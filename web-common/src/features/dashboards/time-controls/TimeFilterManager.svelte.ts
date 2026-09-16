@@ -1,9 +1,12 @@
 import { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
-import type { MetricsViewsProvider } from "@rilldata/web-common/features/metrics-views/providers/MetricsViewsProvider.svelte.ts";
+import { MetricsViewsProvider } from "@rilldata/web-common/features/metrics-views/providers/MetricsViewsProvider.svelte.ts";
 import type { YAMLConfigProvider } from "@rilldata/web-common/features/dashboards/providers/YAMLConfigProvider.svelte.ts";
 import { copySubsetParams } from "@rilldata/web-common/lib/url-utils.ts";
 import type { UrlParamsStore } from "@rilldata/web-common/lib/store-utils/url-params-store-sync.svelte.ts";
-import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
+import {
+  V1TimeGrain,
+  type V1TimeRange,
+} from "@rilldata/web-common/runtime-client";
 import { DEFAULT_TIMEZONE } from "@rilldata/web-common/lib/time/config.ts";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.ts";
 import { invalidationForMetricsViewData } from "@rilldata/web-common/runtime-client/invalidation.ts";
@@ -47,6 +50,7 @@ import { getDefaultTimeRange } from "@rilldata/web-common/features/dashboards/st
 import { measureSelection } from "@rilldata/web-common/features/dashboards/time-series/measure-selection/measure-selection.ts";
 import { getDurationObjectFromMS } from "@rilldata/web-common/lib/time/transforms";
 import { getOrderedStartEndDateTime } from "@rilldata/web-common/features/dashboards/time-series/utils.ts";
+import { toStore } from "svelte/store";
 
 type ComparisonTimeRangeOption = {
   name: TimeComparisonOption;
@@ -66,6 +70,22 @@ type ScrubRange = {
   start: DateTime;
   end: DateTime;
   isScrubbing: boolean;
+};
+
+export type TimeControlState = {
+  timeRange: string | undefined;
+  timeGrain: V1TimeGrain | undefined;
+  timeZone: string;
+  apiTimeRange: V1TimeRange;
+
+  comparisonTimeRange: string | undefined;
+  showComparison: boolean;
+  apiComparisonTimeRange: V1TimeRange | undefined;
+
+  // Undefined until the metrics view specs resolve. Consumers that gate queries on a time range
+  // need to tell "this dashboard has no time dimension" apart from "we do not know yet".
+  hasTimeSeries: boolean | undefined;
+  ready: boolean;
 };
 
 export class TimeFilterManager implements UrlParamsStore {
@@ -95,8 +115,10 @@ export class TimeFilterManager implements UrlParamsStore {
   // For convenience
   public timeStart: string | undefined;
   public timeEnd: string | undefined;
+  public apiTimeRange: V1TimeRange;
   public comparisonTimeStart: string | undefined;
   public comparisonTimeEnd: string | undefined;
+  public apiComparisonTimeRange: V1TimeRange | undefined;
 
   // RillTime related values
   public parsedTime: RillTime | undefined;
@@ -111,7 +133,7 @@ export class TimeFilterManager implements UrlParamsStore {
 
   public curParams = $state(new URLSearchParams());
 
-  public hasTimeSeries: boolean;
+  public hasTimeSeries: boolean | undefined;
   public ready: boolean;
 
   // Temporary lock in explore. Once we move whereFilter out of explore, we can remove this.
@@ -161,6 +183,13 @@ export class TimeFilterManager implements UrlParamsStore {
       const end = this.lastDefinedScrubInterval?.end ?? this.interval?.end;
       return end?.toJSDate()?.toISOString();
     });
+    this.apiTimeRange = $derived(<V1TimeRange>{
+      start: this.timeStart,
+      end: this.timeEnd,
+      timeZone: this.timeZone,
+      timeDimension: this.timeDimension,
+    });
+
     // TODO: calculate vs scrub
     this.comparisonTimeStart = $derived(
       this.comparisonInterval?.start.toJSDate().toISOString(),
@@ -168,6 +197,16 @@ export class TimeFilterManager implements UrlParamsStore {
     this.comparisonTimeEnd = $derived(
       this.comparisonInterval?.end.toJSDate().toISOString(),
     );
+    this.apiComparisonTimeRange = $derived.by(() => {
+      if (!this.comparisonTimeStart || !this.comparisonTimeEnd)
+        return undefined;
+
+      return <V1TimeRange>{
+        start: this.comparisonTimeStart,
+        end: this.comparisonTimeEnd,
+        timeZone: this.timeZone,
+      };
+    });
 
     this.parsedTime = $derived.by(() => {
       if (!this.timeRange) return undefined;
@@ -208,9 +247,19 @@ export class TimeFilterManager implements UrlParamsStore {
       this.getComparisonTimeRangeOptions(),
     );
 
-    this.hasTimeSeries = $derived(
-      Boolean(metricsViewsProvider.timeRangeSummary),
-    );
+    this.hasTimeSeries = $derived.by(() => {
+      if (!metricsViewsProvider.metricsViewNames.length) return undefined;
+
+      let hasTimeSeries = false;
+      for (const metricsView of metricsViewsProvider.metricsViewNames) {
+        const spec = metricsViewsProvider.specs[metricsView];
+        // Every spec comes from the same ListResources response,
+        // so a missing one means they have not resolved and the answer is not knowable yet.
+        if (!spec) return undefined;
+        if (spec.timeDimension) hasTimeSeries = true;
+      }
+      return hasTimeSeries;
+    });
 
     this.ready = $derived.by(() => {
       if (!metricsViewsProvider.ready) return false;
@@ -223,7 +272,8 @@ export class TimeFilterManager implements UrlParamsStore {
 
       // A dashboard without a time dimension has no time range to resolve,
       // so waiting for one would never let the consumers of this become ready.
-      if (!this.hasTimeSeries) return true;
+      // The specs have all resolved by this point, so hasTimeSeries is never undefined here.
+      if (this.hasTimeSeries === false) return true;
 
       return this.timeRangeReady;
     });
@@ -486,6 +536,38 @@ export class TimeFilterManager implements UrlParamsStore {
   public resetScrubRange() {
     this.lastDefinedScrubInterval = undefined;
     this.scrubInterval = undefined;
+  }
+
+  public createLocalFilterStore(metricsViewName: string) {
+    return new TimeFilterManager(
+      this.runtimeClient,
+      new MetricsViewsProvider(this.metricsViewsProvider.runtimeClient, [
+        metricsViewName,
+      ]),
+      this.yamlConfigProvider,
+      this.allowCustomTimeRange,
+    );
+  }
+
+  public getTimeControlStore() {
+    return toStore(
+      () =>
+        ({
+          timeRange: this.timeRange,
+          timeGrain: this.timeGrain,
+          timeZone: this.timeZone,
+          apiTimeRange: this.apiTimeRange,
+
+          comparisonTimeRange: this.comparisonTimeRange,
+          showComparison: this.showComparison,
+          apiComparisonTimeRange: this.showComparison
+            ? this.apiComparisonTimeRange
+            : undefined,
+
+          hasTimeSeries: this.hasTimeSeries,
+          ready: this.ready,
+        }) satisfies TimeControlState,
+    );
   }
 
   private async applyTimeRange(newTimeRange: string, tz = this.timeZone) {

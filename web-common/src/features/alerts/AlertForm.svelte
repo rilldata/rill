@@ -44,7 +44,6 @@
     isSomeFieldTainted,
   } from "@rilldata/web-common/features/alerts/utils.ts";
   import { getProtoFromDashboardState } from "@rilldata/web-common/features/dashboards/proto-state/toProto.ts";
-  import { useMetricsViewTimeRange } from "@rilldata/web-common/features/dashboards/selectors.ts";
   import { useExploreState } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores.ts";
   import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state.ts";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors.ts";
@@ -90,13 +89,6 @@
   $: exploreSpec = $validExploreSpec.data?.explore ?? {};
   $: metricsViewName = exploreSpec.metricsView ?? "";
 
-  $: allTimeRangeResp = useMetricsViewTimeRange(
-    runtimeClient,
-    metricsViewName,
-    undefined,
-    queryClient,
-  );
-
   const exploreState =
     props.mode === "create"
       ? useExploreState(props.exploreName)
@@ -118,7 +110,6 @@
         : getFiltersAndTimeControlsFromAggregationRequest(
             runtimeClient,
             metricsViewName,
-            exploreName,
             JSON.parse(
               props.alertSpec.queryArgsJson ||
                 (props.alertSpec.resolverProperties?.query_args_json as
@@ -126,7 +117,6 @@
                   | undefined) ||
                 "{}",
             ),
-            $allTimeRangeResp.data?.timeRangeSummary,
           ));
   }
 

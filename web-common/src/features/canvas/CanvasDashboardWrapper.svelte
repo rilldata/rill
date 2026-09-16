@@ -44,6 +44,7 @@
       theme,
       exportMode,
       expressionFilterManager,
+      timeFilterManager,
       dashboardProvider,
     },
   } = $derived(getCanvasStore(canvasName, instanceId));
@@ -56,6 +57,17 @@
       return goto("?" + newSearch);
     },
     () => expressionFilterManager.metricsViewsProvider.ready,
+  );
+
+  // svelte-ignore state_referenced_locally
+  syncStoreWithSource(
+    timeFilterManager,
+    (newUrlParams) => {
+      let newSearch = newUrlParams.toString();
+      if (!newSearch) newSearch = "clear=true";
+      return goto("?" + newSearch);
+    },
+    () => timeFilterManager.ready,
   );
 
   $effect(() => {

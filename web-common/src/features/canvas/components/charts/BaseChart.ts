@@ -17,7 +17,6 @@ import type {
 import type { CanvasStore } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
 import { transformChartSpecToPivotState } from "@rilldata/web-common/features/components/charts/explore-transformer";
 import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
-import type { TimeAndFilterStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
 import { DashboardState_ActivePage } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
 import type {
   V1Expression,
@@ -46,6 +45,8 @@ import type {
 import Chart from "./CanvasChart.svelte";
 
 import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
+import type { ExpressionState } from "@rilldata/web-common/features/dashboards/filters/ExpressionFilterManager.svelte.ts";
+import type { TimeControlState } from "@rilldata/web-common/features/dashboards/time-controls/TimeFilterManager.svelte.ts";
 
 // Base interface for all chart configurations
 export type BaseChartConfig = ComponentFilterProperties &
@@ -110,7 +111,8 @@ export abstract class BaseChart<
 
   abstract createChartDataQuery(
     ctx: CanvasStore,
-    timeAndFilterStore: Readable<TimeAndFilterStore>,
+    filterStore: Readable<ExpressionState>,
+    timeControlStore: Readable<TimeControlState>,
     visible: Readable<boolean>,
   ): ChartDataQuery;
 
@@ -133,7 +135,7 @@ export abstract class BaseChart<
   getExploreTransformerProperties(): Partial<ExploreState> {
     const spec = get(this.specStore);
 
-    const timeGrain = get(this.timeAndFilterStore)?.timeGrain;
+    const timeGrain = this.timeFilters.timeGrain;
     const tddLink = getLinkStateForTimeDimensionDetail(spec, this.type);
 
     const comparisonChartTypes: ChartType[] = [

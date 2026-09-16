@@ -39,6 +39,7 @@
   } from "@rilldata/web-common/features/dashboards/providers/DashboardConfigProvider.svelte.ts";
   import { onDestroy } from "svelte";
   import { syncStoreWithSource } from "@rilldata/web-common/lib/store-utils/url-params-store-sync.svelte.ts";
+  import { TimeFilterManager } from "@rilldata/web-common/features/dashboards/time-controls/TimeFilterManager.svelte.ts";
 
   let {
     dashboardResource,
@@ -62,17 +63,33 @@
   const dashboardConfigProvider = isExplore
     ? new ExploreDashboardConfigProvider(runtimeClient, dashboardName)
     : new CanvasDashboardConfigProvider(runtimeClient, dashboardName);
+
   const expressionFilterManager = new ExpressionFilterManager(
     dashboardConfigProvider.metricsViewsProvider,
     dashboardConfigProvider.yamlConfigProvider,
   );
-
   // Always load from current state. This is the only route to overwrite bookmark state.
   // A future PR will improve this by adding `Replace` action, in that case this should only have bookmark's state.
   syncStoreWithSource(
     expressionFilterManager,
     async (newUrlParams) => expressionFilterManager.setUrlParams(newUrlParams),
     () => dashboardConfigProvider.metricsViewsProvider.ready,
+  );
+
+  const timeFilterManager = new TimeFilterManager(
+    runtimeClient,
+    dashboardConfigProvider.metricsViewsProvider,
+    dashboardConfigProvider.yamlConfigProvider,
+    true,
+  );
+  // Always load from current state. This is the only route to overwrite bookmark state.
+  // A future PR will improve this by adding `Replace` action, in that case this should only have bookmark's state.
+  syncStoreWithSource(
+    timeFilterManager,
+    async (newUrlParams) => timeFilterManager.setUrlParams(newUrlParams),
+    () =>
+      timeFilterManager.ready &&
+      dashboardConfigProvider.metricsViewsProvider.ready,
   );
 
   const exprByMetricsView = $derived(expressionFilterManager.exprByMetricsView);
@@ -82,9 +99,7 @@
     dashboardKind,
     expressionFilterManager,
   );
-  let { fields, sanitizedState, queryTimeStart, queryTimeEnd } = $derived(
-    $sanitisedFilterState,
-  );
+  let { fields, sanitizedState } = $derived($sanitisedFilterState);
 
   const formId = "create-public-url-form";
 
@@ -246,8 +261,8 @@
         <div class="flex flex-col gap-2 my-2">
           <ReadonlyExpressionFilters
             {expressionFilterManager}
-            {queryTimeStart}
-            {queryTimeEnd}
+            {timeFilterManager}
+            hideTimePills
           />
         </div>
       </div>

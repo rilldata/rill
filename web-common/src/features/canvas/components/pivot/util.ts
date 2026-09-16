@@ -1,4 +1,3 @@
-import type { CanvasStore } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
 import { createPivotDataStore } from "@rilldata/web-common/features/dashboards/pivot/pivot-data-store";
 import {
   canEnablePivotComparison,
@@ -16,7 +15,6 @@ import {
   type PivotTimeConfig,
 } from "@rilldata/web-common/features/dashboards/pivot/types";
 import { createAndExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
-import type { TimeAndFilterStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import {
   V1Operation,
@@ -33,6 +31,8 @@ import {
 } from "svelte/store";
 import type { CanvasEntity } from "../../stores/canvas-entity";
 import type { PivotSpec, TableSpec } from "./";
+import type { TimeControlState } from "@rilldata/web-common/features/dashboards/time-controls/TimeFilterManager.svelte.ts";
+import type { ExpressionState } from "@rilldata/web-common/features/dashboards/filters/ExpressionFilterManager.svelte.ts";
 
 /**
  * Strips filters for the pivot's own dimensions from the where filter.
@@ -101,7 +101,8 @@ export function createPivotConfig(
   canvas: CanvasEntity,
   tableSpecStore: Readable<PivotSpec | TableSpec>,
   pivotState: Writable<PivotState>,
-  timeAndFilterStore: Readable<TimeAndFilterStore>,
+  filterStore: Readable<ExpressionState>,
+  timeControlStore: Readable<TimeControlState>,
   selfFilteredDimensions?: Readable<Set<string>>,
 ): Readable<PivotDataStoreConfig> {
   const selfFilteredStore = selfFilteredDimensions ?? readable(null);
@@ -111,34 +112,36 @@ export function createPivotConfig(
       canvas.specStore,
       tableSpecStore,
       pivotState,
-      timeAndFilterStore,
+      filterStore,
+      timeControlStore,
       selfFilteredStore,
     ],
     ([
       $canvasData,
       $tableSpec,
       $pivotState,
-      $timeAndFilterStore,
+      $filterState,
+      $timeControlState,
       $selfFiltered,
     ]) => {
-      const { timeRange, comparisonTimeRange, where } = $timeAndFilterStore;
+      const {
+        apiTimeRange,
+        apiComparisonTimeRange,
+        ready: timeReady,
+      } = $timeControlState;
       const metricsViewName = $tableSpec.metrics_view;
       const metricsView =
         $canvasData?.data?.metricsViews[metricsViewName]?.state?.validSpec;
-      const ready =
-        !!metricsViewName &&
-        !!metricsView &&
-        ($timeAndFilterStore.hasTimeSeries === false ||
-          ($timeAndFilterStore.hasTimeSeries === true &&
-            !!timeRange?.start &&
-            !!timeRange?.end));
+      const ready = !!metricsViewName && !!metricsView && timeReady;
 
       let queryWhere: V1Expression | undefined;
       if (!$selfFiltered || $selfFiltered.size === 0) {
-        queryWhere = where;
+        queryWhere = $filterState.expr;
       } else {
         // Only exclude dimensions the pivot itself applied via click-to-filter
-        queryWhere = excludeOwnDimensionFilters(where, [...$selfFiltered]);
+        queryWhere = excludeOwnDimensionFilters($filterState.expr, [
+          ...$selfFiltered,
+        ]);
       }
 
       return "columns" in $tableSpec
@@ -147,10 +150,10 @@ export function createPivotConfig(
             $pivotState,
             queryWhere,
             metricsView,
-            $timeAndFilterStore,
-            comparisonTimeRange,
+            $timeControlState,
+            apiComparisonTimeRange,
             pivotState,
-            timeRange,
+            apiTimeRange,
             ready,
           )
         : processPivot(
@@ -158,10 +161,10 @@ export function createPivotConfig(
             $pivotState,
             queryWhere,
             metricsView,
-            $timeAndFilterStore,
-            comparisonTimeRange,
+            $timeControlState,
+            apiComparisonTimeRange,
             pivotState,
-            timeRange,
+            apiTimeRange,
             ready,
           );
     },
@@ -173,7 +176,7 @@ export function processPivot(
   $pivotState: PivotState,
   where: V1Expression | undefined,
   metricsView: V1MetricsViewSpec | undefined,
-  $timeAndFilterStore: TimeAndFilterStore,
+  $timeControlState: TimeControlState,
   comparisonTimeRange: V1TimeRange | undefined,
   pivotState: Writable<PivotState>,
   timeRange: V1TimeRange,
@@ -199,7 +202,7 @@ export function processPivot(
 
   const enableComparison =
     canEnablePivotComparison($pivotState, comparisonTimeRange?.start) &&
-    $timeAndFilterStore.showTimeComparison;
+    !!$timeControlState.apiComparisonTimeRange;
 
   const config: PivotDataStoreConfig = {
     ready,
@@ -256,7 +259,7 @@ export function processFlat(
   $pivotState: PivotState,
   where: V1Expression | undefined,
   metricsView: V1MetricsViewSpec | undefined,
-  $timeAndFilterStore: TimeAndFilterStore,
+  $timeControlState: TimeControlState,
   comparisonTimeRange: V1TimeRange | undefined,
   pivotState: Writable<PivotState>,
   timeRange: V1TimeRange,
@@ -289,7 +292,7 @@ export function processFlat(
 
   const enableComparison =
     canEnablePivotComparison($pivotState, comparisonTimeRange?.start) &&
-    $timeAndFilterStore.showTimeComparison;
+    !!$timeControlState.apiComparisonTimeRange;
 
   const config: PivotDataStoreConfig = {
     ready,
@@ -390,41 +393,4 @@ export function tableFieldMapper(
       type: PivotChipType.Dimension,
     };
   });
-}
-
-export function memoizePivotConfig<
-  Store extends Readable<PivotDataStoreConfig>,
->(
-  storeGetter: (
-    ctx: CanvasStore,
-    metricsViewName: string,
-    tableSpecStore: Readable<TableSpec | PivotSpec>,
-    pivotState: Writable<PivotState>,
-    timeAndFilterStore: Readable<TimeAndFilterStore>,
-  ) => Store,
-) {
-  const cache = new Map<string, Store>();
-  return (
-    ctx: CanvasStore,
-    metricsViewName: string,
-    tableSpecStore: Readable<TableSpec | PivotSpec>,
-    pivotState: Writable<PivotState>,
-    timeAndFilterStore: Readable<TimeAndFilterStore>,
-  ): Store => {
-    return derived(tableSpecStore, ($tableSpec, set) => {
-      const key = JSON.stringify($tableSpec);
-      let store = cache.get(key);
-      if (!store) {
-        store = storeGetter(
-          ctx,
-          metricsViewName,
-          tableSpecStore,
-          pivotState,
-          timeAndFilterStore,
-        );
-        cache.set(key, store);
-      }
-      return store.subscribe(set);
-    }) as Store;
-  };
 }

@@ -9,7 +9,6 @@ import {
 import { isFieldConfig } from "@rilldata/web-common/features/components/charts/util";
 import { mergeFilters } from "@rilldata/web-common/features/dashboards/pivot/pivot-merge-filters";
 import { createInExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
-import type { TimeAndFilterStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
 import type {
   V1Expression,
   V1MetricsViewAggregationDimension,
@@ -37,6 +36,8 @@ import {
   TOTAL_DOMAIN_KEY,
   type LabelsConfig,
 } from "./constants";
+import type { ExpressionState } from "@rilldata/web-common/features/dashboards/filters/ExpressionFilterManager.svelte.ts";
+import type { TimeControlState } from "@rilldata/web-common/features/dashboards/time-controls/TimeFilterManager.svelte.ts";
 
 export type CircularChartSpec = {
   metrics_view: string;
@@ -80,7 +81,8 @@ export class CircularChartProvider {
 
   createChartDataQuery(
     client: RuntimeClient,
-    timeAndFilterStore: Readable<TimeAndFilterStore>,
+    filterStore: Readable<ExpressionState>,
+    timeControlStore: Readable<TimeControlState>,
     visible?: Readable<boolean>,
   ): ChartDataQuery {
     const visibleStore = visible ?? readable(true);
@@ -106,17 +108,18 @@ export class CircularChartProvider {
 
     // Create topN query for color dimension
     const topNColorQueryOptionsStore = derived(
-      [timeAndFilterStore, visibleStore],
-      ([$timeAndFilterStore, $visible]) => {
-        const { timeRange, where, hasTimeSeries } = $timeAndFilterStore;
+      [filterStore, timeControlStore, visibleStore],
+      ([$filterStore, $timeControlStore, $visible]) => {
+        const { expr } = $filterStore;
+        const { apiTimeRange, hasTimeSeries } = $timeControlStore;
         const enabled =
           $visible &&
-          canQueryWithTimeRange(hasTimeSeries, timeRange) &&
+          canQueryWithTimeRange(hasTimeSeries, apiTimeRange) &&
           !!colorDimensionName &&
           config.color?.type === "nominal" &&
           !Array.isArray(config.color?.sort);
 
-        const topNWhere = getFilterWithNullHandling(where, config.color);
+        const topNWhere = getFilterWithNullHandling(expr, config.color);
 
         // drives the "Other" UI affordance
         const probeLimit = limit ? limit + 1 : undefined;
@@ -129,7 +132,7 @@ export class CircularChartProvider {
             dimensions: [{ name: colorDimensionName }],
             sort: colorSort ? [colorSort] : undefined,
             where: topNWhere,
-            timeRange,
+            timeRange: apiTimeRange,
             limit: probeLimit?.toString(),
           },
           {
@@ -146,15 +149,16 @@ export class CircularChartProvider {
     // The total query feeds the optional center-label total AND the
     // percent-of-total tooltip entry
     const totalQueryOptionsStore = derived(
-      [timeAndFilterStore, visibleStore],
-      ([$timeAndFilterStore, $visible]) => {
-        const { timeRange, where, hasTimeSeries } = $timeAndFilterStore;
+      [filterStore, timeControlStore, visibleStore],
+      ([$filterStore, $timeControlStore, $visible]) => {
+        const { expr } = $filterStore;
+        const { apiTimeRange, hasTimeSeries } = $timeControlStore;
         const enabled =
           $visible &&
-          canQueryWithTimeRange(hasTimeSeries, timeRange) &&
+          canQueryWithTimeRange(hasTimeSeries, apiTimeRange) &&
           !!config.measure?.field;
 
-        const totalWhere = getFilterWithNullHandling(where, config.color);
+        const totalWhere = getFilterWithNullHandling(expr, config.color);
 
         return getQueryServiceMetricsViewAggregationQueryOptions(
           client,
@@ -162,7 +166,7 @@ export class CircularChartProvider {
             metricsView: config.metrics_view,
             measures,
             where: totalWhere,
-            timeRange,
+            timeRange: apiTimeRange,
           },
           {
             query: {
@@ -176,9 +180,10 @@ export class CircularChartProvider {
     const totalQuery = createQuery(totalQueryOptionsStore);
 
     const otherQueryOptionsStore = derived(
-      [timeAndFilterStore, topNColorQuery, visibleStore],
-      ([$timeAndFilterStore, $topNColorQuery, $visible]) => {
-        const { timeRange, where, hasTimeSeries } = $timeAndFilterStore;
+      [filterStore, timeControlStore, topNColorQuery, visibleStore],
+      ([$filterStore, $timeControlStore, $topNColorQuery, $visible]) => {
+        const { expr } = $filterStore;
+        const { apiTimeRange, hasTimeSeries } = $timeControlStore;
         const topNData = $topNColorQuery?.data?.data;
         const customSortValues = Array.isArray(config.color?.sort)
           ? config.color.sort
@@ -197,11 +202,11 @@ export class CircularChartProvider {
           showOther &&
           !!visibleValues &&
           visibleValues.length > 0 &&
-          canQueryWithTimeRange(hasTimeSeries, timeRange) &&
+          canQueryWithTimeRange(hasTimeSeries, apiTimeRange) &&
           !!config.measure?.field &&
           !!colorDimensionName;
 
-        const baseWhere = getFilterWithNullHandling(where, config.color);
+        const baseWhere = getFilterWithNullHandling(expr, config.color);
         let otherWhere = baseWhere;
         if (enabled && colorDimensionName && visibleValues) {
           const notInExpr = createInExpression(
@@ -218,7 +223,7 @@ export class CircularChartProvider {
             metricsView: config.metrics_view,
             measures,
             where: otherWhere,
-            timeRange,
+            timeRange: apiTimeRange,
           },
           {
             query: {
@@ -233,31 +238,34 @@ export class CircularChartProvider {
 
     const queryOptionsStore = derived(
       [
-        timeAndFilterStore,
+        filterStore,
+        timeControlStore,
         topNColorQuery,
         totalQuery,
         otherQuery,
         visibleStore,
       ],
       ([
-        $timeAndFilterStore,
+        $filterStore,
+        $timeControlStore,
         $topNColorQuery,
         $totalQuery,
         $otherQuery,
         $visible,
       ]) => {
-        const { timeRange, where, hasTimeSeries } = $timeAndFilterStore;
+        const { expr } = $filterStore;
+        const { apiTimeRange, hasTimeSeries } = $timeControlStore;
         const topNColorData = $topNColorQuery?.data?.data;
         const enabled =
           $visible &&
-          canQueryWithTimeRange(hasTimeSeries, timeRange) &&
+          canQueryWithTimeRange(hasTimeSeries, apiTimeRange) &&
           !!measures?.length &&
           (config.color?.type === "nominal" &&
           !Array.isArray(config.color?.sort)
             ? topNColorData !== undefined
             : true);
 
-        let combinedWhere = where;
+        let combinedWhere = expr;
         let topColorValues: string[] = [];
 
         // Apply topN filter for color dimension
@@ -279,7 +287,7 @@ export class CircularChartProvider {
             colorDimensionName,
             topColorValues,
           );
-          combinedWhere = mergeFilters(where, filterForTopColorValues);
+          combinedWhere = mergeFilters(expr, filterForTopColorValues);
         }
 
         // Store combinedWhere for use in BaseChart
@@ -293,7 +301,7 @@ export class CircularChartProvider {
             dimensions,
             where: combinedWhere,
             sort: colorSort ? [colorSort] : undefined,
-            timeRange,
+            timeRange: apiTimeRange,
             limit: limit?.toString(),
           },
           {

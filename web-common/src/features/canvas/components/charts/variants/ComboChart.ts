@@ -15,7 +15,6 @@ import {
   type PivotState,
 } from "@rilldata/web-common/features/dashboards/pivot/types";
 import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
-import type { TimeAndFilterStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
 import { DashboardState_ActivePage } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
 import {
   MetricsViewSpecDimensionType,
@@ -32,6 +31,8 @@ import type {
 import { BaseChart, type BaseChartConfig } from "../BaseChart";
 
 import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
+import type { ExpressionState } from "@rilldata/web-common/features/dashboards/filters/ExpressionFilterManager.svelte.ts";
+import type { TimeControlState } from "@rilldata/web-common/features/dashboards/time-controls/TimeFilterManager.svelte.ts";
 
 export type ComboCanvasChartSpec = BaseChartConfig & ComboChartSpecBase;
 
@@ -197,12 +198,14 @@ export class ComboChartComponent extends BaseChart<ComboCanvasChartSpec> {
 
   createChartDataQuery(
     ctx: CanvasStore,
-    timeAndFilterStore: Readable<TimeAndFilterStore>,
+    filterStore: Readable<ExpressionState>,
+    timeControlStore: Readable<TimeControlState>,
     visible: Readable<boolean>,
   ): ChartDataQuery {
     return this.provider.createChartDataQuery(
       ctx.runtimeClient,
-      timeAndFilterStore,
+      filterStore,
+      timeControlStore,
       visible,
     );
   }
@@ -281,7 +284,7 @@ export class ComboChartComponent extends BaseChart<ComboCanvasChartSpec> {
 
   override getExploreTransformerProperties(): Partial<ExploreState> {
     const spec = get(this.specStore);
-    const timeGrain = get(this.timeAndFilterStore)?.timeGrain;
+    const timeGrain = this.timeFilters.timeGrain;
 
     const columns: PivotChipData[] = [];
     const rows: PivotChipData[] = [];

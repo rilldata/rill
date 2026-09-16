@@ -53,6 +53,7 @@ import { ExpressionFilterManager } from "@rilldata/web-common/features/dashboard
 import { convertExpressionToFilterParam } from "@rilldata/web-common/features/dashboards/url-state/filters/converters.ts";
 import { flattenExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils.ts";
 import { CanvasDashboardConfigProvider } from "@rilldata/web-common/features/dashboards/providers/DashboardConfigProvider.svelte.ts";
+import { TimeFilterManager } from "@rilldata/web-common/features/dashboards/time-controls/TimeFilterManager.svelte.ts";
 
 export const lastVisitedState = new Map<string, string>();
 
@@ -90,15 +91,16 @@ export class CanvasEntity {
   // Tab groups keyed by their stable name, reused across spec updates so active-tab state survives.
   private tabGroups = new Map<string, TabGroup>();
 
-  // Time state controls
-  timeManager: TimeManager;
-
   // Metrics view selectors
   metricsView: MetricsViewSelectors;
   dashboardProvider: CanvasDashboardConfigProvider;
 
   // Expression filter manager
   expressionFilterManager: ExpressionFilterManager;
+
+  // Time filter manager
+  timeManager: TimeManager;
+  timeFilterManager: TimeFilterManager;
 
   fileArtifact: FileArtifact | undefined;
 
@@ -228,6 +230,13 @@ export class CanvasEntity {
       if (source && source === get(this.activeComponent)) return;
       this.clearActiveComponent();
     });
+
+    this.timeFilterManager = new TimeFilterManager(
+      this.client,
+      this.dashboardProvider.metricsViewsProvider,
+      this.dashboardProvider.yamlConfigProvider,
+      false,
+    );
 
     this.processSpec(this.spec);
   }
@@ -492,7 +501,11 @@ export class CanvasEntity {
     if (!isolated) {
       this.saveSnapshot(searchParams.toString());
     }
-    this.expressionFilterManager.setUrlParams(searchParams);
+    if (this.dashboardProvider.metricsViewsProvider.ready) {
+      this.expressionFilterManager.setUrlParams(searchParams);
+      if (this.timeFilterManager.ready)
+        this.timeFilterManager.setUrlParams(searchParams);
+    }
     this.timeManager.state.onUrlChange(searchParams);
     this.applyTabsFromURL(searchParams);
   };

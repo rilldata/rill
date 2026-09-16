@@ -28,7 +28,6 @@
   let leaderboardWrapperWidth = $state(0);
 
   let specStore = $derived(component.specStore);
-  let timeAndFilterStore = $derived(component.timeAndFilterStore);
   let leaderboardState = $derived(component.leaderboardState);
   let toggleSort = $derived(component.toggleSort);
   let dataEnabled = $derived(component.dataEnabled);
@@ -54,11 +53,18 @@
     validateLeaderboardSchema(leaderboardProperties, $metricsViewQuery),
   );
 
-  let showTimeComparison = $derived($timeAndFilterStore.showTimeComparison);
-  let comparisonTimeRange = $derived($timeAndFilterStore.comparisonTimeRange);
-  let timeRange = $derived($timeAndFilterStore.timeRange);
+  let { expressionFilters, timeFilters } = $derived(component);
 
-  let whereFilter = $derived($timeAndFilterStore.where);
+  let whereFilter = $derived(
+    expressionFilters.exprByMetricsView[metricsViewName],
+  );
+  let {
+    showComparison: showTimeComparison,
+    timeStart,
+    timeEnd,
+    apiTimeRange,
+    apiComparisonTimeRange,
+  } = $derived(timeFilters);
 
   let allDimensions = $derived(
     metricsViewSelectors.getDimensionsForMetricView(metricsViewName),
@@ -192,9 +198,9 @@
               filterExcludeMode={expressionFilterManager.sortedFilterManagers.dimensions.find(
                 (dfm) => dfm.name === dimension.name,
               )?.exclude ?? false}
-              {timeRange}
+              timeRange={apiTimeRange}
               comparisonTimeRange={showTimeComparison
-                ? comparisonTimeRange
+                ? apiComparisonTimeRange
                 : undefined}
               {dimension}
               allowExpandTable={false}
@@ -204,8 +210,8 @@
                 [metricsViewName],
                 whereFilter,
                 dimension.name,
-                timeRange.start,
-                timeRange.end,
+                timeStart,
+                timeEnd,
               )}
               isBeingCompared={false}
               formatters={measureFormatters}

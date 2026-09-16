@@ -32,7 +32,6 @@
     aggregationRequestWithTimeRange,
     buildAggregationRequest,
   } from "@rilldata/web-common/features/dashboards/aggregation-request-utils.ts";
-  import { useMetricsViewTimeRange } from "@rilldata/web-common/features/dashboards/selectors.ts";
   import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors.ts";
   import {
     getDashboardNameFromReport,
@@ -117,13 +116,6 @@
   $: validExploreSpec = useExploreValidSpec(runtimeClient, exploreName);
   $: exploreSpec = $validExploreSpec.data?.explore ?? {};
   $: metricsViewName = exploreSpec.metricsView ?? "";
-
-  $: allTimeRangeResp = useMetricsViewTimeRange(
-    runtimeClient,
-    metricsViewName,
-    undefined,
-    queryClient,
-  );
 
   $: mutation =
     props.mode === "edit"

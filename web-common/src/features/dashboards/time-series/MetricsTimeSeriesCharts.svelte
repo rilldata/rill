@@ -23,12 +23,8 @@
   import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors";
   import { translateV1TimeGrain } from "@rilldata/web-common/lib/time/new-grains";
   import { type AvailableTimeGrain } from "@rilldata/web-common/lib/time/types";
-  import {
-    type MetricsViewSpecMeasure,
-    type V1Expression,
-  } from "@rilldata/web-common/runtime-client/gen/index.schemas";
+  import { type MetricsViewSpecMeasure } from "@rilldata/web-common/runtime-client/gen/index.schemas";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
-  import { DateTime, Interval } from "luxon";
   import { Button } from "../../../components/button";
   import Pivot from "../../../components/icons/Pivot.svelte";
   import { TIME_GRAIN } from "../../../lib/time/config";
@@ -51,14 +47,10 @@
 
   let {
     exploreName,
-    dimensionOnlyFilter,
-    whereFilter,
     hideStartPivotButton = false,
     tddChartHeight = 245,
   }: {
     exploreName: string;
-    dimensionOnlyFilter: V1Expression | undefined;
-    whereFilter: V1Expression | undefined;
     hideStartPivotButton?: boolean;
     // Height of the expanded chart in the Time Dimension Detail view, controlled
     // by the resizable divider between the timeseries and the detail table.
@@ -79,17 +71,19 @@
     },
     expressionFilterManager,
     timeFilterManager,
+    dashboardConfigProvider,
   } = StateManagers;
+
+  let where = $derived(
+    expressionFilterManager.exprByMetricsView[$metricsViewName],
+  );
 
   let {
     timeGrain,
-    timeDimension,
+    timeDimension: selectedTimeDimension,
 
     interval,
     showComparison,
-    comparisonInterval,
-    canPanLeft,
-    canPanRight,
 
     timeStart,
     timeEnd,
@@ -100,6 +94,11 @@
 
     ready: chartReady,
   } = $derived(timeFilterManager);
+  let timeDimension = $derived(
+    selectedTimeDimension ??
+      dashboardConfigProvider.metricsViewsProvider.specs[$metricsViewName]
+        ?.timeDimension,
+  );
 
   let grainDropdownOpen = $state(false);
   let connectNulls = $state(true);
@@ -127,14 +126,6 @@
     if (timeGrain) measureSelection.setTimeGrain(timeGrain);
   });
 
-  let chartScrubInterval = $derived.by(() => {
-    const range = $exploreState?.lastDefinedScrubRange;
-    if (!range) return undefined;
-    const a = DateTime.fromJSDate(range.start, { zone: selectedTimezone });
-    const b = DateTime.fromJSDate(range.end, { zone: selectedTimezone });
-    const [start, end] = a <= b ? [a, b] : [b, a];
-    return Interval.fromDateTimes(start, end) as Interval<true>;
-  });
   let managerForCompareDimension = $derived.by(() => {
     const manager = comparisonDimension
       ? expressionFilterManager.filterManagersMap[comparisonDimension]
@@ -223,14 +214,6 @@
       [getTimeDimension()],
       measures,
     );
-  }
-
-  function handleScrub(range: {
-    start: DateTime;
-    end: DateTime;
-    isScrubbing: boolean;
-  }) {
-    timeFilterManager.onScrubRange(range);
   }
 
   function maybeClearMeasureSelection() {
@@ -367,7 +350,7 @@
           isMeasureExpanded={showTimeDimensionDetail}
           {showComparison}
           metricsViewName={chartMetricsViewName}
-          where={whereFilter}
+          {where}
           {timeDimension}
           {timeStart}
           {timeEnd}
@@ -376,39 +359,25 @@
           ready={chartReady}
         />
 
-        {#if timeGrain}
+        {#if timeDimension && timeGrain}
           <!-- min-w-0 is required for the Vega-rendered chart types: their canvas has an
                intrinsic pixel width, which would otherwise become the 1fr track's minimum
                size and stop the column from shrinking when the divider is dragged in. -->
           <div class="relative min-w-0">
             <MeasureChart
               {measure}
+              {expressionFilterManager}
+              {timeFilterManager}
               {scrubController}
               {connectNulls}
               tddChartType={tddChartType ?? TDDChart.DEFAULT}
               metricsViewName={chartMetricsViewName}
-              where={whereFilter}
               {timeDimension}
-              {interval}
-              {comparisonInterval}
-              timeGranularity={timeGrain}
-              timeZone={selectedTimezone}
-              ready={chartReady}
-              {chartScrubInterval}
-              {comparisonDimension}
               dimensionValues={chartDimensionValues}
-              dimensionWhere={dimensionOnlyFilter}
               {annotationsEnabled}
-              {canPanLeft}
-              {canPanRight}
-              onPanLeft={() => timeFilterManager.onPan("left")}
-              onPanRight={() => timeFilterManager.onPan("right")}
-              {showComparison}
               {showTimeDimensionDetail}
               {tddChartHeight}
               dynamicYAxis={dynamicYAxisScale}
-              onScrub={handleScrub}
-              onScrubClear={() => timeFilterManager.resetScrubRange()}
             />
 
             <DropdownMenu.Root>
@@ -447,25 +416,13 @@
     bind:open={screenshotDialogOpen}
     measure={screenshotDialogMeasure}
     metricsViewName={chartMetricsViewName}
-    tddChartType={tddChartType ?? TDDChart.DEFAULT}
     {expressionFilterManager}
-    where={whereFilter}
-    {timeDimension}
-    {timeStart}
-    {timeEnd}
-    {comparisonTimeStart}
-    {comparisonTimeEnd}
-    {interval}
-    {comparisonInterval}
+    {timeFilterManager}
+    tddChartType={tddChartType ?? TDDChart.DEFAULT}
     {comparisonDimension}
-    timeGranularity={timeGrain}
-    timeZone={selectedTimezone}
     dimensionValues={chartDimensionValues}
-    dimensionWhere={dimensionOnlyFilter}
-    {showComparison}
     {showTimeDimensionDetail}
     dynamicYAxis={dynamicYAxisScale}
     {connectNulls}
-    ready={chartReady}
   />
 {/if}

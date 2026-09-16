@@ -8,7 +8,6 @@
   } from "@rilldata/web-admin/client";
   import {
     type BookmarkEntry,
-    formatTimeRange,
     getBookmarkData,
   } from "@rilldata/web-admin/features/bookmarks/utils.ts";
   import ProjectAccessControls from "@rilldata/web-admin/features/projects/ProjectAccessControls.svelte";
@@ -20,17 +19,11 @@
   import Switch from "@rilldata/web-common/components/forms/Switch.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
-  import { deriveInterval } from "@rilldata/web-common/features/dashboards/time-controls/new-time-controls";
-  import { ExploreStateURLParams } from "@rilldata/web-common/features/dashboards/url-state/url-params";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors.ts";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus.ts";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.ts";
-  import {
-    V1TimeGrain,
-    type V1TimeRange,
-  } from "@rilldata/web-common/runtime-client";
+  import { type V1TimeRange } from "@rilldata/web-common/runtime-client";
   import { InfoIcon } from "lucide-svelte";
-  import type { Interval } from "luxon";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { defaults, superForm } from "sveltekit-superforms";
   import { yup } from "sveltekit-superforms/adapters";
@@ -44,6 +37,7 @@
   } from "@rilldata/web-common/features/dashboards/providers/DashboardConfigProvider.svelte.ts";
   import { onDestroy } from "svelte";
   import { syncStoreWithSource } from "@rilldata/web-common/lib/store-utils/url-params-store-sync.svelte.ts";
+  import { TimeFilterManager } from "@rilldata/web-common/features/dashboards/time-controls/TimeFilterManager.svelte.ts";
 
   let {
     organization,
@@ -73,17 +67,33 @@
     resourceKind === ResourceKind.Canvas
       ? new CanvasDashboardConfigProvider(runtimeClient, resourceName)
       : new ExploreDashboardConfigProvider(runtimeClient, resourceName);
+
   const expressionFilterManager = new ExpressionFilterManager(
     dashboardConfigProvider.metricsViewsProvider,
     dashboardConfigProvider.yamlConfigProvider,
   );
-
   // Always load from current state. This is the only route to overwrite bookmark state.
   // A future PR will improve this by adding `Replace` action, in that case this should only have bookmark's state.
   syncStoreWithSource(
     expressionFilterManager,
     async (newUrlParams) => expressionFilterManager.setUrlParams(newUrlParams),
     () => dashboardConfigProvider.metricsViewsProvider.ready,
+  );
+
+  const timeFilterManager = new TimeFilterManager(
+    runtimeClient,
+    dashboardConfigProvider.metricsViewsProvider,
+    dashboardConfigProvider.yamlConfigProvider,
+    true,
+  );
+  // Always load from current state. This is the only route to overwrite bookmark state.
+  // A future PR will improve this by adding `Replace` action, in that case this should only have bookmark's state.
+  syncStoreWithSource(
+    timeFilterManager,
+    async (newUrlParams) => timeFilterManager.setUrlParams(newUrlParams),
+    () =>
+      timeFilterManager.ready &&
+      dashboardConfigProvider.metricsViewsProvider.ready,
   );
 
   let timeFilterState = $state<
@@ -97,70 +107,6 @@
   >(undefined);
 
   let curUrlParams = $derived(page.url.searchParams);
-  $effect(() => void processTimeFromUrl());
-  async function processTimeFromUrl() {
-    const searchParamsObj = new URLSearchParams(curUrlParams);
-    const rangeExpression = searchParamsObj.get(
-      ExploreStateURLParams.TimeRange,
-    );
-    const timeRange = <V1TimeRange>{
-      expression: rangeExpression || "",
-    };
-
-    const timeZone =
-      searchParamsObj.get(ExploreStateURLParams.TimeZone) || "UTC";
-
-    try {
-      const promises =
-        dashboardConfigProvider.metricsViewsProvider.metricsViewNames.map(
-          (mvName) =>
-            deriveInterval(
-              timeRange.expression || "",
-              runtimeClient,
-              mvName,
-              timeZone,
-            ),
-        );
-
-      const intervals = await Promise.all(promises);
-      let intervalWithLatestEndPoint:
-        | {
-            interval: Interval;
-            grain?: V1TimeGrain | undefined;
-            error?: string;
-          }
-        | undefined;
-      intervals.forEach((response) => {
-        if (
-          !intervalWithLatestEndPoint ||
-          (response.interval.end && intervalWithLatestEndPoint.interval.end
-            ? response.interval.end > intervalWithLatestEndPoint.interval.end
-            : false)
-        ) {
-          intervalWithLatestEndPoint = response;
-        }
-      });
-
-      const start = intervalWithLatestEndPoint?.interval?.start?.toISO();
-      const end = intervalWithLatestEndPoint?.interval?.end?.toISO();
-
-      const grain =
-        (searchParamsObj.get(ExploreStateURLParams.TimeGrain) as V1TimeGrain) ||
-        intervalWithLatestEndPoint.grain ||
-        V1TimeGrain.TIME_GRAIN_MINUTE;
-
-      const selectedTimeRange = formatTimeRange(start, end, grain, timeZone);
-
-      timeFilterState = {
-        queryTimeStart: start,
-        queryTimeEnd: end,
-        displayTimeRange: timeRange,
-        selectedTimeRange,
-      };
-    } catch {
-      timeFilterState = undefined;
-    }
-  }
 
   const bookmarkCreator = createAdminServiceCreateBookmark();
   const bookmarkUpdater = createAdminServiceUpdateBookmark();
@@ -293,14 +239,10 @@
             {m.bookmark_filters_inherited()}
           </div>
         </Label>
-        {#if timeFilterState}
-          <ReadonlyExpressionFilters
-            {expressionFilterManager}
-            displayTimeRange={timeFilterState.displayTimeRange}
-            queryTimeStart={timeFilterState.queryTimeStart}
-            queryTimeEnd={timeFilterState.queryTimeEnd}
-          />
-        {/if}
+        <ReadonlyExpressionFilters
+          {expressionFilterManager}
+          {timeFilterManager}
+        />
       </div>
       <ProjectAccessControls {organization} {project}>
         <Select

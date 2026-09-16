@@ -4,13 +4,12 @@
   import { TDDChart } from "@rilldata/web-common/features/dashboards/time-dimension-details/types";
   import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
-  import { V1TimeGrainToDateTimeUnit } from "@rilldata/web-common/lib/time/new-grains";
-  import type { MetricsViewSpecMeasure } from "@rilldata/web-common/runtime-client";
   import {
-    createQueryServiceMetricsViewTimeSeries,
-    V1TimeGrain,
-    type V1Expression,
-  } from "@rilldata/web-common/runtime-client";
+    MinSupportedGrain,
+    V1TimeGrainToDateTimeUnit,
+  } from "@rilldata/web-common/lib/time/new-grains";
+  import type { MetricsViewSpecMeasure } from "@rilldata/web-common/runtime-client";
+  import { createQueryServiceMetricsViewTimeSeries } from "@rilldata/web-common/runtime-client";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { keepPreviousData } from "@tanstack/svelte-query";
   import { DateTime, Interval } from "luxon";
@@ -29,47 +28,81 @@
   } from "./use-dimension-data";
   import { transformTimeSeriesData } from "./use-measure-time-series";
   import { dateToIndex } from "./utils";
+  import type { ExpressionFilterManager } from "@rilldata/web-common/features/dashboards/filters/ExpressionFilterManager.svelte.ts";
+  import type { TimeFilterManager } from "@rilldata/web-common/features/dashboards/time-controls/TimeFilterManager.svelte.ts";
 
   const VISIBILITY_ROOT_MARGIN = "120px";
 
-  export let measure: MetricsViewSpecMeasure;
-  export let metricsViewName: string;
-  export let where: V1Expression | undefined = undefined;
-  export let timeDimension: string | undefined = undefined;
-  export let interval: Interval<true> | undefined = undefined;
-  export let comparisonInterval: Interval<true> | undefined = undefined;
-  export let timeGranularity: V1TimeGrain | undefined = undefined;
-  export let timeZone: string = "UTC";
-  export let comparisonDimension: string | undefined = undefined;
-  export let dimensionValues: (string | null)[] = [];
-  export let dimensionWhere: V1Expression | undefined = undefined;
-  export let annotationsEnabled: boolean = false;
-  export let showComparison: boolean = false;
-  export let showTimeDimensionDetail: boolean = false;
-  export let ready: boolean = true;
-  export let chartScrubInterval: Interval<true> | undefined = undefined;
-  export let canPanLeft: boolean = false;
-  export let canPanRight: boolean = false;
-  export let tddChartType: TDDChart = TDDChart.DEFAULT;
-  export let onScrub:
-    | ((range: {
-        start: DateTime;
-        end: DateTime;
-        isScrubbing: boolean;
-      }) => void)
-    | undefined = undefined;
-  export let onScrubClear: (() => void) | undefined = undefined;
-  export let onPanLeft: (() => void) | undefined = undefined;
-  export let onPanRight: (() => void) | undefined = undefined;
-  export let scrubController: ScrubController | undefined = undefined;
-  export let connectNulls: boolean = true;
-  export let dynamicYAxis: boolean = false;
-  // Chart height when expanded in the Time Dimension Detail view. Driven by the
-  // resizable divider between the timeseries and the detail table.
-  export let tddChartHeight: number = 245;
+  let {
+    measure,
+    metricsViewName,
+    expressionFilterManager,
+    timeFilterManager,
+    comparisonDimension = undefined,
+    dimensionValues = [],
+    annotationsEnabled = false,
+    timeDimension,
+    showTimeDimensionDetail = false,
+    ready = false,
+    tddChartType = TDDChart.DEFAULT,
+    scrubController = undefined,
+    connectNulls = true,
+    dynamicYAxis = false,
+    tddChartHeight = 245,
+  }: {
+    measure: MetricsViewSpecMeasure;
+    metricsViewName: string;
+    expressionFilterManager: ExpressionFilterManager;
+    timeFilterManager: TimeFilterManager;
+    comparisonDimension?: string | undefined;
+    dimensionValues?: (string | null)[];
+    annotationsEnabled?: boolean;
+    timeDimension: string;
+    showTimeDimensionDetail?: boolean;
+    ready?: boolean;
+    tddChartType?: TDDChart;
+    scrubController?: ScrubController | undefined;
+    connectNulls?: boolean;
+    dynamicYAxis?: boolean;
+    tddChartHeight?: number;
+  } = $props();
 
   const client = useRuntimeClient();
   const { visible, observe } = createVisibilityObserver(VISIBILITY_ROOT_MARGIN);
+
+  let {
+    interval,
+    timeStart,
+    timeEnd,
+    timeGrain,
+    timeZone,
+
+    showComparison,
+    comparisonInterval,
+    comparisonTimeStart,
+    comparisonTimeEnd,
+
+    scrubInterval,
+    canPanLeft,
+    canPanRight,
+  } = $derived(timeFilterManager);
+  let timeGranularity = $derived(timeGrain ?? MinSupportedGrain);
+
+  let chartScrubInterval = $derived.by(() => {
+    if (!scrubInterval) return undefined;
+    const [start, end] =
+      scrubInterval.start <= scrubInterval.end
+        ? [scrubInterval.start, scrubInterval.end]
+        : [scrubInterval.end, scrubInterval.start];
+    return Interval.fromDateTimes(start, end) as Interval<true>;
+  });
+
+  let where = $derived(
+    expressionFilterManager.exprByMetricsView[metricsViewName],
+  );
+  let dimensionWhere = $derived(
+    expressionFilterManager.topLevelJoiner.dimensionOnlyExpr[metricsViewName],
+  );
 
   let container: HTMLDivElement;
   let unobserve: (() => void) | undefined;
@@ -82,93 +115,95 @@
     unobserve?.();
   });
 
-  $: measureName = measure.name ?? "";
-  $: height = showTimeDimensionDetail ? tddChartHeight : 145;
+  let measureName = $derived(measure.name ?? "");
+  let height = $derived(showTimeDimensionDetail ? tddChartHeight : 145);
 
-  $: effectiveChartType = resolveEffectiveChartType(
-    tddChartType,
-    hasDimensionComparison,
+  // Dimension comparison data
+  let hasDimensionComparison = $derived(
+    !!comparisonDimension && dimensionValues.length > 0 && !!timeDimension,
   );
-  $: usesVegaChart = usesVegaRenderer(effectiveChartType);
+
+  let effectiveChartType = $derived(
+    resolveEffectiveChartType(tddChartType, hasDimensionComparison),
+  );
+  let usesVegaChart = $derived(usesVegaRenderer(effectiveChartType));
 
   // Seed the shared brush store from the persisted scrub interval so TDD Vega
   // charts can render the brush on mount, chart-type switch, or page refresh.
-  $: {
+  $effect(() => {
     const brushStoreEmpty = $chartBrushStore.startMs === undefined;
     if (
       usesVegaChart &&
       brushStoreEmpty &&
-      chartScrubInterval?.start &&
-      chartScrubInterval?.end
+      scrubInterval?.start &&
+      scrubInterval?.end
     ) {
       const systemTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-      const vegaStartMs = chartScrubInterval.start
+      const vegaStartMs = scrubInterval.start
         .setZone(systemTimeZone, { keepLocalTime: true })
         .toMillis();
-      const vegaEndMs = chartScrubInterval.end
+      const vegaEndMs = scrubInterval.end
         .setZone(systemTimeZone, { keepLocalTime: true })
         .toMillis();
       chartBrushStore.set({ startMs: vegaStartMs, endMs: vegaEndMs });
     }
-  }
-
-  // Extract ISO strings for API calls (must be UTC for protobuf Timestamp parsing)
-  $: timeStart = interval?.start?.toUTC().toISO() ?? undefined;
-  $: timeEnd = interval?.end?.toUTC().toISO() ?? undefined;
-  $: comparisonTimeStart =
-    comparisonInterval?.start?.toUTC().toISO() ?? undefined;
-  $: comparisonTimeEnd = comparisonInterval?.end?.toUTC().toISO() ?? undefined;
+  });
 
   // Time series queries
-  $: timeSeriesQuery = createQueryServiceMetricsViewTimeSeries(
-    client,
-    {
-      metricsViewName,
-      measureNames: [measureName],
-      where,
-      timeDimension,
-      timeStart,
-      timeEnd,
-      timeGranularity,
-      timeZone,
-    },
-    {
-      query: {
-        enabled: $visible && ready && !!timeStart,
-        placeholderData: keepPreviousData,
-        refetchOnMount: false,
+  let timeSeriesQuery = $derived(
+    createQueryServiceMetricsViewTimeSeries(
+      client,
+      {
+        metricsViewName,
+        measureNames: [measureName],
+        where,
+        timeDimension,
+        timeStart,
+        timeEnd,
+        timeGranularity,
+        timeZone,
       },
-    },
+      {
+        query: {
+          enabled: $visible && ready && !!timeStart,
+          placeholderData: keepPreviousData,
+          refetchOnMount: false,
+        },
+      },
+    ),
   );
 
-  $: comparisonTimeSeriesQuery = createQueryServiceMetricsViewTimeSeries(
-    client,
-    {
-      metricsViewName,
-      measureNames: [measureName],
-      where,
-      timeDimension,
-      timeStart: comparisonTimeStart,
-      timeEnd: comparisonTimeEnd,
-      timeGranularity,
-      timeZone,
-    },
-    {
-      query: {
-        enabled: $visible && ready && showComparison && !!comparisonTimeStart,
-        placeholderData: keepPreviousData,
-        refetchOnMount: false,
+  let comparisonTimeSeriesQuery = $derived(
+    createQueryServiceMetricsViewTimeSeries(
+      client,
+      {
+        metricsViewName,
+        measureNames: [measureName],
+        where,
+        timeDimension,
+        timeStart: comparisonTimeStart,
+        timeEnd: comparisonTimeEnd,
+        timeGranularity,
+        timeZone,
       },
-    },
+      {
+        query: {
+          enabled: $visible && ready && showComparison && !!comparisonTimeStart,
+          placeholderData: keepPreviousData,
+          refetchOnMount: false,
+        },
+      },
+    ),
   );
 
   // Transform query results
-  $: comparisonData =
+  let comparisonData = $derived(
     showComparison && !$comparisonTimeSeriesQuery.isFetching
       ? $comparisonTimeSeriesQuery.data?.data
-      : undefined;
+      : undefined,
+  );
 
-  $: data =
+  let data = $derived(
     $timeSeriesQuery.isFetching || !$timeSeriesQuery.data?.data
       ? ([] as TimeSeriesPoint[])
       : transformTimeSeriesData(
@@ -176,33 +211,32 @@
           comparisonData,
           measureName,
           timeZone,
-        );
+        ),
+  );
 
-  $: isError = $timeSeriesQuery.isError;
-  $: error = $timeSeriesQuery.error?.message;
+  let isError = $derived($timeSeriesQuery.isError);
+  let error = $derived($timeSeriesQuery.error?.message);
 
-  // Dimension comparison data
-  $: hasDimensionComparison =
-    !!comparisonDimension && dimensionValues.length > 0 && !!timeDimension;
+  let dimAggQuery = $derived(
+    hasDimensionComparison
+      ? createDimensionAggregationQuery(
+          client,
+          metricsViewName,
+          measureName,
+          comparisonDimension!,
+          dimensionValues,
+          dimensionWhere,
+          timeDimension,
+          timeStart,
+          timeEnd,
+          timeGranularity,
+          timeZone,
+          $visible && ready && !!timeStart,
+        )
+      : undefined,
+  );
 
-  $: dimAggQuery = hasDimensionComparison
-    ? createDimensionAggregationQuery(
-        client,
-        metricsViewName,
-        measureName,
-        comparisonDimension!,
-        dimensionValues,
-        dimensionWhere,
-        timeDimension!,
-        timeStart,
-        timeEnd,
-        timeGranularity!,
-        timeZone,
-        $visible && ready && !!timeStart,
-      )
-    : undefined;
-
-  $: dimCompAggQuery =
+  let dimCompAggQuery = $derived(
     hasDimensionComparison && showComparison && !!comparisonTimeStart
       ? createDimensionAggregationQuery(
           client,
@@ -211,21 +245,23 @@
           comparisonDimension!,
           dimensionValues,
           dimensionWhere,
-          timeDimension!,
+          timeDimension,
           comparisonTimeStart,
           comparisonTimeEnd,
-          timeGranularity!,
+          timeGranularity,
           timeZone,
 
           $visible && ready && !!comparisonTimeStart,
         )
-      : undefined;
+      : undefined,
+  );
 
-  $: dimIsFetching =
+  let dimIsFetching = $derived(
     (dimAggQuery ? $dimAggQuery?.isFetching : false) ||
-    (dimCompAggQuery ? $dimCompAggQuery?.isFetching : false);
+      (dimCompAggQuery ? $dimCompAggQuery?.isFetching : false),
+  );
 
-  $: dimensionData =
+  let dimensionData = $derived(
     hasDimensionComparison && timeDimension && timeGranularity
       ? buildDimensionSeriesData(
           measureName,
@@ -240,24 +276,28 @@
           dimCompAggQuery ? $dimCompAggQuery?.data?.data : undefined,
           !!dimIsFetching,
         )
-      : [];
+      : [],
+  );
 
-  $: isFetching =
+  let isFetching = $derived(
     $timeSeriesQuery.isFetching ||
-    (showComparison && $comparisonTimeSeriesQuery.isFetching) ||
-    !!dimIsFetching;
+      (showComparison && $comparisonTimeSeriesQuery.isFetching) ||
+      !!dimIsFetching,
+  );
 
   // Annotations query
-  $: annotationsQuery = createAnnotationsQuery(
-    client,
-    metricsViewName,
-    measureName,
-    timeDimension,
-    timeStart,
-    timeEnd,
-    timeGranularity,
-    timeZone,
-    annotationsEnabled && !!timeStart && !!timeEnd && !!timeGranularity,
+  let annotationsQuery = $derived(
+    createAnnotationsQuery(
+      client,
+      metricsViewName,
+      measureName,
+      timeDimension,
+      timeStart,
+      timeEnd,
+      timeGranularity,
+      timeZone,
+      annotationsEnabled && !!timeStart && !!timeEnd && !!timeGranularity,
+    ),
   );
 
   // TDD handlers
@@ -304,7 +344,7 @@
     // Guard: if brush was within a single grain, snapping can invert the range
     if (+endDt <= +startDt) return;
 
-    onScrub?.({
+    timeFilterManager.onScrubRange({
       start: startDt,
       end: endDt,
       isScrubbing: false,
@@ -313,7 +353,7 @@
 
   function handleTddBrushClear() {
     chartBrushStore.set({ startMs: undefined, endMs: undefined });
-    onScrubClear?.();
+    timeFilterManager.resetScrubRange();
   }
 </script>
 
@@ -332,16 +372,12 @@
         chartType={effectiveChartType}
         {metricsViewName}
         {measure}
+        {expressionFilterManager}
+        {timeFilterManager}
         {timeDimension}
-        {interval}
-        comparisonInterval={showComparison ? comparisonInterval : undefined}
-        {timeGranularity}
-        {timeZone}
-        {where}
         {comparisonDimension}
         {dimensionValues}
         {dimensionData}
-        {showComparison}
         {showTimeDimensionDetail}
         {dynamicYAxis}
         onChartHover={handleTddHover}
@@ -364,10 +400,10 @@
       {chartScrubInterval}
       {canPanLeft}
       {canPanRight}
-      {onPanLeft}
-      {onPanRight}
-      {onScrub}
-      {onScrubClear}
+      onPanLeft={() => timeFilterManager.onPan("left")}
+      onPanRight={() => timeFilterManager.onPan("right")}
+      onScrub={(range) => timeFilterManager.onScrubRange(range)}
+      onScrubClear={() => timeFilterManager.resetScrubRange()}
       {scrubController}
       {metricsViewName}
       {connectNulls}

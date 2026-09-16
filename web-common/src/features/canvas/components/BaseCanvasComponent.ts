@@ -35,10 +35,12 @@ import type {
 } from "../stores/canvas-entity";
 import { TimeState } from "../stores/time-state";
 import type { ExpressionFilterManager } from "@rilldata/web-common/features/dashboards/filters/ExpressionFilterManager.svelte.ts";
+import type { TimeFilterManager } from "@rilldata/web-common/features/dashboards/time-controls/TimeFilterManager.svelte.ts";
+import { dedupe } from "@rilldata/web-common/lib/arrayUtils.ts";
 
 export abstract class BaseCanvasComponent<T = ComponentSpec> {
   id: string;
-  // Local copoy of the canvas component resource
+  // Local copy of the canvas component resource
   resource: Writable<V1Resource | null> = writable(null);
   // Local copy of the spec (aka rendererProperties) for the component
   specStore: Writable<T>;
@@ -47,7 +49,14 @@ export abstract class BaseCanvasComponent<T = ComponentSpec> {
   // Widget specific dimension and measure filters
   localExpressionFilters: ExpressionFilterManager;
   // Widget specific time filters
+  localTimeFilters: TimeFilterManager;
+  // Widget specific time filters
   localTimeControls: TimeState;
+
+  // Final expression filter manager based on parent and local
+  expressionFilters: ExpressionFilterManager;
+  // Final time filter manager based on parent and local
+  timeFilters: TimeFilterManager;
 
   // Lazy-load latch: flipped true once the component scrolls into view, gating
   // its data query so off-screen components don't fetch.
@@ -157,15 +166,31 @@ export abstract class BaseCanvasComponent<T = ComponentSpec> {
         this.metricsViewName,
       );
 
+    this.localTimeFilters =
+      this.parent.timeFilterManager.createLocalFilterStore(
+        this.metricsViewName,
+      );
+
+    this.expressionFilters =
+      this.parent.expressionFilterManager.createLocalFilterStore(
+        this.metricsViewName,
+      );
+
+    this.timeFilters = this.parent.timeFilterManager.createLocalFilterStore(
+      this.metricsViewName,
+    );
+
     this.unsubscribeSpec = this.specStore.subscribe((spec) => {
       this.localExpressionFilters.setParamForMetricsView(
         this.metricsViewName,
         (spec["dimension_filters"] ?? "") as string,
       );
+      this.syncExpressionFilters();
 
-      this.localTimeControls.onUrlChange(
+      this.localTimeFilters.setUrlParams(
         new URLSearchParams(spec?.["time_filters"] ?? ""),
       );
+      this.syncTimeFilters();
     });
   }
 
@@ -184,6 +209,38 @@ export abstract class BaseCanvasComponent<T = ComponentSpec> {
     this.resource.set(resource);
     this.pathInYAML = path;
     this.specStore.set(yamlSpec);
+  }
+
+  public syncExpressionFilters() {
+    const globalExpr =
+      this.parent.expressionFilterManager.exprByMetricsView[
+        this.metricsViewName
+      ];
+    const localExpr =
+      this.localExpressionFilters.exprByMetricsView[this.metricsViewName];
+
+    let resolvedExpr: V1Expression | undefined;
+    if (globalExpr && localExpr) {
+      resolvedExpr = mergeFilters(globalExpr, localExpr);
+    } else {
+      resolvedExpr = globalExpr ?? localExpr;
+    }
+
+    this.expressionFilters.setExprForMetricsView(
+      this.metricsViewName,
+      resolvedExpr,
+      dedupe([
+        ...this.parent.expressionFilterManager.inList,
+        ...this.localExpressionFilters.inList,
+      ]),
+    );
+  }
+
+  public syncTimeFilters() {
+    const urlParams = this.localTimeFilters.timeRange
+      ? this.localTimeFilters.curParams
+      : this.parent.timeFilterManager.curParams;
+    this.timeFilters.setUrlParams(urlParams);
   }
 
   // This will be deprecated eventually - bgh

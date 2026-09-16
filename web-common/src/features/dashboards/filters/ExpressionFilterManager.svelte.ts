@@ -25,6 +25,11 @@ import { getSortFilterManagers } from "@rilldata/web-common/features/dashboards/
 import { expandCompressedParams } from "@rilldata/web-common/features/dashboards/url-state/compression.ts";
 import type { UrlParamsStore } from "@rilldata/web-common/lib/store-utils/url-params-store-sync.svelte.ts";
 
+export type ExpressionState = {
+  expr: V1Expression | undefined;
+  dimensionOnlyExpr: V1Expression | undefined;
+};
+
 /**
  * Filter managers for the chips in a filter bar.
  *
@@ -319,7 +324,6 @@ export class ExpressionFilterManager implements UrlParamsStore {
   }
 
   public getExprStoreForFirstMetricsView() {
-    // The name is read inside the store, since the metrics views only arrive once the specs load.
     return toStore(() => {
       const mvName = this.metricsViewsProvider.metricsViewNames[0];
       return {
@@ -330,10 +334,13 @@ export class ExpressionFilterManager implements UrlParamsStore {
   }
 
   public getExprStoreForMetricsView(mvName: string) {
-    return toStore(() => ({
-      expr: this.topLevelJoiner.expr[mvName],
-      dimensionOnlyExpr: this.topLevelJoiner.dimensionOnlyExpr[mvName],
-    }));
+    return toStore(
+      () =>
+        <ExpressionState>{
+          expr: this.topLevelJoiner.expr[mvName],
+          dimensionOnlyExpr: this.topLevelJoiner.dimensionOnlyExpr[mvName],
+        },
+    );
   }
 }
 
