@@ -28440,9 +28440,13 @@ func (m *ListBookmarksRequest) validate(all bool) error {
 
 	// no validation rules for ProjectId
 
-	// no validation rules for ResourceKind
+	if m.ResourceKind != nil {
+		// no validation rules for ResourceKind
+	}
 
-	// no validation rules for ResourceName
+	if m.ResourceName != nil {
+		// no validation rules for ResourceName
+	}
 
 	if len(errors) > 0 {
 		return ListBookmarksRequestMultiError(errors)
@@ -47024,6 +47028,8 @@ func (m *UsergroupMemberUser) validate(all bool) error {
 	// no validation rules for UserName
 
 	// no validation rules for UserPhotoUrl
+
+	// no validation rules for PendingAcceptance
 
 	if all {
 		switch v := interface{}(m.GetCreatedOn()).(type) {

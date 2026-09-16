@@ -78,6 +78,10 @@ export class ExpressionFilterManager implements UrlParamsStore {
         this.events,
       ) as JoinerFilterManager,
     );
+    this.on("filter-removed", ({ name, wasEmpty }) => {
+      if (!wasEmpty) return; // This will change expr and other pipelines will update managers.
+      this.topLevelJoiner.removeManagerByName(name);
+    });
 
     this.sortedFilterManagers = $derived.by(() =>
       getSortFilterManagers(this.topLevelJoiner, this.yamlConfigProvider),

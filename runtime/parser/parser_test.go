@@ -1524,6 +1524,94 @@ annotations:
 	requireResourcesAndErrors(t, p, resources, nil)
 }
 
+func TestReportAIExploreRef(t *testing.T) {
+	ctx := context.Background()
+	repo := makeRepo(t, map[string]string{
+		`rill.yaml`: ``,
+		`reports/r1.yaml`: `
+type: report
+display_name: AI Report
+
+refresh:
+  cron: 0 8 * * *
+
+watermark: inherit
+
+data:
+  ai:
+    prompt: Analyze key metrics
+    time_range:
+      expression: 1D as of latest/D
+    explore: e1
+
+notify:
+  email:
+    recipients:
+      - user_1@example.com
+`,
+		// Without an explore, the report has no refs.
+		`reports/r2.yaml`: `
+type: report
+display_name: AI Report
+
+refresh:
+  cron: 0 8 * * *
+
+data:
+  ai:
+    prompt: Analyze key metrics
+
+notify:
+  email:
+    recipients:
+      - user_1@example.com
+`,
+	})
+
+	resources := []*Resource{
+		{
+			Name:  ResourceName{Kind: ResourceKindReport, Name: "r1"},
+			Paths: []string{"/reports/r1.yaml"},
+			Refs:  []ResourceName{{Kind: ResourceKindExplore, Name: "e1"}},
+			ReportSpec: &runtimev1.ReportSpec{
+				DisplayName:     "AI Report",
+				RefreshSchedule: &runtimev1.Schedule{Cron: "0 8 * * *"},
+				Resolver:        "ai",
+				ResolverProperties: must(structpb.NewStruct(map[string]any{
+					"prompt":     "Analyze key metrics",
+					"time_range": map[string]any{"expression": "1D as of latest/D"},
+					"explore":    "e1",
+				})),
+				Notifiers: []*runtimev1.Notifier{{
+					Connector:  "email",
+					Properties: must(structpb.NewStruct(map[string]any{"recipients": []any{"user_1@example.com"}})),
+				}},
+				WatermarkInherit: true,
+			},
+		},
+		{
+			Name:  ResourceName{Kind: ResourceKindReport, Name: "r2"},
+			Paths: []string{"/reports/r2.yaml"},
+			ReportSpec: &runtimev1.ReportSpec{
+				DisplayName:     "AI Report",
+				RefreshSchedule: &runtimev1.Schedule{Cron: "0 8 * * *"},
+				Resolver:        "ai",
+				ResolverProperties: must(structpb.NewStruct(map[string]any{
+					"prompt": "Analyze key metrics",
+				})),
+				Notifiers: []*runtimev1.Notifier{{
+					Connector:  "email",
+					Properties: must(structpb.NewStruct(map[string]any{"recipients": []any{"user_1@example.com"}})),
+				}},
+			},
+		},
+	}
+
+	p, err := Parse(ctx, repo, "", "", "duckdb", true)
+	require.NoError(t, err)
+	requireResourcesAndErrors(t, p, resources, nil)
+}
+
 func TestReportPdfValidation(t *testing.T) {
 	ctx := context.Background()
 	repo := makeRepo(t, map[string]string{
@@ -3065,6 +3153,7 @@ func requireResourcesAndErrors(t testing.TB, p *Parser, wantResources []*Resourc
 				require.Equal(t, want.CanvasSpec, got.CanvasSpec, "for resource %q", want.Name)
 				require.Equal(t, want.APISpec, got.APISpec, "for resource %q", want.Name)
 				require.Equal(t, want.ConnectorSpec, got.ConnectorSpec, "for resource %q", want.Name)
+				require.Equal(t, want.SkillSpec, got.SkillSpec, "for resource %q", want.Name)
 
 				delete(gotResources, got.Name)
 				found = true

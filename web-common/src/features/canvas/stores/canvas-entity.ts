@@ -492,7 +492,11 @@ export class CanvasEntity {
     if (!isolated) {
       this.saveSnapshot(searchParams.toString());
     }
-    this.expressionFilterManager.setUrlParams(searchParams);
+    // Only sync when metricsViewsProvider has loaded. Once loaded sync is handled by syncStoreWithSource
+    // TODO: find a good common method of sync between explore and canvas once time filters is also unified
+    if (this.dashboardProvider.metricsViewsProvider.ready) {
+      this.expressionFilterManager.setUrlParams(searchParams);
+    }
     this.timeManager.state.onUrlChange(searchParams);
     this.applyTabsFromURL(searchParams);
   };
