@@ -16,6 +16,7 @@ import type {
   ChartSpec,
   TimeDimensionDefinition,
 } from "./types";
+import { resolveEphemeralMeasureSpec } from "./ephemeral-measures";
 import { adjustDataForTimeZone, getFieldsByType } from "./util";
 import type { ExpressionState } from "@rilldata/web-common/features/dashboards/filters/ExpressionFilterManager.svelte.ts";
 import type { TimeControlState } from "@rilldata/web-common/features/dashboards/time-controls/TimeFilterManager.svelte.ts";
@@ -92,7 +93,13 @@ export function getChartData<T extends ChartSpec = ChartSpec>(
     ([chartData, $timeControlStore, theme, isThemeModeDark, ...fieldMap]) => {
       const fieldSpecMap = allFields.reduce(
         (acc, field, index) => {
-          acc[field.field] = fieldMap?.[index];
+          acc[field.field] =
+            fieldMap?.[index] ??
+            // ephemeral measures have no metrics view spec entry;
+            // synthesize one so labels and formatters resolve.
+            (field.type === "measure"
+              ? resolveEphemeralMeasureSpec(config, field.field)
+              : undefined);
           return acc;
         },
         {} as Record<
@@ -183,7 +190,9 @@ export function getFieldsForSpec<T extends ChartSpec = ChartSpec>(
   >;
 
   measures.forEach((measure) => {
-    fields[measure] = metricsView.measures?.find((m) => m.name === measure);
+    fields[measure] =
+      metricsView.measures?.find((m) => m.name === measure) ??
+      resolveEphemeralMeasureSpec(config, measure);
   });
 
   dimensions.forEach((dimension) => {

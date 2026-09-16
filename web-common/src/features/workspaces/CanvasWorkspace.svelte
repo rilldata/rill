@@ -88,6 +88,7 @@
     let:ready
     let:isReconciling
     let:isLoading
+    let:queryError
   >
     <WorkspaceContainer>
       <WorkspaceHeader
@@ -143,6 +144,7 @@
                   {ready}
                   {isReconciling}
                   {isLoading}
+                  {queryError}
                   errorMessage={rootCauseReconcileError ?? parseError?.message}
                   {filePath}
                 >

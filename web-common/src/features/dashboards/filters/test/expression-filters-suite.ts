@@ -641,6 +641,17 @@ export function testDimensionFilters(variant: ExpressionFiltersVariant) {
         initialUrlSearch,
       );
     });
+
+    it("Should remove an empty dimension filter", async () => {
+      await variant.render();
+
+      await addFilter(AD_BIDS_PUBLISHER_DIMENSION);
+      // Close without selecting any values
+      await closeFilter(AD_BIDS_PUBLISHER_DIMENSION);
+
+      await removeDimensionFilter(AD_BIDS_PUBLISHER_DIMENSION);
+      await waitForEmptyFilters();
+    });
   });
 }
 
@@ -903,6 +914,17 @@ export function testMeasureFilters(variant: ExpressionFiltersVariant) {
         ),
         initialUrlSearch,
       );
+    });
+
+    it("Should remove an empty measure filter", async () => {
+      await variant.render();
+
+      await addFilter(AD_BIDS_IMPRESSIONS_MEASURE_LABEL);
+      // Close without selecting any values
+      await closeMeasureFilter(AD_BIDS_IMPRESSIONS_MEASURE_LABEL);
+
+      await removeMeasureFilter(AD_BIDS_IMPRESSIONS_MEASURE_LABEL);
+      await waitForEmptyFilters();
     });
 
     it("Should keep dimension and measure filters side by side", async () => {

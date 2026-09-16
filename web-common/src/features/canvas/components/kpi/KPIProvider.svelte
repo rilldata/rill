@@ -1,4 +1,10 @@
 <script lang="ts">
+  import { ephemeralSpecsToDefs } from "@rilldata/web-common/features/dashboards/ephemeral-measures/canvas";
+  import {
+    ephemeralMeasureToSpecMeasure,
+    mapEphemeralMeasuresForRequest,
+    splitTimeSeriesMeasures,
+  } from "@rilldata/web-common/features/dashboards/ephemeral-measures/measure-mapping";
   import { measureSupportsTotalsQuery } from "@rilldata/web-common/features/dashboards/state-managers/selectors/measures";
   import { TIME_COMPARISON } from "@rilldata/web-common/lib/time/config";
   import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
@@ -62,10 +68,18 @@
   let schema = $derived(validateKPISchema(ctx, spec));
   let { isValid } = $derived($schema);
 
+  let ephemeralMeasures = $derived(ephemeralSpecsToDefs(spec.adhoc_measures));
+  let ephemeralDef = $derived(
+    ephemeralMeasures?.find((def) => def.name === measureName),
+  );
+
   let measureStore = $derived(
     getMeasureForMetricView(measureName, metricsViewName),
   );
-  let measure = $derived($measureStore);
+  let measure = $derived(
+    $measureStore ??
+      (ephemeralDef ? ephemeralMeasureToSpecMeasure(ephemeralDef) : undefined),
+  );
 
   // Measures with required dimensions (e.g. a rolling window ordered by the time
   // dimension) produce one value per dimension value and have no single total,
@@ -87,7 +101,11 @@
       (TIME_COMPARISON[comparisonTimeRange]?.label as string | undefined),
   );
 
-  let queryMeasures = $derived([{ name: measureName }]);
+  let queryMeasures = $derived(
+    mapEphemeralMeasuresForRequest([{ name: measureName }], ephemeralMeasures),
+  );
+  let { measureNames: tsMeasureNames, ephemeralMeasures: tsEphemeralMeasures } =
+    $derived(splitTimeSeriesMeasures([measureName], ephemeralMeasures));
 
   let totalQuery = $derived(
     createQueryServiceMetricsViewAggregation(
@@ -141,7 +159,8 @@
       client,
       {
         metricsViewName,
-        measureNames: [measureName],
+        measureNames: tsMeasureNames,
+        ephemeralMeasures: tsEphemeralMeasures,
         timeStart: apiTimeRange.start,
         timeEnd: apiTimeRange.end,
         timeGranularity: timeGrain || V1TimeGrain.TIME_GRAIN_HOUR,
@@ -167,7 +186,8 @@
       client,
       {
         metricsViewName,
-        measureNames: [measureName],
+        measureNames: tsMeasureNames,
+        ephemeralMeasures: tsEphemeralMeasures,
         timeStart: apiComparisonTimeRange?.start,
         timeEnd: apiComparisonTimeRange?.end,
         timeGranularity: timeGrain || V1TimeGrain.TIME_GRAIN_HOUR,

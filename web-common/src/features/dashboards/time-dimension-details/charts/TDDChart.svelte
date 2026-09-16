@@ -7,6 +7,7 @@
     setExternalHover,
   } from "@rilldata/web-common/features/components/charts/highlight-controller";
   import { THEME_STORE_CONTEXT_KEY } from "@rilldata/web-common/features/themes/theme-boundary";
+  import type { EphemeralMeasureDef } from "@rilldata/web-common/features/dashboards/ephemeral-measures/types";
   import {
     chartBrushStore,
     chartHoverStore,
@@ -32,6 +33,7 @@
   let {
     metricsViewName,
     measure,
+    ephemeralMeasures = undefined,
     expressionFilterManager,
     timeFilterManager,
     timeDimension = undefined,
@@ -47,6 +49,7 @@
   }: {
     metricsViewName: string;
     measure: MetricsViewSpecMeasure;
+    ephemeralMeasures?: EphemeralMeasureDef[] | undefined;
     expressionFilterManager: ExpressionFilterManager;
     timeFilterManager: TimeFilterManager;
     timeDimension?: string | undefined;
@@ -87,6 +90,7 @@
       dimensionData,
       showTimeDimensionDetail,
       dynamicYAxis,
+      ephemeralMeasures,
     ),
   );
 

@@ -1,3 +1,4 @@
+import type { EphemeralMeasureSpec } from "@rilldata/web-common/features/dashboards/ephemeral-measures/canvas";
 import {
   ChartSortType,
   type ChartDataQuery,
@@ -32,11 +33,15 @@ import {
 } from "../query-util";
 import type { ExpressionState } from "@rilldata/web-common/features/dashboards/filters/ExpressionFilterManager.svelte.ts";
 import type { TimeControlState } from "@rilldata/web-common/features/dashboards/time-controls/TimeFilterManager.svelte.ts";
+import { withEphemeralMeasures } from "../ephemeral-measures";
 
 export type MarkType = "bar" | "line";
 
 export type ComboChartSpec = {
   metrics_view: string;
+  // Ad-hoc measures derived from existing measures via an arithmetic
+  // expression; measure fields may name them.
+  adhoc_measures?: EphemeralMeasureSpec[];
   x?: FieldConfig<"nominal" | "time">;
   y1?: FieldConfig<"quantitative" | "mark">;
   y2?: FieldConfig<"quantitative" | "mark">;
@@ -92,7 +97,7 @@ export class ComboChartProvider {
     const visibleStore = visible ?? readable(true);
     const config = get(this.spec);
 
-    const measures: V1MetricsViewAggregationMeasure[] = [];
+    let measures: V1MetricsViewAggregationMeasure[] = [];
     let dimensions: V1MetricsViewAggregationDimension[] = [];
 
     // Add both y1 and y2 measures
@@ -102,6 +107,7 @@ export class ComboChartProvider {
     if (config.y2?.type === "quantitative" && config.y2?.field) {
       measures.push({ name: config.y2.field });
     }
+    measures = withEphemeralMeasures(config, measures);
 
     const dimensionName = config.x?.field;
     const requiresTimeRange = config.x?.type === "temporal";
@@ -127,7 +133,7 @@ export class ComboChartProvider {
         }
 
         const xAxisMeasures = config.y1?.field
-          ? [{ name: config.y1.field }]
+          ? withEphemeralMeasures(config, [{ name: config.y1.field }])
           : [];
 
         const xAxisSort = vegaSortToAggregationSort(

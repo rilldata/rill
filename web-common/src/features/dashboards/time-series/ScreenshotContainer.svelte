@@ -1,4 +1,5 @@
 <script lang="ts">
+  import type { EphemeralMeasureDef } from "@rilldata/web-common/features/dashboards/ephemeral-measures/types";
   import { Button } from "@rilldata/web-common/components/button";
   import * as Dialog from "@rilldata/web-common/components/dialog";
   import { TDDChart } from "@rilldata/web-common/features/dashboards/time-dimension-details/types";
@@ -18,6 +19,7 @@
   let {
     open = $bindable(false),
     measure,
+    ephemeralMeasures = undefined,
     metricsViewName,
     expressionFilterManager,
     timeFilterManager,
@@ -31,6 +33,7 @@
   }: {
     open: boolean;
     measure: MetricsViewSpecMeasure;
+    ephemeralMeasures: EphemeralMeasureDef[] | undefined;
     metricsViewName: string;
     expressionFilterManager: ExpressionFilterManager;
     timeFilterManager: TimeFilterManager;
@@ -156,6 +159,7 @@
 
           <MeasureBigNumber
             {measure}
+            {ephemeralMeasures}
             {metricsViewName}
             {where}
             {timeDimension}
@@ -171,6 +175,7 @@
           {#if timeDimension}
             <MeasureChart
               {measure}
+              {ephemeralMeasures}
               {expressionFilterManager}
               {timeFilterManager}
               {connectNulls}

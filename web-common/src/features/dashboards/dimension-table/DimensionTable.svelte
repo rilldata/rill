@@ -209,14 +209,17 @@ TableCells – the cell contents.
 
   /** handle scrolling tooltip suppression */
   let scrolling = $state(false);
-  let timeoutID: ReturnType<typeof setTimeout> = $state(0 as any);
+  // Plain variable, not `$state`: the effect below both reads and writes it, so
+  // making it reactive makes the effect re-trigger itself until Svelte aborts
+  // with `effect_update_depth_exceeded`. Nothing renders it.
+  let timeoutID: ReturnType<typeof setTimeout> | undefined;
   $effect(() => {
-    if (scrolling) {
-      if (timeoutID) clearTimeout(timeoutID);
-      timeoutID = setTimeout(() => {
-        scrolling = false;
-      }, 200);
-    }
+    if (!scrolling) return;
+
+    if (timeoutID) clearTimeout(timeoutID);
+    timeoutID = setTimeout(() => {
+      scrolling = false;
+    }, 200);
   });
 
   function handleResizeDimensionColumn(size: number) {

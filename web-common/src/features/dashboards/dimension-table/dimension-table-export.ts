@@ -1,3 +1,4 @@
+import { mapEphemeralMeasuresForRequest } from "@rilldata/web-common/features/dashboards/ephemeral-measures/measure-mapping";
 import { getComparisonRequestMeasures } from "@rilldata/web-common/features/dashboards/dashboard-utils";
 import {
   ComparisonDeltaAbsoluteSuffix,
@@ -140,7 +141,10 @@ export function getDimensionTableAggregationRequestForTime({
         name: exploreState.selectedDimensionName,
       },
     ],
-    measures,
+    measures: mapEphemeralMeasuresForRequest(
+      measures,
+      exploreState.ephemeralMeasures,
+    ),
     timeRange,
     ...(comparisonTimeRange ? { comparisonTimeRange } : {}),
     sort: [

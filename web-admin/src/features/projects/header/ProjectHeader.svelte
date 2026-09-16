@@ -54,6 +54,7 @@
   import { useReports } from "../../scheduled-reports/selectors";
   import SharePersonalFile from "web-admin/src/features/personal-files/SharePersonalFile.svelte";
   import VisualizationsBreadcrumbDropdown from "./VisualizationsBreadcrumbDropdown.svelte";
+  import EditSessionViewAs from "@rilldata/web-admin/features/edit-session/EditSessionViewAs.svelte";
 
   export let organization: string;
   export let project: string;
@@ -65,6 +66,8 @@
   export let planDisplayName: string | undefined;
   export let organizationLogoUrl: string | undefined;
   export let editContext: boolean = false;
+  export let editSessionDeploymentId: string | undefined = undefined;
+  export let editSessionJwt: string | undefined = undefined;
 
   const user = createAdminServiceGetCurrentUser();
   const runtimeClient = useRuntimeClient();
@@ -181,10 +184,12 @@
       !!onPublicURLPage,
   });
 
-  $: publicURLDashboardTitle = onCanvasDashboardPage
-    ? $canvasQuery.data?.canvas?.displayName || dashboard
-    : $exploreQuery.data?.explore?.explore?.state?.validSpec?.displayName ||
-      dashboard;
+  // Public URL pages without a dashboard (e.g. a shared AI conversation) render no title.
+  $: publicURLDashboardTitle =
+    (onCanvasDashboardPage
+      ? $canvasQuery.data?.canvas?.displayName || dashboard
+      : $exploreQuery.data?.explore?.explore?.state?.validSpec?.displayName ||
+        dashboard) ?? "";
 
   $: currentPath = [organization, project, dashboard, report || alert];
 </script>
@@ -216,6 +221,12 @@
 
   <div class="flex gap-x-2 items-center ml-auto">
     {#if editContext}
+      {#if editSessionDeploymentId && editSessionJwt}
+        <EditSessionViewAs
+          deploymentId={editSessionDeploymentId}
+          {editSessionJwt}
+        />
+      {/if}
       {#if $developerChat && !onEditDashboardPreview}
         <ChatToggle open={developerChatOpen} actions={developerChatActions} />
       {/if}

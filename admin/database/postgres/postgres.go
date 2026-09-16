@@ -130,9 +130,9 @@ func (c *connection) InsertOrganization(ctx context.Context, opts *database.Inse
 	}
 
 	res := &database.Organization{}
-	err := c.getDB(ctx).QueryRowxContext(ctx, `INSERT INTO orgs(name, display_name, description, logo_asset_id, logo_dark_asset_id, favicon_asset_id, thumbnail_asset_id, custom_domain, default_project_role_id, quota_projects, quota_deployments, quota_slots_total, quota_slots_per_deployment, quota_outstanding_invites, quota_storage_limit_bytes_per_deployment, billing_customer_id, payment_customer_id, billing_email, created_by_user_id, quota_seats)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20) RETURNING *`,
-		opts.Name, opts.DisplayName, opts.Description, opts.LogoAssetID, opts.LogoDarkAssetID, opts.FaviconAssetID, opts.ThumbnailAssetID, opts.CustomDomain, opts.DefaultProjectRoleID, opts.QuotaProjects, opts.QuotaDeployments, opts.QuotaSlotsTotal, opts.QuotaSlotsPerDeployment, opts.QuotaOutstandingInvites, opts.QuotaStorageLimitBytesPerDeployment, opts.BillingCustomerID, opts.PaymentCustomerID, opts.BillingEmail, opts.CreatedByUserID, opts.QuotaSeats).StructScan(res)
+	err := c.getDB(ctx).QueryRowxContext(ctx, `INSERT INTO orgs(name, display_name, description, logo_asset_id, logo_dark_asset_id, favicon_asset_id, thumbnail_asset_id, custom_domain, default_project_role_id, quota_projects, quota_deployments, quota_slots_total, quota_slots_per_deployment, quota_outstanding_invites, quota_storage_limit_bytes_per_deployment, billing_customer_id, payment_customer_id, billing_email, created_by_user_id, quota_seats, default_provisioner)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21) RETURNING *`,
+		opts.Name, opts.DisplayName, opts.Description, opts.LogoAssetID, opts.LogoDarkAssetID, opts.FaviconAssetID, opts.ThumbnailAssetID, opts.CustomDomain, opts.DefaultProjectRoleID, opts.QuotaProjects, opts.QuotaDeployments, opts.QuotaSlotsTotal, opts.QuotaSlotsPerDeployment, opts.QuotaOutstandingInvites, opts.QuotaStorageLimitBytesPerDeployment, opts.BillingCustomerID, opts.PaymentCustomerID, opts.BillingEmail, opts.CreatedByUserID, opts.QuotaSeats, opts.DefaultProvisioner).StructScan(res)
 	if err != nil {
 		return nil, parseErr("org", err)
 	}
@@ -151,8 +151,8 @@ func (c *connection) UpdateOrganization(ctx context.Context, id string, opts *da
 
 	res := &database.Organization{}
 	err := c.getDB(ctx).QueryRowxContext(ctx,
-		`UPDATE orgs SET name=$1, display_name=$2, description=$3, logo_asset_id=$4, logo_dark_asset_id=$5, favicon_asset_id=$6, thumbnail_asset_id=$7, custom_domain=$8, default_project_role_id=$9, quota_projects=$10, quota_deployments=$11, quota_slots_total=$12, quota_slots_per_deployment=$13, quota_outstanding_invites=$14, quota_storage_limit_bytes_per_deployment=$15, billing_customer_id=$16, payment_customer_id=$17, billing_email=$18, created_by_user_id=$19, billing_plan_name=$20, billing_plan_display_name=$21, quota_seats=$22, updated_on=now() WHERE id=$23 RETURNING *`,
-		opts.Name, opts.DisplayName, opts.Description, opts.LogoAssetID, opts.LogoDarkAssetID, opts.FaviconAssetID, opts.ThumbnailAssetID, opts.CustomDomain, opts.DefaultProjectRoleID, opts.QuotaProjects, opts.QuotaDeployments, opts.QuotaSlotsTotal, opts.QuotaSlotsPerDeployment, opts.QuotaOutstandingInvites, opts.QuotaStorageLimitBytesPerDeployment, opts.BillingCustomerID, opts.PaymentCustomerID, opts.BillingEmail, opts.CreatedByUserID, opts.BillingPlanName, opts.BillingPlanDisplayName, opts.QuotaSeats, id).StructScan(res)
+		`UPDATE orgs SET name=$1, display_name=$2, description=$3, logo_asset_id=$4, logo_dark_asset_id=$5, favicon_asset_id=$6, thumbnail_asset_id=$7, custom_domain=$8, default_project_role_id=$9, quota_projects=$10, quota_deployments=$11, quota_slots_total=$12, quota_slots_per_deployment=$13, quota_outstanding_invites=$14, quota_storage_limit_bytes_per_deployment=$15, billing_customer_id=$16, payment_customer_id=$17, billing_email=$18, created_by_user_id=$19, billing_plan_name=$20, billing_plan_display_name=$21, quota_seats=$22, default_provisioner=$23, updated_on=now() WHERE id=$24 RETURNING *`,
+		opts.Name, opts.DisplayName, opts.Description, opts.LogoAssetID, opts.LogoDarkAssetID, opts.FaviconAssetID, opts.ThumbnailAssetID, opts.CustomDomain, opts.DefaultProjectRoleID, opts.QuotaProjects, opts.QuotaDeployments, opts.QuotaSlotsTotal, opts.QuotaSlotsPerDeployment, opts.QuotaOutstandingInvites, opts.QuotaStorageLimitBytesPerDeployment, opts.BillingCustomerID, opts.PaymentCustomerID, opts.BillingEmail, opts.CreatedByUserID, opts.BillingPlanName, opts.BillingPlanDisplayName, opts.QuotaSeats, opts.DefaultProvisioner, id).StructScan(res)
 	if err != nil {
 		return nil, parseErr("org", err)
 	}
@@ -1086,8 +1086,26 @@ func (c *connection) UpdateUsergroupDescription(ctx context.Context, description
 }
 
 func (c *connection) DeleteUsergroup(ctx context.Context, groupID string) error {
+	// Pending org invites reference usergroups by ID without a foreign key, so scrub the group from them first.
+	// The scrub and the delete must land together, otherwise a failed delete would silently drop the invitees' group assignment.
+	ctx, tx, err := c.NewTx(ctx, true)
+	if err != nil {
+		return err
+	}
+	defer func() { _ = tx.Rollback() }()
+
+	_, err = c.getDB(ctx).ExecContext(ctx, "UPDATE org_invites SET usergroup_ids = array_remove(usergroup_ids, $1::text) WHERE $1::text = ANY(usergroup_ids)", groupID)
+	if err != nil {
+		return parseErr("org invites", err)
+	}
+
 	res, err := c.getDB(ctx).ExecContext(ctx, "DELETE FROM usergroups WHERE id=$1", groupID)
-	return checkDeleteRow("usergroup", res, err)
+	err = checkDeleteRow("usergroup", res, err)
+	if err != nil {
+		return err
+	}
+
+	return tx.Commit()
 }
 
 func (c *connection) FindUsergroupsForUser(ctx context.Context, userID, orgID string) ([]*database.Usergroup, error) {
@@ -1102,13 +1120,25 @@ func (c *connection) FindUsergroupsForUser(ctx context.Context, userID, orgID st
 	return res, nil
 }
 
+// FindUsergroupMemberUsers returns the group's members, including users with a pending org invite that will add them to the group on acceptance.
+// Both are keyed by email, so pagination by afterEmail works across the union.
+// An email cannot appear in both sets since org invites are deleted when the user signs up.
 func (c *connection) FindUsergroupMemberUsers(ctx context.Context, groupID, afterEmail string, limit int) ([]*database.UsergroupMemberUser, error) {
 	var res []*database.UsergroupMemberUser
 	err := c.getDB(ctx).SelectContext(ctx, &res, `
-		SELECT uug.user_id as "id", u.email, u.display_name, u.photo_url FROM usergroups_users uug
-		JOIN users u ON uug.user_id = u.id
-		WHERE uug.usergroup_id = $1 AND lower(u.email) > lower($2)
-		ORDER BY lower(u.email) LIMIT $3
+		SELECT m.id, m.email, m.display_name, m.photo_url, m.pending_acceptance FROM (
+			SELECT uug.user_id::text AS id, u.email, u.display_name, u.photo_url, false AS pending_acceptance
+			FROM usergroups_users uug
+			JOIN users u ON uug.user_id = u.id
+			WHERE uug.usergroup_id = $1
+			UNION ALL
+			SELECT '' AS id, oi.email, '' AS display_name, '' AS photo_url, true AS pending_acceptance
+			FROM org_invites oi
+			JOIN usergroups ug ON ug.org_id = oi.org_id
+			WHERE ug.id = $1 AND ug.id::text = ANY(oi.usergroup_ids)
+		) m
+		WHERE lower(m.email) > lower($2)
+		ORDER BY lower(m.email) LIMIT $3
 	`, groupID, afterEmail, limit)
 	if err != nil {
 		return nil, parseErr("usergroup member", err)
@@ -1118,6 +1148,23 @@ func (c *connection) FindUsergroupMemberUsers(ctx context.Context, groupID, afte
 
 func (c *connection) InsertUsergroupMemberUser(ctx context.Context, groupID, userID string) error {
 	_, err := c.getDB(ctx).ExecContext(ctx, "INSERT INTO usergroups_users (user_id, usergroup_id) VALUES ($1, $2)", userID, groupID)
+	if err != nil {
+		return parseErr("usergroup member", err)
+	}
+	return nil
+}
+
+// InsertUsergroupsMemberUser adds the user to each of the groups, skipping groups the user is already a member of.
+// It is safe to call inside a transaction since duplicates do not raise a unique violation.
+func (c *connection) InsertUsergroupsMemberUser(ctx context.Context, userID string, groupIDs []string) error {
+	if len(groupIDs) == 0 {
+		return nil
+	}
+	_, err := c.getDB(ctx).ExecContext(ctx, `
+		INSERT INTO usergroups_users (user_id, usergroup_id)
+		SELECT $1::uuid, unnest($2::text[])::uuid
+		ON CONFLICT DO NOTHING
+	`, userID, groupIDs)
 	if err != nil {
 		return parseErr("usergroup member", err)
 	}
@@ -2383,9 +2430,12 @@ func (c *connection) FindOrganizationMemberUsergroups(ctx context.Context, orgID
 	var qry strings.Builder
 	qry.WriteString("SELECT ug.id, ug.name, ug.managed, ug.created_on, ug.updated_on, COALESCE(r.name, '') as role_name")
 	if withCounts {
+		// Counts pending invitees as well, to match the members listed by FindUsergroupMemberUsers.
 		qry.WriteString(`,
 			(
 				SELECT COUNT(*) FROM usergroups_users uug WHERE uug.usergroup_id = ug.id
+			) + (
+				SELECT COUNT(*) FROM org_invites oi WHERE oi.org_id = ug.org_id AND ug.id::text = ANY(oi.usergroup_ids)
 			) as users_count
 		`)
 	}
@@ -2449,9 +2499,12 @@ func (c *connection) FindProjectMemberUsergroups(ctx context.Context, projectID,
 	var qry strings.Builder
 	qry.WriteString(`SELECT ug.id, ug.name, ug.managed, ug.created_on, ug.updated_on, r.name as "role_name", upr.resources, upr.restrict_resources`)
 	if withCounts {
+		// Counts pending invitees as well, to match the members listed by FindUsergroupMemberUsers.
 		qry.WriteString(`,
 			(
 				SELECT COUNT(*) FROM usergroups_users uug WHERE uug.usergroup_id = ug.id
+			) + (
+				SELECT COUNT(*) FROM org_invites oi WHERE oi.org_id = ug.org_id AND ug.id::text = ANY(oi.usergroup_ids)
 			) as users_count
 		`)
 	}
@@ -2604,7 +2657,8 @@ func (c *connection) DeleteProjectMemberService(ctx context.Context, serviceID, 
 func (c *connection) FindOrganizationInvites(ctx context.Context, orgID, afterEmail string, limit int) ([]*database.OrganizationInviteWithRole, error) {
 	var dtos []*organizationInviteWithRoleDTO
 	err := c.getDB(ctx).SelectContext(ctx, &dtos, `
-		SELECT uoi.id, uoi.email, ur.name as role_name, uoi.attributes, u.email as invited_by
+		SELECT uoi.id, uoi.email, ur.name as role_name, uoi.attributes, u.email as invited_by,
+			(SELECT COALESCE(array_agg(ug.name ORDER BY lower(ug.name)), '{}') FROM usergroups ug WHERE ug.id::text = ANY(uoi.usergroup_ids)) as usergroups
 		FROM org_invites uoi
 		JOIN org_roles ur ON uoi.org_role_id = ur.id
 		LEFT JOIN users u ON uoi.invited_by_user_id = u.id
@@ -2675,7 +2729,13 @@ func (c *connection) InsertOrganizationInvite(ctx context.Context, opts *databas
 		inviterID = opts.InviterID
 	}
 
-	_, err = c.getDB(ctx).ExecContext(ctx, "INSERT INTO org_invites (email, invited_by_user_id, org_id, org_role_id, attributes) VALUES ($1, $2, $3, $4, $5)", opts.Email, inviterID, opts.OrgID, opts.RoleID, attrs)
+	// usergroup_ids is NOT NULL, so a nil slice must be inserted as an empty array
+	groupIDs := opts.UsergroupIDs
+	if groupIDs == nil {
+		groupIDs = []string{}
+	}
+
+	_, err = c.getDB(ctx).ExecContext(ctx, "INSERT INTO org_invites (email, invited_by_user_id, org_id, org_role_id, attributes, usergroup_ids) VALUES ($1, $2, $3, $4, $5, $6)", opts.Email, inviterID, opts.OrgID, opts.RoleID, attrs, groupIDs)
 	if err != nil {
 		return parseErr("org invite", err)
 	}
@@ -2852,11 +2912,23 @@ func (c *connection) DeleteProjectAccessRequest(ctx context.Context, id string) 
 	return checkDeleteRow("project access request", res, err)
 }
 
-// FindBookmarks returns a list of bookmarks for a user per project
+// FindBookmarks returns the bookmarks in a project that are visible to the user.
+// resourceKind and resourceName are optional filters; when empty, they are not applied.
 func (c *connection) FindBookmarks(ctx context.Context, projectID, resourceKind, resourceName, userID string) ([]*database.Bookmark, error) {
+	qry := `SELECT * FROM bookmarks WHERE project_id = $1 AND (user_id = $2 OR shared = true OR "default" = true)`
+	args := []any{projectID, userID}
+	if resourceKind != "" {
+		args = append(args, resourceKind)
+		qry += fmt.Sprintf(" AND resource_kind = $%d", len(args))
+	}
+	if resourceName != "" {
+		args = append(args, resourceName)
+		qry += fmt.Sprintf(" AND lower(resource_name) = lower($%d)", len(args))
+	}
+	qry += " ORDER BY lower(display_name), created_on"
+
 	var res []*database.Bookmark
-	err := c.getDB(ctx).SelectContext(ctx, &res, `SELECT * FROM bookmarks WHERE project_id = $1 and resource_kind = $2 and lower(resource_name) = lower($3) and (user_id = $4 or shared = true or "default" = true)`,
-		projectID, resourceKind, resourceName, userID)
+	err := c.getDB(ctx).SelectContext(ctx, &res, qry, args...)
 	if err != nil {
 		return nil, parseErr("bookmarks", err)
 	}
@@ -2903,7 +2975,7 @@ func (c *connection) UpdateBookmark(ctx context.Context, opts *database.UpdateBo
 	if err := database.Validate(opts); err != nil {
 		return err
 	}
-	res, err := c.getDB(ctx).ExecContext(ctx, `UPDATE bookmarks SET display_name=$1, description=$2, url_search=$3, shared=$4 WHERE id=$5`,
+	res, err := c.getDB(ctx).ExecContext(ctx, `UPDATE bookmarks SET display_name=$1, description=$2, url_search=$3, shared=$4, updated_on=now() WHERE id=$5`,
 		opts.DisplayName, opts.Description, opts.URLSearch, opts.Shared, opts.BookmarkID)
 	return checkUpdateRow("bookmark", res, err)
 }
@@ -3760,10 +3832,16 @@ func (o *organizationInviteDTO) AsModel() (*database.OrganizationInvite, error) 
 
 type organizationInviteWithRoleDTO struct {
 	*database.OrganizationInviteWithRole
-	Attributes pgtype.JSON `db:"attributes"`
+	Usergroups pgtype.TextArray `db:"usergroups"`
+	Attributes pgtype.JSON      `db:"attributes"`
 }
 
 func (o *organizationInviteWithRoleDTO) AsModel() (*database.OrganizationInviteWithRole, error) {
+	err := o.Usergroups.AssignTo(&o.OrganizationInviteWithRole.Usergroups)
+	if err != nil {
+		return nil, err
+	}
+
 	// Handle Attributes: Normalize NULL JSONB to empty map
 	var attrs map[string]any
 	if err := o.Attributes.AssignTo(&attrs); err != nil {

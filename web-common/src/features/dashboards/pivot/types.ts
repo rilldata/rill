@@ -1,3 +1,4 @@
+import type { EphemeralMeasureDef } from "@rilldata/web-common/features/dashboards/ephemeral-measures/types";
 import { type TimeRangeString } from "@rilldata/web-common/lib/time/types";
 import type {
   MetricsViewSpecDimension,
@@ -155,6 +156,10 @@ export interface PivotDataStoreConfig {
   comparisonTime: TimeRangeString | undefined;
   searchText: string | undefined;
   isFlat: boolean;
+  // ephemeral measure definitions available to this pivot.
+  // Sourced from the explore state in explore dashboards, and from the
+  // component spec in canvas table/pivot components.
+  ephemeralMeasures?: EphemeralMeasureDef[];
 }
 
 export interface PivotAxesData {

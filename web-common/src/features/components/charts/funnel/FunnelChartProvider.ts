@@ -1,3 +1,4 @@
+import type { EphemeralMeasureSpec } from "@rilldata/web-common/features/dashboards/ephemeral-measures/canvas";
 import {
   ChartSortType,
   type ChartDataQuery,
@@ -30,6 +31,7 @@ import {
 } from "../query-util";
 import type { ExpressionState } from "@rilldata/web-common/features/dashboards/filters/ExpressionFilterManager.svelte.ts";
 import type { TimeControlState } from "@rilldata/web-common/features/dashboards/time-controls/TimeFilterManager.svelte.ts";
+import { withEphemeralMeasures } from "../ephemeral-measures";
 
 export type FunnelMode = "width" | "order";
 export type FunnelColorMode = "stage" | "measure" | "name" | "value";
@@ -38,6 +40,9 @@ export type FunnelPercentMode = "top" | "previous";
 
 export type FunnelChartSpec = {
   metrics_view: string;
+  // Ad-hoc measures derived from existing measures via an arithmetic
+  // expression; measure fields may name them.
+  adhoc_measures?: EphemeralMeasureSpec[];
   breakdownMode?: FunnelBreakdownMode;
   measure?: FieldConfig<"quantitative">;
   stage?: FieldConfig<"nominal">;
@@ -107,6 +112,7 @@ export class FunnelChartProvider {
         measures = [{ name: config.measure.field }];
       }
     }
+    measures = withEphemeralMeasures(config, measures);
 
     let stageSort: V1MetricsViewAggregationSort | undefined;
     let limit: number | undefined;

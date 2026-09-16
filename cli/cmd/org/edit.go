@@ -11,7 +11,7 @@ import (
 )
 
 func EditCmd(ch *cmdutil.Helper) *cobra.Command {
-	var orgName, displayName, description, defaultProjectRole, billingEmail string
+	var orgName, displayName, description, defaultProjectRole, defaultProvisioner, billingEmail string
 
 	editCmd := &cobra.Command{
 		Use:   "edit [<org-name>]",
@@ -60,10 +60,17 @@ func EditCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 
 			if cmd.Flags().Changed("default-project-role") {
+				flagSet = true
 				if defaultProjectRole == "none" {
 					defaultProjectRole = ""
 				}
 				req.DefaultProjectRole = &defaultProjectRole
+			}
+
+			provisionerChanged := cmd.Flags().Changed("default-provisioner")
+			if provisionerChanged {
+				flagSet = true
+				req.DefaultProvisioner = &defaultProvisioner
 			}
 
 			if cmd.Flags().Changed("billing-email") {
@@ -83,6 +90,10 @@ func EditCmd(ch *cmdutil.Helper) *cobra.Command {
 			ch.PrintfSuccess("Updated organization\n")
 			ch.PrintOrgs([]*adminv1.Organization{updatedOrg.Organization}, "")
 
+			if provisionerChanged {
+				ch.PrintfWarn("Note: the default provisioner only applies to deployments provisioned from now on. Existing deployments keep their current provisioner.\n")
+			}
+
 			return nil
 		},
 	}
@@ -91,6 +102,7 @@ func EditCmd(ch *cmdutil.Helper) *cobra.Command {
 	editCmd.Flags().StringVar(&displayName, "display-name", "", "Display name")
 	editCmd.Flags().StringVar(&description, "description", "", "Description")
 	editCmd.Flags().StringVar(&defaultProjectRole, "default-project-role", "", "Default role for members on new projects (options: admin, editor, viewer, none)")
+	editCmd.Flags().StringVar(&defaultProvisioner, "default-provisioner", "", "Default provisioner for new deployments (empty to unset)")
 	editCmd.Flags().StringVar(&billingEmail, "billing-email", "", "Billing email")
 
 	return editCmd

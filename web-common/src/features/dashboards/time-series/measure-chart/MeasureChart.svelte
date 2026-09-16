@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { splitTimeSeriesMeasures } from "@rilldata/web-common/features/dashboards/ephemeral-measures/measure-mapping";
+  import type { EphemeralMeasureDef } from "@rilldata/web-common/features/dashboards/ephemeral-measures/types";
   import InlineErrorIndicator from "@rilldata/web-common/features/dashboards/errors/InlineErrorIndicator.svelte";
   import TDDMeasureChart from "@rilldata/web-common/features/dashboards/time-dimension-details/charts/TDDChart.svelte";
   import { TDDChart } from "@rilldata/web-common/features/dashboards/time-dimension-details/types";
@@ -35,6 +37,7 @@
 
   let {
     measure,
+    ephemeralMeasures = undefined,
     metricsViewName,
     expressionFilterManager,
     timeFilterManager,
@@ -51,6 +54,7 @@
     tddChartHeight = 245,
   }: {
     measure: MetricsViewSpecMeasure;
+    ephemeralMeasures: EphemeralMeasureDef[] | undefined;
     metricsViewName: string;
     expressionFilterManager: ExpressionFilterManager;
     timeFilterManager: TimeFilterManager;
@@ -116,6 +120,8 @@
   });
 
   let measureName = $derived(measure.name ?? "");
+  let { measureNames: tsMeasureNames, ephemeralMeasures: tsEphemeralMeasures } =
+    $derived(splitTimeSeriesMeasures([measureName], ephemeralMeasures));
   let height = $derived(showTimeDimensionDetail ? tddChartHeight : 145);
 
   // Dimension comparison data
@@ -155,7 +161,8 @@
       client,
       {
         metricsViewName,
-        measureNames: [measureName],
+        measureNames: tsMeasureNames,
+        ephemeralMeasures: tsEphemeralMeasures,
         where,
         timeDimension,
         timeStart,
@@ -178,7 +185,8 @@
       client,
       {
         metricsViewName,
-        measureNames: [measureName],
+        measureNames: tsMeasureNames,
+        ephemeralMeasures: tsEphemeralMeasures,
         where,
         timeDimension,
         timeStart: comparisonTimeStart,
@@ -223,6 +231,7 @@
           client,
           metricsViewName,
           measureName,
+          ephemeralMeasures,
           comparisonDimension!,
           dimensionValues,
           dimensionWhere,
@@ -242,6 +251,7 @@
           client,
           metricsViewName,
           measureName,
+          ephemeralMeasures,
           comparisonDimension!,
           dimensionValues,
           dimensionWhere,
@@ -374,6 +384,7 @@
         {measure}
         {expressionFilterManager}
         {timeFilterManager}
+        {ephemeralMeasures}
         {timeDimension}
         {comparisonDimension}
         {dimensionValues}

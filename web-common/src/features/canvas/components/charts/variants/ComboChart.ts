@@ -1,3 +1,4 @@
+import { ephemeralSpecsToDefs } from "@rilldata/web-common/features/dashboards/ephemeral-measures/canvas";
 import type { ComponentInputParam } from "@rilldata/web-common/features/canvas/inspector/types";
 import type { CanvasStore } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
 import {
@@ -347,6 +348,7 @@ export class ComboChartComponent extends BaseChart<ComboCanvasChartSpec> {
     };
 
     return {
+      ephemeralMeasures: ephemeralSpecsToDefs(spec.adhoc_measures),
       whereFilter: this.componentFilters,
       showTimeComparison: false,
       activePage: DashboardState_ActivePage.PIVOT,

@@ -30,7 +30,9 @@
   } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import CanvasProvider from "@rilldata/web-common/features/canvas/CanvasProvider.svelte";
   import CanvasFilters from "@rilldata/web-common/features/canvas/filters/CanvasFilters.svelte";
+  import CanvasFilterParamsSync from "@rilldata/web-common/features/canvas/CanvasFilterParamsSync.svelte";
   import { specHasTabGroups } from "@rilldata/web-common/features/canvas/stores/tab-group";
+  import type { EphemeralMeasureDef } from "@rilldata/web-common/features/dashboards/ephemeral-measures/types.ts";
   import type { V1Resource } from "@rilldata/web-common/runtime-client";
   import type { TimeFilterManager } from "@rilldata/web-common/features/dashboards/time-controls/TimeFilterManager.svelte.ts";
   import {
@@ -52,6 +54,7 @@
   export let expressionFilterManager: ExpressionFilterManager | undefined =
     undefined;
   export let timeFilterManager: TimeFilterManager | undefined = undefined;
+  export let ephemeralMeasures: EphemeralMeasureDef[] | undefined = undefined;
 
   const RUN_AS_OPTIONS = [
     {
@@ -195,6 +198,10 @@
             isolated
             urlStateOverride={canvasStateOverride}
           >
+            <CanvasFilterParamsSync
+              {canvasName}
+              urlStateOverride={canvasStateOverride}
+            />
             <div class="readonly-filter-bar" onfocusin={blurFocusedDescendant}>
               <CanvasFilters {canvasName} maxWidth={820} readOnly />
             </div>
@@ -272,6 +279,7 @@
         bind:columns={$data["columns"]}
         columnErrors={$errors["columns"]}
         {exploreName}
+        {ephemeralMeasures}
       />
     {/if}
 

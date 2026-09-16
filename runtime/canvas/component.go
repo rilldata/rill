@@ -46,6 +46,8 @@ func ValidateRendererProperties(renderer string, props map[string]any, metricsVi
 		return validatePivot(props, metricsViews)
 	case "leaderboard":
 		return validateLeaderboard(props, metricsViews)
+	case "map":
+		return validateMap(props, metricsViews)
 	case "custom_chart":
 		// TODO: Implement
 		return nil
@@ -437,6 +439,42 @@ func validateLeaderboard(props map[string]any, metricsViews map[string]*runtimev
 	return nil
 }
 
+// validateMap validates properties for map.
+func validateMap(props map[string]any, metricsViews map[string]*runtimev1.MetricsViewSpec) error {
+	mvn, mv, err := requireMetricsView(props, metricsViews)
+	if err != nil {
+		return err
+	}
+
+	ephemeralNames, err := ephemeralMeasureNames(props, mvn, mv)
+	if err != nil {
+		return err
+	}
+
+	geoDim, ok := pathutil.GetPathString(props, "geo_dimension.field")
+	if !ok {
+		return errors.New("renderer properties for map must include a string 'geo_dimension.field' property")
+	}
+	if !metricsViewHasDimension(mv, geoDim) {
+		return fmt.Errorf("referenced geo_dimension.field %q is not a dimension in metrics view %q", geoDim, mvn)
+	}
+
+	// Color on a map is always measure-driven.
+	colorMeasure, ok := pathutil.GetPathString(props, "color.measure")
+	if !ok {
+		return errors.New("renderer properties for map must include a string 'color.measure' property")
+	}
+	if !metricsViewHasMeasure(mv, colorMeasure) && !ephemeralNames[colorMeasure] {
+		return fmt.Errorf("referenced color.measure %q is not a measure in metrics view %q", colorMeasure, mvn)
+	}
+
+	if err := validateOptionalMeasureField(mv, mvn, props, "size_measure.field", ephemeralNames); err != nil {
+		return err
+	}
+
+	return validateOptionalDimensionField(mv, mvn, props, "tooltip_dimension.field")
+}
+
 // requireMetricsView extracts and validates the "metrics_view" property from renderer props.
 // It returns the metrics view name, spec, and nil error on success.
 func requireMetricsView(props map[string]any, metricsViews map[string]*runtimev1.MetricsViewSpec) (string, *runtimev1.MetricsViewSpec, error) {
@@ -592,28 +630,28 @@ func isEncodedTimeDimension(mv *runtimev1.MetricsViewSpec, fieldName string) boo
 	return ok && v != int32(runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED)
 }
 
-// ephemeralMeasureNames extracts and validates the optional "ephemeral_measures" renderer property.
+// ephemeralMeasureNames extracts and validates the optional "adhoc_measures" renderer property.
 // Each entry defines an ephemeral measure derived from existing measures via an arithmetic expression;
 // the returned set contains the names that may be referenced alongside the metrics view's own measures.
 func ephemeralMeasureNames(props map[string]any, mvn string, mv *runtimev1.MetricsViewSpec) (map[string]bool, error) {
-	raw, ok := props["ephemeral_measures"]
+	raw, ok := props["adhoc_measures"]
 	if !ok || raw == nil {
 		return nil, nil
 	}
 	list, ok := raw.([]any)
 	if !ok {
-		return nil, errors.New("renderer property 'ephemeral_measures' must be an array")
+		return nil, errors.New("renderer property 'adhoc_measures' must be an array")
 	}
 	names := make(map[string]bool, len(list))
 	for _, item := range list {
 		entry, ok := item.(map[string]any)
 		if !ok {
-			return nil, errors.New("entries in 'ephemeral_measures' must be objects with 'name' and 'expression'")
+			return nil, errors.New("entries in 'adhoc_measures' must be objects with 'name' and 'expression'")
 		}
 		name, _ := entry["name"].(string)
 		expression, _ := entry["expression"].(string)
 		if name == "" || expression == "" {
-			return nil, errors.New("entries in 'ephemeral_measures' must have a non-empty 'name' and 'expression'")
+			return nil, errors.New("entries in 'adhoc_measures' must have a non-empty 'name' and 'expression'")
 		}
 		// Mirror metricsview.AST.checkNameForComputedField, which also rejects the time dimension.
 		// It is often absent from mv.Dimensions, so checking it here surfaces the collision at parse time rather than at query time.

@@ -2,6 +2,7 @@ import {
   getDashboardNameFromReport,
   getExistingReportInitialFormValues,
   getNewCanvasReportInitialFormValues,
+  isAIReportSpec,
   isCanvasReportSpec,
 } from "@rilldata/web-common/features/scheduled-reports/utils";
 import {
@@ -33,6 +34,24 @@ describe("getDashboardNameFromReport", () => {
     expect(getDashboardNameFromReport(reportSpec)).toEqual("my_metrics_view");
   });
 
+  it("returns the explore from the resolver properties for AI reports", () => {
+    const reportSpec: V1ReportSpec = {
+      resolver: "ai",
+      resolverProperties: { prompt: "Analyze", explore: "my_explore" },
+      annotations: {},
+    };
+    expect(getDashboardNameFromReport(reportSpec)).toEqual("my_explore");
+  });
+
+  it("returns an empty name for AI reports without an explore", () => {
+    const reportSpec: V1ReportSpec = {
+      resolver: "ai",
+      resolverProperties: { prompt: "Analyze" },
+      annotations: {},
+    };
+    expect(getDashboardNameFromReport(reportSpec)).toEqual("");
+  });
+
   it("does not throw for query-less reports with empty queryArgsJson", () => {
     // Proto string fields default to "", which must not be passed to JSON.parse.
     const reportSpec: V1ReportSpec = {
@@ -48,6 +67,14 @@ describe("isCanvasReportSpec", () => {
     expect(isCanvasReportSpec({ annotations: { canvas: "c1" } })).toBe(true);
     expect(isCanvasReportSpec({ annotations: { explore: "e1" } })).toBe(false);
     expect(isCanvasReportSpec({})).toBe(false);
+  });
+});
+
+describe("isAIReportSpec", () => {
+  it("detects AI reports via the resolver", () => {
+    expect(isAIReportSpec({ resolver: "ai" })).toBe(true);
+    expect(isAIReportSpec({ resolver: "legacy_metrics" })).toBe(false);
+    expect(isAIReportSpec({})).toBe(false);
   });
 });
 

@@ -52,6 +52,8 @@ var mcpForwardedTools = []string{
 	ai.GetMetricsViewName,
 	ai.QueryMetricsViewSummaryName,
 	ai.QueryMetricsViewName,
+	ai.ListSkillsName,
+	ai.LoadSkillName,
 }
 
 // mcpSessionNamespace is a UUIDv5 namespace for the per-project session IDs derived in callRuntimeTool.

@@ -99,7 +99,9 @@
     dashboardKind,
     expressionFilterManager,
   );
-  let { fields, sanitizedState } = $derived($sanitisedFilterState);
+  let { fields, sanitizedState, droppedEphemeralMeasures } = $derived(
+    $sanitisedFilterState,
+  );
 
   const formId = "create-public-url-form";
 
@@ -272,6 +274,24 @@
           {m.public_url_measures_dimensions_limited()}
         </p>
       {/if}
+    {/if}
+
+    {#if droppedEphemeralMeasures.length > 0}
+      <div class="flex flex-col gap-y-1 mb-4">
+        <p class="text-xs text-fg-primary font-normal">
+          {m.public_url_adhoc_measures_omitted()}
+        </p>
+        <ul class="text-xs text-fg-secondary list-disc pl-4">
+          {#each droppedEphemeralMeasures as dropped (dropped.name)}
+            <li>
+              {m.public_url_adhoc_measure_hidden_refs({
+                measure: dropped.displayName,
+                hidden: dropped.hiddenMeasures.join(", "),
+              })}
+            </li>
+          {/each}
+        </ul>
+      </div>
     {/if}
 
     <Button
