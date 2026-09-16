@@ -14,15 +14,7 @@ import { EmbedStore } from "@rilldata/web-common/features/embeds/embed-store";
 import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
-import {
-  afterEach,
-  beforeEach,
-  describe,
-  expect,
-  it,
-  vi,
-  type MockInstance,
-} from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import initEmbedPublicAPI from "./init-embed-public-api";
 import { EmbedStorageNamespacePrefix } from "./constants.ts";
 import {
@@ -280,108 +272,23 @@ describe("initEmbedPublicAPI", () => {
     });
   });
 
-  // navigateBack / navigateForward move through the urls the embed has visited rather than
-  // traversing the tab's history, which is shared with the host page. See embed-navigation-stack.ts.
   describe("navigateBack / navigateForward", () => {
-    let back: MockInstance<() => void>;
-    let forward: MockInstance<() => void>;
-
-    beforeEach(() => {
-      back = vi.spyOn(window.history, "back").mockImplementation(() => {});
-      forward = vi
+    it("drives the browser history and returns true", async () => {
+      const back = vi
+        .spyOn(window.history, "back")
+        .mockImplementation(() => {});
+      const forward = vi
         .spyOn(window.history, "forward")
         .mockImplementation(() => {});
-    });
 
-    afterEach(() => {
+      expect((await harness.call("navigateBack")).result).toBe(true);
+      expect(back).toHaveBeenCalledOnce();
+
+      expect((await harness.call("navigateForward")).result).toBe(true);
+      expect(forward).toHaveBeenCalledOnce();
+
       back.mockRestore();
       forward.mockRestore();
-    });
-
-    /** The search of the url the last `goto` navigated to, or undefined if it did not navigate. */
-    async function navigate(method: "navigateBack" | "navigateForward") {
-      const gotoCountBefore = harness.gotoCalls.length;
-      const response = await harness.call(method);
-
-      expect(response.result).toBe(true);
-      // The tab's history is never traversed, whether or not the embed moved.
-      expect(back).not.toHaveBeenCalled();
-      expect(forward).not.toHaveBeenCalled();
-
-      if (harness.gotoCalls.length === gotoCountBefore) return undefined;
-      return harness.lastGoto()?.url.search;
-    }
-
-    it("is a no-op on the dashboard the embed loaded with", async () => {
-      // The embed has no earlier entry of its own, so there is nothing to go back to. Traversing
-      // the tab's history here would revert whatever the host page did before embedding.
-      expect(await navigate("navigateBack")).toBeUndefined();
-      expect(await navigate("navigateForward")).toBeUndefined();
-    });
-
-    it("moves through the urls the embed has visited", async () => {
-      harness.navigateTo("step=1");
-      harness.navigateTo("step=2");
-
-      expect(await navigate("navigateBack")).toBe("?step=1");
-      expect(await navigate("navigateBack")).toBe("");
-      // Back at the entry the embed loaded with, so the next back does nothing.
-      expect(await navigate("navigateBack")).toBeUndefined();
-
-      expect(await navigate("navigateForward")).toBe("?step=1");
-      expect(await navigate("navigateForward")).toBe("?step=2");
-      expect(await navigate("navigateForward")).toBeUndefined();
-    });
-
-    it("does not count a replaced url as a step of its own", async () => {
-      harness.navigateTo("step=1");
-      // Explores canonicalize their url on load with a replace, which must not become something
-      // the user has to go back through.
-      harness.navigateTo("step=1&grain=hour", { replaceState: true });
-
-      expect(await navigate("navigateBack")).toBe("");
-    });
-
-    it("follows a traversal the browser's back button drove", async () => {
-      harness.navigateTo("step=1");
-      harness.navigateTo("step=2");
-
-      // The host's chrome (or the user) takes the tab back onto the embed's previous entry.
-      harness.simulateTabTraversal(-1);
-      expect(harness.currentUrl.search).toBe("?step=1");
-
-      // The embed's position moved with it, so forward returns to the entry left behind.
-      expect(await navigate("navigateForward")).toBe("?step=2");
-    });
-
-    it("keeps only the most recent entries", async () => {
-      // Each dashboard state change pushes an entry, so a long-lived embed must not accumulate them
-      // without bound.
-      for (let step = 1; step <= 120; step++)
-        harness.navigateTo(`step=${step}`);
-
-      const searches: (string | undefined)[] = [];
-      for (let i = 0; i < 100; i++) {
-        searches.push(await navigate("navigateBack"));
-      }
-
-      // The most recent urls are all still there to step back through,
-      expect(searches[0]).toBe("?step=119");
-      expect(searches[98]).toBe("?step=21");
-      // but the ones before them were dropped rather than kept for the whole session.
-      expect(searches[99]).toBeUndefined();
-    });
-
-    it("drops the entries ahead once the embed navigates again", async () => {
-      harness.navigateTo("step=1");
-      harness.navigateTo("step=2");
-      expect(await navigate("navigateBack")).toBe("?step=1");
-
-      harness.navigateTo("step=3");
-
-      // `step=2` is no longer reachable, exactly as a push truncates the tab's forward entries.
-      expect(await navigate("navigateForward")).toBeUndefined();
-      expect(await navigate("navigateBack")).toBe("?step=1");
     });
   });
 
@@ -582,26 +489,6 @@ describe("initEmbedPublicAPI", () => {
         expect(lastVisitedState.has(AD_BIDS_CANVAS_NAME)).toBe(false);
       },
     );
-
-    it("can be undone with navigateBack", async () => {
-      harness.setRoute(CANVAS_ROUTE, { name: AD_BIDS_CANVAS_NAME });
-      harness.navigateTo("foo=bar");
-
-      await callNavigate({
-        name: AD_BIDS_EXPLORE_NAME,
-        state: "dims=publisher",
-      });
-      expect(harness.lastGoto()?.url.pathname).toBe(
-        `/-/embed/explore/${AD_BIDS_EXPLORE_NAME}`,
-      );
-
-      expect((await harness.call("navigateBack")).result).toBe(true);
-
-      // Back on the canvas the embed navigated away from, with the state it had at the time.
-      const last = harness.lastGoto();
-      expect(last?.url.pathname).toBe("/-/embed");
-      expect(last?.url.search).toBe("?foo=bar");
-    });
 
     it("returns a JSON-RPC error when the dashboard does not exist", async () => {
       const response = await callNavigate({ name: "does_not_exist" });

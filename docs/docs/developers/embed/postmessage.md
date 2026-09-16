@@ -349,7 +349,7 @@ The response has the same shape as `setValidState`: `state` is validated against
 
 The same error is returned when `name` refers to a resource that is not an explore or canvas dashboard, or to a dashboard the embed's access token does not grant access to.
 
-Each call adds a browser history entry, so it can be undone with `navigateBack`.
+Each call adds an entry to the browser's session history, so it can be undone with `navigateBack` as long as the host page has not navigated in the meantime.
 
 **Note:** All three navigation methods require navigation to be enabled in the embed configuration. When the embed is configured with `navigation=false`, they return an error instead of navigating:
 
@@ -366,7 +366,7 @@ Each call adds a browser history entry, so it can be undone with `navigateBack`.
 
 ### `navigateBack()`
 
-Navigates the iframe back to the dashboard and state it was at before its most recent navigation.
+Navigates back to the previous entry in the browser's session history, equivalent to the browser's back button.
 
 ```js
 iframe.contentWindow.postMessage({
@@ -383,16 +383,20 @@ iframe.contentWindow.postMessage({
 { "id": 10, "result": true }
 ```
 
-Navigation is confined to the iframe. `navigateBack` steps through the dashboards and states visited inside the embed, and never navigates, reloads, or unloads the host page, even when the host page navigated more recently than the embed did. When there is nothing earlier to return to, for example on the first dashboard the embed loaded, the call succeeds without navigating.
+The browser's session history belongs to the whole tab, not to the iframe: it interleaves the host page's entries with the embed's in the order they were created, and [`history.back()`](https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-history-back) traverses that shared history. So `navigateBack` steps back one entry in the tab, whichever document created it:
 
-Note that this is not the same as the browser's back button, which traverses the whole tab's history: that history interleaves the host page's entries with the embed's, so the browser's back button may undo a host page navigation instead of an embed one. For the same reason, calling `history.back()` on the iframe from the host page is not equivalent to `navigateBack` and is not supported.
+- When the embed created the most recent entry, the embed navigates back. This is the case whenever the host page stays put while the embed is open.
+- When the host page navigated more recently than the embed did, that host navigation is undone instead and the embed stays where it is.
+- When there is no earlier entry at all, for example on the first dashboard the embed loaded with a host page that has not navigated, the call succeeds without navigating. If the host page does have earlier entries, the tab goes back to one of them and the embed is unloaded along with the page.
+
+If your host page navigates while an embed is open, and you need back and forward to move only the embed, keep track of the dashboards and states you have applied and replay them with `navigateToDashboard` or `setValidState` instead of using `navigateBack` and `navigateForward`.
 
 **Note:** This method returns the `Navigation is disabled for this embed` error when the embed is configured with `navigation=false`.
 
 
 ### `navigateForward()`
 
-Navigates the iframe forward to the dashboard and state a `navigateBack` moved away from.
+Navigates forward to the next entry in the browser's session history, equivalent to the browser's forward button.
 
 ```js
 iframe.contentWindow.postMessage({
@@ -409,7 +413,7 @@ iframe.contentWindow.postMessage({
 { "id": 11, "result": true }
 ```
 
-As with `navigateBack`, this is confined to the iframe and never navigates the host page. Navigating the embed somewhere new discards the forward entries, so a `navigateForward` after that succeeds without navigating, as does one when the embed has not been taken back.
+As with `navigateBack`, this traverses the tab's shared session history, so it can redo a host page navigation rather than an embed one. It succeeds without navigating when there is no next entry, which is the case unless the tab was taken back first, since any new navigation discards the forward entries.
 
 **Note:** As with `navigateBack`, this method returns an error when the embed is configured with `navigation=false`.
 

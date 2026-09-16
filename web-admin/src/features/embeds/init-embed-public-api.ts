@@ -12,10 +12,6 @@ import {
 import { buildValidatedExploreUrl } from "@rilldata/web-common/features/dashboards/state-managers/loaders/build-validated-explore-url.ts";
 import { clearExploreSessionStore } from "@rilldata/web-common/features/dashboards/state-managers/loaders/explore-web-view-store.ts";
 import { lastVisitedState } from "@rilldata/web-common/features/canvas/stores/last-visited-state.ts";
-import {
-  EmbedNavigationStack,
-  readSvelteKitHistoryIndex,
-} from "@rilldata/web-admin/features/embeds/embed-navigation-stack.ts";
 import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus.ts";
 import type { PageContentResized } from "@rilldata/web-common/lib/event-bus/events.ts";
 import { Throttler } from "@rilldata/web-common/lib/throttler.ts";
@@ -64,7 +60,6 @@ export default function initEmbedPublicAPI(client: RuntimeClient): () => void {
   const embedThemeStore = getEmbedThemeStoreInstance();
 
   const embedStore = EmbedStore.getInstance();
-  const navigationStack = new EmbedNavigationStack();
   const themeModeFromUrl = embedStore?.themeMode;
   if (themeModeFromUrl) {
     if (
@@ -180,21 +175,16 @@ export default function initEmbedPublicAPI(client: RuntimeClient): () => void {
     }
   }
 
-  // Navigation is confined to the iframe. `window.history.back()` / `forward()` traverse the tab's
-  // joint session history, so they can revert a navigation the host page made, or unload the host
-  // page altogether when the embed has no earlier entry of its own. Moving through the embed's own
-  // history with `goto` can only ever navigate the iframe; see embed-navigation-stack.ts.
-  function navigateWithinEmbed(delta: -1 | 1) {
+  registerRPCMethod("navigateBack", () => {
     assertNavigationEnabled();
-    const url = navigationStack.take(delta);
-    // There is nothing to navigate to at the edge of the embed's history,
-    // e.g. a back on the dashboard the embed loaded with, so the call succeeds without navigating.
-    if (url !== undefined) void goto(url);
+    window.history.back();
     return true;
-  }
-
-  registerRPCMethod("navigateBack", () => navigateWithinEmbed(-1));
-  registerRPCMethod("navigateForward", () => navigateWithinEmbed(1));
+  });
+  registerRPCMethod("navigateForward", () => {
+    assertNavigationEnabled();
+    window.history.forward();
+    return true;
+  });
   registerRPCMethod(
     "navigateToDashboard",
     async (params: NavigateToDashboardParams) => {
@@ -257,13 +247,6 @@ export default function initEmbedPublicAPI(client: RuntimeClient): () => void {
   );
   // Keep this at the end so that RPC methods are already available and "ready" has been fired.
   const unsubscribe = page.subscribe(({ url }) => {
-    // Track where the embed has been, whoever navigated it: an embed API call, a user interaction
-    // inside the dashboard, or a traversal of the tab's history.
-    navigationStack.record(
-      url.pathname + url.search,
-      readSvelteKitHistoryIndex(),
-    );
-
     // Throttle the state change event.
     // This avoids too many events being fired when state is changed quickly.
     // This also avoids early events being fired just before dashboard is ready but is routed to.

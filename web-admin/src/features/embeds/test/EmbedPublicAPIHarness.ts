@@ -1,4 +1,3 @@
-import { SVELTEKIT_HISTORY_INDEX } from "@rilldata/web-admin/features/embeds/embed-navigation-stack.ts";
 import { createIframeRPCHandler } from "@rilldata/web-common/lib/rpc";
 import type { Page } from "@sveltejs/kit";
 import { get, writable, type Readable, type Updater } from "svelte/store";
@@ -10,9 +9,8 @@ import { get, writable, type Readable, type Updater } from "svelte/store";
  * an empty object to `vi.hoisted` and let this harness attach behaviour to it.
  */
 export type HoistedEmbedPage = Readable<Page> & {
-  // Mirrors the `goto(url, { replaceState })` shape used by the embed API, which passes a full url
-  // when navigating to a dashboard and a path when moving through the embed's own history.
-  goto: (url: string | URL, opts?: { replaceState?: boolean }) => void;
+  // Mirrors the single `goto(url, { replaceState })` shape used by the embed API.
+  goto: (url: URL, opts?: { replaceState?: boolean }) => void;
 };
 
 // A message posted from the embed iframe to its parent window: either a JSON-RPC
@@ -29,9 +27,6 @@ export type GotoCall = { url: URL; opts?: { replaceState?: boolean } };
 
 const DEFAULT_URL = "http://localhost/-/embed";
 const DEFAULT_ROUTE_ID = "/[organization]/[project]/-/embed";
-
-// SvelteKit seeds its history index with `Date.now()`, so use a fixed stand-in for it.
-const INITIAL_HISTORY_INDEX = 1_700_000_000_000;
 
 /**
  * Drives `initEmbedPublicAPI` through the real RPC transport, i.e. as an
@@ -64,13 +59,6 @@ export class EmbedPublicAPIHarness {
   // Every message the iframe posted to its (mocked) parent window, in order.
   public readonly messages: PostedMessage[] = [];
 
-  // Stands in for the tab's session history. The embed API reads SvelteKit's per-entry index from
-  // `history.state` to tell a push from a replace and to recognize an entry it has already visited,
-  // so the harness maintains the entries and that index the way SvelteKit's client does.
-  private readonly historyEntries: { url: URL; historyIndex: number }[] = [];
-  private historyCursor = -1;
-  private lastHistoryIndex = INITIAL_HISTORY_INDEX;
-
   private readonly removeRPCHandler: () => void;
   private readonly restoreParent: () => void;
   private nextRPCId = 0;
@@ -93,18 +81,12 @@ export class EmbedPublicAPIHarness {
 
     hoistedPage.subscribe = subscribe;
     hoistedPage.goto = (url, opts) => {
-      // `goto` takes a url or a path; resolve it the way SvelteKit does, so that assertions and the
-      // simulated history always see a full url.
-      const resolved = new URL(url, get(hoistedPage).url);
-      this.gotoCalls.push({ url: resolved, opts });
-      if (opts?.replaceState) {
-        this.replaceHistoryEntry(resolved);
-      } else {
-        this.pushHistoryEntry(resolved);
-      }
+      this.gotoCalls.push({ url, opts });
+      update((page) => {
+        page.url = url;
+        return page;
+      });
     };
-
-    this.pushHistoryEntry(get(hoistedPage).url);
 
     // Stand in for the parent window. The RPC layer only sends responses and
     // notifications when `window.parent !== window`, and routes them through
@@ -173,62 +155,11 @@ export class EmbedPublicAPIHarness {
    * Simulate an external navigation (e.g. the user interacting with the dashboard)
    * that changes only the url's search params. Fires the page store subscribers,
    * which is what the `stateChange` notification listens to.
-   *
-   * Explore dashboards push a history entry for a state change and replace it when canonicalizing
-   * their url on load, so `replaceState` selects which of the two is being simulated.
    */
-  public navigateTo(search: string, opts?: { replaceState?: boolean }) {
-    const url = new URL(get(this.hoistedPage).url);
-    url.search = search;
-    if (opts?.replaceState) {
-      this.replaceHistoryEntry(url);
-    } else {
-      this.pushHistoryEntry(url);
-    }
-  }
-
-  /**
-   * Traverse the tab's history as the browser's back / forward buttons do, e.g. when the host page's
-   * chrome drives them. A traversal restores the entry's SvelteKit history index, which is how the
-   * embed API recognizes an entry it has visited before.
-   */
-  public simulateTabTraversal(delta: -1 | 1) {
-    const position = this.historyCursor + delta;
-    if (!this.historyEntries[position]) {
-      throw new Error(
-        `No tab history entry ${delta} steps from the current one`,
-      );
-    }
-    this.historyCursor = position;
-    this.commitHistoryEntry();
-  }
-
-  /** Adds a history entry, dropping any the tab could no longer reach, and navigates to it. */
-  private pushHistoryEntry(url: URL) {
-    this.historyEntries.length = this.historyCursor + 1;
-    this.historyEntries.push({ url, historyIndex: ++this.lastHistoryIndex });
-    this.historyCursor = this.historyEntries.length - 1;
-    this.commitHistoryEntry();
-  }
-
-  /** Points the current history entry at a new url, keeping its index as a replace does. */
-  private replaceHistoryEntry(url: URL) {
-    this.historyEntries[this.historyCursor].url = url;
-    this.commitHistoryEntry();
-  }
-
-  /**
-   * Applies the current history entry, writing SvelteKit's index to `history.state` before updating
-   * the page store, since that is the order the embed API observes them in.
-   */
-  private commitHistoryEntry() {
-    const { url, historyIndex } = this.historyEntries[this.historyCursor];
-    window.history.replaceState(
-      { [SVELTEKIT_HISTORY_INDEX]: historyIndex },
-      "",
-      url.pathname + url.search,
-    );
+  public navigateTo(search: string) {
     this.update((page) => {
+      const url = new URL(page.url);
+      url.search = search;
       page.url = url;
       return page;
     });
