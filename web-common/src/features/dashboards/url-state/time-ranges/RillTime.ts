@@ -102,10 +102,6 @@ export class RillTime {
     }
   }
 
-  public isAbsoluteTime() {
-    return this.interval instanceof RillIsoInterval;
-  }
-
   public toString() {
     let timeRange = this.interval.toString();
 
