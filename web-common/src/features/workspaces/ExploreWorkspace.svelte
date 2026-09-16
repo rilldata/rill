@@ -58,7 +58,10 @@
   $: workspace = workspaces.get(filePath);
   $: selectedViewStore = workspace.view;
 
-  $: selectedView = $selectedViewStore ?? "code";
+  // Anything other than "code" shows the dashboard preview. This also recovers
+  // layouts persisted by older builds, which could store an explore web view
+  // such as "pivot" here and then render neither editor nor preview.
+  $: selectedView = $selectedViewStore === "code" ? "code" : "viz";
 
   $: metricsViewName = metricsViewResource?.meta?.name?.name;
 

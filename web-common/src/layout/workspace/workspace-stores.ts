@@ -10,6 +10,22 @@ import {
 // workspace adds an "explore" view).
 export type WorkspaceView = "code" | "split" | "viz";
 
+// Every view any workspace supports. Used to validate views coming from
+// localStorage and from the `editor` search param; anything else is ignored so a
+// stray value cannot leave a workspace with no view to render.
+const KNOWN_WORKSPACE_VIEWS: ReadonlySet<string> = new Set([
+  "code",
+  "split",
+  "viz",
+  "explore",
+]);
+
+// Search param that selects the workspace view a file opens on.
+// It is deliberately not named `view`: explore dashboards rendered inside a
+// workspace write their own `view` param (e.g. `view=pivot`) to the same URL,
+// and the two must not collide.
+export const WORKSPACE_VIEW_SEARCH_PARAM = "editor";
+
 type WorkspaceLayout<View extends string> = {
   inspector: {
     width: number;
@@ -42,7 +58,9 @@ class WorkspaceLayoutStore<View extends string = WorkspaceView> {
         parsed?.table?.height ?? DEFAULT_PREVIEW_TABLE_HEIGHT,
       );
       this.tableVisible.set(parsed?.table?.visible ?? true);
-      if (parsed?.view) this.view.set(parsed.view);
+      if (parsed?.view && KNOWN_WORKSPACE_VIEWS.has(parsed.view)) {
+        this.view.set(parsed.view);
+      }
     }
 
     const debouncer = debounce(
@@ -124,21 +142,23 @@ class Workspaces {
 
 export const workspaces = new Workspaces();
 
-// consumeViewSearchParam handles the `view` search param on file routes: links can
-// append `?view=<view>` to open a file's workspace on a specific view (e.g.
-// `?view=explore` for the explore editor of a metrics view file). It stores the view
-// for the file and returns the URL to redirect to with the param removed, or null if
-// the param is not present. Called from the files `+page.ts` load functions.
+// consumeViewSearchParam handles the workspace view search param on file routes:
+// links can append `?editor=<view>` to open a file's workspace on a specific view
+// (e.g. `?editor=explore` for the explore editor of a metrics view file). It stores
+// the view for the file and returns the URL to redirect to with the param removed,
+// or null if the param is not present. Called from the files `+page.ts` load functions.
 export function consumeViewSearchParam(
   url: URL,
   filePath: string,
 ): string | null {
-  const view = url.searchParams.get("view");
+  const view = url.searchParams.get(WORKSPACE_VIEW_SEARCH_PARAM);
   if (!view) return null;
 
-  workspaces.get<string>(filePath).view.set(view);
+  if (KNOWN_WORKSPACE_VIEWS.has(view)) {
+    workspaces.get<string>(filePath).view.set(view);
+  }
 
   const clean = new URL(url);
-  clean.searchParams.delete("view");
+  clean.searchParams.delete(WORKSPACE_VIEW_SEARCH_PARAM);
   return clean.pathname + clean.search;
 }
