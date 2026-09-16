@@ -18,6 +18,8 @@
   export let height: string | undefined = undefined;
   export let config: ChatConfig;
   export let inline = false;
+  // Awaited before a shared conversation is forked (see Conversation.sendMessage).
+  export let beforeFork: (() => Promise<void> | void) | undefined = undefined;
 
   let value = "";
 
@@ -48,6 +50,7 @@
     try {
       await currentConversation.sendMessage(additionalContext, {
         onStreamStart: () => editor.commands.setContent(""),
+        beforeFork,
       });
       onSend?.();
     } catch (error) {

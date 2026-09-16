@@ -2376,6 +2376,8 @@ export const V1ResourceEvent = {
   RESOURCE_EVENT_DELETE: "RESOURCE_EVENT_DELETE",
 } as const;
 
+export type V1ResourceMetaMetadata = { [key: string]: string };
+
 export interface V1ResourceMeta {
   name?: V1ResourceName;
   refs?: V1ResourceName[];
@@ -2383,6 +2385,9 @@ export interface V1ResourceMeta {
   filePaths?: string[];
   /** Tags for organizing and filtering resources. Parsed generically from any resource YAML's top-level "tags:" field. */
   tags?: string[];
+  /** Metadata is free-form key-value metadata for the resource, parsed generically from any resource YAML's top-level "metadata:" field.
+It is user-defined: Rill does not read or write keys in it and exposes it as-is over the API for external tooling. */
+  metadata?: V1ResourceMetaMetadata;
   hidden?: boolean;
   version?: string;
   specVersion?: string;
