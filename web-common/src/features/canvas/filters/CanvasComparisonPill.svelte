@@ -101,8 +101,8 @@
   {#if activeTimeGrain && interval}
     <Comparison
       {minTimeGrain}
-      maxDate={minDate}
-      minDate={maxDate}
+      {minDate}
+      {maxDate}
       timeGrain={activeTimeGrain}
       timeComparisonOptionsState={comparisonOptions}
       selectedComparison={selectedComparisonTimeRange}
