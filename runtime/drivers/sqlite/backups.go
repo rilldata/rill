@@ -22,9 +22,13 @@ import (
 	_ "modernc.org/sqlite"
 )
 
+// Name of the SQLite snapshot file in the backup directory.
+// It is the only file in a backup that can be restored from; the Parquet files are for analytics.
+const backupSnapshotName = "snapshot.db"
+
 var (
 	// Maximum size of the SQLite snapshot for backup.
-	backupMaxSizeBytes int64 = 5 * 1024 * 1024 * 1024 // 5 GB
+	backupMaxSizeBytes int64 = 15 * 1024 * 1024 * 1024 // 15 GB
 
 	// Max time a backup may run for.
 	backupMaxDuration = 10 * time.Minute
@@ -56,17 +60,19 @@ var (
 //
 // It is a no-op unless the following pre-requisites are in place:
 // 1. An external bucket is configured on the storage client.
-// 2. A backup ID is provided in the connection config (through the "id" config parameter, currently propagates from RILL_RUNTIME_METASTORE_ID).
-// 3. The SQLite database is file-based and doesn't exceed backupMaxSizeBytes in size.
+// 2. Backups are enabled in the connection config (through the "backups_enable" config parameter, currently propagates from RILL_RUNTIME_METASTORE_BACKUPS_ENABLE).
+// 3. A backup ID is provided in the connection config (through the "id" config parameter, currently propagates from RILL_RUNTIME_METASTORE_ID).
+// 4. The SQLite database is file-based and doesn't exceed backupMaxSizeBytes in size.
 //
-// It is a best-effort backup used for analytics. There are currently no guarantees on backups and no restore functionality.
-// Backups are performed at midnight UTC every day if the runtime is running at that time.
+// It is a best-effort backup. Backups are performed at midnight UTC every day if the runtime is running at that time.
+// The snapshot.db file can be restored on startup; see restoreBackupIfEmpty() for details.
+// The Parquet files are only used for downstream analytics.
 //
 // Backups are stored in the external bucket under the path "shared/metastore/{backupID}/" (the "shared/metastore" prefix is not applied here, but where the connection is opened).
 // The directory will contain a snapshot.db SQLite file and Parquet files for each of the tables defined in parquetBackupQueries.
 func (c *connection) startBackups() {
-	// It's a no-op if no backup ID is provided.
-	if c.backupID == "" {
+	// It's a no-op unless backups are configured.
+	if c.backupID == "" || !c.backupsEnable {
 		return
 	}
 
@@ -150,7 +156,7 @@ func (c *connection) backup(ctx context.Context, bucket *blob.Bucket) error {
 	defer os.RemoveAll(tmpDir)
 
 	// Capture a snapshot of the SQLite database
-	snapshotPath := filepath.Join(tmpDir, "snapshot.db")
+	snapshotPath := filepath.Join(tmpDir, backupSnapshotName)
 	_, err = c.db.ExecContext(ctx, fmt.Sprintf("VACUUM INTO '%s'", snapshotPath))
 	if err != nil {
 		return fmt.Errorf("failed to create SQLite snapshot: %w", err)
@@ -162,7 +168,7 @@ func (c *connection) backup(ctx context.Context, bucket *blob.Bucket) error {
 		return fmt.Errorf("failed to open SQLite snapshot for upload: %w", err)
 	}
 	defer f.Close()
-	err = bucket.Upload(ctx, "snapshot.db", f, &blob.WriterOptions{
+	err = bucket.Upload(ctx, backupSnapshotName, f, &blob.WriterOptions{
 		ContentType: "application/octet-stream",
 	})
 	if err != nil {
