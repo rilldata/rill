@@ -90,12 +90,12 @@ func (s *Server) GetGithubUserStatus(ctx context.Context, req *adminv1.GetGithub
 
 	client := github.NewTokenClient(ctx, token)
 	// List all the private organizations for the authenticated user
-	orgs, _, err := client.Organizations.List(ctx, "", nil)
+	orgs, err := listOrganizations(ctx, client, "")
 	if err != nil {
 		return nil, fmt.Errorf("failed to get user organizations: %w", err)
 	}
 	// List all the public organizations for the authenticated user
-	publicOrgs, _, err := client.Organizations.List(ctx, user.GithubUsername, nil)
+	publicOrgs, err := listOrganizations(ctx, client, user.GithubUsername)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get user organizations: %w", err)
 	}
@@ -1072,6 +1072,26 @@ func (s *Server) userAccessToken(ctx context.Context, user *database.User) (stri
 	}
 
 	return oauthToken.AccessToken, nil
+}
+
+// listOrganizations returns all organizations visible for the given user,
+// following pagination. An empty user lists the organizations of the
+// authenticated user.
+func listOrganizations(ctx context.Context, client *github.Client, user string) ([]*github.Organization, error) {
+	orgs := make([]*github.Organization, 0)
+	opts := &github.ListOptions{PerPage: 100}
+	for {
+		page, resp, err := client.Organizations.List(ctx, user, opts)
+		if err != nil {
+			return nil, err
+		}
+		orgs = append(orgs, page...)
+		if resp.NextPage == 0 {
+			break
+		}
+		opts.Page = resp.NextPage
+	}
+	return orgs, nil
 }
 
 func (s *Server) fetchReposForUser(ctx context.Context, client *github.Client) ([]*adminv1.ListGithubUserReposResponse_Repo, error) {
