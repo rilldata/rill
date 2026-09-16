@@ -2,11 +2,11 @@ package sqlite
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"fmt"
 	"io/fs"
 	"os"
-	"path/filepath"
 	"time"
 
 	"github.com/jmoiron/sqlx"
@@ -14,14 +14,12 @@ import (
 	"go.uber.org/zap"
 	"gocloud.dev/blob"
 	"gocloud.dev/gcerrors"
-
-	// Register the SQLite driver
-	_ "modernc.org/sqlite"
 )
 
 // Max time a restore may run for.
 // It blocks runtime startup, so we bound it instead of letting a slow download hang the process.
-var restoreMaxDuration = 10 * time.Minute
+// It needs to accommodate downloading a snapshot of up to backupMaxSizeBytes, hence the generous bound.
+var restoreMaxDuration = 30 * time.Minute
 
 // restoreBackupIfEmpty restores the SQLite database at the given DSN from the latest backup in object storage,
 // but only if the database has no data yet. It is called from driver.Open() before the connection handle is created,
@@ -31,6 +29,8 @@ var restoreMaxDuration = 10 * time.Minute
 // if no bucket is configured on the storage client, or if the backup directory doesn't contain a snapshot.
 // Any other failure is returned as an error, which fails runtime startup.
 // Starting with an empty database would be worse: the next backup would overwrite the snapshot we failed to restore.
+// If a restore fails persistently and the runtime needs to start anyway, set RILL_RUNTIME_METASTORE_BACKUPS_ENABLE=false.
+// That skips the restore, but it also disables backups, so the existing snapshot is left untouched.
 func restoreBackupIfEmpty(ctx context.Context, st *storage.Client, backupID, dsn string, logger *zap.Logger) error {
 	ctx, cancel := context.WithTimeout(ctx, restoreMaxDuration)
 	defer cancel()
@@ -97,9 +97,10 @@ func shouldRestoreBackup(ctx context.Context, dsn string) (dbPath string, ok boo
 	}
 	if tables != 0 {
 		// The table is created with version 0 before the first migration is applied, so it may exist on an empty database.
+		// It may also exist with no rows at all, since Migrate() creates the table and inserts the row as two separate statements.
 		var version int
 		err = db.QueryRowContext(ctx, fmt.Sprintf("SELECT version FROM %s", migrationVersionTable)).Scan(&version)
-		if err != nil {
+		if err != nil && !errors.Is(err, sql.ErrNoRows) {
 			return "", false, fmt.Errorf("failed to read migration version: %w", err)
 		}
 		if version > 0 {
@@ -111,7 +112,8 @@ func shouldRestoreBackup(ctx context.Context, dsn string) (dbPath string, ok boo
 }
 
 // restoreBackup downloads the snapshot from the backup bucket and moves it into place at dbPath.
-// It assumes the bucket is already scoped to the correct backup directory and that dbPath is not currently open.
+// It assumes the bucket is already scoped to the correct backup directory, that dbPath is not currently open,
+// and that the directory containing dbPath exists (it does for any dbPath that shouldRestoreBackup has connected to).
 // It is a no-op (returning nil) if the backup directory doesn't contain a snapshot,
 // which is the normal case for a new deployment.
 func restoreBackup(ctx context.Context, bucket *blob.Bucket, dbPath string, logger *zap.Logger) error {
@@ -122,11 +124,6 @@ func restoreBackup(ctx context.Context, bucket *blob.Bucket, dbPath string, logg
 			return nil
 		}
 		return fmt.Errorf("failed to check for backup snapshot: %w", err)
-	}
-
-	err = os.MkdirAll(filepath.Dir(dbPath), os.ModePerm)
-	if err != nil {
-		return fmt.Errorf("failed to create database directory: %w", err)
 	}
 
 	// Download the snapshot to a temporary file in the same directory as the database, so the rename below is atomic.

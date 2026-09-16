@@ -1,10 +1,12 @@
 package sqlite
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
 
+	"github.com/jmoiron/sqlx"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/storage"
@@ -104,6 +106,18 @@ func TestShouldRestoreBackup(t *testing.T) {
 
 	// Nor does one that exists but was never migrated (the call above created it).
 	require.FileExists(t, dsn)
+	dbPath, ok, err = shouldRestoreBackup(t.Context(), dsn)
+	require.NoError(t, err)
+	require.True(t, ok)
+	require.Equal(t, dsn, dbPath)
+
+	// Nor does one where Migrate() created the version table and then crashed before inserting the version row.
+	db, err := sqlx.Open("sqlite", dsn)
+	require.NoError(t, err)
+	_, err = db.ExecContext(t.Context(), fmt.Sprintf("CREATE TABLE %s(version integer not null)", migrationVersionTable))
+	require.NoError(t, err)
+	require.NoError(t, db.Close())
+
 	dbPath, ok, err = shouldRestoreBackup(t.Context(), dsn)
 	require.NoError(t, err)
 	require.True(t, ok)

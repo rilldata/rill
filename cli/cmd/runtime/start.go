@@ -243,7 +243,7 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 				"backups_enable": conf.MetastoreBackupsEnable,
 			})
 			if err != nil {
-				logger.Fatal("error: could not creat metastore metastore config", zap.Error(err))
+				logger.Fatal("could not create metastore config", zap.Error(err))
 			}
 			opts := &runtime.Options{
 				ConnectionCacheSize:          conf.ConnectionCacheSize,
