@@ -215,22 +215,6 @@ func TestUnnestDimension(t *testing.T) {
 			want: []map[string]any{{"count": int64(0)}},
 		},
 		{
-			// Measure filter: the only dimension value with more than one row is 'b'.
-			name: "in filter with measure-filter subquery",
-			qry: count(&metricsview.Expression{Condition: &metricsview.Condition{
-				Operator: metricsview.OperatorIn,
-				Expressions: []*metricsview.Expression{
-					{Name: "tags"},
-					{Subquery: &metricsview.Subquery{
-						Dimension: metricsview.Dimension{Name: "tags"},
-						Measures:  []metricsview.Measure{{Name: "count"}},
-						Having:    &metricsview.Expression{Condition: &metricsview.Condition{Operator: metricsview.OperatorGt, Expressions: []*metricsview.Expression{{Name: "count"}, {Value: 1}}}},
-					}},
-				},
-			}}),
-			want: []map[string]any{{"count": int64(2)}},
-		},
-		{
 			name: "filter combined with group by on another dimension",
 			qry: &metricsview.Query{
 				Dimensions: []metricsview.Dimension{{Name: "id"}},

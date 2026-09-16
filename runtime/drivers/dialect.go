@@ -50,8 +50,6 @@ type Dialect interface {
 	// ArrayContainsAnyExpression returns an expression that is true if the array arrExpr contains any of the comma-separated valuesExpr.
 	// ok is false if the dialect has no such expression, in which case the condition is evaluated against the unnested elements instead.
 	ArrayContainsAnyExpression(arrExpr, valuesExpr string) (expr string, ok bool)
-	// ArrayContainsSubqueryExpression is like ArrayContainsAnyExpression but takes a parenthesized subquery whose values are in the column valueCol.
-	ArrayContainsSubqueryExpression(arrExpr, subquerySQL, valueCol string) (expr string, ok bool)
 	DimensionSelect(escapeTable string, dim *runtimev1.MetricsViewSpec_Dimension) (dimSelect, unnestClause string, err error)
 	// LateralUnnest returns the join clause that unnests expr. If tupleStyle is false the element is referenced by colName alone,
 	// and the dialect must implement ArrayAnyExpression since it cannot be referenced from a correlated subquery.
@@ -246,10 +244,6 @@ func (b *BaseDialect) AutoUnnest(expr string) string {
 }
 
 func (b *BaseDialect) ArrayContainsAnyExpression(_, _ string) (expr string, ok bool) {
-	return "", false
-}
-
-func (b *BaseDialect) ArrayContainsSubqueryExpression(_, _, _ string) (expr string, ok bool) {
 	return "", false
 }
 

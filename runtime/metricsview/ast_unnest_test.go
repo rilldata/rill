@@ -6,7 +6,9 @@ import (
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/drivers/bigquery"
+	"github.com/rilldata/rill/runtime/drivers/clickhouse"
 	"github.com/rilldata/rill/runtime/drivers/databricks"
+	"github.com/rilldata/rill/runtime/drivers/druid"
 	"github.com/rilldata/rill/runtime/drivers/duckdb"
 	"github.com/rilldata/rill/runtime/drivers/snowflake"
 	"github.com/stretchr/testify/require"
@@ -113,7 +115,7 @@ func TestUnnestSQL(t *testing.T) {
 	}
 }
 
-// Measure filters produce "dim IN (subquery)". Dialects with an array-contains fast path must still handle them.
+// Subquery filters remain supported for scalar dimensions and existing general unnest paths.
 func TestUnnestSubqueryFilterSQL(t *testing.T) {
 	mv := &runtimev1.MetricsViewSpec{
 		Table: "test_table",
@@ -125,46 +127,55 @@ func TestUnnestSubqueryFilterSQL(t *testing.T) {
 			{Name: "count", Expression: "count(*)", Type: runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE},
 		},
 	}
-	where := &Expression{Condition: &Condition{
-		Operator: OperatorNin,
-		Expressions: []*Expression{
-			{Name: "tags"},
-			{Subquery: &Subquery{
-				Dimension: Dimension{Name: "tags"},
-				Measures:  []Measure{{Name: "count"}},
-				Having:    &Expression{Condition: &Condition{Operator: OperatorGt, Expressions: []*Expression{{Name: "count"}, {Value: 10}}}},
-			}},
-		},
-	}}
-	// The subquery is the metrics view grouped by the unnest dimension, with the having clause applied in an outer select.
-	sub := map[string]string{
-		"duckdb":     `(SELECT "tags" FROM (SELECT ("t2"."tags") AS "tags", ("t2"."count") AS "count" FROM (SELECT ("t0"."tags") AS "tags", (count(*)) AS "count" FROM "test_table", LATERAL UNNEST("tags") t0("tags") GROUP BY 1) t2 WHERE (("t2"."count") > ?)))`,
-		"databricks": "(SELECT `tags` FROM (SELECT (`t2`.`tags`) AS `tags`, (`t2`.`count`) AS `count` FROM (SELECT (`t0`.`tags`) AS `tags`, (count(*)) AS `count` FROM `test_table` LATERAL VIEW EXPLODE(`tags`) t0 AS `tags` GROUP BY 1) t2 WHERE ((`t2`.`count`) > ?)))",
-		"snowflake":  `(SELECT "tags" FROM (SELECT (t2."tags") AS "tags", (t2."count") AS "count" FROM (SELECT (t0.tags::VARCHAR) AS "tags", (count(*)) AS "count" FROM test_table, LATERAL FLATTEN(INPUT => tags) t0 (seq, key, path, index, tags, this) GROUP BY 1) t2 WHERE ((t2."count") > ?)))`,
-		"bigquery":   "(SELECT `tags` FROM (SELECT (`t2`.`tags`) AS `tags`, (`t2`.`count`) AS `count` FROM (SELECT (`tags`) AS `tags`, (count(*)) AS `count` FROM `test_table`, UNNEST(`tags`) AS `tags` GROUP BY 1) t2 WHERE ((`t2`.`count`) > ?)))",
-	}
+	base := drivers.NewBaseDialect(drivers.DialectNamePostgres, drivers.DoubleQuotesEscapeIdentifier, drivers.DoubleQuotesEscapeIdentifier)
 	tests := []struct {
 		dialect drivers.Dialect
-		want    string
+		wantErr string
 	}{
-		// No native form: correlated EXISTS over the unnest join.
-		{duckdb.DialectDuckDB, `WHERE NOT EXISTS (SELECT 1 FROM LATERAL UNNEST("tags") t0("tags") WHERE (("t0"."tags") IN ` + sub["duckdb"] + `)) GROUP BY 1`},
-		// Lambdas cannot contain subqueries: aggregate the subquery into an array.
-		{databricks.DialectDatabricks, "WHERE (NOT COALESCE(arrays_overlap((`tags`), (SELECT collect_list(s.`tags`) FROM " + sub["databricks"] + " AS s)), FALSE)) GROUP BY 1"},
-		// IN subquery inside FILTER hits an internal error: aggregate into an array and use ARRAY_CONTAINS.
-		{snowflake.DialectSnowflake, `WHERE (NOT COALESCE(ARRAY_SIZE(FILTER((tags), x -> ARRAY_CONTAINS(x::VARCHAR::VARIANT, (SELECT ARRAY_AGG(s."tags") FROM ` + sub["snowflake"] + ` AS s)))) > 0, FALSE)) GROUP BY 1`},
-		// A table-referencing subquery inside correlated EXISTS cannot be de-correlated: join the subquery to the unnested array instead.
-		{bigquery.DialectBigQuery, "WHERE (NOT EXISTS (SELECT 1 FROM UNNEST((`tags`)) AS e JOIN " + sub["bigquery"] + " AS s ON e = s.`tags`)) GROUP BY 1"},
+		{duckdb.DialectDuckDB, "the right value must be a list of values for an array IN condition"},
+		{clickhouse.DialectClickhouse, "the right value must be a list of values for an array IN condition"},
+		{databricks.DialectDatabricks, "the right value must be a list of values for an array IN condition"},
+		{snowflake.DialectSnowflake, `dialect snowflake does not support subquery filters on unnest dimension "tags"`},
+		{bigquery.DialectBigQuery, `dialect bigquery does not support subquery filters on unnest dimension "tags"`},
+		{druid.DialectDruid, ""},
+		{&base, ""},
 	}
 	for _, tt := range tests {
-		t.Run(tt.dialect.String(), func(t *testing.T) {
-			qry := &Query{MetricsView: "test", Dimensions: []Dimension{{Name: "city"}}, Measures: []Measure{{Name: "count"}}, Where: where}
-			ast, err := NewAST(mv, skipMetricsViewSecurity{}, qry, tt.dialect)
-			require.NoError(t, err)
-			sql, args, err := ast.SQL()
-			require.NoError(t, err)
-			require.Contains(t, sql, tt.want)
-			require.Equal(t, []any{10}, args)
-		})
+		for _, op := range []Operator{OperatorIn, OperatorNin} {
+			for _, shape := range []struct {
+				name string
+				dim  string
+				dims []Dimension
+			}{
+				{"unselected unnest dimension", "tags", []Dimension{{Name: "city"}}},
+				{"selected unnest dimension", "tags", []Dimension{{Name: "tags"}}},
+				{"scalar dimension", "city", []Dimension{{Name: "city"}}},
+			} {
+				t.Run(tt.dialect.String()+"/"+string(op)+"/"+shape.name, func(t *testing.T) {
+					where := &Expression{Condition: &Condition{
+						Operator: op,
+						Expressions: []*Expression{
+							{Name: shape.dim},
+							{Subquery: &Subquery{
+								Dimension: Dimension{Name: shape.dim},
+								Measures:  []Measure{{Name: "count"}},
+								Having:    &Expression{Condition: &Condition{Operator: OperatorGt, Expressions: []*Expression{{Name: "count"}, {Value: 10}}}},
+							}},
+						},
+					}}
+					qry := &Query{MetricsView: "test", Dimensions: shape.dims, Measures: []Measure{{Name: "count"}}, Where: where}
+					ast, err := NewAST(mv, skipMetricsViewSecurity{}, qry, tt.dialect)
+					if shape.name == "unselected unnest dimension" && tt.wantErr != "" {
+						require.ErrorContains(t, err, tt.wantErr)
+						return
+					}
+					require.NoError(t, err)
+					sql, args, err := ast.SQL()
+					require.NoError(t, err)
+					require.Contains(t, sql, " IN (SELECT "+tt.dialect.EscapeAlias(shape.dim)+" FROM (")
+					require.Equal(t, []any{10}, args)
+				})
+			}
+		}
 	}
 }

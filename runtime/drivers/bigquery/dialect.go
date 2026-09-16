@@ -88,13 +88,6 @@ func (d *dialect) LateralUnnest(expr, _, colName string) (tbl string, tupleStyle
 	return fmt.Sprintf(`UNNEST(%s) AS %s`, expr, d.EscapeIdentifier(colName)), false, false, nil
 }
 
-// ArrayContainsSubqueryExpression joins the subquery to the unnested array.
-// BigQuery cannot de-correlate an IN subquery that references another table inside a correlated EXISTS.
-// UNNEST comes first so that the array expression resolves against the outer query and cannot be shadowed by the subquery's column.
-func (d *dialect) ArrayContainsSubqueryExpression(arrExpr, subquerySQL, valueCol string) (expr string, ok bool) {
-	return fmt.Sprintf("EXISTS (SELECT 1 FROM UNNEST(%s) AS e JOIN %s AS s ON e = s.%s)", arrExpr, subquerySQL, valueCol), true
-}
-
 func (d *dialect) ArrayAnyExpression(arrExpr, elemAlias string) (open, elem, closing string, ok bool) {
 	elem = d.EscapeIdentifier(elemAlias)
 	return fmt.Sprintf("EXISTS (SELECT 1 FROM UNNEST(%s) AS %s WHERE ", arrExpr, elem), elem, ")", true

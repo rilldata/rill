@@ -91,11 +91,6 @@ func (d *dialect) ArrayContainsAnyExpression(arrExpr, valuesExpr string) (expr s
 	return fmt.Sprintf("COALESCE(arrays_overlap(%s, array(%s)), FALSE)", arrExpr, valuesExpr), true
 }
 
-// ArrayContainsSubqueryExpression collects the subquery into an array because Databricks does not allow subqueries inside lambda functions.
-func (d *dialect) ArrayContainsSubqueryExpression(arrExpr, subquerySQL, valueCol string) (expr string, ok bool) {
-	return fmt.Sprintf("COALESCE(arrays_overlap(%s, (SELECT collect_list(s.%s) FROM %s AS s)), FALSE)", arrExpr, valueCol, subquerySQL), true
-}
-
 func (d *dialect) DateTruncExpr(dim *runtimev1.MetricsViewSpec_Dimension, grain runtimev1.TimeGrain, tz string, firstDayOfWeek, firstMonthOfYear int) (string, error) {
 	if tz == "UTC" || tz == "Etc/UTC" {
 		tz = ""
