@@ -16,6 +16,7 @@ import {
   AD_BIDS_TIME_RANGE_SUMMARY,
 } from "@rilldata/web-common/features/dashboards/stores/test-data/data";
 import {
+  AD_BIDS_ADD_DOUBLED_ADHOC_MEASURE,
   AD_BIDS_APPLY_PUB_DIMENSION_FILTER,
   AD_BIDS_OPEN_PIVOT_WITH_ALL_FIELDS,
   AD_BIDS_OPEN_PUB_DIMENSION_TABLE,
@@ -293,6 +294,43 @@ describe("Explore web view store", () => {
 
     pageMock.gotoSearch(exploreSearch);
     pageMock.assertSearchParams("chart_type=stacked_bar");
+  });
+
+  // The URL only carries the ad-hoc measures the current page shows, so a
+  // definition only the explore view shows leaves the URL while on the pivot.
+  // The session store keeps every definition, so it is still visible on return.
+  it("keeps an ad-hoc measure only the explore view shows across a pivot visit", async () => {
+    renderDashboardStateManager();
+    await waitFor(() => expect(screen.getByText("Dashboard loaded!")));
+
+    pageMock.gotoSearch("view=explore");
+    await applyMutationsToDashboard(
+      AD_BIDS_EXPLORE_NAME,
+      [AD_BIDS_ADD_DOUBLED_ADHOC_MEASURE],
+      getFilterManager(),
+    );
+    const exploreSearch =
+      "adhoc_m=doubled:Doubled:impressions*2&measures=impressions,bid_price,doubled";
+    pageMock.assertSearchParams(exploreSearch);
+    const { visibleMeasures, ephemeralMeasures } =
+      getCleanMetricsExploreForAssertion();
+
+    pageMock.gotoSearch("view=pivot");
+    await applyMutationsToDashboard(
+      AD_BIDS_EXPLORE_NAME,
+      [AD_BIDS_OPEN_PIVOT_WITH_ALL_FIELDS],
+      getFilterManager(),
+    );
+    // The pivot does not show the measure, so its URL does not carry it.
+    pageMock.assertSearchParams(
+      "view=pivot&rows=publisher,time.hour&cols=domain,time.day,impressions&sort_by=&table_mode=nest",
+    );
+
+    pageMock.gotoSearch("view=explore");
+    pageMock.assertSearchParams(exploreSearch);
+    const restored = getCleanMetricsExploreForAssertion();
+    expect(restored.visibleMeasures).toEqual(visibleMeasures);
+    expect(restored.ephemeralMeasures).toEqual(ephemeralMeasures);
   });
 });
 

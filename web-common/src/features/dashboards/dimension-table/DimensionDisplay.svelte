@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { mapEphemeralMeasuresForRequest } from "@rilldata/web-common/features/dashboards/ephemeral-measures/measure-mapping";
   /**
    * DimensionDisplay.svelte
    * -------------------------
@@ -77,23 +78,26 @@
     dimensionName,
   );
 
-  $: measures = [
-    ...getMeasuresForDimensionOrLeaderboardDisplay(
-      $leaderboardShowContextForAllMeasures
-        ? null
-        : $leaderboardSortByMeasureName,
-      whereFilter,
-      visibleMeasureNames,
-    ).map((name) => ({ name }) as V1MetricsViewAggregationMeasure),
+  $: measures = mapEphemeralMeasuresForRequest(
+    [
+      ...getMeasuresForDimensionOrLeaderboardDisplay(
+        $leaderboardShowContextForAllMeasures
+          ? null
+          : $leaderboardSortByMeasureName,
+        whereFilter,
+        visibleMeasureNames,
+      ).map((name) => ({ name }) as V1MetricsViewAggregationMeasure),
 
-    // Add comparison measures if comparison time range exists
-    ...(comparisonTimeRange
-      ? ($leaderboardShowContextForAllMeasures
-          ? visibleMeasureNames
-          : [$leaderboardSortByMeasureName]
-        ).flatMap((name) => getComparisonRequestMeasures(name))
-      : []),
-  ];
+      // Add comparison measures if comparison time range exists.
+      ...(comparisonTimeRange
+        ? ($leaderboardShowContextForAllMeasures
+            ? visibleMeasureNames
+            : [$leaderboardSortByMeasureName]
+          ).flatMap((name) => getComparisonRequestMeasures(name))
+        : []),
+    ],
+    $dashboardStore.ephemeralMeasures,
+  );
   $: filteredMeasures = filterOutSomeAdvancedAggregationMeasures(
     $dashboardStore,
     metricsViewSpec,

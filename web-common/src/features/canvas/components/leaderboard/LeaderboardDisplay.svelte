@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { ephemeralSpecsToDefs } from "@rilldata/web-common/features/dashboards/ephemeral-measures/canvas";
+  import { appendEphemeralSpecMeasures } from "@rilldata/web-common/features/dashboards/ephemeral-measures/measure-mapping";
   import type { LeaderboardComponent } from "@rilldata/web-common/features/canvas/components/leaderboard";
   import { validateLeaderboardSchema } from "@rilldata/web-common/features/canvas/components/leaderboard/selector";
   import { getCanvasStore } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
@@ -75,9 +77,16 @@
       .filter((d) => d !== undefined),
   );
 
+  let ephemeralMeasures = $derived(
+    ephemeralSpecsToDefs(leaderboardProperties.adhoc_measures),
+  );
+  let allMeasuresWithEphemeral = $derived(
+    appendEphemeralSpecMeasures($allMeasures, ephemeralMeasures),
+  );
+
   let visibleMeasures = $derived(
     leaderboardMeasureNames
-      .map((lm) => $allMeasures.find((m) => m.name === lm))
+      .map((lm) => allMeasuresWithEphemeral.find((m) => m.name === lm))
       .filter((m) => m !== undefined),
   );
 
@@ -184,6 +193,7 @@
               leaderboardSortByMeasureName={leaderboardSortByMeasureName ??
                 leaderboardMeasureNames[0]}
               leaderboardMeasures={visibleMeasures}
+              {ephemeralMeasures}
               {whereFilter}
               tableWidth={dimensionColumnWidth + totalContextWidth}
               {dimensionColumnWidth}

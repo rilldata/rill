@@ -4,6 +4,7 @@ import {
   getAlertQueryArgsFromFormValues,
 } from "@rilldata/web-common/features/alerts/form-utils";
 import { getComparisonProperties } from "@rilldata/web-common/features/dashboards/dimension-table/dimension-table-utils";
+import { ephemeralMeasureToSpecMeasure } from "@rilldata/web-common/features/dashboards/ephemeral-measures/measure-mapping";
 import {
   ComparisonDeltaAbsoluteSuffix,
   ComparisonDeltaPreviousSuffix,
@@ -25,6 +26,7 @@ import {
   type V1MetricsViewAggregationRequest,
   type V1MetricsViewAggregationResponseDataItem,
   type V1MetricsViewSpec,
+  type MetricsViewSpecMeasure,
 } from "@rilldata/web-common/runtime-client";
 import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import type { QueryClient } from "@tanstack/query-core";
@@ -107,13 +109,22 @@ function getAlertPreviewQueryOptions(
     AlertPreviewResponse
   >
 > {
+  // Ephemeral measures have no spec entry; synthesize one so the preview
+  // column shows their display name and format instead of the raw name.
+  const measures = [
+    ...(metricsViewSpec?.measures ?? []),
+    ...(formValues.ephemeralMeasures ?? []).map(ephemeralMeasureToSpecMeasure),
+  ];
+
   return {
     enabled: !!formValues.measure && !!metricsViewSpec,
     select: (resp) => {
       return {
         rows: resp.data as V1MetricsViewAggregationResponseDataItem[],
         schema: (resp.schema?.fields
-          ?.map((field) => getSchemaEntryForField(metricsViewSpec ?? {}, field))
+          ?.map((field) =>
+            getSchemaEntryForField(metricsViewSpec ?? {}, measures, field),
+          )
           .filter(Boolean) ?? []) as VirtualizedTableColumns[],
       };
     },
@@ -122,6 +133,7 @@ function getAlertPreviewQueryOptions(
 
 function getSchemaEntryForField(
   metricsViewSpec: V1MetricsViewSpec,
+  measures: MetricsViewSpecMeasure[],
   field: StructTypeField,
 ): VirtualizedTableColumns | undefined {
   if (metricsViewSpec.dimensions) {
@@ -138,8 +150,8 @@ function getSchemaEntryForField(
     }
   }
 
-  if (metricsViewSpec.measures) {
-    for (const measure of metricsViewSpec.measures) {
+  if (measures.length) {
+    for (const measure of measures) {
       if (measure.name + ComparisonDeltaPreviousSuffix === field.name)
         return undefined;
 

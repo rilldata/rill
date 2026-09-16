@@ -33,6 +33,7 @@
   import CanvasFilters from "@rilldata/web-common/features/canvas/filters/CanvasFilters.svelte";
   import CanvasFilterParamsSync from "@rilldata/web-common/features/canvas/CanvasFilterParamsSync.svelte";
   import { specHasTabGroups } from "@rilldata/web-common/features/canvas/stores/tab-group";
+  import type { EphemeralMeasureDef } from "@rilldata/web-common/features/dashboards/ephemeral-measures/types.ts";
   import type { V1Resource } from "@rilldata/web-common/runtime-client";
 
   export let formId: string;
@@ -48,6 +49,7 @@
   export let canvasStateOverride: string | undefined = undefined;
   export let filters: ExpressionFilterManager | undefined = undefined;
   export let timeControls: TimeControls | undefined = undefined;
+  export let ephemeralMeasures: EphemeralMeasureDef[] | undefined = undefined;
 
   const RUN_AS_OPTIONS = [
     {
@@ -265,6 +267,7 @@
         bind:columns={$data["columns"]}
         columnErrors={$errors["columns"]}
         {exploreName}
+        {ephemeralMeasures}
       />
     {/if}
 
