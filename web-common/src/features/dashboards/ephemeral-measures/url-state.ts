@@ -93,6 +93,29 @@ export function injectEphemeralMeasuresIntoMap(
 }
 
 /**
+ * Names of the ephemeral measures any page of the explore state uses: visible,
+ * leaderboard and sort measures, the TDD measure and pivot chips.
+ */
+export function ephemeralMeasureNamesInUse(
+  exploreState: Partial<ExploreState>,
+): Set<string> {
+  const inUse = new Set<string>([
+    ...(exploreState.visibleMeasures ?? []),
+    ...(exploreState.leaderboardMeasureNames ?? []),
+    ...(exploreState.pivot?.rows ?? []).map((chip) => chip.id),
+    ...(exploreState.pivot?.columns ?? []).map((chip) => chip.id),
+    ...(exploreState.pivot?.sorting ?? []).map((sort) => sort.id),
+  ]);
+  if (exploreState.leaderboardSortByMeasureName) {
+    inUse.add(exploreState.leaderboardSortByMeasureName);
+  }
+  if (exploreState.tdd?.expandedMeasureName) {
+    inUse.add(exploreState.tdd.expandedMeasureName);
+  }
+  return inUse;
+}
+
+/**
  * Returns the definitions the active page actually shows: visible and
  * leaderboard measures plus the sort measure on the explore page, the expanded
  * measure on the TDD page, and the row, column and sort chips on the pivot

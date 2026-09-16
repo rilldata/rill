@@ -1,4 +1,7 @@
-import type { EphemeralMeasureSpec } from "@rilldata/web-common/features/dashboards/ephemeral-measures/canvas";
+import {
+  ephemeralSpecsToDefs,
+  type EphemeralMeasureSpec,
+} from "@rilldata/web-common/features/dashboards/ephemeral-measures/canvas";
 import { BaseCanvasComponent } from "@rilldata/web-common/features/canvas/components/BaseCanvasComponent";
 import {
   getCommonOptions,
@@ -70,6 +73,7 @@ export class KPIGridComponent extends BaseCanvasComponent<KPIGridSpec> {
     const spec = get(this.specStore);
     return {
       visibleMeasures: spec.measures,
+      ephemeralMeasures: ephemeralSpecsToDefs(spec.adhoc_measures),
       activePage: DashboardState_ActivePage.DEFAULT,
       allMeasuresVisible: false,
       leaderboardSortByMeasureName: spec.measures[0],

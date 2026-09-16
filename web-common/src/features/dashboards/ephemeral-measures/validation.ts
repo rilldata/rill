@@ -6,8 +6,24 @@ import { ComparisonModifierSuffixRegex } from "../pivot/types";
 import { parseMeasureExpression } from "./expression-parser";
 import type { EphemeralMeasureDef } from "./types";
 
-// Maximum number of ephemeral measures per pivot.
+// Maximum number of ephemeral measure definitions per metrics view. Enforced
+// on creation, when the library is merged into the state and when the URL
+// param is written and parsed, so a shared link can always carry every
+// definition the page shows.
 export const MAX_EPHEMERAL_MEASURES = 10;
+
+/**
+ * Validates that another definition may be created alongside `existingCount`
+ * definitions.
+ */
+export function validateEphemeralMeasureCount(
+  existingCount: number,
+): string | undefined {
+  if (existingCount >= MAX_EPHEMERAL_MEASURES) {
+    return `at most ${MAX_EPHEMERAL_MEASURES} adhoc measures can be defined`;
+  }
+  return undefined;
+}
 
 export const EPHEMERAL_MEASURE_NAME_REGEX = /^[a-zA-Z][a-zA-Z0-9_]*$/;
 

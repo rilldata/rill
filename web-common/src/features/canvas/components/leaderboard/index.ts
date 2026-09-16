@@ -1,4 +1,7 @@
-import type { EphemeralMeasureSpec } from "@rilldata/web-common/features/dashboards/ephemeral-measures/canvas";
+import {
+  ephemeralSpecsToDefs,
+  type EphemeralMeasureSpec,
+} from "@rilldata/web-common/features/dashboards/ephemeral-measures/canvas";
 import { BaseCanvasComponent } from "@rilldata/web-common/features/canvas/components/BaseCanvasComponent";
 import {
   getCommonOptions,
@@ -88,6 +91,7 @@ export class LeaderboardComponent extends BaseCanvasComponent<LeaderboardSpec> {
     const leaderboardState = get(this.leaderboardState);
     return {
       visibleMeasures: spec.measures,
+      ephemeralMeasures: ephemeralSpecsToDefs(spec.adhoc_measures),
       visibleDimensions: spec.dimensions,
       activePage: DashboardState_ActivePage.DEFAULT,
       allMeasuresVisible: false,

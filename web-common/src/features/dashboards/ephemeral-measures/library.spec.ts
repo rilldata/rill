@@ -5,6 +5,7 @@ import {
   saveEphemeralMeasureLibrary,
   syncEphemeralMeasureLibrary,
   upsertIntoEphemeralMeasureLibrary,
+  capEphemeralMeasureDefs,
 } from "./library";
 import type { EphemeralMeasureDef } from "./types";
 
@@ -100,5 +101,34 @@ describe("ephemeral measure library", () => {
     expect(mergeEphemeralMeasureDefs([profit], [arpu], [editedProfit])).toEqual(
       [editedProfit, arpu],
     );
+  });
+});
+
+describe("capEphemeralMeasureDefs", () => {
+  const def = (name: string) => ({
+    name,
+    displayName: name,
+    expression: "revenue",
+  });
+
+  it("returns the list unchanged within the limit", () => {
+    const defs = [def("a"), def("b")];
+    expect(capEphemeralMeasureDefs(defs, new Set(), 2)).toBe(defs);
+  });
+
+  it("drops unused definitions from the end before used ones", () => {
+    const defs = [def("a"), def("b"), def("c"), def("d")];
+    expect(
+      capEphemeralMeasureDefs(defs, new Set(["d"]), 2).map((d) => d.name),
+    ).toEqual(["a", "d"]);
+  });
+
+  it("truncates when more definitions are used than fit", () => {
+    const defs = [def("a"), def("b"), def("c")];
+    expect(
+      capEphemeralMeasureDefs(defs, new Set(["a", "b", "c"]), 2).map(
+        (d) => d.name,
+      ),
+    ).toEqual(["a", "b"]);
   });
 });

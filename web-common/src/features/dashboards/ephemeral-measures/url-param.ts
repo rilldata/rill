@@ -19,7 +19,9 @@ export function toEphemeralMeasuresParam(
   defs: EphemeralMeasureDef[] | undefined,
 ): string {
   if (!defs?.length) return "";
+  // Mirrors the parse-side cap so a written param always reads back whole.
   return defs
+    .slice(0, MAX_EPHEMERAL_MEASURES)
     .map((def) => {
       const parts = [
         def.name,

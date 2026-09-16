@@ -6,9 +6,13 @@ import {
 import { cascadingExploreStateMerge } from "@rilldata/web-common/features/dashboards/state-managers/cascading-explore-state-merge";
 import { getPartialExploreStateFromSessionStorage } from "@rilldata/web-common/features/dashboards/state-managers/loaders/explore-web-view-store";
 import {
+  capEphemeralMeasureDefs,
   loadEphemeralMeasureLibrary,
   mergeEphemeralMeasureDefs,
 } from "@rilldata/web-common/features/dashboards/ephemeral-measures/library";
+import type { EphemeralMeasureDef } from "@rilldata/web-common/features/dashboards/ephemeral-measures/types";
+import { ephemeralMeasureNamesInUse } from "@rilldata/web-common/features/dashboards/ephemeral-measures/url-state";
+import { MAX_EPHEMERAL_MEASURES } from "@rilldata/web-common/features/dashboards/ephemeral-measures/validation";
 import { getMostRecentPartialExploreState } from "@rilldata/web-common/features/dashboards/state-managers/loaders/most-recent-explore-state";
 import { validateAndCleanExploreState } from "@rilldata/web-common/features/dashboards/stores/validate-and-clean-explore-state";
 import { getExploreStateFromYAMLConfig } from "@rilldata/web-common/features/dashboards/stores/get-explore-state-from-yaml-config";
@@ -339,11 +343,19 @@ export class DashboardStateDataLoader {
         {},
       );
 
+    // Loaded up front: the most recent state's ad-hoc selections are validated
+    // against these definitions, and they are merged into the final state below.
+    const libraryEphemeralMeasures = this.loadEphemeralMeasureLibrary(
+      metricsViewSpec,
+      exploreSpec,
+    );
+
     const { mostRecentPartialExploreState } = getMostRecentPartialExploreState(
       this.exploreName,
       this.storageNamespacePrefix,
       metricsViewSpec,
       exploreSpec,
+      libraryEphemeralMeasures,
     );
 
     const shouldSkipOtherSources =
@@ -378,43 +390,46 @@ export class DashboardStateDataLoader {
     const finalExploreState = cascadingExploreStateMerge(
       nonEmptyExploreStateOrder,
     ) as ExploreState;
-    this.mergeEphemeralMeasureLibrary(
-      metricsViewSpec,
-      exploreSpec,
-      finalExploreState,
-    );
+    // Restore ad-hoc measure definitions from the library. The URL only
+    // carries the definitions the page shows, so this is what brings back
+    // hidden definitions and ones created in another explore on the same
+    // metrics view. Definitions from the state win over stored copies, and the
+    // total is capped at what a URL can carry so a shared link never drops one;
+    // definitions the state uses are kept ahead of unused ones.
+    if (libraryEphemeralMeasures.length) {
+      finalExploreState.ephemeralMeasures = capEphemeralMeasureDefs(
+        mergeEphemeralMeasureDefs(
+          finalExploreState.ephemeralMeasures ?? [],
+          libraryEphemeralMeasures,
+        ),
+        ephemeralMeasureNamesInUse(finalExploreState),
+        MAX_EPHEMERAL_MEASURES,
+      );
+    }
     correctExploreState(metricsViewSpec, finalExploreState);
 
     return finalExploreState;
   }
 
   /**
-   * Restores ad-hoc measure definitions from the per-metrics-view library.
-   * The URL only carries the definitions the state references, so this is what
-   * brings back hidden definitions, and definitions created in another explore
-   * on the same metrics view. Definitions from the state win over stored copies.
+   * Loads the per-metrics-view ad-hoc measure library, validated against the
+   * current spec so definitions referencing measures this explore does not
+   * expose are dropped. Empty when persisted state is disabled.
    */
-  private mergeEphemeralMeasureLibrary(
+  private loadEphemeralMeasureLibrary(
     metricsViewSpec: V1MetricsViewSpec,
     exploreSpec: V1ExploreSpec,
-    exploreState: ExploreState,
-  ) {
+  ): EphemeralMeasureDef[] {
     if (this.disableMostRecentDashboardState || !exploreSpec.metricsView) {
-      return;
+      return [];
     }
     const library = loadEphemeralMeasureLibrary(
       exploreSpec.metricsView,
       this.storageNamespacePrefix,
     );
-    if (!library.length) return;
-    // Validate stored definitions against the current spec, dropping any that
-    // reference measures this explore does not expose.
+    if (!library.length) return [];
     const libraryState: Partial<ExploreState> = { ephemeralMeasures: library };
     validateAndCleanExploreState(metricsViewSpec, exploreSpec, libraryState);
-    if (!libraryState.ephemeralMeasures?.length) return;
-    exploreState.ephemeralMeasures = mergeEphemeralMeasureDefs(
-      exploreState.ephemeralMeasures ?? [],
-      libraryState.ephemeralMeasures,
-    );
+    return libraryState.ephemeralMeasures ?? [];
   }
 }

@@ -1,3 +1,4 @@
+import { MAX_EPHEMERAL_MEASURES } from "./validation";
 import { PivotChipType } from "@rilldata/web-common/features/dashboards/pivot/types";
 import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
 import {
@@ -247,5 +248,20 @@ describe("ephemeral measures URL state integration", () => {
       title: "Profit (net)",
       type: PivotChipType.Measure,
     });
+  });
+});
+
+describe("ephemeral measures param limit", () => {
+  it("writes at most the number of definitions the parser accepts", () => {
+    const defs = Array.from({ length: MAX_EPHEMERAL_MEASURES + 2 }, (_, i) => ({
+      name: `m${i}`,
+      displayName: `M${i}`,
+      expression: "impressions * 2",
+    }));
+    const { ephemeralMeasures, invalidEntries } = fromEphemeralMeasuresParam(
+      toEphemeralMeasuresParam(defs),
+    );
+    expect(ephemeralMeasures).toEqual(defs.slice(0, MAX_EPHEMERAL_MEASURES));
+    expect(invalidEntries).toEqual([]);
   });
 });

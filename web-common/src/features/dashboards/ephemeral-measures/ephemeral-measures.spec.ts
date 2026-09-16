@@ -3,7 +3,9 @@ import type { V1MetricsViewAggregationMeasure } from "@rilldata/web-common/runti
 import { prepareMeasuresForRequest } from "../pivot/pivot-utils";
 import type { EphemeralMeasureDef } from "./types";
 import {
+  MAX_EPHEMERAL_MEASURES,
   slugifyEphemeralMeasureName,
+  validateEphemeralMeasureCount,
   validateEphemeralMeasureDef,
   validateEphemeralMeasureName,
 } from "./validation";
@@ -154,5 +156,20 @@ describe("slugifyEphemeralMeasureName", () => {
       "revenue_delta_2",
     );
     expect(slugifyEphemeralMeasureName("123 abc", reserved)).toBe("m_123_abc");
+  });
+});
+
+describe("validateEphemeralMeasureCount", () => {
+  it("allows creating up to the limit", () => {
+    expect(validateEphemeralMeasureCount(0)).toBeUndefined();
+    expect(
+      validateEphemeralMeasureCount(MAX_EPHEMERAL_MEASURES - 1),
+    ).toBeUndefined();
+  });
+
+  it("rejects creating beyond the limit", () => {
+    expect(validateEphemeralMeasureCount(MAX_EPHEMERAL_MEASURES)).toContain(
+      `at most ${MAX_EPHEMERAL_MEASURES}`,
+    );
   });
 });

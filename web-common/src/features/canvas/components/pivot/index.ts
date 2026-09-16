@@ -1,4 +1,7 @@
-import type { EphemeralMeasureSpec } from "@rilldata/web-common/features/dashboards/ephemeral-measures/canvas";
+import {
+  ephemeralSpecsToDefs,
+  type EphemeralMeasureSpec,
+} from "@rilldata/web-common/features/dashboards/ephemeral-measures/canvas";
 import { BaseCanvasComponent } from "@rilldata/web-common/features/canvas/components/BaseCanvasComponent";
 import {
   getCommonOptions,
@@ -223,6 +226,9 @@ export class PivotCanvasComponent extends BaseCanvasComponent<
   getExploreTransformerProperties(): Partial<ExploreState> {
     return {
       pivot: get(this.pivotState),
+      ephemeralMeasures: ephemeralSpecsToDefs(
+        get(this.specStore).adhoc_measures,
+      ),
       activePage: DashboardState_ActivePage.PIVOT,
     };
   }

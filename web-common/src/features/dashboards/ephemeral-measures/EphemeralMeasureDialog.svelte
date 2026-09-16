@@ -18,6 +18,7 @@
   import {
     isReferenceableMeasure,
     slugifyEphemeralMeasureName,
+    validateEphemeralMeasureCount,
     validateEphemeralMeasureDef,
   } from "./validation";
 
@@ -89,11 +90,13 @@
       expression: expression.trim(),
       ...(formatPreset !== FormatPreset.HUMANIZE ? { formatPreset } : {}),
     };
-    saveError = validateEphemeralMeasureDef(
-      def,
-      knownMeasureNames,
-      reservedNames,
-    );
+    saveError =
+      validateEphemeralMeasureDef(def, knownMeasureNames, reservedNames) ??
+      (editingDef
+        ? undefined
+        : validateEphemeralMeasureCount(
+            $dashboardStore?.ephemeralMeasures?.length ?? 0,
+          ));
     if (saveError) return;
 
     if (editingDef) {

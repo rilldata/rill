@@ -9,6 +9,7 @@
   import {
     ephemeralDefsToSpecs,
     ephemeralSpecsToDefs,
+    removeMeasureFromComponentSpec,
     type EphemeralMeasureSpec,
   } from "@rilldata/web-common/features/dashboards/ephemeral-measures/canvas";
   import {
@@ -19,6 +20,7 @@
   import {
     isReferenceableMeasure,
     slugifyEphemeralMeasureName,
+    validateEphemeralMeasureCount,
     validateEphemeralMeasureDef,
   } from "@rilldata/web-common/features/dashboards/ephemeral-measures/validation";
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
@@ -119,11 +121,9 @@
       expression: expression.trim(),
       ...(formatPreset !== FormatPreset.HUMANIZE ? { formatPreset } : {}),
     };
-    saveError = validateEphemeralMeasureDef(
-      def,
-      knownMeasureNames,
-      reservedNames,
-    );
+    saveError =
+      validateEphemeralMeasureDef(def, knownMeasureNames, reservedNames) ??
+      (editingDef ? undefined : validateEphemeralMeasureCount(defs.length));
     if (saveError) return;
 
     const rawSpecs = currentRawSpecs();
@@ -143,21 +143,17 @@
     if (!editingDef) return;
     const name = editingDef.name;
     writeRawSpecs(currentRawSpecs().filter((entry) => entry?.name !== name));
-    // Also remove it from the component's field selections.
-    for (const key of [
-      "measures",
-      "columns",
-      "measure",
-    ] as AllKeys<ComponentSpec>[]) {
-      const value = ($specStore as unknown as Record<string, unknown>)[key];
-      if (Array.isArray(value) && value.includes(name)) {
-        component.updateProperty(
-          key,
-          value.filter((n) => n !== name),
-        );
-      } else if (value === name) {
-        component.updateProperty(key, undefined);
-      }
+    // Also remove it from the component's field selections, including chart
+    // field configs and per-measure formatting, so the component stays valid.
+    const changes = removeMeasureFromComponentSpec(
+      $specStore as unknown as Record<string, unknown>,
+      name,
+    );
+    const untyped = component as unknown as BaseCanvasComponent<
+      Record<string, unknown>
+    >;
+    for (const [key, value] of Object.entries(changes)) {
+      untyped.updateProperty(key, value);
     }
     onClose();
   }

@@ -127,6 +127,25 @@ export function mergeEphemeralMeasureDefs(
   return merged;
 }
 
+/**
+ * Limits the definitions to `max`, preferring the ones in `inUse` (names the
+ * explore state references) so restoring a full library never discards a
+ * definition behind a visible measure. Order is preserved: unused definitions
+ * are dropped from the end first.
+ */
+export function capEphemeralMeasureDefs(
+  defs: EphemeralMeasureDef[],
+  inUse: Set<string>,
+  max: number,
+): EphemeralMeasureDef[] {
+  if (defs.length <= max) return defs;
+  const kept = [...defs];
+  for (let i = kept.length - 1; i >= 0 && kept.length > max; i--) {
+    if (!inUse.has(kept[i].name)) kept.splice(i, 1);
+  }
+  return kept.slice(0, max);
+}
+
 function isEphemeralMeasureDef(value: unknown): value is EphemeralMeasureDef {
   if (!value || typeof value !== "object") return false;
   const def = value as Record<string, unknown>;

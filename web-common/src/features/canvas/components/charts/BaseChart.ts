@@ -24,6 +24,7 @@ import type {
   V1MetricsViewSpec,
   V1Resource,
 } from "@rilldata/web-common/runtime-client";
+import { ephemeralSpecsToDefs } from "@rilldata/web-common/features/dashboards/ephemeral-measures/canvas";
 import { get, writable, type Readable, type Writable } from "svelte/store";
 import type {
   ChartDataQuery,
@@ -152,6 +153,7 @@ export abstract class BaseChart<
 
     return {
       whereFilter: this.componentFilters,
+      ephemeralMeasures: ephemeralSpecsToDefs(spec.adhoc_measures),
       ...(passComparison ? {} : { showTimeComparison: false }),
       activePage: tddLink.canLink
         ? DashboardState_ActivePage.TIME_DIMENSIONAL_DETAIL
