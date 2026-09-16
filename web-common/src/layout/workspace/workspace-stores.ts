@@ -8,14 +8,15 @@ import {
 // Views available in every workspace. Individual workspaces can support additional
 // views by passing an extended union to `workspaces.get` (e.g. the metrics view
 // workspace adds an "explore" view).
-export type WorkspaceView = "code" | "split" | "viz";
+export type WorkspaceView = "code" | "viz";
 
-// Every view any workspace supports. Used to validate views coming from
-// localStorage and from the `editor` search param; anything else is ignored so a
-// stray value cannot leave a workspace with no view to render.
+// The union of views across all workspaces. Views from localStorage and from the
+// `editor` search param are validated against this set so garbage such as an
+// explore's `pivot` web view is never stored. It is deliberately not per workspace:
+// a workspace that does not support one of these views (e.g. "explore" in the
+// canvas workspace) must coerce it to a view it can render.
 const KNOWN_WORKSPACE_VIEWS: ReadonlySet<string> = new Set([
   "code",
-  "split",
   "viz",
   "explore",
 ]);
