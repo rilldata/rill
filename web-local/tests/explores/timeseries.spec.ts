@@ -89,9 +89,11 @@ async function verifyChartTooltipData(
 
     const expectedValue = point.records[measureName];
     if (expectedValue !== null && expectedValue !== undefined) {
-      const formatter = createMeasureValueFormatter({
-        formatPreset: "humanize",
-      });
+      // The chart formats hover readouts with the tooltip context
+      const formatter = createMeasureValueFormatter(
+        { formatPreset: "humanize" },
+        "tooltip",
+      );
       expect(valueText!.trim()).toBe(formatter(expectedValue));
     }
 

@@ -54,6 +54,8 @@
         <CriteriaForm {superFormInstance} {timeControls} {index} />
       </div>
     {/each}
-    <Button type="tertiary" onClick={handleAddCriteria}>+ Add Criteria</Button>
+    <Button type="tertiary" onClick={handleAddCriteria}
+      >+ {m.alert_form_add_criteria()}</Button
+    >
   </div>
 {/if}

@@ -28,6 +28,11 @@ export enum ExportFormat {
    * @generated from enum value: EXPORT_FORMAT_PARQUET = 3;
    */
   PARQUET = 3,
+
+  /**
+   * @generated from enum value: EXPORT_FORMAT_PDF = 4;
+   */
+  PDF = 4,
 }
 // Retrieve enum metadata with: proto3.getEnumType(ExportFormat)
 proto3.util.setEnumType(ExportFormat, "rill.runtime.v1.ExportFormat", [
@@ -35,5 +40,6 @@ proto3.util.setEnumType(ExportFormat, "rill.runtime.v1.ExportFormat", [
   { no: 1, name: "EXPORT_FORMAT_CSV" },
   { no: 2, name: "EXPORT_FORMAT_XLSX" },
   { no: 3, name: "EXPORT_FORMAT_PARQUET" },
+  { no: 4, name: "EXPORT_FORMAT_PDF" },
 ]);
 

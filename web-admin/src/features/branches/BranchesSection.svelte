@@ -354,7 +354,8 @@
                     <span>
                       {m.branch_recreate_with()}
                       <code class="font-mono"
-                        >rill project deployment create {branchName} --editable</code
+                        ><!-- i18n-ignore: CLI command -->rill project
+                        deployment create {branchName} --editable</code
                       >.
                     </span>
                   </div>

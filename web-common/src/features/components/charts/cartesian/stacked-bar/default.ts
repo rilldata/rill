@@ -8,6 +8,7 @@ import {
   createDefaultTooltipEncoding,
   createMultiLayerBaseSpec,
   createPositionEncoding,
+  createStackOverride,
 } from "@rilldata/web-common/features/components/charts/builder";
 import {
   createComparisonOpacityEncoding,
@@ -70,7 +71,10 @@ export function generateVLStackedBarChartSpec(
   const barLayer: UnitSpec<Field> = {
     mark: { type: "bar", clip: true, width: { band: 0.9 } },
     encoding: {
-      y: createPositionEncoding(config.y, data),
+      y: {
+        ...createPositionEncoding(config.y, data),
+        ...createStackOverride(config.y, colorField),
+      },
       color: createColorEncoding(config.color, data),
       tooltip: defaultTooltipChannel,
     },

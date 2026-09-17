@@ -14,6 +14,7 @@ import {
   AD_BIDS_DOMAIN_DIMENSION,
   AD_BIDS_EXPLORE_NAME,
   AD_BIDS_EXPLORE_WITH_3_MEASURES_DIMENSIONS,
+  AD_BIDS_IMPRESSIONS_MEASURE,
   AD_BIDS_METRICS_3_MEASURES_DIMENSIONS_WITH_TIME,
   AD_BIDS_METRICS_NAME,
   AD_BIDS_PUBLISHER_DIMENSION,
@@ -334,8 +335,89 @@ describe("getDashboardFromAggregationRequest", () => {
     });
   });
 
+  // Reports and alerts embed the ephemeral definition in the request itself,
+  // so opening one must restore it without any saved dashboard state.
+  it("Recovers ephemeral measures from the request", async () => {
+    const ephemeralMeasureName = "bid_price_per_impression";
+    const aggregationRequest: V1MetricsViewAggregationRequest = {
+      dimensions: [],
+      measures: [
+        {
+          name: ephemeralMeasureName,
+          expression: {
+            expression: `${AD_BIDS_BID_PRICE_MEASURE} / ${AD_BIDS_IMPRESSIONS_MEASURE}`,
+            displayName: "Bid price per impression",
+          },
+        },
+      ],
+      sort: [{ desc: true, name: ephemeralMeasureName }],
+    };
+
+    const exploreState = await getExploreState(aggregationRequest, {
+      forceOpenPivot: false,
+    });
+    expect(exploreState.ephemeralMeasures).toEqual([
+      {
+        name: ephemeralMeasureName,
+        displayName: "Bid price per impression",
+        expression: `${AD_BIDS_BID_PRICE_MEASURE} / ${AD_BIDS_IMPRESSIONS_MEASURE}`,
+      },
+    ]);
+    expect(exploreState.visibleMeasures).toEqual([ephemeralMeasureName]);
+    // The ephemeral measure is not in the explore spec, so it must not make
+    // the dashboard think every spec measure is visible.
+    expect(exploreState.allMeasuresVisible).toBe(false);
+
+    const pivotState = await getExploreState(aggregationRequest, {
+      forceOpenPivot: true,
+    });
+    expect(pivotState.ephemeralMeasures).toEqual(
+      exploreState.ephemeralMeasures,
+    );
+    expect(pivotState.pivot.columns).toEqual([
+      {
+        id: ephemeralMeasureName,
+        title: "Bid price per impression",
+        type: PivotChipType.Measure,
+      },
+    ]);
+  });
+
   // TODO: add more extensive tests for other parts
 });
+
+async function getExploreState(
+  aggregationRequest: V1MetricsViewAggregationRequest,
+  { forceOpenPivot }: { forceOpenPivot: boolean },
+) {
+  const mockClient = new RuntimeClient({
+    host: "http://localhost:9009",
+    instanceId: "default",
+  });
+  const mapQueryStore = mapQueryToDashboard(
+    mockClient,
+    {
+      exploreName: AD_BIDS_EXPLORE_NAME,
+      queryName: "MetricsViewAggregation",
+      queryArgsJson: JSON.stringify({
+        metricsView: AD_BIDS_METRICS_NAME,
+        ...aggregationRequest,
+      }),
+      executionTime: AD_BIDS_TIME_RANGE_SUMMARY.timeRangeSummary!.max!,
+    },
+    { ignoreFilters: false, forceOpenPivot },
+  );
+
+  let mapQueryResp: MapQueryResponse | undefined;
+  const unsub = mapQueryStore.subscribe((r) => (mapQueryResp = r));
+  await waitUntil(() => !!mapQueryResp?.data, 1000, 50);
+  unsub();
+
+  if (!mapQueryResp?.data) {
+    throw new Error("mapQueryStore did not return a response");
+  }
+  return mapQueryResp.data.exploreState;
+}
 
 async function runTest({
   aggregationRequest,

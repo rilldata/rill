@@ -23,6 +23,7 @@
   $: kpis = (kpiGridProperties.measures || []).map((measure) => ({
     metrics_view: kpiGridProperties.metrics_view,
     measure,
+    adhoc_measures: kpiGridProperties.adhoc_measures,
     sparkline: kpiGridProperties.sparkline,
     hide_time_range: kpiGridProperties.hide_time_range,
     comparison: kpiGridProperties.comparison,
@@ -67,12 +68,14 @@
     >
       {#each kpis as kpi, i (i)}
         <div class="min-h-32 kpi-wrapper">
-          <KPIProvider
-            spec={kpi}
-            {timeAndFilterStore}
-            {canvasName}
-            visible={$visible}
-          />
+          {#if $timeAndFilterStore}
+            <KPIProvider
+              spec={kpi}
+              {timeAndFilterStore}
+              {canvasName}
+              visible={$visible}
+            />
+          {/if}
         </div>
       {/each}
     </div>

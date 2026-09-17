@@ -782,6 +782,11 @@ export class UpdateOrganizationRequest extends Message<UpdateOrganizationRequest
   defaultProjectRole?: string;
 
   /**
+   * @generated from field: optional string default_provisioner = 10;
+   */
+  defaultProvisioner?: string;
+
+  /**
    * @generated from field: optional string billing_email = 4;
    */
   billingEmail?: string;
@@ -803,6 +808,7 @@ export class UpdateOrganizationRequest extends Message<UpdateOrganizationRequest
     { no: 7, name: "favicon_asset_id", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 9, name: "thumbnail_asset_id", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 8, name: "default_project_role", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 10, name: "default_provisioner", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 4, name: "billing_email", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
   ]);
 
@@ -2822,6 +2828,15 @@ export class GetIFrameRequest extends Message<GetIFrameRequest> {
   navigation = false;
 
   /**
+   * HideNavigationBar hides the embed's top navigation bar (the home link and dashboard breadcrumbs) without disabling navigation itself.
+   * It is only meaningful when `navigation` is true; the bar is always hidden when `navigation` is false.
+   * In-dashboard navigation, such as the canvas drill-through to an explore dashboard, remains available.
+   *
+   * @generated from field: bool hide_navigation_bar = 18;
+   */
+  hideNavigationBar = false;
+
+  /**
    * Blob containing UI state for rendering the initial embed. Not currently supported.
    *
    * @generated from field: string state = 7;
@@ -2864,6 +2879,7 @@ export class GetIFrameRequest extends Message<GetIFrameRequest> {
     { no: 12, name: "theme", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 15, name: "theme_mode", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 13, name: "navigation", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 18, name: "hide_navigation_bar", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 7, name: "state", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 8, name: "query", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
     { no: 17, name: "superuser_force_access", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
@@ -5279,6 +5295,23 @@ export class AddOrganizationMemberUserRequest extends Message<AddOrganizationMem
   role = "";
 
   /**
+   * Custom attributes to set on the new membership.
+   * If the user has not signed up yet, they are stored on the invite and applied when the invite is accepted.
+   *
+   * @generated from field: google.protobuf.Struct attributes = 5;
+   */
+  attributes?: Struct;
+
+  /**
+   * Names of user groups in the org to add the user to.
+   * If the user has not signed up yet, they are stored on the invite and applied when the invite is accepted.
+   * Groups are additive: on a re-invite they are merged with the groups already on the invite.
+   *
+   * @generated from field: repeated string usergroups = 6;
+   */
+  usergroups: string[] = [];
+
+  /**
    * @generated from field: bool superuser_force_access = 4;
    */
   superuserForceAccess = false;
@@ -5294,6 +5327,8 @@ export class AddOrganizationMemberUserRequest extends Message<AddOrganizationMem
     { no: 1, name: "org", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "email", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "role", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 5, name: "attributes", kind: "message", T: Struct },
+    { no: 6, name: "usergroups", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 4, name: "superuser_force_access", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
@@ -6782,6 +6817,88 @@ export class SudoUpdateOrganizationCustomDomainResponse extends Message<SudoUpda
 }
 
 /**
+ * @generated from message rill.admin.v1.SudoUpdateOrganizationDefaultProvisionerRequest
+ */
+export class SudoUpdateOrganizationDefaultProvisionerRequest extends Message<SudoUpdateOrganizationDefaultProvisionerRequest> {
+  /**
+   * @generated from field: string org = 1;
+   */
+  org = "";
+
+  /**
+   * Name of the provisioner to use by default. Empty unsets the org's default provisioner.
+   *
+   * @generated from field: string default_provisioner = 2;
+   */
+  defaultProvisioner = "";
+
+  constructor(data?: PartialMessage<SudoUpdateOrganizationDefaultProvisionerRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.SudoUpdateOrganizationDefaultProvisionerRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "org", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "default_provisioner", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): SudoUpdateOrganizationDefaultProvisionerRequest {
+    return new SudoUpdateOrganizationDefaultProvisionerRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): SudoUpdateOrganizationDefaultProvisionerRequest {
+    return new SudoUpdateOrganizationDefaultProvisionerRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): SudoUpdateOrganizationDefaultProvisionerRequest {
+    return new SudoUpdateOrganizationDefaultProvisionerRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: SudoUpdateOrganizationDefaultProvisionerRequest | PlainMessage<SudoUpdateOrganizationDefaultProvisionerRequest> | undefined, b: SudoUpdateOrganizationDefaultProvisionerRequest | PlainMessage<SudoUpdateOrganizationDefaultProvisionerRequest> | undefined): boolean {
+    return proto3.util.equals(SudoUpdateOrganizationDefaultProvisionerRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.SudoUpdateOrganizationDefaultProvisionerResponse
+ */
+export class SudoUpdateOrganizationDefaultProvisionerResponse extends Message<SudoUpdateOrganizationDefaultProvisionerResponse> {
+  /**
+   * @generated from field: rill.admin.v1.Organization organization = 1;
+   */
+  organization?: Organization;
+
+  constructor(data?: PartialMessage<SudoUpdateOrganizationDefaultProvisionerResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.SudoUpdateOrganizationDefaultProvisionerResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "organization", kind: "message", T: Organization },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): SudoUpdateOrganizationDefaultProvisionerResponse {
+    return new SudoUpdateOrganizationDefaultProvisionerResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): SudoUpdateOrganizationDefaultProvisionerResponse {
+    return new SudoUpdateOrganizationDefaultProvisionerResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): SudoUpdateOrganizationDefaultProvisionerResponse {
+    return new SudoUpdateOrganizationDefaultProvisionerResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: SudoUpdateOrganizationDefaultProvisionerResponse | PlainMessage<SudoUpdateOrganizationDefaultProvisionerResponse> | undefined, b: SudoUpdateOrganizationDefaultProvisionerResponse | PlainMessage<SudoUpdateOrganizationDefaultProvisionerResponse> | undefined): boolean {
+    return proto3.util.equals(SudoUpdateOrganizationDefaultProvisionerResponse, a, b);
+  }
+}
+
+/**
  * @generated from message rill.admin.v1.SudoUpdateUserQuotasRequest
  */
 export class SudoUpdateUserQuotasRequest extends Message<SudoUpdateUserQuotasRequest> {
@@ -7555,6 +7672,24 @@ export class AddProjectMemberUserRequest extends Message<AddProjectMemberUserReq
    */
   resources: ResourceName[] = [];
 
+  /**
+   * Custom attributes to set on the user's org membership (attributes are org-scoped).
+   * If the user has not signed up yet, they are stored on the org invite and applied when the invite is accepted.
+   * Setting attributes requires permission to manage org members.
+   *
+   * @generated from field: google.protobuf.Struct attributes = 7;
+   */
+  attributes?: Struct;
+
+  /**
+   * Names of user groups in the org to add the user to (user groups are org-scoped).
+   * If the user has not signed up yet, they are stored on the org invite and applied when the invite is accepted.
+   * Setting user groups requires permission to manage org members.
+   *
+   * @generated from field: repeated string usergroups = 8;
+   */
+  usergroups: string[] = [];
+
   constructor(data?: PartialMessage<AddProjectMemberUserRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -7569,6 +7704,8 @@ export class AddProjectMemberUserRequest extends Message<AddProjectMemberUserReq
     { no: 4, name: "role", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 5, name: "restrict_resources", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
     { no: 6, name: "resources", kind: "message", T: ResourceName, repeated: true },
+    { no: 7, name: "attributes", kind: "message", T: Struct },
+    { no: 8, name: "usergroups", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): AddProjectMemberUserRequest {
@@ -10185,6 +10322,9 @@ export class RevokeCurrentAuthTokenResponse extends Message<RevokeCurrentAuthTok
 }
 
 /**
+ * ListBookmarksRequest lists the bookmarks in a project that are visible to the caller:
+ * the caller's own bookmarks plus shared and default bookmarks.
+ *
  * @generated from message rill.admin.v1.ListBookmarksRequest
  */
 export class ListBookmarksRequest extends Message<ListBookmarksRequest> {
@@ -10194,14 +10334,19 @@ export class ListBookmarksRequest extends Message<ListBookmarksRequest> {
   projectId = "";
 
   /**
-   * @generated from field: string resource_kind = 2;
+   * Optional filter on the kind of the resource the bookmark is for (e.g. "rill.runtime.v1.Explore").
+   * When both resource_kind and resource_name are unset, all bookmarks in the project are returned.
+   *
+   * @generated from field: optional string resource_kind = 2;
    */
-  resourceKind = "";
+  resourceKind?: string;
 
   /**
-   * @generated from field: string resource_name = 3;
+   * Optional filter on the name of the resource the bookmark is for. Requires resource_kind to be set.
+   *
+   * @generated from field: optional string resource_name = 3;
    */
-  resourceName = "";
+  resourceName?: string;
 
   constructor(data?: PartialMessage<ListBookmarksRequest>) {
     super();
@@ -10212,8 +10357,8 @@ export class ListBookmarksRequest extends Message<ListBookmarksRequest> {
   static readonly typeName = "rill.admin.v1.ListBookmarksRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "project_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "resource_kind", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 3, name: "resource_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "resource_kind", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 3, name: "resource_name", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListBookmarksRequest {
@@ -16592,6 +16737,11 @@ export class Organization extends Message<Organization> {
   defaultProjectRoleId = "";
 
   /**
+   * @generated from field: string default_provisioner = 19;
+   */
+  defaultProvisioner = "";
+
+  /**
    * @generated from field: rill.admin.v1.OrganizationQuotas quotas = 4;
    */
   quotas?: OrganizationQuotas;
@@ -16649,6 +16799,7 @@ export class Organization extends Message<Organization> {
     { no: 17, name: "thumbnail_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 10, name: "custom_domain", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 16, name: "default_project_role_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 19, name: "default_provisioner", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "quotas", kind: "message", T: OrganizationQuotas },
     { no: 7, name: "billing_customer_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 8, name: "payment_customer_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
@@ -17787,6 +17938,14 @@ export class UsergroupMemberUser extends Message<UsergroupMemberUser> {
   userPhotoUrl = "";
 
   /**
+   * True if the user has been invited to the group but has not signed up yet.
+   * For pending members, user_id, user_name and user_photo_url are empty.
+   *
+   * @generated from field: bool pending_acceptance = 8;
+   */
+  pendingAcceptance = false;
+
+  /**
    * @generated from field: google.protobuf.Timestamp created_on = 5;
    */
   createdOn?: Timestamp;
@@ -17808,6 +17967,7 @@ export class UsergroupMemberUser extends Message<UsergroupMemberUser> {
     { no: 3, name: "user_email", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "user_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 7, name: "user_photo_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 8, name: "pending_acceptance", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 5, name: "created_on", kind: "message", T: Timestamp },
     { no: 6, name: "updated_on", kind: "message", T: Timestamp },
   ]);
@@ -17848,6 +18008,18 @@ export class OrganizationInvite extends Message<OrganizationInvite> {
    */
   invitedBy = "";
 
+  /**
+   * @generated from field: google.protobuf.Struct attributes = 4;
+   */
+  attributes?: Struct;
+
+  /**
+   * Names of the user groups the user will be added to when the invite is accepted.
+   *
+   * @generated from field: repeated string usergroups = 5;
+   */
+  usergroups: string[] = [];
+
   constructor(data?: PartialMessage<OrganizationInvite>) {
     super();
     proto3.util.initPartial(data, this);
@@ -17859,6 +18031,8 @@ export class OrganizationInvite extends Message<OrganizationInvite> {
     { no: 1, name: "email", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "role_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "invited_by", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "attributes", kind: "message", T: Struct },
+    { no: 5, name: "usergroups", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): OrganizationInvite {
@@ -18551,6 +18725,14 @@ export class ReportOptions extends Message<ReportOptions> {
   canvas = "";
 
   /**
+   * Per-metrics-view filters of the canvas at scheduling time (canvas PDF reports only).
+   * Baked into the report's security rules so magic-token recipients cannot query unfiltered data.
+   *
+   * @generated from field: map<string, rill.runtime.v1.Expression> metrics_view_filters = 23;
+   */
+  metricsViewFilters: { [key: string]: Expression } = {};
+
+  /**
    * web_open_mode is used to determine how to create or disable open link for the report
    * - send "recipient" for reports that should be opened with recipient's permissions - requires login
    * - send "creator" for reports that should be opened with creators permissions but with locked filters - no login required
@@ -18587,6 +18769,7 @@ export class ReportOptions extends Message<ReportOptions> {
     { no: 14, name: "web_open_state", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 16, name: "explore", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 17, name: "canvas", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 23, name: "metrics_view_filters", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "message", T: Expression} },
     { no: 18, name: "web_open_mode", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 

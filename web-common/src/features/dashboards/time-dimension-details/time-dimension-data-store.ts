@@ -1,3 +1,4 @@
+import { ephemeralMeasureToSpecMeasure } from "@rilldata/web-common/features/dashboards/ephemeral-measures/measure-mapping";
 import { createSparkline } from "@rilldata/web-common/components/data-graphic/marks/sparkline";
 import { useSelectedValuesForCompareDimension } from "@rilldata/web-common/features/dashboards/state-managers/selectors/dimension-filters";
 import type { StateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
@@ -407,9 +408,14 @@ export function createTimeDimensionDataStore(
       const isAllTime =
         timeControls?.selectedTimeRange?.name === TimeRangePreset.ALL_TIME;
 
-      const measure = validSpec.data?.metricsView?.measures?.find(
-        (m) => m.name === measureName,
-      );
+      const measure =
+        validSpec.data?.metricsView?.measures?.find(
+          (m) => m.name === measureName,
+        ) ??
+        // ephemeral measures have no spec entry; synthesize one.
+        dashboardStore?.ephemeralMeasures
+          ?.filter((def) => def.name === measureName)
+          .map(ephemeralMeasureToSpecMeasure)[0];
 
       let comparing;
       let data: TableData | undefined = undefined;

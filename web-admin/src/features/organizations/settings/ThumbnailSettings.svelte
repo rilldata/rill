@@ -71,7 +71,7 @@
     <UploadImagePopover
       imageUrl={organizationThumbnailUrl}
       accept="image/png, image/jpeg, image/gif"
-      label="thumbnail"
+      label={m.settings_thumbnail_title()}
       {organization}
       loading={isLoading}
       error={getRpcErrorMessage(error)}
@@ -80,7 +80,7 @@
     >
       <img
         src="https://cdn.rilldata.com/images/rill-admin.png"
-        alt="thumbnail"
+        alt={m.settings_thumbnail_title()}
         class="h-10"
       />
     </UploadImagePopover>

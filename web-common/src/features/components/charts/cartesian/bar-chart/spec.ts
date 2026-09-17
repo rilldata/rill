@@ -8,6 +8,7 @@ import {
   createDefaultTooltipEncoding,
   createMultiLayerBaseSpec,
   createPositionEncoding,
+  createStackOverride,
 } from "@rilldata/web-common/features/components/charts/builder";
 import {
   ColorWithComparisonField,
@@ -73,7 +74,10 @@ export function generateVLBarChartSpec(
   const barLayer: UnitSpec<Field> = {
     mark: { type: "bar", clip: true, width: { band: 0.9 } },
     encoding: {
-      y: createPositionEncoding(config.y, data),
+      y: {
+        ...createPositionEncoding(config.y, data),
+        ...createStackOverride(config.y, colorField),
+      },
       color: createColorEncoding(config.color, data),
       // Only add xOffset for color field when NOT in comparison mode
       // In comparison mode, we'll handle xOffset separately to include comparison grouping

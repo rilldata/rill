@@ -646,6 +646,7 @@ components:
                 - EXPORT_FORMAT_CSV
                 - EXPORT_FORMAT_XLSX
                 - EXPORT_FORMAT_PARQUET
+                - EXPORT_FORMAT_PDF
             type: string
         v1Expression:
             properties:
@@ -1392,6 +1393,8 @@ components:
                     type: string
                 defaultProjectRoleId:
                     type: string
+                defaultProvisioner:
+                    type: string
                 description:
                     type: string
                 displayName:
@@ -1419,12 +1422,19 @@ components:
             type: object
         v1OrganizationInvite:
             properties:
+                attributes:
+                    type: object
                 email:
                     type: string
                 invitedBy:
                     type: string
                 roleName:
                     type: string
+                usergroups:
+                    description: Names of the user groups the user will be added to when the invite is accepted.
+                    items:
+                        type: string
+                    type: array
             type: object
         v1OrganizationMemberService:
             properties:
@@ -1873,6 +1883,13 @@ components:
                     type: string
                 intervalDuration:
                     type: string
+                metricsViewFilters:
+                    additionalProperties:
+                        $ref: '#/components/schemas/v1Expression'
+                    description: |-
+                        Per-metrics-view filters of the canvas at scheduling time (canvas PDF reports only).
+                        Baked into the report's security rules so magic-token recipients cannot query unfiltered data.
+                    type: object
                 queryArgsJson:
                     title: use resolver/resolver_properties instead
                     type: string
@@ -2207,6 +2224,19 @@ components:
                 organization:
                     $ref: '#/components/schemas/v1Organization'
             type: object
+        v1SudoUpdateOrganizationDefaultProvisionerRequest:
+            properties:
+                defaultProvisioner:
+                    description: Name of the provisioner to use by default. Empty unsets the org's default provisioner.
+                    type: string
+                org:
+                    type: string
+            type: object
+        v1SudoUpdateOrganizationDefaultProvisionerResponse:
+            properties:
+                organization:
+                    $ref: '#/components/schemas/v1Organization'
+            type: object
         v1SudoUpdateOrganizationQuotasRequest:
             properties:
                 deployments:
@@ -2469,6 +2499,11 @@ components:
                 createdOn:
                     format: date-time
                     type: string
+                pendingAcceptance:
+                    description: |-
+                        True if the user has been invited to the group but has not signed up yet.
+                        For pending members, user_id, user_name and user_photo_url are empty.
+                    type: boolean
                 updatedOn:
                     format: date-time
                     type: string
@@ -2647,6 +2682,8 @@ paths:
                                     type: string
                                 defaultProjectRole:
                                     type: string
+                                defaultProvisioner:
+                                    type: string
                                 description:
                                     type: string
                                 displayName:
@@ -2784,12 +2821,25 @@ paths:
                     application/json:
                         schema:
                             properties:
+                                attributes:
+                                    description: |-
+                                        Custom attributes to set on the new membership.
+                                        If the user has not signed up yet, they are stored on the invite and applied when the invite is accepted.
+                                    type: object
                                 email:
                                     type: string
                                 role:
                                     type: string
                                 superuserForceAccess:
                                     type: boolean
+                                usergroups:
+                                    description: |-
+                                        Names of user groups in the org to add the user to.
+                                        If the user has not signed up yet, they are stored on the invite and applied when the invite is accepted.
+                                        Groups are additive: on a re-invite they are merged with the groups already on the invite.
+                                    items:
+                                        type: string
+                                    type: array
                             type: object
                 required: true
                 x-originalParamName: body
@@ -3204,6 +3254,12 @@ paths:
                     application/json:
                         schema:
                             properties:
+                                attributes:
+                                    description: |-
+                                        Custom attributes to set on the user's org membership (attributes are org-scoped).
+                                        If the user has not signed up yet, they are stored on the org invite and applied when the invite is accepted.
+                                        Setting attributes requires permission to manage org members.
+                                    type: object
                                 email:
                                     type: string
                                 resources:
@@ -3214,6 +3270,14 @@ paths:
                                     type: boolean
                                 role:
                                     type: string
+                                usergroups:
+                                    description: |-
+                                        Names of user groups in the org to add the user to (user groups are org-scoped).
+                                        If the user has not signed up yet, they are stored on the org invite and applied when the invite is accepted.
+                                        Setting user groups requires permission to manage org members.
+                                    items:
+                                        type: string
+                                    type: array
                             type: object
                 required: true
                 x-originalParamName: body
@@ -3913,6 +3977,7 @@ paths:
     /v1/superuser/organization/billing/customer_id: {}
     /v1/superuser/organization/billing/report-usage: {}
     /v1/superuser/organization/custom-domain: {}
+    /v1/superuser/organization/default-provisioner: {}
     /v1/superuser/organization/trial/extend: {}
     /v1/superuser/organization/trial/grant-credits: {}
     /v1/superuser/organizations/{org}/billing/issues/{type}: {}

@@ -12,6 +12,7 @@ import type {
   SourceFileType,
 } from "./SourceEventTypes";
 import type { AddDataBehaviourEventFields } from "@rilldata/web-common/metrics/service/BehaviourEventTypes.ts";
+import { sanitizePageUrl } from "./sanitizePageUrl";
 
 export enum ErrorEventAction {
   SourceError = "source-error",
@@ -124,7 +125,7 @@ export class ErrorEventFactory extends MetricsEventFactory {
     event.api = api;
     event.status = status;
     event.message = message;
-    event.page_url = pageUrl;
+    event.page_url = sanitizePageUrl(pageUrl);
     return event;
   }
 
@@ -146,7 +147,7 @@ export class ErrorEventFactory extends MetricsEventFactory {
     event.screen_name = screen_name;
     event.stack = stack;
     event.message = message;
-    event.page_url = pageUrl;
+    event.page_url = sanitizePageUrl(pageUrl);
     return event;
   }
 }

@@ -2295,6 +2295,96 @@ export function createRuntimeServiceListInstancesInfinite<
   return createInfiniteQuery(queryOptions, queryClient);
 }
 
+export function getRuntimeServiceListResourcesInfiniteQueryOptions<
+  TData = InfiniteData<V1ListResourcesResponse>,
+>(
+  client: RuntimeClient,
+  request: Omit<
+    PartialMessage<ListResourcesRequest>,
+    "instanceId" | "pageToken"
+  >,
+  options?: {
+    query?: Partial<
+      CreateInfiniteQueryOptions<
+        V1ListResourcesResponse,
+        ConnectError,
+        TData,
+        V1ListResourcesResponse,
+        QueryKey,
+        string | undefined
+      >
+    >;
+  },
+): CreateInfiniteQueryOptions<
+  V1ListResourcesResponse,
+  ConnectError,
+  TData,
+  V1ListResourcesResponse,
+  QueryKey,
+  string | undefined
+> & { queryKey: QueryKey } {
+  const queryKey = [
+    ...getRuntimeServiceListResourcesQueryKey(client.instanceId, request),
+    "infinite",
+  ] as QueryKey;
+  return {
+    queryKey,
+    queryFn: ({ pageParam, signal }) =>
+      runtimeServiceListResources(
+        client,
+        { ...request, pageToken: pageParam } as Omit<
+          PartialMessage<ListResourcesRequest>,
+          "instanceId"
+        >,
+        { signal },
+      ),
+    initialPageParam: undefined as string | undefined,
+    getNextPageParam: (lastPage) =>
+      ((lastPage as Record<string, unknown>)?.nextPageToken as
+        | string
+        | undefined) || undefined,
+    enabled: !!client.instanceId,
+    ...options?.query,
+  } as CreateInfiniteQueryOptions<
+    V1ListResourcesResponse,
+    ConnectError,
+    TData,
+    V1ListResourcesResponse,
+    QueryKey,
+    string | undefined
+  > & { queryKey: QueryKey };
+}
+
+export function createRuntimeServiceListResourcesInfinite<
+  TData = InfiniteData<V1ListResourcesResponse>,
+>(
+  client: RuntimeClient,
+  request: Omit<
+    PartialMessage<ListResourcesRequest>,
+    "instanceId" | "pageToken"
+  >,
+  options?: {
+    query?: Partial<
+      CreateInfiniteQueryOptions<
+        V1ListResourcesResponse,
+        ConnectError,
+        TData,
+        V1ListResourcesResponse,
+        QueryKey,
+        string | undefined
+      >
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateInfiniteQueryResult<TData, ConnectError> {
+  const queryOptions = getRuntimeServiceListResourcesInfiniteQueryOptions(
+    client,
+    request,
+    options,
+  );
+  return createInfiniteQuery(queryOptions, queryClient);
+}
+
 export function getRuntimeServiceGetModelPartitionsInfiniteQueryOptions<
   TData = InfiniteData<V1GetModelPartitionsResponse>,
 >(

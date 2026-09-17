@@ -1,7 +1,7 @@
 <script lang="ts">
   import { page } from "$app/state";
   import ResourceError from "@rilldata/web-common/features/resources/ResourceError.svelte";
-  import ResourceList from "@rilldata/web-admin/features/resources/ResourceList.svelte";
+  import ListTable from "@rilldata/web-admin/components/list-table/ListTable.svelte";
   import ResourceListEmptyState from "@rilldata/web-admin/features/resources/ResourceListEmptyState.svelte";
   import ExploreIcon from "@rilldata/web-common/components/icons/ExploreIcon.svelte";
   import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
@@ -10,20 +10,28 @@
   import { renderComponent } from "tanstack-table-8-svelte-5";
   import DashboardsTableCompositeCell from "./DashboardsTableCompositeCell.svelte";
   import { useDashboards, useIsInitialBuild } from "./selectors";
-  import { Search } from "@rilldata/web-common/components/search";
   import { UrlParamsState } from "web-common/src/lib/store-utils/url-params-state.svelte.ts";
   import { getAllTagsForResources } from "@rilldata/web-common/features/resources/resource-tag-utils.ts";
   import ResizableSidebar from "@rilldata/web-common/layout/ResizableSidebar.svelte";
   import DashboardsTagSidebar from "@rilldata/web-admin/features/dashboards/listing/DashboardsTagSidebar.svelte";
   import { filterResources } from "@rilldata/web-common/features/resources/resource-filter-utils.ts";
+  import {
+    DashboardTableSortOptions,
+    getDashboardFavouritesStore,
+    RecentlyUsedDashboards,
+  } from "./dashboard-favourites.ts";
   import { DebouncedRuneStore } from "@rilldata/web-common/lib/store-utils/types.svelte.ts";
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import { escapeHtml } from "@rilldata/web-common/lib/i18n";
+  import { TableToolbar } from "@rilldata/web-common/components/table-toolbar";
+  import { dedupe } from "@rilldata/web-common/lib/arrayUtils.ts";
+
+  type DashboardRow = V1Resource & { lastUsed: number };
 
   let {
     isEmbedded = false,
     isPreview = false,
-    previewLimit = 5,
+    previewLimit = undefined,
   }: {
     isEmbedded?: boolean;
     isPreview?: boolean;
@@ -35,6 +43,16 @@
   const searchTextStore = new DebouncedRuneStore(
     UrlParamsState.createStringParam("q"),
     500,
+  );
+
+  const sortStore = UrlParamsState.createStringParam(
+    "sort",
+    DashboardTableSortOptions[0].value,
+  );
+  let sortingOption = $derived(
+    DashboardTableSortOptions.find(
+      (option) => option.value === sortStore.value,
+    ) ?? DashboardTableSortOptions[0],
   );
 
   const runtimeClient = useRuntimeClient();
@@ -66,12 +84,35 @@
     ),
   );
 
-  let displayData = $derived(
-    isPreview ? filteredDashboards.slice(0, previewLimit) : filteredDashboards,
+  let dashboardFavourites = $derived(
+    getDashboardFavouritesStore(organization, project),
+  );
+  let recentlyUsedDashboards = $derived(
+    new RecentlyUsedDashboards(organization, project),
+  );
+
+  let validDashboardFavourites = $derived(
+    dedupe(
+      dashboardFavourites.value.filter((f) =>
+        filteredDashboards.find((r) => r.meta?.name?.name?.toLowerCase() === f),
+      ),
+    ),
   );
 
   let hasMoreDashboards = $derived(
     isPreview && filteredDashboards.length > previewLimit,
+  );
+
+  let displayData = $derived(
+    filteredDashboards.map(
+      (r): DashboardRow => ({
+        ...r,
+        lastUsed:
+          recentlyUsedDashboards.recentlyUsed.value[
+            r.meta?.name?.name?.toLowerCase() ?? ""
+          ] ?? 0,
+      }),
+    ),
   );
 
   const columns = [
@@ -103,6 +144,8 @@
           organization,
           project,
           tags,
+          dashboardFavourites,
+          recentlyUsedDashboards,
         });
       },
     },
@@ -135,6 +178,10 @@
         return isMetricsExplorer ? row.explore.spec.description : "";
       },
     },
+    {
+      id: "lastUsed",
+      accessorFn: (row: DashboardRow) => row.lastUsed,
+    },
   ];
 
   const columnVisibility = {
@@ -142,9 +189,8 @@
     name: false,
     lastRefreshed: false,
     description: false,
+    lastUsed: false,
   };
-
-  const initialSorting = [{ id: "name", desc: false }];
 </script>
 
 {#if isLoading || isBuilding}
@@ -156,16 +202,11 @@
 {:else if isSuccess}
   <div class="flex flex-col w-full gap-y-3">
     {#if !isPreview}
-      <div class="flex flex-row items-center gap-x-2">
-        <Search
-          placeholder={m.common_search()}
-          autofocus={false}
-          bind:value={searchTextStore.getter, searchTextStore.setter}
-          rounded="lg"
-          retainValueOnMount
-          large
-        />
-      </div>
+      <TableToolbar
+        {searchTextStore}
+        {sortStore}
+        sortOptions={DashboardTableSortOptions}
+      />
     {/if}
 
     <div class="flex flex-row flex-1 w-full gap-x-2 overflow-hidden">
@@ -185,14 +226,19 @@
         </ResizableSidebar>
       {/if}
 
-      <div class="flex flex-col flex-grow">
-        <ResourceList
+      <div class="flex flex-col flex-grow min-w-0">
+        <ListTable
           kind="dashboard"
           data={displayData}
           {columns}
           {columnVisibility}
-          {initialSorting}
+          sorting={[sortingOption.sort]}
           toolbar={false}
+          pinnedRows={validDashboardFavourites}
+          maxRows={previewLimit}
+          getRowId={(row, index) =>
+            (row as V1Resource).meta?.name?.name?.toLowerCase() ??
+            index.toString()}
         >
           <ResourceListEmptyState
             slot="empty"
@@ -205,7 +251,7 @@
               })}
             </span>
           </ResourceListEmptyState>
-        </ResourceList>
+        </ListTable>
 
         {#if hasMoreDashboards}
           <div class="pl-4 py-1">

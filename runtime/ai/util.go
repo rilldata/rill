@@ -63,6 +63,21 @@ func resolverResultToTabular(res runtime.ResolverResult) ([]SchemaField, [][]any
 	return fields, data, nil
 }
 
+// normalizeFilePath converts a model-provided file path to an absolute path within the project (e.g. "models/foo.sql" to "/models/foo.sql").
+// It returns an error for paths with ".." segments, which could otherwise traverse outside the project directory.
+func normalizeFilePath(p string) (string, error) {
+	segments := strings.FieldsFunc(p, func(r rune) bool { return r == '/' || r == '\\' })
+	for _, segment := range segments {
+		if segment == ".." {
+			return "", fmt.Errorf("invalid path %q: must not contain %q segments", p, "..")
+		}
+	}
+	if !strings.HasPrefix(p, "/") {
+		p = "/" + p
+	}
+	return p, nil
+}
+
 var templateFuncs = template.FuncMap{
 	"backticks": func() string {
 		return "```"

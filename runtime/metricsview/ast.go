@@ -363,6 +363,38 @@ func NewAST(mv *runtimev1.MetricsViewSpec, sec MetricsViewSecurity, qry *Query, 
 	return ast, nil
 }
 
+// SecurityFilterSQL compiles the security policy's query filter and row filter for the given metrics view
+// into a SQL expression and args that can be used in a WHERE clause against the metrics view's underlying table.
+// It returns an empty SQL string if the security policy does not restrict row access.
+// It is used when building an AST, and can also be used directly for queries that are built manually, such as dimension summaries.
+func SecurityFilterSQL(mv *runtimev1.MetricsViewSpec, sec MetricsViewSecurity, dialect drivers.Dialect) (string, []any, error) {
+	var res *ExprNode
+
+	if qf := sec.QueryFilter(); qf != nil {
+		// Compiling an expression requires an AST value for contextual info such as dimension lookups.
+		a := &AST{
+			MetricsView: mv,
+			Security:    sec,
+			Query:       &Query{},
+			Dialect:     dialect,
+		}
+		expr, args, err := a.SQLForExpression(NewExpressionFromProto(qf), nil, false, false)
+		if err != nil {
+			return "", nil, fmt.Errorf("failed to compile the security policy's query filter: %w", err)
+		}
+		res = res.And(expr, args)
+	}
+
+	if rf := sec.RowFilter(); rf != "" {
+		res = res.And(rf, nil)
+	}
+
+	if res == nil {
+		return "", nil, nil
+	}
+	return res.Expr, res.Args, nil
+}
+
 // ResolveDimension returns a dimension spec for the given dimension query.
 // If the dimension query specifies a computed dimension, it constructs a dimension spec to match it.
 func (a *AST) ResolveDimension(qd Dimension, visible bool) (*runtimev1.MetricsViewSpec_Dimension, error) {
@@ -461,7 +493,7 @@ func (a *AST) ResolveMeasure(qm Measure, visible bool) (*runtimev1.MetricsViewSp
 	}
 
 	if qm.Compute.ComparisonValue != nil {
-		m, err := a.LookupMeasure(qm.Compute.ComparisonValue.Measure, visible)
+		m, err := a.resolveReferencedMeasure(qm.Compute.ComparisonValue.Measure, visible)
 		if err != nil {
 			return nil, err
 		}
@@ -481,7 +513,7 @@ func (a *AST) ResolveMeasure(qm Measure, visible bool) (*runtimev1.MetricsViewSp
 	}
 
 	if qm.Compute.ComparisonDelta != nil {
-		m, err := a.LookupMeasure(qm.Compute.ComparisonDelta.Measure, visible)
+		m, err := a.resolveReferencedMeasure(qm.Compute.ComparisonDelta.Measure, visible)
 		if err != nil {
 			return nil, err
 		}
@@ -501,7 +533,7 @@ func (a *AST) ResolveMeasure(qm Measure, visible bool) (*runtimev1.MetricsViewSp
 	}
 
 	if qm.Compute.ComparisonRatio != nil {
-		m, err := a.LookupMeasure(qm.Compute.ComparisonRatio.Measure, visible)
+		m, err := a.resolveReferencedMeasure(qm.Compute.ComparisonRatio.Measure, visible)
 		if err != nil {
 			return nil, err
 		}
@@ -527,7 +559,7 @@ func (a *AST) ResolveMeasure(qm Measure, visible bool) (*runtimev1.MetricsViewSp
 			return nil, fmt.Errorf("totals not computed for %s", qm.Name)
 		}
 
-		m, err := a.LookupMeasure(qm.Compute.PercentOfTotal.Measure, visible)
+		m, err := a.resolveReferencedMeasure(qm.Compute.PercentOfTotal.Measure, visible)
 		if err != nil {
 			return nil, err
 		}
@@ -545,6 +577,41 @@ func (a *AST) ResolveMeasure(qm Measure, visible bool) (*runtimev1.MetricsViewSp
 			Type:               runtimev1.MetricsViewSpec_MEASURE_TYPE_DERIVED,
 			ReferencedMeasures: []string{qm.Compute.PercentOfTotal.Measure},
 			DisplayName:        fmt.Sprintf("%s (Σ%%)", m.DisplayName),
+		}, nil
+	}
+
+	if qm.Compute.Expression != nil {
+		parsed, err := ParseMeasureExpression(qm.Compute.Expression.Expression)
+		if err != nil {
+			return nil, fmt.Errorf("invalid expression for measure %q: %w", qm.Name, err)
+		}
+
+		// Resolve every referenced measure to check it exists and is visible under the security policy.
+		for _, ref := range parsed.Refs() {
+			if _, err := a.LookupMeasure(ref, visible); err != nil {
+				return nil, fmt.Errorf("invalid expression for measure %q: measure %q: %w", qm.Name, ref, err)
+			}
+		}
+
+		// Re-render the expression from the parsed tree with dialect-safe escaping.
+		// Never splice the user-supplied string into SQL directly.
+		expr := parsed.Render(MeasureExpressionRenderOptions{
+			Dialect:    a.Dialect.String(),
+			EscapeRef:  a.Dialect.EscapeAlias,
+			SafeDivide: a.Dialect.SafeDivideExpression,
+		})
+
+		displayName := qm.Compute.Expression.DisplayName
+		if displayName == "" {
+			displayName = qm.Name
+		}
+
+		return &runtimev1.MetricsViewSpec_Measure{
+			Name:               qm.Name,
+			Expression:         expr,
+			Type:               runtimev1.MetricsViewSpec_MEASURE_TYPE_DERIVED,
+			ReferencedMeasures: parsed.Refs(),
+			DisplayName:        displayName,
 		}, nil
 	}
 
@@ -658,6 +725,27 @@ func (a *AST) LookupMeasure(name string, visible bool) (*runtimev1.MetricsViewSp
 	for _, m := range a.MetricsView.Measures {
 		if m.Name == name {
 			return m, nil
+		}
+	}
+
+	return nil, fmt.Errorf("measure %q not found", name)
+}
+
+// resolveReferencedMeasure resolves a measure referenced by name from another measure,
+// such as the base measure of a comparison delta or a measure referenced by a derived measure.
+// The referenced measure is either a measure in the metrics view or an expression measure defined in the same query,
+// which lets ad-hoc measures support comparisons without being declared in the metrics view.
+// Expression measures may only reference metrics view measures, so the recursion is at most one level deep.
+func (a *AST) resolveReferencedMeasure(name string, visible bool) (*runtimev1.MetricsViewSpec_Measure, error) {
+	for _, m := range a.MetricsView.Measures {
+		if m.Name == name {
+			return a.LookupMeasure(name, visible)
+		}
+	}
+
+	for _, qm := range a.Query.Measures {
+		if qm.Name == name && qm.Compute != nil && qm.Compute.Expression != nil {
+			return a.ResolveMeasure(qm, visible)
 		}
 	}
 
@@ -998,7 +1086,7 @@ func (a *AST) addReferencedMeasuresToScope(n *SelectNode, referencedMeasures []s
 
 	for _, rm := range referencedMeasures {
 		// Note we pass visible==false because the measure won't be projected into the current node's SELECT list, only brought into scope for derived measures.
-		m, err := a.LookupMeasure(rm, false)
+		m, err := a.resolveReferencedMeasure(rm, false)
 		if err != nil {
 			return err
 		}
@@ -1022,7 +1110,7 @@ func (a *AST) addReferencedMeasuresToScope(n *SelectNode, referencedMeasures []s
 }
 
 // buildWhereForUnderlyingTable constructs an expression for a WHERE clause for the underlying table.
-// It combines the provided where expression with any security policy filters.
+// It combines the provided where expression with the security policy's filters.
 // It allows the input `where` to be nil, and returns nil if there are no conditions to apply.
 func (a *AST) buildWhereForUnderlyingTable(where *Expression) (*ExprNode, error) {
 	var res *ExprNode
@@ -1033,18 +1121,11 @@ func (a *AST) buildWhereForUnderlyingTable(where *Expression) (*ExprNode, error)
 	}
 	res = res.And(expr, args)
 
-	if qf := a.Security.QueryFilter(); qf != nil {
-		e := NewExpressionFromProto(qf)
-		expr, args, err = a.SQLForExpression(e, nil, false, false)
-		if err != nil {
-			return nil, fmt.Errorf("failed to compile the security policy's query filter: %w", err)
-		}
-		res = res.And(expr, args)
+	secExpr, secArgs, err := SecurityFilterSQL(a.MetricsView, a.Security, a.Dialect)
+	if err != nil {
+		return nil, err
 	}
-
-	if rf := a.Security.RowFilter(); rf != "" {
-		res = res.And(rf, nil)
-	}
+	res = res.And(secExpr, secArgs)
 
 	return res, nil
 }

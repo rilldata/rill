@@ -11,6 +11,58 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+// TestMCPToolSpecs asserts that tool specs can be built without a runtime,
+// which is the invariant ai.MCPToolSpecs relies on to serve the admin service's unified MCP server.
+func TestMCPToolSpecs(t *testing.T) {
+	specs := ai.MCPToolSpecs()
+	require.NotEmpty(t, specs)
+	for name, spec := range specs {
+		require.Equal(t, name, spec.Name)
+		require.NotEmpty(t, spec.Description, "tool %q", name)
+		require.NotNil(t, spec.InputSchema, "tool %q", name)
+	}
+	require.Contains(t, specs, ai.QueryMetricsViewName)
+}
+
+// TestSessionCreateIfNotExists asserts that a caller can address a session by an ID of its own choosing,
+// which the admin service's unified MCP server relies on to keep one session per project.
+func TestSessionCreateIfNotExists(t *testing.T) {
+	rt, instanceID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{})
+	claims := &runtime.SecurityClaims{UserID: uuid.NewString(), Permissions: []runtime.Permission{runtime.UseAI}}
+	r := ai.NewRunner(rt, activity.NewNoopClient())
+	sessionID := uuid.NewString()
+
+	// The session does not exist yet, so it is created with the given ID.
+	s, err := r.Session(t.Context(), &ai.SessionOptions{
+		InstanceID:        instanceID,
+		SessionID:         sessionID,
+		CreateIfNotExists: true,
+		Claims:            claims,
+		UserAgent:         "mcp-client",
+	})
+	require.NoError(t, err)
+	require.Equal(t, sessionID, s.ID())
+	require.NoError(t, s.Flush(t.Context()))
+
+	// A second call loads the same session instead of creating another one.
+	s2, err := r.Session(t.Context(), &ai.SessionOptions{
+		InstanceID:        instanceID,
+		SessionID:         sessionID,
+		CreateIfNotExists: true,
+		Claims:            claims,
+	})
+	require.NoError(t, err)
+	require.Equal(t, sessionID, s2.ID())
+
+	// Without CreateIfNotExists, an unknown session ID is still an error.
+	_, err = r.Session(t.Context(), &ai.SessionOptions{
+		InstanceID: instanceID,
+		SessionID:  uuid.NewString(),
+		Claims:     claims,
+	})
+	require.Error(t, err)
+}
+
 // TestDeveloperToolsMCPAccess verifies that the leaf developer tools are exposed to external
 // MCP clients (non-rill user agents) for callers with EditRepo, while the developer agents remain
 // restricted to first-party Rill clients.

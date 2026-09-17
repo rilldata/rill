@@ -3,6 +3,7 @@ package drivers_test
 import (
 	"context"
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -157,4 +158,50 @@ func testRepo(t *testing.T, repo drivers.RepoStore) {
 		{"/foo_new.yml", false},
 		{"/new_folder", true},
 	}, files)
+
+	// paths that traverse outside the repo root must be rejected
+	_, err = repo.Get(ctx, "/../secret.txt")
+	require.ErrorContains(t, err, "outside the repo root")
+	_, err = repo.Stat(ctx, "../secret.txt")
+	require.ErrorContains(t, err, "outside the repo root")
+	err = repo.Put(ctx, "../escape.sql", strings.NewReader("boom"))
+	require.ErrorContains(t, err, "outside the repo root")
+	err = repo.MkdirAll(ctx, "/nested/../../escape_dir")
+	require.ErrorContains(t, err, "outside the repo root")
+	err = repo.Rename(ctx, "foo.csv", "../escape.csv")
+	require.ErrorContains(t, err, "outside the repo root")
+	err = repo.Rename(ctx, "../escape.csv", "foo2.csv")
+	require.ErrorContains(t, err, "outside the repo root")
+	err = repo.Delete(ctx, "/../escape.sql", false)
+	require.ErrorContains(t, err, "outside the repo root")
+}
+
+func TestResolveRepoPath(t *testing.T) {
+	root := filepath.Join(string(filepath.Separator), "data", "repo")
+
+	valid := map[string]string{
+		"/models/foo.sql":      filepath.Join(root, "models", "foo.sql"),
+		"models/foo.sql":       filepath.Join(root, "models", "foo.sql"),
+		"/models/../rill.yaml": filepath.Join(root, "rill.yaml"),
+		"/":                    root,
+		"":                     root,
+	}
+	for path, expected := range valid {
+		fp, err := drivers.ResolveRepoPath(root, path)
+		require.NoError(t, err, "path %q", path)
+		require.Equal(t, expected, fp, "path %q", path)
+	}
+
+	invalid := []string{
+		"..",
+		"/..",
+		"../secret.txt",
+		"/../secret.txt",
+		"/models/../../secret.txt",
+		"../../../../etc/passwd",
+	}
+	for _, path := range invalid {
+		_, err := drivers.ResolveRepoPath(root, path)
+		require.ErrorContains(t, err, "outside the repo root", "path %q", path)
+	}
 }

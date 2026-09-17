@@ -211,6 +211,7 @@ func (s *Service) StartDeploymentInner(ctx context.Context, depl *database.Deplo
 		DeploymentID:   depl.ID,
 		Environment:    depl.Environment,
 		Provisioner:    proj.Provisioner,
+		OrgProvisioner: org.DefaultProvisioner,
 		Slots:          slots,
 		Version:        runtimeVersion,
 		OverrideDiskGB: proj.OverrideDiskGB,
@@ -417,7 +418,7 @@ func (s *Service) DeleteDeploymentInner(ctx context.Context, depl *database.Depl
 					CommitMessage: "Auto checkpoint",
 				})
 				if err != nil {
-					s.Logger.Error("failed to checkpoint repo changes", zap.String("deployment_id", depl.ID), zap.String("runtime_instance_id", depl.RuntimeInstanceID), zap.Error(err), observability.ZapCtx(ctx))
+					s.Logger.Warn("failed to checkpoint repo changes", zap.String("deployment_id", depl.ID), zap.String("runtime_instance_id", depl.RuntimeInstanceID), zap.Error(err), observability.ZapCtx(ctx))
 				}
 			}
 
@@ -427,7 +428,7 @@ func (s *Service) DeleteDeploymentInner(ctx context.Context, depl *database.Depl
 				InstanceId: depl.RuntimeInstanceID,
 			})
 			if err != nil {
-				s.Logger.Error("failed to delete instance", zap.String("deployment_id", depl.ID), zap.String("runtime_instance_id", depl.RuntimeInstanceID), zap.Error(err), observability.ZapCtx(ctx))
+				s.Logger.Warn("failed to delete instance", zap.String("deployment_id", depl.ID), zap.String("runtime_instance_id", depl.RuntimeInstanceID), zap.Error(err), observability.ZapCtx(ctx))
 			}
 		}
 	}
@@ -558,9 +559,13 @@ func (s *Service) UpdateDeploymentInner(ctx context.Context, d *database.Deploym
 		// This is idempotent and will (partially) update the existing provisioned runtime.
 		annotations := s.NewDeploymentAnnotations(org, proj, d.Environment)
 		_, err = s.provisionRuntime(ctx, &provisionRuntimeOptions{
-			DeploymentID:   d.ID,
-			Environment:    d.Environment,
+			DeploymentID: d.ID,
+			Environment:  d.Environment,
+			// NOTE: Passing the already provisioned resource's provisioner (not the project's or org's).
+			// The provisioner of an existing resource is immutable, so changing the project's or org's
+			// provisioner only takes effect for newly provisioned deployments.
 			Provisioner:    pr.Provisioner,
+			OrgProvisioner: org.DefaultProvisioner,
 			Slots:          slots,
 			Version:        runtimeVersion,
 			OverrideDiskGB: proj.OverrideDiskGB,
@@ -796,9 +801,12 @@ func resolveSlots(proj *database.Project, environment string) (int, error) {
 }
 
 type provisionRuntimeOptions struct {
-	DeploymentID   string
-	Environment    string
-	Provisioner    string
+	DeploymentID string
+	Environment  string
+	// Provisioner is the project-level provisioner. It takes precedence over OrgProvisioner.
+	Provisioner string
+	// OrgProvisioner is the org-level default provisioner. It is used if Provisioner is empty.
+	OrgProvisioner string
 	Slots          int
 	Version        string
 	OverrideDiskGB *int64
@@ -822,7 +830,11 @@ func (s *Service) triggerDeploymentReconcileJob(ctx context.Context, deploymentI
 }
 
 func (s *Service) provisionRuntime(ctx context.Context, opts *provisionRuntimeOptions) (*database.ProvisionerResource, error) {
-	// Use default if no provisioner is specified.
+	// Resolve the provisioner. The project-level provisioner takes precedence,
+	// then the org-level default, then the global default.
+	if opts.Provisioner == "" {
+		opts.Provisioner = opts.OrgProvisioner
+	}
 	if opts.Provisioner == "" {
 		opts.Provisioner = s.opts.DefaultProvisioner
 	}

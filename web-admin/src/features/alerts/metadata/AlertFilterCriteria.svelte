@@ -24,7 +24,10 @@
     "previous period";
 </script>
 
-<div class="flex flex-col gap-y-3" aria-label="Alert criteria">
+<div
+  class="flex flex-col gap-y-3"
+  aria-label={m.alert_metadata_criteria_aria()}
+>
   <MetadataLabel>{m.alert_criteria()}</MetadataLabel>
   <div class="flex flex-wrap gap-2">
     {#if filtersLength}

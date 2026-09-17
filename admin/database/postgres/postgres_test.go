@@ -45,6 +45,8 @@ func TestPostgres(t *testing.T) {
 	t.Run("TestUpsertProjectVariable", func(t *testing.T) { testUpsertProjectVariable(t, db) })
 	t.Run("TestManagedGitRepos", func(t *testing.T) { testManagedGitRepos(t, db) })
 	t.Run("TestOrganizationMemberUserAttributes", func(t *testing.T) { testOrganizationMemberUserAttributes(t, db) })
+	t.Run("TestOrganizationInviteAttributes", func(t *testing.T) { testOrganizationInviteAttributes(t, db) })
+	t.Run("TestOrganizationInviteUsergroups", func(t *testing.T) { testOrganizationInviteUsergroups(t, db) })
 	t.Run("TestAttributeValidation", func(t *testing.T) { testAttributeValidation(t, db) })
 
 	t.Run("TestOrgNameValidation", func(t *testing.T) {
@@ -120,12 +122,14 @@ func testOrganizations(t *testing.T, db database.DB) {
 	require.Nil(t, org)
 
 	org, err = db.InsertOrganization(ctx, &database.InsertOrganizationOptions{
-		Name:        "foo",
-		Description: "hello world",
+		Name:               "foo",
+		Description:        "hello world",
+		DefaultProvisioner: "provisioner-a",
 	})
 	require.NoError(t, err)
 	require.Equal(t, "foo", org.Name)
 	require.Equal(t, "hello world", org.Description)
+	require.Equal(t, "provisioner-a", org.DefaultProvisioner)
 	require.Less(t, time.Since(org.CreatedOn), 10*time.Second)
 	require.Less(t, time.Since(org.UpdatedOn), 10*time.Second)
 
@@ -135,6 +139,7 @@ func testOrganizations(t *testing.T, db database.DB) {
 	})
 	require.NoError(t, err)
 	require.Equal(t, "bar", org.Name)
+	require.Equal(t, "", org.DefaultProvisioner)
 
 	orgs, err := db.FindOrganizations(ctx, "", 1000)
 	require.NoError(t, err)
@@ -145,14 +150,24 @@ func testOrganizations(t *testing.T, db database.DB) {
 	require.NoError(t, err)
 	require.Equal(t, "foo", org.Name)
 	require.Equal(t, "hello world", org.Description)
+	require.Equal(t, "provisioner-a", org.DefaultProvisioner)
 
 	org, err = db.UpdateOrganization(ctx, org.ID, &database.UpdateOrganizationOptions{
-		Name:        org.Name,
-		Description: "",
+		Name:               org.Name,
+		Description:        "",
+		DefaultProvisioner: "provisioner-b",
 	})
 	require.NoError(t, err)
 	require.Equal(t, "foo", org.Name)
 	require.Equal(t, "", org.Description)
+	require.Equal(t, "provisioner-b", org.DefaultProvisioner)
+
+	// Check the default provisioner can be cleared
+	org, err = db.UpdateOrganization(ctx, org.ID, &database.UpdateOrganizationOptions{
+		Name: org.Name,
+	})
+	require.NoError(t, err)
+	require.Equal(t, "", org.DefaultProvisioner)
 
 	err = db.DeleteOrganization(ctx, org.Name)
 	require.NoError(t, err)
@@ -744,6 +759,185 @@ func testOrganizationMemberUserAttributes(t *testing.T, db database.DB) {
 	// Cleanup
 	require.NoError(t, db.DeleteOrganization(ctx, org.Name))
 	require.NoError(t, db.DeleteUser(ctx, user.ID))
+}
+
+func testOrganizationInviteAttributes(t *testing.T, db database.DB) {
+	ctx := context.Background()
+
+	org, err := db.InsertOrganization(ctx, &database.InsertOrganizationOptions{Name: "test-invite-attrs-org"})
+	require.NoError(t, err)
+
+	role, err := db.FindOrganizationRole(ctx, database.OrganizationRoleNameViewer)
+	require.NoError(t, err)
+
+	email := "invitee-attrs@rilldata.com"
+	attributes := map[string]any{"attr1": "value1", "attr2": "value2"}
+
+	t.Run("InsertOrganizationInvite with attributes", func(t *testing.T) {
+		err := db.InsertOrganizationInvite(ctx, &database.InsertOrganizationInviteOptions{
+			Email:      email,
+			OrgID:      org.ID,
+			RoleID:     role.ID,
+			Attributes: attributes,
+		})
+		require.NoError(t, err)
+
+		invite, err := db.FindOrganizationInvite(ctx, org.ID, email)
+		require.NoError(t, err)
+		require.Equal(t, attributes, invite.Attributes)
+
+		invites, err := db.FindOrganizationInvitesByEmail(ctx, email)
+		require.NoError(t, err)
+		require.Len(t, invites, 1)
+		require.Equal(t, attributes, invites[0].Attributes)
+
+		invitesWithRole, err := db.FindOrganizationInvites(ctx, org.ID, "", 10)
+		require.NoError(t, err)
+		require.Len(t, invitesWithRole, 1)
+		require.Equal(t, attributes, invitesWithRole[0].Attributes)
+	})
+
+	t.Run("UpdateOrganizationInviteAttributes", func(t *testing.T) {
+		invite, err := db.FindOrganizationInvite(ctx, org.ID, email)
+		require.NoError(t, err)
+
+		updated := map[string]any{"attr1": "new-value1"}
+		require.NoError(t, db.UpdateOrganizationInviteAttributes(ctx, invite.ID, updated))
+
+		invite, err = db.FindOrganizationInvite(ctx, org.ID, email)
+		require.NoError(t, err)
+		require.Equal(t, updated, invite.Attributes)
+	})
+
+	t.Run("InsertOrganizationInvite without attributes normalizes to empty map", func(t *testing.T) {
+		email2 := "invitee-no-attrs@rilldata.com"
+		err := db.InsertOrganizationInvite(ctx, &database.InsertOrganizationInviteOptions{
+			Email:  email2,
+			OrgID:  org.ID,
+			RoleID: role.ID,
+		})
+		require.NoError(t, err)
+
+		invite, err := db.FindOrganizationInvite(ctx, org.ID, email2)
+		require.NoError(t, err)
+		require.NotNil(t, invite.Attributes)
+		require.Empty(t, invite.Attributes)
+	})
+
+	t.Run("InsertOrganizationInvite rejects invalid attributes", func(t *testing.T) {
+		err := db.InsertOrganizationInvite(ctx, &database.InsertOrganizationInviteOptions{
+			Email:      "invitee-invalid-attrs@rilldata.com",
+			OrgID:      org.ID,
+			RoleID:     role.ID,
+			Attributes: map[string]any{"invalid-key": "value"},
+		})
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "invalid attribute key")
+	})
+
+	// Cleanup
+	require.NoError(t, db.DeleteOrganization(ctx, org.Name))
+}
+
+func testOrganizationInviteUsergroups(t *testing.T, db database.DB) {
+	ctx := context.Background()
+
+	org, err := db.InsertOrganization(ctx, &database.InsertOrganizationOptions{Name: "test-invite-groups-org"})
+	require.NoError(t, err)
+
+	role, err := db.FindOrganizationRole(ctx, database.OrganizationRoleNameViewer)
+	require.NoError(t, err)
+
+	g1, err := db.InsertUsergroup(ctx, &database.InsertUsergroupOptions{OrgID: org.ID, Name: "g1"})
+	require.NoError(t, err)
+	g2, err := db.InsertUsergroup(ctx, &database.InsertUsergroupOptions{OrgID: org.ID, Name: "g2"})
+	require.NoError(t, err)
+
+	email := "invitee-groups@rilldata.com"
+
+	t.Run("InsertOrganizationInvite with usergroups", func(t *testing.T) {
+		err := db.InsertOrganizationInvite(ctx, &database.InsertOrganizationInviteOptions{
+			Email:        email,
+			OrgID:        org.ID,
+			RoleID:       role.ID,
+			UsergroupIDs: []string{g2.ID, g1.ID},
+		})
+		require.NoError(t, err)
+
+		invite, err := db.FindOrganizationInvite(ctx, org.ID, email)
+		require.NoError(t, err)
+		require.Equal(t, []string{g2.ID, g1.ID}, invite.UsergroupIDs)
+
+		// The display-friendly listing resolves names, sorted by name
+		invitesWithRole, err := db.FindOrganizationInvites(ctx, org.ID, "", 10)
+		require.NoError(t, err)
+		require.Len(t, invitesWithRole, 1)
+		require.Equal(t, []string{"g1", "g2"}, invitesWithRole[0].Usergroups)
+	})
+
+	t.Run("InsertOrganizationInvite without usergroups normalizes to empty slice", func(t *testing.T) {
+		email2 := "invitee-no-groups@rilldata.com"
+		err := db.InsertOrganizationInvite(ctx, &database.InsertOrganizationInviteOptions{
+			Email:  email2,
+			OrgID:  org.ID,
+			RoleID: role.ID,
+		})
+		require.NoError(t, err)
+
+		invite, err := db.FindOrganizationInvite(ctx, org.ID, email2)
+		require.NoError(t, err)
+		require.Empty(t, invite.UsergroupIDs)
+
+		invitesWithRole, err := db.FindOrganizationInvites(ctx, org.ID, "", 10)
+		require.NoError(t, err)
+		require.Len(t, invitesWithRole, 2)
+		for _, inv := range invitesWithRole {
+			if inv.Email == email2 {
+				require.Empty(t, inv.Usergroups)
+			}
+		}
+		require.NoError(t, db.DeleteOrganizationInvite(ctx, invite.ID))
+	})
+
+	t.Run("FindUsergroupMemberUsers includes pending invitees", func(t *testing.T) {
+		user, err := db.InsertUser(ctx, &database.InsertUserOptions{Email: "member-groups@rilldata.com"})
+		require.NoError(t, err)
+		_, err = db.InsertOrganizationMemberUser(ctx, org.ID, user.ID, role.ID, nil, false)
+		require.NoError(t, err)
+
+		// Batch insert is idempotent
+		require.NoError(t, db.InsertUsergroupsMemberUser(ctx, user.ID, []string{g1.ID, g2.ID}))
+		require.NoError(t, db.InsertUsergroupsMemberUser(ctx, user.ID, []string{g1.ID}))
+		require.NoError(t, db.InsertUsergroupsMemberUser(ctx, user.ID, nil))
+
+		members, err := db.FindUsergroupMemberUsers(ctx, g1.ID, "", 10)
+		require.NoError(t, err)
+		require.Len(t, members, 2)
+		// Ordered by email: invitee-groups@ sorts before member-groups@
+		require.Equal(t, email, members[0].Email)
+		require.True(t, members[0].PendingAcceptance)
+		require.Empty(t, members[0].ID)
+		require.Equal(t, user.Email, members[1].Email)
+		require.False(t, members[1].PendingAcceptance)
+		require.Equal(t, user.ID, members[1].ID)
+
+		// Pagination by email spans both real and pending members
+		page, err := db.FindUsergroupMemberUsers(ctx, g1.ID, email, 10)
+		require.NoError(t, err)
+		require.Len(t, page, 1)
+		require.Equal(t, user.Email, page[0].Email)
+	})
+
+	t.Run("DeleteUsergroup scrubs pending invites", func(t *testing.T) {
+		require.NoError(t, db.DeleteUsergroup(ctx, g2.ID))
+
+		invite, err := db.FindOrganizationInvite(ctx, org.ID, email)
+		require.NoError(t, err)
+		require.Equal(t, []string{g1.ID}, invite.UsergroupIDs)
+	})
+
+	// Cleanup
+	require.NoError(t, db.DeleteOrganization(ctx, org.Name))
 }
 
 func testAttributeValidation(t *testing.T, db database.DB) {

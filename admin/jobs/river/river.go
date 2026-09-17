@@ -441,7 +441,7 @@ func (c *Client) CustomerAddressUpdated(ctx context.Context, paymentCustomerID s
 	}, nil
 }
 
-func (c *Client) PaymentFailed(ctx context.Context, billingCustomerID, invoiceID, invoiceNumber, invoiceURL, amount, currency string, dueDate, failedAt time.Time) (*jobs.InsertResult, error) {
+func (c *Client) PaymentFailed(ctx context.Context, billingCustomerID, invoiceID, invoiceNumber, invoiceURL, amount, currency string, dueDate time.Time) (*jobs.InsertResult, error) {
 	res, err := c.riverClient.Insert(ctx, PaymentFailedArgs{
 		BillingCustomerID: billingCustomerID,
 		InvoiceID:         invoiceID,
@@ -450,7 +450,6 @@ func (c *Client) PaymentFailed(ctx context.Context, billingCustomerID, invoiceID
 		Amount:            amount,
 		Currency:          currency,
 		DueDate:           dueDate,
-		FailedAt:          failedAt,
 	}, &river.InsertOpts{
 		UniqueOpts: river.UniqueOpts{
 			ByArgs: true,
@@ -461,7 +460,7 @@ func (c *Client) PaymentFailed(ctx context.Context, billingCustomerID, invoiceID
 	}
 
 	if res.UniqueSkippedAsDuplicate {
-		c.logger.Debug("PaymentFailed job skipped as duplicate", zap.String("billing_customer_id", billingCustomerID), zap.String("invoice_id", invoiceID), zap.String("invoice_number", invoiceNumber), zap.String("invoice_url", invoiceURL), zap.String("amount", amount), zap.String("currency", currency), zap.Time("due_date", dueDate), zap.Time("failed_at", failedAt))
+		c.logger.Warn("PaymentFailed job skipped as duplicate", zap.String("billing_customer_id", billingCustomerID), zap.String("invoice_id", invoiceID), zap.String("invoice_number", invoiceNumber), zap.String("invoice_url", invoiceURL), zap.String("amount", amount), zap.String("currency", currency), zap.Time("due_date", dueDate))
 	}
 
 	return &jobs.InsertResult{

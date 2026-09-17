@@ -1,3 +1,7 @@
+import {
+  ephemeralSpecsToDefs,
+  type EphemeralMeasureSpec,
+} from "@rilldata/web-common/features/dashboards/ephemeral-measures/canvas";
 import { BaseCanvasComponent } from "@rilldata/web-common/features/canvas/components/BaseCanvasComponent";
 import {
   getCommonOptions,
@@ -100,6 +104,8 @@ export interface PivotSpec
     ComponentFilterProperties {
   metrics_view: string;
   measures: string[];
+  // Ad-hoc measures derived from existing measures via an arithmetic expression.
+  adhoc_measures?: EphemeralMeasureSpec[];
   row_dimensions?: string[];
   col_dimensions?: string[];
   hide_totals_row?: boolean;
@@ -113,6 +119,8 @@ export interface TableSpec
     ComponentFilterProperties {
   metrics_view: string;
   columns: string[];
+  // Ad-hoc measures derived from existing measures via an arithmetic expression.
+  adhoc_measures?: EphemeralMeasureSpec[];
   hide_totals_row?: boolean;
   hide_totals_col?: boolean;
   conditional_format?: PivotConditionalFormatSpec[];
@@ -132,6 +140,7 @@ export class PivotCanvasComponent extends BaseCanvasComponent<
     "row_dimensions",
     "col_dimensions",
     "conditional_format",
+    "adhoc_measures",
   ];
   type: CanvasComponentType;
   component = CanvasPivotDisplay;
@@ -217,6 +226,9 @@ export class PivotCanvasComponent extends BaseCanvasComponent<
   getExploreTransformerProperties(): Partial<ExploreState> {
     return {
       pivot: get(this.pivotState),
+      ephemeralMeasures: ephemeralSpecsToDefs(
+        get(this.specStore).adhoc_measures,
+      ),
       activePage: DashboardState_ActivePage.PIVOT,
     };
   }
@@ -265,6 +277,13 @@ export class PivotCanvasComponent extends BaseCanvasComponent<
             meta: { allowedTypes: ["measure"] },
             label: m.canvas_measures_label(),
           },
+          adhoc_measures: {
+            type: "adhoc_measures",
+            label: m.canvas_ephemeral_measures_label(),
+            optional: true,
+            // Managed through the measures selector's create/edit dialog.
+            showInUI: false,
+          },
           col_dimensions: {
             type: "multi_fields",
             meta: { allowedTypes: ["time", "dimension"] },
@@ -289,7 +308,7 @@ export class PivotCanvasComponent extends BaseCanvasComponent<
           },
           row_limit: {
             type: "select",
-            label: "Row limit",
+            label: m.canvas_row_limit(),
             meta: {
               default: ROW_LIMIT_ALL_VALUE,
               options: [
@@ -297,7 +316,7 @@ export class PivotCanvasComponent extends BaseCanvasComponent<
                   value: limit.toString(),
                   label: limit.toString(),
                 })),
-                { value: ROW_LIMIT_ALL_VALUE, label: "All" },
+                { value: ROW_LIMIT_ALL_VALUE, label: m.common_all() },
               ],
             },
           },
@@ -327,6 +346,13 @@ export class PivotCanvasComponent extends BaseCanvasComponent<
             type: "multi_fields_format",
             label: m.canvas_columns_label(),
             meta: { allowedTypes: ["time", "dimension", "measure"] },
+          },
+          adhoc_measures: {
+            type: "adhoc_measures",
+            label: m.canvas_ephemeral_measures_label(),
+            optional: true,
+            // Managed through the measures selector's create/edit dialog.
+            showInUI: false,
           },
           hide_totals_row: {
             type: "boolean",

@@ -14,6 +14,7 @@
     InfiniteQueryObserverResult,
   } from "@tanstack/svelte-query";
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
+  import { getLocale } from "@rilldata/web-common/lib/i18n/gen/runtime";
 
   interface MagicAuthTokenProps extends V1MagicAuthToken {
     dashboardTitle: string;
@@ -82,7 +83,7 @@
   ] as ColumnDef<MagicAuthTokenProps, any>[];
 
   function formatDate(value: string) {
-    return new Date(value).toLocaleDateString(undefined, {
+    return new Date(value).toLocaleDateString(getLocale(), {
       year: "numeric",
       month: "short",
       day: "numeric",

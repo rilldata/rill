@@ -401,6 +401,20 @@ func (s *Service) RedeployProject(ctx context.Context, proj *database.Project, p
 			s.Logger.Error("trigger redeploy: could not teardown old deployment", zap.String("deployment_id", prevDepl.ID), zap.Error(err), observability.ZapCtx(ctx))
 		}
 	}
+	// also delete stopped deployments, if any
+	stoppedDepls, err := s.DB.FindDeploymentsForProject(ctx, proj.ID, environment, branch)
+	if err != nil {
+		s.Logger.Error("trigger redeploy: could not find stopped deployments", zap.String("project_id", proj.ID), zap.Error(err), observability.ZapCtx(ctx))
+		return proj, nil
+	}
+	for _, d := range stoppedDepls {
+		if d.Status == database.DeploymentStatusStopped {
+			err := s.TeardownDeployment(ctx, d)
+			if err != nil {
+				s.Logger.Error("trigger redeploy: could not teardown old stopped deployment", zap.String("deployment_id", d.ID), zap.Error(err), observability.ZapCtx(ctx))
+			}
+		}
+	}
 
 	return proj, nil
 }

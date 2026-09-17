@@ -946,6 +946,15 @@ service AdminService {
     };
   }
 
+  // SudoUpdateOrganizationDefaultProvisioner sets the provisioner used by default for an organization's deployments.
+  // It only affects deployments provisioned after the change; existing deployments stay on their current provisioner.
+  rpc SudoUpdateOrganizationDefaultProvisioner(SudoUpdateOrganizationDefaultProvisionerRequest) returns (SudoUpdateOrganizationDefaultProvisionerResponse) {
+    option (google.api.http) = {
+      patch: "/v1/superuser/organization/default-provisioner",
+      body: "*"
+    };
+  }
+
 
   // SudoUpdateAnnotations endpoint for superusers to update project annotations
   rpc SudoUpdateAnnotations(SudoUpdateAnnotationsRequest) returns (SudoUpdateAnnotationsResponse) {
@@ -1454,6 +1463,7 @@ message UpdateOrganizationRequest {
   optional string favicon_asset_id = 7;
   optional string thumbnail_asset_id = 9;
   optional string default_project_role = 8;
+  optional string default_provisioner = 10;
   optional string billing_email = 4 [(validate.rules).string.email = true];
 }
 
@@ -1767,6 +1777,10 @@ message GetIFrameRequest {
   string theme_mode = 15 [(validate.rules).string = {ignore_empty: true, in: ["light", "dark", "system"]}];
   // Navigation denotes whether navigation between different resources should be enabled in the embed.
   bool navigation = 13;
+  // HideNavigationBar hides the embed's top navigation bar (the home link and dashboard breadcrumbs) without disabling navigation itself.
+  // It is only meaningful when `navigation` is true; the bar is always hidden when `navigation` is false.
+  // In-dashboard navigation, such as the canvas drill-through to an explore dashboard, remains available.
+  bool hide_navigation_bar = 18;
   // Blob containing UI state for rendering the initial embed. Not currently supported.
   string state = 7;
   // DEPRECATED: Additional parameters to set outright in the generated URL query.
@@ -2073,6 +2087,13 @@ message AddOrganizationMemberUserRequest {
   string org = 1 [(validate.rules).string.min_len = 1];
   string email = 2 [(validate.rules).string.email = true];
   string role = 3;
+  // Custom attributes to set on the new membership.
+  // If the user has not signed up yet, they are stored on the invite and applied when the invite is accepted.
+  google.protobuf.Struct attributes = 5;
+  // Names of user groups in the org to add the user to.
+  // If the user has not signed up yet, they are stored on the invite and applied when the invite is accepted.
+  // Groups are additive: on a re-invite they are merged with the groups already on the invite.
+  repeated string usergroups = 6;
   bool superuser_force_access = 4;
 }
 
@@ -2247,6 +2268,16 @@ message SudoUpdateOrganizationCustomDomainResponse {
   Organization organization = 1;
 }
 
+message SudoUpdateOrganizationDefaultProvisionerRequest {
+  string org = 1 [(validate.rules).string.min_len = 1];
+  // Name of the provisioner to use by default. Empty unsets the org's default provisioner.
+  string default_provisioner = 2;
+}
+
+message SudoUpdateOrganizationDefaultProvisionerResponse {
+  Organization organization = 1;
+}
+
 message SudoUpdateUserQuotasRequest {
   string email = 1;
   optional int32 singleuser_orgs = 2;
@@ -2333,6 +2364,14 @@ message AddProjectMemberUserRequest {
   string role = 4 [(validate.rules).string.min_len = 1];
   optional bool restrict_resources = 5;
   repeated ResourceName resources = 6;
+  // Custom attributes to set on the user's org membership (attributes are org-scoped).
+  // If the user has not signed up yet, they are stored on the org invite and applied when the invite is accepted.
+  // Setting attributes requires permission to manage org members.
+  google.protobuf.Struct attributes = 7;
+  // Names of user groups in the org to add the user to (user groups are org-scoped).
+  // If the user has not signed up yet, they are stored on the org invite and applied when the invite is accepted.
+  // Setting user groups requires permission to manage org members.
+  repeated string usergroups = 8;
 }
 
 message AddProjectMemberUserResponse {
@@ -2639,10 +2678,15 @@ message RevokeCurrentAuthTokenRequest {}
 message RevokeCurrentAuthTokenResponse {
 }
 
+// ListBookmarksRequest lists the bookmarks in a project that are visible to the caller:
+// the caller's own bookmarks plus shared and default bookmarks.
 message ListBookmarksRequest {
   string project_id = 1;
-  string resource_kind = 2;
-  string resource_name = 3;
+  // Optional filter on the kind of the resource the bookmark is for (e.g. "rill.runtime.v1.Explore").
+  // When both resource_kind and resource_name are unset, all bookmarks in the project are returned.
+  optional string resource_kind = 2;
+  // Optional filter on the name of the resource the bookmark is for. Requires resource_kind to be set.
+  optional string resource_name = 3;
 }
 
 message ListBookmarksResponse {
@@ -3439,6 +3483,7 @@ message Organization {
   string thumbnail_url = 17;
   string custom_domain = 10;
   string default_project_role_id = 16;
+  string default_provisioner = 19;
   OrganizationQuotas quotas = 4;
   string billing_customer_id = 7;
   string payment_customer_id = 8;
@@ -3623,6 +3668,9 @@ message UsergroupMemberUser {
   string user_email = 3;
   string user_name = 2;
   string user_photo_url = 7;
+  // True if the user has been invited to the group but has not signed up yet.
+  // For pending members, user_id, user_name and user_photo_url are empty.
+  bool pending_acceptance = 8;
   google.protobuf.Timestamp created_on = 5;
   google.protobuf.Timestamp updated_on = 6;
 }
@@ -3631,6 +3679,9 @@ message OrganizationInvite {
   string email = 1;
   string role_name = 2;
   string invited_by = 3;
+  google.protobuf.Struct attributes = 4;
+  // Names of the user groups the user will be added to when the invite is accepted.
+  repeated string usergroups = 5;
 }
 
 message ProjectInvite {
@@ -3732,6 +3783,9 @@ message ReportOptions {
   string web_open_state = 14; // Annotation for the base64-encoded UI state to open for the report.
   string explore = 16; // either canvas or explore should be set
   string canvas = 17;
+  // Per-metrics-view filters of the canvas at scheduling time (canvas PDF reports only).
+  // Baked into the report's security rules so magic-token recipients cannot query unfiltered data.
+  map<string, rill.runtime.v1.Expression> metrics_view_filters = 23;
   /* web_open_mode is used to determine how to create or disable open link for the report
     - send "recipient" for reports that should be opened with recipient's permissions - requires login
     - send "creator" for reports that should be opened with creators permissions but with locked filters - no login required

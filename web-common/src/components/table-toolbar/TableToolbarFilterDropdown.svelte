@@ -40,7 +40,7 @@
       <FilterOutlined size="16" />
       <span>Filter</span>
     </DropdownMenu.Trigger>
-    <DropdownMenu.Content align="start">
+    <DropdownMenu.Content align="start" class="max-h-72 overflow-y-auto">
       {#each filterGroups as group, i (group.key)}
         <DropdownMenu.Group>
           <DropdownMenu.Label class="uppercase">

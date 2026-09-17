@@ -393,6 +393,34 @@ _[object]_ - Defines an optional inline explore view for the metrics view. If no
 
   - **`banner`** - _[string]_ - Custom banner displayed at the header of the explore view.
 
+  - **`dimensions`** - _[oneOf]_ - Dimensions to include in the explore view. Defaults to all dimensions in the metrics view.
+
+    - **option 1** - _[string]_ - Wildcard(*) selector that includes all available fields in the selection
+
+    - **option 2** - _[array of string]_ - Explicit list of fields to include in the selection
+
+    - **option 3** - _[object]_ - Advanced matching using regex, DuckDB expression, or exclusion
+
+      - **`regex`** - _[string]_ - Select fields using a regular expression
+
+      - **`expr`** - _[string]_ - DuckDB SQL expression to select fields based on custom logic
+
+      - **`exclude`** - _[object]_ - Select all fields except those listed here
+
+  - **`measures`** - _[oneOf]_ - Measures to include in the explore view. Defaults to all measures in the metrics view.
+
+    - **option 1** - _[string]_ - Wildcard(*) selector that includes all available fields in the selection
+
+    - **option 2** - _[array of string]_ - Explicit list of fields to include in the selection
+
+    - **option 3** - _[object]_ - Advanced matching using regex, DuckDB expression, or exclusion
+
+      - **`regex`** - _[string]_ - Select fields using a regular expression
+
+      - **`expr`** - _[string]_ - DuckDB SQL expression to select fields based on custom logic
+
+      - **`exclude`** - _[object]_ - Select all fields except those listed here
+
   - **`theme`** - _[oneOf]_ - Name of the theme to use or define a theme inline. Either theme name or inline theme can be set.
 
     - **option 1** - _[string]_ - Name of an existing theme to apply to the explore view.
@@ -506,6 +534,10 @@ _[array of string]_ - List of resource references
 ### `tags`
 
 _[array of string]_ - Tags for organizing and filtering the resource (e.g. on the project dashboards list).
+
+### `metadata`
+
+_[object]_ - User-defined key-value metadata attached to the resource. Rill does not read or write it; it is exposed as-is on the resource's meta over the API for external tooling. Values are strings, with numbers and booleans coerced. Not supported in rill.yaml defaults.
 
 ### `dev`
 

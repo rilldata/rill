@@ -183,7 +183,9 @@
     <DelayedSpinner isLoading={true} size="16px" />
   {:else if $resources.isError}
     <div class="text-red-500">
-      {m.status_error_loading_resources()}: {$resources.error?.message}
+      {m.status_error_loading_resources({
+        error: $resources.error?.message ?? "",
+      })}
     </div>
   {:else if $resources.data}
     <ProjectResourcesTable data={filteredResources} />

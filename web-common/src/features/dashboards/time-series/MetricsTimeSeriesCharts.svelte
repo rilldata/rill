@@ -3,7 +3,9 @@
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import DashboardMetricsDraggableList from "@rilldata/web-common/components/menu/DashboardMetricsDraggableList.svelte";
-  import { mergeDimensionAndMeasureFilters } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
+  import CreateEphemeralMeasureButton from "@rilldata/web-common/features/dashboards/ephemeral-measures/CreateEphemeralMeasureButton.svelte";
+  import { ephemeralMeasureDialog } from "@rilldata/web-common/features/dashboards/ephemeral-measures/dialog-store";
+  import { ephemeralMeasureNameSet } from "@rilldata/web-common/features/dashboards/ephemeral-measures/measure-mapping";
   import ReplacePivotDialog from "@rilldata/web-common/features/dashboards/pivot/ReplacePivotDialog.svelte";
   import { splitPivotChips } from "@rilldata/web-common/features/dashboards/pivot/pivot-utils";
   import {
@@ -15,7 +17,6 @@
     metricsExplorerStore,
     useExploreState,
   } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
-  import { sanitiseExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
   import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
   import ChartTypeSelector from "@rilldata/web-common/features/dashboards/time-dimension-details/charts/ChartTypeSelector.svelte";
   import { TDDChart } from "@rilldata/web-common/features/dashboards/time-dimension-details/types";
@@ -31,7 +32,10 @@
     type AvailableTimeGrain,
     type DashboardTimeControls,
   } from "@rilldata/web-common/lib/time/types";
-  import { type MetricsViewSpecMeasure } from "@rilldata/web-common/runtime-client/gen/index.schemas";
+  import {
+    type MetricsViewSpecMeasure,
+    type V1Expression,
+  } from "@rilldata/web-common/runtime-client/gen/index.schemas";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { DateTime, Interval } from "luxon";
   import { Button } from "../../../components/button";
@@ -47,17 +51,28 @@
   import { ScrubController } from "./measure-chart/ScrubController";
   import ThreeDot from "@rilldata/web-common/components/icons/ThreeDot.svelte";
   import ScreenshotContainer from "@rilldata/web-common/features/dashboards/time-series/ScreenshotContainer.svelte";
+  import { DimensionFilterManager } from "@rilldata/web-common/features/dashboards/filters/dimension-filters/DimensionFilterManager.svelte.ts";
 
   const { rillTime } = featureFlags;
 
   // Singleton scrub controller — shared across all charts
   const scrubController = new ScrubController();
 
-  export let exploreName: string;
-  export let hideStartPivotButton = false;
-  // Height of the expanded chart in the Time Dimension Detail view, controlled
-  // by the resizable divider between the timeseries and the detail table.
-  export let tddChartHeight = 245;
+  let {
+    exploreName,
+    dimensionOnlyFilter,
+    whereFilter,
+    hideStartPivotButton = false,
+    tddChartHeight = 245,
+  }: {
+    exploreName: string;
+    dimensionOnlyFilter: V1Expression | undefined;
+    whereFilter: V1Expression | undefined;
+    hideStartPivotButton?: boolean;
+    // Height of the expanded chart in the Time Dimension Detail view, controlled
+    // by the resizable divider between the timeseries and the detail table.
+    tddChartHeight?: number;
+  } = $props();
 
   const StateManagers = getStateManagers();
 
@@ -66,23 +81,23 @@
     dashboardStore,
     selectors: {
       measures: { allMeasures, visibleMeasures, getMeasureByName },
-      dimensionFilters: { includedDimensionValues },
       charts: { canPanLeft, canPanRight, getNewPanRange },
       tags: { measureTagIndex },
     },
     actions: {
       measures: { setMeasureVisibility },
     },
+    expressionFilterManager,
   } = StateManagers;
 
   const timeControlsStore = useTimeControlStore(StateManagers);
 
-  let grainDropdownOpen = false;
-  let connectNulls = true;
+  let grainDropdownOpen = $state(false);
+  let connectNulls = $state(true);
 
   const client = useRuntimeClient();
 
-  $: ({
+  let {
     selectedTimeRange,
     selectedComparisonTimeRange,
     timeDimension,
@@ -93,13 +108,12 @@
     comparisonTimeEnd,
     comparisonTimeStart,
     aggregationOptions,
-  } = $timeControlsStore);
+  } = $derived($timeControlsStore);
 
-  $: ({ whereFilter, dimensionThresholdFilters, selectedTimezone } =
-    $dashboardStore);
+  let { selectedTimezone } = $derived($dashboardStore);
 
   // Use the full selected time range for chart data fetching (not modified by scrub)
-  $: chartInterval =
+  let chartInterval = $derived(
     selectedTimeRange?.start && selectedTimeRange?.end
       ? (Interval.fromDateTimes(
           DateTime.fromJSDate(selectedTimeRange.start, {
@@ -109,8 +123,9 @@
             zone: selectedTimezone,
           }),
         ) as Interval<true>)
-      : undefined;
-  $: chartComparisonInterval =
+      : undefined,
+  );
+  let chartComparisonInterval = $derived(
     selectedComparisonTimeRange?.start && selectedComparisonTimeRange?.end
       ? (Interval.fromDateTimes(
           DateTime.fromJSDate(selectedComparisonTimeRange.start, {
@@ -120,74 +135,97 @@
             zone: selectedTimezone,
           }),
         ) as Interval<true>)
-      : undefined;
-
-  $: exploreState = useExploreState(exploreName);
-
-  $: activePage = $exploreState?.activePage;
-  $: showTimeDimensionDetail = Boolean(
-    activePage === DashboardState_ActivePage.TIME_DIMENSIONAL_DETAIL,
+      : undefined,
   );
-  $: expandedMeasureName = $exploreState?.tdd?.expandedMeasureName;
 
-  $: comparisonDimension = $exploreState?.selectedComparisonDimension;
-  $: showComparison = Boolean(showTimeComparison);
-  $: tddChartType = $exploreState?.tdd?.chartType;
-  $: dynamicYAxisScale = $exploreState?.dynamicYAxisScale ?? false;
+  let exploreState = $derived(useExploreState(exploreName));
 
-  $: activeTimeGrain = selectedTimeRange?.interval;
+  let activePage = $derived($exploreState?.activePage);
+  let showTimeDimensionDetail = $derived(
+    Boolean(activePage === DashboardState_ActivePage.TIME_DIMENSIONAL_DETAIL),
+  );
+  let expandedMeasureName = $derived($exploreState?.tdd?.expandedMeasureName);
 
-  $: measureSelection.setZone(selectedTimezone);
-  $: if (activeTimeGrain) measureSelection.setTimeGrain(activeTimeGrain);
+  let comparisonDimension = $derived(
+    $exploreState?.selectedComparisonDimension,
+  );
+  let showComparison = $derived(Boolean(showTimeComparison));
+  let tddChartType = $derived($exploreState?.tdd?.chartType);
+  let dynamicYAxisScale = $derived($exploreState?.dynamicYAxisScale ?? false);
 
-  $: chartScrubInterval = (() => {
+  let activeTimeGrain = $derived(selectedTimeRange?.interval);
+
+  $effect(() => measureSelection.setZone(selectedTimezone));
+  $effect(() => {
+    if (activeTimeGrain) measureSelection.setTimeGrain(activeTimeGrain);
+  });
+
+  let chartScrubInterval = $derived.by(() => {
     const range = $exploreState?.lastDefinedScrubRange;
     if (!range) return undefined;
     const a = DateTime.fromJSDate(range.start, { zone: selectedTimezone });
     const b = DateTime.fromJSDate(range.end, { zone: selectedTimezone });
     const [start, end] = a <= b ? [a, b] : [b, a];
     return Interval.fromDateTimes(start, end) as Interval<true>;
-  })();
-  $: includedValuesForDimension = $includedDimensionValues(
-    comparisonDimension as string,
+  });
+  let managerForCompareDimension = $derived.by(() => {
+    const manager = comparisonDimension
+      ? expressionFilterManager.filterManagersMap[comparisonDimension]
+      : undefined;
+    return manager && manager instanceof DimensionFilterManager
+      ? manager
+      : undefined;
+  });
+  let includedValuesForDimension = $derived(
+    managerForCompareDimension && !managerForCompareDimension.exclude
+      ? managerForCompareDimension.selectedValues
+      : [],
   );
-  $: chartDimensionValues = includedValuesForDimension.slice(
-    0,
-    showTimeDimensionDetail ? 11 : 7,
-  ) as (string | null)[];
+  let chartDimensionValues = $derived(
+    includedValuesForDimension.slice(0, showTimeDimensionDetail ? 11 : 7) as (
+      | string
+      | null
+    )[],
+  );
 
-  $: expandedMeasure = $getMeasureByName(expandedMeasureName);
-  let renderedMeasures: MetricsViewSpecMeasure[];
-  $: {
-    renderedMeasures =
-      showTimeDimensionDetail && expandedMeasure
-        ? [expandedMeasure]
-        : $visibleMeasures;
+  let expandedMeasure = $derived($getMeasureByName(expandedMeasureName));
+  let renderedMeasures: MetricsViewSpecMeasure[] = $derived(
+    showTimeDimensionDetail && expandedMeasure
+      ? [expandedMeasure]
+      : $visibleMeasures,
+  );
+
+  let visibleMeasureNames = $derived(
+    $visibleMeasures.map(({ name }) => name).filter(isDefined),
+  );
+  let allMeasureNames = $derived(
+    $allMeasures.map(({ name }) => name).filter(isDefined),
+  );
+
+  function openEphemeralMeasureEditor(name: string) {
+    const def = $dashboardStore?.ephemeralMeasures?.find(
+      (d) => d.name === name,
+    );
+    if (def) ephemeralMeasureDialog.set({ def });
   }
-
-  $: visibleMeasureNames = $visibleMeasures
-    .map(({ name }) => name)
-    .filter(isDefined);
-  $: allMeasureNames = $allMeasures.map(({ name }) => name).filter(isDefined);
   function isDefined(value: string | undefined): value is string {
     return value !== undefined;
   }
 
-  $: chartMetricsViewName = $metricsViewName;
-  $: chartWhere = sanitiseExpression(
-    mergeDimensionAndMeasureFilters(whereFilter, dimensionThresholdFilters),
-    undefined,
-  );
+  let chartMetricsViewName = $derived($metricsViewName);
 
-  $: chartReady = !!ready;
+  let chartReady = $derived(!!ready);
 
   // Check if annotations are enabled for this explore
-  $: exploreValidSpec = useExploreValidSpec(client, exploreName);
-  $: annotationsEnabled =
-    !!$exploreValidSpec.data?.metricsView?.annotations?.length;
+  let exploreValidSpec = $derived(useExploreValidSpec(client, exploreName));
+  let annotationsEnabled = $derived(
+    !!$exploreValidSpec.data?.metricsView?.annotations?.length,
+  );
 
-  let screenshotDialogOpen = false;
-  let screenshotDialogMeasure: MetricsViewSpecMeasure | undefined = undefined;
+  let screenshotDialogOpen = $state(false);
+  let screenshotDialogMeasure = $state<MetricsViewSpecMeasure | undefined>(
+    undefined,
+  );
 
   // Pan handler
   function handlePan(direction: "left" | "right") {
@@ -206,7 +244,7 @@
     );
   }
 
-  let showReplacePivotModal = false;
+  let showReplacePivotModal = $state(false);
   function startPivotForTimeseries() {
     const pivot = $exploreState?.pivot;
     if (!pivot) return;
@@ -300,7 +338,15 @@
         allItems={$allMeasures}
         tagIndex={$measureTagIndex}
         selectedItems={visibleMeasureNames}
-      />
+        ephemeralNames={ephemeralMeasureNameSet(
+          $dashboardStore?.ephemeralMeasures,
+        )}
+        onEditEphemeral={openEphemeralMeasureEditor}
+      >
+        <div class="border-t border-border" slot="action" let:close>
+          <CreateEphemeralMeasureButton onOpen={close} />
+        </div>
+      </DashboardMetricsDraggableList>
 
       {#if $rillTime && activeTimeGrain}
         <DropdownMenu.Root bind:open={grainDropdownOpen}>
@@ -379,7 +425,9 @@
           class="sticky top-0 z-10 bg-surface-background col-span-2 grid grid-cols-subgrid"
         >
           <div></div>
-          <div class="relative">
+          <!-- min-w-0 lets the 1fr track follow the resizable panel width instead of
+               being propped open by the chart's intrinsic size (see the chart cell below) -->
+          <div class="relative min-w-0">
             <MeasureChartXAxis
               interval={chartInterval}
               timeGranularity={activeTimeGrain}
@@ -396,10 +444,11 @@
       {#each renderedMeasures as measure (measure.name)}
         <MeasureBigNumber
           {measure}
+          ephemeralMeasures={$dashboardStore.ephemeralMeasures}
           isMeasureExpanded={showTimeDimensionDetail}
           {showComparison}
           metricsViewName={chartMetricsViewName}
-          where={chartWhere}
+          where={whereFilter}
           {timeDimension}
           {timeStart}
           {timeEnd}
@@ -409,14 +458,18 @@
         />
 
         {#if activeTimeGrain}
-          <div class="relative">
+          <!-- min-w-0 is required for the Vega-rendered chart types: their canvas has an
+               intrinsic pixel width, which would otherwise become the 1fr track's minimum
+               size and stop the column from shrinking when the divider is dragged in. -->
+          <div class="relative min-w-0">
             <MeasureChart
               {measure}
+              ephemeralMeasures={$dashboardStore.ephemeralMeasures}
               {scrubController}
               {connectNulls}
               tddChartType={tddChartType ?? TDDChart.DEFAULT}
               metricsViewName={chartMetricsViewName}
-              where={chartWhere}
+              where={whereFilter}
               {timeDimension}
               interval={chartInterval}
               comparisonInterval={chartComparisonInterval}
@@ -426,7 +479,7 @@
               {chartScrubInterval}
               {comparisonDimension}
               dimensionValues={chartDimensionValues}
-              dimensionWhere={whereFilter}
+              dimensionWhere={dimensionOnlyFilter}
               {annotationsEnabled}
               canPanLeft={$canPanLeft}
               canPanRight={$canPanRight}
@@ -480,9 +533,11 @@
   <ScreenshotContainer
     bind:open={screenshotDialogOpen}
     measure={screenshotDialogMeasure}
+    ephemeralMeasures={$dashboardStore.ephemeralMeasures}
     metricsViewName={chartMetricsViewName}
     tddChartType={tddChartType ?? TDDChart.DEFAULT}
-    where={chartWhere}
+    {expressionFilterManager}
+    where={whereFilter}
     {timeDimension}
     {timeStart}
     {timeEnd}
@@ -494,7 +549,7 @@
     timeGranularity={activeTimeGrain}
     timeZone={selectedTimezone}
     dimensionValues={chartDimensionValues}
-    dimensionWhere={whereFilter}
+    dimensionWhere={dimensionOnlyFilter}
     {showComparison}
     {showTimeDimensionDetail}
     dynamicYAxis={dynamicYAxisScale}

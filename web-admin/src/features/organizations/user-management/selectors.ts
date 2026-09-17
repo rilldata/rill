@@ -4,6 +4,7 @@ import {
   createAdminServiceListOrganizationMemberUsergroups,
   getAdminServiceListOrganizationMemberUsergroupsQueryOptions,
   getAdminServiceListUsergroupsForOrganizationAndUserQueryOptions,
+  createAdminServiceListOrganizationMemberUsergroupsInfinite,
 } from "@rilldata/web-admin/client";
 import { OrgUserRoles } from "@rilldata/web-common/features/users/roles.ts";
 import { createQuery } from "@tanstack/svelte-query";
@@ -165,6 +166,26 @@ export function getUserCounts(organization: string) {
         guestsCount: guestUsersCounts,
         groupsCount,
       };
+    },
+  );
+}
+
+export function getOrgUsergroupsInfinite(organization: string) {
+  return createAdminServiceListOrganizationMemberUsergroupsInfinite(
+    organization,
+    {
+      pageSize: INFINITE_PAGE_SIZE,
+      includeCounts: true,
+    },
+    {
+      query: {
+        getNextPageParam: (lastPage) => {
+          if (lastPage.nextPageToken !== "") {
+            return lastPage.nextPageToken;
+          }
+          return undefined;
+        },
+      },
     },
   );
 }

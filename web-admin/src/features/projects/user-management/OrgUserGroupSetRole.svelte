@@ -3,9 +3,9 @@
     createAdminServiceRemoveOrganizationMemberUsergroup,
     createAdminServiceSetOrganizationMemberUsergroupRole,
     createAdminServiceAddOrganizationMemberUsergroup,
-    getAdminServiceListOrganizationMemberUsergroupsQueryKey,
   } from "@rilldata/web-admin/client";
   import type { V1MemberUsergroup } from "@rilldata/web-admin/client";
+  import { invalidateOrgUsergroups } from "@rilldata/web-admin/features/organizations/user-management/utils";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import { capitalize } from "@rilldata/web-common/components/table/utils";
   import { OrgUserRoles } from "@rilldata/web-common/features/users/roles.ts";
@@ -46,17 +46,16 @@
         },
       });
 
-      await queryClient.invalidateQueries({
-        queryKey:
-          getAdminServiceListOrganizationMemberUsergroupsQueryKey(organization),
-      });
+      await invalidateOrgUsergroups(queryClient, organization);
 
       eventBus.emit("notification", {
         message: m.groups_role_added(),
       });
     } catch (error) {
       eventBus.emit("notification", {
-        message: `Error: ${error.response.data.message}`,
+        message: m.common_error_message({
+          message: error.response.data.message,
+        }),
         type: "error",
       });
     }
@@ -72,17 +71,16 @@
         },
       });
 
-      await queryClient.invalidateQueries({
-        queryKey:
-          getAdminServiceListOrganizationMemberUsergroupsQueryKey(organization),
-      });
+      await invalidateOrgUsergroups(queryClient, organization);
 
       eventBus.emit("notification", {
         message: m.groups_role_updated(),
       });
     } catch (error) {
       eventBus.emit("notification", {
-        message: `Error: ${error.response.data.message}`,
+        message: m.common_error_message({
+          message: error.response.data.message,
+        }),
         type: "error",
       });
     }
@@ -95,17 +93,16 @@
         usergroup: group.groupName,
       });
 
-      await queryClient.invalidateQueries({
-        queryKey:
-          getAdminServiceListOrganizationMemberUsergroupsQueryKey(organization),
-      });
+      await invalidateOrgUsergroups(queryClient, organization);
 
       eventBus.emit("notification", {
         message: m.groups_removed(),
       });
     } catch (error) {
       eventBus.emit("notification", {
-        message: `Error: ${error.response.data.message}`,
+        message: m.common_error_message({
+          message: error.response.data.message,
+        }),
         type: "error",
       });
     }

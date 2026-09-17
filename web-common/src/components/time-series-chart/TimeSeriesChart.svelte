@@ -7,6 +7,7 @@
     ChartScales,
     ChartSeries,
   } from "@rilldata/web-common/features/dashboards/time-series/measure-chart/types";
+  import { clampToRange } from "@rilldata/web-common/features/dashboards/time-series/measure-chart/utils";
   import { bridgeGaps } from "./sparse-data-utils";
 
   const numAccessor = (d: number | null) => d;
@@ -27,9 +28,11 @@
     defined: (d) => d !== null,
   });
 
+  // With a dynamic y-axis the domain can exclude zero, putting scales.y(0) outside the plot.
+  // Clamp the area's baseline to the scale's range so the fill stays inside the plot area.
   $: areaGen = createAreaGenerator<number | null>({
     x: (_d, i) => scales.x(i),
-    y0: scales.y(0),
+    y0: clampToRange(scales.y(0), scales.y.range()),
     y1: (d) => scales.y(d ?? 0),
     defined: (d) => d !== null,
   });

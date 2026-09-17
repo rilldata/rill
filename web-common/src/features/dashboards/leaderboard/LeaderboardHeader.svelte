@@ -32,7 +32,8 @@
   export let allowExpandTable: boolean;
   export let leaderboardMeasureNames: string[] = [];
   export let leaderboardSortByMeasureName: string | null;
-  export let leaderboardShowContextForAllMeasures: boolean;
+  // Measures that render context columns; see Leaderboard.svelte.
+  export let measuresWithContext: Set<string>;
   export let toggleSort: (sortType: SortType, measureName?: string) => void;
   export let setPrimaryDimension: (dimensionName: string) => void;
   export let toggleComparisonDimension: (
@@ -44,13 +45,6 @@
   // Height of the whole leaderboard table, so the resize handle can span all
   // rows instead of just the header cell.
   export let tableHeight = 0;
-
-  function shouldShowContextColumns(measureName: string): boolean {
-    return (
-      leaderboardShowContextForAllMeasures ||
-      measureName === leaderboardSortByMeasureName
-    );
-  }
 </script>
 
 <thead>
@@ -161,7 +155,7 @@
         </button>
       </th>
 
-      {#if isValidPercentOfTotal(measureName) && shouldShowContextColumns(measureName)}
+      {#if isValidPercentOfTotal(measureName) && measuresWithContext.has(measureName)}
         <th data-percent-of-total-header>
           <button
             aria-label={m.dashboard_sort_by_percent_total_aria()}
@@ -191,7 +185,7 @@
         </th>
       {/if}
 
-      {#if isTimeComparisonActive && shouldShowContextColumns(measureName)}
+      {#if isTimeComparisonActive && measuresWithContext.has(measureName)}
         <th data-absolute-change-header>
           <button
             aria-label={m.dashboard_sort_by_absolute_change_aria()}
@@ -221,7 +215,7 @@
         </th>
       {/if}
 
-      {#if isTimeComparisonActive && shouldShowContextColumns(measureName)}
+      {#if isTimeComparisonActive && measuresWithContext.has(measureName)}
         <th data-percent-change-header>
           <button
             aria-label={m.dashboard_sort_by_percent_change_aria()}

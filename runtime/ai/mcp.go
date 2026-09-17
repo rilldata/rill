@@ -1,16 +1,24 @@
 package ai
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
-	"time"
 
+	"github.com/google/jsonschema-go/jsonschema"
+	"github.com/modelcontextprotocol/go-sdk/jsonrpc"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
+	"github.com/rilldata/rill/runtime/pkg/jsonschemautil"
 	"go.uber.org/zap"
 )
 
-const mcpInstructions = `
+// MCPInstructions are the instructions advertised by the MCP server.
+// It is exported so the unified MCP server in the admin service, which serves all projects, can extend it instead of restating it.
+//
+//nolint:gosec // G101 false positive: long instructions text, not a credential
+const MCPInstructions = `
 # Rill MCP Server
 This server exposes APIs for querying **metrics views**, which represent Rill's metrics layer.
 
@@ -23,6 +31,12 @@ This server exposes APIs for querying **metrics views**, which represent Rill's 
 In the workflow, do not proceed with the next step until the previous step has been completed. If the information from the previous step is already known (let's say for subsequent queries), you can skip it.
 If a response contains an "ai_instructions" field, you should interpret it as additional instructions for how to behave in subsequent responses that relate to that tool call.
 
+## Skills
+Projects may define **skills**: instruction files that teach agents project-specific analysis or development practices, such as analysis playbooks and business glossaries. The skill tools are only exposed when the project defines skills:
+- Use "list_skills" early in a session to discover the project's skills.
+- Before doing work that a skill's description covers, use "load_skill" to fetch its full instructions and follow them.
+- Load any skill marked "always_apply" up front and treat its instructions as always in effect.
+
 ## Project Development
 If you have edit access, the server also exposes tools for inspecting and editing the project's source code, which consists of YAML and SQL files:
 - **List files:** Use "list_files" to browse the files in the project.
@@ -31,11 +45,25 @@ If you have edit access, the server also exposes tools for inspecting and editin
 - **Write a file:** Use "write_file" to create, update or delete a file. If the file declares a Rill resource, it returns the resource's status and any errors encountered after reconciliation.
 `
 
+// MCPToolSpecs returns the specs of all registered tools, keyed by name.
+// The specs are freshly built and owned by the caller, so they may be mutated.
+// It is used by the unified MCP server in the admin service, which advertises the tools without being able to run them.
+func MCPToolSpecs() map[string]*mcp.Tool {
+	// Safe to pass a nil runtime: Spec() does not use it (asserted by TestMCPToolSpecs).
+	runner := NewRunner(nil, nil)
+	specs := make(map[string]*mcp.Tool, len(runner.Tools))
+	for name, t := range runner.Tools {
+		specs[name] = t.Spec
+	}
+	return specs
+}
+
 // MCPServer returns a new MCP server scoped to the current session.
 // Since it is scoped to the session, a new MCP server should be created for each client connection.
 // Using a separate MCP server for each client enables tailoring the server's instructions and available tools to the end user's claims.
 func (s *Session) MCPServer(ctx context.Context) *mcp.Server {
-	// Create the MCP server
+	// Create the MCP server.
+	// The instructions omit the skills section; it is added during the initialization handshake if the project defines skills (see below).
 	srv := mcp.NewServer(
 		&mcp.Implementation{
 			Name:    "rill",
@@ -43,7 +71,7 @@ func (s *Session) MCPServer(ctx context.Context) *mcp.Server {
 			Version: s.runner.Runtime.Version().String(),
 		},
 		&mcp.ServerOptions{
-			Instructions: mcpInstructions,
+			Instructions: MCPInstructions,
 			InitializedHandler: func(ctx context.Context, r *mcp.InitializedRequest) {
 				// Save user agent in the session
 				clientInfo := r.Session.InitializeParams().ClientInfo
@@ -59,8 +87,7 @@ func (s *Session) MCPServer(ctx context.Context) *mcp.Server {
 					}
 				}
 			},
-			KeepAlive: 30 * time.Second,
-			HasTools:  true,
+			HasTools: true,
 			GetSessionID: func() string {
 				return s.id
 			},
@@ -77,6 +104,32 @@ func (s *Session) MCPServer(ctx context.Context) *mcp.Server {
 				return nil, errors.Join(err, fmt.Errorf("failed to flush session: %w", flushErr))
 			}
 			return res, err
+		}
+	})
+
+	// Tolerantly decode tool arguments where object/array-typed fields arrive as JSON-encoded strings.
+	// This works around a serialization bug in some MCP clients (see https://github.com/anthropics/claude-code/issues/25865).
+	// The coercion runs only as a fallback: if a tool call fails the SDK's input schema validation,
+	// the arguments are coerced and the call is retried once; calls that validate as-is are never rewritten.
+	// The internal LLM tool-call path (CallToolWithOptions) receives tool inputs as real JSON objects from the provider API,
+	// so it does not need this; if that ever changes, the coercion should be applied there too.
+	srv.AddReceivingMiddleware(func(next mcp.MethodHandler) mcp.MethodHandler {
+		return func(ctx context.Context, method string, req mcp.Request) (mcp.Result, error) {
+			res, err := next(ctx, method, req)
+			if method != "tools/call" || err == nil {
+				return res, err
+			}
+			var jsonrpcErr *jsonrpc.Error
+			if !errors.As(err, &jsonrpcErr) || jsonrpcErr.Code != jsonrpc.CodeInvalidParams {
+				return res, err
+			}
+			if !s.coerceMCPToolArgs(req) {
+				return res, err
+			}
+			if params, ok := req.GetParams().(*mcp.CallToolParamsRaw); ok {
+				s.logger.Debug("tolerantly decoded stringified MCP tool call arguments; retrying the call", zap.String("tool", params.Name))
+			}
+			return next(ctx, method, req)
 		}
 	})
 
@@ -97,6 +150,44 @@ func (s *Session) MCPServer(ctx context.Context) *mcp.Server {
 	}
 
 	return srv
+}
+
+// coerceMCPToolArgs rewrites a tool call's raw arguments,
+// JSON-decoding any string values in positions where the tool's input schema expects an object or array.
+// It returns whether the arguments were rewritten.
+// It fails open: on any lookup or decode failure it leaves the arguments untouched,
+// so the SDK's schema validation produces its normal error.
+func (s *Session) coerceMCPToolArgs(req mcp.Request) bool {
+	params, ok := req.GetParams().(*mcp.CallToolParamsRaw)
+	if !ok || len(params.Arguments) == 0 {
+		return false
+	}
+	t, ok := s.runner.Tools[params.Name]
+	if !ok || t.Spec == nil {
+		return false
+	}
+	schema, ok := t.Spec.InputSchema.(*jsonschema.Schema)
+	if !ok || schema == nil {
+		return false
+	}
+
+	var args any
+	dec := json.NewDecoder(bytes.NewReader(params.Arguments))
+	dec.UseNumber() // preserve integer fidelity across the re-marshal
+	if err := dec.Decode(&args); err != nil {
+		return false
+	}
+
+	coerced, changed := jsonschemautil.CoerceStringifiedJSON(schema, args)
+	if !changed {
+		return false
+	}
+	data, err := json.Marshal(coerced)
+	if err != nil {
+		return false
+	}
+	params.Arguments = data
+	return true
 }
 
 // InternalError represents an internal error in a tool call.

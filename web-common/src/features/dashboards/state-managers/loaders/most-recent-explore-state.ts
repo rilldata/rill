@@ -5,6 +5,7 @@ import type {
   V1MetricsViewSpec,
 } from "@rilldata/web-common/runtime-client";
 import type { ExploreState } from "web-common/src/features/dashboards/stores/explore-state";
+import type { EphemeralMeasureDef } from "@rilldata/web-common/features/dashboards/ephemeral-measures/types";
 
 function getKeyForLocalStore(
   exploreName: string,
@@ -13,11 +14,18 @@ function getKeyForLocalStore(
   return `rill:app:explore:${storageNamespacePrefix ?? ""}${exploreName}`.toLowerCase();
 }
 
+/**
+ * `ephemeralMeasures` are the ad-hoc definitions restored from the
+ * per-metrics-view library. The saved state does not store definitions, only
+ * selections that may name them, so they must be known before the saved
+ * selections are validated or the ad-hoc visible and sort measures are dropped.
+ */
 export function getMostRecentPartialExploreState(
   exploreName: string,
   storageNamespacePrefix: string | undefined,
   metricsViewSpec: V1MetricsViewSpec,
   exploreSpec: V1ExploreSpec,
+  ephemeralMeasures: EphemeralMeasureDef[] = [],
 ) {
   const key = getKeyForLocalStore(exploreName, storageNamespacePrefix);
   try {
@@ -30,6 +38,9 @@ export function getMostRecentPartialExploreState(
     const stateFromLocalStorage = JSON.parse(
       rawExploreState,
     ) as Partial<ExploreState>;
+    if (ephemeralMeasures.length) {
+      stateFromLocalStorage.ephemeralMeasures = ephemeralMeasures;
+    }
     const errors = validateAndCleanExploreState(
       metricsViewSpec,
       exploreSpec,
@@ -67,6 +78,8 @@ export function saveMostRecentPartialExploreState(
       {
         selectedTimezone: exploreState.selectedTimezone,
 
+        // Ad-hoc measure definitions are stored per metrics view instead; see
+        // ephemeral-measures/library.ts.
         visibleMeasures: exploreState.visibleMeasures,
         allMeasuresVisible: exploreState.allMeasuresVisible,
         visibleDimensions: exploreState.visibleDimensions,

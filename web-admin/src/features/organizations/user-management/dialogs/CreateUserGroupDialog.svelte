@@ -1,15 +1,21 @@
 <script lang="ts">
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import { page } from "$app/stores";
-  import type { V1OrganizationMemberUser } from "@rilldata/web-admin/client";
   import {
     createAdminServiceAddUsergroupMemberUser,
     createAdminServiceCreateUsergroup,
+    createAdminServiceListOrganizationInvites,
     createAdminServiceListOrganizationMemberUsersInfinite,
-    getAdminServiceListOrganizationMemberUsergroupsQueryKey,
-    getAdminServiceListOrganizationMemberUsersQueryKey,
     getAdminServiceListUsergroupMemberUsersQueryKey,
   } from "@rilldata/web-admin/client";
+  import {
+    invalidateOrgInvites,
+    invalidateOrgMemberUsers,
+    invalidateOrgUsergroups,
+    invalidateUserGroupsForUser,
+    pendingInviteesMatching,
+    type GroupMemberRow,
+  } from "@rilldata/web-admin/features/organizations/user-management/utils.ts";
   import AvatarListItem from "@rilldata/web-common/components/avatar/AvatarListItem.svelte";
   import { Button } from "@rilldata/web-common/components/button";
   import Combobox from "@rilldata/web-common/components/combobox/Combobox.svelte";
@@ -36,7 +42,7 @@
   let searchInput = "";
   let debouncedSearchText = "";
   let debounceTimer: ReturnType<typeof setTimeout> | undefined;
-  let selectedUsers: V1OrganizationMemberUser[] = [];
+  let selectedUsers: GroupMemberRow[] = [];
   let pendingAdditions: string[] = [];
   let pendingRemovals: string[] = [];
 
@@ -75,9 +81,30 @@
       },
     );
 
-  $: organizationUsers = $organizationUsersInfiniteQuery.data?.pages
-    ? $organizationUsersInfiniteQuery.data.pages.flatMap((p) => p.members ?? [])
-    : [];
+  // Pending invitees can be added to a group too, so they are searched alongside members.
+  // ListOrganizationInvites has no search parameter, so the (typically short) list is fetched once and filtered here.
+  $: organizationInvitesQuery = createAdminServiceListOrganizationInvites(
+    organization,
+    { pageSize: 1000 },
+    { query: { enabled: open } },
+  );
+
+  $: organizationUsers = [
+    ...($organizationUsersInfiniteQuery.data?.pages ?? [])
+      .flatMap((p) => p.members ?? [])
+      .map(
+        (u): GroupMemberRow => ({
+          userEmail: u.userEmail ?? "",
+          userName: u.userName,
+          userPhotoUrl: u.userPhotoUrl,
+          roleName: u.roleName,
+        }),
+      ),
+    ...pendingInviteesMatching(
+      $organizationInvitesQuery.data?.invites,
+      debouncedSearchText,
+    ),
+  ];
 
   $: hasMoreUsers =
     // Prefer built-in flag if available
@@ -114,14 +141,7 @@
       // Apply pending user changes after group creation
       await applyPendingChanges(newName);
 
-      await queryClient.invalidateQueries({
-        queryKey: getAdminServiceListOrganizationMemberUsergroupsQueryKey(
-          organization,
-          {
-            includeCounts: true,
-          },
-        ),
-      });
+      await invalidateOrgUsergroups(queryClient, organization);
 
       groupName = "";
       selectedUsers = [];
@@ -132,7 +152,9 @@
       eventBus.emit("notification", { message: m.groups_created() });
     } catch (error) {
       eventBus.emit("notification", {
-        message: `Error: ${error.response.data.message}`,
+        message: m.common_error_message({
+          message: error.response.data.message,
+        }),
         type: "error",
       });
     }
@@ -150,10 +172,11 @@
         });
       }
 
-      await queryClient.invalidateQueries({
-        queryKey:
-          getAdminServiceListOrganizationMemberUsersQueryKey(organization),
-      });
+      await invalidateOrgMemberUsers(queryClient, organization);
+      // Pending invites carry their groups, so the users table needs a refresh too
+      await invalidateOrgInvites(queryClient, organization);
+      // The per-user group lists (users table cell and manage groups dialog) changed for every user added
+      await invalidateUserGroupsForUser(queryClient, organization);
 
       await queryClient.invalidateQueries({
         queryKey: getAdminServiceListUsergroupMemberUsersQueryKey(
@@ -167,7 +190,9 @@
       });
     } catch (error) {
       eventBus.emit("notification", {
-        message: `Error: ${error.response.data.message}`,
+        message: m.common_error_message({
+          message: error.response.data.message,
+        }),
         type: "error",
       });
     }
@@ -230,13 +255,17 @@
 
   $: coercedUsersToOptions = organizationUsers.map((user) => ({
     value: user.userEmail,
-    label: user.userName,
+    label: user.userName || user.userEmail,
   }));
 
   function getMetadata(email: string) {
     const user = organizationUsers.find((user) => user.userEmail === email);
     return user
-      ? { name: user.userName, photoUrl: user.userPhotoUrl }
+      ? {
+          name: user.userName || user.userEmail,
+          photoUrl: user.userPhotoUrl,
+          pendingAcceptance: user.pendingAcceptance,
+        }
       : undefined;
   }
 
@@ -351,10 +380,11 @@
           {#each selectedUsers as user (user.userEmail)}
             <div class="flex flex-row justify-between gap-2 items-center">
               <AvatarListItem
-                name={user.userName}
+                name={user.userName || user.userEmail}
                 email={user.userEmail}
                 photoUrl={user.userPhotoUrl}
                 isCurrentUser={user.userEmail === currentUserEmail}
+                pendingAcceptance={user.pendingAcceptance ?? false}
                 role={user.roleName}
               />
               <Button

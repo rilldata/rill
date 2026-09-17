@@ -377,6 +377,8 @@ export async function deriveInterval(
   metricsViewName: string,
   activeTimeZone: string,
   timeDimension?: string,
+  // When set, relative ranges are anchored at this time instead of now/latest (e.g. for scheduled report exports).
+  executionTime?: string,
 ): Promise<{
   interval: Interval;
   grain?: V1TimeGrain | undefined;
@@ -403,6 +405,7 @@ export async function deriveInterval(
       rillTimes: [name],
       timeZone: activeTimeZone,
       timeDimension,
+      executionTime,
       cacheBust,
     });
 

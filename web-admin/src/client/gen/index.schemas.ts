@@ -518,6 +518,7 @@ export const V1ExportFormat = {
   EXPORT_FORMAT_CSV: "EXPORT_FORMAT_CSV",
   EXPORT_FORMAT_XLSX: "EXPORT_FORMAT_XLSX",
   EXPORT_FORMAT_PARQUET: "EXPORT_FORMAT_PARQUET",
+  EXPORT_FORMAT_PDF: "EXPORT_FORMAT_PDF",
 } as const;
 
 export interface V1Expression {
@@ -1029,6 +1030,7 @@ export interface V1Organization {
   thumbnailUrl?: string;
   customDomain?: string;
   defaultProjectRoleId?: string;
+  defaultProvisioner?: string;
   quotas?: V1OrganizationQuotas;
   billingCustomerId?: string;
   paymentCustomerId?: string;
@@ -1039,10 +1041,15 @@ export interface V1Organization {
   updatedOn?: string;
 }
 
+export type V1OrganizationInviteAttributes = { [key: string]: unknown };
+
 export interface V1OrganizationInvite {
   email?: string;
   roleName?: string;
   invitedBy?: string;
+  attributes?: V1OrganizationInviteAttributes;
+  /** Names of the user groups the user will be added to when the invite is accepted. */
+  usergroups?: string[];
 }
 
 export type V1OrganizationMemberServiceAttributes = { [key: string]: unknown };
@@ -1325,6 +1332,12 @@ export interface V1RenewBillingSubscriptionResponse {
 
 export type V1ReportOptionsResolverProperties = { [key: string]: unknown };
 
+/**
+ * Per-metrics-view filters of the canvas at scheduling time (canvas PDF reports only).
+Baked into the report's security rules so magic-token recipients cannot query unfiltered data.
+ */
+export type V1ReportOptionsMetricsViewFilters = { [key: string]: V1Expression };
+
 export interface V1ReportOptions {
   displayName?: string;
   refreshCron?: string;
@@ -1347,6 +1360,9 @@ export interface V1ReportOptions {
   webOpenState?: string;
   explore?: string;
   canvas?: string;
+  /** Per-metrics-view filters of the canvas at scheduling time (canvas PDF reports only).
+Baked into the report's security rules so magic-token recipients cannot query unfiltered data. */
+  metricsViewFilters?: V1ReportOptionsMetricsViewFilters;
   webOpenMode?: string;
 }
 
@@ -1586,6 +1602,16 @@ export interface V1SudoUpdateOrganizationCustomDomainResponse {
   organization?: V1Organization;
 }
 
+export interface V1SudoUpdateOrganizationDefaultProvisionerRequest {
+  org?: string;
+  /** Name of the provisioner to use by default. Empty unsets the org's default provisioner. */
+  defaultProvisioner?: string;
+}
+
+export interface V1SudoUpdateOrganizationDefaultProvisionerResponse {
+  organization?: V1Organization;
+}
+
 export interface V1SudoUpdateOrganizationQuotasRequest {
   org?: string;
   projects?: number;
@@ -1767,6 +1793,9 @@ export interface V1UsergroupMemberUser {
   userEmail?: string;
   userName?: string;
   userPhotoUrl?: string;
+  /** True if the user has been invited to the group but has not signed up yet.
+For pending members, user_id, user_name and user_photo_url are empty. */
+  pendingAcceptance?: boolean;
   createdOn?: string;
   updatedOn?: string;
 }
@@ -1882,6 +1911,7 @@ export type AdminServiceUpdateOrganizationBody = {
   faviconAssetId?: string;
   thumbnailAssetId?: string;
   defaultProjectRole?: string;
+  defaultProvisioner?: string;
   billingEmail?: string;
 };
 
@@ -1948,9 +1978,24 @@ export type AdminServiceListOrganizationMemberUsersParams = {
   searchPattern?: string;
 };
 
+/**
+ * Custom attributes to set on the new membership.
+If the user has not signed up yet, they are stored on the invite and applied when the invite is accepted.
+ */
+export type AdminServiceAddOrganizationMemberUserBodyAttributes = {
+  [key: string]: unknown;
+};
+
 export type AdminServiceAddOrganizationMemberUserBody = {
   email?: string;
   role?: string;
+  /** Custom attributes to set on the new membership.
+If the user has not signed up yet, they are stored on the invite and applied when the invite is accepted. */
+  attributes?: AdminServiceAddOrganizationMemberUserBodyAttributes;
+  /** Names of user groups in the org to add the user to.
+If the user has not signed up yet, they are stored on the invite and applied when the invite is accepted.
+Groups are additive: on a re-invite they are merged with the groups already on the invite. */
+  usergroups?: string[];
   superuserForceAccess?: boolean;
 };
 
@@ -2136,6 +2181,10 @@ Cannot be combined with `user_id`. If `user_email` matches a Rill Cloud user, th
   themeMode?: string;
   /** Navigation denotes whether navigation between different resources should be enabled in the embed. */
   navigation?: boolean;
+  /** HideNavigationBar hides the embed's top navigation bar (the home link and dashboard breadcrumbs) without disabling navigation itself.
+It is only meaningful when `navigation` is true; the bar is always hidden when `navigation` is false.
+In-dashboard navigation, such as the canvas drill-through to an explore dashboard, remains available. */
+  hideNavigationBar?: boolean;
   /** Blob containing UI state for rendering the initial embed. Not currently supported. */
   state?: string;
   /** DEPRECATED: Additional parameters to set outright in the generated URL query. */
@@ -2159,11 +2208,28 @@ export type AdminServiceListProjectMemberUsersParams = {
   superuserForceAccess?: boolean;
 };
 
+/**
+ * Custom attributes to set on the user's org membership (attributes are org-scoped).
+If the user has not signed up yet, they are stored on the org invite and applied when the invite is accepted.
+Setting attributes requires permission to manage org members.
+ */
+export type AdminServiceAddProjectMemberUserBodyAttributes = {
+  [key: string]: unknown;
+};
+
 export type AdminServiceAddProjectMemberUserBody = {
   email?: string;
   role?: string;
   restrictResources?: boolean;
   resources?: V1ResourceName[];
+  /** Custom attributes to set on the user's org membership (attributes are org-scoped).
+If the user has not signed up yet, they are stored on the org invite and applied when the invite is accepted.
+Setting attributes requires permission to manage org members. */
+  attributes?: AdminServiceAddProjectMemberUserBodyAttributes;
+  /** Names of user groups in the org to add the user to (user groups are org-scoped).
+If the user has not signed up yet, they are stored on the org invite and applied when the invite is accepted.
+Setting user groups requires permission to manage org members. */
+  usergroups?: string[];
 };
 
 export type AdminServiceCreatePersonalFileBody = {
@@ -2493,7 +2559,14 @@ This is only allowed for superusers. */
 
 export type AdminServiceListBookmarksParams = {
   projectId?: string;
+  /**
+ * Optional filter on the kind of the resource the bookmark is for (e.g. "rill.runtime.v1.Explore").
+When both resource_kind and resource_name are unset, all bookmarks in the project are returned.
+ */
   resourceKind?: string;
+  /**
+   * Optional filter on the name of the resource the bookmark is for. Requires resource_kind to be set.
+   */
   resourceName?: string;
 };
 

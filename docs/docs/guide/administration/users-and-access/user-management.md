@@ -221,7 +221,7 @@ If you are unsure which option to select, select `Continue with Email` and set u
 
 :::
 
-Afterwards, you should receive an email verification to complete the sign-up process.
+Afterward, you should receive an email verification to complete the sign-up process.
 
 ![Verification Email](/img/manage/user-management/verification-email.png)
 

@@ -201,7 +201,10 @@
     }
     if (canShowDataViewer && !rowHeader) {
       return [
-        { description: "View raw data for aggregated cell", shortcut: "Click" },
+        {
+          description: m.dashboard_view_raw_aggregated_data(),
+          shortcut: "Click",
+        },
       ];
     }
     return [];

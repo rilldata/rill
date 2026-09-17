@@ -193,11 +193,15 @@ export class Conversation {
    * Send a message and handle streaming response
    *
    * @param context - Chat context to be sent with the message
-   * @param options - Callback functions for different stages of message sending
+   * @param options - Callback functions for different stages of message sending.
+   *   `beforeFork` is awaited right before a shared conversation is forked, e.g. to switch credentials first.
    */
   public async sendMessage(
     context: RuntimeServiceCompleteBody,
-    options?: { onStreamStart?: () => void },
+    options?: {
+      onStreamStart?: () => void;
+      beforeFork?: () => Promise<void> | void;
+    },
   ): Promise<void> {
     // Prevent concurrent message sending
     if (get(this.isStreaming)) {
@@ -218,6 +222,7 @@ export class Conversation {
     const isOwner = this.getIsOwner();
     if (!isOwner && this.conversationId !== NEW_CONVERSATION_ID) {
       try {
+        await options?.beforeFork?.();
         const forkedConversationId = await this.forkConversation();
         // Update to the forked conversation (setter updates the reactive store)
         this.conversationId = forkedConversationId;

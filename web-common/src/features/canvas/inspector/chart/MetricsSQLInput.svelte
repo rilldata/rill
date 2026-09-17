@@ -118,7 +118,9 @@
       <div class="query-block">
         {#if entries.length > 1}
           <div class="query-header">
-            <span class="query-number">Query {idx + 1}</span>
+            <span class="query-number">
+              {m.canvas_query_number({ idx: String(idx + 1) })}
+            </span>
             <button
               class="remove-btn"
               onclick={() => removeQuery(entry.id)}
@@ -142,7 +144,7 @@
         stroke-linecap="round"
       />
     </svg>
-    Add query
+    {m.canvas_add_query()}
   </button>
 </div>
 

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -119,7 +120,7 @@ type WatchEvent struct {
 
 // RepoListLimit is the maximum number of files that can be listed in a call to RepoStore.ListGlob.
 // This limit is effectively a cap on the number of files in a project because `rill start` lists the project directory using a "**" glob.
-const RepoListLimit = 2000
+const RepoListLimit = 10000
 
 // ErrRepoListLimitExceeded should be returned when RepoListLimit is exceeded.
 var ErrRepoListLimitExceeded = fmt.Errorf("glob exceeded limit of %d matched files", RepoListLimit)
@@ -144,6 +145,18 @@ func IsIgnored(path string, additionalIgnoredPaths []string) bool {
 		}
 	}
 	return false
+}
+
+// ResolveRepoPath resolves a repo-relative path against the given root directory and returns the resulting file system path.
+// It returns an error if the resolved path falls outside the root, which prevents path traversal using ".." segments.
+// Repo drivers must use it instead of joining untrusted paths onto the root directly.
+func ResolveRepoPath(root, path string) (string, error) {
+	root = filepath.Clean(root)
+	fp := filepath.Join(root, path)
+	if fp != root && !strings.HasPrefix(fp, root+string(filepath.Separator)) {
+		return "", fmt.Errorf("path %q is outside the repo root", path)
+	}
+	return fp, nil
 }
 
 type RepoStatus struct {
