@@ -5,7 +5,7 @@
 </script>
 
 <div
-  class=" grid gap-x-6 items-baseline dark:text-fg-muted text-gray-300"
+  class=" grid gap-x-6 items-baseline dark:text-fg-muted text-fg-inverse/60"
   class:pb-1={padBottom}
   class:pt-1={padTop}
   style="grid-template-columns: auto max-content"

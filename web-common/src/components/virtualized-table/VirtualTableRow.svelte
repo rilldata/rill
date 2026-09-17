@@ -138,6 +138,6 @@
   }
 
   .selected {
-    @apply text-black font-bold;
+    @apply bg-surface-active font-bold;
   }
 </style>

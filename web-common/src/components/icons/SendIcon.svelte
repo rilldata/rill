@@ -5,7 +5,7 @@
   export let disabled = false;
 
   $: backgroundClass = disabled ? "fill-gray-300" : "fill-primary-400";
-  $: arrowClass = "text-gray-100";
+  $: arrowClass = "text-fg-primary";
 </script>
 
 <svg

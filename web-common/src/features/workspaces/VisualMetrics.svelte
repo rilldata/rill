@@ -763,7 +763,7 @@
 
       {#if totalSelected}
         <div
-          class="bg-surface-subtle rounded-[2px] z-20 shadow-md flex gap-x-0 h-8 text-gray-700 border border-slate-100 absolute right-0"
+          class="bg-surface-subtle rounded-[2px] z-20 shadow-md flex gap-x-0 h-8 text-fg-secondary border border-slate-100 absolute right-0"
         >
           <div class="px-2 flex items-center">
             {m.visual_metrics_items_selected({ count: totalSelected })}

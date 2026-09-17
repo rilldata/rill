@@ -35,7 +35,7 @@
       {#if message}
         <button
           type="button"
-          class="shrink-0 p-1 rounded hover:bg-white/10 transition-colors text-fg-inverse"
+          class="shrink-0 p-1 rounded hover:bg-surface/10 transition-colors text-fg-inverse"
           on:click={() =>
             copyToClipboard(message, m.dashboard_copied_error_clipboard())}
           title={m.dashboard_copy_error_clipboard()}

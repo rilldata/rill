@@ -63,7 +63,7 @@
     <div class="flex flex-col gap-0.5">
       <span class="text-sm font-medium">{prop.title ?? id}</span>
       {#if prop.description}
-        <span class="text-xs text-gray-500">{prop.description}</span>
+        <span class="text-xs text-fg-muted">{prop.description}</span>
       {/if}
     </div>
     <Switch bind:checked {disabled} label={prop.title ?? id} />

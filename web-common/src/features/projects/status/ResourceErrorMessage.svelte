@@ -56,7 +56,7 @@
       >
         <CopyIcon
           size="18px"
-          className="text-gray-500 hidden group-hover:block"
+          className="text-fg-muted hidden group-hover:block"
         />
 
         <CancelCircle size="18px" className="text-red-500 group-hover:hidden" />

@@ -141,7 +141,7 @@
           {#if organizationLogoDarkUrl}
             {m.settings_dark_logo_label()}
           {:else}
-            <span class="text-slate-500">{m.settings_dark_logo_label()}</span>
+            <span class="text-icon-default">{m.settings_dark_logo_label()}</span>
           {/if}
         </div>
         <UploadImagePopover

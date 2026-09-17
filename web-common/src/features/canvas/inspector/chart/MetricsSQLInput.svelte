@@ -166,11 +166,11 @@
   }
 
   .query-number {
-    @apply text-[10px] font-medium text-gray-400 uppercase tracking-wide;
+    @apply text-[10px] font-medium text-fg-muted uppercase tracking-wide;
   }
 
   .remove-btn {
-    @apply p-1 rounded text-gray-400 bg-transparent border-none cursor-pointer;
+    @apply p-1 rounded text-fg-muted bg-transparent border-none cursor-pointer;
     @apply transition-colors duration-150;
   }
 
@@ -204,7 +204,7 @@
 
   .add-query-btn {
     @apply flex items-center gap-1.5 self-start;
-    @apply px-0 py-0.5 text-[11px] text-gray-400;
+    @apply px-0 py-0.5 text-[11px] text-fg-muted;
     @apply bg-transparent border-none cursor-pointer;
     @apply transition-colors duration-150;
   }
