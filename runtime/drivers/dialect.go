@@ -47,6 +47,8 @@ type Dialect interface {
 	GetCastExprForLike() string
 	SupportsRegexMatch() bool
 	GetRegexMatchFunction() (string, error)
+	// GetRegexMatchCastExpr returns expr cast to the string type accepted by the dialect's regex match function.
+	GetRegexMatchCastExpr(expr string) (string, error)
 	RequiresArrayContainsForInOperator() bool
 	GetArrayContainsFunction() (string, error)
 	DimensionSelect(escapeTable string, dim *runtimev1.MetricsViewSpec_Dimension) (dimSelect, unnestClause string, err error)
@@ -159,6 +161,10 @@ func (b *BaseDialect) SupportsRegexMatch() bool {
 }
 
 func (b *BaseDialect) GetRegexMatchFunction() (string, error) {
+	return "", fmt.Errorf("regex match not supported for %s dialect", b.String())
+}
+
+func (b *BaseDialect) GetRegexMatchCastExpr(expr string) (string, error) {
 	return "", fmt.Errorf("regex match not supported for %s dialect", b.String())
 }
 
