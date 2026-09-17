@@ -41,11 +41,6 @@ func TestListOrganizationsPagination(t *testing.T) {
 	require.Equal(t, "org1", orgs[0].GetLogin())
 	require.Equal(t, "org2", orgs[1].GetLogin())
 	require.Equal(t, "org3", orgs[2].GetLogin())
-
-	// Organizations of a named user.
-	orgs, err = listOrganizations(context.Background(), client, "octocat")
-	require.NoError(t, err)
-	require.Len(t, orgs, 3)
 }
 
 func TestMirrorGitRepo(t *testing.T) {

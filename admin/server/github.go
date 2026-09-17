@@ -1074,26 +1074,6 @@ func (s *Server) userAccessToken(ctx context.Context, user *database.User) (stri
 	return oauthToken.AccessToken, nil
 }
 
-// listOrganizations returns all organizations visible for the given user,
-// following pagination. An empty user lists the organizations of the
-// authenticated user.
-func listOrganizations(ctx context.Context, client *github.Client, user string) ([]*github.Organization, error) {
-	orgs := make([]*github.Organization, 0)
-	opts := &github.ListOptions{PerPage: 100}
-	for {
-		page, resp, err := client.Organizations.List(ctx, user, opts)
-		if err != nil {
-			return nil, err
-		}
-		orgs = append(orgs, page...)
-		if resp.NextPage == 0 {
-			break
-		}
-		opts.Page = resp.NextPage
-	}
-	return orgs, nil
-}
-
 func (s *Server) fetchReposForUser(ctx context.Context, client *github.Client) ([]*adminv1.ListGithubUserReposResponse_Repo, error) {
 	repos := make([]*adminv1.ListGithubUserReposResponse_Repo, 0)
 	page := 1
@@ -1266,6 +1246,26 @@ func (s *Server) githubAppInstallationURL(state githubConnectState) (string, err
 	}
 
 	return urlutil.MustWithQuery(res, map[string]string{"state": string(stateJSON)}), nil
+}
+
+// listOrganizations returns all organizations visible for the given user,
+// following pagination. An empty user lists the organizations of the
+// authenticated user.
+func listOrganizations(ctx context.Context, client *github.Client, user string) ([]*github.Organization, error) {
+	orgs := make([]*github.Organization, 0)
+	opts := &github.ListOptions{PerPage: 100}
+	for {
+		page, resp, err := client.Organizations.List(ctx, user, opts)
+		if err != nil {
+			return nil, err
+		}
+		orgs = append(orgs, page...)
+		if resp.NextPage == 0 {
+			break
+		}
+		opts.Page = resp.NextPage
+	}
+	return orgs, nil
 }
 
 func fromStringPtr(s *string) string {
