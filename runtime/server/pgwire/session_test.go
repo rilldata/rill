@@ -2,7 +2,10 @@ package pgwire
 
 import (
 	"context"
+	"math/big"
 	"net"
+	"os"
+	"path/filepath"
 	"strconv"
 	"testing"
 	"time"
@@ -21,16 +24,18 @@ func TestInterpolateParameters(t *testing.T) {
 	types := pgtype.NewMap()
 	binaryInt, err := types.Encode(pgtype.Int4OID, pgtype.BinaryFormatCode, int32(42), nil)
 	require.NoError(t, err)
-	query, err := interpolateParameters(
-		`SELECT value FROM metrics WHERE id = $1 AND label = $2 AND literal = '$1'`,
+	parsed, err := parseSQL(`SELECT value FROM metrics WHERE id = $1 AND label = $2 AND literal = '$1'`)
+	require.NoError(t, err)
+	query, err := parsed.interpolateMetricsParameters(
 		[]base.Parameter{
 			{OID: pgtype.Int4OID, Format: pgtype.BinaryFormatCode, Value: binaryInt},
 			{OID: pgtype.TextOID, Format: pgtype.TextFormatCode, Value: []byte("O'Reilly")},
 		},
 		types,
+		false,
 	)
 	require.NoError(t, err)
-	require.Equal(t, `SELECT value FROM metrics WHERE id = 42 AND label = 'O''Reilly'::text AND literal = '$1'`, query)
+	require.Equal(t, `SELECT value FROM metrics WHERE id = 42 AND label = 'O''Reilly' AND literal = '$1'`, query)
 }
 
 func TestEncodeTimestamptzTextUsesNumericOffset(t *testing.T) {
@@ -49,17 +54,9 @@ func TestNormalizeNumericForBinaryEncoding(t *testing.T) {
 }
 
 func TestInferParameterOIDs(t *testing.T) {
-	require.Equal(t,
-		[]uint32{pgtype.Int4OID, pgtype.TimestamptzOID, pgtype.TextOID},
-		inferParameterOIDs("SELECT $1::int4, $2::timestamp with time zone, $3", nil),
-	)
-}
-
-func TestCatalogClassification(t *testing.T) {
-	require.True(t, isCatalogQuery("SHOW timezone"))
-	require.True(t, isCatalogQuery("SELECT version()"))
-	require.True(t, isCatalogQuery("SELECT * FROM pg_catalog.pg_type"))
-	require.False(t, isCatalogQuery("SELECT country FROM sales"))
+	parsed, err := parseSQL("SELECT $1::int4, $2::timestamp with time zone, $3")
+	require.NoError(t, err)
+	require.Equal(t, []uint32{pgtype.Int4OID, pgtype.TimestamptzOID, pgtype.TextOID}, parsed.parameterOIDs(nil))
 }
 
 func TestRuntimePGWireSupersetQueriesEndToEnd(t *testing.T) {
@@ -88,6 +85,61 @@ func TestRuntimePGWireSupersetQueriesEndToEnd(t *testing.T) {
 	require.NoError(t, err)
 	defer conn.Close(t.Context())
 
+	// Parameter values must remain Metrics SQL values, even when they contain
+	// catalog names, quotes, backslashes or an empty string.
+	for _, value := range []string{"msn.com", "", "pg_catalog", "O'Reilly", `a\' OR 1=1 --`} {
+		var count int64
+		err := conn.QueryRow(t.Context(), "SELECT total_records FROM ad_bids_metrics_view WHERE domain = $1", value).Scan(&count)
+		require.NoError(t, err, value)
+		if value == "msn.com" {
+			require.Positive(t, count)
+		} else {
+			require.Zero(t, count)
+		}
+	}
+
+	// A quoted placeholder is a literal and must not require an argument.
+	var count int64
+	err = conn.QueryRow(t.Context(), "SELECT total_records FROM ad_bids_metrics_view WHERE domain = '$1'").Scan(&count)
+	require.NoError(t, err)
+	require.Zero(t, count)
+
+	for _, value := range []string{"", `\`, "O'Reilly"} {
+		var result string
+		err := conn.QueryRow(t.Context(), "SELECT $1", value).Scan(&result)
+		require.NoError(t, err)
+		require.Equal(t, value, result)
+	}
+
+	// Pagination placeholders are integers even when Parse does not supply OIDs.
+	for _, query := range []string{
+		"SELECT domain FROM ad_bids_metrics_view ORDER BY domain LIMIT $1 OFFSET $2",
+		"SELECT domain FROM ad_bids_metrics_view ORDER BY domain LIMIT $2, $1",
+	} {
+		rows, err := conn.Query(t.Context(), query, int64(2), int64(1))
+		require.NoError(t, err)
+		var domains []string
+		for rows.Next() {
+			var domain string
+			require.NoError(t, rows.Scan(&domain))
+			domains = append(domains, domain)
+		}
+		require.NoError(t, rows.Err())
+		rows.Close()
+		require.Len(t, domains, 2)
+		var expected []string
+		rows, err = conn.Query(t.Context(), "SELECT domain FROM ad_bids_metrics_view ORDER BY domain LIMIT 2 OFFSET 1")
+		require.NoError(t, err)
+		for rows.Next() {
+			var domain string
+			require.NoError(t, rows.Scan(&domain))
+			expected = append(expected, domain)
+		}
+		require.NoError(t, rows.Err())
+		rows.Close()
+		require.Equal(t, expected, domains)
+	}
+
 	// SQLAlchemy resolves the table OID and columns in separate queries. This
 	// exercises separate catalog rebuilds through the actual extended protocol.
 	var tableOID int64
@@ -107,7 +159,7 @@ func TestRuntimePGWireSupersetQueriesEndToEnd(t *testing.T) {
 		{"timestamp", "timestamp with time zone"},
 		{"publisher", "character varying"},
 		{"domain", "character varying"},
-		{"total_records", "double precision"},
+		{"total_records", "bigint"},
 		{"bid_price_sum", "double precision"},
 	}, columns)
 
@@ -170,10 +222,236 @@ func TestRuntimeSessionMetricsSQLAndCatalog(t *testing.T) {
 		{"timestamp", "timestamp with time zone"},
 		{"publisher", "character varying"},
 		{"domain", "character varying"},
-		{"total_records", "double precision"},
+		{"total_records", "bigint"},
 		{"bid_price_sum", "double precision"},
 	}, columns)
 
 	_, err = session.Query(context.Background(), "SELECT * FROM missing_metrics_view", nil, nil)
 	require.Error(t, err)
+}
+
+func TestCatalogRejectsExternalAccessAndMultipleStatements(t *testing.T) {
+	rt, instanceID := testruntime.NewInstanceForProject(t, "ad_bids")
+	session, err := NewSession(rt, instanceID, &runtime.SecurityClaims{Permissions: runtime.AllPermissions, SkipChecks: true})
+	require.NoError(t, err)
+	defer session.Close()
+	path := filepath.Join(t.TempDir(), "private.txt")
+	require.NoError(t, os.WriteFile(path, []byte("private fixture"), 0o600))
+	for _, query := range []string{
+		"SELECT content FROM read_text(" + quoteLiteral(path) + ") /* pg_catalog */",
+		"SELECT content FROM read_text(" + quoteLiteral(path) + "), pg_catalog.pg_type LIMIT 1",
+		"SELECT * FROM pg_catalog.pg_type; SET enable_external_access=true",
+		"COPY (SELECT * FROM pg_catalog.pg_type) TO " + quoteLiteral(filepath.Join(t.TempDir(), "out.csv")),
+	} {
+		rows, err := session.Query(t.Context(), query, nil, nil)
+		if rows != nil {
+			defer rows.Close()
+		}
+		require.Error(t, err, query)
+	}
+}
+
+func TestDescribeMatchesMetricsResults(t *testing.T) {
+	rt, instanceID := testruntime.NewInstanceForProject(t, "ad_bids")
+	session, err := NewSession(rt, instanceID, &runtime.SecurityClaims{Permissions: runtime.AllPermissions, SkipChecks: true})
+	require.NoError(t, err)
+	defer session.Close()
+	for _, query := range []string{
+		"SELECT publisher, total_records FROM ad_bids_metrics_view LIMIT 1",
+		"SELECT DATE_TRUNC('day', timestamp) AS day, total_records FROM ad_bids_metrics_view LIMIT 1",
+		"SELECT total_records, bid_price_sum FROM ad_bids_metrics_view",
+	} {
+		description, err := session.Describe(t.Context(), query, nil)
+		require.NoError(t, err, query)
+		rows, err := session.Query(t.Context(), query, nil, nil)
+		require.NoError(t, err, query)
+		require.Equal(t, rows.Fields(), description.Fields, query)
+		require.NoError(t, rows.Close())
+	}
+}
+
+func TestDescribeDoesNotEvaluateRows(t *testing.T) {
+	rt, instanceID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{Files: map[string]string{
+		"rill.yaml": "",
+		"model.sql": "SELECT 'not-a-number' AS value, DATE '2025-01-01' AS day, true AS active",
+		"metrics.yaml": `type: metrics_view
+model: model
+dimensions:
+  - column: day
+  - column: active
+measures:
+  - name: invalid_sum
+    expression: sum(CAST(value AS BIGINT))
+`,
+	}})
+	testruntime.RequireReconcileState(t, rt, instanceID, 4, 0, 0)
+	session, err := NewSession(rt, instanceID, &runtime.SecurityClaims{Permissions: runtime.AllPermissions, SkipChecks: true})
+	require.NoError(t, err)
+	defer session.Close()
+	description, err := session.Describe(t.Context(), "SELECT invalid_sum FROM metrics", nil)
+	require.NoError(t, err)
+	require.Len(t, description.Fields, 1)
+
+	rows, err := session.Query(t.Context(), "SELECT invalid_sum FROM metrics", nil, nil)
+	if err == nil {
+		defer rows.Close()
+		for rows.Next() {
+		}
+		err = rows.Err()
+	}
+	require.Error(t, err, "execution must evaluate the invalid cast, but description must not")
+
+	rows, err = session.Query(t.Context(), "SELECT column_name, data_type FROM information_schema.columns WHERE table_name = 'metrics' ORDER BY ordinal_position", nil, nil)
+	require.NoError(t, err)
+	defer rows.Close()
+	var columns [][2]string
+	for rows.Next() {
+		columns = append(columns, [2]string{string(rows.Values()[0]), string(rows.Values()[1])})
+	}
+	require.NoError(t, rows.Err())
+	require.Equal(t, [][2]string{{"day", "DATE"}, {"active", "BOOLEAN"}, {"invalid_sum", "DECIMAL(38,9)"}}, columns)
+}
+
+func TestCatalogParameterTypesMatchDescription(t *testing.T) {
+	rt, instanceID := testruntime.NewInstanceForProject(t, "ad_bids")
+	session, err := NewSession(rt, instanceID, &runtime.SecurityClaims{Permissions: runtime.AllPermissions, SkipChecks: true})
+	require.NoError(t, err)
+	defer session.Close()
+	for _, tc := range []struct {
+		name  string
+		oid   uint32
+		value any
+	}{
+		{"smallint", pgtype.Int2OID, int16(42)},
+		{"integer", pgtype.Int4OID, int32(42)},
+		{"bigint", pgtype.Int8OID, int64(42)},
+		{"real", pgtype.Float4OID, float32(1.25)},
+		{"double", pgtype.Float8OID, float64(1.25)},
+		{"numeric", pgtype.NumericOID, pgtype.Numeric{Int: big.NewInt(123456), Exp: -5, Valid: true}},
+		{"boolean", pgtype.BoolOID, true},
+		{"text", pgtype.TextOID, "O'Reilly \\ pg_catalog $1"},
+		{"empty_text", pgtype.TextOID, ""},
+		{"empty_bytes", pgtype.ByteaOID, []byte{}},
+		{"null", pgtype.Int8OID, nil},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			query := "SELECT $2 AS second, $1 AS first, $2 AS repeated; -- trailing comment"
+			description, err := session.Describe(t.Context(), query, []uint32{pgtype.TextOID, tc.oid})
+			require.NoError(t, err)
+			for _, format := range []int16{pgtype.TextFormatCode, pgtype.BinaryFormatCode} {
+				encoded, err := session.types.Encode(tc.oid, format, tc.value, []byte{})
+				require.NoError(t, err)
+				rows, err := session.Query(t.Context(), query, []base.Parameter{
+					{OID: pgtype.TextOID, Value: []byte("first")},
+					{OID: tc.oid, Format: format, Value: encoded},
+				}, []int16{pgtype.BinaryFormatCode})
+				require.NoError(t, err)
+				for i, field := range rows.Fields() {
+					require.Equal(t, description.Fields[i].DataTypeOID, field.DataTypeOID)
+					require.Equal(t, description.Fields[i].DataTypeSize, field.DataTypeSize)
+				}
+				require.Equal(t, tc.oid, rows.Fields()[0].DataTypeOID)
+				next := rows.Next()
+				require.NoError(t, rows.Err())
+				require.True(t, next)
+				expected, err := session.types.Encode(tc.oid, pgtype.BinaryFormatCode, tc.value, []byte{})
+				require.NoError(t, err)
+				require.Equal(t, expected, rows.Values()[0])
+				require.Equal(t, []byte("first"), rows.Values()[1])
+				require.Equal(t, expected, rows.Values()[2])
+				require.False(t, rows.Next())
+				require.NoError(t, rows.Err())
+				require.NoError(t, rows.Close())
+			}
+		})
+	}
+}
+
+func TestMetricsColumnNamedLikeCatalog(t *testing.T) {
+	rt, id := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{Files: map[string]string{
+		"rill.yaml":    "",
+		"model.sql":    "SELECT 'real-row' AS pg_type",
+		"metrics.yaml": "type: metrics_view\nmodel: model\ndimensions:\n  - column: pg_type\nmeasures:\n  - name: total\n    expression: count(*)\n",
+	}})
+	session, err := NewSession(rt, id, &runtime.SecurityClaims{Permissions: runtime.AllPermissions, SkipChecks: true})
+	require.NoError(t, err)
+	defer session.Close()
+	query := "SELECT pg_type FROM metrics"
+	description, err := session.Describe(t.Context(), query, nil)
+	require.NoError(t, err)
+	rows, err := session.Query(t.Context(), query, nil, nil)
+	require.NoError(t, err)
+	defer rows.Close()
+	require.Equal(t, description.Fields, rows.Fields())
+	require.True(t, rows.Next())
+	require.Equal(t, "real-row", string(rows.Values()[0]))
+	require.False(t, rows.Next())
+	require.NoError(t, rows.Err())
+}
+
+func TestRuntimeSessionSecurityPolicies(t *testing.T) {
+	rt, id := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{Files: map[string]string{
+		"rill.yaml": "",
+		"model.sql": "SELECT 'a' AS tenant, 10 AS amount UNION ALL SELECT 'b', 20",
+		"metrics.yaml": `type: metrics_view
+model: model
+dimensions:
+  - column: tenant
+measures:
+  - name: total
+    expression: count(*)
+  - name: secret_total
+    expression: sum(amount)
+security:
+  access: "'{{ .user.role }}' = 'reader'"
+  row_filter: "tenant = '{{ .user.tenant }}'"
+  exclude:
+    - names: [secret_total]
+      if: "true"
+`,
+	}})
+	for _, role := range []string{"reader", "blocked"} {
+		t.Run(role, func(t *testing.T) {
+			session, err := NewSession(rt, id, &runtime.SecurityClaims{
+				Permissions:    []runtime.Permission{runtime.ReadMetrics},
+				UserAttributes: map[string]any{"role": role, "tenant": "a"},
+			})
+			require.NoError(t, err)
+			defer session.Close()
+
+			rows, err := session.Query(t.Context(), "SELECT column_name FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'metrics' ORDER BY ordinal_position", nil, nil)
+			require.NoError(t, err)
+			var columns []string
+			for rows.Next() {
+				columns = append(columns, string(rows.Values()[0]))
+			}
+			require.NoError(t, rows.Err())
+			require.NoError(t, rows.Close())
+			if role == "blocked" {
+				require.Empty(t, columns)
+			} else {
+				require.Equal(t, []string{"tenant", "total"}, columns)
+			}
+
+			for _, query := range []string{"SELECT tenant, total FROM metrics", "SELECT secret_total FROM metrics"} {
+				description, describeErr := session.Describe(t.Context(), query, nil)
+				rows, queryErr := session.Query(t.Context(), query, nil, nil)
+				if rows != nil {
+					defer rows.Close()
+				}
+				if role == "blocked" || query == "SELECT secret_total FROM metrics" {
+					require.Error(t, describeErr)
+					require.Error(t, queryErr)
+					continue
+				}
+				require.NoError(t, describeErr)
+				require.NoError(t, queryErr)
+				require.Equal(t, description.Fields, rows.Fields())
+				require.True(t, rows.Next())
+				require.Equal(t, [][]byte{[]byte("a"), []byte("1")}, rows.Values())
+				require.False(t, rows.Next())
+				require.NoError(t, rows.Err())
+			}
+		})
+	}
 }

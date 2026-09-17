@@ -10,17 +10,17 @@ import (
 	"strings"
 	"time"
 
-	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgconn/ctxwatch"
 	"github.com/jackc/pgx/v5/pgproto3"
 	"github.com/rilldata/rill/admin/server/auth"
 	"github.com/rilldata/rill/runtime/pkg/graceful"
 	base "github.com/rilldata/rill/runtime/pkg/pgwire"
+	"go.uber.org/zap"
 )
 
 // ServePGWire starts the admin PostgreSQL wire-compatible endpoint. Each client
-// session is proxied to the selected production runtime over one dedicated pgx
+// session is proxied to the selected production runtime over one dedicated pgconn
 // connection.
 func (s *Server) ServePGWire(ctx context.Context) error {
 	server, err := base.NewServer(base.Options{
@@ -92,7 +92,7 @@ func (s *Server) newPGWireProxySession(ctx context.Context, parameters map[strin
 		Path:     deployment.RuntimeInstanceID,
 		RawQuery: "sslmode=" + sslMode,
 	}
-	config, err := pgx.ParseConfig(connectionURL.String())
+	config, err := pgconn.ParseConfig(connectionURL.String())
 	if err != nil {
 		return nil, err
 	}
@@ -108,24 +108,31 @@ func (s *Server) newPGWireProxySession(ctx context.Context, parameters map[strin
 		config.TLSConfig.MinVersion = tls.VersionTLS12
 		config.TLSConfig.ServerName = host
 	}
-	conn, err := pgx.ConnectConfig(ctx, config)
+	conn, err := pgconn.ConnectConfig(ctx, config)
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to runtime pgwire endpoint: %w", err)
 	}
 	s.admin.Used.Deployment(deployment.ID)
-	return &proxySession{conn: conn}, nil
+	return &proxySession{conn: conn, logger: s.logger.With(zap.String("organization", org), zap.String("project", project))}, nil
 }
 
 type proxySession struct {
-	conn *pgx.Conn
+	conn   *pgconn.PgConn
+	logger *zap.Logger
 }
 
 func (s *proxySession) Close() error {
 	return s.conn.Close(context.Background())
 }
 
-func (s *proxySession) Describe(ctx context.Context, query string, parameterOIDs []uint32) (*base.Description, error) {
-	description, err := s.conn.PgConn().Prepare(ctx, "", query, parameterOIDs)
+func (s *proxySession) Describe(ctx context.Context, query string, parameterOIDs []uint32) (_ *base.Description, describeErr error) {
+	started := time.Now()
+	logger := s.logger.With(zap.String("query", query))
+	logger.Info("pgwire proxy describe started")
+	defer func() {
+		logger.Info("pgwire proxy describe completed", zap.Duration("duration", time.Since(started)), zap.Error(describeErr))
+	}()
+	description, err := s.conn.Prepare(ctx, "", query, parameterOIDs)
 	if err != nil {
 		return nil, err
 	}
@@ -144,8 +151,11 @@ func (s *proxySession) Query(ctx context.Context, query string, parameters []bas
 		oids[i] = parameter.OID
 		formats[i] = parameter.Format
 	}
-	reader := s.conn.PgConn().ExecParams(ctx, query, values, oids, formats, resultFormats)
-	return &proxyRows{reader: reader, fields: proxyFields(reader.FieldDescriptions())}, nil
+	started := time.Now()
+	logger := s.logger.With(zap.String("query", query))
+	logger.Info("pgwire proxy query started")
+	reader := s.conn.ExecParams(ctx, query, values, oids, formats, resultFormats)
+	return &proxyRows{reader: reader, fields: proxyFields(reader.FieldDescriptions()), logger: logger, started: started}, nil
 }
 
 func proxyFields(fields []pgconn.FieldDescription) []pgproto3.FieldDescription {
@@ -165,11 +175,13 @@ func proxyFields(fields []pgconn.FieldDescription) []pgproto3.FieldDescription {
 }
 
 type proxyRows struct {
-	reader *pgconn.ResultReader
-	fields []pgproto3.FieldDescription
-	tag    string
-	err    error
-	closed bool
+	reader  *pgconn.ResultReader
+	logger  *zap.Logger
+	started time.Time
+	fields  []pgproto3.FieldDescription
+	tag     string
+	err     error
+	closed  bool
 }
 
 func (r *proxyRows) Fields() []pgproto3.FieldDescription { return r.fields }
@@ -191,5 +203,6 @@ func (r *proxyRows) Close() error {
 	tag, err := r.reader.Close()
 	r.tag = tag.String()
 	r.err = err
+	r.logger.Info("pgwire proxy query completed", zap.Duration("duration", time.Since(r.started)), zap.Error(err))
 	return err
 }

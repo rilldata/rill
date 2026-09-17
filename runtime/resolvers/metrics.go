@@ -19,7 +19,9 @@ import (
 )
 
 func init() {
-	runtime.RegisterResolverInitializer("metrics", newMetrics)
+	runtime.RegisterResolverInitializer("metrics", func(ctx context.Context, opts *runtime.ResolverOptions) (runtime.Resolver, error) {
+		return newMetrics(ctx, opts)
+	})
 }
 
 type metricsResolver struct {
@@ -37,7 +39,7 @@ type metricsResolverArgs struct {
 	ExecutionTime *time.Time `mapstructure:"execution_time"`
 }
 
-func newMetrics(ctx context.Context, opts *runtime.ResolverOptions) (runtime.Resolver, error) {
+func newMetrics(ctx context.Context, opts *runtime.ResolverOptions) (*metricsResolver, error) {
 	qry := &metricsview.Query{}
 	if err := mapstructureutil.WeakDecode(opts.Properties, qry); err != nil {
 		return nil, err
@@ -135,7 +137,7 @@ func (r *metricsResolver) Validate(ctx context.Context) error {
 	return nil
 }
 
-func (r *metricsResolver) ResolveInteractive(ctx context.Context) (runtime.ResolverResult, error) {
+func (r *metricsResolver) bindQuery(ctx context.Context) error {
 	if r.mv.TimeDimension != "" || (r.query.TimeRange != nil && r.query.TimeRange.TimeDimension != "") {
 		timeDim := ""
 		if r.query.TimeRange != nil && r.query.TimeRange.TimeDimension != "" {
@@ -143,13 +145,21 @@ func (r *metricsResolver) ResolveInteractive(ctx context.Context) (runtime.Resol
 		}
 		tsRes, err := resolveTimestampResult(ctx, r.runtime, r.instanceID, r.query.MetricsView, timeDim, r.claims, r.args.Priority)
 		if err != nil {
-			return nil, err
+			return err
 		}
 
 		err = r.executor.BindQuery(r.query, tsRes)
 		if err != nil {
-			return nil, err
+			return err
 		}
+	}
+
+	return nil
+}
+
+func (r *metricsResolver) ResolveInteractive(ctx context.Context) (runtime.ResolverResult, error) {
+	if err := r.bindQuery(ctx); err != nil {
+		return nil, err
 	}
 
 	meta := map[string]any{}

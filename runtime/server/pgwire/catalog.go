@@ -3,53 +3,38 @@ package pgwire
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"regexp"
 	"sort"
 	"strings"
 
+	"github.com/duckdb/duckdb-go/v2"
 	"github.com/jackc/pgx/v5/pgproto3"
 	"github.com/jackc/pgx/v5/pgtype"
+	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	base "github.com/rilldata/rill/runtime/pkg/pgwire"
-
-	// Register the in-memory DuckDB database/sql driver used for catalog emulation.
-	_ "github.com/duckdb/duckdb-go/v2"
 )
 
-var (
-	catalogNames = regexp.MustCompile(`(?i)\b(pg_catalog|pg_attribute|pg_class|pg_type|pg_namespace|pg_index|pg_constraint|information_schema)\b`)
-	fromClause   = regexp.MustCompile(`(?i)\bFROM\b`)
-	showVariable = regexp.MustCompile(`(?is)^\s*SHOW\s+(.+?)\s*;?\s*$`)
+var showVariable = regexp.MustCompile(`(?is)^\s*SHOW\s+(.+?)\s*;?\s*$`)
 
-	privilegeFunctions = regexp.MustCompile(`pg_catalog\.(has_any_column_privilege|has_column_privilege|has_database_privilege|has_foreign_data_wrapper_privilege|has_function_privilege|has_language_privilege|has_parameter_privilege|has_schema_privilege|has_sequence_privilege|has_server_privilege|has_table_privilege|has_tablespace_privilege|has_type_privilege|pg_has_role)\(([^,]+), ([^,]+), ([^)]+)\)`)
-	pgBackendPID       = regexp.MustCompile(`(?i)(pg_catalog\.)?pg_backend_pid\([^)]*\)`)
-	pgGetIndexDef      = regexp.MustCompile(`(?i)(pg_catalog\.)?pg_get_indexdef\([^)]*\)`)
-	pgVersion          = regexp.MustCompile(`(?i)(pg_catalog\.)?version\(\)`)
-	serialSequence     = regexp.MustCompile(`(?i)pg_catalog\.pg_get_serial_sequence\([^)]*\)`)
-	identityOptions    = regexp.MustCompile(`(?is)\(SELECT\s+json_build_object\([^)]*\)\s*FROM[^)]*\)\s+as\s+identity_options`)
-)
-
-func isCatalogQuery(query string) bool {
-	trimmed := strings.TrimSpace(query)
-	if trimmed == "-- ping" || showVariable.MatchString(trimmed) || catalogNames.MatchString(trimmed) {
-		return true
-	}
-	upper := strings.ToUpper(trimmed)
-	return strings.HasPrefix(upper, "SELECT") && !fromClause.MatchString(trimmed)
-}
-
-func queryCatalog(ctx context.Context, rt *runtime.Runtime, instanceID string, claims *runtime.SecurityClaims, query string, resultFormats []int16, types *pgtype.Map) (base.Rows, error) {
-	if strings.TrimSpace(query) == "-- ping" {
+func (s *Session) queryCatalog(ctx context.Context, parsed *parsedSQL, parameters []base.Parameter, resultFormats []int16, describe bool) (base.Rows, error) {
+	if strings.TrimSpace(parsed.text) == "-- ping" {
 		return &memoryRows{tag: "SELECT 0"}, nil
 	}
-	if matches := showVariable.FindStringSubmatch(query); len(matches) == 2 {
-		return showResult(strings.TrimSpace(matches[1]), resultFormats, types)
+	if matches := showVariable.FindStringSubmatch(parsed.text); len(matches) == 2 {
+		return showResult(strings.TrimSpace(matches[1]), resultFormats, s.types)
 	}
-
-	db, err := sql.Open("duckdb", "")
+	query, args, err := parsed.bindCatalogParameters(parameters, s.types)
 	if err != nil {
 		return nil, err
 	}
+
+	db, err := sql.Open("duckdb", "?enable_external_access=false")
+	if err != nil {
+		return nil, err
+	}
+	db.SetMaxOpenConns(1)
 	closeDB := true
 	defer func() {
 		if closeDB {
@@ -63,7 +48,7 @@ func queryCatalog(ctx context.Context, rt *runtime.Runtime, instanceID string, c
 	if _, err := db.ExecContext(ctx, "USE public"); err != nil {
 		return nil, err
 	}
-	if err := createMetricsViewTables(ctx, db, rt, instanceID, claims); err != nil {
+	if err := s.createMetricsViewTables(ctx, db); err != nil {
 		return nil, err
 	}
 	// DuckDB lacks this PostgreSQL catalog relation, which is queried by both
@@ -73,7 +58,45 @@ func queryCatalog(ctx context.Context, rt *runtime.Runtime, instanceID string, c
 		return nil, err
 	}
 
-	rows, err := db.QueryContext(ctx, rewriteCatalogSQL(query))
+	// Lock configuration before accepting client SQL. Wrapping the query also
+	// lets the SQL parser enforce a read-only SELECT, including for CTEs.
+	if _, err := db.ExecContext(ctx, "SET lock_configuration=true"); err != nil {
+		return nil, err
+	}
+	query, err = rewriteCatalogSQL(query)
+	if err != nil {
+		return nil, err
+	}
+	query = "SELECT * FROM (\n" + query + "\n) AS catalog_query"
+	if describe {
+		query += " LIMIT 0"
+	}
+	conn, err := db.Conn(ctx)
+	if err != nil {
+		return nil, err
+	}
+	err = conn.Raw(func(raw any) error {
+		// Prepare (without Context) rejects multiple statements without executing
+		// any of them. PrepareContext executes preceding statements in this driver.
+		stmt, err := raw.(*duckdb.Conn).Prepare(query)
+		if err != nil {
+			return err
+		}
+		defer stmt.Close()
+		typ, err := stmt.(*duckdb.Stmt).StatementType()
+		if err != nil {
+			return err
+		}
+		if typ != duckdb.STATEMENT_TYPE_SELECT {
+			return &base.Error{Code: "0A000", Message: "only catalog SELECT statements are supported"}
+		}
+		return nil
+	})
+	_ = conn.Close()
+	if err != nil {
+		return nil, err
+	}
+	rows, err := db.QueryContext(ctx, query, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -83,11 +106,11 @@ func queryCatalog(ctx context.Context, rt *runtime.Runtime, instanceID string, c
 		return nil, err
 	}
 	closeDB = false
-	return &sqlRows{rows: rows, db: db, fields: fields, types: types}, nil
+	return &sqlRows{rows: rows, db: db, fields: fields, types: s.types}, nil
 }
 
-func createMetricsViewTables(ctx context.Context, db *sql.DB, rt *runtime.Runtime, instanceID string, claims *runtime.SecurityClaims) error {
-	ctrl, err := rt.Controller(ctx, instanceID)
+func (s *Session) createMetricsViewTables(ctx context.Context, db *sql.DB) error {
+	ctrl, err := s.runtime.Controller(ctx, s.instanceID)
 	if err != nil {
 		return err
 	}
@@ -103,7 +126,7 @@ func createMetricsViewTables(ctx context.Context, db *sql.DB, rt *runtime.Runtim
 		if state == nil || state.State == nil || state.State.ValidSpec == nil {
 			continue
 		}
-		security, err := rt.ResolveSecurity(ctx, instanceID, claims, resource)
+		security, err := s.runtime.ResolveSecurity(ctx, s.instanceID, s.claims, resource)
 		if err != nil {
 			return err
 		}
@@ -121,12 +144,12 @@ func createMetricsViewTables(ctx context.Context, db *sql.DB, rt *runtime.Runtim
 			seen[name] = true
 			columns = append(columns, struct{ name, typ string }{name: name, typ: typ})
 		}
-		addColumn(spec.TimeDimension, "TIMESTAMPTZ")
 		for _, dimension := range spec.Dimensions {
-			addColumn(dimension.Name, "VARCHAR")
+			addColumn(dimension.Name, catalogColumnType(dimension.DataType))
 		}
+		addColumn(spec.TimeDimension, "TIMESTAMPTZ")
 		for _, measure := range spec.Measures {
-			addColumn(measure.Name, "DOUBLE PRECISION")
+			addColumn(measure.Name, catalogColumnType(measure.DataType))
 		}
 		if len(columns) == 0 {
 			continue
@@ -152,43 +175,173 @@ func createMetricsViewTables(ctx context.Context, db *sql.DB, rt *runtime.Runtim
 	return nil
 }
 
-func rewriteCatalogSQL(query string) string {
-	query = strings.TrimSpace(strings.TrimSuffix(query, ";"))
-
-	// Superset compatibility.
-	query = strings.ReplaceAll(query, "ix.indrelid = c.conrelid and\n                                ix.indexrelid = c.conindid and\n                                c.contype in ('p', 'u', 'x')", "ix.indrelid = c.conrelid")
-	query = strings.ReplaceAll(query, "t.oid = a.attrelid and a.attnum = ANY(ix.indkey)", "t.oid = a.attrelid")
-	query = strings.ReplaceAll(query, "pg_get_constraintdef(cons.oid)", "pg_get_constraintdef(cons.oid, false)")
-	query = strings.ReplaceAll(query, "pg_catalog.format_type(a.atttypid, a.atttypmod)", `CASE pg_catalog.format_type(a.atttypid, a.atttypmod)
-		WHEN 'bool' THEN 'boolean'
-		WHEN 'float4' THEN 'real'
-		WHEN 'float8' THEN 'double precision'
-		WHEN 'hugeint' THEN 'bigint'
-		WHEN 'int2' THEN 'smallint'
-		WHEN 'int4' THEN 'integer'
-		WHEN 'int8' THEN 'bigint'
-		WHEN 'timestamptz' THEN 'timestamp with time zone'
-		WHEN 'timetz' THEN 'time with time zone'
-		WHEN 'varchar' THEN 'character varying'
-		ELSE pg_catalog.format_type(a.atttypid, a.atttypmod)
-	END`)
-
-	if strings.EqualFold(query, "SELECT nspname FROM pg_namespace WHERE nspname NOT LIKE 'pg_%' ORDER BY nspname") {
-		query = "SELECT nspname FROM pg_namespace WHERE nspname NOT IN ('pg_catalog', 'information_schema', 'main') ORDER BY nspname"
+func (q *parsedSQL) isCatalog() bool {
+	if strings.TrimSpace(q.text) == "-- ping" {
+		return true
+	}
+	if len(q.tokens) == 0 {
+		return false
+	}
+	first := q.text[q.tokens[0].start:q.tokens[0].end]
+	if strings.EqualFold(first, "SHOW") {
+		return true
+	}
+	if !strings.EqualFold(first, "SELECT") && !strings.EqualFold(first, "WITH") {
+		return false
 	}
 
-	// Metabase compatibility.
-	query = strings.ReplaceAll(query, "t.schemaname <> 'information_schema'", "t.schemaname <> 'information_schema' AND t.schemaname <> 'pg_catalog' AND t.schemaname <> 'main'")
-	query = strings.ReplaceAll(query, "(information_schema._pg_expandarray(i.indkey)).n", "generate_subscripts(i.indkey, 1)")
-	query = privilegeFunctions.ReplaceAllString(query, `(select pg_catalog.$1($3, $4))`)
-	query = strings.ReplaceAll(query, "pg_catalog.pg_matviews", "pg_matviews")
-	query = serialSequence.ReplaceAllString(query, "NULL")
-	query = pgBackendPID.ReplaceAllString(query, `(SELECT 1234) AS pg_backend_pid`)
-	query = pgGetIndexDef.ReplaceAllString(query, "NULL")
-	query = pgVersion.ReplaceAllString(query, `(SELECT 'PostgreSQL 16.3 (Rill pgwire)') AS version`)
-	query = strings.ReplaceAll(query, `'pg_class'::regclass`, `(SELECT oid FROM pg_class WHERE relname = 'pg_class')`)
-	query = identityOptions.ReplaceAllString(query, "NULL AS identity_options")
-	return query
+	// Track FROM clauses at each parenthesis depth so projection names, aliases,
+	// and function arguments cannot masquerade as catalog relations.
+	type clause struct{ selection, from, relation bool }
+	clauses := []clause{{}}
+	hasFrom := false
+	for i, token := range q.tokens {
+		current := &clauses[len(clauses)-1]
+		switch token.kind {
+		case '(':
+			current.relation = false
+			clauses = append(clauses, clause{})
+			continue
+		case ')':
+			if len(clauses) > 1 {
+				clauses = clauses[:len(clauses)-1]
+			}
+			continue
+		case ',':
+			current.relation = current.from
+			continue
+		case 'w', 'i':
+		default:
+			continue
+		}
+		word := q.text[token.start:token.end]
+		if token.kind == 'w' {
+			switch strings.ToUpper(word) {
+			case "SELECT":
+				current.selection = true
+			case "FROM", "JOIN":
+				if current.selection {
+					hasFrom = true
+					current.from, current.relation = true, true
+				}
+				continue
+			case "WHERE", "GROUP", "HAVING", "ORDER", "LIMIT", "OFFSET", "UNION", "EXCEPT", "INTERSECT", "QUALIFY":
+				current.from, current.relation = false, false
+			case "LATERAL", "ONLY":
+				continue
+			}
+		} else {
+			word = word[1 : len(word)-1]
+		}
+		if !current.relation {
+			continue
+		}
+		current.relation = false
+		qualified := i+1 < len(q.tokens) && q.tokens[i+1].kind == '.'
+		switch strings.ToLower(word) {
+		case "pg_catalog", "information_schema":
+			if qualified {
+				return true
+			}
+		case "pg_attribute", "pg_class", "pg_type", "pg_namespace", "pg_index", "pg_constraint", "pg_matviews":
+			if !qualified {
+				return true
+			}
+		}
+	}
+	return strings.EqualFold(first, "SELECT") && !hasFrom
+}
+
+// Keep catalog values as driver arguments. Casts preserve each parameter's
+// declared type, including NULLs used during Describe and narrow integer types.
+func (q *parsedSQL) bindCatalogParameters(parameters []base.Parameter, types *pgtype.Map) (string, []any, error) {
+	var args []any
+	replacements := make(map[int]string)
+	query, err := q.replaceParameters(func(index, _ int) (string, error) {
+		if replacement, ok := replacements[index]; ok {
+			return replacement, nil
+		}
+		if index >= len(parameters) {
+			return "", &base.Error{Code: "42P02", Message: fmt.Sprintf("there is no parameter $%d", index+1)}
+		}
+		parameter := parameters[index]
+		if parameter.OID == 0 {
+			parameter.OID = pgtype.TextOID
+		}
+		typ, ok := types.TypeForOID(parameter.OID)
+		if !ok {
+			return "", fmt.Errorf("unsupported parameter type OID %d", parameter.OID)
+		}
+		value, err := typ.Codec.DecodeDatabaseSQLValue(types, parameter.OID, parameter.Format, parameter.Value)
+		if err != nil {
+			return "", fmt.Errorf("invalid parameter $%d: %w", index+1, err)
+		}
+		cast := typ.Name
+		switch parameter.OID {
+		case pgtype.JSONBOID:
+			cast = "json"
+		case pgtype.OIDOID:
+			cast = "uinteger"
+		case pgtype.NumericOID:
+			// DuckDB's default NUMERIC scale is 3. Match the supplied decimal
+			// instead of silently rounding it; PostgreSQL numeric has no typemod here.
+			precision, scale := 38, 0
+			if value != nil {
+				whole, fraction, _ := strings.Cut(strings.TrimLeft(value.(string), "+-"), ".")
+				scale = len(fraction)
+				precision = max(1, len(strings.TrimLeft(whole, "0"))+scale)
+				if precision > 38 || (whole == "NaN" || whole == "Infinity") {
+					return "", fmt.Errorf("numeric parameter $%d exceeds DuckDB decimal range", index+1)
+				}
+			}
+			cast = fmt.Sprintf("DECIMAL(%d,%d)", precision, scale)
+		}
+		name := fmt.Sprintf("p%d", index+1)
+		args = append(args, sql.Named(name, value))
+		replacement := "CAST($" + name + " AS " + cast + ")"
+		replacements[index] = replacement
+		return replacement, nil
+	})
+	return query, args, err
+}
+
+// The reconciler already resolves these types using Executor.Schema.
+// Reuse them instead of guessing or issuing schema queries for every catalog request.
+func catalogColumnType(typ *runtimev1.Type) string {
+	if typ != nil && typ.Code == runtimev1.Type_CODE_ARRAY {
+		return catalogColumnType(typ.ArrayElementType) + "[]"
+	}
+	oid, _ := postgresType(typ)
+	switch oid {
+	case pgtype.BoolOID:
+		return "BOOLEAN"
+	case pgtype.Int2OID:
+		return "SMALLINT"
+	case pgtype.Int4OID:
+		return "INTEGER"
+	case pgtype.Int8OID:
+		return "BIGINT"
+	case pgtype.NumericOID:
+		return "DECIMAL(38, 9)"
+	case pgtype.Float4OID:
+		return "REAL"
+	case pgtype.Float8OID:
+		return "DOUBLE PRECISION"
+	case pgtype.TimestamptzOID:
+		return "TIMESTAMPTZ"
+	case pgtype.DateOID:
+		return "DATE"
+	case pgtype.TimeOID:
+		return "TIME"
+	case pgtype.ByteaOID:
+		return "BLOB"
+	case pgtype.JSONBOID:
+		return "JSON"
+	case pgtype.UUIDOID:
+		return "UUID"
+	default:
+		return "VARCHAR"
+	}
 }
 
 func showResult(variable string, resultFormats []int16, types *pgtype.Map) (base.Rows, error) {
@@ -209,7 +362,7 @@ func showResult(variable string, resultFormats []int16, types *pgtype.Map) (base
 	case "search_path":
 		value = `"$user", public`
 	default:
-		value = ""
+		return nil, &base.Error{Code: "42704", Message: fmt.Sprintf("unsupported configuration parameter %q", name)}
 	}
 	fields, err := base.ApplyResultFormats([]pgproto3.FieldDescription{{Name: []byte(column), DataTypeOID: pgtype.TextOID, DataTypeSize: -1, TypeModifier: -1}}, resultFormats)
 	if err != nil {
@@ -248,9 +401,11 @@ func postgresTypeForDatabaseName(name string) (uint32, int16) {
 		return pgtype.Int2OID, 2
 	case name == "INTEGER" || name == "INT":
 		return pgtype.Int4OID, 4
-	case strings.Contains(name, "BIGINT") || strings.Contains(name, "HUGEINT"):
+	case strings.Contains(name, "HUGEINT") || strings.Contains(name, "DECIMAL") || strings.Contains(name, "NUMERIC"):
+		return pgtype.NumericOID, -1
+	case strings.Contains(name, "BIGINT"):
 		return pgtype.Int8OID, 8
-	case strings.Contains(name, "DOUBLE") || strings.Contains(name, "DECIMAL") || strings.Contains(name, "NUMERIC"):
+	case strings.Contains(name, "DOUBLE"):
 		return pgtype.Float8OID, 8
 	case strings.Contains(name, "FLOAT") || strings.Contains(name, "REAL"):
 		return pgtype.Float4OID, 4
@@ -293,6 +448,9 @@ func (r *sqlRows) Next() bool {
 	}
 	r.values = make([][]byte, len(values))
 	for i, value := range values {
+		if decimal, ok := value.(duckdb.Decimal); ok {
+			value = pgtype.Numeric{Int: decimal.Value, Exp: -int32(decimal.Scale), Valid: true}
+		}
 		var err error
 		value, err = normalizeValue(value, r.fields[i].DataTypeOID)
 		if err != nil {

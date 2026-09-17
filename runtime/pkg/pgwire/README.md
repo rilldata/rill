@@ -11,3 +11,7 @@ is provided by a `Session` created for each connection.
 Prepared statements and portals intentionally live on a connection, not on the
 server. This matches PostgreSQL semantics and prevents state or credentials from
 being shared between clients.
+
+Result messages are flushed in batches of approximately 64 KiB, plus at most
+one row, so unlimited Execute and simple queries do not accumulate the entire
+encoded result in memory. Error recovery shares the normal Sync handler.

@@ -1,6 +1,7 @@
 package pgwire
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -47,17 +48,11 @@ func (c *connection) run() error {
 
 		if c.failed {
 			switch message.(type) {
-			case *pgproto3.Sync:
-				c.failed = false
-				c.backend.Send(&pgproto3.ReadyForQuery{TxStatus: c.txStatus})
-			case *pgproto3.Terminate:
-				return nil
-			case *pgproto3.Flush:
-				if err := c.backend.Flush(); err != nil {
-					return err
-				}
+			case *pgproto3.Sync, *pgproto3.Terminate, *pgproto3.Flush:
+				// Use the normal handlers, including flushing ReadyForQuery on Sync.
+			default:
+				continue
 			}
-			continue
 		}
 
 		switch message := message.(type) {
@@ -90,6 +85,7 @@ func (c *connection) run() error {
 				return err
 			}
 		case *pgproto3.Sync:
+			c.failed = false
 			c.backend.Send(&pgproto3.ReadyForQuery{TxStatus: c.txStatus})
 			if err := c.backend.Flush(); err != nil {
 				return err
@@ -182,9 +178,7 @@ func (c *connection) handleBind(message *pgproto3.Bind) error {
 			format = message.ParameterFormatCodes[i]
 		}
 		parameters[i] = Parameter{OID: statement.description.ParameterOIDs[i], Format: format}
-		if value != nil {
-			parameters[i].Value = append([]byte(nil), value...)
-		}
+		parameters[i].Value = bytes.Clone(value)
 	}
 
 	c.closePortal(message.DestinationPortal)
@@ -295,6 +289,7 @@ func (c *connection) sendResult(rows Rows, includeDescription bool, maxRows uint
 	}
 
 	var sent uint32
+	bufferedBytes := 0
 	for maxRows == 0 || sent < maxRows {
 		if !rows.Next() {
 			if err := rows.Err(); err != nil {
@@ -311,7 +306,19 @@ func (c *connection) sendResult(rows Rows, includeDescription bool, maxRows uint
 			c.backend.Send(&pgproto3.CommandComplete{CommandTag: []byte(tag)})
 			return false, nil
 		}
-		c.backend.Send(&pgproto3.DataRow{Values: rows.Values()})
+		values := rows.Values()
+		c.backend.Send(&pgproto3.DataRow{Values: values})
+		// Bound the encoded output buffer to a batch plus one row.
+		bufferedBytes += 7 + 4*len(values)
+		for _, value := range values {
+			bufferedBytes += len(value)
+		}
+		if bufferedBytes >= 64<<10 {
+			if err := c.backend.Flush(); err != nil {
+				return false, err
+			}
+			bufferedBytes = 0
+		}
 		sent++
 	}
 

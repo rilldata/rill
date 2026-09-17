@@ -143,13 +143,14 @@ func (s *Server) Serve(ctx context.Context, listener net.Listener) error {
 				errCh <- err
 				return
 			}
+			connCtx, cancel := context.WithCancel(ctx)
+			s.mu.Lock()
 			if s.closed.Load() {
+				s.mu.Unlock()
+				cancel()
 				_ = conn.Close()
 				continue
 			}
-
-			connCtx, cancel := context.WithCancel(ctx)
-			s.mu.Lock()
 			s.conns[conn] = cancel
 			s.mu.Unlock()
 			go s.serveConn(connCtx, conn)

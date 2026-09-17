@@ -16,7 +16,9 @@ import (
 )
 
 func init() {
-	runtime.RegisterResolverInitializer("metrics_sql", newMetricsSQL)
+	runtime.RegisterResolverInitializer("metrics_sql", func(ctx context.Context, opts *runtime.ResolverOptions) (runtime.Resolver, error) {
+		return newMetricsSQL(ctx, opts)
+	})
 }
 
 type metricsSQLProps struct {
@@ -40,7 +42,7 @@ type metricsSQLArgs struct {
 // newMetricsSQL creates a resolver for evaluating metrics SQL.
 // It wraps the regular SQL resolver and compiles the metrics SQL to a regular SQL query first.
 // The compiler preserves templating in the SQL, allowing the regular SQL resolver to handle SQL templating rules.
-func newMetricsSQL(ctx context.Context, opts *runtime.ResolverOptions) (runtime.Resolver, error) {
+func newMetricsSQL(ctx context.Context, opts *runtime.ResolverOptions) (*metricsResolver, error) {
 	props := &metricsSQLProps{}
 	if err := mapstructureutil.WeakDecode(opts.Properties, props); err != nil {
 		return nil, err
@@ -211,4 +213,17 @@ func applyAdditionalTimeRange(current, additional *metricsview.TimeRange) *metri
 	}
 
 	return timeRange
+}
+
+// MetricsSQLSchema compiles and describes Metrics SQL without executing its result query.
+func MetricsSQLSchema(ctx context.Context, opts *runtime.ResolverOptions) (*runtimev1.StructType, error) {
+	r, err := newMetricsSQL(ctx, opts)
+	if err != nil {
+		return nil, err
+	}
+	defer r.Close()
+	if err := r.bindQuery(ctx); err != nil {
+		return nil, err
+	}
+	return r.executor.QuerySchema(ctx, r.query, r.args.ExecutionTime)
 }
