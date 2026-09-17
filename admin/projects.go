@@ -195,9 +195,7 @@ func (s *Service) UpdateProject(ctx context.Context, oldProj *database.Project, 
 		return nil, err
 	}
 
-	impactsDeployments := (oldProj.ProdVersion != opts.ProdVersion) ||
-		(oldProj.ProdSlots != opts.ProdSlots) ||
-		(oldProj.DevSlots != opts.DevSlots) ||
+	impactsAllDeployments := (oldProj.ProdVersion != opts.ProdVersion) ||
 		(oldProj.Name != opts.Name) ||
 		(oldProj.Subpath != opts.Subpath) ||
 		(oldProj.PrimaryBranch != opts.PrimaryBranch) ||
@@ -207,7 +205,9 @@ func (s *Service) UpdateProject(ctx context.Context, oldProj *database.Project, 
 		!reflect.DeepEqual(oldProj.ArchiveAssetID, opts.ArchiveAssetID) ||
 		!reflect.DeepEqual(oldProj.OverrideDiskGB, opts.OverrideDiskGB)
 
-	if !impactsDeployments {
+	prodSlotsChanged := oldProj.ProdSlots != opts.ProdSlots
+	devSlotsChanged := oldProj.DevSlots != opts.DevSlots
+	if !impactsAllDeployments && !prodSlotsChanged && !devSlotsChanged {
 		return proj, nil
 	}
 
@@ -247,8 +247,17 @@ func (s *Service) UpdateProject(ctx context.Context, oldProj *database.Project, 
 		}
 	}
 
-	// TODO: changing environment-specific fields like slots should only impact deployments in that environment, but for now we update all deployments.
-	err = s.UpdateDeploymentsForProject(ctx, proj)
+	// Slot-only changes should only reconcile deployments in the affected environment.
+	// An empty environment updates all deployments for shared changes or changes to both slot counts.
+	environment := ""
+	if !impactsAllDeployments {
+		if prodSlotsChanged && !devSlotsChanged {
+			environment = "prod"
+		} else if devSlotsChanged && !prodSlotsChanged {
+			environment = "dev"
+		}
+	}
+	err = s.UpdateDeploymentsForProject(ctx, proj, environment)
 	if err != nil {
 		return nil, err
 	}
@@ -294,7 +303,7 @@ func (s *Service) UpdateProjectVariables(ctx context.Context, project *database.
 	// Update deployments
 	s.Logger.Info("update project variables: updating deployments", observability.ZapCtx(ctx))
 
-	err = s.UpdateDeploymentsForProject(ctx, project)
+	err = s.UpdateDeploymentsForProject(ctx, project, "")
 	if err != nil {
 		return err
 	}
@@ -315,7 +324,7 @@ func (s *Service) UpdateOrgDeploymentAnnotations(ctx context.Context, org *datab
 		}
 
 		for _, proj := range projs {
-			err := s.UpdateDeploymentsForProject(ctx, proj)
+			err := s.UpdateDeploymentsForProject(ctx, proj, "")
 			if err != nil {
 				return err
 			}

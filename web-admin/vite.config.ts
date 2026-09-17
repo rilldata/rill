@@ -15,6 +15,7 @@ export default defineConfig({
         extends: true,
         test: {
           name: "unit",
+          include: ["src/**/*.{spec,test}.ts"],
           exclude: [...configDefaults.exclude, "**/*.component.spec.ts"],
         },
       },

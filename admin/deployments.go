@@ -136,9 +136,10 @@ func (s *Service) TeardownDeployment(ctx context.Context, depl *database.Deploym
 }
 
 // UpdateDeploymentsForProject updates the deployments of a project.
+// An empty environment updates deployments in all environments.
 // Care must be taken to avoid one broken deployment from blocking updates to other healthy deployments.
-func (s *Service) UpdateDeploymentsForProject(ctx context.Context, p *database.Project) error {
-	ds, err := s.DB.FindDeploymentsForProject(ctx, p.ID, "", "")
+func (s *Service) UpdateDeploymentsForProject(ctx context.Context, p *database.Project, environment string) error {
+	ds, err := s.DB.FindDeploymentsForProject(ctx, p.ID, environment, "")
 	if err != nil {
 		return err
 	}
