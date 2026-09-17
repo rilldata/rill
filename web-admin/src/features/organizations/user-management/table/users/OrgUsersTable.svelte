@@ -20,6 +20,7 @@
   import { ExternalLinkIcon } from "lucide-svelte";
   import InfiniteScrollTable from "@rilldata/web-common/components/table/InfiniteScrollTable.svelte";
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
+  import { loadNextInvitePageForFilter } from "@rilldata/web-admin/features/organizations/user-management/pagination";
 
   export let organization: string;
   export let data: OrgUser[];
@@ -36,6 +37,10 @@
   export let billingContact: string | undefined;
   export let scrollToTopTrigger: any = null;
   export let guestOnly: boolean;
+  export let hasActiveFilters = false;
+  export let isSearchPending = false;
+  export let showMembers = true;
+  export let showInvites = true;
 
   export let onAttemptRemoveBillingContactUser: () => void;
   export let onAttemptChangeBillingContactUserRole: () => void;
@@ -44,6 +49,24 @@
   export let onManageGroups: (user: OrgUser) => void;
 
   $: safeData = Array.isArray(data) ? data : [];
+
+  $: loadNextInvitePageForFilter(invitesQuery, showInvites && hasActiveFilters);
+  // Show the footer spinner only while rows are still arriving: the initial
+  // load, placeholder rows for a new search or role, or the next page.
+  // Background refetches after mutations or refocus must not show it, since
+  // they refetch every loaded page and would also pause infinite scrolling.
+  $: isLoadingMembers =
+    usersQuery.isPending ||
+    usersQuery.isPlaceholderData ||
+    usersQuery.isFetchingNextPage;
+  $: isLoadingInvites =
+    invitesQuery.isPending ||
+    invitesQuery.isFetchingNextPage ||
+    (hasActiveFilters && invitesQuery.isSuccess && invitesQuery.hasNextPage);
+  $: isLoading =
+    isSearchPending ||
+    (showMembers && isLoadingMembers) ||
+    (showInvites && isLoadingInvites);
 
   const UserCell = <ColumnDef<OrgUser, any>>{
     accessorKey: "user",
@@ -139,11 +162,22 @@
     : [UserCell, RoleCell, UserGroupCell];
 
   function handleLoadMore() {
-    if (usersQuery.hasNextPage) {
-      usersQuery.fetchNextPage();
+    if (
+      showMembers &&
+      usersQuery.hasNextPage &&
+      !usersQuery.isFetching &&
+      !usersQuery.isPlaceholderData &&
+      !usersQuery.isError
+    ) {
+      void usersQuery.fetchNextPage();
     }
-    if (invitesQuery.hasNextPage) {
-      invitesQuery.fetchNextPage();
+    if (
+      showInvites &&
+      invitesQuery.hasNextPage &&
+      !invitesQuery.isFetching &&
+      !invitesQuery.isError
+    ) {
+      void invitesQuery.fetchNextPage();
     }
   }
 
@@ -161,9 +195,9 @@
 <InfiniteScrollTable
   data={safeData}
   {columns}
-  hasNextPage={usersQuery.hasNextPage || invitesQuery.hasNextPage}
-  isFetchingNextPage={usersQuery.isFetchingNextPage ||
-    invitesQuery.isFetchingNextPage}
+  hasNextPage={(showMembers && usersQuery.hasNextPage && !usersQuery.isError) ||
+    (showInvites && invitesQuery.hasNextPage && !invitesQuery.isError)}
+  isFetchingNextPage={isLoading}
   onLoadMore={handleLoadMore}
   maxHeight={dynamicTableMaxHeight}
   emptyStateMessage={m.users_table_empty()}
