@@ -109,11 +109,15 @@ func (r *CanvasReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceN
 
 	// Validate refs
 	validateErr := checkRefs(ctx, r.C, self.Meta.Refs)
+	metricsViews := r.getReferencedMetricsViews(ctx, components)
 	if validateErr == nil {
-		validateErr = r.validateMetricsViewTimeConsistency(ctx, components)
+		validateErr = r.validateMetricsViewTimeConsistency(metricsViews)
 	}
 	if validateErr == nil {
 		validateErr = r.validateRequiredFilters(ctx, c.Spec, components)
+	}
+	if validateErr == nil {
+		validateErr = r.validateDefaultFilters(c.Spec, metricsViews)
 	}
 
 	// Capture the valid spec in the state
@@ -244,8 +248,7 @@ func canvasTransitiveConditionResources(ctx context.Context, c *runtime.Controll
 	return conditionResources, nil
 }
 
-// validateMetricsViewTimeConsistency checks that all the metrics views referenced by the canvas' components have the same first_day_of_week and first_month_of_year.
-func (r *CanvasReconciler) validateMetricsViewTimeConsistency(ctx context.Context, components map[string]*runtimev1.Resource) error {
+func (r *CanvasReconciler) getReferencedMetricsViews(ctx context.Context, components map[string]*runtimev1.Resource) map[string]*runtimev1.Resource {
 	metricsViews := make(map[string]*runtimev1.Resource)
 	for _, component := range components {
 		if component == nil {
@@ -278,6 +281,11 @@ func (r *CanvasReconciler) validateMetricsViewTimeConsistency(ctx context.Contex
 		}
 	}
 
+	return metricsViews
+}
+
+// validateMetricsViewTimeConsistency checks that all the metrics views referenced by the canvas' components have the same first_day_of_week and first_month_of_year.
+func (r *CanvasReconciler) validateMetricsViewTimeConsistency(metricsViews map[string]*runtimev1.Resource) error {
 	// Validate all metrics views have consistent first_day_of_week or first_month_of_year
 	if len(metricsViews) > 0 {
 		first := false
@@ -359,6 +367,22 @@ func (r *CanvasReconciler) validateRequiredFilters(ctx context.Context, spec *ru
 	for _, name := range spec.RequiredFilters {
 		if !known[name] {
 			return fmt.Errorf("required filter %q is not a dimension or measure on any metrics view referenced by this canvas", name)
+		}
+	}
+	return nil
+}
+
+// validateDefaultFilters validates that all metrics views referenced in the default filter expression exist.
+// Expressions themselves are validated in parse_canvas.
+func (r *CanvasReconciler) validateDefaultFilters(spec *runtimev1.CanvasSpec, metricsViews map[string]*runtimev1.Resource) error {
+	if spec.DefaultPreset == nil {
+		return nil
+	}
+
+	for mv := range spec.DefaultPreset.FilterExpr {
+		_, ok := metricsViews[mv]
+		if !ok {
+			return fmt.Errorf("metrics view %q referenced in default filter does not exist", mv)
 		}
 	}
 	return nil

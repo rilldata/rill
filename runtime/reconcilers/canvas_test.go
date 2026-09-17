@@ -392,3 +392,100 @@ rows:
 	require.NoError(t, err)
 	require.True(t, sec.CanAccess())
 }
+
+func TestCanvasValidateDefaultFilters(t *testing.T) {
+	// Create an instance with StageChanges==true
+	rt, id := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
+		Files:        map[string]string{"rill.yaml": ""},
+		StageChanges: true,
+	})
+
+	// Create two metrics views, but a canvas that only references mv1 and sets a default filter on it
+	testruntime.PutFiles(t, rt, id, map[string]string{
+		"m1.sql": `SELECT 'foo' as foo, 1 as x`,
+		"m2.sql": `SELECT 'bar' as bar, 2 as y`,
+		"mv1.yaml": `
+version: 1
+type: metrics_view
+model: m1
+dimensions:
+- column: foo
+measures:
+- name: x
+  expression: sum(x)
+`,
+		"mv2.yaml": `
+version: 1
+type: metrics_view
+model: m2
+dimensions:
+- column: bar
+measures:
+- name: y
+  expression: sum(y)
+`,
+		"c1.yaml": `
+type: canvas
+defaults:
+  filters:
+    mv1: "foo = 'foo'"
+rows:
+  - items:
+      - kpi_grid:
+          metrics_view: mv1
+          measures:
+            - x
+`,
+	})
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireReconcileState(t, rt, id, 7, 0, 0)
+	c1 := testruntime.GetResource(t, rt, id, runtime.ResourceKindCanvas, "c1")
+	require.NotNil(t, c1.GetCanvas().State.ValidSpec)
+	require.Empty(t, c1.Meta.ReconcileError)
+
+	// Add a default filter for a metrics view that exists, but is not referenced by any component
+	testruntime.PutFiles(t, rt, id, map[string]string{"c1.yaml": `
+type: canvas
+defaults:
+  filters:
+    mv1: "foo = 'foo'"
+    mv2: "bar = 'bar'"
+rows:
+  - items:
+      - kpi_grid:
+          metrics_view: mv1
+          measures:
+            - x
+`})
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	c1 = testruntime.GetResource(t, rt, id, runtime.ResourceKindCanvas, "c1")
+	require.Contains(t, c1.Meta.ReconcileError, `metrics view "mv2" referenced in default filter does not exist`)
+
+	// With StageChanges==true, the valid spec should be preserved
+	require.NotNil(t, c1.GetCanvas().State.ValidSpec)
+
+	// Fix it by adding a component that references mv2
+	testruntime.PutFiles(t, rt, id, map[string]string{"c1.yaml": `
+type: canvas
+defaults:
+  filters:
+    mv1: "foo = 'foo'"
+    mv2: "bar = 'bar'"
+rows:
+  - items:
+      - kpi_grid:
+          metrics_view: mv1
+          measures:
+            - x
+  - items:
+      - kpi_grid:
+          metrics_view: mv2
+          measures:
+            - y
+`})
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireReconcileState(t, rt, id, 8, 0, 0)
+	c1 = testruntime.GetResource(t, rt, id, runtime.ResourceKindCanvas, "c1")
+	require.NotNil(t, c1.GetCanvas().State.ValidSpec)
+	require.Empty(t, c1.Meta.ReconcileError)
+}
