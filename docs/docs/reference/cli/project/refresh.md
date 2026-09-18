@@ -13,22 +13,26 @@ rill project refresh [<project-name>] [flags]
 ### Flags
 
 ```
-      --project string         Project name
-      --path string            Project directory (default ".")
-      --branch string          Target deployment by Git branch (default: primary deployment)
-      --local                  Target locally running Rill
-      --all                    Refresh all resources except alerts and reports (default)
-      --full                   Fully reload the targeted models (use with --all or --model)
-      --model strings          Refresh a model
-      --partition strings      Refresh a model partition (must set --model)
-      --errored-partitions     Refresh all model partitions with errors (must set --model)
-      --skipped-partitions     Refresh all skipped model partitions (must set --model)
-      --source strings         Refresh a source
-      --metrics-view strings   Refresh a metrics view
-      --alert strings          Refresh an alert
-      --report strings         Refresh a report
-      --connector strings      Re-validate a connector
-      --parser                 Refresh the parser (forces a pull from Github)
+      --project string           Project name
+      --path string              Project directory (default ".")
+      --branch string            Target deployment by Git branch (default: primary deployment)
+      --local                    Target locally running Rill
+      --all                      Refresh all resources except alerts and reports (default)
+      --full                     Fully reload the targeted models (use with --all or --model)
+      --model strings            Refresh a model
+      --partition strings        Refresh a model partition (must set --model)
+      --errored-partitions       Refresh all model partitions with errors (must set --model)
+      --skipped-partitions       Refresh all skipped model partitions (must set --model)
+      --partition-key string     Name of the field in the partition data to range-filter on (must set --model)
+      --partition-start string   Inclusive lower bound for --partition-key (lexicographic string compare)
+      --partition-end string     Inclusive upper bound for --partition-key (lexicographic string compare)
+      --force                    Skip the partition-range refresh confirmation prompt
+      --source strings           Refresh a source
+      --metrics-view strings     Refresh a metrics view
+      --alert strings            Refresh an alert
+      --report strings           Refresh a report
+      --connector strings        Re-validate a connector
+      --parser                   Refresh the parser (forces a pull from Github)
 ```
 
 ### Global flags
