@@ -21,6 +21,7 @@
     interval,
     parsedTime,
     comparisonTimeRange,
+    comparisonInterval,
     parsedComparisonTime,
   } = $derived(timeFilterManager);
 
@@ -28,37 +29,46 @@
   let showRange = $derived(
     parsedTime && parsedTime?.interval instanceof RillIsoInterval,
   );
+  let showComparisonRange = $derived(
+    parsedComparisonTime?.interval instanceof RillIsoInterval,
+  );
 </script>
 
-<Chip type="time" theme readOnly>
-  <svelte:fragment slot="body">
-    <div class="text-fg-primary flex gap-x-1.5">
-      <div class="font-bold">
-        {#if showRange}
-          {m.time_custom()}
-        {:else}
-          {selectedLabel}
-        {/if}
-      </div>
-      {#if showRange && interval}
-        <RangeDisplay {interval} {timeGrain} />
-      {/if}
-    </div>
-  </svelte:fragment>
-</Chip>
-
-{#if comparisonTimeRange && parsedComparisonTime}
-  <Chip type="time" readOnly>
+{#if timeRange}
+  <Chip type="time" theme readOnly>
     <svelte:fragment slot="body">
-      <div class="text-fg-primary px-2">
-        {m.time_vs()}
-        <span class:font-bold={hasBoldTimeRange}>
-          {getComparisonLabelFromRange(
-            comparisonTimeRange,
-            parsedComparisonTime,
-          )}
-        </span>
+      <div class="text-fg-primary flex gap-x-1.5">
+        <div class="font-bold">
+          {#if showRange}
+            {m.time_custom()}
+          {:else}
+            {selectedLabel}
+          {/if}
+        </div>
+        {#if showRange && interval}
+          <RangeDisplay {interval} {timeGrain} />
+        {/if}
       </div>
     </svelte:fragment>
   </Chip>
+
+  {#if comparisonTimeRange && parsedComparisonTime}
+    <Chip type="time" readOnly>
+      <svelte:fragment slot="body">
+        <div class="text-fg-primary px-2 flex gap-x-1">
+          {m.time_vs()}
+          {#if showComparisonRange && comparisonInterval}
+            <RangeDisplay interval={comparisonInterval} {timeGrain} />
+          {:else}
+            <span class:font-bold={hasBoldTimeRange}>
+              {getComparisonLabelFromRange(
+                comparisonTimeRange,
+                parsedComparisonTime,
+              )}
+            </span>
+          {/if}
+        </div>
+      </svelte:fragment>
+    </Chip>
+  {/if}
 {/if}

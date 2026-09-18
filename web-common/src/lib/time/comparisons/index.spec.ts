@@ -35,6 +35,20 @@ const contiguousAndCustomComparisonRanges = [
       end: new Date("2020-03-05T06:05:00.000Z"),
     },
   },
+  // custom case
+  {
+    description:
+      "should return the window itself when comparison is an absolute range",
+    input: {
+      start: new Date("2020-03-05T00:00:00.000Z"),
+      end: new Date("2020-03-06T00:00:00.000Z"),
+      comparison: "2019-03-05T00:00:00.000Z,2019-03-06T00:00:00.000Z",
+    },
+    output: {
+      start: new Date("2019-03-05T00:00:00.000Z"),
+      end: new Date("2019-03-06T00:00:00.000Z"),
+    },
+  },
 ];
 
 const periodStart = new Date("2020-03-05T00:00:00.000Z");

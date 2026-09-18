@@ -34,9 +34,8 @@
         ) ?? "",
       );
     },
-    () => localExpressionFilters.metricsViewsProvider.ready,
     undefined,
-    true,
+    false,
   );
 
   let localFiltersEnabledOverride = $state(false);

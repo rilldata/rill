@@ -1,9 +1,9 @@
 export type TimeFiltersConfig = {
   hidePan?: boolean;
-  canPanLeft?: boolean;
-  canPanRight?: boolean;
-
+  showGrainSelector?: boolean; // TODO: not used in new picker?
   showTimeDimensionSelector?: boolean;
+  showComparisonSelector?: boolean;
+  allowCustomTimeRange?: boolean;
   lockTimeZone?: boolean;
   showFullRange?: boolean;
   showWatermark?: boolean;

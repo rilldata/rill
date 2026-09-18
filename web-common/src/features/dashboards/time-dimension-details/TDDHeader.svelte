@@ -64,7 +64,7 @@
   } = stateManagers;
 
   let { metricsViewsProvider } = $derived(dashboardConfigProvider);
-  let { smallestTimeGrain } = $derived(metricsViewsProvider);
+  let { largestMinTimeGrain } = $derived(metricsViewsProvider);
 
   let { timeGrain, timeStart, timeEnd } = $derived(timeFilterManager);
 
@@ -190,7 +190,7 @@
           onTimeGrainSelect={(grain) => timeFilterManager.onSelectGrain(grain)}
           {timeStart}
           {timeEnd}
-          minTimeGrain={smallestTimeGrain}
+          minTimeGrain={largestMinTimeGrain}
         />
         <SearchableFilterChip
           label={selectedMeasureLabel}

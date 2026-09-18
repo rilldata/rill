@@ -132,9 +132,9 @@ export function getResolveTemplatedStringQueryOptions(
           component.specStore,
           component.timeFilters.getTimeControlStore(),
           component.parent?.specStore ?? null,
-          component.parent.timeManager.hasTimeSeriesStore,
+          component.parent.timeFilterManager.getTimeControlStore(),
         ],
-        ([spec, { apiTimeRange }, parentSpec, hasTimeSeries]) => {
+        ([spec, { apiTimeRange }, parentSpec, { hasTimeSeries }]) => {
           const content = spec?.content ?? "";
           const applyFormatting = spec?.apply_formatting === true;
           const needsTemplating = hasTemplatingSyntax(content);

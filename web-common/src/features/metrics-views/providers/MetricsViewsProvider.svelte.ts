@@ -18,6 +18,7 @@ import {
   MinSupportedGrain,
   V1TimeGrainToOrder,
 } from "@rilldata/web-common/lib/time/new-grains.ts";
+import { writable } from "svelte/store";
 
 export type MetricsViewName = string;
 export type DimensionName = string;
@@ -65,12 +66,17 @@ export class MetricsViewsProvider {
   public timeRangeSummary: V1TimeRangeSummary | undefined;
   /** Smallest restriction across the metrics views, since it has to hold for all of them. */
   public maxQueryTimeRange: Duration | undefined;
-  /** Smallest time grain across the metrics views, since it has to hold for all of them. */
-  public smallestTimeGrain: V1TimeGrain | undefined;
-  public smallestGrainOrder: number;
+  // Largest `smallest_time_grain` across the metrics views.
+  public largestMinTimeGrain: V1TimeGrain | undefined;
+  public largestMinGrainOrder: number;
   /** True once every metrics view has a spec and every time series metrics view has a summary. */
   public ready: boolean;
   public metricsViewNames = $state<string[]>([]);
+
+  // Stores for legacy svelte4 usages
+  public largestMinTimeGrainStore = writable<V1TimeGrain | undefined>(
+    undefined,
+  );
 
   public cleanup: () => void;
 
@@ -194,8 +200,8 @@ export class MetricsViewsProvider {
     > = {};
     const dimensions: MetricsViewSpecDimension[] = [];
 
-    let smallestTimeGrain: V1TimeGrain | undefined = undefined;
-    let smallestGrainOrder: number | undefined = Infinity;
+    let largestMinTimeGrain: V1TimeGrain | undefined = undefined;
+    let largestMinGrainOrder: number | undefined = Infinity;
 
     for (const metricsViewName of this.metricsViewNames) {
       const res = this.resources.find(
@@ -235,12 +241,12 @@ export class MetricsViewsProvider {
       if (spec.smallestTimeGrain) {
         const specGrainOrder = V1TimeGrainToOrder[spec.smallestTimeGrain];
 
-        if (!smallestTimeGrain) {
-          smallestTimeGrain = spec.smallestTimeGrain;
-          smallestGrainOrder = specGrainOrder;
-        } else if (specGrainOrder < smallestGrainOrder) {
-          smallestTimeGrain = spec.smallestTimeGrain;
-          smallestGrainOrder = specGrainOrder;
+        if (!largestMinTimeGrain) {
+          largestMinTimeGrain = spec.smallestTimeGrain;
+          largestMinGrainOrder = specGrainOrder;
+        } else if (specGrainOrder > largestMinGrainOrder) {
+          largestMinTimeGrain = spec.smallestTimeGrain;
+          largestMinGrainOrder = specGrainOrder;
         }
       }
 
@@ -253,10 +259,13 @@ export class MetricsViewsProvider {
     this.simpleMeasures = simpleMeasures;
     this.dimensionSpecs = dimensionSpecs;
     this.dimensions = dimensions;
-    this.smallestTimeGrain = smallestTimeGrain;
-    this.smallestGrainOrder = smallestTimeGrain
-      ? smallestGrainOrder
+    this.largestMinTimeGrain = largestMinTimeGrain;
+    this.largestMinGrainOrder = largestMinTimeGrain
+      ? largestMinGrainOrder
       : V1TimeGrainToOrder[MinSupportedGrain];
+
+    // Set legacy stores
+    this.largestMinTimeGrainStore.set(largestMinTimeGrain);
   }
 
   /**

@@ -7,31 +7,35 @@
   import Calendar from "@rilldata/web-common/components/icons/Calendar.svelte";
   import Metadata from "@rilldata/web-common/features/dashboards/time-controls/super-pill/components/Metadata.svelte";
   import ComparisonTimeRangePicker from "@rilldata/web-common/features/dashboards/time-controls/ComparisonTimeRangePicker.svelte";
-  import type { DashboardConfigProvider } from "@rilldata/web-common/features/dashboards/providers/DashboardConfigProvider.svelte.ts";
+  import type { YAMLConfigProvider } from "@rilldata/web-common/features/dashboards/providers/YAMLConfigProvider.svelte.ts";
+  import type { MetricsViewsProvider } from "@rilldata/web-common/features/metrics-views/providers/MetricsViewsProvider.svelte.ts";
 
   let {
     timeFilterManager,
-    dashboardConfigProvider,
+    metricsViewsProvider,
+    yamlConfigProvider,
     context,
     config,
   }: {
     timeFilterManager: TimeFilterManager;
-    dashboardConfigProvider: DashboardConfigProvider;
+    metricsViewsProvider: MetricsViewsProvider;
+    yamlConfigProvider: YAMLConfigProvider;
     context: string;
     config: TimeFiltersConfig;
   } = $props();
+
   let hidePan = $derived(config.hidePan ?? false);
-  let canPanLeft = $derived(config.canPanLeft ?? !hidePan);
-  let canPanRight = $derived(config.canPanRight ?? !hidePan);
+  let canPanLeft = $derived(timeFilterManager.canPanLeft ?? !hidePan);
+  let canPanRight = $derived(timeFilterManager.canPanRight ?? !hidePan);
+
+  let showComparisonSelector = $derived(config.showComparisonSelector ?? true);
 
   let { timeZone, minDate, maxDate } = $derived(timeFilterManager);
-
-  let { metricsViewsProvider, yamlConfigProvider } = $derived(
-    dashboardConfigProvider,
-  );
 </script>
 
-<div class="flex flex-row flex-wrap gap-x-2 gap-y-1.5 items-center">
+<div
+  class="flex flex-row flex-wrap gap-x-2 gap-y-1.5 items-center pointer-events-auto"
+>
   <Tooltip.Root delayDuration={0}>
     <Tooltip.Trigger class="cursor-default text-fg-secondary">
       <Calendar size="16px" />
@@ -70,11 +74,13 @@
     />
   </div>
 
-  <ComparisonTimeRangePicker
-    {timeFilterManager}
-    {metricsViewsProvider}
-    {config}
-  />
+  {#if showComparisonSelector}
+    <ComparisonTimeRangePicker
+      {timeFilterManager}
+      {metricsViewsProvider}
+      {config}
+    />
+  {/if}
 </div>
 
 <style lang="postcss">

@@ -22,16 +22,12 @@
   } = $props();
 
   // svelte-ignore state_referenced_locally
-  syncStoreWithSource(
-    expressionFilterManager,
-    async (newUrlParams) => expressionFilterManager.setUrlParams(newUrlParams),
-    () => expressionFilterManager.metricsViewsProvider.ready,
+  syncStoreWithSource(expressionFilterManager, async (newUrlParams) =>
+    expressionFilterManager.setUrlParams(newUrlParams),
   );
   // svelte-ignore state_referenced_locally
-  syncStoreWithSource(
-    timeFilterManager,
-    async (newUrlParams) => timeFilterManager.setUrlParams(newUrlParams),
-    () => timeFilterManager.ready,
+  syncStoreWithSource(timeFilterManager, async (newUrlParams) =>
+    timeFilterManager.setUrlParams(newUrlParams),
   );
 
   let { timeStart, timeEnd, timeDimension } = $derived(timeFilterManager);

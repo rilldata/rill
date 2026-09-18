@@ -1,5 +1,4 @@
 import { goto } from "$app/navigation";
-import { page } from "$app/stores";
 import {
   useCanvas,
   type CanvasResponse,
@@ -40,8 +39,6 @@ import {
 } from "../components/util";
 import { Grid } from "./grid";
 import { TabGroup, type LayoutBlock } from "./tab-group";
-import { getComparisonTypeFromRangeString } from "./time-state";
-import { TimeManager } from "./time-manager";
 import { Theme } from "../../themes/theme";
 import { createResolvedThemeStore } from "../../themes/selectors";
 import { ExploreStateURLParams } from "../../dashboards/url-state/url-params";
@@ -54,6 +51,7 @@ import { convertExpressionToFilterParam } from "@rilldata/web-common/features/da
 import { flattenExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils.ts";
 import { CanvasDashboardConfigProvider } from "@rilldata/web-common/features/dashboards/providers/DashboardConfigProvider.svelte.ts";
 import { TimeFilterManager } from "@rilldata/web-common/features/dashboards/time-controls/TimeFilterManager.svelte.ts";
+import { getComparisonTypeFromRangeString } from "@rilldata/web-common/features/dashboards/time-controls/time-range-utils.ts";
 
 export const lastVisitedState = new Map<string, string>();
 
@@ -99,7 +97,6 @@ export class CanvasEntity {
   expressionFilterManager: ExpressionFilterManager;
 
   // Time filter manager
-  timeManager: TimeManager;
   timeFilterManager: TimeFilterManager;
 
   fileArtifact: FileArtifact | undefined;
@@ -157,50 +154,11 @@ export class CanvasEntity {
       allowUnvalidatedSpec,
     );
 
-    // This will be deprecated soon - bgh
-    const searchParamsStore: SearchParamsStore = (() => {
-      return {
-        subscribe: this.searchParams.subscribe,
-        set: (
-          map: Map<string, string>,
-          checkIfSet = false,
-          replaceState = false,
-        ) => {
-          const existingParams = new URLSearchParams(window.location.search);
-
-          map.forEach((value, key) => {
-            if (checkIfSet && existingParams.has(key)) return false;
-
-            if (value === undefined || value === null || value === "") {
-              existingParams.delete(key);
-            } else {
-              existingParams.set(key, value);
-            }
-          });
-
-          goto(`?${existingParams.toString()}`, { replaceState }).catch(
-            console.error,
-          );
-          return true;
-        },
-        clearAll: () => {
-          const url = get(page).url;
-          url.searchParams.forEach((_, effectiveKey) => {
-            url.searchParams.delete(effectiveKey);
-          });
-
-          goto(url.toString(), { replaceState: true }).catch(console.error);
-        },
-      };
-    })();
-
     this.theme = createResolvedThemeStore(
       this.themeName,
       this.specStore,
       this.client,
     );
-
-    this.timeManager = new TimeManager(searchParamsStore, this);
 
     // Let the embed layer (CanvasDashboardEmbed) drive themeName;
     // initialise with no override here so createResolvedThemeStore falls
@@ -236,6 +194,7 @@ export class CanvasEntity {
       this.dashboardProvider.metricsViewsProvider,
       this.dashboardProvider.yamlConfigProvider,
       false,
+      true,
     );
 
     this.processSpec(this.spec);
@@ -319,8 +278,6 @@ export class CanvasEntity {
     this.checkAndSetHasBanner(validSpec);
     this.checkAndSetMaxWidth(validSpec);
 
-    this.timeManager.onSpecChange(response);
-
     this.titleStore.set(validSpec.displayName ?? "");
 
     this.processRows({ canvas, components, metricsViews, filePath });
@@ -350,8 +307,8 @@ export class CanvasEntity {
     const requiredNames = requiredFilters
       .map((f) => f.split("::").pop())
       .filter(Boolean) as string[];
-    const timeRange = get(this.timeManager.state.rangeStore);
-    const comparisonOn = get(this.timeManager.state.showTimeComparisonStore);
+    const timeRange = this.timeFilterManager.timeRange;
+    const comparisonOn = this.timeFilterManager.showComparison;
 
     const filterNames = Object.keys(
       this.expressionFilterManager.topLevelJoiner.expr,
@@ -508,7 +465,6 @@ export class CanvasEntity {
       if (this.timeFilterManager.ready)
         this.timeFilterManager.setUrlParams(searchParams);
     }
-    this.timeManager.state.onUrlChange(searchParams);
     this.applyTabsFromURL(searchParams);
   };
 

@@ -10,6 +10,12 @@ import {
 } from "@rilldata/web-common/runtime-client";
 import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
 import { durationToMillis } from "@rilldata/web-common/lib/time/grains";
+import { TimeComparisonOption } from "@rilldata/web-common/lib/time/types.ts";
+import { parseRillTime } from "@rilldata/web-common/features/dashboards/url-state/time-ranges/parser.ts";
+import {
+  RillLegacyDaxInterval,
+  RillPeriodToGrainInterval,
+} from "@rilldata/web-common/features/dashboards/url-state/time-ranges/RillTime.ts";
 
 // Moved
 export function getAllowedTimeGrains(timeRangeDurationMs) {
@@ -119,3 +125,43 @@ export function getTimeDimensionOptions(
     };
   });
 }
+
+export function getComparisonTypeFromRangeString(
+  range: string | undefined,
+): TimeComparisonOption {
+  if (!range) {
+    return TimeComparisonOption.CONTIGUOUS;
+  }
+  try {
+    const { interval, rangeGrain } = parseRillTime(range);
+
+    if (
+      interval instanceof RillLegacyDaxInterval ||
+      interval instanceof RillPeriodToGrainInterval
+    ) {
+      return rangeGrain && rangeGrain in timeGrainToComparisonOptionMap
+        ? timeGrainToComparisonOptionMap[rangeGrain]
+        : TimeComparisonOption.CONTIGUOUS;
+    } else {
+      return TimeComparisonOption.CONTIGUOUS;
+    }
+  } catch {
+    return TimeComparisonOption.CONTIGUOUS;
+  }
+}
+
+const timeGrainToComparisonOptionMap: Record<
+  V1TimeGrain,
+  TimeComparisonOption
+> = {
+  [V1TimeGrain.TIME_GRAIN_MILLISECOND]: TimeComparisonOption.CONTIGUOUS,
+  [V1TimeGrain.TIME_GRAIN_SECOND]: TimeComparisonOption.CONTIGUOUS,
+  [V1TimeGrain.TIME_GRAIN_MINUTE]: TimeComparisonOption.CONTIGUOUS,
+  [V1TimeGrain.TIME_GRAIN_HOUR]: TimeComparisonOption.CONTIGUOUS,
+  [V1TimeGrain.TIME_GRAIN_DAY]: TimeComparisonOption.DAY,
+  [V1TimeGrain.TIME_GRAIN_WEEK]: TimeComparisonOption.WEEK,
+  [V1TimeGrain.TIME_GRAIN_MONTH]: TimeComparisonOption.MONTH,
+  [V1TimeGrain.TIME_GRAIN_QUARTER]: TimeComparisonOption.QUARTER,
+  [V1TimeGrain.TIME_GRAIN_YEAR]: TimeComparisonOption.YEAR,
+  [V1TimeGrain.TIME_GRAIN_UNSPECIFIED]: TimeComparisonOption.CONTIGUOUS,
+};

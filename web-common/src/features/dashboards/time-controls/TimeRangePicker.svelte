@@ -73,7 +73,8 @@
     snapToEnd,
   } = $derived(timeFilterManager);
 
-  let { smallestTimeGrain, maxQueryTimeRange } = $derived(metricsViewsProvider);
+  let { largestMinTimeGrain, maxQueryTimeRange } =
+    $derived(metricsViewsProvider);
 
   let {
     restrictedDimensions,
@@ -84,7 +85,7 @@
   } = $derived(yamlConfigProvider);
 
   let rangeBuckets = $derived(
-    bucketYamlRanges(timeRanges, smallestTimeGrain, true, maxQueryTimeRange),
+    bucketYamlRanges(timeRanges, largestMinTimeGrain, true, maxQueryTimeRange),
   );
 
   let timeDimensions = $derived(
@@ -437,7 +438,7 @@
             {interval}
             zone={timeZone}
             minTimeGrain={V1TimeGrainToDateTimeUnit[
-              smallestTimeGrain ?? MinSupportedGrain
+              largestMinTimeGrain ?? MinSupportedGrain
             ]}
             {minDate}
             {maxDate}
@@ -464,7 +465,7 @@
     isPeriodToDate={parsedTime?.interval instanceof RillPeriodToGrainInterval}
     {watermark}
     latest={maxDate}
-    {smallestTimeGrain}
+    smallestTimeGrain={largestMinTimeGrain}
     {snapToEnd}
     {ref}
     zone={timeZone}

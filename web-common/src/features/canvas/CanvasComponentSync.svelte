@@ -10,17 +10,11 @@
 
   // TODO: move to CanvasComponent after migrating it to svelte5
   // svelte-ignore state_referenced_locally
-  syncStoreWithSource(
-    component.expressionFilters,
-    async () => component.syncExpressionFilters(),
-    () => component.expressionFilters.metricsViewsProvider.ready,
+  syncStoreWithSource(component.expressionFilters, async () =>
+    component.syncExpressionFilters(),
   );
   // svelte-ignore state_referenced_locally
-  syncStoreWithSource(
-    component.timeFilters,
-    async () => component.syncTimeFilters(),
-    () =>
-      component.expressionFilters.metricsViewsProvider.ready &&
-      component.timeFilters.ready,
+  syncStoreWithSource(component.timeFilters, async () =>
+    component.syncTimeFilters(),
   );
 </script>

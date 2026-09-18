@@ -7,36 +7,25 @@ import type {
   AllKeys,
   InputParams,
 } from "@rilldata/web-common/features/canvas/inspector/types";
-import { getFiltersFromText } from "@rilldata/web-common/features/dashboards/filters/dimension-filters/dimension-search-text-utils";
 import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
-import { TimeRangePreset } from "@rilldata/web-common/lib/time/types";
 import type {
   V1Expression,
   V1Resource,
-  V1TimeRange,
 } from "@rilldata/web-common/runtime-client";
 import type { Component, ComponentType, SvelteComponent } from "svelte";
 import type { Readable, Unsubscriber } from "svelte/store";
 import { derived, get, writable, type Writable } from "svelte/store";
 import { mergeFilters } from "../../dashboards/pivot/pivot-merge-filters";
-import {
-  createAndExpression,
-  sanitiseExpression,
-} from "../../dashboards/stores/filter-utils";
-import type {
-  ComparisonTimeRangeState,
-  TimeAndFilterStore,
-  TimeRangeState,
-} from "../../dashboards/time-controls/time-control-store";
 import type {
   CanvasEntity,
   ComponentPath,
   SearchParamsStore,
 } from "../stores/canvas-entity";
-import { TimeState } from "../stores/time-state";
-import type { ExpressionFilterManager } from "@rilldata/web-common/features/dashboards/filters/ExpressionFilterManager.svelte.ts";
-import type { TimeFilterManager } from "@rilldata/web-common/features/dashboards/time-controls/TimeFilterManager.svelte.ts";
+import { ExpressionFilterManager } from "@rilldata/web-common/features/dashboards/filters/ExpressionFilterManager.svelte.ts";
+import { TimeFilterManager } from "@rilldata/web-common/features/dashboards/time-controls/TimeFilterManager.svelte.ts";
 import { dedupe } from "@rilldata/web-common/lib/arrayUtils.ts";
+import { YAMLConfigProvider } from "@rilldata/web-common/features/dashboards/providers/YAMLConfigProvider.svelte.ts";
+import { MetricsViewsProvider } from "@rilldata/web-common/features/metrics-views/providers/MetricsViewsProvider.svelte.ts";
 
 export abstract class BaseCanvasComponent<T = ComponentSpec> {
   id: string;
@@ -50,8 +39,9 @@ export abstract class BaseCanvasComponent<T = ComponentSpec> {
   localExpressionFilters: ExpressionFilterManager;
   // Widget specific time filters
   localTimeFilters: TimeFilterManager;
-  // Widget specific time filters
-  localTimeControls: TimeState;
+
+  metricsViewsProvider: MetricsViewsProvider;
+  yamlConfigProvider: YAMLConfigProvider;
 
   // Final expression filter manager based on parent and local
   expressionFilters: ExpressionFilterManager;
@@ -155,29 +145,33 @@ export abstract class BaseCanvasComponent<T = ComponentSpec> {
       };
     })();
 
-    this.localTimeControls = this.parent.timeManager.createLocalTimeState(
-      this.id,
-      yamlTimeFilterStore,
+    this.metricsViewsProvider = new MetricsViewsProvider(this.parent.client, [
       this.metricsViewName,
+    ]);
+    this.yamlConfigProvider = this.parent.dashboardProvider.yamlConfigProvider;
+
+    this.localExpressionFilters = new ExpressionFilterManager(
+      this.metricsViewsProvider,
+      this.yamlConfigProvider,
     );
 
-    this.localExpressionFilters =
-      this.parent.expressionFilterManager.createLocalFilterStore(
-        this.metricsViewName,
-      );
+    this.localTimeFilters = new TimeFilterManager(
+      this.parent.client,
+      this.metricsViewsProvider,
+      this.yamlConfigProvider,
+      this.parent.timeFilterManager.allowCustomTimeRange,
+    );
 
-    this.localTimeFilters =
-      this.parent.timeFilterManager.createLocalFilterStore(
-        this.metricsViewName,
-      );
+    this.expressionFilters = new ExpressionFilterManager(
+      this.metricsViewsProvider,
+      this.yamlConfigProvider,
+    );
 
-    this.expressionFilters =
-      this.parent.expressionFilterManager.createLocalFilterStore(
-        this.metricsViewName,
-      );
-
-    this.timeFilters = this.parent.timeFilterManager.createLocalFilterStore(
-      this.metricsViewName,
+    this.timeFilters = new TimeFilterManager(
+      this.parent.client,
+      this.metricsViewsProvider,
+      this.yamlConfigProvider,
+      this.parent.timeFilterManager.allowCustomTimeRange,
     );
 
     this.unsubscribeSpec = this.specStore.subscribe((spec) => {
@@ -241,177 +235,6 @@ export abstract class BaseCanvasComponent<T = ComponentSpec> {
       ? this.localTimeFilters.curParams
       : this.parent.timeFilterManager.curParams;
     this.timeFilters.setUrlParams(urlParams);
-  }
-
-  // This will be deprecated eventually - bgh
-  get timeAndFilterStore(): Readable<TimeAndFilterStore> {
-    return derived(
-      [
-        this.parent.timeManager.state.interval,
-        this.parent.timeManager.state.grainStore,
-        this.parent.timeManager.state.showTimeComparisonStore,
-        this.parent.timeManager.state.comparisonRangeStore,
-        this.parent.timeManager.state.comparisonIntervalStore,
-        this.parent.timeManager.state.timeZoneStore,
-        this.parent.timeManager.state.rangeStore,
-        this.localTimeControls.interval,
-        this.localTimeControls.comparisonIntervalStore,
-        this.localTimeControls.showTimeComparisonStore,
-        this.localTimeControls.grainStore,
-        this.localTimeControls.comparisonRangeStore,
-        this.localTimeControls.rangeStore,
-        this.parent.expressionFilterManager.getExprStoreForMetricsView(
-          this.metricsViewName,
-        ),
-        this.parent.timeManager.hasTimeSeriesMap,
-        this.specStore,
-      ],
-      ([
-        globalInterval,
-        globalGrainStore,
-        globalShowTimeComparison,
-        globalComparisonRange,
-        globalComparisonInterval,
-        timeZone,
-        globalRange,
-        localInterval,
-        localComparisonInterval,
-        localShowTimeComparison,
-        localGrainStore,
-        localComparisonRange,
-        localRange,
-        metricsViewFilters,
-        hasTimeSeriesMap,
-        componentSpec,
-      ]) => {
-        const hasTimeSeries = hasTimeSeriesMap.get(this.metricsViewName);
-
-        let timeGrain = globalGrainStore;
-
-        // Timestamps sent to the runtime must be UTC:
-        // the protobuf JSON codec rejects ISO strings with both milliseconds and a timezone offset,
-        // which is what Luxon produces for zoned datetimes (e.g. 2026-08-13T00:00:00.000+09:00).
-        let timeRange: V1TimeRange = {
-          start: globalInterval?.start.toUTC().toISO(),
-          end: globalInterval?.end.toUTC().toISO(),
-          timeZone,
-        };
-
-        let timeRangeState: TimeRangeState | undefined = {
-          selectedTimeRange: globalInterval
-            ? {
-                name: globalRange ?? TimeRangePreset.CUSTOM,
-                start: globalInterval.start.toJSDate(),
-                end: globalInterval.end.toJSDate(),
-                interval: globalGrainStore,
-              }
-            : undefined,
-          timeStart: globalInterval?.start.toUTC().toISO(),
-          timeEnd: globalInterval?.end.toUTC().toISO(),
-        };
-
-        let comparisonTimeRange: V1TimeRange | undefined = {
-          start: globalComparisonInterval?.start.toUTC().toISO(),
-          end: globalComparisonInterval?.end.toUTC().toISO(),
-          timeZone,
-        };
-
-        let showTimeComparison = globalShowTimeComparison;
-
-        let comparisonTimeRangeState: ComparisonTimeRangeState | undefined =
-          globalComparisonInterval && {
-            comparisonTimeStart: globalComparisonInterval.start.toUTC().toISO(),
-            comparisonTimeEnd: globalComparisonInterval.end.toUTC().toISO(),
-            selectedComparisonTimeRange: {
-              start: globalComparisonInterval.start.toJSDate(),
-              end: globalComparisonInterval.end.toJSDate(),
-              name: globalComparisonRange,
-            },
-          };
-
-        if (componentSpec?.["time_filters"]) {
-          timeRange = {
-            start: localInterval?.start.toUTC().toISO(),
-            end: localInterval?.end.toUTC().toISO(),
-            timeZone,
-          };
-
-          comparisonTimeRange = {
-            start: localComparisonInterval?.start.toUTC().toISO(),
-            end: localComparisonInterval?.end.toUTC().toISO(),
-            timeZone,
-          };
-
-          showTimeComparison = localShowTimeComparison;
-
-          timeGrain = localGrainStore ?? globalGrainStore;
-
-          const localTimeRangeState: TimeRangeState = {
-            selectedTimeRange: localInterval
-              ? {
-                  name: localRange ?? TimeRangePreset.CUSTOM,
-                  start: localInterval.start.toJSDate(),
-                  end: localInterval.end.toJSDate(),
-                  interval: localGrainStore ?? globalGrainStore,
-                }
-              : undefined,
-            timeStart: localInterval?.start.toUTC().toISO(),
-            timeEnd: localInterval?.end.toUTC().toISO(),
-          };
-          const localComparisonRangeState:
-            | ComparisonTimeRangeState
-            | undefined = localComparisonInterval && {
-            comparisonTimeStart: localComparisonInterval.start.toUTC().toISO(),
-            comparisonTimeEnd: localComparisonInterval.end.toUTC().toISO(),
-            selectedComparisonTimeRange: {
-              start: localComparisonInterval.start.toJSDate(),
-              end: localComparisonInterval.end.toJSDate(),
-              name: localComparisonRange,
-            },
-          };
-
-          timeRangeState = localTimeRangeState;
-          comparisonTimeRangeState = localComparisonRangeState;
-        }
-
-        // Dimension Filters
-        // The global filters are absent until the canvas' metrics views resolve, and for a component
-        // pointed at a metrics view the canvas does not reference. The component's own filters below
-        // still apply in both cases.
-        const globalDimensionOnlyWhere =
-          sanitiseExpression(
-            metricsViewFilters?.dimensionOnlyExpr,
-            undefined,
-          ) ?? createAndExpression([]);
-
-        let fullWhere: V1Expression | undefined = metricsViewFilters?.expr;
-        let dimensionOnlyWhere: V1Expression | undefined =
-          globalDimensionOnlyWhere;
-
-        if (componentSpec?.["dimension_filters"]) {
-          const { expr: componentWhere } = getFiltersFromText(
-            componentSpec?.["dimension_filters"] as string,
-          );
-          fullWhere = mergeFilters(fullWhere, componentWhere);
-          dimensionOnlyWhere = mergeFilters(
-            globalDimensionOnlyWhere,
-            componentWhere,
-          );
-        }
-
-        return {
-          timeRange,
-          showTimeComparison,
-          comparisonTimeRange,
-          dimensionOnlyWhere,
-          where: fullWhere,
-          timeGrain,
-          timeRangeState,
-          comparisonTimeRangeState,
-          hasTimeSeries,
-        };
-      },
-    );
   }
 
   private updateYAML(newSpec: T) {

@@ -414,6 +414,7 @@ export async function deriveInterval(
     );
 
     if (!timeRange?.start || !timeRange?.end) {
+      console.error("Invalid time range: no start/end");
       return { interval: Interval.invalid("Invalid time range") };
     }
 

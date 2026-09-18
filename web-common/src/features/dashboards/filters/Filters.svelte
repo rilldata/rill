@@ -19,24 +19,24 @@
     timeFilterManager,
   } = StateManagers;
 
-  let { metricsViewsProvider } = $derived(dashboardConfigProvider);
+  let { metricsViewsProvider, yamlConfigProvider } = $derived(
+    dashboardConfigProvider,
+  );
 
   syncStoreWithSource(
     expressionFilterManager,
     syncExpressionFilters,
-    () => metricsViewsProvider.ready,
     undefined,
     // URL sync is managed by DashboardStateSync
-    true,
+    false,
   );
 
   syncStoreWithSource(
     timeFilterManager,
     syncTimeFilters,
-    () => metricsViewsProvider.ready && timeFilterManager.ready,
     undefined,
     // URL sync is managed by DashboardStateSync
-    true,
+    false,
   );
 
   let {
@@ -100,7 +100,8 @@
   {#if hasTimeSeries}
     <TimeFilters
       {timeFilterManager}
-      {dashboardConfigProvider}
+      {metricsViewsProvider}
+      {yamlConfigProvider}
       config={{
         showTimeDimensionSelector: true,
         showFullRange: true,

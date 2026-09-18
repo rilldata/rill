@@ -8,8 +8,6 @@ import {
   type V1TimeRange,
 } from "@rilldata/web-common/runtime-client";
 import { DEFAULT_TIMEZONE } from "@rilldata/web-common/lib/time/config.ts";
-import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.ts";
-import { invalidationForMetricsViewData } from "@rilldata/web-common/runtime-client/invalidation.ts";
 import {
   constructAsOfString,
   constructNewString,
@@ -76,6 +74,7 @@ export type TimeControlState = {
   timeRange: string | undefined;
   timeGrain: V1TimeGrain | undefined;
   timeZone: string;
+  interval: Interval<true> | undefined;
   apiTimeRange: V1TimeRange;
 
   comparisonTimeRange: string | undefined;
@@ -100,6 +99,10 @@ export class TimeFilterManager implements UrlParamsStore {
     undefined,
   );
   public scrubInterval = $state<ScrubRange | undefined>(undefined);
+
+  // When set, relative time ranges are anchored at this time instead of now/latest.
+  // Used by scheduled report exports to render data as of the report's execution time.
+  private executionTime = $state<string | undefined>(undefined);
 
   // Computed values
   public minDate: DateTime<true> | undefined;
@@ -135,16 +138,20 @@ export class TimeFilterManager implements UrlParamsStore {
 
   public hasTimeSeries: boolean | undefined;
   public ready: boolean;
+  public specLoaded: boolean;
+  public dataLoaded = $state(false);
 
   // Temporary lock in explore. Once we move whereFilter out of explore, we can remove this.
   public updating = false;
-  private timeRangeReady = $state(false);
+
+  private fetchingTimeRange = "";
 
   public constructor(
     private readonly runtimeClient: RuntimeClient,
     private readonly metricsViewsProvider: MetricsViewsProvider,
     private readonly yamlConfigProvider: YAMLConfigProvider,
-    private readonly allowCustomTimeRange: boolean,
+    public readonly allowCustomTimeRange: boolean,
+    private readonly log: boolean = false,
   ) {
     this.minDate = $derived.by(() => {
       const minDate = this.metricsViewsProvider.timeRangeSummary?.min
@@ -240,7 +247,7 @@ export class TimeFilterManager implements UrlParamsStore {
     this.aggregationOptions = $derived(
       allowedGrainsForInterval(
         this.interval,
-        this.metricsViewsProvider.smallestTimeGrain,
+        this.metricsViewsProvider.largestMinTimeGrain,
       ),
     );
     this.comparisonTimeRangeOptions = $derived(
@@ -248,7 +255,7 @@ export class TimeFilterManager implements UrlParamsStore {
     );
 
     this.hasTimeSeries = $derived.by(() => {
-      if (!metricsViewsProvider.metricsViewNames.length) return undefined;
+      if (!metricsViewsProvider.ready) return undefined;
 
       let hasTimeSeries = false;
       for (const metricsView of metricsViewsProvider.metricsViewNames) {
@@ -261,21 +268,17 @@ export class TimeFilterManager implements UrlParamsStore {
       return hasTimeSeries;
     });
 
-    this.ready = $derived.by(() => {
-      if (!metricsViewsProvider.ready) return false;
-      for (const metricsView of metricsViewsProvider.metricsViewNames) {
-        const spec = metricsViewsProvider.specs[metricsView];
-        if (!spec) return false;
-        if (!spec.timeDimension) continue;
-        if (!metricsViewsProvider.timeRangeSummaries[metricsView]) return false;
-      }
+    this.specLoaded = $derived(this.hasTimeSeries !== undefined);
 
+    this.ready = $derived.by(() => {
+      // 'undefined' means data has not loaded yet.
+      if (this.hasTimeSeries === undefined) return false;
       // A dashboard without a time dimension has no time range to resolve,
       // so waiting for one would never let the consumers of this become ready.
       // The specs have all resolved by this point, so hasTimeSeries is never undefined here.
-      if (this.hasTimeSeries === false) return true;
+      if (!this.hasTimeSeries) return true;
 
-      return this.timeRangeReady;
+      return this.dataLoaded;
     });
   }
 
@@ -300,13 +303,15 @@ export class TimeFilterManager implements UrlParamsStore {
       let defaultTimeRange = this.yamlConfigProvider.defaultTimeRange;
       if (!defaultTimeRange) {
         defaultTimeRange = getDefaultTimeRange(
-          this.metricsViewsProvider.smallestTimeGrain,
+          this.metricsViewsProvider.largestMinTimeGrain,
           this.metricsViewsProvider.timeRangeSummary,
         );
       }
       if (defaultTimeRange) {
         void this.applyTimeRange(defaultTimeRange);
       } else {
+        if (this.log)
+          console.log("TimeFilterManager:setUrlParams:unset", this.timeRange);
         this.timeRange = undefined;
         this.interval = undefined;
       }
@@ -422,7 +427,7 @@ export class TimeFilterManager implements UrlParamsStore {
 
         const isTruncationGrainAllowed =
           getGrainOrder(this.truncationGrain) >=
-          this.metricsViewsProvider.smallestGrainOrder;
+          this.metricsViewsProvider.largestMinGrainOrder;
         const newAsOfString = constructAsOfString(
           this.ref ?? RillTimeLabel.Latest,
           ignoreSnap
@@ -431,7 +436,7 @@ export class TimeFilterManager implements UrlParamsStore {
               ? isTruncationGrainAllowed
                 ? this.truncationGrain
                 : parsed.rangeGrain
-              : (this.metricsViewsProvider.smallestTimeGrain ??
+              : (this.metricsViewsProvider.largestMinTimeGrain ??
                 V1TimeGrain.TIME_GRAIN_MINUTE),
           hasAsOfClause || this.snapToEnd ? this.snapToEnd : true,
         );
@@ -516,6 +521,9 @@ export class TimeFilterManager implements UrlParamsStore {
     this.showComparison = true;
   }
 
+  public setShowComparison(showComparison: boolean) {
+    this.showComparison = showComparison;
+  }
   public onToggleShowComparison() {
     this.showComparison = !this.showComparison;
   }
@@ -550,24 +558,26 @@ export class TimeFilterManager implements UrlParamsStore {
   }
 
   public getTimeControlStore() {
-    return toStore(
-      () =>
-        ({
-          timeRange: this.timeRange,
-          timeGrain: this.timeGrain,
-          timeZone: this.timeZone,
-          apiTimeRange: this.apiTimeRange,
+    return toStore<TimeControlState>(() => ({
+      timeRange: this.timeRange,
+      timeGrain: this.timeGrain,
+      timeZone: this.timeZone,
+      interval: this.interval,
+      apiTimeRange: this.apiTimeRange,
 
-          comparisonTimeRange: this.comparisonTimeRange,
-          showComparison: this.showComparison,
-          apiComparisonTimeRange: this.showComparison
-            ? this.apiComparisonTimeRange
-            : undefined,
+      comparisonTimeRange: this.comparisonTimeRange,
+      showComparison: this.showComparison,
+      apiComparisonTimeRange: this.showComparison
+        ? this.apiComparisonTimeRange
+        : undefined,
 
-          hasTimeSeries: this.hasTimeSeries,
-          ready: this.ready,
-        }) satisfies TimeControlState,
-    );
+      hasTimeSeries: this.hasTimeSeries,
+      ready: this.ready,
+    }));
+  }
+
+  public setExecutionTime(executionTime: string | undefined) {
+    this.executionTime = executionTime;
   }
 
   private async applyTimeRange(newTimeRange: string, tz = this.timeZone) {
@@ -579,10 +589,11 @@ export class TimeFilterManager implements UrlParamsStore {
     // waiting for it here would drop the range the dashboard loaded with.
     if (
       !this.metricsViewsProvider.metricsViewNames.length ||
-      this.timeRange === newTimeRange
+      this.fetchingTimeRange === newTimeRange
     ) {
       return;
     }
+    this.fetchingTimeRange = newTimeRange;
 
     // This should be returned by the API, but it is not yet implemented
     const includesTimeZoneOffset = newTimeRange.includes("tz");
@@ -593,13 +604,6 @@ export class TimeFilterManager implements UrlParamsStore {
       if (timeZone) this.timeZone = timeZone;
     }
 
-    await queryClient.cancelQueries({
-      predicate: (query) =>
-        this.metricsViewsProvider.metricsViewNames.some((mvName) =>
-          invalidationForMetricsViewData(query, mvName),
-        ),
-    });
-
     const promises = this.metricsViewsProvider.metricsViewNames.map(
       (mvName) => {
         return deriveInterval(
@@ -608,7 +612,7 @@ export class TimeFilterManager implements UrlParamsStore {
           mvName,
           tz ?? "UTC",
           this.timeDimension,
-          // executionTime, // TODO
+          this.executionTime,
         );
       },
     );
@@ -632,11 +636,14 @@ export class TimeFilterManager implements UrlParamsStore {
         smallestGrain = grain;
       }
     });
-    if (!latestInterval) return;
+    if (!latestInterval) {
+      if (this.log) console.log("TimeFilterManager:applyTimeRange:noInterval");
+      return;
+    }
 
     const allowedGrains = allowedGrainsForInterval(
       latestInterval,
-      this.metricsViewsProvider.smallestTimeGrain ?? MinSupportedGrain,
+      this.metricsViewsProvider.largestMinTimeGrain ?? MinSupportedGrain,
     );
 
     const finalGrain =
@@ -659,7 +666,12 @@ export class TimeFilterManager implements UrlParamsStore {
     if (this.comparisonTimeRange)
       this.applyComparisonRange(this.comparisonTimeRange);
 
-    this.timeRangeReady = true;
+    if (this.log)
+      console.log(
+        "TimeFilterManager:applyTimeRange:dataLoaded",
+        this.timeRange,
+      );
+    this.dataLoaded = true;
   }
 
   private applyComparisonRange(newComparisonTimeRange: string) {
@@ -668,8 +680,13 @@ export class TimeFilterManager implements UrlParamsStore {
 
     try {
       const parsed = parseRillTime(this.timeRange);
-      // Mark comparison as contiguous when we have an absolute primary time range
-      if (parsed.interval instanceof RillIsoInterval) {
+      // An absolute primary time range has no relative comparison other than the contiguous one,
+      // so mark the comparison as contiguous. An absolute comparison window is left as-is:
+      // it already names the exact period to compare against.
+      if (
+        parsed.interval instanceof RillIsoInterval &&
+        !(this.parsedComparisonTime?.interval instanceof RillIsoInterval)
+      ) {
         this.comparisonTimeRange = TimeComparisonOption.CONTIGUOUS;
       }
       if (this.timeRange === TimeRangePreset.ALL_TIME) {

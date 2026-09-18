@@ -219,7 +219,7 @@ export function getAdjustedInterval(
   grain: V1TimeGrain | undefined,
   zone: string,
 ): Interval | undefined {
-  if (interval?.isValid || !interval.start || !interval.end || !grain) {
+  if (!interval?.isValid || !interval.start || !interval.end || !grain) {
     return undefined;
   }
 

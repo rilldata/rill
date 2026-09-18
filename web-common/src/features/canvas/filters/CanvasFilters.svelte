@@ -22,6 +22,8 @@
       timeFilterManager,
     },
   } = $derived(getCanvasStore(canvasName, runtimeClient.instanceId));
+  let { metricsViewsProvider, yamlConfigProvider } =
+    $derived(dashboardProvider);
 
   let {
     hasTimeSeries,
@@ -39,10 +41,10 @@
   {#if hasTimeSeries}
     <TimeFilters
       {timeFilterManager}
-      dashboardConfigProvider={dashboardProvider}
+      {metricsViewsProvider}
+      {yamlConfigProvider}
       config={{
         showTimeDimensionSelector: false,
-        showFullRange: false,
         showWatermark: false,
       }}
       context="canvas"

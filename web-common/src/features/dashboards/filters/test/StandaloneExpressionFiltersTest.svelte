@@ -39,9 +39,8 @@
   syncStoreWithSource(
     expressionFilterManager,
     async (newUrlParams) => expressionFilterManager.setUrlParams(newUrlParams),
-    () => metricsViewsProvider.ready,
     undefined,
-    true,
+    false,
   );
 </script>
 

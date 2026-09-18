@@ -70,10 +70,8 @@
   );
   // Always load from current state. This is the only route to overwrite bookmark state.
   // A future PR will improve this by adding `Replace` action, in that case this should only have bookmark's state.
-  syncStoreWithSource(
-    expressionFilterManager,
-    async (newUrlParams) => expressionFilterManager.setUrlParams(newUrlParams),
-    () => dashboardConfigProvider.metricsViewsProvider.ready,
+  syncStoreWithSource(expressionFilterManager, async (newUrlParams) =>
+    expressionFilterManager.setUrlParams(newUrlParams),
   );
 
   const timeFilterManager = new TimeFilterManager(
@@ -84,12 +82,8 @@
   );
   // Always load from current state. This is the only route to overwrite bookmark state.
   // A future PR will improve this by adding `Replace` action, in that case this should only have bookmark's state.
-  syncStoreWithSource(
-    timeFilterManager,
-    async (newUrlParams) => timeFilterManager.setUrlParams(newUrlParams),
-    () =>
-      timeFilterManager.ready &&
-      dashboardConfigProvider.metricsViewsProvider.ready,
+  syncStoreWithSource(timeFilterManager, async (newUrlParams) =>
+    timeFilterManager.setUrlParams(newUrlParams),
   );
 
   const exprByMetricsView = $derived(expressionFilterManager.exprByMetricsView);

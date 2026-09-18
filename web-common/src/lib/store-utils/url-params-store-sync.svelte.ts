@@ -5,27 +5,28 @@ import { untrack } from "svelte";
 export interface UrlParamsStore {
   setUrlParams(urlParams: URLSearchParams): void;
   applyFilterToParams(urlParams: URLSearchParams): void;
+  specLoaded: boolean;
+  dataLoaded: boolean;
 }
 
 export function syncStoreWithSource(
   store: UrlParamsStore,
   sync: (newUrlParams: URLSearchParams) => Promise<void>,
-  readyGetter: () => boolean,
   defaultUrlParamsGetter?: () => URLSearchParams | undefined,
-  skipUrlSync = false,
+  syncFromUrl = true,
+  log = false,
 ) {
   let lock = false;
 
-  if (!skipUrlSync) {
+  if (syncFromUrl) {
     $effect(() => {
       // Read all dependencies first so the subscription survives the guard.
       const currentUrl = page.url;
       const defaultUrlParams = untrack(() =>
         defaultUrlParamsGetter ? defaultUrlParamsGetter() : undefined,
       );
-      const ready = readyGetter();
 
-      if (!ready || lock) return;
+      if (!store.specLoaded || lock) return;
       lock = true;
 
       const newUrlParams = new URLSearchParams(currentUrl.searchParams);
@@ -36,6 +37,7 @@ export function syncStoreWithSource(
         });
       }
 
+      if (log) console.log("sync:fromUrl", newUrlParams.toString());
       // No need to safeguard against unchanged url.
       // It should already happen in setUrlParams since it will have other callers.
       untrack(() => store.setUrlParams(newUrlParams));
@@ -53,21 +55,16 @@ export function syncStoreWithSource(
     const defaultUrlParams = untrack(() =>
       defaultUrlParamsGetter ? defaultUrlParamsGetter() : undefined,
     );
-    const ready = readyGetter();
 
     if (
-      !ready ||
+      !store.dataLoaded ||
       lock ||
       curStateParams.toString() === prevStateParams.toString()
     )
       return;
     lock = true;
 
-    const currentUrlParams = untrack(() =>
-      skipUrlSync
-        ? new URLSearchParams(prevStateParams)
-        : page.url.searchParams,
-    );
+    const currentUrlParams = untrack(() => page.url.searchParams);
     prevStateParams = curStateParams;
 
     let newUrlParams = new URLSearchParams(currentUrlParams);
@@ -78,6 +75,13 @@ export function syncStoreWithSource(
       store.applyFilterToParams(newUrlParams);
     });
 
+    if (log) {
+      console.log(
+        "sync:toUrl",
+        newUrlParams.toString() === currentUrlParams.toString(),
+        newUrlParams.toString(),
+      );
+    }
     if (newUrlParams.toString() === currentUrlParams.toString()) {
       lock = false;
       return;

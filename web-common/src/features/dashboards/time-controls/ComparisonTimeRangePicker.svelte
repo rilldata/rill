@@ -47,7 +47,7 @@
     comparisonInterval,
   } = $derived(timeFilterManager);
 
-  let { smallestTimeGrain } = $derived(metricsViewsProvider);
+  let { largestMinTimeGrain } = $derived(metricsViewsProvider);
 
   let open = $state(false);
   let showSelector = $state(false);
@@ -181,7 +181,7 @@
               {#if !comparisonInterval || comparisonInterval?.isValid}
                 <CalendarPlusDateInput
                   minTimeGrain={V1TimeGrainToDateTimeUnit[
-                    smallestTimeGrain ?? MinSupportedGrain
+                    largestMinTimeGrain ?? MinSupportedGrain
                   ]}
                   {maxDate}
                   {minDate}

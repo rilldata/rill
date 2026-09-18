@@ -69,6 +69,9 @@ export class ExpressionFilterManager implements UrlParamsStore {
   // Temporary lock in explore. Once we move whereFilter out of explore, we can remove this.
   public updating = false;
 
+  public specLoaded: boolean;
+  public dataLoaded = $state<boolean>(false);
+
   public constructor(
     public readonly metricsViewsProvider: MetricsViewsProvider,
     public readonly yamlConfigProvider: YAMLConfigProvider,
@@ -112,6 +115,8 @@ export class ExpressionFilterManager implements UrlParamsStore {
     this.hasSomeFilter = $derived(
       Object.keys(this.exprByMetricsView).length > 0,
     );
+
+    this.specLoaded = $derived(this.metricsViewsProvider.ready);
   }
 
   public clone() {
@@ -166,6 +171,7 @@ export class ExpressionFilterManager implements UrlParamsStore {
       this.events,
     ) as JoinerFilterManager;
     this.isComplexFilter = advanced;
+    this.dataLoaded = true;
 
     this.curParams = normalizeUrlParams(
       relevantUrlParams,

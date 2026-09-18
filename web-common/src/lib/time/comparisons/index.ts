@@ -343,10 +343,25 @@ export function getComparisonInterval(
   comparisonRange: string | undefined,
   activeTimeZone: string,
 ): Interval<true> | undefined {
-  if (!interval || !comparisonRange || isNewRillTimeFormat(comparisonRange))
-    return undefined;
+  if (!interval || !comparisonRange) return undefined;
 
-  let comparisonInterval: Interval | undefined = undefined;
+  // An absolute `<start>,<end>` window names the period to compare against, so it resolves here.
+  // It parses as a new format rill time, hence it is handled before the check for one below.
+  if (comparisonRange.includes(",")) {
+    const absoluteInterval = Interval.fromISO(
+      comparisonRange.replace(",", "/"),
+    );
+    // Safeguard against unknown comparison range format.
+    if (!absoluteInterval.isValid) return undefined;
+
+    const zonedInterval = absoluteInterval.mapEndpoints((dt) =>
+      dt.setZone(activeTimeZone),
+    );
+    return zonedInterval.isValid ? zonedInterval : undefined;
+  }
+
+  // Every other new format range is resolved by the runtime rather than here.
+  if (isNewRillTimeFormat(comparisonRange)) return undefined;
 
   const COMPARISON_DURATIONS = {
     "rill-PP": interval.toDuration(),
@@ -359,29 +374,20 @@ export function getComparisonInterval(
 
   const duration =
     COMPARISON_DURATIONS[comparisonRange as keyof typeof COMPARISON_DURATIONS];
+  // Safeguard against unknown comparison range format.
+  if (!duration) return undefined;
 
-  if (duration) {
+  let comparisonInterval = Interval.fromDateTimes(
+    interval.start.minus(duration),
+    interval.end.minus(duration),
+  );
+  // If this didn't work, it's likely because we fell on a boundary case
+  // such as looking at March 31st and subtracting a month
+  // We can fall back to adding the duration to the start date
+  if (!comparisonInterval.isValid) {
     comparisonInterval = Interval.fromDateTimes(
       interval.start.minus(duration),
-      interval.end.minus(duration),
-    );
-    // If this didn't work, it's likely because we fell on a boundary case
-    // such as looking at March 31st and subtracting a month
-    // We can fall back to adding the duration to the start date
-    if (!comparisonInterval.isValid) {
-      comparisonInterval = Interval.fromDateTimes(
-        interval.start.minus(duration),
-        interval.start.minus(duration).plus(interval.toDuration()),
-      );
-    }
-  } else {
-    const normalizedRange = comparisonRange.replace(",", "/");
-    const normalizedInterval = Interval.fromISO(normalizedRange);
-    // Safeguard against unknown comparison range format.
-    if (!normalizedInterval.isValid) return undefined;
-
-    comparisonInterval = normalizedInterval.mapEndpoints((dt) =>
-      dt.setZone(activeTimeZone),
+      interval.start.minus(duration).plus(interval.toDuration()),
     );
   }
 

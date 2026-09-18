@@ -185,7 +185,7 @@
     // Always set (not just when defined): the store is cached and shared across surfaces,
     // so an undefined executionTime must reset an anchor left behind by a previous consumer
     // (e.g. the report export page), or the live dashboard would keep showing stale data.
-    existingStore?.canvasEntity.timeManager.executionTimeStore.set(
+    existingStore?.canvasEntity.timeFilterManager.setExecutionTime(
       executionTime,
     );
     if (fetchedCanvas && !isReconciling) {
@@ -218,7 +218,7 @@
           client,
           allowUnvalidatedSpec,
         );
-        newStore.canvasEntity.timeManager.executionTimeStore.set(executionTime);
+        newStore.canvasEntity.timeFilterManager.setExecutionTime(executionTime);
         newStore.canvasEntity.acquire();
         release?.(); // release our reference to the previous entity, if any
         release = newStore.canvasEntity.release;
