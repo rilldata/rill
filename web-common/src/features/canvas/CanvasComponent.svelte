@@ -7,6 +7,7 @@
 </script>
 
 <script lang="ts">
+  import ComponentAccessDenied from "@rilldata/web-common/features/components/ComponentAccessDenied.svelte";
   import { get } from "svelte/store";
 
   // When false (the PDF export render), skip lazy-loading entirely: render
@@ -65,7 +66,10 @@
   let open = false;
   let container: HTMLElement;
 
-  $: ({ id: componentName, type: renderer } = component);
+  $: ({ id: componentName, type: renderer, parent, specStore } = component);
+  $: componentSpec = $specStore;
+  $: metricsViewName = componentSpec?.["metrics_view"] as string | undefined;
+  $: isAccessDenied = parent.isMetricsViewAccessDenied(metricsViewName);
 
   $: allowBorder = !hideBorder.has(renderer);
 </script>
@@ -99,7 +103,11 @@
     onmousedown={onMouseDown}
   >
     {#if component}
-      <svelte:component this={component.component} {component} {editable} />
+      {#if $isAccessDenied}
+        <ComponentAccessDenied />
+      {:else}
+        <svelte:component this={component.component} {component} {editable} />
+      {/if}
     {:else}
       <div class="size-full grid place-content-center">
         <LoadingSpinner size="36px" />
