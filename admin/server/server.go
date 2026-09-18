@@ -95,9 +95,6 @@ var _ adminv1.AIServiceServer = (*Server)(nil)
 var _ adminv1.TelemetryServiceServer = (*Server)(nil)
 
 func New(logger *zap.Logger, adm *admin.Service, issuer *runtimeauth.Issuer, limiter ratelimit.Limiter, activityClient *activity.Client, opts *Options) (*Server, error) {
-	if opts.RuntimePSQLPort == 0 {
-		opts.RuntimePSQLPort = 5432
-	}
 	if len(opts.SessionKeyPairs) == 0 {
 		return nil, fmt.Errorf("provided SessionKeyPairs is empty")
 	}

@@ -8,6 +8,10 @@ negotiation, password authentication, cancellation, prepared statements,
 portals, and simple and extended query flows. Product-specific query execution
 is provided by a `Session` created for each connection.
 
+When a TLS configuration is set, unencrypted connections are rejected so
+passwords never travel in cleartext. Cancelling a query via CancelRequest
+reports SQLSTATE 57014 and keeps the connection open.
+
 Prepared statements and portals intentionally live on a connection, not on the
 server. This matches PostgreSQL semantics and prevents state or credentials from
 being shared between clients.

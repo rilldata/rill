@@ -8,6 +8,7 @@ import (
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"encoding/pem"
+	"errors"
 	"fmt"
 	"math/big"
 	"net"
@@ -16,6 +17,7 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgproto3"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/stretchr/testify/require"
@@ -87,18 +89,36 @@ func TestServerTLSAndAuthenticationFailure(t *testing.T) {
 		TLSConfig:       &tls.Config{MinVersion: tls.VersionTLS12, Certificates: []tls.Certificate{certificate}},
 		RequirePassword: true,
 		NewSession: func(ctx context.Context, parameters map[string]string, password string) (Session, error) {
-			if password != "secret" {
+			switch password {
+			case "secret":
+				return &testSession{}, nil
+			case "wrong":
 				return nil, &Error{Code: "28P01", Message: "invalid password"}
+			default:
+				return nil, errors.New("runtime unavailable")
 			}
-			return &testSession{}, nil
 		},
 	})
+
+	// Passwords must never be requested over an unencrypted connection.
+	_, err := pgx.Connect(t.Context(), fmt.Sprintf("postgres://user:secret@%s/test?sslmode=disable", address))
+	var pgErr *pgconn.PgError
+	require.ErrorAs(t, err, &pgErr)
+	require.Equal(t, "28000", pgErr.Code)
 
 	config, err := pgx.ParseConfig(fmt.Sprintf("postgres://user:wrong@%s/test?sslmode=require", address))
 	require.NoError(t, err)
 	config.TLSConfig.InsecureSkipVerify = true //nolint:gosec // Self-signed test certificate.
 	_, err = pgx.ConnectConfig(t.Context(), config)
-	require.Error(t, err)
+	require.ErrorAs(t, err, &pgErr)
+	require.Equal(t, "28P01", pgErr.Code)
+
+	// Only authentication failures may be reported as invalid passwords.
+	config.Password = "unavailable"
+	_, err = pgx.ConnectConfig(t.Context(), config)
+	require.ErrorAs(t, err, &pgErr)
+	require.Equal(t, "XX000", pgErr.Code)
+	require.Equal(t, "runtime unavailable", pgErr.Message)
 
 	config.Password = "secret"
 	conn, err := pgx.ConnectConfig(t.Context(), config)
@@ -107,35 +127,47 @@ func TestServerTLSAndAuthenticationFailure(t *testing.T) {
 }
 
 func TestServerCancelRequest(t *testing.T) {
-	started := make(chan struct{})
-	address := startTestServer(t, Options{
-		NewSession: func(context.Context, map[string]string, string) (Session, error) {
-			return &testSession{block: started}, nil
-		},
-	})
-	config, err := pgx.ParseConfig(fmt.Sprintf("postgres://user@%s/test?sslmode=disable", address))
-	require.NoError(t, err)
-	config.DefaultQueryExecMode = pgx.QueryExecModeSimpleProtocol
-	conn, err := pgx.ConnectConfig(t.Context(), config)
-	require.NoError(t, err)
-	defer conn.Close(t.Context())
+	// Cancellation can surface from Session.Query or while streaming rows.
+	// Either way the client gets SQLSTATE 57014 and keeps its connection.
+	for _, query := range []string{"select blocked", "select blocked rows"} {
+		t.Run(query, func(t *testing.T) {
+			started := make(chan struct{})
+			address := startTestServer(t, Options{
+				NewSession: func(context.Context, map[string]string, string) (Session, error) {
+					return &testSession{block: started}, nil
+				},
+			})
+			config, err := pgx.ParseConfig(fmt.Sprintf("postgres://user@%s/test?sslmode=disable", address))
+			require.NoError(t, err)
+			config.DefaultQueryExecMode = pgx.QueryExecModeSimpleProtocol
+			conn, err := pgx.ConnectConfig(t.Context(), config)
+			require.NoError(t, err)
+			defer conn.Close(t.Context())
 
-	errCh := make(chan error, 1)
-	go func() {
-		_, err := conn.Exec(context.Background(), "select blocked")
-		errCh <- err
-	}()
-	select {
-	case <-started:
-	case <-time.After(5 * time.Second):
-		t.Fatal("query did not start")
-	}
-	require.NoError(t, conn.PgConn().CancelRequest(t.Context()))
-	select {
-	case err := <-errCh:
-		require.Error(t, err)
-	case <-time.After(5 * time.Second):
-		t.Fatal("query was not cancelled")
+			errCh := make(chan error, 1)
+			go func() {
+				_, err := conn.Exec(context.Background(), query)
+				errCh <- err
+			}()
+			select {
+			case <-started:
+			case <-time.After(5 * time.Second):
+				t.Fatal("query did not start")
+			}
+			require.NoError(t, conn.PgConn().CancelRequest(t.Context()))
+			select {
+			case err := <-errCh:
+				var pgErr *pgconn.PgError
+				require.ErrorAs(t, err, &pgErr)
+				require.Equal(t, "57014", pgErr.Code)
+			case <-time.After(5 * time.Second):
+				t.Fatal("query was not cancelled")
+			}
+
+			var value int32
+			require.NoError(t, conn.QueryRow(t.Context(), "select 7::int4").Scan(&value))
+			require.Equal(t, int32(7), value)
+		})
 	}
 }
 
@@ -202,6 +234,9 @@ func (s *testSession) Query(ctx context.Context, query string, parameters []Para
 		<-ctx.Done()
 		return nil, ctx.Err()
 	}
+	if s.block != nil && query == "select blocked rows" {
+		return &blockedRows{ctx: ctx, started: s.block}, nil
+	}
 	value := int32(7)
 	if len(parameters) != 0 {
 		if err := pgtype.NewMap().Scan(parameters[0].OID, parameters[0].Format, parameters[0].Value, &value); err != nil {
@@ -242,3 +277,22 @@ func (r *testRows) Values() [][]byte   { return r.values[r.index-1] }
 func (r *testRows) Err() error         { return nil }
 func (r *testRows) CommandTag() string { return fmt.Sprintf("SELECT %d", len(r.values)) }
 func (r *testRows) Close() error       { return nil }
+
+// blockedRows blocks in Next until ctx is cancelled and then reports the cancellation.
+type blockedRows struct {
+	ctx     context.Context
+	started chan struct{}
+	err     error
+}
+
+func (r *blockedRows) Fields() []pgproto3.FieldDescription { return nil }
+func (r *blockedRows) Next() bool {
+	close(r.started)
+	<-r.ctx.Done()
+	r.err = r.ctx.Err()
+	return false
+}
+func (r *blockedRows) Values() [][]byte   { return nil }
+func (r *blockedRows) Err() error         { return r.err }
+func (r *blockedRows) CommandTag() string { return "" }
+func (r *blockedRows) Close() error       { return nil }

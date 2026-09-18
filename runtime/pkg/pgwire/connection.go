@@ -123,19 +123,24 @@ func (c *connection) handleSimpleQuery(query string) error {
 	}()
 	rows, err := c.session.Query(queryCtx, query, nil, nil)
 	if err != nil {
-		sendError(c.backend, err, "XX000")
-		c.backend.Send(&pgproto3.ReadyForQuery{TxStatus: c.txStatus})
-		return c.backend.Flush()
+		return c.simpleQueryError(err)
 	}
 	defer rows.Close()
 
-	_, err = c.sendResult(rows, true, 0, nil)
-	if err != nil {
-		if isConnectionError(err) {
-			return err
-		}
-		sendError(c.backend, err, "XX000")
+	if _, err := c.sendResult(rows, true, 0, nil); err != nil {
+		return c.simpleQueryError(err)
 	}
+	c.backend.Send(&pgproto3.ReadyForQuery{TxStatus: c.txStatus})
+	return c.backend.Flush()
+}
+
+// simpleQueryError reports a failed simple query and keeps the connection open.
+// A cancelled query only cancels queryCtx, so the connection ends only when c.ctx is done.
+func (c *connection) simpleQueryError(err error) error {
+	if c.ctx.Err() != nil || errors.Is(err, io.EOF) || errors.Is(err, net.ErrClosed) {
+		return err
+	}
+	sendError(c.backend, err, "XX000")
 	c.backend.Send(&pgproto3.ReadyForQuery{TxStatus: c.txStatus})
 	return c.backend.Flush()
 }
@@ -143,6 +148,8 @@ func (c *connection) handleSimpleQuery(query string) error {
 func (c *connection) handleParse(message *pgproto3.Parse) error {
 	if message.Name == "" {
 		c.closePortal("")
+	} else if _, ok := c.statements[message.Name]; ok {
+		return &Error{Code: "42P05", Message: fmt.Sprintf("prepared statement %q already exists", message.Name)}
 	}
 	description := &Description{ParameterOIDs: append([]uint32(nil), message.ParameterOIDs...)}
 	if sessionCommand(message.Query) == "" {
@@ -372,8 +379,24 @@ func (c *connection) handleSessionCommand(query string) (string, bool) {
 	}
 }
 
+// sessionCommand returns the transaction or settings command that query consists of.
+// Text with several statements is left to the session, which rejects it.
 func sessionCommand(query string) string {
-	fields := strings.Fields(strings.TrimSpace(strings.TrimSuffix(query, ";")))
+	query = strings.TrimSuffix(strings.TrimSpace(query), ";")
+	var quote byte
+	for i := 0; i < len(query); i++ {
+		switch c := query[i]; {
+		case quote != 0:
+			if c == quote {
+				quote = 0
+			}
+		case c == '\'' || c == '"':
+			quote = c
+		case c == ';':
+			return ""
+		}
+	}
+	fields := strings.Fields(query)
 	if len(fields) == 0 {
 		return ""
 	}
@@ -441,16 +464,18 @@ func ApplyResultFormats(fields []pgproto3.FieldDescription, formats []int16) ([]
 }
 
 func sendError(backend *pgproto3.Backend, err error, defaultCode string) {
-	code := defaultCode
+	code, message := defaultCode, err.Error()
 	var pgErr *Error
 	if errors.As(err, &pgErr) && pgErr.Code != "" {
 		code = pgErr.Code
+	} else if errors.Is(err, context.Canceled) {
+		code, message = "57014", "canceling statement due to user request"
 	}
 	backend.Send(&pgproto3.ErrorResponse{
 		Severity:            "ERROR",
 		SeverityUnlocalized: "ERROR",
 		Code:                code,
-		Message:             err.Error(),
+		Message:             message,
 	})
 }
 
@@ -464,8 +489,4 @@ func (e *Error) Error() string { return e.Message }
 
 func protocolError(format string, args ...any) error {
 	return &Error{Code: "08P01", Message: fmt.Sprintf(format, args...)}
-}
-
-func isConnectionError(err error) bool {
-	return errors.Is(err, io.EOF) || errors.Is(err, net.ErrClosed) || errors.Is(err, context.Canceled)
 }

@@ -3,6 +3,7 @@ package server
 import (
 	"context"
 	"crypto/tls"
+	"errors"
 	"fmt"
 	"net"
 	"net/url"
@@ -38,7 +39,7 @@ func (s *Server) ServePGWire(ctx context.Context) error {
 func (s *Server) newPGWireProxySession(ctx context.Context, parameters map[string]string, password string) (base.Session, error) {
 	ctx, err := s.authenticator.AuthenticateToken(ctx, password)
 	if err != nil {
-		return nil, err
+		return nil, &base.Error{Code: "28P01", Message: err.Error()}
 	}
 
 	org, project, ok := strings.Cut(parameters["database"], ".")
@@ -81,9 +82,10 @@ func (s *Server) newPGWireProxySession(ctx context.Context, parameters map[strin
 	if host == "" {
 		host = deployment.RuntimeHost
 	}
+	// The runtime JWT is sent as the password, so the runtime's certificate must be verified.
 	sslMode := "disable"
 	if strings.EqualFold(runtimeURL.Scheme, "https") {
-		sslMode = "require"
+		sslMode = "verify-full"
 	}
 	connectionURL := &url.URL{
 		Scheme:   "postgres",
@@ -106,11 +108,14 @@ func (s *Server) newPGWireProxySession(ctx context.Context, parameters map[strin
 	}
 	if config.TLSConfig != nil {
 		config.TLSConfig.MinVersion = tls.VersionTLS12
-		config.TLSConfig.ServerName = host
 	}
 	conn, err := pgconn.ConnectConfig(ctx, config)
 	if err != nil {
-		return nil, fmt.Errorf("failed to connect to runtime pgwire endpoint: %w", err)
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) {
+			return nil, &base.Error{Code: pgErr.Code, Message: pgErr.Message}
+		}
+		return nil, &base.Error{Code: "08006", Message: fmt.Sprintf("failed to connect to runtime pgwire endpoint: %v", err)}
 	}
 	s.admin.Used.Deployment(deployment.ID)
 	return &proxySession{conn: conn, logger: s.logger.With(zap.String("organization", org), zap.String("project", project))}, nil
@@ -134,7 +139,7 @@ func (s *proxySession) Describe(ctx context.Context, query string, parameterOIDs
 	}()
 	description, err := s.conn.Prepare(ctx, "", query, parameterOIDs)
 	if err != nil {
-		return nil, err
+		return nil, proxyError(err)
 	}
 	return &base.Description{
 		ParameterOIDs: append([]uint32(nil), description.ParamOIDs...),
@@ -202,7 +207,16 @@ func (r *proxyRows) Close() error {
 	r.closed = true
 	tag, err := r.reader.Close()
 	r.tag = tag.String()
-	r.err = err
+	r.err = proxyError(err)
 	r.logger.Info("pgwire proxy query completed", zap.Duration("duration", time.Since(r.started)), zap.Error(err))
+	return r.err
+}
+
+// proxyError preserves the runtime's SQLSTATE when relaying an error to the client.
+func proxyError(err error) error {
+	var pgErr *pgconn.PgError
+	if errors.As(err, &pgErr) {
+		return &base.Error{Code: pgErr.Code, Message: pgErr.Message}
+	}
 	return err
 }

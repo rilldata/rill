@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"net"
+	"strings"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -50,6 +51,84 @@ func (s *errorSession) Query(ctx context.Context, query string, parameters []Par
 		return nil, errors.New("execution failed")
 	}
 	return s.testSession.Query(ctx, query, parameters, formats)
+}
+
+func TestSessionCommandsRequireSingleStatement(t *testing.T) {
+	session := &recordingSession{}
+	address := startTestServer(t, Options{NewSession: func(context.Context, map[string]string, string) (Session, error) {
+		return session, nil
+	}})
+	ctx, cancel := context.WithTimeout(t.Context(), 5*time.Second)
+	defer cancel()
+	conn, err := pgconn.Connect(ctx, fmt.Sprintf("postgres://user@%s/test?sslmode=disable", address))
+	require.NoError(t, err)
+	defer conn.Close(ctx)
+
+	// A lone SET, including one with a semicolon in a literal, is answered locally.
+	results, err := conn.Exec(ctx, "SET application_name = 'a;b'").ReadAll()
+	require.NoError(t, err)
+	require.Len(t, results, 1)
+	require.Equal(t, "SET", results[0].CommandTag.String())
+	require.Empty(t, session.queries)
+
+	// Multiple statements must not be swallowed by the SET shortcut.
+	_, err = conn.Exec(ctx, "SET search_path TO public; select 7::int4").ReadAll()
+	require.ErrorContains(t, err, "expected one SQL statement")
+	require.Equal(t, []string{"SET search_path TO public; select 7::int4"}, session.queries)
+	_, err = conn.Prepare(ctx, "", "BEGIN; select 7::int4", nil)
+	require.ErrorContains(t, err, "expected one SQL statement")
+}
+
+type recordingSession struct {
+	testSession
+	queries []string
+}
+
+func (s *recordingSession) Describe(ctx context.Context, query string, oids []uint32) (*Description, error) {
+	if strings.Contains(query, ";") {
+		return nil, &Error{Code: "42601", Message: "expected one SQL statement"}
+	}
+	return s.testSession.Describe(ctx, query, oids)
+}
+
+func (s *recordingSession) Query(ctx context.Context, query string, parameters []Parameter, formats []int16) (Rows, error) {
+	s.queries = append(s.queries, query)
+	if strings.Contains(query, ";") {
+		return nil, &Error{Code: "42601", Message: "expected one SQL statement"}
+	}
+	return s.testSession.Query(ctx, query, parameters, formats)
+}
+
+func TestParseRejectsDuplicateStatementName(t *testing.T) {
+	address := startTestServer(t, Options{NewSession: func(context.Context, map[string]string, string) (Session, error) {
+		return &testSession{}, nil
+	}})
+	ctx, cancel := context.WithTimeout(t.Context(), 5*time.Second)
+	defer cancel()
+	conn, err := pgconn.Connect(ctx, fmt.Sprintf("postgres://user@%s/test?sslmode=disable", address))
+	require.NoError(t, err)
+	defer conn.Close(ctx)
+	require.NoError(t, conn.Conn().SetDeadline(time.Now().Add(5*time.Second)))
+	frontend := conn.Frontend()
+	frontend.Send(&pgproto3.Parse{Name: "statement", Query: "select 7::int4"})
+	frontend.Send(&pgproto3.Bind{PreparedStatement: "statement", DestinationPortal: "portal"})
+	frontend.Send(&pgproto3.Parse{Name: "statement", Query: "select 8::int4"})
+	frontend.Send(&pgproto3.Sync{})
+	frontend.Send(&pgproto3.Execute{Portal: "portal"})
+	frontend.Send(&pgproto3.Sync{})
+	require.NoError(t, frontend.Flush())
+	for _, expected := range []pgproto3.BackendMessage{
+		&pgproto3.ParseComplete{}, &pgproto3.BindComplete{},
+		&pgproto3.ErrorResponse{Severity: "ERROR", SeverityUnlocalized: "ERROR", Code: "42P05", Message: `prepared statement "statement" already exists`},
+		&pgproto3.ReadyForQuery{TxStatus: 'I'},
+		&pgproto3.DataRow{Values: [][]byte{[]byte("7")}},
+		&pgproto3.CommandComplete{CommandTag: []byte("SELECT 1")},
+		&pgproto3.ReadyForQuery{TxStatus: 'I'},
+	} {
+		message, err := frontend.Receive()
+		require.NoError(t, err)
+		require.Equal(t, expected, message)
+	}
 }
 
 func TestBindPreservesEmptyParameters(t *testing.T) {

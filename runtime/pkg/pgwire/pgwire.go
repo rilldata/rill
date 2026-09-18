@@ -51,11 +51,14 @@ type Session interface {
 }
 
 // SessionFactory authenticates a startup request and creates connection-local
-// query state. Password is empty when RequirePassword is false.
+// query state. Password is empty when RequirePassword is false. Return an
+// *Error to control the SQLSTATE reported to the client, e.g. 28P01 for
+// authentication failures.
 type SessionFactory func(ctx context.Context, parameters map[string]string, password string) (Session, error)
 
 // Options configures a Server.
 type Options struct {
+	// TLSConfig enables SSLRequest negotiation. When set, unencrypted connections are rejected.
 	TLSConfig       *tls.Config
 	RequirePassword bool
 	NewSession      SessionFactory
@@ -208,7 +211,7 @@ func (s *Server) serveConn(ctx context.Context, conn net.Conn) {
 
 	session, err := s.opts.NewSession(ctx, startup.Parameters, password)
 	if err != nil {
-		sendError(backend, err, "28P01")
+		sendError(backend, err, "XX000")
 		_ = backend.Flush()
 		return
 	}
@@ -303,6 +306,11 @@ func (s *Server) startup(ctx context.Context, backend *pgproto3.Backend, conn ne
 			}
 			return nil, "", backend, true, nil
 		case *pgproto3.StartupMessage:
+			if _, encrypted := conn.(*tls.Conn); s.opts.TLSConfig != nil && !encrypted {
+				backend.Send(&pgproto3.ErrorResponse{Severity: "FATAL", SeverityUnlocalized: "FATAL", Code: "28000", Message: "SSL connection is required"})
+				_ = backend.Flush()
+				return nil, "", backend, false, errors.New("rejected unencrypted connection")
+			}
 			var password string
 			if s.opts.RequirePassword {
 				backend.Send(&pgproto3.AuthenticationCleartextPassword{})

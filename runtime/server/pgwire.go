@@ -18,7 +18,7 @@ func (s *Server) ServePGWire(ctx context.Context, requirePassword bool) error {
 		NewSession: func(ctx context.Context, parameters map[string]string, password string) (base.Session, error) {
 			ctx, err := auth.AuthenticateToken(ctx, s.aud, password)
 			if err != nil {
-				return nil, err
+				return nil, &base.Error{Code: "28P01", Message: err.Error()}
 			}
 			instanceID := parameters["database"]
 			return pgwireserver.NewSession(s.runtime, instanceID, auth.GetClaims(ctx, instanceID))

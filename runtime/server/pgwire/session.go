@@ -3,6 +3,7 @@ package pgwire
 
 import (
 	"context"
+	"database/sql"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
@@ -14,6 +15,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/duckdb/duckdb-go/v2"
 	"github.com/jackc/pgx/v5/pgproto3"
 	"github.com/jackc/pgx/v5/pgtype"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
@@ -28,6 +30,9 @@ type Session struct {
 	instanceID string
 	claims     *runtime.SecurityClaims
 	types      *pgtype.Map
+	// catalog is the in-memory DuckDB serving catalog queries, built lazily by catalogDB.
+	catalog    *sql.DB
+	catalogKey string
 }
 
 // NewSession creates a runtime pgwire session.
@@ -42,7 +47,12 @@ func NewSession(rt *runtime.Runtime, instanceID string, claims *runtime.Security
 }
 
 // Close implements base.Session.
-func (s *Session) Close() error { return nil }
+func (s *Session) Close() error {
+	if s.catalog == nil {
+		return nil
+	}
+	return s.catalog.Close()
+}
 
 // Describe implements base.Session.
 func (s *Session) Describe(ctx context.Context, query string, parameterOIDs []uint32) (*base.Description, error) {
@@ -208,6 +218,7 @@ var postgresTypes = map[runtimev1.Type_Code]postgresTypeInfo{
 	runtimev1.Type_CODE_MAP:       {pgtype.JSONBOID, pgtype.JSONBArrayOID, -1},
 	runtimev1.Type_CODE_STRUCT:    {pgtype.JSONBOID, pgtype.JSONBArrayOID, -1},
 	runtimev1.Type_CODE_UUID:      {pgtype.UUIDOID, pgtype.UUIDArrayOID, 16},
+	runtimev1.Type_CODE_INTERVAL:  {pgtype.IntervalOID, pgtype.IntervalArrayOID, 16},
 }
 
 func postgresType(typ *runtimev1.Type) (uint32, int16) {
@@ -276,12 +287,36 @@ func normalizeValue(value any, oid uint32) (any, error) {
 			}
 			return parsed, nil
 		}
+	case pgtype.UUIDOID:
+		// pgtype treats []byte as pre-encoded, so DuckDB's raw UUID bytes need a fixed-size array.
+		if value, ok := value.([]byte); ok && len(value) == 16 {
+			return [16]byte(value), nil
+		}
+	case pgtype.IntervalOID:
+		switch value := value.(type) {
+		case duckdb.Interval:
+			return pgtype.Interval{Microseconds: value.Micros, Days: value.Days, Months: value.Months, Valid: true}, nil
+		case float64:
+			// Resolvers report intervals as milliseconds (see jsonval).
+			return pgtype.Interval{Microseconds: int64(value) * 1000, Valid: true}, nil
+		}
 	case pgtype.JSONOID, pgtype.JSONBOID:
 		switch value.(type) {
 		case string, []byte:
 			return value, nil
 		default:
 			return json.Marshal(value)
+		}
+	case pgtype.TextOID:
+		// Text is the fallback for unmapped types; render whatever the value is.
+		switch value := value.(type) {
+		case string, []byte:
+			return value, nil
+		case fmt.Stringer:
+			return value.String(), nil
+		default:
+			encoded, err := json.Marshal(value)
+			return string(encoded), err
 		}
 	}
 	return value, nil

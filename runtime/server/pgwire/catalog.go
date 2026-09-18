@@ -29,50 +29,39 @@ func (s *Session) queryCatalog(ctx context.Context, parsed *parsedSQL, parameter
 	if err != nil {
 		return nil, err
 	}
-
-	db, err := sql.Open("duckdb", "?enable_external_access=false")
+	query, err = rewriteCatalogSQL(query)
 	if err != nil {
 		return nil, err
 	}
-	db.SetMaxOpenConns(1)
-	closeDB := true
+	// Wrapping the query lets the SQL parser enforce a read-only SELECT, including for CTEs.
+	query = "SELECT * FROM (\n" + query + "\n) AS catalog_query"
+	if describe {
+		query += " LIMIT 0"
+	}
+
+	db, err := s.catalogDB(ctx)
+	if err != nil {
+		return nil, err
+	}
+	// The default schema and temporary tables are connection-local,
+	// so run every statement of this query on one dedicated connection.
+	conn, err := db.Conn(ctx)
+	if err != nil {
+		return nil, err
+	}
+	closeConn := true
 	defer func() {
-		if closeDB {
-			_ = db.Close()
+		if closeConn {
+			_ = conn.Close()
 		}
 	}()
-
-	if _, err := db.ExecContext(ctx, "CREATE SCHEMA IF NOT EXISTS public"); err != nil {
-		return nil, err
-	}
-	if _, err := db.ExecContext(ctx, "USE public"); err != nil {
-		return nil, err
-	}
-	if err := s.createMetricsViewTables(ctx, db); err != nil {
+	if _, err := conn.ExecContext(ctx, "USE public"); err != nil {
 		return nil, err
 	}
 	// DuckDB lacks this PostgreSQL catalog relation, which is queried by both
 	// Superset and Metabase during introspection. A temporary relation is used
 	// because DuckDB does not permit creating objects in pg_catalog.
-	if _, err := db.ExecContext(ctx, "CREATE TEMP TABLE pg_matviews(schemaname VARCHAR, matviewname VARCHAR, matviewowner VARCHAR, tablespace VARCHAR, hasindexes BOOLEAN, ispopulated BOOLEAN, definition VARCHAR)"); err != nil {
-		return nil, err
-	}
-
-	// Lock configuration before accepting client SQL. Wrapping the query also
-	// lets the SQL parser enforce a read-only SELECT, including for CTEs.
-	if _, err := db.ExecContext(ctx, "SET lock_configuration=true"); err != nil {
-		return nil, err
-	}
-	query, err = rewriteCatalogSQL(query)
-	if err != nil {
-		return nil, err
-	}
-	query = "SELECT * FROM (\n" + query + "\n) AS catalog_query"
-	if describe {
-		query += " LIMIT 0"
-	}
-	conn, err := db.Conn(ctx)
-	if err != nil {
+	if _, err := conn.ExecContext(ctx, "CREATE TEMP TABLE IF NOT EXISTS pg_matviews(schemaname VARCHAR, matviewname VARCHAR, matviewowner VARCHAR, tablespace VARCHAR, hasindexes BOOLEAN, ispopulated BOOLEAN, definition VARCHAR)"); err != nil {
 		return nil, err
 	}
 	err = conn.Raw(func(raw any) error {
@@ -92,35 +81,71 @@ func (s *Session) queryCatalog(ctx context.Context, parsed *parsedSQL, parameter
 		}
 		return nil
 	})
-	_ = conn.Close()
 	if err != nil {
 		return nil, err
 	}
-	rows, err := db.QueryContext(ctx, query, args...)
+	rows, err := conn.QueryContext(ctx, query, args...)
 	if err != nil {
 		return nil, err
 	}
-	fields, err := fieldsForSQLRows(rows, resultFormats)
+	fields, err := fieldsForSQLRows(rows, resultFormats, s.types)
 	if err != nil {
 		_ = rows.Close()
 		return nil, err
 	}
-	closeDB = false
-	return &sqlRows{rows: rows, db: db, fields: fields, types: s.types}, nil
+	closeConn = false
+	return &sqlRows{rows: rows, conn: conn, fields: fields, types: s.types}, nil
 }
 
-func (s *Session) createMetricsViewTables(ctx context.Context, db *sql.DB) error {
+// catalogDB returns an in-memory DuckDB with one table per accessible metrics view.
+// It is reused across queries and rebuilt when the metrics views change.
+func (s *Session) catalogDB(ctx context.Context) (*sql.DB, error) {
 	ctrl, err := s.runtime.Controller(ctx, s.instanceID)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	resources, err := ctrl.List(ctx, runtime.ResourceKindMetricsView, "", false)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	sort.Slice(resources, func(i, j int) bool {
 		return resources[i].Meta.Name.Name < resources[j].Meta.Name.Name
 	})
+	var key strings.Builder
+	for _, resource := range resources {
+		fmt.Fprintf(&key, "%s@%d;", resource.Meta.Name.Name, resource.Meta.StateVersion)
+	}
+	if s.catalog != nil && s.catalogKey == key.String() {
+		return s.catalog, nil
+	}
+	if s.catalog != nil {
+		// Open cursors keep their connections alive until they are closed.
+		_ = s.catalog.Close()
+		s.catalog = nil
+	}
+
+	db, err := sql.Open("duckdb", "?enable_external_access=false")
+	if err != nil {
+		return nil, err
+	}
+	if _, err := db.ExecContext(ctx, "CREATE SCHEMA IF NOT EXISTS public"); err != nil {
+		_ = db.Close()
+		return nil, err
+	}
+	if err := s.createMetricsViewTables(ctx, db, resources); err != nil {
+		_ = db.Close()
+		return nil, err
+	}
+	// Lock configuration database-wide before accepting client SQL.
+	if _, err := db.ExecContext(ctx, "SET lock_configuration=true"); err != nil {
+		_ = db.Close()
+		return nil, err
+	}
+	s.catalog, s.catalogKey = db, key.String()
+	return db, nil
+}
+
+func (s *Session) createMetricsViewTables(ctx context.Context, db *sql.DB, resources []*runtimev1.Resource) error {
 	for _, resource := range resources {
 		state := resource.GetMetricsView()
 		if state == nil || state.State == nil || state.State.ValidSpec == nil {
@@ -156,7 +181,7 @@ func (s *Session) createMetricsViewTables(ctx context.Context, db *sql.DB) error
 		}
 
 		var statement strings.Builder
-		statement.WriteString("CREATE TABLE ")
+		statement.WriteString("CREATE TABLE public.")
 		statement.WriteString(quoteIdentifier(resource.Meta.Name.Name))
 		statement.WriteString(" (")
 		for i, column := range columns {
@@ -339,6 +364,8 @@ func catalogColumnType(typ *runtimev1.Type) string {
 		return "JSON"
 	case pgtype.UUIDOID:
 		return "UUID"
+	case pgtype.IntervalOID:
+		return "INTERVAL"
 	default:
 		return "VARCHAR"
 	}
@@ -379,32 +406,43 @@ func showResult(variable string, resultFormats []int16, types *pgtype.Map) (base
 	}, nil
 }
 
-func fieldsForSQLRows(rows *sql.Rows, resultFormats []int16) ([]pgproto3.FieldDescription, error) {
+func fieldsForSQLRows(rows *sql.Rows, resultFormats []int16, types *pgtype.Map) ([]pgproto3.FieldDescription, error) {
 	columnTypes, err := rows.ColumnTypes()
 	if err != nil {
 		return nil, err
 	}
 	fields := make([]pgproto3.FieldDescription, len(columnTypes))
 	for i, column := range columnTypes {
-		oid, size := postgresTypeForDatabaseName(column.DatabaseTypeName())
+		oid, size := postgresTypeForDatabaseName(column.DatabaseTypeName(), types)
 		fields[i] = pgproto3.FieldDescription{Name: []byte(column.Name()), DataTypeOID: oid, DataTypeSize: size, TypeModifier: -1}
 	}
 	return base.ApplyResultFormats(fields, resultFormats)
 }
 
-func postgresTypeForDatabaseName(name string) (uint32, int16) {
+// postgresTypeForDatabaseName maps a DuckDB type name to a PostgreSQL type.
+// Unsigned integers widen to the next signed type; unmapped types become text.
+func postgresTypeForDatabaseName(name string, types *pgtype.Map) (uint32, int16) {
 	name = strings.ToUpper(name)
+	if element, ok := strings.CutSuffix(name, "[]"); ok && !strings.HasSuffix(element, "]") {
+		oid, _ := postgresTypeForDatabaseName(element, types)
+		if typ, ok := types.TypeForOID(oid); ok {
+			if array, ok := types.TypeForName("_" + typ.Name); ok {
+				return array.OID, -1
+			}
+		}
+		return pgtype.TextArrayOID, -1
+	}
 	switch {
 	case strings.Contains(name, "BOOL"):
 		return pgtype.BoolOID, 1
-	case strings.Contains(name, "SMALLINT") || strings.Contains(name, "TINYINT"):
+	case name == "SMALLINT" || name == "TINYINT" || name == "UTINYINT":
 		return pgtype.Int2OID, 2
-	case name == "INTEGER" || name == "INT":
+	case name == "INTEGER" || name == "INT" || name == "USMALLINT":
 		return pgtype.Int4OID, 4
-	case strings.Contains(name, "HUGEINT") || strings.Contains(name, "DECIMAL") || strings.Contains(name, "NUMERIC"):
-		return pgtype.NumericOID, -1
-	case strings.Contains(name, "BIGINT"):
+	case name == "BIGINT" || name == "UINTEGER":
 		return pgtype.Int8OID, 8
+	case name == "UBIGINT" || strings.Contains(name, "HUGEINT") || strings.Contains(name, "DECIMAL") || strings.Contains(name, "NUMERIC"):
+		return pgtype.NumericOID, -1
 	case strings.Contains(name, "DOUBLE"):
 		return pgtype.Float8OID, 8
 	case strings.Contains(name, "FLOAT") || strings.Contains(name, "REAL"):
@@ -415,8 +453,14 @@ func postgresTypeForDatabaseName(name string) (uint32, int16) {
 		return pgtype.DateOID, 4
 	case name == "TIME":
 		return pgtype.TimeOID, 8
+	case name == "INTERVAL":
+		return pgtype.IntervalOID, 16
+	case name == "UUID":
+		return pgtype.UUIDOID, 16
 	case strings.Contains(name, "BLOB") || strings.Contains(name, "BYTE"):
 		return pgtype.ByteaOID, -1
+	case strings.HasPrefix(name, "STRUCT(") || strings.HasPrefix(name, "MAP(") || name == "JSON":
+		return pgtype.JSONBOID, -1
 	default:
 		return pgtype.TextOID, -1
 	}
@@ -424,7 +468,7 @@ func postgresTypeForDatabaseName(name string) (uint32, int16) {
 
 type sqlRows struct {
 	rows   *sql.Rows
-	db     *sql.DB
+	conn   *sql.Conn
 	fields []pgproto3.FieldDescription
 	types  *pgtype.Map
 	values [][]byte
@@ -471,11 +515,11 @@ func (r *sqlRows) CommandTag() string { return "" }
 
 func (r *sqlRows) Close() error {
 	rowsErr := r.rows.Close()
-	dbErr := r.db.Close()
+	connErr := r.conn.Close()
 	if rowsErr != nil {
 		return rowsErr
 	}
-	return dbErr
+	return connErr
 }
 
 type memoryRows struct {

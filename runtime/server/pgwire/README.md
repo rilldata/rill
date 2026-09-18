@@ -13,7 +13,10 @@ Statement description uses the Metrics SQL compiler and the OLAP schema API,
 without fetching query result rows. Catalog columns use the validated metrics
 view dimension and measure types. Catalog SQL runs in a separate in-memory
 DuckDB with external access disabled and configuration locked; only a single
-SELECT (or an explicitly supported SHOW probe) is accepted.
+SELECT (or an explicitly supported SHOW probe) is accepted. The catalog
+database is built once per session and rebuilt when a metrics view changes.
+Each catalog query runs on its own connection, which owns the connection-local
+default schema and `pg_matviews` temporary table.
 
 Routing, parameter inference, and binding share a parsed SQL representation.
 Catalog routing recognizes relation references, excluding column names and

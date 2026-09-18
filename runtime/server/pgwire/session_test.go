@@ -455,3 +455,89 @@ security:
 		})
 	}
 }
+
+func TestCatalogDatabaseReuseAndInvalidation(t *testing.T) {
+	files := map[string]string{
+		"rill.yaml":    "",
+		"model.sql":    "SELECT 'a' AS x, 1 AS y",
+		"metrics.yaml": "type: metrics_view\nmodel: model\ndimensions:\n  - column: x\nmeasures:\n  - name: total\n    expression: count(*)\n",
+	}
+	rt, id := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{Files: files})
+	session, err := NewSession(rt, id, &runtime.SecurityClaims{Permissions: runtime.AllPermissions, SkipChecks: true})
+	require.NoError(t, err)
+	defer session.Close()
+	columnsQuery := "SELECT column_name FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'metrics' ORDER BY ordinal_position"
+	columns := func(rows base.Rows) []string {
+		var names []string
+		for rows.Next() {
+			names = append(names, string(rows.Values()[0]))
+		}
+		require.NoError(t, rows.Err())
+		require.NoError(t, rows.Close())
+		return names
+	}
+
+	// An open cursor must not block or corrupt a second catalog query on the same session.
+	first, err := session.Query(t.Context(), columnsQuery, nil, nil)
+	require.NoError(t, err)
+	catalog := session.catalog
+	require.NotNil(t, catalog)
+	second, err := session.Query(t.Context(), "SELECT current_schema(), (SELECT count(*) FROM pg_matviews)", nil, nil)
+	require.NoError(t, err)
+	require.True(t, second.Next())
+	require.Equal(t, [][]byte{[]byte("public"), []byte("0")}, second.Values())
+	require.NoError(t, second.Close())
+	require.Equal(t, []string{"x", "total"}, columns(first))
+	require.Same(t, catalog, session.catalog, "unchanged metrics views must reuse the catalog database")
+
+	files["metrics.yaml"] = "type: metrics_view\nmodel: model\ndimensions:\n  - column: x\n  - column: y\nmeasures:\n  - name: total\n    expression: count(*)\n"
+	testruntime.PutFiles(t, rt, id, files)
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	rows, err := session.Query(t.Context(), columnsQuery, nil, nil)
+	require.NoError(t, err)
+	require.Equal(t, []string{"x", "y", "total"}, columns(rows))
+	require.NotSame(t, catalog, session.catalog, "changed metrics views must rebuild the catalog database")
+}
+
+func TestUnmappedTypesEncodeAsText(t *testing.T) {
+	rt, id := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{Files: map[string]string{
+		"rill.yaml":    "",
+		"model.sql":    "SELECT TIMESTAMP '2020-01-01' AS ts, INTERVAL 1 DAY AS span, [1, 2] AS arr, 3::UINTEGER AS u, {'a': 1} AS st",
+		"metrics.yaml": "type: metrics_view\nmodel: model\ntimeseries: ts\ndimensions:\n  - column: span\n  - column: arr\n  - column: u\n  - column: st\nmeasures:\n  - name: total\n    expression: count(*)\n",
+	}})
+	session, err := NewSession(rt, id, &runtime.SecurityClaims{Permissions: runtime.AllPermissions, SkipChecks: true})
+	require.NoError(t, err)
+	defer session.Close()
+
+	for _, tc := range []struct {
+		query    string
+		expected []string
+	}{
+		{
+			// DuckDB catalog values, including types without a direct PostgreSQL equivalent.
+			query:    "SELECT 3::UINTEGER, 4::UBIGINT, 65535::USMALLINT, INTERVAL 1 DAY, [1, 2]::INTEGER[], {'a': 1}, [[1]]::INTEGER[][], '5a1a0d5a-0000-4000-8000-000000000000'::UUID",
+			expected: []string{"3", "4", "65535", "1 day 00:00:00", "{1,2}", `{"a":1}`, "[[1]]", "5a1a0d5a-0000-4000-8000-000000000000"},
+		},
+		{
+			// Resolver values arrive JSON-encoded, e.g. intervals as microseconds.
+			query:    "SELECT span, arr, u, st, total FROM metrics",
+			expected: []string{"24:00:00", "{1,2}", "3", `{"a":1}`, "1"},
+		},
+	} {
+		description, err := session.Describe(t.Context(), tc.query, nil)
+		require.NoError(t, err, tc.query)
+		rows, err := session.Query(t.Context(), tc.query, nil, nil)
+		require.NoError(t, err, tc.query)
+		require.Equal(t, description.Fields, rows.Fields(), tc.query)
+		require.True(t, rows.Next(), tc.query)
+		require.NoError(t, rows.Err(), tc.query)
+		var values []string
+		for _, value := range rows.Values() {
+			values = append(values, string(value))
+		}
+		require.Equal(t, tc.expected, values, tc.query)
+		require.False(t, rows.Next())
+		require.NoError(t, rows.Err())
+		require.NoError(t, rows.Close())
+	}
+}
