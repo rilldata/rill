@@ -6,7 +6,6 @@
     splitTimeSeriesMeasures,
   } from "@rilldata/web-common/features/dashboards/ephemeral-measures/measure-mapping";
   import { measureSupportsTotalsQuery } from "@rilldata/web-common/features/dashboards/state-managers/selectors/measures";
-  import type { TimeAndFilterStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
   import { TIME_COMPARISON } from "@rilldata/web-common/lib/time/config";
   import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
@@ -14,189 +13,217 @@
     createQueryServiceMetricsViewAggregation,
     createQueryServiceMetricsViewTimeSeries,
   } from "@rilldata/web-common/runtime-client";
-  import { DateTime, Interval } from "luxon";
-  import type { Readable } from "svelte/store";
   import type { KPISpec } from ".";
   import { KPI } from ".";
   import { getCanvasStore } from "../../state-managers/state-managers";
   import { validateKPISchema } from "./selector";
+  import type { ExpressionFilterManager } from "@rilldata/web-common/features/dashboards/filters/ExpressionFilterManager.svelte.ts";
+  import type { TimeFilterManager } from "@rilldata/web-common/features/dashboards/time-controls/TimeFilterManager.svelte.ts";
 
-  export let spec: KPISpec;
-  export let timeAndFilterStore: Readable<TimeAndFilterStore>;
-  export let canvasName: string;
-  export let visible: boolean;
+  let {
+    spec,
+    canvasName,
+    expressionFilterManager,
+    timeFilterManager,
+    visible,
+  }: {
+    spec: KPISpec;
+    canvasName: string;
+    expressionFilterManager: ExpressionFilterManager;
+    timeFilterManager: TimeFilterManager;
+    visible: boolean;
+  } = $props();
 
   const client = useRuntimeClient();
 
-  $: ctx = getCanvasStore(canvasName, client.instanceId);
-  $: ({
+  let ctx = $derived(getCanvasStore(canvasName, client.instanceId));
+  let {
     metricsView: { getMeasureForMetricView },
-  } = ctx.canvasEntity);
+  } = $derived(ctx.canvasEntity);
 
-  $: ({
+  let {
     metrics_view: metricsViewName,
     measure: measureName,
     sparkline,
     comparison: comparisonOptions,
     hide_time_range: hideTimeRange,
-  } = spec);
+  } = $derived(spec);
 
-  $: ({
+  let where = $derived(
+    expressionFilterManager.exprByMetricsView[metricsViewName],
+  );
+
+  let {
+    interval,
+    apiTimeRange,
     timeGrain,
-    timeRange: { timeZone, start, end },
-    where,
+    timeZone,
+
     comparisonTimeRange,
-    showTimeComparison,
-    comparisonTimeRangeState,
+    apiComparisonTimeRange,
+    showComparison: showTimeComparison,
     hasTimeSeries,
-  } = $timeAndFilterStore);
+  } = $derived(timeFilterManager);
 
-  $: schema = validateKPISchema(ctx, spec);
-  $: ({ isValid } = $schema);
+  let schema = $derived(validateKPISchema(ctx, spec));
+  let { isValid } = $derived($schema);
 
-  $: ephemeralMeasures = ephemeralSpecsToDefs(spec.adhoc_measures);
-  $: ephemeralDef = ephemeralMeasures?.find((def) => def.name === measureName);
+  let ephemeralMeasures = $derived(ephemeralSpecsToDefs(spec.adhoc_measures));
+  let ephemeralDef = $derived(
+    ephemeralMeasures?.find((def) => def.name === measureName),
+  );
 
-  $: measureStore = getMeasureForMetricView(measureName, metricsViewName);
-  // ephemeral measures have no spec entry; synthesize one.
-  $: measure =
+  let measureStore = $derived(
+    getMeasureForMetricView(measureName, metricsViewName),
+  );
+  let measure = $derived(
     $measureStore ??
-    (ephemeralDef ? ephemeralMeasureToSpecMeasure(ephemeralDef) : undefined);
+      (ephemeralDef ? ephemeralMeasureToSpecMeasure(ephemeralDef) : undefined),
+  );
 
   // Measures with required dimensions (e.g. a rolling window ordered by the time
   // dimension) produce one value per dimension value and have no single total,
   // so we skip the totals queries; the KPI shows an explanatory hint instead.
   // The measure metadata must have loaded before we can tell, so the queries
   // also wait for it.
-  $: supportsTotal = !!measure && measureSupportsTotalsQuery(measure);
-
-  $: showSparkline = sparkline !== "none" && hasTimeSeries;
-
-  $: showComparison = !!comparisonOptions?.length && showTimeComparison;
-
-  $: comparisonLabel =
-    comparisonTimeRangeState?.selectedComparisonTimeRange?.name &&
-    (TIME_COMPARISON[comparisonTimeRangeState?.selectedComparisonTimeRange.name]
-      ?.label as string | undefined);
-
-  $: queryMeasures = mapEphemeralMeasuresForRequest(
-    [{ name: measureName }],
-    ephemeralMeasures,
+  let supportsTotal = $derived(
+    !!measure && measureSupportsTotalsQuery(measure),
   );
-  $: ({ measureNames: tsMeasureNames, ephemeralMeasures: tsEphemeralMeasures } =
-    splitTimeSeriesMeasures([measureName], ephemeralMeasures));
 
-  $: totalQuery = createQueryServiceMetricsViewAggregation(
-    client,
-    {
-      metricsView: metricsViewName,
-      measures: queryMeasures,
-      timeRange: {
-        start,
-        end,
+  let showSparkline = $derived(sparkline !== "none" && hasTimeSeries);
+
+  let showComparison = $derived(
+    !!comparisonOptions?.length && showTimeComparison,
+  );
+
+  let comparisonLabel = $derived(
+    comparisonTimeRange &&
+      (TIME_COMPARISON[comparisonTimeRange]?.label as string | undefined),
+  );
+
+  let queryMeasures = $derived(
+    mapEphemeralMeasuresForRequest([{ name: measureName }], ephemeralMeasures),
+  );
+  let { measureNames: tsMeasureNames, ephemeralMeasures: tsEphemeralMeasures } =
+    $derived(splitTimeSeriesMeasures([measureName], ephemeralMeasures));
+
+  let totalQuery = $derived(
+    createQueryServiceMetricsViewAggregation(
+      client,
+      {
+        metricsView: metricsViewName,
+        measures: queryMeasures,
+        timeRange: apiTimeRange,
+        where,
+        priority: 50,
+      },
+      {
+        query: {
+          enabled:
+            isValid &&
+            supportsTotal &&
+            visible &&
+            (!hasTimeSeries || (!!apiTimeRange.start && !!apiTimeRange.end)),
+        },
+      },
+    ),
+  );
+
+  let comparisonTotalQuery = $derived(
+    createQueryServiceMetricsViewAggregation(
+      client,
+      {
+        metricsView: metricsViewName,
+        measures: queryMeasures,
+        timeRange: apiComparisonTimeRange,
+        where,
+        priority: 50,
+      },
+      {
+        query: {
+          enabled:
+            apiComparisonTimeRange &&
+            showComparison &&
+            isValid &&
+            supportsTotal &&
+            !!apiTimeRange.start &&
+            !!apiTimeRange.end &&
+            visible,
+        },
+      },
+    ),
+  );
+
+  let primarySparklineQuery = $derived(
+    createQueryServiceMetricsViewTimeSeries(
+      client,
+      {
+        metricsViewName,
+        measureNames: tsMeasureNames,
+        ephemeralMeasures: tsEphemeralMeasures,
+        timeStart: apiTimeRange.start,
+        timeEnd: apiTimeRange.end,
+        timeGranularity: timeGrain || V1TimeGrain.TIME_GRAIN_HOUR,
         timeZone,
+        where,
+        priority: 10,
       },
-      where,
-      priority: 50,
-    },
-    {
-      query: {
-        enabled:
-          isValid &&
-          supportsTotal &&
-          visible &&
-          (!hasTimeSeries || (!!start && !!end)),
+      {
+        query: {
+          enabled:
+            !!apiTimeRange.start &&
+            !!apiTimeRange.end &&
+            isValid &&
+            showSparkline &&
+            visible,
+        },
       },
-    },
+    ),
   );
 
-  $: comparisonTotalQuery = createQueryServiceMetricsViewAggregation(
-    client,
-    {
-      metricsView: metricsViewName,
-      measures: queryMeasures,
-      timeRange: comparisonTimeRange,
-      where,
-      priority: 50,
-    },
-    {
-      query: {
-        enabled:
-          comparisonTimeRange &&
-          showComparison &&
-          isValid &&
-          supportsTotal &&
-          !!start &&
-          !!end &&
-          visible,
+  let comparisonSparklineQuery = $derived(
+    createQueryServiceMetricsViewTimeSeries(
+      client,
+      {
+        metricsViewName,
+        measureNames: tsMeasureNames,
+        ephemeralMeasures: tsEphemeralMeasures,
+        timeStart: apiComparisonTimeRange?.start,
+        timeEnd: apiComparisonTimeRange?.end,
+        timeGranularity: timeGrain || V1TimeGrain.TIME_GRAIN_HOUR,
+        timeZone,
+        where,
+        priority: 10,
       },
-    },
-  );
-
-  $: primarySparklineQuery = createQueryServiceMetricsViewTimeSeries(
-    client,
-    {
-      metricsViewName,
-      measureNames: tsMeasureNames,
-      ephemeralMeasures: tsEphemeralMeasures,
-      timeStart: start,
-      timeEnd: end,
-      timeGranularity: timeGrain || V1TimeGrain.TIME_GRAIN_HOUR,
-      timeZone,
-      where,
-      priority: 10,
-    },
-    {
-      query: {
-        enabled: !!start && !!end && isValid && showSparkline && visible,
+      {
+        query: {
+          enabled:
+            apiComparisonTimeRange &&
+            isValid &&
+            showSparkline &&
+            showComparison &&
+            visible,
+        },
       },
-    },
-  );
-
-  $: comparisonSparklineQuery = createQueryServiceMetricsViewTimeSeries(
-    client,
-    {
-      metricsViewName,
-      measureNames: tsMeasureNames,
-      ephemeralMeasures: tsEphemeralMeasures,
-      timeStart: comparisonTimeRange?.start,
-      timeEnd: comparisonTimeRange?.end,
-      timeGranularity: timeGrain || V1TimeGrain.TIME_GRAIN_HOUR,
-      timeZone,
-      where,
-      priority: 10,
-    },
-    {
-      query: {
-        enabled:
-          comparisonTimeRange &&
-          isValid &&
-          showSparkline &&
-          showComparison &&
-          visible,
-      },
-    },
-  );
-
-  $: interval = Interval.fromDateTimes(
-    DateTime.fromISO(start ?? "").setZone(timeZone),
-    DateTime.fromISO(end ?? "").setZone(timeZone),
+    ),
   );
 </script>
 
-<KPI
-  {measure}
-  {timeGrain}
-  {timeZone}
-  {showTimeComparison}
-  {hasTimeSeries}
-  {comparisonLabel}
-  {interval}
-  sparkline={spec.sparkline}
-  {hideTimeRange}
-  comparisonOptions={spec.comparison}
-  primaryTotalResult={$totalQuery}
-  comparisonTotalResult={$comparisonTotalQuery}
-  primarySparklineResult={$primarySparklineQuery}
-  comparisonSparklineResult={$comparisonSparklineQuery}
-/>
+{#if interval}
+  <KPI
+    {measure}
+    {timeGrain}
+    {timeZone}
+    {showTimeComparison}
+    {hasTimeSeries}
+    {comparisonLabel}
+    {interval}
+    sparkline={spec.sparkline}
+    {hideTimeRange}
+    comparisonOptions={spec.comparison}
+    primaryTotalResult={$totalQuery}
+    comparisonTotalResult={$comparisonTotalQuery}
+    primarySparklineResult={$primarySparklineQuery}
+    comparisonSparklineResult={$comparisonSparklineQuery}
+  />
+{/if}

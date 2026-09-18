@@ -309,6 +309,7 @@
             onclick={() => {
               onToggleAlignment(!snapToEnd);
             }}
+            label={m.dashboard_anchor_period_end()}
           />
         </div>
       </div>

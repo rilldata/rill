@@ -1,28 +1,25 @@
 <script lang="ts">
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import type { ExpressionFilterManager } from "@rilldata/web-common/features/dashboards/filters/ExpressionFilterManager.svelte.ts";
-  import type { V1TimeRange } from "@rilldata/web-common/runtime-client";
-  import TimeRangeReadOnly from "@rilldata/web-common/features/dashboards/filters/TimeRangeReadOnly.svelte";
   import ReadonlyDimensionFilter from "@rilldata/web-common/features/dashboards/filters/dimension-filters/ReadonlyDimensionFilter.svelte";
   import ReadonlyMeasureFilter from "@rilldata/web-common/features/dashboards/filters/measure-filters/ReadonlyMeasureFilter.svelte";
   import { flip } from "svelte/animate";
+  import { TimeFilterManager } from "@rilldata/web-common/features/dashboards/time-controls/TimeFilterManager.svelte.ts";
+  import ReadonlyTimeFilters from "@rilldata/web-common/features/dashboards/time-controls/ReadonlyTimeFilters.svelte";
 
   let {
     expressionFilterManager,
-    displayTimeRange,
-    displayComparisonTimeRange,
-    queryTimeStart = undefined,
-    queryTimeEnd = undefined,
+    timeFilterManager,
+    hideTimePills = false,
     hasBoldTimeRange = true,
     chipLayout = "wrap",
     ariaLabel = m.dashboard_readonly_filter_chips_aria(),
     showPinned = false,
   }: {
     expressionFilterManager: ExpressionFilterManager;
-    displayTimeRange?: V1TimeRange | undefined;
-    displayComparisonTimeRange?: V1TimeRange | undefined;
-    queryTimeStart?: string | undefined;
-    queryTimeEnd?: string | undefined;
+    timeFilterManager?: TimeFilterManager;
+    // Additional control to pass timeFilterManager but not show the pills
+    hideTimePills?: boolean;
     hasBoldTimeRange?: boolean;
     chipLayout?: "wrap" | "scroll" | "col";
     ariaLabel?: string | undefined;
@@ -62,12 +59,8 @@
   bind:this={scrollContainer}
   onwheel={handleWheel}
 >
-  {#if displayTimeRange}
-    <TimeRangeReadOnly
-      timeRange={displayTimeRange}
-      comparisonTimeRange={displayComparisonTimeRange}
-      {hasBoldTimeRange}
-    />
+  {#if timeFilterManager && !hideTimePills}
+    <ReadonlyTimeFilters {timeFilterManager} {hasBoldTimeRange} />
   {/if}
 
   {#each nonEmptyDimensionManagers as dimensionManager (dimensionManager.name)}
@@ -76,8 +69,8 @@
         manager={expressionFilterManager}
         {dimensionManager}
         yamlConfigProvider={expressionFilterManager.yamlConfigProvider}
-        timeStart={queryTimeStart}
-        timeEnd={queryTimeEnd}
+        timeStart={timeFilterManager?.timeStart}
+        timeEnd={timeFilterManager?.timeEnd}
         {showPinned}
       />
     </div>

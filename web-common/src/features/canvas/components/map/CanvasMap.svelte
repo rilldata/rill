@@ -59,7 +59,8 @@
   // render, so they are read once rather than tracked.
   const {
     specStore,
-    timeAndFilterStore,
+    expressionFilters,
+    timeFilters,
     dataEnabled: visible,
     parent: {
       name: canvasName,
@@ -119,13 +120,18 @@
   });
 
   const queryOptionsStore = derived(
-    [specStore, timeAndFilterStore, visible],
-    ([specVal, $timeAndFilterStore, $visible]) => {
+    [
+      specStore,
+      expressionFilters.getExprStoreForFirstMetricsView(),
+      timeFilters.getTimeControlStore(),
+      visible,
+    ],
+    ([specVal, { expr }, timeState, $visible]) => {
       const spec = specVal ?? ({} as Partial<MapSpec>);
       const mv = spec.metrics_view ?? "";
       const gd = spec.geo_dimension?.field ?? "";
 
-      const { timeRange, where, hasTimeSeries } = $timeAndFilterStore;
+      const { apiTimeRange, hasTimeSeries } = timeState;
 
       const dimensions: V1MetricsViewAggregationDimension[] = [{ name: gd }];
       if (spec.tooltip_dimension?.field) {
@@ -143,7 +149,7 @@
         !!mv &&
         !!gd &&
         !!cm &&
-        canQueryWithTimeRange(hasTimeSeries, timeRange);
+        canQueryWithTimeRange(hasTimeSeries, apiTimeRange);
 
       return getQueryServiceMetricsViewAggregationQueryOptions(
         runtimeClient,
@@ -152,8 +158,8 @@
           dimensions,
           measures,
           limit: "5000",
-          where,
-          timeRange: hasTimeSeries ? timeRange : undefined,
+          where: expr,
+          timeRange: hasTimeSeries ? apiTimeRange : undefined,
         },
         {
           query: {

@@ -28,12 +28,18 @@
   $: ({ instanceId } = runtimeClient);
 
   $: ({
+    metricsViewName,
     specStore,
     parent: { name: canvasName, theme },
-    timeAndFilterStore,
+    expressionFilters,
+    timeFilters,
     chartType: type,
     dataEnabled: visible,
   } = component);
+
+  $: filterStore =
+    expressionFilters.getExprStoreForMetricsView(metricsViewName);
+  $: timeControlStore = timeFilters.getTimeControlStore();
 
   $: chartType = $type;
 
@@ -69,7 +75,8 @@
     store,
     component,
     chartSpec,
-    timeAndFilterStore,
+    filterStore,
+    timeControlStore,
     isThemeModeDark,
     visible,
   );

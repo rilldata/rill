@@ -15,6 +15,7 @@ import {
   type V1TimeRange,
   type V1TimeRangeSummary,
 } from "@rilldata/web-common/runtime-client";
+import type { TimeFilterManager } from "@rilldata/web-common/features/dashboards/time-controls/TimeFilterManager.svelte.ts";
 
 // Temporary fix to split previous complete ranges to duration and round to grain to get it working on backend
 // TODO: Eventually we should support this in the backend.
@@ -235,4 +236,121 @@ export function mapV1TimeRangeToSelectedComparisonTimeRange(
   selectedTimeRange.interval = timeRange.roundToGrain;
 
   return selectedTimeRange;
+}
+
+export function mapTimeManagerRangeToV1TimeRange(
+  timeFilterManager: TimeFilterManager,
+): V1TimeRange | undefined {
+  if (!timeFilterManager.timeRange) return;
+  if (timeFilterManager.parsedTime) {
+    return {
+      expression: timeFilterManager.timeRange,
+      timeZone: timeFilterManager.timeZone,
+    };
+  }
+
+  // Legacy rill-time handling
+  const timeRange: V1TimeRange = {};
+  switch (timeFilterManager.timeRange) {
+    case TimeRangePreset.CUSTOM:
+      timeRange.start = timeFilterManager.timeStart;
+      timeRange.end = timeFilterManager.timeEnd;
+      break;
+
+    default:
+      if (timeFilterManager.timeRange in PreviousCompleteRangeMap) {
+        const prevCompleteTimeRange: V1TimeRange | undefined =
+          PreviousCompleteRangeMap[timeFilterManager.timeRange];
+        // Backend doesn't support previous complete ranges since it has offset built in.
+        // We add the offset manually as a workaround for now
+        timeRange.isoDuration = prevCompleteTimeRange?.isoDuration;
+        timeRange.isoOffset = prevCompleteTimeRange?.isoOffset;
+        timeRange.roundToGrain = prevCompleteTimeRange?.roundToGrain;
+      } else {
+        timeRange.isoDuration = timeFilterManager.timeRange;
+      }
+      break;
+  }
+
+  timeRange.timeZone = timeFilterManager.timeZone;
+
+  return timeRange;
+}
+
+export function mapTimeManagerComparisonRangeToV1TimeRange(
+  timeFilterManager: TimeFilterManager,
+  timeRange: V1TimeRange | undefined,
+): V1TimeRange | undefined {
+  if (
+    !timeRange ||
+    !timeFilterManager.showComparison ||
+    !timeFilterManager.comparisonTimeRange
+  ) {
+    return undefined;
+  }
+
+  let isoDuration = timeRange.isoDuration;
+  const name = timeFilterManager.comparisonTimeRange;
+
+  if (timeRange.expression && TIME_COMPARISON[name]?.rillTimeOffset) {
+    const rt = parseRillTime(timeRange.expression);
+    if (!rt.isOldFormat) {
+      return {
+        expression:
+          rt.toString() + " offset " + TIME_COMPARISON[name]?.rillTimeOffset,
+      };
+    } else {
+      // Handle old syntax differently until we have the backend parser updated.
+      isoDuration = timeRange.expression;
+    }
+  }
+
+  const comparisonTimeRange: V1TimeRange = {};
+  switch (name) {
+    default:
+      comparisonTimeRange.isoOffset = name;
+      comparisonTimeRange.isoDuration = isoDuration;
+      break;
+    case TimeComparisonOption.CONTIGUOUS:
+      comparisonTimeRange.isoOffset = comparisonTimeRange.isoDuration =
+        isoDuration;
+      break;
+
+    case TimeComparisonOption.CUSTOM:
+      comparisonTimeRange.start = timeFilterManager.comparisonTimeStart;
+      comparisonTimeRange.end = timeFilterManager.comparisonTimeEnd;
+      break;
+  }
+  return comparisonTimeRange;
+}
+
+export function mapV1TimeRangeToRillTime(timeRange: V1TimeRange) {
+  let duration = timeRange.isoDuration;
+
+  const fullRangeKey = `${timeRange.isoDuration ?? ""}_${timeRange.isoOffset ?? ""}_${timeRange.roundToGrain ?? ""}`;
+  if (fullRangeKey in PreviousCompleteRangeReverseMap) {
+    duration = PreviousCompleteRangeReverseMap[fullRangeKey];
+  }
+
+  if (timeRange.start && timeRange.end) {
+    return `${timeRange.start} to ${timeRange.end}`;
+  }
+  return duration ?? timeRange.isoDuration;
+}
+
+export function mapV1TimeRangeToComparisonTimeOption(timeRange: V1TimeRange) {
+  let duration = timeRange.isoOffset;
+
+  const fullRangeKey = `${timeRange.isoDuration ?? ""}_${timeRange.isoOffset ?? ""}_${timeRange.roundToGrain ?? ""}`;
+  if (fullRangeKey in PreviousCompleteRangeReverseMap) {
+    duration = PreviousCompleteRangeReverseMap[fullRangeKey];
+  }
+
+  if (timeRange.start && timeRange.end) {
+    return `${timeRange.start} to ${timeRange.end}`;
+  } else if (timeRange.isoOffset === timeRange.isoDuration) {
+    return TimeComparisonOption.CONTIGUOUS;
+  }
+
+  return duration;
 }

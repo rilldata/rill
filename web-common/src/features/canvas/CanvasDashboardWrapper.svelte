@@ -44,18 +44,28 @@
       theme,
       exportMode,
       expressionFilterManager,
+      timeFilterManager,
       dashboardProvider,
     },
   } = $derived(getCanvasStore(canvasName, instanceId));
   // svelte-ignore state_referenced_locally
+  syncStoreWithSource(expressionFilterManager, (newUrlParams) => {
+    let newSearch = newUrlParams.toString();
+    if (!newSearch) newSearch = "clear=true";
+    return goto("?" + newSearch);
+  });
+
+  // svelte-ignore state_referenced_locally
   syncStoreWithSource(
-    expressionFilterManager,
+    timeFilterManager,
     (newUrlParams) => {
       let newSearch = newUrlParams.toString();
       if (!newSearch) newSearch = "clear=true";
       return goto("?" + newSearch);
     },
-    () => expressionFilterManager.metricsViewsProvider.ready,
+    undefined,
+    true,
+    true,
   );
 
   $effect(() => {

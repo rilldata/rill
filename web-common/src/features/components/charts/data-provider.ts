@@ -1,5 +1,4 @@
 import { timeGrainToVegaTimeUnitMap } from "@rilldata/web-common/components/vega/util";
-import type { TimeAndFilterStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
 import type { MetricsViewSelectors } from "@rilldata/web-common/features/metrics-views/metrics-view-selectors";
 import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
 import {
@@ -19,6 +18,8 @@ import type {
 } from "./types";
 import { resolveEphemeralMeasureSpec } from "./ephemeral-measures";
 import { adjustDataForTimeZone, getFieldsByType } from "./util";
+import type { ExpressionState } from "@rilldata/web-common/features/dashboards/filters/ExpressionFilterManager.svelte.ts";
+import type { TimeControlState } from "@rilldata/web-common/features/dashboards/time-controls/TimeFilterManager.svelte.ts";
 
 export interface ChartDataDependencies<T extends ChartSpec = ChartSpec> {
   config: T;
@@ -26,7 +27,7 @@ export interface ChartDataDependencies<T extends ChartSpec = ChartSpec> {
   metricsView: MetricsViewSelectors;
   /** Theme colors (primary/secondary) - updates when theme changes */
   themeStore: CanvasEntity["theme"];
-  timeAndFilterStore: Readable<TimeAndFilterStore>;
+  timeControlStore: Readable<TimeControlState>;
   /** Reactive theme mode (light/dark toggle) - used in canvas context */
   themeModeStore?: Readable<boolean>;
   /** Static theme mode flag - used in standalone chart context */
@@ -47,7 +48,7 @@ export function getChartData<T extends ChartSpec = ChartSpec>(
     metricsView,
     themeStore,
     getDomainValues,
-    timeAndFilterStore,
+    timeControlStore,
     themeModeStore,
     isThemeModeDark: staticThemeModeDark,
   } = deps;
@@ -73,7 +74,7 @@ export function getChartData<T extends ChartSpec = ChartSpec>(
         config.metrics_view,
       );
     } else {
-      return getTimeDimensionDefinition(field.field, timeAndFilterStore);
+      return getTimeDimensionDefinition(field.field, timeControlStore);
     }
   });
 
@@ -84,12 +85,12 @@ export function getChartData<T extends ChartSpec = ChartSpec>(
   return derived(
     [
       chartDataQuery,
-      timeAndFilterStore,
+      timeControlStore,
       themeStore,
       modeStore,
       ...fieldReadableMap,
     ],
-    ([chartData, $timeAndFilterStore, theme, isThemeModeDark, ...fieldMap]) => {
+    ([chartData, $timeControlStore, theme, isThemeModeDark, ...fieldMap]) => {
       const fieldSpecMap = allFields.reduce(
         (acc, field, index) => {
           acc[field.field] =
@@ -112,21 +113,21 @@ export function getChartData<T extends ChartSpec = ChartSpec>(
 
       let data = chartData?.data?.data;
 
-      if (timeDimensions?.length && $timeAndFilterStore.timeGrain) {
+      if (timeDimensions?.length && $timeControlStore.timeGrain) {
         data = adjustDataForTimeZone(
           data,
           timeDimensions,
-          $timeAndFilterStore.timeRange.timeZone || "UTC",
+          $timeControlStore.timeZone || "UTC",
         );
       }
 
       const domainValues = getDomainValues();
-      const hasComparison = $timeAndFilterStore.showTimeComparison;
+      const hasComparison = $timeControlStore.showComparison;
       const waitingForTimeState =
-        $timeAndFilterStore.hasTimeSeries === undefined ||
-        ($timeAndFilterStore.hasTimeSeries === true &&
-          (!$timeAndFilterStore.timeRange?.start ||
-            !$timeAndFilterStore.timeRange?.end));
+        $timeControlStore.hasTimeSeries === undefined ||
+        ($timeControlStore.hasTimeSeries === true &&
+          (!$timeControlStore.apiTimeRange?.start ||
+            !$timeControlStore.apiTimeRange?.end));
 
       return {
         data: data || [],
@@ -151,10 +152,10 @@ export function getChartData<T extends ChartSpec = ChartSpec>(
 
 export function getTimeDimensionDefinition(
   field: string,
-  timeAndFilterStore: Readable<TimeAndFilterStore>,
+  timeControlStore: Readable<TimeControlState>,
 ): Readable<TimeDimensionDefinition> {
-  return derived(timeAndFilterStore, ($timeAndFilterStore) => {
-    const grain = $timeAndFilterStore?.timeGrain;
+  return derived(timeControlStore, ($timeControlStore) => {
+    const grain = $timeControlStore?.timeGrain;
     const displayName = "Time";
 
     if (grain) {

@@ -12,7 +12,8 @@
 
   $: ({
     specStore,
-    timeAndFilterStore,
+    expressionFilters,
+    timeFilters,
     parent: { name: canvasName },
     dataEnabled: visible,
   } = component);
@@ -68,14 +69,13 @@
     >
       {#each kpis as kpi, i (i)}
         <div class="min-h-32 kpi-wrapper">
-          {#if $timeAndFilterStore}
-            <KPIProvider
-              spec={kpi}
-              {timeAndFilterStore}
-              {canvasName}
-              visible={$visible}
-            />
-          {/if}
+          <KPIProvider
+            spec={kpi}
+            expressionFilterManager={expressionFilters}
+            timeFilterManager={timeFilters}
+            {canvasName}
+            visible={$visible}
+          />
         </div>
       {/each}
     </div>

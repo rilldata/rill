@@ -3,13 +3,8 @@
   import { Button } from "@rilldata/web-common/components/button";
   import * as Dialog from "@rilldata/web-common/components/dialog";
   import { TDDChart } from "@rilldata/web-common/features/dashboards/time-dimension-details/types";
-  import type {
-    MetricsViewSpecMeasure,
-    V1Expression,
-    V1TimeGrain,
-  } from "@rilldata/web-common/runtime-client";
+  import type { MetricsViewSpecMeasure } from "@rilldata/web-common/runtime-client";
   import { toPng } from "html-to-image";
-  import { Interval } from "luxon";
   import MeasureBigNumber from "../big-number/MeasureBigNumber.svelte";
   import MeasureChart from "./measure-chart/MeasureChart.svelte";
   import MeasureChartXAxis from "./measure-chart/MeasureChartXAxis.svelte";
@@ -19,50 +14,74 @@
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import type { ExpressionFilterManager } from "@rilldata/web-common/features/dashboards/filters/ExpressionFilterManager.svelte.ts";
   import ReadonlyExpressionFilters from "@rilldata/web-common/features/dashboards/filters/ReadonlyExpressionFilters.svelte";
+  import type { TimeFilterManager } from "@rilldata/web-common/features/dashboards/time-controls/TimeFilterManager.svelte.ts";
   import { EmbedStore } from "@rilldata/web-common/features/embeds/embed-store";
 
-  export let open = false;
-  export let measure: MetricsViewSpecMeasure;
-  export let ephemeralMeasures: EphemeralMeasureDef[] | undefined = undefined;
-  export let metricsViewName: string;
-  export let where: V1Expression | undefined = undefined;
-  export let expressionFilterManager: ExpressionFilterManager;
-  export let tddChartType: TDDChart = TDDChart.DEFAULT;
-  export let timeDimension: string | undefined = undefined;
-  export let timeStart: string | undefined = undefined;
-  export let timeEnd: string | undefined = undefined;
-  export let comparisonTimeStart: string | undefined = undefined;
-  export let comparisonTimeEnd: string | undefined = undefined;
-  export let interval: Interval<true> | undefined = undefined;
-  export let comparisonInterval: Interval<true> | undefined = undefined;
-  export let timeGranularity: V1TimeGrain | undefined = undefined;
-  export let timeZone: string = "UTC";
-  export let comparisonDimension: string | undefined = undefined;
-  export let dimensionWhere: V1Expression | undefined = undefined;
-  export let dimensionValues: (string | null)[] = [];
-  export let showComparison = false;
-  export let showTimeDimensionDetail: boolean = false;
-  export let connectNulls: boolean = true;
-  export let dynamicYAxis: boolean = false;
-  export let ready = true;
+  let {
+    open = $bindable(false),
+    measure,
+    ephemeralMeasures = undefined,
+    metricsViewName,
+    expressionFilterManager,
+    timeFilterManager,
+    tddChartType = TDDChart.DEFAULT,
+    timeDimension = undefined,
+    comparisonDimension = undefined,
+    dimensionValues = [],
+    showTimeDimensionDetail = false,
+    connectNulls = true,
+    dynamicYAxis = false,
+  }: {
+    open: boolean;
+    measure: MetricsViewSpecMeasure;
+    ephemeralMeasures: EphemeralMeasureDef[] | undefined;
+    metricsViewName: string;
+    expressionFilterManager: ExpressionFilterManager;
+    timeFilterManager: TimeFilterManager;
+    tddChartType?: TDDChart;
+    timeDimension?: string | undefined;
+    comparisonDimension?: string | undefined;
+    dimensionValues?: (string | null)[];
+    showTimeDimensionDetail?: boolean;
+    connectNulls?: boolean;
+    dynamicYAxis?: boolean;
+  } = $props();
+
+  let where = $derived(
+    expressionFilterManager.exprByMetricsView[metricsViewName],
+  );
+  let {
+    timeStart,
+    timeEnd,
+    interval,
+    timeGrain,
+
+    comparisonTimeStart,
+    comparisonTimeEnd,
+    comparisonInterval,
+    showComparison,
+
+    ready,
+  } = $derived(timeFilterManager);
 
   // Embedded dashboards live inside a customer's product, so the exported
   // image should not carry Rill branding there.
   const isEmbedded = EmbedStore.isEmbedded();
 
   let captureNode: HTMLDivElement;
-  let downloading = false;
+  let downloading = $state<boolean>(false);
 
-  $: formattedTimeRange = interval
-    ? prettyFormatTimeRange(interval, timeGranularity)
-    : "";
+  let formattedTimeRange = $derived(
+    interval ? prettyFormatTimeRange(interval, timeGrain) : "",
+  );
   // The time controls carry a comparison range even when comparison mode is
   // off, so gate on showComparison rather than on the interval alone.
-  $: formattedComparisonRange =
+  let formattedComparisonRange = $derived(
     showComparison && comparisonInterval
-      ? prettyFormatTimeRange(comparisonInterval, timeGranularity)
-      : "";
-  $: generatedTime = new Date().toISOString();
+      ? prettyFormatTimeRange(comparisonInterval, timeGrain)
+      : "",
+  );
+  let generatedTime = $derived(new Date().toISOString());
 
   const SVG_PROPS = [
     "fill",
@@ -138,10 +157,10 @@
         <ReadonlyExpressionFilters {expressionFilterManager} />
 
         <div class="grid grid-cols-[auto_1fr] gap-x-4 gap-y-2">
-          {#if timeGranularity}
+          {#if timeGrain}
             <div class="col-span-2 grid grid-cols-subgrid">
               <div></div>
-              <MeasureChartXAxis {interval} {timeGranularity} />
+              <MeasureChartXAxis {interval} timeGranularity={timeGrain} />
             </div>
           {/if}
 
@@ -160,26 +179,23 @@
             skipLink
           />
 
-          <MeasureChart
-            {measure}
-            {ephemeralMeasures}
-            {connectNulls}
-            tddChartType={tddChartType ?? TDDChart.DEFAULT}
-            {metricsViewName}
-            {where}
-            {timeDimension}
-            {interval}
-            {comparisonInterval}
-            {timeGranularity}
-            {timeZone}
-            {ready}
-            {comparisonDimension}
-            {dimensionValues}
-            {dimensionWhere}
-            {showComparison}
-            {showTimeDimensionDetail}
-            {dynamicYAxis}
-          />
+          {#if timeDimension}
+            <MeasureChart
+              {measure}
+              {ephemeralMeasures}
+              {expressionFilterManager}
+              {timeFilterManager}
+              {connectNulls}
+              tddChartType={tddChartType ?? TDDChart.DEFAULT}
+              {metricsViewName}
+              {timeDimension}
+              {ready}
+              {comparisonDimension}
+              {dimensionValues}
+              {showTimeDimensionDetail}
+              {dynamicYAxis}
+            />
+          {/if}
         </div>
 
         <footer class="flex items-center justify-between text-xs text-fg-muted">

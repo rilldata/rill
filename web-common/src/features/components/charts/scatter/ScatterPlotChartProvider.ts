@@ -8,7 +8,6 @@ import type {
 import { isFieldConfig } from "@rilldata/web-common/features/components/charts/util";
 import { mergeFilters } from "@rilldata/web-common/features/dashboards/pivot/pivot-merge-filters";
 import { createInExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
-import type { TimeAndFilterStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
 import type {
   V1Expression,
   V1MetricsViewAggregationDimension,
@@ -29,6 +28,8 @@ import {
   canQueryWithTimeRange,
   getFilterWithNullHandling,
 } from "../query-util";
+import type { ExpressionState } from "@rilldata/web-common/features/dashboards/filters/ExpressionFilterManager.svelte.ts";
+import type { TimeControlState } from "@rilldata/web-common/features/dashboards/time-controls/TimeFilterManager.svelte.ts";
 import { withEphemeralMeasures } from "../ephemeral-measures";
 
 export type ScatterPlotChartSpec = {
@@ -59,7 +60,8 @@ export class ScatterPlotChartProvider {
 
   createChartDataQuery(
     client: RuntimeClient,
-    timeAndFilterStore: Readable<TimeAndFilterStore>,
+    filterStore: Readable<ExpressionState>,
+    timeControlStore: Readable<TimeControlState>,
     visible?: Readable<boolean>,
   ): ChartDataQuery {
     const visibleStore = visible ?? readable(true);
@@ -108,14 +110,15 @@ export class ScatterPlotChartProvider {
       config.x?.type === "temporal" || config.y?.type === "temporal";
 
     const topNColorQueryOptionsStore = derived(
-      [timeAndFilterStore, visibleStore],
-      ([$timeAndFilterStore, $visible]) => {
-        const { timeRange, where, hasTimeSeries } = $timeAndFilterStore;
+      [filterStore, timeControlStore, visibleStore],
+      ([$filterStore, $timeControlStore, $visible]) => {
+        const { expr } = $filterStore;
+        const { apiTimeRange, hasTimeSeries } = $timeControlStore;
         const enabled =
           $visible &&
           canQueryWithTimeRange(
             hasTimeSeries,
-            timeRange,
+            apiTimeRange,
             hasTemporalDimension,
           ) &&
           hasColorDimension &&
@@ -123,7 +126,7 @@ export class ScatterPlotChartProvider {
           !!colorLimit;
 
         const topNWhere = getFilterWithNullHandling(
-          where,
+          expr,
           isFieldConfig(config.color) ? config.color : undefined,
         );
 
@@ -137,7 +140,7 @@ export class ScatterPlotChartProvider {
               ? [{ name: config.y.field, desc: true }]
               : undefined,
             where: topNWhere,
-            timeRange,
+            timeRange: apiTimeRange,
             limit: colorLimit?.toString(),
           },
           {
@@ -152,16 +155,16 @@ export class ScatterPlotChartProvider {
     const topNColorQuery = createQuery(topNColorQueryOptionsStore);
 
     const queryOptionsStore = derived(
-      [timeAndFilterStore, topNColorQuery, visibleStore],
-      ([$timeAndFilterStore, $topNColorQuery, $visible]) => {
-        const { timeRange, where, timeGrain, hasTimeSeries } =
-          $timeAndFilterStore;
+      [filterStore, timeControlStore, topNColorQuery, visibleStore],
+      ([$filterStore, $timeControlStore, $topNColorQuery, $visible]) => {
+        const { expr } = $filterStore;
+        const { apiTimeRange, timeGrain, hasTimeSeries } = $timeControlStore;
         const topNColorData = $topNColorQuery?.data?.data;
         const enabled =
           $visible &&
           canQueryWithTimeRange(
             hasTimeSeries,
-            timeRange,
+            apiTimeRange,
             hasTemporalDimension,
           ) &&
           !!measures?.length &&
@@ -171,7 +174,7 @@ export class ScatterPlotChartProvider {
             : true);
 
         let combinedWhere: V1Expression | undefined = getFilterWithNullHandling(
-          where,
+          expr,
           config.dimension,
         );
 
@@ -209,7 +212,7 @@ export class ScatterPlotChartProvider {
             measures,
             dimensions: finalDimensions,
             where: combinedWhere,
-            timeRange,
+            timeRange: apiTimeRange,
             fillMissing: hasTemporalDimension,
             limit: "9999",
           },

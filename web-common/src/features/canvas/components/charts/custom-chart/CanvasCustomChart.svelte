@@ -5,17 +5,29 @@
   import { clearComponentConversation } from "./chart-ai-agent";
   import type { CustomChartComponent, QueryFieldMeta } from "./index";
 
-  export let component: CustomChartComponent;
-  export let editable: boolean = false;
+  let {
+    component,
+    editable,
+  }: {
+    component: CustomChartComponent;
+    editable: boolean;
+  } = $props();
 
   onDestroy(() => {
     clearComponentConversation(component.id);
   });
 
-  $: ({ specStore, timeAndFilterStore } = component);
+  let { metricsViewName, specStore, expressionFilters, timeFilters } =
+    $derived(component);
 
-  $: hasValidSpec = component.isValid($specStore);
-  $: hasContent = component.hasContent($specStore);
+  let whereFilter = $derived(
+    expressionFilters.exprByMetricsView[metricsViewName],
+  );
+
+  let timeRange = $derived(timeFilters.apiTimeRange);
+
+  let hasValidSpec = $derived(component.isValid($specStore));
+  let hasContent = $derived(component.hasContent($specStore));
 
   function handleMetaChange(meta: Record<string, unknown> | undefined) {
     if (!meta?.fields || !Array.isArray(meta.fields)) {
@@ -30,8 +42,8 @@
   <CustomChartRenderer
     name={component.id}
     spec={$specStore.vega_spec}
-    whereFilter={$timeAndFilterStore?.where}
-    timeRange={$timeAndFilterStore?.timeRange}
+    {whereFilter}
+    {timeRange}
     metricsSQL={$specStore.metrics_sql}
     showDataTable={editable}
     onMetaChange={handleMetaChange}
