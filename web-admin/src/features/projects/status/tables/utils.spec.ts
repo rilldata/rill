@@ -221,7 +221,10 @@ describe("tables utils", () => {
 
     it("returns false when no partitionsModelId", () => {
       const resource: V1Resource = {
-        model: { state: { partitionsHaveErrors: true } },
+        model: {
+          spec: { incremental: true },
+          state: { partitionsHaveErrors: true },
+        },
       };
       expect(hasModelErroredPartitions(resource)).toBe(false);
     });
@@ -229,15 +232,27 @@ describe("tables utils", () => {
     it("returns false when partitionsHaveErrors is false", () => {
       const resource: V1Resource = {
         model: {
+          spec: { incremental: true },
           state: { partitionsModelId: "123", partitionsHaveErrors: false },
         },
       };
       expect(hasModelErroredPartitions(resource)).toBe(false);
     });
 
-    it("returns true when both conditions are met", () => {
+    it("returns false for a non-incremental model with errored partitions", () => {
       const resource: V1Resource = {
         model: {
+          spec: { incremental: false },
+          state: { partitionsModelId: "123", partitionsHaveErrors: true },
+        },
+      };
+      expect(hasModelErroredPartitions(resource)).toBe(false);
+    });
+
+    it("returns true for an incremental model with errored partitions", () => {
+      const resource: V1Resource = {
+        model: {
+          spec: { incremental: true },
           state: { partitionsModelId: "123", partitionsHaveErrors: true },
         },
       };
