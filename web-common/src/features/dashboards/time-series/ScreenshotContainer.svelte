@@ -15,6 +15,7 @@
   import type { ExpressionFilterManager } from "@rilldata/web-common/features/dashboards/filters/ExpressionFilterManager.svelte.ts";
   import ReadonlyExpressionFilters from "@rilldata/web-common/features/dashboards/filters/ReadonlyExpressionFilters.svelte";
   import type { TimeFilterManager } from "@rilldata/web-common/features/dashboards/time-controls/TimeFilterManager.svelte.ts";
+  import { EmbedStore } from "@rilldata/web-common/features/embeds/embed-store";
 
   let {
     open = $bindable(false),
@@ -63,14 +64,20 @@
     ready,
   } = $derived(timeFilterManager);
 
+  // Embedded dashboards live inside a customer's product, so the exported
+  // image should not carry Rill branding there.
+  const isEmbedded = EmbedStore.isEmbedded();
+
   let captureNode: HTMLDivElement;
   let downloading = $state<boolean>(false);
 
   let formattedTimeRange = $derived(
     interval ? prettyFormatTimeRange(interval, timeGrain) : "",
   );
+  // The time controls carry a comparison range even when comparison mode is
+  // off, so gate on showComparison rather than on the interval alone.
   let formattedComparisonRange = $derived(
-    comparisonInterval
+    showComparison && comparisonInterval
       ? prettyFormatTimeRange(comparisonInterval, timeGrain)
       : "",
   );
@@ -192,9 +199,13 @@
         </div>
 
         <footer class="flex items-center justify-between text-xs text-fg-muted">
-          <!-- i18n-ignore: standalone product name -->
-          <span>Rill</span>
-          <span>{m.dashboard_generated({ time: generatedTime })}</span>
+          {#if !isEmbedded}
+            <!-- i18n-ignore: standalone product name -->
+            <span>Rill</span>
+          {/if}
+          <span class="ml-auto"
+            >{m.dashboard_generated({ time: generatedTime })}</span
+          >
         </footer>
       </div>
     </ThemeProvider>

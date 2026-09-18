@@ -1,7 +1,7 @@
 import type { V1Bookmark } from "@rilldata/web-admin/client";
 import { isHomeBookmark } from "@rilldata/web-admin/features/bookmarks/selectors.ts";
 import { cleanUrlParams } from "@rilldata/web-common/features/dashboards/url-state/clean-url-params.ts";
-import { parseRillTime } from "@rilldata/web-common/features/dashboards/url-state/time-ranges/parser.ts";
+import { isAbsoluteTimeRange } from "@rilldata/web-common/features/dashboards/url-state/time-ranges/parser.ts";
 import { ExploreStateURLParams } from "@rilldata/web-common/features/dashboards/url-state/url-params";
 import { prettyFormatTimeRange } from "@rilldata/web-common/lib/time/ranges/formatter.ts";
 import { type DashboardTimeControls } from "@rilldata/web-common/lib/time/types.ts";
@@ -223,12 +223,7 @@ function isAbsoluteTimeRangeBookmark(bookmarkUrlParams: URLSearchParams) {
   const timeRange = bookmarkUrlParams.get(ExploreStateURLParams.TimeRange);
   if (!timeRange) return false;
 
-  try {
-    const rt = parseRillTime(timeRange);
-    return rt.isAbsoluteTime();
-  } catch {
-    return false;
-  }
+  return isAbsoluteTimeRange(timeRange);
 }
 
 export function isFilterOnlyBookmark(

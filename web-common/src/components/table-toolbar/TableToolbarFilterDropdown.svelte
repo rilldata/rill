@@ -34,7 +34,7 @@
     <DropdownMenu.Trigger
       class="flex flex-row items-center gap-x-2 h-9 px-4 border rounded-[2px] shadow-xs text-sm font-medium cursor-pointer {hasActiveFilters
         ? 'bg-surface-hover border-border text-fg-accent'
-        : 'bg-white border-border text-fg-primary hover:bg-surface-hover'}"
+        : 'border-border text-fg-primary hover:bg-surface-hover'}"
       aria-label="Filter options"
     >
       <FilterOutlined size="16" />

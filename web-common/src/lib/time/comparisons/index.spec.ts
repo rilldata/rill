@@ -35,18 +35,31 @@ const contiguousAndCustomComparisonRanges = [
       end: new Date("2020-03-05T06:05:00.000Z"),
     },
   },
-  // custom case
+  // custom cases
   {
     description:
-      "should return the window itself when comparison is an absolute range",
+      "should return the parsed range when comparison is a custom absolute range",
     input: {
       start: new Date("2020-03-05T00:00:00.000Z"),
       end: new Date("2020-03-06T00:00:00.000Z"),
-      comparison: "2019-03-05T00:00:00.000Z,2019-03-06T00:00:00.000Z",
+      comparison: "2024-01-01T00:00:00.000Z,2024-02-01T00:00:00.000Z",
     },
     output: {
-      start: new Date("2019-03-05T00:00:00.000Z"),
-      end: new Date("2019-03-06T00:00:00.000Z"),
+      start: new Date("2024-01-01T00:00:00.000Z"),
+      end: new Date("2024-02-01T00:00:00.000Z"),
+    },
+  },
+  {
+    description:
+      "should return the parsed range when comparison is a custom absolute range using an interval separator",
+    input: {
+      start: new Date("2020-03-05T00:00:00.000Z"),
+      end: new Date("2020-03-06T00:00:00.000Z"),
+      comparison: "2024-01-01T00:00:00.000Z/2024-02-01T00:00:00.000Z",
+    },
+    output: {
+      start: new Date("2024-01-01T00:00:00.000Z"),
+      end: new Date("2024-02-01T00:00:00.000Z"),
     },
   },
 ];
