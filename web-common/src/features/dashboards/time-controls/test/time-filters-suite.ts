@@ -143,33 +143,33 @@ export function testTimeRangeFilters(variant: TimeFiltersVariant) {
       await variant.render();
 
       // Select 'watermark' as reference
-      await selectSnapRefOrGrain("complete data", "as of complete day end");
+      await selectSnapRefOrGrain("current time", "as of current day end");
 
-      const watermarkTimeRange = "7D as of watermark/D";
-      assertTimeRange(resolvedTimeRange(watermarkTimeRange));
+      const nowTimeRange = "7D as of now/D+1D";
+      assertTimeRange(resolvedTimeRange(nowTimeRange));
       // Day is still the grain.
       assertTimeGrain(V1TimeGrain.TIME_GRAIN_DAY);
-      const watermarkUrlSearch = urlSearchWithTimeParams({
-        tr: watermarkTimeRange,
+      const nowUrlSearch = urlSearchWithTimeParams({
+        tr: nowTimeRange,
       });
-      assertUrlSearch(watermarkUrlSearch);
+      assertUrlSearch(nowUrlSearch);
       // Applying the changes should add a single entry to history.
-      assertUrlSearchHistory(watermarkUrlSearch);
+      assertUrlSearchHistory(nowUrlSearch);
 
       // Watermark snap doesn't allow snap to end
       await snapOffsetToggleIsDisabled();
 
       // Select 'hour' as snap grain
-      await selectSnapRefOrGrain("hour", "as of complete hour end");
-      const watermarkHourTimeRange = "7D as of watermark/h";
-      assertTimeRange(resolvedTimeRange(watermarkHourTimeRange));
+      await selectSnapRefOrGrain("hour", "as of current hour end");
+      const nowHourTimeRange = "7D as of now/h+1h";
+      assertTimeRange(resolvedTimeRange(nowHourTimeRange));
       assertTimeGrain(V1TimeGrain.TIME_GRAIN_DAY); // Snap doesnt change the selected grain
-      const watermarkHourUrlSearch = urlSearchWithTimeParams({
-        tr: watermarkHourTimeRange,
+      const nowHourUrlSearch = urlSearchWithTimeParams({
+        tr: nowHourTimeRange,
         grain: "day",
       });
-      assertUrlSearch(watermarkHourUrlSearch);
-      assertUrlSearchHistory(watermarkUrlSearch, watermarkHourUrlSearch);
+      assertUrlSearch(nowHourUrlSearch);
+      assertUrlSearchHistory(nowUrlSearch, nowHourUrlSearch);
     });
 
     it("Should change snap offset", async () => {
@@ -279,17 +279,17 @@ export function testComparisonTimeRangeFilters(variant: TimeFiltersVariant) {
         end: "2024-03-24T15:00:00.000Z",
       });
 
-      const last25PreviousWeekComparisonUrl = urlSearchWithTimeParams({
+      const last24PreviousWeekComparisonUrl = urlSearchWithTimeParams({
         tr: "24h as of latest/h+1h",
         compare_tr: "rill-PW",
       });
-      assertUrlSearch(last25PreviousWeekComparisonUrl);
+      assertUrlSearch(last24PreviousWeekComparisonUrl);
 
       // Only 3 entries are present
       assertUrlSearchHistory(
         defaultComparisonUrl,
         previousWeekComparisonUrl,
-        last25PreviousWeekComparisonUrl,
+        last24PreviousWeekComparisonUrl,
       );
     });
   });

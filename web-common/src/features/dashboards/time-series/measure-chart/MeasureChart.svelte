@@ -46,7 +46,6 @@
     annotationsEnabled = false,
     timeDimension,
     showTimeDimensionDetail = false,
-    ready = false,
     tddChartType = TDDChart.DEFAULT,
     scrubController = undefined,
     connectNulls = true,
@@ -63,7 +62,6 @@
     annotationsEnabled?: boolean;
     timeDimension: string;
     showTimeDimensionDetail?: boolean;
-    ready?: boolean;
     tddChartType?: TDDChart;
     scrubController?: ScrubController | undefined;
     connectNulls?: boolean;
@@ -89,6 +87,8 @@
     scrubInterval,
     canPanLeft,
     canPanRight,
+
+    ready,
   } = $derived(timeFilterManager);
   let timeGranularity = $derived(timeGrain ?? MinSupportedGrain);
 

@@ -45,14 +45,15 @@ export const RESOLVED_RILL_TIMES: Record<string, V1ResolvedTimeRange> = {
     end: "2024-03-31T00:00:00.000Z",
     grain: V1TimeGrain.TIME_GRAIN_DAY,
   },
-  "7D as of watermark/D": {
-    start: "2024-03-23T00:00:00.000Z",
-    end: "2024-03-30T00:00:00.000Z",
+  // Hardcoded `now` to 2024-05-03T12:00:00Z
+  "7D as of now/D+1D": {
+    start: "2024-04-27T00:00:00.000Z",
+    end: "2024-05-04T00:00:00.000Z",
     grain: V1TimeGrain.TIME_GRAIN_DAY,
   },
-  "7D as of watermark/h": {
-    start: "2024-03-23T14:00:00.000Z",
-    end: "2024-03-30T14:00:00.000Z",
+  "7D as of now/h+1h": {
+    start: "2024-04-26T13:00:00.000Z",
+    end: "2024-05-03T13:00:00.000Z",
     grain: V1TimeGrain.TIME_GRAIN_DAY,
   },
   // The same anchor, minus 4 weeks.
