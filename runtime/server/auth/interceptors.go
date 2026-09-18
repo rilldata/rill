@@ -109,11 +109,29 @@ func HTTPMiddleware(aud *Audience, next http.Handler) http.Handler {
 	})
 }
 
+// AuthenticateToken validates a raw token for a PostgreSQL wire-compatible connection.
+// Unlike HTTP authentication, token must not include the "Bearer" scheme.
+func AuthenticateToken(ctx context.Context, aud *Audience, token string) (context.Context, error) {
+	return parseClaimsFromToken(ctx, aud, token)
+}
+
 func parseClaims(ctx context.Context, aud *Audience, authorizationHeader string) (context.Context, error) {
+	if authorizationHeader == "" {
+		return parseClaimsFromToken(ctx, aud, "")
+	}
+	if len(authorizationHeader) >= 6 && strings.EqualFold(authorizationHeader[:6], "bearer") {
+		if token := strings.TrimSpace(authorizationHeader[6:]); token != "" {
+			return parseClaimsFromToken(ctx, aud, token)
+		}
+	}
+	return nil, errors.New("no bearer token found in authorization header")
+}
+
+func parseClaimsFromToken(ctx context.Context, aud *Audience, token string) (context.Context, error) {
 	// When aud == nil, it means auth is disabled.
 	if aud == nil {
-		// If there's no authorization header, we set open claims since auth is disabled.
-		if authorizationHeader == "" {
+		// If there's no token, we set open claims since auth is disabled.
+		if token == "" {
 			return withClaimsProvider(ctx, wrappedClaims{
 				claims: &runtime.SecurityClaims{
 					UserAttributes: map[string]any{"admin": true, "email": "", "name": ""},
@@ -123,24 +141,17 @@ func parseClaims(ctx context.Context, aud *Audience, authorizationHeader string)
 			}), nil
 		}
 
-		// If auth header is set when auth is disabled, it must be a devJWTClaims, which we parse without verifying the signature.
-		bearerToken := ""
-		if len(authorizationHeader) >= 6 && strings.EqualFold(authorizationHeader[0:6], "bearer") {
-			bearerToken = strings.TrimSpace(authorizationHeader[6:])
-		}
-		if bearerToken == "" {
-			return nil, errors.New("no bearer token found in authorization header")
-		}
+		// If token is set when auth is disabled, it must be a devJWTClaims, which we parse without verifying the signature.
 		claims := &devJWTClaims{}
-		_, _, err := jwt.NewParser().ParseUnverified(bearerToken, claims)
+		_, _, err := jwt.NewParser().ParseUnverified(token, claims)
 		if err != nil {
 			return nil, err
 		}
 		return withClaimsProvider(ctx, claims), nil
 	}
 
-	// If authorization header is not set, it's an anonymous user so we set empty claims with no permissions.
-	if authorizationHeader == "" {
+	// If token is not set, it's an anonymous user so we set empty claims with no permissions.
+	if token == "" {
 		ctx = withClaimsProvider(ctx, wrappedClaims{
 			claims: &runtime.SecurityClaims{
 				UserAttributes: map[string]any{},
@@ -149,17 +160,8 @@ func parseClaims(ctx context.Context, aud *Audience, authorizationHeader string)
 		return ctx, nil
 	}
 
-	// Extract bearer token
-	bearerToken := ""
-	if len(authorizationHeader) >= 6 && strings.EqualFold(authorizationHeader[0:6], "bearer") {
-		bearerToken = strings.TrimSpace(authorizationHeader[6:])
-	}
-	if bearerToken == "" {
-		return nil, errors.New("no bearer token found in authorization header")
-	}
-
 	// Parse, validate and set claims from JWT
-	claims, err := aud.ParseAndValidate(bearerToken)
+	claims, err := aud.ParseAndValidate(token)
 	if err != nil {
 		if errors.Is(err, jwt.ErrTokenExpired) {
 			// The JWT library appends the expiration duration to the error message, which looks messy/ungrouped in observability.

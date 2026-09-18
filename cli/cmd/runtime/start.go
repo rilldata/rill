@@ -71,6 +71,9 @@ type Config struct {
 	LogLevel                zapcore.Level          `default:"info" split_words:"true"`
 	HTTPPort                int                    `default:"8080" split_words:"true"`
 	GRPCPort                int                    `default:"8080" split_words:"true"`
+	PSQLPort                int                    `default:"5432" split_words:"true"`
+	TLSCertPath             string                 `split_words:"true"`
+	TLSKeyPath              string                 `split_words:"true"`
 	DebugPort               int                    `default:"6060" split_words:"true"`
 	AllowedOrigins          []string               `default:"*" split_words:"true"`
 	SessionKeyPairs         []string               `split_words:"true"`
@@ -274,12 +277,15 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 			srvOpts := &server.Options{
 				HTTPPort:        conf.HTTPPort,
 				GRPCPort:        conf.GRPCPort,
+				PSQLPort:        conf.PSQLPort,
 				AllowedOrigins:  conf.AllowedOrigins,
 				ServePrometheus: conf.MetricsExporter == observability.PrometheusExporter,
 				SessionKeyPairs: keyPairs,
 				AuthEnable:      conf.AuthEnable,
 				AuthIssuerURL:   conf.AuthIssuerURL,
 				AuthAudienceURL: conf.AuthAudienceURL,
+				TLSCertPath:     conf.TLSCertPath,
+				TLSKeyPath:      conf.TLSKeyPath,
 			}
 			s, err := server.NewServer(ctx, srvOpts, rt, logger, limiter, activityClient)
 			if err != nil {
@@ -289,6 +295,9 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 			// Run server
 			group, cctx := errgroup.WithContext(ctx)
 			group.Go(func() error { return s.ServeHTTP(cctx, nil, false) })
+			if conf.PSQLPort != 0 {
+				group.Go(func() error { return s.ServePGWire(cctx, true) })
+			}
 			if conf.DebugPort != 0 {
 				group.Go(func() error { return debugserver.ServeHTTP(cctx, conf.DebugPort) })
 			}
