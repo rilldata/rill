@@ -26,8 +26,10 @@ KPI grids display key performance indicators in a compact grid format with compa
 />
 
 To compare a measure against a target instead of against an earlier period, add
-`measure_comparisons`. Both measures must belong to the same metrics view, and
-the comparison is made over the selected time range:
+`measure_comparisons`. The comparison is made over the selected time range.
+`compare_to` can be a measure of the same metrics view or one of the grid's
+`adhoc_measures`. If it has no single total, because it has
+`required_dimensions`, the card shows no comparison:
 
 ```yaml
 - kpi_grid:

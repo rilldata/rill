@@ -322,7 +322,9 @@ kpi_grid:
     - percent_change
 ```
 
-Both measures must live in the same metrics view. For a percentage measure use
+`compare_to` can name a measure of the same metrics view or an entry in the
+grid's `adhoc_measures`. A target with `required_dimensions` has no single
+total, so the card shows no comparison for it. For a percentage measure use
 `delta` rather than `percent_change`: the relative change of a percentage is
 misleading, and Rill omits it, so `delta` gives the difference in points.
 

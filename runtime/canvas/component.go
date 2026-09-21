@@ -333,14 +333,20 @@ func validateKPIGrid(props map[string]any, metricsViews map[string]*runtimev1.Me
 		if !ok {
 			return errors.New("each entry in 'measure_comparisons' must be an object with 'measure' and 'compare_to'")
 		}
-		if _, ok := pathutil.GetPathString(entry, "measure"); !ok {
+		measure, ok := pathutil.GetPathString(entry, "measure")
+		if !ok {
 			return errors.New("each entry in 'measure_comparisons' must include a 'measure' string")
+		}
+		// Checked against the metrics view, not against 'measures': an entry for a
+		// measure the grid no longer shows is inert, not an error.
+		if !metricsViewHasMeasure(mv, measure) && !ephemeralNames[measure] {
+			return fmt.Errorf("referenced measure_comparisons measure %q is not a measure in metrics view %q", measure, mvn)
 		}
 		compareTo, ok := pathutil.GetPathString(entry, "compare_to")
 		if !ok {
 			return errors.New("each entry in 'measure_comparisons' must include a 'compare_to' string")
 		}
-		if !metricsViewHasMeasure(mv, compareTo) {
+		if !metricsViewHasMeasure(mv, compareTo) && !ephemeralNames[compareTo] {
 			return fmt.Errorf("referenced compare_to value %q is not a measure in metrics view %q", compareTo, mvn)
 		}
 	}

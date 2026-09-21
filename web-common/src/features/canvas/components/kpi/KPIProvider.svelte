@@ -25,6 +25,10 @@
   export let timeAndFilterStore: Readable<TimeAndFilterStore>;
   export let canvasName: string;
   export let visible: boolean;
+  // Measure to compare against over the primary time range (e.g. a target),
+  // instead of the time comparison. Set by the KPI grid from its
+  // `measure_comparisons`; it is not part of the `kpi` component spec.
+  export let comparisonMeasureName: string | undefined = undefined;
 
   const client = useRuntimeClient();
 
@@ -38,7 +42,6 @@
     measure: measureName,
     sparkline,
     comparison: comparisonOptions,
-    comparison_measure: comparisonMeasureName,
     hide_time_range: hideTimeRange,
   } = spec);
 
@@ -76,16 +79,31 @@
   // also wait for it.
   $: supportsTotal = !!measure && measureSupportsTotalsQuery(measure);
 
+  $: comparisonEphemeralDef = ephemeralMeasures?.find(
+    (def) => def.name === comparisonMeasureKey,
+  );
   $: comparisonMeasureStore = getMeasureForMetricView(
     comparisonMeasureKey,
     metricsViewName,
   );
-  $: comparisonMeasure = $comparisonMeasureStore;
+  $: comparisonMeasure =
+    $comparisonMeasureStore ??
+    (comparisonEphemeralDef
+      ? ephemeralMeasureToSpecMeasure(comparisonEphemeralDef)
+      : undefined);
+
+  // A comparison measure without a single total has no value to compare
+  // against, so the card shows no comparison at all.
+  $: comparisonSupportsTotal =
+    !!comparisonMeasure && measureSupportsTotalsQuery(comparisonMeasure);
+
+  $: comparisonEnabled = measureComparison
+    ? comparisonSupportsTotal
+    : showTimeComparison;
 
   $: showSparkline = sparkline !== "none" && hasTimeSeries;
 
-  $: showComparison =
-    !!comparisonOptions?.length && (showTimeComparison || measureComparison);
+  $: showComparison = !!comparisonOptions?.length && comparisonEnabled;
 
   $: comparisonLabel = measureComparison
     ? (comparisonMeasure?.displayName ?? comparisonMeasureKey)
@@ -102,6 +120,19 @@
   );
   $: ({ measureNames: tsMeasureNames, ephemeralMeasures: tsEphemeralMeasures } =
     splitTimeSeriesMeasures([measureName], ephemeralMeasures));
+
+  $: comparisonQueryMeasures = measureComparison
+    ? mapEphemeralMeasuresForRequest(
+        [{ name: comparisonMeasureKey }],
+        ephemeralMeasures,
+      )
+    : queryMeasures;
+  $: ({
+    measureNames: comparisonTsMeasureNames,
+    ephemeralMeasures: comparisonTsEphemeralMeasures,
+  } = measureComparison
+    ? splitTimeSeriesMeasures([comparisonMeasureKey], ephemeralMeasures)
+    : { measureNames: tsMeasureNames, ephemeralMeasures: tsEphemeralMeasures });
 
   $: totalQuery = createQueryServiceMetricsViewAggregation(
     client,
@@ -131,9 +162,7 @@
     client,
     {
       metricsView: metricsViewName,
-      measures: measureComparison
-        ? [{ name: comparisonMeasureKey }]
-        : queryMeasures,
+      measures: comparisonQueryMeasures,
       timeRange: measureComparison
         ? { start, end, timeZone }
         : comparisonTimeRange,
@@ -145,6 +174,7 @@
         enabled: measureComparison
           ? showComparison &&
             isValid &&
+            supportsTotal &&
             visible &&
             (!hasTimeSeries || (!!start && !!end))
           : comparisonTimeRange &&
@@ -200,10 +230,8 @@
     client,
     {
       metricsViewName,
-      measureNames: measureComparison
-        ? [comparisonMeasureKey]
-        : tsMeasureNames,
-      ephemeralMeasures: measureComparison ? undefined : tsEphemeralMeasures,
+      measureNames: comparisonTsMeasureNames,
+      ephemeralMeasures: comparisonTsEphemeralMeasures,
       timeStart: measureComparison ? start : comparisonTimeRange?.start,
       timeEnd: measureComparison ? end : comparisonTimeRange?.end,
       timeGranularity: timeGrain || V1TimeGrain.TIME_GRAIN_HOUR,
@@ -259,7 +287,7 @@
   {measure}
   {timeGrain}
   {timeZone}
-  showTimeComparison={showTimeComparison || measureComparison}
+  showTimeComparison={comparisonEnabled}
   {hasTimeSeries}
   {comparisonLabel}
   {interval}

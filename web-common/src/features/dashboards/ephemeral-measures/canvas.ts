@@ -39,9 +39,10 @@ export function ephemeralDefsToSpecs(
  * `undefined` value deletes the property). Handles plain lists (`measures`,
  * `columns`), the single-measure `measure` property, chart field configs
  * (`y.field`, `y.fields`, `color.field`, ...) and per-measure entries such as
- * the pivot's `conditional_format`. Other properties are never touched even
- * if a value equals the name: `metrics_view`, `title`, dimension lists, or a
- * `comparison` list containing "delta". A field config whose only field was
+ * the pivot's `conditional_format` or the KPI grid's `measure_comparisons`,
+ * where the measure may be on either side. Other properties are never touched
+ * even if a value equals the name: `metrics_view`, `title`, dimension lists, or
+ * a `comparison` list containing "delta". A field config whose only field was
  * the measure is dropped entirely, matching the inspector's own remove action.
  */
 export function removeMeasureFromComponentSpec(
@@ -56,7 +57,10 @@ export function removeMeasureFromComponentSpec(
       const kept = value.filter((item: unknown) =>
         MEASURE_LIST_KEYS.has(key)
           ? item !== name
-          : !(isRecord(item) && item["measure"] === name),
+          : !(
+              isRecord(item) &&
+              MEASURE_ENTRY_KEYS.some((entryKey) => item[entryKey] === name)
+            ),
       );
       if (kept.length !== value.length) changes[key] = kept;
     } else if (isRecord(value)) {
@@ -84,6 +88,9 @@ export function removeMeasureFromComponentSpec(
 
 // Component spec lists whose string entries are measure names.
 const MEASURE_LIST_KEYS = new Set(["measures", "columns"]);
+
+// Keys of per-measure list entries whose values are measure names.
+const MEASURE_ENTRY_KEYS = ["measure", "compare_to"];
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return !!value && typeof value === "object" && !Array.isArray(value);
