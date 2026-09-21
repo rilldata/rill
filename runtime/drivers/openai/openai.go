@@ -425,9 +425,8 @@ func (o *openaiHandle) Complete(ctx context.Context, opts *drivers.CompleteOptio
 			if err != nil {
 				return nil, fmt.Errorf("failed to marshal output schema: %w", err)
 			}
-			schemaInstruction := openai.SystemMessage(
-				"Return ONLY a single valid JSON object that conforms exactly to this JSON Schema (no prose, no markdown fences): " + string(schemaJSON))
-			params.Messages = append([]openai.ChatCompletionMessageParamUnion{schemaInstruction}, params.Messages...)
+			schemaInstruction := "Return ONLY a single valid JSON object that conforms exactly to this JSON Schema (no prose, no markdown fences): " + string(schemaJSON)
+			params.Messages = withSystemInstruction(params.Messages, schemaInstruction)
 			params.ResponseFormat = openai.ChatCompletionNewParamsResponseFormatUnion{
 				OfJSONObject: &shared.ResponseFormatJSONObjectParam{},
 			}
@@ -468,6 +467,16 @@ func (o *openaiHandle) Complete(ctx context.Context, opts *drivers.CompleteOptio
 		OutputTokens:      int(res.Usage.CompletionTokens),
 	}
 	return result, nil
+}
+
+// withSystemInstruction appends an instruction to the leading system message, or prepends one if there is none.
+// Some OpenAI-compatible providers only accept a single leading system message.
+func withSystemInstruction(msgs []openai.ChatCompletionMessageParamUnion, instruction string) []openai.ChatCompletionMessageParamUnion {
+	if len(msgs) > 0 && msgs[0].OfSystem != nil && msgs[0].OfSystem.Content.OfString.Valid() {
+		msgs[0] = openai.SystemMessage(msgs[0].OfSystem.Content.OfString.Value + "\n\n" + instruction)
+		return msgs
+	}
+	return append([]openai.ChatCompletionMessageParamUnion{openai.SystemMessage(instruction)}, msgs...)
 }
 
 // messageToOpenAI converts a single Rill CompletionMessage to one or more OpenAI ChatCompletionMessages.

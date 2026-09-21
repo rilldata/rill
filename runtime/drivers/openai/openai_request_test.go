@@ -49,6 +49,32 @@ func TestCompleteAppliesConnectorRequestBehavior(t *testing.T) {
 	require.Equal(t, "user", requireJSONObject(t, messages[1])["role"])
 }
 
+func TestCompleteMergesSchemaInstructionIntoSystemMessage(t *testing.T) {
+	fake := newFakeChatCompletionsServer([]string{completionResponse(`{"answer":"ok"}`)})
+	defer fake.Close()
+
+	ai := openTestAI(t, fake.URL, map[string]any{
+		"structured_output_mode": structuredOutputModeJSONObject,
+	})
+
+	_, err := ai.Complete(t.Context(), &drivers.CompleteOptions{
+		Messages: []*aiv1.CompletionMessage{
+			textMessage("system", "You are a helpful assistant."),
+			textMessage("user", "answer as JSON"),
+		},
+		OutputSchema: &jsonschema.Schema{Type: "object"},
+	})
+	require.NoError(t, err)
+
+	messages := requireJSONArray(t, fake.request(t, 0)["messages"])
+	require.Len(t, messages, 2, "some providers only accept a single leading system message")
+	system := requireJSONObject(t, messages[0])
+	require.Equal(t, "system", system["role"])
+	require.Contains(t, system["content"], "You are a helpful assistant.")
+	require.Contains(t, system["content"], "Return ONLY a single valid JSON object")
+	require.Equal(t, "user", requireJSONObject(t, messages[1])["role"])
+}
+
 func TestCompletePassesNestedExtraBody(t *testing.T) {
 	fake := newFakeChatCompletionsServer([]string{completionResponse("ok")})
 	defer fake.Close()
