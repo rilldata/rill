@@ -207,7 +207,8 @@ func (a *Authenticator) authStart(w http.ResponseWriter, r *http.Request, signup
 	// Redirect to auth provider (canonical domain flow)
 	redirectURL := a.oauth2.AuthCodeURL(state)
 	if signup {
-		redirectURL = a.oauth2.AuthCodeURL(state, oauth2.SetAuthURLParam("prompt", "create"))
+		// Send both signup hints: Auth0 only honors screen_hint, standard OIDC providers only honor prompt=create.
+		redirectURL = a.oauth2.AuthCodeURL(state, oauth2.SetAuthURLParam("screen_hint", "signup"), oauth2.SetAuthURLParam("prompt", "create"))
 	}
 
 	http.Redirect(w, r, redirectURL, http.StatusTemporaryRedirect)
