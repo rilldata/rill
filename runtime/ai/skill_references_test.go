@@ -5,9 +5,12 @@ import (
 	"sync"
 	"testing"
 
+	"github.com/google/uuid"
 	aiv1 "github.com/rilldata/rill/proto/gen/rill/ai/v1"
+	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/ai"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/testruntime"
 	"github.com/stretchr/testify/require"
 )
@@ -63,6 +66,12 @@ func textTurn(text string) turnFunc {
 
 // newSkillReferencesSession creates a session on a project with analyst, developer and always-apply skills, backed by the given simulated model.
 func newSkillReferencesSession(t *testing.T, script *scriptedAIService) *ai.Session {
+	s, _, _ := newSkillReferencesSessionWithRuntime(t, script)
+	return s
+}
+
+// newSkillReferencesSessionWithRuntime is like newSkillReferencesSession, and also returns the runtime and instance so the test can change the project's files.
+func newSkillReferencesSessionWithRuntime(t *testing.T, script *scriptedAIService) (*ai.Session, *runtime.Runtime, string) {
 	rt, instanceID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
 		Files: map[string]string{
 			"rill.yaml": ``,
@@ -95,7 +104,7 @@ Name models in snake_case.`,
 	s.SetLLM(func(_ context.Context) (drivers.AIService, func(), error) {
 		return script, func() {}, nil
 	})
-	return s
+	return s, rt, instanceID
 }
 
 // loadedSkillNames returns the names of the skills loaded with load_skill as sub-calls of the given call, in order.
@@ -170,6 +179,52 @@ func TestAnalystSkipsSkillsAlreadyLoaded(t *testing.T) {
 	res2, err := s.CallTool(t.Context(), ai.RoleUser, ai.AnalystAgentName, nil, &ai.AnalystAgentArgs{Prompt: prompt})
 	require.NoError(t, err)
 	require.Empty(t, loadedSkillNames(s, res2.Call.ID))
+}
+
+// TestAnalystLoadsSkillAfterFailedLoad verifies that a load_skill call that failed doesn't count as loaded.
+// Like the chat, each message opens a new session on the conversation: the skill fails to load in one
+// message, its file is fixed, and a later message that references it loads it.
+func TestAnalystLoadsSkillAfterFailedLoad(t *testing.T) {
+	script := &scriptedAIService{turns: []turnFunc{textTurn("done")}}
+	_, rt, instanceID := newSkillReferencesSessionWithRuntime(t, script)
+
+	claims := &runtime.SecurityClaims{UserID: uuid.NewString(), SkipChecks: true}
+	runner := ai.NewRunner(rt, activity.NewNoopClient())
+	open := func(sessionID string) *ai.Session {
+		s, err := runner.Session(t.Context(), &ai.SessionOptions{
+			InstanceID: instanceID,
+			SessionID:  sessionID,
+			Claims:     claims,
+			UserAgent:  "rill-evals",
+		})
+		require.NoError(t, err)
+		s.SetLLM(func(_ context.Context) (drivers.AIService, func(), error) {
+			return script, func() {}, nil
+		})
+		return s
+	}
+
+	// The skill doesn't exist yet, e.g. while its file has an error, so loading it fails.
+	s1 := open("")
+	_, err := s1.CallTool(t.Context(), ai.RoleAssistant, ai.LoadSkillName, nil, &ai.LoadSkillArgs{Name: "quarterly-close"})
+	require.ErrorContains(t, err, "not found")
+	require.NoError(t, s1.Flush(t.Context()))
+
+	testruntime.PutFiles(t, rt, instanceID, map[string]string{
+		"skills/quarterly-close/SKILL.md": `---
+description: Runs the quarterly close analysis.
+agents: [analyst]
+---
+Compare revenue quarter over quarter.`,
+	})
+	testruntime.ReconcileParserAndWait(t, rt, instanceID)
+
+	s2 := open(s1.ID())
+	t.Cleanup(func() { require.NoError(t, s2.Flush(t.Context())) })
+	prompt := `<chat-reference>type="skill" skill="quarterly-close"</chat-reference> for Q3`
+	res, err := s2.CallTool(t.Context(), ai.RoleUser, ai.AnalystAgentName, nil, &ai.AnalystAgentArgs{Prompt: prompt})
+	require.NoError(t, err)
+	require.Contains(t, loadedSkillNames(s2, res.Call.ID), "quarterly-close")
 }
 
 // TestAnalystLoadsReferencedSkillsOnEveryTurn verifies that skills referenced in a later turn of the conversation are loaded in that turn.

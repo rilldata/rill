@@ -35,10 +35,15 @@ func referencedSkills(prompt string, skills []*Skill) []*Skill {
 }
 
 // loadedSkills returns the names of the skills already loaded in the session, whether pre-invoked or called by the model.
+// A call whose result is an error, such as a skill that was not found yet, doesn't count: the model never got the body.
 func loadedSkills(s *Session) map[string]bool {
 	res := map[string]bool{}
-	for _, msg := range s.Messages(FilterByType(MessageTypeCall), FilterByTool(LoadSkillName)) {
-		content, err := s.UnmarshalMessageContent(msg)
+	for _, call := range s.Messages(FilterByType(MessageTypeCall), FilterByTool(LoadSkillName)) {
+		result, ok := s.Message(FilterByParent(call.ID), FilterByType(MessageTypeResult))
+		if !ok || result.ContentType == MessageContentTypeError {
+			continue
+		}
+		content, err := s.UnmarshalMessageContent(call)
 		if err != nil {
 			continue
 		}
