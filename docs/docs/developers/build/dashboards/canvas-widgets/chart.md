@@ -32,6 +32,10 @@ Bar charts are ideal for comparing values across different categories.
          
 />
 
+### Axis label orientation
+
+Category labels on the x-axis are laid out automatically: they stay upright when they fit, tilt to 45° when they do not, and only turn vertical when the chart is too narrow for angled text. Long labels are shortened with an ellipsis and shown in full in the tooltip. To force an orientation, choose **Label orientation** in the field settings or set `labelAngle` on the `x` field to `0` (horizontal), `-45` (angled) or `-90` (vertical).
+
 ## Line Chart
 
 Line charts are perfect for showing trends over time.

@@ -99,7 +99,7 @@ export function generateVLComboChartSpec(
   ];
 
   spec.height = "container";
-  spec.encoding = { x: createPositionEncoding(config.x, data) };
+  spec.encoding = { x: createPositionEncoding(config.x, data, "x") };
 
   const layers: Array<LayerSpec<Field> | UnitSpec<Field>> = [];
 

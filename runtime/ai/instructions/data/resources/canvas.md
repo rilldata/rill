@@ -408,7 +408,6 @@ bar_chart:
     type: nominal
     limit: 10
     sort: -y
-    labelAngle: 0
   y:
     field: total_revenue
     type: quantitative
@@ -1085,7 +1084,7 @@ x:
   limit: 10                  # Max values to display
   sort: -y                   # Sort order (see below)
   showNull: true             # Include null values
-  labelAngle: 45             # Label rotation angle
+  labelAngle: -45            # Label rotation angle; omit for automatic orientation (0, -45 or -90 based on available width)
 ```
 
 ### Sort Options

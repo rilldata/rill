@@ -15,6 +15,7 @@ import type {
   TooltipValue,
 } from "@rilldata/web-common/features/components/charts/types";
 import {
+  estimateAxisLabelWidth,
   getColorForValues,
   isDomainStringArray,
   isFieldConfig,
@@ -77,9 +78,13 @@ export function createSingleLayerBaseSpec(
   };
 }
 
+type PositionChannel = "x" | "y";
+type AxisProps = NonNullable<PositionFieldDef<Field>["axis"]>;
+
 export function createPositionEncoding(
   field: FieldConfig | undefined,
   data: ChartDataResult,
+  channel?: PositionChannel,
 ): PositionFieldDef<Field> {
   if (!field || field.type === "value") return {};
   const metaData = data.fields[field.field];
@@ -108,9 +113,7 @@ export function createPositionEncoding(
       field.axisOrient === "none"
         ? null
         : {
-            ...(field.labelAngle !== undefined && {
-              labelAngle: field.labelAngle,
-            }),
+            ...createAxisLabelLayout(field, data, channel),
             ...(field.axisOrient && { orient: field.axisOrient }),
             ...(field.type === "quantitative" && {
               formatType: sanitizeFieldName(field.field),
@@ -124,6 +127,77 @@ export function createPositionEncoding(
             }),
             ...(!field.showAxisTitle && { title: null }),
           },
+  };
+}
+
+// Padding kept around an upright label inside its band before it counts as fitting.
+const UPRIGHT_LABEL_PADDING_PX = 8;
+// Narrowest band on which -45° labels stay apart: the 11px line height divided by sin(45°).
+const ANGLED_LABEL_MIN_BAND_PX = 16;
+// Rotated labels are truncated at this share of the plot height so the marks always keep room.
+// Under `autosize: fit` the `height` signal is the plot height left after the axes, so the share
+// of the whole chart the labels end up with is smaller than this fraction.
+const ROTATED_LABEL_MAX_HEIGHT_FRACTION = 0.5;
+const ROTATED_LABEL_MIN_LIMIT_PX = 60;
+
+/**
+ * Axis label angle, truncation and overlap handling for a position field.
+ *
+ * Vega-Lite rotates nominal x-axis labels to -90° by default regardless of the available width,
+ * which lets the axis consume most of a short chart. For a categorical x-axis without a configured
+ * `labelAngle`, the labels are instead laid out with Vega signal expressions so they react to
+ * resizes without a re-embed: upright when the widest label fits inside its band, -45° when it
+ * does not, and -90° only when the bands are too narrow even for angled text. Rotated labels are
+ * truncated with an ellipsis at a fraction of the plot height so the marks always keep room.
+ * An explicit angle is kept as is with the same truncation, so a vertical label can never take over
+ * the chart. Categorical labels are never thinned: a reader cannot infer a hidden category.
+ * Other channels and field types only pass through an explicit `labelAngle`.
+ */
+export function createAxisLabelLayout(
+  field: FieldConfig,
+  data: ChartDataResult,
+  channel: PositionChannel | undefined,
+): Partial<AxisProps> {
+  const isCategoricalX =
+    channel === "x" && (field.type === "nominal" || field.type === "ordinal");
+  if (!isCategoricalX) {
+    return field.labelAngle !== undefined
+      ? { labelAngle: field.labelAngle }
+      : {};
+  }
+
+  const domain =
+    data.domainValues?.[field.field] ??
+    Array.from(new Set(data.data.map((row) => row[field.field])));
+  const labels = domain
+    .slice(0, field.limit ?? domain.length)
+    .map((value) => String(value));
+  const band = `(width / ${Math.max(1, labels.length)})`;
+  const uprightLimit = `${band} - 4`;
+  const rotatedLimit = `max(${ROTATED_LABEL_MIN_LIMIT_PX}, height * ${ROTATED_LABEL_MAX_HEIGHT_FRACTION})`;
+
+  if (field.labelAngle !== undefined) {
+    return {
+      labelAngle: field.labelAngle,
+      labelLimit: {
+        expr: field.labelAngle % 180 === 0 ? uprightLimit : rotatedLimit,
+      },
+      labelOverlap: false,
+    };
+  }
+
+  const widestLabel = Math.ceil(
+    Math.max(0, ...labels.map(estimateAxisLabelWidth)) +
+      UPRIGHT_LABEL_PADDING_PX,
+  );
+  const fitsUpright = `${band} >= ${widestLabel}`;
+  const fitsAngled = `${band} >= ${ANGLED_LABEL_MIN_BAND_PX}`;
+  return {
+    labelAngle: {
+      expr: `(${fitsUpright} ? 0 : (${fitsAngled} ? -45 : -90))`,
+    },
+    labelLimit: { expr: `${fitsUpright} ? ${uprightLimit} : ${rotatedLimit}` },
+    labelOverlap: false,
   };
 }
 
@@ -377,8 +451,8 @@ export function createEncoding(
   data: ChartDataResult,
 ): Encoding<Field> {
   return {
-    x: createPositionEncoding(config.x, data),
-    y: createPositionEncoding(config.y, data),
+    x: createPositionEncoding(config.x, data, "x"),
+    y: createPositionEncoding(config.y, data, "y"),
     color: createColorEncoding(config.color, data),
     tooltip: createDefaultTooltipEncoding(
       [config.x, config.y, config.color],

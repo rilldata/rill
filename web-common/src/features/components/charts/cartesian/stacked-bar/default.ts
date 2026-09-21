@@ -43,7 +43,7 @@ export function generateVLStackedBarChartSpec(
     data,
   );
   spec.encoding = {
-    x: { ...createPositionEncoding(config.x, data), bandPosition: 0 },
+    x: { ...createPositionEncoding(config.x, data, "x"), bandPosition: 0 },
   };
 
   // Check if comparison mode is enabled
