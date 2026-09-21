@@ -10,10 +10,13 @@
   import { YAMLConfigProvider } from "@rilldata/web-common/features/dashboards/providers/YAMLConfigProvider.svelte.ts";
   import { MetricsViewsProvider } from "@rilldata/web-common/features/metrics-views/providers/MetricsViewsProvider.svelte.ts";
   import ReadonlyExpressionFilters from "@rilldata/web-common/features/dashboards/filters/ReadonlyExpressionFilters.svelte";
-  import { onDestroy } from "svelte";
+  import { onDestroy, untrack } from "svelte";
   import { TimeFilterManager } from "@rilldata/web-common/features/dashboards/time-controls/TimeFilterManager.svelte.ts";
   import { ExploreStateURLParams } from "@rilldata/web-common/features/dashboards/url-state/url-params.ts";
-  import { mapV1TimeRangeToRillTime } from "@rilldata/web-common/features/dashboards/time-controls/time-range-mappers.ts";
+  import {
+    mapV1TimeRangeToComparisonTimeOption,
+    mapV1TimeRangeToRillTime,
+  } from "@rilldata/web-common/features/dashboards/time-controls/time-range-mappers.ts";
 
   let {
     metricsViewName,
@@ -54,7 +57,7 @@
     false,
   );
   $effect(() => {
-    if (!timeRange) return;
+    if (!timeRange || !timeFilterManager.specLoaded) return;
     const urlParams = new URLSearchParams();
     urlParams.set(
       ExploreStateURLParams.TimeRange,
@@ -64,11 +67,13 @@
     if (comparisonTimeRange) {
       urlParams.set(
         ExploreStateURLParams.ComparisonTimeRange,
-        mapV1TimeRangeToRillTime(comparisonTimeRange),
+        mapV1TimeRangeToComparisonTimeOption(timeRange, comparisonTimeRange),
       );
     }
 
-    timeFilterManager.setUrlParams(urlParams);
+    untrack(() => {
+      timeFilterManager.setUrlParams(urlParams);
+    });
   });
 
   // time range could be an empty object sometimes

@@ -20,6 +20,7 @@
     timeGrain,
     interval,
     parsedTime,
+    showComparison,
     comparisonTimeRange,
     comparisonInterval,
     parsedComparisonTime,
@@ -52,7 +53,7 @@
     </svelte:fragment>
   </Chip>
 
-  {#if comparisonTimeRange && parsedComparisonTime}
+  {#if showComparison && comparisonTimeRange && parsedComparisonTime}
     <Chip type="time" readOnly>
       <svelte:fragment slot="body">
         <div class="text-fg-primary px-2 flex gap-x-1">

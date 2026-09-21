@@ -200,6 +200,7 @@ export function getFiltersAndTimeControlsFromAggregationRequest(
 
   if (aggregationRequest.comparisonTimeRange) {
     const selectedCompareTimeRange = mapV1TimeRangeToComparisonTimeOption(
+      timeRange,
       aggregationRequest.comparisonTimeRange,
     );
     if (selectedCompareTimeRange)

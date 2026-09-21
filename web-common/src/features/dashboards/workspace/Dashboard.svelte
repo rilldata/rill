@@ -74,7 +74,6 @@
   $: ({ selectedTimeDimension } = $dashboardStore);
   const filterStore =
     expressionFilterManager.getExprStoreForMetricsView(metricsViewName);
-  $: dimensionOnlyFilter = $filterStore?.dimensionOnlyExpr;
   $: whereFilter = $filterStore?.expr;
 
   $: extraLeftPadding = !$navigationOpen;

@@ -186,6 +186,7 @@ export function createStateManagers({
     dashboardConfigProvider.metricsViewsProvider,
     dashboardConfigProvider.yamlConfigProvider,
     true,
+    true,
   );
 
   return {

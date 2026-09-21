@@ -28,7 +28,6 @@
     syncExpressionFilters,
     // URL sync is managed by DashboardStateSync
     false,
-    true,
   );
 
   syncStoreWithSource(

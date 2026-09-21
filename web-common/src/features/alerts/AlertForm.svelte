@@ -266,7 +266,9 @@
     // if the user came to the delivery tab and name was not changed then auto generate it
     const name = generateAlertName(
       $form,
-      timeFilterManager.comparisonTimeRange,
+      timeFilterManager.showComparison
+        ? timeFilterManager.comparisonTimeRange
+        : undefined,
       metricsViewSpec,
     );
     if (!name) return;

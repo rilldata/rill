@@ -336,10 +336,13 @@ export function mapV1TimeRangeToRillTime(timeRange: V1TimeRange) {
   if (timeRange.start && timeRange.end) {
     return `${timeRange.start} to ${timeRange.end}`;
   }
-  return duration ?? timeRange.isoDuration;
+  return duration ?? timeRange.expression;
 }
 
-export function mapV1TimeRangeToComparisonTimeOption(timeRange: V1TimeRange) {
+export function mapV1TimeRangeToComparisonTimeOption(
+  primaryTimeRange: V1TimeRange,
+  timeRange: V1TimeRange,
+) {
   let duration = timeRange.isoOffset;
 
   const fullRangeKey = `${timeRange.isoDuration ?? ""}_${timeRange.isoOffset ?? ""}_${timeRange.roundToGrain ?? ""}`;
@@ -349,8 +352,30 @@ export function mapV1TimeRangeToComparisonTimeOption(timeRange: V1TimeRange) {
 
   if (timeRange.start && timeRange.end) {
     return `${timeRange.start} to ${timeRange.end}`;
-  } else if (timeRange.isoOffset === timeRange.isoDuration) {
+  } else if (
+    timeRange.isoOffset &&
+    timeRange.isoOffset === timeRange.isoDuration
+  ) {
     return TimeComparisonOption.CONTIGUOUS;
+  } else if (timeRange.expression) {
+    if (
+      primaryTimeRange.expression &&
+      timeRange.expression.startsWith(primaryTimeRange.expression)
+    ) {
+      const offset = timeRange.expression.replace(
+        primaryTimeRange.expression + " offset ",
+        "",
+      );
+      for (const comparisonOption in TIME_COMPARISON) {
+        if (TIME_COMPARISON[comparisonOption].rillTimeOffset === offset) {
+          return comparisonOption;
+        }
+      }
+
+      return timeRange.expression;
+    }
+
+    return timeRange.expression;
   }
 
   return duration;

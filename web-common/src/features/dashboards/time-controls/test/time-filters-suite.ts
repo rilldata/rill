@@ -257,7 +257,6 @@ export function testComparisonTimeRangeFilters(variant: TimeFiltersVariant) {
       });
 
       await selectComparisonTimeRange("Previous week");
-      console.log(variant.timeFilterManager.getTimeRange());
       assertComparisonTimeRange({
         expression: "rill-PW",
         start: "2024-03-18T00:00:00.000Z",
@@ -271,7 +270,6 @@ export function testComparisonTimeRangeFilters(variant: TimeFiltersVariant) {
       assertUrlSearch(previousWeekComparisonUrl);
 
       await selectTimeRange(/Last 24 hours/);
-      console.log(variant.timeFilterManager.getTimeRange());
       // Previous week selection was retained and calculated for 24 hrs instead
       assertComparisonTimeRange({
         expression: "rill-PW",

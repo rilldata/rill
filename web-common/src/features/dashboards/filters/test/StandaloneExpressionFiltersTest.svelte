@@ -41,6 +41,16 @@
     async (newUrlParams) => expressionFilterManager.setUrlParams(newUrlParams),
     false,
   );
+
+  // Call `setUrlParams` to load the data
+  let loaded = false;
+  $effect(() => {
+    if (loaded || !metricsViewsProvider.ready) {
+      return;
+    }
+    loaded = true;
+    expressionFilterManager.setUrlParams(new URLSearchParams());
+  });
 </script>
 
 <ExpressionFilters

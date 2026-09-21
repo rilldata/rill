@@ -180,6 +180,8 @@ export class CanvasEntity {
       this.dashboardProvider.metricsViewsProvider,
       this.dashboardProvider.yamlConfigProvider,
       false,
+      false,
+      false,
     );
 
     this.processSpec(this.spec);
@@ -555,6 +557,7 @@ export class CanvasEntity {
 
       // Third priority
       const defaultParamsString = get(this.defaultUrlParamsStore).toString();
+      console.log("Default params string:", defaultParamsString);
 
       if (defaultParamsString) {
         await goto(`?${defaultParamsString}`, {
