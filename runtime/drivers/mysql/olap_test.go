@@ -1,6 +1,7 @@
 package mysql_test
 
 import (
+	"context"
 	"strings"
 	"testing"
 
@@ -517,7 +518,7 @@ func testLoadDDL(t *testing.T, olap drivers.OLAPStore) {
 
 func acquireTestMySQL(t *testing.T) (drivers.Handle, drivers.OLAPStore) {
 	cfg := testruntime.AcquireConnector(t, "mysql")
-	conn, err := drivers.Open("mysql", "", "default", cfg, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
+	conn, err := drivers.Open(context.Background(), "mysql", "", "default", cfg, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
 	t.Cleanup(func() { conn.Close() })
 

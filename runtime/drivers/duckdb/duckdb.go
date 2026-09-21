@@ -154,7 +154,7 @@ type Driver struct {
 	name string
 }
 
-func (d Driver) Open(connectorName, instanceID string, cfgMap map[string]any, st *storage.Client, ac *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
+func (d Driver) Open(ctx context.Context, connectorName, instanceID string, cfgMap map[string]any, st *storage.Client, ac *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
 	if instanceID == "" {
 		return nil, errors.New("duckdb driver can't be shared")
 	}
@@ -178,7 +178,7 @@ func (d Driver) Open(connectorName, instanceID string, cfgMap map[string]any, st
 	// Open remote bucket for backups if configured
 	var remote *blob.Bucket
 	if cfg.EnableBackups {
-		b, ok, err := st.OpenBucket(context.Background())
+		b, ok, err := st.OpenBucket(ctx)
 		if err != nil {
 			return nil, err
 		}
@@ -187,8 +187,9 @@ func (d Driver) Open(connectorName, instanceID string, cfgMap map[string]any, st
 		}
 	}
 
-	// Create the handle
-	ctx, cancel := context.WithCancel(context.Background())
+	// Create the handle.
+	// Note the handle's ctx tracks the handle's lifetime, so it must not derive from the ctx passed to Open.
+	bgctx, cancel := context.WithCancel(context.Background())
 	c := &connection{
 		instanceID:     instanceID,
 		connectorName:  connectorName,
@@ -204,7 +205,7 @@ func (d Driver) Open(connectorName, instanceID string, cfgMap map[string]any, st
 		driverConfig:   cfgMap,
 		driverName:     d.name,
 		connTimes:      make(map[int]time.Time),
-		ctx:            ctx,
+		ctx:            bgctx,
 		cancel:         cancel,
 	}
 
@@ -216,7 +217,7 @@ func (d Driver) Open(connectorName, instanceID string, cfgMap map[string]any, st
 	}, connectionsInUse))
 
 	// Open the DB
-	err = c.reopenDB(context.Background())
+	err = c.reopenDB(ctx)
 	if err != nil {
 		if remote != nil {
 			_ = remote.Close()

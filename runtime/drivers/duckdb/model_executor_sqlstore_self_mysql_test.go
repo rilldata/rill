@@ -108,10 +108,10 @@ func TestMySQLToDuckDBTransfer(t *testing.T) {
 }
 
 func mysqlToDuckDB(t *testing.T, dsn string) {
-	duckDB, err := drivers.Open("duckdb", "", "default", map[string]any{"data_dir": t.TempDir()}, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
+	duckDB, err := drivers.Open(context.Background(), "duckdb", "", "default", map[string]any{"data_dir": t.TempDir()}, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
 
-	inputHandle, err := drivers.Open("mysql", "", "default", map[string]any{"dsn": dsn}, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
+	inputHandle, err := drivers.Open(context.Background(), "mysql", "", "default", map[string]any{"dsn": dsn}, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
 
 	opts := &drivers.ModelExecutorOptions{
@@ -205,9 +205,9 @@ func TestMySQLToDuckLakeTransfer(t *testing.T) {
 	}
 
 	t.Run("retry_after_missing_column", func(t *testing.T) {
-		duckLake, err := drivers.Open("duckdb", "", "retry", outputConfig, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
+		duckLake, err := drivers.Open(context.Background(), "duckdb", "", "retry", outputConfig, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
 		require.NoError(t, err)
-		inputHandle, err := drivers.Open("mysql", "", "retry", map[string]any{"dsn": dsn}, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
+		inputHandle, err := drivers.Open(context.Background(), "mysql", "", "retry", map[string]any{"dsn": dsn}, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
 		require.NoError(t, err)
 
 		requireDuckLakeRetryAfterFailure(t, duckLake, inputHandle, "mysql", map[string]any{
@@ -224,9 +224,9 @@ func TestMySQLToDuckLakeTransfer(t *testing.T) {
 }
 
 func mysqlToDuckLake(t *testing.T, dsn string, outputConfig map[string]any) {
-	duckLake, err := drivers.Open("duckdb", "", "default", outputConfig, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
+	duckLake, err := drivers.Open(context.Background(), "duckdb", "", "default", outputConfig, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
-	inputHandle, err := drivers.Open("mysql", "", "default", map[string]any{"dsn": dsn}, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
+	inputHandle, err := drivers.Open(context.Background(), "mysql", "", "default", map[string]any{"dsn": dsn}, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
 
 	opts := &drivers.ModelExecutorOptions{

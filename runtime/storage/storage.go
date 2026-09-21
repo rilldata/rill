@@ -130,6 +130,9 @@ func (c *Client) RandomTempDir(pattern string, elem ...string) (string, error) {
 	return path, nil
 }
 
+// OpenBucket opens the client's external bucket, scoped to the client's prefixes plus any additional elem.
+// It returns false if no bucket is configured.
+// The ctx scopes the open itself; the returned bucket does not retain it and stays usable after it is cancelled.
 func (c *Client) OpenBucket(ctx context.Context, elem ...string) (*blob.Bucket, bool, error) {
 	if c.bucketConfig == nil {
 		return nil, false, nil
@@ -167,7 +170,9 @@ func (c *Client) path(base string, elem ...string) string {
 }
 
 func (c *Client) newGCPClient(ctx context.Context) (*gcp.HTTPClient, error) {
-	creds, err := gcputil.Credentials(ctx, c.bucketConfig.GoogleApplicationCredentialsJSON, false)
+	// Detach cancellation: the credentials capture the ctx and reuse it to refresh tokens for as long as the bucket is used.
+	// Some credential types bind that ctx to the refresh request, so a cancelled ctx would permanently break a long-lived bucket.
+	creds, err := gcputil.Credentials(context.WithoutCancel(ctx), c.bucketConfig.GoogleApplicationCredentialsJSON, false)
 	if err != nil {
 		return nil, err
 	}

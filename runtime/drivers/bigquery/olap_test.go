@@ -393,7 +393,7 @@ func TestAllDatatypesRowCount(t *testing.T) {
 
 func acquireTestBigQuery(t *testing.T) (drivers.Handle, drivers.OLAPStore) {
 	cfg := testruntime.AcquireConnector(t, "bigquery")
-	conn, err := drivers.Open("bigquery", "", "default", cfg, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
+	conn, err := drivers.Open(context.Background(), "bigquery", "", "default", cfg, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
 	t.Cleanup(func() { conn.Close() })
 

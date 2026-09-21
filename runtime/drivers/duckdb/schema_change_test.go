@@ -293,7 +293,7 @@ func TestInsertTableAsSelectEmptyPartitionSkipsSchemaHandling(t *testing.T) {
 
 func newSchemaChangeTestConnection(t *testing.T) *connection {
 	t.Helper()
-	handle, err := Driver{}.Open("", "default", map[string]any{}, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
+	handle, err := Driver{}.Open(context.Background(), "", "default", map[string]any{}, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
 	c := handle.(*connection)
 	require.NoError(t, c.Migrate(context.Background()))

@@ -70,10 +70,10 @@ func TestTransfer(t *testing.T) {
 }
 
 func pgxToDuckDB(t *testing.T, pgdb *sql.DB, dbURL string) {
-	duckDB, err := drivers.Open("duckdb", "", "default", map[string]any{"data_dir": t.TempDir()}, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
+	duckDB, err := drivers.Open(context.Background(), "duckdb", "", "default", map[string]any{"data_dir": t.TempDir()}, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
 
-	inputHandle, err := drivers.Open("postgres", "", "default", map[string]any{"database_url": dbURL}, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
+	inputHandle, err := drivers.Open(context.Background(), "postgres", "", "default", map[string]any{"database_url": dbURL}, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
 
 	opts := &drivers.ModelExecutorOptions{
@@ -172,9 +172,9 @@ func TestPostgresToDuckLakeTransfer(t *testing.T) {
 	}
 
 	t.Run("retry_after_missing_column", func(t *testing.T) {
-		duckLake, err := drivers.Open("duckdb", "", "retry", outputConfig, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
+		duckLake, err := drivers.Open(context.Background(), "duckdb", "", "retry", outputConfig, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
 		require.NoError(t, err)
-		inputHandle, err := drivers.Open("postgres", "", "retry", map[string]any{"database_url": pg.DatabaseURL}, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
+		inputHandle, err := drivers.Open(context.Background(), "postgres", "", "retry", map[string]any{"database_url": pg.DatabaseURL}, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
 		require.NoError(t, err)
 
 		requireDuckLakeRetryAfterFailure(t, duckLake, inputHandle, "postgres", map[string]any{
@@ -190,10 +190,10 @@ func TestPostgresToDuckLakeTransfer(t *testing.T) {
 }
 
 func postgresToDuckLake(t *testing.T, pgdb *sql.DB, dbURL string, outputConfig map[string]any) {
-	duckLake, err := drivers.Open("duckdb", "", "default", outputConfig, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
+	duckLake, err := drivers.Open(context.Background(), "duckdb", "", "default", outputConfig, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
 
-	inputHandle, err := drivers.Open("postgres", "", "default", map[string]any{"database_url": dbURL}, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
+	inputHandle, err := drivers.Open(context.Background(), "postgres", "", "default", map[string]any{"database_url": dbURL}, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
 
 	opts := &drivers.ModelExecutorOptions{

@@ -1,6 +1,7 @@
 package sqlite
 
 import (
+	"context"
 	"path/filepath"
 	"testing"
 	"time"
@@ -22,7 +23,7 @@ func TestDeleteExpiredAISessions(t *testing.T) {
 	cfg := map[string]any{"dsn": dbPath}
 
 	// Open the database, run migrations, and seed test data.
-	h, err := driver{}.Open("", "", cfg, storage.MustNew(storageDir, nil), activity.NewNoopClient(), zap.NewNop())
+	h, err := driver{}.Open(context.Background(), "", "", cfg, storage.MustNew(storageDir, nil), activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
 	defer h.Close()
 	require.NoError(t, h.Migrate(t.Context()))
