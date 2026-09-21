@@ -6,7 +6,9 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"encoding/json"
+	"fmt"
 	"io"
+	"net"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -29,9 +31,9 @@ func newTestNotifier(t *testing.T, config *configProperties, urls []string) *not
 	n, err := newNotifier(config, EncodeProps(urls))
 	require.NoError(t, err)
 	// Keep tests fast.
-	n.retryWaitMin = time.Millisecond
-	n.retryWaitMax = 5 * time.Millisecond
-	n.requestTimeout = 5 * time.Second
+	n.client.RetryWaitMin = time.Millisecond
+	n.client.RetryWaitMax = 5 * time.Millisecond
+	n.client.HTTPClient.Timeout = 5 * time.Second
 	return n
 }
 
@@ -228,7 +230,7 @@ func TestAllURLsAttemptedDespiteFailure(t *testing.T) {
 	defer ok.Close()
 
 	n := newTestNotifier(t, &configProperties{}, []string{failing.URL, ok.URL})
-	n.retryMax = 0 // single attempt to keep the test fast
+	n.client.RetryMax = 0 // single attempt to keep the test fast
 
 	err := n.SendAlertStatus(testAlertStatus())
 	require.Error(t, err)
@@ -262,4 +264,131 @@ func TestPingValidatesSigningSecret(t *testing.T) {
 	require.NoError(t, (&handle{config: &configProperties{}}).Ping(ctx))
 	require.NoError(t, (&handle{config: &configProperties{SigningSecret: officialVectorSecret}}).Ping(ctx))
 	require.Error(t, (&handle{config: &configProperties{SigningSecret: "whsec_!!!"}}).Ping(ctx))
+}
+
+func TestRetryAfterIsCapped(t *testing.T) {
+	var calls atomic.Int32
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if calls.Add(1) == 1 {
+			// A receiver must not be able to stall delivery for a day.
+			w.Header().Set("Retry-After", "86400")
+			w.WriteHeader(http.StatusTooManyRequests)
+			return
+		}
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer srv.Close()
+
+	n := newTestNotifier(t, &configProperties{}, []string{srv.URL})
+	require.NoError(t, sendWithin(t, 3*time.Second, func() error { return n.SendAlertStatus(testAlertStatus()) }))
+	require.Equal(t, int32(2), calls.Load())
+}
+
+func TestDeliveryDeadline(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Never answer. The body must be read for the server to notice the client going away.
+		_, _ = io.Copy(io.Discard, r.Body)
+		<-r.Context().Done()
+	}))
+	defer srv.Close()
+
+	n := newTestNotifier(t, &configProperties{}, []string{srv.URL})
+	n.deliveryTimeout = 200 * time.Millisecond
+
+	err := sendWithin(t, 3*time.Second, func() error { return n.SendAlertStatus(testAlertStatus()) })
+	require.Error(t, err)
+	require.Contains(t, err.Error(), srv.URL)
+	require.ErrorIs(t, err, context.DeadlineExceeded)
+}
+
+func TestSlowURLDoesNotDelayOthers(t *testing.T) {
+	slow := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Never answer. The body must be read for the server to notice the client going away.
+		_, _ = io.Copy(io.Discard, r.Body)
+		<-r.Context().Done()
+	}))
+	defer slow.Close()
+	var fastCalls atomic.Int32
+	fast := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		fastCalls.Add(1)
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer fast.Close()
+
+	// The slow URL comes first and uses up the whole deadline.
+	n := newTestNotifier(t, &configProperties{}, []string{slow.URL, fast.URL})
+	n.client.RetryMax = 0
+	n.client.HTTPClient.Timeout = time.Minute
+	n.deliveryTimeout = 300 * time.Millisecond
+
+	err := sendWithin(t, 3*time.Second, func() error { return n.SendAlertStatus(testAlertStatus()) })
+	require.Error(t, err)
+	require.Contains(t, err.Error(), slow.URL)
+	require.NotContains(t, err.Error(), fast.URL)
+	require.Equal(t, int32(1), fastCalls.Load())
+}
+
+func TestNoIdleConnectionsAfterSend(t *testing.T) {
+	var open atomic.Int32
+	srv := httptest.NewUnstartedServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}))
+	srv.Config.ConnState = func(_ net.Conn, state http.ConnState) {
+		switch state {
+		case http.StateNew:
+			open.Add(1)
+		case http.StateClosed, http.StateHijacked:
+			open.Add(-1)
+		}
+	}
+	srv.Start()
+	defer srv.Close()
+
+	// The reconcilers build a notifier per execution, so connections kept alive after a send
+	// would only be closed by the transport's idle timeout.
+	n := newTestNotifier(t, &configProperties{}, []string{srv.URL})
+	require.NoError(t, n.SendAlertStatus(testAlertStatus()))
+	require.Eventually(t, func() bool { return open.Load() == 0 }, time.Second, 10*time.Millisecond)
+}
+
+func TestConcurrentDeliveriesAreCapped(t *testing.T) {
+	var inFlight, maxInFlight, calls atomic.Int32
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		cur := inFlight.Add(1)
+		defer inFlight.Add(-1)
+		for {
+			prev := maxInFlight.Load()
+			if cur <= prev || maxInFlight.CompareAndSwap(prev, cur) {
+				break
+			}
+		}
+		calls.Add(1)
+		time.Sleep(50 * time.Millisecond)
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer srv.Close()
+
+	urls := make([]string, 3*maxConcurrentDeliveries)
+	for i := range urls {
+		urls[i] = fmt.Sprintf("%s/hook?n=%d", srv.URL, i)
+	}
+	n := newTestNotifier(t, &configProperties{}, urls)
+	require.NoError(t, n.SendAlertStatus(testAlertStatus()))
+	require.Equal(t, int32(len(urls)), calls.Load())
+	require.LessOrEqual(t, maxInFlight.Load(), int32(maxConcurrentDeliveries))
+	require.Greater(t, maxInFlight.Load(), int32(1)) // still parallel
+}
+
+// sendWithin runs fn and fails the test if it has not returned after d.
+func sendWithin(t *testing.T, d time.Duration, fn func() error) error {
+	t.Helper()
+	done := make(chan error, 1)
+	go func() { done <- fn() }()
+	select {
+	case err := <-done:
+		return err
+	case <-time.After(d):
+		t.Fatalf("send still running after %s", d)
+		return nil
+	}
 }
