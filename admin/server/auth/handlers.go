@@ -281,33 +281,9 @@ func (a *Authenticator) authLoginCallback(w http.ResponseWriter, r *http.Request
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	email, ok := profile["email"].(string)
-	if !ok || email == "" {
-		http.Error(w, "claim 'email' not found", http.StatusInternalServerError)
-		return
-	}
-	emailVerified, ok := profile["email_verified"].(bool)
-	if !ok {
-		// For SAML flows, it is passed as a string
-		emailVerifiedStr, ok := profile["email_verified"].(string)
-		if !ok {
-			http.Error(w, "claim 'email_verified' not found", http.StatusInternalServerError)
-			return
-		}
-		emailVerified, err = strconv.ParseBool(emailVerifiedStr)
-		if err != nil {
-			http.Error(w, fmt.Sprintf("claim 'email_verified' could not be parsed as a boolean (got %q)", emailVerifiedStr), http.StatusInternalServerError)
-			return
-		}
-	}
-	name, ok := profile["name"].(string)
-	if !ok {
-		http.Error(w, "claim 'name' not found", http.StatusInternalServerError)
-		return
-	}
-	photoURL, ok := profile["picture"].(string)
-	if !ok {
-		http.Error(w, "claim 'picture' not found", http.StatusInternalServerError)
+	info, err := parseUserProfile(profile)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -319,14 +295,14 @@ func (a *Authenticator) authLoginCallback(w http.ResponseWriter, r *http.Request
 	delete(sess.Values, cookieFieldRedirect)
 
 	// Check that the user's email is verified
-	if !emailVerified {
+	if !info.emailVerified {
 		redirectURL := a.admin.URLs.WithCustomDomainFromRedirectURL(redirect).AuthVerifyEmailUI()
 		http.Redirect(w, r, redirectURL, http.StatusTemporaryRedirect)
 		return
 	}
 
 	// Create (or update) user in our DB
-	user, err := a.admin.CreateOrUpdateUser(r.Context(), email, name, photoURL)
+	user, err := a.admin.CreateOrUpdateUser(r.Context(), info.email, info.name, info.photoURL)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("failed to update user: %s", err), http.StatusInternalServerError)
 		return
@@ -386,6 +362,47 @@ func (a *Authenticator) authLoginCallback(w http.ResponseWriter, r *http.Request
 
 	// Redirect to UI
 	http.Redirect(w, r, redirect, http.StatusTemporaryRedirect)
+}
+
+// userProfile is the user information authLoginCallback reads from the ID token claims.
+type userProfile struct {
+	email         string
+	emailVerified bool
+	name          string
+	photoURL      string
+}
+
+// parseUserProfile reads the user's profile from the ID token claims.
+func parseUserProfile(claims map[string]any) (*userProfile, error) {
+	email, ok := claims["email"].(string)
+	if !ok || email == "" {
+		return nil, errors.New("claim 'email' not found")
+	}
+	emailVerified, ok := claims["email_verified"].(bool)
+	if !ok {
+		// For SAML flows, it is passed as a string
+		emailVerifiedStr, ok := claims["email_verified"].(string)
+		if !ok {
+			return nil, errors.New("claim 'email_verified' not found")
+		}
+		var err error
+		emailVerified, err = strconv.ParseBool(emailVerifiedStr)
+		if err != nil {
+			return nil, fmt.Errorf("claim 'email_verified' could not be parsed as a boolean (got %q)", emailVerifiedStr)
+		}
+	}
+	name, ok := claims["name"].(string)
+	if !ok {
+		return nil, errors.New("claim 'name' not found")
+	}
+	// The picture claim is optional: some providers never emit it (e.g. Dex), or only for users who have one (e.g. Keycloak)
+	photoURL, _ := claims["picture"].(string)
+	return &userProfile{
+		email:         email,
+		emailVerified: emailVerified,
+		name:          name,
+		photoURL:      photoURL,
+	}, nil
 }
 
 // authLoginCustomDomainCallback first verifies the state for CSRF protection, then extracts

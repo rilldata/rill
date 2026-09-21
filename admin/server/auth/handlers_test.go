@@ -211,3 +211,55 @@ func mustRSAKey(t *testing.T) *rsa.PrivateKey {
 	require.NoError(t, err)
 	return key
 }
+
+func TestParseUserProfile(t *testing.T) {
+	tests := []struct {
+		name    string
+		claims  map[string]any
+		want    *userProfile
+		wantErr string
+	}{
+		{
+			name:   "all claims",
+			claims: map[string]any{"email": "a@example.com", "email_verified": true, "name": "A", "picture": "https://example.com/a.png"},
+			want:   &userProfile{email: "a@example.com", emailVerified: true, name: "A", photoURL: "https://example.com/a.png"},
+		},
+		{
+			// Dex never emits picture, and Keycloak omits it for users without a picture attribute.
+			name:   "without picture",
+			claims: map[string]any{"email": "a@example.com", "email_verified": true, "name": "A"},
+			want:   &userProfile{email: "a@example.com", emailVerified: true, name: "A"},
+		},
+		{
+			name:   "email_verified as a string",
+			claims: map[string]any{"email": "a@example.com", "email_verified": "false", "name": "A", "picture": ""},
+			want:   &userProfile{email: "a@example.com", emailVerified: false, name: "A"},
+		},
+		{
+			name:    "without email",
+			claims:  map[string]any{"email_verified": true, "name": "A"},
+			wantErr: "claim 'email' not found",
+		},
+		{
+			name:    "without email_verified",
+			claims:  map[string]any{"email": "a@example.com", "name": "A"},
+			wantErr: "claim 'email_verified' not found",
+		},
+		{
+			name:    "without name",
+			claims:  map[string]any{"email": "a@example.com", "email_verified": true},
+			wantErr: "claim 'name' not found",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := parseUserProfile(tt.claims)
+			if tt.wantErr != "" {
+				require.EqualError(t, err, tt.wantErr)
+				return
+			}
+			require.NoError(t, err)
+			require.Equal(t, tt.want, got)
+		})
+	}
+}
