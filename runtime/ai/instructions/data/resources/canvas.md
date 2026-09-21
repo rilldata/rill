@@ -882,11 +882,12 @@ table:
 
 ### Image
 
-Display external images:
+Display external images. Set `dark_url` to show a different image when the dashboard is in dark mode (falls back to `url`):
 
 ```yaml
 image:
   url: https://example.com/logo.png
+  dark_url: https://example.com/logo-dark.png
   alignment:
     horizontal: center
     vertical: middle

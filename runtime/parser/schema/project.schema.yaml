@@ -3363,7 +3363,10 @@ definitions:
     properties:
       url:
         type: string
-        description: Image URL
+        description: Image URL. Used in light mode, and in dark mode when `dark_url` is not set.
+      dark_url:
+        type: string
+        description: Image URL to use when the dashboard is displayed in dark mode. Defaults to `url`.
       css:
         type: object
         description: CSS styles
