@@ -11,7 +11,7 @@ test.describe("canvas time filters", () => {
 
     await page.getByLabel("total_records KPI data").first().click();
 
-    await page.getByRole("button", { name: "Filters" }).click();
+    await page.getByRole("button", { name: "Time & filters" }).click();
     await page
       .getByRole("complementary", { name: "Inspector Panel" })
       .getByRole("switch")
@@ -76,7 +76,9 @@ test.describe("canvas time filters", () => {
     await expect(kpi).toContainText("vs");
 
     await kpi.click();
-    await page.getByRole("button", { name: "Filters", exact: true }).click();
+    await page
+      .getByRole("button", { name: "Time & filters", exact: true })
+      .click();
 
     const widgetToggle = page
       .getByRole("complementary", { name: "Inspector Panel" })
@@ -115,7 +117,9 @@ test.describe("canvas time filters", () => {
 
     await expect(page.locator(".kpi-wrapper").getByText("797")).toBeVisible();
 
-    await page.getByRole("button", { name: "Filters", exact: true }).click();
+    await page
+      .getByRole("button", { name: "Time & filters", exact: true })
+      .click();
     // Switches in the Filters tab: local time range, widget time comparison, local filters.
     await page
       .getByRole("complementary", { name: "Inspector Panel" })
