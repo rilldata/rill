@@ -37,6 +37,7 @@
   import BlockingOverlayContainer from "@rilldata/web-common/layout/BlockingOverlayContainer.svelte";
   import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts.ts";
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
+  import { belowSm } from "@rilldata/web-common/lib/store-utils/media-query-store";
 
   $: organization = $page.params.organization;
   $: project = $page.params.project;
@@ -148,10 +149,20 @@
   });
 </script>
 
-<!-- The in-browser editor needs a real keyboard and a wide canvas, so below `md`
-     we show a "use desktop" notice instead. `contents` keeps this wrapper out
-     of the box tree at `md` and up, so it doesn't affect the editor's layout. -->
-<div class="hidden md:contents">
+<!-- The in-browser editor needs a real keyboard and a wide canvas, so phones get a
+     "use desktop" notice instead. `{#if}` rather than a CSS class keeps the editor,
+     its runtime connection and its file watcher from mounting behind the notice. -->
+{#if $belowSm}
+  <CtaLayoutContainer>
+    <CtaContentContainer>
+      <CtaHeader>{m.edit_desktop_only_title()}</CtaHeader>
+      <CtaMessage>{m.edit_desktop_only_message()}</CtaMessage>
+      <CtaButton variant="secondary" href={`/${organization}/${project}`}>
+        {m.edit_desktop_only_back_link()}
+      </CtaButton>
+    </CtaContentContainer>
+  </CtaLayoutContainer>
+{:else}
   <div class="edit-session">
     {#if isLoading}
       <EditSessionLoading status={deploymentStatus} href={`/${organization}`} />
@@ -236,19 +247,7 @@
       />
     {/if}
   </div>
-</div>
-
-<div class="flex md:hidden">
-  <CtaLayoutContainer>
-    <CtaContentContainer>
-      <CtaHeader>{m.edit_desktop_only_title()}</CtaHeader>
-      <CtaMessage>{m.edit_desktop_only_message()}</CtaMessage>
-      <CtaButton variant="secondary" href={`/${organization}/${project}`}>
-        {m.edit_desktop_only_back_link()}
-      </CtaButton>
-    </CtaContentContainer>
-  </CtaLayoutContainer>
-</div>
+{/if}
 
 {#if $overlay !== null}
   <BlockingOverlayContainer
