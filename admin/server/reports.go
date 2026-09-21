@@ -911,7 +911,7 @@ type reportYAML struct {
 		} `yaml:"slack"`
 		Webhook struct {
 			URLs []string `yaml:"urls"`
-		} `yaml:"webhook"`
+		} `yaml:"webhook,omitempty"`
 	} `yaml:"notify"`
 	Annotations reportAnnotations `yaml:"annotations,omitempty"`
 }
