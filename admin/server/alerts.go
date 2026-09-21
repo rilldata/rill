@@ -617,7 +617,7 @@ type alertYAML struct {
 		}
 		Webhook struct {
 			URLs []string `yaml:"urls"`
-		}
+		} `yaml:"webhook,omitempty"`
 	}
 	Annotations alertAnnotations `yaml:"annotations,omitempty"`
 }
