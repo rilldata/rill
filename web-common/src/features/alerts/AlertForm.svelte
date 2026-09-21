@@ -295,9 +295,11 @@
   });
 </script>
 
+<!-- Cap the form to the viewport so the dialog never overflows a small window.
+     The tab body keeps a 600px height on large screens but shrinks and scrolls when space is tight. -->
 <form
   autocomplete="off"
-  class="flex flex-col gap-y-3"
+  class="flex flex-col gap-y-3 max-h-[calc(100dvh-2rem)]"
   id={formId}
   onsubmit={(e) => {
     e.preventDefault();
@@ -313,16 +315,15 @@
       <X strokeWidth={3} size={16} class="text-fg-secondary" />
     </Button>
   </DialogTitle>
-  <DialogTabs.Root value={tabs[currentTabIndex]}>
-    <DialogTabs.List class="border-t">
+  <DialogTabs.Root value={tabs[currentTabIndex]} class="flex flex-col min-h-0">
+    <DialogTabs.List class="border-t flex w-full">
       {#each tabs as tab, i (i)}
-        <!-- inner width is 800px. so, width = ceil(800/3) = 267 -->
-        <DialogTabs.Trigger value={tab} tabIndex={i} class="w-[267px]">
+        <DialogTabs.Trigger value={tab} tabIndex={i} class="flex-1 w-auto">
           {tab}
         </DialogTabs.Trigger>
       {/each}
     </DialogTabs.List>
-    <div class="p-3 bg-surface-subtle h-[600px] overflow-auto">
+    <div class="p-3 bg-surface-subtle h-[600px] min-h-0 shrink overflow-auto">
       <DialogTabs.Content {currentTabIndex} tabIndex={0} value={tabs[0]}>
         <AlertDialogDataTab {superFormInstance} {filters} {timeControls} />
       </DialogTabs.Content>
