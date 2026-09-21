@@ -556,3 +556,18 @@ func TestGuardConnectsWithoutEnvironmentProxy(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, listed.client.HTTPClient.Transport.(*http.Transport).Proxy)
 }
+
+func TestFinalStatusReportedAfterRetries(t *testing.T) {
+	var calls atomic.Int32
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		calls.Add(1)
+		w.WriteHeader(http.StatusServiceUnavailable)
+	}))
+	defer srv.Close()
+
+	n := newTestNotifier(t, &configProperties{}, []string{srv.URL})
+	err := n.SendAlertStatus(testAlertStatus())
+	// The execution's error is the only place a failed delivery surfaces, so it must say why.
+	require.ErrorContains(t, err, "webhook "+srv.URL+": unexpected status 503 after 3 attempt(s)")
+	require.Equal(t, int32(3), calls.Load())
+}
