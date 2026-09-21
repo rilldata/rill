@@ -1219,6 +1219,18 @@ stacked_bar:
   # ... other config
 ```
 
+### Disable Comparison Per Widget
+
+Turn delta/comparison off for one component while the canvas-level comparison stays on for the others. This wins over both the canvas toggle and a local `time_filters` override. Applies to `kpi_grid`, `table`, `pivot`, `leaderboard`, and time-series charts:
+
+```yaml
+kpi_grid:
+  metrics_view: sales_metrics
+  measures:
+    - total_revenue
+  hide_comparison: true
+```
+
 ### Vega-Lite Configuration
 
 Customize chart appearance with Vega-Lite config:

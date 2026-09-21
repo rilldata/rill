@@ -46,6 +46,9 @@ export type ComponentComparisonOptions =
 export interface ComponentFilterProperties {
   time_filters?: string;
   dimension_filters?: string;
+  // When true, delta/comparison is disabled for this component regardless of
+  // the canvas-level comparison toggle or a local `time_filters` override.
+  hide_comparison?: boolean;
 }
 
 export interface ComponentSize {

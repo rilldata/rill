@@ -15,6 +15,8 @@
   export let showGrain: boolean;
   export let canvasName: string;
   export let metricsView: string | null;
+  export let hideComparison = false;
+  export let onToggleComparison: (hidden: boolean) => void = () => {};
 
   const runtimeClient = useRuntimeClient();
 
@@ -133,7 +135,7 @@
         onPan={() => {}}
       />
 
-      {#if showComparison}
+      {#if showComparison && !hideComparison}
         <CanvasComparisonPill
           {minTimeGrain}
           {minDate}
@@ -156,6 +158,31 @@
             }
           }}
         />
+      {/if}
+    </div>
+  {/if}
+
+  {#if showComparison}
+    <div class="flex justify-between pt-3">
+      <InputLabel
+        capitalize={false}
+        small
+        label={m.canvas_widget_time_comparison()}
+        id="{id}-comparison"
+        faint={hideComparison}
+      />
+      <Switch
+        checked={!hideComparison}
+        label={m.canvas_widget_time_comparison_toggle_aria()}
+        onCheckedChange={(next) => onToggleComparison(!next)}
+        small
+      />
+    </div>
+    <div class="text-fg-secondary">
+      {#if hideComparison}
+        {m.canvas_widget_time_comparison_off_hint()}
+      {:else}
+        {m.canvas_widget_time_comparison_on_hint()}
       {/if}
     </div>
   {/if}

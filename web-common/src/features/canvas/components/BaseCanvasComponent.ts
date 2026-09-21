@@ -317,6 +317,13 @@ export abstract class BaseCanvasComponent<T = ComponentSpec> {
           comparisonTimeRangeState = localComparisonRangeState;
         }
 
+        // Per-component kill switch: wins over both the canvas toggle and a local time_filters override.
+        // Consumers gate on this flag, so the comparison ranges can stay as computed
+        // (same shape as "canvas comparison off").
+        if (componentSpec?.["hide_comparison"]) {
+          showTimeComparison = false;
+        }
+
         // Dimension Filters
         // The global filters are absent until the canvas' metrics views resolve, and for a component
         // pointed at a metrics view the canvas does not reference. The component's own filters below

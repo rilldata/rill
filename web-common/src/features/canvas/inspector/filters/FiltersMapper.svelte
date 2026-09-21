@@ -56,6 +56,13 @@
             {localTimeControls}
             showComparison={config?.meta?.hasComparison}
             showGrain={config?.meta?.hasGrain}
+            hideComparison={"hide_comparison" in localParamValues &&
+              Boolean(localParamValues.hide_comparison)}
+            onToggleComparison={(hidden) =>
+              component.updateProperty(
+                "hide_comparison",
+                hidden ? true : undefined,
+              )}
           />
         {/if}
       {:else if config.type == "dimension_filters" && metricsView}

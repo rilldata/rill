@@ -41,8 +41,14 @@
     : undefined;
 
   // $: selectedTimeRange = $timeRangeStateStore?.selectedTimeRange;
+  $: hideComparison =
+    "hide_comparison" in $specStore && Boolean($specStore.hide_comparison);
+
   $: displayComparisonTimeRange =
-    showTimeComparison && comparisonInterval && comparisonRange
+    showTimeComparison &&
+    !hideComparison &&
+    comparisonInterval &&
+    comparisonRange
       ? <V1TimeRange>{
           name: comparisonRange,
           start: comparisonInterval.start.toISO(),

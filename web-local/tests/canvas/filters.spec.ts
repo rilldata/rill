@@ -59,6 +59,38 @@ test.describe("canvas time filters", () => {
     await expect(page.getByText("7,863")).toBeVisible();
   });
 
+  test("can disable comparison for a single widget", async ({ page }) => {
+    await gotoNavEntry(page, "/dashboards/AdBids_metrics_canvas.yaml");
+
+    const kpi = page.getByLabel("total_records KPI data").first();
+    // The canvas can take a while to render under parallel workers.
+    await expect(kpi).toBeVisible({ timeout: 30_000 });
+
+    // Make sure comparison is on at the canvas level.
+    const globalToggle = page.getByLabel("Toggle time comparison").first();
+    const globalSwitch = globalToggle.getByRole("switch");
+    if (!(await globalSwitch.isChecked())) {
+      await globalToggle.click();
+    }
+    await expect(globalSwitch).toBeChecked();
+    await expect(kpi).toContainText("vs");
+
+    await kpi.click();
+    await page.getByRole("button", { name: "Filters", exact: true }).click();
+
+    const widgetToggle = page
+      .getByRole("complementary", { name: "Inspector Panel" })
+      .getByLabel("Toggle widget time comparison");
+    await widgetToggle.click();
+
+    // Only this widget loses comparison; the canvas toggle stays on.
+    await expect(kpi).not.toContainText("vs");
+    await expect(globalSwitch).toBeChecked();
+
+    await widgetToggle.click();
+    await expect(kpi).toContainText("vs");
+  });
+
   test("can update domain filters", async ({ page }) => {
     await gotoNavEntry(page, "/dashboards/AdBids_metrics_canvas.yaml");
 
@@ -84,10 +116,11 @@ test.describe("canvas time filters", () => {
     await expect(page.locator(".kpi-wrapper").getByText("797")).toBeVisible();
 
     await page.getByRole("button", { name: "Filters", exact: true }).click();
+    // Switches in the Filters tab: local time range, widget time comparison, local filters.
     await page
       .getByRole("complementary", { name: "Inspector Panel" })
       .getByRole("switch")
-      .nth(1)
+      .nth(2)
       .click();
     await page
       .getByRole("complementary", { name: "Inspector Panel" })

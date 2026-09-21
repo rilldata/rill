@@ -25,6 +25,16 @@ KPI grids display key performance indicators in a compact grid format with compa
   codeLanguage="yaml"
 />
 
+Comparison follows the canvas-level time comparison toggle by default. To turn delta and comparison off for a single widget while keeping it on for the rest of the canvas, set `hide_comparison: true` on that widget. This works on KPI grids, tables, pivots, leaderboards, and time-series charts.
+
+```yaml
+- kpi_grid:
+    metrics_view: auction_metrics
+    measures:
+      - requests
+    hide_comparison: true
+```
+
 ## Leaderboard
 
 Leaderboards show ranked data with the top performers highlighted.
