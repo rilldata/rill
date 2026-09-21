@@ -70,9 +70,9 @@ var _ drivers.Handle = &handle{}
 // Ping implements drivers.Handle.
 func (h *handle) Ping(ctx context.Context) error {
 	// Delivery URLs are provided per alert/report, so there is no receiver to contact at
-	// the connector level. Validate that the signing secret (if any) is well-formed so a
-	// misconfiguration surfaces here instead of on the first delivery.
-	_, err := signingKey(h.config.SigningSecret)
+	// the connector level. Validate the config so a misconfiguration surfaces here instead
+	// of on the first delivery.
+	_, err := validateConfig(h.config)
 	return err
 }
 
@@ -157,6 +157,10 @@ type configProperties struct {
 	// base64-encoded (the format the spec defines); other values are used as raw key bytes.
 	SigningSecret string `mapstructure:"signing_secret"`
 	// Headers are static headers added to every delivery, e.g. an Authorization header for
-	// receivers behind an API gateway.
+	// receivers behind an API gateway. They require AllowedURLPrefixes.
 	Headers map[string]string `mapstructure:"headers"`
+	// AllowedURLPrefixes restricts deliveries to URLs under these prefixes, e.g.
+	// `https://example.com/hooks/`. The scheme and host must match exactly. Deliveries to
+	// private or loopback addresses are blocked unless the connector sets this list.
+	AllowedURLPrefixes []string `mapstructure:"allowed_url_prefixes"`
 }
