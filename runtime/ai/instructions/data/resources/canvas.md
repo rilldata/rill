@@ -435,6 +435,27 @@ bar_chart:
     type: quantitative
 ```
 
+**Horizontal orientation** (bars run left to right; useful for long category labels or many categories):
+
+```yaml
+bar_chart:
+  metrics_view: sales_metrics
+  title: "Revenue by Product Category"
+  orientation: horizontal
+  color: primary
+  x:
+    field: product_category
+    type: nominal
+    limit: 15
+    sort: -y
+  y:
+    field: total_revenue
+    type: quantitative
+    zeroBasedOrigin: true
+```
+
+`orientation` is also supported by `stacked_bar` and `stacked_bar_normalized`. Keep `x` as the category field and `y` as the measure; only the rendering is rotated, and `sort: -y` still sorts by the measure.
+
 ### Stacked Bar
 
 Show cumulative values across categories or time:
@@ -1104,6 +1125,15 @@ y:
   type: quantitative
   zeroBasedOrigin: true      # Start y-axis at zero
 ```
+
+### Orientation (bar charts)
+
+```yaml
+bar_chart:
+  orientation: horizontal    # vertical (default) or horizontal
+```
+
+Applies to `bar_chart`, `stacked_bar` and `stacked_bar_normalized` only. With `horizontal`, the `x` (category) field is drawn along the vertical axis and the `y` (measure) along the horizontal axis; `x`/`y` roles and sort values are unchanged.
 
 **Multiple measures:**
 

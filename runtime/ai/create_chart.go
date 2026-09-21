@@ -315,6 +315,12 @@ func validateChartFields(chartType string, spec map[string]any, mvSpec *runtimev
 				return fmt.Errorf("invalid y fields: %w", err)
 			}
 		}
+		// Optional bar orientation; ignored by line and area charts.
+		if orientation, ok := spec["orientation"]; ok {
+			if err := validateEnum("orientation", orientation, []string{"vertical", "horizontal"}); err != nil {
+				return err
+			}
+		}
 
 	case "combo_chart":
 		// For combo_chart, color.type must be "value"
@@ -503,6 +509,34 @@ total_bids: measure
       "field": "advertiser_name",
       "limit": 20,
       "showNull": true,
+      "type": "nominal",
+      "sort": "-y"
+    },
+    "y": {
+      "field": "total_bids",
+      "type": "quantitative",
+      "zeroBasedOrigin": true
+    }
+  }
+}
+` + "```" + `
+
+Example with horizontal orientation: the same chart with bars running left to right. Keep ` + "`x`" + ` as the category and ` + "`y`" + ` as the measure; only the rendering is rotated, and ` + "`\"sort\": \"-y\"`" + ` still sorts by the measure. Prefer this for long category labels or many categories.
+
+` + "```json" + `
+{
+  "chart_type": "bar_chart",
+  "spec": {
+    "metrics_view": "bids_metrics",
+    "time_range": {
+      "start": "2024-01-01T00:00:00Z",
+      "end": "2024-12-31T23:59:59Z"
+    },
+    "orientation": "horizontal",
+    "color": "primary",
+    "x": {
+      "field": "advertiser_name",
+      "limit": 20,
       "type": "nominal",
       "sort": "-y"
     },
@@ -838,6 +872,8 @@ clicks, video_starts, video_completes, ctr, ecpm, impressions: measures
 
 **IMPORTANT** : The chart types bar_chart, area_chart, line_chart and stacked_bar follow the same schema definition.
 Note that when charting out multiple fields using "fields" key, you must also add a "field" key with value being the first field in fields array
+
+Bar orientation: bar_chart, stacked_bar and stacked_bar_normalized accept an optional top-level ` + "`\"orientation\": \"horizontal\"`" + ` (default ` + "`\"vertical\"`" + `). Horizontal bars draw the x (category) field along the vertical axis and the y (measure) along the horizontal axis; the x/y field roles and sort values are unchanged. Other chart types ignore it.
 
 
 ### 5. Normalized Stacked Bar Chart (` + "`stacked_bar_normalized`" + `)
@@ -1213,6 +1249,7 @@ Choose the appropriate chart type based on your data and analysis goals:
 - **` + "`bar_chart`" + `**: Standard choice for comparing discrete categories or groups
 - **` + "`stacked_bar`" + `**: Standard choice for comparing discrete categories or groups when split by dimension is involved
 - **Nominal axis**: Use nominal encoding for categorical x-axis
+- **Orientation**: Add ` + "`\"orientation\": \"horizontal\"`" + ` to bar_chart, stacked_bar or stacked_bar_normalized when category labels are long or there are many categories; x stays the category field
 
 ### Part-to-Whole Relationships
 - **` + "`donut_chart`" + `**: Shows composition of a whole

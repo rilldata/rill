@@ -127,6 +127,43 @@ bar_chart:
 	testruntime.RequireReconcileErrorContains(t, rt, id, runtime.ResourceKindComponent, "c1", "is not a dimension")
 }
 
+func TestValidateBarChartOrientation(t *testing.T) {
+	rt, id := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
+		Files: metricsViewFiles(),
+	})
+
+	// Valid horizontal orientation.
+	testruntime.PutFiles(t, rt, id, map[string]string{
+		"c1.yaml": `
+type: component
+bar_chart:
+  metrics_view: mv1
+  orientation: horizontal
+  x:
+    field: foo
+  y:
+    field: y
+`})
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireReconcileState(t, rt, id, 4, 0, 0)
+
+	// Invalid: unknown orientation value.
+	testruntime.PutFiles(t, rt, id, map[string]string{
+		"c1.yaml": `
+type: component
+bar_chart:
+  metrics_view: mv1
+  orientation: diagonal
+  x:
+    field: foo
+  y:
+    field: y
+`})
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireReconcileState(t, rt, id, 4, 1, 0)
+	testruntime.RequireReconcileErrorContains(t, rt, id, runtime.ResourceKindComponent, "c1", `"orientation" must be one of`)
+}
+
 func TestValidateCartesianMultiField(t *testing.T) {
 	rt, id := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
 		Files: metricsViewFiles(),

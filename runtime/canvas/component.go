@@ -95,6 +95,11 @@ func validateCartesianChart(props map[string]any, metricsViews map[string]*runti
 		}
 	}
 
+	// Optional bar orientation; only honored by the bar chart renderers, but harmless elsewhere.
+	if err := validateOptionalStringEnum(props, "orientation", []string{"vertical", "horizontal"}); err != nil {
+		return err
+	}
+
 	// Validate optional color field: can be a plain string (skip) or a map with a "field" key (validate as dimension)
 	return validateOptionalColorDimensionField(mv, mvn, props)
 }

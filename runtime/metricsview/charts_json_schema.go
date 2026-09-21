@@ -108,6 +108,11 @@ const ChartsJSONSchema = `{
           "enum": ["top", "previous"],
           "description": "For funnel charts: reference for the on-bar percentage label. 'top' shows each stage as % of the top stage; 'previous' shows each stage as % of the prior stage. Tooltip always shows both regardless of this setting."
         },
+        "orientation": {
+          "type": "string",
+          "enum": ["vertical", "horizontal"],
+          "description": "For bar_chart, stacked_bar and stacked_bar_normalized: 'horizontal' draws the bars left to right, placing the x (category) field on the vertical axis and the y (measure) on the horizontal axis. The x/y field roles and sort values (e.g. '-y') are unchanged. Ignored by other chart types. Default 'vertical'."
+        },
         "show_data_labels": {
           "type": "boolean",
           "description": "Whether to show data labels on the chart."

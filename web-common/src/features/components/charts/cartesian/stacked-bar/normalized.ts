@@ -23,6 +23,7 @@ import type { LayerSpec } from "vega-lite/types_unstable/spec/layer.js";
 import type { UnitSpec } from "vega-lite/types_unstable/spec/unit.js";
 import type { Transform } from "vega-lite/types_unstable/transform.js";
 import type { CartesianChartSpec } from "../CartesianChartProvider";
+import { isHorizontal, transposeCartesianSpec } from "../orientation";
 import { createVegaTransformPivotConfig } from "../util";
 
 export function generateVLStackedBarNormalizedSpec(
@@ -48,7 +49,7 @@ export function generateVLStackedBarNormalizedSpec(
       stack: "normalize",
       scale: {
         zero: false,
-        // Add padding at the top for hover space since normalized charts go to 100%
+        // Add padding at the end of the measure axis for hover space since normalized charts go to 100%
         domainMax: 1.1,
       },
       axis: {
@@ -178,8 +179,10 @@ export function generateVLStackedBarNormalizedSpec(
 
   spec.layer = layers;
 
-  return {
+  const result: VisualizationSpec = {
     ...spec,
     ...(vegaConfig && { config: vegaConfig }),
   };
+
+  return isHorizontal(config) ? transposeCartesianSpec(result) : result;
 }

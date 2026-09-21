@@ -32,6 +32,26 @@ Bar charts are ideal for comparing values across different categories.
          
 />
 
+### Horizontal Bar Chart
+
+Set `orientation: horizontal` to draw the bars from left to right, which works well for long category labels or many categories. The `x` field stays the category and `y` stays the measure; only the rendering is rotated, so `sort: -y` still sorts by the measure. The same option is available on `stacked_bar` and `stacked_bar_normalized`.
+
+```yaml
+- bar_chart:
+    metrics_view: bids_metrics
+    orientation: horizontal
+    color: primary
+    x:
+      field: advertiser_name
+      limit: 20
+      type: nominal
+      sort: -y
+    y:
+      field: total_bids
+      type: quantitative
+      zeroBasedOrigin: true
+```
+
 ## Line Chart
 
 Line charts are perfect for showing trends over time.

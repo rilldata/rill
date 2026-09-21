@@ -4,6 +4,7 @@ import {
   CartesianChartProvider,
   type CartesianChartSpec as CartesianChartSpecBase,
 } from "@rilldata/web-common/features/components/charts/cartesian/CartesianChartProvider";
+import { supportsOrientation } from "@rilldata/web-common/features/components/charts/cartesian/orientation";
 import {
   ChartSortType,
   type ChartDataQuery,
@@ -96,6 +97,17 @@ export class CartesianChartComponent extends BaseChart<CartesianCanvasChartSpec>
           },
         },
       },
+      orientation: {
+        type: "switcher_tab",
+        label: m.canvas_orientation_label(),
+        meta: {
+          default: "vertical",
+          options: [
+            { label: m.canvas_vertical_option(), value: "vertical" },
+            { label: m.canvas_horizontal_option(), value: "horizontal" },
+          ],
+        },
+      },
     };
   }
 
@@ -131,6 +143,11 @@ export class CartesianChartComponent extends BaseChart<CartesianCanvasChartSpec>
     const inputParams = { ...CartesianChartComponent.chartInputParams };
     const config = get(this.specStore);
     const isMultiMeasure = isMultiFieldConfig(config.y);
+
+    // Only bar charts can be drawn horizontally.
+    if (!supportsOrientation(this.type)) {
+      delete inputParams.orientation;
+    }
 
     const sortSelector = inputParams.x.meta?.chartFieldInput?.sortSelector;
     if (sortSelector) {
@@ -173,6 +190,12 @@ export class CartesianChartComponent extends BaseChart<CartesianCanvasChartSpec>
     key: keyof CartesianCanvasChartSpec,
     value: CartesianCanvasChartSpec[keyof CartesianCanvasChartSpec],
   ) => {
+    if (key === "orientation" && value === "vertical") {
+      // Vertical is the default; keep it implicit in the YAML.
+      super.updateProperty(key, undefined);
+      return;
+    }
+
     const currentSpec = get(this.specStore);
 
     if (key === "y") {

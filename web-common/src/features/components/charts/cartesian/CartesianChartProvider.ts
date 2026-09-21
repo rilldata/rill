@@ -46,6 +46,7 @@ import {
   isSortByDelta,
   vegaSortToAggregationSort,
 } from "../query-util";
+import type { ChartOrientation } from "./orientation";
 
 export type CartesianChartSpec = {
   metrics_view: string;
@@ -55,6 +56,10 @@ export type CartesianChartSpec = {
   x?: FieldConfig<"nominal" | "time">;
   y?: FieldConfig<"quantitative">;
   color?: FieldConfig<"nominal"> | string;
+  // Bar charts only (bar_chart, stacked_bar, stacked_bar_normalized); defaults to "vertical".
+  // "horizontal" draws the x (category) field along the vertical axis and the y (measure)
+  // along the horizontal axis. Field roles, sort semantics and queries are unchanged.
+  orientation?: ChartOrientation;
   isInteractive?: boolean;
 };
 
