@@ -192,21 +192,15 @@
   };
 </script>
 
-<!-- Wrap in a horizontal scroll container: InfiniteScrollTable's own scroll-container
-     only handles overflow-y, so wide columns would otherwise overflow the viewport. -->
-<div class="overflow-x-auto">
-  <InfiniteScrollTable
-    data={safeData}
-    {columns}
-    hasNextPage={(showMembers &&
-      usersQuery.hasNextPage &&
-      !usersQuery.isError) ||
-      (showInvites && invitesQuery.hasNextPage && !invitesQuery.isError)}
-    isFetchingNextPage={isLoading}
-    onLoadMore={handleLoadMore}
-    maxHeight={dynamicTableMaxHeight}
-    emptyStateMessage={m.users_table_empty()}
-    {headerIcons}
-    {scrollToTopTrigger}
-  />
-</div>
+<InfiniteScrollTable
+  data={safeData}
+  {columns}
+  hasNextPage={(showMembers && usersQuery.hasNextPage && !usersQuery.isError) ||
+    (showInvites && invitesQuery.hasNextPage && !invitesQuery.isError)}
+  isFetchingNextPage={isLoading}
+  onLoadMore={handleLoadMore}
+  maxHeight={dynamicTableMaxHeight}
+  emptyStateMessage={m.users_table_empty()}
+  {headerIcons}
+  {scrollToTopTrigger}
+/>
