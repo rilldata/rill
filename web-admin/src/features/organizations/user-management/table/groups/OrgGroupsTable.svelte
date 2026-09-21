@@ -70,16 +70,12 @@
   $: dynamicTableMaxHeight = data.length > 12 ? `calc(100dvh - 300px)` : "auto";
 </script>
 
-<!-- Wrap in a horizontal scroll container: InfiniteScrollTable's own scroll-container
-     only handles overflow-y, so wide columns would otherwise overflow the viewport. -->
-<div class="overflow-x-auto">
-  <InfiniteScrollTable
-    {data}
-    {columns}
-    {hasNextPage}
-    {isFetchingNextPage}
-    {onLoadMore}
-    maxHeight={dynamicTableMaxHeight}
-    emptyStateMessage={m.groups_table_empty()}
-  />
-</div>
+<InfiniteScrollTable
+  {data}
+  {columns}
+  {hasNextPage}
+  {isFetchingNextPage}
+  {onLoadMore}
+  maxHeight={dynamicTableMaxHeight}
+  emptyStateMessage={m.groups_table_empty()}
+/>
