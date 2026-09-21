@@ -151,7 +151,7 @@ export class TimeFilterManager implements UrlParamsStore {
     private readonly metricsViewsProvider: MetricsViewsProvider,
     private readonly yamlConfigProvider: YAMLConfigProvider,
     public readonly allowCustomTimeRange: boolean,
-    private readonly log: boolean = false,
+    private readonly addDefault: boolean = false, // TODO: maybe this can be moved to yamlConfigProvider?
   ) {
     this.minDate = $derived.by(() => {
       const minDate = this.metricsViewsProvider.timeRangeSummary?.min
@@ -285,10 +285,8 @@ export class TimeFilterManager implements UrlParamsStore {
   public setUrlParams(urlParams: URLSearchParams) {
     this.curParams = copySubsetParams(urlParams, TimeFilterParams);
 
-    this.timeGrain =
-      DateTimeUnitToV1TimeGrain[
-        urlParams.get(ExploreStateURLParams.TimeGrain)!
-      ];
+    const urlGrain = urlParams.get(ExploreStateURLParams.TimeGrain);
+    this.timeGrain = urlGrain ? DateTimeUnitToV1TimeGrain[urlGrain] : undefined;
 
     this.timeZone =
       urlParams.get(ExploreStateURLParams.TimeZone) ??
@@ -307,11 +305,9 @@ export class TimeFilterManager implements UrlParamsStore {
           this.metricsViewsProvider.timeRangeSummary,
         );
       }
-      if (defaultTimeRange) {
+      if (defaultTimeRange && this.addDefault) {
         void this.applyTimeRange(defaultTimeRange);
       } else {
-        if (this.log)
-          console.log("TimeFilterManager:setUrlParams:unset", this.timeRange);
         this.timeRange = undefined;
         this.interval = undefined;
       }
@@ -637,7 +633,6 @@ export class TimeFilterManager implements UrlParamsStore {
       }
     });
     if (!latestInterval) {
-      if (this.log) console.log("TimeFilterManager:applyTimeRange:noInterval");
       return;
     }
 
@@ -666,11 +661,6 @@ export class TimeFilterManager implements UrlParamsStore {
     if (this.comparisonTimeRange)
       this.applyComparisonRange(this.comparisonTimeRange);
 
-    if (this.log)
-      console.log(
-        "TimeFilterManager:applyTimeRange:dataLoaded",
-        this.timeRange,
-      );
     this.dataLoaded = true;
   }
 

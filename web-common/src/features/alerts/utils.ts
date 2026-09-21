@@ -1,7 +1,6 @@
 import { type AlertFormValues } from "@rilldata/web-common/features/alerts/form-utils";
 import { AllMeasureFilterTypeOptions } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-options";
 import { TIME_COMPARISON } from "@rilldata/web-common/lib/time/config";
-import type { DashboardTimeControls } from "@rilldata/web-common/lib/time/types.ts";
 import type { V1MetricsViewSpec } from "@rilldata/web-common/runtime-client";
 import type { TaintedFields } from "sveltekit-superforms";
 

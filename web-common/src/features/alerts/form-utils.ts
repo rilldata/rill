@@ -50,7 +50,7 @@ export type AlertFormValues = {
 export function getAlertQueryArgsFromFormValues(
   formValues: AlertFormValues,
   expr: V1Expression | undefined,
-  timeFilterManager: TimeFilterManager,
+  timeFilterManager: TimeFilterManager | undefined,
 ): V1MetricsViewAggregationRequest {
   const timeRange = mapTimeManagerRangeToV1TimeRange(timeFilterManager);
   const comparisonTimeRange = mapTimeManagerComparisonRangeToV1TimeRange(

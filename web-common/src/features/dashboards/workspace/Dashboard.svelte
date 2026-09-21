@@ -217,8 +217,6 @@
             {#if hasTimeSeries}
               <MetricsTimeSeriesCharts
                 {exploreName}
-                {dimensionOnlyFilter}
-                {whereFilter}
                 hideStartPivotButton={hidePivot}
                 tddChartHeight={$tddChartHeight}
               />

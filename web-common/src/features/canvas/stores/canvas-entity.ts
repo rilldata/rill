@@ -66,20 +66,6 @@ function encodeTabKey(name: string): string {
   return encodeURIComponent(name).replace(/\./g, "%2E");
 }
 
-// Store for managing URL search parameters
-// Which may be in the URL or in the Canvas YAML
-// Set returns a boolean indicating whether the value was set
-export type SearchParamsStore = {
-  subscribe: (run: (value: URLSearchParams) => void) => Unsubscriber;
-  set: (
-    map: Map<string, string | undefined>,
-    checkIfSet?: boolean,
-    replaceState?: boolean,
-    prefixes?: string[],
-  ) => boolean;
-  clearAll: () => void;
-};
-
 export class CanvasEntity {
   componentsStore = createCustomMapStore<BaseCanvasComponent>();
   _rows: Grid = new Grid(this);
@@ -194,7 +180,6 @@ export class CanvasEntity {
       this.dashboardProvider.metricsViewsProvider,
       this.dashboardProvider.yamlConfigProvider,
       false,
-      true,
     );
 
     this.processSpec(this.spec);

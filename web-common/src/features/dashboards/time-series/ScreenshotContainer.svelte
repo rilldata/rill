@@ -189,7 +189,6 @@
               tddChartType={tddChartType ?? TDDChart.DEFAULT}
               {metricsViewName}
               {timeDimension}
-              {ready}
               {comparisonDimension}
               {dimensionValues}
               {showTimeDimensionDetail}

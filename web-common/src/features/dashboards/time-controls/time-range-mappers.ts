@@ -239,9 +239,9 @@ export function mapV1TimeRangeToSelectedComparisonTimeRange(
 }
 
 export function mapTimeManagerRangeToV1TimeRange(
-  timeFilterManager: TimeFilterManager,
+  timeFilterManager: TimeFilterManager | undefined,
 ): V1TimeRange | undefined {
-  if (!timeFilterManager.timeRange) return;
+  if (!timeFilterManager?.timeRange) return undefined;
   if (timeFilterManager.parsedTime) {
     return {
       expression: timeFilterManager.timeRange,
@@ -278,11 +278,12 @@ export function mapTimeManagerRangeToV1TimeRange(
 }
 
 export function mapTimeManagerComparisonRangeToV1TimeRange(
-  timeFilterManager: TimeFilterManager,
+  timeFilterManager: TimeFilterManager | undefined,
   timeRange: V1TimeRange | undefined,
 ): V1TimeRange | undefined {
   if (
     !timeRange ||
+    !timeFilterManager ||
     !timeFilterManager.showComparison ||
     !timeFilterManager.comparisonTimeRange
   ) {

@@ -26,15 +26,14 @@
   syncStoreWithSource(
     expressionFilterManager,
     syncExpressionFilters,
-    undefined,
     // URL sync is managed by DashboardStateSync
     false,
+    true,
   );
 
   syncStoreWithSource(
     timeFilterManager,
     syncTimeFilters,
-    undefined,
     // URL sync is managed by DashboardStateSync
     false,
   );

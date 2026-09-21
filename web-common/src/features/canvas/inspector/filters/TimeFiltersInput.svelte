@@ -9,6 +9,7 @@
   import TimeFilters from "@rilldata/web-common/features/dashboards/time-controls/TimeFilters.svelte";
   import type { MetricsViewsProvider } from "@rilldata/web-common/features/metrics-views/providers/MetricsViewsProvider.svelte.ts";
   import type { YAMLConfigProvider } from "@rilldata/web-common/features/dashboards/providers/YAMLConfigProvider.svelte.ts";
+  import { syncStoreWithSource } from "@rilldata/web-common/lib/store-utils/url-params-store-sync.svelte.ts";
 
   let {
     id,
@@ -18,6 +19,7 @@
     showComparison,
     showGrain,
     canvasName,
+    updateLocalTimeFilterString,
   }: {
     id: string;
     localTimeFilters: TimeFilterManager;
@@ -26,6 +28,7 @@
     showComparison: boolean;
     showGrain: boolean;
     canvasName: string;
+    updateLocalTimeFilterString: (newFilterString: string) => void;
   } = $props();
 
   const runtimeClient = useRuntimeClient();
@@ -35,9 +38,15 @@
   let {
     canvasEntity: { timeFilterManager, dashboardProvider },
   } = $derived(getCanvasStore(canvasName, instanceId));
+  // svelte-ignore state_referenced_locally
+  syncStoreWithSource(
+    localTimeFilters,
+    async (newUrlParams) =>
+      updateLocalTimeFilterString(newUrlParams.toString()),
+    false,
+  );
 
   let { curParams } = $derived(localTimeFilters);
-  $effect(() => console.log(localTimeFilters.timeRange));
 
   let globalRange = $derived(timeFilterManager.timeRange);
 
@@ -59,7 +68,7 @@
     />
     <Switch
       checked={localFiltersEnabled}
-      onclick={() => {
+      onCheckedChange={() => {
         if (localFiltersEnabled) {
           localTimeFilters.setUrlParams(new URLSearchParams());
         } else {
@@ -81,7 +90,7 @@
 
   {#if localFiltersEnabled}
     <TimeFilters
-      {timeFilterManager}
+      timeFilterManager={localTimeFilters}
       {metricsViewsProvider}
       {yamlConfigProvider}
       context="filter-input"

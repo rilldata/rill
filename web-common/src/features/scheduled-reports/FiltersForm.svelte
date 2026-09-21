@@ -40,7 +40,8 @@
 >
   <TimeFilters
     {timeFilterManager}
-    {dashboardConfigProvider}
+    metricsViewsProvider={dashboardConfigProvider.metricsViewsProvider}
+    yamlConfigProvider={dashboardConfigProvider.yamlConfigProvider}
     config={{
       showTimeDimensionSelector: true,
       showFullRange: true,

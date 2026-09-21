@@ -18,7 +18,6 @@ import type {
 } from "./types";
 import { resolveEphemeralMeasureSpec } from "./ephemeral-measures";
 import { adjustDataForTimeZone, getFieldsByType } from "./util";
-import type { ExpressionState } from "@rilldata/web-common/features/dashboards/filters/ExpressionFilterManager.svelte.ts";
 import type { TimeControlState } from "@rilldata/web-common/features/dashboards/time-controls/TimeFilterManager.svelte.ts";
 
 export interface ChartDataDependencies<T extends ChartSpec = ChartSpec> {

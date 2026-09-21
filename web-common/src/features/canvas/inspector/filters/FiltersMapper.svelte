@@ -59,6 +59,9 @@
             {yamlConfigProvider}
             showComparison={config?.meta?.hasComparison}
             showGrain={config?.meta?.hasGrain}
+            updateLocalTimeFilterString={(newString) => {
+              component.updateProperty("time_filters", newString);
+            }}
           />
         {/if}
       {:else if config.type == "dimension_filters" && metricsView}

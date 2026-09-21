@@ -16,11 +16,7 @@ import type { Component, ComponentType, SvelteComponent } from "svelte";
 import type { Readable, Unsubscriber } from "svelte/store";
 import { derived, get, writable, type Writable } from "svelte/store";
 import { mergeFilters } from "../../dashboards/pivot/pivot-merge-filters";
-import type {
-  CanvasEntity,
-  ComponentPath,
-  SearchParamsStore,
-} from "../stores/canvas-entity";
+import type { CanvasEntity, ComponentPath } from "../stores/canvas-entity";
 import { ExpressionFilterManager } from "@rilldata/web-common/features/dashboards/filters/ExpressionFilterManager.svelte.ts";
 import { TimeFilterManager } from "@rilldata/web-common/features/dashboards/time-controls/TimeFilterManager.svelte.ts";
 import { dedupe } from "@rilldata/web-common/lib/arrayUtils.ts";
@@ -107,44 +103,6 @@ export abstract class BaseCanvasComponent<T = ComponentSpec> {
       ([visible, exportMode]) => visible || exportMode,
     );
 
-    const yamlTimeFilterStore: SearchParamsStore = (() => {
-      const store = derived(this.specStore, (spec) => {
-        return new URLSearchParams(spec?.["time_filters"] ?? "");
-      });
-      return {
-        subscribe: store.subscribe,
-        set: (map: Map<string, string | undefined>) => {
-          const searchParams = get(store);
-
-          map.forEach((value, key) => {
-            if (value === undefined || value === null || value === "") {
-              searchParams.delete(key);
-            } else {
-              searchParams.set(key, value);
-            }
-          });
-
-          this.updateProperty(
-            "time_filters" as AllKeys<T>,
-            searchParams.toString() as T[AllKeys<T>],
-          );
-          return true;
-        },
-        clearAll: () => {
-          const searchParams = get(store);
-
-          searchParams.forEach((_, key) => {
-            searchParams.delete(key);
-          });
-
-          this.updateProperty(
-            "time_filters" as AllKeys<T>,
-            searchParams.toString() as T[AllKeys<T>],
-          );
-        },
-      };
-    })();
-
     this.metricsViewsProvider = new MetricsViewsProvider(this.parent.client, [
       this.metricsViewName,
     ]);
@@ -160,6 +118,7 @@ export abstract class BaseCanvasComponent<T = ComponentSpec> {
       this.metricsViewsProvider,
       this.yamlConfigProvider,
       this.parent.timeFilterManager.allowCustomTimeRange,
+      false,
     );
 
     this.expressionFilters = new ExpressionFilterManager(

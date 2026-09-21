@@ -2,11 +2,11 @@
   import * as Tooltip from "@rilldata/web-common/components/tooltip-v2";
   import type { TimeFilterManager } from "@rilldata/web-common/features/dashboards/time-controls/TimeFilterManager.svelte.ts";
   import { Nudge } from "@rilldata/web-common/features/dashboards/time-controls/super-pill/components";
-  import TimeRangePicker from "@rilldata/web-common/features/dashboards/time-controls/TimeRangePicker.svelte";
+  import TimeRangePicker from "@rilldata/web-common/features/dashboards/time-controls/super-pill/TimeRangePicker.svelte";
   import type { TimeFiltersConfig } from "@rilldata/web-common/features/dashboards/time-controls/time-filters-config.ts";
   import Calendar from "@rilldata/web-common/components/icons/Calendar.svelte";
   import Metadata from "@rilldata/web-common/features/dashboards/time-controls/super-pill/components/Metadata.svelte";
-  import ComparisonTimeRangePicker from "@rilldata/web-common/features/dashboards/time-controls/ComparisonTimeRangePicker.svelte";
+  import ComparisonTimeRangePicker from "@rilldata/web-common/features/dashboards/time-controls/comparison/ComparisonTimeRangePicker.svelte";
   import type { YAMLConfigProvider } from "@rilldata/web-common/features/dashboards/providers/YAMLConfigProvider.svelte.ts";
   import type { MetricsViewsProvider } from "@rilldata/web-common/features/metrics-views/providers/MetricsViewsProvider.svelte.ts";
 

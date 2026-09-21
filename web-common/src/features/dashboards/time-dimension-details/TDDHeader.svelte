@@ -11,7 +11,7 @@
     dimensionSearchText,
     metricsExplorerStore,
   } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
-  import ComparisonSelector from "@rilldata/web-common/features/dashboards/time-controls/ComparisonSelector.svelte";
+  import ComparisonSelector from "@rilldata/web-common/features/dashboards/time-controls/comparison/ComparisonSelector.svelte";
   import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
   import ExportMenu from "../../exports/ExportMenu.svelte";
   import { featureFlags } from "../../feature-flags";

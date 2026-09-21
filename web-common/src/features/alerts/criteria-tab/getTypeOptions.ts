@@ -5,7 +5,6 @@ import {
   MeasureFilterPercentOfTotalOption,
 } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-options";
 import { TIME_COMPARISON } from "@rilldata/web-common/lib/time/config.ts";
-import type { DashboardTimeControls } from "@rilldata/web-common/lib/time/types.ts";
 import type { MetricsViewSpecMeasure } from "@rilldata/web-common/runtime-client";
 
 export function getTypeOptions(

@@ -31,15 +31,13 @@
     metricsViewName,
     specStore,
     parent: { name: canvasName, theme },
-    expressionFilters,
-    timeFilters,
     chartType: type,
     dataEnabled: visible,
   } = component);
 
-  $: filterStore =
-    expressionFilters.getExprStoreForMetricsView(metricsViewName);
-  $: timeControlStore = timeFilters.getTimeControlStore();
+  const filterStore =
+    component.expressionFilters.getExprStoreForMetricsView(metricsViewName);
+  const timeControlStore = component.timeFilters.getTimeControlStore();
 
   $: chartType = $type;
 

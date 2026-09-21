@@ -1,4 +1,3 @@
-import { cleanUrlParams } from "@rilldata/web-common/features/dashboards/url-state/clean-url-params.ts";
 import { page } from "$app/state";
 import { untrack } from "svelte";
 
@@ -12,7 +11,6 @@ export interface UrlParamsStore {
 export function syncStoreWithSource(
   store: UrlParamsStore,
   sync: (newUrlParams: URLSearchParams) => Promise<void>,
-  defaultUrlParamsGetter?: () => URLSearchParams | undefined,
   syncFromUrl = true,
   log = false,
 ) {
@@ -22,20 +20,11 @@ export function syncStoreWithSource(
     $effect(() => {
       // Read all dependencies first so the subscription survives the guard.
       const currentUrl = page.url;
-      const defaultUrlParams = untrack(() =>
-        defaultUrlParamsGetter ? defaultUrlParamsGetter() : undefined,
-      );
 
       if (!store.specLoaded || lock) return;
       lock = true;
 
       const newUrlParams = new URLSearchParams(currentUrl.searchParams);
-      if (defaultUrlParams) {
-        defaultUrlParams.forEach((value, key) => {
-          if (newUrlParams.has(key)) return;
-          newUrlParams.set(key, value);
-        });
-      }
 
       if (log) console.log("sync:fromUrl", newUrlParams.toString());
       // No need to safeguard against unchanged url.
@@ -52,10 +41,6 @@ export function syncStoreWithSource(
     const curStateParams = new URLSearchParams();
     store.applyFilterToParams(curStateParams);
 
-    const defaultUrlParams = untrack(() =>
-      defaultUrlParamsGetter ? defaultUrlParamsGetter() : undefined,
-    );
-
     if (
       !store.dataLoaded ||
       lock ||
@@ -64,13 +49,14 @@ export function syncStoreWithSource(
       return;
     lock = true;
 
-    const currentUrlParams = untrack(() => page.url.searchParams);
+    const currentUrlParams = untrack(() =>
+      syncFromUrl
+        ? page.url.searchParams
+        : new URLSearchParams(prevStateParams),
+    );
     prevStateParams = curStateParams;
 
-    let newUrlParams = new URLSearchParams(currentUrlParams);
-    if (defaultUrlParams) {
-      newUrlParams = cleanUrlParams(newUrlParams, defaultUrlParams);
-    }
+    const newUrlParams = new URLSearchParams(currentUrlParams);
     untrack(() => {
       store.applyFilterToParams(newUrlParams);
     });

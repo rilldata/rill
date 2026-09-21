@@ -34,7 +34,6 @@
         ) ?? "",
       );
     },
-    undefined,
     false,
   );
 
