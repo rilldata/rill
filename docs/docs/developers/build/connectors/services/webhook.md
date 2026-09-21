@@ -73,11 +73,41 @@ values are used as raw key bytes. If no secret is configured, deliveries are sen
 recommended only for capability URLs (e.g. Zapier or n8n hooks) where the URL itself is the
 secret.
 
+## Restricting destinations
+
+Anyone who can create an alert or report chooses its webhook URLs. To limit deliveries to
+known receivers, list them in `allowed_url_prefixes` on a connector YAML file:
+
+```yaml
+# connectors/webhook.yaml
+type: connector
+driver: webhook
+allowed_url_prefixes:
+  - https://hooks.example.com/rill/
+```
+
+A URL is allowed if it has the same scheme and host (including the port) as an entry and
+its path starts with the entry's path. Deliveries to other URLs fail and are reported in the
+execution's error, while the allowed URLs are still delivered to.
+
+Without `allowed_url_prefixes`, deliveries to loopback, private and link-local addresses
+(such as `localhost`, `10.0.0.0/8` or `169.254.169.254`) are blocked, and deliveries don't go
+through an HTTP proxy configured in the environment (`HTTP_PROXY`, `HTTPS_PROXY`). To deliver
+to a receiver on such an address, for example a local receiver during development, or through
+a proxy, list the receivers explicitly:
+
+```yaml
+allowed_url_prefixes:
+  - http://localhost:8080/
+```
+
 ## Static headers
 
 If a receiver requires additional headers (e.g. an `Authorization` header for an API
 gateway), configure them on a connector YAML file (connector variables cannot express
-nested maps, so headers cannot be set via `.env`):
+nested maps, so headers cannot be set via `.env`). Because headers usually carry
+credentials, they require `allowed_url_prefixes`, so they are only sent to the listed
+receivers:
 
 ```yaml
 # connectors/webhook.yaml
@@ -85,6 +115,8 @@ type: connector
 driver: webhook
 headers:
   Authorization: "Bearer {{ .env.connector.webhook.gateway_token }}"
+allowed_url_prefixes:
+  - https://gateway.example.com/
 ```
 
 ## Per-receiver configuration
@@ -116,7 +148,10 @@ connector.my_hook.signing_secret=whsec_...
 
 - Deliveries are `POST` requests with `Content-Type: application/json`.
 - Any 2xx response counts as delivered; the response body is ignored.
-- Failed deliveries are retried up to 3 times with exponential backoff (5xx responses,
-  429s and network errors are retried; other 4xx responses are not).
-- All URLs are always attempted, even if an earlier one fails. Delivery failures surface as
+- Each URL gets up to 3 attempts, waiting 1 and then 2 seconds between them. 5xx responses
+  (except 501), 429s and network errors are retried; other 4xx responses are not. A
+  `Retry-After` header is honored, capped at 4 seconds.
+- Redirects are not followed: a 3xx response counts as a failed delivery.
+- URLs are delivered to in parallel, up to 8 at a time, and always attempted, even if another
+  one fails. A notification gives up after 60 seconds in total. Delivery failures surface as
   the alert execution's error in its history.
