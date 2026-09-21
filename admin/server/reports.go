@@ -385,27 +385,12 @@ func (s *Server) UnsubscribeReport(ctx context.Context, req *adminv1.Unsubscribe
 		return nil, status.Errorf(codes.Internal, "failed to unmarshal report YAML: %s", err.Error())
 	}
 
-	found := false
-	for idx, email := range report.Notify.Email.Recipients {
-		if strings.EqualFold(userEmail, email) {
-			report.Notify.Email.Recipients = slices.Delete(report.Notify.Email.Recipients, idx, idx+1)
-			found = true
-			break
-		}
-	}
-	for idx, email := range report.Notify.Slack.Users {
-		if strings.EqualFold(slackEmail, email) {
-			report.Notify.Slack.Users = slices.Delete(report.Notify.Slack.Users, idx, idx+1)
-			found = true
-			break
-		}
-	}
-
+	found, remaining := report.unsubscribe(userEmail, slackEmail)
 	if !found {
 		return nil, status.Error(codes.FailedPrecondition, "user is not subscribed to report")
 	}
 
-	if len(report.Notify.Email.Recipients) == 0 && len(report.Notify.Slack.Users) == 0 && len(report.Notify.Slack.Channels) == 0 && len(report.Notify.Slack.Webhooks) == 0 {
+	if !remaining {
 		err = s.admin.DB.UpdateVirtualFileDeleted(ctx, proj.ID, "prod", virtualFilePathForManagedReport(req.Name))
 		if err != nil {
 			return nil, fmt.Errorf("failed to update virtual file: %w", err)
@@ -929,6 +914,28 @@ type reportYAML struct {
 		} `yaml:"webhook"`
 	} `yaml:"notify"`
 	Annotations reportAnnotations `yaml:"annotations,omitempty"`
+}
+
+// unsubscribe removes the email recipient and the Slack user from the report. It reports whether
+// either was subscribed, and whether the report still notifies anyone afterwards.
+func (r *reportYAML) unsubscribe(email, slackUser string) (found, remaining bool) {
+	n := &r.Notify
+	for idx, recipient := range n.Email.Recipients {
+		if strings.EqualFold(email, recipient) {
+			n.Email.Recipients = slices.Delete(n.Email.Recipients, idx, idx+1)
+			found = true
+			break
+		}
+	}
+	for idx, user := range n.Slack.Users {
+		if strings.EqualFold(slackUser, user) {
+			n.Slack.Users = slices.Delete(n.Slack.Users, idx, idx+1)
+			found = true
+			break
+		}
+	}
+	remaining = len(n.Email.Recipients) > 0 || len(n.Slack.Users) > 0 || len(n.Slack.Channels) > 0 || len(n.Slack.Webhooks) > 0 || len(n.Webhook.URLs) > 0
+	return found, remaining
 }
 
 type reportAnnotations struct {

@@ -351,30 +351,12 @@ func (s *Server) UnsubscribeAlert(ctx context.Context, req *adminv1.UnsubscribeA
 		return nil, status.Errorf(codes.Internal, "failed to unmarshal alert YAML: %s", err.Error())
 	}
 
-	found := false
-	// Exclude email recipient
-	for idx, recipient := range alert.Notify.Email.Recipients {
-		if strings.EqualFold(userEmail, recipient) {
-			alert.Notify.Email.Recipients = slices.Delete(alert.Notify.Email.Recipients, idx, idx+1)
-			found = true
-			break
-		}
-	}
-
-	// Exclude slack user
-	for idx, email := range alert.Notify.Slack.Users {
-		if strings.EqualFold(slackEmail, email) {
-			alert.Notify.Slack.Users = slices.Delete(alert.Notify.Slack.Users, idx, idx+1)
-			found = true
-			break
-		}
-	}
-
+	found, remaining := alert.unsubscribe(userEmail, slackEmail)
 	if !found {
 		return nil, status.Error(codes.FailedPrecondition, "user is not subscribed to alert")
 	}
 
-	if len(alert.Notify.Email.Recipients) == 0 && len(alert.Notify.Slack.Users) == 0 && len(alert.Notify.Slack.Channels) == 0 && len(alert.Notify.Slack.Webhooks) == 0 {
+	if !remaining {
 		err = s.admin.DB.UpdateVirtualFileDeleted(ctx, proj.ID, "prod", virtualFilePathForManagedAlert(req.Name))
 		if err != nil {
 			return nil, fmt.Errorf("failed to update virtual file: %w", err)
@@ -638,6 +620,28 @@ type alertYAML struct {
 		}
 	}
 	Annotations alertAnnotations `yaml:"annotations,omitempty"`
+}
+
+// unsubscribe removes the email recipient and the Slack user from the alert. It reports whether
+// either was subscribed, and whether the alert still notifies anyone afterwards.
+func (a *alertYAML) unsubscribe(email, slackUser string) (found, remaining bool) {
+	n := &a.Notify
+	for idx, recipient := range n.Email.Recipients {
+		if strings.EqualFold(email, recipient) {
+			n.Email.Recipients = slices.Delete(n.Email.Recipients, idx, idx+1)
+			found = true
+			break
+		}
+	}
+	for idx, user := range n.Slack.Users {
+		if strings.EqualFold(slackUser, user) {
+			n.Slack.Users = slices.Delete(n.Slack.Users, idx, idx+1)
+			found = true
+			break
+		}
+	}
+	remaining = len(n.Email.Recipients) > 0 || len(n.Slack.Users) > 0 || len(n.Slack.Channels) > 0 || len(n.Slack.Webhooks) > 0 || len(n.Webhook.URLs) > 0
+	return found, remaining
 }
 
 type alertAnnotations struct {
