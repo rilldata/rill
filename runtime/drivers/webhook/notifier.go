@@ -102,6 +102,18 @@ func newClient(blockPrivate bool) *retryablehttp.Client {
 	client.Backoff = func(minWait, maxWait time.Duration, attempt int, resp *http.Response) time.Duration {
 		return min(retryablehttp.DefaultBackoff(minWait, maxWait, attempt, resp), maxWait)
 	}
+	// The default error on exhausted retries only says how many attempts were made. Keep the
+	// final status or error: the execution's error is the only place a failed delivery surfaces.
+	client.ErrorHandler = func(resp *http.Response, err error, attempts int) (*http.Response, error) {
+		if resp != nil {
+			_, _ = io.Copy(io.Discard, io.LimitReader(resp.Body, 4096))
+			_ = resp.Body.Close()
+			if err == nil {
+				return nil, fmt.Errorf("unexpected status %d after %d attempt(s)", resp.StatusCode, attempts)
+			}
+		}
+		return nil, fmt.Errorf("giving up after %d attempt(s): %w", attempts, err)
+	}
 	// Webhook receivers don't redirect. Following a redirect would bypass allowed_url_prefixes
 	// and carry the static headers to another host, so a 3xx is reported as a failed delivery.
 	client.HTTPClient.CheckRedirect = func(*http.Request, []*http.Request) error {
