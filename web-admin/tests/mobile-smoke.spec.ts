@@ -37,8 +37,11 @@ const TEST_ROUTES: Record<string, string> = {
 /**
  * Asserts that the page produces no horizontal overflow at the current
  * viewport width: neither the document scrolls horizontally, nor does any
- * visible element extend past the right edge of the viewport. Offending
- * element selectors are included in the failure message.
+ * visible element extend past the right edge of the viewport.
+ * Elements inside a scroll or clip container are left to that container,
+ * since `getBoundingClientRect` reports their unclipped box;
+ * the container itself is still checked.
+ * Offending element selectors are included in the failure message.
  */
 async function assertNoHorizontalOverflow(page: Page) {
   const result = await page.evaluate(() => {
@@ -56,13 +59,22 @@ async function assertNoHorizontalOverflow(page: Page) {
       return `${tag}${id}${cls}`;
     };
 
+    const insideOverflowContainer = (el: Element): boolean => {
+      let ancestor = el.parentElement;
+      while (ancestor && ancestor !== document.body) {
+        if (getComputedStyle(ancestor).overflowX !== "visible") return true;
+        ancestor = ancestor.parentElement;
+      }
+      return false;
+    };
+
     // Collect visible elements whose right edge extends past the viewport.
     // Cap the list so a systemic failure does not produce an unwieldy message.
     const offenders: string[] = [];
     for (const el of Array.from(document.querySelectorAll("*"))) {
       const rect = el.getBoundingClientRect();
       if (rect.width === 0 || rect.height === 0) continue;
-      if (rect.right > viewportWidth + 1) {
+      if (rect.right > viewportWidth + 1 && !insideOverflowContainer(el)) {
         offenders.push(`${describe(el)} (right=${Math.round(rect.right)})`);
         if (offenders.length >= 10) break;
       }
