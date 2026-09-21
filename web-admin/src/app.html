@@ -46,13 +46,9 @@
       crossorigin
     />
     <meta charset="utf-8" />
-    <!-- maximum-scale suppresses the iOS auto-zoom on sub-16px inputs; since
-         iOS 10 Safari ignores it for user-initiated pinch zoom, so it does
-         not restrict accessibility. -->
-    <meta
-      name="viewport"
-      content="width=device-width, initial-scale=1, maximum-scale=1"
-    />
+    <!-- Use the device's real width. The zoom is not capped; the chat composer
+         stays at 16px on phones so iOS doesn't auto-zoom into it. -->
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
     <!-- Set the og image for thumbnail previews -->
     <meta
       property="og:image"
