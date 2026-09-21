@@ -273,6 +273,8 @@ import type {
   V1SudoUpdateOrganizationBillingMessageResponse,
   V1SudoUpdateOrganizationCustomDomainRequest,
   V1SudoUpdateOrganizationCustomDomainResponse,
+  V1SudoUpdateOrganizationDefaultProvisionerRequest,
+  V1SudoUpdateOrganizationDefaultProvisionerResponse,
   V1SudoUpdateOrganizationQuotasRequest,
   V1SudoUpdateOrganizationQuotasResponse,
   V1SudoUpdateUserQuotasRequest,
@@ -14616,6 +14618,109 @@ export const createAdminServiceSudoUpdateOrganizationCustomDomain = <
 > => {
   const mutationOptions =
     getAdminServiceSudoUpdateOrganizationCustomDomainMutationOptions(options);
+
+  return createMutation(mutationOptions, queryClient);
+};
+/**
+ * @summary SudoUpdateOrganizationDefaultProvisioner sets the provisioner used by default for an organization's deployments.
+It only affects deployments provisioned after the change; existing deployments stay on their current provisioner.
+ */
+export const adminServiceSudoUpdateOrganizationDefaultProvisioner = (
+  v1SudoUpdateOrganizationDefaultProvisionerRequest: V1SudoUpdateOrganizationDefaultProvisionerRequest,
+) => {
+  return httpClient<V1SudoUpdateOrganizationDefaultProvisionerResponse>({
+    url: `/v1/superuser/organization/default-provisioner`,
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    data: v1SudoUpdateOrganizationDefaultProvisionerRequest,
+  });
+};
+
+export const getAdminServiceSudoUpdateOrganizationDefaultProvisionerMutationOptions =
+  <TError = RpcStatus, TContext = unknown>(options?: {
+    mutation?: CreateMutationOptions<
+      Awaited<
+        ReturnType<typeof adminServiceSudoUpdateOrganizationDefaultProvisioner>
+      >,
+      TError,
+      { data: V1SudoUpdateOrganizationDefaultProvisionerRequest },
+      TContext
+    >;
+  }): CreateMutationOptions<
+    Awaited<
+      ReturnType<typeof adminServiceSudoUpdateOrganizationDefaultProvisioner>
+    >,
+    TError,
+    { data: V1SudoUpdateOrganizationDefaultProvisionerRequest },
+    TContext
+  > => {
+    const mutationKey = [
+      "adminServiceSudoUpdateOrganizationDefaultProvisioner",
+    ];
+    const { mutation: mutationOptions } = options
+      ? options.mutation &&
+        "mutationKey" in options.mutation &&
+        options.mutation.mutationKey
+        ? options
+        : { ...options, mutation: { ...options.mutation, mutationKey } }
+      : { mutation: { mutationKey } };
+
+    const mutationFn: MutationFunction<
+      Awaited<
+        ReturnType<typeof adminServiceSudoUpdateOrganizationDefaultProvisioner>
+      >,
+      { data: V1SudoUpdateOrganizationDefaultProvisionerRequest }
+    > = (props) => {
+      const { data } = props ?? {};
+
+      return adminServiceSudoUpdateOrganizationDefaultProvisioner(data);
+    };
+
+    return { mutationFn, ...mutationOptions };
+  };
+
+export type AdminServiceSudoUpdateOrganizationDefaultProvisionerMutationResult =
+  NonNullable<
+    Awaited<
+      ReturnType<typeof adminServiceSudoUpdateOrganizationDefaultProvisioner>
+    >
+  >;
+export type AdminServiceSudoUpdateOrganizationDefaultProvisionerMutationBody =
+  V1SudoUpdateOrganizationDefaultProvisionerRequest;
+export type AdminServiceSudoUpdateOrganizationDefaultProvisionerMutationError =
+  RpcStatus;
+
+/**
+ * @summary SudoUpdateOrganizationDefaultProvisioner sets the provisioner used by default for an organization's deployments.
+It only affects deployments provisioned after the change; existing deployments stay on their current provisioner.
+ */
+export const createAdminServiceSudoUpdateOrganizationDefaultProvisioner = <
+  TError = RpcStatus,
+  TContext = unknown,
+>(
+  options?: {
+    mutation?: CreateMutationOptions<
+      Awaited<
+        ReturnType<typeof adminServiceSudoUpdateOrganizationDefaultProvisioner>
+      >,
+      TError,
+      { data: V1SudoUpdateOrganizationDefaultProvisionerRequest },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateMutationResult<
+  Awaited<
+    ReturnType<typeof adminServiceSudoUpdateOrganizationDefaultProvisioner>
+  >,
+  TError,
+  { data: V1SudoUpdateOrganizationDefaultProvisionerRequest },
+  TContext
+> => {
+  const mutationOptions =
+    getAdminServiceSudoUpdateOrganizationDefaultProvisionerMutationOptions(
+      options,
+    );
 
   return createMutation(mutationOptions, queryClient);
 };

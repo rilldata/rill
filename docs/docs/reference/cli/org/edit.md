@@ -17,6 +17,7 @@ rill org edit [<org-name>] [flags]
       --display-name string           Display name
       --description string            Description
       --default-project-role string   Default role for members on new projects (options: admin, editor, viewer, none)
+      --default-provisioner string    Default provisioner for new deployments (empty to unset)
       --billing-email string          Billing email
 ```
 

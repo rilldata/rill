@@ -408,6 +408,12 @@ func rollupEligible(rollup *runtimev1.MetricsViewSpec_Rollup, qry *metricsview.Q
 				return false, rejectComputedMeasure, nil
 			}
 			for _, refName := range refNames {
+				// A comparison compute may reference an expression measure defined in the same query.
+				// That measure is not in the rollup, but the measures it references may be, so check those instead.
+				// Its own rollup safety is checked when the loop reaches it.
+				if _, ok := queryExpressionMeasure(qry, refName); ok {
+					continue
+				}
 				if !rollupMeasures[strings.ToLower(refName)] {
 					return false, rejectMeasureMissing, nil
 				}
@@ -581,6 +587,16 @@ func rollupSafeReferencedMeasures(c *metricsview.MeasureCompute) ([]string, bool
 		return parsed.Refs(), true
 	}
 	return nil, false
+}
+
+// queryExpressionMeasure returns the expression measure with the given name defined in the query, if any.
+func queryExpressionMeasure(qry *metricsview.Query, name string) (metricsview.Measure, bool) {
+	for _, qm := range qry.Measures {
+		if qm.Name == name && qm.Compute != nil && qm.Compute.Expression != nil {
+			return qm, true
+		}
+	}
+	return metricsview.Measure{}, false
 }
 
 // normalizeTimezone validates and normalizes a timezone string for comparison.

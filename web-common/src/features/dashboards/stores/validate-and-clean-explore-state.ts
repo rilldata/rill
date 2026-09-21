@@ -1,3 +1,7 @@
+import {
+  injectEphemeralMeasuresIntoMap,
+  validateEphemeralDefsAgainstSpec,
+} from "@rilldata/web-common/features/dashboards/ephemeral-measures/url-state";
 import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
 import {
   getMultiFieldError,
@@ -45,6 +49,21 @@ export function validateAndCleanExploreState(
     ) ?? [],
     (d) => d.name!,
   );
+
+  // Validate restored ephemeral measures and treat the valid ones as known
+  // measure names for the validations below.
+  if (exploreState.ephemeralMeasures !== undefined) {
+    const { valid, invalidEntries } = validateEphemeralDefsAgainstSpec(
+      exploreState.ephemeralMeasures,
+      measures,
+      metricsViewSpec,
+    );
+    exploreState.ephemeralMeasures = valid.length ? valid : undefined;
+    injectEphemeralMeasuresIntoMap(measures, valid);
+    if (invalidEntries.length) {
+      errors.push(getMultiFieldError("adhoc measure", invalidEntries));
+    }
+  }
 
   const errorsFromExploreView = validateAndCleanExploreViewState(
     measures,
@@ -144,8 +163,9 @@ function validateAndCleanMeasureRelatedExploreState(
 
   if (selectedMeasures.length > 0) {
     // If there are any remaining valid measures then set it.
-    exploreState.allMeasuresVisible =
-      selectedMeasures.length === exploreSpec.measures?.length;
+    // `measures` includes ephemeral measures, so a hidden spec measure can
+    // never be masked by a visible ephemeral one.
+    exploreState.allMeasuresVisible = selectedMeasures.length === measures.size;
     exploreState.visibleMeasures = selectedMeasures;
   } else {
     // Else remove the relevant fields so that cascading merge can set fields from other sources.

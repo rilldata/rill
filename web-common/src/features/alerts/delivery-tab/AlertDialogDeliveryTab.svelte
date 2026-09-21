@@ -43,13 +43,13 @@
     <div class="grid grid-cols-2">
       <Button
         onClick={() => ($form["refreshWhenDataRefreshes"] = true)}
-        active={$form["refreshWhenDataRefreshes"]}
+        selected={$form["refreshWhenDataRefreshes"]}
       >
         {m.alert_form_trigger_data_refresh()}
       </Button>
       <Button
         onClick={() => ($form["refreshWhenDataRefreshes"] = false)}
-        active={!$form["refreshWhenDataRefreshes"]}
+        selected={!$form["refreshWhenDataRefreshes"]}
       >
         {m.alert_form_trigger_set_schedule()}
       </Button>
