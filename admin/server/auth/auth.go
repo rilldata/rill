@@ -43,7 +43,7 @@ func NewAuthenticator(logger *zap.Logger, adm *admin.Service, cookieStore *cooki
 	// AuthDomain with "://" is a full issuer URL (Keycloak, Dex, etc.);
 	// without it, assume Auth0-style domain and append trailing slash.
 	issuerURL := opts.AuthDomain
-	if !strings.Contains(issuerURL, "://") {
+	if isBareDomain(issuerURL) {
 		issuerURL = "https://" + issuerURL + "/"
 	}
 
@@ -56,6 +56,9 @@ func NewAuthenticator(logger *zap.Logger, adm *admin.Service, cookieStore *cooki
 		EndSessionEndpoint string `json:"end_session_endpoint"`
 	}
 	_ = oidcProvider.Claims(&claims)
+	if claims.EndSessionEndpoint == "" && !isBareDomain(opts.AuthDomain) {
+		logger.Warn("auth provider does not publish an end_session_endpoint, so logging out will only end the Rill session", zap.String("issuer", issuerURL))
+	}
 
 	oauth2Config := oauth2.Config{
 		ClientID:     opts.AuthClientID,
@@ -76,4 +79,9 @@ func NewAuthenticator(logger *zap.Logger, adm *admin.Service, cookieStore *cooki
 	}
 
 	return a, nil
+}
+
+// isBareDomain reports whether authDomain is an Auth0-style domain (e.g. "rill.auth0.com") rather than a full issuer URL.
+func isBareDomain(authDomain string) bool {
+	return !strings.Contains(authDomain, "://")
 }

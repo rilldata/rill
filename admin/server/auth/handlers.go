@@ -615,6 +615,11 @@ func (a *Authenticator) authLogoutProvider(w http.ResponseWriter, r *http.Reques
 	logoutEndpoint := a.endSessionEndpoint
 	redirectParam := "post_logout_redirect_uri"
 	if logoutEndpoint == "" {
+		if !isBareDomain(a.opts.AuthDomain) {
+			// The provider has no logout endpoint we can call (e.g. Dex), so only the Rill session is ended.
+			http.Redirect(w, r, a.admin.URLs.AuthLogoutCallback(), http.StatusTemporaryRedirect)
+			return
+		}
 		logoutEndpoint = "https://" + a.opts.AuthDomain + "/v2/logout"
 		redirectParam = "returnTo"
 	}
