@@ -36,7 +36,8 @@ const config: PlaywrightTestConfig = {
     {
       name: "e2e",
       dependencies: process.env.E2E_NO_SETUP_OR_TEARDOWN ? [] : ["setup"],
-      testIgnore: "/setup",
+      // The mobile smoke suite runs only in the `mobile` project, at a phone viewport.
+      testIgnore: ["/setup", "mobile-smoke.spec.ts"],
       use: {
         storageState: ADMIN_STORAGE_STATE,
       },
