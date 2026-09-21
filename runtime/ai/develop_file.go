@@ -11,6 +11,8 @@ import (
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/ai/instructions"
+	"github.com/rilldata/rill/runtime/parser"
+	"go.uber.org/zap"
 )
 
 const DevelopFileName = "develop_file"
@@ -87,6 +89,14 @@ func (t *DevelopFile) Handler(ctx context.Context, args *DevelopFileArgs) (*Deve
 		return nil, fmt.Errorf("invalid input: unsupported resource type %q", args.Type)
 	}
 
+	// Load the project's skills. Loading failures should degrade the response, not fail it.
+	s := GetSession(ctx)
+	skills, err := s.Skills(ctx)
+	if err != nil {
+		s.logger.Warn("failed to load project skills", zap.Error(err))
+		skills = nil
+	}
+
 	// Prepare the user prompt
 	userPrompt, err := t.userPrompt(ctx, args)
 	if err != nil {
@@ -94,7 +104,6 @@ func (t *DevelopFile) Handler(ctx context.Context, args *DevelopFileArgs) (*Deve
 	}
 
 	// Pre-invoke some tool calls
-	s := GetSession(ctx)
 	_, err = s.CallTool(ctx, RoleAssistant, ListFilesName, nil, &ListFilesArgs{})
 	if err != nil {
 		return nil, err
@@ -109,6 +118,13 @@ func (t *DevelopFile) Handler(ctx context.Context, args *DevelopFileArgs) (*Deve
 	if ctx.Err() != nil { // Ignore tool error since the file may not exist
 		return nil, ctx.Err()
 	}
+	// Pre-invoke the skill tools so the sub-agent, which does not see the parent conversation, discovers the project's skills and follows the always-apply ones.
+	if len(skills) > 0 {
+		err = preloadSkills(ctx, s, skills, parser.SkillAgentDeveloper)
+		if err != nil {
+			return nil, err
+		}
+	}
 
 	// Build initial completion messages
 	messages := []*aiv1.CompletionMessage{NewTextCompletionMessage(RoleSystem, generalInstructions.Body)}
@@ -118,21 +134,27 @@ func (t *DevelopFile) Handler(ctx context.Context, args *DevelopFileArgs) (*Deve
 	messages = append(messages, NewTextCompletionMessage(RoleUser, userPrompt))
 	messages = append(messages, s.NewCompletionMessages(s.MessagesWithResults(FilterByParent(s.ID())))...)
 
+	// Determine tools that can be used
+	tools := []string{
+		SearchFilesName,
+		ReadFileName,
+		WriteFileName,
+		GetMetricsViewName,
+		ListBucketsName,
+		ListBucketObjectsName,
+		ListTablesName,
+		ShowTableName,
+		QuerySQLName,
+	}
+	if len(skills) > 0 {
+		tools = append(tools, ListSkillsName, LoadSkillName)
+	}
+
 	// Run an LLM tool call loop
 	var response string
 	err = s.Complete(ctx, "File developer loop", &response, &CompleteOptions{
-		Messages: messages,
-		Tools: []string{
-			SearchFilesName,
-			ReadFileName,
-			WriteFileName,
-			GetMetricsViewName,
-			ListBucketsName,
-			ListBucketObjectsName,
-			ListTablesName,
-			ShowTableName,
-			QuerySQLName,
-		},
+		Messages:      messages,
+		Tools:         tools,
 		MaxIterations: 10,
 		UnwrapCall:    true,
 	})

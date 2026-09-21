@@ -21,6 +21,7 @@
     getSortedRowModel,
   } from "tanstack-table-8-svelte-5";
   import ArrowDown from "@rilldata/web-common/components/icons/ArrowDown.svelte";
+  import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
 
   export let data: any[];
   export let columns: ColumnDef<any, any>[];
@@ -117,7 +118,14 @@
     if (sentinelEl) observer.observe(sentinelEl);
   }
 
-  $: if (scrollContainerEl && sentinelEl) {
+  // Re-observe after a page loads: the sentinel may still be visible when
+  // client-side filters remove all rows from that page.
+  $: if (
+    scrollContainerEl &&
+    sentinelEl &&
+    hasNextPage &&
+    !isFetchingNextPage
+  ) {
     setupObserver();
   }
 
@@ -194,7 +202,7 @@
       {/each}
     </thead>
     <tbody>
-      {#if rows.length === 0}
+      {#if rows.length === 0 && !isFetchingNextPage && !hasNextPage}
         <tr>
           <td
             colspan={columns.length}
@@ -221,13 +229,24 @@
             {/each}
           </tr>
         {/each}
-        {#if hasNextPage}
-          <tr class="h-0">
-            <td colspan={columns.length} class="p-0 border-0">
-              <div bind:this={sentinelEl}></div>
-            </td>
-          </tr>
-        {/if}
+      {/if}
+      {#if isFetchingNextPage}
+        <tr>
+          <td
+            colspan={columns.length}
+            class="px-4 py-4 text-center"
+            aria-busy="true"
+          >
+            <DelayedSpinner isLoading size="1rem" />
+          </td>
+        </tr>
+      {/if}
+      {#if hasNextPage}
+        <tr class="h-0">
+          <td colspan={columns.length} class="p-0 border-0">
+            <div bind:this={sentinelEl}></div>
+          </td>
+        </tr>
       {/if}
     </tbody>
   </table>

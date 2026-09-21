@@ -1,4 +1,5 @@
 <script lang="ts">
+  import type { EphemeralMeasureDef } from "@rilldata/web-common/features/dashboards/ephemeral-measures/types";
   import { Button } from "@rilldata/web-common/components/button";
   import * as Dialog from "@rilldata/web-common/components/dialog";
   import { TDDChart } from "@rilldata/web-common/features/dashboards/time-dimension-details/types";
@@ -18,9 +19,11 @@
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import type { ExpressionFilterManager } from "@rilldata/web-common/features/dashboards/filters/ExpressionFilterManager.svelte.ts";
   import ReadonlyExpressionFilters from "@rilldata/web-common/features/dashboards/filters/ReadonlyExpressionFilters.svelte";
+  import { EmbedStore } from "@rilldata/web-common/features/embeds/embed-store";
 
   export let open = false;
   export let measure: MetricsViewSpecMeasure;
+  export let ephemeralMeasures: EphemeralMeasureDef[] | undefined = undefined;
   export let metricsViewName: string;
   export let where: V1Expression | undefined = undefined;
   export let expressionFilterManager: ExpressionFilterManager;
@@ -43,15 +46,22 @@
   export let dynamicYAxis: boolean = false;
   export let ready = true;
 
+  // Embedded dashboards live inside a customer's product, so the exported
+  // image should not carry Rill branding there.
+  const isEmbedded = EmbedStore.isEmbedded();
+
   let captureNode: HTMLDivElement;
   let downloading = false;
 
   $: formattedTimeRange = interval
     ? prettyFormatTimeRange(interval, timeGranularity)
     : "";
-  $: formattedComparisonRange = comparisonInterval
-    ? prettyFormatTimeRange(comparisonInterval, timeGranularity)
-    : "";
+  // The time controls carry a comparison range even when comparison mode is
+  // off, so gate on showComparison rather than on the interval alone.
+  $: formattedComparisonRange =
+    showComparison && comparisonInterval
+      ? prettyFormatTimeRange(comparisonInterval, timeGranularity)
+      : "";
   $: generatedTime = new Date().toISOString();
 
   const SVG_PROPS = [
@@ -137,6 +147,7 @@
 
           <MeasureBigNumber
             {measure}
+            {ephemeralMeasures}
             {metricsViewName}
             {where}
             {timeDimension}
@@ -151,6 +162,7 @@
 
           <MeasureChart
             {measure}
+            {ephemeralMeasures}
             {connectNulls}
             tddChartType={tddChartType ?? TDDChart.DEFAULT}
             {metricsViewName}
@@ -171,9 +183,13 @@
         </div>
 
         <footer class="flex items-center justify-between text-xs text-fg-muted">
-          <!-- i18n-ignore: standalone product name -->
-          <span>Rill</span>
-          <span>{m.dashboard_generated({ time: generatedTime })}</span>
+          {#if !isEmbedded}
+            <!-- i18n-ignore: standalone product name -->
+            <span>Rill</span>
+          {/if}
+          <span class="ml-auto"
+            >{m.dashboard_generated({ time: generatedTime })}</span
+          >
         </footer>
       </div>
     </ThemeProvider>

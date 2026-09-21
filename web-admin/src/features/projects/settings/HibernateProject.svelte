@@ -3,6 +3,8 @@
     createAdminServiceGetProject,
     createAdminServiceHibernateProject,
     getAdminServiceGetProjectQueryKey,
+    getAdminServiceListDeploymentsQueryKey,
+    getAdminServiceListProjectsForOrganizationQueryKey,
     type RpcStatus,
   } from "@rilldata/web-admin/client";
   import SettingsContainer from "@rilldata/web-admin/features/organizations/settings/SettingsContainer.svelte";
@@ -33,9 +35,14 @@
   );
   let isHibernated = $derived(!$projectResp.data?.deployment);
 
+  let canManage = $derived(
+    !!$projectResp.data?.projectPermissions?.manageProject,
+  );
+
   let hibernateResult = $derived($hibernateProjectMutation);
 
   async function hibernateProject() {
+    if (!canManage || isHibernated || hibernateResult.isPending) return;
     try {
       await $hibernateProjectMutation.mutateAsync({
         org: organization,
@@ -44,9 +51,21 @@
 
       dialogOpen = false;
 
-      await queryClient.refetchQueries({
-        queryKey: getAdminServiceGetProjectQueryKey(organization, project),
-      });
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: getAdminServiceGetProjectQueryKey(organization, project),
+        }),
+        queryClient.invalidateQueries({
+          queryKey: getAdminServiceListDeploymentsQueryKey(
+            organization,
+            project,
+          ),
+        }),
+        queryClient.invalidateQueries({
+          queryKey:
+            getAdminServiceListProjectsForOrganizationQueryKey(organization),
+        }),
+      ]);
 
       eventBus.emit("notification", {
         message: m.settings_project_hibernated_notification(),
@@ -73,7 +92,7 @@
           <Button
             {...props}
             type="secondary-destructive"
-            disabled={isHibernated}
+            disabled={!canManage || isHibernated || hibernateResult.isPending}
           >
             {m.settings_hibernate_project_button()}
           </Button>
@@ -89,7 +108,11 @@
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <Button type="tertiary" onClick={() => (dialogOpen = false)}>
+          <Button
+            type="tertiary"
+            onClick={() => (dialogOpen = false)}
+            disabled={hibernateResult.isPending}
+          >
             {m.settings_cancel_button()}
           </Button>
           <Button

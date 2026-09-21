@@ -1030,6 +1030,7 @@ export interface V1Organization {
   thumbnailUrl?: string;
   customDomain?: string;
   defaultProjectRoleId?: string;
+  defaultProvisioner?: string;
   quotas?: V1OrganizationQuotas;
   billingCustomerId?: string;
   paymentCustomerId?: string;
@@ -1047,6 +1048,8 @@ export interface V1OrganizationInvite {
   roleName?: string;
   invitedBy?: string;
   attributes?: V1OrganizationInviteAttributes;
+  /** Names of the user groups the user will be added to when the invite is accepted. */
+  usergroups?: string[];
 }
 
 export type V1OrganizationMemberServiceAttributes = { [key: string]: unknown };
@@ -1599,6 +1602,16 @@ export interface V1SudoUpdateOrganizationCustomDomainResponse {
   organization?: V1Organization;
 }
 
+export interface V1SudoUpdateOrganizationDefaultProvisionerRequest {
+  org?: string;
+  /** Name of the provisioner to use by default. Empty unsets the org's default provisioner. */
+  defaultProvisioner?: string;
+}
+
+export interface V1SudoUpdateOrganizationDefaultProvisionerResponse {
+  organization?: V1Organization;
+}
+
 export interface V1SudoUpdateOrganizationQuotasRequest {
   org?: string;
   projects?: number;
@@ -1780,6 +1793,9 @@ export interface V1UsergroupMemberUser {
   userEmail?: string;
   userName?: string;
   userPhotoUrl?: string;
+  /** True if the user has been invited to the group but has not signed up yet.
+For pending members, user_id, user_name and user_photo_url are empty. */
+  pendingAcceptance?: boolean;
   createdOn?: string;
   updatedOn?: string;
 }
@@ -1895,6 +1911,7 @@ export type AdminServiceUpdateOrganizationBody = {
   faviconAssetId?: string;
   thumbnailAssetId?: string;
   defaultProjectRole?: string;
+  defaultProvisioner?: string;
   billingEmail?: string;
 };
 
@@ -1975,6 +1992,10 @@ export type AdminServiceAddOrganizationMemberUserBody = {
   /** Custom attributes to set on the new membership.
 If the user has not signed up yet, they are stored on the invite and applied when the invite is accepted. */
   attributes?: AdminServiceAddOrganizationMemberUserBodyAttributes;
+  /** Names of user groups in the org to add the user to.
+If the user has not signed up yet, they are stored on the invite and applied when the invite is accepted.
+Groups are additive: on a re-invite they are merged with the groups already on the invite. */
+  usergroups?: string[];
   superuserForceAccess?: boolean;
 };
 
@@ -2205,6 +2226,10 @@ export type AdminServiceAddProjectMemberUserBody = {
 If the user has not signed up yet, they are stored on the org invite and applied when the invite is accepted.
 Setting attributes requires permission to manage org members. */
   attributes?: AdminServiceAddProjectMemberUserBodyAttributes;
+  /** Names of user groups in the org to add the user to (user groups are org-scoped).
+If the user has not signed up yet, they are stored on the org invite and applied when the invite is accepted.
+Setting user groups requires permission to manage org members. */
+  usergroups?: string[];
 };
 
 export type AdminServiceCreatePersonalFileBody = {
@@ -2534,7 +2559,14 @@ This is only allowed for superusers. */
 
 export type AdminServiceListBookmarksParams = {
   projectId?: string;
+  /**
+ * Optional filter on the kind of the resource the bookmark is for (e.g. "rill.runtime.v1.Explore").
+When both resource_kind and resource_name are unset, all bookmarks in the project are returned.
+ */
   resourceKind?: string;
+  /**
+   * Optional filter on the name of the resource the bookmark is for. Requires resource_kind to be set.
+   */
   resourceName?: string;
 };
 

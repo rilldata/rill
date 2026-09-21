@@ -274,7 +274,8 @@ func (b *sqlExprBuilder) writeBinaryCondition(exprs []*Expression, op Operator) 
 				return nil
 			}
 
-			return b.writeBinaryConditionInner(nil, right, leftExpr, op)
+			// The left expression is passed along with its rendered SQL so the inner writers can look up the dimension's data type.
+			return b.writeBinaryConditionInner(left, right, leftExpr, op)
 		}
 
 		// For IN/NIN on unnest dimensions backed by DuckDB or ClickHouse, use native array-contains
@@ -292,7 +293,7 @@ func (b *sqlExprBuilder) writeBinaryCondition(exprs []*Expression, op Operator) 
 		if auto {
 			// Means the DB automatically unnests, so we can treat it as a normal value
 			leftExpr = b.ast.Dialect.AutoUnnest(leftExpr)
-			return b.writeBinaryConditionInner(nil, right, leftExpr, op)
+			return b.writeBinaryConditionInner(left, right, leftExpr, op)
 		}
 		var unnestColAlias string
 		if tupleStyle {
@@ -429,6 +430,7 @@ func (b *sqlExprBuilder) writeILikeCondition(left, right *Expression, leftOverri
 
 		b.writeString(b.ast.Dialect.GetCastExprForLike())
 	} else if b.ast.Dialect.SupportsRegexMatch() {
+		// Output: [NOT] <regexFunc>(<left>, <regex>) [OR <left> IS NULL]
 		if not {
 			b.writeString(" NOT ")
 		}
@@ -438,7 +440,15 @@ func (b *sqlExprBuilder) writeILikeCondition(left, right *Expression, leftOverri
 		}
 		b.writeString(regexFunc)
 		b.writeByte('(')
-		if leftOverride != "" {
+		if leftOverride != "" && b.needsStringCastForRegexMatch(left) {
+			// Regex match functions only accept string operands, so a known non-string dimension is cast.
+			// A dimension reference always arrives with its rendered SQL in leftOverride (see writeBinaryCondition).
+			expr, err := b.ast.Dialect.GetRegexMatchCastExpr("(" + leftOverride + ")")
+			if err != nil {
+				return err
+			}
+			b.writeString(expr)
+		} else if leftOverride != "" {
 			b.writeParenthesizedString(leftOverride)
 		} else {
 			err := b.writeExpression(left)
@@ -519,6 +529,20 @@ func (b *sqlExprBuilder) writeILikeCondition(left, right *Expression, leftOverri
 	b.writeByte(')')
 
 	return nil
+}
+
+// needsStringCastForRegexMatch reports whether the left operand of a regex match must be cast to a string.
+// A dimension is cast if its resolved data type is known and not a string.
+// Dimensions of unknown type and expressions that are not a plain dimension reference are never cast.
+func (b *sqlExprBuilder) needsStringCastForRegexMatch(left *Expression) bool {
+	if left == nil || left.Name == "" {
+		return false
+	}
+	dim, err := b.ast.LookupDimension(left.Name, b.visible)
+	if err != nil || dim.DataType == nil {
+		return false
+	}
+	return dim.DataType.Code != runtimev1.Type_CODE_UNSPECIFIED && dim.DataType.Code != runtimev1.Type_CODE_STRING
 }
 
 func (b *sqlExprBuilder) writeInCondition(left, right *Expression, leftOverride string, not bool) error {
@@ -789,10 +813,13 @@ func convertLikeExpressionToRegexExpression(like *Expression) (*Expression, erro
 	if !ok {
 		return nil, fmt.Errorf("the pattern expression for regex match function must be a string value, got %T", like.Value)
 	}
-	// convert pattern to a case insensitive regex match pattern, e.g. "%foo%" becomes "^(?i).*foo.*$"
-	pattern := strings.ReplaceAll(val, "%", ".*")
-	pattern = fmt.Sprintf("^(?i)%s$", pattern)
-	return &Expression{Value: pattern}, nil
+	return &Expression{Value: LikePatternToRegex(val)}, nil
+}
+
+// LikePatternToRegex converts a SQL LIKE pattern to a case insensitive regex match pattern, e.g. "%foo%" becomes "^(?i).*foo.*$".
+// It is exported so that rewrites which narrow a dimension to the values matching an ILIKE filter (see the Druid MVD executor rewrite) use exactly the regex the filter is compiled with.
+func LikePatternToRegex(pattern string) string {
+	return fmt.Sprintf("^(?i)%s$", strings.ReplaceAll(pattern, "%", ".*"))
 }
 
 // skipMetricsViewSecurity implements the MetricsViewSecurity interface in a way that allows all access.

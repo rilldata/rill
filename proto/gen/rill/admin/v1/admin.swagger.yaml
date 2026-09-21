@@ -506,6 +506,8 @@ paths:
                 type: string
               defaultProjectRole:
                 type: string
+              defaultProvisioner:
+                type: string
               billingEmail:
                 type: string
       x-visibility: public
@@ -856,6 +858,14 @@ paths:
                 description: |-
                   Custom attributes to set on the new membership.
                   If the user has not signed up yet, they are stored on the invite and applied when the invite is accepted.
+              usergroups:
+                type: array
+                items:
+                  type: string
+                description: |-
+                  Names of user groups in the org to add the user to.
+                  If the user has not signed up yet, they are stored on the invite and applied when the invite is accepted.
+                  Groups are additive: on a re-invite they are merged with the groups already on the invite.
               superuserForceAccess:
                 type: boolean
       x-visibility: public
@@ -1900,6 +1910,14 @@ paths:
                   Custom attributes to set on the user's org membership (attributes are org-scoped).
                   If the user has not signed up yet, they are stored on the org invite and applied when the invite is accepted.
                   Setting attributes requires permission to manage org members.
+              usergroups:
+                type: array
+                items:
+                  type: string
+                description: |-
+                  Names of user groups in the org to add the user to (user groups are org-scoped).
+                  If the user has not signed up yet, they are stored on the org invite and applied when the invite is accepted.
+                  Setting user groups requires permission to manage org members.
       x-visibility: public
   /v1/orgs/{org}/projects/{project}/members/{email}:
     get:
@@ -4130,6 +4148,27 @@ paths:
           required: true
           schema:
             $ref: '#/definitions/v1SudoUpdateOrganizationCustomDomainRequest'
+  /v1/superuser/organization/default-provisioner:
+    patch:
+      summary: |-
+        SudoUpdateOrganizationDefaultProvisioner sets the provisioner used by default for an organization's deployments.
+        It only affects deployments provisioned after the change; existing deployments stay on their current provisioner.
+      operationId: AdminService_SudoUpdateOrganizationDefaultProvisioner
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1SudoUpdateOrganizationDefaultProvisionerResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: body
+          in: body
+          required: true
+          schema:
+            $ref: '#/definitions/v1SudoUpdateOrganizationDefaultProvisionerRequest'
   /v1/superuser/organization/trial/extend:
     post:
       summary: SudoExtendTrial extends the trial period for an organization
@@ -4650,10 +4689,14 @@ paths:
           required: false
           type: string
         - name: resourceKind
+          description: |-
+            Optional filter on the kind of the resource the bookmark is for (e.g. "rill.runtime.v1.Explore").
+            When both resource_kind and resource_name are unset, all bookmarks in the project are returned.
           in: query
           required: false
           type: string
         - name: resourceName
+          description: Optional filter on the name of the resource the bookmark is for. Requires resource_kind to be set.
           in: query
           required: false
           type: string
@@ -6230,6 +6273,8 @@ definitions:
         type: string
       defaultProjectRoleId:
         type: string
+      defaultProvisioner:
+        type: string
       quotas:
         $ref: '#/definitions/v1OrganizationQuotas'
       billingCustomerId:
@@ -6259,6 +6304,11 @@ definitions:
         type: string
       attributes:
         type: object
+      usergroups:
+        type: array
+        items:
+          type: string
+        description: Names of the user groups the user will be added to when the invite is accepted.
   v1OrganizationMemberService:
     type: object
     properties:
@@ -7052,6 +7102,19 @@ definitions:
     properties:
       organization:
         $ref: '#/definitions/v1Organization'
+  v1SudoUpdateOrganizationDefaultProvisionerRequest:
+    type: object
+    properties:
+      org:
+        type: string
+      defaultProvisioner:
+        type: string
+        description: Name of the provisioner to use by default. Empty unsets the org's default provisioner.
+  v1SudoUpdateOrganizationDefaultProvisionerResponse:
+    type: object
+    properties:
+      organization:
+        $ref: '#/definitions/v1Organization'
   v1SudoUpdateOrganizationQuotasRequest:
     type: object
     properties:
@@ -7321,6 +7384,11 @@ definitions:
         type: string
       userPhotoUrl:
         type: string
+      pendingAcceptance:
+        type: boolean
+        description: |-
+          True if the user has been invited to the group but has not signed up yet.
+          For pending members, user_id, user_name and user_photo_url are empty.
       createdOn:
         type: string
         format: date-time

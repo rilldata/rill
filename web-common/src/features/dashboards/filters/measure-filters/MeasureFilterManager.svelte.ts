@@ -99,7 +99,12 @@ export class MeasureFilterManager {
     this.value1 = "";
     this.value2 = "";
     this.dimension = "";
+    const wasEmpty = this.expr === undefined;
     this.commit();
+    this.events?.emit("filter-removed", {
+      name: this.name,
+      wasEmpty,
+    });
   }
 
   /**
