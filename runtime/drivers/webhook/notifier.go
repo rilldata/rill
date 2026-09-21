@@ -1,6 +1,7 @@
 package webhook
 
 import (
+	"context"
 	"crypto/hmac"
 	"crypto/sha256"
 	"encoding/base64"
@@ -11,6 +12,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/google/uuid"
@@ -35,20 +37,23 @@ const (
 	defaultRetryWaitMin   = time.Second
 	defaultRetryWaitMax   = 4 * time.Second
 	defaultRequestTimeout = 10 * time.Second
+	// defaultDeliveryTimeout bounds a whole send, across all URLs and retries. It leaves room
+	// for a full retry cycle (3 attempts of up to 10s plus the waits between them).
+	defaultDeliveryTimeout = 60 * time.Second
+	// maxConcurrentDeliveries bounds how many URLs of one send are delivered to at a time.
+	maxConcurrentDeliveries = 8
 )
 
 type notifier struct {
 	signingSecret string
 	headers       map[string]string
 	props         *NotifierProperties
+	client        *retryablehttp.Client
 
 	// Overridable in tests.
-	retryMax       int
-	retryWaitMin   time.Duration
-	retryWaitMax   time.Duration
-	requestTimeout time.Duration
-	now            func() time.Time
-	newID          func() string
+	deliveryTimeout time.Duration
+	now             func() time.Time
+	newID           func() string
 }
 
 type NotifierProperties struct {
@@ -65,16 +70,29 @@ func newNotifier(config *configProperties, propsMap map[string]any) (*notifier, 
 		return nil, err
 	}
 	return &notifier{
-		signingSecret:  config.SigningSecret,
-		headers:        config.Headers,
-		props:          props,
-		retryMax:       defaultRetryMax,
-		retryWaitMin:   defaultRetryWaitMin,
-		retryWaitMax:   defaultRetryWaitMax,
-		requestTimeout: defaultRequestTimeout,
-		now:            time.Now,
-		newID:          uuid.NewString,
+		signingSecret:   config.SigningSecret,
+		headers:         config.Headers,
+		props:           props,
+		client:          newClient(),
+		deliveryTimeout: defaultDeliveryTimeout,
+		now:             time.Now,
+		newID:           uuid.NewString,
 	}, nil
+}
+
+func newClient() *retryablehttp.Client {
+	client := retryablehttp.NewClient()
+	client.Logger = nil
+	client.RetryMax = defaultRetryMax
+	client.RetryWaitMin = defaultRetryWaitMin
+	client.RetryWaitMax = defaultRetryWaitMax
+	client.HTTPClient.Timeout = defaultRequestTimeout
+	// The default backoff honors a Retry-After header verbatim. Receivers are arbitrary URLs,
+	// so cap the wait at RetryWaitMax like any other backoff.
+	client.Backoff = func(minWait, maxWait time.Duration, attempt int, resp *http.Response) time.Duration {
+		return min(retryablehttp.DefaultBackoff(minWait, maxWait, attempt, resp), maxWait)
+	}
+	return client
 }
 
 func EncodeProps(urls []string) map[string]any {
@@ -183,42 +201,64 @@ func (n *notifier) send(eventType string, data any) error {
 		}
 	}
 
-	client := retryablehttp.NewClient()
-	client.Logger = nil
-	client.RetryMax = n.retryMax
-	client.RetryWaitMin = n.retryWaitMin
-	client.RetryWaitMax = n.retryWaitMax
-	client.HTTPClient.Timeout = n.requestTimeout
+	// Deliver to the URLs in parallel (up to maxConcurrentDeliveries at a time) under one deadline,
+	// so a slow receiver neither delays the others nor holds the caller for longer than deliveryTimeout.
+	ctx, cancel := context.WithTimeout(context.Background(), n.deliveryTimeout)
+	defer cancel()
 
-	var errs []error
-	for _, u := range dedupe(n.props.URLs) {
-		req, err := retryablehttp.NewRequest(http.MethodPost, u, body)
-		if err != nil {
-			errs = append(errs, fmt.Errorf("webhook %s: %w", u, err))
+	urls := dedupe(n.props.URLs)
+	errs := make([]error, len(urls))
+	sem := make(chan struct{}, maxConcurrentDeliveries)
+	var wg sync.WaitGroup
+	for i, u := range urls {
+		select {
+		case sem <- struct{}{}:
+		case <-ctx.Done():
+			errs[i] = fmt.Errorf("webhook %s: %w", u, ctx.Err())
 			continue
 		}
-		req.Header.Set("Content-Type", "application/json")
-		for k, v := range n.headers {
-			req.Header.Set(k, v)
-		}
-		if signature != "" {
-			req.Header.Set("webhook-id", id)
-			req.Header.Set("webhook-timestamp", strconv.FormatInt(ts.Unix(), 10))
-			req.Header.Set("webhook-signature", signature)
-		}
-
-		resp, err := client.Do(req)
-		if err != nil {
-			errs = append(errs, fmt.Errorf("webhook %s: %w", u, err))
-			continue
-		}
-		_, _ = io.Copy(io.Discard, resp.Body)
-		_ = resp.Body.Close()
-		if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-			errs = append(errs, fmt.Errorf("webhook %s: unexpected status %d", u, resp.StatusCode))
-		}
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			defer func() { <-sem }()
+			errs[i] = n.deliver(ctx, u, id, ts, body, signature)
+		}()
 	}
+	wg.Wait()
+
+	// The reconcilers build a notifier per execution, so keeping connections alive would only
+	// leave them open until the transport's idle timeout.
+	n.client.HTTPClient.CloseIdleConnections()
+
 	return errors.Join(errs...)
+}
+
+// deliver posts the payload to a single URL. The returned error names the URL and the final outcome.
+func (n *notifier) deliver(ctx context.Context, u, id string, ts time.Time, body []byte, signature string) error {
+	req, err := retryablehttp.NewRequestWithContext(ctx, http.MethodPost, u, body)
+	if err != nil {
+		return fmt.Errorf("webhook %s: %w", u, err)
+	}
+	req.Header.Set("Content-Type", "application/json")
+	for k, v := range n.headers {
+		req.Header.Set(k, v)
+	}
+	if signature != "" {
+		req.Header.Set("webhook-id", id)
+		req.Header.Set("webhook-timestamp", strconv.FormatInt(ts.Unix(), 10))
+		req.Header.Set("webhook-signature", signature)
+	}
+
+	resp, err := n.client.Do(req)
+	if err != nil {
+		return fmt.Errorf("webhook %s: %w", u, err)
+	}
+	_, _ = io.Copy(io.Discard, resp.Body)
+	_ = resp.Body.Close()
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		return fmt.Errorf("webhook %s: unexpected status %d", u, resp.StatusCode)
+	}
+	return nil
 }
 
 // sign produces a signature following the Standard Webhooks specification:
