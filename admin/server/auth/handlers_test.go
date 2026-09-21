@@ -1,11 +1,17 @@
 package auth
 
 import (
+	"context"
+	"crypto/rand"
+	"crypto/rsa"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"strings"
 	"testing"
+	"time"
 
+	"github.com/coreos/go-oidc/v3/oidc"
 	"github.com/rilldata/rill/admin"
 	"github.com/rilldata/rill/admin/server/cookies"
 	"github.com/stretchr/testify/require"
@@ -19,10 +25,15 @@ func newTestAuthenticator(t *testing.T, authDomain string) *Authenticator {
 	urls, err := admin.NewURLs("http://localhost:8080", "http://localhost:3000")
 	require.NoError(t, err)
 
+	// Cookie options as set in server.New
+	cookieStore := cookies.New(zap.NewNop(), []byte("0123456789abcdef0123456789abcdef"), []byte("0123456789abcdef"))
+	cookieStore.Options.HttpOnly = true
+	cookieStore.Options.SameSite = http.SameSiteLaxMode
+
 	return &Authenticator{
 		logger:  zap.NewNop(),
 		admin:   &admin.Service{URLs: urls},
-		cookies: cookies.New(zap.NewNop(), []byte("0123456789abcdef0123456789abcdef"), []byte("0123456789abcdef")),
+		cookies: cookieStore,
 		opts: &AuthenticatorOptions{
 			AuthDomain:   authDomain,
 			AuthClientID: "rill-client",
@@ -95,4 +106,108 @@ func TestAuthLogoutProvider(t *testing.T) {
 			require.Equal(t, tt.want, w.Header().Get("Location"))
 		})
 	}
+}
+
+func TestIDTokenHint(t *testing.T) {
+	p := newTestProvider(t, nil)
+	provider, err := oidc.NewProvider(context.Background(), p.URL)
+	require.NoError(t, err)
+
+	newAuthenticator := func(endSessionEndpoint string) *Authenticator {
+		a := newTestAuthenticator(t, p.URL)
+		a.oidc = provider
+		a.endSessionEndpoint = endSessionEndpoint
+		return a
+	}
+	idToken := func(key *rsa.PrivateKey, exp time.Time) string {
+		return p.signIDToken(t, key, map[string]any{"iss": p.URL, "aud": "rill-client", "sub": "user", "iat": exp.Add(-5 * time.Minute).Unix(), "exp": exp.Unix()})
+	}
+	// save runs saveIDTokenHint as the login callback would and returns the cookie it set, if any.
+	save := func(a *Authenticator, rawIDToken string) *http.Cookie {
+		req := httptest.NewRequest(http.MethodGet, "http://localhost:8080/auth/callback", nil)
+		w := httptest.NewRecorder()
+		a.saveIDTokenHint(w, req, rawIDToken)
+		require.Equal(t, http.StatusOK, w.Code) // It never fails the login
+		for _, c := range w.Result().Cookies() {
+			if c.Name == idTokenCookieName {
+				return c
+			}
+		}
+		return nil
+	}
+	// logout runs authLogoutProvider with the given cookie and returns the id_token_hint it sent and whether it cleared the cookie.
+	logout := func(a *Authenticator, c *http.Cookie) (string, bool) {
+		req := httptest.NewRequest(http.MethodGet, "http://localhost:8080/auth/logout/provider", nil)
+		req.AddCookie(c)
+		w := httptest.NewRecorder()
+		a.authLogoutProvider(w, req)
+		require.Equal(t, http.StatusTemporaryRedirect, w.Code)
+		loc, err := url.Parse(w.Header().Get("Location"))
+		require.NoError(t, err)
+		cleared := false
+		for _, rc := range w.Result().Cookies() {
+			if rc.Name == idTokenCookieName && rc.MaxAge < 0 && rc.Path == "/auth/logout/provider" {
+				cleared = true
+			}
+		}
+		return loc.Query().Get("id_token_hint"), cleared
+	}
+
+	t.Run("saved only for providers with an end_session_endpoint", func(t *testing.T) {
+		require.Nil(t, save(newAuthenticator(""), idToken(nil, time.Now().Add(5*time.Minute))))
+	})
+
+	t.Run("scoped to the logout path", func(t *testing.T) {
+		c := save(newAuthenticator(p.URL+"/logout"), idToken(nil, time.Now().Add(5*time.Minute)))
+		require.NotNil(t, c)
+		require.Equal(t, "/auth/logout/provider", c.Path)
+		require.True(t, c.HttpOnly)
+	})
+
+	t.Run("skipped when too large for a cookie", func(t *testing.T) {
+		require.Nil(t, save(newAuthenticator(p.URL+"/logout"), strings.Repeat("x", 5000)))
+	})
+
+	tests := []struct {
+		name     string
+		idToken  string
+		wantHint bool
+	}{
+		{"valid", idToken(nil, time.Now().Add(5*time.Minute)), true},
+		// The ID token expires within minutes but the Rill session lasts for weeks, and providers accept expired hints.
+		{"expired", idToken(nil, time.Now().Add(-24*time.Hour)), true},
+		// An invalid hint makes Keycloak fail the logout with an error page, so it is dropped.
+		{"signed by another key", idToken(mustRSAKey(t), time.Now().Add(5*time.Minute)), false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			a := newAuthenticator(p.URL + "/logout")
+			c := save(a, tt.idToken)
+			require.NotNil(t, c)
+
+			hint, cleared := logout(a, c)
+			require.True(t, cleared)
+			if tt.wantHint {
+				require.Equal(t, tt.idToken, hint)
+			} else {
+				require.Empty(t, hint)
+			}
+		})
+	}
+
+	t.Run("undecodable cookie leaves the store options alone", func(t *testing.T) {
+		a := newAuthenticator(p.URL + "/logout")
+		before := *a.cookies.Options
+
+		hint, cleared := logout(a, &http.Cookie{Name: idTokenCookieName, Value: "garbage"})
+		require.Empty(t, hint)
+		require.True(t, cleared)
+		require.Equal(t, before, *a.cookies.Options)
+	})
+}
+
+func mustRSAKey(t *testing.T) *rsa.PrivateKey {
+	key, err := rsa.GenerateKey(rand.Reader, 2048)
+	require.NoError(t, err)
+	return key
 }

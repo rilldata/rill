@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/coreos/go-oidc/v3/oidc"
+	"github.com/gorilla/sessions"
 	"github.com/rilldata/rill/admin/database"
 	"github.com/rilldata/rill/admin/pkg/urlutil"
 	"github.com/rilldata/rill/runtime/pkg/httputil"
@@ -30,6 +31,8 @@ const (
 	cookieFieldRedirect         = "redirect"
 	cookieFieldCustomDomainFlow = "custom_domain_flow"
 	cookieFieldAccessToken      = "access_token"
+	idTokenCookieName           = "auth_id_token" // nolint:gosec // cookie name, not a credential
+	cookieFieldIDToken          = "id_token"
 )
 
 var (
@@ -329,6 +332,9 @@ func (a *Authenticator) authLoginCallback(w http.ResponseWriter, r *http.Request
 		return
 	}
 
+	// Keep the ID token for logout. This callback and authLogoutProvider both run on the canonical domain, so it works for both flows below.
+	a.saveIDTokenHint(w, r, rawIDToken)
+
 	// If it's part of a custom domain login flow, redirect back to the custom domain with a short-lived access token for the user.
 	customDomainFlow, ok := sess.Values[cookieFieldCustomDomainFlow].(bool)
 	delete(sess.Values, cookieFieldCustomDomainFlow)
@@ -610,6 +616,9 @@ func (a *Authenticator) authLogoutProvider(w http.ResponseWriter, r *http.Reques
 		}
 	}
 
+	// Take the ID token saved at login (if any) to send as id_token_hint
+	idTokenHint := a.takeIDTokenHint(w, r)
+
 	// Build the provider logout URL.
 	// Standard OIDC providers expose end_session_endpoint; Auth0 uses /v2/logout with "returnTo".
 	logoutEndpoint := a.endSessionEndpoint
@@ -632,8 +641,79 @@ func (a *Authenticator) authLogoutProvider(w http.ResponseWriter, r *http.Reques
 	params := url.Values{}
 	params.Set("client_id", a.opts.AuthClientID)
 	params.Set(redirectParam, a.admin.URLs.AuthLogoutCallback())
+	if a.endSessionEndpoint != "" && idTokenHint != "" {
+		params.Set("id_token_hint", idTokenHint)
+	}
 	logoutURL.RawQuery = params.Encode()
 	http.Redirect(w, r, logoutURL.String(), http.StatusTemporaryRedirect)
+}
+
+// saveIDTokenHint keeps the raw ID token from login so that authLogoutProvider can send it as id_token_hint.
+// Without the hint, standard OIDC providers (e.g. Keycloak) show a logout confirmation page and keep the user's
+// session alive until it is confirmed.
+//
+// It is only kept when the provider publishes an end_session_endpoint: Auth0's /v2/logout does not use it, so
+// Auth0 deployments are unaffected.
+//
+// It goes in its own cookie rather than in the auth cookie: ID tokens can be large enough to push the auth cookie
+// past the 4096-byte cookie limit, which would fail the login. If the ID token does not fit on its own either, it
+// is skipped, and logout falls back to the provider's confirmation page.
+//
+// The cookie is scoped to the path of authLogoutProvider, so browsers only send it on logout rather than adding
+// the ID token to every request to the admin service.
+func (a *Authenticator) saveIDTokenHint(w http.ResponseWriter, r *http.Request, rawIDToken string) {
+	if a.endSessionEndpoint == "" {
+		return
+	}
+
+	sess := a.cookies.Get(r, idTokenCookieName)
+	sess.Options = a.idTokenCookieOptions(sess.Options, false)
+	sess.Values[cookieFieldIDToken] = rawIDToken
+	if err := sess.Save(r, w); err != nil {
+		a.logger.Info("not keeping ID token for logout", zap.Error(err), observability.ZapCtx(r.Context()))
+	}
+}
+
+// takeIDTokenHint returns the ID token kept by saveIDTokenHint and clears its cookie.
+// It returns an empty string if there is none, or if its signature no longer verifies (e.g. after the provider
+// rotated its keys): providers such as Keycloak fail the whole logout on an invalid hint, whereas without one
+// they only ask for confirmation. Expiry is not checked: the Rill session outlives the ID token by weeks, and the
+// OIDC RP-Initiated Logout spec asks providers to accept hints whose exp has passed.
+func (a *Authenticator) takeIDTokenHint(w http.ResponseWriter, r *http.Request) string {
+	if _, err := r.Cookie(idTokenCookieName); err != nil {
+		return ""
+	}
+
+	sess := a.cookies.Get(r, idTokenCookieName)
+	rawIDToken, _ := sess.Values[cookieFieldIDToken].(string)
+	sess.Options = a.idTokenCookieOptions(sess.Options, true)
+	if err := sess.Save(r, w); err != nil {
+		a.logger.Info("failed to clear ID token cookie", zap.Error(err), observability.ZapCtx(r.Context()))
+	}
+	if rawIDToken == "" {
+		return ""
+	}
+
+	verifier := a.oidc.Verifier(&oidc.Config{ClientID: a.oauth2.ClientID, SkipExpiryCheck: true})
+	if _, err := verifier.Verify(r.Context(), rawIDToken); err != nil {
+		a.logger.Info("not sending ID token as logout hint", zap.Error(err), observability.ZapCtx(r.Context()))
+		return ""
+	}
+	return rawIDToken
+}
+
+// idTokenCookieOptions returns a copy of opts for the ID token cookie, scoped to the path of authLogoutProvider.
+// It copies because cookies.Store.Get may return the store's shared options.
+func (a *Authenticator) idTokenCookieOptions(opts *sessions.Options, expire bool) *sessions.Options {
+	res := *opts
+	res.Path = "/"
+	if u, err := url.Parse(a.admin.URLs.AuthLogoutProvider("")); err == nil {
+		res.Path = u.Path
+	}
+	if expire {
+		res.MaxAge = -1
+	}
+	return &res
 }
 
 // authLogoutCallback is called by the auth provider when a logout flow iniated by authLogout has completed.
