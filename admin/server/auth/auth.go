@@ -2,6 +2,7 @@ package auth
 
 import (
 	"context"
+	"fmt"
 	"strings"
 
 	"github.com/coreos/go-oidc/v3/oidc"
@@ -40,14 +41,8 @@ type Authenticator struct {
 
 // NewAuthenticator creates an Authenticator.
 func NewAuthenticator(logger *zap.Logger, adm *admin.Service, cookieStore *cookies.Store, opts *AuthenticatorOptions) (*Authenticator, error) {
-	// AuthDomain with "://" is a full issuer URL (Keycloak, Dex, etc.);
-	// without it, assume Auth0-style domain and append trailing slash.
-	issuerURL := opts.AuthDomain
-	if isBareDomain(issuerURL) {
-		issuerURL = "https://" + issuerURL + "/"
-	}
-
-	oidcProvider, err := oidc.NewProvider(context.Background(), issuerURL)
+	issuer := issuerURL(opts.AuthDomain)
+	oidcProvider, err := oidc.NewProvider(context.Background(), issuer)
 	if err != nil {
 		return nil, err
 	}
@@ -55,9 +50,11 @@ func NewAuthenticator(logger *zap.Logger, adm *admin.Service, cookieStore *cooki
 	var claims struct {
 		EndSessionEndpoint string `json:"end_session_endpoint"`
 	}
-	_ = oidcProvider.Claims(&claims)
+	if err := oidcProvider.Claims(&claims); err != nil {
+		return nil, fmt.Errorf("failed to parse the auth provider's discovery document: %w", err)
+	}
 	if claims.EndSessionEndpoint == "" && !isBareDomain(opts.AuthDomain) {
-		logger.Warn("auth provider does not publish an end_session_endpoint, so logging out will only end the Rill session", zap.String("issuer", issuerURL))
+		logger.Warn("auth provider does not publish an end_session_endpoint, so logging out will only end the Rill session", zap.String("issuer", issuer))
 	}
 
 	oauth2Config := oauth2.Config{
@@ -79,6 +76,16 @@ func NewAuthenticator(logger *zap.Logger, adm *admin.Service, cookieStore *cooki
 	}
 
 	return a, nil
+}
+
+// issuerURL returns the OIDC issuer for authDomain.
+// AuthDomain with "://" is a full issuer URL (Keycloak, Dex, etc.) used verbatim;
+// without it, assume Auth0-style domain and append trailing slash.
+func issuerURL(authDomain string) string {
+	if isBareDomain(authDomain) {
+		return "https://" + authDomain + "/"
+	}
+	return authDomain
 }
 
 // isBareDomain reports whether authDomain is an Auth0-style domain (e.g. "rill.auth0.com") rather than a full issuer URL.
