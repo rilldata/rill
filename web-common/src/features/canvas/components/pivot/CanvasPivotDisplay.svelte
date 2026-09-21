@@ -64,6 +64,7 @@
       ),
       showTotalsColumn: tableSpec.hide_totals_col !== true,
       showTotalsRow: tableSpec.hide_totals_row !== true,
+      totalsRowPosition: tableSpec.totals_row_position ?? "top",
       measureFormatting,
     }));
   } else if (!("columns" in tableSpec) && schema.isValid && !schema.isLoading) {
@@ -88,6 +89,7 @@
       rows: tableFieldMapper(rowDimensions, metricsViewSpec),
       showTotalsColumn: tableSpec.hide_totals_col !== true,
       showTotalsRow: tableSpec.hide_totals_row !== true,
+      totalsRowPosition: tableSpec.totals_row_position ?? "top",
       measureFormatting,
       rowLimit: normalizeRowLimit(tableSpec.row_limit),
       outermostRowLimit: undefined,
