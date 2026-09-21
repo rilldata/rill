@@ -147,11 +147,14 @@
   }
 
   :global(.chat-markdown table) {
-    @apply w-full text-xs;
+    @apply text-xs;
     border-collapse: collapse;
     margin-bottom: 0.5rem;
-    /* Wide tables scroll within the message instead of stretching the page. */
+    /* A block-level table scrolls within the message instead of stretching the page.
+       Its rows sit in an anonymous table box that sizes to its content,
+       so the table is as wide as its content, like GitHub's markdown tables. */
     display: block;
+    width: max-content;
     max-width: 100%;
     overflow-x: auto;
   }
