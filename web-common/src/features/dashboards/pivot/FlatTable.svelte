@@ -30,7 +30,11 @@
   import type { PivotRowSelectionState } from "./pivot-row-selection";
   import type { CellFormatter } from "./pivot-conditional-formatting";
   import PivotHeaderLabel from "./PivotHeaderLabel.svelte";
-  import type { PivotDataRow, PivotDataStoreConfig } from "./types";
+  import type {
+    PivotDataRow,
+    PivotDataStoreConfig,
+    PivotTotalsRowPosition,
+  } from "./types";
 
   // State props
   export let assembled: boolean;
@@ -52,6 +56,7 @@
   export let rows: Row<PivotDataRow>[];
   export let virtualRows: { index: number }[];
   export let totalsRow: PivotDataRow | undefined;
+  export let totalsRowPosition: PivotTotalsRowPosition = "top";
   export let before: number;
   export let after: number;
   export let totalRowSize: number;
@@ -69,6 +74,11 @@
   let totalLength = 0;
 
   $: headers = headerGroups[0].headers;
+
+  // The totals row is always tanstack row "0" (see PivotTable.svelte). When
+  // pinned to the bottom it is skipped in the virtualized body and rendered
+  // once more in a sticky <tfoot>, so no row ids or index math change.
+  $: totalsRowAtBottom = !!totalsRow && totalsRowPosition === "bottom";
 
   // Initialize column lengths if not already set
   $: headers.forEach((header) => {
@@ -238,90 +248,103 @@
   <tbody>
     <tr style:height="{before}px"></tr>
     {#each virtualRows as row (row.index)}
-      {@const cells = rows[row.index].getVisibleCells()}
-      {@const rowId = rows[row.index].id}
-      {@const rowData = rows[row.index].original}
-      {@const dk = dimKeyFromRow(rowData, config?.rowDimensionNames ?? [])}
-      {@const isTotalsRow = !!totalsRow && rowId === "0"}
-      {@const isSelected = rowSelectionState?.isRowSelected(rowData) ?? false}
-      {@const hasClickedCell =
-        clickSelection?.hasSelectedCellInRow(dk) ?? false}
-      {@const effectiveDimIdx = computeEffectiveDimIdx(
-        hasClickedCell,
-        clickSelection?.getClickedDimensionIndex(dk) ?? -1,
-        lastDimIdx,
-        isSelected,
-        rowSelectionState?.maxFilteredDimensionIndex ?? -1,
-      )}
-      {@const rs = flatRowState({
-        isSelected,
-        hasSelection: rowSelectionState?.hasActiveSelection ?? false,
-        hasClickedCell,
-        effectiveDimIdx,
-      })}
-      <tr class:selected-row={rs.selectedRow} class:dimmed-row={rs.dimmedRow}>
-        {#each cells as cell (cell.id)}
-          {@const result =
-            typeof cell.column.columnDef.cell === "function"
-              ? cell.column.columnDef.cell(cell.getContext())
-              : cell.column.columnDef.cell}
-          {@const cs = flatCellState({
-            isActive: isCellActive(cell.row.id, cell.column.id),
-            isClicked:
-              clickSelection?.isCellSelected(dk, cell.column.id) ?? false,
-            colDimIdx: config?.rowDimensionNames.indexOf(cell.column.id) ?? -1,
-            effectiveDimIdx,
-            lastDimIdx,
-            isTotalsRow,
-            canShowDataViewer,
-            enableClickToFilter,
-            hasValue: cell.getValue() !== undefined,
-          })}
-          {@const tooltipValue = cell.column.columnDef.meta?.tooltipFormatter
-            ? cell.column.columnDef.meta.tooltipFormatter(cell.getValue())
-            : cell.getValue()}
-          {@const cellFmt = getCellFormatting(cell, isTotalsRow)}
-          <td
-            class="ui-copy-number cell truncate"
-            class:has-conditional-format={cellFmt !== null}
-            style:--cf-bg={cellFmt?.background ?? null}
-            style:--cf-color={cellFmt?.color ?? null}
-            class:active-cell={cs.activeCell}
-            class:selected-cell={cs.selectedCell}
-            class:selected-context-cell={cs.selectedContextCell}
-            class:muted-cell={cs.mutedCell}
-            class:interactive-cell={cs.interactiveCell}
-            class:text-right={getMeasureColumn(cell.column)}
-            class:border-r={hasBorderRight(cell.column.id)}
-            class:total-label={cell.getValue() === "Total"}
-            data-value={tooltipValue}
-            data-rowid={cell.row.id}
-            data-columnid={cell.column.id}
-            onmouseover={() =>
-              cellInspectorStore.updateValue(cell.getValue(), tooltipValue)}
-            onfocus={() =>
-              cellInspectorStore.updateValue(cell.getValue(), tooltipValue)}
-          >
-            {#if result?.component && result?.props}
-              <svelte:component
-                this={result.component}
-                {...result.props}
-                {assembled}
-              />
-            {:else if typeof result === "string" || typeof result === "number"}
-              {result}
-            {:else}
-              <svelte:component
-                this={flexRender(cell.column.columnDef.cell, cell.getContext())}
-              />
-            {/if}
-          </td>
-        {/each}
-      </tr>
+      {#if !(totalsRowAtBottom && row.index === 0)}
+        {@render pivotRow(row.index)}
+      {/if}
     {/each}
     <tr style:height="{after}px"></tr>
   </tbody>
+  {#if totalsRowAtBottom && rows[0]}
+    <tfoot>
+      {@render pivotRow(0)}
+    </tfoot>
+  {/if}
 </table>
+
+{#snippet pivotRow(rowIndex: number)}
+  {@const cells = rows[rowIndex].getVisibleCells()}
+  {@const rowId = rows[rowIndex].id}
+  {@const rowData = rows[rowIndex].original}
+  {@const dk = dimKeyFromRow(rowData, config?.rowDimensionNames ?? [])}
+  {@const isTotalsRow = !!totalsRow && rowId === "0"}
+  {@const isSelected = rowSelectionState?.isRowSelected(rowData) ?? false}
+  {@const hasClickedCell = clickSelection?.hasSelectedCellInRow(dk) ?? false}
+  {@const effectiveDimIdx = computeEffectiveDimIdx(
+    hasClickedCell,
+    clickSelection?.getClickedDimensionIndex(dk) ?? -1,
+    lastDimIdx,
+    isSelected,
+    rowSelectionState?.maxFilteredDimensionIndex ?? -1,
+  )}
+  {@const rs = flatRowState({
+    isSelected,
+    hasSelection: rowSelectionState?.hasActiveSelection ?? false,
+    hasClickedCell,
+    effectiveDimIdx,
+  })}
+  <tr
+    class:totals-row={isTotalsRow}
+    class:selected-row={rs.selectedRow}
+    class:dimmed-row={rs.dimmedRow}
+  >
+    {#each cells as cell (cell.id)}
+      {@const result =
+        typeof cell.column.columnDef.cell === "function"
+          ? cell.column.columnDef.cell(cell.getContext())
+          : cell.column.columnDef.cell}
+      {@const cs = flatCellState({
+        isActive: isCellActive(cell.row.id, cell.column.id),
+        isClicked: clickSelection?.isCellSelected(dk, cell.column.id) ?? false,
+        colDimIdx: config?.rowDimensionNames.indexOf(cell.column.id) ?? -1,
+        effectiveDimIdx,
+        lastDimIdx,
+        isTotalsRow,
+        canShowDataViewer,
+        enableClickToFilter,
+        hasValue: cell.getValue() !== undefined,
+      })}
+      {@const tooltipValue = cell.column.columnDef.meta?.tooltipFormatter
+        ? cell.column.columnDef.meta.tooltipFormatter(cell.getValue())
+        : cell.getValue()}
+      {@const cellFmt = getCellFormatting(cell, isTotalsRow)}
+      <td
+        class="ui-copy-number cell truncate"
+        class:has-conditional-format={cellFmt !== null}
+        style:--cf-bg={cellFmt?.background ?? null}
+        style:--cf-color={cellFmt?.color ?? null}
+        class:active-cell={cs.activeCell}
+        class:selected-cell={cs.selectedCell}
+        class:selected-context-cell={cs.selectedContextCell}
+        class:muted-cell={cs.mutedCell}
+        class:interactive-cell={cs.interactiveCell}
+        class:text-right={getMeasureColumn(cell.column)}
+        class:border-r={hasBorderRight(cell.column.id)}
+        class:total-label={cell.getValue() === "Total"}
+        data-value={tooltipValue}
+        data-rowid={cell.row.id}
+        data-columnid={cell.column.id}
+        onmouseover={() =>
+          cellInspectorStore.updateValue(cell.getValue(), tooltipValue)}
+        onfocus={() =>
+          cellInspectorStore.updateValue(cell.getValue(), tooltipValue)}
+      >
+        {#if result?.component && result?.props}
+          <svelte:component
+            this={result.component}
+            {...result.props}
+            {assembled}
+          />
+        {:else if typeof result === "string" || typeof result === "number"}
+          {result}
+        {:else}
+          <svelte:component
+            this={flexRender(cell.column.columnDef.cell, cell.getContext())}
+          />
+        {/if}
+      </td>
+    {/each}
+  </tr>
+{/snippet}
 
 <style lang="postcss">
   * {
@@ -344,7 +367,8 @@
     @apply z-30 bg-surface-background;
   }
 
-  tbody .cell {
+  tbody .cell,
+  tfoot .cell {
     height: var(--row-height);
   }
 
@@ -403,10 +427,17 @@
     @apply font-normal;
   }
 
-  /* The totals row */
-  .with-totals-row tbody > tr:nth-of-type(2) {
+  /* The totals row: pinned under the header, or above the bottom edge when
+     rendered in the tfoot */
+  tbody > tr.totals-row {
     @apply bg-surface-background sticky z-20;
     top: var(--total-header-height);
+  }
+  tfoot > tr.totals-row {
+    @apply bg-surface-background sticky bottom-0 z-20;
+  }
+  tfoot > tr.totals-row > td {
+    @apply border-t;
   }
 
   /* The totals row label - make it bold for flat tables */
@@ -438,7 +469,7 @@
     box-shadow: 0 0 0 1px theme(colors.primary.400);
   }
   /* The totals row is z-20 and covers the outset top shadow; use an inset top border instead */
-  .with-totals-row tbody > tr:nth-of-type(3) > td.selected-cell.cell {
+  tbody > tr.totals-row + tr > td.selected-cell.cell {
     box-shadow:
       0 0 0 1px theme(colors.primary.400),
       inset 0 1px 0 0 theme(colors.primary.400);

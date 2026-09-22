@@ -482,6 +482,12 @@ export const AD_BIDS_SET_PIVOT_ROW_LIMIT_UNLIMITED: TestDashboardMutation =
 export const AD_BIDS_HIDE_PIVOT_TOTALS: TestDashboardMutation = () =>
   metricsExplorerStore.setPivotTotals(AD_BIDS_EXPLORE_NAME, false, false);
 
+export const AD_BIDS_PIVOT_TOTALS_ROW_AT_BOTTOM: TestDashboardMutation = () =>
+  metricsExplorerStore.setPivotTotalsRowPosition(
+    AD_BIDS_EXPLORE_NAME,
+    "bottom",
+  );
+
 export const AD_BIDS_FLAT_PIVOT_TABLE: TestDashboardMutation = () =>
   metricsExplorerStore.setPivotTableMode(
     AD_BIDS_EXPLORE_NAME,

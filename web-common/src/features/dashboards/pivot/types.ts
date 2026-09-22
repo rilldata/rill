@@ -61,6 +61,8 @@ export interface PivotState {
   activeCell: PivotCell | null;
   showTotalsColumn: boolean;
   showTotalsRow: boolean;
+  // Where the grand-totals row is pinned. Undefined means "top".
+  totalsRowPosition?: PivotTotalsRowPosition;
   rowLimit?: number;
   outermostRowLimit?: number; // Local limit for outermost dimension only
   nestedRowLimits?: Record<string, number>; // Local per-row limits keyed by expand index (e.g., "0.1.2")
@@ -70,6 +72,12 @@ export interface PivotState {
 }
 
 export type PivotTableMode = "flat" | "nest";
+
+export type PivotTotalsRowPosition = "top" | "bottom";
+export const PIVOT_TOTALS_ROW_POSITIONS: readonly PivotTotalsRowPosition[] = [
+  "top",
+  "bottom",
+];
 
 // Conditional formatting applied to a measure's cells in the pivot table,
 // discriminated on `mode`.

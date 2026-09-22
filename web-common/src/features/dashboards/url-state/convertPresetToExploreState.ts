@@ -2,9 +2,11 @@ import { fromEphemeralMeasuresParam } from "@rilldata/web-common/features/dashbo
 import { injectEphemeralMeasuresIntoMap } from "@rilldata/web-common/features/dashboards/ephemeral-measures/url-state";
 import { fromPivotFormattingParam } from "@rilldata/web-common/features/dashboards/pivot/pivot-formatting-param";
 import {
+  PIVOT_TOTALS_ROW_POSITIONS,
   type PivotChipData,
   PivotChipType,
   type PivotTableMode,
+  type PivotTotalsRowPosition,
 } from "@rilldata/web-common/features/dashboards/pivot/types";
 import { SortDirection } from "@rilldata/web-common/features/dashboards/proto-state/derived-types";
 import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
@@ -469,6 +471,24 @@ function fromPivotUrlParams(
   const showPivot = preset.view === V1ExploreWebView.EXPLORE_WEB_VIEW_PIVOT;
   const showTotalsColumn = preset.pivotShowTotalsColumn ?? true;
   const showTotalsRow = preset.pivotShowTotalsRow ?? true;
+  let totalsRowPosition: PivotTotalsRowPosition = "top";
+  if (preset.pivotTotalsRowPosition) {
+    if (
+      PIVOT_TOTALS_ROW_POSITIONS.includes(
+        preset.pivotTotalsRowPosition as PivotTotalsRowPosition,
+      )
+    ) {
+      totalsRowPosition =
+        preset.pivotTotalsRowPosition as PivotTotalsRowPosition;
+    } else {
+      errors.push(
+        getSingleFieldError(
+          "pivot totals row position",
+          preset.pivotTotalsRowPosition,
+        ),
+      );
+    }
+  }
   const measureFormatting = preset.pivotFormatting
     ? fromPivotFormattingParam(preset.pivotFormatting).measureFormatting
     : undefined;
@@ -487,6 +507,7 @@ function fromPivotUrlParams(
           activeCell: null,
           showTotalsColumn,
           showTotalsRow,
+          totalsRowPosition,
           tableMode: "nest",
           measureFormatting,
         },
@@ -546,6 +567,7 @@ function fromPivotUrlParams(
         activeCell: null,
         showTotalsColumn,
         showTotalsRow,
+        totalsRowPosition,
         tableMode,
         rowLimit,
         measureFormatting,
