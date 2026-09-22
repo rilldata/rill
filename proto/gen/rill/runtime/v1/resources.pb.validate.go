@@ -5646,6 +5646,10 @@ func (m *ExplorePreset) validate(all bool) error {
 		// no validation rules for PivotShowTotalsRow
 	}
 
+	if m.PivotTotalsRowPosition != nil {
+		// no validation rules for PivotTotalsRowPosition
+	}
+
 	if m.PivotFormatting != nil {
 		// no validation rules for PivotFormatting
 	}

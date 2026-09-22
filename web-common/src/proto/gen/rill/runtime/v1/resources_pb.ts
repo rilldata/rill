@@ -3264,6 +3264,14 @@ export class ExplorePreset extends Message<ExplorePreset> {
   pivotShowTotalsRow?: boolean;
 
   /**
+   * Where the pivot totals row is pinned: "top" (default) or "bottom"
+   * (frontend-only; persisted in URL state).
+   *
+   * @generated from field: optional string pivot_totals_row_position = 41;
+   */
+  pivotTotalsRowPosition?: string;
+
+  /**
    * Per-measure pivot conditional formatting, serialized in the URL param
    * format (frontend-only; persisted in URL state).
    *
@@ -3327,6 +3335,7 @@ export class ExplorePreset extends Message<ExplorePreset> {
     { no: 33, name: "pivot_row_limit", kind: "scalar", T: 5 /* ScalarType.INT32 */, opt: true },
     { no: 37, name: "pivot_show_totals_column", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
     { no: 38, name: "pivot_show_totals_row", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
+    { no: 41, name: "pivot_totals_row_position", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 39, name: "pivot_formatting", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 40, name: "ephemeral_measures", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 35, name: "chart_dynamic_y_axis", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
