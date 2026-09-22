@@ -398,6 +398,8 @@
   "canvas_configuration": "Configuración de {label}",
   "canvas_configurations": "Configuraciones del canvas",
   "canvas_custom_chart": "Gráfico personalizado",
+  "canvas_dark_url_label": "URL en modo oscuro",
+  "canvas_dark_url_placeholder": "Por defecto usa la URL",
   "canvas_data_labels_label": "Etiquetas de datos",
   "canvas_delete": "Eliminar",
   "canvas_delete_dashboard_desc": "El dashboard \"{name}\" será eliminado permanentemente. Esta acción no se puede deshacer.",
