@@ -18,6 +18,7 @@ import {
   getLabelForComponent,
 } from "@rilldata/web-common/features/canvas/components/util.ts";
 import type { ChartSpec } from "@rilldata/web-common/features/components/charts/types.ts";
+import { SquareSlashIcon } from "lucide-svelte";
 
 type ContextConfigPerType = {
   editable: boolean;
@@ -139,5 +140,11 @@ export const InlineContextConfig: Record<
     getTooltip: (ctx, meta) =>
       `From ${InlineContextConfig[InlineContextType.Model].getLabel(ctx, meta)}`,
     getIcon: (ctx) => fieldTypeToSymbol(ctx.columnType ?? ""),
+  },
+
+  [InlineContextType.Skill]: {
+    editable: false,
+    getLabel: (ctx) => ctx.skill ?? "",
+    getIcon: () => SquareSlashIcon,
   },
 };

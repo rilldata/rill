@@ -54,14 +54,17 @@
         <div class="flex flex-col gap-y-1.5">
           <Button type="secondary" onClick={openDialog}>
             <ClaudeIcon size="16px" />
+            <!-- i18n-ignore: standalone product name -->
             Claude
           </Button>
           <Button type="secondary" onClick={openDialog}>
             <OpenAIIcon size="16px" />
+            <!-- i18n-ignore: standalone product name -->
             ChatGPT
           </Button>
           <Button type="secondary" onClick={openDialog}>
             <GeminiIcon size="16px" />
+            <!-- i18n-ignore: standalone product name -->
             Gemini
           </Button>
           <Button type="text" onClick={openDialog}>

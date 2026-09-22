@@ -4,6 +4,7 @@
   import PercentageChange from "@rilldata/web-common/components/data-types/PercentageChange.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import InlineErrorIndicator from "@rilldata/web-common/features/dashboards/errors/InlineErrorIndicator.svelte";
+  import { measureSupportsTotalsQuery } from "@rilldata/web-common/features/dashboards/state-managers/selectors/measures";
   import { ExploreStateURLParams } from "@rilldata/web-common/features/dashboards/url-state/url-params";
   import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
@@ -26,10 +27,15 @@
     type CrossfadeParams,
     type FlyParams,
   } from "svelte/transition";
+  import { mapEphemeralMeasuresForRequest } from "@rilldata/web-common/features/dashboards/ephemeral-measures/measure-mapping";
+  import type { EphemeralMeasureDef } from "@rilldata/web-common/features/dashboards/ephemeral-measures/types";
   import { cellInspectorStore } from "../stores/cell-inspector-store";
   import BigNumberTooltipContent from "./BigNumberTooltipContent.svelte";
 
   export let measure: MetricsViewSpecMeasure;
+  // ephemeral measure definitions; when `measure` is one of
+  // them, the request carries its `expression` compute.
+  export let ephemeralMeasures: EphemeralMeasureDef[] | undefined = undefined;
   export let withTimeseries = true;
   export let isMeasureExpanded = false;
   export let metricsViewName: string;
@@ -46,13 +52,22 @@
   const client = useRuntimeClient();
 
   $: measureName = measure.name ?? "";
+  $: requestMeasures = mapEphemeralMeasuresForRequest(
+    [{ name: measureName }],
+    ephemeralMeasures,
+  );
+
+  // Measures with required dimensions (e.g. a rolling window ordered by the time
+  // dimension) produce one value per dimension value and have no single total,
+  // so we skip the totals queries and show an explanatory hint instead.
+  $: supportsTotal = measureSupportsTotalsQuery(measure);
 
   // Primary totals query
   $: primaryQuery = createQueryServiceMetricsViewAggregation(
     client,
     {
       metricsView: metricsViewName,
-      measures: [{ name: measureName }],
+      measures: requestMeasures,
       where,
       timeRange: {
         start: timeStart as any,
@@ -62,7 +77,11 @@
     },
     {
       query: {
-        enabled: ready && (!!timeStart || !timeDimension) && !!measureName,
+        enabled:
+          ready &&
+          supportsTotal &&
+          (!!timeStart || !timeDimension) &&
+          !!measureName,
         placeholderData: keepPreviousData,
         refetchOnMount: false,
       },
@@ -74,7 +93,7 @@
     client,
     {
       metricsView: metricsViewName,
-      measures: [{ name: measureName }],
+      measures: requestMeasures,
       where,
       timeRange: {
         start: comparisonTimeStart as any,
@@ -85,7 +104,11 @@
     {
       query: {
         enabled:
-          ready && showComparison && !!comparisonTimeStart && !!measureName,
+          ready &&
+          supportsTotal &&
+          showComparison &&
+          !!comparisonTimeStart &&
+          !!measureName,
         placeholderData: keepPreviousData,
         refetchOnMount: false,
       },
@@ -173,8 +196,18 @@
   /** when the measure is a percentage, we don't show a percentage change. */
   $: measureIsPercentage = measure?.formatPreset === FormatPreset.PERCENTAGE;
 
-  $: copyValue = measureValueFormatterUnabridged(value) ?? m.kpi_no_data();
-  $: tooltipValue = measureValueFormatterTooltip(value) ?? m.kpi_no_data();
+  // Base values for the primary total, also used to reset the tooltip/copy
+  // values when the pointer leaves a comparison value.
+  // When the measure has no total, copying is disabled by leaving the copy value undefined.
+  $: baseCopyValue = supportsTotal
+    ? (measureValueFormatterUnabridged(value) ?? m.kpi_no_data())
+    : undefined;
+  $: baseTooltipValue = supportsTotal
+    ? (measureValueFormatterTooltip(value) ?? m.kpi_no_data())
+    : m.kpi_no_total();
+
+  $: copyValue = baseCopyValue;
+  $: tooltipValue = baseTooltipValue;
 
   $: tddHref = `?${ExploreStateURLParams.WebView}=tdd&${ExploreStateURLParams.ExpandedMeasure}=${measure.name}`;
 
@@ -212,6 +245,7 @@
     slot="tooltip-content"
     {measure}
     value={tooltipValue}
+    note={supportsTotal ? undefined : m.kpi_no_total_note()}
   />
 
   <svelte:element
@@ -248,7 +282,9 @@
       onfocus={handleFocus}
       tabindex="0"
     >
-      {#if value !== null && value !== undefined && status === EntityStatus.Idle}
+      {#if !supportsTotal}
+        <span class="text-fg-muted italic text-sm">{m.kpi_no_total()}</span>
+      {:else if value !== null && value !== undefined && status === EntityStatus.Idle}
         <WithTween {value} tweenProps={{ duration: 500 }} let:output>
           {measureValueFormatter(output)}
         </WithTween>
@@ -268,10 +304,8 @@
                     measureValueFormatterUnabridged(diff) ?? m.kpi_no_data();
                 }}
                 onmouseleave={() => {
-                  tooltipValue =
-                    measureValueFormatterTooltip(value) ?? m.kpi_no_data();
-                  copyValue =
-                    measureValueFormatterUnabridged(value) ?? m.kpi_no_data();
+                  tooltipValue = baseTooltipValue;
+                  copyValue = baseCopyValue;
                 }}
               >
                 {#if !noChange}
@@ -297,10 +331,8 @@
                     "no data";
                 }}
                 onmouseleave={() => {
-                  tooltipValue =
-                    measureValueFormatterUnabridged(value) ?? m.kpi_no_data();
-                  copyValue =
-                    measureValueFormatterUnabridged(value) ?? m.kpi_no_data();
+                  tooltipValue = baseTooltipValue;
+                  copyValue = baseCopyValue;
                 }}
                 class="w-fit {comparisonDeltaColorClass}"
                 class:font-semibold={lowerIsBetter

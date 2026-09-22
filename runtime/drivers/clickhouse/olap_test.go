@@ -497,6 +497,30 @@ func testDictionary(t *testing.T, c *Connection, olap drivers.OLAPStore) {
 	require.NoError(t, res.Close())
 
 	require.NoError(t, c.dropTable(context.Background(), "dict1"))
+
+	// A dictionary can also be pointed at a table the user manages. Dropping the dictionary must leave that table
+	// alone, since only the source tables Rill creates for a dictionary are safe to garbage collect.
+	_, err = c.createTableAsSelect(context.Background(), "user_src", "SELECT 1 AS id, 'Venus' AS planet", &ModelOutputProperties{Engine: "MergeTree"}, "", "")
+	require.NoError(t, err)
+	_, err = c.createTableAsSelect(context.Background(), "user_dict", "", &ModelOutputProperties{
+		Typ:        "DICTIONARY",
+		Columns:    "(id UInt64, planet String)",
+		EngineFull: "PRIMARY KEY id SOURCE(CLICKHOUSE(TABLE 'user_src')) LAYOUT(HASHED()) LIFETIME(0)",
+	}, "", "")
+	require.NoError(t, err)
+
+	require.NoError(t, c.dropTable(context.Background(), "user_dict"))
+	requireExists(t, olap, "user_src")
+}
+
+func requireExists(t *testing.T, olap drivers.OLAPStore, tbl string) {
+	result, err := olap.Query(context.Background(), &drivers.Statement{Query: "EXISTS " + tbl})
+	require.NoError(t, err)
+	require.True(t, result.Next())
+	var exist bool
+	require.NoError(t, result.Scan(&exist))
+	require.True(t, exist)
+	require.NoError(t, result.Close())
 }
 
 func testIntervalType(t *testing.T, olap drivers.OLAPStore) {

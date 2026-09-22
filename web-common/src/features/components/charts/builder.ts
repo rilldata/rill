@@ -127,6 +127,23 @@ export function createPositionEncoding(
   };
 }
 
+/**
+ * Turns off Vega-Lite's implicit stacking when the axis should not be anchored at zero.
+ *
+ * Vega-Lite stacks bar and area marks by default, and a stacked scale takes its domain from
+ * the stack's start/end fields, which always span zero. `scale.zero: false` is therefore
+ * compiled in but has nothing to act on. Un-stacking is only safe for a single series: with a
+ * color field the marks would overlap instead of stack, so those charts stay zero-based.
+ *
+ * Spread this after `createPositionEncoding` so it wins over any default `stack`.
+ */
+export function createStackOverride(
+  field: FieldConfig | undefined,
+  colorField: string | undefined,
+): { stack?: null } {
+  return field?.zeroBasedOrigin === false && !colorField ? { stack: null } : {};
+}
+
 export function getTemporalAxisLabelExpr(format: string | undefined) {
   if (format !== "%H:%M") return undefined;
 

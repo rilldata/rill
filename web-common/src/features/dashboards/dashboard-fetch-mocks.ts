@@ -1,10 +1,13 @@
 import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
 import type {
+  V1CanvasSpec,
   V1ExploreSpec,
   V1GetExploreResponse,
   V1GetResourceResponse,
   V1MetricsViewAggregationResponse,
   V1MetricsViewSpec,
+  V1ResolveCanvasResponse,
+  V1Resource,
   V1TimeRangeSummary,
 } from "@rilldata/web-common/runtime-client";
 import { afterAll, beforeAll, vi } from "vitest";
@@ -12,6 +15,9 @@ import { asyncWait } from "../../lib/waitUtils";
 
 export class DashboardFetchMocks {
   private responses = new Map<string, any>();
+  // Every resource mocked so far, keyed by name. GetResource serves one of these,
+  // ListResources serves all of them.
+  private resources = new Map<string, V1Resource>();
   private aggregationRequestMocks: {
     regex: RegExp;
     response: V1MetricsViewAggregationResponse;
@@ -32,20 +38,22 @@ export class DashboardFetchMocks {
   }
 
   public mockMetricsView(name: string, resp: V1MetricsViewSpec) {
-    this.responses.set(`resource__${name}`, {
-      resource: {
-        meta: {
-          name: {
-            kind: ResourceKind.MetricsView,
-            name,
-          },
-        },
-        metricsView: {
-          state: {
-            validSpec: resp,
-          },
+    const resource: V1Resource = {
+      meta: {
+        name: {
+          kind: ResourceKind.MetricsView,
+          name,
         },
       },
+      metricsView: {
+        state: {
+          validSpec: resp,
+        },
+      },
+    };
+    this.resources.set(name, resource);
+    this.responses.set(`resource__${name}`, {
+      resource,
     } as V1GetResourceResponse);
   }
 
@@ -82,6 +90,51 @@ export class DashboardFetchMocks {
         },
       },
     } as V1GetExploreResponse);
+  }
+
+  /**
+   * Mocks the ResolveCanvas response, which is the single request a canvas dashboard loads from.
+   * `metricsViews` are the metrics views the canvas references, which reach the canvas as
+   * resources rather than through GetResource.
+   */
+  public mockCanvas(
+    name: string,
+    canvas: V1CanvasSpec,
+    metricsViews: Record<string, V1MetricsViewSpec>,
+  ) {
+    this.responses.set(`canvas__${name}`, {
+      canvas: {
+        meta: {
+          name: {
+            kind: ResourceKind.Canvas,
+            name,
+          },
+        },
+        canvas: {
+          state: {
+            validSpec: canvas,
+          },
+        },
+      },
+      referencedMetricsViews: Object.fromEntries(
+        Object.entries(metricsViews).map(([metricsViewName, spec]) => [
+          metricsViewName,
+          {
+            meta: {
+              name: {
+                kind: ResourceKind.MetricsView,
+                name: metricsViewName,
+              },
+            },
+            metricsView: {
+              state: {
+                validSpec: spec,
+              },
+            },
+          },
+        ]),
+      ),
+    } as V1ResolveCanvasResponse);
   }
 
   public mockTimeRangeSummary(
@@ -201,6 +254,13 @@ export class DashboardFetchMocks {
     } else if (service === "RuntimeService" && method === "GetResource") {
       const name = parsed.name?.name;
       responseData = this.responses.get(`resource__${name}`);
+    } else if (service === "RuntimeService" && method === "ListResources") {
+      const resources = [...this.resources.values()].filter(
+        (resource) => !parsed.kind || resource.meta?.name?.kind === parsed.kind,
+      );
+      responseData = { resources };
+    } else if (service === "QueryService" && method === "ResolveCanvas") {
+      responseData = this.responses.get(`canvas__${parsed.canvas}`);
     } else if (
       service === "QueryService" &&
       method === "MetricsViewTimeRange"

@@ -2,10 +2,10 @@
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import {
     createAdminServiceAddProjectMemberUser,
-    getAdminServiceListOrganizationMemberUsersQueryKey,
     getAdminServiceListProjectInvitesQueryKey,
     getAdminServiceListProjectMemberUsersQueryKey,
   } from "@rilldata/web-admin/client";
+  import { invalidateOrgMemberUsers } from "@rilldata/web-admin/features/organizations/user-management/utils";
   import UserRoleSelect from "@rilldata/web-admin/features/projects/user-management/UserRoleSelect.svelte";
   import { Button } from "@rilldata/web-common/components/button";
   import MultiInput from "@rilldata/web-common/components/forms/MultiInput.svelte";
@@ -88,11 +88,7 @@
           ),
         });
 
-        await queryClient.invalidateQueries({
-          queryKey:
-            getAdminServiceListOrganizationMemberUsersQueryKey(organization),
-          type: "all", // Clear regular and inactive queries
-        });
+        await invalidateOrgMemberUsers(queryClient, organization);
 
         eventBus.emit("notification", {
           type: "success",

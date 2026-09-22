@@ -14,6 +14,8 @@ export function exportFormatToPrettyString(format: V1ExportFormat): string {
       return m.report_format_xlsx();
     case V1ExportFormat.EXPORT_FORMAT_PARQUET:
       return m.report_format_parquet();
+    case V1ExportFormat.EXPORT_FORMAT_PDF:
+      return m.report_format_pdf();
     default:
       return m.report_format_unknown();
   }

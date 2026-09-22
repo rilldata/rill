@@ -69,7 +69,7 @@ func (e *localFileToSelfExecutor) Execute(ctx context.Context, opts *drivers.Mod
 		}
 		warnings = append(warnings, fmt.Sprintf("Undefined fields %q in output properties. Will be ignored.", strings.Join(unused, ", ")))
 	}
-	if err := outputProps.validateAndApplyDefaults(opts, &ModelInputProperties{}, outputProps); err != nil {
+	if err := outputProps.validateAndApplyDefaults(opts, &ModelInputProperties{}); err != nil {
 		return nil, fmt.Errorf("invalid output properties: %w", err)
 	}
 

@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"path/filepath"
 	"testing"
 
 	"github.com/rilldata/rill/runtime/drivers"
@@ -18,7 +19,7 @@ import (
 func Test_sqliteToDuckDB_Transfer(t *testing.T) {
 	tempDir := t.TempDir()
 
-	dbPath := fmt.Sprintf("%s.db", tempDir)
+	dbPath := filepath.Join(tempDir, "source.db")
 	db, err := sql.Open("sqlite", dbPath)
 	require.NoError(t, err)
 
@@ -41,6 +42,7 @@ func Test_sqliteToDuckDB_Transfer(t *testing.T) {
 		OutputConnector: "duckdb",
 		Env: &drivers.ModelEnv{
 			AllowHostAccess: false,
+			RepoRoot:        tempDir,
 			StageChanges:    true,
 		},
 		PreliminaryInputProperties: map[string]any{

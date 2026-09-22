@@ -9,6 +9,8 @@ import (
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
+	"github.com/rilldata/rill/runtime/parser"
+	"go.uber.org/zap"
 )
 
 const ListMetricsViewsName = "list_metrics_views"
@@ -22,7 +24,8 @@ var _ Tool[*ListMetricsViewsArgs, *ListMetricsViewsResult] = (*ListMetricsViews)
 type ListMetricsViewsArgs struct{}
 
 type ListMetricsViewsResult struct {
-	MetricsViews []map[string]any `json:"metrics_views"`
+	AIInstructions string           `json:"ai_instructions,omitempty"`
+	MetricsViews   []map[string]any `json:"metrics_views"`
 }
 
 func (t *ListMetricsViews) Spec() *mcp.Tool {
@@ -91,16 +94,48 @@ func (t *ListMetricsViews) Handler(ctx context.Context, args *ListMetricsViewsAr
 		i++
 	}
 
-	res := make(map[string]any)
-
 	// Find instance-wide AI context and add it to the response.
 	// NOTE: These arguably belong in the top-level instructions or other metadata, but that doesn't currently support dynamic values.
-	instance, err := t.Runtime.Instance(ctx, session.InstanceID())
-	if err != nil {
-		return nil, fmt.Errorf("failed to get instance %q: %w", session.InstanceID(), err)
-	}
-	if instance.AIInstructions != "" {
-		res["ai_instructions"] = instance.AIInstructions
+	// Rill's own agents receive the project instructions and always-apply skills directly in their prompts,
+	// so this enrichment is only for external MCP clients (identified by a non-rill user agent).
+	var aiInstructions strings.Builder
+	if !strings.HasPrefix(session.CatalogSession().UserAgent, "rill") {
+		instance, err := t.Runtime.Instance(ctx, session.InstanceID())
+		if err != nil {
+			return nil, fmt.Errorf("failed to get instance %q: %w", session.InstanceID(), err)
+		}
+		aiInstructions.WriteString(instance.AIInstructions)
+
+		// Append always-apply skills so external clients receive them without extra round-trips.
+		// Skill loading failures should degrade the response, not fail it.
+		skills, err := session.Skills(ctx)
+		if err != nil {
+			session.logger.Warn("failed to load project skills", zap.Error(err))
+		}
+		// The skills have their own byte budget, matching the in-app agents, so long ai_instructions do not crowd them out.
+		// The cap applies to the rendered section, including its separator and heading, not just the body.
+		var skillBytes int
+		for _, sk := range skillsForAgent(skills, parser.SkillAgentAnalyst) {
+			if !sk.AlwaysApply {
+				continue
+			}
+			var section string
+			if aiInstructions.Len() > 0 {
+				section = "\n\n"
+			}
+			section += fmt.Sprintf("## Skill: %s\n\n", sk.Name)
+			// The tool has no selected metrics view, so a scoped skill states its scope.
+			if len(sk.MetricsViews) > 0 {
+				section += fmt.Sprintf("Applies to the metrics views: %s.\n\n", strings.Join(sk.MetricsViews, ", "))
+			}
+			section += sk.Body
+			if skillBytes+len(section) > skillsMaxAlwaysApplyBytes {
+				session.logger.Warn("always-apply skill exceeds the size cap; clients must load it with load_skill", zap.String("skill", sk.Name))
+				continue
+			}
+			aiInstructions.WriteString(section)
+			skillBytes += len(section)
+		}
 	}
 
 	var metricsViews []map[string]any
@@ -116,9 +151,9 @@ func (t *ListMetricsViews) Handler(ctx context.Context, args *ListMetricsViewsAr
 			"description":  mv.State.ValidSpec.Description,
 		})
 	}
-	res["metrics_views"] = metricsViews
 
 	return &ListMetricsViewsResult{
-		MetricsViews: metricsViews,
+		AIInstructions: aiInstructions.String(),
+		MetricsViews:   metricsViews,
 	}, nil
 }

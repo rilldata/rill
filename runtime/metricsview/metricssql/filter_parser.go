@@ -3,12 +3,14 @@ package metricssql
 import (
 	"context"
 	"fmt"
+	"strconv"
 	"time"
 
 	"github.com/itlightning/dateparse"
 	"github.com/pingcap/tidb/pkg/parser"
 	"github.com/pingcap/tidb/pkg/parser/ast"
 	"github.com/pingcap/tidb/pkg/parser/mysql"
+	"github.com/pingcap/tidb/pkg/parser/test_driver"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/metricsview"
 )
@@ -434,6 +436,13 @@ func parseValueExpr(in ast.Node) (any, error) {
 		val = int(actual) // Cast to plain int
 	case uint64:
 		val = int(actual) // Cast to plain int
+	case *test_driver.MyDecimal:
+		// Decimal literals arrive as an opaque struct that would serialize to an empty value; convert to float64
+		f, err := strconv.ParseFloat(actual.String(), 64)
+		if err != nil {
+			return nil, fmt.Errorf("metrics sql: failed to parse decimal literal %q: %w", actual.String(), err)
+		}
+		val = f
 	}
 
 	return val, nil

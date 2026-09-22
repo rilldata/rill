@@ -46,6 +46,7 @@ export class RillTime {
   public asOfLabel: RillTimeAsOfLabel | undefined = undefined;
 
   public isOldFormat = false;
+  public isAbsolute = false;
 
   public constructor(public readonly interval: RillTimeInterval) {
     this.updateIsComplete();
@@ -58,6 +59,7 @@ export class RillTime {
       interval instanceof RillLegacyIsoInterval ||
       interval instanceof RillLegacyDaxInterval ||
       interval instanceof RillAllTimeInterval;
+    this.isAbsolute = interval instanceof RillIsoInterval;
   }
 
   public withGrain(grain: string) {
@@ -98,10 +100,6 @@ export class RillTime {
     } else {
       this.withAnchorOverrides([...this.anchorOverrides, override]);
     }
-  }
-
-  public isAbsoluteTime() {
-    return this.interval instanceof RillIsoInterval;
   }
 
   public toString() {

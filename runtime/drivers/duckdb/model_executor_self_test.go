@@ -43,6 +43,7 @@ func TestDuckDBToDuckDBTransfer(t *testing.T) {
 		OutputConnector: "duckdb",
 		Env: &drivers.ModelEnv{
 			AllowHostAccess: false,
+			RepoRoot:        tempDir,
 			StageChanges:    true,
 		},
 		PreliminaryInputProperties: map[string]any{

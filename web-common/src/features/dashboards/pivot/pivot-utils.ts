@@ -10,7 +10,6 @@ import {
 import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
 import { getOffset } from "@rilldata/web-common/lib/time/transforms";
 import {
-  Period,
   TimeOffsetType,
   type AvailableTimeGrain,
   type TimeRangeString,
@@ -31,6 +30,8 @@ import { getURIRequestMeasure } from "@rilldata/web-common/features/dashboards/d
 import { SHOW_MORE_BUTTON } from "./pivot-constants";
 import { getColumnFiltersForPage } from "./pivot-infinite-scroll";
 import { mergeFilters } from "./pivot-merge-filters";
+import type { EphemeralMeasureDef } from "@rilldata/web-common/features/dashboards/ephemeral-measures/types";
+import { mapEphemeralMeasuresForRequest } from "@rilldata/web-common/features/dashboards/ephemeral-measures/measure-mapping";
 import {
   COMPARISON_DELTA,
   COMPARISON_PERCENT,
@@ -96,8 +97,11 @@ export function getPivotConfigKey(config: PivotDataStoreConfig) {
   const dimsAndMeasures = rowDimensionNames
     .concat(measureNames, colDimensionNames)
     .join("_");
+  // Ephemeral measure definitions are part of the key so editing an
+  // expression (without renaming) refetches instead of serving cached data.
+  const ephemeralMeasuresKey = JSON.stringify(config.ephemeralMeasures ?? []);
 
-  return `${dimsAndMeasures}_${timeKey}_${sortingKey}_${tableModeKey}_${filterKey}_${enableComparison}_${comparisonTimeKey}_${showTotalsColumn}_${showTotalsRow}_${rowLimit ?? "all"}_${outermostRowLimit ?? "none"}`;
+  return `${dimsAndMeasures}_${timeKey}_${sortingKey}_${tableModeKey}_${filterKey}_${enableComparison}_${comparisonTimeKey}_${showTotalsColumn}_${showTotalsRow}_${rowLimit ?? "all"}_${outermostRowLimit ?? "none"}_${ephemeralMeasuresKey}`;
 }
 
 /**
@@ -125,7 +129,7 @@ export function getTimeForQuery(
       startTimeOfLastInterval = startTimeDt;
     }
 
-    const duration = TIME_GRAIN[filter.interval]?.duration as Period;
+    const duration = TIME_GRAIN[filter.interval]?.duration;
     const endTimeDt = getOffset(
       startTimeOfLastInterval,
       duration,
@@ -541,6 +545,21 @@ export function prepareMeasureForComparison(
   });
 }
 
+/**
+ * Maps plain measure names to request measures: comparison-suffixed names get
+ * their comparison compute, and ephemeral measure names get the `expression`
+ * compute carrying their definition.
+ */
+export function prepareMeasuresForRequest(
+  measures: V1MetricsViewAggregationMeasure[],
+  ephemeralMeasures: EphemeralMeasureDef[] | undefined,
+): V1MetricsViewAggregationMeasure[] {
+  return mapEphemeralMeasuresForRequest(
+    prepareMeasureForComparison(measures),
+    ephemeralMeasures,
+  );
+}
+
 export function canEnablePivotComparison(
   pivotState: PivotState,
   comparisonStart: string | Date | undefined,
@@ -607,7 +626,14 @@ export function getValuesForFlatTable(
 /**
  * Shared core for all pivot filter builders. Takes dimension name/value pairs,
  * separates time dimensions into TimeFilters, creates IN expressions for the rest,
- * computes the narrowed time range, and merges everything with optional extra filters.
+ * and computes the narrowed time range.
+ *
+ * The returned expression describes only the clicked element; the dashboard's
+ * global where filter is deliberately left out. Click-to-filter reads these
+ * expressions back to decide which dimension values to toggle, so folding the
+ * global filter in here would make deselecting a pivot cell also drop unrelated
+ * global filters. Callers that query data with the result (the rows viewer)
+ * merge config.whereFilter themselves.
  *
  * Every public getFiltersFor* function delegates here after extracting its
  * dimension entries from whichever data source it uses (positional rowId,
@@ -616,7 +642,6 @@ export function getValuesForFlatTable(
 export function buildPivotFilter(
   config: PivotDataStoreConfig,
   dimEntries: Array<{ name: string; value: string | null }>,
-  extraFilters?: V1Expression,
 ): PivotFilter {
   const timeFilters: TimeFilters[] = [];
   const dimExprs: V1Expression[] = [];
@@ -637,15 +662,7 @@ export function buildPivotFilter(
     dimExprs.length > 0 ? createAndExpression(dimExprs) : undefined;
   const timeRange = getTimeForQuery(config.time, timeFilters);
 
-  let filters: V1Expression | undefined;
-  if (extraFilters) {
-    const combined = mergeFilters(dimFilter, extraFilters);
-    filters = mergeFilters(combined, config.whereFilter);
-  } else {
-    filters = mergeFilters(dimFilter, config.whereFilter);
-  }
-
-  return { filters, timeRange };
+  return { filters: dimFilter, timeRange };
 }
 
 export function getFiltersForCell(

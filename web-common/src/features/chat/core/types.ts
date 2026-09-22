@@ -58,6 +58,8 @@ export const ToolName = {
 
   // Common tools
   NAVIGATE: "navigate",
+  LIST_SKILLS: "list_skills",
+  LOAD_SKILL: "load_skill",
 } as const;
 
 // =============================================================================
@@ -79,4 +81,6 @@ export type ChatConfig = {
   emptyChatLabel: string;
   placeholder: string;
   minChatHeight: string;
+  // The project's skills for this chat's agent can be picked with "/".
+  skills?: boolean;
 };

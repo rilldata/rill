@@ -2,11 +2,102 @@ package parser
 
 import (
 	"context"
+	"strings"
 	"testing"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/stretchr/testify/require"
 )
+
+func TestExploreDuplicateFields(t *testing.T) {
+	tests := []struct {
+		name    string
+		yaml    string
+		wantErr string
+	}{
+		{
+			name:    "dimensions",
+			yaml:    "dimensions: [foo, bar, foo]",
+			wantErr: `duplicate field "foo" in dimensions`,
+		},
+		{
+			name:    "measures",
+			yaml:    "measures: [count, total, count]",
+			wantErr: `duplicate field "count" in measures`,
+		},
+		{
+			name:    "default dimensions",
+			yaml:    "defaults:\n  dimensions: [foo, bar, foo]",
+			wantErr: `duplicate field "foo" in defaults.dimensions`,
+		},
+		{
+			name:    "default measures",
+			yaml:    "defaults:\n  measures: [count, total, count]",
+			wantErr: `duplicate field "count" in defaults.measures`,
+		},
+		{
+			name: "unique fields can also appear in defaults",
+			yaml: "dimensions: [foo, bar]\nmeasures: [count, total]\ndefaults:\n  dimensions: [bar, foo]\n  measures: [total, count]",
+		},
+	}
+	for _, inline := range []bool{false, true} {
+		kind := "standalone"
+		if inline {
+			kind = "inline"
+		}
+		for _, tt := range tests {
+			t.Run(kind+"/"+tt.name, func(t *testing.T) {
+				path := "explores/e1.yaml"
+				content := "type: explore\nmetrics_view: mv1\n" + tt.yaml
+				if inline {
+					path = "metrics_views/mv1.yaml"
+					content = `type: metrics_view
+version: 1
+model: m1
+dimensions:
+  - name: foo
+    expression: foo
+  - name: bar
+    expression: bar
+measures:
+  - name: count
+    expression: COUNT(*)
+  - name: total
+    expression: SUM(foo)
+explore:
+  ` + strings.ReplaceAll(tt.yaml, "\n", "\n  ")
+				}
+				repo := makeRepo(t, map[string]string{
+					"rill.yaml": "",
+					path:        content,
+				})
+				p, err := Parse(context.Background(), repo, "", "", "duckdb", true)
+				require.NoError(t, err)
+				if tt.wantErr != "" {
+					require.Len(t, p.Errors, 1)
+					require.Equal(t, "/"+path, p.Errors[0].FilePath)
+					require.Contains(t, p.Errors[0].Message, tt.wantErr)
+					for _, resource := range p.Resources {
+						require.NotEqual(t, ResourceKindExplore, resource.Name.Kind)
+					}
+					return
+				}
+				require.Empty(t, p.Errors)
+				var explore *runtimev1.ExploreSpec
+				for _, resource := range p.Resources {
+					if resource.Name.Kind == ResourceKindExplore {
+						explore = resource.ExploreSpec
+					}
+				}
+				require.NotNil(t, explore)
+				require.Equal(t, []string{"foo", "bar"}, explore.Dimensions)
+				require.Equal(t, []string{"count", "total"}, explore.Measures)
+				require.Equal(t, []string{"bar", "foo"}, explore.DefaultPreset.Dimensions)
+				require.Equal(t, []string{"total", "count"}, explore.DefaultPreset.Measures)
+			})
+		}
+	}
+}
 
 func TestExploreFieldSelector(t *testing.T) {
 	files := map[string]string{

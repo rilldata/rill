@@ -166,6 +166,45 @@ func TestListCommits(t *testing.T) {
 	})
 }
 
+func TestListGlob(t *testing.T) {
+	// Sets up a parent directory holding a secret alongside the repo root, so an escaping glob would have something to match.
+	setup := func(t *testing.T) string {
+		t.Helper()
+		parent := t.TempDir()
+		require.NoError(t, os.WriteFile(filepath.Join(parent, "secret.txt"), []byte("secret"), 0644))
+		root := filepath.Join(parent, "repo")
+		require.NoError(t, os.MkdirAll(filepath.Join(root, "sources"), 0755))
+		require.NoError(t, os.WriteFile(filepath.Join(root, "rill.yaml"), []byte("x"), 0644))
+		return root
+	}
+
+	t.Run("lists files under the root", func(t *testing.T) {
+		c := &connection{root: setup(t)}
+
+		entries, err := c.ListGlob(context.Background(), "**", true)
+		require.NoError(t, err)
+		paths := make([]string, len(entries))
+		for i, e := range entries {
+			paths[i] = e.Path
+		}
+		require.Equal(t, []string{"/rill.yaml"}, paths)
+	})
+
+	t.Run("traversal globs cannot escape the root", func(t *testing.T) {
+		c := &connection{root: setup(t)}
+
+		// os.DirFS rejects paths containing ".." elements (they fail fs.ValidPath), so the walk never
+		// leaves the root. This test pins that behaviour in case the glob walk is ever reimplemented.
+		for _, glob := range []string{"../*", "../../**", "/../*", "sources/../../*", "../secret.txt", "{.,..}/*"} {
+			entries, err := c.ListGlob(context.Background(), glob, true)
+			require.NoError(t, err, "glob %q", glob)
+			for _, e := range entries {
+				require.NotContains(t, e.Path, "secret.txt", "glob %q escaped the repo root", glob)
+			}
+		}
+	})
+}
+
 func TestListBranches(t *testing.T) {
 	t.Run("lists local branches and reports the current branch", func(t *testing.T) {
 		tempDir := setupRepoWithCommits(t, 1)

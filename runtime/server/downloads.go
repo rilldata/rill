@@ -273,15 +273,16 @@ func (s *Server) downloadHandler(w http.ResponseWriter, req *http.Request) {
 		r := v.MetricsViewTimeSeriesRequest
 
 		q = &queries.MetricsViewTimeSeries{
-			MetricsViewName: r.MetricsViewName,
-			MeasureNames:    r.MeasureNames,
-			TimeStart:       r.TimeStart,
-			TimeEnd:         r.TimeEnd,
-			Where:           r.Where,
-			Having:          r.Having,
-			TimeGranularity: r.TimeGranularity,
-			TimeZone:        r.TimeZone,
-			SecurityClaims:  claims,
+			MetricsViewName:   r.MetricsViewName,
+			MeasureNames:      r.MeasureNames,
+			EphemeralMeasures: r.EphemeralMeasures,
+			TimeStart:         r.TimeStart,
+			TimeEnd:           r.TimeEnd,
+			Where:             r.Where,
+			Having:            r.Having,
+			TimeGranularity:   r.TimeGranularity,
+			TimeZone:          r.TimeZone,
+			SecurityClaims:    claims,
 		}
 	case *runtimev1.Query_MetricsViewComparisonRequest:
 		r := v.MetricsViewComparisonRequest

@@ -299,6 +299,30 @@ func BucketRegion(ctx context.Context, confProp *ConfigProperties, bucket string
 	return bucketRegionFromConfig(ctx, cfg, confProp, bucket)
 }
 
+// GetConfigWithTemporaryCredentials returns a new ConfigProperties with temporary credentials if the original config has a role ARN to assume.
+// If no role ARN is provided, it returns the original config.
+func GetConfigWithTemporaryCredentials(ctx context.Context, confProp *ConfigProperties, logger *zap.Logger) (*ConfigProperties, error) {
+	if confProp.RoleARN == "" {
+		return confProp, nil
+	}
+	credsProvider, err := newCredentialsProvider(ctx, confProp, logger)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get AWS credentials: %w", err)
+	}
+
+	creds, err := credsProvider.Retrieve(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to retrieve AWS credentials: %w", err)
+	}
+
+	cfg := *confProp
+	cfg.AccessKeyID = creds.AccessKeyID
+	cfg.SecretAccessKey = creds.SecretAccessKey
+	cfg.SessionToken = creds.SessionToken
+	cfg.RoleARN = ""
+	return &cfg, nil
+}
+
 func bucketRegionFromConfig(ctx context.Context, cfg aws.Config, confProp *ConfigProperties, bucket string) (string, error) {
 	// If S3Endpoint is set, we assume we're targeting an S3 compatible API (but not AWS)
 	if confProp.Endpoint != "" {

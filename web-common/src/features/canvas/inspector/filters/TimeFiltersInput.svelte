@@ -66,8 +66,8 @@
 
   $: interval = $intervalStore;
 
-  $: timeStart = interval?.start.toISO();
-  $: timeEnd = interval?.end.toISO();
+  $: timeStart = interval?.start.toUTC().toISO();
+  $: timeEnd = interval?.end.toUTC().toISO();
 
   $: comparisonInterval = $comparisonIntervalStore;
   $: comparisonRange = $comparisonRangeStore;
@@ -96,9 +96,9 @@
   </div>
   <div class="text-fg-secondary">
     {#if localFiltersEnabled}
-      Overriding inherited time filters from canvas.
+      {m.canvas_overriding_inherited_time_filters()}
     {:else}
-      Overrides inherited time filters from canvas when ON.
+      {m.canvas_override_inherited_time_filters_hint()}
     {/if}
   </div>
 

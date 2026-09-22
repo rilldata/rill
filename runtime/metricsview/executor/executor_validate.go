@@ -75,7 +75,7 @@ func (e *Executor) ValidateAndNormalizeMetricsView(ctx context.Context) (*Valida
 			res.OtherErrs = append(res.OtherErrs, fmt.Errorf("table %q does not exist", mv.Table))
 			return res, nil
 		}
-		return nil, fmt.Errorf("could not find table %q: %w", mv.Table, err)
+		return nil, fmt.Errorf("failed to look up table %q: %w", mv.Table, err)
 	}
 
 	// Populate empty database/databaseSchema from table metadata for StarRocks only.

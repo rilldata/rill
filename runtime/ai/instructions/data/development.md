@@ -189,6 +189,20 @@ Since they repeatedly run a query, they are slightly expensive resources.
 They are usually found downstream of a metrics view in the DAG.
 Most projects don't define reports directly as files; instead, users can define reports using a UI in Rill Cloud.
 
+### Skills
+
+Skills teach Rill's AI agents project-specific practices, such as analysis playbooks (e.g. how to do root-cause analysis for a revenue drop) and business glossaries.
+A skill is a directory containing a `SKILL.md` file that follows the Agent Skills format (https://agentskills.io): YAML front matter followed by a markdown body with the instructions.
+Rill loads skills from `skills/<name>/SKILL.md`, and also from `.agents/skills/<name>/SKILL.md` for compatibility with skills authored for other agent clients.
+The front matter supports these properties:
+- `description:` (required) a short summary used to decide when the skill applies; write it as "what it does + when to use it"
+- `name:` always include it (the Agent Skills format requires it, even though Rill derives it from the directory when omitted); must match the directory name; lowercase letters, numbers and hyphens only
+- `metrics_views:` (optional, Rill extension) list of metrics view names the skill is relevant to; the analyst uses it to decide when to load the skill
+- `agents:` (optional, Rill extension) list of agents the skill applies to, `analyst` and/or `developer`; defaults to `[developer]`, so analysis skills must set `agents: [analyst]`
+- `always_apply:` (optional, Rill extension) if `true`, the skill is loaded up front in every conversation instead of on demand; use for short, broadly applicable guidance such as glossaries
+
+Skill contents are visible to every user who can use AI features in the project, so they must never contain secrets.
+
 ### `rill.yaml`
 
 `rill.yaml` is a required file for project-wide config found at the root directory of a Rill project.
@@ -273,6 +287,7 @@ If you don't have access to a matching skill, try searching the reference docume
 ### Common pitfalls
 
 Avoid these mistakes when developing a project:
+- **Inspecting Rill's internal state with external tools**: Never attempt to inspect Rill's internal state in the project's `tmp` directory (or elsewhere) using external tools. In particular, do not point the `duckdb` CLI (or any other external database client) at the files Rill manages there; Rill uses a custom setup that makes this approach fail. Only ever inspect Rill's internal state through the `rill` CLI or the APIs/MCP tools that Rill exposes (e.g. `query_sql`, `show_table`, `project_status`).
 - **Duplicating ETL logic**: Ingest data once, then derive from it within the project. Do not create multiple models that pull the same data from an external source.
 - **Models as SQL files:** Always create new models as `.yaml` files, not `.sql` files (which are harder to extend later).
 - **Not creating connector files:** When Rill has native support for a connector (like S3 or BigQuery), always create a dedicated connector resource file for it.
@@ -294,4 +309,14 @@ Avoid these mistakes when developing a project:
 - **Making unrelated "drive by" improvements:** Never make changes that the user did not request, even if you notice something that looks wrong or could be improved. Stay focused on the task at hand. If you spot an unrelated issue, mention it in your final response instead of fixing it.
 - **Calling navigate too early:** Do NOT call `navigate` while iterating on changes. Only call it once, at the very end, right before your final response.
 - **Don't stop if there are errors:** When a file has an error after you made changes, keep looping until you have done your best to fix the error. You should not give up easily, the user expects you to try and fix errors.
+{% end %}
+
+{% if not .external %}
+## Using skills
+
+The project may define **skills**: instruction files with project-specific development practices and conventions.
+If a "list_skills" result is present in the conversation, the project defines skills. Then:
+- Skills marked "always_apply" have already been loaded for you; treat their instructions as always in effect.
+- Only use skills whose "agents" include "developer".
+- Before doing work that a skill's description covers, you MUST call "load_skill" to retrieve it and follow its instructions.
 {% end %}

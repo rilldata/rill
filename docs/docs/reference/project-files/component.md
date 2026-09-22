@@ -294,7 +294,9 @@ _[object]_ - (no description)
 
 _[object]_ - (no description)
 
-  - **`url`** - _[string]_ - Image URL _(required)_
+  - **`url`** - _[string]_ - Image URL. Used in light mode, and in dark mode when `dark_url` is not set. _(required)_
+
+  - **`dark_url`** - _[string]_ - Image URL to use when the dashboard is displayed in dark mode. Defaults to `url`.
 
   - **`css`** - _[object]_ - CSS styles
 

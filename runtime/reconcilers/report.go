@@ -2,6 +2,7 @@ package reconcilers
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net/url"
@@ -9,7 +10,6 @@ import (
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
-	"github.com/rilldata/rill/runtime/ai"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/duration"
 	"github.com/rilldata/rill/runtime/pkg/email"
@@ -19,6 +19,7 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	"go.uber.org/zap"
 	"golang.org/x/exp/slices"
+	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -205,7 +206,7 @@ func (r *ReportReconciler) ResolveTransitiveAccess(ctx context.Context, claims *
 		resolver, err := initializer(ctx, &runtime.ResolverOptions{
 			Runtime:    r.C.Runtime,
 			InstanceID: r.C.InstanceID,
-			Properties: spec.ResolverProperties.AsMap(),
+			Properties: resolverProperties(spec),
 			Claims:     claims,
 			ForExport:  false,
 		})
@@ -249,7 +250,30 @@ func (r *ReportReconciler) ResolveTransitiveAccess(ctx context.Context, claims *
 	}
 	if canvas != "" {
 		c := &runtimev1.ResourceName{Kind: runtime.ResourceKindCanvas, Name: canvas}
-		conditionRes = append(conditionRes, c)
+
+		// Also allow access to the canvas's components and the resources their renderers reference (e.g. metrics views).
+		// This enables report recipients to render the canvas in the browser (e.g. for PDF exports).
+		canvasRes, err := r.C.Get(ctx, c, false)
+		if err == nil {
+			canvasResources, err := canvasTransitiveConditionResources(ctx, r.C, claims, canvasRes)
+			if err != nil {
+				return nil, err
+			}
+			conditionRes = append(conditionRes, canvasResources...)
+		} else if errors.Is(err, drivers.ErrResourceNotFound) {
+			// Canvas not found: still allow access to the name so requests fail with a clear error on the canvas itself.
+			conditionRes = append(conditionRes, c)
+		} else {
+			return nil, err
+		}
+
+		// Restrict recipients to the data selected by the filters that were captured when the report was created (if any).
+		filterRules, err := canvasFilterSecurityRules(spec.Annotations["metrics_view_filters"])
+		if err != nil {
+			return nil, err
+		}
+		rules = append(rules, filterRules...)
+
 		for _, r := range rules {
 			if rfa := r.GetFieldAccess(); rfa != nil {
 				rfa.ConditionResources = append(rfa.ConditionResources, c)
@@ -689,6 +713,44 @@ func (r *ReportReconciler) sendNonEmailNotification(ctx context.Context, rep *ru
 	return true, nil
 }
 
+// canvasFilterSecurityRules builds row filter security rules from a report's "metrics_view_filters" annotation,
+// which contains a JSON object of metrics view name to filter expression (in protojson format).
+// The annotation is set for canvas reports and captures the filters that were selected when the report was created;
+// baking them in as row filters ensures magic-token recipients cannot query data beyond the report's filters.
+func canvasFilterSecurityRules(annotation string) ([]*runtimev1.SecurityRule, error) {
+	if annotation == "" {
+		return nil, nil
+	}
+
+	var filters map[string]json.RawMessage
+	if err := json.Unmarshal([]byte(annotation), &filters); err != nil {
+		return nil, fmt.Errorf(`failed to parse "metrics_view_filters" annotation: %w`, err)
+	}
+
+	var rules []*runtimev1.SecurityRule
+	for mv, data := range filters {
+		if mv == "" {
+			return nil, errors.New(`empty metrics view name in "metrics_view_filters" annotation`)
+		}
+		expr := &runtimev1.Expression{}
+		if err := protojson.Unmarshal(data, expr); err != nil {
+			return nil, fmt.Errorf("failed to parse filter for metrics view %q: %w", mv, err)
+		}
+		rules = append(rules, &runtimev1.SecurityRule{
+			Rule: &runtimev1.SecurityRule_RowFilter{
+				RowFilter: &runtimev1.SecurityRuleRowFilter{
+					ConditionResources: []*runtimev1.ResourceName{{
+						Kind: runtime.ResourceKindMetricsView,
+						Name: mv,
+					}},
+					Expression: expr,
+				},
+			},
+		})
+	}
+	return rules, nil
+}
+
 // common notification data used for reports
 type notificationData struct {
 	openLink        string
@@ -724,18 +786,11 @@ func (r *ReportReconciler) triggerAIReport(ctx context.Context, self *runtimev1.
 		Permissions:    []runtime.Permission{runtime.ReadObjects, runtime.ReadMetrics, runtime.UseAI},
 	}
 
-	// Get resolver properties from spec and add is_report flag
-	props := rep.Spec.ResolverProperties.AsMap()
-	props["is_report"] = true
-	if props["agent"] == nil {
-		props["agent"] = ai.AnalystAgentName
-	}
-
 	// Execute AI resolver
 	result, info, err := r.C.Runtime.Resolve(ctx, &runtime.ResolveOptions{
 		InstanceID:         r.C.InstanceID,
 		Resolver:           "ai",
-		ResolverProperties: props,
+		ResolverProperties: resolverProperties(rep.Spec),
 		Args: map[string]any{
 			"execution_time":        t,
 			"create_shared_session": webOpenMode == "creator", // if creator mode, create a shared session
@@ -812,9 +867,21 @@ func formatExportFormat(f runtimev1.ExportFormat) string {
 		return "Excel"
 	case runtimev1.ExportFormat_EXPORT_FORMAT_PARQUET:
 		return "Parquet"
+	case runtimev1.ExportFormat_EXPORT_FORMAT_PDF:
+		return "PDF"
 	default:
 		return f.String()
 	}
+}
+
+// resolverProperties returns the report's resolver properties as they should be passed to the resolver.
+// For AI reports, it marks the properties as belonging to a report, which lets the resolver's validation pass (e.g. a prompt is optional).
+func resolverProperties(spec *runtimev1.ReportSpec) map[string]any {
+	props := spec.ResolverProperties.AsMap()
+	if spec.Resolver == "ai" {
+		props["is_report"] = true
+	}
+	return props
 }
 
 // computeInheritedWatermark computes the inherited watermark for the report.
@@ -822,6 +889,20 @@ func formatExportFormat(f runtimev1.ExportFormat) string {
 func (r *ReportReconciler) computeInheritedWatermark(ctx context.Context, refs []*runtimev1.ResourceName) (time.Time, bool, error) {
 	var t time.Time
 	for _, ref := range refs {
+		// Explores (referenced by AI reports) inherit the watermark of their metrics view.
+		// Resolving the metrics view here instead of in the watermark query keeps the query's cache keyed on the metrics view's data.
+		if ref.Kind == runtime.ResourceKindExplore {
+			res, err := r.C.Get(ctx, ref, false)
+			if err != nil {
+				return t, false, fmt.Errorf("failed to get explore %q: %w", ref.Name, err)
+			}
+			spec := res.GetExplore().State.ValidSpec
+			if spec == nil {
+				return t, false, fmt.Errorf("explore %q is not valid", ref.Name)
+			}
+			ref = &runtimev1.ResourceName{Kind: runtime.ResourceKindMetricsView, Name: spec.MetricsView}
+		}
+
 		q := &queries.ResourceWatermark{
 			ResourceKind: ref.Kind,
 			ResourceName: ref.Name,

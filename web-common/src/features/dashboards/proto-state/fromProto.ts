@@ -1,8 +1,4 @@
 import { protoBase64, type Timestamp } from "@bufbuild/protobuf";
-import {
-  mapExprToMeasureFilter,
-  type MeasureFilterEntry,
-} from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
 import { LeaderboardContextColumn } from "@rilldata/web-common/features/dashboards/leaderboard-context-column";
 import {
   type PivotChipData,
@@ -20,7 +16,9 @@ import {
 import { convertFilterToExpression } from "@rilldata/web-common/features/dashboards/proto-state/filter-converter";
 import {
   createAndExpression,
+  createSubQueryExpression,
   filterIdentifiers,
+  getAllIdentifiers,
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
 import { TDDChart } from "@rilldata/web-common/features/dashboards/time-dimension-details/types";
@@ -115,15 +113,18 @@ export function getDashboardStateFromProto(
   if (dashboard.dimensionsWithInlistFilter) {
     entity.dimensionsWithInlistFilter = dashboard.dimensionsWithInlistFilter;
   }
-  if (dashboard.having) {
-    entity.dimensionThresholdFilters = dashboard.having.map((h) => {
-      const expr = fromExpressionProto(h.filter as Expression);
-      return {
-        name: h.name,
-        filters: expr?.cond?.exprs
-          ?.map(mapExprToMeasureFilter)
-          .filter(Boolean) as MeasureFilterEntry[],
-      };
+  // Explore state keeps measure filters collapsed into the where filter as subqueries.
+  // Older protos stored them separately in `having`, so merge those back in.
+  entity.dimensionThresholdFilters = [];
+  if (dashboard.having.length) {
+    entity.whereFilter ??= createAndExpression([]);
+    const exprs = entity.whereFilter.cond?.exprs;
+    dashboard.having.forEach((h) => {
+      if (!h.filter) return;
+      const expr = fromExpressionProto(h.filter);
+      exprs?.push(
+        createSubQueryExpression(h.name, getAllIdentifiers(expr), expr),
+      );
     });
   }
   if (dashboard.compareTimeRange) {
@@ -225,6 +226,15 @@ export function getDashboardStateFromProto(
     entity.leaderboardMeasureNames = dashboard.leaderboardMeasures;
   }
 
+  if (dashboard.ephemeralMeasures?.length) {
+    entity.ephemeralMeasures = dashboard.ephemeralMeasures.map((def) => ({
+      name: def.name,
+      displayName: def.displayName,
+      expression: def.expression,
+      ...(def.formatPreset ? { formatPreset: def.formatPreset } : {}),
+    }));
+  }
+
   if (dashboard.activePage === DashboardState_ActivePage.PIVOT) {
     entity.pivot = fromPivotProto(dashboard, metricsView);
   } else if (dashboard.activePage !== DashboardState_ActivePage.UNSPECIFIED) {
@@ -265,6 +275,20 @@ export function fromExpressionProto(
           exprs: expression.expression.value.exprs
             .map((e) => fromExpressionProto(e))
             .filter((e): e is V1Expression => e !== undefined),
+        },
+      };
+
+    case "subquery":
+      return {
+        subquery: {
+          dimension: expression.expression.value.dimension,
+          measures: expression.expression.value.measures,
+          where:
+            expression.expression.value.where &&
+            fromExpressionProto(expression.expression.value.where),
+          having:
+            expression.expression.value.having &&
+            fromExpressionProto(expression.expression.value.having),
         },
       };
   }
@@ -382,6 +406,10 @@ function fromPivotProto(
     }
   };
 
+  const ephemeralMeasuresMap = new Map(
+    (dashboard.ephemeralMeasures ?? []).map((def) => [def.name, def]),
+  );
+
   const measuresMap = getMapFromArray(
     metricsView.measures ?? [],
     (m) => m.name,
@@ -390,7 +418,11 @@ function fromPivotProto(
     const mes = measuresMap.get(name);
     return {
       id: name,
-      title: mes?.displayName || mes?.name || "Unknown",
+      title:
+        mes?.displayName ||
+        mes?.name ||
+        ephemeralMeasuresMap.get(name)?.displayName ||
+        "Unknown",
       type: PivotChipType.Measure,
     };
   };

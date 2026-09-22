@@ -163,13 +163,16 @@ format_d3: ",.0f"   # 1,235 (rounded, with thousands separator)
 - If there is any date/timestamp column in the underlying table, pick the primary or most interesting one and add it under `dimensions:`
 - It is also _strongly_ recommended that you configure a primary time dimension using `timeseries:`
 
-### Auto-generated explore
+### Inline explore
 
-When you create a metrics view, Rill automatically generates an explore dashboard with the same name, exposing all dimensions and measures. To customize the explore (you usually should not need to), add an `explore:` block:
+New metrics views should set `version: 1` and include an `explore:` block, which makes Rill emit an explore dashboard for the metrics view (named after the metrics view unless `name:` is set):
 
 ```yaml
+version: 1
 explore:
   display_name: Sales Dashboard
+  dimensions: '*'      # Optional: dimensions to expose ('*', a list, or {exclude: [...]}); defaults to all
+  measures: '*'        # Optional: measures to expose ('*', a list, or {exclude: [...]}); defaults to all
   defaults:
     time_range: P7D
     measures:
@@ -177,7 +180,9 @@ explore:
       - order_count
 ```
 
-**Legacy behavior**: Files with `version: 1` do NOT auto-generate an explore. Omit `version:` in new metrics views to get the auto-generated explore.
+An empty block (`explore: {}`) is enough to enable the dashboard with all dimensions and measures. Note that `explore:` with no value (null) does NOT enable it. Set `explore: {skip: true}` to create a metrics view without a dashboard.
+
+**Legacy behavior**: Files without `version:` (or `version: 0`) auto-generate an explore even without an `explore:` block. Files with `version: 1` only get an explore if an `explore:` block is present.
 
 ## Full Example
 
@@ -185,6 +190,7 @@ Here is a complete, annotated metrics view:
 
 ```yaml
 # metrics/orders.yaml
+version: 1
 type: metrics_view
 
 # Display metadata
@@ -255,6 +261,10 @@ measures:
     expression: SUM(item_count) / NULLIF(COUNT(*), 0)
     format_d3: ",.1f"
     valid_percent_of_total: false
+
+# Explore dashboard for this metrics view
+explore:
+  display_name: Orders Dashboard
 ```
 
 ## Security Policies

@@ -34,7 +34,7 @@ Prefer video? Check out our [YouTube playlist](https://www.youtube.com/watch?v=w
 
 ## Overview
 
-Alerting is a key element for any BI or analytics workflow. Because Rill's dashboards are typically built off of raw or near-raw data, we expose alerting on a wide range of filters and depth, including high cardinality fields. Alerts are accessible from any dashboard via the upper-right alarm bell icon and can be used to create context-based triggers or alerts to bring you back to an analysis if an alert is triggered. This allows the analyst or end user to then dive deeper and use Rill dashboards to interactively explore their data as needed.
+Alerting is a key element for any BI or analytics workflow. Because Rill's dashboards are typically built off of raw or near-raw data, we expose alerting on a wide range of filters and depth, including high cardinality fields. Alerts are accessible from any dashboard via the upper-right alarm bell icon and can be used to create context-based triggers or alerts to bring you back to an analysis when an alert is triggered. This allows the analyst or end user to then dive deeper and use Rill dashboards to interactively explore their data as needed.
 
 
 ![Alerts](/img/explore/alerts/alerts.gif)
@@ -75,7 +75,7 @@ On the final tab, you will choose how and where your alert is delivered. By defa
 1. To limit the number of alerts, you can set an optional **Snooze** period after an alert is triggered.
 2. Depending on the available notification targets (see next section), choose which targets and/or users to subscribe to the alert.
 
-Afterwards, click **Create** to finish creating the alert.
+Afterward, click **Create** to finish creating the alert.
 
 ## Available alert notification targets
 
@@ -119,7 +119,7 @@ To view or make changes to existing alerts, navigate to the project home page an
 ## Common use cases
 
 ### Troubleshooting
-Alerts for troubleshooting purposes are useful for making sure that applications are running as expected, campaigns are set up correctly, or any use case where the outcome is binary. For these alerts, the criteria is often: is the amount > 0 or is the amount below a threshold. These alerts are best mixed with dimension filters to be alerted on any instance or split (e.g. Impressions > 0 for all Campaign_ID).
+Alerts for troubleshooting purposes are useful for making sure that applications are running as expected, campaigns are set up correctly, or any use case where the outcome is binary. For these alerts, the criterion is often whether the amount is greater than 0 or below a threshold. These alerts are best mixed with dimension filters to be alerted on any instance or split (e.g. Impressions > 0 for all Campaign_ID).
 
 ### Pacing
 Alerts for pacing purposes are good for budgeting and threshold use cases - where a pre-defined range can be applied to evaluate progress towards a goal. These alerts tend to be more specific (setting up filters and criteria for specific values) and mark progress towards that goal. Consider setting up multiple threshold alerts like 50%, 75% attainment.

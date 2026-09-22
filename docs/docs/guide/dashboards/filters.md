@@ -56,7 +56,7 @@ Or, an administrator can set the default view of a dashboard by [bookmarking the
 
 ### Filter by Dimensions
 
-The primary/easiest way to filter data is by selecting values in the dimension tables. Leaderboards within Rill are fully interactive. Selecting any dimension in the table will automatically filter the remaining leaderboards and metrics by that selection. 
+The primary and easiest way to filter data is by selecting values in the dimension tables. Leaderboards within Rill are fully interactive. Selecting any dimension in the table will automatically filter the remaining leaderboards and metrics by that selection.
 
 To add or remove dimensions on the page - select the All Dimensions picker above the Leaderboards. Next to the All Dimensions picker, you can also change which Metric is being highlighted to be able to update the entire page and cycle through each dimension table sorted by each metric.
 
@@ -103,4 +103,3 @@ Metric filters are a good way to "sort" by two different metrics. First, apply y
 
 As an example - to see the most active enterprise customers - filter all customers with revenue greater than $1000, then sort by number of users in descending order.
 :::
-

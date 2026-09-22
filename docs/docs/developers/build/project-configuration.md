@@ -240,7 +240,7 @@ security:
     row_filter: "region = '{{ .user.region }}'"
 ```
 
-In order to test both access to the dashboard, as well as the row filter, you can create the following in the project YAML.
+To test both access to the dashboard and the row filter, you can create the following in the project YAML.
 
 ```yaml
 mock_users:

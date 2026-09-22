@@ -71,7 +71,10 @@ func (c *connection) ListGlob(ctx context.Context, glob string, skipDirs bool) (
 
 // Get implements drivers.RepoStore.
 func (c *connection) Get(ctx context.Context, filePath string) (string, error) {
-	fp := filepath.Join(c.root, filePath)
+	fp, err := drivers.ResolveRepoPath(c.root, filePath)
+	if err != nil {
+		return "", err
+	}
 
 	b, err := os.ReadFile(fp)
 	if err != nil {
@@ -90,8 +93,11 @@ func (c *connection) Get(ctx context.Context, filePath string) (string, error) {
 func (c *connection) Hash(ctx context.Context, paths []string) (string, error) {
 	hasher := md5.New()
 	for _, path := range paths {
-		path = filepath.Join(c.root, path)
-		file, err := os.Open(path)
+		fp, err := drivers.ResolveRepoPath(c.root, path)
+		if err != nil {
+			return "", err
+		}
+		file, err := os.Open(fp)
 		if err != nil {
 			if os.IsNotExist(err) {
 				continue
@@ -110,7 +116,10 @@ func (c *connection) Hash(ctx context.Context, paths []string) (string, error) {
 
 // Stat implements drivers.RepoStore.
 func (c *connection) Stat(ctx context.Context, filePath string) (*drivers.FileInfo, error) {
-	filePath = filepath.Join(c.root, filePath)
+	filePath, err := drivers.ResolveRepoPath(c.root, filePath)
+	if err != nil {
+		return nil, err
+	}
 
 	info, err := os.Stat(filePath)
 	if err != nil {
@@ -125,9 +134,12 @@ func (c *connection) Stat(ctx context.Context, filePath string) (*drivers.FileIn
 
 // Put implements drivers.RepoStore.
 func (c *connection) Put(ctx context.Context, filePath string, reader io.Reader) error {
-	filePath = filepath.Join(c.root, filePath)
+	filePath, err := drivers.ResolveRepoPath(c.root, filePath)
+	if err != nil {
+		return err
+	}
 
-	err := os.MkdirAll(filepath.Dir(filePath), os.ModePerm)
+	err = os.MkdirAll(filepath.Dir(filePath), os.ModePerm)
 	if err != nil {
 		return err
 	}
@@ -148,9 +160,12 @@ func (c *connection) Put(ctx context.Context, filePath string, reader io.Reader)
 
 // MkdirAll implements drivers.RepoStore.
 func (c *connection) MkdirAll(ctx context.Context, dirPath string) error {
-	dirPath = filepath.Join(c.root, dirPath)
+	dirPath, err := drivers.ResolveRepoPath(c.root, dirPath)
+	if err != nil {
+		return err
+	}
 
-	err := os.MkdirAll(dirPath, os.ModePerm)
+	err = os.MkdirAll(dirPath, os.ModePerm)
 	if err != nil {
 		return err
 	}
@@ -160,13 +175,19 @@ func (c *connection) MkdirAll(ctx context.Context, dirPath string) error {
 
 // Rename implements drivers.RepoStore.
 func (c *connection) Rename(ctx context.Context, fromPath, toPath string) error {
-	toPath = filepath.Join(c.root, toPath)
+	toPath, err := drivers.ResolveRepoPath(c.root, toPath)
+	if err != nil {
+		return err
+	}
 
-	fromPath = filepath.Join(c.root, fromPath)
+	fromPath, err = drivers.ResolveRepoPath(c.root, fromPath)
+	if err != nil {
+		return err
+	}
 	if _, err := os.Stat(toPath); !strings.EqualFold(fromPath, toPath) && err == nil {
 		return os.ErrExist
 	}
-	err := os.Rename(fromPath, toPath)
+	err = os.Rename(fromPath, toPath)
 	if err != nil {
 		return err
 	}
@@ -175,7 +196,10 @@ func (c *connection) Rename(ctx context.Context, fromPath, toPath string) error 
 
 // Delete implements drivers.RepoStore.
 func (c *connection) Delete(ctx context.Context, filePath string, force bool) error {
-	filePath = filepath.Join(c.root, filePath)
+	filePath, err := drivers.ResolveRepoPath(c.root, filePath)
+	if err != nil {
+		return err
+	}
 	if force {
 		return os.RemoveAll(filePath)
 	}

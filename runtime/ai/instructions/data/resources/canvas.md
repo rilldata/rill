@@ -54,6 +54,9 @@ theme: my_theme
 defaults:
   time_range: P7D
   comparison_mode: time
+  # Optional default filters, keyed by metrics view name
+  filters:
+    sales_metrics: "region IN ('US', 'CA')"
 
 # Optional security access control
 security:
@@ -105,6 +108,26 @@ rows:
 - **`required`**: the dashboard refuses to render until every required filter has a value. Set a default value in `defaults.filters` to satisfy a required filter automatically; otherwise the user is prompted to pick one. Required filters are implicitly pinned — do not also list them under `pinned`.
 
 Use `required` for filters that are unsafe or meaningless to omit (e.g. tenant ID, customer scope, region when results would otherwise mix incompatible data).
+
+#### Default filters
+
+`defaults.filters` is a **map keyed by metrics view name**, where each value is a **Metrics SQL `WHERE` expression** applied when the dashboard first loads.
+
+```yaml
+defaults:
+  time_range: P7D
+  filters:
+    sales_metrics: "region IN ('US', 'CA') AND total_revenue > 1000"
+    support_metrics: "ticket_status != 'closed'"
+```
+
+Rules for writing `defaults.filters`:
+
+- Each key must be the name of a metrics view that is referenced by at least one component on the canvas.
+- A filter only applies to the components backed by its metrics view. To filter several metrics views, add one entry per metrics view, including duplicating shared dimension/measure names.
+- Expressions reference dimension and measure **names as defined on that metrics view**, not the underlying table columns. Table prefixes, aliases, and subqueries are not supported.
+- Write only the expression itself; do not include the `WHERE` keyword.
+- Supported syntax: `=`, `!=`, `<`, `<=`, `>`, `>=`, `IN`, `NOT IN`, `LIKE`, `ILIKE`, `IS NULL`, `IS NOT NULL`, `BETWEEN`, combined with `AND`, `OR`, and parentheses. String literals use single quotes.
 
 ## Layout System
 
@@ -859,11 +882,12 @@ table:
 
 ### Image
 
-Display external images:
+Display external images. Set `dark_url` to show a different image when the dashboard is in dark mode (falls back to `url`):
 
 ```yaml
 image:
   url: https://example.com/logo.png
+  dark_url: https://example.com/logo-dark.png
   alignment:
     horizontal: center
     vertical: middle

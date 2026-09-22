@@ -107,6 +107,13 @@ type InstanceConfig struct {
 	// Enabling it reduces the performance of Druid toplist queries.
 	// See runtime/metricsview/executor_rewrite_druid_exactify.go for more details.
 	MetricsExactifyDruidTopN bool `mapstructure:"rill.metrics.exactify_druid_topn"`
+	// MetricsDruidMVDFilteredGroupBy indicates whether to narrow unnested (multi-value) dimensions in a GROUP BY to the values allowed by the query filter in Druid, using MV_FILTER_ONLY.
+	// Druid unnests multi-value dimensions implicitly, so a filter on such a dimension keeps every matching row and a GROUP BY then emits every value in those rows, not just the filtered ones.
+	MetricsDruidMVDFilteredGroupBy bool `mapstructure:"rill.metrics.druid_mvd_filtered_group_by"`
+	// MetricsDruidMVDFilteredSearch extends MetricsDruidMVDFilteredGroupBy to ILIKE filters (as issued by dimension search), using MV_FILTER_REGEX.
+	// When a search is combined with a filter on the searched dimension, the search regex takes precedence, so the results contain only values matching the search text.
+	// It requires Druid 35.0.0 or newer, where MV_FILTER_REGEX was introduced. It has no effect unless MetricsDruidMVDFilteredGroupBy is also enabled.
+	MetricsDruidMVDFilteredSearch bool `mapstructure:"rill.metrics.druid_mvd_filtered_search"`
 	// MetricsNullFillingImplementation switches between null-filling implementations for timeseries queries.
 	// Can be "", "none", "new", "pushdown".
 	MetricsNullFillingImplementation string `mapstructure:"rill.metrics.timeseries_null_filling_implementation"`
@@ -135,6 +142,8 @@ type InstanceConfig struct {
 	AIRequireTimeRange bool `mapstructure:"rill.ai.require_time_range"`
 	// AIMaxTimeRangeDays is the maximum time range allowed for AI tool queries, in days. If set to 0, there is no limit.
 	AIMaxTimeRangeDays int64 `mapstructure:"rill.ai.max_time_range_days"`
+	// AIMaxMessageSizeBytes is the maximum allowed size of an AI message's contents (tool call args or results). Exceeding it results in an error.
+	AIMaxMessageSizeBytes int64 `mapstructure:"rill.ai.max_message_size_bytes"`
 	// StrictResolverProps indicates whether to return an error when a resolver contains properties that are not recognized by the resolver implementation.
 	StrictResolverProps bool `mapstructure:"rill.strict_resolver_properties"`
 	// StrictModelProps indicates whether to return an error when a model contains unmapped properties.
@@ -211,6 +220,8 @@ func (i *Instance) Config() (InstanceConfig, error) {
 		MetricsApproximateComparisonsCTE:     false,
 		MetricsApproxComparisonTwoPhaseLimit: 250,
 		MetricsExactifyDruidTopN:             false,
+		MetricsDruidMVDFilteredGroupBy:       false,
+		MetricsDruidMVDFilteredSearch:        false,
 		MetricsNullFillingImplementation:     "pushdown",
 		MetricsPivotExportColumnLimit:        15000,
 		AlertsDefaultStreamingRefreshCron:    "0 0 * * *",    // Every 24 hours
@@ -220,6 +231,7 @@ func (i *Instance) Config() (InstanceConfig, error) {
 		AIDefaultQueryLimit:                  25,
 		AIMaxQueryLimit:                      250,
 		AIRequireTimeRange:                   true,
+		AIMaxMessageSizeBytes:                200 * 1024, // 200 KB
 		ModelPartitionsWarnOnFailure:         i.Environment == "prod",
 		ModelTestsWarnOnFailure:              i.Environment == "prod",
 	}

@@ -1,6 +1,9 @@
 <script lang="ts">
   import type { ChartSeries } from "@rilldata/web-common/features/dashboards/time-series/measure-chart/types";
-  import { computeBarSlotGeometry } from "@rilldata/web-common/features/dashboards/time-series/measure-chart/utils";
+  import {
+    clampToRange,
+    computeBarSlotGeometry,
+  } from "@rilldata/web-common/features/dashboards/time-series/measure-chart/utils";
   import type { ScaleLinear } from "d3-scale";
 
   const BAR_RADIUS = 3;
@@ -21,7 +24,9 @@
 
   $: visibleCount = Math.max(1, visibleEnd - visibleStart + 1);
   $: geo = computeBarSlotGeometry(plotWidth, visibleCount, series.length);
-  $: zeroY = yScale(0);
+  // With a dynamic y-axis the domain can exclude zero, putting yScale(0) outside the plot.
+  // Clamp the baseline to the scale's range so bars stay inside the plot area.
+  $: zeroY = clampToRange(yScale(0), yScale.range());
 
   function isInScrub(ptIdx: number): boolean {
     if (!hasScrub) return true;

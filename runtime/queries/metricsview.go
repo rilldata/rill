@@ -346,6 +346,9 @@ func WriteParquet(meta []*runtimev1.MetricsViewColumn, data []*structpb.Struct, 
 			arrowField.Type = arrow.FixedWidthTypes.Timestamp_us
 		case runtimev1.Type_CODE_BYTES:
 			arrowField.Type = arrow.BinaryTypes.Binary
+		default:
+			// A nil arrow.DataType panics in array.NewRecordBuilder below, so reject unmapped type codes explicitly.
+			return fmt.Errorf("parquet export: unsupported type %q for column %q", f.Type, f.Name)
 		}
 		fields = append(fields, arrowField)
 	}

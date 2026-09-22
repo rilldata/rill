@@ -28,12 +28,18 @@ type MyFixtures = {
    */
   embeddedResourceName: string;
   embeddedResourceType: string;
+  /**
+   * Hides the embed's navigation bar while keeping navigation enabled.
+   * Defaults to false.
+   */
+  embeddedHideNavigationBar: boolean;
 };
 
 export const rillCloud = base.extend<MyFixtures>({
   embeddedInitialState: [null, { option: true }],
   embeddedResourceName: ["bids_explore", { option: true }],
   embeddedResourceType: ["rill.runtime.v1.Explore", { option: true }],
+  embeddedHideNavigationBar: [false, { option: true }],
 
   // Note: the `e2e` project uses the admin auth file by default, so it's likely that
   // this fixture won't be used often.
@@ -77,6 +83,7 @@ export const rillCloud = base.extend<MyFixtures>({
         embeddedResourceName,
         embeddedResourceType,
         embeddedInitialState,
+        embeddedHideNavigationBar,
       },
       use,
     ) => {
@@ -90,6 +97,7 @@ export const rillCloud = base.extend<MyFixtures>({
         resourceType: embeddedResourceType,
         serviceToken: rillServiceToken,
         initialState: embeddedInitialState,
+        hideNavigationBar: embeddedHideNavigationBar,
       });
       const filePath =
         "file://" + path.resolve(process.cwd(), RILL_EMBED_HTML_FILE);

@@ -1,3 +1,4 @@
+import { ephemeralSpecsToDefs } from "@rilldata/web-common/features/dashboards/ephemeral-measures/canvas";
 import type { ComponentInputParam } from "@rilldata/web-common/features/canvas/inspector/types";
 import type { CanvasStore } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
 import {
@@ -9,7 +10,6 @@ import {
   type ChartFieldsMap,
   type FieldConfig,
 } from "@rilldata/web-common/features/components/charts/types";
-import { splitWhereFilter } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
 import {
   PivotChipType,
   type PivotChipData,
@@ -282,9 +282,6 @@ export class ComboChartComponent extends BaseChart<ComboCanvasChartSpec> {
 
   override getExploreTransformerProperties(): Partial<ExploreState> {
     const spec = get(this.specStore);
-    const { dimensionFilters, dimensionThresholdFilters } = splitWhereFilter(
-      this.componentFilters,
-    );
     const timeGrain = get(this.timeAndFilterStore)?.timeGrain;
 
     const columns: PivotChipData[] = [];
@@ -348,8 +345,8 @@ export class ComboChartComponent extends BaseChart<ComboCanvasChartSpec> {
     };
 
     return {
-      whereFilter: dimensionFilters,
-      dimensionThresholdFilters,
+      ephemeralMeasures: ephemeralSpecsToDefs(spec.adhoc_measures),
+      whereFilter: this.componentFilters,
       showTimeComparison: false,
       activePage: DashboardState_ActivePage.PIVOT,
       pivot,

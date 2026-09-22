@@ -52,7 +52,7 @@ export class MarkdownCanvasComponent extends BaseCanvasComponent<MarkdownSpec> {
         content: {
           type: "textarea",
           label: m.canvas_markdown_label(),
-          description: "Write text using the markdown syntax",
+          description: m.canvas_markdown_description(),
         },
         alignment: {
           type: "alignment",
@@ -66,8 +66,7 @@ export class MarkdownCanvasComponent extends BaseCanvasComponent<MarkdownSpec> {
           optional: true,
           showInUI: true,
           label: m.canvas_apply_measure_formatting_label(),
-          description:
-            "Format measure values according to their format settings",
+          description: m.canvas_apply_measure_formatting_description(),
         },
       },
       filter: {},

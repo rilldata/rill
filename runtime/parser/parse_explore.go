@@ -13,12 +13,21 @@ import (
 )
 
 type ExploreYAML struct {
-	commonYAML           `yaml:",inline"`       // Not accessed here, only setting it so we can use KnownFields for YAML parsing
+	commonYAML            `yaml:",inline"` // Not accessed here, only setting it so we can use KnownFields for YAML parsing
+	ExploreDefinitionYAML `yaml:",inline"`
+	Title                 string              `yaml:"title"` // Deprecated: use display_name
+	MetricsView           string              `yaml:"metrics_view"`
+	Security              *SecurityPolicyYAML `yaml:"security"`
+}
+
+// ExploreDefinitionYAML contains the explore definition fields that are shared between
+// standalone explore files (ExploreYAML) and the inline `explore:` block in a metrics view YAML.
+// Fields added here automatically become available in both places;
+// they are parsed and validated by parseExploreDefinition.
+type ExploreDefinitionYAML struct {
 	DisplayName          string                 `yaml:"display_name"`
-	Title                string                 `yaml:"title"` // Deprecated: use display_name
 	Description          string                 `yaml:"description"`
 	Banner               string                 `yaml:"banner"`
-	MetricsView          string                 `yaml:"metrics_view"`
 	Dimensions           *FieldSelectorYAML     `yaml:"dimensions"`
 	Measures             *FieldSelectorYAML     `yaml:"measures"`
 	Theme                yaml.Node              `yaml:"theme"` // Name (string) or inline theme definition (map)
@@ -26,17 +35,19 @@ type ExploreYAML struct {
 	TimeZones            []string               `yaml:"time_zones"` // Single time zone or list of time zones
 	LockTimeZone         bool                   `yaml:"lock_time_zone"`
 	AllowCustomTimeRange *bool                  `yaml:"allow_custom_time_range"`
-	Defaults             *struct {
-		Dimensions          *FieldSelectorYAML `yaml:"dimensions"`
-		Measures            *FieldSelectorYAML `yaml:"measures"`
-		TimeRange           string             `yaml:"time_range"`
-		ComparisonMode      string             `yaml:"comparison_mode"`
-		ComparisonDimension string             `yaml:"comparison_dimension"`
-	} `yaml:"defaults"`
-	Embeds struct {
+	Defaults             *ExploreDefaultsYAML   `yaml:"defaults"`
+	Embeds               struct {
 		HidePivot bool `yaml:"hide_pivot"`
 	} `yaml:"embeds"`
-	Security *SecurityPolicyYAML `yaml:"security"`
+}
+
+// ExploreDefaultsYAML represents the `defaults` block of an explore definition.
+type ExploreDefaultsYAML struct {
+	Dimensions          *FieldSelectorYAML `yaml:"dimensions"`
+	Measures            *FieldSelectorYAML `yaml:"measures"`
+	TimeRange           string             `yaml:"time_range"`
+	ComparisonMode      string             `yaml:"comparison_mode"`
+	ComparisonDimension string             `yaml:"comparison_dimension"`
 }
 
 // ExploreTimeRangeYAML represents a time range in an ExploreYAML.
@@ -138,123 +149,19 @@ func (p *Parser) parseExplore(node *Node) error {
 		tmp.DisplayName = tmp.Title
 	}
 
-	// Set default for AllowCustomTimeRange to true if not provided
-	allowCustomTimeRange := true
-	if tmp.AllowCustomTimeRange != nil {
-		allowCustomTimeRange = *tmp.AllowCustomTimeRange
-	}
-
 	// Validate metrics_view
 	if tmp.MetricsView == "" {
 		return errors.New("metrics_view is required")
 	}
 	node.Refs = append(node.Refs, ResourceName{Kind: ResourceKindMetricsView, Name: tmp.MetricsView})
 
-	// Parse the dimensions and measures selectors
-	var dimensionsSelector *runtimev1.FieldSelector
-	dimensions, ok := tmp.Dimensions.TryResolve()
-	if !ok {
-		dimensionsSelector = tmp.Dimensions.Proto()
-	}
-	var measuresSelector *runtimev1.FieldSelector
-	measures, ok := tmp.Measures.TryResolve()
-	if !ok {
-		measuresSelector = tmp.Measures.Proto()
-	}
-
-	// Parse theme if present.
-	// If it returns a themeSpec, it will be inserted as a separate resource later in this function.
-	themeName, themeSpec, err := p.parseThemeRef(&tmp.Theme)
+	// Parse and validate the fields shared with inline explore definitions
+	def, err := p.parseExploreDefinition(&tmp.ExploreDefinitionYAML)
 	if err != nil {
 		return err
 	}
-	// Fallback to top-level theme from rill.yaml if no local theme or default theme is set
-	if themeName == "" && themeSpec == nil && p.RillYAML != nil && p.RillYAML.Theme != "" {
-		themeName = p.RillYAML.Theme
-	}
-	if themeName != "" && themeSpec == nil {
-		node.Refs = append(node.Refs, ResourceName{Kind: ResourceKindTheme, Name: themeName})
-	}
-
-	// Build and validate time ranges
-	var timeRanges []*runtimev1.ExploreTimeRange
-	for _, tr := range tmp.TimeRanges {
-		if _, err := rilltime.Parse(tr.Range, rilltime.ParseOptions{}); err != nil {
-			return fmt.Errorf("invalid time range %q: %w", tr.Range, err)
-		}
-		res := &runtimev1.ExploreTimeRange{Range: tr.Range}
-		for _, ctr := range tr.ComparisonTimeRanges {
-			err = rilltime.ParseCompatibility(ctr.Range, ctr.Offset)
-			if err != nil {
-				return err
-			}
-			res.ComparisonTimeRanges = append(res.ComparisonTimeRanges, &runtimev1.ExploreComparisonTimeRange{
-				Offset: ctr.Offset,
-				Range:  ctr.Range,
-			})
-		}
-		timeRanges = append(timeRanges, res)
-	}
-
-	// Validate time zones
-	for _, tz := range tmp.TimeZones {
-		_, err := time.LoadLocation(tz)
-		if err != nil {
-			return err
-		}
-	}
-
-	// Build and validate presets
-	var defaultPreset *runtimev1.ExplorePreset
-	if tmp.Defaults != nil {
-		if tmp.Defaults.TimeRange != "" {
-			if _, err := rilltime.Parse(tmp.Defaults.TimeRange, rilltime.ParseOptions{}); err != nil {
-				return fmt.Errorf("invalid time range %q: %w", tmp.Defaults.TimeRange, err)
-			}
-		}
-
-		mode := runtimev1.ExploreComparisonMode_EXPLORE_COMPARISON_MODE_NONE
-		if tmp.Defaults.ComparisonMode != "" {
-			var ok bool
-			mode, ok = exploreComparisonModes[tmp.Defaults.ComparisonMode]
-			if !ok {
-				return fmt.Errorf("invalid comparison mode %q (options: %s)", tmp.Defaults.ComparisonMode, strings.Join(maps.Keys(exploreComparisonModes), ", "))
-			}
-		}
-
-		if tmp.Defaults.ComparisonDimension != "" && mode != runtimev1.ExploreComparisonMode_EXPLORE_COMPARISON_MODE_DIMENSION {
-			return errors.New("can only set comparison_dimension when comparison_mode is 'dimension'")
-		}
-
-		var presetDimensionsSelector *runtimev1.FieldSelector
-		presetDimensions, ok := tmp.Defaults.Dimensions.TryResolve()
-		if !ok {
-			presetDimensionsSelector = tmp.Defaults.Dimensions.Proto()
-		}
-
-		var presetMeasuresSelector *runtimev1.FieldSelector
-		presetMeasures, ok := tmp.Defaults.Measures.TryResolve()
-		if !ok {
-			presetMeasuresSelector = tmp.Defaults.Measures.Proto()
-		}
-
-		var tr *string
-		if tmp.Defaults.TimeRange != "" {
-			tr = &tmp.Defaults.TimeRange
-		}
-		var compareDim *string
-		if tmp.Defaults.ComparisonDimension != "" {
-			compareDim = &tmp.Defaults.ComparisonDimension
-		}
-		defaultPreset = &runtimev1.ExplorePreset{
-			Dimensions:          presetDimensions,
-			DimensionsSelector:  presetDimensionsSelector,
-			Measures:            presetMeasures,
-			MeasuresSelector:    presetMeasuresSelector,
-			TimeRange:           tr,
-			ComparisonMode:      mode,
-			ComparisonDimension: compareDim,
-		}
+	if def.themeName != "" && def.themeSpec == nil {
+		node.Refs = append(node.Refs, ResourceName{Kind: ResourceKindTheme, Name: def.themeName})
 	}
 
 	// Build security rules
@@ -269,34 +176,185 @@ func (p *Parser) parseExplore(node *Node) error {
 	}
 
 	// Track explore
-	r, err := p.insertResource(ResourceKindExplore, node.Name, node.Paths, node.Tags, node.Refs...)
+	r, err := p.insertResource(ResourceKindExplore, node.Name, node.Paths, node.Tags, node.Metadata, node.Refs...)
 	if err != nil {
 		return err
 	}
 	// NOTE: After calling insertResource, an error must not be returned. Any validation should be done before calling it.
 
-	r.ExploreSpec.DisplayName = tmp.DisplayName
+	def.applyToSpec(r.ExploreSpec, &tmp.ExploreDefinitionYAML)
 	if r.ExploreSpec.DisplayName == "" {
 		r.ExploreSpec.DisplayName = ToDisplayName(node.Name)
 	}
-	r.ExploreSpec.Description = tmp.Description
 	r.ExploreSpec.MetricsView = tmp.MetricsView
-	r.ExploreSpec.Banner = tmp.Banner
-	r.ExploreSpec.Dimensions = dimensions
-	r.ExploreSpec.DimensionsSelector = dimensionsSelector
-	r.ExploreSpec.Measures = measures
-	r.ExploreSpec.MeasuresSelector = measuresSelector
-	r.ExploreSpec.Theme = themeName
-	r.ExploreSpec.EmbeddedTheme = themeSpec
-	r.ExploreSpec.TimeRanges = timeRanges
-	r.ExploreSpec.TimeZones = tmp.TimeZones
-	r.ExploreSpec.DefaultPreset = defaultPreset
-	r.ExploreSpec.EmbedsHidePivot = tmp.Embeds.HidePivot
 	r.ExploreSpec.SecurityRules = rules
-	r.ExploreSpec.LockTimeZone = tmp.LockTimeZone
-	r.ExploreSpec.AllowCustomTimeRange = allowCustomTimeRange
 
 	return nil
+}
+
+// exploreDefinition holds validated values derived from an ExploreDefinitionYAML by parseExploreDefinition.
+// It exists because validation must happen before insertResource while spec assignment happens after;
+// applyToSpec performs the assignment.
+type exploreDefinition struct {
+	dimensions           []string
+	dimensionsSelector   *runtimev1.FieldSelector
+	measures             []string
+	measuresSelector     *runtimev1.FieldSelector
+	themeName            string
+	themeSpec            *runtimev1.ThemeSpec
+	timeRanges           []*runtimev1.ExploreTimeRange
+	defaultPreset        *runtimev1.ExplorePreset
+	allowCustomTimeRange bool
+}
+
+// parseExploreDefinition parses and validates the explore definition fields shared between
+// standalone explores and inline explores in metrics views.
+// It must be called before insertResource since it can return validation errors.
+func (p *Parser) parseExploreDefinition(tmp *ExploreDefinitionYAML) (*exploreDefinition, error) {
+	def := &exploreDefinition{}
+
+	// Parse the dimensions and measures selectors
+	var ok bool
+	def.dimensions, ok = tmp.Dimensions.TryResolve()
+	if name, ok := hasDuplicates(def.dimensions); ok {
+		return nil, fmt.Errorf("duplicate field %q in dimensions", name)
+	}
+	if !ok {
+		def.dimensionsSelector = tmp.Dimensions.Proto()
+	}
+	def.measures, ok = tmp.Measures.TryResolve()
+	if name, ok := hasDuplicates(def.measures); ok {
+		return nil, fmt.Errorf("duplicate field %q in measures", name)
+	}
+	if !ok {
+		def.measuresSelector = tmp.Measures.Proto()
+	}
+
+	// Parse theme if present.
+	// If it returns a themeSpec, the caller must insert it as a separate resource.
+	themeName, themeSpec, err := p.parseThemeRef(&tmp.Theme)
+	if err != nil {
+		return nil, err
+	}
+	// Fallback to top-level theme from rill.yaml if no local theme or default theme is set
+	if themeName == "" && themeSpec == nil && p.RillYAML != nil && p.RillYAML.Theme != "" {
+		themeName = p.RillYAML.Theme
+	}
+	def.themeName = themeName
+	def.themeSpec = themeSpec
+
+	// Build and validate time ranges
+	for _, tr := range tmp.TimeRanges {
+		if _, err := rilltime.Parse(tr.Range, rilltime.ParseOptions{}); err != nil {
+			return nil, fmt.Errorf("invalid time range %q: %w", tr.Range, err)
+		}
+		res := &runtimev1.ExploreTimeRange{Range: tr.Range}
+		for _, ctr := range tr.ComparisonTimeRanges {
+			err := rilltime.ParseCompatibility(ctr.Range, ctr.Offset)
+			if err != nil {
+				return nil, err
+			}
+			res.ComparisonTimeRanges = append(res.ComparisonTimeRanges, &runtimev1.ExploreComparisonTimeRange{
+				Offset: ctr.Offset,
+				Range:  ctr.Range,
+			})
+		}
+		def.timeRanges = append(def.timeRanges, res)
+	}
+
+	// Validate time zones
+	for _, tz := range tmp.TimeZones {
+		_, err := time.LoadLocation(tz)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	// Build and validate presets
+	if tmp.Defaults != nil {
+		if tmp.Defaults.TimeRange != "" {
+			if _, err := rilltime.Parse(tmp.Defaults.TimeRange, rilltime.ParseOptions{}); err != nil {
+				return nil, fmt.Errorf("invalid time range %q: %w", tmp.Defaults.TimeRange, err)
+			}
+		}
+
+		mode := runtimev1.ExploreComparisonMode_EXPLORE_COMPARISON_MODE_NONE
+		if tmp.Defaults.ComparisonMode != "" {
+			var ok bool
+			mode, ok = exploreComparisonModes[tmp.Defaults.ComparisonMode]
+			if !ok {
+				return nil, fmt.Errorf("invalid comparison mode %q (options: %s)", tmp.Defaults.ComparisonMode, strings.Join(maps.Keys(exploreComparisonModes), ", "))
+			}
+		}
+
+		if tmp.Defaults.ComparisonDimension != "" && mode != runtimev1.ExploreComparisonMode_EXPLORE_COMPARISON_MODE_DIMENSION {
+			return nil, errors.New("can only set comparison_dimension when comparison_mode is 'dimension'")
+		}
+
+		var presetDimensionsSelector *runtimev1.FieldSelector
+		presetDimensions, ok := tmp.Defaults.Dimensions.TryResolve()
+		if name, ok := hasDuplicates(presetDimensions); ok {
+			return nil, fmt.Errorf("duplicate field %q in defaults.dimensions", name)
+		}
+		if !ok {
+			presetDimensionsSelector = tmp.Defaults.Dimensions.Proto()
+		}
+
+		var presetMeasuresSelector *runtimev1.FieldSelector
+		presetMeasures, ok := tmp.Defaults.Measures.TryResolve()
+		if name, ok := hasDuplicates(presetMeasures); ok {
+			return nil, fmt.Errorf("duplicate field %q in defaults.measures", name)
+		}
+		if !ok {
+			presetMeasuresSelector = tmp.Defaults.Measures.Proto()
+		}
+
+		var tr *string
+		if tmp.Defaults.TimeRange != "" {
+			tr = &tmp.Defaults.TimeRange
+		}
+		var compareDim *string
+		if tmp.Defaults.ComparisonDimension != "" {
+			compareDim = &tmp.Defaults.ComparisonDimension
+		}
+		def.defaultPreset = &runtimev1.ExplorePreset{
+			Dimensions:          presetDimensions,
+			DimensionsSelector:  presetDimensionsSelector,
+			Measures:            presetMeasures,
+			MeasuresSelector:    presetMeasuresSelector,
+			TimeRange:           tr,
+			ComparisonMode:      mode,
+			ComparisonDimension: compareDim,
+		}
+	}
+
+	// Set default for AllowCustomTimeRange to true if not provided
+	def.allowCustomTimeRange = true
+	if tmp.AllowCustomTimeRange != nil {
+		def.allowCustomTimeRange = *tmp.AllowCustomTimeRange
+	}
+
+	return def, nil
+}
+
+// applyToSpec assigns the parsed definition values to an ExploreSpec.
+// It must only be called after the explore resource has been inserted.
+func (d *exploreDefinition) applyToSpec(spec *runtimev1.ExploreSpec, tmp *ExploreDefinitionYAML) {
+	spec.DisplayName = tmp.DisplayName
+	spec.Description = tmp.Description
+	spec.Banner = tmp.Banner
+	spec.Dimensions = d.dimensions
+	spec.DimensionsSelector = d.dimensionsSelector
+	spec.Measures = d.measures
+	spec.MeasuresSelector = d.measuresSelector
+	spec.Theme = d.themeName
+	spec.EmbeddedTheme = d.themeSpec
+	spec.TimeRanges = d.timeRanges
+	spec.TimeZones = tmp.TimeZones
+	spec.DefaultPreset = d.defaultPreset
+	spec.EmbedsHidePivot = tmp.Embeds.HidePivot
+	spec.LockTimeZone = tmp.LockTimeZone
+	spec.AllowCustomTimeRange = d.allowCustomTimeRange
 }
 
 // parseThemeRef parses a theme from a YAML node.
@@ -331,4 +389,15 @@ func (p *Parser) parseThemeRef(n *yaml.Node) (string, *runtimev1.ThemeSpec, erro
 	default:
 		return "", nil, fmt.Errorf("invalid theme: should be a string or mapping, got %s", n.Tag)
 	}
+}
+
+func hasDuplicates(names []string) (string, bool) {
+	seen := make(map[string]struct{}, len(names))
+	for _, name := range names {
+		if _, ok := seen[name]; ok {
+			return name, true
+		}
+		seen[name] = struct{}{}
+	}
+	return "", false
 }

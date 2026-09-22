@@ -1,6 +1,7 @@
 import { createBatches } from "@rilldata/web-common/lib/arrayUtils";
 import {
   createQueryServiceMetricsViewSearch,
+  MetricsViewSpecDimensionType,
   type V1MetricsViewSpec,
   type V1TimeRangeSummary,
 } from "@rilldata/web-common/runtime-client";
@@ -28,7 +29,10 @@ export function useDimensionSearchResults(
   timeRangeSummary: V1TimeRangeSummary,
   searchText: string,
 ) {
-  const dimensions = metricsView.dimensions ?? [];
+  // Time dimensions (including the auto-added `timeseries` column) are not searchable text, so skip them.
+  const dimensions = (metricsView.dimensions ?? []).filter(
+    (d) => d.type !== MetricsViewSpecDimensionType.DIMENSION_TYPE_TIME,
+  );
   const batches = createBatches(dimensions, BatchSize);
   return derived(
     batches.map((batch) =>

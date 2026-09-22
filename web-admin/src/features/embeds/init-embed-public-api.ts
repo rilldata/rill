@@ -241,6 +241,7 @@ const EmbedParams = [
   "type",
   "kind",
   "navigation",
+  "hide_navigation_bar",
   "theme",
   "theme_mode",
   "external_user_id",

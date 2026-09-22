@@ -46,7 +46,7 @@
   <Chip
     theme
     type={item.type}
-    label="{item.title} pivot chip"
+    label={m.pivot_chip_aria({ title: item.title })}
     caret={false}
     {grab}
     {active}

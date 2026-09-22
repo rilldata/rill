@@ -170,6 +170,10 @@ func (e *Executor) ValidateQuery(qry *metricsview.Query) error {
 
 // Timestamps queries min, max and watermark for the metrics view.
 // For the primary time dimension it also resolves rollup table timestamps if rollups are present.
+// It intentionally does not apply security policy row filters:
+// unfiltered timestamps can be computed from database metadata and cached across users,
+// and they keep time expressions evaluating consistently for all users.
+// The trade-off is that users whose accessible rows don't span the full range may see "no data" for some time ranges.
 func (e *Executor) Timestamps(ctx context.Context, timeDim string) (metricsview.TimestampsResult, error) {
 	if timeDim == "" {
 		timeDim = e.metricsView.TimeDimension
@@ -367,7 +371,8 @@ func (e *Executor) Query(ctx context.Context, qry *metricsview.Query, executionT
 		return nil, err
 	}
 
-	if err := e.rewriteQueryDruidExactify(ctx, qry); err != nil {
+	exactified, err := e.rewriteQueryDruidExactify(ctx, qry)
+	if err != nil {
 		return nil, err
 	}
 
@@ -396,6 +401,8 @@ func (e *Executor) Query(ctx context.Context, qry *metricsview.Query, executionT
 	if err := e.rewriteLimitsIntoSubqueries(ast); err != nil {
 		return nil, err
 	}
+
+	e.rewriteDruidMVDFilteredGroupBy(ast, exactified)
 
 	if err := e.rewriteDruidGroups(ast); err != nil {
 		return nil, err
@@ -509,7 +516,8 @@ func (e *Executor) Export(ctx context.Context, qry *metricsview.Query, execution
 		return "", err
 	}
 
-	if err := e.rewriteQueryDruidExactify(ctx, qry); err != nil {
+	exactified, err := e.rewriteQueryDruidExactify(ctx, qry)
+	if err != nil {
 		return "", err
 	}
 
@@ -533,6 +541,8 @@ func (e *Executor) Export(ctx context.Context, qry *metricsview.Query, execution
 	if err := e.rewriteLimitsIntoSubqueries(ast); err != nil {
 		return "", err
 	}
+
+	e.rewriteDruidMVDFilteredGroupBy(ast, exactified)
 
 	if err := e.rewriteDruidGroups(ast); err != nil {
 		return "", err
@@ -628,11 +638,14 @@ func (e *Executor) Search(ctx context.Context, qry *metricsview.SearchQuery, exe
 			return nil, err
 		}
 
+		e.rewriteDruidMVDFilteredGroupBy(ast, nil)
+
 		sql, args, err := ast.SQL()
 		if err != nil {
 			return nil, err
 		}
-		finalSQL.WriteString(fmt.Sprintf("SELECT %s AS dimension, %s AS value FROM (%s)", drivers.EscapeStringValue(d), e.olap.Dialect().EscapeIdentifier(d), sql))
+		// The aliases must be escaped: "value" is a reserved keyword in Druid (Calcite) SQL.
+		finalSQL.WriteString(fmt.Sprintf("SELECT %s AS %s, %s AS %s FROM (%s)", drivers.EscapeStringValue(d), e.olap.Dialect().EscapeAlias("dimension"), e.olap.Dialect().EscapeIdentifier(d), e.olap.Dialect().EscapeAlias("value"), sql))
 		finalArgs = append(finalArgs, args...)
 	}
 

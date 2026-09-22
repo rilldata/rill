@@ -155,6 +155,7 @@ type DB interface {
 	FindUsergroupsForUser(ctx context.Context, userID, orgID string) ([]*Usergroup, error)
 	FindUsergroupMemberUsers(ctx context.Context, groupID, afterEmail string, limit int) ([]*UsergroupMemberUser, error)
 	InsertUsergroupMemberUser(ctx context.Context, groupID, userID string) error
+	InsertUsergroupsMemberUser(ctx context.Context, userID string, groupIDs []string) error
 	DeleteUsergroupMemberUser(ctx context.Context, groupID, userID string) error
 	DeleteUsergroupsMemberUser(ctx context.Context, orgID, userID string) error
 	InsertManagedUsergroupsMemberUser(ctx context.Context, orgID, userID, roleID string) error
@@ -285,6 +286,7 @@ type DB interface {
 	DeleteOrganizationInvite(ctx context.Context, id string) error
 	CountInvitesForOrganization(ctx context.Context, orgID string) (int, error)
 	UpdateOrganizationInviteRole(ctx context.Context, id, roleID string) error
+	UpdateOrganizationInviteAttributes(ctx context.Context, id string, attributes map[string]any) error
 
 	FindProjectInvites(ctx context.Context, projectID, afterEmail string, limit int) ([]*ProjectInviteWithRole, error)
 	FindProjectInvitesByEmail(ctx context.Context, userEmail string) ([]*ProjectInvite, error)
@@ -299,6 +301,8 @@ type DB interface {
 	InsertProjectAccessRequest(ctx context.Context, opts *InsertProjectAccessRequestOptions) (*ProjectAccessRequest, error)
 	DeleteProjectAccessRequest(ctx context.Context, id string) error
 
+	// FindBookmarks returns the bookmarks in a project that are visible to the user: their own plus shared and default ones.
+	// resourceKind and resourceName are optional filters; when both are empty, all bookmarks in the project are returned.
 	FindBookmarks(ctx context.Context, projectID, resourceKind, resourceName, userID string) ([]*Bookmark, error)
 	FindBookmark(ctx context.Context, bookmarkID string) (*Bookmark, error)
 	FindDefaultBookmark(ctx context.Context, projectID, resourceKind, resourceName string) (*Bookmark, error)
@@ -387,6 +391,7 @@ type Organization struct {
 	ThumbnailAssetID                    *string   `db:"thumbnail_asset_id"`
 	CustomDomain                        string    `db:"custom_domain"`
 	DefaultProjectRoleID                *string   `db:"default_project_role_id"`
+	DefaultProvisioner                  string    `db:"default_provisioner"`
 	CreatedOn                           time.Time `db:"created_on"`
 	UpdatedOn                           time.Time `db:"updated_on"`
 	QuotaProjects                       int       `db:"quota_projects"`
@@ -415,6 +420,7 @@ type InsertOrganizationOptions struct {
 	ThumbnailAssetID                    *string
 	CustomDomain                        string `validate:"omitempty,fqdn"`
 	DefaultProjectRoleID                *string
+	DefaultProvisioner                  string
 	QuotaProjects                       int
 	QuotaDeployments                    int
 	QuotaSlotsTotal                     int
@@ -439,6 +445,7 @@ type UpdateOrganizationOptions struct {
 	ThumbnailAssetID                    *string
 	CustomDomain                        string `validate:"omitempty,fqdn"`
 	DefaultProjectRoleID                *string
+	DefaultProvisioner                  string
 	QuotaProjects                       int
 	QuotaDeployments                    int
 	QuotaSlotsTotal                     int
@@ -1049,11 +1056,14 @@ type ProjectMemberUser struct {
 type UsergroupMemberUser struct {
 	ID          string
 	Email       string
-	DisplayName string    `db:"display_name"`
-	PhotoURL    string    `db:"photo_url"`
-	RoleName    string    `db:"name"`
-	CreatedOn   time.Time `db:"created_on"`
-	UpdatedOn   time.Time `db:"updated_on"`
+	DisplayName string `db:"display_name"`
+	PhotoURL    string `db:"photo_url"`
+	// PendingAcceptance is true for users who have been invited to the group but have not signed up yet.
+	// For pending members, ID, DisplayName and PhotoURL are empty.
+	PendingAcceptance bool      `db:"pending_acceptance"`
+	RoleName          string    `db:"name"`
+	CreatedOn         time.Time `db:"created_on"`
+	UpdatedOn         time.Time `db:"updated_on"`
 }
 
 // MemberUsergroup is a convenience type used for display-friendly representation of an org or project member that is a usergroup.
@@ -1073,19 +1083,22 @@ type MemberUsergroup struct {
 type OrganizationInvite struct {
 	ID              string
 	Email           string
-	OrgID           string    `db:"org_id"`
-	OrgRoleID       string    `db:"org_role_id"`
-	UsergroupIDs    []string  `db:"usergroup_ids"`
-	InvitedByUserID *string   `db:"invited_by_user_id"`
-	CreatedOn       time.Time `db:"created_on"`
+	OrgID           string         `db:"org_id"`
+	OrgRoleID       string         `db:"org_role_id"`
+	UsergroupIDs    []string       `db:"usergroup_ids"`
+	Attributes      map[string]any `db:"attributes"`
+	InvitedByUserID *string        `db:"invited_by_user_id"`
+	CreatedOn       time.Time      `db:"created_on"`
 }
 
 // OrganizationInviteWithRole is a convenience type used for display-friendly representation of an OrganizationInvite.
 type OrganizationInviteWithRole struct {
-	ID        string
-	Email     string
-	RoleName  string  `db:"role_name"`
-	InvitedBy *string `db:"invited_by"`
+	ID         string
+	Email      string
+	RoleName   string         `db:"role_name"`
+	Usergroups []string       `db:"usergroups"` // Names of the user groups the user will be added to on acceptance
+	Attributes map[string]any `db:"attributes"`
+	InvitedBy  *string        `db:"invited_by"`
 }
 
 // ProjectInvite represents an outstanding invitation to join a project.
@@ -1161,10 +1174,12 @@ type ProjectWhitelistedDomainWithJoinedRoleNames struct {
 }
 
 type InsertOrganizationInviteOptions struct {
-	Email     string `validate:"email"`
-	InviterID string
-	OrgID     string `validate:"required"`
-	RoleID    string `validate:"required"`
+	Email        string `validate:"email"`
+	InviterID    string
+	OrgID        string `validate:"required"`
+	RoleID       string `validate:"required"`
+	UsergroupIDs []string
+	Attributes   map[string]any
 }
 
 type InsertProjectInviteOptions struct {

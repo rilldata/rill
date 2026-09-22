@@ -61,7 +61,9 @@
       });
     } catch (error) {
       eventBus.emit("notification", {
-        message: `Error: ${error.response.data.message}`,
+        message: m.common_error_message({
+          message: error.response.data.message,
+        }),
         type: "error",
       });
     }
@@ -90,7 +92,9 @@
       });
     } catch (error) {
       eventBus.emit("notification", {
-        message: `Error: ${error.response.data.message}`,
+        message: m.common_error_message({
+          message: error.response.data.message,
+        }),
         type: "error",
       });
     }
@@ -116,7 +120,9 @@
       });
     } catch (error) {
       eventBus.emit("notification", {
-        message: `Error: ${error.response.data.message}`,
+        message: m.common_error_message({
+          message: error.response.data.message,
+        }),
         type: "error",
       });
     }

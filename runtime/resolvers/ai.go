@@ -67,6 +67,10 @@ func newAI(ctx context.Context, opts *runtime.ResolverOptions) (runtime.Resolver
 		args.ExecutionTime = time.Now()
 	}
 
+	// Default to the analyst agent, which is the only agent supported as of now
+	if props.Agent == "" {
+		props.Agent = ai.AnalystAgentName
+	}
 	if props.Agent != ai.AnalystAgentName {
 		return nil, errors.New("only 'analyst_agent' is supported as agent as of now")
 	}

@@ -1,11 +1,13 @@
 import { LeaderboardContextColumn } from "@rilldata/web-common/features/dashboards/leaderboard-context-column";
 import { getDashboardStateFromUrl } from "@rilldata/web-common/features/dashboards/proto-state/fromProto";
-import { getWhereFilterExpressionIndex } from "@rilldata/web-common/features/dashboards/state-managers/selectors/dimension-filters";
+import {
+  getSelectedValuesInFilter,
+  getWhereFilterExpressionIndex,
+} from "@rilldata/web-common/features/dashboards/state-managers/selectors/dimension-filters";
 import { correctExploreState } from "@rilldata/web-common/features/dashboards/stores/correct-explore-state.ts";
 import { type ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
 import {
   createAndExpression,
-  filterExpressions,
   forEachIdentifier,
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import { TDDChart } from "@rilldata/web-common/features/dashboards/time-dimension-details/types";
@@ -33,6 +35,9 @@ import {
   type PivotMeasureFormatting,
   type PivotTableMode,
 } from "../pivot/types";
+import { parseMeasureExpression } from "../ephemeral-measures/expression-parser";
+import type { EphemeralMeasureDef } from "../ephemeral-measures/types";
+import type { ExpressionFilterManager } from "@rilldata/web-common/features/dashboards/filters/ExpressionFilterManager.svelte.ts";
 
 export interface MetricsExplorerStoreType {
   entities: Record<string, ExploreState>;
@@ -72,13 +77,46 @@ export function includeExcludeModeFromFilters(
   return map;
 }
 
+// syncEphemeralMeasures drops ephemeral measures that reference measures no
+// longer in the explore, so a spec change never leaves views permanently
+// erroring. Must run before syncMeasures/syncDimensions, which treat the
+// remaining ephemeral measure names as valid.
+function syncEphemeralMeasures(
+  explore: V1ExploreSpec,
+  exploreState: ExploreState,
+) {
+  if (!exploreState.ephemeralMeasures?.length) return;
+  const measuresSet = new Set(explore.measures ?? []);
+  const dimensionsSet = new Set(explore.dimensions ?? []);
+  exploreState.ephemeralMeasures = exploreState.ephemeralMeasures.filter(
+    (def) => {
+      // A field later added to the spec with the same name must win;
+      // otherwise the stale definition would silently shadow it in requests.
+      if (measuresSet.has(def.name) || dimensionsSet.has(def.name)) {
+        return false;
+      }
+      const parsed = parseMeasureExpression(def.expression);
+      if (parsed.error) return false;
+      return parsed.refs.every((ref) => measuresSet.has(ref));
+    },
+  );
+  if (!exploreState.ephemeralMeasures.length) {
+    exploreState.ephemeralMeasures = undefined;
+  }
+}
+
 function syncMeasures(explore: V1ExploreSpec, exploreState: ExploreState) {
   const measuresSet = new Set(explore.measures ?? []);
+  // Ephemeral measure names are valid anywhere a measure name is used.
+  const validNames = new Set([
+    ...measuresSet,
+    ...(exploreState.ephemeralMeasures?.map((def) => def.name) ?? []),
+  ]);
 
   // sync measures with selected leaderboard measure and ensure default measure is set
   if (explore.measures?.length) {
     const defaultMeasure = explore.measures[0];
-    if (!measuresSet.has(exploreState.leaderboardSortByMeasureName)) {
+    if (!validNames.has(exploreState.leaderboardSortByMeasureName)) {
       exploreState.leaderboardSortByMeasureName = defaultMeasure;
     }
     if (!exploreState.leaderboardMeasureNames?.length) {
@@ -99,18 +137,22 @@ function syncMeasures(explore: V1ExploreSpec, exploreState: ExploreState) {
 
   if (
     exploreState.tdd.expandedMeasureName &&
-    !measuresSet.has(exploreState.tdd.expandedMeasureName)
+    !validNames.has(exploreState.tdd.expandedMeasureName)
   ) {
     exploreState.tdd.expandedMeasureName = undefined;
   }
 
   if (exploreState.allMeasuresVisible) {
     // this makes sure that the visible keys is in sync with list of measures
-    exploreState.visibleMeasures = [...measuresSet];
+    // (ephemeral measures count as selectable measures too)
+    exploreState.visibleMeasures = [
+      ...measuresSet,
+      ...(exploreState.ephemeralMeasures?.map((def) => def.name) ?? []),
+    ];
   } else {
     // remove any visible measures that doesn't exist anymore
     exploreState.visibleMeasures = exploreState.visibleMeasures.filter((m) =>
-      measuresSet.has(m),
+      validNames.has(m),
     );
     // If there are no visible measures, make the first measure visible
     if (explore.measures?.length && exploreState.visibleMeasures.length === 0) {
@@ -123,12 +165,6 @@ function syncDimensions(explore: V1ExploreSpec, exploreState: ExploreState) {
   // Having a map here improves the lookup for existing dimension name
   const dimensionsSet = new Set(explore.dimensions ?? []);
   const measuresSet = new Set(explore.measures ?? []);
-
-  exploreState.whereFilter =
-    filterExpressions(exploreState.whereFilter, (e) => {
-      if (!e.cond?.exprs?.length) return true;
-      return dimensionsSet.has(e.cond.exprs[0].ident!);
-    }) ?? createAndExpression([]);
 
   if (
     exploreState.selectedDimensionName &&
@@ -143,10 +179,15 @@ function syncDimensions(explore: V1ExploreSpec, exploreState: ExploreState) {
       dimensionsSet.has(dimension.id) || dimension.type === PivotChipType.Time,
   );
 
+  const ephemeralMeasureNames = new Set(
+    exploreState.ephemeralMeasures?.map((def) => def.name) ?? [],
+  );
+
   exploreState.pivot.columns = exploreState.pivot.columns.filter(
     (col) =>
       measuresSet.has(col.id) ||
       dimensionsSet.has(col.id) ||
+      ephemeralMeasureNames.has(col.id) ||
       col.type === PivotChipType.Time,
   );
 
@@ -164,10 +205,6 @@ function syncDimensions(explore: V1ExploreSpec, exploreState: ExploreState) {
 const metricsViewReducers = {
   init(name: string, initState: ExploreState) {
     update((state) => {
-      // TODO: revisit this during the url state / restore user refactor
-      initState.dimensionFilterExcludeMode = includeExcludeModeFromFilters(
-        initState.whereFilter,
-      );
       state.entities[name] = structuredClone(initState);
       state.entities[name].name = name;
 
@@ -196,9 +233,6 @@ const metricsViewReducers = {
       if (!partial.showTimeComparison) {
         exploreState.showTimeComparison = false;
       }
-      exploreState.dimensionFilterExcludeMode = includeExcludeModeFromFilters(
-        partial.whereFilter,
-      );
       correctExploreState(metricsView, exploreState);
     });
   },
@@ -206,6 +240,7 @@ const metricsViewReducers = {
   mergePartialExplorerEntity(
     name: string,
     partialExploreState: Partial<ExploreState>,
+    expressionFilterManager: ExpressionFilterManager,
   ) {
     partialExploreState = structuredClone(partialExploreState);
 
@@ -213,14 +248,22 @@ const metricsViewReducers = {
       for (const key in partialExploreState) {
         exploreState[key] = partialExploreState[key];
       }
+
+      const mvName =
+        expressionFilterManager.metricsViewsProvider.metricsViewNames[0];
+      if (mvName) {
+        exploreState.whereFilter =
+          expressionFilterManager.topLevelJoiner.expr[mvName] ??
+          createAndExpression([]);
+        exploreState.dimensionsWithInlistFilter =
+          expressionFilterManager.inList;
+      }
+
       // this hack is needed since what is shown for comparison is not a single source
       // TODO: use an enum and get rid of this
       if (!partialExploreState.showTimeComparison) {
         exploreState.showTimeComparison = false;
       }
-      exploreState.dimensionFilterExcludeMode = includeExcludeModeFromFilters(
-        partialExploreState.whereFilter,
-      );
       // Partial comes from getMergedExploreState and is already corrected
     });
   },
@@ -229,11 +272,40 @@ const metricsViewReducers = {
   sync(name: string, explore: V1ExploreSpec) {
     if (!name || !explore || !explore.measures) return;
     updateMetricsExplorerByName(name, (exploreState) => {
+      // remove ephemeral measures referencing non existent measures
+      syncEphemeralMeasures(explore, exploreState);
+
       // remove references to non existent measures
       syncMeasures(explore, exploreState);
 
       // remove references to non existent dimensions
       syncDimensions(explore, exploreState);
+    });
+  },
+
+  syncExpressionFilter(
+    name: string,
+    expressionFilterManager: ExpressionFilterManager,
+  ) {
+    updateMetricsExplorerByName(name, (exploreState) => {
+      const mvName =
+        expressionFilterManager.metricsViewsProvider.metricsViewNames[0];
+      if (mvName) {
+        const newWhereFilter =
+          expressionFilterManager.topLevelJoiner.expr[mvName] ??
+          createAndExpression([]);
+        // Read before whereFilter is replaced, since the pin moves with the values it points at.
+        exploreState.tdd.pinIndex = getUpdatedPinIndex(
+          exploreState.tdd.pinIndex,
+          exploreState.selectedComparisonDimension,
+          exploreState.whereFilter,
+          newWhereFilter,
+        );
+
+        exploreState.whereFilter = newWhereFilter;
+        exploreState.dimensionsWithInlistFilter =
+          expressionFilterManager.inList;
+      }
     });
   },
 
@@ -616,6 +688,98 @@ const metricsViewReducers = {
     });
   },
 
+  addEphemeralMeasure(name: string, def: EphemeralMeasureDef) {
+    updateMetricsExplorerByName(name, (exploreState) => {
+      exploreState.ephemeralMeasures = [
+        ...(exploreState.ephemeralMeasures ?? []),
+        def,
+      ];
+      if (exploreState.activePage === DashboardState_ActivePage.PIVOT) {
+        exploreState.pivot.rowPage = 1;
+        exploreState.pivot.activeCell = null;
+        exploreState.pivot.columns.push({
+          id: def.name,
+          title: def.displayName,
+          type: PivotChipType.Measure,
+        });
+      } else {
+        // Make the new measure visible in the explore view.
+        exploreState.visibleMeasures = [
+          ...exploreState.visibleMeasures,
+          def.name,
+        ];
+        exploreState.allMeasuresVisible = false;
+      }
+    });
+  },
+
+  updateEphemeralMeasure(name: string, def: EphemeralMeasureDef) {
+    updateMetricsExplorerByName(name, (exploreState) => {
+      exploreState.pivot.rowPage = 1;
+      exploreState.pivot.activeCell = null;
+      exploreState.ephemeralMeasures = (
+        exploreState.ephemeralMeasures ?? []
+      ).map((d) => (d.name === def.name ? def : d));
+      // Chip titles are denormalized; keep any placed pivot chip in sync on rename.
+      exploreState.pivot.columns = exploreState.pivot.columns.map((col) =>
+        col.id === def.name ? { ...col, title: def.displayName } : col,
+      );
+    });
+  },
+
+  removeEphemeralMeasure(
+    name: string,
+    measureName: string,
+    explore: V1ExploreSpec | undefined,
+  ) {
+    updateMetricsExplorerByName(name, (exploreState) => {
+      exploreState.ephemeralMeasures = (
+        exploreState.ephemeralMeasures ?? []
+      ).filter((d) => d.name !== measureName);
+
+      // Remove all usages across views.
+      exploreState.pivot.rowPage = 1;
+      exploreState.pivot.activeCell = null;
+      exploreState.pivot.columns = exploreState.pivot.columns.filter(
+        (col) => col.id !== measureName,
+      );
+      exploreState.pivot.sorting = exploreState.pivot.sorting.filter(
+        (s) => s.id !== measureName,
+      );
+      if (exploreState.pivot.measureFormatting?.[measureName]) {
+        const measureFormatting = { ...exploreState.pivot.measureFormatting };
+        delete measureFormatting[measureName];
+        exploreState.pivot.measureFormatting = measureFormatting;
+      }
+
+      exploreState.visibleMeasures = exploreState.visibleMeasures.filter(
+        (m) => m !== measureName,
+      );
+      exploreState.leaderboardMeasureNames = (
+        exploreState.leaderboardMeasureNames ?? []
+      ).filter((m) => m !== measureName);
+      if (exploreState.leaderboardSortByMeasureName === measureName) {
+        exploreState.leaderboardSortByMeasureName =
+          exploreState.leaderboardMeasureNames[0] ??
+          exploreState.visibleMeasures[0] ??
+          "";
+      }
+      if (exploreState.tdd.expandedMeasureName === measureName) {
+        exploreState.tdd.expandedMeasureName = undefined;
+        if (
+          exploreState.activePage ===
+          DashboardState_ActivePage.TIME_DIMENSIONAL_DETAIL
+        ) {
+          exploreState.activePage = DashboardState_ActivePage.DEFAULT;
+        }
+      }
+
+      // The removed measure may have been the only visible or leaderboard
+      // measure; restore the spec defaults so views never end up measure-less.
+      if (explore) syncMeasures(explore, exploreState);
+    });
+  },
+
   setPivotRowLimitForExpandedRow(
     name: string,
     expandIndex: string,
@@ -719,6 +883,30 @@ function getPinIndexForDimension(
 
   // 1st entry in the expression is the identifier. hence the -2 here.
   return dimExpr.cond.exprs.length - 2;
+}
+
+/**
+ * `tdd.pinIndex` is an index into the comparison dimension's selected values,
+ * so removing or reordering those values leaves the pin on the wrong row.
+ * Everything up to and including the pin stays pinned,
+ * and the pin is dropped once none of those values are selected anymore.
+ */
+export function getUpdatedPinIndex(
+  pinIndex: number,
+  dimensionName: string | undefined,
+  oldWhereFilter: V1Expression | undefined,
+  newWhereFilter: V1Expression | undefined,
+) {
+  if (pinIndex === -1 || !dimensionName) return pinIndex;
+
+  const oldValues = getSelectedValuesInFilter(oldWhereFilter, dimensionName);
+  const newValues = getSelectedValuesInFilter(newWhereFilter, dimensionName);
+  // A contains filter gets its values from a search query rather than the expression,
+  // so there is nothing to remap against. Leave the pin as is.
+  if (!oldValues || !newValues) return pinIndex;
+
+  const pinnedValues = new Set(oldValues.slice(0, pinIndex + 1));
+  return newValues.findLastIndex((v) => pinnedValues.has(v));
 }
 
 export const dimensionSearchText = writable("");

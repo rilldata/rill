@@ -749,6 +749,8 @@ If not found in `time_ranges`, it should be added to the list. */
   pivotShowTotalsRow?: boolean;
   /** Per-measure pivot conditional formatting, serialized in the URL param format. */
   pivotFormatting?: string;
+  /** Ephemeral measures for the explore, serialized in the URL param format. */
+  ephemeralMeasures?: string;
   /** When true, time-series charts use a dynamic Y-axis scale that fits the visible data range. */
   chartDynamicYAxis?: boolean;
 }
@@ -832,6 +834,7 @@ export const V1ExportFormat = {
   EXPORT_FORMAT_CSV: "EXPORT_FORMAT_CSV",
   EXPORT_FORMAT_XLSX: "EXPORT_FORMAT_XLSX",
   EXPORT_FORMAT_PARQUET: "EXPORT_FORMAT_PARQUET",
+  EXPORT_FORMAT_PDF: "EXPORT_FORMAT_PDF",
 } as const;
 
 export interface V1ExportReportResponse {
@@ -1143,6 +1146,13 @@ export interface V1ListObjectsResponse {
 
 export interface V1ListResourcesResponse {
   resources?: V1Resource[];
+  nextPageToken?: string;
+  /**
+   * True while the runtime may still produce more resources, i.e. it has not finished its initial
+   * parse and reconcile. Computed before security policies are applied, so it stays meaningful when
+   * every resource is denied.
+   */
+  initializing?: boolean;
 }
 
 export interface V1ListTablesResponse {
@@ -1217,10 +1227,18 @@ export interface V1MetricsViewAggregationMeasure {
   percentOfTotal?: V1MetricsViewAggregationMeasureComputePercentOfTotal;
   uri?: V1MetricsViewAggregationMeasureComputeURI;
   comparisonTime?: V1MetricsViewAggregationMeasureComputeComparisonTime;
+  expression?: V1MetricsViewAggregationMeasureComputeExpression;
 }
 
 export interface V1MetricsViewAggregationMeasureComputeComparisonDelta {
   measure?: string;
+}
+
+export interface V1MetricsViewAggregationMeasureComputeExpression {
+  /** Arithmetic expression over existing measure names, e.g. "revenue - cost". */
+  expression?: string;
+  /** Optional display name used in exports and result metadata. */
+  displayName?: string;
 }
 
 export interface V1MetricsViewAggregationMeasureComputeComparisonRatio {
@@ -1568,6 +1586,9 @@ export interface V1MetricsViewTimeSeriesRequest {
   instanceId?: string;
   metricsViewName?: string;
   measureNames?: string[];
+  /** Optional ephemeral measures, i.e. measures defined by the query rather than the metrics view.
+Only the `expression` compute is supported for time series. */
+  ephemeralMeasures?: V1MetricsViewAggregationMeasure[];
   timeStart?: string;
   timeEnd?: string;
   timeGranularity?: V1TimeGrain;
@@ -2102,6 +2123,7 @@ export interface V1Resource {
   canvas?: V1Canvas;
   api?: V1API;
   connector?: V1ConnectorV2;
+  skill?: V1Skill;
 }
 
 export type V1ResourceEvent =
@@ -2114,6 +2136,8 @@ export const V1ResourceEvent = {
   RESOURCE_EVENT_DELETE: "RESOURCE_EVENT_DELETE",
 } as const;
 
+export type V1ResourceMetaMetadata = { [key: string]: string };
+
 export interface V1ResourceMeta {
   name?: V1ResourceName;
   refs?: V1ResourceName[];
@@ -2121,6 +2145,9 @@ export interface V1ResourceMeta {
   filePaths?: string[];
   /** Tags for organizing and filtering resources. Parsed generically from any resource YAML's top-level "tags:" field. */
   tags?: string[];
+  /** Metadata is free-form key-value metadata for the resource, parsed generically from any resource YAML's top-level "metadata:" field.
+It is user-defined: Rill does not read or write keys in it and exposes it as-is over the API for external tooling. */
+  metadata?: V1ResourceMetaMetadata;
   hidden?: boolean;
   version?: string;
   specVersion?: string;
@@ -2320,6 +2347,30 @@ export type V1TableRowsResponseDataItem = { [key: string]: unknown };
 
 export interface V1TableRowsResponse {
   data?: V1TableRowsResponseDataItem[];
+}
+
+export interface V1Skill {
+  spec?: V1SkillSpec;
+  state?: V1SkillState;
+}
+
+/** SkillSpec is parsed from a SKILL.md file that follows the Agent Skills format (https://agentskills.io).
+Skills teach AI agents project-specific practices, such as analysis playbooks and business glossaries. */
+export interface V1SkillSpec {
+  /** Description of what the skill does and when to use it. */
+  description?: string;
+  /** Markdown body with the skill's full instructions. */
+  body?: string;
+  /** Rill extension: metrics views the skill is relevant to. Empty means all. */
+  metricsViews?: string[];
+  /** Rill extension: Rill agents the skill applies to ("analyst" and/or "developer"). */
+  agents?: string[];
+  /** Rill extension: if true, the skill's body is always injected into the agent's context instead of being loaded on demand. */
+  alwaysApply?: boolean;
+}
+
+export interface V1SkillState {
+  [key: string]: unknown;
 }
 
 export interface V1Theme {
@@ -2523,6 +2574,172 @@ export type QueryServiceMetricsViewAggregationBody = {
   trace?: boolean;
 };
 
+export type QueryServiceMetricsViewAnnotationsBody = {
+  measures?: string[];
+  priority?: number;
+  timeRange?: V1TimeRange;
+  timeGrain?: V1TimeGrain;
+  timeZone?: string;
+  limit?: string;
+  offset?: string;
+  /** Optional. If true, the response will include traces of spans captured during execution. */
+  trace?: boolean;
+};
+
+export type QueryServiceMetricsViewComparisonBody = {
+  dimension?: V1MetricsViewAggregationDimension;
+  measures?: V1MetricsViewAggregationMeasure[];
+  comparisonMeasures?: string[];
+  sort?: V1MetricsViewComparisonSort[];
+  timeRange?: V1TimeRange;
+  comparisonTimeRange?: V1TimeRange;
+  where?: V1Expression;
+  /** Optional. If both where and where_sql are set, both will be applied with an AND between them. */
+  whereSql?: string;
+  having?: V1Expression;
+  /** Optional. If both having and having_sql are set, both will be applied with an AND between them. */
+  havingSql?: string;
+  aliases?: V1MetricsViewComparisonMeasureAlias[];
+  limit?: string;
+  offset?: string;
+  priority?: number;
+  exact?: boolean;
+  filter?: V1MetricsViewFilter;
+  /** Optional. If true, the response will include traces of spans captured during execution. */
+  trace?: boolean;
+};
+
+export type QueryServiceMetricsViewRowsBody = {
+  timeStart?: string;
+  timeEnd?: string;
+  timeGranularity?: V1TimeGrain;
+  where?: V1Expression;
+  sort?: V1MetricsViewSort[];
+  limit?: number;
+  offset?: string;
+  priority?: number;
+  timeZone?: string;
+  filter?: V1MetricsViewFilter;
+  timeDimension?: string;
+  /** Optional. If true, the response will include traces of spans captured during execution. */
+  trace?: boolean;
+};
+
+export type QueryServiceMetricsViewSchemaParams = {
+  priority?: number;
+  /**
+   * Optional. If true, the response will include traces of spans captured during execution.
+   */
+  trace?: boolean;
+};
+
+export type QueryServiceMetricsViewSearchBody = {
+  dimensions?: string[];
+  search?: string;
+  timeRange?: V1TimeRange;
+  where?: V1Expression;
+  having?: V1Expression;
+  limit?: number;
+  priority?: number;
+  /** Optional. If true, the response will include traces of spans captured during execution. */
+  trace?: boolean;
+};
+
+export type QueryServiceMetricsViewTimeRangeBody = {
+  priority?: number;
+  timeDimension?: string;
+  /** Optional. If true, the response will include traces of spans captured during execution. */
+  trace?: boolean;
+};
+
+export type QueryServiceMetricsViewTimeRangesBody = {
+  /** Optional time range expressions to resolve (uses the rilltime expression syntax). */
+  expressions?: string[];
+  /** Optional query priority. */
+  priority?: number;
+  /** Optional time zone that overrides the time zones used when resolving the time range expressions. */
+  timeZone?: string;
+  /** Optional time dimension to return time ranges for. If not specified, it uses the metrics view's default time dimension. */
+  timeDimension?: string;
+  /** Optional execution time against which the time ranges needs to be resolved. Watermark, latest and now are all replaced with this if provided. */
+  executionTime?: string;
+  /** Optional. If true, the response will include traces of spans captured during execution. */
+  trace?: boolean;
+};
+
+export type QueryServiceMetricsViewTimeSeriesBody = {
+  measureNames?: string[];
+  /** Optional ephemeral measures, i.e. measures defined by the query rather than the metrics view.
+Only the `expression` compute is supported for time series. */
+  ephemeralMeasures?: V1MetricsViewAggregationMeasure[];
+  timeStart?: string;
+  timeEnd?: string;
+  timeGranularity?: V1TimeGrain;
+  where?: V1Expression;
+  /** Optional. If both where and where_sql are set, both will be applied with an AND between them. */
+  whereSql?: string;
+  having?: V1Expression;
+  /** Optional. If both having and having_sql are set, both will be applied with an AND between them. */
+  havingSql?: string;
+  timeZone?: string;
+  priority?: number;
+  filter?: V1MetricsViewFilter;
+  timeDimension?: string;
+  /** Optional. If true, the response will include traces of spans captured during execution. */
+  trace?: boolean;
+};
+
+export type QueryServiceMetricsViewToplistBody = {
+  dimensionName?: string;
+  measureNames?: string[];
+  timeStart?: string;
+  timeEnd?: string;
+  limit?: string;
+  offset?: string;
+  sort?: V1MetricsViewSort[];
+  where?: V1Expression;
+  whereSql?: string;
+  having?: V1Expression;
+  havingSql?: string;
+  priority?: number;
+  filter?: V1MetricsViewFilter;
+  /** Optional. If true, the response will include traces of spans captured during execution. */
+  trace?: boolean;
+};
+
+export type QueryServiceMetricsViewTotalsBody = {
+  measureNames?: string[];
+  timeStart?: string;
+  timeEnd?: string;
+  where?: V1Expression;
+  /** Optional. If both where and where_sql are set, both will be applied with an AND between them. */
+  whereSql?: string;
+  priority?: number;
+  filter?: V1MetricsViewFilter;
+  timeDimension?: string;
+  /** Optional. If true, the response will include traces of spans captured during execution. */
+  trace?: boolean;
+};
+
+export type QueryServiceColumnNullCountParams = {
+  connector?: string;
+  database?: string;
+  databaseSchema?: string;
+  /**
+   * Required
+   */
+  columnName?: string;
+  priority?: number;
+};
+
+export type QueryServiceColumnNumericHistogramParams = {
+  connector?: string;
+  database?: string;
+  databaseSchema?: string;
+  columnName?: string;
+  histogramMethod?: QueryServiceColumnNumericHistogramHistogramMethod;
+  priority?: number;
+};
 
 export type QueryServiceColumnNumericHistogramHistogramMethod =
   (typeof QueryServiceColumnNumericHistogramHistogramMethod)[keyof typeof QueryServiceColumnNumericHistogramHistogramMethod];

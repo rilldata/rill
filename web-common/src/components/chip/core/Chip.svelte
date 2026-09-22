@@ -92,21 +92,42 @@
     {/if}
 
     {#if $$slots.body}
-      <button
-        {onclick}
-        {onmousedown}
-        aria-label={`Open ${label}`}
-        class="text-inherit w-full select-none truncate flex items-center justify-between gap-x-1 px-0.5"
-        type="button"
-      >
-        <slot name="body" />
+      {#if readOnly && !allowPointerEvents}
+        <!-- A read-only chip has nothing to activate, so it must stay out of the tab order. -->
+        <span
+          class="text-inherit w-full select-none truncate flex items-center justify-between gap-x-1 px-0.5"
+        >
+          <slot name="body" />
 
-        {#if caret}
-          <span class="transition-transform -mr-0.5" class:-rotate-180={active}>
-            <CaretDownIcon size="10px" />
-          </span>
-        {/if}
-      </button>
+          {#if caret}
+            <span
+              class="transition-transform -mr-0.5"
+              class:-rotate-180={active}
+            >
+              <CaretDownIcon size="10px" />
+            </span>
+          {/if}
+        </span>
+      {:else}
+        <button
+          {onclick}
+          {onmousedown}
+          aria-label={`Open ${label}`}
+          class="text-inherit w-full select-none truncate flex items-center justify-between gap-x-1 px-0.5"
+          type="button"
+        >
+          <slot name="body" />
+
+          {#if caret}
+            <span
+              class="transition-transform -mr-0.5"
+              class:-rotate-180={active}
+            >
+              <CaretDownIcon size="10px" />
+            </span>
+          {/if}
+        </button>
+      {/if}
     {/if}
   </div>
 </div>

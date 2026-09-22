@@ -11,12 +11,16 @@ import {
   createInExpression,
   createLikeExpression,
   createOrExpression,
+  isSubqueryExpression,
   matchExpressionByName,
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import { type V1MetricsViewAggregationResponseDataItem } from "../../../runtime-client";
 import PercentOfTotal from "./PercentOfTotal.svelte";
 
-import { PERC_DIFF } from "../../../components/data-types/type-utils";
+import {
+  isPercDiff,
+  PERC_DIFF,
+} from "../../../components/data-types/type-utils";
 import type {
   MetricsViewSpecDimension,
   MetricsViewSpecMeasure,
@@ -26,6 +30,7 @@ import type {
 
 import type { VirtualizedTableColumns } from "@rilldata/web-common/components/virtualized-table/types";
 
+import { clamp } from "@rilldata/web-common/lib/clamp";
 import { createMeasureValueFormatter } from "@rilldata/web-common/lib/number-formatting/format-measure-value";
 import { FormatPreset } from "@rilldata/web-common/lib/number-formatting/humanizer-types";
 import { formatMeasurePercentageDifference } from "@rilldata/web-common/lib/number-formatting/percentage-formatter";
@@ -61,8 +66,8 @@ export function updateFilterOnSearch(
   }
 
   filterForDimension = copyFilterExpression(filterForDimension);
-  const filterIdx = filterForDimension.cond?.exprs?.findIndex((e) =>
-    matchExpressionByName(e, dimensionName),
+  const filterIdx = filterForDimension.cond?.exprs?.findIndex(
+    (e) => matchExpressionByName(e, dimensionName) && !isSubqueryExpression(e),
   );
   if (filterIdx === undefined || filterIdx === -1) {
     filterForDimension.cond?.exprs?.push(cond);
@@ -73,10 +78,12 @@ export function updateFilterOnSearch(
 }
 
 export function getDimensionFilterWithSearch(
-  filters: V1Expression,
+  filters: V1Expression | undefined,
   searchText: string,
   dimensionName: string,
 ) {
+  if (!filters) return undefined;
+
   const filterForDimension =
     getFiltersForOtherDimensions(filters, dimensionName) ??
     createAndExpression([]);
@@ -175,19 +182,26 @@ const HEADER_ICON_WIDTHS = 16;
 const HEADER_X_PAD = CHARACTER_X_PAD;
 const HEADER_FLEX_SPACING = 14;
 // const CHARACTER_LIMIT_FOR_WRAPPING = 9;
+/** A context column cell loses 18px to chrome: a 10px gutter on the cell and
+ * an 8px inset on the label. The rest is breathing room, so the value doesn't
+ * butt up against the previous column. */
+const COMPARISON_X_PAD = 24;
 
 export function estimateColumnSizes(
   columns: VirtualizedTableColumns[],
   columnWidths: {
     [key: string]: number;
   },
-  containerWidth: number,
+  rows: DimensionTableRow[],
   config: DimensionTableConfig,
 ): number[] {
   const estimatedColumnSizes = columns.map((column, i) => {
-    if (column.name.includes("delta")) return config.comparisonColumnWidth;
-    if (column.name.includes("percent_of_total"))
-      return config.comparisonColumnWidth;
+    if (
+      column.name.includes("delta") ||
+      column.name.includes("percent_of_total")
+    ) {
+      return estimateComparisonColumnSize(column.name, rows, config);
+    }
     if (i != 0) return config.defaultColumnWidth;
 
     const largestStringLength =
@@ -225,6 +239,40 @@ export function estimateColumnSizes(
   });
 
   return estimatedColumnSizes;
+}
+
+/** Context columns (delta, delta percent and percent of total) hold formatted
+ * measure values, which can be far wider than the minimum comparison width,
+ * e.g. a currency delta like "-$1,234,567.89". Size them to their content,
+ * the same way the pivot table sizes its measure columns.
+ */
+function estimateComparisonColumnSize(
+  columnName: string,
+  rows: DimensionTableRow[],
+  config: DimensionTableConfig,
+): number {
+  const largestValueLength = rows.reduce((largest, row) => {
+    const value = row["__formatted_" + columnName] ?? row[columnName];
+    return Math.max(largest, renderedValueLength(value));
+  }, 0);
+
+  return clamp(
+    config.comparisonColumnWidth,
+    largestValueLength * CHARACTER_WIDTH + COMPARISON_X_PAD,
+    config.maxColumnWidth,
+  );
+}
+
+/** Formatted context column values are not always strings: percentages are
+ * NumberParts objects, and missing data is a PERC_DIFF token rendered as "-".
+ */
+function renderedValueLength(
+  value: DimensionTableRow[keyof DimensionTableRow],
+): number {
+  if (value === null || value === undefined) return 0;
+  if (isPercDiff(value)) return 1;
+  if (typeof value === "object") return numberPartsToString(value).length;
+  return `${value}`.length;
 }
 
 export function prepareVirtualizedDimTableColumns(

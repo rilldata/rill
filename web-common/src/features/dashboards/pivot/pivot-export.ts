@@ -1,5 +1,4 @@
 import { getDimensionForTimeField } from "@rilldata/web-common/features/dashboards/aggregation-request/dimension-utils.ts";
-import { mergeDimensionAndMeasureFilters } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
 import { sanitiseExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
 import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
@@ -14,7 +13,7 @@ import {
 import { get } from "svelte/store";
 import type { StateManagers } from "../state-managers/state-managers";
 import { getPivotConfig } from "./pivot-data-config";
-import { prepareMeasureForComparison } from "./pivot-utils";
+import { prepareMeasuresForRequest } from "./pivot-utils";
 import {
   COMPARISON_DELTA,
   COMPARISON_PERCENT,
@@ -190,17 +189,12 @@ export function getPivotAggregationRequest({
     metricsView: metricsViewName,
     timeRange,
     comparisonTimeRange: comparisonTime,
-    measures: enableComparison
-      ? prepareMeasureForComparison(measures)
-      : measures,
-    dimensions: allDimensions,
-    where: sanitiseExpression(
-      mergeDimensionAndMeasureFilters(
-        exploreState.whereFilter,
-        exploreState.dimensionThresholdFilters,
-      ),
-      undefined,
+    measures: prepareMeasuresForRequest(
+      measures,
+      exploreState.ephemeralMeasures,
     ),
+    dimensions: allDimensions,
+    where: sanitiseExpression(exploreState.whereFilter, undefined),
     pivotOn,
     sort,
     offset: "0",

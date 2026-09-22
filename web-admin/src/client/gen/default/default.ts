@@ -273,6 +273,8 @@ import type {
   V1SudoUpdateOrganizationBillingMessageResponse,
   V1SudoUpdateOrganizationCustomDomainRequest,
   V1SudoUpdateOrganizationCustomDomainResponse,
+  V1SudoUpdateOrganizationDefaultProvisionerRequest,
+  V1SudoUpdateOrganizationDefaultProvisionerResponse,
   V1SudoUpdateOrganizationQuotasRequest,
   V1SudoUpdateOrganizationQuotasResponse,
   V1SudoUpdateUserQuotasRequest,
@@ -10955,12 +10957,144 @@ export const adminServiceListOrganizationMemberUsergroups = (
   });
 };
 
+export const getAdminServiceListOrganizationMemberUsergroupsInfiniteQueryKey = (
+  org?: string,
+  params?: AdminServiceListOrganizationMemberUsergroupsParams,
+) => {
+  return [
+    "infinite",
+    `/v1/orgs/${org}/usergroups`,
+    ...(params ? [params] : []),
+  ] as const;
+};
+
 export const getAdminServiceListOrganizationMemberUsergroupsQueryKey = (
   org?: string,
   params?: AdminServiceListOrganizationMemberUsergroupsParams,
 ) => {
   return [`/v1/orgs/${org}/usergroups`, ...(params ? [params] : [])] as const;
 };
+
+export const getAdminServiceListOrganizationMemberUsergroupsInfiniteQueryOptions =
+  <
+    TData = InfiniteData<
+      Awaited<ReturnType<typeof adminServiceListOrganizationMemberUsergroups>>,
+      AdminServiceListOrganizationMemberUsergroupsParams["pageToken"]
+    >,
+    TError = RpcStatus,
+  >(
+    org: string,
+    params?: AdminServiceListOrganizationMemberUsergroupsParams,
+    options?: {
+      query?: Partial<
+        CreateInfiniteQueryOptions<
+          Awaited<
+            ReturnType<typeof adminServiceListOrganizationMemberUsergroups>
+          >,
+          TError,
+          TData,
+          Awaited<
+            ReturnType<typeof adminServiceListOrganizationMemberUsergroups>
+          >,
+          QueryKey,
+          AdminServiceListOrganizationMemberUsergroupsParams["pageToken"]
+        >
+      >;
+    },
+  ) => {
+    const { query: queryOptions } = options ?? {};
+
+    const queryKey =
+      queryOptions?.queryKey ??
+      getAdminServiceListOrganizationMemberUsergroupsInfiniteQueryKey(
+        org,
+        params,
+      );
+
+    const queryFn: QueryFunction<
+      Awaited<ReturnType<typeof adminServiceListOrganizationMemberUsergroups>>,
+      QueryKey,
+      AdminServiceListOrganizationMemberUsergroupsParams["pageToken"]
+    > = ({ signal, pageParam }) =>
+      adminServiceListOrganizationMemberUsergroups(
+        org,
+        { ...params, pageToken: pageParam || params?.["pageToken"] },
+        signal,
+      );
+
+    return {
+      queryKey,
+      queryFn,
+      enabled: !!org,
+      ...queryOptions,
+    } as CreateInfiniteQueryOptions<
+      Awaited<ReturnType<typeof adminServiceListOrganizationMemberUsergroups>>,
+      TError,
+      TData,
+      Awaited<ReturnType<typeof adminServiceListOrganizationMemberUsergroups>>,
+      QueryKey,
+      AdminServiceListOrganizationMemberUsergroupsParams["pageToken"]
+    > & { queryKey: DataTag<QueryKey, TData, TError> };
+  };
+
+export type AdminServiceListOrganizationMemberUsergroupsInfiniteQueryResult =
+  NonNullable<
+    Awaited<ReturnType<typeof adminServiceListOrganizationMemberUsergroups>>
+  >;
+export type AdminServiceListOrganizationMemberUsergroupsInfiniteQueryError =
+  RpcStatus;
+
+/**
+ * @summary ListOrganizationMemberUsergroups lists the organization's user groups
+ */
+
+export function createAdminServiceListOrganizationMemberUsergroupsInfinite<
+  TData = InfiniteData<
+    Awaited<ReturnType<typeof adminServiceListOrganizationMemberUsergroups>>,
+    AdminServiceListOrganizationMemberUsergroupsParams["pageToken"]
+  >,
+  TError = RpcStatus,
+>(
+  org: string,
+  params?: AdminServiceListOrganizationMemberUsergroupsParams,
+  options?: {
+    query?: Partial<
+      CreateInfiniteQueryOptions<
+        Awaited<
+          ReturnType<typeof adminServiceListOrganizationMemberUsergroups>
+        >,
+        TError,
+        TData,
+        Awaited<
+          ReturnType<typeof adminServiceListOrganizationMemberUsergroups>
+        >,
+        QueryKey,
+        AdminServiceListOrganizationMemberUsergroupsParams["pageToken"]
+      >
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateInfiniteQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+} {
+  const queryOptions =
+    getAdminServiceListOrganizationMemberUsergroupsInfiniteQueryOptions(
+      org,
+      params,
+      options,
+    );
+
+  const query = createInfiniteQuery(
+    queryOptions,
+    queryClient,
+  ) as CreateInfiniteQueryResult<TData, TError> & {
+    queryKey: DataTag<QueryKey, TData, TError>;
+  };
+
+  query.queryKey = queryOptions.queryKey;
+
+  return query;
+}
 
 export const getAdminServiceListOrganizationMemberUsergroupsQueryOptions = <
   TData = Awaited<
@@ -14484,6 +14618,109 @@ export const createAdminServiceSudoUpdateOrganizationCustomDomain = <
 > => {
   const mutationOptions =
     getAdminServiceSudoUpdateOrganizationCustomDomainMutationOptions(options);
+
+  return createMutation(mutationOptions, queryClient);
+};
+/**
+ * @summary SudoUpdateOrganizationDefaultProvisioner sets the provisioner used by default for an organization's deployments.
+It only affects deployments provisioned after the change; existing deployments stay on their current provisioner.
+ */
+export const adminServiceSudoUpdateOrganizationDefaultProvisioner = (
+  v1SudoUpdateOrganizationDefaultProvisionerRequest: V1SudoUpdateOrganizationDefaultProvisionerRequest,
+) => {
+  return httpClient<V1SudoUpdateOrganizationDefaultProvisionerResponse>({
+    url: `/v1/superuser/organization/default-provisioner`,
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    data: v1SudoUpdateOrganizationDefaultProvisionerRequest,
+  });
+};
+
+export const getAdminServiceSudoUpdateOrganizationDefaultProvisionerMutationOptions =
+  <TError = RpcStatus, TContext = unknown>(options?: {
+    mutation?: CreateMutationOptions<
+      Awaited<
+        ReturnType<typeof adminServiceSudoUpdateOrganizationDefaultProvisioner>
+      >,
+      TError,
+      { data: V1SudoUpdateOrganizationDefaultProvisionerRequest },
+      TContext
+    >;
+  }): CreateMutationOptions<
+    Awaited<
+      ReturnType<typeof adminServiceSudoUpdateOrganizationDefaultProvisioner>
+    >,
+    TError,
+    { data: V1SudoUpdateOrganizationDefaultProvisionerRequest },
+    TContext
+  > => {
+    const mutationKey = [
+      "adminServiceSudoUpdateOrganizationDefaultProvisioner",
+    ];
+    const { mutation: mutationOptions } = options
+      ? options.mutation &&
+        "mutationKey" in options.mutation &&
+        options.mutation.mutationKey
+        ? options
+        : { ...options, mutation: { ...options.mutation, mutationKey } }
+      : { mutation: { mutationKey } };
+
+    const mutationFn: MutationFunction<
+      Awaited<
+        ReturnType<typeof adminServiceSudoUpdateOrganizationDefaultProvisioner>
+      >,
+      { data: V1SudoUpdateOrganizationDefaultProvisionerRequest }
+    > = (props) => {
+      const { data } = props ?? {};
+
+      return adminServiceSudoUpdateOrganizationDefaultProvisioner(data);
+    };
+
+    return { mutationFn, ...mutationOptions };
+  };
+
+export type AdminServiceSudoUpdateOrganizationDefaultProvisionerMutationResult =
+  NonNullable<
+    Awaited<
+      ReturnType<typeof adminServiceSudoUpdateOrganizationDefaultProvisioner>
+    >
+  >;
+export type AdminServiceSudoUpdateOrganizationDefaultProvisionerMutationBody =
+  V1SudoUpdateOrganizationDefaultProvisionerRequest;
+export type AdminServiceSudoUpdateOrganizationDefaultProvisionerMutationError =
+  RpcStatus;
+
+/**
+ * @summary SudoUpdateOrganizationDefaultProvisioner sets the provisioner used by default for an organization's deployments.
+It only affects deployments provisioned after the change; existing deployments stay on their current provisioner.
+ */
+export const createAdminServiceSudoUpdateOrganizationDefaultProvisioner = <
+  TError = RpcStatus,
+  TContext = unknown,
+>(
+  options?: {
+    mutation?: CreateMutationOptions<
+      Awaited<
+        ReturnType<typeof adminServiceSudoUpdateOrganizationDefaultProvisioner>
+      >,
+      TError,
+      { data: V1SudoUpdateOrganizationDefaultProvisionerRequest },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateMutationResult<
+  Awaited<
+    ReturnType<typeof adminServiceSudoUpdateOrganizationDefaultProvisioner>
+  >,
+  TError,
+  { data: V1SudoUpdateOrganizationDefaultProvisionerRequest },
+  TContext
+> => {
+  const mutationOptions =
+    getAdminServiceSudoUpdateOrganizationDefaultProvisionerMutationOptions(
+      options,
+    );
 
   return createMutation(mutationOptions, queryClient);
 };

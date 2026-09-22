@@ -70,7 +70,7 @@ The required permissions are:
 
 At this point, you have the option to connect your Rill project to a GitHub Repository.
 
-Navigating to the Settings page and selecting `Connect to GitHub` will prompt you to login and create a repository for your project. If you've already created a repository, check the box 'I've created a GitHub Repo' and add the permissions for Rill to access the repository.
+Navigating to the Settings page and selecting `Connect to GitHub` will prompt you to log in and create a repository for your project. If you've already created a repository, check the box 'I've created a GitHub Repo' and add the permissions for Rill to access the repository.
 
 :::info Check with your GitHub organization admin
 
@@ -123,7 +123,7 @@ If you have not already [configured your connections' credentials](https://docs.
 
 **First deployment**
 
-If this is your first deployment to Rill Cloud, you will get prompted to either sign up or log in (if you have an existing account on [Rill Cloud](https://ui.rilldata.com/)). Proceed with the sign up and email verification process for new users or authorization process for existing users. As a new user, you can expect to see the following page:
+If this is your first deployment to Rill Cloud, you will get prompted to either sign up or log in (if you have an existing account on [Rill Cloud](https://ui.rilldata.com/)). Proceed with the sign-up and email verification process for new users or authorization process for existing users. As a new user, you can expect to see the following page:
 
 ![Rill Cloud Sign In](/img/deploy/existing-project/rill-cloud-sign-in.png)
 
@@ -141,7 +141,7 @@ Once the project has been uploaded to Rill Cloud, you should be able to see the 
 
 
 ### Deploy Project with Repository
-Follow the instructions in the Terminal to login to GitHub (if not already done so), and select your repository.
+Follow the instructions in the Terminal to log in to GitHub (if not already done so), and select your repository.
 If you do not set any parameters, Rill will infer the project name based on the folder path and use this as both the repository and project name. If there are any overlaps, we will request for a new name.
 ```bash
 rill project connect-github
@@ -208,7 +208,7 @@ rill connect-github --prod-branch [PROD-BRANCH]
 
 ## Deploy from a monorepo
 
-If your Rill project is in a sub-directory of a Git repository, use the `--subpath` option when creating your project:
+If your Rill project is in a subdirectory of a Git repository, use the `--subpath` option when creating your project:
 ```
 rill connect-github --subpath path/to/rill/project
 ```
@@ -231,7 +231,7 @@ rill deploy
 
 ### Enable Automatic deploys
 
-Like running `rill project connect-github`, you will be [prompted to create a github repository](#deploy-project-with-repository). Once created, Rill will deploy the project. You can confirm that the project has the correct repository linked from the UI on the settings page.
+Like running `rill project connect-github`, you will be [prompted to create a GitHub repository](#deploy-project-with-repository). Once created, Rill will deploy the project. You can confirm that the project has the correct repository linked from the UI on the settings page.
 
 
 ### Disable Automatic deploys
