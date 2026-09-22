@@ -236,9 +236,9 @@ func promptToTitle(message string) string {
 	title := whitespaceRegexp.ReplaceAllString(message, " ")
 	title = strings.TrimSpace(title)
 
-	// Truncate to 50 characters.
+	// Truncate to 50 bytes, without splitting a multi-byte rune.
 	if len(title) > 50 {
-		title = title[:47] + "..."
+		title = truncateUTF8(title, 47) + "..."
 	}
 
 	// Fallback title if empty.
