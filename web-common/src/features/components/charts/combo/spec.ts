@@ -160,15 +160,15 @@ export function generateVLComboChartSpec(
         ...(y1MarkType === "line" &&
           config.x?.type === "temporal" && {
             x: {
-              ...createPositionEncoding(config.x, data),
+              ...createPositionEncoding(config.x, data, "x"),
               bandPosition: 0.5,
             },
           }),
         y: {
-          ...createPositionEncoding(config.y1, data),
+          ...createPositionEncoding(config.y1, data, "y"),
           field: valueField,
           axis: {
-            ...createPositionEncoding(config.y1, data).axis,
+            ...createPositionEncoding(config.y1, data, "y").axis,
             orient: "left",
           },
         },
@@ -199,15 +199,15 @@ export function generateVLComboChartSpec(
         ...(y2MarkType === "line" &&
           config.x?.type === "temporal" && {
             x: {
-              ...createPositionEncoding(config.x, data),
+              ...createPositionEncoding(config.x, data, "x"),
               bandPosition: 0.5,
             },
           }),
         y: {
-          ...createPositionEncoding(config.y2, data),
+          ...createPositionEncoding(config.y2, data, "y"),
           field: valueField,
           axis: {
-            ...createPositionEncoding(config.y2, data).axis,
+            ...createPositionEncoding(config.y2, data, "y").axis,
             orient: "right",
           },
         },

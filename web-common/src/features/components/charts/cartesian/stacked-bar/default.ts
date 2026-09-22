@@ -72,7 +72,7 @@ export function generateVLStackedBarChartSpec(
     mark: { type: "bar", clip: true, width: { band: 0.9 } },
     encoding: {
       y: {
-        ...createPositionEncoding(config.y, data),
+        ...createPositionEncoding(config.y, data, "y"),
         ...createStackOverride(config.y, colorField),
       },
       color: createColorEncoding(config.color, data),

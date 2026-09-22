@@ -78,13 +78,13 @@ export function createSingleLayerBaseSpec(
   };
 }
 
-type PositionChannel = "x" | "y";
+type PositionChannel = "x" | "y" | "theta";
 type AxisProps = NonNullable<PositionFieldDef<Field>["axis"]>;
 
 export function createPositionEncoding(
   field: FieldConfig | undefined,
   data: ChartDataResult,
-  channel?: PositionChannel,
+  channel: PositionChannel,
 ): PositionFieldDef<Field> {
   if (!field || field.type === "value") return {};
   const metaData = data.fields[field.field];
@@ -156,7 +156,7 @@ const ROTATED_LABEL_MIN_LIMIT_PX = 60;
 export function createAxisLabelLayout(
   field: FieldConfig,
   data: ChartDataResult,
-  channel: PositionChannel | undefined,
+  channel: PositionChannel,
 ): Partial<AxisProps> {
   const isCategoricalX =
     channel === "x" && (field.type === "nominal" || field.type === "ordinal");

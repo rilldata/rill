@@ -1,6 +1,7 @@
 import { sanitizeValueForVega } from "@rilldata/web-common/components/vega/util";
 import type { ChartDataResult } from "@rilldata/web-common/features/components/charts";
 import { createPositionEncoding } from "@rilldata/web-common/features/components/charts/builder";
+import { generateVLBarChartSpec } from "@rilldata/web-common/features/components/charts/cartesian/bar-chart/spec";
 import { generateVLLineChartSpec } from "@rilldata/web-common/features/components/charts/cartesian/line-chart/spec";
 import chroma from "chroma-js";
 import { splitAccessPath } from "vega-util";
@@ -117,6 +118,23 @@ describe("axis label layout", () => {
         parseExpression((value as { expr: string }).expr),
       ).not.toThrow();
     }
+  });
+
+  it("reaches the bar chart's x-axis through its own spec builder", () => {
+    stubCanvasContext();
+    const spec = generateVLBarChartSpec(
+      {
+        metrics_view: "stores",
+        x: { field: "store", type: "nominal" },
+        y: { field: "post_count", type: "quantitative" },
+      },
+      storeData,
+    ) as { encoding: { x: { axis: Record<string, unknown> } } };
+
+    expect(spec.encoding.x.axis.labelAngle).toEqual({
+      expr: `((width / 3) >= ${widestLabelPx} ? 0 : ((width / 3) >= 16 ? -45 : -90))`,
+    });
+    expect(spec.encoding.x.axis.labelOverlap).toBe(false);
   });
 
   it("truncates an explicit upright angle to the band instead of thinning labels", () => {
