@@ -25,6 +25,7 @@
   import { escapeHtml } from "@rilldata/web-common/lib/i18n";
   import { TableToolbar } from "@rilldata/web-common/components/table-toolbar";
   import { dedupe } from "@rilldata/web-common/lib/arrayUtils.ts";
+  import { resourceTableGetRowId } from "@rilldata/web-common/features/resources/overview-utils.ts";
 
   type DashboardRow = V1Resource & { lastUsed: number };
 
@@ -236,9 +237,7 @@
           toolbar={false}
           pinnedRows={validDashboardFavourites}
           maxRows={previewLimit}
-          getRowId={(row, index) =>
-            (row as V1Resource).meta?.name?.name?.toLowerCase() ??
-            index.toString()}
+          getRowId={resourceTableGetRowId}
         >
           <ResourceListEmptyState
             slot="empty"
