@@ -4,7 +4,10 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/google/uuid"
+	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/ai"
+	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/testruntime"
 	"github.com/stretchr/testify/require"
 )
@@ -92,10 +95,37 @@ rows:
   - kpi_grid:
       metrics_view: orders
       measures: [revenue]
+- items:
+  - bar_chart:
+      metrics_view: orders
+      title: Revenue by country
+      x:
+        field: country
+        type: nominal
+      y:
+        field: revenue
+        type: quantitative
+`,
+			"canvases/restricted.yaml": `
+type: canvas
+display_name: Restricted
+security:
+  access: false
+rows:
+- items:
+  - bar_chart:
+      metrics_view: orders
+      title: Revenue by customer
+      x:
+        field: country
+        type: nominal
+      y:
+        field: revenue
+        type: quantitative
 `,
 		},
 	})
-	testruntime.RequireReconcileState(t, rt, instanceID, 6, 0, 0)
+	testruntime.RequireReconcileState(t, rt, instanceID, 9, 0, 0)
 
 	cases := []struct {
 		prompt string
@@ -116,6 +146,21 @@ rows:
 		{
 			prompt: `Summarize <chat-reference>type="canvas" canvas="overview"</chat-reference>`,
 			title:  "Summarize Sales Overview",
+		},
+		{
+			// A canvas component is shown by its title.
+			prompt: `Explain <chat-reference>type="canvasComponent" canvas="overview" canvasComponent="overview--component-1-0"</chat-reference>`,
+			title:  "Explain Revenue by country",
+		},
+		{
+			// A canvas component without a title is shown by the canvas it belongs to.
+			prompt: `Explain <chat-reference>type="canvasComponent" canvas="overview" canvasComponent="overview--component-0-0"</chat-reference>`,
+			title:  "Explain Sales Overview",
+		},
+		{
+			// A component that doesn't belong to the referenced canvas isn't shown by its title.
+			prompt: `Explain <chat-reference>type="canvasComponent" canvas="overview" canvasComponent="restricted--component-0-0"</chat-reference>`,
+			title:  "Explain Sales Overview",
 		},
 		{
 			// The time range is shown as dates in the reference's time zone.
@@ -162,4 +207,20 @@ rows:
 		require.NoError(t, err)
 		require.Equal(t, c.title, s.Title(), "prompt: %q", c.prompt)
 	}
+
+	// With security checks, a component of a canvas that the session can't access isn't shown by its title.
+	s, err := ai.NewRunner(rt, activity.NewNoopClient()).Session(t.Context(), &ai.SessionOptions{
+		InstanceID: instanceID,
+		Claims:     &runtime.SecurityClaims{UserID: uuid.NewString(), Permissions: []runtime.Permission{runtime.UseAI, runtime.ReadObjects}},
+		UserAgent:  "rill-evals",
+	})
+	require.NoError(t, err)
+	var res *ai.RouterAgentResult
+	_, err = s.CallTool(t.Context(), ai.RoleUser, ai.RouterAgentName, &res, ai.RouterAgentArgs{
+		Prompt:      `Explain <chat-reference>type="canvasComponent" canvas="restricted" canvasComponent="restricted--component-0-0"</chat-reference>`,
+		Agent:       ai.AnalystAgentName,
+		SkipHandoff: true,
+	})
+	require.NoError(t, err)
+	require.Equal(t, "Explain restricted--component-0-0", s.Title())
 }
