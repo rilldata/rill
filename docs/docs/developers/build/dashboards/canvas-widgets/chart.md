@@ -34,22 +34,21 @@ Bar charts are ideal for comparing values across different categories.
 
 ### Horizontal Bar Chart
 
-Set `orientation: horizontal` to draw the bars from left to right, which works well for long category labels or many categories. The `x` field stays the category and `y` stays the measure; only the rendering is rotated, so `sort: -y` still sorts by the measure. The same option is available on `stacked_bar` and `stacked_bar_normalized`.
+`x` and `y` always name the field drawn on that axis. To draw the bars from left to right, which works well for long category labels or many categories, put the measure on `x` and the dimension on `y`. Sort values refer to axes, so `sort: -x` on `y` orders the categories by the measure. The same layout works for `stacked_bar` and `stacked_bar_normalized`; line and area charts always keep the dimension on `x`.
 
 ```yaml
 - bar_chart:
     metrics_view: bids_metrics
-    orientation: horizontal
     color: primary
     x:
-      field: advertiser_name
-      limit: 20
-      type: nominal
-      sort: -y
-    y:
       field: total_bids
       type: quantitative
       zeroBasedOrigin: true
+    y:
+      field: advertiser_name
+      limit: 20
+      type: nominal
+      sort: -x
 ```
 
 ## Line Chart

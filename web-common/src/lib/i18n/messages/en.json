@@ -529,6 +529,8 @@
   "canvas_sort_measure_descending": "Measure descending",
   "canvas_sort_order": "Sort Order",
   "canvas_sort_x_axis_ascending": "X-axis ascending",
+  "canvas_sort_x_axis_delta_ascending": "X-axis delta ascending",
+  "canvas_sort_x_axis_delta_descending": "X-axis delta descending",
   "canvas_sort_x_axis_descending": "X-axis descending",
   "canvas_sort_y_axis_ascending": "Y-axis ascending",
   "canvas_sort_y_axis_delta_ascending": "Y-axis delta ascending",

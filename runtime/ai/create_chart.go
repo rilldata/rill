@@ -309,16 +309,15 @@ func validateChartFields(chartType string, spec map[string]any, mvSpec *runtimev
 				return fmt.Errorf("invalid y field: %w", err)
 			}
 		}
-		// Validate y.fields array if present
+		// Validate multi-measure fields arrays if present. Horizontal bar charts carry the measures on x.
 		if fields, ok := pathutil.GetPath(spec, "y.fields"); ok {
 			if err := validateFieldsArray(availableFields, fields); err != nil {
 				return fmt.Errorf("invalid y fields: %w", err)
 			}
 		}
-		// Optional bar orientation; ignored by line and area charts.
-		if orientation, ok := spec["orientation"]; ok {
-			if err := validateEnum("orientation", orientation, []string{"vertical", "horizontal"}); err != nil {
-				return err
+		if fields, ok := pathutil.GetPath(spec, "x.fields"); ok {
+			if err := validateFieldsArray(availableFields, fields); err != nil {
+				return fmt.Errorf("invalid x fields: %w", err)
 			}
 		}
 
@@ -521,7 +520,7 @@ total_bids: measure
 }
 ` + "```" + `
 
-Example with horizontal orientation: the same chart with bars running left to right. Keep ` + "`x`" + ` as the category and ` + "`y`" + ` as the measure; only the rendering is rotated, and ` + "`\"sort\": \"-y\"`" + ` still sorts by the measure. Prefer this for long category labels or many categories.
+Example of a horizontal bar chart: the same chart with bars running left to right. ` + "`x`" + ` and ` + "`y`" + ` always name the field drawn on that axis, so put the measure (quantitative) under ` + "`x`" + ` and the dimension under ` + "`y`" + `. Sort values refer to axes, so ` + "`\"sort\": \"-x\"`" + ` on ` + "`y`" + ` sorts the categories by the measure. Prefer this for long category labels or many categories.
 
 ` + "```json" + `
 {
@@ -532,18 +531,17 @@ Example with horizontal orientation: the same chart with bars running left to ri
       "start": "2024-01-01T00:00:00Z",
       "end": "2024-12-31T23:59:59Z"
     },
-    "orientation": "horizontal",
     "color": "primary",
     "x": {
-      "field": "advertiser_name",
-      "limit": 20,
-      "type": "nominal",
-      "sort": "-y"
-    },
-    "y": {
       "field": "total_bids",
       "type": "quantitative",
       "zeroBasedOrigin": true
+    },
+    "y": {
+      "field": "advertiser_name",
+      "limit": 20,
+      "type": "nominal",
+      "sort": "-x"
     }
   }
 }
@@ -873,7 +871,7 @@ clicks, video_starts, video_completes, ctr, ecpm, impressions: measures
 **IMPORTANT** : The chart types bar_chart, area_chart, line_chart and stacked_bar follow the same schema definition.
 Note that when charting out multiple fields using "fields" key, you must also add a "field" key with value being the first field in fields array
 
-Bar orientation: bar_chart, stacked_bar and stacked_bar_normalized accept an optional top-level ` + "`\"orientation\": \"horizontal\"`" + ` (default ` + "`\"vertical\"`" + `). Horizontal bars draw the x (category) field along the vertical axis and the y (measure) along the horizontal axis; the x/y field roles and sort values are unchanged. Other chart types ignore it.
+Horizontal bars: bar_chart, stacked_bar and stacked_bar_normalized may put the measure on ` + "`x`" + ` (` + "`\"type\": \"quantitative\"`" + `, with ` + "`fields`" + ` for multiple measures) and the dimension on ` + "`y`" + `; the bars then run left to right. Sort values name axes, so use ` + "`\"sort\": \"-x\"`" + ` on ` + "`y`" + ` to order categories by the measure. line_chart and area_chart always keep the dimension on x.
 
 
 ### 5. Normalized Stacked Bar Chart (` + "`stacked_bar_normalized`" + `)
@@ -1249,7 +1247,7 @@ Choose the appropriate chart type based on your data and analysis goals:
 - **` + "`bar_chart`" + `**: Standard choice for comparing discrete categories or groups
 - **` + "`stacked_bar`" + `**: Standard choice for comparing discrete categories or groups when split by dimension is involved
 - **Nominal axis**: Use nominal encoding for categorical x-axis
-- **Orientation**: Add ` + "`\"orientation\": \"horizontal\"`" + ` to bar_chart, stacked_bar or stacked_bar_normalized when category labels are long or there are many categories; x stays the category field
+- **Horizontal bars**: For bar_chart, stacked_bar or stacked_bar_normalized, put the measure on x (quantitative) and the dimension on y when category labels are long or there are many categories
 
 ### Part-to-Whole Relationships
 - **` + "`donut_chart`" + `**: Shows composition of a whole

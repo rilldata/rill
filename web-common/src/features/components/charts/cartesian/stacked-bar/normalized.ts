@@ -23,13 +23,22 @@ import type { LayerSpec } from "vega-lite/types_unstable/spec/layer.js";
 import type { UnitSpec } from "vega-lite/types_unstable/spec/unit.js";
 import type { Transform } from "vega-lite/types_unstable/transform.js";
 import type { CartesianChartSpec } from "../CartesianChartProvider";
-import { isHorizontal, transposeCartesianSpec } from "../orientation";
+import {
+  isHorizontal,
+  toVerticalSpec,
+  transposeCartesianSpec,
+} from "../orientation";
 import { createVegaTransformPivotConfig } from "../util";
 
 export function generateVLStackedBarNormalizedSpec(
-  config: CartesianChartSpec,
+  chartConfig: CartesianChartSpec,
   data: ChartDataResult,
 ): VisualizationSpec {
+  // The spec is built for the vertical layout and transposed at the end when
+  // the measure sits on x.
+  const horizontal = isHorizontal(chartConfig);
+  const config = toVerticalSpec(chartConfig);
+
   const spec = createMultiLayerBaseSpec();
   const baseEncoding = createEncoding(config, data);
   const vegaConfig = createConfigWithLegend(config, config.color);
@@ -184,5 +193,5 @@ export function generateVLStackedBarNormalizedSpec(
     ...(vegaConfig && { config: vegaConfig }),
   };
 
-  return isHorizontal(config) ? transposeCartesianSpec(result) : result;
+  return horizontal ? transposeCartesianSpec(result) : result;
 }

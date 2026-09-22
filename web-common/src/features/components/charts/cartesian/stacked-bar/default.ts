@@ -19,13 +19,22 @@ import type { VisualizationSpec } from "svelte-vega";
 import type { Field } from "vega-lite/types_unstable/channeldef.js";
 import type { UnitSpec } from "vega-lite/types_unstable/spec/unit.js";
 import { type CartesianChartSpec } from "../CartesianChartProvider";
-import { isHorizontal, transposeCartesianSpec } from "../orientation";
+import {
+  isHorizontal,
+  toVerticalSpec,
+  transposeCartesianSpec,
+} from "../orientation";
 import { createVegaTransformPivotConfig } from "../util";
 
 export function generateVLStackedBarChartSpec(
-  config: CartesianChartSpec,
+  chartConfig: CartesianChartSpec,
   data: ChartDataResult,
 ): VisualizationSpec {
+  // The spec is built for the vertical layout and transposed at the end when
+  // the measure sits on x.
+  const horizontal = isHorizontal(chartConfig);
+  const config = toVerticalSpec(chartConfig);
+
   const spec = createMultiLayerBaseSpec();
   const vegaConfig = createConfigWithLegend(config, config.color);
 
@@ -51,7 +60,6 @@ export function generateVLStackedBarChartSpec(
   const hasComparison = data.hasComparison;
 
   // Brushing is tied to the x channel, so it is disabled for horizontal charts.
-  const horizontal = isHorizontal(config);
   const isInteractive = !!config.isInteractive && !horizontal;
 
   const hoverRuleLayer = buildHoverRuleLayer({

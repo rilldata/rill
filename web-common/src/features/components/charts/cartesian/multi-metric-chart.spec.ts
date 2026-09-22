@@ -16,10 +16,20 @@ const base: CartesianChartSpec = {
   },
 };
 
-const horizontal: CartesianChartSpec = { ...base, orientation: "horizontal" };
+// The same chart with the measures on x and the dimension on y.
+const horizontal: CartesianChartSpec = {
+  ...base,
+  x: {
+    field: "post_count",
+    fields: ["post_count", "comment_count"],
+    type: "quantitative",
+    zeroBasedOrigin: true,
+  },
+  y: { field: "post_title", type: "nominal", sort: "-x" },
+};
 
 describe("generateVLMultiMetricChartSpec orientation", () => {
-  it("draws grouped measures along yOffset when horizontal", () => {
+  it("draws grouped measures along yOffset when the measures are on x", () => {
     const spec = generateVLMultiMetricChartSpec(
       horizontal,
       chartData(),
@@ -59,7 +69,9 @@ describe("generateVLMultiMetricChartSpec orientation", () => {
     expect(at(spec, "layer.1.encoding.x.axis.format")).toBe(".0%");
   });
 
-  it("ignores orientation for line and area variants", () => {
+  it("renders the same vertical layout for the line and area variants", () => {
+    // A measure on x is rejected for line and area charts upstream; the
+    // builder still reads the fields by role so nothing breaks.
     for (const markType of ["line", "stacked_area"] as const) {
       expect(
         generateVLMultiMetricChartSpec(horizontal, chartData(), markType),

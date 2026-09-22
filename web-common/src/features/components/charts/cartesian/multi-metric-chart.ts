@@ -25,10 +25,14 @@ import {
 } from "../builder";
 import type { ChartDataResult } from "../types";
 import type { CartesianChartSpec } from "./CartesianChartProvider";
-import { isHorizontal, transposeCartesianSpec } from "./orientation";
+import {
+  isHorizontal,
+  toVerticalSpec,
+  transposeCartesianSpec,
+} from "./orientation";
 
 export function generateVLMultiMetricChartSpec(
-  config: CartesianChartSpec,
+  chartConfig: CartesianChartSpec,
   data: ChartDataResult,
   markType:
     | "grouped_bar"
@@ -37,6 +41,15 @@ export function generateVLMultiMetricChartSpec(
     | "stacked_area"
     | "line" = "grouped_bar",
 ): VisualizationSpec {
+  // The spec is built for the vertical layout and, for the bar variants,
+  // transposed at the end when the measures sit on x.
+  const horizontal =
+    isHorizontal(chartConfig) &&
+    (markType === "grouped_bar" ||
+      markType === "stacked_bar" ||
+      markType === "stacked_bar_normalized");
+  const config = toVerticalSpec(chartConfig);
+
   const measureField = "Measure";
   const valueField = "value";
   const measureNormalizedField = "Measure_normalized";
@@ -53,13 +66,6 @@ export function generateVLMultiMetricChartSpec(
 
   // Check if comparison mode is enabled
   const hasComparison = data.hasComparison;
-
-  // Only the bar variants can be drawn horizontally.
-  const horizontal =
-    isHorizontal(config) &&
-    (markType === "grouped_bar" ||
-      markType === "stacked_bar" ||
-      markType === "stacked_bar_normalized");
 
   // Build the list of fields to fold
   // In comparison mode, include both current and previous measures

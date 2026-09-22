@@ -11,6 +11,13 @@ const base: CartesianChartSpec = {
   y: { field: "post_count", type: "quantitative", zeroBasedOrigin: true },
 };
 
+// The same chart with the measure on x and the dimension on y.
+const horizontal: CartesianChartSpec = {
+  ...base,
+  x: { field: "post_count", type: "quantitative", zeroBasedOrigin: true },
+  y: { field: "post_title", type: "nominal", sort: "-x" },
+};
+
 describe("generateVLStackedBarNormalizedSpec orientation", () => {
   it("leaves the vertical layout untouched by default", () => {
     const spec = generateVLStackedBarNormalizedSpec(
@@ -21,9 +28,9 @@ describe("generateVLStackedBarNormalizedSpec orientation", () => {
     expect(at(spec, "layer.1.encoding.y.axis.format")).toBe(".0%");
   });
 
-  it("puts the normalized measure axis on x when horizontal", () => {
+  it("puts the normalized measure axis on x when the measure is on x", () => {
     const spec = generateVLStackedBarNormalizedSpec(
-      { ...base, orientation: "horizontal" },
+      horizontal,
       chartData({ colorValues: ["us", "eu"] }),
     );
 
@@ -44,7 +51,7 @@ describe("generateVLStackedBarNormalizedSpec orientation", () => {
     const { compile } = await import("vega-lite");
 
     const spec = generateVLStackedBarNormalizedSpec(
-      { ...base, orientation: "horizontal" },
+      horizontal,
       chartData({ colorValues: ["us", "eu"], hasComparison: true }),
     );
     expect(() => compile(spec as TopLevelSpec)).not.toThrow();

@@ -435,26 +435,25 @@ bar_chart:
     type: quantitative
 ```
 
-**Horizontal orientation** (bars run left to right; useful for long category labels or many categories):
+**Horizontal bars** (bars run left to right; useful for long category labels or many categories). `x` and `y` always name the field drawn on that axis, so put the measure on `x` and the dimension on `y`:
 
 ```yaml
 bar_chart:
   metrics_view: sales_metrics
   title: "Revenue by Product Category"
-  orientation: horizontal
   color: primary
   x:
-    field: product_category
-    type: nominal
-    limit: 15
-    sort: -y
-  y:
     field: total_revenue
     type: quantitative
     zeroBasedOrigin: true
+  y:
+    field: product_category
+    type: nominal
+    limit: 15
+    sort: -x
 ```
 
-`orientation` is also supported by `stacked_bar` and `stacked_bar_normalized`. Keep `x` as the category field and `y` as the measure; only the rendering is rotated, and `sort: -y` still sorts by the measure.
+Sort values refer to axes, so `sort: -x` on `y` orders the categories by the measure. The same layout works for `stacked_bar` and `stacked_bar_normalized`; `line_chart` and `area_chart` always keep the dimension on `x`.
 
 ### Stacked Bar
 
@@ -1126,14 +1125,19 @@ y:
   zeroBasedOrigin: true      # Start y-axis at zero
 ```
 
-### Orientation (bar charts)
+### Horizontal Bars
+
+`bar_chart`, `stacked_bar` and `stacked_bar_normalized` draw horizontal bars when the measure is on `x` and the dimension on `y`:
 
 ```yaml
-bar_chart:
-  orientation: horizontal    # vertical (default) or horizontal
+x:
+  field: total_revenue
+  type: quantitative
+y:
+  field: category_name
+  type: nominal
+  sort: -x                   # Sort categories by the measure (x-axis)
 ```
-
-Applies to `bar_chart`, `stacked_bar` and `stacked_bar_normalized` only. With `horizontal`, the `x` (category) field is drawn along the vertical axis and the `y` (measure) along the horizontal axis; `x`/`y` roles and sort values are unchanged.
 
 **Multiple measures:**
 

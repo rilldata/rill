@@ -529,6 +529,8 @@
   "canvas_sort_measure_descending": "Medida descendente",
   "canvas_sort_order": "Orden",
   "canvas_sort_x_axis_ascending": "Eje X ascendente",
+  "canvas_sort_x_axis_delta_ascending": "Delta del eje X ascendente",
+  "canvas_sort_x_axis_delta_descending": "Delta del eje X descendente",
   "canvas_sort_x_axis_descending": "Eje X descendente",
   "canvas_sort_y_axis_ascending": "Eje Y ascendente",
   "canvas_sort_y_axis_delta_ascending": "Delta del eje Y ascendente",

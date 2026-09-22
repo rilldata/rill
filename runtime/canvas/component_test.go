@@ -127,41 +127,79 @@ bar_chart:
 	testruntime.RequireReconcileErrorContains(t, rt, id, runtime.ResourceKindComponent, "c1", "is not a dimension")
 }
 
-func TestValidateBarChartOrientation(t *testing.T) {
+func TestValidateHorizontalBarChart(t *testing.T) {
 	rt, id := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
 		Files: metricsViewFiles(),
 	})
 
-	// Valid horizontal orientation.
+	// Valid: a quantitative x holds the measure and y holds the dimension.
 	testruntime.PutFiles(t, rt, id, map[string]string{
 		"c1.yaml": `
 type: component
 bar_chart:
   metrics_view: mv1
-  orientation: horizontal
   x:
-    field: foo
-  y:
     field: y
+    type: quantitative
+    fields: [y, z]
+  y:
+    field: foo
+    type: nominal
+    sort: -x
 `})
 	testruntime.ReconcileParserAndWait(t, rt, id)
 	testruntime.RequireReconcileState(t, rt, id, 4, 0, 0)
 
-	// Invalid: unknown orientation value.
+	// Invalid: a quantitative x must reference a measure.
+	testruntime.PutFiles(t, rt, id, map[string]string{
+		"c1.yaml": `
+type: component
+stacked_bar:
+  metrics_view: mv1
+  x:
+    field: foo
+    type: quantitative
+  y:
+    field: bar
+    type: nominal
+`})
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireReconcileState(t, rt, id, 4, 1, 0)
+	testruntime.RequireReconcileErrorContains(t, rt, id, runtime.ResourceKindComponent, "c1", `x.field "foo" is not a measure`)
+
+	// Invalid: with the measure on x, y must reference a dimension.
 	testruntime.PutFiles(t, rt, id, map[string]string{
 		"c1.yaml": `
 type: component
 bar_chart:
   metrics_view: mv1
-  orientation: diagonal
   x:
-    field: foo
-  y:
     field: y
+    type: quantitative
+  y:
+    field: z
+    type: nominal
 `})
 	testruntime.ReconcileParserAndWait(t, rt, id)
 	testruntime.RequireReconcileState(t, rt, id, 4, 1, 0)
-	testruntime.RequireReconcileErrorContains(t, rt, id, runtime.ResourceKindComponent, "c1", `"orientation" must be one of`)
+	testruntime.RequireReconcileErrorContains(t, rt, id, runtime.ResourceKindComponent, "c1", `y.field "z" is not a dimension`)
+
+	// Invalid: line charts cannot be drawn horizontally.
+	testruntime.PutFiles(t, rt, id, map[string]string{
+		"c1.yaml": `
+type: component
+line_chart:
+  metrics_view: mv1
+  x:
+    field: y
+    type: quantitative
+  y:
+    field: foo
+    type: nominal
+`})
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireReconcileState(t, rt, id, 4, 1, 0)
+	testruntime.RequireReconcileErrorContains(t, rt, id, runtime.ResourceKindComponent, "c1", "only supported by bar charts")
 }
 
 func TestValidateCartesianMultiField(t *testing.T) {

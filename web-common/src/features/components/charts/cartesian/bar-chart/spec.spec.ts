@@ -16,7 +16,12 @@ const base: CartesianChartSpec = {
   y: { field: "post_count", type: "quantitative", zeroBasedOrigin: true },
 };
 
-const horizontal: CartesianChartSpec = { ...base, orientation: "horizontal" };
+// The same chart with the measure on x and the dimension on y.
+const horizontal: CartesianChartSpec = {
+  ...base,
+  x: { field: "post_count", type: "quantitative", zeroBasedOrigin: true },
+  y: { field: "post_title", type: "nominal", sort: "-x", limit: 10 },
+};
 
 function paramNames(spec: unknown, path: string): string[] {
   const params = at(spec, path) as { name: string }[];
@@ -24,13 +29,7 @@ function paramNames(spec: unknown, path: string): string[] {
 }
 
 describe("generateVLBarChartSpec orientation", () => {
-  it("treats an explicit vertical orientation as the default", () => {
-    expect(
-      generateVLBarChartSpec({ ...base, orientation: "vertical" }, chartData()),
-    ).toEqual(generateVLBarChartSpec(base, chartData()));
-  });
-
-  it("draws the category on y and the measure on x when horizontal", () => {
+  it("draws the category on y and the measure on x when the measure is on x", () => {
     const spec = generateVLBarChartSpec(horizontal, chartData());
 
     expect(at(spec, "width")).toBe("container");
@@ -54,9 +53,30 @@ describe("generateVLBarChartSpec orientation", () => {
     expect(at(spec, "layer.1.mark.width")).toBeUndefined();
   });
 
+  it("sorts the categories by the measure with a channel-relative sort", () => {
+    // Without domain values the YAML sort reaches Vega-Lite as is.
+    const data = chartData();
+    data.domainValues = {};
+    const spec = generateVLBarChartSpec(horizontal, data);
+    expect(at(spec, "encoding.y.sort")).toBe("-x");
+  });
+
   it("keeps the grid on the measure axis", () => {
     const spec = generateVLBarChartSpec(horizontal, chartData());
     expect(at(spec, "layer.1.encoding.x.axis.grid")).toBe(true);
+  });
+
+  it("keeps the axis placement the YAML asked for", () => {
+    const spec = generateVLBarChartSpec(
+      {
+        ...horizontal,
+        x: { ...horizontal.x!, axisOrient: "top" },
+        y: { ...horizontal.y!, axisOrient: "right" },
+      },
+      chartData(),
+    );
+    expect(at(spec, "layer.1.encoding.x.axis.orient")).toBe("top");
+    expect(at(spec, "encoding.y.axis.orient")).toBe("right");
   });
 
   it("groups a color dimension along yOffset", () => {
@@ -114,7 +134,7 @@ describe("generateVLBarChartSpec orientation", () => {
 });
 
 describe("generateVLStackedBarChartSpec orientation", () => {
-  it("stacks along the x channel when horizontal", () => {
+  it("stacks along the x channel when the measure is on x", () => {
     const spec = generateVLStackedBarChartSpec(
       { ...horizontal, color: { field: "region", type: "nominal" } },
       chartData({ colorValues: ["us", "eu"] }),

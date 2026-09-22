@@ -1,5 +1,5 @@
 import type { VisualizationSpec } from "svelte-vega";
-import type { ChartType } from "../types";
+import { ChartSortType, type ChartType, type FieldConfig } from "../types";
 import type { CartesianChartSpec } from "./CartesianChartProvider";
 
 export type ChartOrientation = "vertical" | "horizontal";
@@ -15,13 +15,37 @@ export function supportsOrientation(type: ChartType): boolean {
   return ORIENTATION_CHART_TYPES.includes(type);
 }
 
+/**
+ * A cartesian chart is horizontal when its measure sits on the x channel.
+ * The YAML is the source of truth for the layout: `x` and `y` always name the
+ * field drawn on that axis, so a horizontal bar chart puts the quantitative
+ * field under `x` and the dimension under `y`.
+ */
 export function isHorizontal(
-  config: Pick<CartesianChartSpec, "orientation">,
+  config: Pick<CartesianChartSpec, "x" | "y">,
 ): boolean {
-  return config.orientation === "horizontal";
+  return config.x?.type === "quantitative";
 }
 
-type AnyRecord = Record<string, unknown>;
+export function chartOrientation(
+  config: Pick<CartesianChartSpec, "x" | "y">,
+): ChartOrientation {
+  return isHorizontal(config) ? "horizontal" : "vertical";
+}
+
+/** The channel ("x" or "y") that carries the measure. */
+export function measureChannel(
+  config: Pick<CartesianChartSpec, "x" | "y">,
+): "x" | "y" {
+  return isHorizontal(config) ? "x" : "y";
+}
+
+/** The channel ("x" or "y") that carries the dimension. */
+export function dimensionChannel(
+  config: Pick<CartesianChartSpec, "x" | "y">,
+): "x" | "y" {
+  return isHorizontal(config) ? "y" : "x";
+}
 
 // Axis placement is expressed relative to the chart edge, so an axis that moves
 // from the x channel to the y channel (or back) has to rotate its `orient`.
@@ -33,14 +57,61 @@ const AXIS_ORIENT_TRANSPOSE: Record<string, string> = {
   right: "top",
 };
 
-// Vega-Lite sort strings ("x", "-y", ...) name the channel to sort by, so they
+// Sort strings ("x", "-y", "y_delta", ...) name the channel to sort by, so they
 // must follow the channels when those are swapped.
 const SORT_CHANNEL_TRANSPOSE: Record<string, string> = {
-  x: "y",
-  "-x": "-y",
-  y: "x",
-  "-y": "-x",
+  [ChartSortType.X_ASC]: ChartSortType.Y_ASC,
+  [ChartSortType.X_DESC]: ChartSortType.Y_DESC,
+  [ChartSortType.Y_ASC]: ChartSortType.X_ASC,
+  [ChartSortType.Y_DESC]: ChartSortType.X_DESC,
+  [ChartSortType.X_DELTA_ASC]: ChartSortType.Y_DELTA_ASC,
+  [ChartSortType.X_DELTA_DESC]: ChartSortType.Y_DELTA_DESC,
+  [ChartSortType.Y_DELTA_ASC]: ChartSortType.X_DELTA_ASC,
+  [ChartSortType.Y_DELTA_DESC]: ChartSortType.X_DELTA_DESC,
 };
+
+/** Rewrites a channel-relative sort value for the other orientation. */
+export function swapSortChannel<T extends string>(sort: T): T {
+  return (SORT_CHANNEL_TRANSPOSE[sort] ?? sort) as T;
+}
+
+/**
+ * Moves the field under `x` to `y` and vice versa, keeping the chart's meaning:
+ * channel-relative sort strings and axis placements are rewritten so that they
+ * still refer to the same field. Applying it twice returns an equal spec.
+ */
+export function swapAxes(config: CartesianChartSpec): CartesianChartSpec {
+  return {
+    ...config,
+    x: swapFieldChannel(config.y),
+    y: swapFieldChannel(config.x),
+  };
+}
+
+function swapFieldChannel<T extends FieldConfig | undefined>(field: T): T {
+  if (!field) return field;
+  const out = { ...field };
+  if (typeof out.sort === "string") {
+    out.sort = swapSortChannel(out.sort);
+  }
+  if (out.axisOrient && out.axisOrient in AXIS_ORIENT_TRANSPOSE) {
+    out.axisOrient = AXIS_ORIENT_TRANSPOSE[
+      out.axisOrient
+    ] as FieldConfig["axisOrient"];
+  }
+  return out;
+}
+
+/**
+ * Returns the spec with the dimension on `x` and the measure on `y`, which is
+ * the layout the query provider and the spec builders are written against.
+ * A vertical spec is returned as is.
+ */
+export function toVerticalSpec(config: CartesianChartSpec): CartesianChartSpec {
+  return isHorizontal(config) ? swapAxes(config) : config;
+}
+
+type AnyRecord = Record<string, unknown>;
 
 /**
  * Transposes a cartesian bar spec built for the vertical orientation so that
@@ -116,8 +187,8 @@ function transposePositionDef(
     out.axis = axis;
   }
 
-  if (typeof def.sort === "string" && def.sort in SORT_CHANNEL_TRANSPOSE) {
-    out.sort = SORT_CHANNEL_TRANSPOSE[def.sort];
+  if (typeof def.sort === "string") {
+    out.sort = swapSortChannel(def.sort);
   }
 
   return out;
