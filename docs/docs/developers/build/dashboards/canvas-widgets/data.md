@@ -25,14 +25,14 @@ KPI grids display key performance indicators in a compact grid format with compa
   codeLanguage="yaml"
 />
 
-Comparison follows the canvas-level time comparison toggle by default. To turn delta and comparison off for a single widget while keeping it on for the rest of the canvas, set `hide_comparison: true` on that widget. This works on KPI grids, tables, pivots, leaderboards, and time-series charts.
+Comparison follows the canvas-level time comparison by default. Set `comparison_range` on a widget to override it: `none` turns delta and comparison off for that widget only, while a comparison range such as `rill-PW` (previous week) or `rill-PY` (previous year) compares the widget against its own previous period. This works on KPI grids, tables, pivots, leaderboards, and time-series charts.
 
 ```yaml
 - kpi_grid:
     metrics_view: auction_metrics
     measures:
       - requests
-    hide_comparison: true
+    comparison_range: none
 ```
 
 ## Leaderboard

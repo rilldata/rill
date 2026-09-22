@@ -1,6 +1,8 @@
 <script lang="ts">
   import Filter from "@rilldata/web-common/components/icons/Filter.svelte";
   import type { BaseCanvasComponent } from "@rilldata/web-common/features/canvas/components/BaseCanvasComponent";
+  import { resolveComparisonRange } from "@rilldata/web-common/features/canvas/components/comparison-range";
+  import type { ComponentFilterProperties } from "@rilldata/web-common/features/canvas/components/types";
   import type { V1TimeRange } from "@rilldata/web-common/runtime-client";
   import ReadonlyExpressionFilters from "@rilldata/web-common/features/dashboards/filters/ReadonlyExpressionFilters.svelte";
 
@@ -13,20 +15,9 @@
     localTimeControls,
   } = component);
 
-  $: ({
-    showTimeComparisonStore,
-    interval: intervalStore,
-    rangeStore,
-    grainStore,
-    comparisonRangeStore,
-    comparisonIntervalStore,
-  } = localTimeControls);
+  $: ({ interval: intervalStore, rangeStore, grainStore } = localTimeControls);
 
-  $: showTimeComparison = $showTimeComparisonStore;
   $: activeTimeGrain = $grainStore;
-
-  $: comparisonRange = $comparisonRangeStore;
-  $: comparisonInterval = $comparisonIntervalStore;
 
   $: interval = $intervalStore;
   $: selectedRangeAlias = $rangeStore;
@@ -40,20 +31,23 @@
       }
     : undefined;
 
-  // $: selectedTimeRange = $timeRangeStateStore?.selectedTimeRange;
-  $: hideComparison =
-    "hide_comparison" in $specStore && Boolean($specStore.hide_comparison);
+  $: ({ showTimeComparison, comparisonTimeRangeState, timeGrain } =
+    $timeAndFilterStore);
+  $: selectedComparisonTimeRange =
+    comparisonTimeRangeState?.selectedComparisonTimeRange;
+
+  // Only a comparison the component sets itself counts as a local filter.
+  $: hasLocalComparison =
+    resolveComparisonRange($specStore as ComponentFilterProperties).mode ===
+    "local";
 
   $: displayComparisonTimeRange =
-    showTimeComparison &&
-    !hideComparison &&
-    comparisonInterval &&
-    comparisonRange
+    hasLocalComparison && showTimeComparison && selectedComparisonTimeRange
       ? <V1TimeRange>{
-          name: comparisonRange,
-          start: comparisonInterval.start.toISO(),
-          end: comparisonInterval.end.toISO(),
-          interval: activeTimeGrain,
+          name: selectedComparisonTimeRange.name,
+          start: selectedComparisonTimeRange.start.toISOString(),
+          end: selectedComparisonTimeRange.end.toISOString(),
+          interval: timeGrain,
         }
       : undefined;
 

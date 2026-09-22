@@ -25,8 +25,8 @@ test.describe("canvas time filters", () => {
       .click();
     await page.getByRole("menuitem", { name: "Last 7 days" }).click();
 
-    // Wait for the local time range to apply before enabling comparison,
-    // otherwise the comparison toggle can race the range change.
+    // Wait for the local time range to apply before choosing a comparison,
+    // otherwise the comparison change can race the range change.
     await expect(
       page
         .getByRole("complementary", { name: "Inspector Panel" })
@@ -35,12 +35,7 @@ test.describe("canvas time filters", () => {
 
     await page
       .getByRole("complementary", { name: "Inspector Panel" })
-      .getByLabel("Toggle time comparison")
-      .click();
-
-    await page
-      .getByRole("complementary", { name: "Inspector Panel" })
-      .getByLabel("Select time comparison option")
+      .getByLabel("Select widget time comparison")
       .click();
 
     await page.getByRole("menuitem", { name: "Previous week" }).click();
@@ -80,16 +75,18 @@ test.describe("canvas time filters", () => {
       .getByRole("button", { name: "Time & filters", exact: true })
       .click();
 
-    const widgetToggle = page
+    const comparisonSelect = page
       .getByRole("complementary", { name: "Inspector Panel" })
-      .getByLabel("Toggle widget time comparison");
-    await widgetToggle.click();
+      .getByLabel("Select widget time comparison");
+    await comparisonSelect.click();
+    await page.getByRole("menuitem", { name: "Off", exact: true }).click();
 
-    // Only this widget loses comparison; the canvas toggle stays on.
+    // Only this widget loses comparison; the canvas comparison stays on.
     await expect(kpi).not.toContainText("vs");
     await expect(globalSwitch).toBeChecked();
 
-    await widgetToggle.click();
+    await comparisonSelect.click();
+    await page.getByRole("menuitem", { name: "Inherit from canvas" }).click();
     await expect(kpi).toContainText("vs");
   });
 
@@ -120,11 +117,10 @@ test.describe("canvas time filters", () => {
     await page
       .getByRole("button", { name: "Time & filters", exact: true })
       .click();
-    // Switches in the Filters tab: local time range, widget time comparison, local filters.
     await page
       .getByRole("complementary", { name: "Inspector Panel" })
       .getByRole("switch")
-      .nth(2)
+      .nth(1)
       .click();
     await page
       .getByRole("complementary", { name: "Inspector Panel" })

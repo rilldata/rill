@@ -2,25 +2,29 @@
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import InputLabel from "@rilldata/web-common/components/forms/InputLabel.svelte";
   import Switch from "@rilldata/web-common/components/forms/Switch.svelte";
-  import CanvasComparisonPill from "@rilldata/web-common/features/canvas/filters/CanvasComparisonPill.svelte";
   import { getCanvasStore } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
   import SuperPill from "@rilldata/web-common/features/dashboards/time-controls/super-pill/SuperPill.svelte";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
-  import type { TimeState } from "../../stores/time-state";
   import { ALL_TIME_RANGE_ALIAS } from "@rilldata/web-common/features/dashboards/time-controls/new-time-controls";
+  import { TIME_COMPARISON } from "@rilldata/web-common/lib/time/config";
+  import type { TimeComparisonOption } from "@rilldata/web-common/lib/time/types";
+  import type { BaseCanvasComponent } from "../../components/BaseCanvasComponent";
+  import type { ComponentFilterProperties } from "../../components/types";
+  import { resolveComparisonRange } from "../../components/comparison-range";
+  import ComparisonRangeInput from "./ComparisonRangeInput.svelte";
 
   export let id: string;
-  export let localTimeControls: TimeState;
+  export let component: BaseCanvasComponent;
   export let showComparison: boolean;
   export let showGrain: boolean;
   export let canvasName: string;
   export let metricsView: string | null;
-  export let hideComparison = false;
-  export let onToggleComparison: (hidden: boolean) => void = () => {};
 
   const runtimeClient = useRuntimeClient();
 
   $: ({ instanceId } = runtimeClient);
+
+  $: ({ localTimeControls, specStore } = component);
 
   $: ({
     canvasEntity: {
@@ -29,7 +33,15 @@
         timeRangeOptionsStore,
         minTimeGrainMap,
         availableTimeZonesStore,
-        state: { rangeStore: globalRangeStore, minMaxTimeStamps },
+        state: {
+          rangeStore: globalRangeStore,
+          minMaxTimeStamps,
+          interval: globalIntervalStore,
+          grainStore: globalGrainStore,
+          timeZoneStore: globalTimeZoneStore,
+          showTimeComparisonStore: globalShowTimeComparisonStore,
+          comparisonRangeStore: globalComparisonRangeStore,
+        },
       },
     },
   } = getCanvasStore(canvasName, instanceId));
@@ -37,11 +49,8 @@
   $: ({
     interval: intervalStore,
     rangeStore,
-    comparisonIntervalStore,
-    showTimeComparisonStore,
     timeZoneStore,
     grainStore,
-    comparisonRangeStore,
     set,
     searchParamsStore,
     clearAll,
@@ -61,7 +70,6 @@
   $: activeTimeGrain = $grainStore;
   $: defaultTimeRange = $defaultTimeRangeStore;
   $: timeRanges = $timeRangeOptionsStore;
-  $: showTimeComparison = $showTimeComparisonStore;
 
   $: activeTimeZone = $timeZoneStore;
   $: minTimeGrain = metricsView ? $minTimeGrainMap.get(metricsView) : undefined;
@@ -71,8 +79,24 @@
   $: timeStart = interval?.start.toUTC().toISO();
   $: timeEnd = interval?.end.toUTC().toISO();
 
-  $: comparisonInterval = $comparisonIntervalStore;
-  $: comparisonRange = $comparisonRangeStore;
+  // Comparison is computed against the component's effective time range,
+  // which is the local one when set and the canvas one otherwise.
+  $: effectiveInterval = localFiltersEnabled ? interval : $globalIntervalStore;
+  $: effectiveRangeAlias = localFiltersEnabled ? selectedRangeAlias : globalRange;
+  $: effectiveTimeGrain = localFiltersEnabled
+    ? activeTimeGrain
+    : $globalGrainStore;
+  $: effectiveTimeZone = localFiltersEnabled
+    ? activeTimeZone
+    : $globalTimeZoneStore;
+
+  $: resolvedComparison = resolveComparisonRange(
+    $specStore as ComponentFilterProperties,
+  );
+  $: inheritedComparisonLabel = $globalShowTimeComparisonStore
+    ? (TIME_COMPARISON[$globalComparisonRangeStore as TimeComparisonOption]
+        ?.label ?? m.time_custom_range())
+    : m.canvas_comparison_off();
 </script>
 
 <div class="flex flex-col gap-y-1 pt-1">
@@ -134,56 +158,36 @@
         onSelectTimeZone={set.zone}
         onPan={() => {}}
       />
-
-      {#if showComparison && !hideComparison}
-        <CanvasComparisonPill
-          {minTimeGrain}
-          {minDate}
-          {maxDate}
-          {interval}
-          selectedRange={selectedRangeAlias}
-          {activeTimeGrain}
-          showFullRange={false}
-          {comparisonInterval}
-          {comparisonRange}
-          {showTimeComparison}
-          {activeTimeZone}
-          onDisplayTimeComparison={set.comparison}
-          onSetSelectedComparisonRange={(range) => {
-            if (range.name === "CUSTOM_COMPARISON_RANGE") {
-              const stringRange = `${range.start.toISOString()},${range.end.toISOString()}`;
-              set.comparison(stringRange);
-            } else if (range.name) {
-              set.comparison(range.name);
-            }
-          }}
-        />
-      {/if}
     </div>
   {/if}
 
   {#if showComparison}
-    <div class="flex justify-between pt-3">
+    <div class="flex flex-col gap-y-1 pt-3">
       <InputLabel
         capitalize={false}
         small
-        label={m.canvas_widget_time_comparison()}
+        label={m.canvas_comparison_range_label()}
         id="{id}-comparison"
-        faint={hideComparison}
       />
-      <Switch
-        checked={!hideComparison}
-        label={m.canvas_widget_time_comparison_toggle_aria()}
-        onCheckedChange={(next) => onToggleComparison(!next)}
-        small
+      <ComparisonRangeInput
+        resolved={resolvedComparison}
+        inheritedLabel={inheritedComparisonLabel}
+        interval={effectiveInterval}
+        selectedRangeAlias={effectiveRangeAlias}
+        activeTimeGrain={effectiveTimeGrain}
+        activeTimeZone={effectiveTimeZone}
+        {minTimeGrain}
+        {minDate}
+        {maxDate}
+        onSelect={(value) => component.setComparisonRange(value)}
       />
-    </div>
-    <div class="text-fg-secondary">
-      {#if hideComparison}
-        {m.canvas_widget_time_comparison_off_hint()}
-      {:else}
-        {m.canvas_widget_time_comparison_on_hint()}
-      {/if}
+      <div class="text-fg-secondary">
+        {#if resolvedComparison.mode === "inherit"}
+          {m.canvas_comparison_inherit_hint()}
+        {:else}
+          {m.canvas_comparison_override_hint()}
+        {/if}
+      </div>
     </div>
   {/if}
 </div>
