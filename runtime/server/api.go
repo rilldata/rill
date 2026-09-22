@@ -72,7 +72,7 @@ func (s *Server) apiHandler(w http.ResponseWriter, req *http.Request) error {
 	}
 
 	// Rewrite the claims before passing them to the resolver.
-	// Copy them first since the claims from the context may be shared.
+	// Claims are not shared(except in tests) but copy just to be safe.
 	if api.Spec.SkipNestedSecurity {
 		nested := *claims
 		nested.SkipChecks = true
