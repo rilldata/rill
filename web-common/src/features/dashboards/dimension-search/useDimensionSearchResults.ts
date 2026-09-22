@@ -7,7 +7,6 @@ import {
 } from "@rilldata/web-common/runtime-client";
 import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import { derived } from "svelte/store";
-import { timeStringToTimestamp } from "@rilldata/web-common/lib/proto-utils.ts";
 
 export type DimensionSearchResult = {
   dimension: string;
@@ -42,8 +41,8 @@ export function useDimensionSearchResults(
         search: searchText,
         limit: 100,
         timeRange: {
-          start: timeStringToTimestamp(timeRangeSummary.min),
-          end: timeStringToTimestamp(timeRangeSummary.max),
+          start: timeRangeSummary.min as any,
+          end: timeRangeSummary.max as any,
         },
       }),
     ),

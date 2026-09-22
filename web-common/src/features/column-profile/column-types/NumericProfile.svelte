@@ -24,8 +24,8 @@
   import NumericPlot from "./details/NumericPlot.svelte";
   import NullPercentageSpark from "./sparks/NullPercentageSpark.svelte";
   import NumericSpark from "./sparks/NumericSpark.svelte";
-  import { HistogramMethod } from "@rilldata/web-common/proto/gen/rill/runtime/v1/queries_pb.ts";
-  import { getOneofValue } from "@rilldata/web-common/lib/proto-utils.ts";
+  import { HistogramMethod } from "@rilldata/web-common/proto/gen/rill/runtime/v1/queries_pb";
+  import { getOneofValue } from "@rilldata/web-common/lib/proto-utils";
 
   export let connector: string;
   export let database: string;

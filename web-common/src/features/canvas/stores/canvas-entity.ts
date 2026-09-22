@@ -49,9 +49,6 @@ import { DEFAULT_DASHBOARD_WIDTH, namePrefixFromPath } from "../layout-util";
 import { createCustomMapStore } from "@rilldata/web-common/lib/custom-map-store";
 import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import { queryServiceConvertExpressionToMetricsSQL } from "@rilldata/web-common/runtime-client";
-import { Expression } from "@rilldata/web-common/proto/gen/rill/runtime/v1/expression_pb";
-import type { JsonValue } from "@bufbuild/protobuf";
-import { stripUndefined } from "@rilldata/web-common/runtime-client/v2/strip-undefined.ts";
 import { ExpressionFilterManager } from "@rilldata/web-common/features/dashboards/filters/ExpressionFilterManager.svelte.ts";
 import { convertExpressionToFilterParam } from "@rilldata/web-common/features/dashboards/url-state/filters/converters.ts";
 import { flattenExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils.ts";
@@ -355,7 +352,7 @@ export class CanvasEntity {
     ).map((expr) => {
       // TODO: our API type is proto but there is a fromJSON underneath.
       //       Once that is fixed, we need to call toExpressionProto here.
-      const protoExpr = expr ? toExpressionProto(expr) : undefined;
+      const protoExpr = expr as any;
       return queryClient.fetchQuery({
         queryKey: getQueryServiceConvertExpressionToMetricsSQLQueryKey(
           this.instanceId,

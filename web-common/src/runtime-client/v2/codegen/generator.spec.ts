@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { MethodKind } from "@bufbuild/protobuf";
+import { protoMessageMethods } from "./config";
 import {
   generateServiceFile,
   generateIndex,
@@ -75,6 +76,25 @@ const mockService: ServiceDef = {
   },
 };
 
+/**
+ * A QueryService whose methods are exactly the ones listed as migrated to proto
+ * messages in `protoMessageMethods`, so the generated file skips the JSON bridge.
+ */
+const migratedService: ServiceDef = {
+  typeName: "rill.runtime.v1.QueryService",
+  methods: Object.fromEntries(
+    protoMessageMethods.QueryService.map((methodKey) => [
+      methodKey,
+      {
+        name: methodKey.charAt(0).toUpperCase() + methodKey.slice(1),
+        I: FakeRequestWithInstanceId,
+        O: FakeResponse,
+        kind: MethodKind.Unary,
+      },
+    ]),
+  ),
+};
+
 // Shared context factory for narrow tests
 function makeCtx(overrides: Partial<MethodContext> = {}): MethodContext {
   return {
@@ -87,6 +107,7 @@ function makeCtx(overrides: Partial<MethodContext> = {}): MethodContext {
       inputType: "FakeRequestWithInstanceId",
       outputType: "FakeResponse",
       classification: "query",
+      usesProtoMessages: false,
       hasInstanceId: true,
       hasPageToken: false,
       hasNextPageToken: false,
@@ -132,6 +153,25 @@ describe("extractMethods", () => {
     const getFoo = methods.find((m) => m.methodKey === "getFoo");
     expect(getFoo?.hasPageToken).toBe(false);
     expect(getFoo?.hasNextPageToken).toBe(false);
+  });
+
+  it("marks only the methods listed in protoMessageMethods as proto", () => {
+    expect(extractMethods(mockService).every((m) => !m.usesProtoMessages)).toBe(
+      true,
+    );
+    expect(
+      extractMethods(migratedService).every((m) => m.usesProtoMessages),
+    ).toBe(true);
+  });
+
+  it("throws when protoMessageMethods names a method the service does not generate", () => {
+    const partialService: ServiceDef = {
+      typeName: "rill.runtime.v1.QueryService",
+      methods: { columnTopK: migratedService.methods.columnTopK },
+    };
+    expect(() => extractMethods(partialService)).toThrow(
+      /protoMessageMethods.QueryService lists methods/,
+    );
   });
 
   it("extracts short type names", () => {
@@ -186,14 +226,20 @@ describe("requestTypes", () => {
     expect(responseType).toBe("V1FakeResponse");
   });
 
-  it("uses the bare proto Message type for responses when no Orval type", () => {
-    const { responseType } = requestTypes(makeCtx());
-    expect(responseType).toBe("FakeResponse");
+  it("falls back to PartialMessage when no Orval type", () => {
+    const { requestType, responseType } = requestTypes(makeCtx());
+    expect(requestType).toContain("PartialMessage<FakeRequestWithInstanceId>");
+    expect(responseType).toBe("PartialMessage<FakeResponse>");
   });
 
-  it("falls back to PartialMessage for requests when no Orval type", () => {
-    const { requestType } = requestTypes(makeCtx());
+  it("uses proto messages for migrated methods, ignoring the Orval types", () => {
+    const ctx = makeCtx({
+      orvalTypes: new Set(["V1FakeRequestWithInstanceId", "V1FakeResponse"]),
+      m: { ...makeCtx().m, usesProtoMessages: true },
+    });
+    const { requestType, responseType } = requestTypes(ctx);
     expect(requestType).toContain("PartialMessage<FakeRequestWithInstanceId>");
+    expect(responseType).toBe("FakeResponse");
   });
 });
 
@@ -205,20 +251,17 @@ describe("generateRawFunction", () => {
     expect(code).toContain("signal?: AbortSignal");
   });
 
-  it("passes proto requests directly and returns the message instance", () => {
-    // No Orval types: skip the JSON bridge entirely.
-    const code = generateRawFunction(makeCtx()).join("\n");
+  it("passes migrated requests directly and returns the message instance", () => {
+    const ctx = makeCtx({ m: { ...makeCtx().m, usesProtoMessages: true } });
+    const code = generateRawFunction(ctx).join("\n");
     expect(code).not.toContain("fromJson");
     expect(code).not.toContain("toJson");
     expect(code).toContain("{ instanceId: client.instanceId, ...request }");
     expect(code).toContain("return r;");
   });
 
-  it("bridges to and from JSON for Orval-typed methods", () => {
-    const ctx = makeCtx({
-      orvalTypes: new Set(["V1FakeRequestWithInstanceId", "V1FakeResponse"]),
-    });
-    const code = generateRawFunction(ctx).join("\n");
+  it("bridges to and from JSON for methods that are not migrated", () => {
+    const code = generateRawFunction(makeCtx()).join("\n");
     expect(code).toContain("fromJson(stripUndefined(");
     expect(code).toContain("toJson({ emitDefaultValues: true })");
   });
@@ -248,6 +291,7 @@ describe("generateInfiniteQueryMethod", () => {
       inputType: "FakePaginatedRequest",
       outputType: "FakePaginatedResponse",
       classification: "query",
+      usesProtoMessages: false,
       hasInstanceId: true,
       hasPageToken: true,
       hasNextPageToken: true,
@@ -296,6 +340,7 @@ describe("generateMutationMethod", () => {
       inputType: "FakeRequestWithoutInstanceId",
       outputType: "FakeResponse",
       classification: "mutation",
+      usesProtoMessages: false,
       hasInstanceId: false,
       hasPageToken: false,
       hasNextPageToken: false,
@@ -329,19 +374,27 @@ describe("generateServiceFile", () => {
     expect(output).toMatch(/^\/\/ Generated by codegen\/run\.ts/);
   });
 
-  it("imports stripUndefined only for Orval-typed requests", () => {
-    // mockService has no Orval types, so the JSON bridge is not needed.
-    expect(output).not.toContain(
+  it("imports stripUndefined only for methods on the JSON bridge", () => {
+    expect(output).toContain(
       'import { stripUndefined } from "../strip-undefined"',
     );
 
-    const { code } = generateServiceFile(
-      mockService,
-      new Set(["V1FakeRequestWithInstanceId"]),
-    );
-    expect(code).toContain(
+    const { code } = generateServiceFile(migratedService, new Set());
+    expect(code).not.toContain(
       'import { stripUndefined } from "../strip-undefined"',
     );
+  });
+
+  it("skips the JSON bridge entirely for a fully migrated service", () => {
+    const { code } = generateServiceFile(
+      migratedService,
+      new Set(["V1FakeRequestWithInstanceId", "V1FakeResponse"]),
+    );
+    expect(code).not.toContain("fromJson");
+    expect(code).not.toContain("toJson");
+    expect(code).not.toContain("JsonValue");
+    expect(code).not.toContain("V1FakeResponse");
+    expect(code).toContain("Promise<FakeResponse>");
   });
 
   it("returns extracted methods", () => {

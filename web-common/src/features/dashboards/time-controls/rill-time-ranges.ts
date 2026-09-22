@@ -7,7 +7,6 @@ import {
 } from "@rilldata/web-common/runtime-client";
 import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
-import { timeStringToTimestamp } from "@rilldata/web-common/lib/proto-utils.ts";
 
 export async function resolveTimeRanges(
   client: RuntimeClient,
@@ -91,7 +90,7 @@ export async function fetchTimeRanges({
     metricsViewName,
     expressions: rillTimes,
     timeZone,
-    executionTime: timeStringToTimestamp(executionTime),
+    executionTime: executionTime as any,
     timeDimension,
   };
 

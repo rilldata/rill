@@ -1,5 +1,4 @@
-import type { Value } from "node_modules/@bufbuild/protobuf/dist/esm/google/protobuf/struct_pb";
-import { Timestamp } from "@bufbuild/protobuf";
+import type { Value } from "@bufbuild/protobuf";
 
 /** A protobuf-es oneof field as generated for a `case` selector. */
 type OneofSelector =
@@ -40,11 +39,4 @@ export function getOneofValue<
 
 export function valueAsNumber(val: Value | undefined) {
   return getOneofValue(val, "kind", "numberValue") ?? 0;
-}
-
-export function timeStringToTimestamp(
-  time: string | undefined,
-): Timestamp | undefined {
-  if (!time) return undefined;
-  return Timestamp.fromDate(new Date(time));
 }

@@ -100,12 +100,19 @@ export async function queryServiceProjectStorage(
   client: RuntimeClient,
   request: Omit<PartialMessage<ProjectStorageRequest>, "instanceId">,
   options?: { signal?: AbortSignal },
-): Promise<ProjectStorageResponse> {
+): Promise<PartialMessage<ProjectStorageResponse>> {
   const r = await client.queryService.projectStorage(
-    { instanceId: client.instanceId, ...request },
+    ProjectStorageRequest.fromJson(
+      stripUndefined({
+        instanceId: client.instanceId,
+        ...request,
+      }) as unknown as JsonValue,
+    ),
     { signal: options?.signal },
   );
-  return r;
+  return r.toJson({
+    emitDefaultValues: true,
+  }) as unknown as PartialMessage<ProjectStorageResponse>;
 }
 
 export function getQueryServiceProjectStorageQueryKey(
@@ -116,42 +123,55 @@ export function getQueryServiceProjectStorageQueryKey(
 }
 
 export function getQueryServiceProjectStorageQueryOptions<
-  TData = ProjectStorageResponse,
+  TData = PartialMessage<ProjectStorageResponse>,
 >(
   client: RuntimeClient,
   request: Omit<PartialMessage<ProjectStorageRequest>, "instanceId">,
   options?: {
     query?: Partial<
-      CreateQueryOptions<ProjectStorageResponse, ConnectError, TData>
+      CreateQueryOptions<
+        PartialMessage<ProjectStorageResponse>,
+        ConnectError,
+        TData
+      >
     >;
   },
-): CreateQueryOptions<ProjectStorageResponse, ConnectError, TData> & {
-  queryKey: QueryKey;
-} {
+): CreateQueryOptions<
+  PartialMessage<ProjectStorageResponse>,
+  ConnectError,
+  TData
+> & { queryKey: QueryKey } {
   const queryKey = getQueryServiceProjectStorageQueryKey(
     client.instanceId,
     request,
   );
-  const queryFn: QueryFunction<ProjectStorageResponse> = ({ signal }) =>
-    queryServiceProjectStorage(client, request, { signal });
+  const queryFn: QueryFunction<PartialMessage<ProjectStorageResponse>> = ({
+    signal,
+  }) => queryServiceProjectStorage(client, request, { signal });
   return {
     queryKey,
     queryFn,
     enabled: !!client.instanceId,
     ...options?.query,
-  } as CreateQueryOptions<ProjectStorageResponse, ConnectError, TData> & {
-    queryKey: QueryKey;
-  };
+  } as CreateQueryOptions<
+    PartialMessage<ProjectStorageResponse>,
+    ConnectError,
+    TData
+  > & { queryKey: QueryKey };
 }
 
 export function createQueryServiceProjectStorage<
-  TData = ProjectStorageResponse,
+  TData = PartialMessage<ProjectStorageResponse>,
 >(
   client: RuntimeClient,
   request: Omit<PartialMessage<ProjectStorageRequest>, "instanceId">,
   options?: {
     query?: Partial<
-      CreateQueryOptions<ProjectStorageResponse, ConnectError, TData>
+      CreateQueryOptions<
+        PartialMessage<ProjectStorageResponse>,
+        ConnectError,
+        TData
+      >
     >;
   },
   queryClient?: QueryClient,
@@ -680,7 +700,12 @@ export async function queryServiceMetricsViewTimeRange(
   options?: { signal?: AbortSignal },
 ): Promise<V1MetricsViewTimeRangeResponse> {
   const r = await client.queryService.metricsViewTimeRange(
-    { instanceId: client.instanceId, ...request },
+    MetricsViewTimeRangeRequest.fromJson(
+      stripUndefined({
+        instanceId: client.instanceId,
+        ...request,
+      }) as unknown as JsonValue,
+    ),
     { signal: options?.signal },
   );
   return r.toJson({
@@ -760,7 +785,12 @@ export async function queryServiceMetricsViewSchema(
   options?: { signal?: AbortSignal },
 ): Promise<V1MetricsViewSchemaResponse> {
   const r = await client.queryService.metricsViewSchema(
-    { instanceId: client.instanceId, ...request },
+    MetricsViewSchemaRequest.fromJson(
+      stripUndefined({
+        instanceId: client.instanceId,
+        ...request,
+      }) as unknown as JsonValue,
+    ),
     { signal: options?.signal },
   );
   return r.toJson({
@@ -838,7 +868,12 @@ export async function queryServiceMetricsViewSearch(
   options?: { signal?: AbortSignal },
 ): Promise<V1MetricsViewSearchResponse> {
   const r = await client.queryService.metricsViewSearch(
-    { instanceId: client.instanceId, ...request },
+    MetricsViewSearchRequest.fromJson(
+      stripUndefined({
+        instanceId: client.instanceId,
+        ...request,
+      }) as unknown as JsonValue,
+    ),
     { signal: options?.signal },
   );
   return r.toJson({
@@ -916,7 +951,12 @@ export async function queryServiceMetricsViewTimeRanges(
   options?: { signal?: AbortSignal },
 ): Promise<V1MetricsViewTimeRangesResponse> {
   const r = await client.queryService.metricsViewTimeRanges(
-    { instanceId: client.instanceId, ...request },
+    MetricsViewTimeRangesRequest.fromJson(
+      stripUndefined({
+        instanceId: client.instanceId,
+        ...request,
+      }) as unknown as JsonValue,
+    ),
     { signal: options?.signal },
   );
   return r.toJson({
@@ -997,7 +1037,12 @@ export async function queryServiceMetricsViewAnnotations(
   options?: { signal?: AbortSignal },
 ): Promise<V1MetricsViewAnnotationsResponse> {
   const r = await client.queryService.metricsViewAnnotations(
-    { instanceId: client.instanceId, ...request },
+    MetricsViewAnnotationsRequest.fromJson(
+      stripUndefined({
+        instanceId: client.instanceId,
+        ...request,
+      }) as unknown as JsonValue,
+    ),
     { signal: options?.signal },
   );
   return r.toJson({
@@ -1081,7 +1126,12 @@ export async function queryServiceConvertExpressionToMetricsSQL(
   options?: { signal?: AbortSignal },
 ): Promise<V1ConvertExpressionToMetricsSQLResponse> {
   const r = await client.queryService.convertExpressionToMetricsSQL(
-    { instanceId: client.instanceId, ...request },
+    ConvertExpressionToMetricsSQLRequest.fromJson(
+      stripUndefined({
+        instanceId: client.instanceId,
+        ...request,
+      }) as unknown as JsonValue,
+    ),
     { signal: options?.signal },
   );
   return r.toJson({
@@ -1181,7 +1231,12 @@ export async function queryServiceResolveCanvas(
   options?: { signal?: AbortSignal },
 ): Promise<V1ResolveCanvasResponse> {
   const r = await client.queryService.resolveCanvas(
-    { instanceId: client.instanceId, ...request },
+    ResolveCanvasRequest.fromJson(
+      stripUndefined({
+        instanceId: client.instanceId,
+        ...request,
+      }) as unknown as JsonValue,
+    ),
     { signal: options?.signal },
   );
   return r.toJson({
@@ -1254,7 +1309,12 @@ export async function queryServiceResolveComponent(
   options?: { signal?: AbortSignal },
 ): Promise<V1ResolveComponentResponse> {
   const r = await client.queryService.resolveComponent(
-    { instanceId: client.instanceId, ...request },
+    ResolveComponentRequest.fromJson(
+      stripUndefined({
+        instanceId: client.instanceId,
+        ...request,
+      }) as unknown as JsonValue,
+    ),
     { signal: options?.signal },
   );
   return r.toJson({
@@ -1332,7 +1392,12 @@ export async function queryServiceResolveTemplatedString(
   options?: { signal?: AbortSignal },
 ): Promise<V1ResolveTemplatedStringResponse> {
   const r = await client.queryService.resolveTemplatedString(
-    { instanceId: client.instanceId, ...request },
+    ResolveTemplatedStringRequest.fromJson(
+      stripUndefined({
+        instanceId: client.instanceId,
+        ...request,
+      }) as unknown as JsonValue,
+    ),
     { signal: options?.signal },
   );
   return r.toJson({
@@ -2425,7 +2490,12 @@ export async function queryServiceQuery(
   options?: { signal?: AbortSignal },
 ): Promise<V1QueryResponse> {
   const r = await client.queryService.query(
-    { instanceId: client.instanceId, ...request },
+    QueryRequest.fromJson(
+      stripUndefined({
+        instanceId: client.instanceId,
+        ...request,
+      }) as unknown as JsonValue,
+    ),
     { signal: options?.signal },
   );
   return r.toJson({ emitDefaultValues: true }) as unknown as V1QueryResponse;
@@ -2479,7 +2549,12 @@ export async function queryServiceExport(
   options?: { signal?: AbortSignal },
 ): Promise<V1ExportResponse> {
   const r = await client.queryService.export(
-    { instanceId: client.instanceId, ...request },
+    ExportRequest.fromJson(
+      stripUndefined({
+        instanceId: client.instanceId,
+        ...request,
+      }) as unknown as JsonValue,
+    ),
     { signal: options?.signal },
   );
   return r.toJson({ emitDefaultValues: true }) as unknown as V1ExportResponse;
@@ -2533,7 +2608,12 @@ export async function queryServiceExportReport(
   options?: { signal?: AbortSignal },
 ): Promise<V1ExportReportResponse> {
   const r = await client.queryService.exportReport(
-    { instanceId: client.instanceId, ...request },
+    ExportReportRequest.fromJson(
+      stripUndefined({
+        instanceId: client.instanceId,
+        ...request,
+      }) as unknown as JsonValue,
+    ),
     { signal: options?.signal },
   );
   return r.toJson({

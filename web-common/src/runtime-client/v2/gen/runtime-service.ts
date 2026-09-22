@@ -131,9 +131,10 @@ export async function runtimeServicePing(
   request: PartialMessage<PingRequest>,
   options?: { signal?: AbortSignal },
 ): Promise<V1PingResponse> {
-  const r = await client.runtimeService.ping(request, {
-    signal: options?.signal,
-  });
+  const r = await client.runtimeService.ping(
+    PingRequest.fromJson(stripUndefined(request) as unknown as JsonValue),
+    { signal: options?.signal },
+  );
   return r.toJson({ emitDefaultValues: true }) as unknown as V1PingResponse;
 }
 
@@ -190,9 +191,10 @@ export async function runtimeServiceHealth(
   request: PartialMessage<HealthRequest>,
   options?: { signal?: AbortSignal },
 ): Promise<V1HealthResponse> {
-  const r = await client.runtimeService.health(request, {
-    signal: options?.signal,
-  });
+  const r = await client.runtimeService.health(
+    HealthRequest.fromJson(stripUndefined(request) as unknown as JsonValue),
+    { signal: options?.signal },
+  );
   return r.toJson({ emitDefaultValues: true }) as unknown as V1HealthResponse;
 }
 
@@ -250,7 +252,12 @@ export async function runtimeServiceInstanceHealth(
   options?: { signal?: AbortSignal },
 ): Promise<V1InstanceHealthResponse> {
   const r = await client.runtimeService.instanceHealth(
-    { instanceId: client.instanceId, ...request },
+    InstanceHealthRequest.fromJson(
+      stripUndefined({
+        instanceId: client.instanceId,
+        ...request,
+      }) as unknown as JsonValue,
+    ),
     { signal: options?.signal },
   );
   return r.toJson({
@@ -327,9 +334,12 @@ export async function runtimeServiceListInstances(
   request: PartialMessage<ListInstancesRequest>,
   options?: { signal?: AbortSignal },
 ): Promise<V1ListInstancesResponse> {
-  const r = await client.runtimeService.listInstances(request, {
-    signal: options?.signal,
-  });
+  const r = await client.runtimeService.listInstances(
+    ListInstancesRequest.fromJson(
+      stripUndefined(request) as unknown as JsonValue,
+    ),
+    { signal: options?.signal },
+  );
   return r.toJson({
     emitDefaultValues: true,
   }) as unknown as V1ListInstancesResponse;
@@ -405,7 +415,12 @@ export async function runtimeServiceGetInstance(
   options?: { signal?: AbortSignal },
 ): Promise<V1GetInstanceResponse> {
   const r = await client.runtimeService.getInstance(
-    { instanceId: client.instanceId, ...request },
+    GetInstanceRequest.fromJson(
+      stripUndefined({
+        instanceId: client.instanceId,
+        ...request,
+      }) as unknown as JsonValue,
+    ),
     { signal: options?.signal },
   );
   return r.toJson({
@@ -476,7 +491,12 @@ export async function runtimeServiceListFiles(
   options?: { signal?: AbortSignal },
 ): Promise<V1ListFilesResponse> {
   const r = await client.runtimeService.listFiles(
-    { instanceId: client.instanceId, ...request },
+    ListFilesRequest.fromJson(
+      stripUndefined({
+        instanceId: client.instanceId,
+        ...request,
+      }) as unknown as JsonValue,
+    ),
     { signal: options?.signal },
   );
   return r.toJson({
@@ -547,7 +567,12 @@ export async function runtimeServiceGetFile(
   options?: { signal?: AbortSignal },
 ): Promise<V1GetFileResponse> {
   const r = await client.runtimeService.getFile(
-    { instanceId: client.instanceId, ...request },
+    GetFileRequest.fromJson(
+      stripUndefined({
+        instanceId: client.instanceId,
+        ...request,
+      }) as unknown as JsonValue,
+    ),
     { signal: options?.signal },
   );
   return r.toJson({ emitDefaultValues: true }) as unknown as V1GetFileResponse;
@@ -606,9 +631,12 @@ export async function runtimeServiceListExamples(
   request: PartialMessage<ListExamplesRequest>,
   options?: { signal?: AbortSignal },
 ): Promise<V1ListExamplesResponse> {
-  const r = await client.runtimeService.listExamples(request, {
-    signal: options?.signal,
-  });
+  const r = await client.runtimeService.listExamples(
+    ListExamplesRequest.fromJson(
+      stripUndefined(request) as unknown as JsonValue,
+    ),
+    { signal: options?.signal },
+  );
   return r.toJson({
     emitDefaultValues: true,
   }) as unknown as V1ListExamplesResponse;
@@ -679,7 +707,12 @@ export async function runtimeServiceQueryResolver(
   options?: { signal?: AbortSignal },
 ): Promise<V1QueryResolverResponse> {
   const r = await client.runtimeService.queryResolver(
-    { instanceId: client.instanceId, ...request },
+    QueryResolverRequest.fromJson(
+      stripUndefined({
+        instanceId: client.instanceId,
+        ...request,
+      }) as unknown as JsonValue,
+    ),
     { signal: options?.signal },
   );
   return r.toJson({
@@ -757,7 +790,12 @@ export async function runtimeServiceGetLogs(
   options?: { signal?: AbortSignal },
 ): Promise<V1GetLogsResponse> {
   const r = await client.runtimeService.getLogs(
-    { instanceId: client.instanceId, ...request },
+    GetLogsRequest.fromJson(
+      stripUndefined({
+        instanceId: client.instanceId,
+        ...request,
+      }) as unknown as JsonValue,
+    ),
     { signal: options?.signal },
   );
   return r.toJson({ emitDefaultValues: true }) as unknown as V1GetLogsResponse;
@@ -817,7 +855,12 @@ export async function runtimeServiceListResources(
   options?: { signal?: AbortSignal },
 ): Promise<V1ListResourcesResponse> {
   const r = await client.runtimeService.listResources(
-    { instanceId: client.instanceId, ...request },
+    ListResourcesRequest.fromJson(
+      stripUndefined({
+        instanceId: client.instanceId,
+        ...request,
+      }) as unknown as JsonValue,
+    ),
     { signal: options?.signal },
   );
   return r.toJson({
@@ -895,7 +938,12 @@ export async function runtimeServiceGetResource(
   options?: { signal?: AbortSignal },
 ): Promise<V1GetResourceResponse> {
   const r = await client.runtimeService.getResource(
-    { instanceId: client.instanceId, ...request },
+    GetResourceRequest.fromJson(
+      stripUndefined({
+        instanceId: client.instanceId,
+        ...request,
+      }) as unknown as JsonValue,
+    ),
     { signal: options?.signal },
   );
   return r.toJson({
@@ -966,7 +1014,12 @@ export async function runtimeServiceGetExplore(
   options?: { signal?: AbortSignal },
 ): Promise<V1GetExploreResponse> {
   const r = await client.runtimeService.getExplore(
-    { instanceId: client.instanceId, ...request },
+    GetExploreRequest.fromJson(
+      stripUndefined({
+        instanceId: client.instanceId,
+        ...request,
+      }) as unknown as JsonValue,
+    ),
     { signal: options?.signal },
   );
   return r.toJson({
@@ -1037,7 +1090,12 @@ export async function runtimeServiceGetModelPartitions(
   options?: { signal?: AbortSignal },
 ): Promise<V1GetModelPartitionsResponse> {
   const r = await client.runtimeService.getModelPartitions(
-    { instanceId: client.instanceId, ...request },
+    GetModelPartitionsRequest.fromJson(
+      stripUndefined({
+        instanceId: client.instanceId,
+        ...request,
+      }) as unknown as JsonValue,
+    ),
     { signal: options?.signal },
   );
   return r.toJson({
@@ -1114,9 +1172,12 @@ export async function runtimeServiceListConnectorDrivers(
   request: PartialMessage<ListConnectorDriversRequest>,
   options?: { signal?: AbortSignal },
 ): Promise<V1ListConnectorDriversResponse> {
-  const r = await client.runtimeService.listConnectorDrivers(request, {
-    signal: options?.signal,
-  });
+  const r = await client.runtimeService.listConnectorDrivers(
+    ListConnectorDriversRequest.fromJson(
+      stripUndefined(request) as unknown as JsonValue,
+    ),
+    { signal: options?.signal },
+  );
   return r.toJson({
     emitDefaultValues: true,
   }) as unknown as V1ListConnectorDriversResponse;
@@ -1194,7 +1255,12 @@ export async function runtimeServiceAnalyzeConnectors(
   options?: { signal?: AbortSignal },
 ): Promise<V1AnalyzeConnectorsResponse> {
   const r = await client.runtimeService.analyzeConnectors(
-    { instanceId: client.instanceId, ...request },
+    AnalyzeConnectorsRequest.fromJson(
+      stripUndefined({
+        instanceId: client.instanceId,
+        ...request,
+      }) as unknown as JsonValue,
+    ),
     { signal: options?.signal },
   );
   return r.toJson({
@@ -1272,7 +1338,12 @@ export async function runtimeServiceListNotifierConnectors(
   options?: { signal?: AbortSignal },
 ): Promise<V1ListNotifierConnectorsResponse> {
   const r = await client.runtimeService.listNotifierConnectors(
-    { instanceId: client.instanceId, ...request },
+    ListNotifierConnectorsRequest.fromJson(
+      stripUndefined({
+        instanceId: client.instanceId,
+        ...request,
+      }) as unknown as JsonValue,
+    ),
     { signal: options?.signal },
   );
   return r.toJson({
@@ -1353,7 +1424,12 @@ export async function runtimeServiceListConversations(
   options?: { signal?: AbortSignal },
 ): Promise<V1ListConversationsResponse> {
   const r = await client.runtimeService.listConversations(
-    { instanceId: client.instanceId, ...request },
+    ListConversationsRequest.fromJson(
+      stripUndefined({
+        instanceId: client.instanceId,
+        ...request,
+      }) as unknown as JsonValue,
+    ),
     { signal: options?.signal },
   );
   return r.toJson({
@@ -1431,7 +1507,12 @@ export async function runtimeServiceGetConversation(
   options?: { signal?: AbortSignal },
 ): Promise<V1GetConversationResponse> {
   const r = await client.runtimeService.getConversation(
-    { instanceId: client.instanceId, ...request },
+    GetConversationRequest.fromJson(
+      stripUndefined({
+        instanceId: client.instanceId,
+        ...request,
+      }) as unknown as JsonValue,
+    ),
     { signal: options?.signal },
   );
   return r.toJson({
@@ -1509,7 +1590,12 @@ export async function runtimeServiceListTools(
   options?: { signal?: AbortSignal },
 ): Promise<V1ListToolsResponse> {
   const r = await client.runtimeService.listTools(
-    { instanceId: client.instanceId, ...request },
+    ListToolsRequest.fromJson(
+      stripUndefined({
+        instanceId: client.instanceId,
+        ...request,
+      }) as unknown as JsonValue,
+    ),
     { signal: options?.signal },
   );
   return r.toJson({
@@ -1580,7 +1666,12 @@ export async function runtimeServiceGetAIMessage(
   options?: { signal?: AbortSignal },
 ): Promise<V1GetAIMessageResponse> {
   const r = await client.runtimeService.getAIMessage(
-    { instanceId: client.instanceId, ...request },
+    GetAIMessageRequest.fromJson(
+      stripUndefined({
+        instanceId: client.instanceId,
+        ...request,
+      }) as unknown as JsonValue,
+    ),
     { signal: options?.signal },
   );
   return r.toJson({
@@ -1726,7 +1817,12 @@ export async function runtimeServiceAnalyzeVariables(
   options?: { signal?: AbortSignal },
 ): Promise<V1AnalyzeVariablesResponse> {
   const r = await client.runtimeService.analyzeVariables(
-    { instanceId: client.instanceId, ...request },
+    AnalyzeVariablesRequest.fromJson(
+      stripUndefined({
+        instanceId: client.instanceId,
+        ...request,
+      }) as unknown as JsonValue,
+    ),
     { signal: options?.signal },
   );
   return r.toJson({
@@ -1804,7 +1900,12 @@ export async function runtimeServiceListGitCommits(
   options?: { signal?: AbortSignal },
 ): Promise<V1ListGitCommitsResponse> {
   const r = await client.runtimeService.listGitCommits(
-    { instanceId: client.instanceId, ...request },
+    ListGitCommitsRequest.fromJson(
+      stripUndefined({
+        instanceId: client.instanceId,
+        ...request,
+      }) as unknown as JsonValue,
+    ),
     { signal: options?.signal },
   );
   return r.toJson({
@@ -1882,7 +1983,12 @@ export async function runtimeServiceGitStatus(
   options?: { signal?: AbortSignal },
 ): Promise<V1GitStatusResponse> {
   const r = await client.runtimeService.gitStatus(
-    { instanceId: client.instanceId, ...request },
+    GitStatusRequest.fromJson(
+      stripUndefined({
+        instanceId: client.instanceId,
+        ...request,
+      }) as unknown as JsonValue,
+    ),
     { signal: options?.signal },
   );
   return r.toJson({
@@ -1951,12 +2057,19 @@ export async function runtimeServiceGitDiff(
   client: RuntimeClient,
   request: Omit<PartialMessage<GitDiffRequest>, "instanceId">,
   options?: { signal?: AbortSignal },
-): Promise<GitDiffResponse> {
+): Promise<PartialMessage<GitDiffResponse>> {
   const r = await client.runtimeService.gitDiff(
-    { instanceId: client.instanceId, ...request },
+    GitDiffRequest.fromJson(
+      stripUndefined({
+        instanceId: client.instanceId,
+        ...request,
+      }) as unknown as JsonValue,
+    ),
     { signal: options?.signal },
   );
-  return r;
+  return r.toJson({
+    emitDefaultValues: true,
+  }) as unknown as PartialMessage<GitDiffResponse>;
 }
 
 export function getRuntimeServiceGitDiffQueryKey(
@@ -1966,33 +2079,44 @@ export function getRuntimeServiceGitDiffQueryKey(
   return ["RuntimeService", "gitDiff", instanceId, request ?? {}] as const;
 }
 
-export function getRuntimeServiceGitDiffQueryOptions<TData = GitDiffResponse>(
+export function getRuntimeServiceGitDiffQueryOptions<
+  TData = PartialMessage<GitDiffResponse>,
+>(
   client: RuntimeClient,
   request: Omit<PartialMessage<GitDiffRequest>, "instanceId">,
   options?: {
-    query?: Partial<CreateQueryOptions<GitDiffResponse, ConnectError, TData>>;
+    query?: Partial<
+      CreateQueryOptions<PartialMessage<GitDiffResponse>, ConnectError, TData>
+    >;
   },
-): CreateQueryOptions<GitDiffResponse, ConnectError, TData> & {
+): CreateQueryOptions<PartialMessage<GitDiffResponse>, ConnectError, TData> & {
   queryKey: QueryKey;
 } {
   const queryKey = getRuntimeServiceGitDiffQueryKey(client.instanceId, request);
-  const queryFn: QueryFunction<GitDiffResponse> = ({ signal }) =>
-    runtimeServiceGitDiff(client, request, { signal });
+  const queryFn: QueryFunction<PartialMessage<GitDiffResponse>> = ({
+    signal,
+  }) => runtimeServiceGitDiff(client, request, { signal });
   return {
     queryKey,
     queryFn,
     enabled: !!client.instanceId,
     ...options?.query,
-  } as CreateQueryOptions<GitDiffResponse, ConnectError, TData> & {
-    queryKey: QueryKey;
-  };
+  } as CreateQueryOptions<
+    PartialMessage<GitDiffResponse>,
+    ConnectError,
+    TData
+  > & { queryKey: QueryKey };
 }
 
-export function createRuntimeServiceGitDiff<TData = GitDiffResponse>(
+export function createRuntimeServiceGitDiff<
+  TData = PartialMessage<GitDiffResponse>,
+>(
   client: RuntimeClient,
   request: Omit<PartialMessage<GitDiffRequest>, "instanceId">,
   options?: {
-    query?: Partial<CreateQueryOptions<GitDiffResponse, ConnectError, TData>>;
+    query?: Partial<
+      CreateQueryOptions<PartialMessage<GitDiffResponse>, ConnectError, TData>
+    >;
   },
   queryClient?: QueryClient,
 ): CreateQueryResult<TData, ConnectError> {
@@ -2013,7 +2137,12 @@ export async function runtimeServiceListGitBranches(
   options?: { signal?: AbortSignal },
 ): Promise<V1ListGitBranchesResponse> {
   const r = await client.runtimeService.listGitBranches(
-    { instanceId: client.instanceId, ...request },
+    ListGitBranchesRequest.fromJson(
+      stripUndefined({
+        instanceId: client.instanceId,
+        ...request,
+      }) as unknown as JsonValue,
+    ),
     { signal: options?.signal },
   );
   return r.toJson({
@@ -2445,7 +2574,12 @@ export async function runtimeServiceReloadConfig(
   options?: { signal?: AbortSignal },
 ): Promise<V1ReloadConfigResponse> {
   const r = await client.runtimeService.reloadConfig(
-    { instanceId: client.instanceId, ...request },
+    ReloadConfigRequest.fromJson(
+      stripUndefined({
+        instanceId: client.instanceId,
+        ...request,
+      }) as unknown as JsonValue,
+    ),
     { signal: options?.signal },
   );
   return r.toJson({
@@ -2504,7 +2638,12 @@ export async function runtimeServicePutFile(
   options?: { signal?: AbortSignal },
 ): Promise<V1PutFileResponse> {
   const r = await client.runtimeService.putFile(
-    { instanceId: client.instanceId, ...request },
+    PutFileRequest.fromJson(
+      stripUndefined({
+        instanceId: client.instanceId,
+        ...request,
+      }) as unknown as JsonValue,
+    ),
     { signal: options?.signal },
   );
   return r.toJson({ emitDefaultValues: true }) as unknown as V1PutFileResponse;
@@ -2561,7 +2700,12 @@ export async function runtimeServiceCreateDirectory(
   options?: { signal?: AbortSignal },
 ): Promise<V1CreateDirectoryResponse> {
   const r = await client.runtimeService.createDirectory(
-    { instanceId: client.instanceId, ...request },
+    CreateDirectoryRequest.fromJson(
+      stripUndefined({
+        instanceId: client.instanceId,
+        ...request,
+      }) as unknown as JsonValue,
+    ),
     { signal: options?.signal },
   );
   return r.toJson({
@@ -2620,7 +2764,12 @@ export async function runtimeServiceDeleteFile(
   options?: { signal?: AbortSignal },
 ): Promise<V1DeleteFileResponse> {
   const r = await client.runtimeService.deleteFile(
-    { instanceId: client.instanceId, ...request },
+    DeleteFileRequest.fromJson(
+      stripUndefined({
+        instanceId: client.instanceId,
+        ...request,
+      }) as unknown as JsonValue,
+    ),
     { signal: options?.signal },
   );
   return r.toJson({
@@ -2679,7 +2828,12 @@ export async function runtimeServiceRenameFile(
   options?: { signal?: AbortSignal },
 ): Promise<V1RenameFileResponse> {
   const r = await client.runtimeService.renameFile(
-    { instanceId: client.instanceId, ...request },
+    RenameFileRequest.fromJson(
+      stripUndefined({
+        instanceId: client.instanceId,
+        ...request,
+      }) as unknown as JsonValue,
+    ),
     { signal: options?.signal },
   );
   return r.toJson({
@@ -2738,7 +2892,12 @@ export async function runtimeServiceUnpackExample(
   options?: { signal?: AbortSignal },
 ): Promise<V1UnpackExampleResponse> {
   const r = await client.runtimeService.unpackExample(
-    { instanceId: client.instanceId, ...request },
+    UnpackExampleRequest.fromJson(
+      stripUndefined({
+        instanceId: client.instanceId,
+        ...request,
+      }) as unknown as JsonValue,
+    ),
     { signal: options?.signal },
   );
   return r.toJson({
@@ -2797,7 +2956,12 @@ export async function runtimeServiceUnpackEmpty(
   options?: { signal?: AbortSignal },
 ): Promise<V1UnpackEmptyResponse> {
   const r = await client.runtimeService.unpackEmpty(
-    { instanceId: client.instanceId, ...request },
+    UnpackEmptyRequest.fromJson(
+      stripUndefined({
+        instanceId: client.instanceId,
+        ...request,
+      }) as unknown as JsonValue,
+    ),
     { signal: options?.signal },
   );
   return r.toJson({
@@ -2856,7 +3020,12 @@ export async function runtimeServiceGenerateMetricsViewFile(
   options?: { signal?: AbortSignal },
 ): Promise<V1GenerateMetricsViewFileResponse> {
   const r = await client.runtimeService.generateMetricsViewFile(
-    { instanceId: client.instanceId, ...request },
+    GenerateMetricsViewFileRequest.fromJson(
+      stripUndefined({
+        instanceId: client.instanceId,
+        ...request,
+      }) as unknown as JsonValue,
+    ),
     { signal: options?.signal },
   );
   return r.toJson({
@@ -2914,7 +3083,12 @@ export async function runtimeServiceGenerateCanvasFile(
   options?: { signal?: AbortSignal },
 ): Promise<V1GenerateCanvasFileResponse> {
   const r = await client.runtimeService.generateCanvasFile(
-    { instanceId: client.instanceId, ...request },
+    GenerateCanvasFileRequest.fromJson(
+      stripUndefined({
+        instanceId: client.instanceId,
+        ...request,
+      }) as unknown as JsonValue,
+    ),
     { signal: options?.signal },
   );
   return r.toJson({
@@ -2971,25 +3145,32 @@ export async function runtimeServiceSkipModelPartitions(
   client: RuntimeClient,
   request: Omit<PartialMessage<SkipModelPartitionsRequest>, "instanceId">,
   options?: { signal?: AbortSignal },
-): Promise<SkipModelPartitionsResponse> {
+): Promise<PartialMessage<SkipModelPartitionsResponse>> {
   const r = await client.runtimeService.skipModelPartitions(
-    { instanceId: client.instanceId, ...request },
+    SkipModelPartitionsRequest.fromJson(
+      stripUndefined({
+        instanceId: client.instanceId,
+        ...request,
+      }) as unknown as JsonValue,
+    ),
     { signal: options?.signal },
   );
-  return r;
+  return r.toJson({
+    emitDefaultValues: true,
+  }) as unknown as PartialMessage<SkipModelPartitionsResponse>;
 }
 
 export function getRuntimeServiceSkipModelPartitionsMutationOptions(
   client: RuntimeClient,
   options?: Partial<
     CreateMutationOptions<
-      SkipModelPartitionsResponse,
+      PartialMessage<SkipModelPartitionsResponse>,
       unknown,
       Omit<PartialMessage<SkipModelPartitionsRequest>, "instanceId">
     >
   >,
 ): CreateMutationOptions<
-  SkipModelPartitionsResponse,
+  PartialMessage<SkipModelPartitionsResponse>,
   unknown,
   Omit<PartialMessage<SkipModelPartitionsRequest>, "instanceId">
 > {
@@ -3003,14 +3184,14 @@ export function createRuntimeServiceSkipModelPartitionsMutation(
   client: RuntimeClient,
   options?: Partial<
     CreateMutationOptions<
-      SkipModelPartitionsResponse,
+      PartialMessage<SkipModelPartitionsResponse>,
       unknown,
       Omit<PartialMessage<SkipModelPartitionsRequest>, "instanceId">
     >
   >,
   queryClient?: QueryClient,
 ): CreateMutationResult<
-  SkipModelPartitionsResponse,
+  PartialMessage<SkipModelPartitionsResponse>,
   unknown,
   Omit<PartialMessage<SkipModelPartitionsRequest>, "instanceId">
 > {
@@ -3030,7 +3211,12 @@ export async function runtimeServiceCreateTrigger(
   options?: { signal?: AbortSignal },
 ): Promise<V1CreateTriggerResponse> {
   const r = await client.runtimeService.createTrigger(
-    { instanceId: client.instanceId, ...request },
+    CreateTriggerRequest.fromJson(
+      stripUndefined({
+        instanceId: client.instanceId,
+        ...request,
+      }) as unknown as JsonValue,
+    ),
     { signal: options?.signal },
   );
   return r.toJson({
@@ -3089,7 +3275,12 @@ export async function runtimeServiceShareConversation(
   options?: { signal?: AbortSignal },
 ): Promise<V1ShareConversationResponse> {
   const r = await client.runtimeService.shareConversation(
-    { instanceId: client.instanceId, ...request },
+    ShareConversationRequest.fromJson(
+      stripUndefined({
+        instanceId: client.instanceId,
+        ...request,
+      }) as unknown as JsonValue,
+    ),
     { signal: options?.signal },
   );
   return r.toJson({
@@ -3148,7 +3339,12 @@ export async function runtimeServiceForkConversation(
   options?: { signal?: AbortSignal },
 ): Promise<V1ForkConversationResponse> {
   const r = await client.runtimeService.forkConversation(
-    { instanceId: client.instanceId, ...request },
+    ForkConversationRequest.fromJson(
+      stripUndefined({
+        instanceId: client.instanceId,
+        ...request,
+      }) as unknown as JsonValue,
+    ),
     { signal: options?.signal },
   );
   return r.toJson({
@@ -3207,7 +3403,12 @@ export async function runtimeServiceComplete(
   options?: { signal?: AbortSignal },
 ): Promise<V1CompleteResponse> {
   const r = await client.runtimeService.complete(
-    { instanceId: client.instanceId, ...request },
+    CompleteRequest.fromJson(
+      stripUndefined({
+        instanceId: client.instanceId,
+        ...request,
+      }) as unknown as JsonValue,
+    ),
     { signal: options?.signal },
   );
   return r.toJson({ emitDefaultValues: true }) as unknown as V1CompleteResponse;
@@ -3262,25 +3463,32 @@ export async function runtimeServiceGitRevert(
   client: RuntimeClient,
   request: Omit<PartialMessage<GitRevertRequest>, "instanceId">,
   options?: { signal?: AbortSignal },
-): Promise<GitRevertResponse> {
+): Promise<PartialMessage<GitRevertResponse>> {
   const r = await client.runtimeService.gitRevert(
-    { instanceId: client.instanceId, ...request },
+    GitRevertRequest.fromJson(
+      stripUndefined({
+        instanceId: client.instanceId,
+        ...request,
+      }) as unknown as JsonValue,
+    ),
     { signal: options?.signal },
   );
-  return r;
+  return r.toJson({
+    emitDefaultValues: true,
+  }) as unknown as PartialMessage<GitRevertResponse>;
 }
 
 export function getRuntimeServiceGitRevertMutationOptions(
   client: RuntimeClient,
   options?: Partial<
     CreateMutationOptions<
-      GitRevertResponse,
+      PartialMessage<GitRevertResponse>,
       unknown,
       Omit<PartialMessage<GitRevertRequest>, "instanceId">
     >
   >,
 ): CreateMutationOptions<
-  GitRevertResponse,
+  PartialMessage<GitRevertResponse>,
   unknown,
   Omit<PartialMessage<GitRevertRequest>, "instanceId">
 > {
@@ -3294,14 +3502,14 @@ export function createRuntimeServiceGitRevertMutation(
   client: RuntimeClient,
   options?: Partial<
     CreateMutationOptions<
-      GitRevertResponse,
+      PartialMessage<GitRevertResponse>,
       unknown,
       Omit<PartialMessage<GitRevertRequest>, "instanceId">
     >
   >,
   queryClient?: QueryClient,
 ): CreateMutationResult<
-  GitRevertResponse,
+  PartialMessage<GitRevertResponse>,
   unknown,
   Omit<PartialMessage<GitRevertRequest>, "instanceId">
 > {
@@ -3321,7 +3529,12 @@ export async function runtimeServiceGitCommit(
   options?: { signal?: AbortSignal },
 ): Promise<V1GitCommitResponse> {
   const r = await client.runtimeService.gitCommit(
-    { instanceId: client.instanceId, ...request },
+    GitCommitRequest.fromJson(
+      stripUndefined({
+        instanceId: client.instanceId,
+        ...request,
+      }) as unknown as JsonValue,
+    ),
     { signal: options?.signal },
   );
   return r.toJson({
@@ -3380,7 +3593,12 @@ export async function runtimeServiceRestoreGitCommit(
   options?: { signal?: AbortSignal },
 ): Promise<V1RestoreGitCommitResponse> {
   const r = await client.runtimeService.restoreGitCommit(
-    { instanceId: client.instanceId, ...request },
+    RestoreGitCommitRequest.fromJson(
+      stripUndefined({
+        instanceId: client.instanceId,
+        ...request,
+      }) as unknown as JsonValue,
+    ),
     { signal: options?.signal },
   );
   return r.toJson({
@@ -3439,7 +3657,12 @@ export async function runtimeServiceGitMergeToBranch(
   options?: { signal?: AbortSignal },
 ): Promise<V1GitMergeToBranchResponse> {
   const r = await client.runtimeService.gitMergeToBranch(
-    { instanceId: client.instanceId, ...request },
+    GitMergeToBranchRequest.fromJson(
+      stripUndefined({
+        instanceId: client.instanceId,
+        ...request,
+      }) as unknown as JsonValue,
+    ),
     { signal: options?.signal },
   );
   return r.toJson({
@@ -3498,7 +3721,12 @@ export async function runtimeServiceGitSwitchBranch(
   options?: { signal?: AbortSignal },
 ): Promise<V1GitSwitchBranchResponse> {
   const r = await client.runtimeService.gitSwitchBranch(
-    { instanceId: client.instanceId, ...request },
+    GitSwitchBranchRequest.fromJson(
+      stripUndefined({
+        instanceId: client.instanceId,
+        ...request,
+      }) as unknown as JsonValue,
+    ),
     { signal: options?.signal },
   );
   return r.toJson({
@@ -3557,7 +3785,12 @@ export async function runtimeServiceGitPull(
   options?: { signal?: AbortSignal },
 ): Promise<V1GitPullResponse> {
   const r = await client.runtimeService.gitPull(
-    { instanceId: client.instanceId, ...request },
+    GitPullRequest.fromJson(
+      stripUndefined({
+        instanceId: client.instanceId,
+        ...request,
+      }) as unknown as JsonValue,
+    ),
     { signal: options?.signal },
   );
   return r.toJson({ emitDefaultValues: true }) as unknown as V1GitPullResponse;
@@ -3614,7 +3847,12 @@ export async function runtimeServiceGitPush(
   options?: { signal?: AbortSignal },
 ): Promise<V1GitPushResponse> {
   const r = await client.runtimeService.gitPush(
-    { instanceId: client.instanceId, ...request },
+    GitPushRequest.fromJson(
+      stripUndefined({
+        instanceId: client.instanceId,
+        ...request,
+      }) as unknown as JsonValue,
+    ),
     { signal: options?.signal },
   );
   return r.toJson({ emitDefaultValues: true }) as unknown as V1GitPushResponse;
@@ -3669,25 +3907,32 @@ export async function runtimeServicePushEnv(
   client: RuntimeClient,
   request: Omit<PartialMessage<PushEnvRequest>, "instanceId">,
   options?: { signal?: AbortSignal },
-): Promise<PushEnvResponse> {
+): Promise<PartialMessage<PushEnvResponse>> {
   const r = await client.runtimeService.pushEnv(
-    { instanceId: client.instanceId, ...request },
+    PushEnvRequest.fromJson(
+      stripUndefined({
+        instanceId: client.instanceId,
+        ...request,
+      }) as unknown as JsonValue,
+    ),
     { signal: options?.signal },
   );
-  return r;
+  return r.toJson({
+    emitDefaultValues: true,
+  }) as unknown as PartialMessage<PushEnvResponse>;
 }
 
 export function getRuntimeServicePushEnvMutationOptions(
   client: RuntimeClient,
   options?: Partial<
     CreateMutationOptions<
-      PushEnvResponse,
+      PartialMessage<PushEnvResponse>,
       unknown,
       Omit<PartialMessage<PushEnvRequest>, "instanceId">
     >
   >,
 ): CreateMutationOptions<
-  PushEnvResponse,
+  PartialMessage<PushEnvResponse>,
   unknown,
   Omit<PartialMessage<PushEnvRequest>, "instanceId">
 > {
@@ -3701,14 +3946,14 @@ export function createRuntimeServicePushEnvMutation(
   client: RuntimeClient,
   options?: Partial<
     CreateMutationOptions<
-      PushEnvResponse,
+      PartialMessage<PushEnvResponse>,
       unknown,
       Omit<PartialMessage<PushEnvRequest>, "instanceId">
     >
   >,
   queryClient?: QueryClient,
 ): CreateMutationResult<
-  PushEnvResponse,
+  PartialMessage<PushEnvResponse>,
   unknown,
   Omit<PartialMessage<PushEnvRequest>, "instanceId">
 > {

@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { classifyMethod } from "./config";
+import { classifyMethod, usesProtoMessages } from "./config";
 
 describe("classifyMethod", () => {
   describe("QueryService overrides", () => {
@@ -78,5 +78,23 @@ describe("classifyMethod", () => {
     it("classifies any method on an unknown service as query", () => {
       expect(classifyMethod("UnknownService", "doSomething")).toBe("query");
     });
+  });
+});
+
+describe("usesProtoMessages", () => {
+  it.each(["columnTopK", "columnTimeSeries", "columnCardinality"])(
+    "is true for the migrated method %s",
+    (method) => {
+      expect(usesProtoMessages("QueryService", method)).toBe(true);
+    },
+  );
+
+  it.each([
+    ["QueryService", "metricsViewAggregation"],
+    ["QueryService", "export"],
+    ["RuntimeService", "getResource"],
+    ["ConnectorService", "listTables"],
+  ] as const)("is false for %s.%s", (service, method) => {
+    expect(usesProtoMessages(service, method)).toBe(false);
   });
 });

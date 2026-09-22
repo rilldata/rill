@@ -1,10 +1,3 @@
-import  {
-  ColumnCardinalityRequest,
-  ColumnDescriptiveStatisticsRequest,
-  ColumnNullCountRequest,
-  ColumnNumericHistogramRequest, type ColumnRollupIntervalRequest,
-  ColumnRugHistogramRequest, ColumnTimeGrainRequest, ColumnTimeRangeRequest, ColumnTimeSeriesRequest, ColumnTopKRequest } from "@rilldata/web-common/proto/gen/rill/runtime/v1/queries_pb.ts";
-
 /**
  * Runtime API type definitions.
  *
@@ -12,13 +5,20 @@ import  {
  * you may hand-edit this file (e.g., to add a new field to an existing type).
  *
  * Migration path:
- * - For new endpoints, prefer proto-native types from protobuf-es (PartialMessage<T>).
- *   The code generator uses them automatically when no V1* equivalent exists here.
+ * - Whether a method's hooks use these V1* types or proto-native types from
+ *   protobuf-es is decided per method by `protoMessageMethods` in
+ *   src/runtime-client/v2/codegen/config.ts, not by what this file happens to export.
  * - When a V1* type causes friction (missing fields, no discriminated unions for
- *   oneof), switch consumers to the proto-native type from the corresponding *_pb.ts
- *   file instead.
+ *   oneof), switch its consumers to the proto-native type from the corresponding
+ *   *_pb.ts file and add the method to `protoMessageMethods`.
  * - Once all consumers of a V1* type have migrated, delete the type from this file.
  */
+export interface ColumnTimeSeriesRequestBasicMeasure {
+  id?: string;
+  expression?: string;
+  sqlName?: string;
+}
+
 export interface ConnectorDriverProperty {
   key?: string;
   type?: ConnectorDriverPropertyType;
@@ -505,6 +505,114 @@ export interface V1Color {
   green?: number;
   blue?: number;
   alpha?: number;
+}
+
+export interface V1ColumnCardinalityRequest {
+  instanceId?: string;
+  connector?: string;
+  database?: string;
+  databaseSchema?: string;
+  tableName?: string;
+  columnName?: string;
+  priority?: number;
+}
+
+export interface V1ColumnDescriptiveStatisticsRequest {
+  instanceId?: string;
+  connector?: string;
+  database?: string;
+  databaseSchema?: string;
+  tableName?: string;
+  columnName?: string;
+  priority?: number;
+}
+
+export interface V1ColumnNullCountRequest {
+  instanceId?: string;
+  connector?: string;
+  database?: string;
+  databaseSchema?: string;
+  tableName?: string;
+  columnName?: string;
+  priority?: number;
+}
+
+export interface V1ColumnNumericHistogramRequest {
+  instanceId?: string;
+  connector?: string;
+  database?: string;
+  databaseSchema?: string;
+  tableName?: string;
+  columnName?: string;
+  histogramMethod?: V1HistogramMethod;
+  priority?: number;
+}
+
+export interface V1ColumnRollupIntervalRequest {
+  instanceId?: string;
+  connector?: string;
+  database?: string;
+  databaseSchema?: string;
+  tableName?: string;
+  columnName?: string;
+  priority?: number;
+}
+
+export interface V1ColumnRugHistogramRequest {
+  instanceId?: string;
+  connector?: string;
+  database?: string;
+  databaseSchema?: string;
+  tableName?: string;
+  columnName?: string;
+  priority?: number;
+}
+
+export interface V1ColumnTimeGrainRequest {
+  instanceId?: string;
+  connector?: string;
+  database?: string;
+  databaseSchema?: string;
+  tableName?: string;
+  columnName?: string;
+  priority?: number;
+}
+
+export interface V1ColumnTimeRangeRequest {
+  instanceId?: string;
+  connector?: string;
+  database?: string;
+  databaseSchema?: string;
+  tableName?: string;
+  columnName?: string;
+  priority?: number;
+}
+
+export interface V1ColumnTimeSeriesRequest {
+  instanceId?: string;
+  connector?: string;
+  database?: string;
+  databaseSchema?: string;
+  tableName?: string;
+  measures?: ColumnTimeSeriesRequestBasicMeasure[];
+  timestampColumnName?: string;
+  timeRange?: V1TimeSeriesTimeRange;
+  pixels?: number;
+  sampleSize?: number;
+  priority?: number;
+  timeZone?: string;
+}
+
+export interface V1ColumnTopKRequest {
+  instanceId?: string;
+  connector?: string;
+  database?: string;
+  databaseSchema?: string;
+  tableName?: string;
+  columnName?: string;
+  agg?: string;
+  k?: number;
+  priority?: number;
 }
 
 export interface V1CompleteResponse {
@@ -1020,6 +1128,16 @@ export interface V1HealthResponse {
   networkError?: string;
   instancesHealth?: V1HealthResponseInstancesHealth;
 }
+
+export type V1HistogramMethod =
+  (typeof V1HistogramMethod)[keyof typeof V1HistogramMethod];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const V1HistogramMethod = {
+  HISTOGRAM_METHOD_UNSPECIFIED: "HISTOGRAM_METHOD_UNSPECIFIED",
+  HISTOGRAM_METHOD_FD: "HISTOGRAM_METHOD_FD",
+  HISTOGRAM_METHOD_DIAGNOSTIC: "HISTOGRAM_METHOD_DIAGNOSTIC",
+} as const;
 
 export type V1InstanceVariables = { [key: string]: string };
 
@@ -1928,16 +2046,16 @@ export interface V1Query {
   metricsViewTimeSeriesRequest?: V1MetricsViewTimeSeriesRequest;
   metricsViewTotalsRequest?: V1MetricsViewTotalsRequest;
   metricsViewRowsRequest?: V1MetricsViewRowsRequest;
-  columnRollupIntervalRequest?: ColumnRollupIntervalRequest;
-  columnTopKRequest?: ColumnTopKRequest;
-  columnNullCountRequest?: ColumnNullCountRequest;
-  columnDescriptiveStatisticsRequest?: ColumnDescriptiveStatisticsRequest;
-  columnTimeGrainRequest?: ColumnTimeGrainRequest;
-  columnNumericHistogramRequest?: ColumnNumericHistogramRequest;
-  columnRugHistogramRequest?: ColumnRugHistogramRequest;
-  columnTimeRangeRequest?: ColumnTimeRangeRequest;
-  columnCardinalityRequest?: ColumnCardinalityRequest;
-  columnTimeSeriesRequest?: ColumnTimeSeriesRequest;
+  columnRollupIntervalRequest?: V1ColumnRollupIntervalRequest;
+  columnTopKRequest?: V1ColumnTopKRequest;
+  columnNullCountRequest?: V1ColumnNullCountRequest;
+  columnDescriptiveStatisticsRequest?: V1ColumnDescriptiveStatisticsRequest;
+  columnTimeGrainRequest?: V1ColumnTimeGrainRequest;
+  columnNumericHistogramRequest?: V1ColumnNumericHistogramRequest;
+  columnRugHistogramRequest?: V1ColumnRugHistogramRequest;
+  columnTimeRangeRequest?: V1ColumnTimeRangeRequest;
+  columnCardinalityRequest?: V1ColumnCardinalityRequest;
+  columnTimeSeriesRequest?: V1ColumnTimeSeriesRequest;
   tableCardinalityRequest?: V1TableCardinalityRequest;
   tableColumnsRequest?: V1TableColumnsRequest;
   tableRowsRequest?: V1TableRowsRequest;
@@ -2432,6 +2550,12 @@ export interface V1TimeRangeSummary {
   min?: string;
   max?: string;
   watermark?: string;
+}
+
+export interface V1TimeSeriesTimeRange {
+  start?: string;
+  end?: string;
+  interval?: V1TimeGrain;
 }
 
 export type V1TimeSeriesValueRecords = { [key: string]: unknown };

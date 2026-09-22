@@ -20,11 +20,11 @@ import { derived, type Readable, writable } from "svelte/store";
 import {
   getOneofValue,
   valueAsNumber,
-} from "@rilldata/web-common/lib/proto-utils.ts";
+} from "@rilldata/web-common/lib/proto-utils";
 import type {
   HistogramMethod,
   TimeSeriesValue,
-} from "@rilldata/web-common/proto/gen/rill/runtime/v1/queries_pb.ts";
+} from "@rilldata/web-common/proto/gen/rill/runtime/v1/queries_pb";
 
 export function isFetching(...queries) {
   return queries.some((query) => query?.isFetching);

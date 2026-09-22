@@ -12,8 +12,7 @@
     isFetching,
   } from "../queries";
   import NullPercentageSpark from "./sparks/NullPercentageSpark.svelte";
-  import { FromProtoTimeGrainMap } from "@rilldata/web-common/features/dashboards/proto-state/enum-maps.ts";
-  import { TimeGrain } from "@rilldata/web-common/proto/gen/rill/runtime/v1/time_grain_pb.ts";
+  import { FromProtoTimeGrainMap } from "@rilldata/web-common/features/dashboards/proto-state/enum-maps";
 
   export let connector: string;
   export let database: string;
@@ -105,7 +104,9 @@
       style:height="{timestampDetailHeight + 64 + 28}px"
       bind:clientWidth={secondWidth}
     >
-      {#if $timeSeries?.data?.length && $timeSeries?.estimatedRollupInterval?.interval && $timeSeries?.smallestTimegrain}
+      <!-- The time grains are proto enums, so an unspecified grain is 0: check
+           for presence rather than truthiness, as the JSON names used to be. -->
+      {#if $timeSeries?.data?.length && $timeSeries?.estimatedRollupInterval?.interval !== undefined && $timeSeries?.smallestTimegrain !== undefined}
         <TimestampDetail
           width={secondWidth - 56 || 400}
           mouseover={true}
@@ -113,11 +114,10 @@
           {data}
           {spark}
           rollupTimeGrain={FromProtoTimeGrainMap[
-            $timeSeries?.estimatedRollupInterval?.interval ??
-              TimeGrain.UNSPECIFIED
+            $timeSeries.estimatedRollupInterval.interval
           ]}
           estimatedSmallestTimeGrain={FromProtoTimeGrainMap[
-            $timeSeries?.smallestTimegrain ?? TimeGrain.UNSPECIFIED
+            $timeSeries.smallestTimegrain
           ]}
         />
       {/if}
