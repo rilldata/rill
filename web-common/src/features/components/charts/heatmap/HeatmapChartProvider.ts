@@ -9,7 +9,6 @@ import {
 } from "@rilldata/web-common/features/components/charts/types";
 import { mergeFilters } from "@rilldata/web-common/features/dashboards/pivot/pivot-merge-filters";
 import { createInExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
-import type { TimeAndFilterStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
 import type {
   V1Expression,
   V1MetricsViewAggregationDimension,
@@ -31,6 +30,8 @@ import {
   getFilterWithNullHandling,
   vegaSortToAggregationSort,
 } from "../query-util";
+import type { ExpressionState } from "@rilldata/web-common/features/dashboards/filters/ExpressionFilterManager.svelte.ts";
+import type { TimeControlState } from "@rilldata/web-common/features/dashboards/time-controls/TimeFilterManager.svelte.ts";
 import { withEphemeralMeasures } from "../ephemeral-measures";
 
 export type HeatmapChartSpec = {
@@ -76,7 +77,8 @@ export class HeatmapChartProvider {
 
   createChartDataQuery(
     client: RuntimeClient,
-    timeAndFilterStore: Readable<TimeAndFilterStore>,
+    filterStore: Readable<ExpressionState>,
+    timeControlStore: Readable<TimeControlState>,
     visible?: Readable<boolean>,
   ): ChartDataQuery {
     const visibleStore = visible ?? readable(true);
@@ -90,17 +92,18 @@ export class HeatmapChartProvider {
 
     // Create top level options store for X axis
     const xAxisQueryOptionsStore = derived(
-      [timeAndFilterStore, visibleStore],
-      ([$timeAndFilterStore, $visible]) => {
-        const { timeRange, where, hasTimeSeries } = $timeAndFilterStore;
+      [filterStore, timeControlStore, visibleStore],
+      ([$filterStore, $timeControlStore, $visible]) => {
+        const { expr } = $filterStore;
+        const { apiTimeRange, hasTimeSeries } = $timeControlStore;
         const enabled =
           $visible &&
-          canQueryWithTimeRange(hasTimeSeries, timeRange) &&
+          canQueryWithTimeRange(hasTimeSeries, apiTimeRange) &&
           !!config.x?.field &&
           config?.x?.type !== "temporal" &&
           !Array.isArray(config.x?.sort);
 
-        const xWhere = getFilterWithNullHandling(where, config.x);
+        const xWhere = getFilterWithNullHandling(expr, config.x);
 
         let limit = this.defaultNominalLimit.toString();
         if (config.x?.limit) {
@@ -121,7 +124,7 @@ export class HeatmapChartProvider {
             dimensions: [{ name: config.x?.field }],
             sort: xAxisSort ? [xAxisSort] : undefined,
             where: xWhere,
-            timeRange,
+            timeRange: apiTimeRange,
             limit,
           },
           {
@@ -135,17 +138,18 @@ export class HeatmapChartProvider {
 
     // Create top level options store for Y axis
     const yAxisQueryOptionsStore = derived(
-      [timeAndFilterStore, visibleStore],
-      ([$timeAndFilterStore, $visible]) => {
-        const { timeRange, where, hasTimeSeries } = $timeAndFilterStore;
+      [filterStore, timeControlStore, visibleStore],
+      ([$filterStore, $timeControlStore, $visible]) => {
+        const { expr } = $filterStore;
+        const { apiTimeRange, hasTimeSeries } = $timeControlStore;
         const enabled =
           $visible &&
-          canQueryWithTimeRange(hasTimeSeries, timeRange) &&
+          canQueryWithTimeRange(hasTimeSeries, apiTimeRange) &&
           !!config.y?.field &&
           config?.y?.type !== "temporal" &&
           !Array.isArray(config.y?.sort);
 
-        const yWhere = getFilterWithNullHandling(where, config.y);
+        const yWhere = getFilterWithNullHandling(expr, config.y);
 
         let limit = this.defaultNominalLimit.toString();
         if (config.y?.limit) {
@@ -166,7 +170,7 @@ export class HeatmapChartProvider {
             dimensions: [{ name: config.y?.field }],
             sort: yAxisSort ? [yAxisSort] : undefined,
             where: yWhere,
-            timeRange,
+            timeRange: apiTimeRange,
             limit,
           },
           {
@@ -182,16 +186,22 @@ export class HeatmapChartProvider {
     const yAxisQuery = createQuery(yAxisQueryOptionsStore);
 
     const queryOptionsStore = derived(
-      [timeAndFilterStore, xAxisQuery, yAxisQuery, visibleStore],
-      ([$timeAndFilterStore, $xAxisQuery, $yAxisQuery, $visible]) => {
-        const { timeRange, where, timeGrain, hasTimeSeries } =
-          $timeAndFilterStore;
+      [filterStore, timeControlStore, xAxisQuery, yAxisQuery, visibleStore],
+      ([
+        $filterStore,
+        $timeControlStore,
+        $xAxisQuery,
+        $yAxisQuery,
+        $visible,
+      ]) => {
+        const { expr } = $filterStore;
+        const { apiTimeRange, timeGrain, hasTimeSeries } = $timeControlStore;
         const xTopNData = $xAxisQuery?.data?.data;
         const yTopNData = $yAxisQuery?.data?.data;
 
         const enabled =
           $visible &&
-          canQueryWithTimeRange(hasTimeSeries, timeRange) &&
+          canQueryWithTimeRange(hasTimeSeries, apiTimeRange) &&
           (config.x?.type === "nominal" && !Array.isArray(config.x?.sort)
             ? xTopNData !== undefined
             : true) &&
@@ -199,7 +209,7 @@ export class HeatmapChartProvider {
             ? yTopNData !== undefined
             : true);
 
-        let combinedWhere: V1Expression | undefined = where;
+        let combinedWhere: V1Expression | undefined = expr;
 
         let includedXValues: string[] = [];
         let includedYValues: string[] = [];
@@ -274,7 +284,7 @@ export class HeatmapChartProvider {
                 ? [{ name: config.x?.field, desc: true }]
                 : undefined,
             where: combinedWhere,
-            timeRange,
+            timeRange: apiTimeRange,
             limit: "5000", // Higher limit for heatmap to show more data points
           },
           {

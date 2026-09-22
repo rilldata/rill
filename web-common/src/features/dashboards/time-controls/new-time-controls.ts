@@ -409,9 +409,12 @@ export async function deriveInterval(
       cacheBust,
     });
 
-    const timeRange = response.resolvedTimeRanges?.[0];
+    const timeRange = response.resolvedTimeRanges?.find(
+      (rtr) => rtr.expression === name,
+    );
 
     if (!timeRange?.start || !timeRange?.end) {
+      console.error("Invalid time range: no start/end");
       return { interval: Interval.invalid("Invalid time range") };
     }
 

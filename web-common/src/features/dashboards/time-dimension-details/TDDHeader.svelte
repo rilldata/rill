@@ -11,17 +11,11 @@
     dimensionSearchText,
     metricsExplorerStore,
   } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
-  import ComparisonSelector from "@rilldata/web-common/features/dashboards/time-controls/ComparisonSelector.svelte";
+  import ComparisonSelector from "@rilldata/web-common/features/dashboards/time-controls/comparison/ComparisonSelector.svelte";
   import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
-  import type {
-    DashboardTimeControls,
-    TimeRange,
-  } from "@rilldata/web-common/lib/time/types";
-  import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
   import ExportMenu from "../../exports/ExportMenu.svelte";
   import { featureFlags } from "../../feature-flags";
   import { PivotChipType } from "../pivot/types";
-  import { useTimeControlStore } from "../time-controls/time-control-store";
   import TimeGrainSelector from "../time-controls/TimeGrainSelector.svelte";
   import ExcludeButton from "../toolbars/ExcludeButton.svelte";
   import SearchButton from "../toolbars/SearchButton.svelte";
@@ -64,9 +58,15 @@
       dimensions: { getDimensionDisplayName },
     },
     dashboardStore,
-    validSpecStore,
+    dashboardConfigProvider,
     expressionFilterManager,
+    timeFilterManager,
   } = stateManagers;
+
+  let { metricsViewsProvider } = $derived(dashboardConfigProvider);
+  let { largestMinTimeGrain } = $derived(metricsViewsProvider);
+
+  let { timeGrain, timeStart, timeEnd } = $derived(timeFilterManager);
 
   const ephemeralDefsByName = $derived(
     new Map(
@@ -140,10 +140,9 @@
 
   function createPivot() {
     showReplacePivotModal = false;
-    const dashboardGrain = $dashboardStore?.selectedTimeRange?.interval;
-    if (!dashboardGrain || !expandedMeasureName) return;
+    if (!timeGrain || !expandedMeasureName) return;
 
-    const timeGrain = V1TimeGrainToDateTimeUnit[dashboardGrain];
+    const dateUnit = V1TimeGrainToDateTimeUnit[timeGrain];
     const rowDimensions = dimensionName
       ? [
           {
@@ -155,8 +154,8 @@
       : [];
     metricsExplorerStore.createPivot(exploreName, rowDimensions, [
       {
-        id: dashboardGrain,
-        title: timeGrain,
+        id: timeGrain,
+        title: dateUnit,
         type: PivotChipType.Time,
       },
       {
@@ -165,52 +164,6 @@
         type: PivotChipType.Measure,
       },
     ]);
-  }
-
-  const timeControlsStore = useTimeControlStore(stateManagers);
-
-  const minTimeGrain = $derived($timeControlsStore.minTimeGrain);
-  const timeStart = $derived($timeControlsStore.timeStart);
-  const timeEnd = $derived($timeControlsStore.timeEnd);
-  const selectedTimeRange = $derived($timeControlsStore.selectedTimeRange);
-
-  const activeTimeGrain = $derived(selectedTimeRange?.interval);
-
-  const baseTimeRange = $derived(
-    selectedTimeRange?.start &&
-      selectedTimeRange?.end && {
-        name: selectedTimeRange?.name,
-        start: selectedTimeRange.start,
-        end: selectedTimeRange.end,
-      },
-  );
-
-  function onTimeGrainSelect(timeGrain: V1TimeGrain) {
-    if (baseTimeRange) {
-      makeTimeSeriesTimeRangeAndUpdateAppState(
-        baseTimeRange,
-        timeGrain,
-        $dashboardStore?.selectedComparisonTimeRange,
-      );
-    }
-  }
-
-  function makeTimeSeriesTimeRangeAndUpdateAppState(
-    timeRange: TimeRange,
-    timeGrain: V1TimeGrain,
-    /** we should only reset the comparison range when the user has explicitly chosen a new
-     * time range. Otherwise, the current comparison state should continue to be the
-     * source of truth.
-     */
-    comparisonTimeRange: DashboardTimeControls | undefined,
-  ) {
-    metricsExplorerStore.selectTimeRange(
-      exploreName,
-      timeRange,
-      timeGrain,
-      comparisonTimeRange,
-      $validSpecStore.data?.metricsView ?? {},
-    );
   }
 </script>
 
@@ -233,11 +186,11 @@
       <div class="flex items-center gap-x-2">
         <TimeGrainSelector
           tdd
-          {activeTimeGrain}
-          {onTimeGrainSelect}
+          activeTimeGrain={timeGrain}
+          onTimeGrainSelect={(grain) => timeFilterManager.onSelectGrain(grain)}
           {timeStart}
           {timeEnd}
-          {minTimeGrain}
+          minTimeGrain={largestMinTimeGrain}
         />
         <SearchableFilterChip
           label={selectedMeasureLabel}

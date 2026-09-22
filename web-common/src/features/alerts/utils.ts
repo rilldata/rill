@@ -1,7 +1,6 @@
 import { type AlertFormValues } from "@rilldata/web-common/features/alerts/form-utils";
 import { AllMeasureFilterTypeOptions } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-options";
 import { TIME_COMPARISON } from "@rilldata/web-common/lib/time/config";
-import type { DashboardTimeControls } from "@rilldata/web-common/lib/time/types.ts";
 import type { V1MetricsViewSpec } from "@rilldata/web-common/runtime-client";
 import type { TaintedFields } from "sveltekit-superforms";
 
@@ -24,7 +23,7 @@ export function isSomeFieldTainted(taintedFields: TaintedFields<any>) {
 
 export function generateAlertName(
   formValues: AlertFormValues,
-  selectedComparisonTimeRange: DashboardTimeControls | undefined,
+  selectedComparisonTimeRange: string | undefined,
   metricsViewSpec: V1MetricsViewSpec,
 ) {
   const firstCriteria = formValues.criteria[0];
@@ -43,11 +42,11 @@ export function generateAlertName(
 
   let comparisonTitle = "";
   if (
-    selectedComparisonTimeRange?.name &&
-    selectedComparisonTimeRange?.name in TIME_COMPARISON
+    selectedComparisonTimeRange &&
+    selectedComparisonTimeRange in TIME_COMPARISON
   ) {
     const label =
-      TIME_COMPARISON[selectedComparisonTimeRange.name].label.toLowerCase();
+      TIME_COMPARISON[selectedComparisonTimeRange].label.toLowerCase();
     comparisonTitle = ` vs ${label}`;
   }
 

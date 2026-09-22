@@ -5,56 +5,60 @@
   import Trash from "@rilldata/web-common/components/icons/Trash.svelte";
   import { ExpressionFilterManager } from "@rilldata/web-common/features/dashboards/filters/ExpressionFilterManager.svelte.ts";
   import ReadonlyExpressionFilters from "@rilldata/web-common/features/dashboards/filters/ReadonlyExpressionFilters.svelte";
-  import type { V1TimeRange } from "@rilldata/web-common/runtime-client";
+  import { V1ExploreComparisonMode } from "@rilldata/web-common/runtime-client";
+  import { TimeFilterManager } from "@rilldata/web-common/features/dashboards/time-controls/TimeFilterManager.svelte.ts";
 
   let { canvasName }: { canvasName: string } = $props();
 
   const runtimeClient = useRuntimeClient();
 
   let {
-    canvasEntity: {
-      specStore,
-      clearDefaultFilters,
-      timeManager: {
-        state: { interval: _interval },
-        defaultTimeRangeStore,
-        defaultComparisonRangeStore,
-      },
-      dashboardProvider,
-    },
+    canvasEntity: { specStore, clearDefaultFilters, dashboardProvider },
   } = $derived(getCanvasStore(canvasName, runtimeClient.instanceId));
 
-  let interval = $derived($_interval);
-
-  let defaultTimeRange: V1TimeRange | undefined = $derived(
-    $defaultTimeRangeStore
-      ? {
-          expression: $defaultTimeRangeStore,
-        }
-      : undefined,
-  );
-  let defaultComparisonRange: V1TimeRange | undefined = $derived(
-    $defaultComparisonRangeStore
-      ? {
-          expression: $defaultComparisonRangeStore,
-        }
-      : undefined,
-  );
-
-  let defaultFiltersManager = $derived(
+  let defaultExpressionFiltersManager = $derived(
     new ExpressionFilterManager(
       dashboardProvider.metricsViewsProvider,
       dashboardProvider.yamlConfigProvider,
     ),
   );
+  let defaultTimeFilterManager = $derived(
+    new TimeFilterManager(
+      runtimeClient,
+      dashboardProvider.metricsViewsProvider,
+      dashboardProvider.yamlConfigProvider,
+      false,
+    ),
+  );
+
   $effect(() => {
     const filterExpr = $specStore.data?.canvas?.defaultPreset?.filterExpr ?? {};
     dashboardProvider.metricsViewsProvider.metricsViewNames.forEach((key) => {
-      defaultFiltersManager.setExprForMetricsView(
+      defaultExpressionFiltersManager.setExprForMetricsView(
         key,
         filterExpr[key]?.expression,
       );
     });
+  });
+
+  $effect(() => {
+    if (!$specStore.data?.canvas?.defaultPreset?.timeRange) {
+      defaultTimeFilterManager.setUrlParams(new URLSearchParams());
+      return;
+    }
+
+    void defaultTimeFilterManager.onSelectRange(
+      $specStore.data.canvas.defaultPreset.timeRange,
+    );
+
+    if (
+      $specStore.data.canvas.defaultPreset.comparisonMode ===
+      V1ExploreComparisonMode.EXPLORE_COMPARISON_MODE_TIME
+    ) {
+      defaultTimeFilterManager.setShowComparison(true);
+    } else {
+      defaultTimeFilterManager.setShowComparison(false);
+    }
   });
 </script>
 
@@ -66,11 +70,8 @@
     </p>
 
     <ReadonlyExpressionFilters
-      expressionFilterManager={defaultFiltersManager}
-      displayTimeRange={defaultTimeRange}
-      displayComparisonTimeRange={defaultComparisonRange}
-      queryTimeStart={interval?.start?.toUTC().toISO()}
-      queryTimeEnd={interval?.end?.toUTC().toISO()}
+      expressionFilterManager={defaultExpressionFiltersManager}
+      timeFilterManager={defaultTimeFilterManager}
     />
   </div>
 

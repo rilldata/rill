@@ -1,203 +1,132 @@
 <script lang="ts">
+  import * as Popover from "@rilldata/web-common/components/popover";
+  import * as Tooltip from "@rilldata/web-common/components/tooltip-v2";
+  import RangeDisplay from "@rilldata/web-common/features/dashboards/time-controls/super-pill/components/RangeDisplay.svelte";
+  import PrimaryRangeTooltip from "@rilldata/web-common/features/dashboards/time-controls/super-pill/new-time-dropdown/PrimaryRangeTooltip.svelte";
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
-  import { DateTime, Duration, Interval } from "luxon";
-  import type {
-    ISODurationString,
-    NamedRange,
-    RangeBuckets,
-  } from "../../new-time-controls";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import {
     ALL_TIME_RANGE_ALIAS,
+    bucketYamlRanges,
     getRangeLabel,
     RILL_TO_LABEL,
-  } from "../../new-time-controls";
-  import CalendarPlusDateInput from "@rilldata/web-common/features/dashboards/time-controls/super-pill/components/CalendarPlusDateInput.svelte";
-  import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
+  } from "@rilldata/web-common/features/dashboards/time-controls/new-time-controls.ts";
+  import { getAbbreviationForIANA } from "@rilldata/web-common/lib/time/timezone";
+  import { DateTime } from "luxon";
+  import type { MetricsViewsProvider } from "@rilldata/web-common/features/metrics-views/providers/MetricsViewsProvider.svelte.ts";
   import TimeRangeSearch from "@rilldata/web-common/features/dashboards/time-controls/super-pill/components/TimeRangeSearch.svelte";
-  import { parseRillTime } from "../../../url-state/time-ranges/parser";
+  import TimeRangeOptionGroup from "@rilldata/web-common/features/dashboards/time-controls/super-pill/new-time-dropdown/TimeRangeOptionGroup.svelte";
+  import Calendar from "@rilldata/web-common/components/icons/Calendar.svelte";
+  import Globe from "@rilldata/web-common/components/icons/Globe.svelte";
+  import SyntaxElement from "@rilldata/web-common/features/dashboards/time-controls/super-pill/components/SyntaxElement.svelte";
+  import ZoneContent from "@rilldata/web-common/features/dashboards/time-controls/super-pill/components/ZoneContent.svelte";
+  import { Clock, Check } from "lucide-svelte";
+  import {
+    MinSupportedGrain,
+    V1TimeGrainToDateTimeUnit,
+  } from "@rilldata/web-common/lib/time/new-grains.ts";
+  import CalendarPlusDateInput from "@rilldata/web-common/features/dashboards/time-controls/super-pill/components/CalendarPlusDateInput.svelte";
   import {
     RillAllTimeInterval,
     RillIsoInterval,
     RillPeriodToGrainInterval,
-    RillTimeLabel,
-    type RillTime,
-  } from "../../../url-state/time-ranges/RillTime";
-  import {
-    getGrainOrder,
-    V1TimeGrainToDateTimeUnit,
-  } from "@rilldata/web-common/lib/time/new-grains";
-  import { getTruncationGrain } from "@rilldata/web-common/lib/time/rill-time-grains";
-  import * as Popover from "@rilldata/web-common/components/popover";
-  import TimeRangeOptionGroup from "./TimeRangeOptionGroup.svelte";
-  import RangeDisplay from "../components/RangeDisplay.svelte";
-  import TruncationSelector from "./TruncationSelector.svelte";
-  import { overrideRillTimeRef } from "../../../url-state/time-ranges/parser";
-  import { getAbbreviationForIANA } from "@rilldata/web-common/lib/time/timezone";
-  import * as Tooltip from "@rilldata/web-common/components/tooltip-v2";
-  import ZoneContent from "../components/ZoneContent.svelte";
-  import SyntaxElement from "../components/SyntaxElement.svelte";
-  import Globe from "@rilldata/web-common/components/icons/Globe.svelte";
-  import Calendar from "@rilldata/web-common/components/icons/Calendar.svelte";
-  import {
-    constructAsOfString,
-    constructNewString,
-  } from "../../new-time-controls";
-  import PrimaryRangeTooltip from "./PrimaryRangeTooltip.svelte";
-  import { Clock, Check } from "lucide-svelte";
-  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
+  } from "@rilldata/web-common/features/dashboards/url-state/time-ranges/RillTime.ts";
+  import TruncationSelector from "@rilldata/web-common/features/dashboards/time-controls/super-pill/new-time-dropdown/TruncationSelector.svelte";
+  import type { TimeFiltersConfig } from "@rilldata/web-common/features/dashboards/time-controls/time-filters-config.ts";
+  import type { YAMLConfigProvider } from "@rilldata/web-common/features/dashboards/providers/YAMLConfigProvider.svelte.ts";
+  import { getTimeDimensionOptions } from "@rilldata/web-common/features/dashboards/time-controls/time-range-utils.ts";
+  import type { TimeFilterManager } from "@rilldata/web-common/features/dashboards/time-controls/TimeFilterManager.svelte.ts";
 
-  export let timeString: string | undefined;
-  export let interval: Interval<true> | undefined;
-  export let timeGrain: V1TimeGrain | undefined;
-  export let zone: string;
-  export let showDefaultItem: boolean;
-  export let context: string;
-  export let minDate: DateTime<true> | undefined;
-  export let maxDate: DateTime<true> | undefined;
-  export let rangeBuckets: RangeBuckets;
-  export let watermark: DateTime | undefined;
-  export let smallestTimeGrain: V1TimeGrain | undefined;
-  export let defaultTimeRange: NamedRange | ISODurationString | undefined;
-  export let allowCustomTimeRange = true;
-  export let maxQueryTimeRange: Duration | undefined = undefined;
-  export let availableTimeZones: string[];
-  export let lockTimeZone = false;
-  export let showFullRange = true;
-  export let timeDimensions: {
-    value: string;
-    label: string;
-    description?: string;
-  }[];
-  export let primaryTimeDimension: string | undefined;
-  export let selectedTimeDimension: string | undefined;
-  export let onTimeDimensionSelect: ((dimension: string) => void) | undefined =
-    undefined;
-  export let onSelectTimeZone: (timeZone: string) => void;
-  export let onSelectRange: (range: string) => void;
+  let {
+    timeFilterManager,
+    metricsViewsProvider,
+    yamlConfigProvider,
+    context,
+    config,
+  }: {
+    timeFilterManager: TimeFilterManager;
+    metricsViewsProvider: MetricsViewsProvider;
+    yamlConfigProvider: YAMLConfigProvider;
+    context: string;
+    config: TimeFiltersConfig;
+  } = $props();
+  let {
+    showTimeDimensionSelector = false,
+    lockTimeZone = false,
+    showFullRange = true,
+    showWatermark = false,
+  } = $derived(config);
 
-  let open = false;
-  $: allTimeAllowed = !(
-    maxQueryTimeRange && maxQueryTimeRange.as("milliseconds") > 0
+  let {
+    timeRange: timeString,
+    timeGrain,
+    timeZone,
+    timeDimension,
+
+    minDate,
+    maxDate,
+
+    interval,
+    parsedTime,
+    truncationGrain,
+    ref,
+    snapToEnd,
+  } = $derived(timeFilterManager);
+
+  let { largestMinTimeGrain, maxQueryTimeRange } =
+    $derived(metricsViewsProvider);
+
+  let {
+    restrictedDimensions,
+    primaryTimeDimension,
+    timeRanges,
+    allowCustomTimeRange,
+    timeZones,
+  } = $derived(yamlConfigProvider);
+
+  let rangeBuckets = $derived(
+    bucketYamlRanges(timeRanges, largestMinTimeGrain, true, maxQueryTimeRange),
   );
-  let searchComponent: TimeRangeSearch;
-  let filter = "";
-  let parsedTime: RillTime | undefined = undefined;
-  let showCalendarPicker = false;
-  let timeZonePickerOpen = false;
-  let timeAxisPickerOpen = false;
-  let searchValue: string | undefined = timeString;
 
-  $: if (timeString) {
-    try {
-      parsedTime = parseRillTime(timeString);
-    } catch {
-      parsedTime = undefined;
-    }
-  }
+  let timeDimensions = $derived(
+    getTimeDimensionOptions(
+      metricsViewsProvider.dimensions,
+      restrictedDimensions,
+    ),
+  );
 
-  $: hideTruncationSelector =
+  let watermark = $derived(
+    showWatermark && metricsViewsProvider.timeRangeSummary?.watermark
+      ? DateTime.fromISO(metricsViewsProvider.timeRangeSummary.watermark)
+      : undefined,
+  );
+
+  let open = $state(false);
+  // svelte-ignore state_referenced_locally
+  let searchValue: string | undefined = $state(timeString);
+  let timeZonePickerOpen = $state(false);
+  let timeAxisPickerOpen = $state(false);
+  let showCalendarPicker = $state(false);
+
+  let allTimeAllowed = $derived(
+    !(maxQueryTimeRange && maxQueryTimeRange.as("milliseconds") > 0),
+  );
+  let selectedLabel = $derived(getRangeLabel(timeString));
+  let zoneAbbreviation = $derived(
+    getAbbreviationForIANA(maxDate ?? DateTime.now(), timeZone),
+  );
+  let dateTimeAnchor = $derived(returnAnchor(ref, timeZone));
+
+  let usingLegacyTime = $derived(parsedTime?.isOldFormat);
+  let hideTruncationSelector = $derived(
     parsedTime?.interval instanceof RillIsoInterval ||
-    parsedTime?.interval instanceof RillAllTimeInterval;
-
-  $: usingLegacyTime = parsedTime?.isOldFormat;
-
-  $: hasAsOfClause = !!parsedTime?.asOfLabel;
-
-  $: snapToEnd = usingLegacyTime ? true : !!parsedTime?.asOfLabel?.offset;
-  $: ref = usingLegacyTime
-    ? RillTimeLabel.Latest
-    : parsedTime?.asOfLabel?.label;
-
-  $: truncationGrain = getTruncationGrain(parsedTime);
-
-  $: dateTimeAnchor = returnAnchor(ref, zone);
-
-  $: selectedLabel = getRangeLabel(timeString);
-
-  // Resolve the active time axis to a defined time dimension, if any. When the
-  // timeseries points at a raw column this is undefined and the tooltip omits
-  // the dimension name and description.
-  $: activeTimeDimension = timeDimensions.find(
-    ({ value }) => value === (selectedTimeDimension || primaryTimeDimension),
+      parsedTime?.interval instanceof RillAllTimeInterval,
   );
 
-  $: zoneAbbreviation = getAbbreviationForIANA(maxDate ?? DateTime.now(), zone);
-
-  $: smallestTimeGrainOrder = getGrainOrder(
-    smallestTimeGrain || V1TimeGrain.TIME_GRAIN_MINUTE,
+  let timeColumn = $derived(timeDimension || primaryTimeDimension);
+  let activeTimeDimension = $derived(
+    timeDimensions.find((d) => d.value === timeColumn),
   );
-
-  function handleRangeSelect(range: string, ignoreSnap?: boolean) {
-    try {
-      const parsed = parseRillTime(range);
-
-      const isPeriodToDate =
-        parsed.interval instanceof RillPeriodToGrainInterval;
-
-      const rangeGrainOrder =
-        getGrainOrder(parsed.rangeGrain) - (isPeriodToDate ? 1 : 0);
-
-      const asOfGrainOrder = getGrainOrder(truncationGrain);
-
-      const shouldAppendAsOfString =
-        !parsed.asOfLabel && !(parsed.interval instanceof RillIsoInterval);
-
-      if (asOfGrainOrder > rangeGrainOrder && parsed.rangeGrain) {
-        truncationGrain = parsed.rangeGrain;
-      }
-
-      if (shouldAppendAsOfString) {
-        const isTruncationGrainAllowed =
-          getGrainOrder(truncationGrain) >= smallestTimeGrainOrder;
-        const newAsOfString = constructAsOfString(
-          ref ?? RillTimeLabel.Latest,
-          ignoreSnap
-            ? undefined
-            : truncationGrain
-              ? isTruncationGrainAllowed
-                ? truncationGrain
-                : parsed.rangeGrain
-              : (smallestTimeGrain ?? V1TimeGrain.TIME_GRAIN_MINUTE),
-          hasAsOfClause || snapToEnd ? snapToEnd : true,
-        );
-
-        overrideRillTimeRef(parsed, newAsOfString);
-      }
-
-      onSelectRange(parsed.toString());
-      closeMenu();
-    } catch {
-      // This function is called in a controlled manner and should not throw
-    }
-  }
-
-  function onSelectGrain(grain: V1TimeGrain | undefined) {
-    if (!timeString) return;
-
-    const newString = constructNewString({
-      currentString: timeString,
-      truncationGrain: grain === truncationGrain ? undefined : grain,
-      snapToEnd: grain === truncationGrain ? false : snapToEnd,
-      ref: ref,
-    });
-
-    onSelectRange(newString);
-  }
-
-  function onSelectAsOfOption(
-    ref: RillTimeLabel | string | undefined,
-    inclusive: boolean,
-  ) {
-    if (!timeString) return;
-    const newString = constructNewString({
-      currentString: timeString,
-      truncationGrain: truncationGrain,
-      snapToEnd: ref === "watermark" ? false : inclusive,
-      ref,
-    });
-
-    onSelectRange(newString);
-  }
 
   // Zone is taken as a param to make it reactive
   function returnAnchor(
@@ -214,8 +143,21 @@
     }
   }
 
-  function closeMenu() {
+  function onSelectRange(range: string, ignoreSnap?: boolean) {
     open = false;
+    void timeFilterManager.onSelectRange(range, ignoreSnap);
+  }
+
+  function onSelectTimeZone(zone: string) {
+    open = false;
+    timeZonePickerOpen = false;
+    timeFilterManager.onSelectZone(zone);
+  }
+
+  function onSelectTimeDimension(dim: string) {
+    open = false;
+    timeAxisPickerOpen = false;
+    timeFilterManager.onSelectTimeDimension(dim);
   }
 </script>
 
@@ -298,15 +240,10 @@
     <TimeRangeSearch
       inError={!parsedTime && !!timeString && !usingLegacyTime}
       width={showCalendarPicker ? 456 : 224}
-      bind:this={searchComponent}
       {context}
       {timeString}
       bind:searchValue
-      onSelectRange={(range) => {
-        open = false;
-
-        handleRangeSelect(range);
-      }}
+      {onSelectRange}
     />
 
     <div
@@ -318,43 +255,28 @@
         class="flex flex-col w-56 overflow-y-auto overflow-x-hidden flex-none py-1"
       >
         <div class="overflow-x-hidden">
-          {#if showDefaultItem && defaultTimeRange}
-            <TimeRangeOptionGroup
-              {filter}
-              {timeString}
-              options={[parseRillTime(defaultTimeRange)]}
-              onClick={handleRangeSelect}
-            />
-          {/if}
-
           <TimeRangeOptionGroup
-            {filter}
             {timeString}
             options={rangeBuckets.custom}
-            onClick={handleRangeSelect}
+            onClick={onSelectRange}
           />
 
           <TimeRangeOptionGroup
-            {filter}
             {timeString}
             options={rangeBuckets.latest}
-            onClick={handleRangeSelect}
+            onClick={onSelectRange}
           />
 
           <TimeRangeOptionGroup
-            {filter}
             {timeString}
             options={rangeBuckets.periodToDate}
-            onClick={handleRangeSelect}
+            onClick={onSelectRange}
           />
 
           <TimeRangeOptionGroup
-            {filter}
             {timeString}
             options={rangeBuckets.previous}
-            onClick={(r) => {
-              handleRangeSelect(r, true);
-            }}
+            onClick={(r) => void onSelectRange(r, true)}
           />
 
           {#if allTimeAllowed}
@@ -363,9 +285,7 @@
                 type="button"
                 role="menuitem"
                 class="group truncate h-7 p-2 text-popover-foreground justify-between overflow-hidden hover:bg-popover-accent rounded-sm w-full select-none flex items-center"
-                onclick={() => {
-                  handleRangeSelect("inf");
-                }}
+                onclick={() => void onSelectRange("inf")}
               >
                 <span class:font-bold={timeString === ALL_TIME_RANGE_ALIAS}>
                   {RILL_TO_LABEL[ALL_TIME_RANGE_ALIAS]}
@@ -432,23 +352,19 @@
               >
                 <ZoneContent
                   {context}
-                  {availableTimeZones}
-                  activeTimeZone={zone}
+                  availableTimeZones={timeZones}
+                  activeTimeZone={timeZone}
                   referencePoint={dateTimeAnchor ??
                     interval?.end ??
                     DateTime.now()}
-                  onSelectTimeZone={(z) => {
-                    onSelectTimeZone(z);
-                    closeMenu();
-                    timeZonePickerOpen = false;
-                  }}
+                  {onSelectTimeZone}
                 />
               </Popover.Content>
             </Popover.Root>
           </div>
         {/if}
 
-        {#if timeDimensions.length > 1 && onTimeDimensionSelect}
+        {#if showTimeDimensionSelector && timeDimensions.length > 1}
           <div class="w-full h-fit px-1">
             <div class="h-px w-full bg-border my-1"></div>
 
@@ -489,14 +405,10 @@
                           aria-label={m.dashboard_select_time_dimension({
                             label,
                           })}
-                          onclick={() => {
-                            onTimeDimensionSelect(value);
-                            closeMenu();
-                            timeAxisPickerOpen = false;
-                          }}
+                          onclick={() => onSelectTimeDimension(value)}
                         >
                           {label}
-                          {#if value === (selectedTimeDimension || primaryTimeDimension)}
+                          {#if value === (timeDimension || primaryTimeDimension)}
                             <Check class="size-4" color="var(--fg-primary)" />
                           {/if}
                         </button>
@@ -524,15 +436,15 @@
         <div class="bg-surface-overlay border-l p-3 size-full overflow-y-auto">
           <CalendarPlusDateInput
             {interval}
-            {zone}
+            zone={timeZone}
             minTimeGrain={V1TimeGrainToDateTimeUnit[
-              smallestTimeGrain ?? V1TimeGrain.TIME_GRAIN_MINUTE
+              largestMinTimeGrain ?? MinSupportedGrain
             ]}
             {minDate}
             {maxDate}
             {maxQueryTimeRange}
             onApply={() => {
-              if (searchValue) handleRangeSelect(searchValue);
+              if (searchValue) onSelectRange(searchValue);
             }}
             updateRange={(string) => {
               searchValue = string;
@@ -553,16 +465,16 @@
     isPeriodToDate={parsedTime?.interval instanceof RillPeriodToGrainInterval}
     {watermark}
     latest={maxDate}
-    {smallestTimeGrain}
+    smallestTimeGrain={largestMinTimeGrain}
     {snapToEnd}
     {ref}
-    {zone}
-    onSelectEnding={onSelectGrain}
+    zone={timeZone}
+    onSelectEnding={(g) => timeFilterManager.onSelectGrainEnding(g)}
     onToggleAlignment={(inclusive) => {
-      onSelectAsOfOption(ref, inclusive);
+      timeFilterManager.onSelectAsOfOption(ref, inclusive);
     }}
     onSelectAsOfOption={(o) => {
-      onSelectAsOfOption(o, snapToEnd);
+      timeFilterManager.onSelectAsOfOption(o, snapToEnd);
     }}
   />
 {/if}

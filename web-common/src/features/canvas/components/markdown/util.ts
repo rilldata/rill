@@ -130,11 +130,11 @@ export function getResolveTemplatedStringQueryOptions(
       derived(
         [
           component.specStore,
-          component.timeAndFilterStore,
+          component.timeFilters.getTimeControlStore(),
           component.parent?.specStore ?? null,
-          component.parent.timeManager.hasTimeSeriesStore,
+          component.parent.timeFilterManager.getTimeControlStore(),
         ],
-        ([spec, timeAndFilters, parentSpec, hasTimeSeries]) => {
+        ([spec, { apiTimeRange }, parentSpec, { hasTimeSeries }]) => {
           const content = spec?.content ?? "";
           const applyFormatting = spec?.apply_formatting === true;
           const needsTemplating = hasTemplatingSyntax(content);
@@ -144,7 +144,7 @@ export function getResolveTemplatedStringQueryOptions(
           const requestBody = buildRequestBody({
             content,
             applyFormatting,
-            timeRange: timeAndFilters?.timeRange,
+            timeRange: apiTimeRange,
             exprByMetricsView,
             metricsViews,
           });
@@ -154,7 +154,7 @@ export function getResolveTemplatedStringQueryOptions(
             !!content &&
             !!client.instanceId &&
             !!requestBody &&
-            (!hasTimeSeries || !!timeAndFilters?.timeRange);
+            (!hasTimeSeries || !!apiTimeRange);
 
           const body: QueryServiceResolveTemplatedStringBody =
             !enabled || !requestBody

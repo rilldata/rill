@@ -27,6 +27,7 @@ import { getContext, setContext } from "svelte";
 import { derived, get, type Readable } from "svelte/store";
 import type { CompoundQueryResult } from "@rilldata/web-common/features/compound-query-result";
 import type { ExpressionFilterManager } from "@rilldata/web-common/features/dashboards/filters/ExpressionFilterManager.svelte.ts";
+import type { TimeFilterManager } from "@rilldata/web-common/features/dashboards/time-controls/TimeFilterManager.svelte.ts";
 
 export const DASHBOARD_STATE_SYNC_KEY = Symbol("state-sync");
 
@@ -65,6 +66,7 @@ export class DashboardStateSync {
     private readonly extraPrefix: string | undefined,
     private readonly dataLoader: DashboardStateDataLoader,
     private readonly expressionFilterManager: ExpressionFilterManager,
+    private readonly timeFilterManager: TimeFilterManager,
   ) {
     this.exploreStore = useExploreState(exploreName);
     this.timeControlStore = createTimeControlStoreFromName(
@@ -172,6 +174,7 @@ export class DashboardStateSync {
     if (!rillDefaultExploreURLParams) return;
     this.updating = true;
     this.expressionFilterManager.updating = true;
+    this.timeFilterManager.updating = true;
 
     const pageState = get(page);
 
@@ -228,6 +231,9 @@ export class DashboardStateSync {
 
     this.expressionFilterManager.setUrlParams(redirectUrl.searchParams);
     this.expressionFilterManager.updating = false;
+    this.timeFilterManager.setUrlParams(redirectUrl.searchParams);
+    this.timeFilterManager.updating = false;
+    log("INIT", redirectUrl);
     // If the current url same as the new url then there is no need to do anything
     if (redirectUrl.search === pageState.url.search) {
       this.initialized = true;
@@ -284,6 +290,7 @@ export class DashboardStateSync {
     // the finally ensures a throw below cannot leave it stuck.
     this.updating = true;
     this.expressionFilterManager.updating = true;
+    this.timeFilterManager.updating = true;
     let redirectUrl: URL | undefined = undefined;
     // TODO: reassess this try-catch. resolveTimeRanges has error handling already.
     try {
@@ -346,13 +353,16 @@ export class DashboardStateSync {
       this.updating = false;
       if (redirectUrl) {
         this.expressionFilterManager.setUrlParams(redirectUrl.searchParams);
+        this.timeFilterManager.setUrlParams(redirectUrl.searchParams);
       }
       this.expressionFilterManager.updating = false;
+      this.timeFilterManager.updating = false;
     }
     // Try-finally without a catch. Rest of the code is not run if the above try body throws.
 
     if (!redirectUrl) return; // type-safety
 
+    log("URL", redirectUrl);
     // If the url doesn't need to be changed further then we can skip the goto
     if (redirectUrl.search === pageState.url.search) {
       return;
@@ -414,6 +424,7 @@ export class DashboardStateSync {
       }
 
       this.expressionFilterManager.setUrlParams(newUrl.searchParams);
+      log("GOTO", newUrl);
       // If the state didnt result in a new url then skip goto.
       // This avoids adding redundant urls to the history.
       if (newUrl.search === pageState.url.search) {
@@ -427,4 +438,12 @@ export class DashboardStateSync {
       this.expressionFilterManager.updating = false;
     }
   }
+}
+
+function log(label: string, toUrl: URL) {
+  const fromUrlSearch = get(page).url.search;
+  const areEqual = fromUrlSearch === toUrl.search;
+  console.log(
+    `[${label}] ${fromUrlSearch} =${areEqual ? "x" : "="}> ${toUrl.search}`,
+  );
 }

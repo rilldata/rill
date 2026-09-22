@@ -10,7 +10,13 @@
   import { YAMLConfigProvider } from "@rilldata/web-common/features/dashboards/providers/YAMLConfigProvider.svelte.ts";
   import { MetricsViewsProvider } from "@rilldata/web-common/features/metrics-views/providers/MetricsViewsProvider.svelte.ts";
   import ReadonlyExpressionFilters from "@rilldata/web-common/features/dashboards/filters/ReadonlyExpressionFilters.svelte";
-  import { onDestroy } from "svelte";
+  import { onDestroy, untrack } from "svelte";
+  import { TimeFilterManager } from "@rilldata/web-common/features/dashboards/time-controls/TimeFilterManager.svelte.ts";
+  import { ExploreStateURLParams } from "@rilldata/web-common/features/dashboards/url-state/url-params.ts";
+  import {
+    mapV1TimeRangeToComparisonTimeOption,
+    mapV1TimeRangeToRillTime,
+  } from "@rilldata/web-common/features/dashboards/time-controls/time-range-mappers.ts";
 
   let {
     metricsViewName,
@@ -31,6 +37,7 @@
   const metricsViewProvider = new MetricsViewsProvider(runtimeClient, []);
   $effect(() => metricsViewProvider.setMetricsViewNames([metricsViewName]));
   const yamlConfigProvider = new YAMLConfigProvider();
+
   const expressionFilterManager = new ExpressionFilterManager(
     metricsViewProvider,
     yamlConfigProvider,
@@ -42,6 +49,32 @@
       dimensionsWithInlistFilter,
     ),
   );
+
+  const timeFilterManager = new TimeFilterManager(
+    runtimeClient,
+    metricsViewProvider,
+    yamlConfigProvider,
+    false,
+  );
+  $effect(() => {
+    if (!timeRange || !timeFilterManager.specLoaded) return;
+    const urlParams = new URLSearchParams();
+    urlParams.set(
+      ExploreStateURLParams.TimeRange,
+      mapV1TimeRangeToRillTime(timeRange),
+    );
+
+    if (comparisonTimeRange) {
+      urlParams.set(
+        ExploreStateURLParams.ComparisonTimeRange,
+        mapV1TimeRangeToComparisonTimeOption(timeRange, comparisonTimeRange),
+      );
+    }
+
+    untrack(() => {
+      timeFilterManager.setUrlParams(urlParams);
+    });
+  });
 
   // time range could be an empty object sometimes
   let hasTimeRange = $derived(timeRange && Object.keys(timeRange).length > 0);
@@ -59,11 +92,5 @@
   <MetadataLabel>
     {m.alert_filters_label({ count: String(filtersLength) })}
   </MetadataLabel>
-  <ReadonlyExpressionFilters
-    {expressionFilterManager}
-    displayTimeRange={timeRange}
-    displayComparisonTimeRange={comparisonTimeRange}
-    queryTimeStart={timeRange?.start}
-    queryTimeEnd={timeRange?.end}
-  />
+  <ReadonlyExpressionFilters {expressionFilterManager} {timeFilterManager} />
 </div>

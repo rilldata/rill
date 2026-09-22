@@ -17,7 +17,6 @@ import {
 } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
 import { mergeFilters } from "@rilldata/web-common/features/dashboards/pivot/pivot-merge-filters";
 import { createInExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
-import type { TimeAndFilterStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
 import type {
   MetricsViewSpecMeasure,
   V1Expression,
@@ -46,6 +45,8 @@ import {
   isSortByDelta,
   vegaSortToAggregationSort,
 } from "../query-util";
+import type { ExpressionState } from "@rilldata/web-common/features/dashboards/filters/ExpressionFilterManager.svelte.ts";
+import type { TimeControlState } from "@rilldata/web-common/features/dashboards/time-controls/TimeFilterManager.svelte.ts";
 
 export type CartesianChartSpec = {
   metrics_view: string;
@@ -162,7 +163,8 @@ export class CartesianChartProvider {
 
   createChartDataQuery(
     client: RuntimeClient,
-    timeAndFilterStore: Readable<TimeAndFilterStore>,
+    filterStore: Readable<ExpressionState>,
+    timeControlStore: Readable<TimeControlState>,
     visible?: Readable<boolean>,
   ): ChartDataQuery {
     const visibleStore = visible ?? readable(true);
@@ -219,28 +221,29 @@ export class CartesianChartProvider {
 
     // Create topN query for x dimension
     const topNXQueryOptionsStore = derived(
-      [timeAndFilterStore, visibleStore],
-      ([$timeAndFilterStore, $visible]) => {
+      [filterStore, timeControlStore, visibleStore],
+      ([$filterStore, $timeControlStore, $visible]) => {
+        const { expr } = $filterStore;
         const {
-          timeRange,
-          where,
+          apiTimeRange,
           hasTimeSeries,
-          comparisonTimeRange,
-          showTimeComparison,
-        } = $timeAndFilterStore;
+          apiComparisonTimeRange,
+          showComparison,
+        } = $timeControlStore;
+
         const enabled =
           $visible &&
-          canQueryWithTimeRange(hasTimeSeries, timeRange) &&
+          canQueryWithTimeRange(hasTimeSeries, apiTimeRange) &&
           config.x?.type === "nominal" &&
           !Array.isArray(config.x?.sort) &&
           !!dimensionName;
 
-        const topNWhere = getFilterWithNullHandling(where, config.x);
+        const topNWhere = getFilterWithNullHandling(expr, config.x);
 
         const isComparisonActive =
-          showTimeComparison &&
-          !!comparisonTimeRange?.start &&
-          !!comparisonTimeRange?.end;
+          showComparison &&
+          !!apiComparisonTimeRange?.start &&
+          !!apiComparisonTimeRange?.end;
 
         let xAxisSort = this.resolveXAxisSort(
           config,
@@ -276,7 +279,7 @@ export class CartesianChartProvider {
                 },
               },
             ];
-            topNComparisonTimeRange = comparisonTimeRange;
+            topNComparisonTimeRange = apiComparisonTimeRange;
           }
         }
 
@@ -288,7 +291,7 @@ export class CartesianChartProvider {
             dimensions: [{ name: dimensionName }],
             sort: xAxisSort ? [xAxisSort] : undefined,
             where: topNWhere,
-            timeRange: hasTimeSeries ? timeRange : undefined,
+            timeRange: hasTimeSeries ? apiTimeRange : undefined,
             comparisonTimeRange: topNComparisonTimeRange,
             limit: limit?.toString(),
           },
@@ -305,19 +308,24 @@ export class CartesianChartProvider {
 
     // Create topN query for color dimension (skipped when explicit values are provided)
     const topNColorQueryOptionsStore = derived(
-      [timeAndFilterStore, visibleStore],
-      ([$timeAndFilterStore, $visible]) => {
-        const { timeRange, where, hasTimeSeries } = $timeAndFilterStore;
+      [filterStore, timeControlStore, visibleStore],
+      ([$filterStore, $timeControlStore, $visible]) => {
+        const { expr } = $filterStore;
+        const { apiTimeRange, hasTimeSeries } = $timeControlStore;
         const enabled =
           $visible &&
           !hasExplicitColorValues &&
-          canQueryWithTimeRange(hasTimeSeries, timeRange, requiresTimeRange) &&
+          canQueryWithTimeRange(
+            hasTimeSeries,
+            apiTimeRange,
+            requiresTimeRange,
+          ) &&
           hasColorDimension &&
           !!colorDimensionName &&
           !!colorLimit;
 
         const topNWhere = getFilterWithNullHandling(
-          where,
+          expr,
           typeof config.color === "object" ? config.color : undefined,
         );
 
@@ -331,7 +339,7 @@ export class CartesianChartProvider {
               ? [{ name: config.y.field, desc: true }]
               : undefined,
             where: topNWhere,
-            timeRange,
+            timeRange: apiTimeRange,
             limit: colorLimit?.toString(),
           },
           {
@@ -346,22 +354,32 @@ export class CartesianChartProvider {
     const topNColorQuery = createQuery(topNColorQueryOptionsStore);
 
     const queryOptionsStore = derived(
-      [timeAndFilterStore, topNXQuery, topNColorQuery, visibleStore],
-      ([$timeAndFilterStore, $topNXQuery, $topNColorQuery, $visible]) => {
+      [filterStore, timeControlStore, topNXQuery, topNColorQuery, visibleStore],
+      ([
+        $filterStore,
+        $timeControlStore,
+        $topNXQuery,
+        $topNColorQuery,
+        $visible,
+      ]) => {
+        const { expr } = $filterStore;
         const {
-          timeRange,
-          where,
+          apiTimeRange,
           timeGrain,
-          comparisonTimeRange,
-          showTimeComparison,
+          apiComparisonTimeRange,
+          showComparison,
           hasTimeSeries,
-        } = $timeAndFilterStore;
+        } = $timeControlStore;
         const topNXData = $topNXQuery?.data?.data;
 
         const topNColorData = $topNColorQuery?.data?.data;
         const enabled =
           $visible &&
-          canQueryWithTimeRange(hasTimeSeries, timeRange, requiresTimeRange) &&
+          canQueryWithTimeRange(
+            hasTimeSeries,
+            apiTimeRange,
+            requiresTimeRange,
+          ) &&
           !!measures?.length &&
           !!dimensions?.length &&
           (hasColorDimension &&
@@ -377,7 +395,7 @@ export class CartesianChartProvider {
             : true);
 
         let combinedWhere: V1Expression | undefined = getFilterWithNullHandling(
-          where,
+          expr,
           config.x,
         );
 
@@ -439,8 +457,8 @@ export class CartesianChartProvider {
             .map((measureName) => {
               // Comparison values cannot be computed for ephemeral measures.
               if (
-                showTimeComparison &&
-                comparisonTimeRange?.start &&
+                showComparison &&
+                apiComparisonTimeRange?.start &&
                 !ephemeralNames.has(measureName)
               ) {
                 const result: V1MetricsViewAggregationMeasure[] = [
@@ -465,12 +483,12 @@ export class CartesianChartProvider {
             measures: withEphemeralMeasures(config, measuresWithComparison),
             dimensions,
             where: combinedWhere,
-            timeRange,
+            timeRange: apiTimeRange,
             comparisonTimeRange:
-              showTimeComparison &&
-              comparisonTimeRange?.start &&
-              comparisonTimeRange?.end
-                ? comparisonTimeRange
+              showComparison &&
+              apiComparisonTimeRange?.start &&
+              apiComparisonTimeRange?.end
+                ? apiComparisonTimeRange
                 : undefined,
             fillMissing: requiresTimeRange,
             limit: hasColorDimension || !limit ? "5000" : limit?.toString(),

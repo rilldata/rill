@@ -2,75 +2,59 @@
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import InputLabel from "@rilldata/web-common/components/forms/InputLabel.svelte";
   import Switch from "@rilldata/web-common/components/forms/Switch.svelte";
-  import CanvasComparisonPill from "@rilldata/web-common/features/canvas/filters/CanvasComparisonPill.svelte";
   import { getCanvasStore } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
-  import SuperPill from "@rilldata/web-common/features/dashboards/time-controls/super-pill/SuperPill.svelte";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
-  import type { TimeState } from "../../stores/time-state";
   import { ALL_TIME_RANGE_ALIAS } from "@rilldata/web-common/features/dashboards/time-controls/new-time-controls";
+  import type { TimeFilterManager } from "@rilldata/web-common/features/dashboards/time-controls/TimeFilterManager.svelte.ts";
+  import TimeFilters from "@rilldata/web-common/features/dashboards/time-controls/TimeFilters.svelte";
+  import type { MetricsViewsProvider } from "@rilldata/web-common/features/metrics-views/providers/MetricsViewsProvider.svelte.ts";
+  import type { YAMLConfigProvider } from "@rilldata/web-common/features/dashboards/providers/YAMLConfigProvider.svelte.ts";
+  import { syncStoreWithSource } from "@rilldata/web-common/lib/store-utils/url-params-store-sync.svelte.ts";
 
-  export let id: string;
-  export let localTimeControls: TimeState;
-  export let showComparison: boolean;
-  export let showGrain: boolean;
-  export let canvasName: string;
-  export let metricsView: string | null;
+  let {
+    id,
+    localTimeFilters,
+    metricsViewsProvider,
+    yamlConfigProvider,
+    showComparison,
+    showGrain,
+    canvasName,
+    updateLocalTimeFilterString,
+  }: {
+    id: string;
+    localTimeFilters: TimeFilterManager;
+    metricsViewsProvider: MetricsViewsProvider;
+    yamlConfigProvider: YAMLConfigProvider;
+    showComparison: boolean;
+    showGrain: boolean;
+    canvasName: string;
+    updateLocalTimeFilterString: (newFilterString: string) => void;
+  } = $props();
 
   const runtimeClient = useRuntimeClient();
 
-  $: ({ instanceId } = runtimeClient);
+  let { instanceId } = $derived(runtimeClient);
 
-  $: ({
-    canvasEntity: {
-      timeManager: {
-        defaultTimeRangeStore,
-        timeRangeOptionsStore,
-        minTimeGrainMap,
-        availableTimeZonesStore,
-        state: { rangeStore: globalRangeStore, minMaxTimeStamps },
-      },
-    },
-  } = getCanvasStore(canvasName, instanceId));
+  let {
+    canvasEntity: { timeFilterManager, dashboardProvider },
+  } = $derived(getCanvasStore(canvasName, instanceId));
+  // svelte-ignore state_referenced_locally
+  syncStoreWithSource(
+    localTimeFilters,
+    async (newUrlParams) =>
+      updateLocalTimeFilterString(newUrlParams.toString()),
+    false,
+  );
 
-  $: ({
-    interval: intervalStore,
-    rangeStore,
-    comparisonIntervalStore,
-    showTimeComparisonStore,
-    timeZoneStore,
-    grainStore,
-    comparisonRangeStore,
-    set,
-    searchParamsStore,
-    clearAll,
-  } = localTimeControls);
+  let { curParams } = $derived(localTimeFilters);
 
-  $: minMax = $minMaxTimeStamps;
+  let globalRange = $derived(timeFilterManager.timeRange);
 
-  $: globalRange = $globalRangeStore;
-  $: availableTimeZones = $availableTimeZonesStore;
+  let localFiltersEnabled = $derived(Boolean(curParams.size));
 
-  $: minDate = minMax?.min;
-  $: maxDate = minMax?.max;
-
-  $: localFiltersEnabled = Boolean($searchParamsStore.size);
-
-  $: selectedRangeAlias = $rangeStore;
-  $: activeTimeGrain = $grainStore;
-  $: defaultTimeRange = $defaultTimeRangeStore;
-  $: timeRanges = $timeRangeOptionsStore;
-  $: showTimeComparison = $showTimeComparisonStore;
-
-  $: activeTimeZone = $timeZoneStore;
-  $: minTimeGrain = metricsView ? $minTimeGrainMap.get(metricsView) : undefined;
-
-  $: interval = $intervalStore;
-
-  $: timeStart = interval?.start.toUTC().toISO();
-  $: timeEnd = interval?.end.toUTC().toISO();
-
-  $: comparisonInterval = $comparisonIntervalStore;
-  $: comparisonRange = $comparisonRangeStore;
+  let defaultTimeRange = $derived(
+    dashboardProvider.yamlConfigProvider.defaultTimeRange,
+  );
 </script>
 
 <div class="flex flex-col gap-y-1 pt-1">
@@ -84,11 +68,13 @@
     />
     <Switch
       checked={localFiltersEnabled}
-      onclick={() => {
+      onCheckedChange={() => {
         if (localFiltersEnabled) {
-          clearAll();
+          localTimeFilters.setUrlParams(new URLSearchParams());
         } else {
-          set.range(globalRange ?? defaultTimeRange ?? ALL_TIME_RANGE_ALIAS);
+          void localTimeFilters.onSelectRange(
+            globalRange ?? defaultTimeRange ?? ALL_TIME_RANGE_ALIAS,
+          );
         }
       }}
       small
@@ -103,60 +89,17 @@
   </div>
 
   {#if localFiltersEnabled}
-    <div class="flex flex-row flex-wrap pt-2 gap-y-1.5 items-center">
-      <SuperPill
-        context="filters-input"
-        {minDate}
-        {maxDate}
-        {selectedRangeAlias}
-        showPivot={!showGrain}
-        {minTimeGrain}
-        {defaultTimeRange}
-        {availableTimeZones}
-        {timeRanges}
-        complete={false}
-        {interval}
-        {timeStart}
-        {timeEnd}
-        {activeTimeGrain}
-        {activeTimeZone}
-        hidePan
-        showFullRange={false}
-        showDefaultItem={false}
-        applyRange={(timeRange) => {
-          const string = `${timeRange.start.toISOString()},${timeRange.end.toISOString()}`;
-          set.range(string);
-        }}
-        onSelectRange={set.range}
-        onTimeGrainSelect={set.grain}
-        onSelectTimeZone={set.zone}
-        onPan={() => {}}
-      />
-
-      {#if showComparison}
-        <CanvasComparisonPill
-          {minTimeGrain}
-          {minDate}
-          {maxDate}
-          {interval}
-          selectedRange={selectedRangeAlias}
-          {activeTimeGrain}
-          showFullRange={false}
-          {comparisonInterval}
-          {comparisonRange}
-          {showTimeComparison}
-          {activeTimeZone}
-          onDisplayTimeComparison={set.comparison}
-          onSetSelectedComparisonRange={(range) => {
-            if (range.name === "CUSTOM_COMPARISON_RANGE") {
-              const stringRange = `${range.start.toISOString()},${range.end.toISOString()}`;
-              set.comparison(stringRange);
-            } else if (range.name) {
-              set.comparison(range.name);
-            }
-          }}
-        />
-      {/if}
-    </div>
+    <TimeFilters
+      timeFilterManager={localTimeFilters}
+      {metricsViewsProvider}
+      {yamlConfigProvider}
+      context="filter-input"
+      config={{
+        showFullRange: false,
+        hidePan: true,
+        showGrainSelector: showGrain,
+        showComparisonSelector: showComparison,
+      }}
+    />
   {/if}
 </div>

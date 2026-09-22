@@ -10,13 +10,11 @@ import { mapEphemeralMeasuresForRequest } from "@rilldata/web-common/features/da
 import type { EphemeralMeasureDef } from "@rilldata/web-common/features/dashboards/ephemeral-measures/types";
 import { sanitiseExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import {
-  mapSelectedComparisonTimeRangeToV1TimeRange,
-  mapSelectedTimeRangeToV1TimeRange,
+  mapTimeManagerComparisonRangeToV1TimeRange,
+  mapTimeManagerRangeToV1TimeRange,
 } from "@rilldata/web-common/features/dashboards/time-controls/time-range-mappers.ts";
-import type { TimeControlState } from "@rilldata/web-common/features/dashboards/stores/TimeControls.ts";
 import { getInitialScheduleFormValues } from "@rilldata/web-common/features/scheduled-reports/time-utils.ts";
 import type {
-  V1ExploreSpec,
   V1Expression,
   V1MetricsViewAggregationRequest,
   V1Operation,
@@ -24,6 +22,7 @@ import type {
 import type { ValidationErrors } from "sveltekit-superforms";
 import { yup, type ValidationAdapter } from "sveltekit-superforms/adapters";
 import { object, array, string } from "yup";
+import type { TimeFilterManager } from "@rilldata/web-common/features/dashboards/time-controls/TimeFilterManager.svelte.ts";
 
 export type AlertFormValues = {
   name: string;
@@ -51,17 +50,11 @@ export type AlertFormValues = {
 export function getAlertQueryArgsFromFormValues(
   formValues: AlertFormValues,
   expr: V1Expression | undefined,
-  timeControlArgs: TimeControlState,
-  exploreSpec: V1ExploreSpec,
+  timeFilterManager: TimeFilterManager | undefined,
 ): V1MetricsViewAggregationRequest {
-  const timeRange = mapSelectedTimeRangeToV1TimeRange(
-    timeControlArgs.selectedTimeRange,
-    timeControlArgs.selectedTimezone,
-    exploreSpec,
-  );
-  const comparisonTimeRange = mapSelectedComparisonTimeRangeToV1TimeRange(
-    timeControlArgs.selectedComparisonTimeRange,
-    timeControlArgs.showTimeComparison,
+  const timeRange = mapTimeManagerRangeToV1TimeRange(timeFilterManager);
+  const comparisonTimeRange = mapTimeManagerComparisonRangeToV1TimeRange(
+    timeFilterManager,
     timeRange,
   );
 

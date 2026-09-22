@@ -6,27 +6,29 @@
   import type { ComponentSpec } from "../../components/types";
   import type { AllKeys, FilterInputParam } from "../types";
 
-  export let component: BaseCanvasComponent;
+  let { component }: { component: BaseCanvasComponent } = $props();
 
-  $: ({
+  let {
     specStore,
     type,
     localExpressionFilters,
-    localTimeControls,
+    localTimeFilters,
+    metricsViewsProvider,
+    yamlConfigProvider,
     parent: { name: canvasName },
-    timeAndFilterStore,
-  } = component);
+  } = $derived(component);
 
-  $: localParamValues = $specStore;
+  let localParamValues = $derived($specStore);
 
-  $: inputParams = component.inputParams().filter;
+  let inputParams = $derived(component.inputParams().filter);
 
-  $: metricsView =
+  let metricsView = $derived(
     "metrics_view" in localParamValues
       ? (localParamValues.metrics_view ?? null)
-      : null;
+      : null,
+  );
 
-  $: excludedDimensions =
+  let excludedDimensions = $derived(
     type === "leaderboard"
       ? Object.fromEntries(
           (localParamValues as LeaderboardSpec).dimensions.map((d) => [
@@ -34,14 +36,14 @@
             true,
           ]),
         )
-      : {};
+      : {},
+  );
 
-  $: entries = Object.entries(inputParams) as [
-    AllKeys<ComponentSpec>,
-    FilterInputParam,
-  ][];
+  let entries = $derived(
+    Object.entries(inputParams) as [AllKeys<ComponentSpec>, FilterInputParam][],
+  );
 
-  $: ({ hasTimeSeries } = $timeAndFilterStore);
+  let { hasTimeSeries } = $derived(localTimeFilters);
 </script>
 
 <div>
@@ -52,10 +54,14 @@
           <TimeFiltersInput
             {canvasName}
             id={key}
-            {metricsView}
-            {localTimeControls}
+            {localTimeFilters}
+            {metricsViewsProvider}
+            {yamlConfigProvider}
             showComparison={config?.meta?.hasComparison}
             showGrain={config?.meta?.hasGrain}
+            updateLocalTimeFilterString={(newString) => {
+              component.updateProperty("time_filters", newString);
+            }}
           />
         {/if}
       {:else if config.type == "dimension_filters" && metricsView}

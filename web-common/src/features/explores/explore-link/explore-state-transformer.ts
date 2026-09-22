@@ -1,46 +1,47 @@
 import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
-import type { TimeAndFilterStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
-import { TimeRangePreset } from "@rilldata/web-common/lib/time/types";
+import { type DashboardTimeControls } from "@rilldata/web-common/lib/time/types";
+import type { ExpressionState } from "@rilldata/web-common/features/dashboards/filters/ExpressionFilterManager.svelte.ts";
+import type { TimeControlState } from "@rilldata/web-common/features/dashboards/time-controls/TimeFilterManager.svelte.ts";
 
 /**
  * Transforms time and filter store data into partial explore state
  */
 export function transformTimeAndFiltersToExploreState(
-  timeAndFilterStore: TimeAndFilterStore,
+  expressionState: ExpressionState,
+  timeControlState: TimeControlState,
 ): Partial<ExploreState> {
   const exploreState: Partial<ExploreState> = {};
 
-  if (timeAndFilterStore.where) {
-    exploreState.whereFilter = timeAndFilterStore.where;
+  if (expressionState.expr) {
+    exploreState.whereFilter = expressionState.expr;
   }
 
-  if (timeAndFilterStore.timeRangeState) {
-    exploreState.selectedTimeRange =
-      timeAndFilterStore.timeRangeState.selectedTimeRange;
-    exploreState.selectedTimezone =
-      timeAndFilterStore?.timeRange?.timeZone || "UTC";
+  if (timeControlState.timeRange && timeControlState.apiTimeRange) {
+    exploreState.selectedTimeRange = {
+      name: timeControlState.timeRange,
+      start: timeControlState.apiTimeRange.start
+        ? new Date(timeControlState.apiTimeRange.start)
+        : new Date(),
+      end: timeControlState.apiTimeRange.end
+        ? new Date(timeControlState.apiTimeRange.end)
+        : new Date(),
+      interval: timeControlState.timeGrain,
+    };
 
-    if (timeAndFilterStore.showTimeComparison) {
+    exploreState.selectedTimezone = timeControlState.timeZone;
+
+    if (
+      timeControlState.comparisonTimeRange &&
+      timeControlState.apiComparisonTimeRange
+    ) {
       exploreState.showTimeComparison = true;
-      exploreState.selectedComparisonTimeRange =
-        timeAndFilterStore.comparisonTimeRangeState?.selectedComparisonTimeRange;
+      exploreState.selectedComparisonTimeRange = {
+        name: timeControlState.comparisonTimeRange,
+      } as DashboardTimeControls;
     } else {
       exploreState.showTimeComparison = false;
       exploreState.selectedComparisonTimeRange = undefined;
     }
-  } else if (
-    timeAndFilterStore.timeRange &&
-    timeAndFilterStore.timeRange.start &&
-    timeAndFilterStore.timeRange.end
-  ) {
-    exploreState.selectedTimeRange = {
-      name: TimeRangePreset.CUSTOM,
-      interval: timeAndFilterStore.timeGrain,
-      start: new Date(timeAndFilterStore.timeRange.start),
-      end: new Date(timeAndFilterStore.timeRange.end),
-    };
-    exploreState.selectedTimezone =
-      timeAndFilterStore.timeRange.timeZone || "UTC";
   }
 
   return exploreState;

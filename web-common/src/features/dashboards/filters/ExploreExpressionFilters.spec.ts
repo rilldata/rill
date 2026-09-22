@@ -62,12 +62,10 @@ vi.mock("$app/stores", () => {
   };
 });
 
-// Tests filter interactions on the explore dashboard, where the filter bar writes to the explore
-// state and the url. Loading state from other sources is covered by DashboardStateManager.spec.ts.
+// Tests filter interactions on the explore dashboard, where the filter bar writes to the explore state and the url.
+// Loading state from other sources is covered by DashboardStateManager.spec.ts.
 //
-// The test bodies live in `test/expression-filters-suite.ts`, so that
-// StandaloneExpressionFilters.spec.ts can run them against a bar with no dashboard around it. See
-// `test/README.md`.
+// The test bodies live in `test/expression-filters-suite.ts`.
 describe("ExploreExpressionFilters", () => {
   const variant = useExploreFiltersVariant(hoistedPage);
 

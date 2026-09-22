@@ -34,12 +34,15 @@ export function useMetricFieldData(
   ephemeralMeasures: EphemeralMeasureDef[] | undefined = undefined,
   geoOnly: boolean = false,
 ) {
-  const { metricsView, timeManager } = ctx.canvasEntity;
+  const { metricsView, dashboardProvider } = ctx.canvasEntity;
 
   const metricsViewQuery = metricsView.getMetricsViewFromName(metricViewName);
 
   return derived(
-    [metricsViewQuery, timeManager.largestMinTimeGrain],
+    [
+      metricsViewQuery,
+      dashboardProvider.metricsViewsProvider.largestMinTimeGrainStore,
+    ],
     ([$metricsViewQuery, minTimeGrain]) => {
       const metricsViewSpec = $metricsViewQuery.metricsView;
       let items: string[] = [];

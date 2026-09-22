@@ -9,13 +9,13 @@ defaults:
 rows:
   - items:
       - kpi_grid:
-          metrics_view: AdBids_metrics
-          measures:
-            - total_records
-            - bid_price_sum
           comparison:
             - delta
             - percent_change
+          measures:
+            - total_records
+            - bid_price_sum
+          metrics_view: AdBids_metrics
         width: 12
     height: 128px
   - items:
