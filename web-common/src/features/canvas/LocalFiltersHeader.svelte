@@ -1,7 +1,7 @@
 <script lang="ts">
   import Filter from "@rilldata/web-common/components/icons/Filter.svelte";
   import type { BaseCanvasComponent } from "@rilldata/web-common/features/canvas/components/BaseCanvasComponent";
-  import { resolveComparisonRange } from "@rilldata/web-common/features/canvas/components/comparison-range";
+  import { resolveTimeFilters } from "@rilldata/web-common/features/canvas/components/time-filters";
   import type { ComponentFilterProperties } from "@rilldata/web-common/features/canvas/components/types";
   import type { V1TimeRange } from "@rilldata/web-common/runtime-client";
   import ReadonlyExpressionFilters from "@rilldata/web-common/features/dashboards/filters/ReadonlyExpressionFilters.svelte";
@@ -36,10 +36,11 @@
   $: selectedComparisonTimeRange =
     comparisonTimeRangeState?.selectedComparisonTimeRange;
 
-  // Only a comparison the component sets itself counts as a local filter.
-  $: hasLocalComparison =
-    resolveComparisonRange($specStore as ComponentFilterProperties).mode ===
-    "local";
+  // Only a range or comparison the component sets itself counts as a local filter.
+  $: ({ hasLocalTimeRange, comparison } = resolveTimeFilters(
+    ($specStore as ComponentFilterProperties).time_filters,
+  ));
+  $: hasLocalComparison = comparison.mode === "local";
 
   $: displayComparisonTimeRange =
     hasLocalComparison && showTimeComparison && selectedComparisonTimeRange
@@ -55,8 +56,6 @@
     ...$timeAndFilterStore.timeRange,
     isoDuration: selectedTimeRange?.name,
   };
-
-  $: hasTimeFilters = "time_filters" in $specStore && $specStore.time_filters;
 </script>
 
 {#if "metrics_view" in $specStore}
@@ -67,7 +66,7 @@
 
     <ReadonlyExpressionFilters
       expressionFilterManager={localExpressionFilters}
-      displayTimeRange={hasTimeFilters ? displayTimeRange : undefined}
+      displayTimeRange={hasLocalTimeRange ? displayTimeRange : undefined}
       {displayComparisonTimeRange}
       queryTimeStart={selectedTimeRange?.start?.toISOString()}
       queryTimeEnd={selectedTimeRange?.end?.toISOString()}

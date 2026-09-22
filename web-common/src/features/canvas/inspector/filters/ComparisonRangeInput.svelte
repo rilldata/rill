@@ -12,12 +12,11 @@
   import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
   import type { DateTime, Interval } from "luxon";
   import {
-    COMPARISON_RANGE_INHERIT,
-    COMPARISON_RANGE_NONE,
-    type ResolvedComparisonRange,
-  } from "../../components/comparison-range";
+    TIME_FILTER_INHERIT,
+    type ResolvedComparison,
+  } from "../../components/time-filters";
 
-  export let resolved: ResolvedComparisonRange;
+  export let resolved: ResolvedComparison;
   // What the canvas currently compares against, shown next to the inherit option.
   export let inheritedLabel: string;
   // The component's effective time range, which comparison options are computed against.
@@ -56,7 +55,7 @@
 
   $: label =
     resolved.mode === "inherit"
-      ? m.canvas_comparison_inherit()
+      ? m.canvas_inherit_from_canvas()
       : resolved.mode === "none"
         ? m.canvas_comparison_off()
         : isCustom
@@ -106,12 +105,12 @@
   <DropdownMenu.Content align="start" class="p-0 overflow-hidden">
     <div class="flex">
       <div class="flex flex-col border-r w-48 p-1">
-        <DropdownMenu.Item onclick={() => select(COMPARISON_RANGE_INHERIT)}>
+        <DropdownMenu.Item onclick={() => select(TIME_FILTER_INHERIT)}>
           <span class:font-bold={resolved.mode === "inherit"}>
-            {m.canvas_comparison_inherit()}
+            {m.canvas_inherit_from_canvas()}
           </span>
         </DropdownMenu.Item>
-        <DropdownMenu.Item onclick={() => select(COMPARISON_RANGE_NONE)}>
+        <DropdownMenu.Item onclick={() => select("none")}>
           <span class:font-bold={resolved.mode === "none"}>
             {m.canvas_comparison_off()}
           </span>

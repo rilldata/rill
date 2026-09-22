@@ -25,14 +25,15 @@ KPI grids display key performance indicators in a compact grid format with compa
   codeLanguage="yaml"
 />
 
-Comparison follows the canvas-level time comparison by default. Set `comparison_range` on a widget to override it: `none` turns delta and comparison off for that widget only, while a comparison range such as `rill-PW` (previous week) or `rill-PY` (previous year) compares the widget against its own previous period. This works on KPI grids, tables, pivots, leaderboards, and time-series charts.
+Widgets follow the canvas time range and time comparison by default. Override either one with `time_filters`, which takes the same `tr` and `compare_tr` parameters as an explore URL. `tr=inherit` keeps the canvas time range, and once `tr` is set a missing `compare_tr` turns delta and comparison off for that widget only. `compare_tr=inherit` follows the canvas comparison, and a comparison range such as `rill-PW` (previous week) or `rill-PY` (previous year) compares the widget against its own previous period. This works on KPI grids, tables, pivots, leaderboards, and time-series charts.
 
 ```yaml
 - kpi_grid:
     metrics_view: auction_metrics
     measures:
       - requests
-    comparison_range: none
+    # Canvas time range, comparison off
+    time_filters: tr=inherit
 ```
 
 ## Leaderboard

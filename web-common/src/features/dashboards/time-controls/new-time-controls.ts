@@ -143,6 +143,14 @@ export type AllTime = typeof ALL_TIME_RANGE_ALIAS;
 export type CustomRange = typeof CUSTOM_TIME_RANGE_ALIAS;
 export type ISODurationString = string;
 
+// An extra entry at the top of the range menu that hands the range back to a parent,
+// such as a canvas widget following the canvas time range.
+export type InheritRangeOption = {
+  label: string;
+  selected: boolean;
+  onSelect: () => void;
+};
+
 export type NamedRange =
   | RillPeriodToDate
   | RillPreviousPeriod

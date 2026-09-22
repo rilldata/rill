@@ -44,12 +44,10 @@ export type ComponentComparisonOptions =
   | "percent_change";
 
 export interface ComponentFilterProperties {
+  // Explore URL params (`tr`, `compare_tr`, `grain`, `tz`). See time-filters.ts for how
+  // `inherit` and an absent `compare_tr` resolve.
   time_filters?: string;
   dimension_filters?: string;
-  // How the component compares against a previous period: absent inherits the
-  // canvas comparison, "none" turns it off, and any comparison range (e.g.
-  // rill-PW or a custom start,end pair) overrides it.
-  comparison_range?: string;
 }
 
 export interface ComponentSize {

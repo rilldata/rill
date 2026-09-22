@@ -12,17 +12,15 @@ test.describe("canvas time filters", () => {
     await page.getByLabel("total_records KPI data").first().click();
 
     await page.getByRole("button", { name: "Time & filters" }).click();
-    await page
+
+    // The widget follows the canvas until a range is picked.
+    const timeRangeSelect = page
       .getByRole("complementary", { name: "Inspector Panel" })
-      .getByRole("switch")
-      .first()
-      .click();
+      .getByLabel("Select time range");
+    await expect(timeRangeSelect).toContainText("Inherit from canvas");
 
     // Set local time range
-    await page
-      .getByRole("complementary", { name: "Inspector Panel" })
-      .getByLabel("Select time range")
-      .click();
+    await timeRangeSelect.click();
     await page.getByRole("menuitem", { name: "Last 7 days" }).click();
 
     // Wait for the local time range to apply before choosing a comparison,
@@ -52,6 +50,17 @@ test.describe("canvas time filters", () => {
     });
 
     await expect(page.getByText("7,863")).toBeVisible();
+
+    // Handing the range back to the canvas drops the local override,
+    // so the widget follows the 6 hour canvas range again.
+    await page.getByLabel("total_records KPI data").first().click();
+    await page
+      .getByRole("button", { name: "Time & filters", exact: true })
+      .click();
+    await timeRangeSelect.click();
+    await page.getByRole("menuitem", { name: "Inherit from canvas" }).click();
+    await expect(timeRangeSelect).toContainText("Inherit from canvas");
+    await expect(page.getByText("7,863")).not.toBeVisible();
   });
 
   test("can disable comparison for a single widget", async ({ page }) => {
@@ -120,7 +129,7 @@ test.describe("canvas time filters", () => {
     await page
       .getByRole("complementary", { name: "Inspector Panel" })
       .getByRole("switch")
-      .nth(1)
+      .first()
       .click();
     await page
       .getByRole("complementary", { name: "Inspector Panel" })

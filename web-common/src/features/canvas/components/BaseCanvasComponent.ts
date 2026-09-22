@@ -1,6 +1,5 @@
 import type {
   CanvasComponentType,
-  ComponentFilterProperties,
   ComponentSize,
   ComponentSpec,
 } from "@rilldata/web-common/features/canvas/components/types";
@@ -34,9 +33,11 @@ import type {
   TimeRangeState,
 } from "../../dashboards/time-controls/time-control-store";
 import {
-  COMPARISON_RANGE_INHERIT,
-  resolveComparisonRange,
-} from "./comparison-range";
+  normalizeTimeFilters,
+  resolveTimeFilters,
+  stripInheritedTimeFilters,
+  TIME_FILTER_INHERIT,
+} from "./time-filters";
 import type {
   CanvasEntity,
   ComponentPath,
@@ -118,16 +119,16 @@ export abstract class BaseCanvasComponent<T = ComponentSpec> {
     );
 
     const yamlTimeFilterStore: SearchParamsStore = (() => {
-      const store = derived(this.specStore, (spec) => {
-        return new URLSearchParams(spec?.["time_filters"] ?? "");
+      const rawStore = derived(this.specStore, (spec) => {
+        return new URLSearchParams((spec?.["time_filters"] ?? "") as string);
       });
+      // The widget's own time state only sees real ranges; `inherit` is resolved here.
+      const store = derived(rawStore, stripInheritedTimeFilters);
       return {
         subscribe: store.subscribe,
         set: (map: Map<string, string | undefined>) => {
-          const searchParams = get(store);
-          const hadLocalTimeRange = searchParams.has(
-            ExploreStateURLParams.TimeRange,
-          );
+          const searchParams = get(rawStore);
+          const before = resolveTimeFilters(searchParams.toString());
 
           map.forEach((value, key) => {
             if (value === undefined || value === null || value === "") {
@@ -137,41 +138,32 @@ export abstract class BaseCanvasComponent<T = ComponentSpec> {
             }
           });
 
-          const changes: Record<string, unknown> = {
-            time_filters: searchParams.toString(),
-          };
-          // Enabling a local time range keeps the comparison the user currently sees.
-          // Without an explicit value, a local time range falls back to the legacy
-          // "comparison off" behaviour (see resolveComparisonRange).
+          const after = resolveTimeFilters(searchParams.toString());
+          // Picking a local time range on a fully inherited widget keeps the comparison it showed,
+          // since a local `tr` without `compare_tr` means no comparison.
           if (
-            !hadLocalTimeRange &&
-            searchParams.has(ExploreStateURLParams.TimeRange) &&
-            !get(this.specStore)?.["comparison_range"]
+            !before.hasLocalTimeRange &&
+            before.comparison.mode === "inherit" &&
+            after.hasLocalTimeRange &&
+            !searchParams.has(ExploreStateURLParams.ComparisonTimeRange)
           ) {
-            changes.comparison_range = COMPARISON_RANGE_INHERIT;
+            searchParams.set(
+              ExploreStateURLParams.ComparisonTimeRange,
+              TIME_FILTER_INHERIT,
+            );
           }
-          this.updateProperties(changes);
+
+          this.updateProperty(
+            "time_filters" as AllKeys<T>,
+            normalizeTimeFilters(searchParams) as T[AllKeys<T>],
+          );
           return true;
         },
         clearAll: () => {
-          const searchParams = get(store);
-
-          searchParams.forEach((_, key) => {
-            searchParams.delete(key);
-          });
-
-          const changes: Record<string, unknown> = {
-            time_filters: searchParams.toString(),
-          };
-          // An explicit "inherit" only exists to override the legacy fallback for
-          // local time ranges, so it is redundant once the local time range is gone.
-          if (
-            get(this.specStore)?.["comparison_range"] ===
-            COMPARISON_RANGE_INHERIT
-          ) {
-            changes.comparison_range = undefined;
-          }
-          this.updateProperties(changes);
+          this.updateProperty(
+            "time_filters" as AllKeys<T>,
+            undefined as T[AllKeys<T>],
+          );
         },
       };
     })();
@@ -194,7 +186,9 @@ export abstract class BaseCanvasComponent<T = ComponentSpec> {
       );
 
       this.localTimeControls.onUrlChange(
-        new URLSearchParams(spec?.["time_filters"] ?? ""),
+        stripInheritedTimeFilters(
+          new URLSearchParams((spec?.["time_filters"] ?? "") as string),
+        ),
       );
     });
   }
@@ -277,7 +271,10 @@ export abstract class BaseCanvasComponent<T = ComponentSpec> {
           timeEnd: globalInterval?.end.toUTC().toISO(),
         };
 
-        const usesLocalTimeRange = Boolean(componentSpec?.["time_filters"]);
+        const {
+          hasLocalTimeRange: usesLocalTimeRange,
+          comparison: resolvedComparison,
+        } = resolveTimeFilters(componentSpec?.["time_filters"] as string);
 
         if (usesLocalTimeRange) {
           timeRange = {
@@ -302,16 +299,13 @@ export abstract class BaseCanvasComponent<T = ComponentSpec> {
           };
         }
 
-        // Comparison is its own axis: `comparison_range` decides whether the component inherits
+        // Comparison is its own axis: `compare_tr` decides whether the component inherits
         // the canvas comparison, turns it off, or compares against its own range.
         // Either way the comparison interval is relative to the component's effective time range.
         const effectiveInterval = usesLocalTimeRange
           ? localInterval
           : globalInterval;
         const effectiveRange = usesLocalTimeRange ? localRange : globalRange;
-        const resolvedComparison = resolveComparisonRange(
-          componentSpec as ComponentFilterProperties,
-        );
 
         let showTimeComparison = false;
         let comparisonRangeName: string | undefined;
@@ -421,37 +415,33 @@ export abstract class BaseCanvasComponent<T = ComponentSpec> {
   }
 
   updateProperty(key: AllKeys<T>, value: T[AllKeys<T>]) {
-    this.updateProperties({ [key as string]: value });
-  }
-
-  // Applies several spec changes in a single YAML write. Empty values remove their key.
-  updateProperties(changes: Record<string, unknown>) {
     const currentSpec = get(this.specStore);
 
-    const newSpec = { ...currentSpec } as Record<string, unknown>;
+    const newSpec = { ...currentSpec, [key]: value };
 
-    for (const [key, value] of Object.entries(changes)) {
-      if (value === undefined || value == "") {
-        delete newSpec[key];
-      } else {
-        newSpec[key] = value;
-      }
+    if (value === undefined || value == "") {
+      delete newSpec[key];
     }
 
     // If the metrics_view is changed, clear the time_filters and dimension_filters
-    if ("metrics_view" in changes) {
-      delete newSpec.time_filters;
-      delete newSpec.dimension_filters;
-      this.resetParams.forEach((param) => {
-        delete newSpec[param as string];
-      });
+    if (key === "metrics_view") {
+      if ("time_filters" in newSpec) {
+        delete newSpec.time_filters;
+      }
+      if ("dimension_filters" in newSpec) {
+        delete newSpec.dimension_filters;
+      }
+      if (this.resetParams.length > 0) {
+        this.resetParams.forEach((param) => {
+          delete newSpec[param];
+        });
+      }
     }
 
-    const typedSpec = newSpec as T;
-    if (this.isValid(typedSpec)) {
-      this.updateYAML(typedSpec);
+    if (this.isValid(newSpec)) {
+      this.updateYAML(newSpec);
     }
-    this.specStore.set(typedSpec);
+    this.specStore.set(newSpec);
   }
 
   // Sets how this component compares against a previous period:
@@ -461,17 +451,20 @@ export abstract class BaseCanvasComponent<T = ComponentSpec> {
     const searchParams = new URLSearchParams(
       (get(this.specStore)?.["time_filters"] ?? "") as string,
     );
-    // The legacy compare_tr inside time_filters is superseded by comparison_range.
-    searchParams.delete(ExploreStateURLParams.ComparisonTimeRange);
-    const hasLocalTimeRange = searchParams.has(ExploreStateURLParams.TimeRange);
 
-    this.updateProperties({
-      time_filters: searchParams.toString(),
-      // Without a local time range an absent key already means inherit.
-      comparison_range:
-        value === COMPARISON_RANGE_INHERIT && !hasLocalTimeRange
-          ? undefined
-          : value,
-    });
+    if (value === "none") {
+      searchParams.delete(ExploreStateURLParams.ComparisonTimeRange);
+      // Off is spelled by a `tr` without `compare_tr`.
+      if (!searchParams.has(ExploreStateURLParams.TimeRange)) {
+        searchParams.set(ExploreStateURLParams.TimeRange, TIME_FILTER_INHERIT);
+      }
+    } else {
+      searchParams.set(ExploreStateURLParams.ComparisonTimeRange, value);
+    }
+
+    this.updateProperty(
+      "time_filters" as AllKeys<T>,
+      normalizeTimeFilters(searchParams) as T[AllKeys<T>],
+    );
   }
 }

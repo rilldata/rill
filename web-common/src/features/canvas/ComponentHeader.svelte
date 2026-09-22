@@ -3,7 +3,7 @@
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import type { BaseCanvasComponent } from "@rilldata/web-common/features/canvas/components/BaseCanvasComponent";
-  import { resolveComparisonRange } from "@rilldata/web-common/features/canvas/components/comparison-range";
+  import { resolveTimeFilters } from "@rilldata/web-common/features/canvas/components/time-filters";
   import type { ComponentFilterProperties } from "@rilldata/web-common/features/canvas/components/types";
   import LocalFiltersHeader from "@rilldata/web-common/features/canvas/LocalFiltersHeader.svelte";
   import { onDestroy, onMount } from "svelte";
@@ -21,12 +21,14 @@
   let wide = false;
   let resizeObserver: ResizeObserver;
 
-  $: ({ specStore } = component);
+  $: ({ hasLocalTimeRange, comparison } = resolveTimeFilters(
+    filters?.time_filters,
+  ));
 
   $: atleastOneFilter =
-    Boolean(filters?.time_filters || filters?.dimension_filters) ||
-    resolveComparisonRange($specStore as ComponentFilterProperties).mode ===
-      "local";
+    Boolean(filters?.dimension_filters) ||
+    hasLocalTimeRange ||
+    comparison.mode === "local";
 
   onMount(() => {
     resizeObserver = new ResizeObserver(([entry]) => {
