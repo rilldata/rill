@@ -398,6 +398,8 @@
   "canvas_configuration": "{label} Configuration",
   "canvas_configurations": "Canvas configurations",
   "canvas_custom_chart": "Custom Chart",
+  "canvas_dark_url_label": "Dark mode URL",
+  "canvas_dark_url_placeholder": "Defaults to URL",
   "canvas_data_labels_label": "Data labels",
   "canvas_delete": "Delete",
   "canvas_delete_dashboard_desc": "The dashboard \"{name}\" will be permanently deleted. This action cannot be undone.",
