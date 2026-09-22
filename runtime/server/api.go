@@ -60,17 +60,23 @@ func (s *Server) apiHandler(w http.ResponseWriter, req *http.Request) error {
 	}
 
 	// Find the API resource
-	api, err := s.runtime.APIForName(ctx, instanceID, apiName)
+	api, err := s.runtime.APIForName(ctx, instanceID, apiName, claims)
 	if err != nil {
 		if errors.Is(err, drivers.ErrResourceNotFound) {
 			return httputil.Errorf(http.StatusNotFound, "api with name %q not found", apiName)
 		}
+		if errors.Is(err, runtime.ErrForbidden) {
+			return httputil.Errorf(http.StatusForbidden, "does not have access to api %q", apiName)
+		}
 		return httputil.Error(http.StatusInternalServerError, err)
 	}
 
-	// Rewrite the claims before passing them to the resolver
+	// Rewrite the claims before passing them to the resolver.
+	// Copy them first since the claims from the context may be shared.
 	if api.Spec.SkipNestedSecurity {
-		claims.SkipChecks = true
+		nested := *claims
+		nested.SkipChecks = true
+		claims = &nested
 	}
 
 	// Resolve the API to JSON data
@@ -82,6 +88,9 @@ func (s *Server) apiHandler(w http.ResponseWriter, req *http.Request) error {
 		Claims:             claims,
 	})
 	if err != nil {
+		if errors.Is(err, runtime.ErrForbidden) {
+			return httputil.Error(http.StatusForbidden, err)
+		}
 		return httputil.Error(http.StatusBadRequest, err)
 	}
 	defer res.Close()
@@ -115,7 +124,8 @@ func (s *Server) combinedOpenAPISpec(w http.ResponseWriter, req *http.Request) e
 	}
 
 	// Check if user has access to query for API data
-	if !auth.GetClaims(ctx, instanceID).Can(runtime.ReadAPI) {
+	claims := auth.GetClaims(ctx, instanceID)
+	if !claims.Can(runtime.ReadAPI) {
 		return httputil.Errorf(http.StatusForbidden, "does not have access to custom APIs")
 	}
 
@@ -138,7 +148,14 @@ func (s *Server) combinedOpenAPISpec(w http.ResponseWriter, req *http.Request) e
 	}
 
 	for _, res := range list {
-		apis[res.Meta.Name.Name] = res.GetApi()
+		r, access, err := s.runtime.ApplySecurityPolicy(ctx, instanceID, claims, res)
+		if err != nil {
+			return httputil.Error(http.StatusInternalServerError, err)
+		}
+		if !access {
+			continue
+		}
+		apis[r.Meta.Name.Name] = r.GetApi()
 	}
 
 	// Generate the OpenAPI spec
