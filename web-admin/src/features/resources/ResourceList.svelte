@@ -51,6 +51,11 @@
   }
   $: setPinned(pinnedRows);
 
+  function getResourceId(res: V1Resource) {
+    if (!res.meta?.name?.name || !res.meta?.name?.kind) return undefined;
+    return `${res.meta.name.kind}/${res.meta.name.name}`;
+  }
+
   const options = writable<TableOptions<unknown>>({
     data: data,
     columns: columns,
@@ -65,10 +70,7 @@
       rowPinning: {},
     },
     getRowId(originalRow, index) {
-      return (
-        (originalRow as V1Resource).meta?.name?.name?.toLowerCase() ??
-        index.toString()
-      );
+      return getResourceId(originalRow as V1Resource) ?? index.toString();
     },
     getCoreRowModel: getCoreRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
