@@ -20,6 +20,7 @@ import (
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/activity"
+	"github.com/rilldata/rill/runtime/pkg/ctxsync"
 	"github.com/rilldata/rill/runtime/pkg/graceful"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"go.opentelemetry.io/otel"
@@ -61,6 +62,8 @@ func NewRunner(rt *runtime.Runtime, activity *activity.Client) *Runner {
 	RegisterTool(r, &QueryMetricsViewSummary{Runtime: rt})
 	RegisterTool(r, &QueryMetricsView{Runtime: rt})
 	RegisterTool(r, &CreateChart{Runtime: rt})
+	RegisterTool(r, &ListSkills{Runtime: rt})
+	RegisterTool(r, &LoadSkill{Runtime: rt})
 
 	RegisterTool(r, &DevelopFile{Runtime: rt})
 	RegisterTool(r, &ListFiles{Runtime: rt})
@@ -210,6 +213,7 @@ func (r *Runner) Session(ctx context.Context, opts *SessionOptions) (res *Sessio
 		acquireCatalog: func(ctx context.Context) (drivers.CatalogStore, func(), error) {
 			return r.Runtime.Catalog(ctx, opts.InstanceID)
 		},
+		skillsMu: ctxsync.NewRWMutex(),
 
 		dto:         session,
 		messages:    messages,
@@ -538,6 +542,10 @@ type BaseSession struct {
 	messages      []*Message
 	messagesDirty bool
 	subscribers   map[chan *Message]struct{}
+
+	skillsMu     ctxsync.RWMutex
+	skillsLoaded bool
+	skills       []*Skill
 }
 
 func (s *BaseSession) Flush(ctx context.Context) error {

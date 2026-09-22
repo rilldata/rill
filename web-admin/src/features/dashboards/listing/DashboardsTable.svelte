@@ -1,7 +1,7 @@
 <script lang="ts">
   import { page } from "$app/state";
   import ResourceError from "@rilldata/web-common/features/resources/ResourceError.svelte";
-  import ResourceList from "@rilldata/web-admin/features/resources/ResourceList.svelte";
+  import ListTable from "@rilldata/web-admin/components/list-table/ListTable.svelte";
   import ResourceListEmptyState from "@rilldata/web-admin/features/resources/ResourceListEmptyState.svelte";
   import ExploreIcon from "@rilldata/web-common/components/icons/ExploreIcon.svelte";
   import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
@@ -227,7 +227,7 @@
       {/if}
 
       <div class="flex flex-col flex-grow min-w-0">
-        <ResourceList
+        <ListTable
           kind="dashboard"
           data={displayData}
           {columns}
@@ -236,6 +236,9 @@
           toolbar={false}
           pinnedRows={validDashboardFavourites}
           maxRows={previewLimit}
+          getRowId={(row, index) =>
+            (row as V1Resource).meta?.name?.name?.toLowerCase() ??
+            index.toString()}
         >
           <ResourceListEmptyState
             slot="empty"
@@ -248,7 +251,7 @@
               })}
             </span>
           </ResourceListEmptyState>
-        </ResourceList>
+        </ListTable>
 
         {#if hasMoreDashboards}
           <div class="pl-4 py-1">

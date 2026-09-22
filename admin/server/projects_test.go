@@ -9,6 +9,34 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func TestCreateProjectSlots(t *testing.T) {
+	fix := testadmin.New(t)
+	_, client := fix.NewUser(t)
+	org, err := client.CreateOrganization(t.Context(), &adminv1.CreateOrganizationRequest{Name: randomName()})
+	require.NoError(t, err)
+
+	for _, tt := range []struct {
+		name              string
+		prod, dev         int64
+		wantProd, wantDev int64
+	}{
+		{name: "defaults", wantProd: 2, wantDev: 2},
+		{name: "explicit", prod: 1, dev: 3, wantProd: 1, wantDev: 3},
+		{name: "default-prod", dev: 1, wantProd: 2, wantDev: 1},
+		{name: "default-dev", prod: 3, wantProd: 3, wantDev: 2},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			resp, err := client.CreateProject(t.Context(), &adminv1.CreateProjectRequest{
+				Org: org.Organization.Name, Project: tt.name,
+				ProdSlots: tt.prod, DevSlots: tt.dev, SkipDeploy: true,
+			})
+			require.NoError(t, err)
+			require.Equal(t, tt.wantProd, resp.Project.ProdSlots)
+			require.Equal(t, tt.wantDev, resp.Project.DevSlots)
+		})
+	}
+}
+
 func TestProjectVariables(t *testing.T) {
 	fix := testadmin.New(t)
 

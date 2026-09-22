@@ -25,6 +25,8 @@
   export let manageProject: boolean;
   export let onCreate: () => void;
   export let onDelete: (bookmark: BookmarkEntry) => Promise<void>;
+  // Called when the user navigates to the home bookmark, so usage can be tracked.
+  export let onOpen: (bookmark: BookmarkEntry) => void = () => {};
 
   $: ({ name: resourceName, kind: resourceKind } = resource);
 
@@ -68,6 +70,7 @@
         <BookmarksMenuItem
           bookmark={homeBookmark}
           {onDelete}
+          onClick={() => homeBookmark && onOpen(homeBookmark)}
           readOnly={!manageProject}
           showDeleteTooltip
         />
@@ -116,7 +119,10 @@
           compact
           preload={false}
           href={fullHomeBookmarkUrl}
-          onClick={goToDashboardHome}
+          onClick={() => {
+            if (homeBookmark) onOpen(homeBookmark);
+            goToDashboardHome();
+          }}
           class="border border-primary-300"
           label={m.bookmark_go_to_home_label()}
           active={isHomeBookmarkActive}

@@ -31,7 +31,7 @@
   const runtimeClient = useRuntimeClient();
 
   let canvasName: string;
-  let selectedView: "split" | "code" | "viz";
+  let selectedView: "code" | "viz";
 
   $: ({
     autoSave,
@@ -51,7 +51,9 @@
 
   $: workspace = workspaces.get(filePath);
   $: selectedViewStore = workspace.view;
-  $: selectedView = $selectedViewStore ?? "code";
+  // The store accepts views from other workspaces (e.g. "explore"); anything
+  // this workspace cannot render falls back to the preview.
+  $: selectedView = $selectedViewStore === "code" ? "code" : "viz";
 
   $: canvasName = getNameFromFile(filePath);
 

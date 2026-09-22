@@ -13,7 +13,7 @@ import {
 import { get } from "svelte/store";
 import type { StateManagers } from "../state-managers/state-managers";
 import { getPivotConfig } from "./pivot-data-config";
-import { prepareMeasureForComparison } from "./pivot-utils";
+import { prepareMeasuresForRequest } from "./pivot-utils";
 import {
   COMPARISON_DELTA,
   COMPARISON_PERCENT,
@@ -189,9 +189,10 @@ export function getPivotAggregationRequest({
     metricsView: metricsViewName,
     timeRange,
     comparisonTimeRange: comparisonTime,
-    measures: enableComparison
-      ? prepareMeasureForComparison(measures)
-      : measures,
+    measures: prepareMeasuresForRequest(
+      measures,
+      exploreState.ephemeralMeasures,
+    ),
     dimensions: allDimensions,
     where: sanitiseExpression(exploreState.whereFilter, undefined),
     pivotOn,

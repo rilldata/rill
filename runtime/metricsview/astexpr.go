@@ -274,7 +274,8 @@ func (b *sqlExprBuilder) writeBinaryCondition(exprs []*Expression, op Operator) 
 				return nil
 			}
 
-			return b.writeBinaryConditionInner(nil, right, leftExpr, op)
+			// The left expression is passed along with its rendered SQL so the inner writers can look up the dimension's data type.
+			return b.writeBinaryConditionInner(left, right, leftExpr, op)
 		}
 
 		// For IN/NIN on unnest dimensions, prefer a native array-contains expression over an unnest join where the dialect supports it.
@@ -294,7 +295,7 @@ func (b *sqlExprBuilder) writeBinaryCondition(exprs []*Expression, op Operator) 
 		if auto {
 			// Means the DB automatically unnests, so we can treat it as a normal value
 			leftExpr = b.ast.Dialect.AutoUnnest(leftExpr)
-			return b.writeBinaryConditionInner(nil, right, leftExpr, op)
+			return b.writeBinaryConditionInner(left, right, leftExpr, op)
 		}
 		// A filter on an unnest dimension that is not selected should match each source row once, even if several of its elements match.
 		// Prefer the dialect's native any-element expression, otherwise use a correlated EXISTS subquery over the unnest join.
@@ -431,6 +432,7 @@ func (b *sqlExprBuilder) writeILikeCondition(left, right *Expression, leftOverri
 
 		b.writeString(b.ast.Dialect.GetCastExprForLike())
 	} else if b.ast.Dialect.SupportsRegexMatch() {
+		// Output: [NOT] <regexFunc>(<left>, <regex>) [OR <left> IS NULL]
 		if not {
 			b.writeString(" NOT ")
 		}
@@ -440,7 +442,15 @@ func (b *sqlExprBuilder) writeILikeCondition(left, right *Expression, leftOverri
 		}
 		b.writeString(regexFunc)
 		b.writeByte('(')
-		if leftOverride != "" {
+		if leftOverride != "" && b.needsStringCastForRegexMatch(left) {
+			// Regex match functions only accept string operands, so a known non-string dimension is cast.
+			// A dimension reference always arrives with its rendered SQL in leftOverride (see writeBinaryCondition).
+			expr, err := b.ast.Dialect.GetRegexMatchCastExpr("(" + leftOverride + ")")
+			if err != nil {
+				return err
+			}
+			b.writeString(expr)
+		} else if leftOverride != "" {
 			b.writeParenthesizedString(leftOverride)
 		} else {
 			err := b.writeExpression(left)
@@ -521,6 +531,20 @@ func (b *sqlExprBuilder) writeILikeCondition(left, right *Expression, leftOverri
 	b.writeByte(')')
 
 	return nil
+}
+
+// needsStringCastForRegexMatch reports whether the left operand of a regex match must be cast to a string.
+// A dimension is cast if its resolved data type is known and not a string.
+// Dimensions of unknown type and expressions that are not a plain dimension reference are never cast.
+func (b *sqlExprBuilder) needsStringCastForRegexMatch(left *Expression) bool {
+	if left == nil || left.Name == "" {
+		return false
+	}
+	dim, err := b.ast.LookupDimension(left.Name, b.visible)
+	if err != nil || dim.DataType == nil {
+		return false
+	}
+	return dim.DataType.Code != runtimev1.Type_CODE_UNSPECIFIED && dim.DataType.Code != runtimev1.Type_CODE_STRING
 }
 
 func (b *sqlExprBuilder) writeInCondition(left, right *Expression, leftOverride string, not bool) error {

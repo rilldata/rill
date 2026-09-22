@@ -50,6 +50,8 @@ type Dialect interface {
 	// ArrayContainsAnyExpression returns an expression that is true if the array arrExpr contains any of the comma-separated valuesExpr.
 	// ok is false if the dialect has no such expression, in which case the condition is evaluated against the unnested elements instead.
 	ArrayContainsAnyExpression(arrExpr, valuesExpr string) (expr string, ok bool)
+	// GetRegexMatchCastExpr returns expr cast to the string type accepted by the dialect's regex match function.
+	GetRegexMatchCastExpr(expr string) (string, error)
 	DimensionSelect(escapeTable string, dim *runtimev1.MetricsViewSpec_Dimension) (dimSelect, unnestClause string, err error)
 	// LateralUnnest returns the join clause that unnests expr. If tupleStyle is false the element is referenced by colName alone,
 	// and the dialect must implement ArrayAnyExpression since it cannot be referenced from a correlated subquery.
@@ -171,6 +173,10 @@ func (b *BaseDialect) GetRegexMatchFunction() (string, error) {
 	return "", fmt.Errorf("regex match not supported for %s dialect", b.String())
 }
 
+func (b *BaseDialect) GetRegexMatchCastExpr(expr string) (string, error) {
+	return "", fmt.Errorf("regex match not supported for %s dialect", b.String())
+}
+
 // EscapeTable returns an escaped table name with database, schema and table.
 func (b *BaseDialect) EscapeTable(db, schema, table string) string {
 	var sb strings.Builder
@@ -288,8 +294,9 @@ func (b *BaseDialect) CastToDataType(typ runtimev1.Type_Code) (string, error) {
 	}
 }
 
+// SafeDivideExpression returns a division that yields NULL instead of an error, infinity or NaN when the denominator is zero.
 func (b *BaseDialect) SafeDivideExpression(numExpr, denExpr string) string {
-	return fmt.Sprintf("(%s)/CAST(%s AS DOUBLE)", numExpr, denExpr)
+	return fmt.Sprintf("(%s)/NULLIF(CAST(%s AS DOUBLE), 0)", numExpr, denExpr)
 }
 
 func (b *BaseDialect) OrderByExpression(name string, desc bool) string {

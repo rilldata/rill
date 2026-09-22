@@ -30,8 +30,9 @@ func TestBackup(t *testing.T) {
 
 	// Create sqlite handle
 	cfg := map[string]any{
-		"dsn": dbPath,
-		"id":  "test-backup",
+		"dsn":            dbPath,
+		"id":             "test-backup",
+		"backups_enable": true,
 	}
 	h, err := driver{}.Open("", "", cfg, storage.MustNew(storageDir, nil), activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)

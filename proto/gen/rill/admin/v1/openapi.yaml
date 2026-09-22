@@ -1393,6 +1393,8 @@ components:
                     type: string
                 defaultProjectRoleId:
                     type: string
+                defaultProvisioner:
+                    type: string
                 description:
                     type: string
                 displayName:
@@ -1428,6 +1430,11 @@ components:
                     type: string
                 roleName:
                     type: string
+                usergroups:
+                    description: Names of the user groups the user will be added to when the invite is accepted.
+                    items:
+                        type: string
+                    type: array
             type: object
         v1OrganizationMemberService:
             properties:
@@ -2217,6 +2224,19 @@ components:
                 organization:
                     $ref: '#/components/schemas/v1Organization'
             type: object
+        v1SudoUpdateOrganizationDefaultProvisionerRequest:
+            properties:
+                defaultProvisioner:
+                    description: Name of the provisioner to use by default. Empty unsets the org's default provisioner.
+                    type: string
+                org:
+                    type: string
+            type: object
+        v1SudoUpdateOrganizationDefaultProvisionerResponse:
+            properties:
+                organization:
+                    $ref: '#/components/schemas/v1Organization'
+            type: object
         v1SudoUpdateOrganizationQuotasRequest:
             properties:
                 deployments:
@@ -2479,6 +2499,11 @@ components:
                 createdOn:
                     format: date-time
                     type: string
+                pendingAcceptance:
+                    description: |-
+                        True if the user has been invited to the group but has not signed up yet.
+                        For pending members, user_id, user_name and user_photo_url are empty.
+                    type: boolean
                 updatedOn:
                     format: date-time
                     type: string
@@ -3107,6 +3132,8 @@ paths:
                                     type: string
                                 defaultProjectRole:
                                     type: string
+                                defaultProvisioner:
+                                    type: string
                                 description:
                                     type: string
                                 displayName:
@@ -3541,6 +3568,14 @@ paths:
                                     type: string
                                 superuserForceAccess:
                                     type: boolean
+                                usergroups:
+                                    description: |-
+                                        Names of user groups in the org to add the user to.
+                                        If the user has not signed up yet, they are stored on the invite and applied when the invite is accepted.
+                                        Groups are additive: on a re-invite they are merged with the groups already on the invite.
+                                    items:
+                                        type: string
+                                    type: array
                             type: object
                 required: true
                 x-originalParamName: body
@@ -4785,6 +4820,14 @@ paths:
                                     type: boolean
                                 role:
                                     type: string
+                                usergroups:
+                                    description: |-
+                                        Names of user groups in the org to add the user to (user groups are org-scoped).
+                                        If the user has not signed up yet, they are stored on the org invite and applied when the invite is accepted.
+                                        Setting user groups requires permission to manage org members.
+                                    items:
+                                        type: string
+                                    type: array
                             type: object
                 required: true
                 x-originalParamName: body
@@ -7543,6 +7586,32 @@ paths:
                 SudoUpdateOrganizationCustomDomain updates the custom domain for an organization.
                 It only updates the custom domain in the database, which is used to ensure correct redirects.
                 The DNS records and ingress TLS must be configured separately.
+    /v1/superuser/organization/default-provisioner:
+        patch:
+            operationId: AdminService_SudoUpdateOrganizationDefaultProvisioner
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/v1SudoUpdateOrganizationDefaultProvisionerRequest'
+                required: true
+                x-originalParamName: body
+            responses:
+                "200":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/v1SudoUpdateOrganizationDefaultProvisionerResponse'
+                    description: A successful response.
+                default:
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/rpcStatus'
+                    description: An unexpected error response.
+            summary: |-
+                SudoUpdateOrganizationDefaultProvisioner sets the provisioner used by default for an organization's deployments.
+                It only affects deployments provisioned after the change; existing deployments stay on their current provisioner.
     /v1/superuser/organization/trial/extend:
         post:
             operationId: AdminService_SudoExtendTrial
@@ -8153,11 +8222,15 @@ paths:
                   name: projectId
                   schema:
                     type: string
-                - in: query
+                - description: |-
+                    Optional filter on the kind of the resource the bookmark is for (e.g. "rill.runtime.v1.Explore").
+                    When both resource_kind and resource_name are unset, all bookmarks in the project are returned.
+                  in: query
                   name: resourceKind
                   schema:
                     type: string
-                - in: query
+                - description: Optional filter on the name of the resource the bookmark is for. Requires resource_kind to be set.
+                  in: query
                   name: resourceName
                   schema:
                     type: string
