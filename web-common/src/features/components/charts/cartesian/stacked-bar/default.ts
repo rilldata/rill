@@ -52,8 +52,12 @@ export function generateVLStackedBarChartSpec(
     { x: config.x, colorField, yField },
     data,
   );
+  // Axis label layout depends on the channel the axis ends up on.
   spec.encoding = {
-    x: { ...createPositionEncoding(config.x, data), bandPosition: 0 },
+    x: {
+      ...createPositionEncoding(config.x, data, horizontal ? "y" : "x"),
+      bandPosition: 0,
+    },
   };
 
   // Check if comparison mode is enabled
@@ -85,7 +89,7 @@ export function generateVLStackedBarChartSpec(
     mark: { type: "bar", clip: true, width: { band: 0.9 } },
     encoding: {
       y: {
-        ...createPositionEncoding(config.y, data),
+        ...createPositionEncoding(config.y, data, "y"),
         ...createStackOverride(config.y, colorField),
       },
       color: createColorEncoding(config.color, data),

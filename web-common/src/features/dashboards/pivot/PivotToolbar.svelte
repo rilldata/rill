@@ -17,7 +17,12 @@
   import Tooltip from "../../../components/tooltip/Tooltip.svelte";
   import TooltipContent from "../../../components/tooltip/TooltipContent.svelte";
   import TableIcon from "../../canvas/icons/TableIcon.svelte";
-  import type { PivotChipData, PivotState, PivotTableMode } from "./types";
+  import type {
+    PivotChipData,
+    PivotState,
+    PivotTableMode,
+    PivotTotalsRowPosition,
+  } from "./types";
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 
   export let pivotState: PivotState;
@@ -32,6 +37,7 @@
   export let setShowTotals: (
     totals: Pick<PivotState, "showTotalsColumn" | "showTotalsRow">,
   ) => void;
+  export let setTotalsRowPosition: (position: PivotTotalsRowPosition) => void;
   export let collapseAll: () => void;
 
   $: ({
@@ -42,6 +48,7 @@
     rowLimit,
     showTotalsColumn,
     showTotalsRow,
+    totalsRowPosition = "top",
   } = pivotState);
   $: splitColumns = splitPivotChips(columns);
   $: isFlat = tableMode === "flat";
@@ -66,6 +73,14 @@
 
   // Convert rowLimit to string for Select component binding
   $: rowLimitValue = rowLimit === undefined ? "all" : rowLimit.toString();
+
+  const totalsRowPositionOptions: {
+    value: PivotTotalsRowPosition;
+    label: string;
+  }[] = [
+    { value: "top", label: m.dashboard_totals_row_position_top() },
+    { value: "bottom", label: m.dashboard_totals_row_position_bottom() },
+  ];
 
   function handleRowLimitChange(value: string) {
     if (value === "all") {
@@ -217,6 +232,18 @@
             label={m.dashboard_total_row()}
             labelClass="text-xs leading-snug font-normal text-fg-secondary"
           />
+          {#if showTotalsRow}
+            <Select
+              id="pivot-totals-row-position"
+              ariaLabel={m.dashboard_totals_row_position()}
+              value={totalsRowPosition}
+              options={totalsRowPositionOptions}
+              onChange={(value) =>
+                setTotalsRowPosition(value as PivotTotalsRowPosition)}
+              size="sm"
+              width={88}
+            />
+          {/if}
         {/if}
         {#if canShowTotalColumn}
           <Checkbox

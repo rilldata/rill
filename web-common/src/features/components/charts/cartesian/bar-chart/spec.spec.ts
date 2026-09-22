@@ -61,6 +61,17 @@ describe("generateVLBarChartSpec orientation", () => {
     expect(at(spec, "encoding.y.sort")).toBe("-x");
   });
 
+  it("lays out category labels for the axis they end up on", () => {
+    // Vertical: automatic x-axis label rotation via signal expressions.
+    const vertical = generateVLBarChartSpec(base, chartData());
+    expect(at(vertical, "encoding.x.axis.labelAngle")).toHaveProperty("expr");
+
+    // Horizontal: the categories sit on y, where labels stay upright.
+    const spec = generateVLBarChartSpec(horizontal, chartData());
+    expect(at(spec, "encoding.y.axis.labelAngle")).toBeUndefined();
+    expect(at(spec, "encoding.y.axis.labelLimit")).toBeUndefined();
+  });
+
   it("keeps the grid on the measure axis", () => {
     const spec = generateVLBarChartSpec(horizontal, chartData());
     expect(at(spec, "layer.1.encoding.x.axis.grid")).toBe(true);

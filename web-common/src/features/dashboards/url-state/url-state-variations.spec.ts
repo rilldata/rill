@@ -34,6 +34,7 @@ import {
   AD_BIDS_OPEN_IMP_TDD,
   AD_BIDS_OPEN_PIVOT_WITH_ALL_FIELDS,
   AD_BIDS_OPEN_PUB_DIMENSION_TABLE,
+  AD_BIDS_PIVOT_TOTALS_ROW_AT_BOTTOM,
   AD_BIDS_SET_ALL_TIME_RANGE_FILTER,
   AD_BIDS_SET_DOMAIN_COMPARE_DIMENSION,
   AD_BIDS_SET_KATHMANDU_TIMEZONE,
@@ -510,6 +511,16 @@ const TestCases: {
     mutations: [AD_BIDS_OPEN_DOMAIN_BID_PRICE_PIVOT, AD_BIDS_HIDE_PIVOT_TOTALS],
     expectedSearch:
       "view=pivot&rows=domain%2Ctime.day&cols=impressions&sort_by=&table_mode=nest&show_totals_column=false&show_totals_row=false",
+    legacyNotSupported: true,
+  },
+  {
+    title: "Pivot with totals row at the bottom",
+    mutations: [
+      AD_BIDS_OPEN_DOMAIN_BID_PRICE_PIVOT,
+      AD_BIDS_PIVOT_TOTALS_ROW_AT_BOTTOM,
+    ],
+    expectedSearch:
+      "view=pivot&rows=domain%2Ctime.day&cols=impressions&sort_by=&table_mode=nest&totals_row_position=bottom",
     legacyNotSupported: true,
   },
   {

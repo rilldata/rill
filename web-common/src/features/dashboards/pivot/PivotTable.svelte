@@ -139,6 +139,7 @@
   $: assembled = $pivotDataStore.assembled;
   $: dataRows = $pivotDataStore.data;
   $: totalsRow = $pivotDataStore.totalsRowData;
+  $: totalsRowPosition = $pivotState.totalsRowPosition ?? "top";
   $: stickyRows = totalsRow ? [0] : [];
   $: isFlat = $config.isFlat;
   $: hasMeasureContextColumns = $config.enableComparison;
@@ -469,6 +470,7 @@
       {measures}
       {cellFormatters}
       {totalsRow}
+      {totalsRowPosition}
       {dataRows}
       {before}
       {after}
@@ -498,6 +500,7 @@
       {after}
       {timeDimension}
       {totalsRow}
+      {totalsRowPosition}
       {totalRowSize}
       {rowDimensions}
       {hasColumnDimension}

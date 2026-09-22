@@ -408,7 +408,6 @@ bar_chart:
     type: nominal
     limit: 10
     sort: -y
-    labelAngle: 0
   y:
     field: total_revenue
     type: quantitative
@@ -902,11 +901,12 @@ table:
 
 ### Image
 
-Display external images:
+Display external images. Set `dark_url` to show a different image when the dashboard is in dark mode (falls back to `url`):
 
 ```yaml
 image:
   url: https://example.com/logo.png
+  dark_url: https://example.com/logo-dark.png
   alignment:
     horizontal: center
     vertical: middle
@@ -1105,7 +1105,7 @@ x:
   limit: 10                  # Max values to display
   sort: -y                   # Sort order (see below)
   showNull: true             # Include null values
-  labelAngle: 45             # Label rotation angle
+  labelAngle: -45            # Label rotation angle; omit for automatic orientation (0, -45 or -90 based on available width)
 ```
 
 ### Sort Options

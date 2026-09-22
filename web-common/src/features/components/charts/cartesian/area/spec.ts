@@ -38,7 +38,7 @@ export function generateVLAreaChartSpec(
     data,
   );
 
-  const xEncoding = createPositionEncoding(config.x, data);
+  const xEncoding = createPositionEncoding(config.x, data, "x");
   xEncoding.scale = { ...(xEncoding.scale ?? {}), padding: 8 };
   spec.encoding = { x: xEncoding };
 
@@ -52,7 +52,7 @@ export function generateVLAreaChartSpec(
     {
       encoding: {
         y: {
-          ...createPositionEncoding(config.y, data),
+          ...createPositionEncoding(config.y, data, "y"),
           stack: "zero",
           ...createStackOverride(config.y, colorField),
         },

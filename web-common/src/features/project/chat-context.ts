@@ -15,4 +15,5 @@ export const projectChat = {
     return m.chat_placeholder_analyst();
   },
   minChatHeight: "min-h-[2.5rem]",
+  skills: true,
 } satisfies ChatConfig;

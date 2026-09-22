@@ -44,7 +44,7 @@ export function generateVLLineChartSpec(
     data,
   );
 
-  const xEncoding = createPositionEncoding(config.x, data);
+  const xEncoding = createPositionEncoding(config.x, data, "x");
   xEncoding.scale = { ...(xEncoding.scale ?? {}), padding: 8 };
   spec.encoding = { x: xEncoding };
 
@@ -71,7 +71,7 @@ export function generateVLLineChartSpec(
 
   const lineLayer: LayerSpec<Field> = {
     encoding: {
-      y: createPositionEncoding(config.y, data),
+      y: createPositionEncoding(config.y, data, "y"),
       color: createColorEncoding(config.color, data),
     },
     layer: [{ mark: "line" }, buildHoverPointOverlay()],

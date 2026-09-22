@@ -34,6 +34,7 @@ import {
   type PivotChipData,
   type PivotMeasureFormatting,
   type PivotTableMode,
+  type PivotTotalsRowPosition,
 } from "../pivot/types";
 import { parseMeasureExpression } from "../ephemeral-measures/expression-parser";
 import type { EphemeralMeasureDef } from "../ephemeral-measures/types";
@@ -665,6 +666,17 @@ const metricsViewReducers = {
         expanded: {},
         activeCell: null,
         rowPage: 1,
+      };
+    });
+  },
+
+  // Presentation-only: the totals row keeps the same data and row id, so no
+  // expansion, paging or query state needs to reset.
+  setPivotTotalsRowPosition(name: string, position: PivotTotalsRowPosition) {
+    updateMetricsExplorerByName(name, (exploreState) => {
+      exploreState.pivot = {
+        ...exploreState.pivot,
+        totalsRowPosition: position,
       };
     });
   },

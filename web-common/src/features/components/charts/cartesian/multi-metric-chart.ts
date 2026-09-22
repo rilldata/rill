@@ -109,8 +109,12 @@ export function generateVLMultiMetricChartSpec(
 
   spec.transform = transforms;
 
+  // Axis label layout depends on the channel the axis ends up on.
   spec.encoding = {
-    x: { ...createPositionEncoding(config.x, data), bandPosition: 0 },
+    x: {
+      ...createPositionEncoding(config.x, data, horizontal ? "y" : "x"),
+      bandPosition: 0,
+    },
   };
 
   const xField = sanitizeValueForVega(config.x?.field);

@@ -12,6 +12,7 @@
   import { getPersonalFilteredResources } from "@rilldata/web-admin/features/personal-files/selectors.ts";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors.ts";
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
+  import { resourceTableGetRowId } from "@rilldata/web-common/features/resources/overview-utils.ts";
 
   let {
     org,
@@ -88,9 +89,7 @@
           data={personalCanvases}
           {columns}
           toolbar={false}
-          getRowId={(row, index) =>
-            (row as V1Resource).meta?.name?.name?.toLowerCase() ??
-            index.toString()}
+          getRowId={resourceTableGetRowId}
         >
           <ResourceListEmptyState
             slot="empty"

@@ -156,7 +156,7 @@ const ChartsJSONSchema = `{
         },
         "labelAngle": {
           "type": "number",
-          "description": "Angle for axis labels in degrees."
+          "description": "Rotation angle of axis labels in degrees. Omit for automatic orientation: upright when the labels fit, otherwise angled. Common values are 0, -45 and -90."
         },
         "legendOrientation": {
           "type": "string",

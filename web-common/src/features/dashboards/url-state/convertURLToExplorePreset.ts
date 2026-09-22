@@ -693,6 +693,13 @@ function fromPivotUrlParams(
       searchParams.get(ExploreStateURLParams.PivotShowTotalsRow) !== "false";
   }
 
+  if (searchParams.has(ExploreStateURLParams.PivotTotalsRowPosition)) {
+    // Validated when the preset is converted to explore state.
+    preset.pivotTotalsRowPosition = searchParams.get(
+      ExploreStateURLParams.PivotTotalsRowPosition,
+    ) as string;
+  }
+
   if (searchParams.has(ExploreStateURLParams.PivotFormatting)) {
     const formattingParam = searchParams.get(
       ExploreStateURLParams.PivotFormatting,
