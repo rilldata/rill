@@ -1,6 +1,7 @@
 package ai_test
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/rilldata/rill/runtime/ai"
@@ -143,6 +144,11 @@ rows:
 			// The title is truncated after the references are replaced.
 			prompt: `<chat-reference>type="metricsView" metricsView="orders"</chat-reference> how much did we sell to each customer last month?`,
 			title:  "Sales how much did we sell to each customer las...",
+		},
+		{
+			// The truncation doesn't split a multi-byte rune: the 47-byte cut lands inside the first "ú".
+			prompt: strings.Repeat("a", 46) + "úúúú",
+			title:  strings.Repeat("a", 46) + "...",
 		},
 	}
 	for _, c := range cases {
