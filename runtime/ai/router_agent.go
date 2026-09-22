@@ -283,6 +283,24 @@ func (t *RouterAgent) readableChatReferences(ctx context.Context, prompt string)
 			}
 			return attrs["canvas"]
 		case "canvasComponent":
+			// Everyone can read a component, and access to it is decided by the canvas that shows it (see runtime.ResolveCanvas).
+			// So a component is shown by its title only if it belongs to the referenced canvas and the session can access that canvas.
+			canvas := t.accessibleResource(ctx, runtime.ResourceKindCanvas, attrs["canvas"]).GetCanvas().GetState().GetValidSpec()
+			components := map[string]bool{}
+			runtime.CollectCanvasComponentNames(canvas.GetRows(), components)
+			if components[attrs["canvasComponent"]] {
+				// Components defined in a canvas are named after their position, so prefer their title.
+				cmp := t.accessibleResource(ctx, runtime.ResourceKindComponent, attrs["canvasComponent"]).GetComponent().GetState().GetValidSpec()
+				if title := cmp.GetRendererProperties().GetFields()["title"].GetStringValue(); title != "" {
+					return title
+				}
+				if name := cmp.GetDisplayName(); name != "" {
+					return name
+				}
+			}
+			if name := canvas.GetDisplayName(); name != "" {
+				return name
+			}
 			return attrs["canvasComponent"]
 		case "timeRange":
 			return formatTimeRangeReference(attrs["timeRange"], attrs["timeZone"])
