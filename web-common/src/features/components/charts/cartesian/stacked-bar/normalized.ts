@@ -132,7 +132,7 @@ export function generateVLStackedBarNormalizedSpec(
   );
 
   spec.encoding = {
-    x: { ...createPositionEncoding(config.x, data), bandPosition: 0 },
+    x: { ...createPositionEncoding(config.x, data, "x"), bandPosition: 0 },
   };
 
   const hoverRuleLayer = buildHoverRuleLayer({

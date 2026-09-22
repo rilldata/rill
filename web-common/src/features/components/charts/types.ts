@@ -146,6 +146,7 @@ interface NominalFieldConfig {
   sort?: ChartSortDirection;
   limit?: number;
   showNull?: boolean;
+  /** Axis label rotation in degrees; unset lays out categorical x-axis labels automatically */
   labelAngle?: number;
   legendOrientation?: ChartLegend;
   colorMapping?: ColorMapping;

@@ -25,9 +25,39 @@
     fieldConfig?.limit || chartFieldInput?.limitSelector?.defaultLimit || 5000;
   let min = fieldConfig?.min;
   let max = fieldConfig?.max;
-  let labelAngle =
-    fieldConfig?.labelAngle ?? (fieldConfig?.type === "temporal" ? 0 : -90);
   let isDropdownOpen = false;
+
+  // An unset angle lets the chart pick the orientation from the available width.
+  const labelOrientationAngles: Record<string, number | undefined> = {
+    auto: undefined,
+    horizontal: 0,
+    angled: -45,
+    vertical: -90,
+  };
+
+  $: labelOrientation =
+    Object.keys(labelOrientationAngles).find(
+      (orientation) =>
+        labelOrientationAngles[orientation] === fieldConfig?.labelAngle,
+    ) ?? "custom";
+  // A YAML angle outside the presets is shown as a read-only entry so it is not silently lost.
+  $: labelOrientationOptions = [
+    ...(labelOrientation === "custom"
+      ? [
+          {
+            label: m.canvas_label_orientation_custom({
+              angle: String(fieldConfig?.labelAngle),
+            }),
+            value: "custom",
+            disabled: true,
+          },
+        ]
+      : []),
+    { label: m.canvas_label_orientation_auto(), value: "auto" },
+    { label: m.canvas_label_orientation_horizontal(), value: "horizontal" },
+    { label: m.canvas_label_orientation_angled(), value: "angled" },
+    { label: m.canvas_label_orientation_vertical(), value: "vertical" },
+  ];
 
   $: legendOptions = [
     { label: m.canvas_legend_top(), value: "top" },
@@ -184,19 +214,15 @@
       {/if}
       {#if showLabelAngle && fieldConfig?.type !== "temporal"}
         <div class="py-1 flex items-center justify-between">
-          <span class="text-xs">{m.canvas_label_angle()}</span>
-          <Input
+          <span class="text-xs">{m.canvas_label_orientation()}</span>
+          <Select
             size="sm"
-            width="72px"
-            id="label-angle-select"
-            inputType="number"
-            bind:value={labelAngle}
-            onBlur={() => {
-              onChange("labelAngle", labelAngle);
-            }}
-            onEnter={() => {
-              onChange("labelAngle", labelAngle);
-            }}
+            id="label-orientation-select"
+            width={180}
+            options={labelOrientationOptions}
+            value={labelOrientation}
+            onChange={(value: string) =>
+              onChange("labelAngle", labelOrientationAngles[value])}
           />
         </div>
       {/if}
