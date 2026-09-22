@@ -7,10 +7,12 @@ import (
 	"regexp"
 	"slices"
 	"strings"
+	"time"
 
 	"github.com/google/jsonschema-go/jsonschema"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 	aiv1 "github.com/rilldata/rill/proto/gen/rill/ai/v1"
+	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/metricsview"
 )
@@ -79,7 +81,7 @@ func (t *RouterAgent) Handler(ctx context.Context, args *RouterAgentArgs) (*Rout
 
 	// Handle title
 	if s.Title() == "" && args.Prompt != "" {
-		err := s.UpdateTitle(ctx, promptToTitle(args.Prompt))
+		err := s.UpdateTitle(ctx, promptToTitle(t.readableChatReferences(ctx, args.Prompt)))
 		if err != nil {
 			return nil, err
 		}
@@ -244,6 +246,94 @@ func promptToTitle(message string) string {
 		return "New Conversation"
 	}
 	return title
+}
+
+// readableChatReferences replaces the chat references in a prompt with readable text, so that a conversation title made from it doesn't show their markup.
+// Resources that the session can access are shown by their display name, and other references by their name.
+func (t *RouterAgent) readableChatReferences(ctx context.Context, prompt string) string {
+	return chatReferenceRegexp.ReplaceAllStringFunc(prompt, func(ref string) string {
+		attrs := chatReferenceAttrs(ref)
+		switch attrs["type"] {
+		case "metricsView":
+			mv := t.accessibleResource(ctx, runtime.ResourceKindMetricsView, attrs["metricsView"]).GetMetricsView().GetState().GetValidSpec()
+			if name := mv.GetDisplayName(); name != "" {
+				return name
+			}
+			return attrs["metricsView"]
+		case "measure":
+			mv := t.accessibleResource(ctx, runtime.ResourceKindMetricsView, attrs["metricsView"]).GetMetricsView().GetState().GetValidSpec()
+			for _, m := range mv.GetMeasures() {
+				if m.Name == attrs["measure"] && m.DisplayName != "" {
+					return m.DisplayName
+				}
+			}
+			return attrs["measure"]
+		case "dimension", "dimensionValues":
+			mv := t.accessibleResource(ctx, runtime.ResourceKindMetricsView, attrs["metricsView"]).GetMetricsView().GetState().GetValidSpec()
+			for _, d := range mv.GetDimensions() {
+				if d.Name == attrs["dimension"] && d.DisplayName != "" {
+					return d.DisplayName
+				}
+			}
+			return attrs["dimension"]
+		case "canvas":
+			canvas := t.accessibleResource(ctx, runtime.ResourceKindCanvas, attrs["canvas"]).GetCanvas().GetState().GetValidSpec()
+			if name := canvas.GetDisplayName(); name != "" {
+				return name
+			}
+			return attrs["canvas"]
+		case "canvasComponent":
+			return attrs["canvasComponent"]
+		case "timeRange":
+			return formatTimeRangeReference(attrs["timeRange"], attrs["timeZone"])
+		case "skill":
+			return "/" + attrs["skill"]
+		case "model":
+			return attrs["model"]
+		case "column":
+			return attrs["column"]
+		default:
+			return ""
+		}
+	})
+}
+
+// accessibleResource returns the named resource if it exists and the session can access it, and nil otherwise.
+// It doesn't return errors because the title falls back to the reference's name when the resource can't be read.
+func (t *RouterAgent) accessibleResource(ctx context.Context, kind, name string) *runtimev1.Resource {
+	session := GetSession(ctx)
+
+	ctrl, err := t.Runtime.Controller(ctx, session.InstanceID())
+	if err != nil {
+		return nil
+	}
+	r, err := ctrl.Get(ctx, &runtimev1.ResourceName{Kind: kind, Name: name}, false)
+	if err != nil {
+		return nil
+	}
+	r, access, err := t.Runtime.ApplySecurityPolicy(ctx, session.InstanceID(), session.Claims(), r)
+	if err != nil || !access {
+		return nil
+	}
+	return r
+}
+
+// formatTimeRangeReference formats the value of a time range reference, "<start>" or "<start> to <end>" in RFC3339, as dates in the given time zone.
+// It returns the value unchanged if it can't be parsed.
+func formatTimeRangeReference(value, timeZone string) string {
+	loc, err := time.LoadLocation(timeZone)
+	if err != nil {
+		loc = time.UTC
+	}
+	var dates []string
+	for _, part := range strings.Split(value, " to ") {
+		ts, err := time.Parse(time.RFC3339, part)
+		if err != nil {
+			return value
+		}
+		dates = append(dates, ts.In(loc).Format(time.DateOnly))
+	}
+	return strings.Join(dates, " – ")
 }
 
 // mapAgentErr maps common agent errors to more user-friendly messages.
