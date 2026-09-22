@@ -165,7 +165,8 @@ format_d3: ",.0f"   # 1,235 (rounded, with thousands separator)
 
 ### Inline explore
 
-New metrics views should set `version: 1` and include an `explore:` block, which makes Rill emit an explore dashboard for the metrics view (named after the metrics view unless `name:` is set):
+New metrics views should set `version: 1` and include an `explore:` block, which makes Rill emit an explore dashboard for the metrics view (named after the metrics view unless `name:` is set).
+This inline block IS the explore dashboard: do not create a separate `type: explore` file for the same metrics view, as that would produce a second, duplicate dashboard. Configure dashboard defaults (time range, measures, dimensions) directly in this block.
 
 ```yaml
 version: 1
