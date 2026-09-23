@@ -137,18 +137,6 @@ func (r *unionResolver) ResolveExport(ctx context.Context, w io.Writer, opts *ru
 	return errors.New("union resolver does not support export")
 }
 
-func (r *unionResolver) InferRequiredSecurityRules() ([]*runtimev1.SecurityRule, error) {
-	var rules []*runtimev1.SecurityRule
-	for _, resolver := range r.resolvers {
-		rs, err := resolver.InferRequiredSecurityRules()
-		if err != nil {
-			return nil, err
-		}
-		rules = append(rules, rs...)
-	}
-	return rules, nil
-}
-
 // mergeSchemas does a best-effort merge of two StructTypes.
 // If two fields have the same name, the type of the first is used.
 func mergeSchemas(a, b *runtimev1.StructType) *runtimev1.StructType {

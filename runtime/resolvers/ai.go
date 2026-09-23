@@ -218,11 +218,6 @@ func (r *aiResolver) ResolveExport(ctx context.Context, w io.Writer, opts *runti
 	return fmt.Errorf("AI resolver does not support export")
 }
 
-// InferRequiredSecurityRules implements runtime.Resolver.
-func (r *aiResolver) InferRequiredSecurityRules() ([]*runtimev1.SecurityRule, error) {
-	return nil, nil
-}
-
 // resolveTimeRange resolves and rewrites the time range to actual timestamps using rilltime.
 func (r *aiResolver) resolveTimeRange(ctx context.Context, tr *metricsview.TimeRange, tz string) error {
 	// if time range is not provided, or already has start and end, do nothing

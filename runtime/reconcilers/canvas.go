@@ -446,26 +446,16 @@ func (r *rendererRefs) text(ctx context.Context, content any) error {
 		return fmt.Errorf("content field is not a string")
 	}
 
-	initializer, ok := runtime.ResolverInitializers["text"]
-	if !ok {
-		return fmt.Errorf("text resolver not registered")
-	}
-	resolver, err := initializer(ctx, &runtime.ResolverOptions{
-		Runtime:    r.rt,
-		InstanceID: r.instanceID,
-		Properties: map[string]any{"text": contentStr},
-		Claims: &runtime.SecurityClaims{
-			UserID:         r.claims.UserID,
-			UserAttributes: r.claims.UserAttributes,
-			SkipChecks:     true,
-		},
+	analysis, err := r.rt.AnalyzeResolver(ctx, "text", &runtime.ResolverAnalysisOptions{
+		InstanceID:     r.instanceID,
+		Properties:     map[string]any{"text": contentStr},
+		UserAttributes: r.claims.UserAttributes,
 	})
 	if err != nil {
-		return fmt.Errorf("failed to initialize text resolver: %w", err)
+		return fmt.Errorf("failed to analyze text resolver: %w", err)
 	}
-	defer resolver.Close()
 
-	for _, ref := range resolver.Refs() {
+	for _, ref := range analysis.Refs {
 		if ref.Kind == runtime.ResourceKindMetricsView {
 			r.metricsViews[ref.Name] = true
 		}
@@ -480,26 +470,16 @@ func (r *rendererRefs) metricsSQL(ctx context.Context, sql any) error {
 		return fmt.Errorf("metrics_sql field is not a string")
 	}
 
-	initializer, ok := runtime.ResolverInitializers["metrics_sql"]
-	if !ok {
-		return fmt.Errorf("metrics_sql resolver not registered")
-	}
-	resolver, err := initializer(ctx, &runtime.ResolverOptions{
-		Runtime:    r.rt,
-		InstanceID: r.instanceID,
-		Properties: map[string]any{"sql": sqlStr},
-		Claims: &runtime.SecurityClaims{
-			UserID:         r.claims.UserID,
-			UserAttributes: r.claims.UserAttributes,
-			SkipChecks:     true, // To avoid infinite recursion
-		},
+	analysis, err := r.rt.AnalyzeResolver(ctx, "metrics_sql", &runtime.ResolverAnalysisOptions{
+		InstanceID:     r.instanceID,
+		Properties:     map[string]any{"sql": sqlStr},
+		UserAttributes: r.claims.UserAttributes,
 	})
 	if err != nil {
-		return fmt.Errorf("failed to initialize metrics_sql resolver: %w", err)
+		return fmt.Errorf("failed to analyze metrics_sql resolver: %w", err)
 	}
-	defer resolver.Close()
 
-	for _, ref := range resolver.Refs() {
+	for _, ref := range analysis.Refs {
 		if ref.Kind == runtime.ResourceKindMetricsView {
 			r.metricsViews[ref.Name] = true
 		}

@@ -167,10 +167,6 @@ func (r *legacyMetricsResolver) ResolveInteractive(ctx context.Context) (runtime
 	}, nil
 }
 
-func (r *legacyMetricsResolver) InferRequiredSecurityRules() ([]*runtimev1.SecurityRule, error) {
-	return legacyMetricsSecurityRules(r.query, r.metricsViewName)
-}
-
 func (r *legacyMetricsResolver) ResolveExport(ctx context.Context, w io.Writer, opts *runtime.ResolverExportOptions) error {
 	return errors.New("not implemented")
 }

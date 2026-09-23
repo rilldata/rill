@@ -143,10 +143,6 @@ func (r *projectStorageResolver) ResolveExport(ctx context.Context, w io.Writer,
 	return errors.New("not implemented")
 }
 
-func (r *projectStorageResolver) InferRequiredSecurityRules() ([]*runtimev1.SecurityRule, error) {
-	return nil, errors.New("security rule inference not implemented")
-}
-
 func (r *projectStorageResolver) resolveForConnector(ctx context.Context, name string) (size int64, driver string, err error) {
 	handle, release, err := r.runtime.AcquireHandle(ctx, r.instanceID, name)
 	if err != nil {

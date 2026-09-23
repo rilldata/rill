@@ -147,7 +147,3 @@ func (r *metricsViewCacheKeyResolver) ResolveInteractive(ctx context.Context) (r
 func (r *metricsViewCacheKeyResolver) ResolveExport(ctx context.Context, w io.Writer, opts *runtime.ResolverExportOptions) error {
 	return errors.New("not implemented")
 }
-
-func (r *metricsViewCacheKeyResolver) InferRequiredSecurityRules() ([]*runtimev1.SecurityRule, error) {
-	return nil, errors.New("security rule inference not implemented")
-}

@@ -184,10 +184,6 @@ func (r *metricsViewTimeRangeResolver) ResolveExport(ctx context.Context, w io.W
 	return errors.New("not implemented")
 }
 
-func (r *metricsViewTimeRangeResolver) InferRequiredSecurityRules() ([]*runtimev1.SecurityRule, error) {
-	return nil, errors.New("security rule inference not implemented")
-}
-
 // resolveTimestampResult resolves timestamps for a metrics view including rollup data.
 // It parses all rows: the first row (table="") populates the base TimestampsResult, and subsequent rows (table=name) populate TimestampsResult.Rollups.
 func resolveTimestampResult(ctx context.Context, rt *runtime.Runtime, instanceID, metricsViewName, timeDimension string, security *runtime.SecurityClaims, priority int) (metricsview.TimestampsResult, error) {

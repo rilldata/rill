@@ -222,10 +222,6 @@ func (r *textResolver) ResolveExport(ctx context.Context, w io.Writer, opts *run
 	return fmt.Errorf("text resolver does not support export")
 }
 
-func (r *textResolver) InferRequiredSecurityRules() ([]*runtimev1.SecurityRule, error) {
-	return nil, nil
-}
-
 func analyzeText(ctx context.Context, rt *runtime.Runtime, opts *runtime.ResolverAnalysisOptions) (*runtime.ResolverAnalysis, error) {
 	props := &textProps{}
 	if err := mapstructureutil.WeakDecode(opts.Properties, props); err != nil {

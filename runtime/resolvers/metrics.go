@@ -173,10 +173,6 @@ func (r *metricsResolver) ResolveInteractive(ctx context.Context) (runtime.Resol
 	return runtime.NewDriverResolverResult(res, meta), nil
 }
 
-func (r *metricsResolver) InferRequiredSecurityRules() ([]*runtimev1.SecurityRule, error) {
-	return metricsSecurityRules(r.query), nil
-}
-
 func (r *metricsResolver) ResolveExport(ctx context.Context, w io.Writer, opts *runtime.ResolverExportOptions) error {
 	return errors.New("not implemented")
 }

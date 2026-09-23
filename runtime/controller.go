@@ -63,6 +63,7 @@ type Reconciler interface {
 	// ResolveTransitiveAccess resolves transitive access rules for the resource of this type.
 	// For example, for a report resource, this determines all the resources needed to access the report like the underlying metrics view, explore, etc. and adds the corresponding security rules to the list of rules to be applied.
 	// And use the underlying query to determine the fields that are accessible in the report and where clause that needs to be applied.
+	// Use Runtime.AnalyzeResolver to infer resolver dependencies without re-entering security resolution.
 	ResolveTransitiveAccess(ctx context.Context, claims *SecurityClaims, res *runtimev1.Resource) ([]*runtimev1.SecurityRule, error)
 }
 
