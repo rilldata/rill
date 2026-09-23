@@ -21,7 +21,7 @@ import (
 func ValidateRendererProperties(renderer string, props map[string]any, metricsViews map[string]*runtimev1.MetricsViewSpec) error {
 	switch renderer {
 	case "line_chart", "bar_chart", "area_chart", "stacked_bar", "stacked_bar_normalized":
-		return validateCartesianChart(props, metricsViews)
+		return validateCartesianChart(renderer, props, metricsViews)
 	case "donut_chart", "pie_chart":
 		return validateCircularChart(props, metricsViews)
 	case "scatter_plot":
@@ -57,7 +57,9 @@ func ValidateRendererProperties(renderer string, props map[string]any, metricsVi
 }
 
 // validateCartesianChart validates properties for line_chart, bar_chart, area_chart, stacked_bar, and stacked_bar_normalized.
-func validateCartesianChart(props map[string]any, metricsViews map[string]*runtimev1.MetricsViewSpec) error {
+// The dimension is normally drawn on x and the measure on y.
+// The bar renderers also accept the measure on x (a quantitative x.type) and the dimension on y, which draws horizontal bars.
+func validateCartesianChart(renderer string, props map[string]any, metricsViews map[string]*runtimev1.MetricsViewSpec) error {
 	mvn, mv, err := requireMetricsView(props, metricsViews)
 	if err != nil {
 		return err
@@ -68,30 +70,44 @@ func validateCartesianChart(props map[string]any, metricsViews map[string]*runti
 		return err
 	}
 
-	xField, ok := pathutil.GetPathString(props, "x.field")
-	if !ok {
-		return errors.New("renderer properties must include a string 'x.field' property")
-	}
-	if !metricsViewHasDimension(mv, xField) {
-		return fmt.Errorf("referenced x.field %q is not a dimension in metrics view %q", xField, mvn)
-	}
-
-	yField, ok := pathutil.GetPathString(props, "y.field")
-	if !ok {
-		return errors.New("renderer properties must include a string 'y.field' property")
-	}
-	if !metricsViewHasMeasure(mv, yField) && !ephemeralNames[yField] {
-		return fmt.Errorf("referenced y.field %q is not a measure in metrics view %q", yField, mvn)
-	}
-
-	// Validate optional multi-field measures (y.fields)
-	yFields, err := getPathStringSlice(props, "y.fields")
+	dimensionAxis, measureAxis := "x", "y"
+	xType, _, err := getOptionalPathString(props, "x.type")
 	if err != nil {
 		return err
 	}
-	for _, f := range yFields {
+	if xType == "quantitative" {
+		switch renderer {
+		case "bar_chart", "stacked_bar", "stacked_bar_normalized":
+			dimensionAxis, measureAxis = "y", "x"
+		default:
+			return fmt.Errorf("renderer %q requires a dimension on x; a quantitative x (horizontal layout) is only supported by bar charts", renderer)
+		}
+	}
+
+	dimensionField, ok := pathutil.GetPathString(props, dimensionAxis+".field")
+	if !ok {
+		return fmt.Errorf("renderer properties must include a string '%s.field' property", dimensionAxis)
+	}
+	if !metricsViewHasDimension(mv, dimensionField) {
+		return fmt.Errorf("referenced %s.field %q is not a dimension in metrics view %q", dimensionAxis, dimensionField, mvn)
+	}
+
+	measureField, ok := pathutil.GetPathString(props, measureAxis+".field")
+	if !ok {
+		return fmt.Errorf("renderer properties must include a string '%s.field' property", measureAxis)
+	}
+	if !metricsViewHasMeasure(mv, measureField) && !ephemeralNames[measureField] {
+		return fmt.Errorf("referenced %s.field %q is not a measure in metrics view %q", measureAxis, measureField, mvn)
+	}
+
+	// Validate optional multi-field measures (e.g. y.fields)
+	measureFields, err := getPathStringSlice(props, measureAxis+".fields")
+	if err != nil {
+		return err
+	}
+	for _, f := range measureFields {
 		if !metricsViewHasMeasure(mv, f) && !ephemeralNames[f] {
-			return fmt.Errorf("referenced y.fields value %q is not a measure in metrics view %q", f, mvn)
+			return fmt.Errorf("referenced %s.fields value %q is not a measure in metrics view %q", measureAxis, f, mvn)
 		}
 	}
 
