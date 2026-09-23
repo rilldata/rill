@@ -12,6 +12,7 @@ import (
 	"github.com/rilldata/rill/runtime/storage"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
+	"gocloud.dev/blob"
 	"gocloud.dev/blob/fileblob"
 )
 
@@ -25,6 +26,8 @@ func TestBackupAndRestore(t *testing.T) {
 	// Create local bucket
 	bucket, err := fileblob.OpenBucket(bucketDir, &fileblob.Options{CreateDir: true})
 	require.NoError(t, err)
+	// Production scopes the bucket to the backup directory; see connection_cache.go and startBackups().
+	bucket = blob.PrefixedBucket(bucket, "shared/metastore/test-restore/")
 
 	cfg := map[string]any{
 		"dsn":            dbPath,
@@ -65,6 +68,7 @@ func TestRestoreCorruptSnapshot(t *testing.T) {
 
 	bucket, err := fileblob.OpenBucket(filepath.Join(tmpdir, "bucket"), &fileblob.Options{CreateDir: true})
 	require.NoError(t, err)
+	bucket = blob.PrefixedBucket(bucket, "shared/metastore/test-corrupt/")
 	require.NoError(t, bucket.WriteAll(t.Context(), backupSnapshotName, []byte("not a database"), nil))
 
 	// The restore must fail rather than leave a broken database behind for the next backup to overwrite.
@@ -77,9 +81,15 @@ func TestRestoreMissingSnapshot(t *testing.T) {
 	tmpdir := t.TempDir()
 	bucket, err := fileblob.OpenBucket(filepath.Join(tmpdir, "bucket"), &fileblob.Options{CreateDir: true})
 	require.NoError(t, err)
+	bucket = blob.PrefixedBucket(bucket, "shared/metastore/test-missing/")
 
 	// An empty backup directory is the normal case for a new deployment, so it must not be an error.
 	dbPath := filepath.Join(tmpdir, "data.sqlite")
+	require.NoError(t, restoreBackup(t.Context(), bucket, dbPath, zap.NewNop()))
+	require.NoFileExists(t, dbPath)
+
+	// A key that merely shares a prefix with the snapshot is not a snapshot.
+	require.NoError(t, bucket.WriteAll(t.Context(), backupSnapshotName+".old", []byte("decoy"), nil))
 	require.NoError(t, restoreBackup(t.Context(), bucket, dbPath, zap.NewNop()))
 	require.NoFileExists(t, dbPath)
 }
