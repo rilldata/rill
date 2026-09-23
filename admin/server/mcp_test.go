@@ -1,10 +1,16 @@
 package server
 
 import (
+	"context"
 	"encoding/json"
+	"net/http"
+	"net/http/httptest"
 	"testing"
 
 	"github.com/google/jsonschema-go/jsonschema"
+	"github.com/modelcontextprotocol/go-sdk/jsonrpc"
+	"github.com/modelcontextprotocol/go-sdk/mcp"
+	"github.com/rilldata/rill/admin/database"
 	"github.com/rilldata/rill/runtime/ai"
 	"github.com/stretchr/testify/require"
 )
@@ -40,4 +46,64 @@ func TestTakeMCPProjectArg(t *testing.T) {
 		_, _, _, err := takeMCPProjectArg(json.RawMessage(args))
 		require.Error(t, err, "args %q", args)
 	}
+}
+
+// TestCallRuntimeToolErrors verifies how errors from a runtime's MCP server are surfaced to the client.
+// It runs a real MCP server with the runtime's transport options, so the errors are the ones the SDK actually emits.
+func TestCallRuntimeToolErrors(t *testing.T) {
+	type echoArgs struct {
+		Name string `json:"name"`
+	}
+	type echoResult struct {
+		Name string `json:"name"`
+	}
+
+	// The server serves a single tool, like the runtime of a project without skills does not serve the skill tools.
+	handler := mcp.NewStreamableHTTPHandler(func(r *http.Request) *mcp.Server {
+		srv := mcp.NewServer(&mcp.Implementation{Name: "runtime"}, &mcp.ServerOptions{HasTools: true})
+		mcp.AddTool(srv, &mcp.Tool{Name: "echo"}, func(ctx context.Context, req *mcp.CallToolRequest, args echoArgs) (*mcp.CallToolResult, echoResult, error) {
+			return nil, echoResult{Name: args.Name}, nil
+		})
+		return srv
+	}, &mcp.StreamableHTTPOptions{Stateless: true, JSONResponse: true})
+	rt := httptest.NewServer(handler)
+	t.Cleanup(rt.Close)
+
+	s := &Server{}
+	depl := &database.Deployment{RuntimeHost: rt.URL, RuntimeInstanceID: "default"}
+	client := &mcpClient{sessionID: "session", userAgent: "test"}
+
+	// A successful call returns the runtime's result.
+	res, err := s.callRuntimeTool(t.Context(), depl, "jwt", client, "echo", json.RawMessage(`{"name":"hello"}`))
+	require.NoError(t, err)
+	require.False(t, res.IsError)
+	require.Equal(t, map[string]any{"name": "hello"}, res.StructuredContent)
+
+	// Calling a skill tool the runtime does not serve returns a tool error the client can act on, not a protocol error.
+	for _, name := range []string{ai.ListSkillsName, ai.LoadSkillName} {
+		res, err := s.callRuntimeTool(t.Context(), depl, "jwt", client, name, json.RawMessage(`{}`))
+		require.NoError(t, err, "tool %q", name)
+		require.True(t, res.IsError, "tool %q", name)
+		require.Len(t, res.Content, 1, "tool %q", name)
+		require.Contains(t, res.Content[0].(*mcp.TextContent).Text, "defines no skills", "tool %q", name)
+	}
+
+	// Invalid arguments are also returned as a tool error.
+	res, err = s.callRuntimeTool(t.Context(), depl, "jwt", client, "echo", json.RawMessage(`{"name":123}`))
+	require.NoError(t, err)
+	require.True(t, res.IsError)
+	require.NotEmpty(t, res.Content)
+
+	// Any other error from the runtime stays a protocol error.
+	internal := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"jsonrpc": "2.0",
+			"id":      1,
+			"error":   jsonrpc.Error{Code: jsonrpc.CodeInternalError, Message: "boom"},
+		})
+	}))
+	t.Cleanup(internal.Close)
+	_, err = s.callRuntimeTool(t.Context(), &database.Deployment{RuntimeHost: internal.URL, RuntimeInstanceID: "default"}, "jwt", client, "echo", json.RawMessage(`{}`))
+	require.ErrorContains(t, err, "boom")
 }
