@@ -498,6 +498,7 @@ Choose the appropriate chart type based on your data and analysis goals:
 - **` + "`bar_chart`" + `**: Standard choice for comparing discrete categories or groups
 - **` + "`stacked_bar`" + `**: Standard choice for comparing discrete categories or groups when split by dimension is involved
 - **Nominal axis**: Use nominal encoding for categorical x-axis
+- **Horizontal bars**: For bar_chart, stacked_bar or stacked_bar_normalized, put the measure on x (quantitative) and the dimension on y when category labels are long or there are many categories; sort the categories by the measure with ` + "`sort: -x`" + ` on y
 
 ### Part-to-Whole Relationships
 - **` + "`donut_chart`" + `**: Shows composition of a whole

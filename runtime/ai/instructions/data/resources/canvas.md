@@ -434,6 +434,26 @@ bar_chart:
     type: quantitative
 ```
 
+**Horizontal bars** (bars run left to right; useful for long category labels or many categories). `x` and `y` always name the field drawn on that axis, so put the measure on `x` and the dimension on `y`:
+
+```yaml
+bar_chart:
+  metrics_view: sales_metrics
+  title: "Revenue by Product Category"
+  color: primary
+  x:
+    field: total_revenue
+    type: quantitative
+    zeroBasedOrigin: true
+  y:
+    field: product_category
+    type: nominal
+    limit: 15
+    sort: -x
+```
+
+Sort values refer to axes, so `sort: -x` on `y` orders the categories by the measure. The same layout works for `stacked_bar` and `stacked_bar_normalized`; `line_chart` and `area_chart` always keep the dimension on `x`.
+
 ### Stacked Bar
 
 Show cumulative values across categories or time:
@@ -1092,6 +1112,7 @@ x:
 
 - `"x"` or `"-x"`: Sort by x-axis values (ascending/descending)
 - `"y"` or `"-y"`: Sort by y-axis values (ascending/descending)
+- `"y_delta"` or `"-y_delta"`: Sort by the change versus the comparison period (`"x_delta"` / `"-x_delta"` on the y field of a horizontal bar chart)
 - `"color"` or `"-color"`: Sort by color field (heatmaps)
 - `"measure"` or `"-measure"`: Sort by measure (donut charts)
 - Array of values: Custom sort order (e.g., `["Mon", "Tue", "Wed"]`)
@@ -1103,6 +1124,20 @@ y:
   field: total_revenue
   type: quantitative
   zeroBasedOrigin: true      # Start y-axis at zero
+```
+
+### Horizontal Bars
+
+`bar_chart`, `stacked_bar` and `stacked_bar_normalized` draw horizontal bars when the measure is on `x` and the dimension on `y`:
+
+```yaml
+x:
+  field: total_revenue
+  type: quantitative
+y:
+  field: category_name
+  type: nominal
+  sort: -x                   # Sort categories by the measure (x-axis)
 ```
 
 **Multiple measures:**
