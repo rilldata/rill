@@ -135,6 +135,8 @@ Metrics views consist of:
 - **Measures:** SQL expressions that define aggregations (usually numeric types)
 - **Security policies:** access rules and row filters that reference attributes of the querying user
 
+A metrics view can also be a *derived metrics view* that sets `parent:` (instead of `model:`) to inherit the data source, dimensions and measures of another metrics view, exposing only a selected subset of them. Derived metrics views cannot define their own dimensions or measures; see the metrics view instructions for details.
+
 ### Explores
 
 Explore resources define an "explore dashboard", an opinionated dashboard type that comes baked into Rill.
