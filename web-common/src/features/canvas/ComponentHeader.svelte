@@ -20,9 +20,15 @@
   let wide = false;
   let resizeObserver: ResizeObserver;
 
-  $: atleastOneFilter = Boolean(
-    filters?.time_filters || filters?.dimension_filters,
+  $: ({ specStore } = component);
+
+  $: hideLocalFilters = Boolean(
+    ($specStore as ComponentFilterProperties).hide_local_filters,
   );
+
+  $: atleastOneFilter =
+    Boolean(filters?.time_filters || filters?.dimension_filters) &&
+    !hideLocalFilters;
 
   onMount(() => {
     resizeObserver = new ResizeObserver(([entry]) => {

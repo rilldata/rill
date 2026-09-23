@@ -1219,6 +1219,20 @@ stacked_bar:
   # ... other config
 ```
 
+### Hiding Local Filters
+
+Components with `dimension_filters` or `time_filters` show the local filters as chips in the component header. Set `hide_local_filters: true` to hide the chips while the filters still apply to the component's data. Useful when the title already describes the filter:
+
+```yaml
+kpi_grid:
+  metrics_view: sales_metrics
+  title: North America revenue
+  measures:
+    - total_revenue
+  dimension_filters: region IN ('North America')
+  hide_local_filters: true
+```
+
 ### Vega-Lite Configuration
 
 Customize chart appearance with Vega-Lite config:

@@ -523,6 +523,8 @@
   "canvas_sequential_theme": "Sequential (Theme)",
   "canvas_show_axis_title": "Show axis title",
   "canvas_show_description_as_tooltip_label": "Show description as tooltip",
+  "canvas_show_local_filters_hint": "Hides the local filter chips from viewers. The filters still apply.",
+  "canvas_show_local_filters_label": "Show filters on component",
   "canvas_show_null_values": "Show null values",
   "canvas_show_other_bucket_label": "Show \"Other\" bucket",
   "canvas_show_totals_value": "Show totals value",
