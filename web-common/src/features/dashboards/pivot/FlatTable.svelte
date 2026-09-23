@@ -6,6 +6,7 @@
     calculateColumnWidth,
     calculateMeasureWidth,
     distributeColumnWidthsToFillContainer,
+    fitColumnWidthsToContainer,
   } from "@rilldata/web-common/features/dashboards/pivot/pivot-column-width-utils";
   import Resizer from "@rilldata/web-common/layout/Resizer.svelte";
   import { modified } from "@rilldata/web-common/lib/actions/modified-click";
@@ -113,6 +114,30 @@
   function getMeasureColumn(headerColumn: Column<PivotDataRow>) {
     const columnId = headerColumn.id;
     return measures.find((m) => m.name === columnId);
+  }
+
+  /**
+   * One-shot resize of every column so the table fits the given width.
+   * Writes the fitted widths into the column length store, so subsequent
+   * manual resizes start from the fitted widths and nothing re-fits.
+   */
+  export function fitColumnsToWidth(availableWidth: number) {
+    const fitted = fitColumnWidthsToContainer(
+      headers.map((header) => {
+        const isMeasure = !!getMeasureColumn(header.column);
+        return {
+          width:
+            $columnLengths.get(header.column.id) ?? WIDTHS.INIT_MEASURE_WIDTH,
+          min: isMeasure ? WIDTHS.MIN_MEASURE_WIDTH : WIDTHS.MIN_COL_WIDTH,
+          max: isMeasure ? WIDTHS.MAX_MEASURE_WIDTH : WIDTHS.MAX_COL_WIDTH,
+        };
+      }),
+      availableWidth,
+    );
+    columnLengths.update((lengths) => {
+      headers.forEach((header, i) => lengths.set(header.column.id, fitted[i]));
+      return lengths;
+    });
   }
 
   // Resolve conditional-formatting styling for a measure cell. Returns null for
