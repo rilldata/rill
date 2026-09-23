@@ -148,14 +148,7 @@ func (s *Server) combinedOpenAPISpec(w http.ResponseWriter, req *http.Request) e
 	}
 
 	for _, res := range list {
-		r, access, err := s.runtime.ApplySecurityPolicy(ctx, instanceID, claims, res)
-		if err != nil {
-			return httputil.Error(http.StatusInternalServerError, err)
-		}
-		if !access {
-			continue
-		}
-		apis[r.Meta.Name.Name] = r.GetApi()
+		apis[res.Meta.Name.Name] = res.GetApi()
 	}
 
 	// Generate the OpenAPI spec
