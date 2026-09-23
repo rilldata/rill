@@ -1219,6 +1219,27 @@ stacked_bar:
   # ... other config
 ```
 
+### Comparison Per Widget
+
+Components inherit the canvas time range and time comparison. `time_filters` overrides either one per component, using the same `tr` and `compare_tr` parameters as explore URLs. `inherit` is a special value for both: `tr=inherit` keeps the canvas time range, and once `tr` is set a missing `compare_tr` means no comparison. A comparison range is `rill-PP`, `rill-PD`, `rill-PW`, `rill-PM`, `rill-PQ`, `rill-PY`, or a custom `<start>,<end>` pair, and it applies even when the canvas comparison is off. Applies to `kpi_grid`, `table`, `pivot`, `leaderboard`, and time-series charts:
+
+| `time_filters` | Time range | Comparison |
+| --- | --- | --- |
+| (absent) | canvas | canvas |
+| `tr=inherit` | canvas | off |
+| `tr=inherit&compare_tr=rill-PP` | canvas | previous period |
+| `tr=P7D` | last 7 days | off |
+| `tr=P7D&compare_tr=inherit` | last 7 days | canvas |
+| `tr=P7D&compare_tr=rill-PP` | last 7 days | previous period |
+
+```yaml
+kpi_grid:
+  metrics_view: sales_metrics
+  measures:
+    - total_revenue
+  time_filters: tr=inherit
+```
+
 ### Vega-Lite Configuration
 
 Customize chart appearance with Vega-Lite config:
