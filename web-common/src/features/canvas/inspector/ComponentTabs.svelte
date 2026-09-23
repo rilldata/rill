@@ -19,7 +19,7 @@
   $: if (hasFilters) {
     tabs.push({
       tab: "filters",
-      label: m.canvas_filters(),
+      label: m.canvas_time_and_filters_tab(),
     });
   }
 
