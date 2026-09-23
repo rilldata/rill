@@ -98,12 +98,17 @@ type ResolverInitializer func(ctx context.Context, opts *ResolverOptions) (Resol
 // ResolverInitializers tracks resolver initializers by name.
 var ResolverInitializers = make(map[string]ResolverInitializer)
 
-// RegisterResolverInitializer registers a resolver initializer by name.
-func RegisterResolverInitializer(name string, initializer ResolverInitializer) {
+// RegisterResolver registers a resolver by name.
+// Every resolver must provide an analyzer; use AnalysisUnsupported if it cannot infer security rules.
+func RegisterResolver(name string, initializer ResolverInitializer, analyzer ResolverAnalyzer) {
+	if initializer == nil || analyzer == nil {
+		panic(fmt.Errorf("resolver %q must register both an initializer and an analyzer", name))
+	}
 	if ResolverInitializers[name] != nil {
 		panic(fmt.Errorf("resolver already registered for name %q", name))
 	}
 	ResolverInitializers[name] = initializer
+	resolverAnalyzers[name] = analyzer
 }
 
 // ResolveOptions are the options passed to the runtime's Resolve method.

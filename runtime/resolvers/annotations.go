@@ -15,7 +15,7 @@ import (
 )
 
 func init() {
-	runtime.RegisterResolverInitializer("metrics_annotations", newAnnotationsResolver)
+	runtime.RegisterResolver("metrics_annotations", newAnnotationsResolver, runtime.AnalysisUnsupported)
 }
 
 type metricsAnnotationsResolver struct {

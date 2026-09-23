@@ -22,7 +22,7 @@ import (
 )
 
 func init() {
-	runtime.RegisterResolverInitializer("sql", newSQL)
+	runtime.RegisterResolver("sql", newSQL, runtime.AnalysisUnsupported)
 }
 
 type sqlResolver struct {

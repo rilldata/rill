@@ -18,7 +18,7 @@ import (
 const _projectStorageDefaultCacheTTL = 60 * time.Second
 
 func init() {
-	runtime.RegisterResolverInitializer("project_storage", newProjectStorage)
+	runtime.RegisterResolver("project_storage", newProjectStorage, runtime.AnalysisUnsupported)
 }
 
 type projectStorageResolver struct {

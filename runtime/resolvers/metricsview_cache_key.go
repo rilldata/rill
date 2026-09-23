@@ -16,7 +16,7 @@ import (
 )
 
 func init() {
-	runtime.RegisterResolverInitializer("metrics_cache_key", newMetricsViewCacheKeyResolver)
+	runtime.RegisterResolver("metrics_cache_key", newMetricsViewCacheKeyResolver, runtime.AnalysisUnsupported)
 }
 
 type metricsViewCacheKeyResolver struct {

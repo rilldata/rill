@@ -14,7 +14,7 @@ import (
 )
 
 func init() {
-	runtime.RegisterResolverInitializer("union", newUnion)
+	runtime.RegisterResolver("union", newUnion, analyzeUnion)
 }
 
 type unionResolver struct {
@@ -32,13 +32,9 @@ type unionResolverEntry struct {
 
 // newUnion creates a resolver that invokes multiple resolvers and returns the union of their results.
 func newUnion(ctx context.Context, opts *runtime.ResolverOptions) (runtime.Resolver, error) {
-	props := &unionProps{}
-	if err := mapstructure.Decode(opts.Properties, props); err != nil {
+	props, err := parseUnion(opts.Properties)
+	if err != nil {
 		return nil, err
-	}
-
-	if len(props.Resolvers) == 0 {
-		return nil, fmt.Errorf("union resolver requires at least one resolver")
 	}
 
 	resolvers := make([]runtime.Resolver, 0, len(props.Resolvers))
@@ -191,4 +187,36 @@ func closeResolvers(resolvers []runtime.Resolver) error {
 		}
 	}
 	return errors.Join(errs...)
+}
+
+func parseUnion(properties map[string]any) (*unionProps, error) {
+	props := &unionProps{}
+	if err := mapstructure.Decode(properties, props); err != nil {
+		return nil, err
+	}
+
+	if len(props.Resolvers) == 0 {
+		return nil, fmt.Errorf("union resolver requires at least one resolver")
+	}
+
+	return props, nil
+}
+
+func analyzeUnion(ctx context.Context, rt *runtime.Runtime, opts *runtime.ResolverAnalysisOptions) (*runtime.ResolverAnalysis, error) {
+	props, err := parseUnion(opts.Properties)
+	if err != nil {
+		return nil, err
+	}
+	result := &runtime.ResolverAnalysis{}
+	for _, entry := range props.Resolvers {
+		child := *opts
+		child.Properties = entry.Properties
+		analysis, err := rt.AnalyzeResolver(ctx, entry.Name, &child)
+		if err != nil {
+			return nil, fmt.Errorf("failed to analyze %q resolver in union: %w", entry.Name, err)
+		}
+		result.Refs = append(result.Refs, analysis.Refs...)
+		result.RequiredSecurityRules = append(result.RequiredSecurityRules, analysis.RequiredSecurityRules...)
+	}
+	return result, nil
 }

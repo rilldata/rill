@@ -15,7 +15,7 @@ import (
 )
 
 func init() {
-	runtime.RegisterResolverInitializer("resource_status", newResourceStatus)
+	runtime.RegisterResolver("resource_status", newResourceStatus, runtime.AnalysisUnsupported)
 }
 
 // resourceStatusResolver is a resolver that returns an overview of the instance's resources and their reconcile status.

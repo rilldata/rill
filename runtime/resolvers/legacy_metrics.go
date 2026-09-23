@@ -20,7 +20,7 @@ import (
 )
 
 func init() {
-	runtime.RegisterResolverInitializer("legacy_metrics", newLegacyMetrics)
+	runtime.RegisterResolver("legacy_metrics", newLegacyMetrics, analyzeLegacyMetrics)
 }
 
 type legacyMetricsResolver struct {
@@ -45,25 +45,9 @@ type legacyMetricsResolverArgs struct {
 }
 
 func newLegacyMetrics(ctx context.Context, opts *runtime.ResolverOptions) (runtime.Resolver, error) {
-	props := &legacyMetricsResolverProps{}
-	if err := mapstructureutil.WeakDecode(opts.Properties, props); err != nil {
-		return nil, err
-	}
-
-	args := &legacyMetricsResolverArgs{}
-	if err := mapstructureutil.WeakDecode(opts.Args, args); err != nil {
-		return nil, err
-	}
-
-	// Build query proto
-	qpb, err := queries.ProtoFromJSON(props.QueryName, props.QueryArgsJSON, args.ExecutionTime)
+	qpb, args, metricsViewName, err := parseLegacyMetrics(opts.Properties, opts.Args)
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse query: %w", err)
-	}
-
-	metricsViewName, err := queries.MetricsViewFromQuery(props.QueryName, props.QueryArgsJSON)
-	if err != nil {
-		return nil, fmt.Errorf("failed extract metrics view name from query: %w", err)
+		return nil, err
 	}
 
 	span := trace.SpanFromContext(ctx)
@@ -183,13 +167,17 @@ func (r *legacyMetricsResolver) ResolveInteractive(ctx context.Context) (runtime
 	}, nil
 }
 
+func (r *legacyMetricsResolver) InferRequiredSecurityRules() ([]*runtimev1.SecurityRule, error) {
+	return legacyMetricsSecurityRules(r.query, r.metricsViewName)
+}
+
 func (r *legacyMetricsResolver) ResolveExport(ctx context.Context, w io.Writer, opts *runtime.ResolverExportOptions) error {
 	return errors.New("not implemented")
 }
 
-func (r *legacyMetricsResolver) InferRequiredSecurityRules() ([]*runtimev1.SecurityRule, error) {
+func legacyMetricsSecurityRules(query runtime.Query, metricsViewName string) ([]*runtimev1.SecurityRule, error) {
 	// Extract fields and row filter from the query using the queries.SecurityFromRuntimeQuery helper
-	rowFilter, fields, err := queries.SecurityFromRuntimeQuery(r.query)
+	rowFilter, fields, err := queries.SecurityFromRuntimeQuery(query)
 	if err != nil {
 		return nil, fmt.Errorf("failed to extract accessible fields: %w", err)
 	}
@@ -206,7 +194,7 @@ func (r *legacyMetricsResolver) InferRequiredSecurityRules() ([]*runtimev1.Secur
 		rules = append(rules, &runtimev1.SecurityRule{
 			Rule: &runtimev1.SecurityRule_RowFilter{
 				RowFilter: &runtimev1.SecurityRuleRowFilter{
-					ConditionResources: []*runtimev1.ResourceName{{Kind: runtime.ResourceKindMetricsView, Name: r.metricsViewName}},
+					ConditionResources: []*runtimev1.ResourceName{{Kind: runtime.ResourceKindMetricsView, Name: metricsViewName}},
 					Expression:         expr,
 				},
 			},
@@ -217,7 +205,7 @@ func (r *legacyMetricsResolver) InferRequiredSecurityRules() ([]*runtimev1.Secur
 		rules = append(rules, &runtimev1.SecurityRule{
 			Rule: &runtimev1.SecurityRule_FieldAccess{
 				FieldAccess: &runtimev1.SecurityRuleFieldAccess{
-					ConditionResources: []*runtimev1.ResourceName{{Kind: runtime.ResourceKindMetricsView, Name: r.metricsViewName}},
+					ConditionResources: []*runtimev1.ResourceName{{Kind: runtime.ResourceKindMetricsView, Name: metricsViewName}},
 					Fields:             fields,
 					Allow:              true,
 					Exclusive:          true,
@@ -415,4 +403,49 @@ func (r *legacyResolverResult) Next() (map[string]any, error) {
 
 func (r *legacyResolverResult) MarshalJSON() ([]byte, error) {
 	return r.data, nil
+}
+
+func parseLegacyMetrics(properties, arguments map[string]any) (*runtimev1.Query, *legacyMetricsResolverArgs, string, error) {
+	props := &legacyMetricsResolverProps{}
+	if err := mapstructureutil.WeakDecode(properties, props); err != nil {
+		return nil, nil, "", err
+	}
+
+	args := &legacyMetricsResolverArgs{}
+	if err := mapstructureutil.WeakDecode(arguments, args); err != nil {
+		return nil, nil, "", err
+	}
+
+	// Build query proto
+	qpb, err := queries.ProtoFromJSON(props.QueryName, props.QueryArgsJSON, args.ExecutionTime)
+	if err != nil {
+		return nil, nil, "", fmt.Errorf("failed to parse query: %w", err)
+	}
+
+	metricsViewName, err := queries.MetricsViewFromQuery(props.QueryName, props.QueryArgsJSON)
+	if err != nil {
+		return nil, nil, "", fmt.Errorf("failed extract metrics view name from query: %w", err)
+	}
+
+	return qpb, args, metricsViewName, nil
+}
+
+func analyzeLegacyMetrics(_ context.Context, _ *runtime.Runtime, opts *runtime.ResolverAnalysisOptions) (*runtime.ResolverAnalysis, error) {
+	qpb, args, name, err := parseLegacyMetrics(opts.Properties, opts.Args)
+	if err != nil {
+		return nil, err
+	}
+	// ProtoToQuery only builds the query structure; analysis never executes it.
+	query, err := queries.ProtoToQuery(qpb, nil, args.ExecutionTime)
+	if err != nil {
+		return nil, err
+	}
+	rules, err := legacyMetricsSecurityRules(query, name)
+	if err != nil {
+		return nil, err
+	}
+	return &runtime.ResolverAnalysis{
+		Refs:                  []*runtimev1.ResourceName{{Kind: runtime.ResourceKindMetricsView, Name: name}},
+		RequiredSecurityRules: rules,
+	}, nil
 }

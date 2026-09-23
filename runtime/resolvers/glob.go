@@ -31,7 +31,7 @@ import (
 )
 
 func init() {
-	runtime.RegisterResolverInitializer("glob", newGlob)
+	runtime.RegisterResolver("glob", newGlob, runtime.AnalysisUnsupported)
 }
 
 // globPartitionType is the type of partitioning for a "glob" resolver.

@@ -19,7 +19,7 @@ import (
 const defaultTimestampsCacheTTL = 5 * time.Minute
 
 func init() {
-	runtime.RegisterResolverInitializer("metrics_time_range", newMetricsViewTimeRangeResolver)
+	runtime.RegisterResolver("metrics_time_range", newMetricsViewTimeRangeResolver, runtime.AnalysisUnsupported)
 }
 
 type metricsViewTimeRangeResolver struct {

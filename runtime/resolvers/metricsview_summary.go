@@ -15,7 +15,7 @@ import (
 )
 
 func init() {
-	runtime.RegisterResolverInitializer("metrics_summary", newMetricsSummaryResolver)
+	runtime.RegisterResolver("metrics_summary", newMetricsSummaryResolver, runtime.AnalysisUnsupported)
 }
 
 type metricsSummaryResolver struct {
