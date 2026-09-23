@@ -397,7 +397,6 @@
   "canvas_comparison_off": "Desactivada",
   "canvas_comparison_override_hint": "Reemplaza la comparación heredada del canvas.",
   "canvas_comparison_range_label": "Comparación temporal",
-  "canvas_comparison_select_aria": "Seleccionar comparación temporal del widget",
   "canvas_comparison_values_label": "Valores de comparación",
   "canvas_config": "Configuración",
   "canvas_configuration": "Configuración de {label}",

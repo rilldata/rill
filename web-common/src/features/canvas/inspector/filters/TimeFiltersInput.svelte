@@ -4,15 +4,19 @@
   import { getCanvasStore } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
   import SuperPill from "@rilldata/web-common/features/dashboards/time-controls/super-pill/SuperPill.svelte";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
+  import CanvasComparisonPill from "@rilldata/web-common/features/canvas/filters/CanvasComparisonPill.svelte";
   import { TIME_COMPARISON } from "@rilldata/web-common/lib/time/config";
-  import type { TimeComparisonOption } from "@rilldata/web-common/lib/time/types";
+  import {
+    TimeComparisonOption,
+    type TimeRange,
+  } from "@rilldata/web-common/lib/time/types";
+  import { DateTime, Interval } from "luxon";
   import type { BaseCanvasComponent } from "../../components/BaseCanvasComponent";
   import type { ComponentFilterProperties } from "../../components/types";
   import {
     resolveTimeFilters,
     TIME_FILTER_INHERIT,
   } from "../../components/time-filters";
-  import ComparisonRangeInput from "./ComparisonRangeInput.svelte";
 
   export let id: string;
   export let component: BaseCanvasComponent;
@@ -25,7 +29,7 @@
 
   $: ({ instanceId } = runtimeClient);
 
-  $: ({ localTimeControls, specStore } = component);
+  $: ({ localTimeControls, specStore, timeAndFilterStore } = component);
 
   $: ({
     canvasEntity: {
@@ -87,6 +91,34 @@
     ? (TIME_COMPARISON[$globalComparisonRangeStore as TimeComparisonOption]
         ?.label ?? m.time_custom_range())
     : m.canvas_comparison_off();
+
+  // The comparison in effect for this widget, inherited or its own.
+  $: ({ showTimeComparison, comparisonTimeRangeState } = $timeAndFilterStore);
+  $: selectedComparison = comparisonTimeRangeState?.selectedComparisonTimeRange;
+  $: comparisonInterval = selectedComparison
+    ? Interval.fromDateTimes(
+        DateTime.fromJSDate(selectedComparison.start).setZone(activeTimeZone),
+        DateTime.fromJSDate(selectedComparison.end).setZone(activeTimeZone),
+      )
+    : undefined;
+
+  function onDisplayTimeComparison(show: boolean) {
+    // Turning comparison on picks the previous period, like the canvas toggle;
+    // inheriting could leave it off when the canvas comparison is off.
+    component.setComparisonRange(
+      show ? TimeComparisonOption.CONTIGUOUS : "none",
+    );
+  }
+
+  function onSetSelectedComparisonRange(range: TimeRange) {
+    if (range.name === TimeComparisonOption.CUSTOM) {
+      component.setComparisonRange(
+        `${range.start.toISOString()},${range.end.toISOString()}`,
+      );
+    } else if (range.name) {
+      component.setComparisonRange(range.name);
+    }
+  }
 </script>
 
 <div class="flex flex-col gap-y-1 pt-1">
@@ -148,18 +180,31 @@
         label={m.canvas_comparison_range_label()}
         id="{id}-comparison"
       />
-      <ComparisonRangeInput
-        resolved={resolved.comparison}
-        inheritedLabel={inheritedComparisonLabel}
-        {interval}
-        {selectedRangeAlias}
-        {activeTimeGrain}
-        {activeTimeZone}
-        {minTimeGrain}
-        {minDate}
-        {maxDate}
-        onSelect={(value) => component.setComparisonRange(value)}
-      />
+      <div class="flex flex-row flex-wrap gap-y-1.5 items-center">
+        <CanvasComparisonPill
+          {minTimeGrain}
+          {minDate}
+          {maxDate}
+          {interval}
+          selectedRange={selectedRangeAlias}
+          {activeTimeGrain}
+          showFullRange={false}
+          comparisonInterval={comparisonInterval?.isValid
+            ? comparisonInterval
+            : undefined}
+          comparisonRange={selectedComparison?.name}
+          {showTimeComparison}
+          {activeTimeZone}
+          inheritOption={{
+            label: m.canvas_inherit_from_canvas(),
+            description: inheritedComparisonLabel,
+            selected: resolved.comparison.mode === "inherit",
+            onSelect: () => component.setComparisonRange(TIME_FILTER_INHERIT),
+          }}
+          {onDisplayTimeComparison}
+          {onSetSelectedComparisonRange}
+        />
+      </div>
       <div class="text-fg-secondary">
         {#if resolved.comparison.mode === "inherit"}
           {m.canvas_comparison_inherit_hint()}

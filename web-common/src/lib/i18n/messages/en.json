@@ -397,7 +397,6 @@
   "canvas_comparison_off": "Off",
   "canvas_comparison_override_hint": "Overrides the comparison inherited from canvas.",
   "canvas_comparison_range_label": "Time comparison",
-  "canvas_comparison_select_aria": "Select widget time comparison",
   "canvas_comparison_values_label": "Comparison values",
   "canvas_config": "Config",
   "canvas_configuration": "{label} Configuration",

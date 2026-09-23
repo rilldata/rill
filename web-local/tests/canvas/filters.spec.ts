@@ -33,7 +33,7 @@ test.describe("canvas time filters", () => {
 
     await page
       .getByRole("complementary", { name: "Inspector Panel" })
-      .getByLabel("Select widget time comparison")
+      .getByLabel("Select time comparison option")
       .click();
 
     await page.getByRole("menuitem", { name: "Previous week" }).click();
@@ -84,18 +84,22 @@ test.describe("canvas time filters", () => {
       .getByRole("button", { name: "Time & filters", exact: true })
       .click();
 
-    const comparisonSelect = page
-      .getByRole("complementary", { name: "Inspector Panel" })
-      .getByLabel("Select widget time comparison");
-    await comparisonSelect.click();
-    await page.getByRole("menuitem", { name: "Off", exact: true }).click();
+    const inspector = page.getByRole("complementary", {
+      name: "Inspector Panel",
+    });
+    const comparisonSelect = inspector.getByLabel(
+      "Select time comparison option",
+    );
+    await expect(comparisonSelect).toContainText("Inherit from canvas");
 
-    // Only this widget loses comparison; the canvas comparison stays on.
+    // The widget toggle only affects this widget; the canvas comparison stays on.
+    await inspector.getByLabel("Toggle time comparison").click();
     await expect(kpi).not.toContainText("vs");
     await expect(globalSwitch).toBeChecked();
 
     await comparisonSelect.click();
     await page.getByRole("menuitem", { name: "Inherit from canvas" }).click();
+    await expect(comparisonSelect).toContainText("Inherit from canvas");
     await expect(kpi).toContainText("vs");
   });
 
@@ -126,10 +130,11 @@ test.describe("canvas time filters", () => {
     await page
       .getByRole("button", { name: "Time & filters", exact: true })
       .click();
+    // The first switch in the panel is the widget comparison toggle.
     await page
       .getByRole("complementary", { name: "Inspector Panel" })
       .getByRole("switch")
-      .first()
+      .nth(1)
       .click();
     await page
       .getByRole("complementary", { name: "Inspector Panel" })
