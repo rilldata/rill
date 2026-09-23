@@ -36,6 +36,8 @@ export type AlertFormValues = {
   enableSlackNotification: boolean;
   slackChannels: string[];
   slackUsers: string[];
+  enableWebhookNotification: boolean;
+  webhookUrls: string[];
   enableEmailNotification: boolean;
   emailRecipients: string[];
   refreshWhenDataRefreshes: boolean;
@@ -158,6 +160,7 @@ export const alertFormValidationSchema = yup(
     criteriaOperation: string().required("Required"),
     snooze: string().required("Required"),
     slackUsers: array(string().email("Invalid email")),
+    webhookUrls: array(string().url("Invalid URL")),
     emailRecipients: array(string().email("Invalid email")),
   }),
 ) as unknown as ValidationAdapter<AlertFormValues>;
