@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"io"
 	"io/fs"
 	"os"
 	"time"
@@ -13,7 +14,6 @@ import (
 	"github.com/rilldata/rill/runtime/storage"
 	"go.uber.org/zap"
 	"gocloud.dev/blob"
-	"gocloud.dev/gcerrors"
 )
 
 // Max time a restore may run for.
@@ -117,13 +117,28 @@ func shouldRestoreBackup(ctx context.Context, dsn string) (dbPath string, ok boo
 // It is a no-op (returning nil) if the backup directory doesn't contain a snapshot,
 // which is the normal case for a new deployment.
 func restoreBackup(ctx context.Context, bucket *blob.Bucket, dbPath string, logger *zap.Logger) error {
-	attrs, err := bucket.Attributes(ctx, backupSnapshotName)
-	if err != nil {
-		if gcerrors.Code(err) == gcerrors.NotFound {
-			logger.Info("sqlite: no backup found, starting with an empty database")
-			return nil
+	// Look up the snapshot with a list instead of an attributes lookup, so that a missing snapshot is an empty
+	// listing rather than an error we have to classify.
+	// We can't rely on that classification: gocloud's gcsblob matches not-found errors with "==" and a type
+	// assertion, but cloud.google.com/go/storage wraps them, so a genuine 404 arrives as code=Unknown.
+	var snapshot *blob.ListObject
+	iter := bucket.List(&blob.ListOptions{Prefix: backupSnapshotName})
+	for {
+		obj, err := iter.Next(ctx)
+		if errors.Is(err, io.EOF) {
+			break
 		}
-		return fmt.Errorf("failed to check for backup snapshot: %w", err)
+		if err != nil {
+			return fmt.Errorf("failed to check for backup snapshot: %w", err)
+		}
+		if obj.Key == backupSnapshotName {
+			snapshot = obj
+			break
+		}
+	}
+	if snapshot == nil {
+		logger.Info("sqlite: no backup found, starting with an empty database")
+		return nil
 	}
 
 	// Download the snapshot to a temporary file in the same directory as the database, so the rename below is atomic.
@@ -180,8 +195,8 @@ func restoreBackup(ctx context.Context, bucket *blob.Bucket, dbPath string, logg
 
 	// Log at warn level: this only happens after data loss, and the snapshot may be up to a day old.
 	logger.Warn("sqlite: restored database from backup",
-		zap.Time("snapshot_time", attrs.ModTime),
-		zap.Int64("snapshot_size_bytes", attrs.Size),
+		zap.Time("snapshot_time", snapshot.ModTime),
+		zap.Int64("snapshot_size_bytes", snapshot.Size),
 		zap.Int("snapshot_migration_version", snapshotVersion),
 	)
 	return nil

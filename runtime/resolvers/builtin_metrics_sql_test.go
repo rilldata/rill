@@ -33,7 +33,7 @@ measures:
 	})
 	testruntime.RequireReconcileState(t, rt, instanceID, 3, 0, 0)
 
-	api, err := rt.APIForName(ctx, instanceID, "metrics-sql")
+	api, err := rt.APIForName(ctx, instanceID, "metrics-sql", &runtime.SecurityClaims{})
 	require.NoError(t, err)
 
 	tt := []struct {

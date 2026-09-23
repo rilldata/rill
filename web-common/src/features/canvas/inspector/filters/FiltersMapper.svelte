@@ -6,7 +6,11 @@
   import DimensionFiltersInput from "@rilldata/web-common/features/canvas/inspector/filters/DimensionFiltersInput.svelte";
   import TimeFiltersInput from "@rilldata/web-common/features/canvas/inspector/filters/TimeFiltersInput.svelte";
   import type { BaseCanvasComponent } from "../../components/BaseCanvasComponent";
-  import type { ComponentSpec } from "../../components/types";
+  import { resolveTimeFilters } from "../../components/time-filters";
+  import type {
+    ComponentFilterProperties,
+    ComponentSpec,
+  } from "../../components/types";
   import type { AllKeys, FilterInputParam } from "../types";
 
   export let component: BaseCanvasComponent;
@@ -15,7 +19,6 @@
     specStore,
     type,
     localExpressionFilters,
-    localTimeControls,
     parent: { name: canvasName },
     timeAndFilterStore,
   } = component);
@@ -46,15 +49,18 @@
 
   $: ({ hasTimeSeries } = $timeAndFilterStore);
 
+  // Mirrors the chip visibility check in ComponentHeader so the switch only
+  // appears when the component would actually show local filter chips.
+  $: filterProperties = localParamValues as ComponentFilterProperties;
+  $: ({ hasLocalTimeRange, comparison } = resolveTimeFilters(
+    filterProperties.time_filters,
+  ));
   $: hasLocalFilter =
-    ("time_filters" in localParamValues &&
-      Boolean(localParamValues.time_filters)) ||
-    ("dimension_filters" in localParamValues &&
-      Boolean(localParamValues.dimension_filters));
+    Boolean(filterProperties.dimension_filters) ||
+    hasLocalTimeRange ||
+    comparison.mode === "local";
 
-  $: hideLocalFilters =
-    "hide_local_filters" in localParamValues &&
-    Boolean(localParamValues.hide_local_filters);
+  $: hideLocalFilters = Boolean(filterProperties.hide_local_filters);
 </script>
 
 <div>
@@ -66,7 +72,7 @@
             {canvasName}
             id={key}
             {metricsView}
-            {localTimeControls}
+            {component}
             showComparison={config?.meta?.hasComparison}
             showGrain={config?.meta?.hasGrain}
           />
