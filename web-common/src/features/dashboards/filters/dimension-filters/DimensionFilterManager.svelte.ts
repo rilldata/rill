@@ -10,6 +10,7 @@ import {
   createInExpression,
   createLikeExpression,
   getValuesInExpression,
+  maybeConvertEqualityToInExpressions,
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils.ts";
 import { convertExpressionToFilterParam } from "@rilldata/web-common/features/dashboards/url-state/filters/converters.ts";
 import type { MetricsViewsProvider } from "@rilldata/web-common/features/metrics-views/providers/MetricsViewsProvider.svelte.ts";
@@ -29,6 +30,9 @@ export class DimensionFilterManager {
   public inputText = $state("");
   public exclude = $state(false);
 
+  // A condition the chip has no mode for, `publisher GT 'x'` for example, kept verbatim.
+  // It is applied and written back as is until an edit replaces it with a selection.
+  private rawExpr: V1Expression | undefined;
   private oldMode: DimensionFilterMode;
   // Cause of the change currently being applied. See `runWithSource`.
   private activeSource: FilterChangeSource;
@@ -81,7 +85,10 @@ export class DimensionFilterManager {
     let initSelectedValues: string[] = [];
     let initInputText: string = "";
     let initExclude: boolean = false;
+    let initRawExpr: V1Expression | undefined = undefined;
 
+    // `=` is a single value selection and `!=` its exclude form.
+    expr = maybeConvertEqualityToInExpressions(expr);
     const op = expr.cond?.op;
     if (op === V1Operation.OPERATION_IN || op === V1Operation.OPERATION_NIN) {
       initMode = inList.includes(this.name)
@@ -98,6 +105,8 @@ export class DimensionFilterManager {
         expr.cond?.exprs?.[1]?.val?.toString?.() ?? "",
       );
       initExclude = op === V1Operation.OPERATION_NLIKE;
+    } else if (op) {
+      initRawExpr = expr;
     }
 
     this.mode = initMode;
@@ -105,6 +114,7 @@ export class DimensionFilterManager {
     this.selectedValues = initSelectedValues;
     this.inputText = initInputText;
     this.exclude = initExclude;
+    this.rawExpr = initRawExpr;
     this.commit(false);
   }
 
@@ -125,6 +135,7 @@ export class DimensionFilterManager {
   }
 
   public apply(dimensionManager: DimensionFilterManager) {
+    this.rawExpr = dimensionManager.rawExpr;
     this.mode = dimensionManager.mode;
     this.selectedValues = [...dimensionManager.selectedValues];
     this.inputText = dimensionManager.inputText;
@@ -133,6 +144,7 @@ export class DimensionFilterManager {
   }
 
   public setSelectedValues(dimensionValues: string[], exclude: boolean) {
+    this.rawExpr = undefined;
     this.mode = DimensionFilterMode.Select;
     this.selectedValues = dimensionValues;
     this.inputText = "";
@@ -141,6 +153,7 @@ export class DimensionFilterManager {
   }
 
   public toggleValue(dimensionValue: string, isExclusiveFilter: boolean) {
+    this.rawExpr = undefined;
     const inIdx = this.selectedValues.findIndex((v) => v === dimensionValue);
 
     if (inIdx === -1) {
@@ -156,6 +169,7 @@ export class DimensionFilterManager {
   }
 
   public appendSelectedValues(dimensionValues: string[]) {
+    this.rawExpr = undefined;
     const newValues = dimensionValues.filter(
       (v) => !this.selectedValues.includes(v),
     );
@@ -165,6 +179,7 @@ export class DimensionFilterManager {
   }
 
   public removeSelectedValues(dimensionValues: string[]) {
+    this.rawExpr = undefined;
     this.selectedValues = this.selectedValues.filter(
       (v) => !dimensionValues.includes(v),
     );
@@ -172,6 +187,7 @@ export class DimensionFilterManager {
   }
 
   public setInList(values: string[], exclude: boolean) {
+    this.rawExpr = undefined;
     this.mode = DimensionFilterMode.InList;
     this.selectedValues = values;
     this.inputText = "";
@@ -180,6 +196,7 @@ export class DimensionFilterManager {
   }
 
   public setContainsText(searchText: string, exclude: boolean) {
+    this.rawExpr = undefined;
     this.mode = DimensionFilterMode.Contains;
     this.selectedValues = [];
     this.inputText = searchText;
@@ -188,11 +205,13 @@ export class DimensionFilterManager {
   }
 
   public toggleExclude() {
+    this.rawExpr = undefined;
     this.exclude = !this.exclude;
     this.commit();
   }
 
   public clear() {
+    this.rawExpr = undefined;
     this.selectedValues = [];
     this.inputText = "";
     const wasEmpty = this.expr === undefined;
@@ -246,6 +265,8 @@ export class DimensionFilterManager {
           : undefined;
         break;
     }
+    // A condition the chip has no mode for is applied as it was parsed.
+    if (this.rawExpr) this.expr = this.rawExpr;
     this.oldMode = this.mode;
 
     this.param = this.expr
