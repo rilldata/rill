@@ -196,19 +196,15 @@ security:
 		require.Equal(t, http.StatusForbidden, rec.Code)
 	})
 
-	t.Run("openapi spec omits inaccessible apis", func(t *testing.T) {
-		spec := func(claims *runtime.SecurityClaims) *httptest.ResponseRecorder {
+	t.Run("openapi spec lists all apis regardless of claims", func(t *testing.T) {
+		for _, claims := range []*runtime.SecurityClaims{free, enterprise} {
 			rec := httptest.NewRecorder()
 			req := httptest.NewRequest(http.MethodGet, "/", nil).WithContext(auth.WithClaims(context.Background(), claims))
 			req.SetPathValue("instance_id", instanceID)
 			httputil.Handler(srv.combinedOpenAPISpec).ServeHTTP(rec, req)
 			require.Equal(t, http.StatusOK, rec.Code)
-			return rec
+			require.Contains(t, rec.Body.String(), "/enterprise_only")
+			require.Contains(t, rec.Body.String(), "/open")
 		}
-		body := spec(free).Body.String()
-		require.NotContains(t, body, "/enterprise_only")
-		require.Contains(t, body, "/open")
-		body = spec(enterprise).Body.String()
-		require.Contains(t, body, "/enterprise_only")
 	})
 }

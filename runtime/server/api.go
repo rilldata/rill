@@ -124,8 +124,7 @@ func (s *Server) combinedOpenAPISpec(w http.ResponseWriter, req *http.Request) e
 	}
 
 	// Check if user has access to query for API data
-	claims := auth.GetClaims(ctx, instanceID)
-	if !claims.Can(runtime.ReadAPI) {
+	if !auth.GetClaims(ctx, instanceID).Can(runtime.ReadAPI) {
 		return httputil.Errorf(http.StatusForbidden, "does not have access to custom APIs")
 	}
 
