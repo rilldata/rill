@@ -1911,7 +1911,6 @@ export type AdminServiceUpdateOrganizationBody = {
   faviconAssetId?: string;
   thumbnailAssetId?: string;
   defaultProjectRole?: string;
-  defaultProvisioner?: string;
   billingEmail?: string;
 };
 

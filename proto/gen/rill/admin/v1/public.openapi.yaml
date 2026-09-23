@@ -2682,8 +2682,6 @@ paths:
                                     type: string
                                 defaultProjectRole:
                                     type: string
-                                defaultProvisioner:
-                                    type: string
                                 description:
                                     type: string
                                 displayName:

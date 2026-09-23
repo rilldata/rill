@@ -506,8 +506,6 @@ paths:
                 type: string
               defaultProjectRole:
                 type: string
-              defaultProvisioner:
-                type: string
               billingEmail:
                 type: string
       x-visibility: public

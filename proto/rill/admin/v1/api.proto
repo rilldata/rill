@@ -1463,8 +1463,9 @@ message UpdateOrganizationRequest {
   optional string favicon_asset_id = 7;
   optional string thumbnail_asset_id = 9;
   optional string default_project_role = 8;
-  optional string default_provisioner = 10;
   optional string billing_email = 4 [(validate.rules).string.email = true];
+  // Reserved for backwards compatibility (default_provisioner, which is now only settable via SudoUpdateOrganizationDefaultProvisioner)
+  reserved 10;
 }
 
 message UpdateOrganizationResponse {

@@ -782,11 +782,6 @@ export class UpdateOrganizationRequest extends Message<UpdateOrganizationRequest
   defaultProjectRole?: string;
 
   /**
-   * @generated from field: optional string default_provisioner = 10;
-   */
-  defaultProvisioner?: string;
-
-  /**
    * @generated from field: optional string billing_email = 4;
    */
   billingEmail?: string;
@@ -808,7 +803,6 @@ export class UpdateOrganizationRequest extends Message<UpdateOrganizationRequest
     { no: 7, name: "favicon_asset_id", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 9, name: "thumbnail_asset_id", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 8, name: "default_project_role", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
-    { no: 10, name: "default_provisioner", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 4, name: "billing_email", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
   ]);
 
