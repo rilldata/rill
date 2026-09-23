@@ -177,10 +177,19 @@ export function createStateManagers({
     runtimeClient,
     exploreName,
   );
+
   const expressionFilterManager = new ExpressionFilterManager(
     dashboardConfigProvider.metricsViewsProvider,
     dashboardConfigProvider.yamlConfigProvider,
   );
+  expressionFilterManager.storeSync.on("change", () => {
+    if (expressionFilterManager.updating) return;
+    metricsExplorerStore.syncExpressionFilter(
+      exploreName,
+      expressionFilterManager,
+    );
+  });
+
   const timeFilterManager = new TimeFilterManager(
     runtimeClient,
     dashboardConfigProvider.metricsViewsProvider,
@@ -188,6 +197,10 @@ export function createStateManagers({
     true,
     true,
   );
+  timeFilterManager.storeSync.on("change", () => {
+    if (timeFilterManager.updating) return;
+    metricsExplorerStore.syncTimeFilters(exploreName, timeFilterManager);
+  });
 
   return {
     runtimeClient,

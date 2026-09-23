@@ -1,7 +1,6 @@
 import { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import { MetricsViewsProvider } from "@rilldata/web-common/features/metrics-views/providers/MetricsViewsProvider.svelte.ts";
 import type { YAMLConfigProvider } from "@rilldata/web-common/features/dashboards/providers/YAMLConfigProvider.svelte.ts";
-import { copySubsetParams } from "@rilldata/web-common/lib/url-utils.ts";
 import type { UrlParamsStore } from "@rilldata/web-common/lib/store-utils/url-params-store-sync.svelte.ts";
 import {
   V1TimeGrain,
@@ -49,6 +48,8 @@ import { measureSelection } from "@rilldata/web-common/features/dashboards/time-
 import { getDurationObjectFromMS } from "@rilldata/web-common/lib/time/transforms";
 import { getOrderedStartEndDateTime } from "@rilldata/web-common/features/dashboards/time-series/utils.ts";
 import { toStore } from "svelte/store";
+import { UrlParamsChangeTracker } from "@rilldata/web-common/lib/store-utils/url-search-params-store.svelte.ts";
+import { EventEmitter } from "@rilldata/web-common/lib/event-emitter.ts";
 
 type ComparisonTimeRangeOption = {
   name: TimeComparisonOption;
@@ -85,6 +86,10 @@ export type TimeControlState = {
   // need to tell "this dashboard has no time dimension" apart from "we do not know yet".
   hasTimeSeries: boolean | undefined;
   ready: boolean;
+};
+
+type TimeFilterManagerEvents = {
+  ready: void;
 };
 
 export class TimeFilterManager implements UrlParamsStore {
@@ -137,9 +142,16 @@ export class TimeFilterManager implements UrlParamsStore {
   public curParams = $state(new URLSearchParams());
 
   public hasTimeSeries: boolean | undefined;
-  public ready: boolean;
+  public ready = $state(false);
   public specLoaded: boolean;
-  public dataLoaded = $state(false);
+
+  private events = new EventEmitter<TimeFilterManagerEvents>();
+  public readonly on = this.events.on.bind(
+    this.events,
+  ) as typeof this.events.on;
+
+  public paramKeys = TimeFilterParams;
+  public readonly storeSync: UrlParamsChangeTracker;
 
   // Temporary lock in explore. Once we move whereFilter out of explore, we can remove this.
   public updating = false;
@@ -154,7 +166,13 @@ export class TimeFilterManager implements UrlParamsStore {
     public readonly allowCustomTimeRange: boolean,
     private readonly addDefault: boolean = false,
     private readonly saveGrain: boolean = true,
+    private readonly log = false,
   ) {
+    metricsViewsProvider.on("time-specs-loaded", () => {
+      this.ready = true;
+      this.events.emit("ready");
+    });
+
     this.minDate = $derived.by(() => {
       const minDate = this.metricsViewsProvider.timeRangeSummary?.min
         ? DateTime.fromISO(this.metricsViewsProvider.timeRangeSummary.min)
@@ -269,24 +287,14 @@ export class TimeFilterManager implements UrlParamsStore {
       }
       return hasTimeSeries;
     });
+  }
 
-    this.specLoaded = $derived(this.hasTimeSeries !== undefined);
-
-    this.ready = $derived.by(() => {
-      // 'undefined' means data has not loaded yet.
-      if (this.hasTimeSeries === undefined) return false;
-      // A dashboard without a time dimension has no time range to resolve,
-      // so waiting for one would never let the consumers of this become ready.
-      // The specs have all resolved by this point, so hasTimeSeries is never undefined here.
-      if (!this.hasTimeSeries) return true;
-
-      return this.dataLoaded;
-    });
+  public normalizeParams(urlParams: URLSearchParams): URLSearchParams {
+    return urlParams;
   }
 
   public setUrlParams(urlParams: URLSearchParams) {
-    this.curParams = copySubsetParams(urlParams, TimeFilterParams);
-    this.dataLoaded = false;
+    if (this.log) console.log("setUrlParams", urlParams.toString());
 
     if (this.saveGrain) {
       const urlGrain = urlParams.get(ExploreStateURLParams.TimeGrain);
@@ -334,7 +342,11 @@ export class TimeFilterManager implements UrlParamsStore {
 
     // Apply time range last so that params are taken from url
     if (urlParams.has(ExploreStateURLParams.TimeRange)) {
-      void this.applyTimeRange(urlParams.get(ExploreStateURLParams.TimeRange)!);
+      void this.applyTimeRange(
+        urlParams.get(ExploreStateURLParams.TimeRange)!,
+        this.timeZone,
+        false,
+      );
     } else {
       let defaultTimeRange = this.yamlConfigProvider.defaultTimeRange;
       if (!defaultTimeRange) {
@@ -344,12 +356,11 @@ export class TimeFilterManager implements UrlParamsStore {
         );
       }
       if (defaultTimeRange && this.addDefault) {
-        void this.applyTimeRange(defaultTimeRange);
+        void this.applyTimeRange(defaultTimeRange, this.timeZone, false);
       } else {
         this.timeRange = undefined;
         this.fetchingTimeRange = "";
         this.interval = undefined;
-        this.dataLoaded = true;
       }
     }
   }
@@ -452,7 +463,7 @@ export class TimeFilterManager implements UrlParamsStore {
         overrideRillTimeRef(parsed, newAsOfString);
       }
 
-      return this.applyTimeRange(parsed.toString());
+      return this.applyTimeRange(parsed.toString(), this.timeZone);
     } catch {
       // This function is called in a controlled manner and should not throw
     }
@@ -473,7 +484,7 @@ export class TimeFilterManager implements UrlParamsStore {
       [direction === "left" ? "plus" : "minus"](panAmount)
       .toISO();
 
-    void this.applyTimeRange(`${newStart} to ${newEnd}`);
+    void this.applyTimeRange(`${newStart} to ${newEnd}`, this.timeZone);
   }
 
   public onSelectGrainEnding(grain: V1TimeGrain | undefined) {
@@ -486,11 +497,12 @@ export class TimeFilterManager implements UrlParamsStore {
       ref: this.ref,
     });
 
-    return this.applyTimeRange(newString);
+    return this.applyTimeRange(newString, this.timeZone);
   }
 
   public onSelectGrain(grain: V1TimeGrain) {
     this.timeGrain = grain;
+    this.storeSync.stateChanged();
   }
 
   public onSelectZone(tz: string) {
@@ -516,25 +528,28 @@ export class TimeFilterManager implements UrlParamsStore {
       ref,
     });
 
-    return this.applyTimeRange(newString);
+    return this.applyTimeRange(newString, this.timeZone);
   }
 
   public onSelectTimeDimension(timeDimension: string) {
     this.timeDimension = timeDimension;
-    if (this.timeRange) void this.applyTimeRange(this.timeRange);
+    if (this.timeRange) void this.applyTimeRange(this.timeRange, this.timeZone);
+    else this.storeSync.stateChanged();
   }
 
   public onSelectComparisonRange(range: string) {
     this.applyComparisonRange(range);
     this.showComparison = true;
+    this.storeSync.stateChanged();
   }
 
   public setShowComparison(showComparison: boolean) {
     this.showComparison = showComparison;
+    this.storeSync.stateChanged();
   }
   public onToggleShowComparison() {
     this.showComparison = !this.showComparison;
-    console.log("Show comparison toggled:", this.showComparison);
+    this.storeSync.stateChanged();
   }
 
   public onScrubRange({ start, end, isScrubbing }: ScrubRange) {
@@ -547,12 +562,16 @@ export class TimeFilterManager implements UrlParamsStore {
 
     ({ start, end } = getOrderedStartEndDateTime(start, end));
     const newInterval = Interval.fromDateTimes(start, end);
-    if (newInterval.isValid) this.lastDefinedScrubInterval = newInterval;
+    if (!newInterval.isValid) return;
+
+    this.lastDefinedScrubInterval = newInterval;
+    this.storeSync.stateChanged();
   }
 
   public resetScrubRange() {
     this.lastDefinedScrubInterval = undefined;
     this.scrubInterval = undefined;
+    this.storeSync.stateChanged();
   }
 
   public createLocalFilterStore(metricsViewName: string) {
@@ -589,7 +608,11 @@ export class TimeFilterManager implements UrlParamsStore {
     this.executionTime = executionTime;
   }
 
-  private async applyTimeRange(newTimeRange: string, tz = this.timeZone) {
+  private async applyTimeRange(
+    newTimeRange: string,
+    tz: string,
+    notifyChange = true,
+  ) {
     measureSelection.clear();
     this.resetScrubRange();
 
@@ -600,6 +623,13 @@ export class TimeFilterManager implements UrlParamsStore {
       !this.metricsViewsProvider.metricsViewNames.length ||
       this.fetchingTimeRange === newTimeRange
     ) {
+      if (this.log)
+        console.log(
+          "applyTimeRange::earlyReturn",
+          !this.metricsViewsProvider.metricsViewNames.length,
+          this.fetchingTimeRange === newTimeRange,
+        );
+      if (notifyChange) this.storeSync.stateChanged();
       return;
     }
     this.fetchingTimeRange = newTimeRange;
@@ -674,7 +704,8 @@ export class TimeFilterManager implements UrlParamsStore {
     if (this.comparisonTimeRange)
       this.applyComparisonRange(this.comparisonTimeRange);
 
-    this.dataLoaded = true;
+    if (this.log) console.log("applyTimeRange::dataUpdated", newTimeRange);
+    if (notifyChange) this.storeSync.stateChanged();
   }
 
   private applyComparisonRange(newComparisonTimeRange: string) {

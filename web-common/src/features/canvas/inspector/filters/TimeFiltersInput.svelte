@@ -9,7 +9,7 @@
   import TimeFilters from "@rilldata/web-common/features/dashboards/time-controls/TimeFilters.svelte";
   import type { MetricsViewsProvider } from "@rilldata/web-common/features/metrics-views/providers/MetricsViewsProvider.svelte.ts";
   import type { YAMLConfigProvider } from "@rilldata/web-common/features/dashboards/providers/YAMLConfigProvider.svelte.ts";
-  import { syncStoreWithSource } from "@rilldata/web-common/lib/store-utils/url-params-store-sync.svelte.ts";
+  import { onMount } from "svelte";
 
   let {
     id,
@@ -38,13 +38,6 @@
   let {
     canvasEntity: { timeFilterManager, dashboardProvider },
   } = $derived(getCanvasStore(canvasName, instanceId));
-  // svelte-ignore state_referenced_locally
-  syncStoreWithSource(
-    localTimeFilters,
-    async (newUrlParams) =>
-      updateLocalTimeFilterString(newUrlParams.toString()),
-    false,
-  );
 
   let { curParams } = $derived(localTimeFilters);
 
@@ -55,6 +48,12 @@
   let defaultTimeRange = $derived(
     dashboardProvider.yamlConfigProvider.defaultTimeRange,
   );
+
+  onMount(() => {
+    return localTimeFilters.storeSync.on("change", (newUrlParams) => {
+      updateLocalTimeFilterString(newUrlParams.toString());
+    });
+  });
 </script>
 
 <div class="flex flex-col gap-y-1 pt-1">

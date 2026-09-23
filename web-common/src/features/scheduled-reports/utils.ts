@@ -24,6 +24,7 @@ import { ExpressionFilterManager } from "@rilldata/web-common/features/dashboard
 import { MetricsViewsProvider } from "@rilldata/web-common/features/metrics-views/providers/MetricsViewsProvider.svelte.ts";
 import { YAMLConfigProvider } from "@rilldata/web-common/features/dashboards/providers/YAMLConfigProvider.svelte.ts";
 import { TimeFilterManager } from "@rilldata/web-common/features/dashboards/time-controls/TimeFilterManager.svelte.ts";
+import { ExploreStateURLParams } from "@rilldata/web-common/features/dashboards/url-state/url-params.ts";
 
 export enum ReportRunAs {
   Recipient = "recipient",
@@ -194,22 +195,35 @@ export function getFiltersAndTimeControlsFromAggregationRequest(
     yamlConfigProvider,
     false,
   );
-  if (timeRange?.roundToGrain)
-    timeFilterManager.onSelectGrain(timeRange.roundToGrain);
-  if (timeRange?.timeZone) timeFilterManager.onSelectZone(timeRange.timeZone);
 
+  const timeFilterParams = new URLSearchParams();
+  if (timeRange?.roundToGrain) {
+    timeFilterParams.set(
+      ExploreStateURLParams.TimeGrain,
+      timeRange.roundToGrain,
+    );
+  }
+  if (timeRange?.timeZone) {
+    timeFilterParams.set(ExploreStateURLParams.TimeZone, timeRange.timeZone);
+  }
   if (aggregationRequest.comparisonTimeRange) {
     const selectedCompareTimeRange = mapV1TimeRangeToComparisonTimeOption(
       timeRange,
       aggregationRequest.comparisonTimeRange,
     );
-    if (selectedCompareTimeRange)
-      timeFilterManager.onSelectComparisonRange(selectedCompareTimeRange);
+    if (selectedCompareTimeRange) {
+      timeFilterParams.set(
+        ExploreStateURLParams.ComparisonTimeRange,
+        selectedCompareTimeRange,
+      );
+    }
+  }
+  const selectedTimeRange = mapV1TimeRangeToRillTime(timeRange);
+  if (selectedTimeRange) {
+    timeFilterParams.set(ExploreStateURLParams.TimeRange, selectedTimeRange);
   }
 
-  const selectedTimeRange = mapV1TimeRangeToRillTime(timeRange);
-  if (selectedTimeRange)
-    void timeFilterManager.onSelectRange(selectedTimeRange);
+  timeFilterManager.storeSync.setUrlParams(timeFilterParams);
 
   return {
     expressionFilterManager,

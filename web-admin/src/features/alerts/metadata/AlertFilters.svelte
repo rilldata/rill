@@ -57,7 +57,7 @@
     false,
   );
   $effect(() => {
-    if (!timeRange || !timeFilterManager.specLoaded) return;
+    if (!timeRange || !timeFilterManager.ready) return;
     const urlParams = new URLSearchParams();
     urlParams.set(
       ExploreStateURLParams.TimeRange,

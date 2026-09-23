@@ -1,7 +1,6 @@
 <script lang="ts">
   import { ExpressionFilterManager } from "@rilldata/web-common/features/dashboards/filters/ExpressionFilterManager.svelte.ts";
   import ExpressionFilters from "@rilldata/web-common/features/dashboards/filters/ExpressionFilters.svelte";
-  import { syncStoreWithSource } from "@rilldata/web-common/lib/store-utils/url-params-store-sync.svelte.ts";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { DashboardConfigProvider } from "@rilldata/web-common/features/dashboards/providers/DashboardConfigProvider.svelte.ts";
 
@@ -35,12 +34,6 @@
   );
   // svelte-ignore state_referenced_locally
   onManagerCreated?.(expressionFilterManager);
-
-  syncStoreWithSource(
-    expressionFilterManager,
-    async (newUrlParams) => expressionFilterManager.setUrlParams(newUrlParams),
-    false,
-  );
 
   // Call `setUrlParams` to load the data
   let loaded = false;

@@ -131,6 +131,9 @@ export abstract class BaseCanvasComponent<T = ComponentSpec> {
       this.metricsViewsProvider,
       this.yamlConfigProvider,
       this.parent.timeFilterManager.allowCustomTimeRange,
+      false,
+      true,
+      true,
     );
 
     this.unsubscribeSpec = this.specStore.subscribe((spec) => {
@@ -138,12 +141,10 @@ export abstract class BaseCanvasComponent<T = ComponentSpec> {
         this.metricsViewName,
         (spec["dimension_filters"] ?? "") as string,
       );
-      this.syncExpressionFilters();
 
       this.localTimeFilters.setUrlParams(
         new URLSearchParams(spec?.["time_filters"] ?? ""),
       );
-      this.syncTimeFilters();
     });
   }
 
@@ -193,6 +194,7 @@ export abstract class BaseCanvasComponent<T = ComponentSpec> {
     const urlParams = this.localTimeFilters.timeRange
       ? this.localTimeFilters.curParams
       : this.parent.timeFilterManager.curParams;
+    console.log("syncTimeFilters", urlParams);
     this.timeFilters.setUrlParams(urlParams);
   }
 

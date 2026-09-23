@@ -24,6 +24,7 @@ import { mergeFilterParams } from "@rilldata/web-common/features/dashboards/filt
 import { getSortFilterManagers } from "@rilldata/web-common/features/dashboards/filters/get-sort-filter-managers.ts";
 import { expandCompressedParams } from "@rilldata/web-common/features/dashboards/url-state/compression.ts";
 import type { UrlParamsStore } from "@rilldata/web-common/lib/store-utils/url-params-store-sync.svelte.ts";
+import { UrlParamsChangeTracker } from "@rilldata/web-common/lib/store-utils/url-search-params-store.svelte.ts";
 
 export type ExpressionState = {
   expr: V1Expression | undefined;
@@ -69,14 +70,31 @@ export class ExpressionFilterManager implements UrlParamsStore {
   // Temporary lock in explore. Once we move whereFilter out of explore, we can remove this.
   public updating = false;
 
-  public specLoaded: boolean;
+  public ready = $state<boolean>(false);
   public dataLoaded = $state<boolean>(false);
+
+  public paramKeys = new Set<string>([ExploreStateURLParams.Filters]);
+  public readonly storeSync: UrlParamsChangeTracker;
 
   public constructor(
     public readonly metricsViewsProvider: MetricsViewsProvider,
     public readonly yamlConfigProvider: YAMLConfigProvider,
     private readonly singleParamFormMv = false,
   ) {
+    this.storeSync = new UrlParamsChangeTracker(this);
+    metricsViewsProvider.on("update-metrics-views", (newMetricsViewsNames) => {
+      this.paramKeys = new Set([
+        ExploreStateURLParams.Filters,
+        ...newMetricsViewsNames.map((mvName) =>
+          getParamKeyForMv(mvName, singleParamFormMv),
+        ),
+      ]);
+    });
+    metricsViewsProvider.on("specs-loaded", () => {
+      this.ready = true;
+      this.events.emit("ready");
+    });
+
     this.topLevelJoiner = $state(
       JoinerFilterManager.parse(
         this.metricsViewsProvider,
@@ -115,8 +133,6 @@ export class ExpressionFilterManager implements UrlParamsStore {
     this.hasSomeFilter = $derived(
       Object.keys(this.exprByMetricsView).length > 0,
     );
-
-    this.specLoaded = $derived(this.metricsViewsProvider.ready);
   }
 
   public clone() {
@@ -133,34 +149,30 @@ export class ExpressionFilterManager implements UrlParamsStore {
     return cloned;
   }
 
-  public setUrlParams(searchParams: URLSearchParams) {
+  public normalizeParams(urlParams: URLSearchParams): URLSearchParams {
     let expandedUrlParams: URLSearchParams;
     try {
-      expandedUrlParams = expandCompressedParams(searchParams);
+      expandedUrlParams = expandCompressedParams(urlParams);
     } catch {
       // If we fail to decompress, do not throw here.
-      return;
+      return urlParams;
     }
 
-    // Use and save just the params set by this class.
-    const relevantUrlParams = new URLSearchParams();
-    expandedUrlParams.forEach((value, key) => {
-      if (
-        key === ExploreStateURLParams.Filters ||
-        key.startsWith(ExploreStateURLParams.Filters + ".")
-      ) {
-        relevantUrlParams.append(key, value);
-      }
-    });
+    const singularParam = expandedUrlParams.get(ExploreStateURLParams.Filters);
+    if (!singularParam || this.singleParamFormMv) return expandedUrlParams;
 
-    // Do not update managers if params didnt change.
-    if (
-      this.curParams &&
-      this.curParams.toString() === relevantUrlParams.toString()
-    )
-      return;
+    const newUrlParams = new URLSearchParams();
+    this.metricsViewsProvider.metricsViewNames.forEach((mvName) =>
+      newUrlParams.set(
+        getParamKeyForMv(mvName, this.singleParamFormMv),
+        singularParam,
+      ),
+    );
+    return newUrlParams;
+  }
 
-    const { expr, inList, advanced } = mergeFilterParams(relevantUrlParams);
+  public setUrlParams(searchParams: URLSearchParams) {
+    const { expr, inList, advanced } = mergeFilterParams(searchParams);
 
     this.temporaryFilterName = undefined;
     this.topLevelJoiner = JoinerFilterManager.parse(
@@ -171,20 +183,14 @@ export class ExpressionFilterManager implements UrlParamsStore {
       this.events,
     ) as JoinerFilterManager;
     this.isComplexFilter = advanced;
-    this.dataLoaded = true;
-
-    this.curParams = normalizeUrlParams(
-      relevantUrlParams,
-      this.metricsViewsProvider.metricsViewNames,
-      this.singleParamFormMv,
-    );
   }
 
   public setParamForMetricsView(mvName: string, param: string) {
     const paramKey = getParamKeyForMv(mvName, this.singleParamFormMv);
     const newParams = new URLSearchParams(this.curParams);
     newParams.set(paramKey, param);
-    this.setUrlParams(newParams);
+    // Thread through the sync code to ensure only changes update the internal state.
+    this.storeSync.setUrlParams(newParams);
   }
 
   public setExprForMetricsView(
@@ -244,10 +250,9 @@ export class ExpressionFilterManager implements UrlParamsStore {
     }
   }
 
-  // TODO: add return type based on callback type?
-  public dimensionFilterAction(
+  public dimensionFilterAction<Ret>(
     name: string,
-    callback: (dimensionFilterManager: DimensionFilterManager) => any,
+    callback: (dimensionFilterManager: DimensionFilterManager) => Ret,
     // Anything other than the filter bar reaches the managers through here,
     // so this is where a caller names itself as the cause of the change.
     source?: FilterChangeSource,
@@ -271,9 +276,9 @@ export class ExpressionFilterManager implements UrlParamsStore {
     return ret;
   }
 
-  public measureFilterAction(
+  public measureFilterAction<Ret>(
     name: string,
-    callback: (measureFilterManager: MeasureFilterManager) => any,
+    callback: (measureFilterManager: MeasureFilterManager) => Ret,
     source?: FilterChangeSource,
   ) {
     const measureFilterManager =
@@ -348,24 +353,6 @@ export class ExpressionFilterManager implements UrlParamsStore {
         },
     );
   }
-}
-
-function normalizeUrlParams(
-  urlParams: URLSearchParams,
-  metricsViews: string[],
-  singleParamFormMv: boolean,
-) {
-  const singularParam = urlParams.get(ExploreStateURLParams.Filters);
-  if (!singularParam || singleParamFormMv) return urlParams;
-
-  const newUrlParams = new URLSearchParams();
-  metricsViews.forEach((mvName) =>
-    newUrlParams.set(
-      getParamKeyForMv(mvName, singleParamFormMv),
-      singularParam,
-    ),
-  );
-  return newUrlParams;
 }
 
 export function getParamKeyForMv(mvName: string, singleParamFormMv: boolean) {

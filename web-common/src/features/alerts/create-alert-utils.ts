@@ -74,7 +74,7 @@ export function getNewAlertInitialFiltersFormValues(
     metricsViewProvider,
     yamlConfigProvider,
   );
-  expressionFilterManager.setUrlParams(get(page).url.searchParams);
+  expressionFilterManager.storeSync.setUrlParams(get(page).url.searchParams);
 
   const timeFilterManager = new TimeFilterManager(
     client,
@@ -82,7 +82,7 @@ export function getNewAlertInitialFiltersFormValues(
     yamlConfigProvider,
     false,
   );
-  timeFilterManager.setUrlParams(get(page).url.searchParams);
+  timeFilterManager.storeSync.setUrlParams(get(page).url.searchParams);
 
   return {
     expressionFilterManager,

@@ -52,6 +52,7 @@ import { flattenExpression } from "@rilldata/web-common/features/dashboards/stor
 import { CanvasDashboardConfigProvider } from "@rilldata/web-common/features/dashboards/providers/DashboardConfigProvider.svelte.ts";
 import { TimeFilterManager } from "@rilldata/web-common/features/dashboards/time-controls/TimeFilterManager.svelte.ts";
 import { getComparisonTypeFromRangeString } from "@rilldata/web-common/features/dashboards/time-controls/time-range-utils.ts";
+import { page } from "$app/stores";
 
 export const lastVisitedState = new Map<string, string>();
 
@@ -174,6 +175,7 @@ export class CanvasEntity {
       if (source && source === get(this.activeComponent)) return;
       this.clearActiveComponent();
     });
+    this.expressionFilterManager.storeSync.syncToUrl("clear=true");
 
     this.timeFilterManager = new TimeFilterManager(
       this.client,
@@ -183,6 +185,7 @@ export class CanvasEntity {
       false,
       false,
     );
+    this.timeFilterManager.storeSync.syncToUrl("clear=true");
 
     this.processSpec(this.spec);
   }
@@ -445,13 +448,8 @@ export class CanvasEntity {
     if (!isolated) {
       this.saveSnapshot(searchParams.toString());
     }
-    // Only sync when metricsViewsProvider has loaded. Once loaded sync is handled by syncStoreWithSource
-    // TODO: find a good common method of sync between explore and canvas once time filters is also unified
-    if (this.dashboardProvider.metricsViewsProvider.ready) {
-      this.expressionFilterManager.setUrlParams(searchParams);
-      if (this.timeFilterManager.ready)
-        this.timeFilterManager.setUrlParams(searchParams);
-    }
+    this.expressionFilterManager.setUrlParams(searchParams);
+    this.timeFilterManager.setUrlParams(searchParams);
     this.applyTabsFromURL(searchParams);
   };
 

@@ -8,7 +8,6 @@
 
 <script lang="ts">
   import { get } from "svelte/store";
-  import CanvasComponentSync from "@rilldata/web-common/features/canvas/CanvasComponentSync.svelte";
 
   // When false (the PDF export render), skip lazy-loading entirely: render
   // immediately and never touch the shared `visible` latch. Data still fetches
@@ -70,8 +69,6 @@
 
   $: allowBorder = !hideBorder.has(renderer);
 </script>
-
-<CanvasComponentSync {component} />
 
 <article
   bind:this={container}

@@ -7,7 +7,7 @@
     getParamKeyForMv,
   } from "@rilldata/web-common/features/dashboards/filters/ExpressionFilterManager.svelte.ts";
   import VerticalExpressionFilters from "@rilldata/web-common/features/dashboards/filters/VerticalExpressionFilters.svelte";
-  import { syncStoreWithSource } from "@rilldata/web-common/lib/store-utils/url-params-store-sync.svelte.ts";
+  import { onMount } from "svelte";
 
   let {
     id,
@@ -20,11 +20,15 @@
     excludedDimensions: Record<string, boolean>;
     updateLocalFilterString: (newFilterString: string) => void;
   } = $props();
-  // svelte-ignore state_referenced_locally
-  syncStoreWithSource(
-    localExpressionFilters,
-    async (newUrlParams) => {
-      localExpressionFilters.setUrlParams(newUrlParams);
+
+  let localFiltersEnabledOverride = $state(false);
+
+  let localFiltersEnabled = $derived(
+    localExpressionFilters.hasSomeFilter || localFiltersEnabledOverride,
+  );
+
+  onMount(() => {
+    return localExpressionFilters.storeSync.on("change", (newUrlParams) => {
       updateLocalFilterString(
         newUrlParams.get(
           getParamKeyForMv(
@@ -33,15 +37,8 @@
           ),
         ) ?? "",
       );
-    },
-    false,
-  );
-
-  let localFiltersEnabledOverride = $state(false);
-
-  let localFiltersEnabled = $derived(
-    localExpressionFilters.hasSomeFilter || localFiltersEnabledOverride,
-  );
+    });
+  });
 </script>
 
 <div class="flex flex-col gap-y-2 pt-1">

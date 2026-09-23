@@ -19,10 +19,17 @@ import {
   V1TimeGrainToOrder,
 } from "@rilldata/web-common/lib/time/new-grains.ts";
 import { writable } from "svelte/store";
+import { EventEmitter } from "@rilldata/web-common/lib/event-emitter.ts";
 
 export type MetricsViewName = string;
 export type DimensionName = string;
 export type MeasureName = string;
+
+type MetricsViewsProviderEvents = {
+  "update-metrics-views": string[];
+  "specs-loaded": void;
+  "time-specs-loaded": void;
+};
 
 /**
  * Reactive view over a set of metrics views.
@@ -36,16 +43,28 @@ export type MeasureName = string;
  * know which metrics views a given measure or dimension belongs to.
  */
 export class MetricsViewsProvider {
-  /** Valid spec per metrics view name. Absent while the resource is loading or invalid. */
+  /**
+   * Valid spec per metrics view name.
+   * Absent while the resource is loading or invalid.
+   */
   public specs = $state<Record<MetricsViewName, V1MetricsViewSpec>>({});
-  /** Time range summary per metrics view name. Absent for metrics views without a time dimension. */
+  /**
+   * Time range summary per metrics view name.
+   * Absent for metrics views without a time dimension.
+   */
   public timeRangeSummaries = $state<
     Record<MetricsViewName, V1TimeRangeSummary>
   >({});
-  /** Max queryable time range in milliseconds per metrics view name. Zero when unrestricted. */
+  /**
+   * Max queryable time range in milliseconds per metrics view name.
+   * Zero when unrestricted.
+   */
   public maxQueryTimeRangeMillis = $state<Record<string, number>>({});
 
-  /** Dimension spec per metrics view, keyed by dimension name (or column when unnamed). */
+  /**
+   * Dimension spec per metrics view, keyed by dimension name (or column when unnamed).
+   * The same dimension name can be defined by more than one metrics view.
+   */
   public dimensionSpecs = $state<
     Record<DimensionName, Record<MetricsViewName, MetricsViewSpecDimension>>
   >({});
@@ -57,19 +76,35 @@ export class MetricsViewsProvider {
     Record<MeasureName, Record<MetricsViewName, MetricsViewSpecMeasure>>
   >({});
 
-  /** Deduped by name across metrics views; the first metrics view to define a name wins. */
+  /**
+   * List of unique measures by name. The first measure seen with the name wins.
+   */
   public measures = $state<MetricsViewSpecMeasure[]>([]);
+  /**
+   * Measures narrowed down to simple measures as filtered by {@link isSimpleMeasure}
+   */
   public simpleMeasures = $state<MetricsViewSpecMeasure[]>([]);
+  /**
+   * List of unique dimensions by name. The first dimension seen with the name wins.
+   */
   public dimensions = $state<MetricsViewSpecDimension[]>([]);
 
-  /** Union of the individual summaries: earliest min, latest max, latest watermark. */
+  /**
+   * Union of the individual summaries: earliest min, latest max, latest watermark.
+   */
   public timeRangeSummary: V1TimeRangeSummary | undefined;
-  /** Smallest restriction across the metrics views, since it has to hold for all of them. */
+  /**
+   * Smallest restriction across the metrics views, since it has to hold for all of them.
+   */
   public maxQueryTimeRange: Duration | undefined;
-  // Largest `smallest_time_grain` across the metrics views.
+  /**
+   * Largest `smallest_time_grain` across the metrics views.
+   */
   public largestMinTimeGrain: V1TimeGrain | undefined;
   public largestMinGrainOrder: number;
-  /** True once every metrics view has a spec and every time series metrics view has a summary. */
+  /**
+   * True once every metrics view has a spec and every time series metrics view has a summary.
+   */
   public ready: boolean;
   public metricsViewNames = $state<string[]>([]);
 
@@ -80,14 +115,25 @@ export class MetricsViewsProvider {
 
   public cleanup: () => void;
 
+  private events = new EventEmitter<MetricsViewsProviderEvents>();
+  public readonly on = this.events.on.bind(
+    this.events,
+  ) as typeof this.events.on;
+
   private resources: V1Resource[] = [];
   private readonly timeRangeUnsubs = new Map<string, () => void>();
+
+  private pendingSpecs = new Set<string>();
+  private pendingTimestamps = new Set<string>();
 
   public constructor(
     public readonly runtimeClient: RuntimeClient,
     initMetricsViewNames: string[],
   ) {
     this.metricsViewNames = initMetricsViewNames.filter(Boolean);
+    this.pendingSpecs = new Set(initMetricsViewNames);
+    this.pendingTimestamps = new Set(initMetricsViewNames);
+    this.events.emit("update-metrics-views", this.metricsViewNames);
 
     const allResourcesQuery = createRuntimeServiceListResources(
       runtimeClient,
@@ -181,6 +227,9 @@ export class MetricsViewsProvider {
     });
 
     this.metricsViewNames = metricsViewNames;
+    this.pendingSpecs = new Set(metricsViewNames);
+    this.pendingTimestamps = new Set(metricsViewNames);
+    this.events.emit("update-metrics-views", this.metricsViewNames);
     this.processResources();
   }
 
@@ -212,6 +261,7 @@ export class MetricsViewsProvider {
       const spec = res?.metricsView?.state?.validSpec;
       if (!spec) continue;
       specs[metricsViewName] = spec;
+      this.specLoaded(metricsViewName);
 
       spec.measures?.forEach((measure) => {
         if (!measure.name) return;
@@ -277,6 +327,7 @@ export class MetricsViewsProvider {
     spec: V1MetricsViewSpec,
   ) {
     if (!spec.timeDimension || this.timeRangeUnsubs.has(metricsViewName)) {
+      this.timeSpecLoaded(metricsViewName);
       return;
     }
 
@@ -290,11 +341,31 @@ export class MetricsViewsProvider {
       metricsViewName,
       timeRangeQuery.subscribe((timeRangeResp) => {
         const summary = timeRangeResp.data?.timeRangeSummary;
-        if (summary) this.timeRangeSummaries[metricsViewName] = summary;
+        if (summary) {
+          this.timeRangeSummaries[metricsViewName] = summary;
+          this.timeSpecLoaded(metricsViewName);
+        }
+        // TODO: handle error
         this.maxQueryTimeRangeMillis[metricsViewName] = Number(
           timeRangeResp.data?.maxQueryTimeRangeMillis ?? 0,
         );
       }),
     );
+  }
+
+  private specLoaded(name: string) {
+    if (!this.pendingSpecs.has(name)) return;
+    this.pendingSpecs.delete(name);
+
+    if (this.pendingSpecs.size > 0) return;
+    this.events.emit("specs-loaded");
+  }
+
+  private timeSpecLoaded(name: string) {
+    if (!this.pendingTimestamps.has(name)) return;
+    this.pendingTimestamps.delete(name);
+
+    if (this.pendingTimestamps.size > 0) return;
+    this.events.emit("time-specs-loaded");
   }
 }

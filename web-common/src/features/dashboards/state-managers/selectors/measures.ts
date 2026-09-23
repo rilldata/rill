@@ -125,6 +125,10 @@ export function getFilteredSimpleMeasures(
   );
 }
 
+/**
+ * Simple measure is defined as a measure that does not have a window and is not of type time comparison measure.
+ * @param measure
+ */
 export const isSimpleMeasure = (measure: MetricsViewSpecMeasure) =>
   !measure.window &&
   measure.type !== MetricsViewSpecMeasureType.MEASURE_TYPE_TIME_COMPARISON;
