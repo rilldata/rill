@@ -27,9 +27,10 @@ connectors/s3.yaml
 models/events_raw.yaml
 models/events.sql
 metrics/events.yaml
-dashboards/events.yaml
 rill.yaml
 ```
+
+Note that there is no separate dashboard file: the explore dashboard for `metrics/events.yaml` is defined inline in the metrics view file (see the "Explores" section below).
 
 Let's start with the project-wide files at the root of the directory:
 - `rill.yaml` is a required file that contains project-wide configuration. It can be compared to `package.json` in Node.js or `dbt_project.yml` in dbt.
@@ -134,6 +135,8 @@ Metrics views consist of:
 - **Measures:** SQL expressions that define aggregations (usually numeric types)
 - **Security policies:** access rules and row filters that reference attributes of the querying user
 
+A metrics view can also be a *derived metrics view* that sets `parent:` (instead of `model:`) to inherit the data source, dimensions and measures of another metrics view, exposing only a selected subset of them. Derived metrics views cannot define their own dimensions or measures; see the metrics view instructions for details.
+
 ### Explores
 
 Explore resources define an "explore dashboard", an opinionated dashboard type that comes baked into Rill.
@@ -141,7 +144,10 @@ These dashboards are specifically designed as an explorative, drill-down, slice-
 They are Rill's default dashboard type, and usually configured for every metrics view in a project.
 They are lightweight resources that are always found downstream of a metrics view in the DAG.
 
-Explore resources can either be configured as stand-alone files or as part of a metrics view definition (see metrics view instructions for details).
+By default, an explore is defined inline in its metrics view file using an `explore:` block (see the metrics view instructions for details).
+The inline block is the dashboard: Rill emits an explore resource from it, and it shows up in the project like any other dashboard.
+Do NOT also create a stand-alone `type: explore` file for the same metrics view; that produces a second, duplicate dashboard, which confuses users.
+Only create a stand-alone explore file when a metrics view needs more than one explore dashboard, or when the user explicitly asks for one.
 The only required configuration is a metrics view to render, but you can optionally also configure things like a theme, default dimension and measures to show, time range presets, and more.
 
 ### Canvases
@@ -227,7 +233,7 @@ This section describes the recommended workflow for developing resources in a Ri
 Before making changes, determine what kind of task you are performing:
 - **Querying**: If you need to answer a question about data in the project, use query tools but do not modify files.
 - **Surgical edit**: If you need to create or update a single resource, focus on that resource and its immediate dependencies.
-- **Full pipeline**: If you need to go from raw data to dashboard, expect your changes to cover a sequential pipeline through connector(s), source model(s), derived model(s), metrics view(s), and an explore or canvas dashboard.
+- **Full pipeline**: If you need to go from raw data to dashboard, expect your changes to cover a sequential pipeline through connector(s), source model(s), derived model(s), and metrics view(s) with an inline explore dashboard (plus optionally a canvas dashboard).
 
 ### Checking project capabilities
 
@@ -246,7 +252,7 @@ Your workflow will depend on the kind of task you are undertaking. Here follows 
 4. **Create or update models** (managed or readwrite OLAP only): Build models that ingest and transform data into denormalized tables suitable for dashboard queries. Materialize models that involve expensive joins or aggregations. Use dev partitions to limit data during development.
 5. **Profile the data**: Before creating a metrics view, look at the schema of the underlying model/table to understand its shape. This informs which dimensions and measures you create. Consider using the SQL query tool to do a couple well-chosen queries to the table to get row counts, cardinality of important columns, example column values, date ranges, or similar. Be very careful not to run too many queries or expensive queries.
 6. **Create or update the metrics view**: Define dimensions and measures using columns in the underlying model/table. Start small with one time dimension (timeseries), up to 10 dimensions and up to 5 measures, and add more later if relevant.
-7. **Ensure there are dashboards**: Create an explore dashboard for drill-down analysis of the metrics view if one doesn't already exist. If the user wants an overview or report-style view, also create a canvas dashboard with components from one or more metrics views.
+7. **Ensure there are dashboards**: The inline `explore:` block in the metrics view (created in the previous step) is the explore dashboard for drill-down analysis; there is nothing more to create for it. Do not create a separate `type: explore` file for the same metrics view. If the user wants an overview or report-style view, also create a canvas dashboard with components from one or more metrics views.
 8. **Check for errors and keep iterating until they are fixed:** At each stage, check if there is a parse or reconcile error, and if there is, keep updating the relevant file(s) to fix the error.
 {% if not .external %}
 9. **Navigate to the main file:** At the very end, once all work is done, call the `navigate` tool (kind `file`) for the main file you created or modified. Prefer dashboard or metrics view files over other files. Skip navigation if you did not modify any files or if the user is already viewing the main file you modified.
@@ -294,6 +300,7 @@ Avoid these mistakes when developing a project:
 - **Forgetting to materialize**: Always materialize models that reference external data or perform expensive operations. This also includes models that load external data using a native SQL function, like `read_parquet(...)` or `s3(...)`. Non-materialized models become views, which re-execute on every query.
 - **Referencing non-existant environment variables:** Only reference environment variables that are present in `.env` (returned in `env` from `project_status`). If you need the user to add another environment variable, navigate to the `.env` file and stop with a message asking the user to manually add the required environment variable(s).
 - **Processing too much data in development**: Use dev partitions to limit data to a small subset (e.g., one day) during development. This speeds up iteration and avoids unnecessary costs.
+- **Creating a duplicate explore dashboard**: A metrics view with an inline `explore:` block (or a legacy metrics view without `version:`) already emits an explore dashboard. Never add a stand-alone `type: explore` file for such a metrics view; it produces a second dashboard for the same data. To change the dashboard, edit the `explore:` block in the metrics view file instead.
 - **Not adding a time dimension (timeseries) in metrics views**: Metrics views are much more useful when they have a time dimension. Make sure to set one of them as the primary time dimension using the `timeseries:` property.
 - **Being deceived by logs from `project_status`:** If you retrieve logs from the `project_status` tool, be aware that issues highlighted in the logs may have already been fixed. Only use the logs to debug errors indicated by the resource-level status.
 - **Using deprecated properties:** Never use a YAML property that is marked as deprecated for the resource type, even if it seems like a convenient way to solve your problem. The only exception is if the deprecated property is already present in the file you are editing. Find a non-deprecated alternative or give up.
