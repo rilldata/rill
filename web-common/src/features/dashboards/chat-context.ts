@@ -6,8 +6,18 @@ import { getExploreNameStore } from "@rilldata/web-common/features/dashboards/na
 import { useStableExploreState } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores.ts";
 import { isExpressionEmpty } from "@rilldata/web-common/features/dashboards/stores/filter-utils.ts";
 import { createStableTimeControlStoreFromName } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store.ts";
+import {
+  createProjectPromptsStore,
+  getDashboardFallbackPrompts,
+  resolveSuggestedPrompts,
+} from "@rilldata/web-common/features/chat/core/suggested-prompts/suggested-prompts.ts";
+import {
+  ResourceKind,
+  useResource,
+} from "@rilldata/web-common/features/entity-management/resource-selectors.ts";
 import type {
   RuntimeServiceCompleteBody,
+  V1AIPrompt,
   V1AnalystAgentContext,
 } from "@rilldata/web-common/runtime-client";
 import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
@@ -19,10 +29,45 @@ export function createDashboardChatConfig(client: RuntimeClient): ChatConfig {
   return {
     agent: ToolName.ANALYST_AGENT,
     additionalContextStoreGetter: () => activeExploreContextStore,
+    suggestedPromptsStoreGetter: getExploreSuggestedPrompts,
     emptyChatLabel: m.chat_happy_to_explore(),
     placeholder: m.chat_placeholder_analyst(),
     minChatHeight: "min-h-[4rem]",
   };
+}
+
+/**
+ * Creates a store with the starter prompts for the active explore:
+ * its configured `ai_prompts`, else the prompts generated during reconciliation, else the project's `ai_prompts`, else a generic fallback.
+ */
+function getExploreSuggestedPrompts(
+  client: RuntimeClient,
+): Readable<V1AIPrompt[]> {
+  const exploreNameStore = getExploreNameStore();
+  const projectPromptsStore = createProjectPromptsStore(client);
+
+  return derived(
+    [exploreNameStore, projectPromptsStore],
+    ([exploreName, projectPrompts], set) => {
+      const exploreQuery = useResource(
+        client,
+        exploreName,
+        ResourceKind.Explore,
+      );
+      return exploreQuery.subscribe((res) => {
+        const explore = res.data?.explore;
+        set(
+          resolveSuggestedPrompts([
+            explore?.state?.validSpec?.aiPrompts ?? explore?.spec?.aiPrompts,
+            explore?.state?.aiSuggestedPrompts,
+            projectPrompts,
+            getDashboardFallbackPrompts(),
+          ]),
+        );
+      });
+    },
+    [] as V1AIPrompt[],
+  );
 }
 
 /**

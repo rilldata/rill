@@ -200,6 +200,7 @@ func (r *Runtime) UpdateInstanceWithRillYAML(ctx context.Context, instanceID str
 	inst.FeatureFlags = rillYAML.FeatureFlags
 	inst.PublicPaths = rillYAML.PublicPaths
 	inst.AIInstructions = rillYAML.AIInstructions
+	inst.AIPrompts = rillYAML.AIPrompts
 	inst.ProjectAIConnector = rillYAML.AIConnector
 	inst.Theme = rillYAML.Theme
 

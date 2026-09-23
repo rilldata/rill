@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/iancoleman/strcase"
+	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/pkg/env"
 	"gopkg.in/yaml.v3"
 )
@@ -21,6 +22,7 @@ type RillYAML struct {
 	DisplayName    string
 	Description    string
 	AIInstructions string
+	AIPrompts      []*runtimev1.AIPrompt
 	OLAPConnector  string
 	AIConnector    string
 	Theme          string
@@ -60,6 +62,8 @@ type rillYAML struct {
 	Description string `yaml:"description"`
 	// User-provided context for LLM/AI features
 	AIInstructions string `yaml:"ai_instructions"`
+	// Suggested prompts shown as starters in the project-wide AI chat
+	AIPrompts []AIPromptYAML `yaml:"ai_prompts"`
 	// Connector to use for the AI service
 	AIConnector string `yaml:"ai_connector"`
 	// Theme resource name to use for AI-generated charts
@@ -301,10 +305,16 @@ func (p *Parser) parseRillYAML(ctx context.Context, path string) error {
 		defaults[ResourceKindMetricsView] = tmp.MetricsViewsLegacy
 	}
 
+	aiPrompts, err := parseAIPrompts(tmp.AIPrompts)
+	if err != nil {
+		return err
+	}
+
 	res := &RillYAML{
 		DisplayName:    tmp.DisplayName,
 		Description:    tmp.Description,
 		AIInstructions: tmp.AIInstructions,
+		AIPrompts:      aiPrompts,
 		AIConnector:    tmp.AIConnector,
 		Theme:          tmp.Theme,
 		OLAPConnector:  tmp.OLAPConnector,

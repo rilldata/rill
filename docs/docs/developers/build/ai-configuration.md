@@ -97,6 +97,38 @@ ai_instructions: |
   - Weekend traffic patterns are anomalous due to our B2B focus.
 ```
 
+## Suggested Prompts
+
+When a user opens the AI chat on a dashboard, Rill shows a few clickable starter prompts so they do not have to begin from a blank input. Prompts come from three sources, in order of precedence:
+
+1. **Configured prompts**: the `ai_prompts` list on an explore or canvas dashboard. These are shown verbatim, in the order you write them, and Rill does not generate its own suggestions for that dashboard.
+2. **Generated prompts**: if a dashboard has no `ai_prompts`, Rill asks the project's AI connector for prompts grounded in the dashboard's measures, dimensions, descriptions and `ai_instructions`. They are generated when the dashboard is reconciled and refreshed only when something relevant changes, so they do not add latency when the chat opens.
+3. **Project prompts**: the `ai_prompts` list in `rill.yaml`. These are shown in the project-wide AI chat, and on dashboards for which no prompts could be generated (for example, when no AI connector is configured).
+
+Each entry is either a prompt string or an object with a `label` (at most 40 characters, shown on the button) and a `prompt` (the full question sent to the AI). When only a string is given, the label is derived from its first words. A list can hold at most 8 prompts; the chat shows the first four.
+
+**Example (explore or canvas YAML):**
+
+```yaml
+ai_prompts:
+  - Which campaigns drove the biggest change in impressions this week?
+  - label: CTR outliers
+    prompt: Which publishers have a click-through rate far above or below the average, and why?
+  - label: Weekly summary
+    prompt: Summarize the key trends in this dashboard for the selected time range.
+```
+
+**Example (`rill.yaml`):**
+
+```yaml
+ai_prompts:
+  - What data is available in this project?
+  - label: Key metrics
+    prompt: Give me an overview of the key metrics across the project.
+```
+
+To steer the generated prompts rather than pin them, describe your priorities and vocabulary in `ai_instructions`; the generator reads the project-level and metrics view-level instructions.
+
 ## Skills
 
 Skills teach Rill's AI project-specific practices, such as analysis playbooks (e.g. how to do root-cause analysis for a revenue drop) or business glossaries. Where `ai_instructions` is best for short guidance that always applies, skills hold longer, structured instructions that the AI loads only when they are relevant to the question at hand. Skills apply both in [AI Chat](/guide/ai/ai-chat) and to external AI clients connected via the [MCP Server](/guide/ai/mcp).

@@ -2382,6 +2382,8 @@ definitions:
           banner:
             type: string
             description: Refers to the custom banner displayed in the header of a Canvas dashboard.
+          ai_prompts:
+            $ref: '#/definitions/ai_prompts_properties'
           rows:
             type: array
             description: Refers to all of the rows displayed on the Canvas. Each entry is either a plain row (with `items`) or a tab group (with `tabs`), but not both.
@@ -2574,6 +2576,8 @@ definitions:
           banner:
             type: string
             description: Refers to the custom banner displayed at the header of an explore dashboard
+          ai_prompts:
+            $ref: '#/definitions/ai_prompts_properties'
           dimensions:
             description:  List of dimension names. Use '*' to select all dimensions (default)
             $ref: '#/definitions/field_selector_properties'
@@ -3830,6 +3834,29 @@ definitions:
                 expression: "7D as of latest/D+1D offset -7D"
               explore: sales_explore
 
+  ai_prompts_properties:
+    type: array
+    description: Suggested prompts shown as starters in the AI chat. Each entry is either a prompt string or an object with `label` and `prompt`. If set on a dashboard, the AI does not generate its own suggestions for it. At most 8 entries.
+    items:
+      oneOf:
+        - type: string
+          description: The prompt. A short label is derived from its first words.
+        - type: object
+          description: A prompt with an explicit label.
+          properties:
+            label:
+              type: string
+              description: Short label shown on the prompt's button (at most 40 characters). Derived from the prompt if omitted.
+            prompt:
+              type: string
+              description: The full question sent to the AI when the user picks the prompt.
+          required:
+            - prompt
+          additionalProperties: false
+    examples:
+      - - Which campaigns drove the biggest change in impressions this week?
+        - label: CTR outliers
+          prompt: Which publishers have a click-through rate far above or below the average?
   explore_time_range_properties:
     oneOf:
       - type: string
@@ -4126,6 +4153,8 @@ definitions:
           banner:
             type: string
             description: Custom banner displayed at the header of the explore view.
+          ai_prompts:
+            $ref: '#/definitions/ai_prompts_properties'
           dimensions:
             $ref: '#/definitions/field_selector_properties'
             description: Dimensions to include in the explore view. Defaults to all dimensions in the metrics view.

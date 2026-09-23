@@ -6,6 +6,7 @@ import (
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
+	mockai "github.com/rilldata/rill/runtime/drivers/mock/ai"
 	"github.com/rilldata/rill/runtime/testruntime"
 	"github.com/stretchr/testify/require"
 
@@ -509,4 +510,108 @@ defaults:
 			},
 		},
 	})
+}
+
+func TestExploreSuggestedPrompts(t *testing.T) {
+	const canned = `{"prompts":[{"label":"Top foo","prompt":"What are the top foo by x in the selected period?"},{"label":"Trend of x","prompt":"How has x changed compared to the previous period?"}]}`
+	rt, id := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
+		AIConnector:    "mock_ai",
+		MockAIResponse: canned,
+	})
+	files := map[string]string{
+		"models/m1.sql": `SELECT 'foo' as foo, 1 as x`,
+		"metrics_views/mv1.yaml": `
+version: 1
+type: metrics_view
+model: m1
+dimensions:
+- column: foo
+measures:
+- name: x
+  expression: sum(x)
+`,
+		"explores/e1.yaml": `
+type: explore
+display_name: Hello
+metrics_view: mv1
+`,
+	}
+	testruntime.PutFiles(t, rt, id, files)
+	callsBefore := mockai.CompleteCalls.Load()
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireReconcileState(t, rt, id, 4, 0, 0)
+
+	// Prompts are generated from the canned LLM response.
+	e1 := testruntime.GetResource(t, rt, id, runtime.ResourceKindExplore, "e1").GetExplore()
+	require.Len(t, e1.State.AiSuggestedPrompts, 2)
+	require.Equal(t, "Top foo", e1.State.AiSuggestedPrompts[0].Label)
+	require.Equal(t, "What are the top foo by x in the selected period?", e1.State.AiSuggestedPrompts[0].Prompt)
+	require.NotEmpty(t, e1.State.AiSuggestedPromptsHash)
+	require.Equal(t, callsBefore+1, mockai.CompleteCalls.Load())
+	hash := e1.State.AiSuggestedPromptsHash
+
+	// A data refresh re-reconciles the explore but must not call the LLM again.
+	testruntime.RefreshAndWait(t, rt, id, &runtimev1.ResourceName{Kind: runtime.ResourceKindModel, Name: "m1"})
+	e1 = testruntime.GetResource(t, rt, id, runtime.ResourceKindExplore, "e1").GetExplore()
+	require.Equal(t, hash, e1.State.AiSuggestedPromptsHash)
+	require.Len(t, e1.State.AiSuggestedPrompts, 2)
+	require.Equal(t, callsBefore+1, mockai.CompleteCalls.Load())
+
+	// Changing something that influences the prompts regenerates them.
+	testruntime.PutFiles(t, rt, id, map[string]string{"explores/e1.yaml": `
+type: explore
+display_name: Hello again
+metrics_view: mv1
+`})
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	e1 = testruntime.GetResource(t, rt, id, runtime.ResourceKindExplore, "e1").GetExplore()
+	require.NotEqual(t, hash, e1.State.AiSuggestedPromptsHash)
+	require.Equal(t, callsBefore+2, mockai.CompleteCalls.Load())
+
+	// Configured prompts replace the generated ones without calling the LLM.
+	testruntime.PutFiles(t, rt, id, map[string]string{"explores/e1.yaml": `
+type: explore
+display_name: Hello again
+metrics_view: mv1
+ai_prompts:
+  - What is the total x?
+  - label: Foo breakdown
+    prompt: Break down x by foo.
+`})
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireReconcileState(t, rt, id, 4, 0, 0)
+	e1 = testruntime.GetResource(t, rt, id, runtime.ResourceKindExplore, "e1").GetExplore()
+	require.Len(t, e1.State.ValidSpec.AiPrompts, 2)
+	require.Equal(t, "What is the total x", e1.State.ValidSpec.AiPrompts[0].Label)
+	require.Equal(t, "Foo breakdown", e1.State.ValidSpec.AiPrompts[1].Label)
+	require.Empty(t, e1.State.AiSuggestedPrompts)
+	require.Empty(t, e1.State.AiSuggestedPromptsHash)
+	require.Equal(t, callsBefore+2, mockai.CompleteCalls.Load())
+}
+
+func TestExploreSuggestedPromptsWithoutAI(t *testing.T) {
+	rt, id := testruntime.NewInstance(t)
+	testruntime.PutFiles(t, rt, id, map[string]string{
+		"models/m1.sql": `SELECT 'foo' as foo, 1 as x`,
+		"metrics_views/mv1.yaml": `
+version: 1
+type: metrics_view
+model: m1
+dimensions:
+- column: foo
+measures:
+- name: x
+  expression: sum(x)
+`,
+		"explores/e1.yaml": `
+type: explore
+metrics_view: mv1
+`,
+	})
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireReconcileState(t, rt, id, 4, 0, 0)
+	e1 := testruntime.GetResource(t, rt, id, runtime.ResourceKindExplore, "e1").GetExplore()
+	require.NotNil(t, e1.State.ValidSpec)
+	require.Empty(t, e1.State.AiSuggestedPrompts)
+	require.Empty(t, e1.State.AiSuggestedPromptsHash)
 }

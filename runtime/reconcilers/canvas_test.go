@@ -6,6 +6,7 @@ import (
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
+	mockai "github.com/rilldata/rill/runtime/drivers/mock/ai"
 	"github.com/rilldata/rill/runtime/testruntime"
 	"github.com/stretchr/testify/require"
 
@@ -488,4 +489,62 @@ rows:
 	c1 = testruntime.GetResource(t, rt, id, runtime.ResourceKindCanvas, "c1")
 	require.NotNil(t, c1.GetCanvas().State.ValidSpec)
 	require.Empty(t, c1.Meta.ReconcileError)
+}
+
+func TestCanvasSuggestedPrompts(t *testing.T) {
+	const canned = `{"prompts":[{"label":"Overview","prompt":"Summarize x for the selected period."}]}`
+	rt, id := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
+		AIConnector:    "mock_ai",
+		MockAIResponse: canned,
+	})
+	testruntime.PutFiles(t, rt, id, map[string]string{
+		"m1.sql": `SELECT 'foo' as foo, 1 as x`,
+		"mv1.yaml": `
+version: 1
+type: metrics_view
+model: m1
+dimensions:
+- column: foo
+measures:
+- name: x
+  expression: sum(x)
+`,
+		"c1.yaml": `
+type: canvas
+rows:
+  - items:
+      - kpi_grid:
+          metrics_view: mv1
+          measures:
+            - x
+`,
+	})
+	callsBefore := mockai.CompleteCalls.Load()
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireReconcileState(t, rt, id, 5, 0, 0)
+	c1 := testruntime.GetResource(t, rt, id, runtime.ResourceKindCanvas, "c1").GetCanvas()
+	require.Len(t, c1.State.AiSuggestedPrompts, 1)
+	require.Equal(t, "Overview", c1.State.AiSuggestedPrompts[0].Label)
+	require.NotEmpty(t, c1.State.AiSuggestedPromptsHash)
+	require.Equal(t, callsBefore+1, mockai.CompleteCalls.Load())
+
+	// Configured prompts replace the generated ones.
+	testruntime.PutFiles(t, rt, id, map[string]string{"c1.yaml": `
+type: canvas
+ai_prompts:
+  - label: Total
+    prompt: What is the total x?
+rows:
+  - items:
+      - kpi_grid:
+          metrics_view: mv1
+          measures:
+            - x
+`})
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	c1 = testruntime.GetResource(t, rt, id, runtime.ResourceKindCanvas, "c1").GetCanvas()
+	require.Len(t, c1.State.ValidSpec.AiPrompts, 1)
+	require.Empty(t, c1.State.AiSuggestedPrompts)
+	require.Empty(t, c1.State.AiSuggestedPromptsHash)
+	require.Equal(t, callsBefore+1, mockai.CompleteCalls.Load())
 }

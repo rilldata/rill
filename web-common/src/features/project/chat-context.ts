@@ -2,12 +2,21 @@ import {
   type ChatConfig,
   ToolName,
 } from "@rilldata/web-common/features/chat/core/types.ts";
+import {
+  createProjectPromptsStore,
+  getProjectFallbackPrompts,
+  resolveSuggestedPrompts,
+} from "@rilldata/web-common/features/chat/core/suggested-prompts/suggested-prompts.ts";
 import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
-import { readable } from "svelte/store";
+import { derived, readable } from "svelte/store";
 
 export const projectChat = {
   agent: ToolName.ANALYST_AGENT,
   additionalContextStoreGetter: () => readable({}),
+  suggestedPromptsStoreGetter: (client) =>
+    derived(createProjectPromptsStore(client), (projectPrompts) =>
+      resolveSuggestedPrompts([projectPrompts, getProjectFallbackPrompts()]),
+    ),
   get emptyChatLabel() {
     return m.chat_empty_label();
   },

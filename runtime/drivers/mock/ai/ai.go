@@ -3,6 +3,7 @@ package ai
 import (
 	"context"
 	"strings"
+	"sync/atomic"
 
 	aiv1 "github.com/rilldata/rill/proto/gen/rill/ai/v1"
 	rillai "github.com/rilldata/rill/runtime/ai"
@@ -17,6 +18,10 @@ func init() {
 	drivers.Register("mock_ai", driver{})
 	drivers.RegisterAsConnector("mock_ai", driver{})
 }
+
+// CompleteCalls counts the completions served by all mock AI connections in the process.
+// Tests use it to assert that a code path did or did not call the LLM.
+var CompleteCalls atomic.Int64
 
 type driver struct{}
 
@@ -34,6 +39,13 @@ func (d driver) Spec() drivers.Spec {
 				DisplayName: "Enable Tool Calling",
 				Description: "If true, returns mock tool calls. If false (default), echoes user messages.",
 			},
+			{
+				Key:         "canned_response",
+				Type:        drivers.StringPropertyType,
+				Required:    false,
+				DisplayName: "Canned Response",
+				Description: "If set, every completion returns this text instead of echoing the user message. Useful for structured output.",
+			},
 		},
 		SourceProperties: []*drivers.PropertySpec{},
 		ImplementsAI:     true,
@@ -50,11 +62,13 @@ func (d driver) TertiarySourceConnectors(ctx context.Context, srcProps map[strin
 
 func (d driver) Open(_, instanceID string, config map[string]any, st *storage.Client, ac *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
 	toolCallingEnabled, _ := config["enable_tool_calling"].(bool)
+	cannedResponse, _ := config["canned_response"].(string)
 
 	return &connection{
 		config:          config,
 		logger:          logger,
 		toolCallingMode: toolCallingEnabled,
+		cannedResponse:  cannedResponse,
 	}, nil
 }
 
@@ -62,6 +76,7 @@ type connection struct {
 	config          map[string]any
 	logger          *zap.Logger
 	toolCallingMode bool
+	cannedResponse  string
 }
 
 var _ drivers.Handle = &connection{}
@@ -163,6 +178,17 @@ func (c *connection) AsNotifier(properties map[string]any) (drivers.Notifier, er
 
 // Complete implements drivers.AIService.
 func (c *connection) Complete(ctx context.Context, opts *drivers.CompleteOptions) (*drivers.CompleteResult, error) {
+	CompleteCalls.Add(1)
+	if c.cannedResponse != "" {
+		return &drivers.CompleteResult{
+			Message: &aiv1.CompletionMessage{
+				Role:    "assistant",
+				Content: []*aiv1.ContentBlock{{BlockType: &aiv1.ContentBlock_Text{Text: c.cannedResponse}}},
+			},
+			InputTokens:  10,
+			OutputTokens: 20,
+		}, nil
+	}
 	if c.toolCallingMode {
 		return &drivers.CompleteResult{
 			Message:      c.handleToolCalling(),

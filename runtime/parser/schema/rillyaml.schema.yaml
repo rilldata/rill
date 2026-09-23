@@ -25,6 +25,25 @@ allOf:
       ai_instructions:
         type: string
         description: Extra instructions for LLM/AI features. Used to guide natural language question answering and routing.
+      ai_prompts:
+        type: array
+        description: Suggested prompts shown as starters in the project-wide AI chat, and on dashboards that have no prompts of their own. Each entry is either a prompt string or an object with `label` and `prompt`. At most 8 entries.
+        items:
+          oneOf:
+            - type: string
+              description: The prompt. A short label is derived from its first words.
+            - type: object
+              description: A prompt with an explicit label.
+              properties:
+                label:
+                  type: string
+                  description: Short label shown on the prompt's button (at most 40 characters). Derived from the prompt if omitted.
+                prompt:
+                  type: string
+                  description: The full question sent to the AI when the user picks the prompt.
+              required:
+                - prompt
+              additionalProperties: false
   - title: Configuring the default OLAP Engine
     description: |
       Rill allows you to specify the default OLAP engine to use in your project via `rill.yaml`.

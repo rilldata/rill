@@ -3,7 +3,11 @@
  *
  * Shared type constants that correspond to backend enums in runtime/ai/ai.go
  */
-import type { RuntimeServiceCompleteBody } from "@rilldata/web-common/runtime-client";
+import type {
+  RuntimeServiceCompleteBody,
+  V1AIPrompt,
+} from "@rilldata/web-common/runtime-client";
+import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import type { Readable } from "svelte/store";
 
 // =============================================================================
@@ -78,6 +82,10 @@ export type ChatConfig = {
   additionalContextStoreGetter: () => Readable<
     Partial<RuntimeServiceCompleteBody>
   >;
+  // Starter prompts shown in the empty chat. Picking one sends it as a message.
+  suggestedPromptsStoreGetter?: (
+    client: RuntimeClient,
+  ) => Readable<V1AIPrompt[]>;
   emptyChatLabel: string;
   placeholder: string;
   minChatHeight: string;
