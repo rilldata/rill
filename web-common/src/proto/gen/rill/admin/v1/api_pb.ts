@@ -3834,6 +3834,8 @@ export class CreateProjectRequest extends Message<CreateProjectRequest> {
   directoryName = "";
 
   /**
+   * Provisioner to use for the project's deployments. Superuser-only; empty means the org's default provisioner (or the global default) is used.
+   *
    * @generated from field: string provisioner = 5;
    */
   provisioner = "";
@@ -4097,6 +4099,9 @@ export class UpdateProjectRequest extends Message<UpdateProjectRequest> {
   prodSlots?: bigint;
 
   /**
+   * Provisioner to use for the project's deployments. Superuser-only; empty unsets it so the org's default provisioner (or the global default) is used.
+   * It only affects deployments provisioned after the change; existing deployments stay on their current provisioner.
+   *
    * @generated from field: optional string provisioner = 8;
    */
   provisioner?: string;

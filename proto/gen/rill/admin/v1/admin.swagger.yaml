@@ -1054,6 +1054,7 @@ paths:
                   See ListProjectsForFingerprint for more context.
               provisioner:
                 type: string
+                description: Provisioner to use for the project's deployments. Superuser-only; empty means the org's default provisioner (or the global default) is used.
               prodSlots:
                 type: string
                 format: int64
@@ -1230,6 +1231,9 @@ paths:
                 format: int64
               provisioner:
                 type: string
+                description: |-
+                  Provisioner to use for the project's deployments. Superuser-only; empty unsets it so the org's default provisioner (or the global default) is used.
+                  It only affects deployments provisioned after the change; existing deployments stay on their current provisioner.
               newName:
                 type: string
               prodTtlSeconds:

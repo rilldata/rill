@@ -4894,6 +4894,7 @@ type CreateProjectRequest struct {
 	// directory_name should be the most recently observed local directory name for the project.
 	// See ListProjectsForFingerprint for more context.
 	DirectoryName string `protobuf:"bytes,16,opt,name=directory_name,json=directoryName,proto3" json:"directory_name,omitempty"`
+	// Provisioner to use for the project's deployments. Superuser-only; empty means the org's default provisioner (or the global default) is used.
 	Provisioner   string `protobuf:"bytes,5,opt,name=provisioner,proto3" json:"provisioner,omitempty"`
 	ProdSlots     int64  `protobuf:"varint,8,opt,name=prod_slots,json=prodSlots,proto3" json:"prod_slots,omitempty"`
 	Subpath       string `protobuf:"bytes,12,opt,name=subpath,proto3" json:"subpath,omitempty"`
@@ -5193,16 +5194,18 @@ type UpdateProjectRequest struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Org                  string  `protobuf:"bytes,1,opt,name=org,proto3" json:"org,omitempty"`
-	Project              string  `protobuf:"bytes,2,opt,name=project,proto3" json:"project,omitempty"`
-	Description          *string `protobuf:"bytes,3,opt,name=description,proto3,oneof" json:"description,omitempty"`
-	Public               *bool   `protobuf:"varint,4,opt,name=public,proto3,oneof" json:"public,omitempty"`
-	DirectoryName        *string `protobuf:"bytes,15,opt,name=directory_name,json=directoryName,proto3,oneof" json:"directory_name,omitempty"`
-	PrimaryBranch        *string `protobuf:"bytes,5,opt,name=primary_branch,json=primaryBranch,proto3,oneof" json:"primary_branch,omitempty"`
-	GitRemote            *string `protobuf:"bytes,6,opt,name=git_remote,json=gitRemote,proto3,oneof" json:"git_remote,omitempty"`
-	Subpath              *string `protobuf:"bytes,13,opt,name=subpath,proto3,oneof" json:"subpath,omitempty"`
-	ArchiveAssetId       *string `protobuf:"bytes,12,opt,name=archive_asset_id,json=archiveAssetId,proto3,oneof" json:"archive_asset_id,omitempty"`
-	ProdSlots            *int64  `protobuf:"varint,7,opt,name=prod_slots,json=prodSlots,proto3,oneof" json:"prod_slots,omitempty"`
+	Org            string  `protobuf:"bytes,1,opt,name=org,proto3" json:"org,omitempty"`
+	Project        string  `protobuf:"bytes,2,opt,name=project,proto3" json:"project,omitempty"`
+	Description    *string `protobuf:"bytes,3,opt,name=description,proto3,oneof" json:"description,omitempty"`
+	Public         *bool   `protobuf:"varint,4,opt,name=public,proto3,oneof" json:"public,omitempty"`
+	DirectoryName  *string `protobuf:"bytes,15,opt,name=directory_name,json=directoryName,proto3,oneof" json:"directory_name,omitempty"`
+	PrimaryBranch  *string `protobuf:"bytes,5,opt,name=primary_branch,json=primaryBranch,proto3,oneof" json:"primary_branch,omitempty"`
+	GitRemote      *string `protobuf:"bytes,6,opt,name=git_remote,json=gitRemote,proto3,oneof" json:"git_remote,omitempty"`
+	Subpath        *string `protobuf:"bytes,13,opt,name=subpath,proto3,oneof" json:"subpath,omitempty"`
+	ArchiveAssetId *string `protobuf:"bytes,12,opt,name=archive_asset_id,json=archiveAssetId,proto3,oneof" json:"archive_asset_id,omitempty"`
+	ProdSlots      *int64  `protobuf:"varint,7,opt,name=prod_slots,json=prodSlots,proto3,oneof" json:"prod_slots,omitempty"`
+	// Provisioner to use for the project's deployments. Superuser-only; empty unsets it so the org's default provisioner (or the global default) is used.
+	// It only affects deployments provisioned after the change; existing deployments stay on their current provisioner.
 	Provisioner          *string `protobuf:"bytes,8,opt,name=provisioner,proto3,oneof" json:"provisioner,omitempty"`
 	NewName              *string `protobuf:"bytes,9,opt,name=new_name,json=newName,proto3,oneof" json:"new_name,omitempty"`
 	ProdTtlSeconds       *int64  `protobuf:"varint,10,opt,name=prod_ttl_seconds,json=prodTtlSeconds,proto3,oneof" json:"prod_ttl_seconds,omitempty"`

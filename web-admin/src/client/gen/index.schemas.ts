@@ -2023,6 +2023,7 @@ export type AdminServiceCreateProjectBody = {
   /** directory_name should be the most recently observed local directory name for the project.
 See ListProjectsForFingerprint for more context. */
   directoryName?: string;
+  /** Provisioner to use for the project's deployments. Superuser-only; empty means the org's default provisioner (or the global default) is used. */
   provisioner?: string;
   prodSlots?: string;
   subpath?: string;
@@ -2071,6 +2072,8 @@ export type AdminServiceUpdateProjectBody = {
   subpath?: string;
   archiveAssetId?: string;
   prodSlots?: string;
+  /** Provisioner to use for the project's deployments. Superuser-only; empty unsets it so the org's default provisioner (or the global default) is used.
+It only affects deployments provisioned after the change; existing deployments stay on their current provisioner. */
   provisioner?: string;
   newName?: string;
   prodTtlSeconds?: string;

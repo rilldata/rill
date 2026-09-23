@@ -16,7 +16,7 @@ The provisioners are configured using the environment variable `RILL_ADMIN_PROVI
 ### Choosing a provisioner for runtimes
 
 When provisioning a runtime, the provisioner is resolved in this order:
-1. The project's provisioner, if set (`rill project edit --provisioner`).
+1. The project's provisioner, if set (superuser-only, via `rill sudo project edit --provisioner`).
 2. The org's default provisioner, if set (superuser-only, via `rill sudo org set-default-provisioner`).
 3. The global default provisioner (`RILL_ADMIN_DEFAULT_PROVISIONER`).
 

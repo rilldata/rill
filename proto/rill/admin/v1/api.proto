@@ -1898,6 +1898,7 @@ message CreateProjectRequest {
   // directory_name should be the most recently observed local directory name for the project.
   // See ListProjectsForFingerprint for more context.
   string directory_name = 16;
+  // Provisioner to use for the project's deployments. Superuser-only; empty means the org's default provisioner (or the global default) is used.
   string provisioner = 5;
   int64 prod_slots = 8;
   string subpath = 12;
@@ -1939,6 +1940,8 @@ message UpdateProjectRequest {
   optional string subpath = 13;
   optional string archive_asset_id = 12;
   optional int64 prod_slots = 7;
+  // Provisioner to use for the project's deployments. Superuser-only; empty unsets it so the org's default provisioner (or the global default) is used.
+  // It only affects deployments provisioned after the change; existing deployments stay on their current provisioner.
   optional string provisioner = 8;
   optional string new_name = 9;
   optional int64 prod_ttl_seconds = 10;
