@@ -89,6 +89,10 @@ export class CanvasEntity {
   layout = writable<LayoutBlock[]>([]);
   // Tab groups keyed by their stable name, reused across spec updates so active-tab state survives.
   private tabGroups = new Map<string, TabGroup>();
+  // Tab indices to activate on groups the next layout pass builds or rebuilds, keyed by group
+  // name. An unnamed group is keyed by its row index, so moving it on the canvas yields a
+  // "new" group that would otherwise open on its first tab.
+  private pendingTabActivations = new Map<string, number>();
 
   // Time state controls
   timeManager: TimeManager;
@@ -771,6 +775,11 @@ export class CanvasEntity {
           group = new TabGroup(this, name);
           this.tabGroups.set(name, group);
         }
+        const pendingTab = this.pendingTabActivations.get(name);
+        if (pendingTab !== undefined) {
+          group.activateWhenReady(pendingTab);
+          this.pendingTabActivations.delete(name);
+        }
         group.updateFromSpec(name, row.tabGroup.tabs ?? [], rowIndex);
         seenGroupNames.add(name);
         blocks.push({ kind: "tab-group", rowIndex, group });
@@ -943,6 +952,12 @@ export class CanvasEntity {
 
   // Look up a tab group by its stable name (for the inspector panel).
   getTabGroup = (name: string) => this.tabGroups.get(name);
+
+  // Request that the tab group with the given name opens on `tabIndex` once the next layout
+  // pass produces it (see pendingTabActivations).
+  activateTabWhenGroupReady = (groupName: string, tabIndex: number) => {
+    this.pendingTabActivations.set(groupName, tabIndex);
+  };
 
   setActiveComponent = (id: string) => {
     this.activeComponent.set(id);

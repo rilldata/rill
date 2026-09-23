@@ -8,6 +8,7 @@ import {
   deleteTab,
   deleteTabGroup,
   duplicateTab,
+  moveTabGroup,
   isTabGroupRow,
   moveItemAcrossContainers,
   moveTab,
@@ -248,6 +249,73 @@ rows:
     expect(isTabGroupRow(doc, 1)).toBe(true);
     expect(json.rows[0]).toEqual({ items: [{ component: "a" }] });
     expect(json.rows[2]).toEqual({ items: [{ component: "b" }] });
+  });
+
+  it("moveTabGroup moves a group to a drop slot above or below other blocks", () => {
+    const yaml = `type: canvas
+rows:
+  - items:
+      - component: a
+  - tabs:
+      - label: Group
+        rows:
+          - items:
+              - component: g
+  - items:
+      - component: b
+  - items:
+      - component: c
+`;
+
+    // Drop slot 0 is above the first block.
+    let doc = parseDocument(yaml);
+    expect(moveTabGroup(doc, 1, 0)).toBe(0);
+    expect(doc.toJSON().rows.map((r: { tabs?: unknown }) => !!r.tabs)).toEqual([
+      true,
+      false,
+      false,
+      false,
+    ]);
+    expect(doc.toJSON().rows[1]).toEqual({ items: [{ component: "a" }] });
+
+    // Drop slot 4 is below the last block; the group ends up at index 3.
+    doc = parseDocument(yaml);
+    expect(moveTabGroup(doc, 1, 4)).toBe(3);
+    expect(doc.toJSON().rows.map((r: { tabs?: unknown }) => !!r.tabs)).toEqual([
+      false,
+      false,
+      false,
+      true,
+    ]);
+    expect(doc.toJSON().rows[3].tabs[0].rows).toEqual([
+      { items: [{ component: "g" }] },
+    ]);
+
+    // Drop slot 3 (between b and c) moves the group one block down.
+    doc = parseDocument(yaml);
+    expect(moveTabGroup(doc, 1, 3)).toBe(2);
+    expect(doc.toJSON().rows[1]).toEqual({ items: [{ component: "b" }] });
+    expect(isTabGroupRow(doc, 2)).toBe(true);
+  });
+
+  it("moveTabGroup is a noop for its own adjacent slots, plain rows and bad indices", () => {
+    const yaml = `type: canvas
+rows:
+  - items:
+      - component: a
+  - tabs:
+      - label: Group
+        rows: []
+`;
+    const doc = parseDocument(yaml);
+    // The slots directly above and below the group leave the order unchanged.
+    expect(moveTabGroup(doc, 1, 1)).toBe(-1);
+    expect(moveTabGroup(doc, 1, 2)).toBe(-1);
+    // Only tab groups move as a block.
+    expect(moveTabGroup(doc, 0, 2)).toBe(-1);
+    expect(moveTabGroup(doc, 1, 3)).toBe(-1);
+    expect(moveTabGroup(doc, 1, -1)).toBe(-1);
+    expect(doc.toString()).toBe(yaml);
   });
 
   it("reorderTab moves a tab from one position to another", () => {

@@ -48,6 +48,7 @@
     duplicateTab,
     moveItemAcrossContainers,
     moveTab,
+    moveTabGroup,
     renameTab,
     tabHasContent,
   } from "./stores/tab-edit";
@@ -62,12 +63,19 @@
   const runtimeClient = useRuntimeClient();
 
   const MIN_DRAG_DISTANCE = 8;
+  // A tab group ghost follows the pointer like a component ghost, but only shows the strip
+  // and a slice of the body: dragging a full-height copy of a many-row group would cover
+  // the drop zones the author is aiming for.
+  const MAX_BLOCK_GHOST_HEIGHT = 200;
 
   let initialMousePosition: { x: number; y: number } | null = null;
   let clientWidth: number = 0;
   let offset = { x: 0, y: 0 };
   let dragComponent: BaseCanvasComponent | null = null;
   let pendingDragComponent: BaseCanvasComponent | null = null;
+  // Whole-block drags: the top-level index of the tab group being moved.
+  let dragBlockIndex: number | null = null;
+  let pendingDragBlockIndex: number | null = null;
   let timeout: ReturnType<typeof setTimeout> | null = null;
   let dragTimeout: ReturnType<typeof setTimeout> | null = null;
   let dragItemPosition = { top: 0, left: 0 };
@@ -82,7 +90,9 @@
       setActiveTabInURL,
       setSelectedComponent,
       setSelectedTabGroup,
+      activateTabWhenGroupReady,
       selectedComponent,
+      selectedTabGroup,
       componentsStore,
       processRows,
       specStore,
@@ -145,9 +155,19 @@
     pendingDragComponent = null;
   }
 
+  $: if (pendingDragBlockIndex !== null && mouseDelta >= MIN_DRAG_DISTANCE) {
+    handleBlockDragStart(pendingDragBlockIndex);
+    pendingDragBlockIndex = null;
+  }
+
   $: defaultMetrics = $metricsViewQuery?.data;
 
-  $: activelyDragging = !!dragComponent;
+  $: activelyDragging = !!dragComponent || dragBlockIndex !== null;
+
+  // The tabs of the tab group being dragged, for its ghost (null when no group is dragged).
+  $: dragBlock = dragBlockIndex !== null ? blocks[dragBlockIndex] : undefined;
+  $: dragGroupTabs =
+    dragBlock?.kind === "tab-group" ? dragBlock.group.tabs : null;
 
   // Resolve the YAML rows path, name prefix, and current spec rows for an edit target.
   // undefined target => the top-level rows; a tab target => one tab's rows.
@@ -216,7 +236,26 @@
     };
   }
 
-  $: if (dragComponent) {
+  function handleBlockDragStart(blockIndex: number) {
+    const element = document.getElementById(`tab-group-region-${blockIndex}`);
+    if (!element) return;
+
+    dragBlockIndex = blockIndex;
+    setSelectedComponent(null);
+
+    const { top, left, width, height } = element.getBoundingClientRect();
+    dragItemDimensions = {
+      width,
+      height: Math.min(height, MAX_BLOCK_GHOST_HEIGHT),
+    };
+
+    offset = {
+      x: left - (initialMousePosition?.x ?? $mousePosition.x),
+      y: top - (initialMousePosition?.y ?? $mousePosition.y),
+    };
+  }
+
+  $: if (dragComponent || dragBlockIndex !== null) {
     dragItemPosition = {
       top: $mousePosition.y + offset.y,
       left: $mousePosition.x + offset.x,
@@ -225,6 +264,7 @@
 
   function onDragEnd() {
     dragComponent = null;
+    dragBlockIndex = null;
     // Safety net: remove portal ghost if Svelte 5's {#if} cleanup didn't
     document
       .querySelectorAll("#rill-portal .drag-container")
@@ -237,9 +277,10 @@
     }
 
     pendingDragComponent = null;
+    pendingDragBlockIndex = null;
     initialMousePosition = null;
 
-    if (dragComponent) {
+    if (dragComponent || dragBlockIndex !== null) {
       onDragEnd();
     }
 
@@ -502,6 +543,54 @@
     if (convertRowToTabGroup(contents, rowIndex)) updateContents();
   }
 
+  // Drop the dragged tab group into the top-level slot `to` (a row drop zone index).
+  function dropTabGroup(from: number, to: number) {
+    const block = blocks[from];
+    if (block?.kind !== "tab-group") return;
+
+    const newIndex = moveTabGroup(contents, from, to);
+    if (newIndex < 0) return;
+
+    // An unnamed group is keyed by its row index, so the move re-keys it: carry the active
+    // tab and the inspector selection over to the group's new name.
+    const yamlName = contents.getIn(["rows", newIndex, "name"]);
+    const newName =
+      typeof yamlName === "string" && yamlName.trim()
+        ? yamlName.trim()
+        : `group-${newIndex}`;
+    activateTabWhenGroupReady(newName, get(block.group.activeTabIndex));
+    if ($selectedTabGroup === block.group.name) setSelectedTabGroup(newName);
+
+    // Mirror the move in the optimistic spec and reprocess, so the canvas reorders now
+    // rather than on the next reconcile (component names are re-derived then).
+    const full = structuredClone(specCanvasRows);
+    const [moved] = full.splice(from, 1);
+    full.splice(newIndex, 0, moved);
+    specCanvasRows = full;
+    processRows({
+      components: resolvedComponents,
+      canvas: { rows: specCanvasRows },
+    });
+
+    updateContents();
+  }
+
+  function handleTabGroupMouseDown(blockIndex: number, event: MouseEvent) {
+    if (event.button !== 0) return;
+    if (event.shiftKey) return;
+
+    initialMousePosition = $mousePosition;
+
+    if (dragTimeout) clearTimeout(dragTimeout);
+
+    // Ensure cleanup on mouseup even if svelte:window handler fails
+    window.addEventListener("mouseup", reset, { once: true });
+
+    dragTimeout = setTimeout(() => {
+      pendingDragBlockIndex = blockIndex;
+    }, 150);
+  }
+
   function initializeRow(
     row: number,
     type: CanvasComponentType,
@@ -543,6 +632,12 @@
   function onDrop(row: number, column: number | null, target?: EditTarget) {
     if (!$dropZone) return;
     dropZone.clear();
+
+    // A dragged tab group only lands in top-level row slots (never inside a tab or a row).
+    if (dragBlockIndex !== null) {
+      if (!target && column === null) dropTabGroup(dragBlockIndex, row);
+      return;
+    }
 
     if (!dragComponent) return;
 
@@ -795,6 +890,7 @@
         {columnWidth}
         {components}
         {dragComponent}
+        {dragBlockIndex}
         {selectedComponent}
         hasValidMetrics={!!defaultMetrics}
         {onDrop}
@@ -813,6 +909,7 @@
         onDuplicateTab={duplicateTabAction}
         onSelect={(tabName) => setActiveTabInURL(block.group.name, tabName)}
         onSelectGroup={() => selectTabGroup(block.group.name)}
+        onGroupMouseDown={handleTabGroupMouseDown}
         onDropOnTab={dropComponentOnTab}
         onAddTabGroup={addTabGroupAtAction}
       />
@@ -825,6 +922,7 @@
         {components}
         {columnWidth}
         {dragComponent}
+        blockDragging={dragBlockIndex !== null}
         {selectedComponent}
         zIndex={blocks.length - blockIndex}
         {onDrop}
@@ -904,6 +1002,26 @@
       ghost
       selected
     />
+  </div>
+{/if}
+
+{#if dragGroupTabs}
+  <div
+    use:portal
+    class="absolute pointer-events-none drag-container"
+    style:z-index="1000"
+    style:top="{dragItemPosition.top}px"
+    style:left="{dragItemPosition.left}px"
+    style:width="{dragItemDimensions.width}px"
+    style:height="{dragItemDimensions.height}px"
+  >
+    <div class="tab-group-ghost">
+      <div class="tab-group-ghost-strip">
+        {#each $dragGroupTabs ?? [] as tab (tab.name)}
+          <span>{tab.displayName}</span>
+        {/each}
+      </div>
+    </div>
   </div>
 {/if}
 
@@ -1013,5 +1131,16 @@
   .drag-container {
     container-type: inline-size;
     container-name: component-container;
+  }
+
+  /* Ghost of a tab group being dragged: the strip's labels over a faded body. */
+  .tab-group-ghost {
+    @apply size-full overflow-hidden rounded-md border border-primary-400 px-3 py-2;
+    @apply bg-surface-subtle/80 opacity-80 shadow-md;
+  }
+
+  .tab-group-ghost-strip {
+    @apply flex h-9 items-end gap-x-4 border-b border-gray-200 pb-2;
+    @apply text-sm font-medium text-fg-secondary;
   }
 </style>

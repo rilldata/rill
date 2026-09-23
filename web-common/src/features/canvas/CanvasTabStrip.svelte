@@ -8,6 +8,7 @@
     ChevronLeft,
     ChevronRight,
     Copy,
+    GripVertical,
     Pencil,
     Plus,
     Trash2,
@@ -34,6 +35,10 @@
     undefined;
   // Fired (edit mode) when a tab is clicked, so the parent can open the tab-group inspector.
   export let onSelectGroup: (() => void) | undefined = undefined;
+  // Fired (edit mode) on mousedown on the strip's grip handle or empty area, so the parent can
+  // start dragging the whole tab group to another position on the canvas.
+  export let onGroupMouseDown: ((event: MouseEvent) => void) | undefined =
+    undefined;
   // When a component is being dragged, tabs become drop targets for cross-tab moves.
   export let dragComponent: BaseCanvasComponent | null = null;
   export let onDropOnTab: ((tabIndex: number) => void) | undefined = undefined;
@@ -101,6 +106,16 @@
     onSelectGroup();
   }
 
+  // Mousedown on the strip's non-interactive area starts a drag of the whole group. Tabs,
+  // the rename input, the ⋯ menus and the scroll/add buttons keep their own behavior.
+  function handleStripMouseDown(e: MouseEvent) {
+    if (!onGroupMouseDown) return;
+    if (e.target instanceof HTMLElement && e.target.closest("button, input")) {
+      return;
+    }
+    onGroupMouseDown(e);
+  }
+
   // Move a tab. The active tab is preserved by name across the reorder (see
   // TabGroup.updateFromSpec), so no explicit re-activation is needed here.
   function moveWithFocus(index: number, direction: -1 | 1) {
@@ -138,10 +153,18 @@
 <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
 <div
   class="tab-strip-shell"
+  class:draggable={editable && !!onGroupMouseDown}
   style:max-width="{maxWidth}px"
   role="presentation"
   on:click={handleStripClick}
+  on:mousedown={handleStripMouseDown}
 >
+  {#if editable && onGroupMouseDown}
+    <div class="grip" title="Drag to move this tab group" role="presentation">
+      <GripVertical size="14px" />
+    </div>
+  {/if}
+
   {#if canScrollToStart}
     <button
       class="scroll-button scroll-to-start"
@@ -303,6 +326,16 @@
 <style lang="postcss">
   .tab-strip-shell {
     @apply relative z-[100] flex w-full max-w-full mx-auto items-stretch px-2;
+  }
+
+  .tab-strip-shell.draggable {
+    @apply cursor-grab active:cursor-grabbing;
+  }
+
+  /* Drag handle for moving the whole group; shares the strip's bottom border and baseline. */
+  .grip {
+    @apply flex flex-none items-center pb-2 pr-1 border-b border-gray-200;
+    @apply text-fg-secondary hover:text-fg-primary;
   }
 
   .tab-strip-wrapper {
