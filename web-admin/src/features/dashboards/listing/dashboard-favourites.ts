@@ -14,29 +14,6 @@ export function getDashboardFavouritesStore(org: string, project: string) {
   return SvelteLocalStorage.createStringArrayStore(key);
 }
 
-/**
- * Rewrites legacy favourites (bare lowercase names) to `kind/name` keys.
- * A legacy name matches every dashboard with that name, whatever its kind;
- * names with no matching dashboard are dropped.
- * Returns undefined when there is nothing to migrate.
- */
-export function migrateLegacyDashboardFavourites(
-  favourites: string[],
-  dashboards: V1Resource[],
-): string[] | undefined {
-  if (!favourites.some((f) => !f.includes("/"))) return undefined;
-  const migrated = favourites.flatMap((f) => {
-    if (f.includes("/")) return [f];
-    return dashboards.flatMap((r) => {
-      const kind = r.meta?.name?.kind;
-      const name = r.meta?.name?.name;
-      if (!kind || !name || name.toLowerCase() !== f) return [];
-      return [resourceKey(kind, name)];
-    });
-  });
-  return [...new Set(migrated)];
-}
-
 export function getDashboardTagFavouritesStore(org: string, project: string) {
   const key = `rill:app:${org}:${project}:tag:favourites`;
   return SvelteLocalStorage.createStringArrayStore(key);
@@ -85,32 +62,87 @@ export const DashboardTableSortOptions: SortOption[] = [
 ];
 
 /**
+ * Rewrites legacy favourites (bare lowercase names) to `kind/name` keys.
+ * A legacy name matches every dashboard with that name, whatever its kind.
+ * A name with no matching dashboard is kept as is: it is ignored when pinning
+ * and can still be migrated once the dashboard is listed again.
+ * Returns undefined when nothing changed.
+ */
+export function migrateLegacyDashboardFavourites(
+  favourites: string[],
+  dashboards: V1Resource[],
+): string[] | undefined {
+  const migrated = [
+    ...new Set(
+      favourites.flatMap((f) => {
+        if (f.includes("/")) return [f];
+        const keys = legacyNameToKeys(f, dashboards);
+        return keys.length ? keys : [f];
+      }),
+    ),
+  ];
+  const unchanged =
+    migrated.length === favourites.length &&
+    migrated.every((f, i) => f === favourites[i]);
+  return unchanged ? undefined : migrated;
+}
+
+/**
  * Rewrites legacy recently-used entries (bare lowercase names) to `kind/name` keys.
  * A legacy name applies to every dashboard with that name, whatever its kind;
- * names with no matching dashboard are dropped.
+ * a name with no matching dashboard is kept as is.
  * When a key already exists, the newer timestamp wins.
- * Returns undefined when there is nothing to migrate.
+ * Returns undefined when nothing changed.
  */
 export function migrateLegacyRecentlyUsedDashboards(
   recentlyUsed: Record<string, number>,
   dashboards: V1Resource[],
 ): Record<string, number> | undefined {
-  const legacyNames = Object.keys(recentlyUsed).filter((k) => !k.includes("/"));
-  if (legacyNames.length === 0) return undefined;
   const migrated: Record<string, number> = {};
+  let changed = false;
   for (const [key, ts] of Object.entries(recentlyUsed)) {
-    if (key.includes("/")) migrated[key] = Math.max(migrated[key] ?? 0, ts);
-  }
-  for (const name of legacyNames) {
-    for (const r of dashboards) {
-      const kind = r.meta?.name?.kind;
-      const resName = r.meta?.name?.name;
-      if (!kind || !resName || resName.toLowerCase() !== name) continue;
-      const key = resourceKey(kind, resName);
-      migrated[key] = Math.max(migrated[key] ?? 0, recentlyUsed[name]);
+    const keys = key.includes("/") ? [] : legacyNameToKeys(key, dashboards);
+    if (keys.length === 0) {
+      migrated[key] = Math.max(migrated[key] ?? 0, ts);
+      continue;
     }
+    changed = true;
+    for (const k of keys) migrated[k] = Math.max(migrated[k] ?? 0, ts);
   }
-  return migrated;
+  return changed ? migrated : undefined;
+}
+
+/**
+ * Migrates both per-project dashboard stores in one go.
+ * Called once the dashboards list is loaded, from a component mounted on every project page.
+ */
+export function migrateLegacyDashboardStores(
+  org: string,
+  project: string,
+  dashboards: V1Resource[],
+) {
+  const favourites = getDashboardFavouritesStore(org, project);
+  const migratedFavourites = migrateLegacyDashboardFavourites(
+    favourites.value,
+    dashboards,
+  );
+  if (migratedFavourites) favourites.setter(migratedFavourites);
+
+  const recentlyUsed = new RecentlyUsedDashboards(org, project).recentlyUsed;
+  const migratedRecentlyUsed = migrateLegacyRecentlyUsedDashboards(
+    recentlyUsed.value,
+    dashboards,
+  );
+  if (migratedRecentlyUsed) recentlyUsed.setter(migratedRecentlyUsed);
+}
+
+function legacyNameToKeys(name: string, dashboards: V1Resource[]): string[] {
+  return dashboards.flatMap((r) => {
+    const kind = r.meta?.name?.kind;
+    const resName = r.meta?.name?.name;
+    if (!kind || !resName || resName.toLowerCase() !== name) return [];
+    return [resourceKey(kind, resName)];
+  });
 }
 
 /**

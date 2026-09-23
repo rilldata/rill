@@ -24,13 +24,26 @@ describe("migrateLegacyDashboardFavourites", () => {
     ).toBeUndefined();
   });
 
-  it("rewrites legacy names to kind/name, keeping order and dropping stale names", () => {
+  it("rewrites legacy names to kind/name, keeping order and unmatched names", () => {
     expect(
       migrateLegacyDashboardFavourites(
-        ["ops", "deleted", "rill.runtime.v1.Explore/sales", "ops"],
+        ["ops", "unlisted", "rill.runtime.v1.Explore/sales", "ops"],
         dashboards,
       ),
-    ).toEqual(["rill.runtime.v1.Canvas/ops", "rill.runtime.v1.Explore/sales"]);
+    ).toEqual([
+      "rill.runtime.v1.Canvas/ops",
+      "unlisted",
+      "rill.runtime.v1.Explore/sales",
+    ]);
+  });
+
+  it("returns undefined when only unmatched legacy names remain", () => {
+    expect(
+      migrateLegacyDashboardFavourites(
+        ["unlisted", "rill.runtime.v1.Canvas/ops"],
+        dashboards,
+      ),
+    ).toBeUndefined();
   });
 
   it("expands a legacy name shared across kinds to every matching dashboard", () => {
@@ -53,13 +66,22 @@ describe("migrateLegacyRecentlyUsedDashboards", () => {
     ).toBeUndefined();
   });
 
-  it("rewrites legacy names, drops stale names and keeps the newest timestamp", () => {
+  it("rewrites legacy names, keeps unmatched names and the newest timestamp", () => {
     expect(
       migrateLegacyRecentlyUsedDashboards(
-        { ops: 10, deleted: 3, "rill.runtime.v1.Canvas/ops": 7 },
+        { ops: 10, unlisted: 3, "rill.runtime.v1.Canvas/ops": 7 },
         dashboards,
       ),
-    ).toEqual({ "rill.runtime.v1.Canvas/ops": 10 });
+    ).toEqual({ "rill.runtime.v1.Canvas/ops": 10, unlisted: 3 });
+  });
+
+  it("returns undefined when only unmatched legacy names remain", () => {
+    expect(
+      migrateLegacyRecentlyUsedDashboards(
+        { unlisted: 3, "rill.runtime.v1.Canvas/ops": 7 },
+        dashboards,
+      ),
+    ).toBeUndefined();
   });
 
   it("applies a legacy name shared across kinds to every matching dashboard", () => {

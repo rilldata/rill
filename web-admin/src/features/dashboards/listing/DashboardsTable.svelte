@@ -18,8 +18,6 @@
   import {
     DashboardTableSortOptions,
     getDashboardFavouritesStore,
-    migrateLegacyDashboardFavourites,
-    migrateLegacyRecentlyUsedDashboards,
     RecentlyUsedDashboards,
   } from "./dashboard-favourites.ts";
   import { DebouncedRuneStore } from "@rilldata/web-common/lib/store-utils/types.svelte.ts";
@@ -94,25 +92,9 @@
     new RecentlyUsedDashboards(organization, project),
   );
 
-  $effect(() => {
-    if (!isSuccess) return;
-    const migrated = migrateLegacyDashboardFavourites(
-      dashboardFavourites.value,
-      allDashboards,
-    );
-    if (migrated) dashboardFavourites.setter(migrated);
-  });
-  $effect(() => {
-    if (!isSuccess) return;
-    const migrated = migrateLegacyRecentlyUsedDashboards(
-      recentlyUsedDashboards.recentlyUsed.value,
-      allDashboards,
-    );
-    if (migrated) recentlyUsedDashboards.recentlyUsed.setter(migrated);
-  });
-
   // Favourites are keyed the same way as table rows, so pinning is a lookup.
-  // Favourites without a matching row (e.g. deleted or filtered out) are dropped.
+  // Favourites without a matching row (deleted, filtered out, or not yet
+  // migrated from a legacy name-only key) are simply not pinned.
   let filteredDashboardRowIds = $derived(
     new Set(filteredDashboards.map(resourceTableGetRowId)),
   );

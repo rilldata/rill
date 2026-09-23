@@ -55,6 +55,7 @@
   import SharePersonalFile from "web-admin/src/features/personal-files/SharePersonalFile.svelte";
   import VisualizationsBreadcrumbDropdown from "./VisualizationsBreadcrumbDropdown.svelte";
   import { resourceKey } from "@rilldata/web-common/features/resources/overview-utils.ts";
+  import { migrateLegacyDashboardStores } from "../../dashboards/listing/dashboard-favourites.ts";
   import EditSessionViewAs from "@rilldata/web-admin/features/edit-session/EditSessionViewAs.svelte";
 
   export let organization: string;
@@ -111,6 +112,11 @@
   $: reportsQuery = useReports(runtimeClient, onReportPage);
 
   $: visualizations = $visualizationsQuery.data ?? [];
+
+  // The header is mounted on every project page, so migrate the per-project
+  // favourites and recently-used stores here rather than in each consumer.
+  $: if ($visualizationsQuery.isSuccess)
+    migrateLegacyDashboardStores(organization, project, visualizations);
   $: alerts = $alertsQuery.data?.resources ?? [];
   $: reports = $reportsQuery.data?.resources ?? [];
 

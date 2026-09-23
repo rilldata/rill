@@ -14,7 +14,6 @@
   import { filterResources } from "@rilldata/web-common/features/resources/resource-filter-utils.ts";
   import {
     getDashboardFavouritesStore,
-    migrateLegacyDashboardFavourites,
     sortByFavourites,
   } from "../../dashboards/listing/dashboard-favourites.ts";
   import { resourceTableGetRowId } from "@rilldata/web-common/features/resources/overview-utils.ts";
@@ -57,15 +56,6 @@
   let dashboardFavourites = $derived(
     getDashboardFavouritesStore(organization, project),
   );
-
-  $effect(() => {
-    if (!$dashboards.isSuccess) return;
-    const migrated = migrateLegacyDashboardFavourites(
-      dashboardFavourites.value,
-      allDashboards,
-    );
-    if (migrated) dashboardFavourites.setter(migrated);
-  });
 
   let sortedOptions = $derived(
     sortByFavourites(filteredOptions, dashboardFavourites.value, ([id]) => id),
