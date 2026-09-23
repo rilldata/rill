@@ -108,6 +108,7 @@ func newMetricsSQL(ctx context.Context, opts *runtime.ResolverOptions) (runtime.
 			if err != nil {
 				return metricsview.TimestampsResult{}, err
 			}
+			defer e.Close()
 			return e.Timestamps(ctx, timeDim)
 		},
 	})
