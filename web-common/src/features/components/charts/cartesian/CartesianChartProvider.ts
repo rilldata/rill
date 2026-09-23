@@ -46,14 +46,21 @@ import {
   isSortByDelta,
   vegaSortToAggregationSort,
 } from "../query-util";
+import { toVerticalSpec } from "./orientation";
 
 export type CartesianChartSpec = {
   metrics_view: string;
   // Ad-hoc measures derived from existing measures via an arithmetic
   // expression; measure fields may name them.
   adhoc_measures?: EphemeralMeasureSpec[];
-  x?: FieldConfig<"nominal" | "time">;
-  y?: FieldConfig<"quantitative">;
+  // `x` and `y` name the field drawn on that axis. Line and area charts and
+  // vertical bar charts put the dimension on `x` and the measure on `y`; a
+  // horizontal bar chart (bar_chart, stacked_bar, stacked_bar_normalized) puts
+  // the quantitative field on `x` and the dimension on `y`. Sort values such
+  // as "-y" refer to channels, so a horizontal chart sorts its categories by
+  // the measure with "-x". See `orientation.ts`.
+  x?: FieldConfig<"nominal" | "quantitative" | "time">;
+  y?: FieldConfig<"nominal" | "quantitative" | "time">;
   color?: FieldConfig<"nominal"> | string;
   isInteractive?: boolean;
 };
@@ -83,7 +90,9 @@ export class CartesianChartProvider {
     spec: Readable<CartesianChartSpec>,
     defaultOptions?: CartesianChartDefaultOptions,
   ) {
-    this.spec = spec;
+    // Queries, sorting and titles are written against the vertical layout
+    // (dimension on x, measure on y); a horizontal spec is normalized once here.
+    this.spec = derived(spec, toVerticalSpec);
     if (defaultOptions) {
       this.defaultNominalLimit =
         defaultOptions.nominalLimit || DEFAULT_NOMINAL_LIMIT;

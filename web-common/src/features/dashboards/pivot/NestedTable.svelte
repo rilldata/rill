@@ -44,7 +44,7 @@
   import type { CellFormatter } from "./pivot-conditional-formatting";
   import { isShowMoreRow } from "./pivot-utils";
   import PivotHeaderLabel from "./PivotHeaderLabel.svelte";
-  import type { PivotDataRow } from "./types";
+  import type { PivotDataRow, PivotTotalsRowPosition } from "./types";
 
   // State props
   export let hasColumnDimension: boolean;
@@ -56,6 +56,7 @@
   export let measures: MeasureColumnProps;
   export let cellFormatters: Map<string, CellFormatter> = new Map();
   export let totalsRow: PivotDataRow | undefined;
+  export let totalsRowPosition: PivotTotalsRowPosition = "top";
   export let canShowDataViewer = false;
   export let enableClickToFilter = false;
   export let rowSelectionState: PivotRowSelectionState | undefined = undefined;
@@ -118,6 +119,11 @@
   $: hasRowDimension = rowDimensions.length > 0;
   $: hasExpandableRows = rowDimensions.length > 1;
   $: hasMeasures = measures.length > 0;
+
+  // The totals row is always tanstack row "0" (see PivotTable.svelte). When
+  // pinned to the bottom it is skipped in the virtualized body and rendered
+  // once more in a sticky <tfoot>, so no row ids or index math change.
+  $: totalsRowAtBottom = !!totalsRow && totalsRowPosition === "bottom";
   $: rowDimensionNames = rowDimensions.map((d) => d.name);
   $: rowDimensionLabel = getRowNestedLabel(rowDimensions);
   $: rowDimensionName = rowDimensionLabel ? rowDimensionLabel : null;
@@ -604,121 +610,131 @@
   <tbody>
     <tr style:height="{before}px"></tr>
     {#each virtualRows as row (row.index)}
-      {@const cells = rows[row.index].getVisibleCells()}
-      {@const rowId = rows[row.index].id}
-      {@const rowData = rows[row.index].original}
-      {@const dk =
-        rows[row.index].depth > 0
-          ? nestedDimKeyFromRow(rows[row.index], rowDimensionNames)
-          : dimKeyFromRow(rowData, rowDimensionNames)}
-      {@const isTotalsRow = !!totalsRow && rowId === "0"}
-      {@const filterSelected =
-        rowSelectionState?.isRowSelected(
-          rowData,
-          rows[row.index].depth,
-          rows[row.index].getParentRows().map((r) => r.original),
-        ) ?? false}
-      {@const isRowHeaderSelected =
-        clickSelection?.isRowHeaderSelected(dk) ?? false}
-      {@const hasClickedCell =
-        clickSelection?.hasSelectedCellInRow(dk) ?? false}
-      {@const isSelected =
-        rows[row.index].depth > 0 && clickSelection?.hasAnySelection
-          ? filterSelected && (isRowHeaderSelected || hasClickedCell)
-          : filterSelected}
-      {@const isAncestorOfSelectedHeader =
-        ancestorRowIdsOfSelectedHeaders.has(rowId)}
-      {@const isShowMore = isShowMoreRow(rows[row.index])}
-      {@const rs = nestedRowState({
-        isSelected,
-        hasSelection: rowSelectionState?.hasActiveSelection ?? false,
-        isRowHeaderSelected,
-        hasClickedCell,
-        hasCrossSelection,
-        isAncestorOfSelectedHeader,
-        isShowMore,
-      })}
-      <tr
-        class:show-more-row={rs.showMoreRow}
-        class:selected-row={rs.selectedRow}
-        class:dimmed-row={rs.dimmedRow}
-        class:ancestor-of-selected-row={rs.ancestorOfSelectedRow}
-      >
-        {#each cells as cell, i (cell.id)}
-          {@const result =
-            typeof cell.column.columnDef.cell === "function"
-              ? cell.column.columnDef.cell(cell.getContext())
-              : cell.column.columnDef.cell}
-          {@const cs = nestedCellState({
-            isActive: isCellActive(cell.row.id, cell.column.id),
-            isClicked:
-              clickSelection?.isCellSelected(dk, cell.column.id) ?? false,
-            cellIndex: i,
-            hasClickedCell,
-            inHoveredCol: isHeaderInHoveredRange(i, 1, hoveredColRange),
-            inSelectedCol: selectedColIndices.has(i),
-            inCellSelectedColDimGroup: cellSelectedColDimGroupIndices.has(i),
-            isRowHeaderSelected,
-            hasCrossSelection,
-            isAncestorOfSelectedHeader,
-            isTotalsRow,
-            isShowMore,
-            canShowDataViewer,
-            enableClickToFilter,
-          })}
-          {@const tooltipValue = cell.column.columnDef.meta?.tooltipFormatter
-            ? cell.column.columnDef.meta.tooltipFormatter(cell.getValue())
-            : cell.getValue()}
-          {@const cellFmt = getCellFormatting(cell, isTotalsRow)}
-          <td
-            class="ui-copy-number cell truncate group/cell"
-            class:has-conditional-format={cellFmt !== null}
-            style:--cf-bg={cellFmt?.background ?? null}
-            style:--cf-color={cellFmt?.color ?? null}
-            class:active-cell={cs.activeCell}
-            class:selected-cell={cs.selectedCell}
-            class:col-dim-hover-body={cs.colDimHoverBody}
-            class:selected-col-body={cs.selectedColBody}
-            class:cell-selected-col-dim-group-body={cs.cellSelectedColDimGroupBody}
-            class:out-of-group-row-cell={cs.outOfGroupRowCell}
-            class:cell-selected-row-header={cs.cellSelectedRowHeader}
-            class:cross-intersection={cs.crossIntersection}
-            class:cross-row-arm={cs.crossRowArm}
-            class:cross-col-arm={cs.crossColArm}
-            class:partial-aggregate-cell={cs.partialAggregateCell}
-            class:cross-selected-row-header={cs.crossSelectedRowHeader}
-            class:interactive-cell={cs.interactiveCell}
-            class:border-r={shouldShowRightBorder(i)}
-            data-value={tooltipValue}
-            data-rowid={cell.row.id}
-            data-columnid={cell.column.id}
-            data-rowheader={i === 0 || undefined}
-            class:totals-column={i > 0 && i <= measureCount}
-            onmouseover={() =>
-              cellInspectorStore.updateValue(cell.getValue(), tooltipValue)}
-            onfocus={() =>
-              cellInspectorStore.updateValue(cell.getValue(), tooltipValue)}
-          >
-            {#if result?.component && result?.props}
-              <svelte:component
-                this={result.component}
-                {...result.props}
-                {assembled}
-              />
-            {:else if typeof result === "string" || typeof result === "number"}
-              {result}
-            {:else}
-              <svelte:component
-                this={flexRender(cell.column.columnDef.cell, cell.getContext())}
-              />
-            {/if}
-          </td>
-        {/each}
-      </tr>
+      {#if !(totalsRowAtBottom && row.index === 0)}
+        {@render pivotRow(row.index)}
+      {/if}
     {/each}
     <tr style:height="{after}px"></tr>
   </tbody>
+  {#if totalsRowAtBottom && rows[0]}
+    <tfoot>
+      {@render pivotRow(0)}
+    </tfoot>
+  {/if}
 </table>
+
+{#snippet pivotRow(rowIndex: number)}
+  {@const cells = rows[rowIndex].getVisibleCells()}
+  {@const rowId = rows[rowIndex].id}
+  {@const rowData = rows[rowIndex].original}
+  {@const dk =
+    rows[rowIndex].depth > 0
+      ? nestedDimKeyFromRow(rows[rowIndex], rowDimensionNames)
+      : dimKeyFromRow(rowData, rowDimensionNames)}
+  {@const isTotalsRow = !!totalsRow && rowId === "0"}
+  {@const filterSelected =
+    rowSelectionState?.isRowSelected(
+      rowData,
+      rows[rowIndex].depth,
+      rows[rowIndex].getParentRows().map((r) => r.original),
+    ) ?? false}
+  {@const isRowHeaderSelected =
+    clickSelection?.isRowHeaderSelected(dk) ?? false}
+  {@const hasClickedCell = clickSelection?.hasSelectedCellInRow(dk) ?? false}
+  {@const isSelected =
+    rows[rowIndex].depth > 0 && clickSelection?.hasAnySelection
+      ? filterSelected && (isRowHeaderSelected || hasClickedCell)
+      : filterSelected}
+  {@const isAncestorOfSelectedHeader =
+    ancestorRowIdsOfSelectedHeaders.has(rowId)}
+  {@const isShowMore = isShowMoreRow(rows[rowIndex])}
+  {@const rs = nestedRowState({
+    isSelected,
+    hasSelection: rowSelectionState?.hasActiveSelection ?? false,
+    isRowHeaderSelected,
+    hasClickedCell,
+    hasCrossSelection,
+    isAncestorOfSelectedHeader,
+    isShowMore,
+  })}
+  <tr
+    class:totals-row={isTotalsRow}
+    class:show-more-row={rs.showMoreRow}
+    class:selected-row={rs.selectedRow}
+    class:dimmed-row={rs.dimmedRow}
+    class:ancestor-of-selected-row={rs.ancestorOfSelectedRow}
+  >
+    {#each cells as cell, i (cell.id)}
+      {@const result =
+        typeof cell.column.columnDef.cell === "function"
+          ? cell.column.columnDef.cell(cell.getContext())
+          : cell.column.columnDef.cell}
+      {@const cs = nestedCellState({
+        isActive: isCellActive(cell.row.id, cell.column.id),
+        isClicked: clickSelection?.isCellSelected(dk, cell.column.id) ?? false,
+        cellIndex: i,
+        hasClickedCell,
+        inHoveredCol: isHeaderInHoveredRange(i, 1, hoveredColRange),
+        inSelectedCol: selectedColIndices.has(i),
+        inCellSelectedColDimGroup: cellSelectedColDimGroupIndices.has(i),
+        isRowHeaderSelected,
+        hasCrossSelection,
+        isAncestorOfSelectedHeader,
+        isTotalsRow,
+        isShowMore,
+        canShowDataViewer,
+        enableClickToFilter,
+      })}
+      {@const tooltipValue = cell.column.columnDef.meta?.tooltipFormatter
+        ? cell.column.columnDef.meta.tooltipFormatter(cell.getValue())
+        : cell.getValue()}
+      {@const cellFmt = getCellFormatting(cell, isTotalsRow)}
+      <td
+        class="ui-copy-number cell truncate group/cell"
+        class:has-conditional-format={cellFmt !== null}
+        style:--cf-bg={cellFmt?.background ?? null}
+        style:--cf-color={cellFmt?.color ?? null}
+        class:active-cell={cs.activeCell}
+        class:selected-cell={cs.selectedCell}
+        class:col-dim-hover-body={cs.colDimHoverBody}
+        class:selected-col-body={cs.selectedColBody}
+        class:cell-selected-col-dim-group-body={cs.cellSelectedColDimGroupBody}
+        class:out-of-group-row-cell={cs.outOfGroupRowCell}
+        class:cell-selected-row-header={cs.cellSelectedRowHeader}
+        class:cross-intersection={cs.crossIntersection}
+        class:cross-row-arm={cs.crossRowArm}
+        class:cross-col-arm={cs.crossColArm}
+        class:partial-aggregate-cell={cs.partialAggregateCell}
+        class:cross-selected-row-header={cs.crossSelectedRowHeader}
+        class:interactive-cell={cs.interactiveCell}
+        class:border-r={shouldShowRightBorder(i)}
+        data-value={tooltipValue}
+        data-rowid={cell.row.id}
+        data-columnid={cell.column.id}
+        data-rowheader={i === 0 || undefined}
+        class:totals-column={i > 0 && i <= measureCount}
+        onmouseover={() =>
+          cellInspectorStore.updateValue(cell.getValue(), tooltipValue)}
+        onfocus={() =>
+          cellInspectorStore.updateValue(cell.getValue(), tooltipValue)}
+      >
+        {#if result?.component && result?.props}
+          <svelte:component
+            this={result.component}
+            {...result.props}
+            {assembled}
+          />
+        {:else if typeof result === "string" || typeof result === "number"}
+          {result}
+        {:else}
+          <svelte:component
+            this={flexRender(cell.column.columnDef.cell, cell.getContext())}
+          />
+        {/if}
+      </td>
+    {/each}
+  </tr>
+{/snippet}
 
 <style lang="postcss">
   * {
@@ -749,7 +765,8 @@
     @apply flex-row;
   }
 
-  tbody .cell {
+  tbody .cell,
+  tfoot .cell {
     height: var(--row-height);
   }
 
@@ -838,34 +855,41 @@
     @apply bg-surface-background;
   }
 
-  /* The totals row */
-  .with-totals-row tbody > tr:nth-of-type(2) {
+  /* The totals row: pinned under the header, or above the bottom edge when
+     rendered in the tfoot */
+  tbody > tr.totals-row,
+  tfoot > tr.totals-row {
     @apply bg-surface-background sticky z-20;
-    top: var(--total-header-height);
     height: calc(var(--row-height) + 2px);
+  }
+  tbody > tr.totals-row {
+    top: var(--total-header-height);
+  }
+  tfoot > tr.totals-row {
+    @apply bottom-0;
+  }
+  tfoot > tr.totals-row > td {
+    @apply border-t;
   }
 
   /* The totals row header - only apply when there are actual measures and totals */
-  .with-row-dimension.with-totals-row.with-measures
-    tbody
-    > tr:nth-of-type(2)
-    > td:first-of-type {
+  .with-row-dimension.with-measures tr.totals-row > td:first-of-type {
     @apply font-semibold bg-surface-background;
   }
 
-  .with-expandable-rows.with-totals-row
-    tbody
-    > tr:nth-of-type(2)
-    > td:first-of-type {
+  .with-expandable-rows tr.totals-row > td:first-of-type {
     @apply pl-5;
   }
 
   tbody tr:hover,
-  tbody tr:hover .cell {
+  tbody tr:hover .cell,
+  tfoot tr:hover,
+  tfoot tr:hover .cell {
     @apply bg-surface-hover;
   }
 
-  tbody tr:hover .active-cell {
+  tbody tr:hover .active-cell,
+  tfoot tr:hover .active-cell {
     @apply bg-primary-100;
   }
 
@@ -890,15 +914,15 @@
       inset 1px 0 0 0 theme(colors.primary.400);
   }
   /* The totals row is z-20 and covers the outset top shadow; add inset top border */
-  .with-totals-row tbody > tr:nth-of-type(3) > td.selected-cell.cell {
+  tbody > tr.totals-row + tr > td.selected-cell.cell {
     box-shadow:
       0 0 0 1px theme(colors.primary.400),
       inset 0 1px 0 0 theme(colors.primary.400);
   }
   /* Both: right after totals AND next to sticky row header */
-  .with-totals-row
-    tbody
-    > tr:nth-of-type(3)
+  tbody
+    > tr.totals-row
+    + tr
     > td.cell-selected-row-header
     + td.selected-cell.cell {
     box-shadow:

@@ -59,7 +59,8 @@ func RegisterBuiltinAPI(opts *BuiltinAPIOptions) {
 
 // APIForName returns the API with the given name for the given instance.
 // It gives precedence to built-in APIs over project-specific dynamically created APIs.
-func (r *Runtime) APIForName(ctx context.Context, instanceID, name string) (*runtimev1.API, error) {
+// It returns ErrForbidden if the claims do not satisfy the security rules of a project-specific API.
+func (r *Runtime) APIForName(ctx context.Context, instanceID, name string, claims *SecurityClaims) (*runtimev1.API, error) {
 	if api, ok := BuiltinAPIs[name]; ok {
 		return api, nil
 	}
@@ -72,6 +73,14 @@ func (r *Runtime) APIForName(ctx context.Context, instanceID, name string) (*run
 	resource, err := ctrl.Get(ctx, &runtimev1.ResourceName{Kind: ResourceKindAPI, Name: name}, false)
 	if err != nil {
 		return nil, err
+	}
+
+	security, err := r.ResolveSecurity(ctx, instanceID, claims, resource)
+	if err != nil {
+		return nil, err
+	}
+	if !security.CanAccess() {
+		return nil, ErrForbidden
 	}
 
 	return resource.GetApi(), nil

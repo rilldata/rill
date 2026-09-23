@@ -459,6 +459,11 @@ function toPivotUrlParams(partialExploreState: Partial<ExploreState>) {
     searchParams.set(ExploreStateURLParams.PivotShowTotalsRow, "false");
   }
 
+  // "top" is the default, so only "bottom" needs to be in the URL.
+  if (partialExploreState.pivot.totalsRowPosition === "bottom") {
+    searchParams.set(ExploreStateURLParams.PivotTotalsRowPosition, "bottom");
+  }
+
   // Always set so clearing formatting removes it from the URL; cleanUrlParams
   // strips the empty value.
   searchParams.set(

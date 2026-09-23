@@ -64,3 +64,9 @@ export function groupErrorsByKind(resources: V1Resource[]): ResourceCount[] {
     }))
     .sort((a, b) => b.count - a.count);
 }
+
+export function resourceTableGetRowId(row: unknown, index: number): string {
+  const res = row as V1Resource;
+  if (!res?.meta?.name?.name || !res?.meta?.name?.kind) return index.toString();
+  return `${res.meta.name.kind}/${res.meta.name.name}`;
+}

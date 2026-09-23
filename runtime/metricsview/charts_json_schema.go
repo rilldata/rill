@@ -62,7 +62,7 @@ const ChartsJSONSchema = `{
         },
         "x": {
           "$ref": "#/$defs/FieldConfig",
-          "description": "X-axis field configuration."
+          "description": "X-axis field configuration. For bar_chart, stacked_bar and stacked_bar_normalized, a quantitative x (the measure) with the dimension on y draws horizontal bars."
         },
         "y": {
           "$ref": "#/$defs/FieldConfig",
@@ -156,7 +156,7 @@ const ChartsJSONSchema = `{
         },
         "labelAngle": {
           "type": "number",
-          "description": "Angle for axis labels in degrees."
+          "description": "Rotation angle of axis labels in degrees. Omit for automatic orientation: upright when the labels fit, otherwise angled. Common values are 0, -45 and -90."
         },
         "legendOrientation": {
           "type": "string",
@@ -200,6 +200,8 @@ const ChartsJSONSchema = `{
                 "-y",
                 "y_delta",
                 "-y_delta",
+                "x_delta",
+                "-x_delta",
                 "color",
                 "-color",
                 "measure",
@@ -214,7 +216,7 @@ const ChartsJSONSchema = `{
               "type": "array"
             }
           ],
-          "description": "Sort order for the field values."
+          "description": "Sort order for the field values. Values name the axis to sort by, so a horizontal bar chart sorts its categories by the measure with '-x' (or '-x_delta' for the comparison delta)."
         },
         "timeUnit": {
           "type": "string",

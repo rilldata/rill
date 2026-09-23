@@ -268,6 +268,8 @@ _[object]_ - (no description)
 
   - **`hide_totals_col`** - _[boolean]_ - Whether to hide the totals column. Defaults to false.
 
+  - **`totals_row_position`** - _[string]_ - Where to pin the totals row, either "top" (default) or "bottom".
+
   - **`row_limit`** - _[string]_ - Maximum number of rows to display in a pivot table (one of "5", "10", "25", "50", "100"). Omit or set to "all" for all rows.
 
   - **`comparison_range`** - _[string]_ - Comparison time range
@@ -294,7 +296,9 @@ _[object]_ - (no description)
 
 _[object]_ - (no description)
 
-  - **`url`** - _[string]_ - Image URL _(required)_
+  - **`url`** - _[string]_ - Image URL. Used in light mode, and in dark mode when `dark_url` is not set. _(required)_
+
+  - **`dark_url`** - _[string]_ - Image URL to use when the dashboard is displayed in dark mode. Defaults to `url`.
 
   - **`css`** - _[object]_ - CSS styles
 

@@ -947,6 +947,8 @@ If not found in `time_ranges`, it should be added to the list. */
   pivotRowLimit?: number;
   pivotShowTotalsColumn?: boolean;
   pivotShowTotalsRow?: boolean;
+  /** Where the pivot totals row is pinned: "top" (default) or "bottom". */
+  pivotTotalsRowPosition?: string;
   /** Per-measure pivot conditional formatting, serialized in the URL param format. */
   pivotFormatting?: string;
   /** Ephemeral measures for the explore, serialized in the URL param format. */

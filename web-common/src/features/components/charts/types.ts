@@ -127,6 +127,9 @@ export enum ChartSortType {
   Y_DESC = "-y",
   Y_DELTA_ASC = "y_delta",
   Y_DELTA_DESC = "-y_delta",
+  // Delta sorts by the measure when it sits on the x channel (horizontal bars).
+  X_DELTA_ASC = "x_delta",
+  X_DELTA_DESC = "-x_delta",
   COLOR_ASC = "color",
   COLOR_DESC = "-color",
   MEASURE_ASC = "measure",
@@ -146,6 +149,7 @@ interface NominalFieldConfig {
   sort?: ChartSortDirection;
   limit?: number;
   showNull?: boolean;
+  /** Axis label rotation in degrees; unset lays out categorical x-axis labels automatically */
   labelAngle?: number;
   legendOrientation?: ChartLegend;
   colorMapping?: ColorMapping;

@@ -213,6 +213,11 @@
             totals.showTotalsColumn,
             totals.showTotalsRow,
           )}
+        setTotalsRowPosition={(position) =>
+          metricsExplorerStore.setPivotTotalsRowPosition(
+            $exploreName,
+            position,
+          )}
         collapseAll={() =>
           metricsExplorerStore.setPivotExpanded($exploreName, {})}
         fitToWidth={() => pivotTable?.fitColumnsToWidth()}
