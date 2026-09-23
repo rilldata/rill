@@ -68,6 +68,88 @@ measures:
 	require.Contains(t, prompt, `total_media_spend_usd_measure (display name "Total Media Spend (USD)")`)
 }
 
+// TestDevelopFileExistingExploresInPrompt verifies that the develop_file prompt tells the sub-agent
+// which explore dashboards each metrics view already has, and whether they are inline.
+// This prevents the sub-agent from writing a stand-alone explore file for a metrics view that already
+// emits an inline explore, which would show up as a duplicate dashboard.
+func TestDevelopFileExistingExploresInPrompt(t *testing.T) {
+	rt, instanceID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
+		Files: map[string]string{
+			"models/orders.yaml": `
+type: model
+sql: SELECT TIMESTAMP '2024-01-01 00:00:00' AS created_at, 'web' AS channel, 10.0 AS revenue
+`,
+			// Inline explore
+			"metrics/orders_inline.yaml": `
+version: 1
+type: metrics_view
+model: orders
+timeseries: created_at
+dimensions:
+  - column: channel
+measures:
+  - name: total_revenue
+    expression: SUM(revenue)
+explore:
+  display_name: Orders Dashboard
+`,
+			// Stand-alone explore
+			"metrics/orders_standalone.yaml": `
+version: 1
+type: metrics_view
+model: orders
+timeseries: created_at
+dimensions:
+  - column: channel
+measures:
+  - name: total_revenue
+    expression: SUM(revenue)
+explore:
+  skip: true
+`,
+			"dashboards/orders_standalone_explore.yaml": `
+type: explore
+metrics_view: orders_standalone
+`,
+			// No explore
+			"metrics/orders_none.yaml": `
+version: 1
+type: metrics_view
+model: orders
+timeseries: created_at
+dimensions:
+  - column: channel
+measures:
+  - name: total_revenue
+    expression: SUM(revenue)
+explore:
+  skip: true
+`,
+		},
+	})
+	testruntime.RequireReconcileState(t, rt, instanceID, 7, 0, 0)
+
+	s := newSession(t, rt, instanceID)
+	llm := &capturingAIService{}
+	s.SetLLM(func(ctx context.Context) (drivers.AIService, func(), error) {
+		return llm, func() {}, nil
+	})
+
+	var res *ai.DevelopFileResult
+	_, err := s.CallTool(t.Context(), ai.RoleUser, ai.DevelopFileName, &res, &ai.DevelopFileArgs{
+		Path:   "/dashboards/orders.yaml",
+		Type:   "explore",
+		Prompt: `Create an explore dashboard for the "orders_inline" metrics view.`,
+	})
+	require.NoError(t, err)
+
+	prompt := llm.promptText()
+	require.Contains(t, prompt, "orders_inline: dimensions: [created_at, channel]; measures: [total_revenue (display name \"Total Revenue\")]; existing explores: orders_inline (inline in the metrics view file)")
+	require.Contains(t, prompt, "orders_standalone: dimensions: [created_at, channel]; measures: [total_revenue (display name \"Total Revenue\")]; existing explores: orders_standalone_explore (stand-alone file /dashboards/orders_standalone_explore.yaml)")
+	require.Contains(t, prompt, "orders_none: dimensions: [created_at, channel]; measures: [total_revenue (display name \"Total Revenue\")]; existing explores: none")
+	require.Contains(t, prompt, "Do NOT create a stand-alone explore file for a metrics view that already has an inline explore")
+}
+
 // capturingAIService is a drivers.AIService that captures the messages passed to it and always
 // returns a plain text response (ending completion loops after one iteration).
 type capturingAIService struct {

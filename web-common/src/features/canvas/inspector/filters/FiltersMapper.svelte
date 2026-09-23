@@ -12,7 +12,6 @@
     specStore,
     type,
     localExpressionFilters,
-    localTimeControls,
     parent: { name: canvasName },
     timeAndFilterStore,
   } = component);
@@ -53,7 +52,7 @@
             {canvasName}
             id={key}
             {metricsView}
-            {localTimeControls}
+            {component}
             showComparison={config?.meta?.hasComparison}
             showGrain={config?.meta?.hasGrain}
           />
