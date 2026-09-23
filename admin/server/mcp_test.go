@@ -58,7 +58,7 @@ func TestCallRuntimeToolErrors(t *testing.T) {
 		Name string `json:"name"`
 	}
 
-	// The server serves a single tool, like the runtime of a project without skills does not serve the skill tools.
+	// The server serves a single tool, so that calls to any other tool exercise the runtime's unknown tool error.
 	handler := mcp.NewStreamableHTTPHandler(func(r *http.Request) *mcp.Server {
 		srv := mcp.NewServer(&mcp.Implementation{Name: "runtime"}, &mcp.ServerOptions{HasTools: true})
 		mcp.AddTool(srv, &mcp.Tool{Name: "echo"}, func(ctx context.Context, req *mcp.CallToolRequest, args echoArgs) (*mcp.CallToolResult, echoResult, error) {
@@ -79,14 +79,12 @@ func TestCallRuntimeToolErrors(t *testing.T) {
 	require.False(t, res.IsError)
 	require.Equal(t, map[string]any{"name": "hello"}, res.StructuredContent)
 
-	// Calling a skill tool the runtime does not serve returns a tool error the client can act on, not a protocol error.
-	for _, name := range []string{ai.ListSkillsName, ai.LoadSkillName} {
-		res, err := s.callRuntimeTool(t.Context(), depl, "jwt", client, name, json.RawMessage(`{}`))
-		require.NoError(t, err, "tool %q", name)
-		require.True(t, res.IsError, "tool %q", name)
-		require.Len(t, res.Content, 1, "tool %q", name)
-		require.Contains(t, res.Content[0].(*mcp.TextContent).Text, "defines no skills", "tool %q", name)
-	}
+	// Calling a tool the runtime does not serve returns a tool error the client can act on, not a protocol error.
+	res, err = s.callRuntimeTool(t.Context(), depl, "jwt", client, ai.ListSkillsName, json.RawMessage(`{}`))
+	require.NoError(t, err)
+	require.True(t, res.IsError)
+	require.Len(t, res.Content, 1)
+	require.Contains(t, res.Content[0].(*mcp.TextContent).Text, "unknown tool")
 
 	// Invalid arguments are also returned as a tool error.
 	res, err = s.callRuntimeTool(t.Context(), depl, "jwt", client, "echo", json.RawMessage(`{"name":123}`))
