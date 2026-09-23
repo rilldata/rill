@@ -142,6 +142,21 @@ describe("generateVLBarChartSpec orientation", () => {
     );
     expect(() => compile(spec as TopLevelSpec)).not.toThrow();
   });
+
+  it("sizes the height from the container instead of the band step", async () => {
+    stubCanvasContext();
+    const { compile } = await import("vega-lite");
+
+    const spec = generateVLBarChartSpec(horizontal, chartData());
+    expect(at(spec, "height")).toBe("container");
+
+    const { spec: vega } = compile(spec as TopLevelSpec);
+    const height = vega.signals?.find((s) => s.name === "height") as
+      | { init?: string; update?: string }
+      | undefined;
+    expect(height?.init).toContain("containerSize()[1]");
+    expect(height?.update).toBeUndefined();
+  });
 });
 
 describe("generateVLStackedBarChartSpec orientation", () => {

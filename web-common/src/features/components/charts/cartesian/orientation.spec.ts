@@ -251,7 +251,11 @@ describe("transposeCartesianSpec", () => {
       opacity: 0.8,
     });
     expect(at(horizontalVega, "width")).toBe("container");
-    expect(at(horizontalVega, "height")).toBeUndefined();
+  });
+
+  it("fills the container height now that the band scale is on y", () => {
+    expect(at(verticalVega, "height")).toBeUndefined();
+    expect(at(horizontalVega, "height")).toBe("container");
   });
 
   it("points selection params at the y channel", () => {

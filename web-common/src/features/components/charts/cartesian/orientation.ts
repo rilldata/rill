@@ -127,12 +127,17 @@ type AnyRecord = Record<string, unknown>;
  *   - `mark.width` <-> `mark.height` (relative band sizes)
  *   - selection params' `select.encodings` ("x" <-> "y")
  * applied to the top-level encoding and recursively to every layer.
- * The top-level `width: "container"` is left alone on purpose.
+ * The top-level `width: "container"` is kept and `height: "container"` is
+ * added: the band scale now sits on y, and without an explicit height
+ * Vega-Lite would size the chart by step instead of filling its container.
  */
 export function transposeCartesianSpec(
   spec: VisualizationSpec,
 ): VisualizationSpec {
-  return transposeLayer(spec as AnyRecord) as VisualizationSpec;
+  return {
+    ...transposeLayer(spec as AnyRecord),
+    height: "container",
+  } as VisualizationSpec;
 }
 
 function transposeLayer(layer: AnyRecord): AnyRecord {

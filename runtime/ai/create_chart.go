@@ -1193,7 +1193,7 @@ total_impressions: measure
 - **sort**: Sorting order
   - ` + "`\"x\"`" + ` or ` + "`\"-x\"`" + `: Sort by x-axis values (ascending/descending)
   - ` + "`\"y\"`" + ` or ` + "`\"-y\"`" + `: Sort by y-axis values (ascending/descending)
-  - ` + "`\"y_delta\"`" + ` or ` + "`\"-y_delta\"`" + `: Sort by absolute change (delta) between current and comparison period (ascending/descending). Only effective when ` + "`comparison_time_range`" + ` is provided; otherwise falls back to regular y-axis sort. Use this when the user asks about "what changed most", "biggest increase/decrease", or "top movers".
+  - ` + "`\"y_delta\"`" + ` or ` + "`\"-y_delta\"`" + `: Sort by absolute change (delta) between current and comparison period (ascending/descending). Only effective when ` + "`comparison_time_range`" + ` is provided; otherwise falls back to regular y-axis sort. Use this when the user asks about "what changed most", "biggest increase/decrease", or "top movers". For a horizontal bar chart (measure on x) use ` + "`\"x_delta\"`" + ` or ` + "`\"-x_delta\"`" + ` on the y field instead.
 	- ` + "`\"color\"`" + ` or ` + "`\"-color\"`" + `: Sort by color field values (ascending/descending) Only used for heatmap charts
 	- ` + "`\"measure\"`" + ` or ` + "`\"-measure\"`" + `: Sort by measure field values (ascending/descending) Only used for donut charts
   - Array of values for custom sort order (e.g., weekday names)
@@ -1295,7 +1295,7 @@ Choose the appropriate chart type based on your data and analysis goals:
 
 ### Delta Sorting (Period-over-Period Change Sorting)
 - **What it does**: Sorts dimensions by the **absolute change (delta)** between the current period and the comparison period, rather than by the current period's value alone
-- **Sort values**: Use ` + "`\"y_delta\"`" + ` (ascending) or ` + "`\"-y_delta\"`" + ` (descending) in the x-axis ` + "`sort`" + ` field
+- **Sort values**: Use ` + "`\"y_delta\"`" + ` (ascending) or ` + "`\"-y_delta\"`" + ` (descending) in the x-axis ` + "`sort`" + ` field (` + "`\"x_delta\"`" + ` / ` + "`\"-x_delta\"`" + ` on the y field of a horizontal bar chart)
 - **Requires**: ` + "`comparison_time_range`" + ` must be provided. If no comparison is active, delta sort automatically falls back to regular ` + "`\"y\"`" + ` / ` + "`\"-y\"`" + ` sorting
 - **Supported chart types**: Only works on cartesian chart types with a nominal x-axis: ` + "`bar_chart`" + `, ` + "`stacked_bar`" + `, ` + "`stacked_bar_normalized`" + `, ` + "`line_chart`" + `
 - **When to use**: When the user asks about "what changed the most", "biggest increase or decrease", "top movers", "which categories grew or declined", or any question about period-over-period ranking by change

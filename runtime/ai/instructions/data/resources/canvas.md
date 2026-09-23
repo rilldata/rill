@@ -1112,6 +1112,7 @@ x:
 
 - `"x"` or `"-x"`: Sort by x-axis values (ascending/descending)
 - `"y"` or `"-y"`: Sort by y-axis values (ascending/descending)
+- `"y_delta"` or `"-y_delta"`: Sort by the change versus the comparison period (`"x_delta"` / `"-x_delta"` on the y field of a horizontal bar chart)
 - `"color"` or `"-color"`: Sort by color field (heatmaps)
 - `"measure"` or `"-measure"`: Sort by measure (donut charts)
 - Array of values: Custom sort order (e.g., `["Mon", "Tue", "Wed"]`)
