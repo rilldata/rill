@@ -63,7 +63,6 @@ func MCPToolSpecs() map[string]*mcp.Tool {
 // Using a separate MCP server for each client enables tailoring the server's instructions and available tools to the end user's claims.
 func (s *Session) MCPServer(ctx context.Context) *mcp.Server {
 	// Create the MCP server.
-	// The instructions omit the skills section; it is added during the initialization handshake if the project defines skills (see below).
 	srv := mcp.NewServer(
 		&mcp.Implementation{
 			Name:    "rill",
