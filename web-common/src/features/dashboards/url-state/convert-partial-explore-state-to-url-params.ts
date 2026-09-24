@@ -1,3 +1,5 @@
+import { toEphemeralMeasuresParam } from "@rilldata/web-common/features/dashboards/ephemeral-measures/url-param";
+import { referencedEphemeralMeasures } from "@rilldata/web-common/features/dashboards/ephemeral-measures/url-state";
 import { toPivotFormattingParam } from "@rilldata/web-common/features/dashboards/pivot/pivot-formatting-param";
 import {
   type PivotChipData,
@@ -117,6 +119,18 @@ export function convertPartialExploreStateToUrlParams(
     }
 
     searchParams.set(ExploreStateURLParams.Filters, filterParam);
+  }
+
+  if ("ephemeralMeasures" in partialExploreState) {
+    // Only definitions the state references go into the URL; unused ones live
+    // in the per-metrics-view library. Always set so deleting or hiding the
+    // last one removes it from the URL; cleanUrlParams strips the empty value.
+    searchParams.set(
+      ExploreStateURLParams.EphemeralMeasures,
+      toEphemeralMeasuresParam(
+        referencedEphemeralMeasures(partialExploreState),
+      ),
+    );
   }
 
   switch (partialExploreState.activePage) {
@@ -443,6 +457,11 @@ function toPivotUrlParams(partialExploreState: Partial<ExploreState>) {
 
   if (partialExploreState.pivot.showTotalsRow === false) {
     searchParams.set(ExploreStateURLParams.PivotShowTotalsRow, "false");
+  }
+
+  // "top" is the default, so only "bottom" needs to be in the URL.
+  if (partialExploreState.pivot.totalsRowPosition === "bottom") {
+    searchParams.set(ExploreStateURLParams.PivotTotalsRowPosition, "bottom");
   }
 
   // Always set so clearing formatting removes it from the URL; cleanUrlParams

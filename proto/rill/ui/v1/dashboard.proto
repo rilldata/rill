@@ -59,6 +59,12 @@ message DashboardState {
     PIVOT_TABLE_MODE_NEST = 2;
   }
 
+  enum PivotTotalsRowPosition {
+    PIVOT_TOTALS_ROW_POSITION_UNSPECIFIED = 0;
+    PIVOT_TOTALS_ROW_POSITION_TOP = 1;
+    PIVOT_TOTALS_ROW_POSITION_BOTTOM = 2;
+  }
+
   enum ActivePage {
     ACTIVE_PAGE_UNSPECIFIED = 0;
     ACTIVE_PAGE_DEFAULT = 1;
@@ -151,6 +157,8 @@ message DashboardState {
   optional bool pivot_show_totals_column = 42;
   // Show the totals row (per-column totals) for pivot/flat tables.
   optional bool pivot_show_totals_row = 43;
+  // Where the totals row is pinned (top by default, or bottom).
+  optional PivotTotalsRowPosition pivot_totals_row_position = 46;
 
   // List of all dimensions selected for rows
   repeated PivotElement pivot_row_all_dimensions = 35;
@@ -159,6 +167,9 @@ message DashboardState {
 
   // Per-measure conditional formatting (heatmap / data bar) for pivot cells.
   repeated PivotConditionalFormat pivot_conditional_formatting = 44;
+
+  // Ephemeral measures defined for the explore.
+  repeated EphemeralMeasure ephemeral_measures = 45;
 }
 
 message DashboardTimeRange {
@@ -182,6 +193,19 @@ message PivotElement {
     rill.runtime.v1.TimeGrain pivot_time_dimension = 1;
     string pivot_dimension = 2;
   }
+}
+
+// An ephemeral measure defined ad-hoc for an explore dashboard,
+// derived from existing metrics view measures via an arithmetic expression.
+message EphemeralMeasure {
+  // Query alias, e.g. "profit". Must not collide with metrics view field names.
+  string name = 1;
+  // Display name shown in the UI, e.g. "Profit".
+  string display_name = 2;
+  // Arithmetic expression over existing measure names, e.g. "revenue - cost".
+  string expression = 3;
+  // Optional format preset for rendering values.
+  string format_preset = 4;
 }
 
 // Conditional formatting applied to a measure's cells in a pivot table.

@@ -60,6 +60,7 @@ func EditCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 
 			if cmd.Flags().Changed("default-project-role") {
+				flagSet = true
 				if defaultProjectRole == "none" {
 					defaultProjectRole = ""
 				}

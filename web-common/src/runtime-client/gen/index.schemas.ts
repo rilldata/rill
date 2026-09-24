@@ -963,6 +963,8 @@ If not found in `time_ranges`, it should be added to the list. */
   pivotRowLimit?: number;
   pivotShowTotalsColumn?: boolean;
   pivotShowTotalsRow?: boolean;
+  /** Where the pivot totals row is pinned: "top" (default) or "bottom". */
+  pivotTotalsRowPosition?: string;
   /** Per-measure pivot conditional formatting, serialized in the URL param format. */
   pivotFormatting?: string;
   /** Ephemeral measures for the explore, serialized in the URL param format. */
@@ -2380,6 +2382,7 @@ export interface V1Resource {
   canvas?: V1Canvas;
   api?: V1API;
   connector?: V1ConnectorV2;
+  skill?: V1Skill;
 }
 
 export type V1ResourceEvent =
@@ -2392,6 +2395,8 @@ export const V1ResourceEvent = {
   RESOURCE_EVENT_DELETE: "RESOURCE_EVENT_DELETE",
 } as const;
 
+export type V1ResourceMetaMetadata = { [key: string]: string };
+
 export interface V1ResourceMeta {
   name?: V1ResourceName;
   refs?: V1ResourceName[];
@@ -2399,6 +2404,9 @@ export interface V1ResourceMeta {
   filePaths?: string[];
   /** Tags for organizing and filtering resources. Parsed generically from any resource YAML's top-level "tags:" field. */
   tags?: string[];
+  /** Metadata is free-form key-value metadata for the resource, parsed generically from any resource YAML's top-level "metadata:" field.
+It is user-defined: Rill does not read or write keys in it and exposes it as-is over the API for external tooling. */
+  metadata?: V1ResourceMetaMetadata;
   hidden?: boolean;
   version?: string;
   specVersion?: string;
@@ -2598,6 +2606,30 @@ export type V1TableRowsResponseDataItem = { [key: string]: unknown };
 
 export interface V1TableRowsResponse {
   data?: V1TableRowsResponseDataItem[];
+}
+
+export interface V1Skill {
+  spec?: V1SkillSpec;
+  state?: V1SkillState;
+}
+
+/** SkillSpec is parsed from a SKILL.md file that follows the Agent Skills format (https://agentskills.io).
+Skills teach AI agents project-specific practices, such as analysis playbooks and business glossaries. */
+export interface V1SkillSpec {
+  /** Description of what the skill does and when to use it. */
+  description?: string;
+  /** Markdown body with the skill's full instructions. */
+  body?: string;
+  /** Rill extension: metrics views the skill is relevant to. Empty means all. */
+  metricsViews?: string[];
+  /** Rill extension: Rill agents the skill applies to ("analyst" and/or "developer"). */
+  agents?: string[];
+  /** Rill extension: if true, the skill's body is always injected into the agent's context instead of being loaded on demand. */
+  alwaysApply?: boolean;
+}
+
+export interface V1SkillState {
+  [key: string]: unknown;
 }
 
 export interface V1Theme {

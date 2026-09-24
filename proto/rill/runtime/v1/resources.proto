@@ -34,6 +34,7 @@ message Resource {
     Canvas canvas = 14;
     API api = 15;
     ConnectorV2 connector = 16;
+    Skill skill = 18;
   }
 }
 
@@ -44,6 +45,9 @@ message ResourceMeta {
   repeated string file_paths = 4;
   // Tags for organizing and filtering resources. Parsed generically from any resource YAML's top-level "tags:" field.
   repeated string tags = 19;
+  // Metadata is free-form key-value metadata for the resource, parsed generically from any resource YAML's top-level "metadata:" field.
+  // It is user-defined: Rill does not read or write keys in it and exposes it as-is over the API for external tooling.
+  map<string, string> metadata = 20;
   bool hidden = 7;
   int64 version = 15;
   int64 spec_version = 5;
@@ -581,6 +585,9 @@ message ExplorePreset {
   optional int32 pivot_row_limit = 33;
   optional bool pivot_show_totals_column = 37;
   optional bool pivot_show_totals_row = 38;
+  // Where the pivot totals row is pinned: "top" (default) or "bottom"
+  // (frontend-only; persisted in URL state).
+  optional string pivot_totals_row_position = 41;
   // Per-measure pivot conditional formatting, serialized in the URL param
   // format (frontend-only; persisted in URL state).
   optional string pivot_formatting = 39;
@@ -796,6 +803,28 @@ message RefreshModelTrigger {
   // If true, it will refresh all partitions that are currently marked as skipped.
   bool all_skipped_partitions = 5;
 }
+
+message Skill {
+  SkillSpec spec = 1;
+  SkillState state = 2;
+}
+
+// SkillSpec is parsed from a SKILL.md file that follows the Agent Skills format (https://agentskills.io).
+// Skills teach AI agents project-specific practices, such as analysis playbooks and business glossaries.
+message SkillSpec {
+  // Description of what the skill does and when to use it.
+  string description = 1;
+  // Markdown body with the skill's full instructions.
+  string body = 2;
+  // Rill extension: metrics views the skill is relevant to. Empty means all.
+  repeated string metrics_views = 3;
+  // Rill extension: Rill agents the skill applies to ("analyst" and/or "developer").
+  repeated string agents = 4;
+  // Rill extension: if true, the skill's body is always injected into the agent's context instead of being loaded on demand.
+  bool always_apply = 5;
+}
+
+message SkillState {}
 
 message Theme {
   ThemeSpec spec = 1;

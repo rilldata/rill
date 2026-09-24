@@ -14,6 +14,8 @@ import (
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/ai/instructions"
 	"github.com/rilldata/rill/runtime/metricsview"
+	"github.com/rilldata/rill/runtime/parser"
+	"go.uber.org/zap"
 )
 
 const AnalystAgentName = "analyst_agent"
@@ -105,32 +107,36 @@ func (t *AnalystAgent) Handler(ctx context.Context, args *AnalystAgentArgs) (*An
 	// Determine if it's the first invocation of the agent in this session.
 	first := len(s.Messages(FilterByType(MessageTypeCall), FilterByTool(AnalystAgentName))) == 1
 
+	// Resolve the metrics views tied to the dashboard being explored, if any.
+	// This runs on every invocation because the metrics views are part of the prompt context;
+	// only the pre-invoked tool calls below are limited to the first invocation.
+	var metricsViewNames []string
+	if args.Explore != "" {
+		_, metricsView, err := t.getValidExploreAndMetricsView(ctx, args.Explore)
+		if err != nil {
+			return nil, err
+		}
+		metricsViewNames = append(metricsViewNames, metricsView.Meta.Name.Name)
+	} else if args.Canvas != "" {
+		_, metricsViews, err := t.getValidCanvasAndMetricsViews(ctx, args.Canvas)
+		if err != nil {
+			return nil, err
+		}
+		for _, res := range metricsViews {
+			metricsViewNames = append(metricsViewNames, res.Meta.Name.Name)
+		}
+	}
+
 	// If a specific dashboard is being explored, we pre-invoke some relevant tool calls for that dashboard.
 	// TODO: This uses `first`, but that may not be safe if the user has navigated to another dashboard. We probably need some more sophisticated de-duplication here.
-	var metricsViewNames []string
 	if first {
-		if args.Explore != "" {
-			_, metricsView, err := t.getValidExploreAndMetricsView(ctx, args.Explore)
-			if err != nil {
-				return nil, err
-			}
-			metricsViewNames = append(metricsViewNames, metricsView.Meta.Name.Name)
-		} else if args.Canvas != "" {
+		if args.Canvas != "" {
 			// Pre-invoke the get_canvas tool to get the canvas definition.
 			_, err := s.CallTool(ctx, RoleAssistant, GetCanvasName, nil, &GetCanvasArgs{
 				Canvas: args.Canvas,
 			})
 			if err != nil && errors.Is(err, ctx.Err()) { // Don't exit on non-context errors
 				return nil, err
-			}
-
-			_, metricsViews, err := t.getValidCanvasAndMetricsViews(ctx, args.Canvas)
-			if err != nil {
-				return nil, err
-			}
-
-			for _, res := range metricsViews {
-				metricsViewNames = append(metricsViewNames, res.Meta.Name.Name)
 			}
 		}
 
@@ -160,6 +166,35 @@ func (t *AnalystAgent) Handler(ctx context.Context, args *AnalystAgentArgs) (*An
 		}
 	}
 
+	// Load the project's skills. Loading failures should degrade the analysis, not fail it.
+	skills, err := s.Skills(ctx)
+	if err != nil {
+		s.logger.Warn("failed to load project skills", zap.Error(err))
+		skills = nil
+	}
+
+	// Pre-invoke the skill tools so the agent discovers the project's skills and follows the always-apply ones.
+	// Like the other pre-invoked calls, this is limited to the first invocation: later invocations see the calls in the conversation history.
+	if first && len(skills) > 0 {
+		err := preloadSkills(ctx, s, skills, parser.SkillAgentAnalyst)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	// Pre-invoke the load_skill tool for each analyst skill the user referenced in the prompt, on every invocation.
+	// A skill already loaded in this conversation is skipped: the model has it, and loading it again would repeat its whole body in the context.
+	loaded := loadedSkills(s)
+	for _, sk := range referencedSkills(args.Prompt, skillsForAgent(skills, parser.SkillAgentAnalyst)) {
+		if loaded[sk.Name] {
+			continue
+		}
+		_, err := s.CallTool(ctx, RoleAssistant, LoadSkillName, nil, &LoadSkillArgs{Name: sk.Name})
+		if err != nil && errors.Is(err, ctx.Err()) { // Don't exit on non-context errors
+			return nil, err
+		}
+	}
+
 	// Determine tools that can be used
 	tools := []string{}
 	if args.Explore == "" {
@@ -168,6 +203,9 @@ func (t *AnalystAgent) Handler(ctx context.Context, args *AnalystAgentArgs) (*An
 	tools = append(tools, QueryMetricsViewSummaryName, QueryMetricsViewName, ClickUIName)
 	if !args.DisableCharts {
 		tools = append(tools, CreateChartName)
+	}
+	if len(skills) > 0 {
+		tools = append(tools, ListSkillsName, LoadSkillName)
 	}
 
 	// Build completion messages

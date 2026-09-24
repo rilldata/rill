@@ -5,6 +5,7 @@ import {
 import { DimensionFilterManager } from "@rilldata/web-common/features/dashboards/filters/dimension-filters/DimensionFilterManager.svelte.ts";
 import { DimensionFilterMode } from "@rilldata/web-common/features/dashboards/filters/dimension-filters/constants.ts";
 import { MeasureFilterManager } from "@rilldata/web-common/features/dashboards/filters/measure-filters/MeasureFilterManager.svelte.ts";
+import { stripMeasureSuffix } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry.ts";
 import type {
   MetricsViewName,
   MetricsViewsProvider,
@@ -136,11 +137,14 @@ export class JoinerFilterManager {
 
       if (firstValueExpr?.subquery) {
         // Having a subquery means this is a measure filter.
+        // A comparison filter references a suffixed accessor like `<measure>_delta`,
+        // which is not itself a measure. The manager is keyed by the base measure;
+        // `reconcile` reads the comparison type back from the having expression.
         const measureName = firstValueExpr.subquery.measures?.[0];
         if (!measureName) return undefined;
         return MeasureFilterManager.createForMetricsViews(
           metricsViewsProvider,
-          measureName,
+          stripMeasureSuffix(measureName),
           { initExpr: firstValueExpr, events },
         );
       } else {
@@ -261,6 +265,18 @@ export class JoinerFilterManager {
     this.managers = {
       ...this.managers,
       measureManagers: [...this.managers.measureManagers, measureFilterManager],
+    };
+  }
+
+  public removeManagerByName(name: string) {
+    this.managers = {
+      ...this.managers,
+      dimensionManagers: this.managers.dimensionManagers.filter(
+        (dfm) => dfm.name !== name,
+      ),
+      measureManagers: this.managers.measureManagers.filter(
+        (mfm) => mfm.name !== name,
+      ),
     };
   }
 

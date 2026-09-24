@@ -21,7 +21,7 @@ import (
 func ValidateRendererProperties(renderer string, props map[string]any, metricsViews map[string]*runtimev1.MetricsViewSpec) error {
 	switch renderer {
 	case "line_chart", "bar_chart", "area_chart", "stacked_bar", "stacked_bar_normalized":
-		return validateCartesianChart(props, metricsViews)
+		return validateCartesianChart(renderer, props, metricsViews)
 	case "donut_chart", "pie_chart":
 		return validateCircularChart(props, metricsViews)
 	case "scatter_plot":
@@ -46,6 +46,8 @@ func ValidateRendererProperties(renderer string, props map[string]any, metricsVi
 		return validatePivot(props, metricsViews)
 	case "leaderboard":
 		return validateLeaderboard(props, metricsViews)
+	case "map":
+		return validateMap(props, metricsViews)
 	case "custom_chart":
 		// TODO: Implement
 		return nil
@@ -55,7 +57,9 @@ func ValidateRendererProperties(renderer string, props map[string]any, metricsVi
 }
 
 // validateCartesianChart validates properties for line_chart, bar_chart, area_chart, stacked_bar, and stacked_bar_normalized.
-func validateCartesianChart(props map[string]any, metricsViews map[string]*runtimev1.MetricsViewSpec) error {
+// The dimension is normally drawn on x and the measure on y.
+// The bar renderers also accept the measure on x (a quantitative x.type) and the dimension on y, which draws horizontal bars.
+func validateCartesianChart(renderer string, props map[string]any, metricsViews map[string]*runtimev1.MetricsViewSpec) error {
 	mvn, mv, err := requireMetricsView(props, metricsViews)
 	if err != nil {
 		return err
@@ -66,30 +70,44 @@ func validateCartesianChart(props map[string]any, metricsViews map[string]*runti
 		return err
 	}
 
-	xField, ok := pathutil.GetPathString(props, "x.field")
-	if !ok {
-		return errors.New("renderer properties must include a string 'x.field' property")
-	}
-	if !metricsViewHasDimension(mv, xField) {
-		return fmt.Errorf("referenced x.field %q is not a dimension in metrics view %q", xField, mvn)
-	}
-
-	yField, ok := pathutil.GetPathString(props, "y.field")
-	if !ok {
-		return errors.New("renderer properties must include a string 'y.field' property")
-	}
-	if !metricsViewHasMeasure(mv, yField) && !ephemeralNames[yField] {
-		return fmt.Errorf("referenced y.field %q is not a measure in metrics view %q", yField, mvn)
-	}
-
-	// Validate optional multi-field measures (y.fields)
-	yFields, err := getPathStringSlice(props, "y.fields")
+	dimensionAxis, measureAxis := "x", "y"
+	xType, _, err := getOptionalPathString(props, "x.type")
 	if err != nil {
 		return err
 	}
-	for _, f := range yFields {
+	if xType == "quantitative" {
+		switch renderer {
+		case "bar_chart", "stacked_bar", "stacked_bar_normalized":
+			dimensionAxis, measureAxis = "y", "x"
+		default:
+			return fmt.Errorf("renderer %q requires a dimension on x; a quantitative x (horizontal layout) is only supported by bar charts", renderer)
+		}
+	}
+
+	dimensionField, ok := pathutil.GetPathString(props, dimensionAxis+".field")
+	if !ok {
+		return fmt.Errorf("renderer properties must include a string '%s.field' property", dimensionAxis)
+	}
+	if !metricsViewHasDimension(mv, dimensionField) {
+		return fmt.Errorf("referenced %s.field %q is not a dimension in metrics view %q", dimensionAxis, dimensionField, mvn)
+	}
+
+	measureField, ok := pathutil.GetPathString(props, measureAxis+".field")
+	if !ok {
+		return fmt.Errorf("renderer properties must include a string '%s.field' property", measureAxis)
+	}
+	if !metricsViewHasMeasure(mv, measureField) && !ephemeralNames[measureField] {
+		return fmt.Errorf("referenced %s.field %q is not a measure in metrics view %q", measureAxis, measureField, mvn)
+	}
+
+	// Validate optional multi-field measures (e.g. y.fields)
+	measureFields, err := getPathStringSlice(props, measureAxis+".fields")
+	if err != nil {
+		return err
+	}
+	for _, f := range measureFields {
 		if !metricsViewHasMeasure(mv, f) && !ephemeralNames[f] {
-			return fmt.Errorf("referenced y.fields value %q is not a measure in metrics view %q", f, mvn)
+			return fmt.Errorf("referenced %s.fields value %q is not a measure in metrics view %q", measureAxis, f, mvn)
 		}
 	}
 
@@ -437,6 +455,42 @@ func validateLeaderboard(props map[string]any, metricsViews map[string]*runtimev
 	return nil
 }
 
+// validateMap validates properties for map.
+func validateMap(props map[string]any, metricsViews map[string]*runtimev1.MetricsViewSpec) error {
+	mvn, mv, err := requireMetricsView(props, metricsViews)
+	if err != nil {
+		return err
+	}
+
+	ephemeralNames, err := ephemeralMeasureNames(props, mvn, mv)
+	if err != nil {
+		return err
+	}
+
+	geoDim, ok := pathutil.GetPathString(props, "geo_dimension.field")
+	if !ok {
+		return errors.New("renderer properties for map must include a string 'geo_dimension.field' property")
+	}
+	if !metricsViewHasDimension(mv, geoDim) {
+		return fmt.Errorf("referenced geo_dimension.field %q is not a dimension in metrics view %q", geoDim, mvn)
+	}
+
+	// Color on a map is always measure-driven.
+	colorMeasure, ok := pathutil.GetPathString(props, "color.measure")
+	if !ok {
+		return errors.New("renderer properties for map must include a string 'color.measure' property")
+	}
+	if !metricsViewHasMeasure(mv, colorMeasure) && !ephemeralNames[colorMeasure] {
+		return fmt.Errorf("referenced color.measure %q is not a measure in metrics view %q", colorMeasure, mvn)
+	}
+
+	if err := validateOptionalMeasureField(mv, mvn, props, "size_measure.field", ephemeralNames); err != nil {
+		return err
+	}
+
+	return validateOptionalDimensionField(mv, mvn, props, "tooltip_dimension.field")
+}
+
 // requireMetricsView extracts and validates the "metrics_view" property from renderer props.
 // It returns the metrics view name, spec, and nil error on success.
 func requireMetricsView(props map[string]any, metricsViews map[string]*runtimev1.MetricsViewSpec) (string, *runtimev1.MetricsViewSpec, error) {
@@ -592,28 +646,28 @@ func isEncodedTimeDimension(mv *runtimev1.MetricsViewSpec, fieldName string) boo
 	return ok && v != int32(runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED)
 }
 
-// ephemeralMeasureNames extracts and validates the optional "ephemeral_measures" renderer property.
+// ephemeralMeasureNames extracts and validates the optional "adhoc_measures" renderer property.
 // Each entry defines an ephemeral measure derived from existing measures via an arithmetic expression;
 // the returned set contains the names that may be referenced alongside the metrics view's own measures.
 func ephemeralMeasureNames(props map[string]any, mvn string, mv *runtimev1.MetricsViewSpec) (map[string]bool, error) {
-	raw, ok := props["ephemeral_measures"]
+	raw, ok := props["adhoc_measures"]
 	if !ok || raw == nil {
 		return nil, nil
 	}
 	list, ok := raw.([]any)
 	if !ok {
-		return nil, errors.New("renderer property 'ephemeral_measures' must be an array")
+		return nil, errors.New("renderer property 'adhoc_measures' must be an array")
 	}
 	names := make(map[string]bool, len(list))
 	for _, item := range list {
 		entry, ok := item.(map[string]any)
 		if !ok {
-			return nil, errors.New("entries in 'ephemeral_measures' must be objects with 'name' and 'expression'")
+			return nil, errors.New("entries in 'adhoc_measures' must be objects with 'name' and 'expression'")
 		}
 		name, _ := entry["name"].(string)
 		expression, _ := entry["expression"].(string)
 		if name == "" || expression == "" {
-			return nil, errors.New("entries in 'ephemeral_measures' must have a non-empty 'name' and 'expression'")
+			return nil, errors.New("entries in 'adhoc_measures' must have a non-empty 'name' and 'expression'")
 		}
 		// Mirror metricsview.AST.checkNameForComputedField, which also rejects the time dimension.
 		// It is often absent from mv.Dimensions, so checking it here surfaces the collision at parse time rather than at query time.

@@ -1,8 +1,12 @@
+import { fromEphemeralMeasuresParam } from "@rilldata/web-common/features/dashboards/ephemeral-measures/url-param";
+import { injectEphemeralMeasuresIntoMap } from "@rilldata/web-common/features/dashboards/ephemeral-measures/url-state";
 import { fromPivotFormattingParam } from "@rilldata/web-common/features/dashboards/pivot/pivot-formatting-param";
 import {
+  PIVOT_TOTALS_ROW_POSITIONS,
   type PivotChipData,
   PivotChipType,
   type PivotTableMode,
+  type PivotTotalsRowPosition,
 } from "@rilldata/web-common/features/dashboards/pivot/types";
 import { SortDirection } from "@rilldata/web-common/features/dashboards/proto-state/derived-types";
 import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
@@ -66,6 +70,19 @@ export function convertPresetToExploreState(
     ) ?? [],
     (d) => d.name!,
   );
+
+  // The preset's ephemeral measures were already validated when the preset
+  // was built (convertURLToExplorePreset); resolve them and make their names
+  // valid everywhere a measure name is used below.
+  if (preset.ephemeralMeasures !== undefined) {
+    const { ephemeralMeasures } = fromEphemeralMeasuresParam(
+      preset.ephemeralMeasures,
+    );
+    partialExploreState.ephemeralMeasures = ephemeralMeasures.length
+      ? ephemeralMeasures
+      : undefined;
+    injectEphemeralMeasuresIntoMap(measures, ephemeralMeasures);
+  }
 
   if (preset.view) {
     partialExploreState.activePage = Number(
@@ -246,8 +263,10 @@ function fromExploreUrlParams(
       errors.push(getMultiFieldError("measure", missingMeasures));
     }
 
+    // `measures` includes ephemeral measures, so a hidden spec measure can
+    // never be masked by a visible ephemeral one.
     partialExploreState.allMeasuresVisible =
-      selectedMeasures.length === explore.measures?.length;
+      selectedMeasures.length === measures.size;
     partialExploreState.visibleMeasures = [...selectedMeasures];
   }
 
@@ -452,6 +471,24 @@ function fromPivotUrlParams(
   const showPivot = preset.view === V1ExploreWebView.EXPLORE_WEB_VIEW_PIVOT;
   const showTotalsColumn = preset.pivotShowTotalsColumn ?? true;
   const showTotalsRow = preset.pivotShowTotalsRow ?? true;
+  let totalsRowPosition: PivotTotalsRowPosition = "top";
+  if (preset.pivotTotalsRowPosition) {
+    if (
+      PIVOT_TOTALS_ROW_POSITIONS.includes(
+        preset.pivotTotalsRowPosition as PivotTotalsRowPosition,
+      )
+    ) {
+      totalsRowPosition =
+        preset.pivotTotalsRowPosition as PivotTotalsRowPosition;
+    } else {
+      errors.push(
+        getSingleFieldError(
+          "pivot totals row position",
+          preset.pivotTotalsRowPosition,
+        ),
+      );
+    }
+  }
   const measureFormatting = preset.pivotFormatting
     ? fromPivotFormattingParam(preset.pivotFormatting).measureFormatting
     : undefined;
@@ -470,6 +507,7 @@ function fromPivotUrlParams(
           activeCell: null,
           showTotalsColumn,
           showTotalsRow,
+          totalsRowPosition,
           tableMode: "nest",
           measureFormatting,
         },
@@ -529,6 +567,7 @@ function fromPivotUrlParams(
         activeCell: null,
         showTotalsColumn,
         showTotalsRow,
+        totalsRowPosition,
         tableMode,
         rowLimit,
         measureFormatting,

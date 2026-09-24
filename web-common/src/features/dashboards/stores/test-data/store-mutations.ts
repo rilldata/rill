@@ -1,3 +1,4 @@
+import type { EphemeralMeasureDef } from "@rilldata/web-common/features/dashboards/ephemeral-measures/types";
 import type { ExpressionFilterManager } from "@rilldata/web-common/features/dashboards/filters/ExpressionFilterManager.svelte.ts";
 import {
   MeasureFilterOperation,
@@ -368,6 +369,17 @@ export const AD_BIDS_OPEN_BP_TDD: TestDashboardMutation = () =>
 export const AD_BIDS_CLOSE_TDD: TestDashboardMutation = () =>
   metricsExplorerStore.setExpandedMeasureName(AD_BIDS_EXPLORE_NAME, "");
 
+export const AD_BIDS_DOUBLED_ADHOC_MEASURE: EphemeralMeasureDef = {
+  name: "doubled",
+  displayName: "Doubled",
+  expression: "impressions*2",
+};
+export const AD_BIDS_ADD_DOUBLED_ADHOC_MEASURE: TestDashboardMutation = () =>
+  metricsExplorerStore.addEphemeralMeasure(
+    AD_BIDS_EXPLORE_NAME,
+    AD_BIDS_DOUBLED_ADHOC_MEASURE,
+  );
+
 export const AD_BIDS_OPEN_PIVOT_WITH_ALL_FIELDS: TestDashboardMutation = () =>
   metricsExplorerStore.createPivot(
     AD_BIDS_EXPLORE_NAME,
@@ -469,6 +481,12 @@ export const AD_BIDS_SET_PIVOT_ROW_LIMIT_UNLIMITED: TestDashboardMutation =
 
 export const AD_BIDS_HIDE_PIVOT_TOTALS: TestDashboardMutation = () =>
   metricsExplorerStore.setPivotTotals(AD_BIDS_EXPLORE_NAME, false, false);
+
+export const AD_BIDS_PIVOT_TOTALS_ROW_AT_BOTTOM: TestDashboardMutation = () =>
+  metricsExplorerStore.setPivotTotalsRowPosition(
+    AD_BIDS_EXPLORE_NAME,
+    "bottom",
+  );
 
 export const AD_BIDS_FLAT_PIVOT_TABLE: TestDashboardMutation = () =>
   metricsExplorerStore.setPivotTableMode(

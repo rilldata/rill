@@ -1,3 +1,7 @@
+import {
+  ephemeralMeasureNameSet,
+  splitTimeSeriesMeasures,
+} from "@rilldata/web-common/features/dashboards/ephemeral-measures/measure-mapping";
 import { filterOutSomeAdvancedMeasures } from "@rilldata/web-common/features/dashboards/state-managers/selectors/measures";
 import type { StateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
 import { sanitiseExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
@@ -59,11 +63,17 @@ export function createMetricsViewTimeSeries(
     ([metricsViewName, dashboardStore, timeControls], set) => {
       const timeGrain = timeControls.selectedTimeRange?.interval;
 
+      // Ephemeral measures travel in `measures` with their expression;
+      // regular measures stay in `measureNames`.
+      const { measureNames, ephemeralMeasures: ephemeralRequestMeasures } =
+        splitTimeSeriesMeasures(measures, dashboardStore.ephemeralMeasures);
+
       return createQueryServiceMetricsViewTimeSeries(
         ctx.runtimeClient,
         {
           metricsViewName,
-          measureNames: measures,
+          measureNames,
+          ephemeralMeasures: ephemeralRequestMeasures,
           where: sanitiseExpression(dashboardStore.whereFilter, undefined),
           timeStart: isComparison
             ? timeControls.comparisonAdjustedStart
@@ -122,7 +132,10 @@ export function createTimeSeriesDataStore(
       );
       const expandedMeasuerName = dashboardStore?.tdd?.expandedMeasureName;
       if (showTimeDimensionDetail && expandedMeasuerName) {
-        measures = allMeasures.filter(
+        const ephemeralMeasureNames = ephemeralMeasureNameSet(
+          dashboardStore?.ephemeralMeasures,
+        );
+        measures = [...allMeasures, ...ephemeralMeasureNames].filter(
           (measure) => measure === expandedMeasuerName,
         );
       } else {

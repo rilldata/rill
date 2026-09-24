@@ -188,10 +188,10 @@ type selectField struct {
 }
 
 func (q *query) parseFrom(ctx context.Context, node *ast.TableRefsClause) error {
-	n := node.TableRefs
-	if n == nil || n.Left == nil {
+	if node == nil || node.TableRefs == nil || node.TableRefs.Left == nil {
 		return fmt.Errorf("metrics sql: need `FROM metrics_view` clause")
 	}
+	n := node.TableRefs
 	if n.Right != nil {
 		return fmt.Errorf("metrics sql: join is not supported")
 	}

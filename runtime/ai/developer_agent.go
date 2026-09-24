@@ -10,6 +10,8 @@ import (
 	aiv1 "github.com/rilldata/rill/proto/gen/rill/ai/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/ai/instructions"
+	"github.com/rilldata/rill/runtime/parser"
+	"go.uber.org/zap"
 )
 
 const DeveloperAgentName = "developer_agent"
@@ -47,6 +49,15 @@ func (t *DeveloperAgent) CheckAccess(ctx context.Context) (bool, error) {
 }
 
 func (t *DeveloperAgent) Handler(ctx context.Context, args *DeveloperAgentArgs) (*DeveloperAgentResult, error) {
+	s := GetSession(ctx)
+
+	// Load the project's skills. Loading failures should degrade the response, not fail it.
+	skills, err := s.Skills(ctx)
+	if err != nil {
+		s.logger.Warn("failed to load project skills", zap.Error(err))
+		skills = nil
+	}
+
 	// Generate the prompts
 	systemPrompt, err := t.systemPrompt()
 	if err != nil {
@@ -58,7 +69,6 @@ func (t *DeveloperAgent) Handler(ctx context.Context, args *DeveloperAgentArgs) 
 	}
 
 	// Pre-invoke some tool calls
-	s := GetSession(ctx)
 	_, err = s.CallTool(ctx, RoleAssistant, ListFilesName, nil, &ListFilesArgs{})
 	if err != nil {
 		return nil, err
@@ -75,6 +85,14 @@ func (t *DeveloperAgent) Handler(ctx context.Context, args *DeveloperAgentArgs) 
 			return nil, ctx.Err()
 		}
 	}
+	// Pre-invoke the skill tools so the agent discovers the project's skills and follows the always-apply ones.
+	// The conversation history only carries the agent's previous calls and responses, so like the calls above this runs on every invocation.
+	if len(skills) > 0 {
+		err = preloadSkills(ctx, s, skills, parser.SkillAgentDeveloper)
+		if err != nil {
+			return nil, err
+		}
+	}
 
 	// Build initial completion messages
 	messages := []*aiv1.CompletionMessage{NewTextCompletionMessage(RoleSystem, systemPrompt)}
@@ -85,24 +103,30 @@ func (t *DeveloperAgent) Handler(ctx context.Context, args *DeveloperAgentArgs) 
 	messages = append(messages, NewTextCompletionMessage(RoleUser, userPrompt))
 	messages = append(messages, s.NewCompletionMessages(s.MessagesWithResults(FilterByParent(s.ParentID)))...)
 
+	// Determine tools that can be used
+	tools := []string{
+		ProjectStatusName,
+		ListFilesName,
+		SearchFilesName,
+		ReadFileName,
+		ListBucketsName,
+		ListBucketObjectsName,
+		ListTablesName,
+		ShowTableName,
+		QuerySQLName,
+		DevelopFileName,
+		NavigateName,
+		ClickUIName,
+	}
+	if len(skills) > 0 {
+		tools = append(tools, ListSkillsName, LoadSkillName)
+	}
+
 	// Run an LLM tool call loop
 	var response string
 	err = s.Complete(ctx, "Developer loop", &response, &CompleteOptions{
-		Messages: messages,
-		Tools: []string{
-			ProjectStatusName,
-			ListFilesName,
-			SearchFilesName,
-			ReadFileName,
-			ListBucketsName,
-			ListBucketObjectsName,
-			ListTablesName,
-			ShowTableName,
-			QuerySQLName,
-			DevelopFileName,
-			NavigateName,
-			ClickUIName,
-		},
+		Messages:      messages,
+		Tools:         tools,
 		MaxIterations: 20,
 		UnwrapCall:    true,
 	})

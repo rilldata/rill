@@ -9,7 +9,10 @@ import {
 import { YAMLConfigProvider } from "@rilldata/web-common/features/dashboards/providers/YAMLConfigProvider.svelte.ts";
 import {
   createAndExpression,
+  createBinaryExpression,
   createInExpression,
+  createSubQueryExpression,
+  flattenExpression,
   getAllIdentifiers,
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils.ts";
 import {
@@ -23,8 +26,12 @@ import {
   AD_BIDS_PUBLISHER_DIMENSION,
 } from "@rilldata/web-common/features/dashboards/stores/test-data/data";
 import { compressUrlParams } from "@rilldata/web-common/features/dashboards/url-state/compression.ts";
+import { convertExpressionToFilterParam } from "@rilldata/web-common/features/dashboards/url-state/filters/converters.ts";
+import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus.ts";
+import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 import { ExploreStateURLParams } from "@rilldata/web-common/features/dashboards/url-state/url-params.ts";
 import { MetricsViewsProvider } from "@rilldata/web-common/features/metrics-views/providers/MetricsViewsProvider.svelte.ts";
+import { V1Operation } from "@rilldata/web-common/runtime-client";
 import {
   createInEffectRoot,
   createTestMetricsViewsProvider,
@@ -192,6 +199,85 @@ describe("setUrlParams", () => {
     expect(measureManager.operation).toBe(MeasureFilterOperation.GreaterThan);
     expect(measureManager.value1).toBe("10");
     expect(filterManager.sortedFilterManagers.dimensions).toEqual([]);
+  });
+
+  describe("comparison measure filters", () => {
+    // The having clause references a suffixed accessor of the base measure.
+    // The chip is keyed by the base measure and the suffix decides the filter type.
+    // Relative values are stored as decimals in the param and shown as percentages.
+    const cases = [
+      {
+        suffix: "_delta",
+        type: MeasureFilterType.AbsoluteChange,
+        paramValue: "10",
+        value1: "10",
+      },
+      {
+        suffix: "_delta_perc",
+        type: MeasureFilterType.PercentChange,
+        paramValue: "0.1",
+        value1: "10",
+      },
+      {
+        suffix: "_percent_of_total",
+        type: MeasureFilterType.PercentOfTotal,
+        paramValue: "0.25",
+        value1: "25",
+      },
+    ];
+
+    for (const { suffix, type, paramValue, value1 } of cases) {
+      it(`builds a chip for the base measure from a ${suffix} filter`, () => {
+        const filterManager = createFilterManager();
+
+        filterManager.setUrlParams(
+          perMetricsViewParams({
+            [AD_BIDS_METRICS_NAME]: `${AD_BIDS_PUBLISHER_DIMENSION} having (${AD_BIDS_IMPRESSIONS_MEASURE}${suffix} gt ${paramValue})`,
+          }),
+        );
+
+        expect(names(filterManager.sortedFilterManagers.measures)).toEqual([
+          AD_BIDS_IMPRESSIONS_MEASURE,
+        ]);
+        const measureManager = filterManager.sortedFilterManagers.measures[0];
+        expect(measureManager.dimension).toBe(AD_BIDS_PUBLISHER_DIMENSION);
+        expect(measureManager.type).toBe(type);
+        expect(measureManager.operation).toBe(
+          MeasureFilterOperation.GreaterThan,
+        );
+        expect(measureManager.value1).toBe(value1);
+
+        // The condition is applied to the metrics view with the suffixed accessor, exactly once.
+        expect(exprOf(filterManager, AD_BIDS_METRICS_NAME)).toEqual(
+          createAndExpression([
+            createSubQueryExpression(
+              AD_BIDS_PUBLISHER_DIMENSION,
+              [AD_BIDS_IMPRESSIONS_MEASURE],
+              createBinaryExpression(
+                `${AD_BIDS_IMPRESSIONS_MEASURE}${suffix}`,
+                V1Operation.OPERATION_GT,
+                Number(paramValue),
+              ),
+            ),
+          ]),
+        );
+      });
+
+      it(`writes a ${suffix} filter back to the param unchanged`, () => {
+        const filterManager = createFilterManager();
+        const param = `${AD_BIDS_DOMAIN_DIMENSION} having (${AD_BIDS_BID_PRICE_MEASURE}${suffix} GT ${paramValue})`;
+        filterManager.setUrlParams(
+          perMetricsViewParams({ [AD_BIDS_METRICS_NAME]: param }),
+        );
+
+        const searchParams = new URLSearchParams();
+        filterManager.applyFilterToParams(searchParams);
+
+        expect(searchParams.toString()).toEqual(
+          perMetricsViewParams({ [AD_BIDS_METRICS_NAME]: param }).toString(),
+        );
+      });
+    }
   });
 
   it("reads an in-list filter back as in-list mode", () => {
@@ -502,6 +588,165 @@ describe("applyFilterToParams", () => {
         [AD_BIDS_MIRROR_METRICS_NAME]: `${AD_BIDS_COUNTRY_DIMENSION} having (${AD_BIDS_PUBLISHER_COUNT_MEASURE} LT 5)`,
       }).toString(),
     );
+  });
+});
+
+describe("dimension params with a binary operator", () => {
+  /** The param the filter is written back as. */
+  function roundTrip(filterManager: ExpressionFilterManager) {
+    const searchParams = new URLSearchParams();
+    filterManager.applyFilterToParams(searchParams);
+    return searchParams.toString();
+  }
+
+  it("reads EQ as a single value selection and writes it back as IN", () => {
+    const filterManager = createFilterManager();
+
+    filterManager.setUrlParams(
+      perMetricsViewParams({
+        [AD_BIDS_METRICS_NAME]: `${AD_BIDS_DOMAIN_DIMENSION} EQ 'google.com'`,
+      }),
+    );
+
+    const [chip] = filterManager.sortedFilterManagers.dimensions;
+    expect(chip.name).toBe(AD_BIDS_DOMAIN_DIMENSION);
+    expect(chip.mode).toBe(DimensionFilterMode.Select);
+    expect(chip.selectedValues).toEqual(["google.com"]);
+    expect(chip.exclude).toBe(false);
+    expect(filterManager.isComplexFilter).toBe(false);
+    expect(exprOf(filterManager, AD_BIDS_METRICS_NAME)).toEqual(
+      createAndExpression([
+        createInExpression(AD_BIDS_DOMAIN_DIMENSION, ["google.com"]),
+      ]),
+    );
+    expect(roundTrip(filterManager)).toEqual(
+      perMetricsViewParams({
+        [AD_BIDS_METRICS_NAME]: `${AD_BIDS_DOMAIN_DIMENSION} IN ('google.com')`,
+      }).toString(),
+    );
+  });
+
+  it("reads NEQ as an excluded single value selection and writes it back as NIN", () => {
+    const filterManager = createFilterManager();
+
+    filterManager.setUrlParams(
+      perMetricsViewParams({
+        [AD_BIDS_METRICS_NAME]: `${AD_BIDS_DOMAIN_DIMENSION} NEQ 'google.com'`,
+      }),
+    );
+
+    const [chip] = filterManager.sortedFilterManagers.dimensions;
+    expect(chip.mode).toBe(DimensionFilterMode.Select);
+    expect(chip.selectedValues).toEqual(["google.com"]);
+    expect(chip.exclude).toBe(true);
+    expect(filterManager.isComplexFilter).toBe(false);
+    expect(exprOf(filterManager, AD_BIDS_METRICS_NAME)).toEqual(
+      createAndExpression([
+        createInExpression(AD_BIDS_DOMAIN_DIMENSION, ["google.com"], true),
+      ]),
+    );
+    expect(roundTrip(filterManager)).toEqual(
+      perMetricsViewParams({
+        [AD_BIDS_METRICS_NAME]: `${AD_BIDS_DOMAIN_DIMENSION} NIN ('google.com')`,
+      }).toString(),
+    );
+  });
+
+  it("applies a canvas default written with an equality", () => {
+    const filterManager = createFilterManager();
+
+    // A canvas `defaults.filters` of `domain = 'google.com' AND publisher IN ('Google')` reaches the
+    // filter bar as the backend expression, flattened and converted to a param.
+    const param = convertExpressionToFilterParam(
+      flattenExpression(
+        createAndExpression([
+          createBinaryExpression(
+            AD_BIDS_DOMAIN_DIMENSION,
+            V1Operation.OPERATION_EQ,
+            "google.com",
+          ),
+          createInExpression(AD_BIDS_PUBLISHER_DIMENSION, ["Google"]),
+        ]),
+      ),
+      [],
+    );
+    expect(param).toEqual(
+      `${AD_BIDS_DOMAIN_DIMENSION} EQ 'google.com' AND ${AD_BIDS_PUBLISHER_DIMENSION} IN ('Google')`,
+    );
+
+    filterManager.setUrlParams(
+      perMetricsViewParams({ [AD_BIDS_METRICS_NAME]: param }),
+    );
+
+    expect(names(filterManager.sortedFilterManagers.dimensions)).toEqual([
+      AD_BIDS_DOMAIN_DIMENSION,
+      AD_BIDS_PUBLISHER_DIMENSION,
+    ]);
+    expect(filterManager.isComplexFilter).toBe(false);
+    expect(exprOf(filterManager, AD_BIDS_METRICS_NAME)).toEqual(
+      createAndExpression([
+        createInExpression(AD_BIDS_DOMAIN_DIMENSION, ["google.com"]),
+        createInExpression(AD_BIDS_PUBLISHER_DIMENSION, ["Google"]),
+      ]),
+    );
+  });
+
+  it("keeps an operator the chips cannot show and flags the filter as complex", () => {
+    const filterManager = createFilterManager();
+
+    filterManager.setUrlParams(
+      perMetricsViewParams({
+        [AD_BIDS_METRICS_NAME]: `${AD_BIDS_DOMAIN_DIMENSION} GT 'g' AND ${AD_BIDS_PUBLISHER_DIMENSION} IN ('Google')`,
+      }),
+    );
+
+    expect(filterManager.isComplexFilter).toBe(true);
+    expect(exprOf(filterManager, AD_BIDS_METRICS_NAME)).toEqual(
+      createAndExpression([
+        createBinaryExpression(
+          AD_BIDS_DOMAIN_DIMENSION,
+          V1Operation.OPERATION_GT,
+          "g",
+        ),
+        createInExpression(AD_BIDS_PUBLISHER_DIMENSION, ["Google"]),
+      ]),
+    );
+    // `publisher` is defined by both metrics views, so the mirror carries it too.
+    expect(roundTrip(filterManager)).toEqual(
+      perMetricsViewParams({
+        [AD_BIDS_METRICS_NAME]: `${AD_BIDS_DOMAIN_DIMENSION} GT 'g' AND ${AD_BIDS_PUBLISHER_DIMENSION} IN ('Google')`,
+        [AD_BIDS_MIRROR_METRICS_NAME]: `${AD_BIDS_PUBLISHER_DIMENSION} IN ('Google')`,
+      }).toString(),
+    );
+  });
+
+  it("keeps the operator through the dropdown clone and drops it once the chip is edited", () => {
+    const filterManager = createFilterManager();
+    filterManager.setUrlParams(
+      perMetricsViewParams({
+        [AD_BIDS_METRICS_NAME]: `${AD_BIDS_DOMAIN_DIMENSION} LTE 'g'`,
+      }),
+    );
+    const [chip] = filterManager.sortedFilterManagers.dimensions;
+
+    // Opening and applying the dropdown without a change is a no-op.
+    chip.apply(chip.clone());
+    expect(roundTrip(filterManager)).toEqual(
+      perMetricsViewParams({
+        [AD_BIDS_METRICS_NAME]: `${AD_BIDS_DOMAIN_DIMENSION} LTE 'g'`,
+      }).toString(),
+    );
+
+    // A selection replaces the condition.
+    chip.toggleValue("google.com", false);
+    expect(exprOf(filterManager, AD_BIDS_METRICS_NAME)).toEqual(
+      createAndExpression([
+        createInExpression(AD_BIDS_DOMAIN_DIMENSION, ["google.com"]),
+      ]),
+    );
+
+    chip.clear();
+    expect(roundTrip(filterManager)).toEqual("");
   });
 });
 
@@ -869,6 +1114,104 @@ describe("dimensionFilterAction", () => {
     expect(
       filterManager.sortedFilterManagers.dimensions[0].selectedValues,
     ).toEqual(["Google"]);
+  });
+
+  // Click to filter from a chart, table, leaderboard or search while the dimension has a
+  // Contains filter. The click selects a concrete value, so the filter converts to Select
+  // the way it did before the filter managers existed, and the user is told about it.
+  describe("with a Contains filter applied", () => {
+    function createWithContainsFilter() {
+      const filterManager = createFilterManager();
+      filterManager.setUrlParams(
+        perMetricsViewParams({
+          [AD_BIDS_METRICS_NAME]: `${AD_BIDS_PUBLISHER_DIMENSION} LIKE '%oo%'`,
+        }),
+      );
+      const manager = filterManager.sortedFilterManagers.dimensions[0];
+      expect(manager.mode).toBe(DimensionFilterMode.Contains);
+      expect(manager.inputText).toBe("oo");
+
+      const emit = vi.spyOn(eventBus, "emit");
+      cleanups.push(() => emit.mockRestore());
+      return { filterManager, manager, emit };
+    }
+
+    it("toggleValue converts the filter to Select with the clicked value", () => {
+      const { filterManager, manager, emit } = createWithContainsFilter();
+
+      filterManager.dimensionFilterAction(
+        AD_BIDS_PUBLISHER_DIMENSION,
+        (manager) => manager.toggleValue("Google", false),
+      );
+
+      expect(manager.mode).toBe(DimensionFilterMode.Select);
+      expect(manager.inputText).toBe("");
+      expect(manager.selectedValues).toEqual(["Google"]);
+      expect(manager.expr).toEqual(
+        createInExpression(AD_BIDS_PUBLISHER_DIMENSION, ["Google"]),
+      );
+      expect(filterManager.topLevelJoiner.param[AD_BIDS_METRICS_NAME]).toBe(
+        `${AD_BIDS_PUBLISHER_DIMENSION} IN ('Google')`,
+      );
+      expect(emit).toHaveBeenCalledWith(
+        "notification",
+        expect.objectContaining({ message: m.filter_converted_to_select() }),
+      );
+    });
+
+    it("toggleValue keeps exclude when converting", () => {
+      const filterManager = createFilterManager();
+      filterManager.setUrlParams(
+        perMetricsViewParams({
+          [AD_BIDS_METRICS_NAME]: `${AD_BIDS_PUBLISHER_DIMENSION} NLIKE '%oo%'`,
+        }),
+      );
+
+      filterManager.dimensionFilterAction(
+        AD_BIDS_PUBLISHER_DIMENSION,
+        (manager) => manager.toggleValue("Google", false),
+      );
+
+      expect(filterManager.topLevelJoiner.param[AD_BIDS_METRICS_NAME]).toBe(
+        `${AD_BIDS_PUBLISHER_DIMENSION} NIN ('Google')`,
+      );
+    });
+
+    it("appendSelectedValues converts the filter to Select with the added values", () => {
+      const { filterManager, manager, emit } = createWithContainsFilter();
+
+      // The callback return type is `any`, hence the cast.
+      const added = filterManager.dimensionFilterAction(
+        AD_BIDS_PUBLISHER_DIMENSION,
+        (manager) => manager.appendSelectedValues(["Google", "Facebook"]),
+      ) as string[];
+
+      expect(added).toEqual(["Google", "Facebook"]);
+      expect(manager.mode).toBe(DimensionFilterMode.Select);
+      expect(manager.selectedValues).toEqual(["Google", "Facebook"]);
+      expect(filterManager.topLevelJoiner.param[AD_BIDS_METRICS_NAME]).toBe(
+        `${AD_BIDS_PUBLISHER_DIMENSION} IN ('Google','Facebook')`,
+      );
+      expect(emit).toHaveBeenCalledWith(
+        "notification",
+        expect.objectContaining({ message: m.filter_converted_to_select() }),
+      );
+    });
+
+    it("removeSelectedValues leaves the Contains filter alone", () => {
+      const { filterManager, manager, emit } = createWithContainsFilter();
+
+      filterManager.dimensionFilterAction(
+        AD_BIDS_PUBLISHER_DIMENSION,
+        (manager) => manager.removeSelectedValues(["Google"]),
+      );
+
+      expect(manager.mode).toBe(DimensionFilterMode.Contains);
+      expect(filterManager.topLevelJoiner.param[AD_BIDS_METRICS_NAME]).toBe(
+        `${AD_BIDS_PUBLISHER_DIMENSION} LIKE '%oo%'`,
+      );
+      expect(emit).not.toHaveBeenCalledWith("notification", expect.anything());
+    });
   });
 });
 

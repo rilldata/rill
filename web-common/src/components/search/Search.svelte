@@ -29,7 +29,8 @@
   let ref: HTMLInputElement | HTMLTextAreaElement;
 
   function handleKeyDown(event) {
-    if (event.code == "Enter") {
+    // Use `key` rather than `code`: the numeric keypad Enter reports code "NumpadEnter", and without this the form submits natively and reloads the page.
+    if (event.key === "Enter") {
       event.preventDefault();
       event.stopPropagation();
       onSubmit();

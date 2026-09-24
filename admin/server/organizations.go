@@ -11,6 +11,7 @@ import (
 	"github.com/rilldata/rill/admin/billing"
 	"github.com/rilldata/rill/admin/database"
 	"github.com/rilldata/rill/admin/pkg/publicemail"
+	"github.com/rilldata/rill/admin/provisioner"
 	"github.com/rilldata/rill/admin/server/auth"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/rilldata/rill/runtime/pkg/email"
@@ -252,6 +253,7 @@ func (s *Server) UpdateOrganization(ctx context.Context, req *adminv1.UpdateOrga
 		ThumbnailAssetID:                    thumbnailAssetID,
 		CustomDomain:                        org.CustomDomain,
 		DefaultProjectRoleID:                defaultProjectRoleID,
+		DefaultProvisioner:                  org.DefaultProvisioner,
 		QuotaProjects:                       org.QuotaProjects,
 		QuotaDeployments:                    org.QuotaDeployments,
 		QuotaSlotsTotal:                     org.QuotaSlotsTotal,
@@ -457,6 +459,13 @@ func (s *Server) AddOrganizationMemberUser(ctx context.Context, req *adminv1.Add
 		attrs = req.Attributes.AsMap()
 	}
 
+	// Resolve and validate the user groups up front, so an invalid group fails the request before anything is written or emailed.
+	groups, err := s.resolveUsergroupsForMembership(ctx, org.Name, req.Usergroups, forceAccess)
+	if err != nil {
+		return nil, err
+	}
+	groupIDs := usergroupIDs(groups)
+
 	user, err := s.admin.DB.FindUserByEmail(ctx, req.Email)
 	if err != nil {
 		if !errors.Is(err, database.ErrNotFound) {
@@ -465,11 +474,12 @@ func (s *Server) AddOrganizationMemberUser(ctx context.Context, req *adminv1.Add
 
 		// Invite user to join org
 		err := s.admin.DB.InsertOrganizationInvite(ctx, &database.InsertOrganizationInviteOptions{
-			Email:      req.Email,
-			InviterID:  invitedByUserID,
-			OrgID:      org.ID,
-			RoleID:     role.ID,
-			Attributes: attrs,
+			Email:        req.Email,
+			InviterID:    invitedByUserID,
+			OrgID:        org.ID,
+			RoleID:       role.ID,
+			UsergroupIDs: groupIDs,
+			Attributes:   attrs,
 		})
 		if err != nil {
 			if !errors.Is(err, database.ErrNotUnique) {
@@ -488,6 +498,13 @@ func (s *Server) AddOrganizationMemberUser(ctx context.Context, req *adminv1.Add
 			// Update the invite's attributes only when explicitly provided, to avoid clearing them on a plain re-invite.
 			if req.Attributes != nil {
 				err = s.admin.DB.UpdateOrganizationInviteAttributes(ctx, invite.ID, attrs)
+				if err != nil {
+					return nil, err
+				}
+			}
+			// User groups are additive: merge them with the groups already on the invite.
+			if mergedGroupIDs, changed := mergeUnique(invite.UsergroupIDs, groupIDs); changed {
+				err = s.admin.DB.UpdateOrganizationInviteUsergroups(ctx, invite.ID, mergedGroupIDs)
 				if err != nil {
 					return nil, err
 				}
@@ -513,21 +530,57 @@ func (s *Server) AddOrganizationMemberUser(ctx context.Context, req *adminv1.Add
 		}, nil
 	}
 
+	// Check the membership before inserting instead of relying on the unique violation:
+	// a failed statement aborts the whole transaction, which would take the user group additions below with it.
+	_, err = s.admin.DB.FindOrganizationMemberUser(ctx, org.ID, user.ID)
+	if err != nil && !errors.Is(err, database.ErrNotFound) {
+		return nil, err
+	}
+	alreadyMember := err == nil
+
 	// Enforce the seat quota (counts billable member users, excluding internal Rill users; invites are limited by QuotaOutstandingInvites above).
-	seats, err := s.admin.DB.CountOrganizationMemberUsers(ctx, org.ID, "", "%@"+billing.InternalEmailDomain, true)
+	// An existing member already holds a seat, so only a new membership is charged against the quota.
+	if !alreadyMember {
+		seats, err := s.admin.DB.CountOrganizationMemberUsers(ctx, org.ID, "", "%@"+billing.InternalEmailDomain, true)
+		if err != nil {
+			return nil, err
+		}
+		if org.QuotaSeats >= 0 && seats >= org.QuotaSeats {
+			return nil, status.Errorf(codes.FailedPrecondition, "quota exceeded: org %q is limited to %d seats", org.Name, org.QuotaSeats)
+		}
+	}
+
+	// Insert the user in the org, its managed usergroups and the requested usergroups transactionally.
+	// NOTE: txCtx carries the transaction, so it must be passed to the DB calls below, but not used after the commit.
+	txCtx, tx, err := s.admin.DB.NewTx(ctx, false)
 	if err != nil {
 		return nil, err
 	}
-	if org.QuotaSeats >= 0 && seats >= org.QuotaSeats {
-		return nil, status.Errorf(codes.FailedPrecondition, "quota exceeded: org %q is limited to %d seats", org.Name, org.QuotaSeats)
+	defer func() { _ = tx.Rollback() }()
+
+	// An existing member keeps their current role and attributes, and we report the conflict after the commit below.
+	// Unlike those, user groups are additive and org-scoped, so they are applied either way (like in AddProjectMemberUser).
+	if !alreadyMember {
+		err = s.admin.InsertOrganizationMemberUser(txCtx, org.ID, user.ID, role.ID, attrs, false)
+		if err != nil {
+			if !errors.Is(err, database.ErrNotUnique) {
+				return nil, err
+			}
+			return nil, status.Error(codes.AlreadyExists, "user is already a member of the organization")
+		}
 	}
 
-	// Insert the user in the org and its managed usergroups transactionally.
-	err = s.admin.InsertOrganizationMemberUser(ctx, org.ID, user.ID, role.ID, attrs, false)
+	err = s.admin.DB.InsertUsergroupsMemberUser(txCtx, user.ID, groupIDs)
 	if err != nil {
-		if !errors.Is(err, database.ErrNotUnique) {
-			return nil, err
-		}
+		return nil, err
+	}
+
+	err = tx.Commit()
+	if err != nil {
+		return nil, err
+	}
+
+	if alreadyMember {
 		return nil, status.Error(codes.AlreadyExists, "user is already a member of the organization")
 	}
 
@@ -1002,6 +1055,7 @@ func (s *Server) SudoUpdateOrganizationQuotas(ctx context.Context, req *adminv1.
 		CustomDomain:                        org.CustomDomain,
 		ThumbnailAssetID:                    org.ThumbnailAssetID,
 		DefaultProjectRoleID:                org.DefaultProjectRoleID,
+		DefaultProvisioner:                  org.DefaultProvisioner,
 		QuotaProjects:                       int(valOrDefault(req.Projects, int32(org.QuotaProjects))),
 		QuotaDeployments:                    int(valOrDefault(req.Deployments, int32(org.QuotaDeployments))),
 		QuotaSlotsTotal:                     int(valOrDefault(req.SlotsTotal, int32(org.QuotaSlotsTotal))),
@@ -1053,6 +1107,7 @@ func (s *Server) SudoUpdateOrganizationCustomDomain(ctx context.Context, req *ad
 		CustomDomain:                        req.CustomDomain,
 		ThumbnailAssetID:                    org.ThumbnailAssetID,
 		DefaultProjectRoleID:                org.DefaultProjectRoleID,
+		DefaultProvisioner:                  org.DefaultProvisioner,
 		QuotaProjects:                       org.QuotaProjects,
 		QuotaDeployments:                    org.QuotaDeployments,
 		QuotaSlotsTotal:                     org.QuotaSlotsTotal,
@@ -1081,6 +1136,81 @@ func (s *Server) SudoUpdateOrganizationCustomDomain(ctx context.Context, req *ad
 	return &adminv1.SudoUpdateOrganizationCustomDomainResponse{
 		Organization: s.organizationToDTO(org, true),
 	}, nil
+}
+
+func (s *Server) SudoUpdateOrganizationDefaultProvisioner(ctx context.Context, req *adminv1.SudoUpdateOrganizationDefaultProvisionerRequest) (*adminv1.SudoUpdateOrganizationDefaultProvisionerResponse, error) {
+	observability.AddRequestAttributes(ctx,
+		attribute.String("args.org", req.Org),
+		attribute.String("args.default_provisioner", req.DefaultProvisioner),
+	)
+
+	claims := auth.GetClaims(ctx)
+	if !claims.Superuser(ctx) {
+		return nil, status.Error(codes.PermissionDenied, "only superusers can manage default provisioners")
+	}
+
+	err := s.validateRuntimeProvisioner(req.DefaultProvisioner)
+	if err != nil {
+		return nil, err
+	}
+
+	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Org)
+	if err != nil {
+		return nil, err
+	}
+
+	org, err = s.admin.DB.UpdateOrganization(ctx, org.ID, &database.UpdateOrganizationOptions{
+		Name:                                org.Name,
+		DisplayName:                         org.DisplayName,
+		Description:                         org.Description,
+		LogoAssetID:                         org.LogoAssetID,
+		LogoDarkAssetID:                     org.LogoDarkAssetID,
+		FaviconAssetID:                      org.FaviconAssetID,
+		ThumbnailAssetID:                    org.ThumbnailAssetID,
+		CustomDomain:                        org.CustomDomain,
+		DefaultProjectRoleID:                org.DefaultProjectRoleID,
+		DefaultProvisioner:                  req.DefaultProvisioner,
+		QuotaProjects:                       org.QuotaProjects,
+		QuotaDeployments:                    org.QuotaDeployments,
+		QuotaSlotsTotal:                     org.QuotaSlotsTotal,
+		QuotaSlotsPerDeployment:             org.QuotaSlotsPerDeployment,
+		QuotaOutstandingInvites:             org.QuotaOutstandingInvites,
+		QuotaStorageLimitBytesPerDeployment: org.QuotaStorageLimitBytesPerDeployment,
+		QuotaSeats:                          org.QuotaSeats,
+		BillingCustomerID:                   org.BillingCustomerID,
+		PaymentCustomerID:                   org.PaymentCustomerID,
+		BillingEmail:                        org.BillingEmail,
+		BillingPlanName:                     org.BillingPlanName,
+		BillingPlanDisplayName:              org.BillingPlanDisplayName,
+		CreatedByUserID:                     org.CreatedByUserID,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return &adminv1.SudoUpdateOrganizationDefaultProvisionerResponse{
+		Organization: s.organizationToDTO(org, true),
+	}, nil
+}
+
+// validateRuntimeProvisioner checks that the named provisioner is present in the provisioner set
+// and is able to provision runtimes. An empty name is valid and means the provisioner is not
+// pinned at this level, i.e. that provisioning should fall back to the next level of defaulting.
+func (s *Server) validateRuntimeProvisioner(name string) error {
+	if name == "" {
+		return nil
+	}
+
+	p, ok := s.admin.ProvisionerSet[name]
+	if !ok {
+		return status.Errorf(codes.InvalidArgument, "provisioner %q is not configured", name)
+	}
+
+	if !p.Supports(provisioner.ResourceTypeRuntime) {
+		return status.Errorf(codes.InvalidArgument, "provisioner %q does not support runtimes", name)
+	}
+
+	return nil
 }
 
 func (s *Server) organizationToDTO(o *database.Organization, privileged bool) *adminv1.Organization {
@@ -1134,6 +1264,7 @@ func (s *Server) organizationToDTO(o *database.Organization, privileged bool) *a
 	}
 
 	if privileged {
+		res.DefaultProvisioner = o.DefaultProvisioner
 		res.BillingCustomerId = o.BillingCustomerID
 		res.PaymentCustomerId = o.PaymentCustomerID
 		res.BillingEmail = o.BillingEmail

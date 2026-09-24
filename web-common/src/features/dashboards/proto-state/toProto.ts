@@ -15,6 +15,7 @@ import {
 import {
   ToProtoOperationMap,
   ToProtoPivotTableModeMap,
+  ToProtoPivotTotalsRowPositionMap,
   ToProtoTimeGrainMap,
 } from "@rilldata/web-common/features/dashboards/proto-state/enum-maps";
 import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
@@ -76,6 +77,14 @@ export function getProtoFromDashboardState(
   if (!exploreState) return "";
 
   const state: PartialMessage<DashboardState> = {};
+  if (exploreState.ephemeralMeasures?.length) {
+    state.ephemeralMeasures = exploreState.ephemeralMeasures.map((def) => ({
+      name: def.name,
+      displayName: def.displayName,
+      expression: def.expression,
+      formatPreset: def.formatPreset ?? "",
+    }));
+  }
   if (exploreState.whereFilter) {
     state.where = toExpressionProto(exploreState.whereFilter);
   }
@@ -335,6 +344,8 @@ function toPivotProto(pivotState: PivotState): PartialMessage<DashboardState> {
     pivotRowLimit: pivotState.rowLimit,
     pivotShowTotalsColumn: pivotState.showTotalsColumn,
     pivotShowTotalsRow: pivotState.showTotalsRow,
+    pivotTotalsRowPosition:
+      ToProtoPivotTotalsRowPositionMap[pivotState.totalsRowPosition ?? "top"],
     pivotConditionalFormatting: Object.entries(
       pivotState.measureFormatting ?? {},
     ).map(([measure, fmt]) =>

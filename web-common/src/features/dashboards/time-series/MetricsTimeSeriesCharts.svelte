@@ -3,6 +3,9 @@
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import DashboardMetricsDraggableList from "@rilldata/web-common/components/menu/DashboardMetricsDraggableList.svelte";
+  import CreateEphemeralMeasureButton from "@rilldata/web-common/features/dashboards/ephemeral-measures/CreateEphemeralMeasureButton.svelte";
+  import { ephemeralMeasureDialog } from "@rilldata/web-common/features/dashboards/ephemeral-measures/dialog-store";
+  import { ephemeralMeasureNameSet } from "@rilldata/web-common/features/dashboards/ephemeral-measures/measure-mapping";
   import ReplacePivotDialog from "@rilldata/web-common/features/dashboards/pivot/ReplacePivotDialog.svelte";
   import { splitPivotChips } from "@rilldata/web-common/features/dashboards/pivot/pivot-utils";
   import {
@@ -198,6 +201,13 @@
   let allMeasureNames = $derived(
     $allMeasures.map(({ name }) => name).filter(isDefined),
   );
+
+  function openEphemeralMeasureEditor(name: string) {
+    const def = $dashboardStore?.ephemeralMeasures?.find(
+      (d) => d.name === name,
+    );
+    if (def) ephemeralMeasureDialog.set({ def });
+  }
   function isDefined(value: string | undefined): value is string {
     return value !== undefined;
   }
@@ -328,7 +338,15 @@
         allItems={$allMeasures}
         tagIndex={$measureTagIndex}
         selectedItems={visibleMeasureNames}
-      />
+        ephemeralNames={ephemeralMeasureNameSet(
+          $dashboardStore?.ephemeralMeasures,
+        )}
+        onEditEphemeral={openEphemeralMeasureEditor}
+      >
+        <div class="border-t border-border" slot="action" let:close>
+          <CreateEphemeralMeasureButton onOpen={close} />
+        </div>
+      </DashboardMetricsDraggableList>
 
       {#if $rillTime && activeTimeGrain}
         <DropdownMenu.Root bind:open={grainDropdownOpen}>
@@ -426,6 +444,7 @@
       {#each renderedMeasures as measure (measure.name)}
         <MeasureBigNumber
           {measure}
+          ephemeralMeasures={$dashboardStore.ephemeralMeasures}
           isMeasureExpanded={showTimeDimensionDetail}
           {showComparison}
           metricsViewName={chartMetricsViewName}
@@ -445,6 +464,7 @@
           <div class="relative min-w-0">
             <MeasureChart
               {measure}
+              ephemeralMeasures={$dashboardStore.ephemeralMeasures}
               {scrubController}
               {connectNulls}
               tddChartType={tddChartType ?? TDDChart.DEFAULT}
@@ -513,6 +533,7 @@
   <ScreenshotContainer
     bind:open={screenshotDialogOpen}
     measure={screenshotDialogMeasure}
+    ephemeralMeasures={$dashboardStore.ephemeralMeasures}
     metricsViewName={chartMetricsViewName}
     tddChartType={tddChartType ?? TDDChart.DEFAULT}
     {expressionFilterManager}

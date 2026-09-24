@@ -127,6 +127,81 @@ bar_chart:
 	testruntime.RequireReconcileErrorContains(t, rt, id, runtime.ResourceKindComponent, "c1", "is not a dimension")
 }
 
+func TestValidateHorizontalBarChart(t *testing.T) {
+	rt, id := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
+		Files: metricsViewFiles(),
+	})
+
+	// Valid: a quantitative x holds the measure and y holds the dimension.
+	testruntime.PutFiles(t, rt, id, map[string]string{
+		"c1.yaml": `
+type: component
+bar_chart:
+  metrics_view: mv1
+  x:
+    field: y
+    type: quantitative
+    fields: [y, z]
+  y:
+    field: foo
+    type: nominal
+    sort: -x
+`})
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireReconcileState(t, rt, id, 4, 0, 0)
+
+	// Invalid: a quantitative x must reference a measure.
+	testruntime.PutFiles(t, rt, id, map[string]string{
+		"c1.yaml": `
+type: component
+stacked_bar:
+  metrics_view: mv1
+  x:
+    field: foo
+    type: quantitative
+  y:
+    field: bar
+    type: nominal
+`})
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireReconcileState(t, rt, id, 4, 1, 0)
+	testruntime.RequireReconcileErrorContains(t, rt, id, runtime.ResourceKindComponent, "c1", `x.field "foo" is not a measure`)
+
+	// Invalid: with the measure on x, y must reference a dimension.
+	testruntime.PutFiles(t, rt, id, map[string]string{
+		"c1.yaml": `
+type: component
+bar_chart:
+  metrics_view: mv1
+  x:
+    field: y
+    type: quantitative
+  y:
+    field: z
+    type: nominal
+`})
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireReconcileState(t, rt, id, 4, 1, 0)
+	testruntime.RequireReconcileErrorContains(t, rt, id, runtime.ResourceKindComponent, "c1", `y.field "z" is not a dimension`)
+
+	// Invalid: line charts cannot be drawn horizontally.
+	testruntime.PutFiles(t, rt, id, map[string]string{
+		"c1.yaml": `
+type: component
+line_chart:
+  metrics_view: mv1
+  x:
+    field: y
+    type: quantitative
+  y:
+    field: foo
+    type: nominal
+`})
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireReconcileState(t, rt, id, 4, 1, 0)
+	testruntime.RequireReconcileErrorContains(t, rt, id, runtime.ResourceKindComponent, "c1", "only supported by bar charts")
+}
+
 func TestValidateCartesianMultiField(t *testing.T) {
 	rt, id := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
 		Files: metricsViewFiles(),
@@ -979,7 +1054,7 @@ type: component
 kpi_grid:
   metrics_view: mv1
   measures: [y, profit]
-  ephemeral_measures:
+  adhoc_measures:
   - name: profit
     display_name: Profit
     expression: y - z
@@ -995,7 +1070,7 @@ leaderboard:
   metrics_view: mv1
   measures: [profit]
   dimensions: [foo]
-  ephemeral_measures:
+  adhoc_measures:
   - name: profit
     display_name: Profit
     expression: y - z
@@ -1010,7 +1085,7 @@ type: component
 table:
   metrics_view: mv1
   columns: [foo, y, profit]
-  ephemeral_measures:
+  adhoc_measures:
   - name: profit
     display_name: Profit
     expression: y - z
@@ -1026,7 +1101,7 @@ pivot:
   metrics_view: mv1
   measures: [profit]
   row_dimensions: [foo]
-  ephemeral_measures:
+  adhoc_measures:
   - name: profit
     display_name: Profit
     expression: y - z
@@ -1047,7 +1122,7 @@ bar_chart:
     field: profit
     type: quantitative
     fields: [y, profit]
-  ephemeral_measures:
+  adhoc_measures:
   - name: profit
     display_name: Profit
     expression: y - z
@@ -1067,7 +1142,7 @@ pie_chart:
   color:
     field: foo
     type: nominal
-  ephemeral_measures:
+  adhoc_measures:
   - name: profit
     display_name: Profit
     expression: y - z
@@ -1087,7 +1162,7 @@ heatmap:
   color:
     field: profit
     type: quantitative
-  ephemeral_measures:
+  adhoc_measures:
   - name: profit
     display_name: Profit
     expression: y - z
@@ -1119,7 +1194,7 @@ type: component
 kpi_grid:
   metrics_view: mv1
   measures: [profit]
-  ephemeral_measures:
+  adhoc_measures:
   - name: profit
     display_name: Profit
     expression: sum(y)
@@ -1135,7 +1210,7 @@ type: component
 kpi_grid:
   metrics_view: mv1
   measures: [profit]
-  ephemeral_measures:
+  adhoc_measures:
   - name: profit
     display_name: Profit
     expression: y - unknown
@@ -1151,7 +1226,7 @@ type: component
 kpi_grid:
   metrics_view: mv1
   measures: [missing]
-  ephemeral_measures:
+  adhoc_measures:
   - name: profit
     display_name: Profit
     expression: y - z

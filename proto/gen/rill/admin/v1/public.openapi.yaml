@@ -1393,6 +1393,8 @@ components:
                     type: string
                 defaultProjectRoleId:
                     type: string
+                defaultProvisioner:
+                    type: string
                 description:
                     type: string
                 displayName:
@@ -1428,6 +1430,11 @@ components:
                     type: string
                 roleName:
                     type: string
+                usergroups:
+                    description: Names of the user groups the user will be added to when the invite is accepted.
+                    items:
+                        type: string
+                    type: array
             type: object
         v1OrganizationMemberService:
             properties:
@@ -2217,6 +2224,19 @@ components:
                 organization:
                     $ref: '#/components/schemas/v1Organization'
             type: object
+        v1SudoUpdateOrganizationDefaultProvisionerRequest:
+            properties:
+                defaultProvisioner:
+                    description: Name of the provisioner to use by default. Empty unsets the org's default provisioner.
+                    type: string
+                org:
+                    type: string
+            type: object
+        v1SudoUpdateOrganizationDefaultProvisionerResponse:
+            properties:
+                organization:
+                    $ref: '#/components/schemas/v1Organization'
+            type: object
         v1SudoUpdateOrganizationQuotasRequest:
             properties:
                 deployments:
@@ -2479,6 +2499,11 @@ components:
                 createdOn:
                     format: date-time
                     type: string
+                pendingAcceptance:
+                    description: |-
+                        True if the user has been invited to the group but has not signed up yet.
+                        For pending members, user_id, user_name and user_photo_url are empty.
+                    type: boolean
                 updatedOn:
                     format: date-time
                     type: string
@@ -2805,6 +2830,14 @@ paths:
                                     type: string
                                 superuserForceAccess:
                                     type: boolean
+                                usergroups:
+                                    description: |-
+                                        Names of user groups in the org to add the user to.
+                                        If the user has not signed up yet, they are stored on the invite and applied when the invite is accepted.
+                                        Groups are additive: on a re-invite they are merged with the groups already on the invite.
+                                    items:
+                                        type: string
+                                    type: array
                             type: object
                 required: true
                 x-originalParamName: body
@@ -2929,6 +2962,7 @@ paths:
                                 project:
                                     type: string
                                 provisioner:
+                                    description: Provisioner to use for the project's deployments. Superuser-only; empty means the org's default provisioner (or the global default) is used.
                                     type: string
                                 public:
                                     type: boolean
@@ -3078,6 +3112,9 @@ paths:
                                 prodVersion:
                                     type: string
                                 provisioner:
+                                    description: |-
+                                        Provisioner to use for the project's deployments. Superuser-only; empty unsets it so the org's default provisioner (or the global default) is used.
+                                        It only affects deployments provisioned after the change; existing deployments stay on their current provisioner.
                                     type: string
                                 public:
                                     type: boolean
@@ -3235,6 +3272,14 @@ paths:
                                     type: boolean
                                 role:
                                     type: string
+                                usergroups:
+                                    description: |-
+                                        Names of user groups in the org to add the user to (user groups are org-scoped).
+                                        If the user has not signed up yet, they are stored on the org invite and applied when the invite is accepted.
+                                        Setting user groups requires permission to manage org members.
+                                    items:
+                                        type: string
+                                    type: array
                             type: object
                 required: true
                 x-originalParamName: body
@@ -3934,6 +3979,7 @@ paths:
     /v1/superuser/organization/billing/customer_id: {}
     /v1/superuser/organization/billing/report-usage: {}
     /v1/superuser/organization/custom-domain: {}
+    /v1/superuser/organization/default-provisioner: {}
     /v1/superuser/organization/trial/extend: {}
     /v1/superuser/organization/trial/grant-credits: {}
     /v1/superuser/organizations/{org}/billing/issues/{type}: {}

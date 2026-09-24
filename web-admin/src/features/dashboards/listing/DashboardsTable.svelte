@@ -1,7 +1,7 @@
 <script lang="ts">
   import { page } from "$app/state";
   import ResourceError from "@rilldata/web-common/features/resources/ResourceError.svelte";
-  import ResourceList from "@rilldata/web-admin/features/resources/ResourceList.svelte";
+  import ListTable from "@rilldata/web-admin/components/list-table/ListTable.svelte";
   import ResourceListEmptyState from "@rilldata/web-admin/features/resources/ResourceListEmptyState.svelte";
   import ExploreIcon from "@rilldata/web-common/components/icons/ExploreIcon.svelte";
   import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
@@ -25,6 +25,7 @@
   import { escapeHtml } from "@rilldata/web-common/lib/i18n";
   import { TableToolbar } from "@rilldata/web-common/components/table-toolbar";
   import { dedupe } from "@rilldata/web-common/lib/arrayUtils.ts";
+  import { resourceTableGetRowId } from "@rilldata/web-common/features/resources/overview-utils.ts";
 
   type DashboardRow = V1Resource & { lastUsed: number };
 
@@ -91,11 +92,15 @@
     new RecentlyUsedDashboards(organization, project),
   );
 
-  let validDashboardFavourites = $derived(
+  // Favourites are keyed the same way as table rows, so pinning is a lookup.
+  // Favourites without a matching row (deleted, filtered out, or not yet
+  // migrated from a legacy name-only key) are simply not pinned.
+  let filteredDashboardRowIds = $derived(
+    new Set(filteredDashboards.map(resourceTableGetRowId)),
+  );
+  let pinnedDashboardRowIds = $derived(
     dedupe(
-      dashboardFavourites.value.filter((f) =>
-        filteredDashboards.find((r) => r.meta?.name?.name?.toLowerCase() === f),
-      ),
+      dashboardFavourites.value.filter((f) => filteredDashboardRowIds.has(f)),
     ),
   );
 
@@ -105,11 +110,11 @@
 
   let displayData = $derived(
     filteredDashboards.map(
-      (r): DashboardRow => ({
+      (r, i): DashboardRow => ({
         ...r,
         lastUsed:
           recentlyUsedDashboards.recentlyUsed.value[
-            r.meta?.name?.name?.toLowerCase() ?? ""
+            resourceTableGetRowId(r, i)
           ] ?? 0,
       }),
     ),
@@ -227,15 +232,16 @@
       {/if}
 
       <div class="flex flex-col flex-grow min-w-0">
-        <ResourceList
+        <ListTable
           kind="dashboard"
           data={displayData}
           {columns}
           {columnVisibility}
           sorting={[sortingOption.sort]}
           toolbar={false}
-          pinnedRows={validDashboardFavourites}
+          pinnedRows={pinnedDashboardRowIds}
           maxRows={previewLimit}
+          getRowId={resourceTableGetRowId}
         >
           <ResourceListEmptyState
             slot="empty"
@@ -248,7 +254,7 @@
               })}
             </span>
           </ResourceListEmptyState>
-        </ResourceList>
+        </ListTable>
 
         {#if hasMoreDashboards}
           <div class="pl-4 py-1">

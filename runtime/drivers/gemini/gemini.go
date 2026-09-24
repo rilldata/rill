@@ -326,14 +326,27 @@ func (h *handle) Complete(ctx context.Context, opts *drivers.CompleteOptions) (*
 		return nil, fmt.Errorf("failed to convert response: %w", err)
 	}
 
-	// Gemini's PromptTokenCount already includes cached content tokens; CachedInputTokens is the subset.
+	inputTokens, cachedInputTokens, outputTokens := usageTokens(res.UsageMetadata)
 	return &drivers.CompleteResult{
 		Message:           resMsg,
 		Provider:          "gemini",
-		InputTokens:       int(res.UsageMetadata.PromptTokenCount),
-		CachedInputTokens: int(res.UsageMetadata.CachedContentTokenCount),
-		OutputTokens:      int(res.UsageMetadata.CandidatesTokenCount),
+		InputTokens:       inputTokens,
+		CachedInputTokens: cachedInputTokens,
+		OutputTokens:      outputTokens,
 	}, nil
+}
+
+// usageTokens maps Gemini's usage metadata to Rill's token counts.
+//
+// Gemini's PromptTokenCount already includes cached content tokens; CachedInputTokens is the subset.
+//
+// Gemini reports thinking tokens in ThoughtsTokenCount, separately from CandidatesTokenCount
+// (totalTokenCount is "prompt + thoughts + response candidates"), but bills them as output:
+// "response pricing is the sum of output tokens and thinking tokens". They are added to OutputTokens so it
+// reflects billed output, as it already does for OpenAI and Claude, whose output counts include reasoning.
+// See https://ai.google.dev/api/generate-content#UsageMetadata and https://ai.google.dev/gemini-api/docs/thinking#pricing.
+func usageTokens(u *genai.GenerateContentResponseUsageMetadata) (inputTokens, cachedInputTokens, outputTokens int) {
+	return int(u.PromptTokenCount), int(u.CachedContentTokenCount), int(u.CandidatesTokenCount + u.ThoughtsTokenCount)
 }
 
 // convertTools converts Rill tools to Gemini tool format.

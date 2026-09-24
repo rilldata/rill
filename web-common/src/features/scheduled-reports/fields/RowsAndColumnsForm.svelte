@@ -1,5 +1,6 @@
 <script lang="ts">
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
+  import type { EphemeralMeasureDef } from "@rilldata/web-common/features/dashboards/ephemeral-measures/types.ts";
   import FieldList from "@rilldata/web-common/features/scheduled-reports/fields/FieldList.svelte";
   import { getFieldsForExplore } from "@rilldata/web-common/features/scheduled-reports/fields/selectors.ts";
   import type { ReportValues } from "@rilldata/web-common/features/scheduled-reports/utils.ts";
@@ -10,12 +11,17 @@
   export let columns: string[];
   export let columnErrors: ValidationErrors<ReportValues>["columns"];
   export let exploreName: string;
+  export let ephemeralMeasures: EphemeralMeasureDef[] | undefined = undefined;
 
   const runtimeClient = useRuntimeClient();
 
   $: selectedFields = new Set([...rows, ...columns]);
 
-  $: fieldsForExplore = getFieldsForExplore(runtimeClient, exploreName);
+  $: fieldsForExplore = getFieldsForExplore(
+    runtimeClient,
+    exploreName,
+    ephemeralMeasures,
+  );
   $: ({ displayMap, allowedRows, allowedColumns } = $fieldsForExplore ?? {});
 
   $: hasSomeRow = rows.length > 0;
