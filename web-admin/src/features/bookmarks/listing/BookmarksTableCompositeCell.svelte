@@ -3,7 +3,6 @@
   import Button from "@rilldata/web-common/components/button/Button.svelte";
   import BookmarkOutline from "@rilldata/web-common/components/icons/BookmarkOutline.svelte";
   import FilterOutline from "@rilldata/web-common/components/icons/FilterOutline.svelte";
-  import HomeBookmark from "@rilldata/web-common/components/icons/HomeBookmark.svelte";
   import Trash from "@rilldata/web-common/components/icons/Trash.svelte";
   import Tag from "@rilldata/web-common/components/tag/Tag.svelte";
   import * as Tooltip from "@rilldata/web-common/components/tooltip-v2";
@@ -24,13 +23,7 @@
     onDelete: (row: BookmarkListRow) => void;
   } = $props();
 
-  let Icon = $derived(
-    row.category === "home"
-      ? HomeBookmark
-      : row.filtersOnly
-        ? FilterOutline
-        : BookmarkOutline,
-  );
+  let Icon = $derived(row.filtersOnly ? FilterOutline : BookmarkOutline);
   let displayName = $derived(row.bookmark.displayName ?? "");
   let updatedOn = $derived(
     row.bookmark.updatedOn ? new Date(row.bookmark.updatedOn) : null,
@@ -54,9 +47,7 @@
         >
           {displayName}
         </span>
-        {#if row.category === "home"}
-          <Tag color="blue">{m.bookmark_tag_home()}</Tag>
-        {:else if row.category === "managed"}
+        {#if row.category === "managed"}
           <Tag color="gray">{m.bookmark_tag_managed()}</Tag>
         {/if}
       </div>
