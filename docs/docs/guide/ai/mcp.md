@@ -260,7 +260,7 @@ You can look at one of our [example projects](https://github.com/rilldata/rill-e
 - __*Get metrics view spec*__ – Use `get_metrics_view` to fetch a metrics view's specification. This is important to understand all the dimensions and measures in a metrics view.
 - __*Query the time range*__ – Use `query_metrics_view_summary` to obtain the available time range for a metrics view. This is important to understand what time range the data spans.
 - __*Query the metrics*__ – Use `query_metrics_view` to run queries to get aggregated results.
-- __*List skills*__ – Use `list_skills` to discover the [skills](/developers/build/ai-configuration#skills) defined in the project. The skill tools are only exposed when the project defines skills.
+- __*List skills*__ – Use `list_skills` to discover the [skills](/developers/build/ai-configuration#skills) defined in the project. It returns an empty list when the project defines no skills.
 - __*Load a skill*__ – Use `load_skill` to fetch a skill's full instructions before doing work its description covers.
 
 

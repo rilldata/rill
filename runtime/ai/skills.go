@@ -73,17 +73,11 @@ func (s *BaseSession) Skills(ctx context.Context) ([]*Skill, error) {
 }
 
 // checkSkillAccess checks whether the skill tools should be available in the current session.
-// They are only exposed when the project defines skills, so clients of projects without skills never see them.
+// They are served even when the project defines no skills, so that external clients see the same tools for every project:
+// list_skills then returns an empty list and load_skill a not-found error.
+// The in-app agents decide for themselves whether to offer the tools, based on whether the project defines skills.
 func checkSkillAccess(ctx context.Context) (bool, error) {
-	s := GetSession(ctx)
-	if !s.Claims().Can(runtime.UseAI) {
-		return false, nil
-	}
-	skills, err := s.Skills(ctx)
-	if err != nil {
-		return false, err
-	}
-	return len(skills) > 0, nil
+	return GetSession(ctx).Claims().Can(runtime.UseAI), nil
 }
 
 // skillsForAgent returns the skills that apply to the given agent.
