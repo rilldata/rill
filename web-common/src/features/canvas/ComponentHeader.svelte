@@ -21,14 +21,21 @@
   let wide = false;
   let resizeObserver: ResizeObserver;
 
+  $: ({ specStore } = component);
+
+  $: hideLocalFilters = Boolean(
+    ($specStore as ComponentFilterProperties).hide_local_filters,
+  );
+
   $: ({ hasLocalTimeRange, comparison } = resolveTimeFilters(
     filters?.time_filters,
   ));
 
   $: atleastOneFilter =
-    Boolean(filters?.dimension_filters) ||
-    hasLocalTimeRange ||
-    comparison.mode === "local";
+    !hideLocalFilters &&
+    (Boolean(filters?.dimension_filters) ||
+      hasLocalTimeRange ||
+      comparison.mode === "local");
 
   onMount(() => {
     resizeObserver = new ResizeObserver(([entry]) => {

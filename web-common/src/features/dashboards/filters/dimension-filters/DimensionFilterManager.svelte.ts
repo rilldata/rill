@@ -154,6 +154,7 @@ export class DimensionFilterManager {
 
   public toggleValue(dimensionValue: string, isExclusiveFilter: boolean) {
     this.rawExpr = undefined;
+    this.leaveContainsMode();
     const inIdx = this.selectedValues.findIndex((v) => v === dimensionValue);
 
     if (inIdx === -1) {
@@ -170,6 +171,7 @@ export class DimensionFilterManager {
 
   public appendSelectedValues(dimensionValues: string[]) {
     this.rawExpr = undefined;
+    this.leaveContainsMode();
     const newValues = dimensionValues.filter(
       (v) => !this.selectedValues.includes(v),
     );
@@ -184,6 +186,18 @@ export class DimensionFilterManager {
       (v) => !dimensionValues.includes(v),
     );
     this.commit();
+  }
+
+  /**
+   * Click to filter (charts, tables, leaderboards, search) selects concrete values,
+   * which a Contains filter cannot hold. So the filter converts to Select,
+   * and `commit` reports the conversion.
+   * Contains mode keeps no selected values, so the clicked value becomes the whole selection.
+   */
+  private leaveContainsMode() {
+    if (this.mode !== DimensionFilterMode.Contains) return;
+    this.mode = DimensionFilterMode.Select;
+    this.inputText = "";
   }
 
   public setInList(values: string[], exclude: boolean) {

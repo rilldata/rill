@@ -37,6 +37,8 @@ Optionally toggle on the **global filter bar** under Canvas properties to give d
 
 **Local filters** for a single KPI, Chart, or Table can be separated from the global filters via the "Filters" tab in the properties panel, where you can set filters that are local to just that widget.
 
+Local filters are shown as chips in the widget's header. To keep the filter but hide the chips from viewers, turn off **Show filters on component** in the same "Filters" tab (or set `hide_local_filters: true` in YAML).
+
 
 ![Local Filters](/img/build/dashboard/canvas/local-filters.png)
 
