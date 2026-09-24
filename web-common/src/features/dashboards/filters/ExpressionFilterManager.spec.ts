@@ -12,6 +12,7 @@ import {
   createBinaryExpression,
   createInExpression,
   createSubQueryExpression,
+  flattenExpression,
   getAllIdentifiers,
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils.ts";
 import {
@@ -25,6 +26,7 @@ import {
   AD_BIDS_PUBLISHER_DIMENSION,
 } from "@rilldata/web-common/features/dashboards/stores/test-data/data";
 import { compressUrlParams } from "@rilldata/web-common/features/dashboards/url-state/compression.ts";
+import { convertExpressionToFilterParam } from "@rilldata/web-common/features/dashboards/url-state/filters/converters.ts";
 import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus.ts";
 import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 import { ExploreStateURLParams } from "@rilldata/web-common/features/dashboards/url-state/url-params.ts";
@@ -586,6 +588,165 @@ describe("applyFilterToParams", () => {
         [AD_BIDS_MIRROR_METRICS_NAME]: `${AD_BIDS_COUNTRY_DIMENSION} having (${AD_BIDS_PUBLISHER_COUNT_MEASURE} LT 5)`,
       }).toString(),
     );
+  });
+});
+
+describe("dimension params with a binary operator", () => {
+  /** The param the filter is written back as. */
+  function roundTrip(filterManager: ExpressionFilterManager) {
+    const searchParams = new URLSearchParams();
+    filterManager.applyFilterToParams(searchParams);
+    return searchParams.toString();
+  }
+
+  it("reads EQ as a single value selection and writes it back as IN", () => {
+    const filterManager = createFilterManager();
+
+    filterManager.setUrlParams(
+      perMetricsViewParams({
+        [AD_BIDS_METRICS_NAME]: `${AD_BIDS_DOMAIN_DIMENSION} EQ 'google.com'`,
+      }),
+    );
+
+    const [chip] = filterManager.sortedFilterManagers.dimensions;
+    expect(chip.name).toBe(AD_BIDS_DOMAIN_DIMENSION);
+    expect(chip.mode).toBe(DimensionFilterMode.Select);
+    expect(chip.selectedValues).toEqual(["google.com"]);
+    expect(chip.exclude).toBe(false);
+    expect(filterManager.isComplexFilter).toBe(false);
+    expect(exprOf(filterManager, AD_BIDS_METRICS_NAME)).toEqual(
+      createAndExpression([
+        createInExpression(AD_BIDS_DOMAIN_DIMENSION, ["google.com"]),
+      ]),
+    );
+    expect(roundTrip(filterManager)).toEqual(
+      perMetricsViewParams({
+        [AD_BIDS_METRICS_NAME]: `${AD_BIDS_DOMAIN_DIMENSION} IN ('google.com')`,
+      }).toString(),
+    );
+  });
+
+  it("reads NEQ as an excluded single value selection and writes it back as NIN", () => {
+    const filterManager = createFilterManager();
+
+    filterManager.setUrlParams(
+      perMetricsViewParams({
+        [AD_BIDS_METRICS_NAME]: `${AD_BIDS_DOMAIN_DIMENSION} NEQ 'google.com'`,
+      }),
+    );
+
+    const [chip] = filterManager.sortedFilterManagers.dimensions;
+    expect(chip.mode).toBe(DimensionFilterMode.Select);
+    expect(chip.selectedValues).toEqual(["google.com"]);
+    expect(chip.exclude).toBe(true);
+    expect(filterManager.isComplexFilter).toBe(false);
+    expect(exprOf(filterManager, AD_BIDS_METRICS_NAME)).toEqual(
+      createAndExpression([
+        createInExpression(AD_BIDS_DOMAIN_DIMENSION, ["google.com"], true),
+      ]),
+    );
+    expect(roundTrip(filterManager)).toEqual(
+      perMetricsViewParams({
+        [AD_BIDS_METRICS_NAME]: `${AD_BIDS_DOMAIN_DIMENSION} NIN ('google.com')`,
+      }).toString(),
+    );
+  });
+
+  it("applies a canvas default written with an equality", () => {
+    const filterManager = createFilterManager();
+
+    // A canvas `defaults.filters` of `domain = 'google.com' AND publisher IN ('Google')` reaches the
+    // filter bar as the backend expression, flattened and converted to a param.
+    const param = convertExpressionToFilterParam(
+      flattenExpression(
+        createAndExpression([
+          createBinaryExpression(
+            AD_BIDS_DOMAIN_DIMENSION,
+            V1Operation.OPERATION_EQ,
+            "google.com",
+          ),
+          createInExpression(AD_BIDS_PUBLISHER_DIMENSION, ["Google"]),
+        ]),
+      ),
+      [],
+    );
+    expect(param).toEqual(
+      `${AD_BIDS_DOMAIN_DIMENSION} EQ 'google.com' AND ${AD_BIDS_PUBLISHER_DIMENSION} IN ('Google')`,
+    );
+
+    filterManager.setUrlParams(
+      perMetricsViewParams({ [AD_BIDS_METRICS_NAME]: param }),
+    );
+
+    expect(names(filterManager.sortedFilterManagers.dimensions)).toEqual([
+      AD_BIDS_DOMAIN_DIMENSION,
+      AD_BIDS_PUBLISHER_DIMENSION,
+    ]);
+    expect(filterManager.isComplexFilter).toBe(false);
+    expect(exprOf(filterManager, AD_BIDS_METRICS_NAME)).toEqual(
+      createAndExpression([
+        createInExpression(AD_BIDS_DOMAIN_DIMENSION, ["google.com"]),
+        createInExpression(AD_BIDS_PUBLISHER_DIMENSION, ["Google"]),
+      ]),
+    );
+  });
+
+  it("keeps an operator the chips cannot show and flags the filter as complex", () => {
+    const filterManager = createFilterManager();
+
+    filterManager.setUrlParams(
+      perMetricsViewParams({
+        [AD_BIDS_METRICS_NAME]: `${AD_BIDS_DOMAIN_DIMENSION} GT 'g' AND ${AD_BIDS_PUBLISHER_DIMENSION} IN ('Google')`,
+      }),
+    );
+
+    expect(filterManager.isComplexFilter).toBe(true);
+    expect(exprOf(filterManager, AD_BIDS_METRICS_NAME)).toEqual(
+      createAndExpression([
+        createBinaryExpression(
+          AD_BIDS_DOMAIN_DIMENSION,
+          V1Operation.OPERATION_GT,
+          "g",
+        ),
+        createInExpression(AD_BIDS_PUBLISHER_DIMENSION, ["Google"]),
+      ]),
+    );
+    // `publisher` is defined by both metrics views, so the mirror carries it too.
+    expect(roundTrip(filterManager)).toEqual(
+      perMetricsViewParams({
+        [AD_BIDS_METRICS_NAME]: `${AD_BIDS_DOMAIN_DIMENSION} GT 'g' AND ${AD_BIDS_PUBLISHER_DIMENSION} IN ('Google')`,
+        [AD_BIDS_MIRROR_METRICS_NAME]: `${AD_BIDS_PUBLISHER_DIMENSION} IN ('Google')`,
+      }).toString(),
+    );
+  });
+
+  it("keeps the operator through the dropdown clone and drops it once the chip is edited", () => {
+    const filterManager = createFilterManager();
+    filterManager.setUrlParams(
+      perMetricsViewParams({
+        [AD_BIDS_METRICS_NAME]: `${AD_BIDS_DOMAIN_DIMENSION} LTE 'g'`,
+      }),
+    );
+    const [chip] = filterManager.sortedFilterManagers.dimensions;
+
+    // Opening and applying the dropdown without a change is a no-op.
+    chip.apply(chip.clone());
+    expect(roundTrip(filterManager)).toEqual(
+      perMetricsViewParams({
+        [AD_BIDS_METRICS_NAME]: `${AD_BIDS_DOMAIN_DIMENSION} LTE 'g'`,
+      }).toString(),
+    );
+
+    // A selection replaces the condition.
+    chip.toggleValue("google.com", false);
+    expect(exprOf(filterManager, AD_BIDS_METRICS_NAME)).toEqual(
+      createAndExpression([
+        createInExpression(AD_BIDS_DOMAIN_DIMENSION, ["google.com"]),
+      ]),
+    );
+
+    chip.clear();
+    expect(roundTrip(filterManager)).toEqual("");
   });
 });
 

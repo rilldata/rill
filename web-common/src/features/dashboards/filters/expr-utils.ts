@@ -25,8 +25,9 @@ export type MergedFilterParams = {
  *
  * `advanced` reports that the merge cannot be shown as chips because,
  * 1. A condition is a nested AND/OR
- * 2. A dimension or measure ended up with more than one condition.
- * The latter happens when metrics views filter the same identifier differently.
+ * 2. A condition uses an operation the chips have no mode for, `publisher GT 'x'` for example
+ * 3. A dimension or measure ended up with more than one condition.
+ * The last happens when metrics views filter the same identifier differently.
  */
 export function mergeFilterParams(
   urlParams: URLSearchParams,
@@ -42,8 +43,10 @@ export function mergeFilterParams(
     const parsed = parseFilterParam(param);
 
     for (const condition of topLevelConditions(parsed.expr)) {
-      // A nested AND/OR has no chip of its own.
-      if (isAndOrExpression(condition)) advanced = true;
+      // A nested AND/OR has no chip of its own, and neither does an operation outside the chip modes.
+      if (isAndOrExpression(condition) || !hasChipOperation(condition)) {
+        advanced = true;
+      }
 
       const key = canonicalKey(condition);
       if (seenExprs.has(key)) continue;
@@ -82,6 +85,26 @@ function topLevelConditions(expr: V1Expression | undefined): V1Expression[] {
   if (!expr) return [];
   if (expr.cond?.op === V1Operation.OPERATION_AND) return expr.cond.exprs ?? [];
   return [expr];
+}
+
+/**
+ * Whether a chip can show the condition's operation.
+ * A measure filter is `dimension IN <subquery>`, so it passes along with the dimension modes.
+ * `=` and `!=` pass as a single value selection, see `DimensionFilterManager.reconcile`.
+ */
+function hasChipOperation(expr: V1Expression) {
+  switch (expr.cond?.op) {
+    case V1Operation.OPERATION_IN:
+    case V1Operation.OPERATION_NIN:
+    case V1Operation.OPERATION_LIKE:
+    case V1Operation.OPERATION_NLIKE:
+      return true;
+    case V1Operation.OPERATION_EQ:
+    case V1Operation.OPERATION_NEQ:
+      return (expr.cond.exprs ?? []).slice(1).every((e) => "val" in e);
+    default:
+      return false;
+  }
 }
 
 /** The dimension or measure a condition filters, which is what its chip is keyed by. */
