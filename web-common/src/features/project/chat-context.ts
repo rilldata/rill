@@ -4,7 +4,6 @@ import {
 } from "@rilldata/web-common/features/chat/core/types.ts";
 import {
   createProjectPromptsStore,
-  getProjectFallbackPrompts,
   resolveSuggestedPrompts,
 } from "@rilldata/web-common/features/chat/core/suggested-prompts/suggested-prompts.ts";
 import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
@@ -15,7 +14,7 @@ export const projectChat = {
   additionalContextStoreGetter: () => readable({}),
   suggestedPromptsStoreGetter: (client) =>
     derived(createProjectPromptsStore(client), (projectPrompts) =>
-      resolveSuggestedPrompts([projectPrompts, getProjectFallbackPrompts()]),
+      resolveSuggestedPrompts([projectPrompts]),
     ),
   get emptyChatLabel() {
     return m.chat_empty_label();

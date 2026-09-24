@@ -57,7 +57,7 @@ Opening AI Chat from within a dashboard allows for more natural, context-aware q
 
 ### Suggested Prompts
 
-When you open a new chat on a dashboard, the empty chat shows a few suggested prompts tailored to that dashboard, such as a breakdown of a key measure or a comparison with the previous period. Click one to send it with your current filters and time range applied. Project administrators can pin their own prompts per dashboard or project-wide with the `ai_prompts` key; see [AI Configuration](/developers/build/ai-configuration#suggested-prompts).
+If the project administrator has configured starter prompts for a dashboard or for the project, a new chat shows them as clickable suggestions. Click one to send it with your current filters and time range applied. Prompts are configured with the `ai_prompts` key; see [AI Configuration](/developers/build/ai-configuration#suggested-prompts).
 
 ## Understanding Responses
 

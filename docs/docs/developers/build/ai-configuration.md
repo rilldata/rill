@@ -99,13 +99,14 @@ ai_instructions: |
 
 ## Suggested Prompts
 
-When a user opens the AI chat on a dashboard, Rill shows a few clickable starter prompts so they do not have to begin from a blank input. Prompts come from three sources, in order of precedence:
+You can give users a few clickable starter prompts when they open the AI chat, so they do not have to begin from a blank input. Prompts are configured with the `ai_prompts` list and shown verbatim, in the order you write them:
 
-1. **Configured prompts**: the `ai_prompts` list on an explore or canvas dashboard. These are shown verbatim, in the order you write them, and Rill does not generate its own suggestions for that dashboard.
-2. **Generated prompts**: if a dashboard has no `ai_prompts`, Rill asks the project's AI connector for prompts grounded in the dashboard's measures, dimensions, descriptions and `ai_instructions`. They are generated when the dashboard is reconciled and refreshed only when something relevant changes, so they do not add latency when the chat opens.
-3. **Project prompts**: the `ai_prompts` list in `rill.yaml`. These are shown in the project-wide AI chat, and on dashboards for which no prompts could be generated (for example, when no AI connector is configured).
+- On an explore or canvas dashboard, the dashboard's own `ai_prompts` are shown in the dashboard chat. If the dashboard has none, the project-level prompts from `rill.yaml` are shown instead.
+- In `rill.yaml`, `ai_prompts` are shown in the project-wide AI chat.
 
-Each entry is either a prompt string or an object with a `label` (at most 40 characters, shown on the button) and a `prompt` (the full question sent to the AI). When only a string is given, the label is derived from its first words. A list can hold at most 8 prompts; the chat shows the first four.
+If neither is configured, no prompts are shown.
+
+Each entry is either a prompt string or an object with a `label` (at most 40 characters, shown on the button) and a `prompt` (the full question sent to the AI). When only a string is given, the label is derived from its first words. A list can hold at most 8 prompts; the chat shows the first four. When a user picks a prompt on a dashboard, their current filters and time range are sent along with it.
 
 **Example (explore or canvas YAML):**
 
@@ -126,8 +127,6 @@ ai_prompts:
   - label: Key metrics
     prompt: Give me an overview of the key metrics across the project.
 ```
-
-To steer the generated prompts rather than pin them, describe your priorities and vocabulary in `ai_instructions`; the generator reads the project-level and metrics view-level instructions.
 
 ## Skills
 

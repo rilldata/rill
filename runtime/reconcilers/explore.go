@@ -9,10 +9,7 @@ import (
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
-	"github.com/rilldata/rill/runtime/ai"
 	"github.com/rilldata/rill/runtime/pkg/fieldselectorpb"
-	"github.com/rilldata/rill/runtime/pkg/observability"
-	"go.uber.org/zap"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -100,28 +97,6 @@ func (r *ExploreReconciler) Reconcile(ctx context.Context, n *runtimev1.Resource
 	err = r.C.UpdateState(ctx, self.Meta.Name, self)
 	if err != nil {
 		return runtime.ReconcileResult{Err: err}
-	}
-
-	// Generate suggested AI prompts after the valid spec has been written.
-	// This is best effort: it may call an LLM, but it never affects the reconcile result.
-	var promptsInput *ai.SuggestedPromptsInput
-	var configuredPrompts []*runtimev1.AIPrompt
-	if validSpec != nil {
-		configuredPrompts = validSpec.AiPrompts
-		promptsInput, err = suggestedPromptsInputForExplore(ctx, r.C, self.Meta.Name.Name, validSpec)
-		if err != nil {
-			r.C.Logger.Warn("Failed to prepare suggested AI prompts", zap.String("name", self.Meta.Name.Name), zap.Error(err), observability.ZapCtx(ctx))
-			promptsInput = nil
-		}
-	}
-	prompts, hash, changed := reconcileSuggestedPrompts(ctx, r.C, self.Meta.Name, configuredPrompts, e.State.AiSuggestedPrompts, e.State.AiSuggestedPromptsHash, promptsInput)
-	if changed {
-		e.State.AiSuggestedPrompts = prompts
-		e.State.AiSuggestedPromptsHash = hash
-		err = r.C.UpdateState(ctx, self.Meta.Name, self)
-		if err != nil {
-			return runtime.ReconcileResult{Err: err}
-		}
 	}
 
 	return runtime.ReconcileResult{Err: validateErr}

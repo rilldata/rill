@@ -34,7 +34,7 @@ _[string]_ - Extra instructions for LLM/AI features. Used to guide natural langu
 
 ### `ai_prompts`
 
-_[array of oneOf]_ - Suggested prompts shown as starters in the project-wide AI chat, and on dashboards that have no prompts of their own. Each entry is either a prompt string or an object with `label` and `prompt`. At most 8 entries.
+_[array of oneOf]_ - Suggested prompts shown as starters in the project-wide AI chat, and on dashboards that have no `ai_prompts` of their own. Each entry is either a prompt string or an object with `label` and `prompt`. At most 8 entries.
 
   - **option 1** - _[string]_ - The prompt. A short label is derived from its first words.
 

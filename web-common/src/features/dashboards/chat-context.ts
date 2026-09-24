@@ -8,7 +8,6 @@ import { isExpressionEmpty } from "@rilldata/web-common/features/dashboards/stor
 import { createStableTimeControlStoreFromName } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store.ts";
 import {
   createProjectPromptsStore,
-  getDashboardFallbackPrompts,
   resolveSuggestedPrompts,
 } from "@rilldata/web-common/features/chat/core/suggested-prompts/suggested-prompts.ts";
 import {
@@ -38,7 +37,7 @@ export function createDashboardChatConfig(client: RuntimeClient): ChatConfig {
 
 /**
  * Creates a store with the starter prompts for the active explore:
- * its configured `ai_prompts`, else the prompts generated during reconciliation, else the project's `ai_prompts`, else a generic fallback.
+ * its configured `ai_prompts`, else the project's `ai_prompts` from rill.yaml. Empty when neither is configured.
  */
 function getExploreSuggestedPrompts(
   client: RuntimeClient,
@@ -59,9 +58,7 @@ function getExploreSuggestedPrompts(
         set(
           resolveSuggestedPrompts([
             explore?.state?.validSpec?.aiPrompts ?? explore?.spec?.aiPrompts,
-            explore?.state?.aiSuggestedPrompts,
             projectPrompts,
-            getDashboardFallbackPrompts(),
           ]),
         );
       });

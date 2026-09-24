@@ -14,7 +14,6 @@ import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 import {
   createProjectPromptsStore,
-  getDashboardFallbackPrompts,
   resolveSuggestedPrompts,
 } from "@rilldata/web-common/features/chat/core/suggested-prompts/suggested-prompts.ts";
 import {
@@ -35,7 +34,7 @@ export function createCanvasChatConfig(client: RuntimeClient): ChatConfig {
 
 /**
  * Creates a store with the starter prompts for the active canvas:
- * its configured `ai_prompts`, else the prompts generated during reconciliation, else the project's `ai_prompts`, else a generic fallback.
+ * its configured `ai_prompts`, else the project's `ai_prompts` from rill.yaml. Empty when neither is configured.
  */
 function getCanvasSuggestedPrompts(
   client: RuntimeClient,
@@ -52,9 +51,7 @@ function getCanvasSuggestedPrompts(
         set(
           resolveSuggestedPrompts([
             canvas?.state?.validSpec?.aiPrompts ?? canvas?.spec?.aiPrompts,
-            canvas?.state?.aiSuggestedPrompts,
             projectPrompts,
-            getDashboardFallbackPrompts(),
           ]),
         );
       });

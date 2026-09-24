@@ -105,11 +105,9 @@ type InstanceOptions struct {
 	WatchRepo         bool
 	StageChanges      bool
 	DisableHostAccess bool
-	AIConnector       string // Options: "" (none), "openai", "claude", "mock_ai"
-	// MockAIResponse is the text the "mock_ai" connector returns for every completion. Ignored for other AI connectors.
-	MockAIResponse string
-	TestConnectors []string
-	FrontendURL    string
+	AIConnector       string // Options: "" (none), "openai", "claude"
+	TestConnectors    []string
+	FrontendURL       string
 }
 
 // NewInstanceWithOptions creates a runtime and an instance for use in tests.
@@ -140,10 +138,8 @@ func NewInstanceWithOptions(t TestingT, opts InstanceOptions) (*runtime.Runtime,
 	// If enabled, we skip the test in CI (short mode) to prevent running up costs.
 	var aiConnector string
 	if opts.AIConnector != "" {
-		// Mark AI tests that use a real LLM as expensive
-		if opts.AIConnector != "mock_ai" {
-			testmode.Expensive(t)
-		}
+		// Mark AI tests as expensive
+		testmode.Expensive(t)
 
 		// Add it to the test connectors if not already present.
 		if !slices.Contains(opts.TestConnectors, opts.AIConnector) {
@@ -163,9 +159,6 @@ func NewInstanceWithOptions(t TestingT, opts InstanceOptions) (*runtime.Runtime,
 			k = fmt.Sprintf("connector.%s.%s", conn, k)
 			vars[k] = v
 		}
-	}
-	if opts.AIConnector == "mock_ai" && opts.MockAIResponse != "" {
-		vars["connector.mock_ai.canned_response"] = opts.MockAIResponse
 	}
 
 	tmpDir := t.TempDir()

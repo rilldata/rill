@@ -326,9 +326,6 @@ var Connectors = map[string]ConnectorAcquireFunc{
 			"endpoint": server.URL + pagePath,
 		}
 	},
-	"mock_ai": func(t TestingT) map[string]string {
-		return map[string]string{}
-	},
 	"openai": func(t TestingT) map[string]string {
 		loadDotEnv(t)
 		apiKey := os.Getenv("RILL_RUNTIME_OPENAI_TEST_API_KEY")
