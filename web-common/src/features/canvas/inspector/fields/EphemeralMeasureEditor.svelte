@@ -165,7 +165,7 @@
     if (!open) onClose();
   }}
 >
-  <Dialog.Content class="w-[480px]">
+  <Dialog.Content class="w-[480px] max-h-[90vh] flex flex-col">
     <Dialog.Header>
       <Dialog.Title>
         {editingDef
@@ -174,7 +174,9 @@
       </Dialog.Title>
     </Dialog.Header>
 
-    <div class="flex flex-col gap-y-4">
+    <!-- Body scrolls if the dialog still exceeds the viewport; the small gutter
+         keeps the inputs' focus ring from being clipped by the overflow. -->
+    <div class="flex flex-col gap-y-4 min-h-0 overflow-y-auto -mx-1 px-1">
       <Input
         bind:value={displayName}
         id="canvas-ephemeral-measure-name"
@@ -198,7 +200,9 @@
           <span class="text-xs text-fg-secondary">
             {m.dashboard_pivot_ephemeral_insert_measure()}
           </span>
-          <div class="flex flex-wrap gap-1">
+          <!-- Cap the chip list so dashboards with hundreds of measures scroll
+               inside the dialog instead of pushing the footer off-screen. -->
+          <div class="flex flex-wrap gap-1 max-h-40 overflow-y-auto">
             {#each referenceableMeasures as mes (mes.name)}
               <button
                 type="button"
