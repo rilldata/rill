@@ -9,6 +9,7 @@
   } from "@rilldata/web-common/features/dashboards/pivot/pivot-column-definition";
   import {
     getNextRowLimit,
+    PIVOT_TOTALS_ROW_ID,
     SHOW_MORE_BUTTON,
   } from "@rilldata/web-common/features/dashboards/pivot/pivot-constants";
   import { NUM_ROWS_PER_PAGE } from "@rilldata/web-common/features/dashboards/pivot/pivot-infinite-scroll";
@@ -19,10 +20,7 @@
     splitPivotChips,
   } from "@rilldata/web-common/features/dashboards/pivot/pivot-utils";
   import { copyToClipboard } from "@rilldata/web-common/lib/actions/copy-to-clipboard";
-  import {
-    createVirtualizer,
-    defaultRangeExtractor,
-  } from "@tanstack/svelte-virtual";
+  import { createVirtualizer } from "@tanstack/svelte-virtual";
   import { onMount } from "svelte";
   import type { Readable } from "svelte/store";
   import { derived } from "svelte/store";
@@ -31,6 +29,7 @@
     type Row,
     type SortingState,
     type TableOptions,
+    createRow,
     createSvelteTable,
     getCoreRowModel,
     getExpandedRowModel,
@@ -91,12 +90,11 @@
   const options: Readable<TableOptions<PivotDataRow>> = derived(
     [pivotDataStore, pivotState],
     ([pivotData, state]) => {
-      let tableData = [...pivotData.data];
-      if (pivotData.totalsRowData) {
-        tableData = [pivotData.totalsRowData, ...pivotData.data];
-      }
       return {
-        data: tableData,
+        // Copy the array: expanded sub-rows are merged into the existing rows
+        // in place, and tanstack only rebuilds its row model when the data
+        // array identity changes.
+        data: [...pivotData.data],
         columns: pivotData.columnDef,
         state: {
           expanded: state.expanded,
@@ -125,7 +123,6 @@
 
   let containerRefElement: HTMLDivElement;
   let containerWidth = 0;
-  let stickyRows: number[] = [];
   let rowScrollOffset = 0;
   let scrollLeft = 0;
   let timeout: ReturnType<typeof setTimeout>;
@@ -138,9 +135,7 @@
   $: reachedEndForRows = !!$pivotDataStore?.reachedEndForRowData;
   $: assembled = $pivotDataStore.assembled;
   $: dataRows = $pivotDataStore.data;
-  $: totalsRow = $pivotDataStore.totalsRowData;
   $: totalsRowPosition = $pivotState.totalsRowPosition ?? "top";
-  $: stickyRows = totalsRow ? [0] : [];
   $: isFlat = $config.isFlat;
   $: hasMeasureContextColumns = $config.enableComparison;
 
@@ -153,12 +148,12 @@
   // Per-measure conditional formatting. Domains prefer leaf data cells so
   // aggregate magnitudes don't dominate the gradient, falling back to nested
   // parent rows when no leaves are present (e.g. collapsed nested rows). The
-  // grand-totals row and the row-totals column are always excluded. Recomputes
-  // when the row model or the formatting config changes.
+  // row-totals column is always excluded, and the grand-totals row is not part
+  // of the row model. Recomputes when the row model or the formatting config
+  // changes.
   $: cellFormatters = buildCellFormatters(
     $table.getRowModel().flatRows,
     $config.pivot.measureFormatting,
-    !!totalsRow,
     $config.allMeasures,
   );
 
@@ -166,17 +161,27 @@
   $: totalHeaderHeight = headerGroups.length * HEADER_HEIGHT;
 
   $: rows = $table.getRowModel().rows;
+
+  // The grand-totals row is kept out of the row model so data row ids match
+  // their index in the pivot data. It is a standalone tanstack row (built
+  // against the same table so the column cell renderers work unchanged) that
+  // the table components pin to the top or the bottom of the body.
+  $: totalsRow = $pivotDataStore.totalsRowData
+    ? createRow(
+        $table,
+        PIVOT_TOTALS_ROW_ID,
+        $pivotDataStore.totalsRowData,
+        0,
+        0,
+      )
+    : undefined;
+
   $: virtualizer = createVirtualizer<HTMLDivElement, HTMLTableRowElement>({
     count: rows.length,
     getScrollElement: () => containerRefElement,
     estimateSize: () => ROW_HEIGHT,
     overscan,
     initialOffset: rowScrollOffset,
-    rangeExtractor: (range) => {
-      const next = new Set([...stickyRows, ...defaultRangeExtractor(range)]);
-
-      return [...next].sort((a, b) => a - b);
-    },
   });
 
   $: virtualRows = $virtualizer.getVirtualItems();
@@ -188,7 +193,7 @@
   // This maintains the "correct" scroll position when the user scrolls
   $: [before, after] = virtualRows.length
     ? [
-        (virtualRows[1]?.start ?? virtualRows[0].start) - ROW_HEIGHT,
+        virtualRows[0].start,
         totalRowSize - virtualRows[virtualRows.length - 1].end,
       ]
     : [0, 0];
@@ -214,7 +219,6 @@
   function buildCellFormatters(
     flatRows: Row<PivotDataRow>[],
     measureFormatting: PivotState["measureFormatting"],
-    hasTotalsRow: boolean,
     allMeasures: PivotDataStoreConfig["allMeasures"],
   ): Map<string, CellFormatter> {
     const formatters = new Map<string, CellFormatter>();
@@ -237,8 +241,6 @@
     const parentValues: { measureName: string; value: number }[] = [];
     if (needsDomains) {
       for (const row of flatRows) {
-        // Always skip the prepended grand-totals row.
-        if (hasTotalsRow && row.id === "0") continue;
         const target = row.subRows.length > 0 ? parentValues : leafValues;
         for (const cell of row.getAllCells()) {
           const meta = cell.column.columnDef.meta;
@@ -327,6 +329,20 @@
 
     if (rowId === undefined || columnId === undefined) return;
 
+    if (rowId === PIVOT_TOTALS_ROW_ID) {
+      // The totals row is not in the row model. It never filters, but the
+      // Explore data viewer can still show the rows behind a totals cell.
+      if (
+        !rowHeader &&
+        !onCellClickToFilter &&
+        setPivotActiveCell &&
+        canShowDataViewer
+      ) {
+        setPivotActiveCell(rowId, columnId);
+      }
+      return;
+    }
+
     const row = $table.getRow(rowId);
     if (!row) return;
 
@@ -367,12 +383,6 @@
       // in PivotExpandableCell (stopPropagation), so row header clicks filter instead.
       if (row.getCanExpand()) row.getToggleExpandedHandler()();
     } else {
-      // Skip totals row for filtering
-      const isTotalsRow = totalsRow && rowId === "0";
-      if (isTotalsRow && onCellClickToFilter) {
-        return;
-      }
-
       // Set active cell for Explore data viewer (if enabled)
       if (setPivotActiveCell && canShowDataViewer) {
         setPivotActiveCell(rowId, columnId);

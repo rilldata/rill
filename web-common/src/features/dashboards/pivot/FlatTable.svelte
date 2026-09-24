@@ -55,7 +55,9 @@
   export let headerGroups: HeaderGroup<PivotDataRow>[];
   export let rows: Row<PivotDataRow>[];
   export let virtualRows: { index: number }[];
-  export let totalsRow: PivotDataRow | undefined;
+  // The grand-totals row is not part of `rows`; it is a standalone tanstack row
+  // pinned to the top of the body or rendered in a sticky <tfoot>.
+  export let totalsRow: Row<PivotDataRow> | undefined;
   export let totalsRowPosition: PivotTotalsRowPosition = "top";
   export let before: number;
   export let after: number;
@@ -75,10 +77,7 @@
 
   $: headers = headerGroups[0].headers;
 
-  // The totals row is always tanstack row "0" (see PivotTable.svelte). When
-  // pinned to the bottom it is skipped in the virtualized body and rendered
-  // once more in a sticky <tfoot>, so no row ids or index math change.
-  $: totalsRowAtBottom = !!totalsRow && totalsRowPosition === "bottom";
+  $: totalsRowAtBottom = totalsRowPosition === "bottom";
 
   // Initialize column lengths if not already set
   $: headers.forEach((header) => {
@@ -91,7 +90,7 @@
             measure.name,
             measure.label,
             measure.formatter,
-            totalsRow,
+            totalsRow?.original,
             dataRows,
           )
         : calculateColumnWidth(
@@ -192,7 +191,6 @@
 <table
   role="presentation"
   style:width="{totalLength}px"
-  class:with-totals-row={!!totalsRow && measures.length > 0}
   onclick={modified({ shift: onCellCopy, click: onCellClick })}
   onmousemove={onMouseMove}
   onmouseleave={onTableLeave}
@@ -247,26 +245,25 @@
   </thead>
   <tbody>
     <tr style:height="{before}px"></tr>
-    {#each virtualRows as row (row.index)}
-      {#if !(totalsRowAtBottom && row.index === 0)}
-        {@render pivotRow(row.index)}
-      {/if}
+    {#if totalsRow && !totalsRowAtBottom}
+      {@render pivotRow(totalsRow, true)}
+    {/if}
+    {#each virtualRows as virtualRow (virtualRow.index)}
+      {@render pivotRow(rows[virtualRow.index], false)}
     {/each}
     <tr style:height="{after}px"></tr>
   </tbody>
-  {#if totalsRowAtBottom && rows[0]}
+  {#if totalsRow && totalsRowAtBottom}
     <tfoot>
-      {@render pivotRow(0)}
+      {@render pivotRow(totalsRow, true)}
     </tfoot>
   {/if}
 </table>
 
-{#snippet pivotRow(rowIndex: number)}
-  {@const cells = rows[rowIndex].getVisibleCells()}
-  {@const rowId = rows[rowIndex].id}
-  {@const rowData = rows[rowIndex].original}
+{#snippet pivotRow(row: Row<PivotDataRow>, isTotalsRow: boolean)}
+  {@const cells = row.getVisibleCells()}
+  {@const rowData = row.original}
   {@const dk = dimKeyFromRow(rowData, config?.rowDimensionNames ?? [])}
-  {@const isTotalsRow = !!totalsRow && rowId === "0"}
   {@const isSelected = rowSelectionState?.isRowSelected(rowData) ?? false}
   {@const hasClickedCell = clickSelection?.hasSelectedCellInRow(dk) ?? false}
   {@const effectiveDimIdx = computeEffectiveDimIdx(
