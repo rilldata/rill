@@ -86,11 +86,13 @@ const config = {
         "connect-src": [
           "self",
           rillWildcard,
-          "https://apichatwidget.usepylon.com",
+          // Pylon chat widget calls several subdomains (API, events, etc.),
+          // so use the wildcard recommended by Pylon's CSP docs.
+          "https://*.usepylon.com",
           "https://docs.google.com",
           "https://storage.googleapis.com",
           "https://cdn.prod.website-files.com",
-          "wss://ws-us3.pusher.com",
+          "wss://*.pusher.com",
           // Mapbox GL JS (canvas map component) fetches styles, sprites,
           // glyphs and tiles from api.mapbox.com and reports telemetry to
           // events.mapbox.com. See https://docs.mapbox.com/mapbox-gl-js/guides/browsers-and-testing/
