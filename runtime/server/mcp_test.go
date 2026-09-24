@@ -89,6 +89,8 @@ explore:
 		ai.ReadFileName,
 		ai.SearchFilesName,
 		ai.WriteFileName,
+		ai.ListSkillsName,
+		ai.LoadSkillName,
 	}
 	require.Len(t, tools.Tools, len(expectedTools))
 	for _, tool := range tools.Tools {
@@ -165,8 +167,8 @@ explore:
 	require.ErrorContains(t, err, `want "object"`)
 }
 
-// TestMCPSkillTools asserts that the skill tools are only advertised when the project defines skills
-// (TestMCP covers a project without skills) and the caller can use AI.
+// TestMCPSkillTools asserts that the skill tools are advertised to callers that can use AI, and only to them.
+// TestMCP covers that they are advertised even when the project defines no skills.
 func TestMCPSkillTools(t *testing.T) {
 	rt, instanceID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
 		Files: map[string]string{
