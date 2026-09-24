@@ -866,6 +866,8 @@
   "dashboard_pivot_ephemeral_create": "Crear medida ad hoc",
   "dashboard_pivot_ephemeral_display_name_label": "Nombre",
   "dashboard_pivot_ephemeral_display_name_placeholder": "Beneficio",
+  "dashboard_pivot_ephemeral_description_label": "Descripción",
+  "dashboard_pivot_ephemeral_description_placeholder": "Se muestra en la descripción emergente de la medida",
   "dashboard_pivot_ephemeral_edit": "Editar",
   "dashboard_pivot_ephemeral_edit_title": "Editar medida ad hoc",
   "dashboard_pivot_ephemeral_expression_hint": "Combina medidas existentes con + - * / % y funciones como round() o coalesce(). Escribe @ para elegir una medida por su nombre.",

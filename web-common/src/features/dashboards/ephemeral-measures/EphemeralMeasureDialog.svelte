@@ -21,6 +21,7 @@
     slugifyEphemeralMeasureName,
     validateEphemeralMeasureCount,
     validateEphemeralMeasureDef,
+    validateEphemeralMeasureDisplayName,
   } from "./validation";
 
   // Mounted only while the dialog is open (see PivotDisplay), so the form
@@ -33,6 +34,7 @@
 
   let displayName = editingDef?.displayName ?? "";
   let expression = editingDef?.expression ?? "";
+  let description = editingDef?.description ?? "";
   let formatPreset: string = editingDef?.formatPreset ?? FormatPreset.HUMANIZE;
   let saveError: string | undefined = undefined;
 
@@ -61,6 +63,22 @@
       .map((d) => d.name)
       .filter((n) => n !== editingDef?.name),
   ]);
+  // Labels of every other measure, so two measures never look the same.
+  $: otherEphemeralMeasures = ($dashboardStore?.ephemeralMeasures ?? []).filter(
+    (d) => d.name !== editingDef?.name,
+  );
+  $: reservedDisplayNames = new Set(
+    [
+      ...(metricsView?.measures ?? []).map(
+        (mes) => mes.displayName || mes.name,
+      ),
+      ...otherEphemeralMeasures.map((d) => d.displayName),
+    ].map((label) => (label ?? "").toLowerCase()),
+  );
+  $: displayNameError =
+    displayName.trim() === ""
+      ? undefined
+      : validateEphemeralMeasureDisplayName(displayName, reservedDisplayNames);
 
   // Live expression feedback (only once the user typed something).
   $: parsed = parseMeasureExpression(expression);
@@ -90,9 +108,15 @@
       displayName: displayName.trim(),
       expression: expression.trim(),
       ...(formatPreset !== FormatPreset.HUMANIZE ? { formatPreset } : {}),
+      ...(description.trim() ? { description: description.trim() } : {}),
     };
     saveError =
-      validateEphemeralMeasureDef(def, knownMeasureNames, reservedNames) ??
+      validateEphemeralMeasureDef(
+        def,
+        knownMeasureNames,
+        reservedNames,
+        reservedDisplayNames,
+      ) ??
       (editingDef
         ? undefined
         : validateEphemeralMeasureCount(
@@ -142,6 +166,8 @@
         id="ephemeral-measure-name"
         label={m.dashboard_pivot_ephemeral_display_name_label()}
         placeholder={m.dashboard_pivot_ephemeral_display_name_placeholder()}
+        errors={displayNameError}
+        alwaysShowError
         claimFocusOnMount
       />
 
@@ -150,6 +176,14 @@
         id="ephemeral-measure-expression"
         measures={referenceableMeasures}
         errors={expressionError}
+      />
+
+      <Input
+        bind:value={description}
+        id="ephemeral-measure-description"
+        label={m.dashboard_pivot_ephemeral_description_label()}
+        placeholder={m.dashboard_pivot_ephemeral_description_placeholder()}
+        optional
       />
 
       {#if referenceableMeasures.length}
@@ -209,6 +243,7 @@
       <Button
         type="primary"
         disabled={!displayName.trim() ||
+          !!displayNameError ||
           !expression.trim() ||
           !!expressionError}
         onClick={save}

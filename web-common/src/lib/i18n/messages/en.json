@@ -866,6 +866,8 @@
   "dashboard_pivot_ephemeral_create": "Create adhoc measure",
   "dashboard_pivot_ephemeral_display_name_label": "Name",
   "dashboard_pivot_ephemeral_display_name_placeholder": "Profit",
+  "dashboard_pivot_ephemeral_description_label": "Description",
+  "dashboard_pivot_ephemeral_description_placeholder": "Shown in the measure's tooltip",
   "dashboard_pivot_ephemeral_edit": "Edit",
   "dashboard_pivot_ephemeral_edit_title": "Edit adhoc measure",
   "dashboard_pivot_ephemeral_expression_hint": "Combine existing measures with + - * / % and functions like round() or coalesce(). Type @ to pick a measure by name.",

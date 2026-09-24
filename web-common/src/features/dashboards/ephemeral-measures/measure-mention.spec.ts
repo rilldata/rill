@@ -1,49 +1,19 @@
 import { describe, expect, it } from "vitest";
 import {
-  applyMeasureMention,
   filterMeasureMentions,
-  findMeasureMention,
+  serializeExpressionTokens,
+  tokenizeMeasureExpression,
 } from "./measure-mention";
 
-describe("findMeasureMention", () => {
-  it("finds the mention the cursor is in", () => {
-    expect(findMeasureMention("@tot", 4)).toEqual({ start: 0, query: "tot" });
-    expect(findMeasureMention("cost - @net rev", 15)).toEqual({
-      start: 7,
-      query: "net rev",
-    });
-    expect(findMeasureMention("(@", 2)).toEqual({ start: 1, query: "" });
-  });
-
-  it("uses the closest @ before the cursor", () => {
-    expect(findMeasureMention("@a + @b", 7)).toEqual({ start: 5, query: "b" });
-    // The cursor is before the second "@", so it is still in the first mention.
-    expect(findMeasureMention("@a + @b", 4)).toEqual({
-      start: 0,
-      query: "a +",
-    });
-  });
-
-  it("returns null without an @ before the cursor", () => {
-    expect(findMeasureMention("total - cost", 5)).toBeNull();
-    expect(findMeasureMention("", 0)).toBeNull();
-    expect(findMeasureMention("total @x", 3)).toBeNull();
-  });
-
-  it("ignores an @ that directly follows an identifier or quoted name", () => {
-    expect(findMeasureMention("total@x", 7)).toBeNull();
-    expect(findMeasureMention('"a b"@x', 7)).toBeNull();
-  });
-});
+const measures = [
+  { name: "total_revenue", displayName: "Total Revenue" },
+  { name: "total_cost", displayName: "Total Cost" },
+  { name: "net_rev", displayName: "Net Revenue" },
+  { name: "margin" },
+  { name: "select", displayName: "Select" },
+];
 
 describe("filterMeasureMentions", () => {
-  const measures = [
-    { name: "total_revenue", displayName: "Total Revenue" },
-    { name: "total_cost", displayName: "Total Cost" },
-    { name: "net_rev", displayName: "Net Revenue" },
-    { name: "margin" },
-  ];
-
   it("returns everything for an empty query", () => {
     expect(filterMeasureMentions(measures, "")).toEqual(measures);
     expect(filterMeasureMentions(measures, "  ")).toEqual(measures);
@@ -63,29 +33,74 @@ describe("filterMeasureMentions", () => {
   });
 });
 
-describe("applyMeasureMention", () => {
-  it("replaces the mention with the measure reference and a space", () => {
+describe("tokenizeMeasureExpression", () => {
+  it("turns known measures into chips and keeps the rest as text", () => {
     expect(
-      applyMeasureMention("@tot", { start: 0, query: "tot" }, "total_cost"),
-    ).toEqual({ value: "total_cost ", cursor: 11 });
+      tokenizeMeasureExpression("total_revenue - total_cost * 2", measures),
+    ).toEqual([
+      { type: "measure", name: "total_revenue", displayName: "Total Revenue" },
+      { type: "text", text: " - " },
+      { type: "measure", name: "total_cost", displayName: "Total Cost" },
+      { type: "text", text: " * 2" },
+    ]);
+  });
+
+  it("keeps functions, literals and unknown names as text", () => {
     expect(
-      applyMeasureMention(
-        "cost - @net rev",
-        { start: 7, query: "net rev" },
-        "net_rev",
+      tokenizeMeasureExpression(
+        "round(margin / unknown, 2) + null + abs(-1e3)",
+        measures,
       ),
-    ).toEqual({ value: "cost - net_rev ", cursor: 15 });
+    ).toEqual([
+      { type: "text", text: "round(" },
+      { type: "measure", name: "margin", displayName: "margin" },
+      { type: "text", text: " / unknown, 2) + null + abs(-1e3)" },
+    ]);
+    // A function named like a measure is still a function call, and a
+    // measure named like a function prefix is not matched inside it.
+    expect(
+      tokenizeMeasureExpression("select(1) + margin_2", [
+        ...measures,
+        { name: "selec" },
+        { name: "margin_2" },
+      ]),
+    ).toEqual([
+      { type: "text", text: "select(1) + " },
+      { type: "measure", name: "margin_2", displayName: "margin_2" },
+    ]);
   });
 
-  it("does not add a space when one already follows", () => {
-    expect(
-      applyMeasureMention("@t * 2", { start: 0, query: "t" }, "total"),
-    ).toEqual({ value: "total * 2", cursor: 5 });
+  it("recognizes quoted references", () => {
+    expect(tokenizeMeasureExpression('"select" + "net_rev"', measures)).toEqual(
+      [
+        { type: "measure", name: "select", displayName: "Select" },
+        { type: "text", text: " + " },
+        { type: "measure", name: "net_rev", displayName: "Net Revenue" },
+      ],
+    );
   });
 
-  it("quotes names that need it", () => {
+  it("returns a single text token when nothing matches", () => {
+    expect(tokenizeMeasureExpression("a + b", measures)).toEqual([
+      { type: "text", text: "a + b" },
+    ]);
+    expect(tokenizeMeasureExpression("", measures)).toEqual([]);
+  });
+});
+
+describe("serializeExpressionTokens", () => {
+  it("round trips an expression, quoting names that need it", () => {
+    const expression = 'total_revenue - "select" * 2';
     expect(
-      applyMeasureMention("@sel", { start: 0, query: "sel" }, "select"),
-    ).toEqual({ value: '"select" ', cursor: 9 });
+      serializeExpressionTokens(
+        tokenizeMeasureExpression(expression, measures),
+      ),
+    ).toBe(expression);
+    expect(
+      serializeExpressionTokens([
+        { type: "measure", name: "select", displayName: "Select" },
+        { type: "text", text: " " },
+      ]),
+    ).toBe('"select" ');
   });
 });
