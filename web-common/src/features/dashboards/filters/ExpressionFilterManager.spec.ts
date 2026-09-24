@@ -23,6 +23,8 @@ import {
   AD_BIDS_PUBLISHER_DIMENSION,
 } from "@rilldata/web-common/features/dashboards/stores/test-data/data";
 import { compressUrlParams } from "@rilldata/web-common/features/dashboards/url-state/compression.ts";
+import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus.ts";
+import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 import { ExploreStateURLParams } from "@rilldata/web-common/features/dashboards/url-state/url-params.ts";
 import { MetricsViewsProvider } from "@rilldata/web-common/features/metrics-views/providers/MetricsViewsProvider.svelte.ts";
 import {
@@ -869,6 +871,104 @@ describe("dimensionFilterAction", () => {
     expect(
       filterManager.sortedFilterManagers.dimensions[0].selectedValues,
     ).toEqual(["Google"]);
+  });
+
+  // Click to filter from a chart, table, leaderboard or search while the dimension has a
+  // Contains filter. The click selects a concrete value, so the filter converts to Select
+  // the way it did before the filter managers existed, and the user is told about it.
+  describe("with a Contains filter applied", () => {
+    function createWithContainsFilter() {
+      const filterManager = createFilterManager();
+      filterManager.setUrlParams(
+        perMetricsViewParams({
+          [AD_BIDS_METRICS_NAME]: `${AD_BIDS_PUBLISHER_DIMENSION} LIKE '%oo%'`,
+        }),
+      );
+      const manager = filterManager.sortedFilterManagers.dimensions[0];
+      expect(manager.mode).toBe(DimensionFilterMode.Contains);
+      expect(manager.inputText).toBe("oo");
+
+      const emit = vi.spyOn(eventBus, "emit");
+      cleanups.push(() => emit.mockRestore());
+      return { filterManager, manager, emit };
+    }
+
+    it("toggleValue converts the filter to Select with the clicked value", () => {
+      const { filterManager, manager, emit } = createWithContainsFilter();
+
+      filterManager.dimensionFilterAction(
+        AD_BIDS_PUBLISHER_DIMENSION,
+        (manager) => manager.toggleValue("Google", false),
+      );
+
+      expect(manager.mode).toBe(DimensionFilterMode.Select);
+      expect(manager.inputText).toBe("");
+      expect(manager.selectedValues).toEqual(["Google"]);
+      expect(manager.expr).toEqual(
+        createInExpression(AD_BIDS_PUBLISHER_DIMENSION, ["Google"]),
+      );
+      expect(filterManager.topLevelJoiner.param[AD_BIDS_METRICS_NAME]).toBe(
+        `${AD_BIDS_PUBLISHER_DIMENSION} IN ('Google')`,
+      );
+      expect(emit).toHaveBeenCalledWith(
+        "notification",
+        expect.objectContaining({ message: m.filter_converted_to_select() }),
+      );
+    });
+
+    it("toggleValue keeps exclude when converting", () => {
+      const filterManager = createFilterManager();
+      filterManager.setUrlParams(
+        perMetricsViewParams({
+          [AD_BIDS_METRICS_NAME]: `${AD_BIDS_PUBLISHER_DIMENSION} NLIKE '%oo%'`,
+        }),
+      );
+
+      filterManager.dimensionFilterAction(
+        AD_BIDS_PUBLISHER_DIMENSION,
+        (manager) => manager.toggleValue("Google", false),
+      );
+
+      expect(filterManager.topLevelJoiner.param[AD_BIDS_METRICS_NAME]).toBe(
+        `${AD_BIDS_PUBLISHER_DIMENSION} NIN ('Google')`,
+      );
+    });
+
+    it("appendSelectedValues converts the filter to Select with the added values", () => {
+      const { filterManager, manager, emit } = createWithContainsFilter();
+
+      // The callback return type is `any`, hence the cast.
+      const added = filterManager.dimensionFilterAction(
+        AD_BIDS_PUBLISHER_DIMENSION,
+        (manager) => manager.appendSelectedValues(["Google", "Facebook"]),
+      ) as string[];
+
+      expect(added).toEqual(["Google", "Facebook"]);
+      expect(manager.mode).toBe(DimensionFilterMode.Select);
+      expect(manager.selectedValues).toEqual(["Google", "Facebook"]);
+      expect(filterManager.topLevelJoiner.param[AD_BIDS_METRICS_NAME]).toBe(
+        `${AD_BIDS_PUBLISHER_DIMENSION} IN ('Google','Facebook')`,
+      );
+      expect(emit).toHaveBeenCalledWith(
+        "notification",
+        expect.objectContaining({ message: m.filter_converted_to_select() }),
+      );
+    });
+
+    it("removeSelectedValues leaves the Contains filter alone", () => {
+      const { filterManager, manager, emit } = createWithContainsFilter();
+
+      filterManager.dimensionFilterAction(
+        AD_BIDS_PUBLISHER_DIMENSION,
+        (manager) => manager.removeSelectedValues(["Google"]),
+      );
+
+      expect(manager.mode).toBe(DimensionFilterMode.Contains);
+      expect(filterManager.topLevelJoiner.param[AD_BIDS_METRICS_NAME]).toBe(
+        `${AD_BIDS_PUBLISHER_DIMENSION} LIKE '%oo%'`,
+      );
+      expect(emit).not.toHaveBeenCalledWith("notification", expect.anything());
+    });
   });
 });
 
