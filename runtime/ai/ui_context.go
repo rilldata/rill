@@ -37,9 +37,9 @@ func UIContextFromContext(ctx context.Context) (*UIContext, bool) {
 	return ui, ok && ui != nil
 }
 
-// UIContextCompletionMessage describes the allowlisted browser actions to the LLM.
+// uiContextCompletionMessage describes the allowlisted browser actions to the LLM.
 // Labels are serialized as JSON and explicitly treated as untrusted display data.
-func UIContextCompletionMessage(ctx context.Context) *aiv1.CompletionMessage {
+func uiContextCompletionMessage(ctx context.Context) *aiv1.CompletionMessage {
 	ui, ok := UIContextFromContext(ctx)
 	if !ok || len(ui.Actions) == 0 {
 		return nil

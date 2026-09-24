@@ -61,10 +61,8 @@
       await currentConversation.sendMessage(
         {
           ...additionalContext,
-          uiContext: {
-            pagePath: `${window.location.pathname}${window.location.search}${window.location.hash}`,
-            actions: getAvailableUIActions(),
-          },
+          uiPagePath: `${window.location.pathname}${window.location.search}${window.location.hash}`,
+          uiActions: getAvailableUIActions(),
         },
         {
           onStreamStart: () => editor.commands.setContent(""),

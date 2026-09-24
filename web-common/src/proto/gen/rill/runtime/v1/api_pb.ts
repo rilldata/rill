@@ -4612,104 +4612,6 @@ export class DeveloperAgentContext extends Message$1<DeveloperAgentContext> {
 }
 
 /**
- * A non-destructive UI action explicitly exposed to the AI by the browser.
- *
- * @generated from message rill.runtime.v1.UIAction
- */
-export class UIAction extends Message$1<UIAction> {
-  /**
-   * Stable identifier from the element's data-ai-action attribute.
-   *
-   * @generated from field: string id = 1;
-   */
-  id = "";
-
-  /**
-   * Human-readable accessible label for the action.
-   *
-   * @generated from field: string label = 2;
-   */
-  label = "";
-
-  constructor(data?: PartialMessage<UIAction>) {
-    super();
-    proto3.util.initPartial(data, this);
-  }
-
-  static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "rill.runtime.v1.UIAction";
-  static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "label", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-  ]);
-
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): UIAction {
-    return new UIAction().fromBinary(bytes, options);
-  }
-
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): UIAction {
-    return new UIAction().fromJson(jsonValue, options);
-  }
-
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): UIAction {
-    return new UIAction().fromJsonString(jsonString, options);
-  }
-
-  static equals(a: UIAction | PlainMessage<UIAction> | undefined, b: UIAction | PlainMessage<UIAction> | undefined): boolean {
-    return proto3.util.equals(UIAction, a, b);
-  }
-}
-
-/**
- * Context about safe actions available on the user's current page.
- *
- * @generated from message rill.runtime.v1.UIContext
- */
-export class UIContext extends Message$1<UIContext> {
-  /**
-   * Current browser path. The origin is intentionally omitted.
-   *
-   * @generated from field: string page_path = 1;
-   */
-  pagePath = "";
-
-  /**
-   * Visible, enabled, uniquely-addressable actions on the page.
-   *
-   * @generated from field: repeated rill.runtime.v1.UIAction actions = 2;
-   */
-  actions: UIAction[] = [];
-
-  constructor(data?: PartialMessage<UIContext>) {
-    super();
-    proto3.util.initPartial(data, this);
-  }
-
-  static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "rill.runtime.v1.UIContext";
-  static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "page_path", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "actions", kind: "message", T: UIAction, repeated: true },
-  ]);
-
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): UIContext {
-    return new UIContext().fromBinary(bytes, options);
-  }
-
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): UIContext {
-    return new UIContext().fromJson(jsonValue, options);
-  }
-
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): UIContext {
-    return new UIContext().fromJsonString(jsonString, options);
-  }
-
-  static equals(a: UIContext | PlainMessage<UIContext> | undefined, b: UIContext | PlainMessage<UIContext> | undefined): boolean {
-    return proto3.util.equals(UIContext, a, b);
-  }
-}
-
-/**
  * Context for prompts handled by the feedback_agent.
  * When provided, the agent records feedback and, for negative sentiment, runs attribution.
  *
@@ -5271,11 +5173,18 @@ export class CompleteRequest extends Message$1<CompleteRequest> {
   feedbackAgentContext?: FeedbackAgentContext;
 
   /**
-   * Optional browser UI context. Only actions explicitly marked with data-ai-action are included.
+   * Optional current browser path. The origin is intentionally omitted.
    *
-   * @generated from field: rill.runtime.v1.UIContext ui_context = 14;
+   * @generated from field: string ui_page_path = 14;
    */
-  uiContext?: UIContext;
+  uiPagePath = "";
+
+  /**
+   * Optional visible, enabled, uniquely-addressable browser actions.
+   *
+   * @generated from field: repeated rill.runtime.v1.UIAction ui_actions = 15;
+   */
+  uiActions: UIAction[] = [];
 
   constructor(data?: PartialMessage<CompleteRequest>) {
     super();
@@ -5292,7 +5201,8 @@ export class CompleteRequest extends Message$1<CompleteRequest> {
     { no: 11, name: "analyst_agent_context", kind: "message", T: AnalystAgentContext },
     { no: 12, name: "developer_agent_context", kind: "message", T: DeveloperAgentContext },
     { no: 13, name: "feedback_agent_context", kind: "message", T: FeedbackAgentContext },
-    { no: 14, name: "ui_context", kind: "message", T: UIContext },
+    { no: 14, name: "ui_page_path", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 15, name: "ui_actions", kind: "message", T: UIAction, repeated: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CompleteRequest {
@@ -5417,11 +5327,18 @@ export class CompleteStreamingRequest extends Message$1<CompleteStreamingRequest
   feedbackAgentContext?: FeedbackAgentContext;
 
   /**
-   * Optional browser UI context. Only actions explicitly marked with data-ai-action are included.
+   * Optional current browser path. The origin is intentionally omitted.
    *
-   * @generated from field: rill.runtime.v1.UIContext ui_context = 14;
+   * @generated from field: string ui_page_path = 14;
    */
-  uiContext?: UIContext;
+  uiPagePath = "";
+
+  /**
+   * Optional visible, enabled, uniquely-addressable browser actions.
+   *
+   * @generated from field: repeated rill.runtime.v1.UIAction ui_actions = 15;
+   */
+  uiActions: UIAction[] = [];
 
   constructor(data?: PartialMessage<CompleteStreamingRequest>) {
     super();
@@ -5438,7 +5355,8 @@ export class CompleteStreamingRequest extends Message$1<CompleteStreamingRequest
     { no: 11, name: "analyst_agent_context", kind: "message", T: AnalystAgentContext },
     { no: 12, name: "developer_agent_context", kind: "message", T: DeveloperAgentContext },
     { no: 13, name: "feedback_agent_context", kind: "message", T: FeedbackAgentContext },
-    { no: 14, name: "ui_context", kind: "message", T: UIContext },
+    { no: 14, name: "ui_page_path", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 15, name: "ui_actions", kind: "message", T: UIAction, repeated: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CompleteStreamingRequest {
@@ -7157,6 +7075,55 @@ export class PushEnvResponse extends Message$1<PushEnvResponse> {
 
   static equals(a: PushEnvResponse | PlainMessage<PushEnvResponse> | undefined, b: PushEnvResponse | PlainMessage<PushEnvResponse> | undefined): boolean {
     return proto3.util.equals(PushEnvResponse, a, b);
+  }
+}
+
+/**
+ * A non-destructive UI action explicitly exposed to the AI by the browser.
+ *
+ * @generated from message rill.runtime.v1.UIAction
+ */
+export class UIAction extends Message$1<UIAction> {
+  /**
+   * Stable identifier from the element's data-ai-action attribute.
+   *
+   * @generated from field: string id = 1;
+   */
+  id = "";
+
+  /**
+   * Human-readable accessible label for the action.
+   *
+   * @generated from field: string label = 2;
+   */
+  label = "";
+
+  constructor(data?: PartialMessage<UIAction>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.UIAction";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "label", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): UIAction {
+    return new UIAction().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): UIAction {
+    return new UIAction().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): UIAction {
+    return new UIAction().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: UIAction | PlainMessage<UIAction> | undefined, b: UIAction | PlainMessage<UIAction> | undefined): boolean {
+    return proto3.util.equals(UIAction, a, b);
   }
 }
 

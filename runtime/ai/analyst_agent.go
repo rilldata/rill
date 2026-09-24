@@ -219,7 +219,7 @@ func (t *AnalystAgent) Handler(ctx context.Context, args *AnalystAgentArgs) (*An
 	}
 	// 1. System prompt
 	messages := []*aiv1.CompletionMessage{NewTextCompletionMessage(RoleSystem, systemPrompt)}
-	if uiMessage := UIContextCompletionMessage(ctx); uiMessage != nil {
+	if uiMessage := uiContextCompletionMessage(ctx); uiMessage != nil {
 		messages = append(messages, uiMessage)
 	}
 	// 2. Previous analyst calls with their tool calls

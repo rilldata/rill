@@ -872,14 +872,6 @@ export interface V1UIAction {
   label?: string;
 }
 
-/** Context about safe actions available on the user's current page. */
-export interface V1UIContext {
-  /** Current browser path. The origin is intentionally omitted. */
-  pagePath?: string;
-  /** Visible, enabled, uniquely-addressable actions on the page. */
-  actions?: V1UIAction[];
-}
-
 export interface V1DirEntry {
   path?: string;
   isDir?: boolean;
@@ -2840,8 +2832,10 @@ If not set, it will infer an agent based on the prompt and conversation history.
   analystAgentContext?: V1AnalystAgentContext;
   developerAgentContext?: V1DeveloperAgentContext;
   feedbackAgentContext?: V1FeedbackAgentContext;
-  /** Optional browser UI context. Only actions explicitly marked with data-ai-action are included. */
-  uiContext?: V1UIContext;
+  /** Optional current browser path. The origin is intentionally omitted. */
+  uiPagePath?: string;
+  /** Optional visible, enabled, uniquely-addressable browser actions. */
+  uiActions?: V1UIAction[];
 };
 
 export type RuntimeServiceCompleteStreamingBody = {
@@ -2855,8 +2849,10 @@ If not set, it will infer an agent based on the prompt and conversation history.
   analystAgentContext?: V1AnalystAgentContext;
   developerAgentContext?: V1DeveloperAgentContext;
   feedbackAgentContext?: V1FeedbackAgentContext;
-  /** Optional browser UI context. Only actions explicitly marked with data-ai-action are included. */
-  uiContext?: V1UIContext;
+  /** Optional current browser path. The origin is intentionally omitted. */
+  uiPagePath?: string;
+  /** Optional visible, enabled, uniquely-addressable browser actions. */
+  uiActions?: V1UIAction[];
 };
 
 export type RuntimeServiceCompleteStreaming200 = {

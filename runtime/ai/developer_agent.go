@@ -96,7 +96,7 @@ func (t *DeveloperAgent) Handler(ctx context.Context, args *DeveloperAgentArgs) 
 
 	// Build initial completion messages
 	messages := []*aiv1.CompletionMessage{NewTextCompletionMessage(RoleSystem, systemPrompt)}
-	if uiMessage := UIContextCompletionMessage(ctx); uiMessage != nil {
+	if uiMessage := uiContextCompletionMessage(ctx); uiMessage != nil {
 		messages = append(messages, uiMessage)
 	}
 	messages = append(messages, s.NewCompletionMessages(s.MessagesWithResults(FilterByType(MessageTypeCall), FilterByTool(DeveloperAgentName)))...)

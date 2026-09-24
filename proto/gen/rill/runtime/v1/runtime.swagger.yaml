@@ -436,9 +436,15 @@ paths:
                 description: |-
                   Optional context for prompts handled by the feedback_agent.
                   The field is ignored if another agent is selected.
-              uiContext:
-                $ref: '#/definitions/v1UIContext'
-                description: Optional browser UI context. Only actions explicitly marked with data-ai-action are included.
+              uiPagePath:
+                type: string
+                description: Optional current browser path. The origin is intentionally omitted.
+              uiActions:
+                type: array
+                items:
+                  type: object
+                  $ref: '#/definitions/v1UIAction'
+                description: Optional visible, enabled, uniquely-addressable browser actions.
             title: Request message for RuntimeService.Complete
       tags:
         - RuntimeService
@@ -499,9 +505,15 @@ paths:
                 description: |-
                   Optional context for prompts handled by the feedback_agent.
                   The field is ignored if another agent is selected.
-              uiContext:
-                $ref: '#/definitions/v1UIContext'
-                description: Optional browser UI context. Only actions explicitly marked with data-ai-action are included.
+              uiPagePath:
+                type: string
+                description: Optional current browser path. The origin is intentionally omitted.
+              uiActions:
+                type: array
+                items:
+                  type: object
+                  $ref: '#/definitions/v1UIAction'
+                description: Optional visible, enabled, uniquely-addressable browser actions.
             title: Request message for RuntimeService.CompleteStreaming
       tags:
         - RuntimeService
@@ -8513,19 +8525,6 @@ definitions:
         type: string
         description: Human-readable accessible label for the action.
     description: A non-destructive UI action explicitly exposed to the AI by the browser.
-  v1UIContext:
-    type: object
-    properties:
-      pagePath:
-        type: string
-        description: Current browser path. The origin is intentionally omitted.
-      actions:
-        type: array
-        items:
-          type: object
-          $ref: '#/definitions/v1UIAction'
-        description: Visible, enabled, uniquely-addressable actions on the page.
-    description: Context about safe actions available on the user's current page.
   v1UnpackEmptyResponse:
     type: object
     title: Response message for RuntimeService.UnpackEmpty

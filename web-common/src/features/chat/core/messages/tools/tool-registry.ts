@@ -115,7 +115,7 @@ const TOOL_CONFIGS: Partial<Record<string, ToolConfig>> = {
   [ToolName.CLICK_UI]: {
     renderMode: "block",
     createBlock: createSimpleTooCall,
-    onCall: handleClickUIToolCall,
+    onResult: handleClickUIToolResult,
   },
 
   // All other tools default to "inline" (shown in thinking blocks)
@@ -155,8 +155,15 @@ function handleNavigateToolCall(callMessage: V1Message) {
   }
 }
 
-function handleClickUIToolCall(callMessage: V1Message) {
-  if (!callMessage.contentData) return;
+function handleClickUIToolResult(
+  callMessage: V1Message | undefined,
+  resultMessage: V1Message,
+) {
+  if (
+    !callMessage?.contentData ||
+    resultMessage.contentType === MessageContentType.ERROR
+  )
+    return;
   try {
     const content = JSON.parse(callMessage.contentData) as {
       action_id?: string;
