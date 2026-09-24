@@ -32,9 +32,9 @@ const prodDeplTTL = 14 * 24 * time.Hour
 
 // defaultProdSlots and defaultDevSlots are the slot counts applied when a CreateProject
 // request omits them (e.g. the UI, or older CLIs that don't pass these fields).
-const defaultProdSlots = 4
+const defaultProdSlots = 2
 
-const defaultDevSlots = 4
+const defaultDevSlots = 2
 
 // runtimeAccessTokenTTL is the validity duration of JWTs issued for runtime access when calling GetProject.
 // This TTL is not used for tokens created for internal communication between the admin and runtime services.
@@ -479,6 +479,17 @@ func (s *Server) CreateProject(ctx context.Context, req *adminv1.CreateProjectRe
 		return nil, status.Error(codes.PermissionDenied, "does not have permission to create projects")
 	}
 
+	// provisioner is a sudo-only field. Non-superusers get the org's default provisioner (or the global default).
+	if req.Provisioner != "" {
+		if !claims.Superuser(ctx) {
+			return nil, status.Error(codes.PermissionDenied, "only superusers can set provisioner")
+		}
+		err := s.validateRuntimeProvisioner(req.Provisioner)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	// check if org has any blocking billing errors
 	err = s.admin.CheckBlockingBillingErrors(ctx, org.ID)
 	if err != nil {
@@ -836,6 +847,17 @@ func (s *Server) UpdateProject(ctx context.Context, req *adminv1.UpdateProjectRe
 			return nil, status.Error(codes.InvalidArgument, "dev_ttl_seconds must be greater than 0")
 		}
 		devTTLSeconds = *req.DevTtlSeconds
+	}
+
+	// provisioner is a sudo-only field. Only allow changes when the caller is a superuser using force access.
+	if req.Provisioner != nil {
+		if !forceAccess {
+			return nil, status.Error(codes.PermissionDenied, "only superusers can set provisioner")
+		}
+		err := s.validateRuntimeProvisioner(*req.Provisioner)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	// override_disk_gb is a sudo-only field. Only allow changes when the caller is a superuser using force access.

@@ -5,9 +5,21 @@ import {
   type CartesianChartSpec as CartesianChartSpecBase,
 } from "@rilldata/web-common/features/components/charts/cartesian/CartesianChartProvider";
 import {
+  chartOrientation,
+  dimensionChannel,
+  isHorizontal,
+  measureChannel,
+  supportsOrientation,
+  swapAxes,
+  swapSortChannel,
+  toVerticalSpec,
+  type ChartOrientation,
+} from "@rilldata/web-common/features/components/charts/cartesian/orientation";
+import {
   ChartSortType,
   type ChartDataQuery,
   type ChartFieldsMap,
+  type ChartType,
   type FieldConfig,
 } from "@rilldata/web-common/features/components/charts/types";
 import { isMultiFieldConfig } from "@rilldata/web-common/features/components/charts/util";
@@ -33,33 +45,45 @@ const DEFAULT_NOMINAL_LIMIT = 20;
 const DEFAULT_SPLIT_LIMIT = 10;
 const DEFAULT_SORT = ChartSortType.Y_DESC;
 
+// Inspector-only param: it is never written to the YAML (see `updateProperty`).
+const ORIENTATION_PARAM = "orientation";
+
+// The dimension picker's sort options, written for the dimension on x.
+const DIMENSION_SORT_OPTIONS = [
+  ChartSortType.X_ASC,
+  ChartSortType.X_DESC,
+  ChartSortType.Y_ASC,
+  ChartSortType.Y_DESC,
+  ChartSortType.Y_DELTA_ASC,
+  ChartSortType.Y_DELTA_DESC,
+  ChartSortType.CUSTOM,
+];
+
 export class CartesianChartComponent extends BaseChart<CartesianCanvasChartSpec> {
   private provider: CartesianChartProvider;
 
   // Static getter (not a static field) so the localized labels inside resolve
   // in the active locale at access time (render) rather than freezing to the
   // locale active when this class was defined at module load.
+  //
+  // The `x` and `y` params describe the vertical layout (dimension on x,
+  // measure on y). `getChartSpecificOptions` swaps their contents for a
+  // horizontal bar chart so that each picker keeps its role and the YAML keys
+  // keep naming the axis a field is drawn on.
   static get chartInputParams(): Record<string, ComponentInputParam> {
     return {
       x: {
         type: "positional",
-        label: m.canvas_x_axis_label(),
+        label: m.canvas_dimension_label(),
         meta: {
+          axisLabel: m.canvas_x_axis_label(),
           chartFieldInput: {
             type: "dimension",
             axisTitleSelector: true,
             sortSelector: {
               enable: true,
               defaultSort: DEFAULT_SORT,
-              options: [
-                ChartSortType.X_ASC,
-                ChartSortType.X_DESC,
-                ChartSortType.Y_ASC,
-                ChartSortType.Y_DESC,
-                ChartSortType.Y_DELTA_ASC,
-                ChartSortType.Y_DELTA_DESC,
-                ChartSortType.CUSTOM,
-              ],
+              options: DIMENSION_SORT_OPTIONS,
             },
             limitSelector: { defaultLimit: DEFAULT_NOMINAL_LIMIT },
             nullSelector: true,
@@ -69,8 +93,9 @@ export class CartesianChartComponent extends BaseChart<CartesianCanvasChartSpec>
       },
       y: {
         type: "positional",
-        label: m.canvas_y_axis_label(),
+        label: m.canvas_measure_label(),
         meta: {
+          axisLabel: m.canvas_y_axis_label(),
           chartFieldInput: {
             type: "measure",
             axisTitleSelector: true,
@@ -95,6 +120,18 @@ export class CartesianChartComponent extends BaseChart<CartesianCanvasChartSpec>
             colorMappingSelector: { enable: true },
             nullSelector: true,
           },
+        },
+      },
+      // Not a YAML property: toggling it swaps the `x` and `y` fields.
+      [ORIENTATION_PARAM]: {
+        type: "switcher_tab",
+        label: m.canvas_orientation_label(),
+        meta: {
+          default: "vertical",
+          options: [
+            { label: m.canvas_vertical_option(), value: "vertical" },
+            { label: m.canvas_horizontal_option(), value: "horizontal" },
+          ],
         },
       },
     };
@@ -129,16 +166,49 @@ export class CartesianChartComponent extends BaseChart<CartesianCanvasChartSpec>
   }
 
   getChartSpecificOptions(): Record<string, ComponentInputParam> {
-    const inputParams = { ...CartesianChartComponent.chartInputParams };
+    const staticParams = CartesianChartComponent.chartInputParams;
     const config = get(this.specStore);
-    const isMultiMeasure = isMultiFieldConfig(config.y);
+    const horizontal = isHorizontal(config);
+    const dimensionKey = dimensionChannel(config);
+    const measureKey = measureChannel(config);
 
-    const sortSelector = inputParams.x.meta?.chartFieldInput?.sortSelector;
+    const dimensionParam = staticParams.x;
+    const measureParam = staticParams.y;
+    if (horizontal) {
+      // The pickers keep their role; only the axis they drive changes, and
+      // channel-relative sort options follow the dimension to the y channel.
+      dimensionParam.meta!.axisLabel = m.canvas_y_axis_label();
+      measureParam.meta!.axisLabel = m.canvas_x_axis_label();
+      const sortSelector = dimensionParam.meta!.chartFieldInput!.sortSelector!;
+      sortSelector.defaultSort = swapSortChannel(DEFAULT_SORT);
+      sortSelector.options = DIMENSION_SORT_OPTIONS.map(swapSortChannel);
+    }
+
+    // Dimension first, then measure, whichever channel each one is on.
+    const inputParams: Record<string, ComponentInputParam> = {
+      [dimensionKey]: dimensionParam,
+      [measureKey]: measureParam,
+      color: staticParams.color,
+    };
+
+    // Only bar charts can be drawn horizontally.
+    if (supportsOrientation(this.type)) {
+      inputParams[ORIENTATION_PARAM] = {
+        ...staticParams[ORIENTATION_PARAM],
+        meta: {
+          ...staticParams[ORIENTATION_PARAM].meta,
+          value: chartOrientation(config),
+        },
+      };
+    }
+
+    const sortSelector = dimensionParam.meta?.chartFieldInput?.sortSelector;
     if (sortSelector) {
       sortSelector.customSortItems = this.provider.customSortXItems;
     }
 
-    if (isMultiMeasure) {
+    const measure = config[measureKey];
+    if (isMultiFieldConfig(measure)) {
       inputParams.color.meta!.chartFieldInput = {
         type: "value",
         colorMappingSelector: {
@@ -148,7 +218,7 @@ export class CartesianChartComponent extends BaseChart<CartesianCanvasChartSpec>
         defaultLegendOrientation: "top",
       };
 
-      inputParams.y.meta!.chartFieldInput!.excludedValues = [];
+      measureParam.meta!.chartFieldInput!.excludedValues = [];
     } else {
       inputParams.color.meta!.chartFieldInput = {
         type: "dimension",
@@ -161,9 +231,9 @@ export class CartesianChartComponent extends BaseChart<CartesianCanvasChartSpec>
         nullSelector: true,
       };
 
-      // Exclude the main y field from multi-field selector
-      if (inputParams.y.meta?.chartFieldInput && config.y?.field) {
-        inputParams.y.meta.chartFieldInput.excludedValues = [config.y.field];
+      // Exclude the main measure field from the multi-field selector
+      if (measureParam.meta?.chartFieldInput && measure?.field) {
+        measureParam.meta.chartFieldInput.excludedValues = [measure.field];
       }
     }
 
@@ -176,12 +246,26 @@ export class CartesianChartComponent extends BaseChart<CartesianCanvasChartSpec>
   ) => {
     const currentSpec = get(this.specStore);
 
-    if (key === "y") {
-      const updatedYField = value as FieldConfig;
-      const isMultiMeasure = isMultiFieldConfig(updatedYField);
+    if ((key as string) === ORIENTATION_PARAM) {
+      // Orientation lives in which axis holds the measure, so changing it
+      // swaps the `x` and `y` fields instead of writing a property. A stray
+      // `orientation` key in the YAML is dropped so it cannot shadow the toggle.
+      const changed =
+        (value as ChartOrientation) !== chartOrientation(currentSpec);
+      const spec = { ...currentSpec };
+      delete (spec as Record<string, unknown>)[ORIENTATION_PARAM];
+      this.setSpec(
+        changed ? (swapAxes(spec) as CartesianCanvasChartSpec) : spec,
+      );
+      return;
+    }
+
+    if (key === measureChannel(currentSpec)) {
+      const updatedMeasureField = value as FieldConfig;
+      const isMultiMeasure = isMultiFieldConfig(updatedMeasureField);
 
       if (isMultiMeasure) {
-        const newSpec = { ...currentSpec, [key]: updatedYField };
+        const newSpec = { ...currentSpec, [key]: updatedMeasureField };
         if (typeof currentSpec.color === "string" || !currentSpec.color) {
           newSpec.color = {
             type: "value",
@@ -193,7 +277,7 @@ export class CartesianChartComponent extends BaseChart<CartesianCanvasChartSpec>
         this.setSpec(newSpec);
         return;
       } else if (!isMultiMeasure) {
-        const newSpec = { ...currentSpec, [key]: updatedYField };
+        const newSpec = { ...currentSpec, [key]: updatedMeasureField };
 
         if (
           typeof currentSpec.color === "object" &&
@@ -209,6 +293,17 @@ export class CartesianChartComponent extends BaseChart<CartesianCanvasChartSpec>
 
     super.updateProperty(key, value);
   };
+
+  protected specForChartTypeSwitch(
+    spec: CartesianCanvasChartSpec,
+    targetType: ChartType,
+  ): CartesianCanvasChartSpec {
+    // Only bar charts read a measure on x; every other target expects the
+    // vertical layout.
+    return supportsOrientation(targetType)
+      ? spec
+      : (toVerticalSpec(spec) as CartesianCanvasChartSpec);
+  }
 
   createChartDataQuery(
     ctx: CanvasStore,

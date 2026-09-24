@@ -53,8 +53,8 @@ export function generateVLHeatmapSpec(
 
   spec.height = "container";
 
-  const xEncoding = createPositionEncoding(config.x, data);
-  const yEncoding = createPositionEncoding(config.y, data);
+  const xEncoding = createPositionEncoding(config.x, data, "x");
+  const yEncoding = createPositionEncoding(config.y, data, "y");
 
   const xSort = createHeatmapSortEncoding("x", config, data);
   if (xSort !== undefined) {

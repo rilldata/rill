@@ -182,6 +182,19 @@ func (t *AnalystAgent) Handler(ctx context.Context, args *AnalystAgentArgs) (*An
 		}
 	}
 
+	// Pre-invoke the load_skill tool for each analyst skill the user referenced in the prompt, on every invocation.
+	// A skill already loaded in this conversation is skipped: the model has it, and loading it again would repeat its whole body in the context.
+	loaded := loadedSkills(s)
+	for _, sk := range referencedSkills(args.Prompt, skillsForAgent(skills, parser.SkillAgentAnalyst)) {
+		if loaded[sk.Name] {
+			continue
+		}
+		_, err := s.CallTool(ctx, RoleAssistant, LoadSkillName, nil, &LoadSkillArgs{Name: sk.Name})
+		if err != nil && errors.Is(err, ctx.Err()) { // Don't exit on non-context errors
+			return nil, err
+		}
+	}
+
 	// Determine tools that can be used
 	tools := []string{}
 	if args.Explore == "" {

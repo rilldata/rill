@@ -2,7 +2,10 @@ name: Unit tests for web code
 on:
   pull_request:
     paths:
-      - ".github/workflows/web-test.yml"
+      - ".github/workflows/web-test-unit-tests.yml"
+      - ".nvmrc"
+      - "package.json"
+      - "package-lock.json"
       - "web-admin/**"
       - "web-common/**"
       - "web-local/**"
@@ -19,10 +22,17 @@ jobs:
         with:
           filters: |
             admin:
-              - ".github/workflows/web-test.yml"
+              - ".github/workflows/web-test-unit-tests.yml"
+              - ".nvmrc"
+              - "package.json"
+              - "package-lock.json"
               - "web-admin/**"
+              - "web-common/**"
             common:
-              - ".github/workflows/web-test.yml"
+              - ".github/workflows/web-test-unit-tests.yml"
+              - ".nvmrc"
+              - "package.json"
+              - "package-lock.json"
               - "web-common/**"
 
       - name: Set up NodeJS
@@ -40,3 +50,7 @@ jobs:
       - name: Run web-common unit tests
         if: steps.filter.outputs.common == 'true'
         run: npm run test -w web-common
+
+      - name: Run web-admin unit tests
+        if: steps.filter.outputs.admin == 'true'
+        run: npm run test:unit -w web-admin

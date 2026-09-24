@@ -181,7 +181,7 @@ export abstract class BaseChart<
   ) {
     if (!this.parent.fileArtifact) return;
 
-    const currentSpec = get(this.specStore);
+    const currentSpec = this.specForChartTypeSwitch(get(this.specStore), key);
     const parentPath = this.pathInYAML.slice(0, -1);
 
     const parseDocumentStore = this.parent.parsedContent;
@@ -234,6 +234,18 @@ export abstract class BaseChart<
     this.chartType.set(key);
   }
 
+  /**
+   * The spec that a switch to `targetType` copies its common properties from.
+   * Subclasses override it when their spec has layouts the target cannot read.
+   */
+  protected specForChartTypeSwitch(
+    spec: TConfig,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    targetType: ChartType,
+  ): TConfig {
+    return spec;
+  }
+
   private extractCommonProperties(
     spec: TConfig,
     sourceType: ChartType,
@@ -254,14 +266,15 @@ export abstract class BaseChart<
     const targetChartParams =
       CANVAS_CHART_CONFIG[targetType].component.chartInputParams || {};
 
-    // Check for common keys and type match first
+    // Check for common keys and type match first. Params without a value in
+    // the spec (e.g. UI-only params) are skipped so they never become keys.
     const commonProps = Object.keys(sourceChartParams).filter((key) => {
       const isKeyAndTypeMatch =
         targetChartParams?.[key]?.type === sourceChartParams[key]?.type;
       const isFieldTypeMatch =
         targetChartParams?.[key]?.meta?.chartFieldInput?.type ===
         sourceChartParams[key]?.meta?.chartFieldInput?.type;
-      return isKeyAndTypeMatch && isFieldTypeMatch;
+      return isKeyAndTypeMatch && isFieldTypeMatch && spec[key] !== undefined;
     });
 
     const commonPropsObject = commonProps.reduce(

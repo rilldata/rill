@@ -275,7 +275,9 @@
             {key}
             label={config.label ?? key}
             options={config.meta?.options ?? []}
-            value={localParamValues[key] ?? config.meta?.default}
+            value={config.meta?.value ??
+              localParamValues[key] ??
+              config.meta?.default}
             onChange={(newValue) => {
               component.updateProperty(key, newValue);
             }}

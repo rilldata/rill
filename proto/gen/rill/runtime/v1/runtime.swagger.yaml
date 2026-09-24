@@ -5396,6 +5396,11 @@ definitions:
         type: boolean
       pivotShowTotalsRow:
         type: boolean
+      pivotTotalsRowPosition:
+        type: string
+        description: |-
+          Where the pivot totals row is pinned: "top" (default) or "bottom"
+          (frontend-only; persisted in URL state).
       pivotFormatting:
         type: string
         description: |-

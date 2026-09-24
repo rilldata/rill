@@ -22,6 +22,11 @@ import { TimeFilterManager } from "@rilldata/web-common/features/dashboards/time
 import { dedupe } from "@rilldata/web-common/lib/arrayUtils.ts";
 import { YAMLConfigProvider } from "@rilldata/web-common/features/dashboards/providers/YAMLConfigProvider.svelte.ts";
 import { MetricsViewsProvider } from "@rilldata/web-common/features/metrics-views/providers/MetricsViewsProvider.svelte.ts";
+import { ExploreStateURLParams } from "@rilldata/web-common/features/dashboards/url-state/url-params.ts";
+import {
+  normalizeTimeFilters,
+  TIME_FILTER_INHERIT,
+} from "@rilldata/web-common/features/canvas/components/time-filters.ts";
 
 export abstract class BaseCanvasComponent<T = ComponentSpec> {
   id: string;
@@ -245,5 +250,29 @@ export abstract class BaseCanvasComponent<T = ComponentSpec> {
       this.updateYAML(newSpec);
     }
     this.specStore.set(newSpec);
+  }
+
+  // Sets how this component compares against a previous period:
+  // "inherit" follows the canvas, "none" turns comparison off,
+  // anything else is a comparison range such as rill-PW or a custom start,end pair.
+  setComparisonRange(value: string) {
+    const searchParams = new URLSearchParams(
+      (get(this.specStore)?.["time_filters"] ?? "") as string,
+    );
+
+    if (value === "none") {
+      searchParams.delete(ExploreStateURLParams.ComparisonTimeRange);
+      // Off is spelled by a `tr` without `compare_tr`.
+      if (!searchParams.has(ExploreStateURLParams.TimeRange)) {
+        searchParams.set(ExploreStateURLParams.TimeRange, TIME_FILTER_INHERIT);
+      }
+    } else {
+      searchParams.set(ExploreStateURLParams.ComparisonTimeRange, value);
+    }
+
+    this.updateProperty(
+      "time_filters" as AllKeys<T>,
+      normalizeTimeFilters(searchParams) as T[AllKeys<T>],
+    );
   }
 }

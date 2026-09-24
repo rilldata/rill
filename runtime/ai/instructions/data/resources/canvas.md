@@ -408,7 +408,6 @@ bar_chart:
     type: nominal
     limit: 10
     sort: -y
-    labelAngle: 0
   y:
     field: total_revenue
     type: quantitative
@@ -434,6 +433,26 @@ bar_chart:
     field: total_revenue
     type: quantitative
 ```
+
+**Horizontal bars** (bars run left to right; useful for long category labels or many categories). `x` and `y` always name the field drawn on that axis, so put the measure on `x` and the dimension on `y`:
+
+```yaml
+bar_chart:
+  metrics_view: sales_metrics
+  title: "Revenue by Product Category"
+  color: primary
+  x:
+    field: total_revenue
+    type: quantitative
+    zeroBasedOrigin: true
+  y:
+    field: product_category
+    type: nominal
+    limit: 15
+    sort: -x
+```
+
+Sort values refer to axes, so `sort: -x` on `y` orders the categories by the measure. The same layout works for `stacked_bar` and `stacked_bar_normalized`; `line_chart` and `area_chart` always keep the dimension on `x`.
 
 ### Stacked Bar
 
@@ -882,11 +901,12 @@ table:
 
 ### Image
 
-Display external images:
+Display external images. Set `dark_url` to show a different image when the dashboard is in dark mode (falls back to `url`):
 
 ```yaml
 image:
   url: https://example.com/logo.png
+  dark_url: https://example.com/logo-dark.png
   alignment:
     horizontal: center
     vertical: middle
@@ -1085,13 +1105,14 @@ x:
   limit: 10                  # Max values to display
   sort: -y                   # Sort order (see below)
   showNull: true             # Include null values
-  labelAngle: 45             # Label rotation angle
+  labelAngle: -45            # Label rotation angle; omit for automatic orientation (0, -45 or -90 based on available width)
 ```
 
 ### Sort Options
 
 - `"x"` or `"-x"`: Sort by x-axis values (ascending/descending)
 - `"y"` or `"-y"`: Sort by y-axis values (ascending/descending)
+- `"y_delta"` or `"-y_delta"`: Sort by the change versus the comparison period (`"x_delta"` / `"-x_delta"` on the y field of a horizontal bar chart)
 - `"color"` or `"-color"`: Sort by color field (heatmaps)
 - `"measure"` or `"-measure"`: Sort by measure (donut charts)
 - Array of values: Custom sort order (e.g., `["Mon", "Tue", "Wed"]`)
@@ -1103,6 +1124,20 @@ y:
   field: total_revenue
   type: quantitative
   zeroBasedOrigin: true      # Start y-axis at zero
+```
+
+### Horizontal Bars
+
+`bar_chart`, `stacked_bar` and `stacked_bar_normalized` draw horizontal bars when the measure is on `x` and the dimension on `y`:
+
+```yaml
+x:
+  field: total_revenue
+  type: quantitative
+y:
+  field: category_name
+  type: nominal
+  sort: -x                   # Sort categories by the measure (x-axis)
 ```
 
 **Multiple measures:**
@@ -1217,6 +1252,41 @@ stacked_bar:
   metrics_view: sales_metrics
   time_filters: tr=P12M&compare_tr=rill-PY&grain=week
   # ... other config
+```
+
+### Comparison Per Widget
+
+Components inherit the canvas time range and time comparison. `time_filters` overrides either one per component, using the same `tr` and `compare_tr` parameters as explore URLs. `inherit` is a special value for both: `tr=inherit` keeps the canvas time range, and once `tr` is set a missing `compare_tr` means no comparison. A comparison range is `rill-PP`, `rill-PD`, `rill-PW`, `rill-PM`, `rill-PQ`, `rill-PY`, or a custom `<start>,<end>` pair, and it applies even when the canvas comparison is off. Applies to `kpi_grid`, `table`, `pivot`, `leaderboard`, and time-series charts:
+
+| `time_filters` | Time range | Comparison |
+| --- | --- | --- |
+| (absent) | canvas | canvas |
+| `tr=inherit` | canvas | off |
+| `tr=inherit&compare_tr=rill-PP` | canvas | previous period |
+| `tr=P7D` | last 7 days | off |
+| `tr=P7D&compare_tr=inherit` | last 7 days | canvas |
+| `tr=P7D&compare_tr=rill-PP` | last 7 days | previous period |
+
+```yaml
+kpi_grid:
+  metrics_view: sales_metrics
+  measures:
+    - total_revenue
+  time_filters: tr=inherit
+```
+
+### Hiding Local Filters
+
+Components with `dimension_filters` or `time_filters` show the local filters as chips in the component header. Set `hide_local_filters: true` to hide the chips while the filters still apply to the component's data. Useful when the title already describes the filter:
+
+```yaml
+kpi_grid:
+  metrics_view: sales_metrics
+  title: North America revenue
+  measures:
+    - total_revenue
+  dimension_filters: region IN ('North America')
+  hide_local_filters: true
 ```
 
 ### Vega-Lite Configuration

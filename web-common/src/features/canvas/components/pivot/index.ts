@@ -14,6 +14,7 @@ import type {
   PivotFormatRule,
   PivotMeasureFormatting,
   PivotState,
+  PivotTotalsRowPosition,
 } from "@rilldata/web-common/features/dashboards/pivot/types";
 import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
 import { DashboardState_ActivePage } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
@@ -110,6 +111,7 @@ export interface PivotSpec
   col_dimensions?: string[];
   hide_totals_row?: boolean;
   hide_totals_col?: boolean;
+  totals_row_position?: PivotTotalsRowPosition;
   conditional_format?: PivotConditionalFormatSpec[];
   row_limit?: string;
 }
@@ -123,12 +125,23 @@ export interface TableSpec
   adhoc_measures?: EphemeralMeasureSpec[];
   hide_totals_row?: boolean;
   hide_totals_col?: boolean;
+  totals_row_position?: PivotTotalsRowPosition;
   conditional_format?: PivotConditionalFormatSpec[];
 }
 
 export { default as Pivot } from "./CanvasPivotDisplay.svelte";
 
 import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
+
+function totalsRowPositionOptions(): {
+  value: PivotTotalsRowPosition;
+  label: string;
+}[] {
+  return [
+    { value: "top", label: m.dashboard_totals_row_position_top() },
+    { value: "bottom", label: m.dashboard_totals_row_position_bottom() },
+  ];
+}
 
 export class PivotCanvasComponent extends BaseCanvasComponent<
   PivotSpec | TableSpec
@@ -307,6 +320,15 @@ export class PivotCanvasComponent extends BaseCanvasComponent<
             meta: { defaultValue: false },
             showInUI: canShowTotalRow,
           },
+          totals_row_position: {
+            type: "select",
+            label: m.canvas_totals_row_position_label(),
+            meta: {
+              default: "top",
+              options: totalsRowPositionOptions(),
+            },
+            showInUI: canShowTotalRow && spec.hide_totals_row !== true,
+          },
           row_limit: {
             type: "select",
             label: m.canvas_row_limit(),
@@ -360,6 +382,15 @@ export class PivotCanvasComponent extends BaseCanvasComponent<
             label: m.canvas_hide_total_row_label(),
             meta: { defaultValue: false },
             showInUI: canShowTotalRow,
+          },
+          totals_row_position: {
+            type: "select",
+            label: m.canvas_totals_row_position_label(),
+            meta: {
+              default: "top",
+              options: totalsRowPositionOptions(),
+            },
+            showInUI: canShowTotalRow && spec.hide_totals_row !== true,
           },
           ...getCommonOptions(),
         },
@@ -424,7 +455,10 @@ export class PivotCanvasComponent extends BaseCanvasComponent<
       ComponentFilterProperties &
       Pick<
         PivotSpec,
-        "hide_totals_row" | "hide_totals_col" | "conditional_format"
+        | "hide_totals_row"
+        | "hide_totals_col"
+        | "totals_row_position"
+        | "conditional_format"
       > = {
       title: currentSpec.title,
       description: currentSpec.description,
@@ -432,6 +466,7 @@ export class PivotCanvasComponent extends BaseCanvasComponent<
       time_filters: currentSpec.time_filters,
       hide_totals_row: currentSpec.hide_totals_row,
       hide_totals_col: currentSpec.hide_totals_col,
+      totals_row_position: currentSpec.totals_row_position,
       conditional_format: currentSpec.conditional_format,
     };
 

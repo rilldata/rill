@@ -66,6 +66,7 @@ export function getDefaultExplorePreset(
     pivotTableMode: "nest",
     pivotShowTotalsColumn: true,
     pivotShowTotalsRow: true,
+    pivotTotalsRowPosition: "top",
 
     ...(explore.defaultPreset ?? {}),
   };

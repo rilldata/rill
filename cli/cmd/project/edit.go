@@ -9,7 +9,7 @@ import (
 )
 
 func EditCmd(ch *cmdutil.Helper) *cobra.Command {
-	var name, description, primaryBranch, subpath, path, provisioner, gitRemote string
+	var name, description, primaryBranch, subpath, path, gitRemote string
 	var public bool
 	var prodTTL, devTTL int64
 	var prodSlots, devSlots int
@@ -39,10 +39,6 @@ func EditCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 
 			var flagSet bool
-			if cmd.Flags().Changed("provisioner") {
-				flagSet = true
-				req.Provisioner = &provisioner
-			}
 			if cmd.Flags().Changed("description") {
 				flagSet = true
 				req.Description = &description
@@ -112,7 +108,6 @@ func EditCmd(ch *cmdutil.Helper) *cobra.Command {
 	editCmd.Flags().StringVar(&path, "path", ".", "Project directory")
 	editCmd.Flags().StringVar(&gitRemote, "remote-url", "", "Github remote URL")
 	editCmd.Flags().StringVar(&subpath, "subpath", "", "Relative path to project in the repository (for monorepos)")
-	editCmd.Flags().StringVar(&provisioner, "provisioner", "", "Project provisioner (default: current provisioner)")
 	editCmd.Flags().Int64Var(&prodTTL, "prod-ttl-seconds", 0, "Time-to-live in seconds for production deployment (0 means no expiration)")
 	editCmd.Flags().Int64Var(&devTTL, "dev-ttl-seconds", 0, "Time-to-live in seconds for dev deployment (must be greater than 0)")
 	editCmd.Flags().IntVar(&prodSlots, "prod-slots", 0, "Slots to allocate for production deployments")

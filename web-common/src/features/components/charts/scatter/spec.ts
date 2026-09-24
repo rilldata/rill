@@ -29,8 +29,8 @@ export function generateVLScatterPlotSpec(
     data,
   );
 
-  const xEncoding = createPositionEncoding(config.x, data);
-  const yEncoding = createPositionEncoding(config.y, data);
+  const xEncoding = createPositionEncoding(config.x, data, "x");
+  const yEncoding = createPositionEncoding(config.y, data, "y");
   const sizeEncoding = createSizeEncoding(config.size, data);
 
   xEncoding.scale = { ...(xEncoding.scale ?? {}), nice: true };

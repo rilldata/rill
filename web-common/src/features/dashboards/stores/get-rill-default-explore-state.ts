@@ -289,6 +289,7 @@ function getRillDefaultPivotViewState() {
       activeCell: null,
       showTotalsColumn: true,
       showTotalsRow: true,
+      totalsRowPosition: "top",
       tableMode: "nest",
     },
   };
