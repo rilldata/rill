@@ -9,7 +9,9 @@ import {
 import { YAMLConfigProvider } from "@rilldata/web-common/features/dashboards/providers/YAMLConfigProvider.svelte.ts";
 import {
   createAndExpression,
+  createBinaryExpression,
   createInExpression,
+  createSubQueryExpression,
   getAllIdentifiers,
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils.ts";
 import {
@@ -27,6 +29,7 @@ import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus.ts";
 import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 import { ExploreStateURLParams } from "@rilldata/web-common/features/dashboards/url-state/url-params.ts";
 import { MetricsViewsProvider } from "@rilldata/web-common/features/metrics-views/providers/MetricsViewsProvider.svelte.ts";
+import { V1Operation } from "@rilldata/web-common/runtime-client";
 import {
   createInEffectRoot,
   createTestMetricsViewsProvider,
@@ -194,6 +197,85 @@ describe("setUrlParams", () => {
     expect(measureManager.operation).toBe(MeasureFilterOperation.GreaterThan);
     expect(measureManager.value1).toBe("10");
     expect(filterManager.sortedFilterManagers.dimensions).toEqual([]);
+  });
+
+  describe("comparison measure filters", () => {
+    // The having clause references a suffixed accessor of the base measure.
+    // The chip is keyed by the base measure and the suffix decides the filter type.
+    // Relative values are stored as decimals in the param and shown as percentages.
+    const cases = [
+      {
+        suffix: "_delta",
+        type: MeasureFilterType.AbsoluteChange,
+        paramValue: "10",
+        value1: "10",
+      },
+      {
+        suffix: "_delta_perc",
+        type: MeasureFilterType.PercentChange,
+        paramValue: "0.1",
+        value1: "10",
+      },
+      {
+        suffix: "_percent_of_total",
+        type: MeasureFilterType.PercentOfTotal,
+        paramValue: "0.25",
+        value1: "25",
+      },
+    ];
+
+    for (const { suffix, type, paramValue, value1 } of cases) {
+      it(`builds a chip for the base measure from a ${suffix} filter`, () => {
+        const filterManager = createFilterManager();
+
+        filterManager.setUrlParams(
+          perMetricsViewParams({
+            [AD_BIDS_METRICS_NAME]: `${AD_BIDS_PUBLISHER_DIMENSION} having (${AD_BIDS_IMPRESSIONS_MEASURE}${suffix} gt ${paramValue})`,
+          }),
+        );
+
+        expect(names(filterManager.sortedFilterManagers.measures)).toEqual([
+          AD_BIDS_IMPRESSIONS_MEASURE,
+        ]);
+        const measureManager = filterManager.sortedFilterManagers.measures[0];
+        expect(measureManager.dimension).toBe(AD_BIDS_PUBLISHER_DIMENSION);
+        expect(measureManager.type).toBe(type);
+        expect(measureManager.operation).toBe(
+          MeasureFilterOperation.GreaterThan,
+        );
+        expect(measureManager.value1).toBe(value1);
+
+        // The condition is applied to the metrics view with the suffixed accessor, exactly once.
+        expect(exprOf(filterManager, AD_BIDS_METRICS_NAME)).toEqual(
+          createAndExpression([
+            createSubQueryExpression(
+              AD_BIDS_PUBLISHER_DIMENSION,
+              [AD_BIDS_IMPRESSIONS_MEASURE],
+              createBinaryExpression(
+                `${AD_BIDS_IMPRESSIONS_MEASURE}${suffix}`,
+                V1Operation.OPERATION_GT,
+                Number(paramValue),
+              ),
+            ),
+          ]),
+        );
+      });
+
+      it(`writes a ${suffix} filter back to the param unchanged`, () => {
+        const filterManager = createFilterManager();
+        const param = `${AD_BIDS_DOMAIN_DIMENSION} having (${AD_BIDS_BID_PRICE_MEASURE}${suffix} GT ${paramValue})`;
+        filterManager.setUrlParams(
+          perMetricsViewParams({ [AD_BIDS_METRICS_NAME]: param }),
+        );
+
+        const searchParams = new URLSearchParams();
+        filterManager.applyFilterToParams(searchParams);
+
+        expect(searchParams.toString()).toEqual(
+          perMetricsViewParams({ [AD_BIDS_METRICS_NAME]: param }).toString(),
+        );
+      });
+    }
   });
 
   it("reads an in-list filter back as in-list mode", () => {
