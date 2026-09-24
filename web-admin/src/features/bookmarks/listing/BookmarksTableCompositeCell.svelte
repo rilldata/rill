@@ -60,8 +60,9 @@
           <Tag color="gray">{m.bookmark_tag_managed()}</Tag>
         {/if}
       </div>
+      <!-- leading-none keeps the resource badge at 16px so the row content stays 40px tall, matching the dashboards list. -->
       <div
-        class="flex gap-x-1 items-center text-fg-tertiary text-xs font-normal min-h-[16px] overflow-hidden"
+        class="flex gap-x-1 items-center text-fg-tertiary text-xs leading-none font-normal min-h-[16px] overflow-hidden"
       >
         {#if row.dashboardKind}
           <ResourceTypeBadge kind={row.dashboardKind} />
