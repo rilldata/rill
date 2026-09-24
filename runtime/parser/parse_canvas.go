@@ -10,11 +10,13 @@ import (
 
 	"github.com/google/uuid"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
+	"github.com/rilldata/rill/runtime/canvas"
 	"github.com/rilldata/rill/runtime/metricsview"
 	"github.com/rilldata/rill/runtime/metricsview/metricssql"
 	"github.com/rilldata/rill/runtime/pkg/rilltime"
 	"github.com/rilldata/rill/runtime/pkg/urlutils"
 	"golang.org/x/exp/maps"
+	"google.golang.org/protobuf/types/known/structpb"
 	"gopkg.in/yaml.v3"
 )
 
@@ -70,6 +72,7 @@ type canvasTabYAML struct {
 type canvasItemYAML struct {
 	Width           *string              `yaml:"width"`
 	Component       string               `yaml:"component"` // Name of an externally defined component
+	Params          map[string]any       `yaml:"params"`    // Values bound to the referenced component's declared params
 	InlineComponent map[string]yaml.Node `yaml:",inline"`   // Any other properties are considered an inline component definition
 }
 
@@ -326,6 +329,33 @@ func (p *Parser) parseCanvasRows(node *Node, rows []*canvasRowYAML, allowTabs bo
 				return nil, fmt.Errorf("item %d in row %d has properties incompatible with 'component'", j, i)
 			}
 
+			// Validate and convert param bindings. Bindings are only valid for items that reference
+			// an externally defined component; inline components can hardcode values directly.
+			var params *structpb.Struct
+			if len(item.Params) > 0 {
+				if len(item.InlineComponent) > 0 {
+					return nil, fmt.Errorf("item %d in row %d cannot pass 'params' to an inline component", j, i)
+				}
+				for k, v := range item.Params {
+					if !componentParamNameRegex.MatchString(k) {
+						return nil, fmt.Errorf("invalid param name %q for item %d in row %d", k, j, i)
+					}
+					switch v.(type) {
+					case string, bool, int, int32, int64, uint, uint32, uint64, float32, float64:
+					default:
+						return nil, fmt.Errorf("invalid value for param %q for item %d in row %d: only scalar values are supported", k, j, i)
+					}
+				}
+				for _, name := range canvas.MetricsViewNamesFromBindings(item.Params) {
+					node.Refs = append(node.Refs, ResourceName{Kind: ResourceKindMetricsView, Name: name})
+				}
+				var err error
+				params, err = structpb.NewStruct(item.Params)
+				if err != nil {
+					return nil, fmt.Errorf("invalid params for item %d in row %d: %w", j, i, err)
+				}
+			}
+
 			// Parse inline component definition if present and assign into item.Component
 			var definedInCanvs bool
 			if len(item.InlineComponent) > 0 {
@@ -342,6 +372,7 @@ func (p *Parser) parseCanvasRows(node *Node, rows []*canvasRowYAML, allowTabs bo
 			items = append(items, &runtimev1.CanvasItem{
 				Component:       item.Component,
 				DefinedInCanvas: definedInCanvs,
+				Params:          params,
 				Width:           width,
 				WidthUnit:       widthUnit,
 			})
@@ -444,9 +475,14 @@ func (p *Parser) parseCanvasInlineComponent(canvasName, posKey string, props map
 		return "", nil, err
 	}
 
-	spec, refs, err := p.parseComponentYAML(tmp)
+	spec, refs, err := p.parseComponentYAML(tmp, true)
 	if err != nil {
 		return "", nil, err
+	}
+
+	// Param declarations only make sense on externally defined components, where canvas items can bind values to them.
+	if len(spec.Params) > 0 {
+		return "", nil, errors.New("inline components cannot declare params")
 	}
 
 	spec.DefinedInCanvas = true

@@ -4,9 +4,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
+	"github.com/rilldata/rill/runtime/canvas"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/pathutil"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -117,6 +119,9 @@ func (r *CanvasReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceN
 		validateErr = r.validateRequiredFilters(ctx, c.Spec, components)
 	}
 	if validateErr == nil {
+		validateErr = r.validateItemParamBindings(ctx, c.Spec, components)
+	}
+	if validateErr == nil {
 		validateErr = r.validateDefaultFilters(c.Spec, metricsViews)
 	}
 
@@ -189,13 +194,13 @@ func canvasTransitiveConditionResources(ctx context.Context, c *runtime.Controll
 		metricsViews: make(map[string]bool),
 	}
 
-	canvas := res.GetCanvas()
-	if canvas == nil {
+	canvasResource := res.GetCanvas()
+	if canvasResource == nil {
 		return nil, fmt.Errorf("resource is not a canvas")
 	}
-	spec := canvas.GetState().GetValidSpec()
+	spec := canvasResource.GetState().GetValidSpec()
 	if spec == nil {
-		spec = canvas.GetSpec() // Fallback to spec if ValidSpec is not available
+		spec = canvasResource.GetSpec() // Fallback to spec if ValidSpec is not available
 	}
 	if spec == nil {
 		return nil, fmt.Errorf("canvas spec is nil")
@@ -204,15 +209,28 @@ func canvasTransitiveConditionResources(ctx context.Context, c *runtime.Controll
 	// explicitly allow access to the canvas itself
 	conditionResources = append(conditionResources, res.Meta.Name)
 
-	// Collect all component names referenced by the canvas (including those nested in tab groups)
-	componentNames := make(map[string]bool)
-	runtime.CollectCanvasComponentNames(spec.Rows, componentNames)
+	// Collect all items referenced by the canvas (including those nested in tab groups)
+	var items []*runtimev1.CanvasItem
+	runtime.CollectCanvasItems(spec.Rows, &items)
 
-	// Process each component
-	for componentName := range componentNames {
+	// Process each item
+	seenComponents := make(map[string]bool, len(items))
+	for _, item := range items {
+		// Track metrics views bound to the item's params.
+		if item.Params != nil {
+			for _, name := range canvas.MetricsViewNamesFromBindings(item.Params.AsMap()) {
+				refs.metricsViews[name] = true
+			}
+		}
+
+		if seenComponents[item.Component] {
+			continue
+		}
+		seenComponents[item.Component] = true
+
 		componentRef := &runtimev1.ResourceName{
 			Kind: runtime.ResourceKindComponent,
-			Name: componentName,
+			Name: item.Component,
 		}
 		// Allow access to the component itself
 		conditionResources = append(conditionResources, componentRef)
@@ -229,6 +247,16 @@ func canvasTransitiveConditionResources(ctx context.Context, c *runtime.Controll
 		if componentSpec == nil {
 			componentSpec = componentRes.GetComponent().Spec
 		}
+
+		// Track metrics views set as defaults of the component's declared metrics_view params.
+		for _, p := range componentSpec.Params {
+			if p.Type == "metrics_view" && p.Default != nil {
+				if name, ok := p.Default.AsInterface().(string); ok && name != "" && !strings.Contains(name, "{{") {
+					refs.metricsViews[name] = true
+				}
+			}
+		}
+
 		if componentSpec.RendererProperties == nil {
 			continue
 		}
@@ -372,6 +400,73 @@ func (r *CanvasReconciler) validateRequiredFilters(ctx context.Context, spec *ru
 	return nil
 }
 
+// validateItemParamBindings validates the param values that canvas items bind to their referenced
+// components' declared params, including that field-typed params reference fields that exist in
+// the bound metrics views.
+func (r *CanvasReconciler) validateItemParamBindings(ctx context.Context, spec *runtimev1.CanvasSpec, components map[string]*runtimev1.Resource) error {
+	var items []*runtimev1.CanvasItem
+	runtime.CollectCanvasItems(spec.Rows, &items)
+
+	// Cache of valid metrics view specs bound to params, shared across items.
+	mvs := make(map[string]*runtimev1.MetricsViewSpec)
+
+	for _, item := range items {
+		cmp := components[item.Component]
+		if cmp == nil {
+			// Missing components are reported by checkRefs.
+			continue
+		}
+		componentSpec := cmp.GetComponent().State.ValidSpec
+		if componentSpec == nil {
+			componentSpec = cmp.GetComponent().Spec
+		}
+
+		var bound map[string]any
+		if item.Params != nil {
+			bound = item.Params.AsMap()
+		}
+		if len(bound) == 0 && len(componentSpec.Params) == 0 {
+			continue
+		}
+		if len(bound) > 0 && len(componentSpec.Params) == 0 {
+			return fmt.Errorf("item passes params to component %q, which does not declare any params", item.Component)
+		}
+
+		// Fetch the specs of the metrics views bound to params.
+		// It is safe to fetch them here because the parser added them as refs of the canvas, so DAG ordering holds.
+		for _, p := range componentSpec.Params {
+			if p.Type != "metrics_view" {
+				continue
+			}
+			v, ok := bound[p.Name]
+			if !ok && p.Default != nil {
+				v = p.Default.AsInterface()
+			}
+			name, ok := v.(string)
+			if !ok || name == "" || strings.Contains(name, "{{") {
+				continue
+			}
+			if _, ok := mvs[name]; ok {
+				continue
+			}
+			res, err := r.C.Get(ctx, &runtimev1.ResourceName{Kind: runtime.ResourceKindMetricsView, Name: name}, false)
+			if err != nil {
+				// Not found or invalid; ValidateParamBindings reports it as an invalid metrics view.
+				continue
+			}
+			if mvSpec := res.GetMetricsView().State.ValidSpec; mvSpec != nil {
+				mvs[name] = mvSpec
+			}
+		}
+
+		err := canvas.ValidateParamBindings(componentSpec.Params, bound, mvs)
+		if err != nil {
+			return fmt.Errorf("invalid params for component %q: %w", item.Component, err)
+		}
+	}
+	return nil
+}
+
 // validateDefaultFilters validates that all metrics views referenced in the default filter expression exist.
 // Expressions themselves are validated in parse_canvas.
 func (r *CanvasReconciler) validateDefaultFilters(spec *runtimev1.CanvasSpec, metricsViews map[string]*runtimev1.Resource) error {
@@ -431,9 +526,13 @@ func (r *rendererRefs) populateRendererRefs(ctx context.Context, renderer string
 }
 
 // metricsView registers a metrics view reference.
+// Templated values (e.g. {{ .params.metrics_view }}) are skipped; the metrics views bound to
+// params are tracked from the canvas items' params instead.
 func (r *rendererRefs) metricsView(mv any) error {
 	if mv, ok := mv.(string); ok {
-		r.metricsViews[mv] = true
+		if !strings.Contains(mv, "{{") {
+			r.metricsViews[mv] = true
+		}
 		return nil
 	}
 	return fmt.Errorf("metrics view field is not a string")
@@ -473,13 +572,31 @@ func (r *rendererRefs) text(ctx context.Context, content any) error {
 	return nil
 }
 
-// metricsSQL parses and registers metrics view references found in a metrics SQL string.
+// metricsSQL parses and registers metrics view references found in a metrics_sql property,
+// which holds either a single query string or a list of query strings.
 func (r *rendererRefs) metricsSQL(ctx context.Context, sql any) error {
-	sqlStr, ok := sql.(string)
-	if !ok {
-		return fmt.Errorf("metrics_sql field is not a string")
+	switch v := sql.(type) {
+	case string:
+		return r.metricsSQLString(ctx, v)
+	case []any:
+		// Multi-query custom charts: register refs per query, best-effort,
+		// so one malformed query doesn't drop refs from the others.
+		for _, e := range v {
+			if s, ok := e.(string); ok {
+				_ = r.metricsSQLString(ctx, s)
+				if ctx.Err() != nil {
+					return ctx.Err()
+				}
+			}
+		}
+		return nil
+	default:
+		return fmt.Errorf("metrics_sql field is not a string or a list of strings")
 	}
+}
 
+// metricsSQLString parses and registers metrics view references found in a single metrics SQL query.
+func (r *rendererRefs) metricsSQLString(ctx context.Context, sqlStr string) error {
 	initializer, ok := runtime.ResolverInitializers["metrics_sql"]
 	if !ok {
 		return fmt.Errorf("metrics_sql resolver not registered")

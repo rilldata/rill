@@ -42,8 +42,11 @@
   // Create a unique key that includes whereFilter and timeRange to ensure queries are invalidated when they change
   $: filterKey = JSON.stringify({ whereFilter, timeRange });
 
-  // Only enable queries when the time range has resolved
-  $: hasValidTimeRange = !!timeRange?.start && !!timeRange?.end;
+  // Only enable queries when the time range has resolved. When no timeRange is
+  // provided at all (e.g. standalone component preview, outside a canvas), queries
+  // run unfiltered instead of waiting for one.
+  $: hasValidTimeRange =
+    timeRange === undefined || (!!timeRange?.start && !!timeRange?.end);
 
   // Create queries that are reactive to whereFilter changes
   $: dataQueries = metricsSQL.map((sql, index) =>

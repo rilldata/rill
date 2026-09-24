@@ -18,7 +18,10 @@
   import MetricsSQLInput from "./chart/MetricsSQLInput.svelte";
   import PositionalFieldConfig from "./chart/PositionalFieldConfig.svelte";
   import ComparisonInput from "./ComparisonInput.svelte";
-  import { ephemeralSpecsToDefs } from "@rilldata/web-common/features/dashboards/ephemeral-measures/canvas";
+  import {
+    ephemeralSpecsToDefs,
+    type EphemeralMeasureSpec,
+  } from "@rilldata/web-common/features/dashboards/ephemeral-measures/canvas";
   import MultiFieldFormatInput from "./fields/MultiFieldFormatInput.svelte";
   import MultiFieldInput from "./fields/MultiFieldInput.svelte";
   import SingleFieldInput from "./fields/SingleFieldInput.svelte";
@@ -55,13 +58,17 @@
       : undefined,
   ).options;
 
-  $: metricsView =
-    "metrics_view" in localParamValues ? localParamValues.metrics_view : null;
+  $: metricsView = (
+    "metrics_view" in localParamValues ? localParamValues.metrics_view : null
+  ) as string | null;
 
+  $: rawComponentEphemeralMeasures =
+    "adhoc_measures" in localParamValues &&
+    Array.isArray(localParamValues.adhoc_measures)
+      ? (localParamValues.adhoc_measures as EphemeralMeasureSpec[])
+      : undefined;
   $: componentEphemeralMeasures = ephemeralSpecsToDefs(
-    "adhoc_measures" in localParamValues
-      ? localParamValues.adhoc_measures
-      : undefined,
+    rawComponentEphemeralMeasures,
   );
 
   // Components that support ephemeral measures declare the param (hidden from
@@ -124,6 +131,9 @@
             metricName={metricsView}
             id={key}
             type={config.type}
+            includeTime={config.meta?.includeTime ?? false}
+            timeFieldsOnly={config.meta?.timeFieldsOnly ?? false}
+            searchableItems={config.meta?.searchableItems}
             selectedItem={localParamValues[key]}
             ephemeralMeasures={componentEphemeralMeasures}
             component={supportsEphemeralMeasures ? component : undefined}
@@ -259,13 +269,18 @@
             id={key}
             label={config.label ?? key}
             options={config.meta?.options ?? []}
-            value={$specStore[key] ?? config.meta?.default}
+            value={String($specStore[key] ?? config.meta?.default ?? "")}
             full={true}
             size="sm"
             sameWidth
             fontSize={12}
             onChange={(newValue) => {
-              component.updateProperty(key, newValue);
+              component.updateProperty(
+                key,
+                config.meta?.paramType === "number"
+                  ? Number(newValue)
+                  : newValue,
+              );
             }}
           />
 

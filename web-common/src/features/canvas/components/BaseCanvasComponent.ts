@@ -13,6 +13,7 @@ import { ExploreStateURLParams } from "@rilldata/web-common/features/dashboards/
 import { getComparisonInterval } from "@rilldata/web-common/lib/time/comparisons";
 import { TimeRangePreset } from "@rilldata/web-common/lib/time/types";
 import type {
+  V1CanvasItem,
   V1Expression,
   V1Resource,
   V1TimeRange,
@@ -199,7 +200,10 @@ export abstract class BaseCanvasComponent<T = ComponentSpec> {
     this.localExpressionFilters.yamlConfigProvider.cleanup?.();
   }
 
-  update(resource: V1Resource, path: ComponentPath) {
+  // item is the canvas item this instance renders; only used by components whose
+  // editable state lives on the item rather than the resource (see ComponentRefComponent).
+  update(resource: V1Resource, path: ComponentPath, item?: V1CanvasItem) {
+    void item;
     const yamlSpec = (resource.component?.state?.validSpec
       ?.rendererProperties ??
       (this.parent.allowUnvalidatedSpec

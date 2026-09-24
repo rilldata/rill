@@ -17,20 +17,22 @@ import type {
   FilterInputTypes,
 } from "@rilldata/web-common/features/canvas/inspector/types";
 import {
-  CHART_CONFIG,
-  type ChartMetadataConfig,
-} from "@rilldata/web-common/features/components/charts/config.ts";
-import { getFieldsForSpec } from "@rilldata/web-common/features/components/charts/data-provider.ts";
-import type { ChartSpec } from "@rilldata/web-common/features/components/charts/types.ts";
-import {
+  type V1CanvasItem,
   type V1ComponentSpec,
   type V1MetricsViewSpec,
   type V1ResolveCanvasResponseResolvedComponents,
   type V1Resource,
 } from "@rilldata/web-common/runtime-client";
+import {
+  CHART_CONFIG,
+  type ChartMetadataConfig,
+} from "@rilldata/web-common/features/components/charts/config.ts";
+import { getFieldsForSpec } from "@rilldata/web-common/features/components/charts/data-provider.ts";
+import type { ChartSpec } from "@rilldata/web-common/features/components/charts/types.ts";
 import { readable } from "svelte/store";
 import type { CanvasEntity, ComponentPath } from "../stores/canvas-entity";
 import type { BaseCanvasComponent } from "./BaseCanvasComponent";
+import { ComponentRefComponent } from "./component-ref";
 import { ImageComponent } from "./image";
 import { LeaderboardComponent } from "./leaderboard";
 import { MapComponent } from "./map";
@@ -123,6 +125,7 @@ const NON_CHART_TYPES = [
   "leaderboard",
   "map",
   "custom_chart",
+  "component_ref",
 ] as const;
 const ALL_COMPONENT_TYPES = [...CHART_TYPES, ...NON_CHART_TYPES] as const;
 
@@ -156,6 +159,7 @@ const baseComponentMap = {
   pivot: PivotCanvasComponent,
   map: MapComponent,
   custom_chart: CustomChartComponent,
+  component_ref: ComponentRefComponent,
 } as const;
 const IconMap = {
   markdown: TextIcon,
@@ -184,6 +188,7 @@ const baseDisplayMap = {
   leaderboard: "Leaderboard",
   map: "Map",
   custom_chart: "Custom Chart",
+  component_ref: "Custom viz",
 } as const;
 
 const chartDisplayMap = Object.fromEntries(
@@ -199,14 +204,53 @@ export function createComponent(
   resource: V1Resource,
   parent: CanvasEntity,
   path: ComponentPath,
+  item?: V1CanvasItem,
+  instanceId?: string,
 ): BaseCanvasComponent<any> {
-  const type = resource.component?.spec?.renderer as CanvasComponentType;
+  const type = getComponentInstanceType(resource, item);
+  if (type === "component_ref") {
+    const component = new ComponentRefComponent(resource, parent, path, item);
+    // Items referencing an external component share one resource, so the
+    // resource name can't identify the instance: use the positional instance id
+    // (also the components-store key and the selection id) so two references to
+    // the same component get distinct DOM ids and selection/cleanup state.
+    if (instanceId) component.id = instanceId;
+    return component;
+  }
   const ComponentClass =
     COMPONENT_CLASS_MAP[type as keyof typeof COMPONENT_CLASS_MAP];
   if (ComponentClass) {
     return new ComponentClass(resource, parent, path);
   }
   return new CartesianChartComponent(resource, parent, path);
+}
+
+/**
+ * Determines the component class type for a canvas item.
+ * Flint or parameterized custom charts render through the component_ref wrapper;
+ * legacy and non-chart component references keep their renderer-specific class.
+ */
+export function getComponentInstanceType(
+  resource: V1Resource | undefined,
+  item?: V1CanvasItem,
+  allowUnvalidatedSpec = true,
+): CanvasComponentType {
+  const spec =
+    resource?.component?.state?.validSpec ??
+    (allowUnvalidatedSpec ? resource?.component?.spec : undefined);
+  // Flint and parameterized custom charts need the component-ref wrapper to compile specs,
+  // resolve bindings, and expose generated inspector controls. Legacy standalone component
+  // files keep using their existing renderer classes (including multi-query Vega charts).
+  if (
+    item &&
+    !item.definedInCanvas &&
+    item.component &&
+    spec?.renderer === "custom_chart" &&
+    ((spec.params?.length ?? 0) > 0 || !!spec.rendererProperties?.spec)
+  ) {
+    return "component_ref";
+  }
+  return spec?.renderer as CanvasComponentType;
 }
 
 export function isCanvasComponentType(

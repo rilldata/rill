@@ -1,0 +1,35 @@
+type: component
+display_name: Share donut
+description: Donut chart showing how a measure is split across a dimension.
+
+params:
+  - name: metrics_view
+    type: metrics_view
+    required: true
+  - name: dimension
+    type: dimension
+    required: true
+  - name: measure
+    type: measure
+    required: true
+  - name: inner_radius
+    type: number
+    default: 60
+    description: Size of the hole in the middle. Set to 0 for a full pie.
+  - name: limit
+    type: number
+    default: 10
+
+custom_chart:
+  metrics_sql: |
+    SELECT {{ .params.dimension }}, {{ .params.measure }}
+    FROM {{ .params.metrics_view }}
+    ORDER BY {{ .params.measure }} DESC
+    LIMIT {{ .params.limit }}
+  spec:
+    chartType: Pie Chart
+    encodings:
+      size: { field: "{{ .params.measure }}" }
+      color: { field: "{{ .params.dimension }}" }
+    chartProperties:
+      innerRadius: "{{ .params.inner_radius }}"

@@ -56,10 +56,12 @@
     >
       <div class="flex gap-x-2">
         <CancelCircle className="text-destructive flex-shrink-0 mt-0.5" />
-        <div class="flex flex-col gap-2 min-w-0">
-          <span class="break-words">{effectiveError}</span>
+        <div class="min-w-0 break-words">
+          <span>{effectiveError}</span>
           {#if filePath}
-            <ExplainAndFixErrorButton {filePath} />
+            <span class="inline-flex align-middle ml-2">
+              <ExplainAndFixErrorButton {filePath} />
+            </span>
           {/if}
         </div>
       </div>
