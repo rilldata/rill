@@ -74,6 +74,7 @@ blobs:
   - disable: "{{ .IsNightly }}"
     provider: gs
     bucket: prod-cdn.rilldata.com
+    directory: "."
     extra_files_only: true
     extra_files:
       - glob: scripts/install.sh
