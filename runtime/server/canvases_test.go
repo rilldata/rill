@@ -1059,8 +1059,12 @@ params:
   - name: metrics_view
     type: metrics_view
     required: true
+  - name: measure
+    type: measure
+    required: true
 kpi:
   metrics_view: "{{ .params.metrics_view }}"
+  measure: "{{ .params.measure }}"
 `,
 			"c1.yaml": `
 type: canvas
@@ -1073,6 +1077,7 @@ rows:
   - component: tplkpi
     params:
       metrics_view: mv1
+      measure: count
 `,
 		},
 	})
