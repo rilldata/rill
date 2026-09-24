@@ -40,7 +40,7 @@
 
 <div class="flex flex-row items-center gap-x-2 group px-4 w-full h-full">
   <a
-    class="flex flex-row items-start gap-x-3 min-w-0 grow h-full py-2.5"
+    class="flex flex-row items-start gap-x-3 min-w-0 grow h-full py-2"
     href={row.href}
     aria-label={m.bookmark_entry_aria_label({ name: displayName })}
     onclick={() => onOpen(row)}
@@ -60,9 +60,9 @@
           <Tag color="gray">{m.bookmark_tag_managed()}</Tag>
         {/if}
       </div>
-      <!-- leading-none keeps the resource badge at 16px so the row content stays 40px tall, matching the dashboards list. -->
+      <!-- Both lines are 20px so the resource badge keeps its natural height and the row fills its fixed 60px height exactly. -->
       <div
-        class="flex gap-x-1 items-center text-fg-tertiary text-xs leading-none font-normal min-h-[16px] overflow-hidden"
+        class="flex gap-x-1 items-center text-fg-tertiary text-xs font-normal min-h-[20px] overflow-hidden"
       >
         {#if row.dashboardKind}
           <ResourceTypeBadge kind={row.dashboardKind} />
