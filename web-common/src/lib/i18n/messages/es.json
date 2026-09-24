@@ -527,6 +527,8 @@
   "canvas_sequential_theme": "Secuencial (Tema)",
   "canvas_show_axis_title": "Mostrar título del eje",
   "canvas_show_description_as_tooltip_label": "Mostrar descripción como tooltip",
+  "canvas_show_local_filters_hint": "Oculta las fichas de filtros locales a los usuarios. Los filtros se siguen aplicando.",
+  "canvas_show_local_filters_label": "Mostrar filtros en el componente",
   "canvas_show_null_values": "Mostrar valores nulos",
   "canvas_show_other_bucket_label": "Mostrar grupo \"Otros\"",
   "canvas_show_totals_value": "Mostrar valor total",
