@@ -149,5 +149,26 @@ test.describe("canvas time filters", () => {
     await page.keyboard.press("Escape");
 
     await expect(page.getByText("375")).toBeVisible();
+
+    // The local filter is shown as chips on the component
+    const kpiComponent = page
+      .locator(".component-card")
+      .filter({ has: page.getByLabel("total_records KPI data") })
+      .first();
+    await expect(
+      kpiComponent.getByLabel("Readonly Filter Chips"),
+    ).toBeVisible();
+
+    // Hiding local filters removes the chips but keeps the filter applied
+    await page
+      .getByRole("complementary", { name: "Inspector Panel" })
+      .getByRole("switch")
+      .last()
+      .click();
+
+    await expect(
+      kpiComponent.getByLabel("Readonly Filter Chips"),
+    ).not.toBeVisible();
+    await expect(page.getByText("375")).toBeVisible();
   });
 });

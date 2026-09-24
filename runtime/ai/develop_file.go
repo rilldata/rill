@@ -132,7 +132,7 @@ func (t *DevelopFile) Handler(ctx context.Context, args *DevelopFileArgs) (*Deve
 		messages = append(messages, NewTextCompletionMessage(RoleSystem, resourceInstructions.Body))
 	}
 	messages = append(messages, NewTextCompletionMessage(RoleUser, userPrompt))
-	messages = append(messages, s.NewCompletionMessages(s.MessagesWithResults(FilterByParent(s.ID())))...)
+	messages = append(messages, s.NewCompletionMessages(s.MessagesWithResults(FilterByParent(s.ParentID)))...)
 
 	// Determine tools that can be used
 	tools := []string{

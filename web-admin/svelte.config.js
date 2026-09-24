@@ -91,6 +91,11 @@ const config = {
           "https://storage.googleapis.com",
           "https://cdn.prod.website-files.com",
           "wss://ws-us3.pusher.com",
+          // Mapbox GL JS (canvas map component) fetches styles, sprites,
+          // glyphs and tiles from api.mapbox.com and reports telemetry to
+          // events.mapbox.com. See https://docs.mapbox.com/mapbox-gl-js/guides/browsers-and-testing/
+          "https://api.mapbox.com",
+          "https://events.mapbox.com",
           ...(dev ? ["http://localhost:*", "ws://localhost:*"] : []),
         ],
         "font-src": [
@@ -98,6 +103,12 @@ const config = {
           "https://fonts.gstatic.com",
           "https://widget.usepylon.com",
         ],
+        // Mapbox GL JS (canvas map component) runs its tile parser in a Web
+        // Worker created from a blob: URL. Without worker-src, browsers fall
+        // back to script-src, which does not allow blob:. child-src is the
+        // fallback for browsers that do not support worker-src.
+        "worker-src": ["self", "blob:"],
+        "child-src": ["self", "blob:"],
       },
     },
     adapter: adapter({

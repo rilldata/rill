@@ -14,6 +14,7 @@ import (
 
 	"github.com/google/jsonschema-go/jsonschema"
 	"github.com/google/uuid"
+	"github.com/modelcontextprotocol/go-sdk/jsonrpc"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 	"github.com/rilldata/rill/admin/database"
 	"github.com/rilldata/rill/admin/server/auth"
@@ -289,14 +290,17 @@ func (s *Server) callRuntimeTool(ctx context.Context, depl *database.Deployment,
 	for _, msg := range msgs {
 		var rpc struct {
 			Result *mcp.CallToolResult `json:"result"`
-			Error  *struct {
-				Message string `json:"message"`
-			} `json:"error"`
+			Error  *jsonrpc.Error      `json:"error"`
 		}
 		if err := json.Unmarshal(msg, &rpc); err != nil {
 			return nil, err
 		}
 		if rpc.Error != nil {
+			// The runtime rejects calls with invalid arguments, and calls to a tool it does not serve (e.g. because the caller lacks a permission), as invalid params.
+			// The caller can act on both, so they are returned as tool errors; any other error is unexpected and stays a protocol error.
+			if rpc.Error.Code == jsonrpc.CodeInvalidParams {
+				return mcpToolErrorf("%s", rpc.Error.Message), nil
+			}
 			return nil, errors.New(rpc.Error.Message)
 		}
 		if rpc.Result != nil {
