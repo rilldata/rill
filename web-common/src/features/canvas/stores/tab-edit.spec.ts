@@ -8,6 +8,7 @@ import {
   deleteTab,
   deleteTabGroup,
   duplicateTab,
+  duplicateTabGroup,
   moveTabGroup,
   isTabGroupRow,
   moveItemAcrossContainers,
@@ -249,6 +250,42 @@ rows:
     expect(isTabGroupRow(doc, 1)).toBe(true);
     expect(json.rows[0]).toEqual({ items: [{ component: "a" }] });
     expect(json.rows[2]).toEqual({ items: [{ component: "b" }] });
+  });
+
+  it("duplicateTabGroup inserts a full copy of the group after the original", () => {
+    const doc = parseDocument(`type: canvas
+rows:
+  - name: deep_dive
+    tabs:
+      - name: ov
+        label: Overview
+        rows:
+          - items:
+              - component: a
+      - label: Detail
+        rows: []
+  - items:
+      - component: b
+`);
+    expect(duplicateTabGroup(doc, 0)).toBe(1);
+
+    const json = doc.toJSON();
+    expect(json.rows).toHaveLength(3);
+    // The copy carries every tab and row but not the group's URL name.
+    expect(json.rows[1].name).toBeUndefined();
+    expect(json.rows[1].tabs).toEqual(json.rows[0].tabs);
+    expect(json.rows[1].tabs[0].rows).toEqual([
+      { items: [{ component: "a" }] },
+    ]);
+    // The original and the row that followed it are untouched.
+    expect(json.rows[0].name).toBe("deep_dive");
+    expect(json.rows[2]).toEqual({ items: [{ component: "b" }] });
+  });
+
+  it("duplicateTabGroup is a noop on a plain row", () => {
+    const doc = parseDocument(BASE);
+    expect(duplicateTabGroup(doc, 0)).toBe(-1);
+    expect(doc.toString()).toBe(BASE);
   });
 
   it("moveTabGroup moves a group to a drop slot above or below other blocks", () => {

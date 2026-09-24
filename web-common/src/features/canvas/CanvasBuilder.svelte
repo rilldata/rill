@@ -46,6 +46,7 @@
     convertRowToTabGroup,
     deleteTab,
     duplicateTab,
+    duplicateTabGroup,
     moveItemAcrossContainers,
     moveTab,
     moveTabGroup,
@@ -539,6 +540,14 @@
     openSidebar();
   }
 
+  function duplicateTabGroupAction(blockIndex: number) {
+    const newIndex = duplicateTabGroup(contents, blockIndex);
+    if (newIndex < 0) return;
+    updateContents();
+    // The copy has no name, so it is keyed by its index; select it like a duplicated tab.
+    selectTabGroup(`group-${newIndex}`);
+  }
+
   function convertRowToTabGroupAction(rowIndex: number) {
     if (convertRowToTabGroup(contents, rowIndex)) updateContents();
   }
@@ -910,6 +919,7 @@
         onSelect={(tabName) => setActiveTabInURL(block.group.name, tabName)}
         onSelectGroup={() => selectTabGroup(block.group.name)}
         onGroupMouseDown={handleTabGroupMouseDown}
+        onDuplicateGroup={duplicateTabGroupAction}
         onDropOnTab={dropComponentOnTab}
         onAddTabGroup={addTabGroupAtAction}
       />

@@ -4,7 +4,7 @@
   import Input from "@rilldata/web-common/components/forms/Input.svelte";
   import SidebarWrapper from "@rilldata/web-common/features/visual-editing/SidebarWrapper.svelte";
   import type { FileArtifact } from "@rilldata/web-common/features/entity-management/file-artifact";
-  import { Trash2 } from "lucide-svelte";
+  import { Copy, Trash2 } from "lucide-svelte";
   import { parseDocument, type Document } from "yaml";
   import TabListItem from "./TabListItem.svelte";
   import type { TabGroup } from "../stores/tab-group";
@@ -12,6 +12,7 @@
     deleteTab,
     deleteTabGroup,
     duplicateTab,
+    duplicateTabGroup,
     moveTab,
     renameTab,
     renameTabGroup,
@@ -25,9 +26,9 @@
   export let autoSave: boolean;
   // Clear the tab-group selection (e.g. after deleting the whole group).
   export let onClose: () => void;
-  // Re-point the selection at the group's new name after a rename, so the inspector stays
-  // open on it (the group is re-keyed by name when the spec reprocesses).
-  export let onRename: (name: string) => void;
+  // Re-point the selection at a group by name: after a rename, so the inspector stays open on
+  // it (the group is re-keyed by name when the spec reprocesses), or at a freshly made copy.
+  export let onSelectGroup: (name: string) => void;
 
   $: ({ editorContent, updateEditorContent, saveLocalContent } = fileArtifact);
 
@@ -60,7 +61,7 @@
     if (trimmed === group.name) return;
     await applyEdit((doc) => renameTabGroup(doc, blockIndex, trimmed));
     // Follow the group to its new key (an empty name defaults to `group-<index>`).
-    onRename(trimmed || `group-${blockIndex}`);
+    onSelectGroup(trimmed || `group-${blockIndex}`);
   }
 
   async function commitLabel(index: number, value: string) {
@@ -112,6 +113,14 @@
     await applyEdit((doc) => deleteTab(doc, blockIndex, index));
     // Deleting the last tab unwraps the group, so the group no longer exists.
     if (wasLastTab) onClose();
+  }
+
+  async function duplicateGroup() {
+    await applyEdit((doc) => {
+      duplicateTabGroup(doc, blockIndex);
+    });
+    // The copy sits right after the original and has no name, so it is keyed by its index.
+    onSelectGroup(`group-${blockIndex + 1}`);
   }
 
   function requestDeleteGroup() {
@@ -170,7 +179,11 @@
     </ul>
   </div>
 
-  <div class="param">
+  <div class="param flex flex-col gap-y-2">
+    <Button type="secondary" onClick={duplicateGroup}>
+      <Copy size="14px" />
+      Duplicate tab group
+    </Button>
     <Button type="secondary-destructive" onClick={requestDeleteGroup}>
       <Trash2 size="14px" />
       Delete tab group

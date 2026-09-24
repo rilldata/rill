@@ -35,6 +35,8 @@
     undefined;
   // Fired (edit mode) when a tab is clicked, so the parent can open the tab-group inspector.
   export let onSelectGroup: (() => void) | undefined = undefined;
+  // Duplicate the whole group (offered from each tab's ⋯ menu).
+  export let onDuplicateGroup: (() => void) | undefined = undefined;
   // Fired (edit mode) on mousedown on the strip's grip handle or empty area, so the parent can
   // start dragging the whole tab group to another position on the canvas.
   export let onGroupMouseDown: ((event: MouseEvent) => void) | undefined =
@@ -288,6 +290,16 @@
                     <ArrowRight size="14px" />
                     Move right
                   </DropdownMenu.Item>
+                  {#if onDuplicateGroup}
+                    <DropdownMenu.Separator />
+                    <DropdownMenu.Item
+                      class="flex flex-row gap-x-2 text-fg-primary"
+                      onclick={() => onDuplicateGroup?.()}
+                    >
+                      <Copy size="14px" />
+                      Duplicate tab group
+                    </DropdownMenu.Item>
+                  {/if}
                   <DropdownMenu.Separator />
                   <DropdownMenu.Item
                     class="flex flex-row gap-x-2 text-red-600"

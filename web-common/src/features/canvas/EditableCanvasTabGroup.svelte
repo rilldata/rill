@@ -92,6 +92,8 @@
   export let onSelectGroup: (() => void) | undefined = undefined;
   // Start dragging this tab group to another position on the canvas.
   export let onGroupMouseDown: (blockIndex: number, event: MouseEvent) => void;
+  // Duplicate this whole tab group (the copy is inserted right after it).
+  export let onDuplicateGroup: (blockIndex: number) => void;
   // Drop a dragged component onto a tab (cross-container move).
   export let onDropOnTab: (blockIndex: number, tabIndex: number) => void;
   // Insert a new tab group at a given top-level index (for the "add outside" affordance).
@@ -130,6 +132,7 @@
         {dragComponent}
         {onSelect}
         onGroupMouseDown={(event) => onGroupMouseDown(blockIndex, event)}
+        onDuplicateGroup={() => onDuplicateGroup(blockIndex)}
         onAddTab={() => onAddTab(blockIndex)}
         onRenameTab={(tabIndex, label) =>
           onRenameTab(blockIndex, tabIndex, label)}
