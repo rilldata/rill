@@ -6,6 +6,7 @@ import {
 import { PERC_DIFF } from "../../../components/data-types/type-utils";
 import {
   computePercentOfTotal,
+  getDimensionFilterWithSearch,
   updateFilterOnSearch,
 } from "./dimension-table-utils";
 import { describe, it, expect } from "vitest";
@@ -93,6 +94,39 @@ const expectedPOTData = [
     },
   },
 ];
+
+describe("getDimensionFilterWithSearch", () => {
+  it("should apply the search text when there are no active filters", () => {
+    const updatedFilter = getDimensionFilterWithSearch(
+      undefined,
+      "apple",
+      "fruit",
+    );
+    expect(updatedFilter).toEqual(
+      createAndExpression([createLikeExpression("fruit", "%apple%")]),
+    );
+  });
+  it("should return an empty filter when there are no active filters and no search text", () => {
+    const updatedFilter = getDimensionFilterWithSearch(undefined, "", "fruit");
+    expect(updatedFilter).toEqual(createAndExpression([]));
+  });
+  it("should replace the filter on the searched dimension and keep the others", () => {
+    const updatedFilter = getDimensionFilterWithSearch(
+      createAndExpression([
+        createInExpression("fruit", ["banana"]),
+        createInExpression("color", ["red"]),
+      ]),
+      "apple",
+      "fruit",
+    );
+    expect(updatedFilter).toEqual(
+      createAndExpression([
+        createInExpression("color", ["red"]),
+        createLikeExpression("fruit", "%apple%"),
+      ]),
+    );
+  });
+});
 
 describe("computePercentOfTotal", () => {
   const values = [
