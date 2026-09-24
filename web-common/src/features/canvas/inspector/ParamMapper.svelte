@@ -269,13 +269,18 @@
             id={key}
             label={config.label ?? key}
             options={config.meta?.options ?? []}
-            value={$specStore[key] ?? config.meta?.default}
+            value={String($specStore[key] ?? config.meta?.default ?? "")}
             full={true}
             size="sm"
             sameWidth
             fontSize={12}
             onChange={(newValue) => {
-              component.updateProperty(key, newValue);
+              component.updateProperty(
+                key,
+                config.meta?.paramType === "number"
+                  ? Number(newValue)
+                  : newValue,
+              );
             }}
           />
 

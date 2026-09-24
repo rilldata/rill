@@ -17,3 +17,8 @@ export function getPreviewArgsStore(
   }
   return store;
 }
+
+/** Drops preview-only bindings when a file is deleted (including the old path of a rename). */
+export function deletePreviewArgsStore(filePath: string): void {
+  stores.delete(filePath);
+}

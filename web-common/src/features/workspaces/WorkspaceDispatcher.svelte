@@ -21,6 +21,7 @@
   import WorkspaceContainer from "@rilldata/web-common/layout/workspace/WorkspaceContainer.svelte";
   import WorkspaceEditorContainer from "@rilldata/web-common/layout/workspace/WorkspaceEditorContainer.svelte";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.js";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import { onMount } from "svelte";
   import { getReadonlyNotice } from "@rilldata/web-common/features/entity-management/actions/protected-files.ts";
 
@@ -96,15 +97,19 @@
 </script>
 
 <svelte:head>
+  <!-- i18n-ignore: product name in the document title -->
   <title>Rill Developer | {fileName}</title>
 </svelte:head>
 
 <div class="flex h-full overflow-hidden">
   <div class="flex-1 overflow-hidden">
     {#if isGeneratingThisFile}
-      <GeneratingMessage title="Generating your Canvas dashboard..." />
+      <GeneratingMessage title={m.add_asset_generating_canvas_dashboard()} />
     {:else if isImportingThisComponent}
-      <GeneratingMessage title="Importing example using AI..." description="" />
+      <GeneratingMessage
+        title={m.component_importing_example_with_ai()}
+        description=""
+      />
     {:else if fileArtifact.isPreviewableDataFile}
       <ParquetWorkspace {fileArtifact} />
     {:else if WorkspaceComponent}

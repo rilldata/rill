@@ -3,6 +3,7 @@ import { ejectToVegaSpec, type EjectFieldBinding } from "./eject";
 import { deriveFlintFields } from "./semantic-types";
 import {
   getDeclaredParams,
+  normalizeMetricsSQL,
   type ComponentParamType,
 } from "@rilldata/web-common/features/custom-viz/params";
 import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
@@ -160,15 +161,4 @@ function boundMetricsViewName(
   if (!param?.name) return undefined;
   const name = args[param.name] ?? param.default;
   return typeof name === "string" && name ? name : undefined;
-}
-
-function normalizeMetricsSQL(value: unknown): string | undefined {
-  if (typeof value === "string") return value.trim() ? value : undefined;
-  if (Array.isArray(value)) {
-    return value.find(
-      (entry): entry is string =>
-        typeof entry === "string" && entry.trim().length > 0,
-    );
-  }
-  return undefined;
 }

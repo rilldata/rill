@@ -3,7 +3,10 @@
   import ReconcilingSpinner from "@rilldata/web-common/features/entity-management/ReconcilingSpinner.svelte";
   import FlintChartRenderer from "@rilldata/web-common/features/components/charts/flint/FlintChartRenderer.svelte";
   import type { FlintChartSpec } from "@rilldata/web-common/features/custom-viz/flint/compile";
-  import { optimisticRendererProps } from "@rilldata/web-common/features/custom-viz/params";
+  import {
+    normalizeMetricsSQL,
+    optimisticRendererProps,
+  } from "@rilldata/web-common/features/custom-viz/params";
   import { themeControl } from "@rilldata/web-common/features/themes/theme-control";
   import { createQueryServiceResolveComponent } from "@rilldata/web-common/runtime-client/v2/gen/query-service";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
@@ -78,15 +81,6 @@
 
   $: metricsViewName = $specStore.metrics_view as string | undefined;
   $: timeGrain = $timeAndFilterStore?.timeGrain;
-
-  function normalizeMetricsSQL(value: unknown): string | undefined {
-    if (typeof value === "string") return value;
-    if (Array.isArray(value)) {
-      // Multi-query components are a Vega-era shape that Flint cannot express.
-      return value.find((entry): entry is string => typeof entry === "string");
-    }
-    return undefined;
-  }
 </script>
 
 {#if !componentSpec}

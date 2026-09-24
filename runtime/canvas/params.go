@@ -32,6 +32,28 @@ func EffectiveArgs(spec *runtimev1.ComponentSpec, args map[string]any) map[strin
 	return res
 }
 
+// IsMetricsViewParamName reports whether a param name follows the convention used
+// to discover metrics view bindings before a referenced component has been loaded.
+func IsMetricsViewParamName(name string) bool {
+	return name == "metrics_view" || strings.HasSuffix(name, "_metrics_view")
+}
+
+// MetricsViewNamesFromBindings extracts statically bound metrics view names from a params map.
+// Templated bindings are resolved later and cannot be registered as resource references here.
+func MetricsViewNamesFromBindings(bindings map[string]any) []string {
+	var names []string
+	for key, value := range bindings {
+		if !IsMetricsViewParamName(key) {
+			continue
+		}
+		name, ok := value.(string)
+		if ok && name != "" && !strings.Contains(name, "{{") {
+			names = append(names, name)
+		}
+	}
+	return names
+}
+
 // ValidateParamBindings validates values bound to a component's declared params.
 // It checks unknown keys, missing required params, scalar types and option membership.
 // When metricsViews is non-nil, it additionally checks that params of type "metrics_view" name a valid metrics view

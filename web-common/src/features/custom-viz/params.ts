@@ -141,10 +141,11 @@ export function paramToInputParam(
           ...common,
           meta: {
             options: param.options.map((option) => ({
-              value: option,
+              value: String(option),
               label: String(option),
             })),
             default: param.default,
+            paramType: param.type,
           },
         };
       }
@@ -152,6 +153,18 @@ export function paramToInputParam(
     default:
       return { type: "text", ...common };
   }
+}
+
+/** Returns the first non-empty Metrics SQL query from the supported scalar/list shapes. */
+export function normalizeMetricsSQL(value: unknown): string | undefined {
+  if (typeof value === "string") return value.trim() ? value : undefined;
+  if (Array.isArray(value)) {
+    return value.find(
+      (entry): entry is string =>
+        typeof entry === "string" && entry.trim().length > 0,
+    );
+  }
+  return undefined;
 }
 
 /**

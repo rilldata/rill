@@ -19,8 +19,9 @@ import type { ComponentParamType } from "@rilldata/web-common/features/custom-vi
  *   display name   -> {{ .fields.<param>.display_name }}
  *   formatter name -> {{ .fields.<param>.format_type }}
  *
- * Field names are matched anywhere in a string, since Vega expressions embed them
- * (`datum['bid_price_sum']`), while display names are only matched as a whole title value whose
+ * Field names are matched only in field-valued properties and `datum` accesses in expressions.
+ * This avoids rewriting unrelated Vega-Lite enum values such as `aggregate: "count"` when a bound
+ * field happens to have the same name. Display names are only matched as a whole title value whose
  * encoding binds the matching field, so a hard-coded label that happens to read like a display
  * name is left alone.
  */
@@ -30,19 +31,21 @@ export const EJECTED_DATA_NAME = "query1";
 
 const VEGA_LITE_SCHEMA = "https://vega.github.io/schema/vega-lite/v5.json";
 
-/**
- * Delimits a parked match while substituting (see `substitute`). A private-use code point can
- * occur in neither a field name, a display name, nor any literal the compiler emits, so expanding
- * a placeholder back cannot catch unrelated text.
- */
-const PARK_DELIMITER = "\uE000";
-const PARKED_PATTERN = new RegExp(
-  `${PARK_DELIMITER}(\\d+)${PARK_DELIMITER}`,
-  "g",
-);
-
 /** Object keys whose value is a label rather than data, and so may hold a display name. */
 const TITLE_KEYS = new Set(["title", "text"]);
+
+/** Vega-Lite properties whose string values identify fields rather than enum values or labels. */
+const FIELD_VALUE_KEYS = new Set([
+  "field",
+  "fold",
+  "flatten",
+  "groupby",
+  "impute",
+  "key",
+  "lookup",
+  "pivot",
+  "repeat",
+]);
 
 /**
  * Multi-view specs size their subplots from the composition rather than from the enclosing view,
@@ -72,14 +75,13 @@ export function ejectToVegaSpec(
   compiled: Record<string, unknown>,
   bindings: EjectFieldBinding[],
 ): string {
-  const replacements = buildReplacements(bindings);
   const spec: Record<string, unknown> = {};
 
   for (const [key, value] of Object.entries(compiled)) {
     // The compiler inlines the rows it read, which the renderer supplies as a named dataset instead.
     // Skipping it also keeps cell values that happen to match a field name from being templated.
     if (key === "data") continue;
-    spec[key] = templatize(value, undefined, key, bindings, replacements);
+    spec[key] = templatize(value, undefined, key, bindings);
   }
 
   // Ordered so the spec opens with the keys a reader orients by, matching the base specs the
@@ -96,63 +98,38 @@ export function ejectToVegaSpec(
   );
 }
 
-/**
- * Builds the field-name and formatter-name substitutions, longest needle first.
- *
- * Ordering matters because one needle can contain another: a measure's formatter name
- * (`rill_bid_price`) contains its field name, and one field name can be a prefix of another
- * (`price`, `price_sum`). Matching the longest first, and never rescanning what was already
- * substituted, keeps the shorter needle from splitting a longer match.
- */
-function buildReplacements(
-  bindings: EjectFieldBinding[],
-): { pattern: RegExp; template: string }[] {
-  const needles: { needle: string; template: string }[] = [];
-  for (const { param, field, type } of bindings) {
-    if (!field) continue;
-    if (type === "measure") {
-      needles.push({
-        needle: sanitizeFieldName(field),
-        template: `{{ .fields.${param}.format_type }}`,
-      });
-    }
-    needles.push({ needle: field, template: `{{ .params.${param} }}` });
-  }
-  needles.sort((a, b) => b.needle.length - a.needle.length);
-
-  return needles.map(({ needle, template }) => ({
-    // Bounded on both sides so a field name is not matched inside a longer identifier.
-    // The leading boundary is a capture rather than a lookbehind for broader browser support.
-    pattern: new RegExp(
-      `(^|[^A-Za-z0-9_$])${escapeRegExp(needle)}(?![A-Za-z0-9_$])`,
-      "g",
-    ),
-    template,
-  }));
-}
-
 function templatize(
   value: unknown,
   scopeField: string | undefined,
   key: string | undefined,
   bindings: EjectFieldBinding[],
-  replacements: { pattern: RegExp; template: string }[],
 ): unknown {
   if (typeof value === "string") {
     if (key && TITLE_KEYS.has(key)) {
       const binding = bindings.find(
         (candidate) =>
-          candidate.field === scopeField && candidate.displayName === value,
+          (candidate.field === scopeField && candidate.displayName === value) ||
+          candidate.field === value,
       );
       if (binding) return `{{ .fields.${binding.param}.display_name }}`;
     }
-    return substitute(value, replacements);
+    if (key && FIELD_VALUE_KEYS.has(key)) {
+      const binding = bindings.find((candidate) => candidate.field === value);
+      if (binding) return `{{ .params.${binding.param} }}`;
+    }
+    if (key === "formatType") {
+      const binding = bindings.find(
+        (candidate) =>
+          candidate.type === "measure" &&
+          sanitizeFieldName(candidate.field) === value,
+      );
+      if (binding) return `{{ .fields.${binding.param}.format_type }}`;
+    }
+    return templatizeDatumAccesses(value, bindings);
   }
 
   if (Array.isArray(value)) {
-    return value.map((entry) =>
-      templatize(entry, scopeField, key, bindings, replacements),
-    );
+    return value.map((entry) => templatize(entry, scopeField, key, bindings));
   }
 
   if (value && typeof value === "object") {
@@ -164,7 +141,7 @@ function templatize(
     return Object.fromEntries(
       Object.entries(record).map(([childKey, childValue]) => [
         childKey,
-        templatize(childValue, nextScope, childKey, bindings, replacements),
+        templatize(childValue, nextScope, childKey, bindings),
       ]),
     );
   }
@@ -172,29 +149,34 @@ function templatize(
   return value;
 }
 
-/**
- * Applies the substitutions to a string in one pass.
- *
- * Each match is parked behind a placeholder that no later pattern can match, so a template
- * reference is never itself substituted: `{{ .params.publisher }}` inserted for the field
- * `publisher` would otherwise be rewritten again by a param of the same name.
- */
-function substitute(
+/** Replaces bound field names only when they are read from Vega's `datum` object. */
+function templatizeDatumAccesses(
   value: string,
-  replacements: { pattern: RegExp; template: string }[],
+  bindings: EjectFieldBinding[],
 ): string {
-  const parked: string[] = [];
   let res = value;
-  for (const { pattern, template } of replacements) {
-    res = res.replace(pattern, (_, boundary: string) => {
-      parked.push(template);
-      return `${boundary}${PARK_DELIMITER}${parked.length - 1}${PARK_DELIMITER}`;
-    });
+  for (const { field, param } of bindings) {
+    if (!field) continue;
+    const escaped = escapeRegExp(field);
+    const template = `{{ .params.${param} }}`;
+    const bracketAccess = new RegExp(
+      `(\\bdatum\\s*\\[\\s*)(["'])${escaped}\\2(\\s*\\])`,
+      "g",
+    );
+    res = res.replace(
+      bracketAccess,
+      (_match, prefix: string, quote: string, suffix: string) =>
+        `${prefix}${quote}${template}${quote}${suffix}`,
+    );
+    if (/^[A-Za-z_$][A-Za-z0-9_$]*$/.test(field)) {
+      const dotAccess = new RegExp(
+        `(\\bdatum\\s*\\.\\s*)${escaped}(?![A-Za-z0-9_$])`,
+        "g",
+      );
+      res = res.replace(dotAccess, `$1${template}`);
+    }
   }
-  return res.replace(
-    PARKED_PATTERN,
-    (match, index: string) => parked[Number(index)] ?? match,
-  );
+  return res;
 }
 
 /**

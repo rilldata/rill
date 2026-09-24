@@ -43,6 +43,7 @@
   import AddModelSubOption from "@rilldata/web-common/features/entity-management/add/AddModelSubOption.svelte";
   import AddDataModal from "@rilldata/web-common/features/add-data/AddDataModal.svelte";
   import AddMetricsViewSubOption from "@rilldata/web-common/features/entity-management/add/AddMetricsViewSubOption.svelte";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 
   let active = false;
   let showExploreDialog = false;
@@ -186,14 +187,14 @@
     {#snippet child({ props })}
       <Button
         {...props}
-        label="Add Asset"
+        label={m.add_asset_label()}
         class="w-full"
         type="secondary"
         selected={active}
       >
         <PlusCircleIcon size="14px" />
         <div class="flex gap-x-1 items-center">
-          Add
+          {m.add_asset_add()}
           <span class="transition-transform" class:-rotate-180={active}>
             <CaretDownIcon size="10px" />
           </span>
@@ -208,12 +209,12 @@
     }]`}
   >
     <DropdownMenu.Item
-      aria-label="Add Data"
+      aria-label={m.add_asset_add_data()}
       class="flex gap-x-2"
       onclick={handleAddData}
     >
       <svelte:component this={Database} color="#C026D3" size="16px" />
-      Data
+      {m.add_asset_data()}
     </DropdownMenu.Item>
     <AddModelSubOption
       onSelect={(connector) => {
@@ -231,7 +232,7 @@
     />
     <DropdownMenu.Separator />
     <DropdownMenu.Item
-      aria-label="Add Explore Dashboard"
+      aria-label={m.add_asset_add_explore_dashboard()}
       class="flex gap-x-2"
       disabled={metricsViews.length === 0}
       onclick={() => {
@@ -252,10 +253,10 @@
           size="16px"
         />
         <div class="flex flex-col items-start">
-          Explore dashboard
+          {m.add_asset_explore_dashboard()}
           {#if metricsViews.length === 0}
             <span class="text-fg-secondary text-xs">
-              Requires a metrics view
+              {m.add_asset_requires_metrics_view()}
             </span>
           {/if}
         </div>
@@ -274,10 +275,10 @@
           size="16px"
         />
         <div class="flex flex-col items-start">
-          Canvas dashboard
+          {m.add_asset_canvas_dashboard()}
           {#if metricsViews.length === 0}
             <span class="text-fg-secondary text-xs">
-              Requires a metrics view
+              {m.add_asset_requires_metrics_view()}
             </span>
           {/if}
         </div>
@@ -292,26 +293,28 @@
           this={resourceIconMapping[ResourceKind.Component]}
           size="16px"
         />
-        Custom viz
+        {m.component_custom_viz()}
       </DropdownMenu.Item>
     {/if}
     <DropdownMenu.Separator />
     <DropdownMenu.Sub>
-      <DropdownMenu.SubTrigger>More</DropdownMenu.SubTrigger>
+      <DropdownMenu.SubTrigger>{m.add_asset_more()}</DropdownMenu.SubTrigger>
       <DropdownMenu.SubContent class="w-[240px]">
         <DropdownMenu.Item class="flex gap-x-2" onclick={handleAddFolder}>
-          <Folder size="14px" class="stroke-icon-muted" /> Folder
+          <Folder size="14px" class="stroke-icon-muted" />
+          {m.add_asset_folder()}
         </DropdownMenu.Item>
         <DropdownMenu.Item class="flex gap-x-2" onclick={handleAddBlankFile}>
-          <File size="14px" class="stroke-icon-muted" /> Blank file
+          <File size="14px" class="stroke-icon-muted" />
+          {m.add_asset_blank_file()}
         </DropdownMenu.Item>
         {#if $developerChat}
           <DropdownMenu.Item
             class="flex gap-x-2"
             onclick={() => (generateDataDialog = true)}
           >
-            <Wand size="14px" class="stroke-accent-primary-action" /> Generate data
-            using AI
+            <Wand size="14px" class="stroke-accent-primary-action" />
+            {m.add_asset_generate_data_with_ai()}
           </DropdownMenu.Item>
         {/if}
         <DropdownMenu.Separator />
@@ -334,7 +337,7 @@
           }}
         >
           <Bot size="14px" class="stroke-icon-muted" />
-          AI Connector
+          {m.status_label_ai_connector()}
         </DropdownMenu.Item>
         <DropdownMenu.Separator />
         <DropdownMenu.Item
@@ -346,12 +349,12 @@
             this={resourceIconMapping[ResourceKind.Theme]}
             size="16px"
           />
-          Theme
+          {m.theme_label()}
         </DropdownMenu.Item>
         <DropdownMenu.Separator />
         <DropdownMenu.Item class="flex gap-x-2" onclick={handleAddSkill}>
           <GraduationCap size="14px" class="stroke-icon-muted" />
-          AI Skill
+          {m.add_asset_ai_skill()}
         </DropdownMenu.Item>
         <!-- Temporarily hide Report and Alert options -->
         <!-- <DropdownMenu.Item class="flex gap-x-2" onclick={() => createResourceAndNavigate(runtimeClient, ResourceKind.Report)}>
@@ -360,7 +363,7 @@
               className="text-fg-primary"
               size="16px"
             />
-            Report
+            {m.nav_tab_reports()}
           </DropdownMenu.Item>
           <DropdownMenu.Item class="flex gap-x-2" onclick={() => createResourceAndNavigate(runtimeClient, ResourceKind.Alert)}>
             <svelte:component
@@ -368,7 +371,7 @@
               className="text-fg-primary"
               size="16px"
             />
-            Alert
+            {m.nav_tab_alerts()}
           </DropdownMenu.Item> -->
       </DropdownMenu.SubContent>
     </DropdownMenu.Sub>

@@ -209,7 +209,10 @@ export class ComponentRefComponent extends BaseCanvasComponent<ComponentRefSpec>
       return;
     }
     this.metricsViewName = name;
-    this.localFilters = this.parent.filterManager.createLocalFilterStore(name);
+    this.localExpressionFilters.metricsViewsProvider.setMetricsViewNames([
+      name,
+    ]);
+    this.localTimeControls.metricsViewName = name;
     // Surface the metrics view under the key the shared canvas systems read.
     this.specStore.update((s) => ({ ...s, metrics_view: name }));
   }

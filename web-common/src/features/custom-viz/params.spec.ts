@@ -80,6 +80,22 @@ describe("paramToInputParam", () => {
     expect(input.meta?.default).toBe("line");
   });
 
+  it("marks numeric select options for coercion by the inspector", () => {
+    const input = paramToInputParam({
+      name: "limit",
+      type: "number",
+      options: [10, 25, 50],
+    });
+
+    expect(input.type).toBe("select");
+    expect(input.meta?.options).toEqual([
+      { value: "10", label: "10" },
+      { value: "25", label: "25" },
+      { value: "50", label: "50" },
+    ]);
+    expect(input.meta?.paramType).toBe("number");
+  });
+
   it("marks required params as non-optional", () => {
     expect(paramToInputParam(params[0]).optional).toBe(false);
     expect(paramToInputParam(params[4]).optional).toBe(true);

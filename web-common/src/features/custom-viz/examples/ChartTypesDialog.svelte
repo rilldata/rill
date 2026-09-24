@@ -16,6 +16,7 @@
   import { extractErrorMessage } from "@rilldata/web-common/lib/errors";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
+  import { CUSTOM_VIZ_FOLDER } from "@rilldata/web-common/features/custom-viz/params";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import ExampleCard from "./ExampleCard.svelte";
   import {
@@ -106,7 +107,12 @@
 
   function startBlank() {
     open = false;
-    void createResourceAndNavigate(client, ResourceKind.Component);
+    void createResourceAndNavigate(
+      client,
+      ResourceKind.Component,
+      undefined,
+      CUSTOM_VIZ_FOLDER,
+    );
   }
 
   async function select(entry: GalleryEntry) {

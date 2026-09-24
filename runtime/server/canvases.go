@@ -77,23 +77,21 @@ func (s *Server) ResolveComponent(ctx context.Context, req *runtimev1.ResolveCom
 		return nil, err
 	}
 
-	// Parse args and validate them against the component's declared params.
-	// Components without declared params accept arbitrary args for backwards compatibility.
+	// Parse args and merge defaults before loading the metrics views referenced by the bindings.
 	args := req.Args.AsMap()
-	if len(spec.Params) > 0 {
-		if err := canvas.ValidateParamBindings(spec.Params, args, nil); err != nil {
-			return nil, status.Error(codes.InvalidArgument, err.Error())
-		}
-	}
-
-	// Merge the declared param defaults (and legacy input variable defaults) under the provided args.
 	effectiveArgs := canvas.EffectiveArgs(spec, args)
 
-	// Resolve the metrics view metadata of the bound fields, so a spec can title an axis with a
-	// measure's display name or format it with the measure's formatter. See canvas.FieldTemplateData.
+	// Resolve metrics view metadata both to validate field bindings at this API boundary and to
+	// expose display names and formatters to renderer-property templates.
 	metricsViews, err := s.boundMetricsViews(ctx, req.InstanceId, claims, spec.Params, effectiveArgs)
 	if err != nil {
 		return nil, err
+	}
+	// Components without declared params accept arbitrary args for backwards compatibility.
+	if len(spec.Params) > 0 {
+		if err := canvas.ValidateParamBindings(spec.Params, args, metricsViews); err != nil {
+			return nil, status.Error(codes.InvalidArgument, err.Error())
+		}
 	}
 
 	// Setup templating data.

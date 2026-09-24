@@ -2313,6 +2313,11 @@ func TestComponentParamErrors(t *testing.T) {
 			wantErr: `must be named "metrics_view" or end with "_metrics_view"`,
 		},
 		{
+			name:    "metrics_view name reserved for its type",
+			files:   map[string]string{`components/c.yaml`: component("  - name: metrics_view\n    type: string")},
+			wantErr: `must have type "metrics_view"`,
+		},
+		{
 			name:    "back-reference to non-metrics_view param",
 			files:   map[string]string{`components/c.yaml`: component("  - name: metrics_view\n    type: metrics_view\n  - name: a\n    type: string\n  - name: b\n    type: measure\n    metrics_view: a")},
 			wantErr: `not a declared param of type "metrics_view"`,

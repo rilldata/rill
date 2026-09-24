@@ -66,6 +66,8 @@
   $: customVizComponents = ($componentsQuery?.data ?? []).filter(
     (res) =>
       !res.component?.spec?.definedInCanvas &&
+      (res.component?.state?.validSpec?.renderer ??
+        res.component?.spec?.renderer) === "custom_chart" &&
       !!res.meta?.name?.name &&
       !res.meta.name.name.includes("--component-"),
   );

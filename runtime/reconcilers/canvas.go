@@ -194,13 +194,13 @@ func canvasTransitiveConditionResources(ctx context.Context, c *runtime.Controll
 		metricsViews: make(map[string]bool),
 	}
 
-	canvas := res.GetCanvas()
-	if canvas == nil {
+	canvasResource := res.GetCanvas()
+	if canvasResource == nil {
 		return nil, fmt.Errorf("resource is not a canvas")
 	}
-	spec := canvas.GetState().GetValidSpec()
+	spec := canvasResource.GetState().GetValidSpec()
 	if spec == nil {
-		spec = canvas.GetSpec() // Fallback to spec if ValidSpec is not available
+		spec = canvasResource.GetSpec() // Fallback to spec if ValidSpec is not available
 	}
 	if spec == nil {
 		return nil, fmt.Errorf("canvas spec is nil")
@@ -217,15 +217,9 @@ func canvasTransitiveConditionResources(ctx context.Context, c *runtime.Controll
 	seenComponents := make(map[string]bool, len(items))
 	for _, item := range items {
 		// Track metrics views bound to the item's params.
-		// The component parser enforces that params of type "metrics_view" are named
-		// "metrics_view" or end with "_metrics_view", which makes this extraction complete.
 		if item.Params != nil {
-			for k, v := range item.Params.AsMap() {
-				if k == "metrics_view" || strings.HasSuffix(k, "_metrics_view") {
-					if name, ok := v.(string); ok && name != "" && !strings.Contains(name, "{{") {
-						refs.metricsViews[name] = true
-					}
-				}
+			for _, name := range canvas.MetricsViewNamesFromBindings(item.Params.AsMap()) {
+				refs.metricsViews[name] = true
 			}
 		}
 

@@ -782,6 +782,22 @@ custom_chart:
 	require.Error(t, err)
 	require.Equal(t, codes.InvalidArgument, status.Code(err))
 	require.ErrorContains(t, err, `unknown param "nope"`)
+
+	// A direct resolve must repeat the reconciler's field-membership validation because clients
+	// can call this endpoint with bindings that never appeared in a reconciled canvas.
+	args, err = structpb.NewStruct(map[string]any{
+		"metrics_view": "mv1",
+		"measure":      "not_a_measure",
+	})
+	require.NoError(t, err)
+	_, err = server.ResolveComponent(testCtx(), &runtimev1.ResolveComponentRequest{
+		InstanceId: instanceID,
+		Component:  "trend",
+		Args:       args,
+	})
+	require.Error(t, err)
+	require.Equal(t, codes.InvalidArgument, status.Code(err))
+	require.ErrorContains(t, err, `is not a measure in metrics view "mv1"`)
 }
 
 func TestResolveEjectedComponent(t *testing.T) {

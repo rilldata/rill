@@ -270,4 +270,33 @@ describe("ejectToVegaSpec", () => {
 
     expect(spec.encoding.x.field).toBe("{{ .params.publisher }}");
   });
+
+  it("does not rewrite Vega-Lite enum values that match bound field names", () => {
+    const spec = JSON.parse(
+      ejectToVegaSpec(
+        {
+          mark: { type: "bar" },
+          encoding: {
+            x: { field: "count", aggregate: "count" },
+            y: { field: "bar" },
+          },
+          transform: [
+            { calculate: "datum['count'] + datum.bar", as: "combined" },
+          ],
+        },
+        [
+          { param: "x_axis", field: "count", type: "measure" },
+          { param: "category", field: "bar", type: "dimension" },
+        ],
+      ),
+    ) as Record<string, any>;
+
+    expect(spec.mark.type).toBe("bar");
+    expect(spec.encoding.x.aggregate).toBe("count");
+    expect(spec.encoding.x.field).toBe("{{ .params.x_axis }}");
+    expect(spec.encoding.y.field).toBe("{{ .params.category }}");
+    expect(spec.transform[0].calculate).toBe(
+      "datum['{{ .params.x_axis }}'] + datum.{{ .params.category }}",
+    );
+  });
 });

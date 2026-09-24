@@ -22,8 +22,14 @@ export async function createResourceAndNavigate(
   client: RuntimeClient,
   kind: ResourceKind,
   baseResource?: V1Resource,
+  folderName?: string,
 ) {
-  const filePath = await createResourceFile(client, kind, baseResource);
+  const filePath = await createResourceFile(
+    client,
+    kind,
+    baseResource,
+    folderName,
+  );
   if (!filePath) return;
 
   const previousScreenName = getScreenNameFromPage();
@@ -40,12 +46,13 @@ export async function createResourceFile(
   client: RuntimeClient,
   kind: ResourceKind,
   baseResource?: V1Resource,
+  folderName?: string,
 ): Promise<string> {
   if (!(kind in ResourceKindMap)) {
     throw new Error(`Unknown resource kind: ${kind}`);
   }
 
-  const newPath = getPathForNewResourceFile(kind, baseResource);
+  const newPath = getPathForNewResourceFile(kind, baseResource, folderName);
   await runtimeServicePutFile(client, {
     path: newPath,
     blob: generateBlobForNewResourceFile(kind, baseResource),
@@ -60,6 +67,7 @@ export async function createResourceFile(
 export function getPathForNewResourceFile(
   newKind: ResourceKind,
   baseResource?: V1Resource,
+  folderName?: string,
 ) {
   const allNames =
     newKind === ResourceKind.Source || newKind === ResourceKind.Model
@@ -70,11 +78,11 @@ export function getPathForNewResourceFile(
         ]
       : fileArtifacts.getNamesForKind(newKind);
 
-  const { folderName, extension } = ResourceKindMap[newKind];
+  const { folderName: defaultFolderName, extension } = ResourceKindMap[newKind];
   const baseName = getBaseNameForNewResourceFile(newKind, baseResource);
   const newName = getName(baseName, allNames);
 
-  return `${folderName}/${newName}${extension}`;
+  return `${folderName ?? defaultFolderName}/${newName}${extension}`;
 }
 
 export const ResourceKindMap: Record<
@@ -116,7 +124,7 @@ export const ResourceKindMap: Record<
     extension: ".yaml",
   },
   [ResourceKind.Component]: {
-    folderName: "viz_library",
+    folderName: "components",
     baseName: "component",
     extension: ".yaml",
   },

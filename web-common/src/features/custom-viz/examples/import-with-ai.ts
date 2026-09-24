@@ -4,6 +4,7 @@ import { developerChatActions } from "@rilldata/web-common/features/chat/layouts
 import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
 import { navigateToFile } from "@rilldata/web-common/layout/navigation/editor-routing";
 import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
+import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 import { asyncWaitUntil, waitUntil } from "@rilldata/web-common/lib/waitUtils";
 import {
   runtimeServicePutFile,
@@ -84,7 +85,7 @@ export async function importGalleryChartWithAgent(
 
       if (attempt >= MAX_FIX_ATTEMPTS) {
         eventBus.emit("notification", {
-          message: `Imported ${filePath}, but it still has errors — review it in the editor`,
+          message: m.component_imported_with_errors({ path: filePath }),
           detail: error,
           type: "error",
         });

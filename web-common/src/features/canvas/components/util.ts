@@ -227,22 +227,30 @@ export function createComponent(
 
 /**
  * Determines the component class type for a canvas item.
- * Items that reference an externally defined component render through the
- * component_ref wrapper regardless of the referenced component's renderer;
- * everything else keys off the renderer.
+ * Flint or parameterized custom charts render through the component_ref wrapper;
+ * legacy and non-chart component references keep their renderer-specific class.
  */
 export function getComponentInstanceType(
   resource: V1Resource | undefined,
   item?: V1CanvasItem,
   allowUnvalidatedSpec = true,
 ): CanvasComponentType {
-  if (item && !item.definedInCanvas && item.component) {
+  const spec =
+    resource?.component?.state?.validSpec ??
+    (allowUnvalidatedSpec ? resource?.component?.spec : undefined);
+  // Flint and parameterized custom charts need the component-ref wrapper to compile specs,
+  // resolve bindings, and expose generated inspector controls. Legacy standalone component
+  // files keep using their existing renderer classes (including multi-query Vega charts).
+  if (
+    item &&
+    !item.definedInCanvas &&
+    item.component &&
+    spec?.renderer === "custom_chart" &&
+    ((spec.params?.length ?? 0) > 0 || !!spec.rendererProperties?.spec)
+  ) {
     return "component_ref";
   }
-  return (resource?.component?.state?.validSpec?.renderer ??
-    (allowUnvalidatedSpec
-      ? resource?.component?.spec?.renderer
-      : undefined)) as CanvasComponentType;
+  return spec?.renderer as CanvasComponentType;
 }
 
 export function isCanvasComponentType(

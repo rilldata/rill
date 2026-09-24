@@ -5,7 +5,10 @@
   import FlintChartRenderer from "@rilldata/web-common/features/components/charts/flint/FlintChartRenderer.svelte";
   import type { FlintChartSpec } from "@rilldata/web-common/features/custom-viz/flint/compile";
   import { sendComponentFilePrompt } from "@rilldata/web-common/features/custom-viz/component-ai-agent";
-  import { optimisticRendererProps } from "@rilldata/web-common/features/custom-viz/params";
+  import {
+    normalizeMetricsSQL,
+    optimisticRendererProps,
+  } from "@rilldata/web-common/features/custom-viz/params";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import { themeControl } from "@rilldata/web-common/features/themes/theme-control";
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
@@ -93,17 +96,6 @@
       ? (args[metricsViewParam.name] ?? metricsViewParam.default)
       : undefined
   ) as string | undefined;
-
-  function normalizeMetricsSQL(value: unknown): string | undefined {
-    if (typeof value === "string") return value.trim() ? value : undefined;
-    if (Array.isArray(value)) {
-      return value.find(
-        (entry): entry is string =>
-          typeof entry === "string" && entry.trim().length > 0,
-      );
-    }
-    return undefined;
-  }
 </script>
 
 <div class="size-full min-h-[400px] flex flex-col p-4">

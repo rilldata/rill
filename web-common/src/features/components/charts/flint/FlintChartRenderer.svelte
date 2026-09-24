@@ -26,6 +26,9 @@
   } from "@rilldata/web-common/features/custom-viz/flint/compile";
   import { EJECTED_DATA_NAME } from "@rilldata/web-common/features/custom-viz/flint/eject";
   import { deriveFlintFields } from "@rilldata/web-common/features/custom-viz/flint/semantic-types";
+  import { debounce } from "@rilldata/web-common/lib/create-debouncer";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
+  import { onDestroy } from "svelte";
 
   export let spec: FlintChartSpec | undefined = undefined;
   /**
@@ -50,12 +53,23 @@
    */
   export let theme: Record<string, string> | undefined = undefined;
 
-  const viewOptions = ["Chart", "Data"];
+  $: viewOptions = [m.canvas_chart(), m.component_preview_data()];
 
   let selectedView = 0; // 0 = Chart, 1 = Data
   let chartWidth = 0;
   let chartHeight = 0;
+  let compileWidth = 0;
+  let compileHeight = 0;
   let viewVL: View;
+
+  // Vega resizes the live view immediately. Flint only needs the settled size to recompute
+  // layout choices, which avoids recreating the full spec on every drag-resize frame.
+  const updateCompileSize = debounce((width: number, height: number) => {
+    compileWidth = width;
+    compileHeight = height;
+  }, 150);
+  $: updateCompileSize(chartWidth, chartHeight);
+  onDestroy(updateCompileSize.cancel);
 
   const runtimeClient = useRuntimeClient();
 
@@ -145,8 +159,8 @@
           rows,
           fields,
           size:
-            chartWidth > 0 && chartHeight > 0
-              ? { width: chartWidth, height: chartHeight }
+            compileWidth > 0 && compileHeight > 0
+              ? { width: compileWidth, height: compileHeight }
               : undefined,
           measureFields: measures.map((measure) => measure.name as string),
         })
@@ -200,11 +214,13 @@
         bind:clientHeight={chartHeight}
       >
         {#if !spec && !vegaSpec}
-          <ComponentError error="No spec provided" />
+          <ComponentError error={m.component_preview_no_chart_spec()} />
         {:else if !metricsSQL}
-          <ComponentError error="No metrics SQL provided" />
+          <ComponentError error={m.component_preview_no_metrics_sql()} />
         {:else if queryError}
-          <ComponentError error={queryError.message || "Error loading data"} />
+          <ComponentError
+            error={queryError.message || m.component_preview_query_error()}
+          />
         {:else if isLoading}
           <ReconcilingSpinner />
         {:else if specError}
@@ -243,7 +259,9 @@
         {:else if isLoading}
           <ReconcilingSpinner />
         {:else if queryError}
-          <ComponentError error={queryError.message || "Error loading data"} />
+          <ComponentError
+            error={queryError.message || m.component_preview_query_error()}
+          />
         {/if}
       </div>
     {/if}

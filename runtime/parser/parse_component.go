@@ -333,10 +333,12 @@ func parseComponentParams(params []*ComponentParamYAML) ([]*runtimev1.ComponentP
 		if param.Type == "metrics_view" {
 			// The naming convention enables the canvas parser to extract metrics view refs from
 			// param bindings by key pattern without access to the component's declarations.
-			if param.Name != "metrics_view" && !strings.HasSuffix(param.Name, "_metrics_view") {
+			if !canvas.IsMetricsViewParamName(param.Name) {
 				return nil, fmt.Errorf(`param %q of type "metrics_view" must be named "metrics_view" or end with "_metrics_view"`, param.Name)
 			}
 			mvParams = append(mvParams, param.Name)
+		} else if canvas.IsMetricsViewParamName(param.Name) {
+			return nil, fmt.Errorf(`param %q must have type "metrics_view" because its name is "metrics_view" or ends with "_metrics_view"`, param.Name)
 		}
 	}
 

@@ -56,6 +56,17 @@ func TestEffectiveArgs(t *testing.T) {
 	}, args)
 }
 
+func TestMetricsViewNamesFromBindings(t *testing.T) {
+	names := canvas.MetricsViewNamesFromBindings(map[string]any{
+		"metrics_view":            "mv1",
+		"comparison_metrics_view": "mv2",
+		"string_param":            "not_a_ref",
+		"templated_metrics_view":  "{{ .env.metrics_view }}",
+		"empty_metrics_view":      "",
+	})
+	require.ElementsMatch(t, []string{"mv1", "mv2"}, names)
+}
+
 func TestValidateParamBindings(t *testing.T) {
 	params := testParams(t)
 	mvs := testMetricsViews(t)

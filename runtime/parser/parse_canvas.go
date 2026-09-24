@@ -10,6 +10,7 @@ import (
 
 	"github.com/google/uuid"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
+	"github.com/rilldata/rill/runtime/canvas"
 	"github.com/rilldata/rill/runtime/metricsview"
 	"github.com/rilldata/rill/runtime/metricsview/metricssql"
 	"github.com/rilldata/rill/runtime/pkg/rilltime"
@@ -344,14 +345,9 @@ func (p *Parser) parseCanvasRows(node *Node, rows []*canvasRowYAML, allowTabs bo
 					default:
 						return nil, fmt.Errorf("invalid value for param %q for item %d in row %d: only scalar values are supported", k, j, i)
 					}
-					// Register metrics views bound to params as refs of the canvas.
-					// The component parser enforces that params of type "metrics_view" are named
-					// "metrics_view" or end with "_metrics_view", which makes this extraction complete.
-					if k == "metrics_view" || strings.HasSuffix(k, "_metrics_view") {
-						if name, ok := v.(string); ok && name != "" && !strings.Contains(name, "{{") {
-							node.Refs = append(node.Refs, ResourceName{Kind: ResourceKindMetricsView, Name: name})
-						}
-					}
+				}
+				for _, name := range canvas.MetricsViewNamesFromBindings(item.Params) {
+					node.Refs = append(node.Refs, ResourceName{Kind: ResourceKindMetricsView, Name: name})
 				}
 				var err error
 				params, err = structpb.NewStruct(item.Params)
