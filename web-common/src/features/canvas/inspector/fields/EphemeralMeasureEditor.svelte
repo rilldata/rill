@@ -3,6 +3,7 @@
   import Chip from "@rilldata/web-common/components/chip/core/Chip.svelte";
   import * as Dialog from "@rilldata/web-common/components/dialog";
   import Input from "@rilldata/web-common/components/forms/Input.svelte";
+  import MeasureExpressionInput from "@rilldata/web-common/features/dashboards/ephemeral-measures/MeasureExpressionInput.svelte";
   import type { BaseCanvasComponent } from "@rilldata/web-common/features/canvas/components/BaseCanvasComponent";
   import type { ComponentSpec } from "@rilldata/web-common/features/canvas/components/types";
   import { getCanvasStore } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
@@ -185,14 +186,11 @@
         claimFocusOnMount
       />
 
-      <Input
+      <MeasureExpressionInput
         bind:value={expression}
         id="canvas-ephemeral-measure-expression"
-        label={m.dashboard_pivot_ephemeral_expression_label()}
-        placeholder={m.dashboard_pivot_ephemeral_expression_placeholder()}
-        hint={m.dashboard_pivot_ephemeral_expression_hint()}
+        measures={referenceableMeasures}
         errors={expressionError}
-        alwaysShowError
       />
 
       {#if referenceableMeasures.length}

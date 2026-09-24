@@ -3,6 +3,7 @@
   import Chip from "@rilldata/web-common/components/chip/core/Chip.svelte";
   import * as Dialog from "@rilldata/web-common/components/dialog";
   import Input from "@rilldata/web-common/components/forms/Input.svelte";
+  import MeasureExpressionInput from "./MeasureExpressionInput.svelte";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
@@ -144,14 +145,11 @@
         claimFocusOnMount
       />
 
-      <Input
+      <MeasureExpressionInput
         bind:value={expression}
         id="ephemeral-measure-expression"
-        label={m.dashboard_pivot_ephemeral_expression_label()}
-        placeholder={m.dashboard_pivot_ephemeral_expression_placeholder()}
-        hint={m.dashboard_pivot_ephemeral_expression_hint()}
+        measures={referenceableMeasures}
         errors={expressionError}
-        alwaysShowError
       />
 
       {#if referenceableMeasures.length}
