@@ -7,434 +7,369 @@
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import TooltipTitle from "@rilldata/web-common/components/tooltip/TooltipTitle.svelte";
-  import { DimensionFilterMode } from "@rilldata/web-common/features/dashboards/filters/dimension-filters/constants";
+  import { DimensionFilterMode } from "@rilldata/web-common/features/dashboards/filters/dimension-filters/constants.ts";
   import {
     getEffectiveSelectedValues,
     getItemLists,
     getSearchPlaceholder,
     shouldDisableApplyButton,
-  } from "@rilldata/web-common/features/dashboards/filters/dimension-filters/helpers";
+  } from "@rilldata/web-common/features/dashboards/filters/dimension-filters/helpers.ts";
   import {
     mergeDimensionSearchValues,
     splitDimensionSearchText,
-  } from "@rilldata/web-common/features/dashboards/filters/dimension-filters/dimension-search-text-utils";
+  } from "@rilldata/web-common/features/dashboards/filters/dimension-filters/dimension-search-text-utils.ts";
   import DimensionFilterChipBody from "@rilldata/web-common/features/dashboards/filters/dimension-filters/DimensionFilterChipBody.svelte";
   import DimensionFilterFooter from "@rilldata/web-common/features/dashboards/filters/dimension-filters/DimensionFilterFooter.svelte";
   import DimensionFilterModeSelector from "@rilldata/web-common/features/dashboards/filters/dimension-filters/DimensionFilterModeSelector.svelte";
-  import type { V1Expression } from "@rilldata/web-common/runtime-client";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
-  import {
-    useAllSearchResultsCount,
-    useDimensionSearch,
-  } from "web-common/src/features/dashboards/filters/dimension-filters/dimension-filter-values";
-  import type { DimensionFilterItem } from "../../state-managers/selectors/dimension-filters";
-  import type { FilterManager } from "@rilldata/web-common/features/canvas/stores/filter-manager";
   import PinButton from "../PinButton.svelte";
   import RequiredButton from "../RequiredButton.svelte";
+  import { DimensionFilterManager } from "./DimensionFilterManager.svelte.ts";
+  import {
+    createDimensionSearchCountQuery,
+    createDimensionSearchQuery,
+  } from "./queries.svelte.ts";
+  import type { ExpressionFilterManager } from "../ExpressionFilterManager.svelte.ts";
+  import { onMount } from "svelte";
+  import type { YAMLConfigProvider } from "@rilldata/web-common/features/dashboards/providers/YAMLConfigProvider.svelte.ts";
+  import {
+    dedupe,
+    getMissingValues,
+  } from "@rilldata/web-common/lib/arrayUtils.ts";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 
-  type Actions = FilterManager["actions"];
+  let {
+    manager,
+    dimensionManager,
+    yamlConfigProvider,
+    openOnMount = true,
+    timeStart = undefined,
+    timeEnd = undefined,
+    timeDimension = undefined,
+    timeControlsReady,
+    smallChip = false,
+    removable = true,
+    side = "bottom",
+    isUrlTooLongAfterInListFilter = () => false,
+  }: {
+    manager: ExpressionFilterManager;
+    dimensionManager: DimensionFilterManager;
+    yamlConfigProvider: YAMLConfigProvider;
+    openOnMount?: boolean;
+    timeStart?: string | undefined;
+    timeEnd?: string | undefined;
+    timeDimension?: string | undefined;
+    timeControlsReady: boolean | undefined;
+    smallChip?: boolean;
+    removable?: boolean;
+    side?: "top" | "right" | "bottom" | "left";
+    isUrlTooLongAfterInListFilter?: (values: string[]) => boolean;
+  } = $props();
 
-  export let filterData: DimensionFilterItem;
-  export let expressionMap: Map<string, V1Expression>;
-  export let openOnMount: boolean = true;
-  export let readOnly: boolean = false;
-  export let timeStart: string | undefined;
-  export let timeEnd: string | undefined;
-  export let timeDimension: string | undefined = undefined;
-  export let timeControlsReady: boolean | undefined;
-  export let smallChip = false;
-  export let side: "top" | "right" | "bottom" | "left" = "bottom";
-  export let removeDimensionFilter: Actions["removeDimensionFilter"];
-  export let applyDimensionInListMode: Actions["applyDimensionInListMode"];
-  export let toggleDimensionValueSelections: Actions["toggleDimensionValueSelections"];
-  export let applyDimensionContainsMode: Actions["applyDimensionContainsMode"];
-  export let toggleDimensionFilterMode: Actions["toggleDimensionFilterMode"];
-  export let toggleFilterPin: Actions["toggleFilterPin"] | undefined =
-    undefined;
-  export let toggleFilterRequired: Actions["toggleFilterRequired"] | undefined =
-    undefined;
-  export let isUrlTooLongAfterInListFilter: (
-    values: string[],
-  ) => boolean = () => false;
+  let proxyDimensionManager = $derived(dimensionManager.clone());
 
-  let open =
-    openOnMount && !filterData.selectedValues?.length && !filterData.inputText;
-  let curMode = filterData.mode;
-  let curSearchText = filterData.inputText ?? "";
-  let curExcludeMode = filterData.isInclude === false;
-  let inListTooLong = false;
-  let selectedValuesProxy: string[] = filterData.selectedValues ?? [];
-  let searchedBulkValues: string[] =
-    filterData.mode === DimensionFilterMode.InList
-      ? (filterData.selectedValues ?? [])
-      : [];
-  let curPinned = filterData.pinned;
-  let curRequired = filterData.required;
-  let excludeModeDirty = false;
+  let open = $state(false);
+  let curSearchText = $state("");
 
   const client = useRuntimeClient();
 
-  $: ({
-    name,
-    label,
-    mode,
-    selectedValues = [],
-    inputText,
-    isInclude,
-    dimensions,
-    pinned,
-    required,
-    missingRequired,
-  } = filterData);
+  let pinned = $derived(
+    Boolean(yamlConfigProvider.pinnedFilters[dimensionManager.name]),
+  );
+  let required = $derived(
+    Boolean(yamlConfigProvider.requiredFilters[dimensionManager.name]),
+  );
+  let missingRequired = $derived(Boolean(required && !dimensionManager.expr));
 
-  $: if (
-    !open &&
-    excludeModeDirty &&
-    (isInclude === false) === curExcludeMode
-  ) {
-    excludeModeDirty = false;
-  }
+  // Pinned and required are edited locally and only persisted once the dropdown closes.
+  // svelte-ignore state_referenced_locally
+  let curPinned = $state(pinned);
+  // svelte-ignore state_referenced_locally
+  let curRequired = $state(required);
 
-  $: if (
-    !open &&
-    (mode !== curMode ||
-      (!excludeModeDirty && (isInclude === false) !== curExcludeMode))
-  ) {
-    resyncFilterData(filterData);
-  }
+  // Only InList mode parses the input as a list of values; the other modes treat it as search text,
+  // so this is read behind a mode check everywhere it is used.
+  let inListValues = $derived.by(() => {
+    const values = splitDimensionSearchText(curSearchText);
+    if (values.length <= 1) return curSearchText === "" ? [] : values;
 
-  // Sync proxy when selectedValues changes (for Select mode)
-  $: if (!open && mode === DimensionFilterMode.Select) {
-    selectedValuesProxy = structuredClone(filterData.selectedValues) ?? [];
-  }
+    // Include both the applied values and the ones in the input so the below-fold query can find
+    // applied values that might not be in the top 250.
+    return [...new Set([...dimensionManager.selectedValues, ...values])];
+  });
+  let inListTooLong = $derived(
+    proxyDimensionManager.mode === DimensionFilterMode.InList &&
+      inListValues.length > 0 &&
+      isUrlTooLongAfterInListFilter(inListValues),
+  );
 
-  $: metricsViewNames = Array.from(dimensions.keys());
-
-  $: excludeMode = isInclude === false;
-
-  $: sanitisedSearchText = inputText?.replace(/^%/, "").replace(/%$/, "");
-
-  $: checkSearchText(curSearchText);
-
-  $: enableSearchQuery =
+  let enableSearchQuery = $derived(
     Boolean(timeControlsReady && open) &&
-    (curMode === DimensionFilterMode.Select ||
-      (curMode === DimensionFilterMode.Contains && curSearchText.length > 0) ||
-      (curMode === DimensionFilterMode.InList &&
-        searchedBulkValues.length > 0));
+      (proxyDimensionManager.mode === DimensionFilterMode.Select ||
+        (proxyDimensionManager.mode === DimensionFilterMode.Contains &&
+          curSearchText.length > 0) ||
+        (proxyDimensionManager.mode === DimensionFilterMode.InList &&
+          inListValues.length > 0)),
+  );
 
-  $: searchResultsQuery = useDimensionSearch(client, metricsViewNames, name, {
-    mode: curMode,
-    values:
-      curMode === DimensionFilterMode.Select
-        ? selectedValues
-        : searchedBulkValues,
+  // The queries are created once and follow the dropdown through the args getter, so changing the
+  // mode or the search text updates them instead of replacing them.
+  const searchResultsQuery = createDimensionSearchQuery(client, () => ({
+    manager,
+    dimensionName: dimensionManager.name,
+    mode: proxyDimensionManager.mode,
+    values: inListValues,
     searchText: curSearchText,
     timeStart,
     timeEnd,
     timeDimension,
     enabled: enableSearchQuery,
-    metricsViewWheres: expressionMap,
+  }));
+  // The query only returns the top 250 values, so applied values outside that window are merged back
+  // in: Select mode shows them as checked, InList mode lists them among the values it matched.
+  let correctedSearchResults = $derived.by(() => {
+    if (!enableSearchQuery) return [];
+
+    const searchResults = searchResultsQuery.current.data;
+    const appliedValues =
+      proxyDimensionManager.mode === DimensionFilterMode.InList
+        ? inListValues
+        : proxyDimensionManager.mode === DimensionFilterMode.Select
+          ? dimensionManager.selectedValues
+          : [];
+    if (!appliedValues.length) return searchResults;
+
+    return [...new Set([...searchResults, ...appliedValues])];
   });
-  $: ({
-    data: searchResults,
-    error: errorFromSearchResults,
-    isFetching: isFetchingFromSearchResults,
-  } = $searchResultsQuery);
-  $: correctedSearchResults = enableSearchQuery ? searchResults : [];
 
-  $: enableSearchCountQuery =
+  let enableSearchCountQuery = $derived(
     Boolean(timeControlsReady) &&
-    ((curMode === DimensionFilterMode.Contains && curSearchText.length > 0) ||
-      (curMode === DimensionFilterMode.InList &&
-        searchedBulkValues.length > 0));
+      ((proxyDimensionManager.mode === DimensionFilterMode.Contains &&
+        curSearchText.length > 0) ||
+        (proxyDimensionManager.mode === DimensionFilterMode.InList &&
+          inListValues.length > 0)),
+  );
 
-  $: allSearchResultsCountQuery = useAllSearchResultsCount(
+  const allSearchResultsCountQuery = createDimensionSearchCountQuery(
     client,
-    metricsViewNames,
-    name,
-    {
-      mode: curMode,
-      values: searchedBulkValues,
+    () => ({
+      manager,
+      dimensionName: dimensionManager.name,
+      mode: proxyDimensionManager.mode,
+      values: inListValues,
       searchText: curSearchText,
       timeStart,
       timeEnd,
       timeDimension,
       enabled: enableSearchCountQuery,
-
-      metricsViewWheres: expressionMap,
-    },
+    }),
   );
-  $: ({
-    data: allSearchResultsCount,
-    error: errorFromAllSearchResultsCount,
-    isFetching: isFetchingFromAllSearchResultsCount,
-  } = $allSearchResultsCountQuery);
-  $: searchResultCountText = enableSearchCountQuery
-    ? curMode === DimensionFilterMode.Contains
-      ? `${allSearchResultsCount} results`
-      : `${allSearchResultsCount} of ${searchedBulkValues.length} matched`
-    : "0 results";
-
-  $: searchPlaceholder = getSearchPlaceholder(curMode);
-
-  $: error = errorFromSearchResults ?? errorFromAllSearchResultsCount;
-  $: isFetching =
-    isFetchingFromSearchResults ?? isFetchingFromAllSearchResultsCount;
-
-  $: showExtraInfo = curMode !== DimensionFilterMode.Select; // || curSearchText.length > 0; (Add once we have docs)
-
-  $: allSelected = Boolean(
-    effectiveSelectedValues.length &&
-      correctedSearchResults?.length === effectiveSelectedValues.length,
-  );
-  $: effectiveSelectedValues = getEffectiveSelectedValues(
-    curMode,
-    selectedValuesProxy,
-    correctedSearchResults ?? [],
-    selectedValues,
+  let allSearchResultsCount = $derived(allSearchResultsCountQuery.current.data);
+  let searchResultCountText = $derived(
+    enableSearchCountQuery
+      ? proxyDimensionManager.mode === DimensionFilterMode.Contains
+        ? m.filter_search_result_count({ count: allSearchResultsCount ?? 0 })
+        : m.filter_search_matched_count({
+            count: allSearchResultsCount ?? 0,
+            total: inListValues.length,
+          })
+      : m.filter_search_result_count({ count: 0 }),
   );
 
-  $: disableApplyButton = shouldDisableApplyButton(
-    curMode,
-    enableSearchCountQuery,
-    inListTooLong,
+  let searchPlaceholder = $derived(
+    getSearchPlaceholder(proxyDimensionManager.mode),
+  );
+
+  let error = $derived(
+    searchResultsQuery.current.error ??
+      allSearchResultsCountQuery.current.error,
+  );
+  let isFetching = $derived(
+    searchResultsQuery.current.isFetching ||
+      allSearchResultsCountQuery.current.isFetching,
+  );
+
+  let showExtraInfo = $derived(
+    proxyDimensionManager.mode !== DimensionFilterMode.Select,
+  ); // || curSearchText.length > 0; (Add once we have docs)
+
+  let effectiveSelectedValues = $derived(
+    getEffectiveSelectedValues(
+      proxyDimensionManager.mode,
+      proxyDimensionManager.selectedValues,
+      correctedSearchResults,
+      dimensionManager.selectedValues,
+    ),
+  );
+  let allSelected = $derived(
+    Boolean(
+      effectiveSelectedValues.length &&
+        correctedSearchResults.length === effectiveSelectedValues.length,
+    ),
+  );
+
+  let disableApplyButton = $derived(
+    shouldDisableApplyButton(
+      proxyDimensionManager.mode,
+      enableSearchCountQuery,
+      inListTooLong,
+    ),
   );
 
   // Split results into checked and unchecked for better UX (like SelectionDropdown)
   // Use actual selectedValues (not proxy) so items only sort after dropdown closes
-  $: ({ checkedItems, uncheckedItems } = getItemLists(
-    curMode,
-    correctedSearchResults ?? [],
-    selectedValues,
-    curSearchText,
-  ));
+  let { checkedItems, uncheckedItems } = $derived(
+    getItemLists(
+      proxyDimensionManager.mode,
+      correctedSearchResults,
+      dimensionManager.selectedValues,
+      curSearchText,
+    ),
+  );
 
-  /**
-   * Reset filter settings based on params to the component.
-   */
-  function resetFilterSettings(
-    mode: DimensionFilterMode,
-    sanitisedSearchText: string | undefined,
-  ) {
-    curExcludeMode = excludeMode;
-    switch (mode) {
+  function handleModeChange(newMode: DimensionFilterMode) {
+    switch (newMode) {
       case DimensionFilterMode.Select:
-        curMode = DimensionFilterMode.Select;
+        proxyDimensionManager.setSelectedValues(
+          [...proxyDimensionManager.selectedValues],
+          proxyDimensionManager.exclude,
+        );
         curSearchText = "";
-        selectedValuesProxy = [...selectedValues];
         break;
 
       case DimensionFilterMode.InList:
-        curMode = DimensionFilterMode.InList;
-        curSearchText = mergeDimensionSearchValues(selectedValues);
-        searchedBulkValues = selectedValues; // Ensure searchedBulkValues includes existing selections
+        proxyDimensionManager.setInList(
+          [...proxyDimensionManager.selectedValues],
+          proxyDimensionManager.exclude,
+        );
+        // The values carried over stay editable as text.
+        curSearchText = mergeDimensionSearchValues(
+          proxyDimensionManager.selectedValues,
+        );
         break;
 
       case DimensionFilterMode.Contains:
-        curMode = DimensionFilterMode.Contains;
-        curSearchText = sanitisedSearchText ?? "";
+        proxyDimensionManager.setContainsText(
+          "",
+          proxyDimensionManager.exclude,
+        );
+        curSearchText = "";
         break;
     }
   }
 
-  function checkSearchText(inputText: string) {
-    inListTooLong = false;
-
-    // Only InList mode parses bulk values. Other modes treat input as search text.
-    if (curMode !== DimensionFilterMode.InList) return;
-
-    const values = splitDimensionSearchText(inputText);
-
-    if (values.length <= 1) {
-      searchedBulkValues = inputText === "" ? [] : values;
+  function handleOpenChange(open: boolean) {
+    if (open) {
+      resetSearchText();
+      curPinned = pinned;
+      curRequired = required;
       return;
     }
 
-    // Include both existing selected values and new search values so the
-    // below-fold query can find existing selected values that might not be
-    // in the top 250.
-    searchedBulkValues = [...new Set([...selectedValues, ...values])];
-    inListTooLong = isUrlTooLongAfterInListFilter(searchedBulkValues);
-  }
+    persistPinnedAndRequired();
 
-  function handleModeChange(newMode: DimensionFilterMode) {
-    curSearchText = "";
-    if (newMode !== DimensionFilterMode.InList) {
-      searchedBulkValues = [];
-      // Reset proxy when switching to/from Select mode
-      if (newMode === DimensionFilterMode.Select) {
-        curExcludeMode = excludeMode;
-        selectedValuesProxy = [...selectedValues];
-      }
+    // Switching the mode to Select carries no values over from Contains, so a proxy with no values
+    // and an applied filter with no values means the user staged nothing. Committing that would
+    // clear the applied Contains filter, which there is no Apply button in Select mode to undo.
+    const stagedNothing =
+      proxyDimensionManager.selectedValues.length === 0 &&
+      dimensionManager.selectedValues.length === 0;
+
+    // Select mode applies when the dropdown closes. The other modes only apply through the Apply
+    // button, so drop whatever they staged.
+    if (
+      proxyDimensionManager.mode === DimensionFilterMode.Select &&
+      !stagedNothing
+    ) {
+      dimensionManager.apply(proxyDimensionManager);
     } else {
-      checkSearchText(curSearchText);
+      proxyDimensionManager.apply(dimensionManager);
+      resetSearchText();
     }
   }
 
-  async function handleOpenChange(open: boolean) {
-    if (open) {
-      curSearchText =
-        mode === DimensionFilterMode.InList
-          ? mergeDimensionSearchValues(selectedValues)
-          : (sanitisedSearchText ?? "");
-    } else {
-      if (pinned !== curPinned) {
-        toggleFilterPin?.(name, metricsViewNames);
-      }
-      if (required !== curRequired) {
-        toggleFilterRequired?.(name, metricsViewNames);
-      }
-
-      // Apply proxy changes for Select mode when dropdown closes
-      if (curMode === DimensionFilterMode.Select) {
-        await applySelectModeChanges();
-        // Don't reset immediately for Select mode - let props update first
-        return;
-      }
-
-      if (selectedValues.length === 0 && !inputText) {
-        // filter was cleared. so remove the filter
-        await removeDimensionFilter(name, metricsViewNames);
-      } else {
-        // reset the settings on unmount (but not for Select mode)
-        resetFilterSettings(mode, sanitisedSearchText);
-      }
-    }
+  /** Resets the input to the applied filter: the list of values in InList mode, the search text otherwise. */
+  function resetSearchText() {
+    curSearchText =
+      dimensionManager.mode === DimensionFilterMode.InList
+        ? mergeDimensionSearchValues(dimensionManager.selectedValues)
+        : dimensionManager.inputText;
   }
 
-  function handleToggleExcludeMode(checked: boolean) {
-    curExcludeMode = checked;
-    excludeModeDirty = true;
+  function handleToggleExcludeMode() {
+    proxyDimensionManager.toggleExclude();
   }
 
   function onToggleSelectAll() {
-    if (curMode === DimensionFilterMode.Select) {
-      // Update proxy for select all/deselect all
-      if (allSelected) {
-        selectedValuesProxy = selectedValuesProxy.filter(
-          (v) => !correctedSearchResults?.includes(v),
-        );
-      } else {
-        const newValues =
-          correctedSearchResults?.filter(
-            (v) => !selectedValuesProxy.includes(v),
-          ) ?? [];
-        selectedValuesProxy = [...selectedValuesProxy, ...newValues];
-      }
+    if (allSelected) {
+      proxyDimensionManager.setSelectedValues(
+        getMissingValues(
+          correctedSearchResults ?? [],
+          proxyDimensionManager.selectedValues,
+        ),
+        proxyDimensionManager.exclude,
+      );
     } else {
-      correctedSearchResults?.forEach((dimensionValue) => {
-        if (!allSelected && effectiveSelectedValues.includes(dimensionValue))
-          return;
-
-        toggleDimensionValueSelections(
-          name,
-          [dimensionValue],
-          metricsViewNames,
-        ).catch(console.error);
-      });
-    }
-  }
-
-  async function onApply(close = true) {
-    if (disableApplyButton) return;
-    switch (curMode) {
-      case DimensionFilterMode.Select:
-        // Apply proxy changes for Select mode
-        await applySelectModeChanges();
-        if (close) open = false;
-        break;
-      case DimensionFilterMode.InList:
-        if (searchedBulkValues.length === 0) return;
-        await applyDimensionInListMode(
-          name,
-          searchedBulkValues,
-          metricsViewNames,
-        );
-        if (curExcludeMode !== excludeMode)
-          await toggleDimensionFilterMode(name, metricsViewNames);
-        if (close) open = false;
-        break;
-      case DimensionFilterMode.Contains:
-        if (curSearchText.length === 0) return;
-        await applyDimensionContainsMode(name, curSearchText, metricsViewNames);
-        if (curExcludeMode !== excludeMode)
-          await toggleDimensionFilterMode(name, metricsViewNames);
-        if (close) open = false;
-        break;
-    }
-  }
-
-  async function applySelectModeChanges() {
-    // Find values that were added or removed
-    const currentValues = new Set(selectedValues);
-    const proxyValues = new Set(selectedValuesProxy);
-    const changedValues = [...currentValues, ...proxyValues].filter((value) => {
-      const wasSelected = currentValues.has(value);
-      const isSelected = proxyValues.has(value);
-
-      return wasSelected !== isSelected;
-    });
-    const shouldToggleExcludeMode = curExcludeMode !== excludeMode;
-    const shouldCommitSelectMode =
-      mode !== DimensionFilterMode.Select && currentValues.size > 0;
-
-    if (!currentValues.size && !proxyValues.size) {
-      // No changes
-      return;
-    }
-
-    // Existing filters still need to be negated. New filters get the operator
-    // from curExcludeMode when values are committed below.
-    if (shouldToggleExcludeMode && currentValues.size > 0) {
-      await toggleDimensionFilterMode(name, metricsViewNames);
-    }
-
-    if (changedValues.length || shouldCommitSelectMode) {
-      await toggleDimensionValueSelections(
-        name,
-        changedValues,
-        metricsViewNames,
-        undefined,
-        undefined,
-        curExcludeMode,
+      proxyDimensionManager.setSelectedValues(
+        dedupe([
+          ...proxyDimensionManager.selectedValues,
+          ...(correctedSearchResults ?? []),
+        ]),
+        proxyDimensionManager.exclude,
       );
     }
   }
 
-  async function handleItemClick(value: string) {
-    if (curMode === DimensionFilterMode.Select) {
-      // Update proxy instead of calling onSelect immediately
-      if (selectedValuesProxy.includes(value)) {
-        selectedValuesProxy = selectedValuesProxy.filter((v) => v !== value);
-      } else {
-        selectedValuesProxy = [...selectedValuesProxy, value];
-      }
-    } else {
-      await toggleDimensionValueSelections(name, [value], metricsViewNames);
+  function onApply(close = true) {
+    if (disableApplyButton) return;
+    persistPinnedAndRequired();
+    // Select mode stages straight onto the proxy; the other two stage in the input.
+    switch (proxyDimensionManager.mode) {
+      case DimensionFilterMode.InList:
+        proxyDimensionManager.setInList(
+          [...inListValues],
+          proxyDimensionManager.exclude,
+        );
+        break;
+
+      case DimensionFilterMode.Contains:
+        proxyDimensionManager.setContainsText(
+          curSearchText,
+          proxyDimensionManager.exclude,
+        );
+        break;
+    }
+    dimensionManager.apply(proxyDimensionManager);
+    if (close) open = false;
+  }
+
+  // Closing via the trigger goes through handleOpenChange, but applying closes the dropdown
+  // directly, so both paths persist the staged pinned and required states.
+  function persistPinnedAndRequired() {
+    if (pinned !== curPinned) {
+      yamlConfigProvider.togglePinnedFilter(dimensionManager.name);
+    }
+    if (required !== curRequired) {
+      yamlConfigProvider.toggleRequiredFilter(dimensionManager.name);
     }
   }
 
-  function resyncFilterData(filterData: DimensionFilterItem) {
-    curMode = filterData.mode;
-    curSearchText = filterData.inputText ?? "";
-    curExcludeMode = filterData.isInclude === false;
-    excludeModeDirty = false;
-    selectedValuesProxy = filterData.selectedValues ?? [];
-    searchedBulkValues =
-      filterData.mode === DimensionFilterMode.InList
-        ? (filterData.selectedValues ?? [])
-        : [];
-    curPinned = filterData.pinned;
-    curRequired = filterData.required;
+  function handleItemClick(value: string) {
+    proxyDimensionManager.toggleValue(value, false);
   }
+
+  onMount(() => {
+    open =
+      openOnMount &&
+      !dimensionManager.selectedValues?.length &&
+      !dimensionManager.inputText;
+    resetSearchText();
+  });
 </script>
 
 <svelte:window
-  onkeydown={async (e) => {
-    if (e.key === "Enter") {
-      await onApply();
-    }
+  onkeydown={(e) => {
+    if (open && e.key === "Enter") onApply();
   }}
 />
 
@@ -446,36 +381,39 @@
         alignment="start"
         distance={8}
         location="bottom"
-        suppress={open || readOnly}
+        suppress={open}
       >
         <Chip
           {...props}
           type="dimension"
-          gray={selectedValues.length === 0 && !inputText}
+          gray={dimensionManager.selectedValues.length === 0 &&
+            !dimensionManager.inputText}
           error={!!missingRequired}
           active={open}
-          exclude={curExcludeMode}
-          label={`${name} filter`}
+          exclude={proxyDimensionManager.exclude}
+          label={m.filter_dimension_chip_aria({
+            name: dimensionManager.name,
+          })}
           theme
-          onRemove={() => removeDimensionFilter(name, metricsViewNames)}
-          removable={!readOnly && !curPinned && !required}
-          {readOnly}
-          removeTooltipText="remove {selectedValues.length} value{selectedValues.length !==
-          1
-            ? 's'
-            : ''}"
+          onRemove={() => dimensionManager.clear()}
+          removable={removable && !pinned && !required}
+          removeTooltipText={m.filter_remove_values({
+            count: dimensionManager.selectedValues.length,
+          })}
         >
           <DimensionFilterChipBody
             slot="body"
-            label={curExcludeMode ? `Exclude ${label}` : label}
+            label={proxyDimensionManager.exclude
+              ? m.filter_exclude_label({ label: dimensionManager.label })
+              : dimensionManager.label}
             show={1}
             {smallChip}
-            values={curMode === DimensionFilterMode.InList
-              ? searchedBulkValues
+            values={proxyDimensionManager.mode === DimensionFilterMode.InList
+              ? inListValues
               : effectiveSelectedValues}
             matchedCount={allSearchResultsCount}
-            loading={isFetchingFromAllSearchResultsCount}
-            search={curMode === DimensionFilterMode.Contains
+            loading={allSearchResultsCountQuery.current.isFetching}
+            search={proxyDimensionManager.mode === DimensionFilterMode.Contains
               ? curSearchText
               : undefined}
           />
@@ -483,17 +421,19 @@
         <div slot="tooltip-content" transition:fly={{ duration: 100, y: 4 }}>
           <TooltipContent maxWidth="400px">
             <TooltipTitle>
-              <svelte:fragment slot="name">{name}</svelte:fragment>
+              <svelte:fragment slot="name"
+                >{dimensionManager.name}</svelte:fragment
+              >
               <svelte:fragment slot="description"
                 >{required
-                  ? "required dimension"
-                  : "dimension"}</svelte:fragment
+                  ? m.filter_required_dimension()
+                  : m.filter_dimension()}</svelte:fragment
               >
             </TooltipTitle>
             {#if missingRequired}
-              This filter is required. Select a value to load the dashboard.
+              {m.dashboard_filter_required_set_value()}
             {:else}
-              Click to edit the filters in this dimension
+              {m.filter_dimension_chip_tooltip()}
             {/if}
           </TooltipContent>
         </div>
@@ -509,41 +449,35 @@
     class="flex flex-col max-h-96 w-[400px] overflow-hidden p-0"
   >
     <div class="flex flex-col px-3 pt-3">
-      {#if toggleFilterPin || toggleFilterRequired}
+      {#if yamlConfigProvider.editable}
         <div
           class="flex flex-row items-center justify-between mb-2 pointer-events-auto"
         >
-          <b>{label}</b>
+          <b>{dimensionManager.label}</b>
 
           <div class="flex flex-row items-center gap-x-1">
-            {#if toggleFilterRequired}
-              <RequiredButton
-                required={!!curRequired}
-                onToggleRequired={() => {
-                  curRequired = !curRequired;
-                }}
-              />
-            {/if}
-            {#if toggleFilterPin}
-              <PinButton
-                pinned={!!curPinned}
-                onTogglePin={() => {
-                  curPinned = !curPinned;
-                }}
-              />
-            {/if}
+            <RequiredButton
+              required={curRequired}
+              onToggleRequired={() => (curRequired = !curRequired)}
+            />
+            <PinButton
+              pinned={curPinned}
+              onTogglePin={() => (curPinned = !curPinned)}
+            />
           </div>
         </div>
       {/if}
       <div class="flex flex-row">
         <DimensionFilterModeSelector
-          bind:mode={curMode}
+          bind:mode={proxyDimensionManager.mode}
           onModeChange={handleModeChange}
           size="md"
         />
         <Search
           bind:value={curSearchText}
-          label={`${name} search list`}
+          label={m.filter_dimension_search_list_aria({
+            name: dimensionManager.name,
+          })}
           showBorderOnFocus={false}
           retainValueOnMount
           placeholder={searchPlaceholder}
@@ -554,10 +488,12 @@
       </div>
       {#if showExtraInfo}
         <div class="flex flex-row items-center justify-between pt-2 pb-1">
-          {#if curMode !== DimensionFilterMode.Select}
+          {#if proxyDimensionManager.mode !== DimensionFilterMode.Select}
             <span
               class="px-2 py-1.5 pb-0 uppercase text-[10px] text-fg-secondary font-semibold"
-              aria-label={`${name} result count`}
+              aria-label={m.filter_dimension_result_count_aria({
+                name: dimensionManager.name,
+              })}
             >
               {searchResultCountText}
             </span>
@@ -581,26 +517,32 @@
           <LoadingSpinner />
         </div>
       {:else if error}
-        <div class="min-h-9 p-3 text-center text-red-600 text-xs">error</div>
+        <div class="min-h-9 p-3 text-center text-red-600 text-xs">
+          {m.filter_search_error()}
+        </div>
       {:else if inListTooLong}
         <div class="min-h-9 p-3 text-center text-red-600 text-xs">
-          List is too long. Please remove some values.
+          {m.filter_in_list_too_long()}
         </div>
-      {:else if correctedSearchResults}
-        <DropdownMenu.Group class="px-1" aria-label={`${name} results`}>
+      {:else}
+        <DropdownMenu.Group
+          class="px-1"
+          aria-label={m.filter_dimension_results_aria({
+            name: dimensionManager.name,
+          })}
+        >
           <!-- Show checked items first (only in Select mode and when not searching) -->
-          {#if curMode === DimensionFilterMode.Select && !curSearchText}
+          {#if proxyDimensionManager.mode === DimensionFilterMode.Select && !curSearchText}
             {#each checkedItems as name (name)}
               {@const selected = effectiveSelectedValues.includes(name)}
               {@const label = name ?? "null"}
 
-              <svelte:component
-                this={DropdownMenu.CheckboxItem}
+              <DropdownMenu.CheckboxItem
                 closeOnSelect={false}
                 class="text-xs cursor-pointer"
                 checked={selected}
-                showXForSelected={curExcludeMode}
-                onclick={() => handleItemClick(name)}
+                showXForSelected={proxyDimensionManager.exclude}
+                onCheckedChange={() => handleItemClick(name)}
               >
                 <span>
                   {#if label.length > 240}
@@ -609,12 +551,12 @@
                     {label}
                   {/if}
                 </span>
-              </svelte:component>
+              </DropdownMenu.CheckboxItem>
             {/each}
           {/if}
 
           <!-- Separator between checked and unchecked items -->
-          {#if curMode === DimensionFilterMode.Select && !curSearchText && checkedItems.length > 0 && uncheckedItems.length > 0}
+          {#if proxyDimensionManager.mode === DimensionFilterMode.Select && !curSearchText && checkedItems.length > 0 && uncheckedItems.length > 0}
             <DropdownMenu.Separator />
           {/if}
 
@@ -622,20 +564,23 @@
           {#each uncheckedItems as name (name)}
             {@const selected = effectiveSelectedValues.includes(name)}
             {@const label = name ?? "null"}
-
-            <svelte:component
-              this={curMode === DimensionFilterMode.Select
+            {@const ItemComponent =
+              proxyDimensionManager.mode === DimensionFilterMode.Select
                 ? DropdownMenu.CheckboxItem
                 : DropdownMenu.Item}
+
+            <ItemComponent
               closeOnSelect={false}
-              class="text-xs cursor-pointer {curMode !==
+              class="text-xs cursor-pointer {proxyDimensionManager.mode !==
               DimensionFilterMode.Select
                 ? 'pl-3'
                 : ''}"
-              checked={curMode === DimensionFilterMode.Select && selected}
-              showXForSelected={curExcludeMode}
-              disabled={curMode !== DimensionFilterMode.Select}
-              onclick={() => handleItemClick(name)}
+              checked={proxyDimensionManager.mode ===
+                DimensionFilterMode.Select && selected}
+              showXForSelected={proxyDimensionManager.exclude}
+              disabled={proxyDimensionManager.mode !==
+                DimensionFilterMode.Select}
+              onCheckedChange={() => handleItemClick(name)}
             >
               <span>
                 {#if label.length > 240}
@@ -644,13 +589,13 @@
                   {label}
                 {/if}
               </span>
-            </svelte:component>
+            </ItemComponent>
           {/each}
 
           <!-- Show "no results" only if both checked and unchecked are empty -->
-          {#if uncheckedItems.length === 0 && (curMode !== DimensionFilterMode.Select || checkedItems.length === 0)}
+          {#if uncheckedItems.length === 0 && (proxyDimensionManager.mode !== DimensionFilterMode.Select || checkedItems.length === 0)}
             <div class="text-fg-disabled text-center p-2 w-full">
-              no results
+              {m.filter_no_results()}
             </div>
           {/if}
         </DropdownMenu.Group>
@@ -658,8 +603,8 @@
     </div>
 
     <DimensionFilterFooter
-      mode={curMode}
-      excludeMode={curExcludeMode}
+      mode={proxyDimensionManager.mode}
+      excludeMode={proxyDimensionManager.exclude}
       {allSelected}
       {disableApplyButton}
       onToggleExcludeMode={handleToggleExcludeMode}

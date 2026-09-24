@@ -1,53 +1,23 @@
 <script lang="ts">
   import Filter from "@rilldata/web-common/components/icons/Filter.svelte";
   import type { BaseCanvasComponent } from "@rilldata/web-common/features/canvas/components/BaseCanvasComponent";
-  import FilterChipsReadOnly from "@rilldata/web-common/features/dashboards/filters/FilterChipsReadOnly.svelte";
-  import type {
-    MetricsViewSpecDimension,
-    MetricsViewSpecMeasure,
-    V1TimeRange,
-  } from "@rilldata/web-common/runtime-client";
-  import { readable, type Readable } from "svelte/store";
+  import { resolveTimeFilters } from "@rilldata/web-common/features/canvas/components/time-filters";
+  import type { ComponentFilterProperties } from "@rilldata/web-common/features/canvas/components/types";
+  import type { V1TimeRange } from "@rilldata/web-common/runtime-client";
+  import ReadonlyExpressionFilters from "@rilldata/web-common/features/dashboards/filters/ReadonlyExpressionFilters.svelte";
 
   export let component: BaseCanvasComponent;
 
-  let measures: Readable<MetricsViewSpecMeasure[]> = readable([]);
-  let dimensions: Readable<MetricsViewSpecDimension[]> = readable([]);
-
   $: ({
     specStore,
-    parent: {
-      metricsView: { getDimensionsForMetricView, getMeasuresForMetricView },
-    },
     timeAndFilterStore,
-    localFilters,
+    localExpressionFilters,
     localTimeControls,
   } = component);
 
-  $: metricsViewName =
-    "metrics_view" in $specStore
-      ? (($specStore.metrics_view as string | undefined) ?? null)
-      : null;
+  $: ({ interval: intervalStore, rangeStore, grainStore } = localTimeControls);
 
-  $: if (metricsViewName) {
-    measures = getMeasuresForMetricView(metricsViewName);
-    dimensions = getDimensionsForMetricView(metricsViewName);
-  }
-
-  $: ({
-    showTimeComparisonStore,
-    interval: intervalStore,
-    rangeStore,
-    grainStore,
-    comparisonRangeStore,
-    comparisonIntervalStore,
-  } = localTimeControls);
-
-  $: showTimeComparison = $showTimeComparisonStore;
   $: activeTimeGrain = $grainStore;
-
-  $: comparisonRange = $comparisonRangeStore;
-  $: comparisonInterval = $comparisonIntervalStore;
 
   $: interval = $intervalStore;
   $: selectedRangeAlias = $rangeStore;
@@ -61,31 +31,31 @@
       }
     : undefined;
 
-  // $: selectedTimeRange = $timeRangeStateStore?.selectedTimeRange;
+  $: ({ showTimeComparison, comparisonTimeRangeState, timeGrain } =
+    $timeAndFilterStore);
+  $: selectedComparisonTimeRange =
+    comparisonTimeRangeState?.selectedComparisonTimeRange;
+
+  // Only a range or comparison the component sets itself counts as a local filter.
+  $: ({ hasLocalTimeRange, comparison } = resolveTimeFilters(
+    ($specStore as ComponentFilterProperties).time_filters,
+  ));
+  $: hasLocalComparison = comparison.mode === "local";
+
   $: displayComparisonTimeRange =
-    showTimeComparison && comparisonInterval && comparisonRange
+    hasLocalComparison && showTimeComparison && selectedComparisonTimeRange
       ? <V1TimeRange>{
-          name: comparisonRange,
-          start: comparisonInterval.start.toISO(),
-          end: comparisonInterval.end.toISO(),
-          interval: activeTimeGrain,
+          name: selectedComparisonTimeRange.name,
+          start: selectedComparisonTimeRange.start.toISOString(),
+          end: selectedComparisonTimeRange.end.toISOString(),
+          interval: timeGrain,
         }
       : undefined;
-
-  $: ({ parsed } = localFilters);
-
-  $: ({
-    dimensionThresholdFilters,
-    dimensionFilter,
-    dimensionsWithInListFilter,
-  } = $parsed);
 
   $: displayTimeRange = {
     ...$timeAndFilterStore.timeRange,
     isoDuration: selectedTimeRange?.name,
   };
-
-  $: hasTimeFilters = "time_filters" in $specStore && $specStore.time_filters;
 </script>
 
 {#if "metrics_view" in $specStore}
@@ -94,15 +64,10 @@
   >
     <Filter size="16px" className="text-fg-secondary" />
 
-    <FilterChipsReadOnly
-      metricsViewNames={metricsViewName ? [metricsViewName] : []}
-      dimensions={$dimensions}
-      measures={$measures}
-      {dimensionThresholdFilters}
-      dimensionsWithInlistFilter={dimensionsWithInListFilter}
-      filters={dimensionFilter}
+    <ReadonlyExpressionFilters
+      expressionFilterManager={localExpressionFilters}
+      displayTimeRange={hasLocalTimeRange ? displayTimeRange : undefined}
       {displayComparisonTimeRange}
-      displayTimeRange={hasTimeFilters ? displayTimeRange : undefined}
       queryTimeStart={selectedTimeRange?.start?.toISOString()}
       queryTimeEnd={selectedTimeRange?.end?.toISOString()}
       hasBoldTimeRange={false}

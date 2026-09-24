@@ -18,6 +18,8 @@
 </script>
 
 <script lang="ts">
+  import { ephemeralDefsFromRequestMeasures } from "@rilldata/web-common/features/dashboards/ephemeral-measures/measure-mapping";
+  import { useExploreState } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import { page } from "$app/stores";
   import {
@@ -28,7 +30,6 @@
   } from "@rilldata/web-admin/client";
   import * as Dialog from "@rilldata/web-common/components/dialog";
   import {
-    aggregationRequestWithFilters,
     aggregationRequestWithRowsAndColumns,
     aggregationRequestWithTimeRange,
     buildAggregationRequest,
@@ -70,6 +71,9 @@
   import { ResourceKind } from "../entity-management/resource-selectors";
   import BaseScheduledReportForm from "./BaseScheduledReportForm.svelte";
   import { convertFormValuesToCronExpression } from "./time-utils";
+  import type { ExpressionFilterManager } from "@rilldata/web-common/features/dashboards/filters/ExpressionFilterManager.svelte.ts";
+  import type { TimeControls } from "@rilldata/web-common/features/dashboards/stores/TimeControls.ts";
+  import { onDestroy } from "svelte";
 
   export let open: boolean;
   export let props:
@@ -114,6 +118,7 @@
 
   $: validExploreSpec = useExploreValidSpec(runtimeClient, exploreName);
   $: exploreSpec = $validExploreSpec.data?.explore ?? {};
+  $: exploreStateStore = useExploreState(exploreName);
   $: metricsViewName = exploreSpec.metricsView ?? "";
 
   $: allTimeRangeResp = useMetricsViewTimeRange(
@@ -152,15 +157,28 @@
         : {}
   ) as V1MetricsViewAggregationRequest;
 
-  $: ({ filters, timeControls } = isCanvasReport
-    ? { filters: undefined, timeControls: undefined }
-    : getFiltersAndTimeControlsFromAggregationRequest(
-        runtimeClient,
-        metricsViewName,
-        exploreName,
-        aggregationRequest,
-        $allTimeRangeResp.data?.timeRangeSummary,
-      ));
+  // The explore state only exists on the explore page (create mode);
+  // an edited report carries its definitions in the saved request.
+  $: ephemeralMeasures =
+    props.mode === "edit"
+      ? ephemeralDefsFromRequestMeasures(aggregationRequest.measures)
+      : $exploreStateStore?.ephemeralMeasures;
+
+  let filters: ExpressionFilterManager | undefined;
+  let timeControls: TimeControls | undefined;
+  let cleanup: (() => void) | undefined = undefined;
+  $: {
+    cleanup?.();
+    ({ filters, timeControls, cleanup } = isCanvasReport
+      ? { filters: undefined, timeControls: undefined, cleanup: undefined }
+      : getFiltersAndTimeControlsFromAggregationRequest(
+          runtimeClient,
+          metricsViewName,
+          exploreName,
+          aggregationRequest,
+          $allTimeRangeResp.data?.timeRangeSummary,
+        ));
+  }
 
   let currentProtobufState: string | undefined = undefined;
   if (open && props.mode === "create") {
@@ -328,22 +346,22 @@
       };
     }
 
-    const filtersState = filters!.toState();
     const timeControlsState = timeControls!.toState();
     const updatedAggregationRequest = buildAggregationRequest(
       aggregationRequest,
       [
         aggregationRequestWithTimeRange(exploreSpec, timeControlsState),
-        aggregationRequestWithFilters(filtersState),
         aggregationRequestWithRowsAndColumns({
           exploreSpec,
           rows: values.rows,
           columns: values.columns,
           showTimeComparison: timeControlsState.showTimeComparison,
           selectedTimezone: timeControlsState.selectedTimezone,
+          ephemeralMeasures,
         }),
       ],
     );
+    updatedAggregationRequest.where = filters?.topLevelJoiner[metricsViewName];
     return {
       ...commonOptions,
       explore: exploreName,
@@ -417,6 +435,10 @@
       // showing error below
     }
   }
+
+  onDestroy(() => {
+    cleanup?.();
+  });
 </script>
 
 <Dialog.Root bind:open>
@@ -429,11 +451,13 @@
       {errors}
       {submit}
       {enhance}
+      metricsViewName={metricsViewName ?? ""}
       exploreName={exploreName ?? ""}
       {canvasName}
       {canvasStateOverride}
       {filters}
       {timeControls}
+      {ephemeralMeasures}
     />
 
     {#if generalErrors}

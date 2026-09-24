@@ -1,6 +1,8 @@
 <script lang="ts">
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
+  import { mapEphemeralMeasuresForRequest } from "@rilldata/web-common/features/dashboards/ephemeral-measures/measure-mapping";
+  import type { EphemeralMeasureDef } from "@rilldata/web-common/features/dashboards/ephemeral-measures/types";
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import { DashboardState_LeaderboardSortType } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
   import type {
@@ -16,12 +18,10 @@
   } from "@rilldata/web-common/runtime-client";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { onMount } from "svelte";
-  import type { DimensionThresholdFilter } from "web-common/src/features/dashboards/stores/explore-state";
   import {
     getComparisonRequestMeasures,
     getURIRequestMeasure,
   } from "../dashboard-utils";
-  import { mergeDimensionAndMeasureFilters } from "../filters/measure-filters/measure-filter-utils";
   import { SortType } from "../proto-state/derived-types";
   import { getFiltersForOtherDimensions } from "../selectors";
   import { getMeasuresForDimensionOrLeaderboardDisplay } from "../state-managers/selectors/dashboard-queries";
@@ -55,10 +55,12 @@
   export let timeRange: V1TimeRange;
   export let comparisonTimeRange: V1TimeRange | undefined;
   export let selectedValues: ReturnType<typeof selectedDimensionValues>;
-  export let whereFilter: V1Expression;
-  export let dimensionThresholdFilters: DimensionThresholdFilter[];
+  export let whereFilter: V1Expression | undefined;
   export let leaderboardSortByMeasureName: string;
   export let leaderboardMeasures: MetricsViewSpecMeasure[];
+  // ephemeral measure definitions; their names may appear in
+  // leaderboardMeasures and are sent with an `expression` compute.
+  export let ephemeralMeasures: EphemeralMeasureDef[] | undefined = undefined;
   export let leaderboardShowContextForAllMeasures: boolean;
   export let metricsViewName: string;
   export let sortType: SortType;
@@ -143,36 +145,35 @@
   $: atLeastOneActive = Boolean($selectedValues.data?.length);
 
   $: isComplexFilter = isExpressionUnsupported(whereFilter);
-  $: where = isComplexFilter
-    ? whereFilter
-    : sanitiseExpression(
-        mergeDimensionAndMeasureFilters(
-          getFiltersForOtherDimensions(whereFilter, dimensionName),
-          dimensionThresholdFilters,
-        ),
-        undefined,
-      );
+  $: where = sanitiseExpression(
+    isComplexFilter
+      ? whereFilter
+      : getFiltersForOtherDimensions(whereFilter, dimensionName),
+  );
 
-  $: measures = [
-    ...getMeasuresForDimensionOrLeaderboardDisplay(
-      leaderboardShowContextForAllMeasures
-        ? null
-        : leaderboardSortByMeasureName,
-      dimensionThresholdFilters,
-      leaderboardMeasureNames,
-    ).map((name) => ({ name }) as V1MetricsViewAggregationMeasure),
+  $: measures = mapEphemeralMeasuresForRequest(
+    [
+      ...getMeasuresForDimensionOrLeaderboardDisplay(
+        leaderboardShowContextForAllMeasures
+          ? null
+          : leaderboardSortByMeasureName,
+        whereFilter,
+        leaderboardMeasureNames,
+      ).map((name) => ({ name }) as V1MetricsViewAggregationMeasure),
 
-    // Add comparison measures if there's a comparison time range
-    ...(comparisonTimeRange
-      ? (leaderboardShowContextForAllMeasures
-          ? leaderboardMeasureNames
-          : [leaderboardSortByMeasureName]
-        ).flatMap((name) => getComparisonRequestMeasures(name))
-      : []),
+      // Add comparison measures if there's a comparison time range.
+      ...(comparisonTimeRange
+        ? (leaderboardShowContextForAllMeasures
+            ? leaderboardMeasureNames
+            : [leaderboardSortByMeasureName]
+          ).flatMap((name) => getComparisonRequestMeasures(name))
+        : []),
 
-    // Add URI measure if URI is present
-    ...(uri ? [getURIRequestMeasure(dimensionName)] : []),
-  ];
+      // Add URI measure if URI is present
+      ...(uri ? [getURIRequestMeasure(dimensionName)] : []),
+    ],
+    ephemeralMeasures,
+  );
 
   $: sort = getSort(
     sortedAscending,
@@ -206,7 +207,10 @@
     runtimeClient,
     {
       metricsView: metricsViewName,
-      measures: leaderboardMeasureNames.map((name) => ({ name })),
+      measures: mapEphemeralMeasuresForRequest(
+        leaderboardMeasureNames.map((name) => ({ name })),
+        ephemeralMeasures,
+      ),
       where,
       timeRange,
     },

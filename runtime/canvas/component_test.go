@@ -127,6 +127,81 @@ bar_chart:
 	testruntime.RequireReconcileErrorContains(t, rt, id, runtime.ResourceKindComponent, "c1", "is not a dimension")
 }
 
+func TestValidateHorizontalBarChart(t *testing.T) {
+	rt, id := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
+		Files: metricsViewFiles(),
+	})
+
+	// Valid: a quantitative x holds the measure and y holds the dimension.
+	testruntime.PutFiles(t, rt, id, map[string]string{
+		"c1.yaml": `
+type: component
+bar_chart:
+  metrics_view: mv1
+  x:
+    field: y
+    type: quantitative
+    fields: [y, z]
+  y:
+    field: foo
+    type: nominal
+    sort: -x
+`})
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireReconcileState(t, rt, id, 4, 0, 0)
+
+	// Invalid: a quantitative x must reference a measure.
+	testruntime.PutFiles(t, rt, id, map[string]string{
+		"c1.yaml": `
+type: component
+stacked_bar:
+  metrics_view: mv1
+  x:
+    field: foo
+    type: quantitative
+  y:
+    field: bar
+    type: nominal
+`})
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireReconcileState(t, rt, id, 4, 1, 0)
+	testruntime.RequireReconcileErrorContains(t, rt, id, runtime.ResourceKindComponent, "c1", `x.field "foo" is not a measure`)
+
+	// Invalid: with the measure on x, y must reference a dimension.
+	testruntime.PutFiles(t, rt, id, map[string]string{
+		"c1.yaml": `
+type: component
+bar_chart:
+  metrics_view: mv1
+  x:
+    field: y
+    type: quantitative
+  y:
+    field: z
+    type: nominal
+`})
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireReconcileState(t, rt, id, 4, 1, 0)
+	testruntime.RequireReconcileErrorContains(t, rt, id, runtime.ResourceKindComponent, "c1", `y.field "z" is not a dimension`)
+
+	// Invalid: line charts cannot be drawn horizontally.
+	testruntime.PutFiles(t, rt, id, map[string]string{
+		"c1.yaml": `
+type: component
+line_chart:
+  metrics_view: mv1
+  x:
+    field: y
+    type: quantitative
+  y:
+    field: foo
+    type: nominal
+`})
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireReconcileState(t, rt, id, 4, 1, 0)
+	testruntime.RequireReconcileErrorContains(t, rt, id, runtime.ResourceKindComponent, "c1", "only supported by bar charts")
+}
+
 func TestValidateCartesianMultiField(t *testing.T) {
 	rt, id := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
 		Files: metricsViewFiles(),
@@ -1259,4 +1334,198 @@ renderer:
 	testruntime.ReconcileParserAndWait(t, rt, id)
 	testruntime.RequireReconcileState(t, rt, id, 4, 1, 0)
 	testruntime.RequireReconcileErrorContains(t, rt, id, runtime.ResourceKindComponent, "c1", `unsupported renderer "renderer"`)
+}
+
+func TestValidateEphemeralMeasures(t *testing.T) {
+	rt, id := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
+		Files: metricsViewFiles(),
+	})
+
+	// A kpi_grid referencing a ephemeral measure should be valid.
+	testruntime.PutFiles(t, rt, id, map[string]string{
+		"c1.yaml": `
+type: component
+kpi_grid:
+  metrics_view: mv1
+  measures: [y, profit]
+  adhoc_measures:
+  - name: profit
+    display_name: Profit
+    expression: y - z
+`})
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireReconcileState(t, rt, id, 4, 0, 0)
+
+	// A leaderboard referencing a ephemeral measure should be valid.
+	testruntime.PutFiles(t, rt, id, map[string]string{
+		"c1.yaml": `
+type: component
+leaderboard:
+  metrics_view: mv1
+  measures: [profit]
+  dimensions: [foo]
+  adhoc_measures:
+  - name: profit
+    display_name: Profit
+    expression: y - z
+`})
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireReconcileState(t, rt, id, 4, 0, 0)
+
+	// A table with a ephemeral measure column should be valid.
+	testruntime.PutFiles(t, rt, id, map[string]string{
+		"c1.yaml": `
+type: component
+table:
+  metrics_view: mv1
+  columns: [foo, y, profit]
+  adhoc_measures:
+  - name: profit
+    display_name: Profit
+    expression: y - z
+`})
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireReconcileState(t, rt, id, 4, 0, 0)
+
+	// A pivot with a ephemeral measure should be valid.
+	testruntime.PutFiles(t, rt, id, map[string]string{
+		"c1.yaml": `
+type: component
+pivot:
+  metrics_view: mv1
+  measures: [profit]
+  row_dimensions: [foo]
+  adhoc_measures:
+  - name: profit
+    display_name: Profit
+    expression: y - z
+`})
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireReconcileState(t, rt, id, 4, 0, 0)
+
+	// A bar chart using a ephemeral measure on the y axis (single and multi) should be valid.
+	testruntime.PutFiles(t, rt, id, map[string]string{
+		"c1.yaml": `
+type: component
+bar_chart:
+  metrics_view: mv1
+  x:
+    field: foo
+    type: nominal
+  y:
+    field: profit
+    type: quantitative
+    fields: [y, profit]
+  adhoc_measures:
+  - name: profit
+    display_name: Profit
+    expression: y - z
+`})
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireReconcileState(t, rt, id, 4, 0, 0)
+
+	// A pie chart using a ephemeral measure should be valid.
+	testruntime.PutFiles(t, rt, id, map[string]string{
+		"c1.yaml": `
+type: component
+pie_chart:
+  metrics_view: mv1
+  measure:
+    field: profit
+    type: quantitative
+  color:
+    field: foo
+    type: nominal
+  adhoc_measures:
+  - name: profit
+    display_name: Profit
+    expression: y - z
+`})
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireReconcileState(t, rt, id, 4, 0, 0)
+
+	// A heatmap using a ephemeral measure as the color field should be valid.
+	testruntime.PutFiles(t, rt, id, map[string]string{
+		"c1.yaml": `
+type: component
+heatmap:
+  metrics_view: mv1
+  x:
+    field: foo
+    type: nominal
+  color:
+    field: profit
+    type: quantitative
+  adhoc_measures:
+  - name: profit
+    display_name: Profit
+    expression: y - z
+`})
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireReconcileState(t, rt, id, 4, 0, 0)
+
+	// A chart referencing an undefined ephemeral measure should fail.
+	testruntime.PutFiles(t, rt, id, map[string]string{
+		"c1.yaml": `
+type: component
+bar_chart:
+  metrics_view: mv1
+  x:
+    field: foo
+    type: nominal
+  y:
+    field: missing
+    type: quantitative
+`})
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireReconcileState(t, rt, id, 4, 1, 0)
+	testruntime.RequireReconcileErrorContains(t, rt, id, runtime.ResourceKindComponent, "c1", "not a measure in metrics view")
+
+	// An invalid expression should fail validation.
+	testruntime.PutFiles(t, rt, id, map[string]string{
+		"c1.yaml": `
+type: component
+kpi_grid:
+  metrics_view: mv1
+  measures: [profit]
+  adhoc_measures:
+  - name: profit
+    display_name: Profit
+    expression: sum(y)
+`})
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireReconcileState(t, rt, id, 4, 1, 0)
+	testruntime.RequireReconcileErrorContains(t, rt, id, runtime.ResourceKindComponent, "c1", "aggregate function")
+
+	// An expression referencing an unknown measure should fail validation.
+	testruntime.PutFiles(t, rt, id, map[string]string{
+		"c1.yaml": `
+type: component
+kpi_grid:
+  metrics_view: mv1
+  measures: [profit]
+  adhoc_measures:
+  - name: profit
+    display_name: Profit
+    expression: y - unknown
+`})
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireReconcileState(t, rt, id, 4, 1, 0)
+	testruntime.RequireReconcileErrorContains(t, rt, id, runtime.ResourceKindComponent, "c1", "not a measure in metrics view")
+
+	// A measure not defined anywhere should still fail.
+	testruntime.PutFiles(t, rt, id, map[string]string{
+		"c1.yaml": `
+type: component
+kpi_grid:
+  metrics_view: mv1
+  measures: [missing]
+  adhoc_measures:
+  - name: profit
+    display_name: Profit
+    expression: y - z
+`})
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireReconcileState(t, rt, id, 4, 1, 0)
+	testruntime.RequireReconcileErrorContains(t, rt, id, runtime.ResourceKindComponent, "c1", "is not a measure")
 }

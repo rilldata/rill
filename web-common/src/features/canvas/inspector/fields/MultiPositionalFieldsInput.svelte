@@ -1,10 +1,13 @@
 <script lang="ts">
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
+  import type { BaseCanvasComponent } from "@rilldata/web-common/features/canvas/components/BaseCanvasComponent";
   import { getCanvasStore } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
+  import type { EphemeralMeasureDef } from "@rilldata/web-common/features/dashboards/ephemeral-measures/types";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { PlusIcon } from "lucide-svelte";
   import { useMetricFieldData } from "../selectors";
   import type { FieldType } from "../types";
+  import { canvasEphemeralMeasureEditor } from "./ephemeral-editor-store";
   import FieldChips from "./FieldChips.svelte";
   import FieldSelectorDropdown from "./FieldSelectorDropdown.svelte";
 
@@ -14,6 +17,10 @@
   export let chipItems: string[] = [];
   export let types: FieldType[] = ["measure", "dimension"];
   export let excludedValues: string[] | undefined = undefined;
+  export let ephemeralMeasures: EphemeralMeasureDef[] | undefined = undefined;
+  // Component owning the spec; when set (and the field accepts measures), the
+  // selector offers creating and editing ephemeral measures.
+  export let component: BaseCanvasComponent | undefined = undefined;
   export let onMultiSelect: (items: string[]) => void = () => {};
 
   const client = useRuntimeClient();
@@ -21,8 +28,30 @@
   let open = false;
   let searchValue = "";
 
+  $: ephemeralEnabled = !!component && types.includes("measure");
+
+  // Opens the editor mounted once at the inspector root (see ComponentsEditor).
+  function openEphemeralEditor(editingDef: EphemeralMeasureDef | null) {
+    if (!component) return;
+    canvasEphemeralMeasureEditor.set({
+      component,
+      canvasName,
+      metricName,
+      editingDef,
+      onCreated: (name) => onMultiSelect([...selectedItems, name]),
+    });
+  }
+
   $: ctx = getCanvasStore(canvasName, client.instanceId);
-  $: fieldData = useMetricFieldData(ctx, metricName, types);
+  $: fieldData = useMetricFieldData(
+    ctx,
+    metricName,
+    types,
+    undefined,
+    "",
+    undefined,
+    ephemeralMeasures,
+  );
 </script>
 
 <div class="w-full flex flex-col gap-y-2">
@@ -38,7 +67,17 @@
     {selectedItems}
     {types}
     {excludedValues}
+    {ephemeralMeasures}
     {onMultiSelect}
+    onCreateEphemeral={ephemeralEnabled
+      ? () => openEphemeralEditor(null)
+      : undefined}
+    onEditEphemeral={ephemeralEnabled
+      ? (name) => {
+          const def = ephemeralMeasures?.find((d) => d.name === name);
+          if (def) openEphemeralEditor(def);
+        }
+      : undefined}
     bind:open
     bind:searchValue
   >

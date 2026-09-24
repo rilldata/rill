@@ -7,9 +7,11 @@ import (
 	"testing"
 	"time"
 
+	"github.com/rilldata/rill/admin/pkg/pgtestcontainer"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/storage"
+	"github.com/rilldata/rill/runtime/testruntime/testmode"
 	"github.com/stretchr/testify/require"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
@@ -66,11 +68,12 @@ VALUES (NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 
 `
 
 func TestMySQLToDuckDBTransfer(t *testing.T) {
+	testmode.Expensive(t)
 	ctx := context.Background()
 	container, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
 		Started: true,
 		ContainerRequest: testcontainers.ContainerRequest{
-			WaitingFor:   wait.ForLog("mysqld: ready for connections").WithOccurrence(2).WithStartupTimeout(15 * time.Second),
+			WaitingFor:   wait.ForLog("mysqld: ready for connections").WithOccurrence(2).WithStartupTimeout(time.Minute),
 			Image:        "mysql:8.3.0",
 			ExposedPorts: []string{"3306/tcp"},
 			Env: map[string]string{
@@ -157,4 +160,107 @@ func mysqlToDuckDB(t *testing.T, dsn string) {
 	require.NoError(t, err)
 	require.False(t, tbl.View)
 	require.NoError(t, duckDB.Close())
+}
+
+func TestMySQLToDuckLakeTransfer(t *testing.T) {
+	testmode.Expensive(t)
+	ctx := t.Context()
+	pg := pgtestcontainer.New(t)
+	defer pg.Terminate(t)
+
+	container, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
+		Started: true,
+		ContainerRequest: testcontainers.ContainerRequest{
+			WaitingFor:   wait.ForLog("mysqld: ready for connections").WithOccurrence(2).WithStartupTimeout(time.Minute),
+			Image:        "mysql:8.3.0",
+			ExposedPorts: []string{"3306/tcp"},
+			Env: map[string]string{
+				"MYSQL_ROOT_PASSWORD": "mypassword",
+				"MYSQL_DATABASE":      "mydb",
+				"MYSQL_USER":          "myuser",
+				"MYSQL_PASSWORD":      "mypassword",
+			},
+		},
+	})
+	require.NoError(t, err)
+	defer container.Terminate(ctx)
+
+	host, err := container.Host(ctx)
+	require.NoError(t, err)
+	port, err := container.MappedPort(ctx, "3306/tcp")
+	require.NoError(t, err)
+	goDSN := fmt.Sprintf("myuser:mypassword@tcp(%s:%d)/mydb?multiStatements=true", host, port.Int())
+	db, err := sql.Open("mysql", goDSN)
+	require.NoError(t, err)
+	defer db.Close()
+	_, err = db.ExecContext(ctx, mysqlInitStmt)
+	require.NoError(t, err)
+
+	dsn := fmt.Sprintf("mysql://myuser:mypassword@%s:%d/mydb", host, port.Int())
+	dataPath := t.TempDir()
+	outputConfig := map[string]any{
+		"attach":        fmt.Sprintf("'ducklake:postgres:%s' AS ducklake (DATA_PATH '%s', DATA_INLINING_ROW_LIMIT 0)", pg.DatabaseURL, dataPath),
+		"database_name": "ducklake",
+		"mode":          "readwrite",
+	}
+
+	t.Run("retry_after_missing_column", func(t *testing.T) {
+		duckLake, err := drivers.Open("duckdb", "", "retry", outputConfig, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
+		require.NoError(t, err)
+		inputHandle, err := drivers.Open("mysql", "", "retry", map[string]any{"dsn": dsn}, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
+		require.NoError(t, err)
+
+		requireDuckLakeRetryAfterFailure(t, duckLake, inputHandle, "mysql", map[string]any{
+			"sql": "SELECT missing_column FROM all_data_types_table;",
+			"dsn": dsn,
+		}, "SELECT * FROM all_data_types_table;", 2)
+		require.NoError(t, inputHandle.Close())
+		require.NoError(t, duckLake.Close())
+	})
+
+	t.Run("ingestion", func(t *testing.T) {
+		mysqlToDuckLake(t, dsn, outputConfig)
+	})
+}
+
+func mysqlToDuckLake(t *testing.T, dsn string, outputConfig map[string]any) {
+	duckLake, err := drivers.Open("duckdb", "", "default", outputConfig, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
+	require.NoError(t, err)
+	inputHandle, err := drivers.Open("mysql", "", "default", map[string]any{"dsn": dsn}, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
+	require.NoError(t, err)
+
+	opts := &drivers.ModelExecutorOptions{
+		InputHandle:     inputHandle,
+		InputConnector:  "mysql",
+		OutputHandle:    duckLake,
+		OutputConnector: "duckdb",
+		Env: &drivers.ModelEnv{
+			AllowHostAccess: false,
+			StageChanges:    true,
+		},
+		PreliminaryInputProperties: map[string]any{
+			"sql": "SELECT * FROM all_data_types_table;",
+			"dsn": dsn,
+		},
+		PreliminaryOutputProperties: map[string]any{
+			"table": "sink",
+		},
+	}
+	me, err := duckLake.AsModelExecutor("default", opts)
+	require.NoError(t, err)
+	execOpts := &drivers.ModelExecuteOptions{
+		ModelExecutorOptions: opts,
+		InputProperties:      opts.PreliminaryInputProperties,
+		OutputProperties:     opts.PreliminaryOutputProperties,
+	}
+	_, err = me.Execute(t.Context(), execOpts)
+	require.NoError(t, err)
+	requireDuckLakeRowCount(t, duckLake, 2)
+	olap, ok := duckLake.AsOLAP("default")
+	require.True(t, ok)
+	tbl, err := olap.InformationSchema().Lookup(t.Context(), "", "", "sink")
+	require.NoError(t, err)
+	require.False(t, tbl.View)
+	require.NoError(t, inputHandle.Close())
+	require.NoError(t, duckLake.Close())
 }

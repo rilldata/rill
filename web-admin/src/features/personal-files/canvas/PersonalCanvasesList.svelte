@@ -4,7 +4,7 @@
   import CreatePersonalCanvasDialog from "@rilldata/web-admin/features/personal-files/canvas/CreatePersonalCanvasDialog.svelte";
   import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
   import ExploreIcon from "@rilldata/web-common/components/icons/ExploreIcon.svelte";
-  import ResourceList from "@rilldata/web-admin/features/resources/ResourceList.svelte";
+  import ListTable from "@rilldata/web-admin/components/list-table/ListTable.svelte";
   import ResourceListEmptyState from "@rilldata/web-admin/features/resources/ResourceListEmptyState.svelte";
   import type { V1Resource } from "@rilldata/web-common/runtime-client";
   import { renderComponent } from "tanstack-table-8-svelte-5";
@@ -12,6 +12,7 @@
   import { getPersonalFilteredResources } from "@rilldata/web-admin/features/personal-files/selectors.ts";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors.ts";
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
+  import { resourceTableGetRowId } from "@rilldata/web-common/features/resources/overview-utils.ts";
 
   let {
     org,
@@ -83,11 +84,12 @@
       </div>
     {:else}
       <div class="flex flex-col w-full gap-y-3">
-        <ResourceList
+        <ListTable
           kind="personal canvases"
           data={personalCanvases}
           {columns}
           toolbar={false}
+          getRowId={resourceTableGetRowId}
         >
           <ResourceListEmptyState
             slot="empty"
@@ -98,7 +100,7 @@
               {m.personal_files_canvases_empty_action()}
             </span>
           </ResourceListEmptyState>
-        </ResourceList>
+        </ListTable>
       </div>
     {/if}
   </section>

@@ -1,3 +1,4 @@
+import { appendEphemeralSpecMeasures } from "@rilldata/web-common/features/dashboards/ephemeral-measures/measure-mapping";
 import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
 import {
   MetricsViewSpecMeasureType,
@@ -5,27 +6,53 @@ import {
   type V1MetricsViewSpec,
   V1TimeGrain,
   type V1MetricsViewAggregationMeasure,
+  type V1MetricsViewAggregationMeasureComputeExpression,
 } from "@rilldata/web-common/runtime-client";
 import type { DashboardDataSources } from "./types";
+
+/**
+ * The subset of an aggregation measure that identifies the spec measure it derives from.
+ * Both spec measures and aggregation measures satisfy it,
+ * so selectors that only resolve the source measure can accept either.
+ */
+type AggregationMeasureRef = Pick<
+  V1MetricsViewAggregationMeasure,
+  | "name"
+  | "comparisonDelta"
+  | "comparisonValue"
+  | "comparisonRatio"
+  | "percentOfTotal"
+> & {
+  /**
+   * Aggregation measures carry the ephemeral expression compute here, while spec measures carry
+   * their SQL expression as a plain string. Only the object form marks an ephemeral measure.
+   */
+  expression?: V1MetricsViewAggregationMeasureComputeExpression | string;
+};
 
 export const allMeasures = ({
   validMetricsView,
   validExplore,
-}: Pick<
-  DashboardDataSources,
-  "validMetricsView" | "validExplore"
->): MetricsViewSpecMeasure[] => {
+  dashboard,
+}: Pick<DashboardDataSources, "validMetricsView" | "validExplore"> &
+  Partial<
+    Pick<DashboardDataSources, "dashboard">
+  >): MetricsViewSpecMeasure[] => {
   if (!validMetricsView?.measures || !validExplore?.measures) return [];
 
-  return (
-    validMetricsView.measures
-      .filter((m) => validExplore.measures!.includes(m.name!))
-      // Sort the filtered measures based on their order in validExplore.measures
-      .sort(
-        (a, b) =>
-          validExplore.measures!.indexOf(a.name!) -
-          validExplore.measures!.indexOf(b.name!),
-      )
+  const specMeasures = validMetricsView.measures
+    .filter((m) => validExplore.measures!.includes(m.name!))
+    // Sort the filtered measures based on their order in validExplore.measures
+    .sort(
+      (a, b) =>
+        validExplore.measures!.indexOf(a.name!) -
+        validExplore.measures!.indexOf(b.name!),
+    );
+  // ephemeral measures behave like regular measures across the
+  // explore; they get synthetic spec entries so labels/formatting resolve.
+  return appendEphemeralSpecMeasures(
+    specMeasures,
+    dashboard?.ephemeralMeasures,
   );
 };
 
@@ -36,8 +63,9 @@ export const visibleMeasures = ({
 }: DashboardDataSources): MetricsViewSpecMeasure[] => {
   if (!validMetricsView?.measures || !validExplore?.measures) return [];
 
+  const all = allMeasures({ validMetricsView, validExplore, dashboard });
   return dashboard.visibleMeasures
-    .map((mes) => validMetricsView.measures?.find((m) => m.name === mes))
+    .map((mes) => all.find((m) => m.name === mes))
     .filter(Boolean) as MetricsViewSpecMeasure[];
 };
 
@@ -49,13 +77,11 @@ export const getMeasureByName = (
   };
 };
 
-export const measureLabel = ({
-  validMetricsView,
-}: DashboardDataSources): ((m: string) => string) => {
+export const measureLabel = (
+  dashData: DashboardDataSources,
+): ((m: string) => string) => {
   return (measureName) => {
-    const measure = validMetricsView?.measures?.find(
-      (d) => d.name === measureName,
-    );
+    const measure = allMeasures(dashData).find((d) => d.name === measureName);
     return measure?.displayName || measureName;
   };
 };
@@ -75,23 +101,29 @@ export const filteredSimpleMeasures = ({
   validMetricsView,
   validExplore,
 }: DashboardDataSources) => {
-  return () => {
-    if (!validMetricsView?.measures || !validExplore?.measures) return [];
-
-    return (
-      validMetricsView.measures
-        .filter(
-          (m) => validExplore.measures!.includes(m.name!) && isSimpleMeasure(m),
-        )
-        // Sort the filtered measures based on their order in validExplore.measures
-        .sort(
-          (a, b) =>
-            validExplore.measures!.indexOf(a.name!) -
-            validExplore.measures!.indexOf(b.name!),
-        )
+  return () =>
+    getFilteredSimpleMeasures(
+      validMetricsView?.measures ?? [],
+      validExplore?.measures,
     );
-  };
 };
+
+export function getFilteredSimpleMeasures(
+  allMeasures: MetricsViewSpecMeasure[],
+  exploreMeasures: string[] | undefined,
+) {
+  if (!exploreMeasures) return [];
+
+  return (
+    allMeasures
+      .filter((m) => exploreMeasures.includes(m.name!) && isSimpleMeasure(m))
+      // Sort the filtered measures based on their order in validExplore.measures
+      .sort(
+        (a, b) =>
+          exploreMeasures.indexOf(a.name!) - exploreMeasures.indexOf(b.name!),
+      )
+  );
+}
 
 export const isSimpleMeasure = (measure: MetricsViewSpecMeasure) =>
   !measure.window &&
@@ -121,7 +153,17 @@ export const filterOutSomeAdvancedMeasures = (
 ) => {
   const measuresSeen = new Set<string>();
 
+  const ephemeralMeasureNames = new Set(
+    exploreState.ephemeralMeasures?.map((def) => def.name) ?? [],
+  );
+
   return measureNames.filter((measureName) => {
+    // ephemeral measures are simple aggregations; always supported.
+    if (ephemeralMeasureNames.has(measureName)) {
+      if (measuresSeen.has(measureName)) return false;
+      measuresSeen.add(measureName);
+      return true;
+    }
     const measureSpec = metricsViewSpec.measures?.find(
       (m) => m.name === measureName,
     );
@@ -147,14 +189,22 @@ export const filterOutSomeAdvancedMeasures = (
  *
  * This is a variant of the above but works on V1MetricsViewAggregationMeasure.
  * Once we move all queries to MetricsViewAggregation we dont need the above method.
+ *
+ * It is generic over the measure type so callers that pass spec measures get spec measures back.
  */
-export const filterOutSomeAdvancedAggregationMeasures = (
+export const filterOutSomeAdvancedAggregationMeasures = <
+  T extends AggregationMeasureRef,
+>(
   exploreState: ExploreState,
   metricsViewSpec: V1MetricsViewSpec,
-  measures: V1MetricsViewAggregationMeasure[],
+  measures: T[],
   includeWindowMeasures: boolean,
-) => {
+): T[] => {
   const measuresSeen = new Set<string>();
+
+  const ephemeralMeasureNames = new Set(
+    exploreState.ephemeralMeasures?.map((def) => def.name) ?? [],
+  );
 
   return measures.filter((measure) => {
     const sourceMeasureName =
@@ -164,17 +214,27 @@ export const filterOutSomeAdvancedAggregationMeasures = (
       measure.percentOfTotal?.measure ??
       measure.name ??
       "";
-    const measureSpec = metricsViewSpec.measures?.find(
-      (m) => m.name === sourceMeasureName,
-    );
-    if (!measureSpec) return false;
-    const measureIsSupported = isMeasureSupported(
-      exploreState,
-      measureSpec,
-      includeWindowMeasures,
-      false,
-    );
-    if (!measureIsSupported || measuresSeen.has(measure.name!)) return false;
+    // Ephemeral expression measures are derived from measures already in the spec and have no spec
+    // entry of their own, so there is no source measure to resolve or check for support.
+    // The same applies to comparison measures derived from an ephemeral measure.
+    const isEphemeral =
+      (!!measure.expression && typeof measure.expression === "object") ||
+      ephemeralMeasureNames.has(sourceMeasureName);
+    if (!isEphemeral) {
+      const measureSpec = metricsViewSpec.measures?.find(
+        (m) => m.name === sourceMeasureName,
+      );
+      if (!measureSpec) return false;
+      const measureIsSupported = isMeasureSupported(
+        exploreState,
+        measureSpec,
+        includeWindowMeasures,
+        false,
+      );
+      if (!measureIsSupported) return false;
+    }
+
+    if (measuresSeen.has(measure.name!)) return false;
 
     measuresSeen.add(measure.name!);
     return true;

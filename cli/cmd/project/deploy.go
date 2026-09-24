@@ -293,7 +293,10 @@ func DeployCmd(ch *cmdutil.Helper) *cobra.Command {
 	deployCmd.Flags().StringVar(&opts.Name, "project", "", "Project name (default: Git repo name)")
 	deployCmd.Flags().StringVar(&opts.Description, "description", "", "Project description")
 	deployCmd.Flags().BoolVar(&opts.Public, "public", false, "Make dashboards publicly accessible")
-	deployCmd.Flags().StringVar(&opts.Provisioner, "provisioner", "", "Project provisioner")
+	deployCmd.Flags().StringVar(&opts.Provisioner, "provisioner", "", "Project provisioner (superuser-only)")
+	if err := deployCmd.Flags().MarkHidden("provisioner"); err != nil {
+		panic(err)
+	}
 	deployCmd.Flags().StringVar(&opts.PrimaryBranch, "primary-branch", "", "Git branch to deploy from (default: the default Git branch)")
 	deployCmd.Flags().IntVar(&opts.Slots, "prod-slots", local.DefaultProdSlots(ch), "Slots to allocate for production deployments")
 	deployCmd.Flags().IntVar(&opts.DevSlots, "dev-slots", local.DefaultDevSlots(ch), "Slots to allocate for dev deployments")

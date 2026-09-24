@@ -4,10 +4,11 @@ import type { ScatterPlotCanvasChartSpec } from "@rilldata/web-common/features/c
 import type { KPIGridSpec } from "@rilldata/web-common/features/canvas/components/kpi-grid";
 import type { ChartType } from "../../components/charts/types";
 import type { ComponentRefSpec } from "./component-ref";
+import type { CustomChart } from "./charts/custom-chart";
 import type { ImageSpec } from "./image";
 import type { KPISpec } from "./kpi";
 import type { LeaderboardSpec } from "./leaderboard";
-import type { CustomChart } from "./charts/custom-chart";
+import type { MapSpec } from "./map";
 import type { MarkdownSpec } from "./markdown";
 import type { PivotSpec, TableSpec } from "./pivot";
 
@@ -20,6 +21,7 @@ export type ComponentWithMetricsView =
   | KPISpec
   | KPIGridSpec
   | LeaderboardSpec
+  | MapSpec
   | CustomChart;
 
 export type ComponentSpec =
@@ -47,8 +49,15 @@ export type ComponentComparisonOptions =
   | "percent_change";
 
 export interface ComponentFilterProperties {
+  // Explore URL params (`tr`, `compare_tr`, `grain`, `tz`). See time-filters.ts for how
+  // `inherit` and an absent `compare_tr` resolve.
   time_filters?: string;
   dimension_filters?: string;
+  /**
+   * Hides the local filter chips from the rendered component.
+   * The filters still apply to the component's queries.
+   */
+  hide_local_filters?: boolean;
 }
 
 export interface ComponentSize {
@@ -64,6 +73,7 @@ export type CanvasComponentType =
   | "pivot"
   | "table"
   | "leaderboard"
+  | "map"
   | "custom_chart"
   | "component_ref";
 
@@ -96,6 +106,9 @@ export interface PivotTemplateT {
 export interface TableTemplateT {
   table: TableSpec;
 }
+export interface MapTemplateT {
+  map: MapSpec;
+}
 
 export type TemplateSpec =
   | ChartTemplates
@@ -103,4 +116,5 @@ export type TemplateSpec =
   | PivotTemplateT
   | MarkdownTemplateT
   | ImageTemplateT
-  | TableTemplateT;
+  | TableTemplateT
+  | MapTemplateT;

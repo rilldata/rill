@@ -576,3 +576,66 @@ func TestResolveMetricsView(t *testing.T) {
 		})
 	}
 }
+
+func TestResolveAPI(t *testing.T) {
+	tests := []struct {
+		name       string
+		attr       map[string]any
+		rules      []*runtimev1.SecurityRule
+		wantAccess bool
+		wantErr    bool
+	}{
+		{
+			name:       "no_rules_allows",
+			attr:       map[string]any{"tier": "free"},
+			wantAccess: true,
+		},
+		{
+			name:       "rule_matches_allows",
+			attr:       map[string]any{"tier": "enterprise"},
+			rules:      []*runtimev1.SecurityRule{{Rule: &runtimev1.SecurityRule_Access{Access: &runtimev1.SecurityRuleAccess{ConditionExpression: `{{ eq .user.tier "enterprise" }}`, Allow: true}}}},
+			wantAccess: true,
+		},
+		{
+			name:       "rule_does_not_match_denies",
+			attr:       map[string]any{"tier": "free"},
+			rules:      []*runtimev1.SecurityRule{{Rule: &runtimev1.SecurityRule_Access{Access: &runtimev1.SecurityRuleAccess{ConditionExpression: `{{ eq .user.tier "enterprise" }}`, Allow: true}}}},
+			wantAccess: false,
+		},
+		{
+			name:       "missing_attribute_denies",
+			attr:       map[string]any{},
+			rules:      []*runtimev1.SecurityRule{{Rule: &runtimev1.SecurityRule_Access{Access: &runtimev1.SecurityRuleAccess{ConditionExpression: `{{ eq .user.tier "enterprise" }}`, Allow: true}}}},
+			wantAccess: false,
+		},
+		{
+			name:    "evaluation_error_fails",
+			attr:    map[string]any{"admin": "notabool"},
+			rules:   []*runtimev1.SecurityRule{{Rule: &runtimev1.SecurityRule_Access{Access: &runtimev1.SecurityRuleAccess{ConditionExpression: `{{ .user.admin }}`, Allow: true}}}},
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			r := &runtimev1.Resource{
+				Meta: &runtimev1.ResourceMeta{
+					Name:           &runtimev1.ResourceName{Kind: ResourceKindAPI, Name: "test"},
+					StateUpdatedOn: timestamppb.Now(),
+				},
+				Resource: &runtimev1.Resource_Api{
+					Api: &runtimev1.API{Spec: &runtimev1.APISpec{SecurityRules: tt.rules}},
+				},
+			}
+
+			claims := &SecurityClaims{UserAttributes: tt.attr}
+			p := newSecurityEngine(1, zap.NewNop(), nil)
+			got, err := p.resolveSecurity(t.Context(), "", "test", map[string]string{}, claims, r)
+			if tt.wantErr {
+				require.Error(t, err)
+				return
+			}
+			require.NoError(t, err)
+			require.Equal(t, tt.wantAccess, got.CanAccess())
+		})
+	}
+}

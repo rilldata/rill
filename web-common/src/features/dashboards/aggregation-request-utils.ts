@@ -1,10 +1,12 @@
+import {
+  ephemeralMeasureNameSet,
+  mapEphemeralMeasuresForRequest,
+} from "@rilldata/web-common/features/dashboards/ephemeral-measures/measure-mapping";
+import type { EphemeralMeasureDef } from "@rilldata/web-common/features/dashboards/ephemeral-measures/types";
 import { getAggregationDimensionFromFieldName } from "@rilldata/web-common/features/dashboards/aggregation-request/dimension-utils.ts";
 import { getComparisonRequestMeasures } from "@rilldata/web-common/features/dashboards/dashboard-utils.ts";
 import { MeasureModifierSuffixRegex } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry.ts";
-import { mergeDimensionAndMeasureFilters } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils.ts";
 import { ComparisonModifierSuffixRegex } from "@rilldata/web-common/features/dashboards/pivot/types.ts";
-import { sanitiseExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils.ts";
-import type { FiltersState } from "@rilldata/web-common/features/dashboards/stores/Filters.ts";
 import type { TimeControlState } from "@rilldata/web-common/features/dashboards/stores/TimeControls.ts";
 import {
   mapSelectedComparisonTimeRangeToV1TimeRange,
@@ -56,42 +58,30 @@ export const aggregationRequestWithTimeRange = (
   };
 };
 
-export const aggregationRequestWithFilters = (filtersState: FiltersState) => {
-  return (aggregationRequest: V1MetricsViewAggregationRequest) => {
-    const whereFilter = sanitiseExpression(
-      mergeDimensionAndMeasureFilters(
-        filtersState.whereFilter,
-        filtersState.dimensionThresholdFilters,
-      ),
-      undefined,
-    );
-    return {
-      ...aggregationRequest,
-      where: whereFilter,
-    };
-  };
-};
-
 export const aggregationRequestWithRowsAndColumns = ({
   exploreSpec,
   rows,
   columns,
   showTimeComparison,
   selectedTimezone,
+  ephemeralMeasures,
 }: {
   exploreSpec: V1ExploreSpec;
   rows: string[];
   columns: string[];
   showTimeComparison: boolean;
   selectedTimezone: string;
+  ephemeralMeasures?: EphemeralMeasureDef[];
 }) => {
   return (aggregationRequest: V1MetricsViewAggregationRequest) => {
     const isFlat = rows.length === 0;
+    const ephemeralMeasureNames = ephemeralMeasureNameSet(ephemeralMeasures);
+    const isMeasureColumn = (col: string) =>
+      exploreSpec.measures?.includes(col) || ephemeralMeasureNames.has(col);
 
     // Get measures defined as columns. We do allow adding measures as rows so need to check it.
-    const measures = columns
-      .filter((col) => exploreSpec.measures?.includes(col))
-      .flatMap((measureName) => {
+    const measures = mapEphemeralMeasuresForRequest(
+      columns.filter(isMeasureColumn).flatMap((measureName) => {
         const group: V1MetricsViewAggregationMeasure[] = [
           { name: measureName },
         ];
@@ -101,7 +91,9 @@ export const aggregationRequestWithRowsAndColumns = ({
         }
 
         return group;
-      });
+      }),
+      ephemeralMeasures,
+    );
 
     // Get dimensions defined as rows
     const dimensionsFromRows: V1MetricsViewAggregationDimension[] = rows.map(
@@ -110,7 +102,7 @@ export const aggregationRequestWithRowsAndColumns = ({
 
     // Get dimensions defined as columns
     const dimensionsFromColumns: V1MetricsViewAggregationDimension[] = columns
-      .filter((col) => !exploreSpec.measures?.includes(col))
+      .filter((col) => !isMeasureColumn(col))
       .map((col) =>
         getAggregationDimensionFromFieldName(col, selectedTimezone),
       );

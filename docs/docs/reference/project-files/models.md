@@ -182,37 +182,31 @@ _[oneOf]_ - Refers to the explicitly defined state of your model, cannot be used
 
       - **`prompt`** - _[string]_ - Custom prompt to guide the AI analysis. If not provided, a default analysis prompt is used.
 
-      - **`time_range`** - _[object]_ - Time range for the analysis period
+      - **`time_range`** - _[object]_ - Time range for the analysis period. Use either a Rill time expression or fixed start and end timestamps.
 
-        - **`iso_duration`** - _[string]_ - ISO 8601 duration (e.g., P7D for 7 days, P1M for 1 month)
-
-        - **`iso_offset`** - _[string]_ - ISO 8601 offset from current time (e.g., P1D to start from yesterday)
+        - **`expression`** - _[string]_ - Rill time expression. Note that snapping excludes the period containing the reference point, so '1D as of latest/D' is the day before the latest data; use '1D as of latest/D+1D' for the last day with data.
 
         - **`start`** - _[string]_ - Start timestamp in ISO 8601 format
 
         - **`end`** - _[string]_ - End timestamp in ISO 8601 format
 
-        - **`expression`** - _[string]_ - Rill time expression (e.g., 'last 7 days', 'this month')
+      - **`comparison_time_range`** - _[object]_ - Optional comparison time range for period-over-period analysis. Use either a Rill time expression or fixed start and end timestamps.
 
-      - **`comparison_time_range`** - _[object]_ - Optional comparison time range for period-over-period analysis
-
-        - **`iso_duration`** - _[string]_ - ISO 8601 duration for comparison period
-
-        - **`iso_offset`** - _[string]_ - ISO 8601 offset for comparison period (e.g., P7D to compare with previous week)
+        - **`expression`** - _[string]_ - Rill time expression for the comparison period (e.g., '1D as of latest/D' when the time range is '1D as of latest/D+1D')
 
         - **`start`** - _[string]_ - Start timestamp in ISO 8601 format
 
         - **`end`** - _[string]_ - End timestamp in ISO 8601 format
 
-        - **`expression`** - _[string]_ - Rill time expression for comparison period
+      - **`time_zone`** - _[string]_ - IANA time zone used to evaluate the time range expressions (e.g., 'America/New_York'). Defaults to UTC.
 
-      - **`context`** - _[object]_ - Context to constrain the AI analysis
+      - **`explore`** - _[string]_ - Name of the explore dashboard to analyze. If provided, the analysis is limited to the metrics view of this dashboard. Combined with `watermark: inherit` on the report, time range expressions are resolved against the latest data in the metrics view instead of the report's trigger time.
 
-        - **`explore`** - _[string]_ - Name of the explore dashboard to analyze
+      - **`dimensions`** - _[array of string]_ - List of dimensions to include in the analysis
 
-        - **`dimensions`** - _[array of string]_ - List of dimensions to include in analysis
+      - **`measures`** - _[array of string]_ - List of measures to include in the analysis
 
-        - **`measures`** - _[array of string]_ - List of measures to include in analysis
+      - **`where`** - _[object]_ - Optional filter expression to apply to the analysis, in the same format as metrics view query filters
 
 ```yaml
 state:
@@ -280,37 +274,31 @@ _[oneOf]_ - Refers to how your data is partitioned; cannot be used with state. (
 
       - **`prompt`** - _[string]_ - Custom prompt to guide the AI analysis. If not provided, a default analysis prompt is used.
 
-      - **`time_range`** - _[object]_ - Time range for the analysis period
+      - **`time_range`** - _[object]_ - Time range for the analysis period. Use either a Rill time expression or fixed start and end timestamps.
 
-        - **`iso_duration`** - _[string]_ - ISO 8601 duration (e.g., P7D for 7 days, P1M for 1 month)
-
-        - **`iso_offset`** - _[string]_ - ISO 8601 offset from current time (e.g., P1D to start from yesterday)
+        - **`expression`** - _[string]_ - Rill time expression. Note that snapping excludes the period containing the reference point, so '1D as of latest/D' is the day before the latest data; use '1D as of latest/D+1D' for the last day with data.
 
         - **`start`** - _[string]_ - Start timestamp in ISO 8601 format
 
         - **`end`** - _[string]_ - End timestamp in ISO 8601 format
 
-        - **`expression`** - _[string]_ - Rill time expression (e.g., 'last 7 days', 'this month')
+      - **`comparison_time_range`** - _[object]_ - Optional comparison time range for period-over-period analysis. Use either a Rill time expression or fixed start and end timestamps.
 
-      - **`comparison_time_range`** - _[object]_ - Optional comparison time range for period-over-period analysis
-
-        - **`iso_duration`** - _[string]_ - ISO 8601 duration for comparison period
-
-        - **`iso_offset`** - _[string]_ - ISO 8601 offset for comparison period (e.g., P7D to compare with previous week)
+        - **`expression`** - _[string]_ - Rill time expression for the comparison period (e.g., '1D as of latest/D' when the time range is '1D as of latest/D+1D')
 
         - **`start`** - _[string]_ - Start timestamp in ISO 8601 format
 
         - **`end`** - _[string]_ - End timestamp in ISO 8601 format
 
-        - **`expression`** - _[string]_ - Rill time expression for comparison period
+      - **`time_zone`** - _[string]_ - IANA time zone used to evaluate the time range expressions (e.g., 'America/New_York'). Defaults to UTC.
 
-      - **`context`** - _[object]_ - Context to constrain the AI analysis
+      - **`explore`** - _[string]_ - Name of the explore dashboard to analyze. If provided, the analysis is limited to the metrics view of this dashboard. Combined with `watermark: inherit` on the report, time range expressions are resolved against the latest data in the metrics view instead of the report's trigger time.
 
-        - **`explore`** - _[string]_ - Name of the explore dashboard to analyze
+      - **`dimensions`** - _[array of string]_ - List of dimensions to include in the analysis
 
-        - **`dimensions`** - _[array of string]_ - List of dimensions to include in analysis
+      - **`measures`** - _[array of string]_ - List of measures to include in the analysis
 
-        - **`measures`** - _[array of string]_ - List of measures to include in analysis
+      - **`where`** - _[object]_ - Optional filter expression to apply to the analysis, in the same format as metrics view query filters
 
 ```yaml
 partitions:
@@ -391,6 +379,8 @@ _[object]_ - Defines the output properties.
 
   - **`partition_by`** - _[string]_ - Column or expression to partition the table by
 
+  - **`on_schema_change`** - _[string]_ - Controls what happens when an incremental run, such as a new partition, produces columns that do not match the model's existing table. With `fail` (the default), the run fails and reports which columns are new and which are missing. With `ignore`, the existing table keeps the columns it already has, so new columns are discarded and columns missing from the new data are left empty for the incoming rows. With `append_new_columns`, new columns are added to the table and left empty for the rows already in it, while columns missing from the new data are kept and left empty for the incoming rows. Column types of the existing table are always preserved, so DuckDB converts the incoming values to fit and fails the run if a value cannot be converted. Only applies to incremental models using the `merge` or `partition_overwrite` strategy, and only when the output connector is DuckDB.
+
   - **`pre_exec`** - _[string]_ - SQL query to run on the output OLAP engine (DuckDB or ClickHouse) before the main query. (optional). Ensure pre_exec queries are idempotent. Use IF NOT EXISTS statements when applicable.
 
 ```yaml
@@ -460,6 +450,10 @@ _[array of string]_ - List of resource references
 ### `tags`
 
 _[array of string]_ - Tags for organizing and filtering the resource (e.g. on the project dashboards list).
+
+### `metadata`
+
+_[object]_ - User-defined key-value metadata attached to the resource. Rill does not read or write it; it is exposed as-is on the resource's meta over the API for external tooling. Values are strings, with numbers and booleans coerced. Not supported in rill.yaml defaults.
 
 ### `dev`
 
@@ -544,6 +538,10 @@ _[array of string]_ - List of resource references
 ### `tags`
 
 _[array of string]_ - Tags for organizing and filtering the resource (e.g. on the project dashboards list).
+
+### `metadata`
+
+_[object]_ - User-defined key-value metadata attached to the resource. Rill does not read or write it; it is exposed as-is on the resource's meta over the API for external tooling. Values are strings, with numbers and booleans coerced. Not supported in rill.yaml defaults.
 
 ### `dev`
 

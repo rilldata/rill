@@ -10,9 +10,12 @@
   import SidebarWrapper from "@rilldata/web-common/features/visual-editing/SidebarWrapper.svelte";
   import { getFileHref } from "@rilldata/web-common/layout/navigation/editor-routing";
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
+  import { onDestroy } from "svelte";
   import type { BaseCanvasComponent } from "../components/BaseCanvasComponent";
   import VegaConfigInput from "./chart/VegaConfigInput.svelte";
   import ComponentTabs from "./ComponentTabs.svelte";
+  import { canvasEphemeralMeasureEditor } from "./fields/ephemeral-editor-store";
+  import EphemeralMeasureEditor from "./fields/EphemeralMeasureEditor.svelte";
   import FiltersMapper from "./filters/FiltersMapper.svelte";
   import ParamMapper from "./ParamMapper.svelte";
   import { hasComponentFilters } from "./util";
@@ -34,7 +37,28 @@
     $resource?.meta?.name?.name ??
     "";
   $: refFilePath = $resource?.meta?.filePaths?.[0];
+
+  // The editor targets the component that opened it; close it when the
+  // inspector switches to another component.
+  $: if (component) canvasEphemeralMeasureEditor.set(null);
+
+  onDestroy(() => canvasEphemeralMeasureEditor.set(null));
 </script>
+
+<!-- Single mount of the ephemeral measure editor for every field input in the
+     inspector. Keyed on the state so each open starts from fresh form values. -->
+{#if $canvasEphemeralMeasureEditor}
+  {#key $canvasEphemeralMeasureEditor}
+    <EphemeralMeasureEditor
+      component={$canvasEphemeralMeasureEditor.component}
+      canvasName={$canvasEphemeralMeasureEditor.canvasName}
+      metricName={$canvasEphemeralMeasureEditor.metricName}
+      editingDef={$canvasEphemeralMeasureEditor.editingDef}
+      onCreated={$canvasEphemeralMeasureEditor.onCreated}
+      onClose={() => canvasEphemeralMeasureEditor.set(null)}
+    />
+  {/key}
+{/if}
 
 <SidebarWrapper
   type="secondary"

@@ -1,4 +1,9 @@
 import { stripMeasureSuffix } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
+import { toEphemeralMeasuresParam } from "@rilldata/web-common/features/dashboards/ephemeral-measures/url-param";
+import {
+  injectEphemeralMeasuresIntoMap,
+  parseAndValidateEphemeralParam,
+} from "@rilldata/web-common/features/dashboards/ephemeral-measures/url-state";
 import { PIVOT_ROW_LIMIT_OPTIONS } from "@rilldata/web-common/features/dashboards/pivot/pivot-constants";
 import {
   fromPivotFormattingParam,
@@ -9,7 +14,7 @@ import {
   createAndExpression,
   filterIdentifiers,
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
-import { decompressUrlParams } from "@rilldata/web-common/features/dashboards/url-state/compression";
+import { expandCompressedParams } from "@rilldata/web-common/features/dashboards/url-state/compression";
 import { convertLegacyStateToExplorePreset } from "@rilldata/web-common/features/dashboards/url-state/convertLegacyStateToExplorePreset";
 import { CustomTimeRangeRegex } from "@rilldata/web-common/features/dashboards/url-state/convertPresetToExploreState";
 import {
@@ -84,13 +89,7 @@ export function convertURLToExplorePreset(
     (d) => d.name!,
   );
 
-  if (searchParams.has(ExploreStateURLParams.GzippedParams)) {
-    searchParams = new URLSearchParams(
-      decompressUrlParams(
-        searchParams.get(ExploreStateURLParams.GzippedParams)!,
-      ),
-    );
-  }
+  searchParams = expandCompressedParams(searchParams);
 
   // Support legacy dashboard param.
   // This will be applied 1st so that any newer params added can be applied as well.
@@ -107,6 +106,26 @@ export function convertURLToExplorePreset(
       );
     Object.assign(preset, presetFromLegacyState);
     errors.push(...errorsFromLegacyState);
+  }
+
+  // Parse ephemeral measures before any other param: their names are valid
+  // measure names everywhere (visible measures, leaderboards, sort, pivot
+  // columns, formatting, ...), which is achieved by injecting synthetic spec
+  // measures into the `measures` map used by all validations below.
+  if (searchParams.has(ExploreStateURLParams.EphemeralMeasures)) {
+    const ephemeralParam = searchParams.get(
+      ExploreStateURLParams.EphemeralMeasures,
+    ) as string;
+    const { valid, invalidEntries } = parseAndValidateEphemeralParam(
+      ephemeralParam,
+      measures,
+      metricsView,
+    );
+    preset.ephemeralMeasures = toEphemeralMeasuresParam(valid);
+    injectEphemeralMeasuresIntoMap(measures, valid);
+    if (invalidEntries.length) {
+      errors.push(getMultiFieldError("adhoc measure", invalidEntries));
+    }
   }
 
   if (searchParams.has(ExploreStateURLParams.WebView)) {
@@ -672,6 +691,13 @@ function fromPivotUrlParams(
   if (searchParams.has(ExploreStateURLParams.PivotShowTotalsRow)) {
     preset.pivotShowTotalsRow =
       searchParams.get(ExploreStateURLParams.PivotShowTotalsRow) !== "false";
+  }
+
+  if (searchParams.has(ExploreStateURLParams.PivotTotalsRowPosition)) {
+    // Validated when the preset is converted to explore state.
+    preset.pivotTotalsRowPosition = searchParams.get(
+      ExploreStateURLParams.PivotTotalsRowPosition,
+    ) as string;
   }
 
   if (searchParams.has(ExploreStateURLParams.PivotFormatting)) {

@@ -30,6 +30,16 @@ func TestOrg(t *testing.T) {
 	require.Contains(t, res.Output, org1)
 	require.Contains(t, res.Output, desc1)
 
+	// Check the default project role can be set on its own.
+	// This flag used to not count towards the "at least one flag must be set" check.
+	res = u1.Run(t, "org", "edit", org1, "--default-project-role", "editor")
+	require.Equal(t, 0, res.ExitCode)
+
+	// Check the default provisioner cannot be set through `org edit` (it is superuser-only via `rill sudo org set-default-provisioner`)
+	res = u1.Run(t, "org", "edit", org1, "--default-provisioner", "static")
+	require.Equal(t, 1, res.ExitCode)
+	require.Contains(t, res.Output, "unknown flag: --default-provisioner")
+
 	// Create another org
 	org2 := randomName()
 	res = u1.Run(t, "org", "create", org2)

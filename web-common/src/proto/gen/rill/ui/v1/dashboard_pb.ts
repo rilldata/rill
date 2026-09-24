@@ -268,6 +268,13 @@ export class DashboardState extends Message<DashboardState> {
   pivotShowTotalsRow?: boolean;
 
   /**
+   * Where the totals row is pinned (top by default, or bottom).
+   *
+   * @generated from field: optional rill.ui.v1.DashboardState.PivotTotalsRowPosition pivot_totals_row_position = 46;
+   */
+  pivotTotalsRowPosition?: DashboardState_PivotTotalsRowPosition;
+
+  /**
    * List of all dimensions selected for rows
    *
    * @generated from field: repeated rill.ui.v1.PivotElement pivot_row_all_dimensions = 35;
@@ -287,6 +294,13 @@ export class DashboardState extends Message<DashboardState> {
    * @generated from field: repeated rill.ui.v1.PivotConditionalFormat pivot_conditional_formatting = 44;
    */
   pivotConditionalFormatting: PivotConditionalFormat[] = [];
+
+  /**
+   * Ephemeral measures defined for the explore.
+   *
+   * @generated from field: repeated rill.ui.v1.EphemeralMeasure ephemeral_measures = 45;
+   */
+  ephemeralMeasures: EphemeralMeasure[] = [];
 
   constructor(data?: PartialMessage<DashboardState>) {
     super();
@@ -336,9 +350,11 @@ export class DashboardState extends Message<DashboardState> {
     { no: 41, name: "pivot_row_limit", kind: "scalar", T: 5 /* ScalarType.INT32 */, opt: true },
     { no: 42, name: "pivot_show_totals_column", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
     { no: 43, name: "pivot_show_totals_row", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
+    { no: 46, name: "pivot_totals_row_position", kind: "enum", T: proto3.getEnumType(DashboardState_PivotTotalsRowPosition), opt: true },
     { no: 35, name: "pivot_row_all_dimensions", kind: "message", T: PivotElement, repeated: true },
     { no: 36, name: "pivot_column_all_dimensions", kind: "message", T: PivotElement, repeated: true },
     { no: 44, name: "pivot_conditional_formatting", kind: "message", T: PivotConditionalFormat, repeated: true },
+    { no: 45, name: "ephemeral_measures", kind: "message", T: EphemeralMeasure, repeated: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): DashboardState {
@@ -512,6 +528,32 @@ proto3.util.setEnumType(DashboardState_PivotTableMode, "rill.ui.v1.DashboardStat
   { no: 0, name: "PIVOT_TABLE_MODE_UNSPECIFIED" },
   { no: 1, name: "PIVOT_TABLE_MODE_FLAT" },
   { no: 2, name: "PIVOT_TABLE_MODE_NEST" },
+]);
+
+/**
+ * @generated from enum rill.ui.v1.DashboardState.PivotTotalsRowPosition
+ */
+export enum DashboardState_PivotTotalsRowPosition {
+  /**
+   * @generated from enum value: PIVOT_TOTALS_ROW_POSITION_UNSPECIFIED = 0;
+   */
+  UNSPECIFIED = 0,
+
+  /**
+   * @generated from enum value: PIVOT_TOTALS_ROW_POSITION_TOP = 1;
+   */
+  TOP = 1,
+
+  /**
+   * @generated from enum value: PIVOT_TOTALS_ROW_POSITION_BOTTOM = 2;
+   */
+  BOTTOM = 2,
+}
+// Retrieve enum metadata with: proto3.getEnumType(DashboardState_PivotTotalsRowPosition)
+proto3.util.setEnumType(DashboardState_PivotTotalsRowPosition, "rill.ui.v1.DashboardState.PivotTotalsRowPosition", [
+  { no: 0, name: "PIVOT_TOTALS_ROW_POSITION_UNSPECIFIED" },
+  { no: 1, name: "PIVOT_TOTALS_ROW_POSITION_TOP" },
+  { no: 2, name: "PIVOT_TOTALS_ROW_POSITION_BOTTOM" },
 ]);
 
 /**
@@ -734,6 +776,72 @@ export class PivotElement extends Message<PivotElement> {
 
   static equals(a: PivotElement | PlainMessage<PivotElement> | undefined, b: PivotElement | PlainMessage<PivotElement> | undefined): boolean {
     return proto3.util.equals(PivotElement, a, b);
+  }
+}
+
+/**
+ * An ephemeral measure defined ad-hoc for an explore dashboard,
+ * derived from existing metrics view measures via an arithmetic expression.
+ *
+ * @generated from message rill.ui.v1.EphemeralMeasure
+ */
+export class EphemeralMeasure extends Message<EphemeralMeasure> {
+  /**
+   * Query alias, e.g. "profit". Must not collide with metrics view field names.
+   *
+   * @generated from field: string name = 1;
+   */
+  name = "";
+
+  /**
+   * Display name shown in the UI, e.g. "Profit".
+   *
+   * @generated from field: string display_name = 2;
+   */
+  displayName = "";
+
+  /**
+   * Arithmetic expression over existing measure names, e.g. "revenue - cost".
+   *
+   * @generated from field: string expression = 3;
+   */
+  expression = "";
+
+  /**
+   * Optional format preset for rendering values.
+   *
+   * @generated from field: string format_preset = 4;
+   */
+  formatPreset = "";
+
+  constructor(data?: PartialMessage<EphemeralMeasure>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.ui.v1.EphemeralMeasure";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "display_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "expression", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "format_preset", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): EphemeralMeasure {
+    return new EphemeralMeasure().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): EphemeralMeasure {
+    return new EphemeralMeasure().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): EphemeralMeasure {
+    return new EphemeralMeasure().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: EphemeralMeasure | PlainMessage<EphemeralMeasure> | undefined, b: EphemeralMeasure | PlainMessage<EphemeralMeasure> | undefined): boolean {
+    return proto3.util.equals(EphemeralMeasure, a, b);
   }
 }
 

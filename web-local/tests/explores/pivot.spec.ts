@@ -73,6 +73,17 @@ const expectedOneMeasureOneDim = [
   [], // dummy row added for virtualization
 ];
 
+// With the totals row pinned to the bottom it leaves the body for the footer.
+const expectedOneMeasureOneDimTotalsAtBottom = [
+  [], // dummy row added for virtualization
+  ["null", "32.9k"],
+  ["Facebook", "19.3k"],
+  ["Google", "18.8k"],
+  ["Yahoo", "18.6k"],
+  ["Microsoft", "10.4k"],
+  [], // dummy row added for virtualization
+];
+
 const expectedTwoMeasureRowDimColDim = [
   [],
   [
@@ -614,6 +625,26 @@ test.describe("pivot run through", () => {
     await dragPivotChip(page, publisher, rowZone);
     await expect(page.locator(".status.running")).toHaveCount(0);
     await validateTableContents(page, "table", expectedOneMeasureOneDim);
+
+    // Pin the totals row to the bottom: it moves into a sticky footer and the
+    // URL records the position. Then move it back to the top.
+    const totalsRowPosition = page.getByLabel("Totals row position");
+    await totalsRowPosition.click();
+    await page.getByRole("option", { name: "Bottom" }).click();
+    await expect(page.locator("table > tfoot > tr > td").first()).toHaveText(
+      "Total",
+    );
+    await validateTableContents(
+      page,
+      "table",
+      expectedOneMeasureOneDimTotalsAtBottom,
+    );
+    expect(page.url()).toContain("totals_row_position=bottom");
+    await totalsRowPosition.click();
+    await page.getByRole("option", { name: "Top" }).click();
+    await expect(page.locator("table > tfoot")).toHaveCount(0);
+    await validateTableContents(page, "table", expectedOneMeasureOneDim);
+    expect(page.url()).not.toContain("totals_row_position");
 
     // add second measure using menu and add column dimension
     await dragPivotChip(page, domain, columnZone);

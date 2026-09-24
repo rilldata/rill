@@ -340,6 +340,7 @@ func (s *Service) CreateOrganizationForUser(ctx context.Context, userID, email, 
 		ThumbnailAssetID:                    nil,
 		CustomDomain:                        "",
 		DefaultProjectRoleID:                &viewerProjectRole.ID,
+		DefaultProvisioner:                  "", // Means the global default provisioner is used
 		QuotaProjects:                       deref(defaultQuotas.NumProjects, -1),
 		QuotaDeployments:                    deref(defaultQuotas.NumDeployments, -1),
 		QuotaSlotsTotal:                     deref(defaultQuotas.NumSlotsTotal, -1),

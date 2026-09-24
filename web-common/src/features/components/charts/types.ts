@@ -12,6 +12,7 @@ import type {
   ScatterPlotChartProvider,
   ScatterPlotChartSpec,
 } from "@rilldata/web-common/features/components/charts";
+import type { EphemeralMeasureSpec } from "@rilldata/web-common/features/dashboards/ephemeral-measures/canvas";
 import type {
   V1Expression,
   V1MetricsViewAggregationDimension,
@@ -126,6 +127,9 @@ export enum ChartSortType {
   Y_DESC = "-y",
   Y_DELTA_ASC = "y_delta",
   Y_DELTA_DESC = "-y_delta",
+  // Delta sorts by the measure when it sits on the x channel (horizontal bars).
+  X_DELTA_ASC = "x_delta",
+  X_DELTA_DESC = "-x_delta",
   COLOR_ASC = "color",
   COLOR_DESC = "-color",
   MEASURE_ASC = "measure",
@@ -145,6 +149,7 @@ interface NominalFieldConfig {
   sort?: ChartSortDirection;
   limit?: number;
   showNull?: boolean;
+  /** Axis label rotation in degrees; unset lays out categorical x-axis labels automatically */
   labelAngle?: number;
   legendOrientation?: ChartLegend;
   colorMapping?: ColorMapping;
@@ -190,6 +195,9 @@ export type FieldConfig<
 
 export interface CommonChartProperties {
   metrics_view: string;
+  // Ad-hoc measures derived from existing measures via an arithmetic
+  // expression; measure fields may name them.
+  adhoc_measures?: EphemeralMeasureSpec[];
   tooltip?: FieldConfig;
   vl_config?: string;
 }

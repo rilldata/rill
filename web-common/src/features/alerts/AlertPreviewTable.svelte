@@ -59,7 +59,6 @@
       columns,
       columnWidths,
       rows,
-      containerWidth,
       config,
     );
   }

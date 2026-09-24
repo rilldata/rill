@@ -1,9 +1,12 @@
 <script lang="ts">
   import { getEditorPlugins } from "@rilldata/web-common/features/chat/core/context/editor-plugins.svelte.ts";
+  import { getSkillsPickerOptions } from "@rilldata/web-common/features/chat/core/context/picker/data/skills.ts";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { chatMounted } from "@rilldata/web-common/features/chat/layouts/sidebar/sidebar-store.ts";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus.ts";
   import { Editor } from "@tiptap/core";
   import { onMount, tick } from "svelte";
+  import { readable } from "svelte/store";
   import IconButton from "../../../../components/button/IconButton.svelte";
   import StopCircle from "../../../../components/icons/StopCircle.svelte";
   import type { ConversationManager } from "../conversation-manager";
@@ -18,8 +21,16 @@
   export let height: string | undefined = undefined;
   export let config: ChatConfig;
   export let inline = false;
+  // Awaited before a shared conversation is forked (see Conversation.sendMessage).
+  export let beforeFork: (() => Promise<void> | void) | undefined = undefined;
 
   let value = "";
+
+  const skillsEnabled = !!config.skills;
+  const skillsStore = skillsEnabled
+    ? getSkillsPickerOptions(useRuntimeClient())
+    : readable([]);
+  $: hasSkills = $skillsStore.length > 0;
 
   $: ({ placeholder, additionalContextStoreGetter } = config);
   $: additionalContextStore = additionalContextStoreGetter();
@@ -48,6 +59,7 @@
     try {
       await currentConversation.sendMessage(additionalContext, {
         onStreamStart: () => editor.commands.setContent(""),
+        beforeFork,
       });
       onSend?.();
     } catch (error) {
@@ -76,6 +88,10 @@
     editor.commands.startMention();
   }
 
+  function startSkill() {
+    editor.commands.startSkill();
+  }
+
   function startChat(prompt: string) {
     editor.commands.setContent(prompt);
     // Wait for `value` and `canSend` to update before sending the message.`
@@ -88,6 +104,7 @@
       extensions: getEditorPlugins({
         placeholder,
         onSubmit: () => void sendMessage(),
+        skillOptions: skillsEnabled ? getSkillsPickerOptions : undefined,
       }),
       content: "",
       editorProps: {
@@ -135,6 +152,16 @@
     >
       @
     </button>
+    {#if hasSkills}
+      <button
+        class="text-base text-fg-muted"
+        type="button"
+        aria-label={m.chat_insert_skill()}
+        onclick={startSkill}
+      >
+        /
+      </button>
+    {/if}
     <div class="grow"></div>
     <div>
       {#if canCancel}
@@ -212,6 +239,6 @@
   }
 
   .chat-input-footer {
-    @apply flex flex-row;
+    @apply flex flex-row gap-x-2;
   }
 </style>

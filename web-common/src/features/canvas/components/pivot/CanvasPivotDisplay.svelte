@@ -57,9 +57,14 @@
       activeCell: null,
       columnPage: 1,
       rowPage: 1,
-      columns: tableFieldMapper(columns, metricsViewSpec),
+      columns: tableFieldMapper(
+        columns,
+        metricsViewSpec,
+        tableSpec.adhoc_measures,
+      ),
       showTotalsColumn: tableSpec.hide_totals_col !== true,
       showTotalsRow: tableSpec.hide_totals_row !== true,
+      totalsRowPosition: tableSpec.totals_row_position ?? "top",
       measureFormatting,
     }));
   } else if (!("columns" in tableSpec) && schema.isValid && !schema.isLoading) {
@@ -75,11 +80,16 @@
       rowPage: 1,
       columns: [
         ...tableFieldMapper(colDimensions, metricsViewSpec),
-        ...tableFieldMapper(measures, metricsViewSpec),
+        ...tableFieldMapper(
+          measures,
+          metricsViewSpec,
+          tableSpec.adhoc_measures,
+        ),
       ],
       rows: tableFieldMapper(rowDimensions, metricsViewSpec),
       showTotalsColumn: tableSpec.hide_totals_col !== true,
       showTotalsRow: tableSpec.hide_totals_row !== true,
+      totalsRowPosition: tableSpec.totals_row_position ?? "top",
       measureFormatting,
       rowLimit: normalizeRowLimit(tableSpec.row_limit),
       outermostRowLimit: undefined,

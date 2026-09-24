@@ -34,6 +34,7 @@ export const initialHeights: Record<CanvasComponentType, number> = {
   pivot: 300,
   leaderboard: 300,
   component_ref: 320,
+  map: 400,
 };
 
 // Minimum heights a component can shrink to, when smaller than its initial

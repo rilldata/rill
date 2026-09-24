@@ -5,9 +5,9 @@ import {
 } from "@rilldata/web-admin/features/bookmarks/utils.ts";
 import { getProtoFromDashboardState } from "@rilldata/web-common/features/dashboards/proto-state/toProto.ts";
 import {
-  type HoistedPageForExploreTests,
-  PageMockForExploreTests,
-} from "@rilldata/web-common/features/dashboards/state-managers/loaders/test/PageMockForExploreTests.ts";
+  type HoistedPageForComponentTests,
+  PageMockForComponentTests,
+} from "@rilldata/web-common/features/dashboards/state-managers/loaders/test/PageMockForComponentTests.ts";
 import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state.ts";
 import {
   createAndExpression,
@@ -24,13 +24,14 @@ import {
   AD_BIDS_TIME_RANGE_SUMMARY,
 } from "@rilldata/web-common/features/dashboards/stores/test-data/data.ts";
 import { getTimeControlState } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store.ts";
+import { cleanUrlParams } from "@rilldata/web-common/features/dashboards/url-state/clean-url-params.ts";
 import { convertPartialExploreStateToUrlParams } from "@rilldata/web-common/features/dashboards/url-state/convert-partial-explore-state-to-url-params.ts";
 import type { DashboardTimeControls } from "@rilldata/web-common/lib/time/types.ts";
 import { DashboardState_ActivePage } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb.ts";
 import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
-const hoistedPage: HoistedPageForExploreTests = vi.hoisted(() => ({}) as any);
+const hoistedPage: HoistedPageForComponentTests = vi.hoisted(() => ({}) as any);
 
 vi.mock("$app/stores", () => {
   return {
@@ -40,7 +41,7 @@ vi.mock("$app/stores", () => {
 
 describe("getBookmarkData and parseBookmarks", () => {
   beforeEach(() => {
-    new PageMockForExploreTests(hoistedPage);
+    new PageMockForComponentTests(hoistedPage);
   });
 
   const TestCases: {
@@ -67,7 +68,7 @@ describe("getBookmarkData and parseBookmarks", () => {
         ]),
         selectedTimeRange: {
           name: "P7D",
-          interval: V1TimeGrain.TIME_GRAIN_HOUR, // Equal to default
+          interval: V1TimeGrain.TIME_GRAIN_HOUR, // Explicit grain for the P7D range
         } as DashboardTimeControls,
         showTimeComparison: true,
         selectedComparisonTimeRange: {
@@ -84,23 +85,23 @@ describe("getBookmarkData and parseBookmarks", () => {
           subTitle: "Empty url",
           curUrlSearch: "",
           expectedFullUrlSearch:
-            "view=explore&tr=P7D&tz=UTC&grain=hour&compare_tr=rill-PP&f=publisher+IN+('Facebook','Yahoo')&compare_dim=&measures=bid_price&dims=*&expand_dim=domain&sort_by=bid_price&sort_dir=DESC&sort_type=value&leaderboard_measures=bid_price",
+            "view=explore&tr=P7D&tz=UTC&grain=hour&compare_tr=rill-PP&f=publisher+IN+('Facebook','Yahoo')&compare_dim=&measures=bid_price&dims=*&expand_dim=domain&sort_by=bid_price&sort_dir=DESC&sort_type=value&leaderboard_measures=bid_price&chart_type=adaptive&dyn_y=false&lb_ctx=false",
           isActive: false,
         },
         {
           subTitle: "Filter only equal",
           curUrlSearch:
-            "view=tdd&tr=P7D&compare_tr=rill-PW&f=publisher+IN+('Facebook','Yahoo')&measure=impressions&chart_type=stacked_bar",
+            "view=tdd&tr=P7D&grain=hour&compare_tr=rill-PW&f=publisher+IN+('Facebook','Yahoo')&measure=impressions&chart_type=stacked_bar",
           expectedFullUrlSearch:
-            "view=explore&tr=P7D&tz=UTC&grain=hour&compare_tr=rill-PP&f=publisher+IN+('Facebook','Yahoo')&compare_dim=&measures=bid_price&dims=*&expand_dim=domain&sort_by=bid_price&sort_dir=DESC&sort_type=value&leaderboard_measures=bid_price",
+            "view=explore&tr=P7D&tz=UTC&grain=hour&compare_tr=rill-PP&f=publisher+IN+('Facebook','Yahoo')&compare_dim=&measures=bid_price&dims=*&expand_dim=domain&sort_by=bid_price&sort_dir=DESC&sort_type=value&leaderboard_measures=bid_price&chart_type=adaptive&dyn_y=false&lb_ctx=false",
           isActive: false,
         },
         {
           subTitle: "Same url",
           curUrlSearch:
-            "tr=P7D&compare_tr=rill-PP&f=publisher+IN+('Facebook','Yahoo')&measures=bid_price&expand_dim=domain&sort_by=bid_price&leaderboard_measures=bid_price",
+            "tr=P7D&compare_tr=rill-PP&grain=hour&f=publisher+IN+('Facebook','Yahoo')&measures=bid_price&expand_dim=domain&sort_by=bid_price&leaderboard_measures=bid_price",
           expectedFullUrlSearch:
-            "view=explore&tr=P7D&tz=UTC&grain=hour&compare_tr=rill-PP&f=publisher+IN+('Facebook','Yahoo')&compare_dim=&measures=bid_price&dims=*&expand_dim=domain&sort_by=bid_price&sort_dir=DESC&sort_type=value&leaderboard_measures=bid_price",
+            "view=explore&tr=P7D&tz=UTC&grain=hour&compare_tr=rill-PP&f=publisher+IN+('Facebook','Yahoo')&compare_dim=&measures=bid_price&dims=*&expand_dim=domain&sort_by=bid_price&sort_dir=DESC&sort_type=value&leaderboard_measures=bid_price&chart_type=adaptive&dyn_y=false&lb_ctx=false",
           isActive: true,
         },
       ],
@@ -139,7 +140,7 @@ describe("getBookmarkData and parseBookmarks", () => {
         {
           subTitle: "Filter only equal",
           curUrlSearch:
-            "view=tdd&tr=P7D&compare_tr=rill-PW&f=publisher+IN+('Facebook','Yahoo')&measure=impressions&chart_type=stacked_bar",
+            "view=tdd&tr=P7D&grain=hour&compare_tr=rill-PW&f=publisher+IN+('Facebook','Yahoo')&measure=impressions&chart_type=stacked_bar",
           expectedFullUrlSearch:
             "view=tdd&tr=P7D&grain=hour&compare_tr=rill-PW&f=publisher+IN+('Facebook','Yahoo')&measure=impressions&chart_type=stacked_bar",
           isActive: true,
@@ -147,9 +148,9 @@ describe("getBookmarkData and parseBookmarks", () => {
         {
           subTitle: "Same url",
           curUrlSearch:
-            "tr=P7D&compare_tr=rill-PP&f=publisher+IN+('Facebook','Yahoo')&measures=bid_price&expand_dim=domain&sort_by=bid_price&leaderboard_measures=bid_price",
+            "tr=P7D&compare_tr=rill-PP&grain=hour&f=publisher+IN+('Facebook','Yahoo')&measures=bid_price&expand_dim=domain&sort_by=bid_price&leaderboard_measures=bid_price",
           expectedFullUrlSearch:
-            "tr=P7D&grain=hour&compare_tr=rill-PP&f=publisher+IN+('Facebook','Yahoo')&measures=bid_price&expand_dim=domain&sort_by=bid_price&leaderboard_measures=bid_price",
+            "tr=P7D&compare_tr=rill-PP&grain=hour&f=publisher+IN+('Facebook','Yahoo')&measures=bid_price&expand_dim=domain&sort_by=bid_price&leaderboard_measures=bid_price",
           isActive: true,
         },
       ],
@@ -226,9 +227,17 @@ describe("getBookmarkData and parseBookmarks", () => {
           expect(parsedBookmark.isActive).toEqual(isActive);
 
           assertUnorderedUrlSearch(parsedProtoBookmark.url, parsedBookmark.url);
+          // Legacy proto bookmarks omit newer default-valued settings (dyn_y and lb_ctx).
+          // Compare the complete navigation URLs after removing equivalent defaults.
           assertUnorderedUrlSearch(
-            parsedProtoBookmark.fullUrl,
-            parsedBookmark.fullUrl,
+            cleanUrlParams(
+              new URLSearchParams(parsedProtoBookmark.fullUrl.slice(1)),
+              AD_BIDS_RILL_DEFAULT_EXPLORE_URL_PARAMS,
+            ).toString(),
+            cleanUrlParams(
+              new URLSearchParams(parsedBookmark.fullUrl.slice(1)),
+              AD_BIDS_RILL_DEFAULT_EXPLORE_URL_PARAMS,
+            ).toString(),
           );
           expect(parsedProtoBookmark.isActive).toEqual(isActive);
         });

@@ -42,6 +42,7 @@ type ModelOutputProperties struct {
 	UniqueKey           []string                    `mapstructure:"unique_key"`
 	IncrementalStrategy drivers.IncrementalStrategy `mapstructure:"incremental_strategy"`
 	PartitionBy         string                      `mapstructure:"partition_by"`
+	OnSchemaChange      drivers.OnSchemaChange      `mapstructure:"on_schema_change"`
 	// PreExec is a SQL query to run on the output engine before the main query. Ensure pre_exec queries are idempotent.
 	PreExec string `mapstructure:"pre_exec"`
 	// PostExec is a SQL query to run on the output engine after the main query. Ensure post_exec queries are idempotent.
@@ -94,6 +95,22 @@ func (p *ModelOutputProperties) validateAndApplyDefaults(opts *drivers.ModelExec
 	// If we failed to apply a better incremental strategy, fall back to append.
 	if p.IncrementalStrategy == drivers.IncrementalStrategyUnspecified {
 		p.IncrementalStrategy = drivers.IncrementalStrategyAppend
+	}
+
+	// The schema of an incremental insert is only reconciled for the merge and partition_overwrite strategies,
+	// which are the only ones that stage the new data in a temporary table before inserting it.
+	reconcilesSchema := p.IncrementalStrategy == drivers.IncrementalStrategyMerge || p.IncrementalStrategy == drivers.IncrementalStrategyPartitionOverwrite
+	if p.OnSchemaChange == drivers.OnSchemaChangeUnspecified {
+		if reconcilesSchema {
+			p.OnSchemaChange = drivers.OnSchemaChangeFail
+		}
+	} else {
+		if !p.OnSchemaChange.Valid() {
+			return fmt.Errorf("invalid on_schema_change mode %q", p.OnSchemaChange)
+		}
+		if !reconcilesSchema {
+			return fmt.Errorf(`"on_schema_change" is only supported for the "merge" and "partition_overwrite" incremental strategies`)
+		}
 	}
 
 	p.PreExec = strings.TrimSpace(p.PreExec)

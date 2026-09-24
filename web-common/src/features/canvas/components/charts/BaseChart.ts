@@ -16,7 +16,6 @@ import type {
 } from "@rilldata/web-common/features/canvas/inspector/types";
 import type { CanvasStore } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
 import { transformChartSpecToPivotState } from "@rilldata/web-common/features/components/charts/explore-transformer";
-import { splitWhereFilter } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
 import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
 import type { TimeAndFilterStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
 import { DashboardState_ActivePage } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
@@ -25,6 +24,7 @@ import type {
   V1MetricsViewSpec,
   V1Resource,
 } from "@rilldata/web-common/runtime-client";
+import { ephemeralSpecsToDefs } from "@rilldata/web-common/features/dashboards/ephemeral-measures/canvas";
 import { get, writable, type Readable, type Writable } from "svelte/store";
 import type {
   ChartDataQuery,
@@ -91,6 +91,12 @@ export abstract class BaseChart<
     return {
       options: {
         metrics_view: { type: "metrics", label: m.canvas_metrics_view_label() },
+        // Managed through the measure selectors' create/edit dialog.
+        adhoc_measures: {
+          type: "adhoc_measures",
+          optional: true,
+          showInUI: false,
+        },
         tooltip: {
           type: "tooltip",
           label: m.canvas_tooltip_label(),
@@ -133,9 +139,6 @@ export abstract class BaseChart<
 
   getExploreTransformerProperties(): Partial<ExploreState> {
     const spec = get(this.specStore);
-    const { dimensionFilters, dimensionThresholdFilters } = splitWhereFilter(
-      this.componentFilters,
-    );
 
     const timeGrain = get(this.timeAndFilterStore)?.timeGrain;
     const tddLink = getLinkStateForTimeDimensionDetail(spec, this.type);
@@ -149,8 +152,8 @@ export abstract class BaseChart<
     const passComparison = comparisonChartTypes.includes(this.type);
 
     return {
-      whereFilter: dimensionFilters,
-      dimensionThresholdFilters,
+      whereFilter: this.componentFilters,
+      ephemeralMeasures: ephemeralSpecsToDefs(spec.adhoc_measures),
       ...(passComparison ? {} : { showTimeComparison: false }),
       activePage: tddLink.canLink
         ? DashboardState_ActivePage.TIME_DIMENSIONAL_DETAIL
@@ -176,7 +179,7 @@ export abstract class BaseChart<
   ) {
     if (!this.parent.fileArtifact) return;
 
-    const currentSpec = get(this.specStore);
+    const currentSpec = this.specForChartTypeSwitch(get(this.specStore), key);
     const parentPath = this.pathInYAML.slice(0, -1);
 
     const parseDocumentStore = this.parent.parsedContent;
@@ -229,6 +232,18 @@ export abstract class BaseChart<
     this.chartType.set(key);
   }
 
+  /**
+   * The spec that a switch to `targetType` copies its common properties from.
+   * Subclasses override it when their spec has layouts the target cannot read.
+   */
+  protected specForChartTypeSwitch(
+    spec: TConfig,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    targetType: ChartType,
+  ): TConfig {
+    return spec;
+  }
+
   private extractCommonProperties(
     spec: TConfig,
     sourceType: ChartType,
@@ -236,6 +251,7 @@ export abstract class BaseChart<
   ): Partial<BaseChartConfig> {
     const {
       metrics_view,
+      adhoc_measures,
       title,
       description,
       vl_config,
@@ -248,14 +264,15 @@ export abstract class BaseChart<
     const targetChartParams =
       CANVAS_CHART_CONFIG[targetType].component.chartInputParams || {};
 
-    // Check for common keys and type match first
+    // Check for common keys and type match first. Params without a value in
+    // the spec (e.g. UI-only params) are skipped so they never become keys.
     const commonProps = Object.keys(sourceChartParams).filter((key) => {
       const isKeyAndTypeMatch =
         targetChartParams?.[key]?.type === sourceChartParams[key]?.type;
       const isFieldTypeMatch =
         targetChartParams?.[key]?.meta?.chartFieldInput?.type ===
         sourceChartParams[key]?.meta?.chartFieldInput?.type;
-      return isKeyAndTypeMatch && isFieldTypeMatch;
+      return isKeyAndTypeMatch && isFieldTypeMatch && spec[key] !== undefined;
     });
 
     const commonPropsObject = commonProps.reduce(
@@ -268,6 +285,7 @@ export abstract class BaseChart<
 
     return {
       metrics_view,
+      ...(adhoc_measures ? { adhoc_measures } : {}),
       title,
       description,
       vl_config,

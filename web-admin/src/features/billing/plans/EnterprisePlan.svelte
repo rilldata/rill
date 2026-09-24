@@ -30,7 +30,7 @@
 
 <style lang="postcss">
   .contact-us-btn {
-    @apply text-sm font-medium text-primary-600 border border-primary-500 px-4 py-2 cursor-pointer bg-white rounded-none;
+    @apply text-sm font-medium text-primary-600 border border-primary-500 px-4 py-2 cursor-pointer rounded-none;
     height: 36px;
   }
 

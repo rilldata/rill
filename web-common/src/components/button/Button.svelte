@@ -253,6 +253,10 @@
     @apply opacity-50;
   }
 
+  .tertiary.selected {
+    @apply bg-surface-active;
+  }
+
   /* NEUTRAL STYLES */
 
   .neutral {
