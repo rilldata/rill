@@ -59,6 +59,24 @@ describe("compileFlintSpec", () => {
     expect((compiled.data as { values: unknown[] }).values).toHaveLength(3);
   });
 
+  it("fits axes and legends inside the measured chart container", () => {
+    const { spec } = compileBar();
+    const compiled = spec as unknown as Record<string, unknown>;
+
+    // Without fit autosizing, Vega treats the measured height as the plot height and adds axes
+    // and bottom legends below it, leaving a persistent scrollbar of exactly that guide height.
+    expect(compiled.autosize).toEqual({
+      type: "fit",
+      contains: "padding",
+    });
+    expect(compiled.width).toBeUndefined();
+    expect(compiled.height).toBeUndefined();
+
+    const view = (compiled.config as { view?: Record<string, unknown> })?.view;
+    expect(view?.continuousWidth).toBeUndefined();
+    expect(view?.continuousHeight).toBeUndefined();
+  });
+
   it("strips Flint's non-standard bookkeeping keys", () => {
     const { spec } = compileBar();
     const keys = Object.keys(spec as unknown as Record<string, unknown>);

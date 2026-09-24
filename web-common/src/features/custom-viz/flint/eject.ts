@@ -181,15 +181,14 @@ function templatizeDatumAccesses(
 
 /**
  * Replaces the compiler's fixed sizing with container sizing, matching the base specs Rill's native
- * charts are built from: `width`/`height` of "container" and `autosize: {type: "fit"}`.
+ * charts are built from: `width`/`height` of "container" and fit autosizing.
  *
  * The compiler sizes charts itself: handed the box it should draw into, it writes back a plot area
  * that already leaves room for axes and legends. A static spec cannot redo that arithmetic when the
- * container changes, so it hands the fitting to Vega-Lite instead. `autosize: "fit"` is the part
- * that matters — it makes the given dimensions the chart's *total* size rather than its plot area,
- * which keeps axis and legend decorations inside the container. Without it the Rill theme's
- * "fit-x" default applies, which fits the width only and lets the chart run past the bottom of
- * its box.
+ * container changes, so it hands the fitting to Vega-Lite instead. `type: "fit"` shrinks the plot
+ * to leave room for guides, while `contains: "padding"` makes the given dimensions the chart's
+ * total intended size. Without them the Rill theme's "fit-x" default applies, which fits the width
+ * only and lets the chart run past the bottom of its box.
  *
  * Multi-view specs (facet, repeat, concat) size their subplots from the composition, and Vega-Lite
  * rejects container sizing for them, so theirs is left as the compiler wrote it.
@@ -217,7 +216,11 @@ function takeContainerSizing(
     }
   }
 
-  return { width: "container", height: "container", autosize: { type: "fit" } };
+  return {
+    width: "container",
+    height: "container",
+    autosize: { type: "fit", contains: "padding" },
+  };
 }
 
 function escapeRegExp(value: string): string {

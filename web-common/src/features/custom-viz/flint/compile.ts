@@ -103,8 +103,41 @@ export function compileFlintSpec({
   const warnings = (assembled._warnings as FlintWarning[] | undefined) ?? [];
   const vegaSpec = stripInternalKeys(assembled);
   applyMeasureFormatters(vegaSpec, measureFields);
+  fitSingleViewToContainer(vegaSpec);
 
   return { spec: vegaSpec as VisualizationSpec, warnings, error: null };
+}
+
+/**
+ * Makes the renderer's measured width and height describe the whole chart, including axes and
+ * legends, rather than only its plot area.
+ *
+ * Vega-Lite's default `pad` autosize treats `view.width()` / `view.height()` as the plot size and
+ * adds guides outside it. That is why charts with a bottom legend stayed a fixed number of pixels
+ * taller than their canvas slot while charts with a right-side legend happened to fit. `fit`
+ * subtracts those guides from the plot; `contains: "padding"` makes the requested dimensions
+ * include Vega's outer padding instead of adding it beyond the container.
+ *
+ * Vega-Lite does not support fit autosizing for composed views; Flint already owns their subplot
+ * sizing, so leave those specs untouched.
+ */
+function fitSingleViewToContainer(spec: Record<string, unknown>): void {
+  const multiViewKeys = ["facet", "repeat", "concat", "hconcat", "vconcat"];
+  if (multiViewKeys.some((key) => key in spec)) return;
+
+  // Some Flint templates (notably pie/donut) put fixed dimensions directly on the spec, while
+  // most use config.view defaults. Both take precedence over responsive container sizing.
+  delete spec.width;
+  delete spec.height;
+  const config = spec.config as Record<string, unknown> | undefined;
+  const view = config?.view as Record<string, unknown> | undefined;
+  if (view) {
+    delete view.continuousWidth;
+    delete view.continuousHeight;
+    if (Object.keys(view).length === 0) delete config?.view;
+  }
+
+  spec.autosize = { type: "fit", contains: "padding" };
 }
 
 /**

@@ -28,7 +28,7 @@
   import { deriveFlintFields } from "@rilldata/web-common/features/custom-viz/flint/semantic-types";
   import { debounce } from "@rilldata/web-common/lib/create-debouncer";
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
-  import { onDestroy } from "svelte";
+  import { onDestroy, tick } from "svelte";
 
   export let spec: FlintChartSpec | undefined = undefined;
   /**
@@ -60,7 +60,11 @@
   let chartHeight = 0;
   let compileWidth = 0;
   let compileHeight = 0;
+  let plotWidth = 0;
+  let plotHeight = 0;
+  let chartContainer: HTMLDivElement;
   let viewVL: View;
+  let fitRun = 0;
 
   // Vega resizes the live view immediately. Flint only needs the settled size to recompute
   // layout choices, which avoids recreating the full spec on every drag-resize frame.
@@ -69,7 +73,10 @@
     compileHeight = height;
   }, 150);
   $: updateCompileSize(chartWidth, chartHeight);
-  onDestroy(updateCompileSize.cancel);
+  onDestroy(() => {
+    updateCompileSize.cancel();
+    fitRun++;
+  });
 
   const runtimeClient = useRuntimeClient();
 
@@ -176,6 +183,39 @@
   $: renderedSpec = ejected?.spec ?? compiled?.spec;
   $: specError = ejected?.error ?? compiled?.error;
 
+  $: if (viewVL && chartContainer && plotWidth > 0 && plotHeight > 0) {
+    void fitFlintGuidesToContainer(viewVL);
+  }
+
+  /**
+   * Vega-Lite's `fit` autosize handles ordinary axes and legends, but an arc chart can still place
+   * a wrapped legend beyond its requested height. Keep this correction local to Flint charts and
+   * feed the measured overflow back into the view. The second pass covers a legend that wraps
+   * differently after the first shrink.
+   */
+  async function fitFlintGuidesToContainer(view: View) {
+    const currentRun = ++fitRun;
+    await tick();
+    if (currentRun !== fitRun || view !== viewVL) return;
+
+    await view.runAsync();
+
+    const rendererContainer = chartContainer.querySelector<HTMLElement>(
+      ".rill-vega-container",
+    );
+    if (!rendererContainer || currentRun !== fitRun) return;
+
+    let fittedHeight = view.height();
+    for (let pass = 0; pass < 2; pass++) {
+      const overflow =
+        rendererContainer.scrollHeight - rendererContainer.clientHeight;
+      if (overflow <= 0 || currentRun !== fitRun) break;
+      fittedHeight = Math.max(0, fittedHeight - overflow);
+      view.height(fittedHeight);
+      await view.runAsync();
+    }
+  }
+
   // A compiled chart spec inlines the rows it read, so only an ejected spec is handed a named
   // dataset: passing Vega a dataset the spec never declares makes it throw.
   $: namedData = ejected ? { [EJECTED_DATA_NAME]: rows } : {};
@@ -233,7 +273,12 @@
               {overflowWarnings.map((warning) => warning.message).join(" ")}
             </div>
           {/if}
-          <div class="grow min-h-0">
+          <div
+            class="grow min-h-0"
+            bind:this={chartContainer}
+            bind:clientWidth={plotWidth}
+            bind:clientHeight={plotHeight}
+          >
             <VegaLiteRenderer
               {renderer}
               spec={renderedSpec}

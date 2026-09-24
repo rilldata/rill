@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { compile } from "vega-lite";
 import { getRillTheme } from "@rilldata/web-common/components/vega/vega-config";
-import { createSingleLayerBaseSpec } from "@rilldata/web-common/features/components/charts/builder";
 import {
   V1TimeGrain,
   type V1MetricsViewSpec,
@@ -137,31 +136,27 @@ describe("ejectToVegaSpec", () => {
     expect(spec.height).toBe("container");
     // Without this the Rill theme's "fit-x" default applies, which fits the width only and lets
     // axis and legend decorations run past the bottom of the container.
-    expect(spec.autosize).toEqual({ type: "fit" });
+    expect(spec.autosize).toEqual({
+      type: "fit",
+      contains: "padding",
+    });
 
     // The compiler's own sizing is replaced, not layered under it.
     expect(spec.config.view?.continuousWidth).toBeUndefined();
     expect(spec.config.view?.continuousHeight).toBeUndefined();
   });
 
-  it("fills its container like a native chart does", () => {
+  it("preserves total-container sizing through Vega-Lite compilation", () => {
     // The end of the sizing story: what reaches Vega after the renderer spreads the measured
-    // dimensions over the spec and the Rill theme is applied as config. "fit" makes those
-    // dimensions the total size; the theme's "fit-x" default would fit only the width.
+    // dimensions over the spec and the Rill theme is applied as config. `fit` leaves room for
+    // guides and `contains: padding` includes outer padding in those dimensions.
     const autosizeOf = (spec: unknown) =>
       compile({ ...(spec as object), width: 600, height: 390 } as never, {
         config: getRillTheme(false) as never,
       }).spec.autosize;
 
-    const native = {
-      ...createSingleLayerBaseSpec("bar"),
-      height: "container",
-      encoding: { y: { field: "total_records", type: "quantitative" } },
-    };
-
     const { spec } = ejectBar();
-    expect(autosizeOf(spec)).toBe("fit");
-    expect(autosizeOf(spec)).toEqual(autosizeOf(native));
+    expect(autosizeOf(spec)).toEqual({ type: "fit", contains: "padding" });
   });
 
   it("leaves multi-view sizing to the composition", () => {
