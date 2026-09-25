@@ -436,6 +436,15 @@ paths:
                 description: |-
                   Optional context for prompts handled by the feedback_agent.
                   The field is ignored if another agent is selected.
+              uiPagePath:
+                type: string
+                description: Optional current browser path. The origin is intentionally omitted.
+              uiActions:
+                type: array
+                items:
+                  type: object
+                  $ref: '#/definitions/v1UIAction'
+                description: Optional visible, enabled, uniquely-addressable browser actions.
             title: Request message for RuntimeService.Complete
       tags:
         - RuntimeService
@@ -496,6 +505,15 @@ paths:
                 description: |-
                   Optional context for prompts handled by the feedback_agent.
                   The field is ignored if another agent is selected.
+              uiPagePath:
+                type: string
+                description: Optional current browser path. The origin is intentionally omitted.
+              uiActions:
+                type: array
+                items:
+                  type: object
+                  $ref: '#/definitions/v1UIAction'
+                description: Optional visible, enabled, uniquely-addressable browser actions.
             title: Request message for RuntimeService.CompleteStreaming
       tags:
         - RuntimeService
@@ -8497,6 +8515,16 @@ definitions:
           type: object
           $ref: '#/definitions/v1Span'
     description: Trace contains trace spans captured during request execution. Used both in successful responses and as gRPC error details when trace=true and the request fails.
+  v1UIAction:
+    type: object
+    properties:
+      id:
+        type: string
+        description: Stable identifier from the element's data-ai-action attribute.
+      label:
+        type: string
+        description: Human-readable accessible label for the action.
+    description: A non-destructive UI action explicitly exposed to the AI by the browser.
   v1UnpackEmptyResponse:
     type: object
     title: Response message for RuntimeService.UnpackEmpty

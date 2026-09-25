@@ -200,7 +200,7 @@ func (t *AnalystAgent) Handler(ctx context.Context, args *AnalystAgentArgs) (*An
 	if args.Explore == "" {
 		tools = append(tools, ListMetricsViewsName, GetMetricsViewName, GetCanvasName)
 	}
-	tools = append(tools, QueryMetricsViewSummaryName, QueryMetricsViewName)
+	tools = append(tools, QueryMetricsViewSummaryName, QueryMetricsViewName, ClickUIName)
 	if !args.DisableCharts {
 		tools = append(tools, CreateChartName)
 	}
@@ -219,6 +219,9 @@ func (t *AnalystAgent) Handler(ctx context.Context, args *AnalystAgentArgs) (*An
 	}
 	// 1. System prompt
 	messages := []*aiv1.CompletionMessage{NewTextCompletionMessage(RoleSystem, systemPrompt)}
+	if uiMessage := uiContextCompletionMessage(ctx); uiMessage != nil {
+		messages = append(messages, uiMessage)
+	}
 	// 2. Previous analyst calls with their tool calls
 	notCurrentCall := func(m *Message) bool { return m.ID != s.ParentID }
 	messages = append(messages, s.NewCompletionMessages(s.MessagesWithChildren(FilterByType(MessageTypeCall), FilterByTool(AnalystAgentName), notCurrentCall))...)

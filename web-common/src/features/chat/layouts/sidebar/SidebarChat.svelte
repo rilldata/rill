@@ -59,6 +59,7 @@
 
 <div
   class="chat-sidebar"
+  data-ai-ignore
   style="--sidebar-width: {$sidebarWidth}px;"
   onclick={(e) => {
     e.stopPropagation();
