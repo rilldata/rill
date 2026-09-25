@@ -59,6 +59,31 @@ Opening AI Chat from within a dashboard allows for more natural, context-aware q
 
 If the project administrator has configured starter prompts for a dashboard or for the project, a new chat shows them as clickable suggestions. Click one to send it with your current filters and time range applied. Prompts are configured with the `ai_prompts` key; see [AI Configuration](/developers/build/ai-configuration#suggested-prompts).
 
+## Using Project Skills
+
+Skills are playbooks that your project's developers write for the AI, such as how to investigate a revenue drop or what your company's business terms mean. The AI loads a skill on its own when your question matches the skill's description. To make sure the AI follows a specific skill, invoke it yourself with `/`:
+
+1. In the chat input, type `/` at the start of a line or after a space, or click the **/** button next to **@** below the input.
+2. Pick a skill from the list. Each entry shows the skill's name and description. Keep typing to narrow the list, and use the arrow keys and **Enter** to select.
+3. Type your question after the skill and send the message.
+
+![Skill picker in AI Chat](/img/explore/chat/skill-picker.png)
+
+The list shows the skills that apply to the chat you're in:
+
+| Chat | Skills listed |
+|------|---------------|
+| Project chat (the **AI** tab), dashboard chat on Explore and Canvas dashboards, and chat in embedded dashboards | Skills written for data analysis (`agents: [analyst]`) |
+| Developer chat, which edits your project files in Rill Developer | Skills written for project development (`agents: [developer]`) |
+
+The **/** button appears only when the project has skills for that chat. Skills with errors in their file are not listed.
+
+When the AI uses a skill, whether you picked it or the AI chose it, the response's activity trace shows a **Loaded skill** step. In an analysis chat, a skill is loaded once per conversation, so referencing it again in a later message does not add it a second time.
+
+:::tip Writing skills
+Skills are files in your project. To create or change one, see [Skills](/developers/build/ai-configuration#skills) in the AI Configuration guide.
+:::
+
 ## Understanding Responses
 
 AI Chat provides rich, multi-layered responses to help you understand your data quickly while maintaining easy access to deeper exploration:
