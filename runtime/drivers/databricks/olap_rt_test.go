@@ -14,10 +14,11 @@ import (
 	"go.uber.org/zap"
 )
 
-// TestOLAP_LakehouseRT runs the Rill Databricks OLAP path against a live Lakehouse//RT
-// warehouse. RT speaks only SEA, reached via the SEA-via-kernel backend, so this file is
-// tagged databricks_kernel (out of the default build and `go test -short` CI). Config
-// passes only the DSN (no use_kernel): a passing query proves Thrift->SEA autodetect.
+// TestOLAP_LakehouseRT runs the Rill Databricks OLAP and information_schema paths against
+// a live Lakehouse//RT warehouse. RT speaks only SEA, reached via the SEA-via-kernel
+// backend, so this file is tagged databricks_kernel (out of the default build and
+// `go test -short` CI). Config passes only the DSN (no use_kernel): a passing query proves
+// Thrift->SEA autodetect.
 // Run: CGO_ENABLED=1 RILL_RUNTIME_TEST_MODE=expensive RILL_RUNTIME_DATABRICKS_RT_TEST_DSN=...
 // go test -tags databricks_kernel -run TestOLAP_LakehouseRT ./runtime/drivers/databricks/...
 func TestOLAP_LakehouseRT(t *testing.T) {
@@ -29,7 +30,7 @@ func TestOLAP_LakehouseRT(t *testing.T) {
 		t.Skip("RILL_RUNTIME_DATABRICKS_RT_TEST_DSN not configured")
 	}
 
-	_, olap := acquireTestDatabricksRT(t, dsn)
+	conn, olap := acquireTestDatabricksRT(t, dsn)
 
 	// Only assert queries RT supports (e.g. current_version() is UNRESOLVED_ROUTINE on RT).
 	t.Run("scalar_values", func(t *testing.T) {
@@ -87,6 +88,41 @@ func TestOLAP_LakehouseRT(t *testing.T) {
 		_, err := olap.Query(t.Context(), &drivers.Statement{Query: "SELECT 1", DryRun: true})
 		require.NoError(t, err)
 	})
+
+	// RT rejects catalog-local <catalog>.information_schema with MALFORMED_UC_RESPONSE;
+	// ListTables/Lookup must go through system.information_schema filtered by table_catalog.
+	t.Run("information_schema", func(t *testing.T) {
+		is, ok := conn.AsInformationSchema()
+		require.True(t, ok)
+
+		schemas, _, err := is.ListDatabaseSchemas(t.Context(), 100, "")
+		require.NoError(t, err)
+		require.NotEmpty(t, schemas)
+
+		var checked bool
+		for _, s := range schemas {
+			tables, _, err := is.ListTables(t.Context(), s.Database, s.DatabaseSchema, 50, "")
+			require.NoError(t, err, "ListTables failed for %s.%s", s.Database, s.DatabaseSchema)
+			if len(tables) == 0 {
+				continue
+			}
+			tbl, err := is.Lookup(t.Context(), s.Database, s.DatabaseSchema, tables[0].Name)
+			require.NoError(t, err, "Lookup failed for %s.%s.%s", s.Database, s.DatabaseSchema, tables[0].Name)
+			require.NotEmpty(t, tbl.Schema.Fields)
+			checked = true
+			break
+		}
+		require.True(t, checked, "expected at least one schema with a table to validate ListTables/Lookup")
+
+		// An empty database must scope to current_catalog(), matching the explicit catalog
+		// (not span all catalogs).
+		curCat, curSchema := currentNamespace(t, olap)
+		explicit, _, err := is.ListTables(t.Context(), curCat, curSchema, 100, "")
+		require.NoError(t, err)
+		implicit, _, err := is.ListTables(t.Context(), "", curSchema, 100, "")
+		require.NoError(t, err)
+		require.Equal(t, len(explicit), len(implicit), "empty-database ListTables must match current_catalog() scoping")
+	})
 }
 
 func acquireTestDatabricksRT(t *testing.T, dsn string) (drivers.Handle, drivers.OLAPStore) {
@@ -99,4 +135,14 @@ func acquireTestDatabricksRT(t *testing.T, dsn string) (drivers.Handle, drivers.
 	require.True(t, ok)
 
 	return conn, olap
+}
+
+func currentNamespace(t *testing.T, olap drivers.OLAPStore) (catalog, schema string) {
+	rows, err := olap.Query(t.Context(), &drivers.Statement{Query: "SELECT current_catalog() AS c, current_schema() AS s"})
+	require.NoError(t, err)
+	defer rows.Close()
+	require.True(t, rows.Next(), "expected current_catalog()/current_schema() row")
+	require.NoError(t, rows.Scan(&catalog, &schema))
+	require.NoError(t, rows.Err())
+	return catalog, schema
 }
