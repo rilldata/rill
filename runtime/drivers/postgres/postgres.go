@@ -422,7 +422,7 @@ func (c *connection) getDB(ctx context.Context) (*sqlx.DB, error) {
 		return nil, c.dbErr
 	}
 
-	c.db, c.dbErr = sqlx.Connect("pgx", c.config.ResolveDSN())
+	c.db, c.dbErr = sqlx.Open("pgx", c.config.ResolveDSN())
 	if c.dbErr != nil {
 		return nil, c.dbErr
 	}
