@@ -112,6 +112,19 @@ Rill Canvas dashboards are built using a variety of widgets that can display dat
     />
 </div>
 
+## Map
+
+### Point and Region Maps
+
+<div className="component-icon-grid">
+    <ComponentTile
+        header="Map"
+        link="/developers/build/dashboards/canvas-widgets/map"
+        multiple_measures="False"
+        image={<img src="/img/build/dashboard/canvas/components/map-points.png" alt="Map" />}
+    />
+</div>
+
 ## Miscellaneous 
 
 ### Markdown Text

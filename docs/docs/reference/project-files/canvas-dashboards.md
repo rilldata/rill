@@ -68,6 +68,7 @@ _[array of object]_ - Refers to all of the rows displayed on the Canvas. Each en
         - **table** - Similar to Pivot table, add dimensions and measures to visualize your data
         - **heatmap** - Heat Map chart to visualize distribution of data
         - **donut_chart** - Donut or Pie chart to display sums of total
+        - **map** - Map of points or regions, colored and sized by measures
 
 
     - **`width`** - _[string, integer]_ - Width of the component (can be a number or string with unit)

@@ -67,3 +67,7 @@ If you want to further drill into a component's data, select the top right butto
 If no Explore dashboard exists, and/or you don't have [permissions to view it](/developers/build/dashboards/customization#define-dashboard-access), no button will appear and is as designed.
 
 :::
+
+## Maps
+
+Map widgets plot a measure by location, as points or as shaded regions. Drag to pan, scroll or use the buttons in the top-right corner to zoom, and hover over a point or region to see its values. The map keeps your position when you change filters or the time range. To add a map to a dashboard, see [Map widget](/developers/build/dashboards/canvas-widgets/map).
