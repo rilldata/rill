@@ -21,6 +21,7 @@ import (
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.uber.org/zap"
+	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/structpb"
 )
 
@@ -200,7 +201,12 @@ func (r *Runtime) UpdateInstanceWithRillYAML(ctx context.Context, instanceID str
 	inst.FeatureFlags = rillYAML.FeatureFlags
 	inst.PublicPaths = rillYAML.PublicPaths
 	inst.AIInstructions = rillYAML.AIInstructions
-	inst.AIPrompts = rillYAML.AIPrompts
+	// Clone the prompts so the instance doesn't share proto messages with the parser;
+	// marshalling mutates their internal state, which breaks the parser's rill.yaml change detection.
+	inst.AIPrompts = make([]*runtimev1.AIPrompt, len(rillYAML.AIPrompts))
+	for i, p := range rillYAML.AIPrompts {
+		inst.AIPrompts[i] = proto.Clone(p).(*runtimev1.AIPrompt)
+	}
 	inst.ProjectAIConnector = rillYAML.AIConnector
 	inst.Theme = rillYAML.Theme
 
