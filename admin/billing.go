@@ -45,30 +45,9 @@ func (s *Service) InitOrganizationBilling(ctx context.Context, org *database.Org
 
 	org.BillingCustomerID = bc.ID
 
-	org, err = s.DB.UpdateOrganization(ctx, org.ID, &database.UpdateOrganizationOptions{
-		Name:                                org.Name,
-		DisplayName:                         org.DisplayName,
-		Description:                         org.Description,
-		LogoAssetID:                         org.LogoAssetID,
-		LogoDarkAssetID:                     org.LogoDarkAssetID,
-		FaviconAssetID:                      org.FaviconAssetID,
-		ThumbnailAssetID:                    org.ThumbnailAssetID,
-		CustomDomain:                        org.CustomDomain,
-		DefaultProjectRoleID:                org.DefaultProjectRoleID,
-		DefaultProvisioner:                  org.DefaultProvisioner,
-		QuotaProjects:                       org.QuotaProjects,
-		QuotaDeployments:                    org.QuotaDeployments,
-		QuotaSlotsTotal:                     org.QuotaSlotsTotal,
-		QuotaSlotsPerDeployment:             org.QuotaSlotsPerDeployment,
-		QuotaOutstandingInvites:             org.QuotaOutstandingInvites,
-		QuotaStorageLimitBytesPerDeployment: org.QuotaStorageLimitBytesPerDeployment,
-		QuotaSeats:                          org.QuotaSeats,
-		BillingCustomerID:                   org.BillingCustomerID,
-		PaymentCustomerID:                   org.PaymentCustomerID,
-		BillingEmail:                        org.BillingEmail,
-		BillingPlanName:                     org.BillingPlanName,
-		BillingPlanDisplayName:              org.BillingPlanDisplayName,
-		CreatedByUserID:                     org.CreatedByUserID,
+	org, err = s.updateOrganizationBilling(ctx, org.ID, func(latest *database.Organization) {
+		latest.PaymentCustomerID = pc.ID
+		latest.BillingCustomerID = bc.ID
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to update organization: %w", err)
@@ -155,30 +134,9 @@ func (s *Service) RepairOrganizationBilling(ctx context.Context, org *database.O
 	}
 
 	// update billing and payment customer id
-	org, err = s.DB.UpdateOrganization(ctx, org.ID, &database.UpdateOrganizationOptions{
-		Name:                                org.Name,
-		DisplayName:                         org.DisplayName,
-		Description:                         org.Description,
-		LogoAssetID:                         org.LogoAssetID,
-		LogoDarkAssetID:                     org.LogoDarkAssetID,
-		FaviconAssetID:                      org.FaviconAssetID,
-		ThumbnailAssetID:                    org.ThumbnailAssetID,
-		CustomDomain:                        org.CustomDomain,
-		DefaultProjectRoleID:                org.DefaultProjectRoleID,
-		DefaultProvisioner:                  org.DefaultProvisioner,
-		QuotaProjects:                       org.QuotaProjects,
-		QuotaDeployments:                    org.QuotaDeployments,
-		QuotaSlotsTotal:                     org.QuotaSlotsTotal,
-		QuotaSlotsPerDeployment:             org.QuotaSlotsPerDeployment,
-		QuotaOutstandingInvites:             org.QuotaOutstandingInvites,
-		QuotaStorageLimitBytesPerDeployment: org.QuotaStorageLimitBytesPerDeployment,
-		QuotaSeats:                          org.QuotaSeats,
-		BillingCustomerID:                   org.BillingCustomerID,
-		PaymentCustomerID:                   org.PaymentCustomerID,
-		BillingEmail:                        org.BillingEmail,
-		BillingPlanName:                     org.BillingPlanName,
-		BillingPlanDisplayName:              org.BillingPlanDisplayName,
-		CreatedByUserID:                     org.CreatedByUserID,
+	org, err = s.updateOrganizationBilling(ctx, org.ID, func(latest *database.Organization) {
+		latest.BillingCustomerID = org.BillingCustomerID
+		latest.PaymentCustomerID = org.PaymentCustomerID
 	})
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to update organization: %w", err)
@@ -221,30 +179,8 @@ func (s *Service) RepairOrganizationBilling(ctx context.Context, org *database.O
 	} else {
 		s.Logger.Named("billing").Warn("subscription already exists for org", zap.String("org_id", org.ID), zap.String("org_name", org.Name))
 		// update org quotas, this subscription might have been manually created
-		updatedOrg, err = s.DB.UpdateOrganization(ctx, org.ID, &database.UpdateOrganizationOptions{
-			Name:                                org.Name,
-			DisplayName:                         org.DisplayName,
-			Description:                         org.Description,
-			LogoAssetID:                         org.LogoAssetID,
-			LogoDarkAssetID:                     org.LogoDarkAssetID,
-			FaviconAssetID:                      org.FaviconAssetID,
-			ThumbnailAssetID:                    org.ThumbnailAssetID,
-			CustomDomain:                        org.CustomDomain,
-			DefaultProjectRoleID:                org.DefaultProjectRoleID,
-			DefaultProvisioner:                  org.DefaultProvisioner,
-			QuotaProjects:                       biggerOfInt(sub.Plan.Quotas.NumProjects, org.QuotaProjects),
-			QuotaDeployments:                    biggerOfInt(sub.Plan.Quotas.NumDeployments, org.QuotaDeployments),
-			QuotaSlotsTotal:                     biggerOfInt(sub.Plan.Quotas.NumSlotsTotal, org.QuotaSlotsTotal),
-			QuotaSlotsPerDeployment:             biggerOfInt(sub.Plan.Quotas.NumSlotsPerDeployment, org.QuotaSlotsPerDeployment),
-			QuotaOutstandingInvites:             biggerOfInt(sub.Plan.Quotas.NumOutstandingInvites, org.QuotaOutstandingInvites),
-			QuotaStorageLimitBytesPerDeployment: biggerOfInt64(sub.Plan.Quotas.StorageLimitBytesPerDeployment, org.QuotaStorageLimitBytesPerDeployment),
-			QuotaSeats:                          biggerOfInt(sub.Plan.Quotas.NumSeats, org.QuotaSeats),
-			BillingCustomerID:                   org.BillingCustomerID,
-			PaymentCustomerID:                   org.PaymentCustomerID,
-			BillingEmail:                        org.BillingEmail,
-			BillingPlanName:                     org.BillingPlanName,
-			BillingPlanDisplayName:              org.BillingPlanDisplayName,
-			CreatedByUserID:                     org.CreatedByUserID,
+		updatedOrg, err = s.updateOrganizationBilling(ctx, org.ID, func(latest *database.Organization) {
+			raiseQuotasToPlan(latest, sub.Plan)
 		})
 		if err != nil {
 			return nil, nil, fmt.Errorf("failed to update organization: %w", err)
@@ -318,30 +254,10 @@ func (s *Service) StartCreditTrial(ctx context.Context, org *database.Organizati
 		zap.String("plan_name", plan.Name),
 	)
 
-	org, err = s.DB.UpdateOrganization(ctx, org.ID, &database.UpdateOrganizationOptions{
-		Name:                                org.Name,
-		DisplayName:                         org.DisplayName,
-		Description:                         org.Description,
-		LogoAssetID:                         org.LogoAssetID,
-		LogoDarkAssetID:                     org.LogoDarkAssetID,
-		FaviconAssetID:                      org.FaviconAssetID,
-		ThumbnailAssetID:                    org.ThumbnailAssetID,
-		CustomDomain:                        org.CustomDomain,
-		DefaultProjectRoleID:                org.DefaultProjectRoleID,
-		DefaultProvisioner:                  org.DefaultProvisioner,
-		QuotaProjects:                       biggerOfInt(plan.Quotas.NumProjects, org.QuotaProjects),
-		QuotaDeployments:                    biggerOfInt(plan.Quotas.NumDeployments, org.QuotaDeployments),
-		QuotaSlotsTotal:                     biggerOfInt(plan.Quotas.NumSlotsTotal, org.QuotaSlotsTotal),
-		QuotaSlotsPerDeployment:             biggerOfInt(plan.Quotas.NumSlotsPerDeployment, org.QuotaSlotsPerDeployment),
-		QuotaOutstandingInvites:             biggerOfInt(plan.Quotas.NumOutstandingInvites, org.QuotaOutstandingInvites),
-		QuotaStorageLimitBytesPerDeployment: biggerOfInt64(plan.Quotas.StorageLimitBytesPerDeployment, org.QuotaStorageLimitBytesPerDeployment),
-		QuotaSeats:                          biggerOfInt(plan.Quotas.NumSeats, org.QuotaSeats),
-		BillingCustomerID:                   org.BillingCustomerID,
-		PaymentCustomerID:                   org.PaymentCustomerID,
-		BillingEmail:                        org.BillingEmail,
-		BillingPlanName:                     &plan.Name,
-		BillingPlanDisplayName:              &plan.DisplayName,
-		CreatedByUserID:                     org.CreatedByUserID,
+	org, err = s.updateOrganizationBilling(ctx, org.ID, func(latest *database.Organization) {
+		raiseQuotasToPlan(latest, plan)
+		latest.BillingPlanName = &plan.Name
+		latest.BillingPlanDisplayName = &plan.DisplayName
 	})
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to update organization: %w", err)
@@ -424,30 +340,10 @@ func (s *Service) StartTrial(ctx context.Context, org *database.Organization) (*
 		zap.String("user_email", userEmail),
 	)
 
-	org, err = s.DB.UpdateOrganization(ctx, org.ID, &database.UpdateOrganizationOptions{
-		Name:                                org.Name,
-		DisplayName:                         org.DisplayName,
-		Description:                         org.Description,
-		LogoAssetID:                         org.LogoAssetID,
-		LogoDarkAssetID:                     org.LogoDarkAssetID,
-		FaviconAssetID:                      org.FaviconAssetID,
-		ThumbnailAssetID:                    org.ThumbnailAssetID,
-		CustomDomain:                        org.CustomDomain,
-		DefaultProjectRoleID:                org.DefaultProjectRoleID,
-		DefaultProvisioner:                  org.DefaultProvisioner,
-		QuotaProjects:                       biggerOfInt(plan.Quotas.NumProjects, org.QuotaProjects),
-		QuotaDeployments:                    biggerOfInt(plan.Quotas.NumDeployments, org.QuotaDeployments),
-		QuotaSlotsTotal:                     biggerOfInt(plan.Quotas.NumSlotsTotal, org.QuotaSlotsTotal),
-		QuotaSlotsPerDeployment:             biggerOfInt(plan.Quotas.NumSlotsPerDeployment, org.QuotaSlotsPerDeployment),
-		QuotaOutstandingInvites:             biggerOfInt(plan.Quotas.NumOutstandingInvites, org.QuotaOutstandingInvites),
-		QuotaStorageLimitBytesPerDeployment: biggerOfInt64(plan.Quotas.StorageLimitBytesPerDeployment, org.QuotaStorageLimitBytesPerDeployment),
-		QuotaSeats:                          biggerOfInt(plan.Quotas.NumSeats, org.QuotaSeats),
-		BillingCustomerID:                   org.BillingCustomerID,
-		PaymentCustomerID:                   org.PaymentCustomerID,
-		BillingEmail:                        org.BillingEmail,
-		BillingPlanName:                     &plan.Name,
-		BillingPlanDisplayName:              &plan.DisplayName,
-		CreatedByUserID:                     org.CreatedByUserID,
+	org, err = s.updateOrganizationBilling(ctx, org.ID, func(latest *database.Organization) {
+		raiseQuotasToPlan(latest, plan)
+		latest.BillingPlanName = &plan.Name
+		latest.BillingPlanDisplayName = &plan.DisplayName
 	})
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to update organization: %w", err)
@@ -618,6 +514,72 @@ func (s *Service) CheckBlockingBillingErrors(ctx context.Context, orgID string) 
 	}
 
 	return nil
+}
+
+// updateOrganizationBilling applies fn to the latest version of the org and saves the result.
+// Billing flows call external billing systems between reading the org and writing it back,
+// so writing their initial snapshot would silently revert concurrent changes to the org,
+// such as a superuser raising its quotas.
+// The org's row stays locked from the re-read until the update commits.
+func (s *Service) updateOrganizationBilling(ctx context.Context, orgID string, fn func(latest *database.Organization)) (*database.Organization, error) {
+	ctx, tx, err := s.DB.NewTx(ctx, true)
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = tx.Rollback() }()
+
+	org, err := s.DB.FindOrganizationForUpdate(ctx, orgID)
+	if err != nil {
+		return nil, err
+	}
+
+	fn(org)
+
+	org, err = s.DB.UpdateOrganization(ctx, org.ID, &database.UpdateOrganizationOptions{
+		Name:                                org.Name,
+		DisplayName:                         org.DisplayName,
+		Description:                         org.Description,
+		LogoAssetID:                         org.LogoAssetID,
+		LogoDarkAssetID:                     org.LogoDarkAssetID,
+		FaviconAssetID:                      org.FaviconAssetID,
+		ThumbnailAssetID:                    org.ThumbnailAssetID,
+		CustomDomain:                        org.CustomDomain,
+		DefaultProjectRoleID:                org.DefaultProjectRoleID,
+		DefaultProvisioner:                  org.DefaultProvisioner,
+		QuotaProjects:                       org.QuotaProjects,
+		QuotaDeployments:                    org.QuotaDeployments,
+		QuotaSlotsTotal:                     org.QuotaSlotsTotal,
+		QuotaSlotsPerDeployment:             org.QuotaSlotsPerDeployment,
+		QuotaOutstandingInvites:             org.QuotaOutstandingInvites,
+		QuotaStorageLimitBytesPerDeployment: org.QuotaStorageLimitBytesPerDeployment,
+		QuotaSeats:                          org.QuotaSeats,
+		BillingCustomerID:                   org.BillingCustomerID,
+		PaymentCustomerID:                   org.PaymentCustomerID,
+		BillingEmail:                        org.BillingEmail,
+		BillingPlanName:                     org.BillingPlanName,
+		BillingPlanDisplayName:              org.BillingPlanDisplayName,
+		CreatedByUserID:                     org.CreatedByUserID,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	err = tx.Commit()
+	if err != nil {
+		return nil, err
+	}
+	return org, nil
+}
+
+// raiseQuotasToPlan raises the org's quotas to the plan's quotas, keeping any quota that is already bigger.
+func raiseQuotasToPlan(org *database.Organization, plan *billing.Plan) {
+	org.QuotaProjects = biggerOfInt(plan.Quotas.NumProjects, org.QuotaProjects)
+	org.QuotaDeployments = biggerOfInt(plan.Quotas.NumDeployments, org.QuotaDeployments)
+	org.QuotaSlotsTotal = biggerOfInt(plan.Quotas.NumSlotsTotal, org.QuotaSlotsTotal)
+	org.QuotaSlotsPerDeployment = biggerOfInt(plan.Quotas.NumSlotsPerDeployment, org.QuotaSlotsPerDeployment)
+	org.QuotaOutstandingInvites = biggerOfInt(plan.Quotas.NumOutstandingInvites, org.QuotaOutstandingInvites)
+	org.QuotaStorageLimitBytesPerDeployment = biggerOfInt64(plan.Quotas.StorageLimitBytesPerDeployment, org.QuotaStorageLimitBytesPerDeployment)
+	org.QuotaSeats = biggerOfInt(plan.Quotas.NumSeats, org.QuotaSeats)
 }
 
 func biggerOfInt(ptr *int, def int) int {

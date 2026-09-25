@@ -58,6 +58,9 @@ type DB interface {
 	FindOrganizations(ctx context.Context, afterName string, limit int) ([]*Organization, error)
 	FindOrganizationsForUser(ctx context.Context, userID string, afterName string, limit int) ([]*Organization, error)
 	FindOrganization(ctx context.Context, id string) (*Organization, error)
+	// FindOrganizationForUpdate finds an org and locks its row until the current transaction ends.
+	// It must be called with a ctx returned from NewTx.
+	FindOrganizationForUpdate(ctx context.Context, id string) (*Organization, error)
 	FindOrganizationByName(ctx context.Context, name string) (*Organization, error)
 	FindOrganizationByCustomDomain(ctx context.Context, domain string) (*Organization, error)
 	CheckOrganizationHasPublicProjects(ctx context.Context, orgID string) (bool, error)

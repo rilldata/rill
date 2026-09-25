@@ -87,6 +87,15 @@ func (c *connection) FindOrganization(ctx context.Context, orgID string) (*datab
 	return res, nil
 }
 
+func (c *connection) FindOrganizationForUpdate(ctx context.Context, orgID string) (*database.Organization, error) {
+	res := &database.Organization{}
+	err := c.getDB(ctx).QueryRowxContext(ctx, "SELECT * FROM orgs WHERE id = $1 FOR UPDATE", orgID).StructScan(res)
+	if err != nil {
+		return nil, parseErr("org", err)
+	}
+	return res, nil
+}
+
 func (c *connection) FindOrganizationByName(ctx context.Context, name string) (*database.Organization, error) {
 	res := &database.Organization{}
 	err := c.getDB(ctx).QueryRowxContext(ctx, "SELECT * FROM orgs WHERE lower(name)=lower($1)", name).StructScan(res)
