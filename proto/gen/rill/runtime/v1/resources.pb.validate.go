@@ -4963,6 +4963,40 @@ func (m *ExploreSpec) validate(all bool) error {
 
 	// no validation rules for DefinedInMetricsView
 
+	for idx, item := range m.GetAiPrompts() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, ExploreSpecValidationError{
+						field:  fmt.Sprintf("AiPrompts[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, ExploreSpecValidationError{
+						field:  fmt.Sprintf("AiPrompts[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return ExploreSpecValidationError{
+					field:  fmt.Sprintf("AiPrompts[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
+
 	if len(errors) > 0 {
 		return ExploreSpecMultiError(errors)
 	}
@@ -5196,6 +5230,109 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = ExploreStateValidationError{}
+
+// Validate checks the field values on AIPrompt with the rules defined in the
+// proto definition for this message. If any rules are violated, the first
+// error encountered is returned, or nil if there are no violations.
+func (m *AIPrompt) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on AIPrompt with the rules defined in
+// the proto definition for this message. If any rules are violated, the
+// result is a list of violation errors wrapped in AIPromptMultiError, or nil
+// if none found.
+func (m *AIPrompt) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *AIPrompt) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for Label
+
+	// no validation rules for Prompt
+
+	if len(errors) > 0 {
+		return AIPromptMultiError(errors)
+	}
+
+	return nil
+}
+
+// AIPromptMultiError is an error wrapping multiple validation errors returned
+// by AIPrompt.ValidateAll() if the designated constraints aren't met.
+type AIPromptMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m AIPromptMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m AIPromptMultiError) AllErrors() []error { return m }
+
+// AIPromptValidationError is the validation error returned by
+// AIPrompt.Validate if the designated constraints aren't met.
+type AIPromptValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e AIPromptValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e AIPromptValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e AIPromptValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e AIPromptValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e AIPromptValidationError) ErrorName() string { return "AIPromptValidationError" }
+
+// Error satisfies the builtin error interface
+func (e AIPromptValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sAIPrompt.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = AIPromptValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = AIPromptValidationError{}
 
 // Validate checks the field values on ExploreTimeRange with the rules defined
 // in the proto definition for this message. If any rules are violated, the
@@ -10840,6 +10977,40 @@ func (m *CanvasSpec) validate(all bool) error {
 	}
 
 	// no validation rules for Annotations
+
+	for idx, item := range m.GetAiPrompts() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, CanvasSpecValidationError{
+						field:  fmt.Sprintf("AiPrompts[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, CanvasSpecValidationError{
+						field:  fmt.Sprintf("AiPrompts[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return CanvasSpecValidationError{
+					field:  fmt.Sprintf("AiPrompts[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
 
 	if len(errors) > 0 {
 		return CanvasSpecMultiError(errors)

@@ -1,0 +1,1 @@
+ALTER TABLE instances ADD COLUMN ai_prompts TEXT NOT NULL DEFAULT '[]';

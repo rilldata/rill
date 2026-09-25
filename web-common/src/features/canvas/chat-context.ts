@@ -4,18 +4,29 @@ import {
 } from "@rilldata/web-common/features/chat/core/types.ts";
 import type {
   RuntimeServiceCompleteBody,
+  V1AIPrompt,
   V1AnalystAgentContext,
 } from "@rilldata/web-common/runtime-client";
 import { getCanvasNameStore } from "@rilldata/web-common/features/dashboards/nav-utils.ts";
 import { derived, type Readable } from "svelte/store";
 import { getCanvasStoreUnguarded } from "@rilldata/web-common/features/canvas/state-managers/state-managers.ts";
 import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
+import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
+import {
+  createProjectPromptsStore,
+  resolveSuggestedPrompts,
+} from "@rilldata/web-common/features/chat/core/suggested-prompts/suggested-prompts.ts";
+import {
+  ResourceKind,
+  useResource,
+} from "@rilldata/web-common/features/entity-management/resource-selectors.ts";
 
 export function createCanvasChatConfig(client: RuntimeClient): ChatConfig {
   return {
     agent: ToolName.ANALYST_AGENT,
     additionalContextStoreGetter: () => getActiveCanvasContext(client),
+    suggestedPromptsStoreGetter: getCanvasSuggestedPrompts,
     emptyChatLabel: m.chat_happy_to_explore(),
     placeholder: m.chat_placeholder_analyst(),
     minChatHeight: "min-h-[4rem]",
@@ -23,7 +34,42 @@ export function createCanvasChatConfig(client: RuntimeClient): ChatConfig {
 }
 
 /**
- * Creates a store that contains the active explore context sent to the Complete API.
+ * Creates a store with the starter prompts for the active canvas:
+ * its configured `ai_prompts`, else the project's `ai_prompts` from rill.yaml. Empty when neither is configured.
+ */
+function getCanvasSuggestedPrompts(
+  client: RuntimeClient,
+): Readable<V1AIPrompt[]> {
+  const canvasNameStore = getCanvasNameStore();
+  const projectPromptsStore = createProjectPromptsStore(client);
+
+  return derived(
+    [canvasNameStore, projectPromptsStore],
+    ([canvasName, projectPrompts], set) => {
+      // Pass the query client explicitly: this callback re-runs outside component initialization, where getContext is unavailable.
+      const canvasQuery = useResource(
+        client,
+        canvasName,
+        ResourceKind.Canvas,
+        undefined,
+        queryClient,
+      );
+      return canvasQuery.subscribe((res) => {
+        const canvas = res.data?.canvas;
+        set(
+          resolveSuggestedPrompts([
+            canvas?.state?.validSpec?.aiPrompts ?? canvas?.spec?.aiPrompts,
+            projectPrompts,
+          ]),
+        );
+      });
+    },
+    [] as V1AIPrompt[],
+  );
+}
+
+/**
+ * Creates a store that contains the active canvas context sent to the Complete API.
  * It returns RuntimeServiceCompleteBody with V1AnalystAgentContext that is passed to the API.
  */
 function getActiveCanvasContext(
