@@ -3,6 +3,7 @@
   import Chip from "@rilldata/web-common/components/chip/core/Chip.svelte";
   import * as Dialog from "@rilldata/web-common/components/dialog";
   import Input from "@rilldata/web-common/components/forms/Input.svelte";
+  import { getName } from "@rilldata/web-common/features/entity-management/name-utils";
   import MeasureExpressionInput from "@rilldata/web-common/features/dashboards/ephemeral-measures/MeasureExpressionInput.svelte";
   import type { BaseCanvasComponent } from "@rilldata/web-common/features/canvas/components/BaseCanvasComponent";
   import type { ComponentSpec } from "@rilldata/web-common/features/canvas/components/types";
@@ -13,17 +14,13 @@
     removeMeasureFromComponentSpec,
     type EphemeralMeasureSpec,
   } from "@rilldata/web-common/features/dashboards/ephemeral-measures/canvas";
-  import {
-    formatMeasureRef,
-    parseMeasureExpression,
-  } from "@rilldata/web-common/features/dashboards/ephemeral-measures/expression-parser";
+  import { parseMeasureExpression } from "@rilldata/web-common/features/dashboards/ephemeral-measures/expression-parser";
   import type { EphemeralMeasureDef } from "@rilldata/web-common/features/dashboards/ephemeral-measures/types";
   import {
     isReferenceableMeasure,
     slugifyEphemeralMeasureName,
     validateEphemeralMeasureCount,
     validateEphemeralMeasureDef,
-    validateEphemeralMeasureDisplayName,
   } from "@rilldata/web-common/features/dashboards/ephemeral-measures/validation";
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import { ephemeralFormatPresetOptions } from "@rilldata/web-common/features/dashboards/ephemeral-measures/format-presets";
@@ -55,6 +52,7 @@
   let description = editingDef?.description ?? "";
   let formatPreset: string = editingDef?.formatPreset ?? FormatPreset.HUMANIZE;
   let saveError: string | undefined = undefined;
+  let expressionInput: MeasureExpressionInput;
 
   $: ctx = getCanvasStore(canvasName, client.instanceId);
   $: metricsViewStore =
@@ -83,21 +81,16 @@
     ...(metricsViewSpec?.timeDimension ? [metricsViewSpec.timeDimension] : []),
     ...defs.filter((d) => d.name !== editingDef?.name).map((d) => d.name),
   ]);
-  // Labels of every other measure, so two measures never look the same.
-  $: reservedDisplayNames = new Set(
-    [
-      ...(metricsViewSpec?.measures ?? []).map(
-        (mes) => mes.displayName || mes.name,
-      ),
-      ...defs
-        .filter((d) => d.name !== editingDef?.name)
-        .map((d) => d.displayName),
-    ].map((label) => (label ?? "").toLowerCase()),
-  );
-  $: displayNameError =
-    displayName.trim() === ""
-      ? undefined
-      : validateEphemeralMeasureDisplayName(displayName, reservedDisplayNames);
+  // Labels of every other measure: a display name that repeats one gets a
+  // numeric suffix on save, so two measures never look the same.
+  $: otherDisplayNames = [
+    ...(metricsViewSpec?.measures ?? []).map(
+      (mes) => mes.displayName || mes.name,
+    ),
+    ...defs
+      .filter((d) => d.name !== editingDef?.name)
+      .map((d) => d.displayName),
+  ].filter((label): label is string => !!label);
 
   $: parsed = parseMeasureExpression(expression);
   $: unknownRef = parsed.refs.find((ref) => !knownMeasureNames.has(ref));
@@ -125,28 +118,18 @@
     );
   }
 
-  function insertMeasure(name: string) {
-    const token = formatMeasureRef(name);
-    expression = expression === "" ? token : `${expression} ${token}`;
-  }
-
   function save() {
     const def: EphemeralMeasureDef = {
       name:
         editingDef?.name ??
         slugifyEphemeralMeasureName(displayName, reservedNames),
-      displayName: displayName.trim(),
+      displayName: getName(displayName.trim(), otherDisplayNames),
       expression: expression.trim(),
       ...(formatPreset !== FormatPreset.HUMANIZE ? { formatPreset } : {}),
       ...(description.trim() ? { description: description.trim() } : {}),
     };
     saveError =
-      validateEphemeralMeasureDef(
-        def,
-        knownMeasureNames,
-        reservedNames,
-        reservedDisplayNames,
-      ) ??
+      validateEphemeralMeasureDef(def, knownMeasureNames, reservedNames) ??
       (editingDef ? undefined : validateEphemeralMeasureCount(defs.length));
     if (saveError) return;
 
@@ -206,12 +189,11 @@
         id="canvas-ephemeral-measure-name"
         label={m.dashboard_pivot_ephemeral_display_name_label()}
         placeholder={m.dashboard_pivot_ephemeral_display_name_placeholder()}
-        errors={displayNameError}
-        alwaysShowError
         claimFocusOnMount
       />
 
       <MeasureExpressionInput
+        bind:this={expressionInput}
         bind:value={expression}
         id="canvas-ephemeral-measure-expression"
         measures={referenceableMeasures}
@@ -237,7 +219,7 @@
             {#each referenceableMeasures as mes (mes.name)}
               <button
                 type="button"
-                on:click={() => insertMeasure(mes.name ?? "")}
+                on:click={() => expressionInput.insertMeasure(mes)}
               >
                 <Chip type="measure" label={mes.displayName || mes.name}>
                   <span slot="body" class="text-xs">
@@ -283,7 +265,6 @@
       <Button
         type="primary"
         disabled={!displayName.trim() ||
-          !!displayNameError ||
           !expression.trim() ||
           !!expressionError}
         onClick={save}

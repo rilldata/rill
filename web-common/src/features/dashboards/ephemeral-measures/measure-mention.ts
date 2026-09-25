@@ -9,7 +9,7 @@
  * (quoted if needed) name in the expression.
  */
 import type { MetricsViewSpecMeasure } from "@rilldata/web-common/runtime-client";
-import { formatMeasureRef } from "./expression-parser";
+import { formatMeasureRef, parseMeasureExpression } from "./expression-parser";
 
 // A "@" only starts a mention when it does not directly follow an identifier or
 // a quoted name, so "@" pasted in the middle of a name is not picked up.
@@ -19,13 +19,11 @@ export type ExpressionToken =
   | { type: "text"; text: string }
   | { type: "measure"; name: string; displayName: string };
 
-// A quoted identifier, or a whole bare identifier that is not a function call.
-const REFERENCE_REGEX = /"(?:[^"]|"")+"|\b[A-Za-z_][A-Za-z0-9_]*\b(?!\s*\()/g;
-
 /**
  * Splits an expression into plain text and references to the given measures,
- * so an existing expression can be shown with measure chips. Names that are
- * not a known measure (functions, literals, typos) stay text.
+ * so an existing expression can be shown with measure chips. References are
+ * located by the expression parser; names that are not a known measure stay
+ * text, and so does the whole expression when it does not parse.
  */
 export function tokenizeMeasureExpression(
   expression: string,
@@ -43,23 +41,16 @@ export function tokenizeMeasureExpression(
       tokens.push({ type: "text", text });
     }
   };
-  for (const match of expression.matchAll(REFERENCE_REGEX)) {
-    const raw = match[0];
-    const name = raw.startsWith('"')
-      ? raw.slice(1, -1).replace(/""/g, '"')
-      : raw;
-    const measure = byName.get(name);
-    pushText(expression.slice(last, match.index));
-    if (measure) {
-      tokens.push({
-        type: "measure",
-        name,
-        displayName: measure.displayName || name,
-      });
-    } else {
-      pushText(raw);
-    }
-    last = match.index + raw.length;
+  for (const span of parseMeasureExpression(expression).refSpans) {
+    const measure = byName.get(span.name);
+    if (!measure) continue;
+    pushText(expression.slice(last, span.start));
+    tokens.push({
+      type: "measure",
+      name: span.name,
+      displayName: measure.displayName || span.name,
+    });
+    last = span.end;
   }
   pushText(expression.slice(last));
   return tokens;

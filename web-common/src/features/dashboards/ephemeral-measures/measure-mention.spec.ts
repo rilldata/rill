@@ -56,17 +56,25 @@ describe("tokenizeMeasureExpression", () => {
       { type: "measure", name: "margin", displayName: "margin" },
       { type: "text", text: " / unknown, 2) + null + abs(-1e3)" },
     ]);
-    // A function named like a measure is still a function call, and a
-    // measure named like a function prefix is not matched inside it.
+    // A function named like a measure is still a function call.
     expect(
-      tokenizeMeasureExpression("select(1) + margin_2", [
+      tokenizeMeasureExpression("round(1) + margin_2", [
         ...measures,
-        { name: "selec" },
+        { name: "round" },
         { name: "margin_2" },
       ]),
     ).toEqual([
-      { type: "text", text: "select(1) + " },
+      { type: "text", text: "round(1) + " },
       { type: "measure", name: "margin_2", displayName: "margin_2" },
+    ]);
+  });
+
+  it("keeps an expression that does not parse as text", () => {
+    expect(tokenizeMeasureExpression("margin +", measures)).toEqual([
+      { type: "text", text: "margin +" },
+    ]);
+    expect(tokenizeMeasureExpression("margin @", measures)).toEqual([
+      { type: "text", text: "margin @" },
     ]);
   });
 
@@ -90,7 +98,7 @@ describe("tokenizeMeasureExpression", () => {
 
 describe("serializeExpressionTokens", () => {
   it("round trips an expression, quoting names that need it", () => {
-    const expression = 'total_revenue - "select" * 2';
+    const expression = 'total_revenue - "select" * (2 + net_rev)';
     expect(
       serializeExpressionTokens(
         tokenizeMeasureExpression(expression, measures),

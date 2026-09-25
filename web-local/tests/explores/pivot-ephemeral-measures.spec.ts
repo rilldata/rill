@@ -175,7 +175,13 @@ test.describe("pivot ephemeral measures from URL state", () => {
       expression.locator(".measure-chip", { hasText: "Total records" }),
     ).toBeVisible();
 
-    await expression.pressSequentially("* 2");
+    // The "Insert a measure" buttons insert a chip too.
+    await expression.pressSequentially("* 2 +");
+    await page
+      .getByRole("dialog")
+      .getByRole("button", { name: "Total records", exact: true })
+      .click();
+    await expect(expression.locator(".measure-chip")).toHaveCount(2);
     await page.getByLabel("Description").fill("Twice");
     await page.getByRole("button", { name: "Save" }).click();
 
@@ -185,15 +191,18 @@ test.describe("pivot ephemeral measures from URL state", () => {
     // The description rides along in the URL after the (empty) format preset.
     const url = new URL(page.url());
     expect(url.searchParams.get("adhoc_m")).toBe(
-      "doubled:Doubled:total_records%20*%202::Twice",
+      "doubled:Doubled:total_records%20*%202%20%2B%20total_records::Twice",
     );
 
-    // A second measure with the same display name is rejected.
+    // A second measure with the same display name gets a numeric suffix.
     await page.getByRole("button", { name: "Create adhoc measure" }).click();
     await page.getByLabel("Name", { exact: true }).fill("doubled");
+    await page
+      .getByLabel("Expression", { exact: true })
+      .fill("total_records * 3");
+    await page.getByRole("button", { name: "Save" }).click();
     await expect(
-      page.getByText('a measure named "doubled" already exists'),
+      page.getByLabel("doubled_1 pivot chip", { exact: true }),
     ).toBeVisible();
-    await expect(page.getByRole("button", { name: "Save" })).toBeDisabled();
   });
 });

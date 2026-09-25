@@ -103,6 +103,33 @@ field name (see measure-mention.ts).
     return { destroy: cleanup };
   }
 
+  /**
+   * Inserts a chip for the measure at the cursor (at the end when the editor
+   * has not been focused yet), separated from any preceding text by a space.
+   */
+  export function insertMeasure(measure: MetricsViewSpecMeasure) {
+    if (!editor) return;
+    const chain = editor.isFocused
+      ? editor.chain().focus()
+      : editor.chain().focus("end");
+    const { from } = editor.state.selection;
+    const before = editor.state.doc.textBetween(Math.max(from - 1, 0), from);
+    chain
+      .insertContent([
+        ...(before && !/\s/.test(before) ? [{ type: "text", text: " " }] : []),
+        {
+          type: MENTION,
+          attrs: {
+            id: measure.name,
+            label: measure.displayName || measure.name,
+            mentionSuggestionChar: "@",
+          },
+        },
+        { type: "text", text: " " },
+      ])
+      .run();
+  }
+
   function docToTokens(doc: ProseMirrorNode): ExpressionToken[] {
     const tokens: ExpressionToken[] = [];
     doc.descendants((node) => {

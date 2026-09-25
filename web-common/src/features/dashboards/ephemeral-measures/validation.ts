@@ -85,25 +85,6 @@ export function validateEphemeralMeasureName(
 }
 
 /**
- * Validates an ephemeral measure's display name against the display names of
- * the metrics view's measures and of the other ephemeral measures, so two
- * measures never show the same label. `reservedDisplayNames` holds them in
- * lower case.
- */
-export function validateEphemeralMeasureDisplayName(
-  displayName: string,
-  reservedDisplayNames: Set<string>,
-): string | undefined {
-  if (displayName.trim() === "") {
-    return "display name is required";
-  }
-  if (reservedDisplayNames.has(displayName.trim().toLowerCase())) {
-    return `a measure named "${displayName.trim()}" already exists`;
-  }
-  return undefined;
-}
-
-/**
  * Derives a query alias from a display name that passes
  * `validateEphemeralMeasureName`: reserved suffixes and collisions are
  * resolved with a numeric suffix, so a valid display name is always saveable.
@@ -132,24 +113,19 @@ export function slugifyEphemeralMeasureName(
  * Validates a full ephemeral measure definition.
  * `knownMeasureNames` are the measure names an expression may reference
  * (the metrics view's measures available in this explore; ephemeral measures
- * cannot reference other ephemeral measures). `reservedDisplayNames` is only
- * checked by the editors: definitions from a shared URL keep rendering even
- * when their labels collide.
+ * cannot reference other ephemeral measures).
  */
 export function validateEphemeralMeasureDef(
   def: EphemeralMeasureDef,
   knownMeasureNames: Set<string>,
   reservedNames: Set<string>,
-  reservedDisplayNames: Set<string> = new Set(),
 ): string | undefined {
   const nameError = validateEphemeralMeasureName(def.name, reservedNames);
   if (nameError) return nameError;
 
-  const displayNameError = validateEphemeralMeasureDisplayName(
-    def.displayName,
-    reservedDisplayNames,
-  );
-  if (displayNameError) return displayNameError;
+  if (def.displayName.trim() === "") {
+    return "display name is required";
+  }
 
   const parsed = parseMeasureExpression(def.expression);
   if (parsed.error) {
