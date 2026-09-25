@@ -12,15 +12,21 @@ var (
 	chatReferenceAttrRegexp = regexp.MustCompile(`(\w+)="([^"]*)"`)
 )
 
+// chatReferenceAttrs returns the key="value" attributes of a chat reference.
+func chatReferenceAttrs(ref string) map[string]string {
+	attrs := map[string]string{}
+	for _, attr := range chatReferenceAttrRegexp.FindAllStringSubmatch(ref, -1) {
+		attrs[attr[1]] = attr[2]
+	}
+	return attrs
+}
+
 // referencedSkills returns the skills referenced in a prompt with a chat reference of type "skill", once each and in order of first reference.
 // References to skills that are not in the given list are ignored.
 func referencedSkills(prompt string, skills []*Skill) []*Skill {
 	var res []*Skill
-	for _, ref := range chatReferenceRegexp.FindAllStringSubmatch(prompt, -1) {
-		attrs := map[string]string{}
-		for _, attr := range chatReferenceAttrRegexp.FindAllStringSubmatch(ref[1], -1) {
-			attrs[attr[1]] = attr[2]
-		}
+	for _, ref := range chatReferenceRegexp.FindAllString(prompt, -1) {
+		attrs := chatReferenceAttrs(ref)
 		if attrs["type"] != "skill" {
 			continue
 		}
