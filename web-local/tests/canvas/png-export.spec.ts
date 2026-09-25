@@ -15,7 +15,7 @@ test.describe("canvas PNG export", () => {
 
     // The toolbar only shows while the card is hovered.
     await card.hover();
-    await card.getByRole("button", { name: "Component options" }).click();
+    await card.getByRole("button", { name: "Component menu" }).click();
     await page.getByRole("menuitem", { name: "Download as PNG" }).click();
 
     const dialog = page.getByRole("dialog");
