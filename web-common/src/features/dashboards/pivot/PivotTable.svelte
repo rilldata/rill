@@ -125,6 +125,8 @@
 
   let containerRefElement: HTMLDivElement;
   let containerWidth = 0;
+  let flatTable: FlatTable | undefined;
+  let nestedTable: NestedTable | undefined;
   let stickyRows: number[] = [];
   let rowScrollOffset = 0;
   let scrollLeft = 0;
@@ -279,6 +281,27 @@
       }
     }
     return formatters;
+  }
+
+  /**
+   * One-shot resize of every column so the table fits the space available to
+   * it. The wrapper is `w-fit`, so its own width tracks the content; the
+   * available width is measured from the parent's content box instead, minus
+   * the wrapper's own horizontal border.
+   */
+  export function fitColumnsToWidth() {
+    const parent = containerRefElement?.parentElement;
+    if (!parent) return;
+    const parentStyle = getComputedStyle(parent);
+    const wrapperStyle = getComputedStyle(containerRefElement);
+    const availableWidth =
+      parent.clientWidth -
+      parseFloat(parentStyle.paddingLeft) -
+      parseFloat(parentStyle.paddingRight) -
+      parseFloat(wrapperStyle.borderLeftWidth) -
+      parseFloat(wrapperStyle.borderRightWidth);
+    if (!(availableWidth > 0)) return;
+    (isFlat ? flatTable : nestedTable)?.fitColumnsToWidth(availableWidth);
   }
 
   const handleScroll = (containerRefElement?: HTMLDivElement | null) => {
@@ -464,6 +487,7 @@
 >
   {#if isFlat}
     <FlatTable
+      bind:this={flatTable}
       {headerGroups}
       {rows}
       {virtualRows}
@@ -492,6 +516,7 @@
     />
   {:else}
     <NestedTable
+      bind:this={nestedTable}
       {headerGroups}
       {rows}
       {virtualRows}

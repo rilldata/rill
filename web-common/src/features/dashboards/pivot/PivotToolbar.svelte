@@ -11,6 +11,7 @@
   import { splitPivotChips } from "@rilldata/web-common/features/dashboards/pivot/pivot-utils.ts";
   import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
+  import { UnfoldHorizontal } from "lucide-svelte";
   import { writable } from "svelte/store";
   import Collapse from "../../../components/icons/Collapse.svelte";
   import Pivot from "../../../components/icons/Pivot.svelte";
@@ -39,6 +40,8 @@
   ) => void;
   export let setTotalsRowPosition: (position: PivotTotalsRowPosition) => void;
   export let collapseAll: () => void;
+  export let fitToWidth: () => void;
+  export let canFitToWidth = true;
 
   $: ({
     rows,
@@ -196,6 +199,16 @@
       <Collapse size="16px" />
       {m.dashboard_collapse_all()}
     </Button>
+
+    <Tooltip location="bottom" alignment="start" distance={8}>
+      <Button type="toolbar" onClick={fitToWidth} disabled={!canFitToWidth}>
+        <UnfoldHorizontal size="16px" />
+        {m.dashboard_fit_to_width()}
+      </Button>
+      <TooltipContent slot="tooltip-content" maxWidth="260px">
+        {m.dashboard_fit_to_width_tooltip()}
+      </TooltipContent>
+    </Tooltip>
 
     {#if !isFlat}
       <div class="flex items-center gap-x-2 pointer-events-auto">

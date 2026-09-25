@@ -807,6 +807,8 @@
   "dashboard_filter_by_value": "Filter by this value",
   "dashboard_filter_dimension_value": "Filter dimension value",
   "dashboard_filter_required_set_value": "This filter is required. Set a value to load the dashboard.",
+  "dashboard_fit_to_width": "Fit to width",
+  "dashboard_fit_to_width_tooltip": "Resize all columns once to fit the available width. You can still resize individual columns afterwards.",
   "dashboard_flat": "Flat",
   "dashboard_generated": "Generated {time}",
   "dashboard_generating": "Generating…",

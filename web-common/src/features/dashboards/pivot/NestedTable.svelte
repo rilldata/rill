@@ -25,6 +25,7 @@
     calculateMeasureWidth,
     calculateRowDimensionWidth,
     distributeColumnWidthsToFillContainer,
+    fitColumnWidthsToContainer,
     getNestedRowDimensionWidthKey,
     COLUMN_WIDTH_CONSTANTS as WIDTHS,
   } from "./pivot-column-width-utils";
@@ -275,6 +276,49 @@
     0,
   );
   $: totalLength = measureGroupsLength * totalMeasureWidth;
+
+  /**
+   * One-shot resize of every column so the table fits the given width.
+   * Columns are ordered as rendered: the row dimension column (if any) followed
+   * by every visible measure column across all column-dimension groups. The
+   * fitted widths are written back into the width stores so subsequent manual
+   * resizes start from them and nothing re-fits. Each measure shares one width
+   * across groups, so every group yields the same fitted value per measure.
+   */
+  export function fitColumnsToWidth(availableWidth: number) {
+    const fitted = fitColumnWidthsToContainer(
+      [
+        ...(hasRowDimension
+          ? [
+              {
+                width: baseRowDimensionWidth,
+                min: WIDTHS.MIN_COL_WIDTH,
+                max: WIDTHS.MAX_COL_WIDTH,
+              },
+            ]
+          : []),
+        ...visibleMeasureColumns.map(({ name }) => ({
+          width: $measureLengths.get(name) ?? WIDTHS.INIT_MEASURE_WIDTH,
+          min: WIDTHS.MIN_MEASURE_WIDTH,
+          max: WIDTHS.MAX_MEASURE_WIDTH,
+        })),
+      ],
+      availableWidth,
+    );
+
+    const offset = hasRowDimension ? 1 : 0;
+    if (hasRowDimension && rowDimensionWidthKey) {
+      rowDimensionLengths.update((lengths) =>
+        lengths.set(rowDimensionWidthKey, fitted[0]),
+      );
+    }
+    measureLengths.update((lengths) => {
+      visibleMeasureColumns.forEach(({ name }, i) =>
+        lengths.set(name, fitted[i + offset]),
+      );
+      return lengths;
+    });
+  }
 
   function isMeasureColumn(header, colNumber: number) {
     // Measure columns are the last columns in the header group
