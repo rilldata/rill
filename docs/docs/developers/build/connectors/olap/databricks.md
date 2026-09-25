@@ -90,3 +90,9 @@ Rill supports metrics views directly on Databricks as a live connector. Incremen
 :::
 
 To reduce SQL warehouse spend on dashboards with repeat traffic, see [Caching query results](/developers/build/metrics-view/underlying-model#caching-query-results) on live connectors.
+
+To attribute SQL warehouse usage to Rill users, add [`query_attributes`](/developers/build/metrics-view/query-attributes#databricks-query-tags) to your metrics view. Rill sends them as Databricks query tags, recorded in `system.query.history`.
+
+:::note
+Query tags are a Databricks Public Preview feature. On a workspace that does not support them, every query of a metrics view with `query_attributes` fails with `Configuration query_tags is not available`. Remove `query_attributes` to resolve the error.
+:::
