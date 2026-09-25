@@ -116,8 +116,8 @@ export function getOrderedStartEnd(start: Date, stop: Date) {
 
 // Return start and end of the time range that is ordered.
 export function getOrderedStartEndDateTime(start: DateTime, stop: DateTime) {
-  const startMs = start?.get("millisecond");
-  const stopMs = stop?.get("millisecond");
+  const startMs = start?.toMillis();
+  const stopMs = stop?.toMillis();
 
   if (startMs > stopMs) {
     return { start: stop, end: start };

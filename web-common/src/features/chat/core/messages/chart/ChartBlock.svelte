@@ -59,7 +59,6 @@
     runtimeClient,
     metricsViewsProvider,
     yamlConfigProvider,
-    true,
   );
   onDestroy(() => {
     metricsViewsProvider.cleanup();

@@ -22,7 +22,6 @@
     localTimeFilters,
     metricsViewsProvider,
     yamlConfigProvider,
-    parent: { name: canvasName },
   } = $derived(component);
 
   let localParamValues = $derived($specStore);
@@ -75,13 +74,11 @@
       {#if config.type === "time_filters"}
         {#if hasTimeSeries}
           <TimeFiltersInput
-            {canvasName}
             id={key}
             {localTimeFilters}
             {metricsViewsProvider}
             {yamlConfigProvider}
             showComparison={config?.meta?.hasComparison}
-            showGrain={config?.meta?.hasGrain}
             updateLocalTimeFilterString={(newString) => {
               component.updateProperty("time_filters", newString);
             }}

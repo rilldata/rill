@@ -28,16 +28,19 @@
   );
 
   onMount(() => {
-    return localExpressionFilters.storeSync.on("change", (newUrlParams) => {
-      updateLocalFilterString(
-        newUrlParams.get(
-          getParamKeyForMv(
-            localExpressionFilters.metricsViewsProvider.metricsViewNames[0],
-            false,
-          ),
-        ) ?? "",
-      );
-    });
+    return localExpressionFilters.storeSync.on(
+      "internal-change",
+      (newUrlParams) => {
+        updateLocalFilterString(
+          newUrlParams.get(
+            getParamKeyForMv(
+              localExpressionFilters.metricsViewsProvider.metricsViewNames[0],
+              false,
+            ),
+          ) ?? "",
+        );
+      },
+    );
   });
 </script>
 

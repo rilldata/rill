@@ -182,8 +182,7 @@ export function createStateManagers({
     dashboardConfigProvider.metricsViewsProvider,
     dashboardConfigProvider.yamlConfigProvider,
   );
-  expressionFilterManager.storeSync.on("change", () => {
-    if (expressionFilterManager.updating) return;
+  expressionFilterManager.storeSync.on("internal-change", () => {
     metricsExplorerStore.syncExpressionFilter(
       exploreName,
       expressionFilterManager,
@@ -194,11 +193,14 @@ export function createStateManagers({
     runtimeClient,
     dashboardConfigProvider.metricsViewsProvider,
     dashboardConfigProvider.yamlConfigProvider,
-    true,
-    true,
+    {
+      allowCustomTimeRange: true,
+      skipDefaultTimeRange: false,
+      skipTimeGrain: false,
+      log: true,
+    },
   );
   timeFilterManager.storeSync.on("change", () => {
-    if (timeFilterManager.updating) return;
     metricsExplorerStore.syncTimeFilters(exploreName, timeFilterManager);
   });
 

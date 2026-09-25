@@ -1,10 +1,7 @@
 <script lang="ts">
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import InputLabel from "@rilldata/web-common/components/forms/InputLabel.svelte";
-  import Switch from "@rilldata/web-common/components/forms/Switch.svelte";
-  import { getCanvasStore } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
-  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
-  import { ALL_TIME_RANGE_ALIAS } from "@rilldata/web-common/features/dashboards/time-controls/new-time-controls";
+  import { INHERIT_TIME_RANGE_ALIAS } from "@rilldata/web-common/features/dashboards/time-controls/new-time-controls";
   import type { TimeFilterManager } from "@rilldata/web-common/features/dashboards/time-controls/TimeFilterManager.svelte.ts";
   import TimeFilters from "@rilldata/web-common/features/dashboards/time-controls/TimeFilters.svelte";
   import type { MetricsViewsProvider } from "@rilldata/web-common/features/metrics-views/providers/MetricsViewsProvider.svelte.ts";
@@ -17,8 +14,6 @@
     metricsViewsProvider,
     yamlConfigProvider,
     showComparison,
-    showGrain,
-    canvasName,
     updateLocalTimeFilterString,
   }: {
     id: string;
@@ -26,32 +21,27 @@
     metricsViewsProvider: MetricsViewsProvider;
     yamlConfigProvider: YAMLConfigProvider;
     showComparison: boolean;
-    showGrain: boolean;
-    canvasName: string;
     updateLocalTimeFilterString: (newFilterString: string) => void;
   } = $props();
 
-  const runtimeClient = useRuntimeClient();
+  let { urlTimeRange, urlComparisonTimeRange } = $derived(localTimeFilters);
 
-  let { instanceId } = $derived(runtimeClient);
-
-  let {
-    canvasEntity: { timeFilterManager, dashboardProvider },
-  } = $derived(getCanvasStore(canvasName, instanceId));
-
-  let { curParams } = $derived(localTimeFilters);
-
-  let globalRange = $derived(timeFilterManager.timeRange);
-
-  let localFiltersEnabled = $derived(Boolean(curParams.size));
-
-  let defaultTimeRange = $derived(
-    dashboardProvider.yamlConfigProvider.defaultTimeRange,
+  let hasLocalTimeRange = $derived(
+    (urlTimeRange && urlTimeRange !== INHERIT_TIME_RANGE_ALIAS) ||
+      (urlComparisonTimeRange &&
+        urlComparisonTimeRange !== INHERIT_TIME_RANGE_ALIAS),
   );
 
   onMount(() => {
-    return localTimeFilters.storeSync.on("change", (newUrlParams) => {
-      updateLocalTimeFilterString(newUrlParams.toString());
+    return localTimeFilters.storeSync.on("internal-change", (newUrlParams) => {
+      if (
+        localTimeFilters.urlTimeRange === INHERIT_TIME_RANGE_ALIAS &&
+        localTimeFilters.urlComparisonTimeRange === INHERIT_TIME_RANGE_ALIAS
+      ) {
+        updateLocalTimeFilterString("");
+      } else {
+        updateLocalTimeFilterString(newUrlParams.toString());
+      }
     });
   });
 </script>
@@ -61,44 +51,28 @@
     <InputLabel
       capitalize={false}
       small
-      label={m.canvas_local_time_range()}
+      label={m.canvas_time_range_label()}
       {id}
-      faint={!localFiltersEnabled}
-    />
-    <Switch
-      checked={localFiltersEnabled}
-      onCheckedChange={() => {
-        if (localFiltersEnabled) {
-          localTimeFilters.setUrlParams(new URLSearchParams());
-        } else {
-          void localTimeFilters.onSelectRange(
-            globalRange ?? defaultTimeRange ?? ALL_TIME_RANGE_ALIAS,
-          );
-        }
-      }}
-      small
     />
   </div>
   <div class="text-fg-secondary">
-    {#if localFiltersEnabled}
-      {m.canvas_overriding_inherited_time_filters()}
+    {#if hasLocalTimeRange}
+      {m.canvas_time_range_override_hint()}
     {:else}
-      {m.canvas_override_inherited_time_filters_hint()}
+      {m.canvas_time_range_inherit_hint()}
     {/if}
   </div>
 
-  {#if localFiltersEnabled}
-    <TimeFilters
-      timeFilterManager={localTimeFilters}
-      {metricsViewsProvider}
-      {yamlConfigProvider}
-      context="filter-input"
-      config={{
-        showFullRange: false,
-        hidePan: true,
-        showGrainSelector: showGrain,
-        showComparisonSelector: showComparison,
-      }}
-    />
-  {/if}
+  <TimeFilters
+    timeFilterManager={localTimeFilters}
+    {metricsViewsProvider}
+    {yamlConfigProvider}
+    context="filter-input"
+    config={{
+      showFullRange: false,
+      hidePan: true,
+      showComparisonSelector: showComparison,
+      showInheritRange: true,
+    }}
+  />
 </div>

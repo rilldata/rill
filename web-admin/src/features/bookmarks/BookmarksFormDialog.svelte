@@ -75,7 +75,6 @@
     runtimeClient,
     dashboardConfigProvider.metricsViewsProvider,
     dashboardConfigProvider.yamlConfigProvider,
-    true,
   );
 
   // Always load from current url state. This is the only route to overwrite bookmark state.

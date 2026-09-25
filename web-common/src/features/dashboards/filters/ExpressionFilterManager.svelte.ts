@@ -22,7 +22,6 @@ import type {
 } from "@rilldata/web-common/features/dashboards/filters/filter-events.ts";
 import { mergeFilterParams } from "@rilldata/web-common/features/dashboards/filters/expr-utils.ts";
 import { getSortFilterManagers } from "@rilldata/web-common/features/dashboards/filters/get-sort-filter-managers.ts";
-import { expandCompressedParams } from "@rilldata/web-common/features/dashboards/url-state/compression.ts";
 import type { UrlParamsStore } from "@rilldata/web-common/lib/store-utils/url-params-store-sync.svelte.ts";
 import { UrlParamsChangeTracker } from "@rilldata/web-common/lib/store-utils/url-search-params-store.svelte.ts";
 
@@ -58,8 +57,6 @@ export class ExpressionFilterManager implements UrlParamsStore {
   };
   public readonly filterManagersMap: Record<string, DimensionOrMeasureManager>;
 
-  private curParams = $state<URLSearchParams | undefined>(undefined);
-
   // Shared with every manager below this one, so a chip edit reports itself
   // without the managers in between having to forward it. See `filter-events.ts`.
   private events = new EventEmitter<FilterEvents>();
@@ -67,11 +64,7 @@ export class ExpressionFilterManager implements UrlParamsStore {
     this.events,
   ) as typeof this.events.on;
 
-  // Temporary lock in explore. Once we move whereFilter out of explore, we can remove this.
-  public updating = false;
-
   public ready = $state<boolean>(false);
-  public dataLoaded = $state<boolean>(false);
 
   public paramKeys = new Set<string>([ExploreStateURLParams.Filters]);
   public readonly storeSync: UrlParamsChangeTracker;
@@ -82,14 +75,17 @@ export class ExpressionFilterManager implements UrlParamsStore {
     private readonly singleParamFormMv = false,
   ) {
     this.storeSync = new UrlParamsChangeTracker(this);
-    metricsViewsProvider.on("update-metrics-views", (newMetricsViewsNames) => {
+
+    const syncParamKeys = (names: string[]) => {
       this.paramKeys = new Set([
         ExploreStateURLParams.Filters,
-        ...newMetricsViewsNames.map((mvName) =>
-          getParamKeyForMv(mvName, singleParamFormMv),
-        ),
+        ...names.map((mvName) => getParamKeyForMv(mvName, singleParamFormMv)),
       ]);
-    });
+    };
+    metricsViewsProvider.on("update-metrics-views", syncParamKeys);
+    syncParamKeys(metricsViewsProvider.metricsViewNames);
+
+    this.ready = metricsViewsProvider.ready;
     metricsViewsProvider.on("specs-loaded", () => {
       this.ready = true;
       this.events.emit("ready");
@@ -104,9 +100,9 @@ export class ExpressionFilterManager implements UrlParamsStore {
         this.events,
       ) as JoinerFilterManager,
     );
-    this.on("filter-removed", ({ name, wasEmpty }) => {
-      if (!wasEmpty) return; // This will change expr and other pipelines will update managers.
-      this.topLevelJoiner.removeManagerByName(name);
+    this.events.on("filter-changed", () => {
+      this.topLevelJoiner?.removeEmptyManagers();
+      this.storeSync.stateChanged();
     });
 
     this.sortedFilterManagers = $derived.by(() =>
@@ -150,16 +146,8 @@ export class ExpressionFilterManager implements UrlParamsStore {
   }
 
   public normalizeParams(urlParams: URLSearchParams): URLSearchParams {
-    let expandedUrlParams: URLSearchParams;
-    try {
-      expandedUrlParams = expandCompressedParams(urlParams);
-    } catch {
-      // If we fail to decompress, do not throw here.
-      return urlParams;
-    }
-
-    const singularParam = expandedUrlParams.get(ExploreStateURLParams.Filters);
-    if (!singularParam || this.singleParamFormMv) return expandedUrlParams;
+    const singularParam = urlParams.get(ExploreStateURLParams.Filters);
+    if (!singularParam || this.singleParamFormMv) return urlParams;
 
     const newUrlParams = new URLSearchParams();
     this.metricsViewsProvider.metricsViewNames.forEach((mvName) =>
@@ -187,7 +175,7 @@ export class ExpressionFilterManager implements UrlParamsStore {
 
   public setParamForMetricsView(mvName: string, param: string) {
     const paramKey = getParamKeyForMv(mvName, this.singleParamFormMv);
-    const newParams = new URLSearchParams(this.curParams);
+    const newParams = new URLSearchParams(this.storeSync.searchParams);
     newParams.set(paramKey, param);
     // Thread through the sync code to ensure only changes update the internal state.
     this.storeSync.setUrlParams(newParams);

@@ -10,9 +10,6 @@ export type FilterChangeSource = string | undefined;
 export type FilterEvents = {
   // A filter was mutated. Emitted synchronously by the manager that was mutated.
   "filter-changed": { source: FilterChangeSource };
-  // Emitted when a filter is manually removed from a manager.
-  // This is useful when removal doesn't change expr and the manager has to be manually removed.
-  "filter-removed": { name: string; wasEmpty: boolean };
   ready: void;
 };
 

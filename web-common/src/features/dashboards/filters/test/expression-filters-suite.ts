@@ -45,6 +45,7 @@ import {
 } from "@rilldata/web-common/runtime-client";
 import { screen, waitFor } from "@testing-library/svelte";
 import { describe, expect, it } from "vitest";
+import { asyncWait } from "@rilldata/web-common/lib/waitUtils.ts";
 
 /**
  * How a test reads the filter state back.
@@ -998,6 +999,7 @@ export function testURLNavigationFlows(variant: ExpressionFiltersVariant) {
 
     it("Should apply initial state based on url search", async () => {
       await variant.render(urlAfterBothFilters);
+      console.log("Start...");
 
       // Filters already applied.
       await waitFor(() => {

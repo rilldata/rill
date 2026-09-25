@@ -162,8 +162,8 @@ function testTimeRange(timeRange: DashboardTimeControls | undefined) {
   if (!timeRange?.name) return undefined;
   return <V1ResolvedTimeRange>{
     expression: timeRange.name,
-    start: timeRange.start.toISOString(),
-    end: timeRange.end.toISOString(),
+    start: timeRange.start?.toISOString(),
+    end: timeRange.end?.toISOString(),
     ...("interval" in timeRange ? { grain: timeRange.interval } : {}),
   };
 }

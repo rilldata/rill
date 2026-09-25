@@ -1,12 +1,16 @@
 export type TimeFiltersConfig = {
   hidePan?: boolean;
-  showGrainSelector?: boolean; // TODO: not used in new picker?
   showTimeDimensionSelector?: boolean;
   showComparisonSelector?: boolean;
   allowCustomTimeRange?: boolean;
+  skipDefaultTimeRange?: boolean;
+  skipTimeGrain?: boolean;
   lockTimeZone?: boolean;
   showFullRange?: boolean;
   showWatermark?: boolean;
+  showInheritRange?: boolean;
+
+  log?: boolean;
 
   side?: "top" | "right" | "bottom" | "left";
 };

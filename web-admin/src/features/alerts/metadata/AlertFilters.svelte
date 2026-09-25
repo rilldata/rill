@@ -54,7 +54,6 @@
     runtimeClient,
     metricsViewProvider,
     yamlConfigProvider,
-    false,
   );
   $effect(() => {
     if (!timeRange || !timeFilterManager.ready) return;

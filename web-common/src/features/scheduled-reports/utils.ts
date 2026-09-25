@@ -193,7 +193,6 @@ export function getFiltersAndTimeControlsFromAggregationRequest(
     client,
     metricsViewProvider,
     yamlConfigProvider,
-    false,
   );
 
   const timeFilterParams = new URLSearchParams();

@@ -18,15 +18,13 @@ import { derived, get, writable, type Writable } from "svelte/store";
 import { mergeFilters } from "../../dashboards/pivot/pivot-merge-filters";
 import type { CanvasEntity, ComponentPath } from "../stores/canvas-entity";
 import { ExpressionFilterManager } from "@rilldata/web-common/features/dashboards/filters/ExpressionFilterManager.svelte.ts";
-import { TimeFilterManager } from "@rilldata/web-common/features/dashboards/time-controls/TimeFilterManager.svelte.ts";
+import {
+  DEFAULT_INHERIT_URL_PARAMS,
+  TimeFilterManager,
+} from "@rilldata/web-common/features/dashboards/time-controls/TimeFilterManager.svelte.ts";
 import { dedupe } from "@rilldata/web-common/lib/arrayUtils.ts";
 import { YAMLConfigProvider } from "@rilldata/web-common/features/dashboards/providers/YAMLConfigProvider.svelte.ts";
 import { MetricsViewsProvider } from "@rilldata/web-common/features/metrics-views/providers/MetricsViewsProvider.svelte.ts";
-import { ExploreStateURLParams } from "@rilldata/web-common/features/dashboards/url-state/url-params.ts";
-import {
-  normalizeTimeFilters,
-  TIME_FILTER_INHERIT,
-} from "@rilldata/web-common/features/canvas/components/time-filters.ts";
 
 export abstract class BaseCanvasComponent<T = ComponentSpec> {
   id: string;
@@ -62,6 +60,7 @@ export abstract class BaseCanvasComponent<T = ComponentSpec> {
   // a component replaced in CanvasEntity.processRows keeps reacting to spec
   // emissions and mutates the shared filter/time state of a deleted widget.
   private unsubscribeSpec: Unsubscriber;
+  private unsubExpressionSync: Unsubscriber;
 
   abstract type: CanvasComponentType;
   // Component responsible for DOM rendering.
@@ -116,14 +115,19 @@ export abstract class BaseCanvasComponent<T = ComponentSpec> {
     this.localExpressionFilters = new ExpressionFilterManager(
       this.metricsViewsProvider,
       this.yamlConfigProvider,
+      false,
     );
 
     this.localTimeFilters = new TimeFilterManager(
       this.parent.client,
       this.metricsViewsProvider,
       this.yamlConfigProvider,
-      this.parent.timeFilterManager.allowCustomTimeRange,
-      false,
+      {
+        ...this.parent.timeFilterManager.config,
+        skipTimeGrain: true,
+        log: true,
+      },
+      this.parent.timeFilterManager,
     );
 
     this.expressionFilters = new ExpressionFilterManager(
@@ -131,32 +135,33 @@ export abstract class BaseCanvasComponent<T = ComponentSpec> {
       this.yamlConfigProvider,
     );
 
-    this.timeFilters = new TimeFilterManager(
-      this.parent.client,
-      this.metricsViewsProvider,
-      this.yamlConfigProvider,
-      this.parent.timeFilterManager.allowCustomTimeRange,
-      false,
-      true,
-      true,
-    );
+    this.timeFilters = this.localTimeFilters;
 
     this.unsubscribeSpec = this.specStore.subscribe((spec) => {
       this.localExpressionFilters.setParamForMetricsView(
         this.metricsViewName,
         (spec["dimension_filters"] ?? "") as string,
       );
+      this.syncExpressionFilters();
 
       this.localTimeFilters.setUrlParams(
-        new URLSearchParams(spec?.["time_filters"] ?? ""),
+        spec?.["time_filters"]
+          ? new URLSearchParams(spec["time_filters"])
+          : new URLSearchParams(DEFAULT_INHERIT_URL_PARAMS),
       );
     });
+
+    this.unsubExpressionSync = this.parent.expressionFilterManager.storeSync.on(
+      "change",
+      () => this.syncExpressionFilters(),
+    );
   }
 
   destroy() {
     this.unsubscribeSpec?.();
-    this.localExpressionFilters.metricsViewsProvider.cleanup();
-    this.localExpressionFilters.yamlConfigProvider.cleanup?.();
+    this.unsubExpressionSync?.();
+    this.metricsViewsProvider.cleanup();
+    this.yamlConfigProvider.cleanup?.();
   }
 
   update(resource: V1Resource, path: ComponentPath) {
@@ -193,14 +198,6 @@ export abstract class BaseCanvasComponent<T = ComponentSpec> {
         ...this.localExpressionFilters.inList,
       ]),
     );
-  }
-
-  public syncTimeFilters() {
-    const urlParams = this.localTimeFilters.timeRange
-      ? this.localTimeFilters.curParams
-      : this.parent.timeFilterManager.curParams;
-    console.log("syncTimeFilters", urlParams);
-    this.timeFilters.setUrlParams(urlParams);
   }
 
   private updateYAML(newSpec: T) {
@@ -250,29 +247,5 @@ export abstract class BaseCanvasComponent<T = ComponentSpec> {
       this.updateYAML(newSpec);
     }
     this.specStore.set(newSpec);
-  }
-
-  // Sets how this component compares against a previous period:
-  // "inherit" follows the canvas, "none" turns comparison off,
-  // anything else is a comparison range such as rill-PW or a custom start,end pair.
-  setComparisonRange(value: string) {
-    const searchParams = new URLSearchParams(
-      (get(this.specStore)?.["time_filters"] ?? "") as string,
-    );
-
-    if (value === "none") {
-      searchParams.delete(ExploreStateURLParams.ComparisonTimeRange);
-      // Off is spelled by a `tr` without `compare_tr`.
-      if (!searchParams.has(ExploreStateURLParams.TimeRange)) {
-        searchParams.set(ExploreStateURLParams.TimeRange, TIME_FILTER_INHERIT);
-      }
-    } else {
-      searchParams.set(ExploreStateURLParams.ComparisonTimeRange, value);
-    }
-
-    this.updateProperty(
-      "time_filters" as AllKeys<T>,
-      normalizeTimeFilters(searchParams) as T[AllKeys<T>],
-    );
   }
 }

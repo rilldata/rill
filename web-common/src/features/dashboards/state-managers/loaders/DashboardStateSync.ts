@@ -84,6 +84,9 @@ export class DashboardStateSync {
       dataLoader.fullTimeRangeQuery,
     );
 
+    this.expressionFilterParamsTracker = expressionFilterManager.storeSync;
+    this.timeFilterParamsTracker = timeFilterManager.storeSync;
+
     this.unsubInit = derived(
       [dataLoader.initExploreState],
       (states) => states,
@@ -103,8 +106,6 @@ export class DashboardStateSync {
       void this.gotoNewState(exploreState);
     });
 
-    this.expressionFilterParamsTracker = expressionFilterManager.storeSync;
-    // this.timeFilterParamsTracker = timeFilterManager.storeSync;
     setContext(DASHBOARD_STATE_SYNC_KEY, this);
   }
 
@@ -312,12 +313,17 @@ export class DashboardStateSync {
         );
       }
 
-      // Merge the partial state from url into the store
+      // Merge the partial state from url into the stores
+      this.expressionFilterParamsTracker.setUrlParams(urlSearchParams);
+      this.timeFilterParamsTracker.setUrlParams(urlSearchParams);
+
       metricsExplorerStore.mergePartialExplorerEntity(
         this.exploreName,
         partialExplore,
         this.expressionFilterManager,
+        this.timeFilterManager,
       );
+
       // Get time controls state after explore state is updated.
       const timeControlsState = get(this.timeControlStore);
       // Get the updated URL, this could be different from the page url if we added extra state.
@@ -351,12 +357,6 @@ export class DashboardStateSync {
       // Release before the goto below: state changes made while the navigation is in flight
       // must still be picked up by gotoNewState.
       this.updating = false;
-      if (redirectUrl) {
-        this.expressionFilterParamsTracker.setUrlParams(
-          redirectUrl.searchParams,
-        );
-        this.timeFilterParamsTracker.setUrlParams(redirectUrl.searchParams);
-      }
     }
     // Try-finally without a catch. Rest of the code is not run if the above try body throws.
 

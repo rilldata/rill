@@ -130,10 +130,7 @@ export class MetricsViewsProvider {
     public readonly runtimeClient: RuntimeClient,
     initMetricsViewNames: string[],
   ) {
-    this.metricsViewNames = initMetricsViewNames.filter(Boolean);
-    this.pendingSpecs = new Set(initMetricsViewNames);
-    this.pendingTimestamps = new Set(initMetricsViewNames);
-    this.events.emit("update-metrics-views", this.metricsViewNames);
+    this.setMetricsViewNames(initMetricsViewNames);
 
     const allResourcesQuery = createRuntimeServiceListResources(
       runtimeClient,

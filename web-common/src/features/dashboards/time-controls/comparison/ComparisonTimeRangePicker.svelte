@@ -19,6 +19,8 @@
   import type { Interval } from "luxon";
   import type { TimeFiltersConfig } from "@rilldata/web-common/features/dashboards/time-controls/time-filters-config.ts";
   import type { TimeFilterManager } from "@rilldata/web-common/features/dashboards/time-controls/TimeFilterManager.svelte.ts";
+  import InheritTimeRangeOption from "@rilldata/web-common/features/dashboards/time-controls/super-pill/new-time-dropdown/InheritTimeRangeOption.svelte";
+  import { INHERIT_TIME_RANGE_ALIAS } from "@rilldata/web-common/features/dashboards/time-controls/new-time-controls.ts";
 
   let {
     timeFilterManager,
@@ -32,6 +34,7 @@
   let {
     showFullRange = true,
     allowCustomTimeRange = true,
+    showInheritRange = false,
     side = "bottom",
   } = $derived(config);
 
@@ -41,10 +44,13 @@
     timeZone,
     minDate,
     maxDate,
+    urlComparisonTimeRange,
     comparisonTimeRange,
     showComparison,
     comparisonTimeRangeOptions,
     comparisonInterval,
+
+    parent,
   } = $derived(timeFilterManager);
 
   let { largestMinTimeGrain } = $derived(metricsViewsProvider);
@@ -61,6 +67,16 @@
   );
   let selectedLabel = $derived(
     comparisonTimeRange ?? firstOption?.name ?? m.time_custom_range(),
+  );
+
+  let inheritedComparisonTimeRange = $derived(
+    urlComparisonTimeRange === INHERIT_TIME_RANGE_ALIAS,
+  );
+  let inheritedComparisonDesc = $derived(
+    parent?.showComparison
+      ? (TIME_COMPARISON[parent?.comparisonTimeRange as TimeComparisonOption]
+          ?.label ?? m.time_custom_range())
+      : m.canvas_comparison_off(),
   );
 
   function applyCustomRange(range: Interval<true>) {
@@ -117,7 +133,12 @@
             class="rounded-r-full"
           >
             <div class="gap-x-2 flex" class:opacity-50={!showComparison}>
-              {#if !comparisonTimeRangeOptions.length && !showComparison}
+              {#if inheritedComparisonTimeRange && showInheritRange}
+                <b class="line-clamp-1">{m.canvas_inherit_from_canvas()}</b>
+                <span class="line-clamp-1 text-fg-secondary">
+                  · {inheritedComparisonDesc}
+                </span>
+              {:else if !comparisonTimeRangeOptions.length && !showComparison}
                 <p>{m.time_no_comparison_period()}</p>
               {:else}
                 <b class="line-clamp-1">{label}</b>
@@ -140,6 +161,13 @@
       <DropdownMenu.Content align="start" {side} class="p-0 overflow-hidden">
         <div class="flex">
           <div class="flex flex-col border-r w-48 p-1">
+            {#if showInheritRange}
+              <InheritTimeRangeOption
+                inherited={inheritedComparisonTimeRange}
+                onSelect={onSelectComparisonRange}
+              />
+            {/if}
+
             {#each comparisonTimeRangeOptions as option (option.name)}
               {@const preset = TIME_COMPARISON[option.name]}
               {@const selected = selectedLabel === option.name}

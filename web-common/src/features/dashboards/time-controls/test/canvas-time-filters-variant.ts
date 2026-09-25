@@ -116,7 +116,7 @@ export function useCanvasTimeFiltersVariant(
   return {
     initialUrlSearch: PageURLForInitialState,
     // The default preset lands in the url as soon as the dashboard loads.
-    initialUrlSearchHistory: [PageURLForDefaultPreset, PageURLForInitialState],
+    initialUrlSearchHistory: [PageURLForDefaultPreset],
 
     urlSearchWithTimeParams: (timeParams: Record<string, string>) => {
       const urlSearch = new URLSearchParams(PageURLForInitialState);

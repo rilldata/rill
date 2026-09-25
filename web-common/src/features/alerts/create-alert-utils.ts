@@ -80,7 +80,6 @@ export function getNewAlertInitialFiltersFormValues(
     client,
     metricsViewProvider,
     yamlConfigProvider,
-    false,
   );
   timeFilterManager.storeSync.setUrlParams(get(page).url.searchParams);
 

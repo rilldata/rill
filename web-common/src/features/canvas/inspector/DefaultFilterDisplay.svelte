@@ -27,7 +27,6 @@
       runtimeClient,
       dashboardProvider.metricsViewsProvider,
       dashboardProvider.yamlConfigProvider,
-      false,
     ),
   );
 

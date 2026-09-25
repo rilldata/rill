@@ -181,9 +181,6 @@ export class CanvasEntity {
       this.client,
       this.dashboardProvider.metricsViewsProvider,
       this.dashboardProvider.yamlConfigProvider,
-      false,
-      false,
-      false,
     );
     this.timeFilterManager.storeSync.syncToUrl("clear=true");
 
@@ -448,8 +445,8 @@ export class CanvasEntity {
     if (!isolated) {
       this.saveSnapshot(searchParams.toString());
     }
-    this.expressionFilterManager.setUrlParams(searchParams);
-    this.timeFilterManager.setUrlParams(searchParams);
+    this.expressionFilterManager.storeSync.setUrlParams(searchParams);
+    this.timeFilterManager.storeSync.setUrlParams(searchParams);
     this.applyTabsFromURL(searchParams);
   };
 

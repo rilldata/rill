@@ -9,6 +9,7 @@
     ALL_TIME_RANGE_ALIAS,
     bucketYamlRanges,
     getRangeLabel,
+    INHERIT_TIME_RANGE_ALIAS,
     RILL_TO_LABEL,
   } from "@rilldata/web-common/features/dashboards/time-controls/new-time-controls.ts";
   import { getAbbreviationForIANA } from "@rilldata/web-common/lib/time/timezone";
@@ -36,6 +37,7 @@
   import type { YAMLConfigProvider } from "@rilldata/web-common/features/dashboards/providers/YAMLConfigProvider.svelte.ts";
   import { getTimeDimensionOptions } from "@rilldata/web-common/features/dashboards/time-controls/time-range-utils.ts";
   import type { TimeFilterManager } from "@rilldata/web-common/features/dashboards/time-controls/TimeFilterManager.svelte.ts";
+  import InheritTimeRangeOption from "@rilldata/web-common/features/dashboards/time-controls/super-pill/new-time-dropdown/InheritTimeRangeOption.svelte";
 
   let {
     timeFilterManager,
@@ -55,9 +57,11 @@
     lockTimeZone = false,
     showFullRange = true,
     showWatermark = false,
+    showInheritRange = false,
   } = $derived(config);
 
   let {
+    urlTimeRange,
     timeRange: timeString,
     timeGrain,
     timeZone,
@@ -117,10 +121,13 @@
   );
   let dateTimeAnchor = $derived(returnAnchor(ref, timeZone));
 
+  let inheritedTimeRange = $derived(urlTimeRange === INHERIT_TIME_RANGE_ALIAS);
+
   let usingLegacyTime = $derived(parsedTime?.isOldFormat);
   let hideTruncationSelector = $derived(
     parsedTime?.interval instanceof RillIsoInterval ||
-      parsedTime?.interval instanceof RillAllTimeInterval,
+      parsedTime?.interval instanceof RillAllTimeInterval ||
+      inheritedTimeRange,
   );
 
   let timeColumn = $derived(timeDimension || primaryTimeDimension);
@@ -189,6 +196,11 @@
               aria-label={m.dashboard_select_time_range()}
               type="button"
             >
+              {#if inheritedTimeRange && showInheritRange}
+                <b class="line-clamp-1 flex-none">
+                  {m.canvas_inherit_from_canvas()}
+                </b>
+              {/if}
               {#if timeString}
                 <b class="line-clamp-1 flex-none">
                   {#if selectedLabel?.startsWith("-") || !isNaN(Number(selectedLabel?.[0]))}
@@ -255,6 +267,13 @@
         class="flex flex-col w-56 overflow-y-auto overflow-x-hidden flex-none py-1"
       >
         <div class="overflow-x-hidden">
+          {#if showInheritRange}
+            <InheritTimeRangeOption
+              inherited={inheritedTimeRange}
+              onSelect={onSelectRange}
+            />
+          {/if}
+
           <TimeRangeOptionGroup
             {timeString}
             options={rangeBuckets.custom}

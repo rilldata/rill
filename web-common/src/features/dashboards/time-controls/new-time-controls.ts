@@ -143,6 +143,8 @@ export type AllTime = typeof ALL_TIME_RANGE_ALIAS;
 export type CustomRange = typeof CUSTOM_TIME_RANGE_ALIAS;
 export type ISODurationString = string;
 
+export const INHERIT_TIME_RANGE_ALIAS = "inherit";
+
 // An extra entry at the top of a range or comparison menu that hands the choice back to a parent,
 // such as a canvas widget following the canvas time range.
 export type InheritRangeOption = {
@@ -805,6 +807,9 @@ export function constructNewString({
   snapToEnd: boolean;
   ref: RillTimeLabel | string | undefined;
 }): string {
+  // Safeguard to ensure we don't try to parse an `inherit` time range.
+  if (currentString === INHERIT_TIME_RANGE_ALIAS) return currentString;
+
   const legacy = isUsingLegacyTime(currentString);
 
   const rillTime = parseRillTime(

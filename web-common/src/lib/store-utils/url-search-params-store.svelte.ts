@@ -3,11 +3,17 @@ import { copySubsetParams } from "@rilldata/web-common/lib/url-utils.ts";
 import type { UrlParamsStore } from "@rilldata/web-common/lib/store-utils/url-params-store-sync.svelte.ts";
 import { page } from "$app/state";
 import { goto } from "$app/navigation";
+import { expandCompressedParams } from "@rilldata/web-common/features/dashboards/url-state/compression.ts";
 
 type UrlParamsChangeTrackerEvents = {
   /**
-   * Fired when the underlying class's state changes.
+   * Fired when the underlying class's state changes internally.
+   * Happens when UI controls directly update class's state.
    * Does not fire when `setUrlParams` is called to avoid loop.
+   */
+  "internal-change": URLSearchParams;
+  /**
+   * Fired when
    */
   change: URLSearchParams;
 };
@@ -22,7 +28,7 @@ export class UrlParamsChangeTracker {
   /**
    * Source of truth for the underlying class's state.
    */
-  public searchParams = $state(new URLSearchParams());
+  public searchParams = $state<URLSearchParams | undefined>();
 
   private pendingParams: URLSearchParams | undefined = undefined;
 
@@ -31,7 +37,10 @@ export class UrlParamsChangeTracker {
     this.events,
   ) as typeof this.events.on;
 
-  public constructor(private readonly store: UrlParamsStore) {
+  public constructor(
+    private readonly store: UrlParamsStore,
+    private readonly log = false,
+  ) {
     this.store.on("ready", () => this.replayPendingParams());
   }
 
@@ -41,15 +50,38 @@ export class UrlParamsChangeTracker {
    */
   public setUrlParams(urlParams: URLSearchParams) {
     if (!this.store.ready) {
+      if (this.log)
+        console.log(
+          "UrlParamsChangeTracker::setUrlParams::delay",
+          urlParams.toString(),
+        );
       this.pendingParams = urlParams;
       return;
     }
 
-    const relevantParams = copySubsetParams(urlParams, this.store.paramKeys);
-    if (this.searchParams.toString() === relevantParams.toString()) return;
+    let expandedUrlParams: URLSearchParams;
+    try {
+      expandedUrlParams = expandCompressedParams(urlParams);
+    } catch {
+      // If we fail to decompress, do not throw here.
+      return;
+    }
+
+    const relevantParams = copySubsetParams(
+      expandedUrlParams,
+      this.store.paramKeys,
+    );
+    if (this.log)
+      console.log(
+        "UrlParamsChangeTracker::setUrlParams",
+        this.searchParams?.toString() === relevantParams.toString(),
+        relevantParams.toString(),
+      );
+    if (this.searchParams?.toString() === relevantParams.toString()) return;
 
     this.searchParams = this.store.normalizeParams(relevantParams);
     this.store.setUrlParams(relevantParams);
+    this.events.emit("change", this.searchParams);
   }
 
   /**
@@ -67,7 +99,7 @@ export class UrlParamsChangeTracker {
    * @param emptySearchOverride The search override to use if the store's state is empty.
    */
   public syncToUrl(emptySearchOverride = "") {
-    return this.on("change", (newUrlParams) => {
+    return this.on("internal-change", (newUrlParams) => {
       const urlParamsToApply = new URLSearchParams(page.url.searchParams);
       this.store.paramKeys.forEach((key) => {
         if (newUrlParams.has(key)) {
@@ -97,8 +129,9 @@ export class UrlParamsChangeTracker {
     const urlParams = new URLSearchParams();
     this.store.applyFilterToParams(urlParams);
 
-    if (this.searchParams.toString() === urlParams.toString()) return;
+    if (this.searchParams?.toString() === urlParams.toString()) return;
     this.searchParams = urlParams;
+    this.events.emit("internal-change", this.searchParams);
     this.events.emit("change", this.searchParams);
   }
 }
