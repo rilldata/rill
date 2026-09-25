@@ -13,6 +13,7 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
+	"github.com/rilldata/rill/runtime/drivers"
 	base "github.com/rilldata/rill/runtime/pkg/pgwire"
 )
 
@@ -23,7 +24,7 @@ func (s *Session) queryCatalog(ctx context.Context, parsed *parsedSQL, parameter
 		return &memoryRows{tag: "SELECT 0"}, nil
 	}
 	if matches := showVariable.FindStringSubmatch(parsed.text); len(matches) == 2 {
-		return showResult(strings.TrimSpace(matches[1]), resultFormats, s.types)
+		return showResult(matches[1], resultFormats, s.types)
 	}
 	query, args, err := parsed.bindCatalogParameters(parameters, s.types)
 	if err != nil {
@@ -160,14 +161,14 @@ func (s *Session) createMetricsViewTables(ctx context.Context, db *sql.DB, resou
 		}
 
 		spec := state.State.ValidSpec
-		columns := make([]struct{ name, typ string }, 0, len(spec.Dimensions)+len(spec.Measures)+1)
+		columns := make([]string, 0, len(spec.Dimensions)+len(spec.Measures)+1)
 		seen := make(map[string]bool)
 		addColumn := func(name, typ string) {
 			if name == "" || seen[name] || !security.CanAccessField(name) {
 				return
 			}
 			seen[name] = true
-			columns = append(columns, struct{ name, typ string }{name: name, typ: typ})
+			columns = append(columns, drivers.DoubleQuotesEscapeIdentifier(name)+" "+typ)
 		}
 		for _, dimension := range spec.Dimensions {
 			addColumn(dimension.Name, catalogColumnType(dimension.DataType))
@@ -180,20 +181,8 @@ func (s *Session) createMetricsViewTables(ctx context.Context, db *sql.DB, resou
 			continue
 		}
 
-		var statement strings.Builder
-		statement.WriteString("CREATE TABLE public.")
-		statement.WriteString(quoteIdentifier(resource.Meta.Name.Name))
-		statement.WriteString(" (")
-		for i, column := range columns {
-			if i != 0 {
-				statement.WriteString(", ")
-			}
-			statement.WriteString(quoteIdentifier(column.name))
-			statement.WriteByte(' ')
-			statement.WriteString(column.typ)
-		}
-		statement.WriteByte(')')
-		if _, err := db.ExecContext(ctx, statement.String()); err != nil {
+		statement := "CREATE TABLE public." + drivers.DoubleQuotesEscapeIdentifier(resource.Meta.Name.Name) + " (" + strings.Join(columns, ", ") + ")"
+		if _, err := db.ExecContext(ctx, statement); err != nil {
 			return err
 		}
 	}
@@ -372,7 +361,7 @@ func catalogColumnType(typ *runtimev1.Type) string {
 }
 
 func showResult(variable string, resultFormats []int16, types *pgtype.Map) (base.Rows, error) {
-	name := strings.ToLower(strings.TrimSpace(variable))
+	name := strings.ToLower(variable)
 	column := name
 	value := ""
 	switch name {
@@ -471,7 +460,10 @@ type sqlRows struct {
 	conn   *sql.Conn
 	fields []pgproto3.FieldDescription
 	types  *pgtype.Map
+	scan   []any
+	dest   []any
 	values [][]byte
+	buf    []byte
 	err    error
 }
 
@@ -481,33 +473,24 @@ func (r *sqlRows) Next() bool {
 		r.err = r.rows.Err()
 		return false
 	}
-	values := make([]any, len(r.fields))
-	dest := make([]any, len(values))
-	for i := range values {
-		dest[i] = &values[i]
+	if r.dest == nil {
+		r.scan = make([]any, len(r.fields))
+		r.dest = make([]any, len(r.fields))
+		for i := range r.scan {
+			r.dest[i] = &r.scan[i]
+		}
 	}
-	if err := r.rows.Scan(dest...); err != nil {
+	if err := r.rows.Scan(r.dest...); err != nil {
 		r.err = err
 		return false
 	}
-	r.values = make([][]byte, len(values))
-	for i, value := range values {
+	for i, value := range r.scan {
 		if decimal, ok := value.(duckdb.Decimal); ok {
-			value = pgtype.Numeric{Int: decimal.Value, Exp: -int32(decimal.Scale), Valid: true}
-		}
-		var err error
-		value, err = normalizeValue(value, r.fields[i].DataTypeOID)
-		if err != nil {
-			r.err = err
-			return false
-		}
-		r.values[i], err = encodeValue(r.types, r.fields[i].DataTypeOID, r.fields[i].Format, value)
-		if err != nil {
-			r.err = err
-			return false
+			r.scan[i] = pgtype.Numeric{Int: decimal.Value, Exp: -int32(decimal.Scale), Valid: true}
 		}
 	}
-	return true
+	r.values, r.buf, r.err = encodeRow(r.types, r.fields, r.scan, r.values, r.buf)
+	return r.err == nil
 }
 func (r *sqlRows) Values() [][]byte   { return r.values }
 func (r *sqlRows) Err() error         { return r.err }
@@ -544,7 +527,3 @@ func (r *memoryRows) Values() [][]byte {
 func (r *memoryRows) Err() error         { return nil }
 func (r *memoryRows) CommandTag() string { return r.tag }
 func (r *memoryRows) Close() error       { return nil }
-
-func quoteIdentifier(value string) string {
-	return `"` + strings.ReplaceAll(value, `"`, `""`) + `"`
-}

@@ -88,12 +88,6 @@ func (e *cancelEntry) set(cancel context.CancelFunc) {
 	e.active = cancel
 }
 
-func (e *cancelEntry) clear() {
-	e.mu.Lock()
-	defer e.mu.Unlock()
-	e.active = nil
-}
-
 func (e *cancelEntry) cancel() {
 	e.mu.Lock()
 	defer e.mu.Unlock()
@@ -187,31 +181,31 @@ func (s *Server) Close() {
 }
 
 func (s *Server) serveConn(ctx context.Context, conn net.Conn) {
-	rawConn := conn
 	defer func() {
 		s.mu.Lock()
-		if cancel, ok := s.conns[rawConn]; ok {
+		if cancel, ok := s.conns[conn]; ok {
 			cancel()
-			delete(s.conns, rawConn)
+			delete(s.conns, conn)
 		}
 		s.mu.Unlock()
-		_ = rawConn.Close()
+		_ = conn.Close()
 	}()
 
 	backend := pgproto3.NewBackend(conn, conn)
 	backend.SetMaxBodyLen(maxMessageBodyLen)
-	startup, password, backend, done, err := s.startup(ctx, backend, conn)
-	if done {
-		return
-	}
+	startup, password, backend, err := s.startup(ctx, backend, conn)
 	if err != nil {
 		s.opts.Logger.Debug("pgwire startup failed", zap.Error(err), zap.Stringer("remote", conn.RemoteAddr()))
+		return
+	}
+	if startup == nil {
+		// Cancel request
 		return
 	}
 
 	session, err := s.opts.NewSession(ctx, startup.Parameters, password)
 	if err != nil {
-		sendError(backend, err, "XX000")
+		sendError(backend, err)
 		_ = backend.Flush()
 		return
 	}
@@ -269,33 +263,33 @@ func (s *Server) serveConn(ctx context.Context, conn net.Conn) {
 	}
 }
 
-func (s *Server) startup(ctx context.Context, backend *pgproto3.Backend, conn net.Conn) (*pgproto3.StartupMessage, string, *pgproto3.Backend, bool, error) {
+func (s *Server) startup(ctx context.Context, backend *pgproto3.Backend, conn net.Conn) (*pgproto3.StartupMessage, string, *pgproto3.Backend, error) {
 	for {
 		message, err := backend.ReceiveStartupMessage()
 		if err != nil {
-			return nil, "", backend, false, err
+			return nil, "", backend, err
 		}
 		switch message := message.(type) {
 		case *pgproto3.SSLRequest:
 			if s.opts.TLSConfig == nil {
 				if _, err := conn.Write([]byte("N")); err != nil {
-					return nil, "", backend, false, err
+					return nil, "", backend, err
 				}
 				continue
 			}
 			if _, err := conn.Write([]byte("S")); err != nil {
-				return nil, "", backend, false, err
+				return nil, "", backend, err
 			}
 			tlsConn := tls.Server(conn, s.opts.TLSConfig.Clone())
 			if err := tlsConn.HandshakeContext(ctx); err != nil {
-				return nil, "", backend, false, err
+				return nil, "", backend, err
 			}
 			conn = tlsConn
 			backend = pgproto3.NewBackend(conn, conn)
 			backend.SetMaxBodyLen(maxMessageBodyLen)
 		case *pgproto3.GSSEncRequest:
 			if _, err := conn.Write([]byte("N")); err != nil {
-				return nil, "", backend, false, err
+				return nil, "", backend, err
 			}
 		case *pgproto3.CancelRequest:
 			s.mu.Lock()
@@ -304,35 +298,35 @@ func (s *Server) startup(ctx context.Context, backend *pgproto3.Backend, conn ne
 			if ok && bytes.Equal(entry.secret, message.SecretKey) {
 				entry.cancel()
 			}
-			return nil, "", backend, true, nil
+			return nil, "", backend, nil
 		case *pgproto3.StartupMessage:
 			if _, encrypted := conn.(*tls.Conn); s.opts.TLSConfig != nil && !encrypted {
 				backend.Send(&pgproto3.ErrorResponse{Severity: "FATAL", SeverityUnlocalized: "FATAL", Code: "28000", Message: "SSL connection is required"})
 				_ = backend.Flush()
-				return nil, "", backend, false, errors.New("rejected unencrypted connection")
+				return nil, "", backend, errors.New("rejected unencrypted connection")
 			}
 			var password string
 			if s.opts.RequirePassword {
 				backend.Send(&pgproto3.AuthenticationCleartextPassword{})
 				if err := backend.SetAuthType(pgproto3.AuthTypeCleartextPassword); err != nil {
-					return nil, "", backend, false, err
+					return nil, "", backend, err
 				}
 				if err := backend.Flush(); err != nil {
-					return nil, "", backend, false, err
+					return nil, "", backend, err
 				}
 				response, err := backend.Receive()
 				if err != nil {
-					return nil, "", backend, false, err
+					return nil, "", backend, err
 				}
 				passwordMessage, ok := response.(*pgproto3.PasswordMessage)
 				if !ok {
-					return nil, "", backend, false, fmt.Errorf("expected password message, got %T", response)
+					return nil, "", backend, fmt.Errorf("expected password message, got %T", response)
 				}
 				password = passwordMessage.Password
 			}
-			return message, password, backend, false, nil
+			return message, password, backend, nil
 		default:
-			return nil, "", backend, false, fmt.Errorf("unsupported startup message %T", message)
+			return nil, "", backend, fmt.Errorf("unsupported startup message %T", message)
 		}
 	}
 }

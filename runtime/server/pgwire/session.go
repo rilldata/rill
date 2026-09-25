@@ -20,6 +20,7 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
+	"github.com/rilldata/rill/runtime/drivers"
 	base "github.com/rilldata/rill/runtime/pkg/pgwire"
 	"github.com/rilldata/rill/runtime/resolvers"
 )
@@ -134,6 +135,7 @@ type resolverRows struct {
 	fields []pgproto3.FieldDescription
 	types  *pgtype.Map
 	values [][]byte
+	buf    []byte
 	err    error
 }
 
@@ -148,21 +150,12 @@ func (r *resolverRows) Next() bool {
 		return false
 	}
 
-	r.values = make([][]byte, len(r.fields))
+	values := make([]any, len(r.fields))
 	for i, field := range r.fields {
-		value := row[string(field.Name)]
-		value, err = normalizeValue(value, field.DataTypeOID)
-		if err != nil {
-			r.err = err
-			return false
-		}
-		r.values[i], err = encodeValue(r.types, field.DataTypeOID, field.Format, value)
-		if err != nil {
-			r.err = fmt.Errorf("failed to encode column %q: %w", field.Name, err)
-			return false
-		}
+		values[i] = row[string(field.Name)]
 	}
-	return true
+	r.values, r.buf, r.err = encodeRow(r.types, r.fields, values, r.values, r.buf)
+	return r.err == nil
 }
 
 func (r *resolverRows) Values() [][]byte   { return r.values }
@@ -239,16 +232,40 @@ func postgresType(typ *runtimev1.Type) (uint32, int16) {
 	return pgtype.TextOID, -1
 }
 
-func encodeValue(types *pgtype.Map, oid uint32, format int16, value any) ([]byte, error) {
-	// pgtype emits UTC timestamptz values with a trailing "Z" in text format.
-	// PostgreSQL emits a numeric offset, which is required for psycopg2 to parse
-	// the value reliably (a trailing "Z" can retain seconds from its input buffer).
-	if oid == pgtype.TimestamptzOID && format == pgtype.TextFormatCode {
-		if value, ok := value.(time.Time); ok {
-			return []byte(value.Format("2006-01-02 15:04:05.999999999-07:00")), nil
-		}
+// encodeRow encodes values into dst, appending the encoded bytes to buf.
+// Both are reused across rows, which is safe because pgproto3.Backend.Send copies them.
+func encodeRow(types *pgtype.Map, fields []pgproto3.FieldDescription, values []any, dst [][]byte, buf []byte) ([][]byte, []byte, error) {
+	dst = dst[:0]
+	// buf must be non-nil: pgtype returns a nil slice only for NULL.
+	if buf == nil {
+		buf = make([]byte, 0, 256)
 	}
-	return types.Encode(oid, format, value, []byte{})
+	buf = buf[:0]
+	for i, field := range fields {
+		value, err := normalizeValue(values[i], field.DataTypeOID)
+		if err != nil {
+			return nil, buf, fmt.Errorf("failed to encode column %q: %w", field.Name, err)
+		}
+		start := len(buf)
+		// pgtype emits UTC timestamptz values with a trailing "Z" in text format.
+		// PostgreSQL emits a numeric offset, which is required for psycopg2 to parse
+		// the value reliably (a trailing "Z" can retain seconds from its input buffer).
+		if t, ok := value.(time.Time); ok && field.DataTypeOID == pgtype.TimestamptzOID && field.Format == pgtype.TextFormatCode {
+			buf = t.AppendFormat(buf, "2006-01-02 15:04:05.999999999-07:00")
+		} else {
+			encoded, err := types.Encode(field.DataTypeOID, field.Format, value, buf)
+			if err != nil {
+				return nil, buf, fmt.Errorf("failed to encode column %q: %w", field.Name, err)
+			}
+			if encoded == nil {
+				dst = append(dst, nil)
+				continue
+			}
+			buf = encoded
+		}
+		dst = append(dst, buf[start:len(buf):len(buf)])
+	}
+	return dst, buf, nil
 }
 
 func normalizeValue(value any, oid uint32) (any, error) {
@@ -281,11 +298,7 @@ func normalizeValue(value any, oid uint32) (any, error) {
 			}
 			return parsed, nil
 		case *big.Int:
-			parsed := &pgtype.Numeric{}
-			if err := parsed.Scan(value.String()); err != nil {
-				return nil, err
-			}
-			return parsed, nil
+			return pgtype.Numeric{Int: value, Valid: true}, nil
 		}
 	case pgtype.UUIDOID:
 		// pgtype treats []byte as pre-encoded, so DuckDB's raw UUID bytes need a fixed-size array.
@@ -408,7 +421,7 @@ func metricsParameterLiteral(parameter base.Parameter, types *pgtype.Map) (strin
 		if parameter.Format != 0 {
 			return "", fmt.Errorf("binary parameter has no type OID")
 		}
-		return quoteLiteral(strings.ReplaceAll(string(parameter.Value), `\`, `\\`)), nil
+		return quoteLiteral(string(parameter.Value)), nil
 	}
 
 	var value any
@@ -425,11 +438,12 @@ func metricsParameterLiteral(parameter base.Parameter, types *pgtype.Map) (strin
 	case pgtype.ByteaOID:
 		return "X'" + hex.EncodeToString(value.([]byte)) + "'", nil
 	default:
-		// Metrics SQL uses MySQL string escaping and does not accept PostgreSQL casts.
-		return quoteLiteral(strings.ReplaceAll(string(text), `\`, `\\`)), nil
+		return quoteLiteral(string(text)), nil
 	}
 }
 
+// quoteLiteral quotes a Metrics SQL string literal.
+// Metrics SQL uses MySQL string escaping and does not accept PostgreSQL casts.
 func quoteLiteral(value string) string {
-	return "'" + strings.ReplaceAll(value, "'", "''") + "'"
+	return drivers.EscapeStringValue(strings.ReplaceAll(value, `\`, `\\`))
 }

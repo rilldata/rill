@@ -39,7 +39,11 @@ type portal struct {
 }
 
 func (c *connection) run() error {
-	defer c.closePortals()
+	defer func() {
+		for name := range c.portals {
+			c.closePortal(name)
+		}
+	}()
 	for {
 		message, err := c.backend.Receive()
 		if err != nil {
@@ -61,25 +65,15 @@ func (c *connection) run() error {
 				return err
 			}
 		case *pgproto3.Parse:
-			if err := c.handleParse(message); err != nil {
-				c.extendedError(err)
-			}
+			err = c.handleParse(message)
 		case *pgproto3.Bind:
-			if err := c.handleBind(message); err != nil {
-				c.extendedError(err)
-			}
+			err = c.handleBind(message)
 		case *pgproto3.Describe:
-			if err := c.handleDescribe(message); err != nil {
-				c.extendedError(err)
-			}
+			err = c.handleDescribe(message)
 		case *pgproto3.Execute:
-			if err := c.handleExecute(message); err != nil {
-				c.extendedError(err)
-			}
+			err = c.handleExecute(message)
 		case *pgproto3.Close:
-			if err := c.handleClose(message); err != nil {
-				c.extendedError(err)
-			}
+			err = c.handleClose(message)
 		case *pgproto3.Flush:
 			if err := c.backend.Flush(); err != nil {
 				return err
@@ -93,7 +87,11 @@ func (c *connection) run() error {
 		case *pgproto3.Terminate:
 			return nil
 		default:
-			c.extendedError(fmt.Errorf("unsupported frontend message %T", message))
+			err = fmt.Errorf("unsupported frontend message %T", message)
+		}
+		if err != nil {
+			sendError(c.backend, err)
+			c.failed = true
 		}
 	}
 }
@@ -119,7 +117,7 @@ func (c *connection) handleSimpleQuery(query string) error {
 	c.cancel.set(cancel)
 	defer func() {
 		cancel()
-		c.cancel.clear()
+		c.cancel.set(nil)
 	}()
 	rows, err := c.session.Query(queryCtx, query, nil, nil)
 	if err != nil {
@@ -127,7 +125,8 @@ func (c *connection) handleSimpleQuery(query string) error {
 	}
 	defer rows.Close()
 
-	if _, err := c.sendResult(rows, true, 0, nil); err != nil {
+	c.sendDescription(rows.Fields())
+	if _, err := c.sendResult(rows, 0, nil); err != nil {
 		return c.simpleQueryError(err)
 	}
 	c.backend.Send(&pgproto3.ReadyForQuery{TxStatus: c.txStatus})
@@ -140,7 +139,7 @@ func (c *connection) simpleQueryError(err error) error {
 	if c.ctx.Err() != nil || errors.Is(err, io.EOF) || errors.Is(err, net.ErrClosed) {
 		return err
 	}
-	sendError(c.backend, err, "XX000")
+	sendError(c.backend, err)
 	c.backend.Send(&pgproto3.ReadyForQuery{TxStatus: c.txStatus})
 	return c.backend.Flush()
 }
@@ -184,8 +183,7 @@ func (c *connection) handleBind(message *pgproto3.Bind) error {
 		} else if len(message.ParameterFormatCodes) > 1 {
 			format = message.ParameterFormatCodes[i]
 		}
-		parameters[i] = Parameter{OID: statement.description.ParameterOIDs[i], Format: format}
-		parameters[i].Value = bytes.Clone(value)
+		parameters[i] = Parameter{OID: statement.description.ParameterOIDs[i], Format: format, Value: bytes.Clone(value)}
 	}
 
 	c.closePortal(message.DestinationPortal)
@@ -228,7 +226,7 @@ func (c *connection) describe(query string, parameterOIDs []uint32) (*Descriptio
 	c.cancel.set(cancel)
 	defer func() {
 		cancel()
-		c.cancel.clear()
+		c.cancel.set(nil)
 	}()
 	description, err := c.session.Describe(queryCtx, query, parameterOIDs)
 	if err != nil {
@@ -270,31 +268,23 @@ func (c *connection) handleExecute(message *pgproto3.Execute) error {
 		rows, err := c.session.Query(queryCtx, portal.statement.query, portal.parameters, portal.resultFormats)
 		if err != nil {
 			cancel()
-			c.cancel.clear()
+			c.cancel.set(nil)
 			return err
 		}
 		portal.rows = rows
 	} else {
 		c.cancel.set(portal.cancel)
 	}
-	defer c.cancel.clear()
+	defer c.cancel.set(nil)
 
-	suspended, err := c.sendResult(portal.rows, false, message.MaxRows, portal)
-	if err != nil {
-		c.closePortal(message.Portal)
-		return err
-	}
-	if !suspended {
+	suspended, err := c.sendResult(portal.rows, message.MaxRows, portal)
+	if err != nil || !suspended {
 		c.closePortal(message.Portal)
 	}
-	return nil
+	return err
 }
 
-func (c *connection) sendResult(rows Rows, includeDescription bool, maxRows uint32, portal *portal) (bool, error) {
-	if includeDescription {
-		c.sendDescription(rows.Fields())
-	}
-
+func (c *connection) sendResult(rows Rows, maxRows uint32, portal *portal) (bool, error) {
 	var sent uint32
 	bufferedBytes := 0
 	for maxRows == 0 || sent < maxRows {
@@ -339,11 +329,12 @@ func (c *connection) sendResult(rows Rows, includeDescription bool, maxRows uint
 func (c *connection) handleClose(message *pgproto3.Close) error {
 	switch message.ObjectType {
 	case 'S':
-		if _, ok := c.statements[message.Name]; !ok {
+		statement, ok := c.statements[message.Name]
+		if !ok {
 			return protocolError("prepared statement %q does not exist", message.Name)
 		}
 		for name, portal := range c.portals {
-			if portal.statement == c.statements[message.Name] {
+			if portal.statement == statement {
 				c.closePortal(name)
 			}
 		}
@@ -361,25 +352,17 @@ func (c *connection) handleClose(message *pgproto3.Close) error {
 }
 
 func (c *connection) handleSessionCommand(query string) (string, bool) {
-	command := sessionCommand(query)
-	switch command {
-	case "BEGIN", "START":
+	tag := sessionCommand(query)
+	switch tag {
+	case "BEGIN":
 		c.txStatus = 'T'
-		return "BEGIN", true
-	case "COMMIT", "END":
+	case "COMMIT", "ROLLBACK":
 		c.txStatus = 'I'
-		return "COMMIT", true
-	case "ROLLBACK":
-		c.txStatus = 'I'
-		return "ROLLBACK", true
-	case "SET", "RESET", "DISCARD":
-		return command, true
-	default:
-		return "", false
 	}
+	return tag, tag != ""
 }
 
-// sessionCommand returns the transaction or settings command that query consists of.
+// sessionCommand returns the command tag of the transaction or settings command that query consists of.
 // Text with several statements is left to the session, which rejects it.
 func sessionCommand(query string) string {
 	query = strings.TrimSuffix(strings.TrimSpace(query), ";")
@@ -400,18 +383,16 @@ func sessionCommand(query string) string {
 	if len(fields) == 0 {
 		return ""
 	}
-	command := strings.ToUpper(fields[0])
-	switch command {
-	case "BEGIN", "START", "COMMIT", "END", "ROLLBACK", "SET", "RESET", "DISCARD":
+	switch command := strings.ToUpper(fields[0]); command {
+	case "START":
+		return "BEGIN"
+	case "END":
+		return "COMMIT"
+	case "BEGIN", "COMMIT", "ROLLBACK", "SET", "RESET", "DISCARD":
 		return command
 	default:
 		return ""
 	}
-}
-
-func (c *connection) extendedError(err error) {
-	sendError(c.backend, err, "XX000")
-	c.failed = true
 }
 
 func (c *connection) closePortal(name string) {
@@ -428,43 +409,29 @@ func (c *connection) closePortal(name string) {
 	delete(c.portals, name)
 }
 
-func (c *connection) closePortals() {
-	for name := range c.portals {
-		c.closePortal(name)
-	}
-}
-
 // ApplyResultFormats copies fields and applies the result formats from a Bind message.
 func ApplyResultFormats(fields []pgproto3.FieldDescription, formats []int16) ([]pgproto3.FieldDescription, error) {
 	result := append([]pgproto3.FieldDescription(nil), fields...)
-	switch len(formats) {
-	case 0:
-		for i := range result {
-			result[i].Format = 0
+	if len(formats) > 1 && len(formats) != len(result) {
+		return nil, protocolError("bind message has %d result formats but query has %d columns", len(formats), len(result))
+	}
+	for i := range result {
+		var format int16
+		if len(formats) == 1 {
+			format = formats[0]
+		} else if len(formats) > 1 {
+			format = formats[i]
 		}
-	case 1:
-		if formats[0] != 0 && formats[0] != 1 {
-			return nil, protocolError("unknown result format code %d", formats[0])
+		if format != 0 && format != 1 {
+			return nil, protocolError("unknown result format code %d", format)
 		}
-		for i := range result {
-			result[i].Format = formats[0]
-		}
-	default:
-		if len(formats) != len(result) {
-			return nil, protocolError("bind message has %d result formats but query has %d columns", len(formats), len(result))
-		}
-		for i, format := range formats {
-			if format != 0 && format != 1 {
-				return nil, protocolError("unknown result format code %d", format)
-			}
-			result[i].Format = format
-		}
+		result[i].Format = format
 	}
 	return result, nil
 }
 
-func sendError(backend *pgproto3.Backend, err error, defaultCode string) {
-	code, message := defaultCode, err.Error()
+func sendError(backend *pgproto3.Backend, err error) {
+	code, message := "XX000", err.Error()
 	var pgErr *Error
 	if errors.As(err, &pgErr) && pgErr.Code != "" {
 		code = pgErr.Code

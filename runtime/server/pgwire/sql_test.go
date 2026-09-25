@@ -3,6 +3,7 @@ package pgwire
 import (
 	"testing"
 
+	"github.com/jackc/pgx/v5/pgproto3"
 	"github.com/jackc/pgx/v5/pgtype"
 	base "github.com/rilldata/rill/runtime/pkg/pgwire"
 	"github.com/stretchr/testify/require"
@@ -76,12 +77,11 @@ func TestEncodeEmptyAndNullValues(t *testing.T) {
 			if oid == pgtype.ByteaOID {
 				value = []byte{}
 			}
-			encoded, err := encodeValue(pgtype.NewMap(), oid, format, value)
+			field := pgproto3.FieldDescription{DataTypeOID: oid, Format: format}
+			encoded, _, err := encodeRow(pgtype.NewMap(), []pgproto3.FieldDescription{field, field}, []any{value, nil}, nil, nil)
 			require.NoError(t, err)
-			require.NotNil(t, encoded)
-			encoded, err = encodeValue(pgtype.NewMap(), oid, format, nil)
-			require.NoError(t, err)
-			require.Nil(t, encoded)
+			require.NotNil(t, encoded[0])
+			require.Nil(t, encoded[1])
 		}
 	}
 }

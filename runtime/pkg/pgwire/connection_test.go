@@ -156,7 +156,7 @@ func TestSendResultFlushesWhileReading(t *testing.T) {
 	rows := &generatedRows{value: bytes.Repeat([]byte("x"), 4096), count: 1000}
 	writer := &batchWriter{rows: rows}
 	c := &connection{backend: pgproto3.NewBackend(bytes.NewReader(nil), writer)}
-	suspended, err := c.sendResult(rows, false, 0, nil)
+	suspended, err := c.sendResult(rows, 0, nil)
 	require.NoError(t, err)
 	require.False(t, suspended)
 	require.Positive(t, writer.firstRow)

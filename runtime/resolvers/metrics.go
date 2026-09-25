@@ -19,9 +19,7 @@ import (
 )
 
 func init() {
-	runtime.RegisterResolverInitializer("metrics", func(ctx context.Context, opts *runtime.ResolverOptions) (runtime.Resolver, error) {
-		return newMetrics(ctx, opts)
-	})
+	runtime.RegisterResolverInitializer("metrics", newMetrics)
 }
 
 type metricsResolver struct {
@@ -39,7 +37,7 @@ type metricsResolverArgs struct {
 	ExecutionTime *time.Time `mapstructure:"execution_time"`
 }
 
-func newMetrics(ctx context.Context, opts *runtime.ResolverOptions) (*metricsResolver, error) {
+func newMetrics(ctx context.Context, opts *runtime.ResolverOptions) (runtime.Resolver, error) {
 	qry := &metricsview.Query{}
 	if err := mapstructureutil.WeakDecode(opts.Properties, qry); err != nil {
 		return nil, err

@@ -109,25 +109,21 @@ func HTTPMiddleware(aud *Audience, next http.Handler) http.Handler {
 	})
 }
 
-// AuthenticateToken validates a raw token for a PostgreSQL wire-compatible connection.
-// Unlike HTTP authentication, token must not include the "Bearer" scheme.
-func AuthenticateToken(ctx context.Context, aud *Audience, token string) (context.Context, error) {
-	return parseClaimsFromToken(ctx, aud, token)
-}
-
 func parseClaims(ctx context.Context, aud *Audience, authorizationHeader string) (context.Context, error) {
 	if authorizationHeader == "" {
-		return parseClaimsFromToken(ctx, aud, "")
+		return AuthenticateToken(ctx, aud, "")
 	}
 	if len(authorizationHeader) >= 6 && strings.EqualFold(authorizationHeader[:6], "bearer") {
 		if token := strings.TrimSpace(authorizationHeader[6:]); token != "" {
-			return parseClaimsFromToken(ctx, aud, token)
+			return AuthenticateToken(ctx, aud, token)
 		}
 	}
 	return nil, errors.New("no bearer token found in authorization header")
 }
 
-func parseClaimsFromToken(ctx context.Context, aud *Audience, token string) (context.Context, error) {
+// AuthenticateToken validates a raw token, such as one from a PostgreSQL wire-compatible connection.
+// Unlike HTTP authentication, token must not include the "Bearer" scheme.
+func AuthenticateToken(ctx context.Context, aud *Audience, token string) (context.Context, error) {
 	// When aud == nil, it means auth is disabled.
 	if aud == nil {
 		// If there's no token, we set open claims since auth is disabled.

@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgproto3"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/rilldata/rill/runtime"
 	base "github.com/rilldata/rill/runtime/pkg/pgwire"
@@ -39,11 +40,10 @@ func TestInterpolateParameters(t *testing.T) {
 }
 
 func TestEncodeTimestamptzTextUsesNumericOffset(t *testing.T) {
-	value, err := normalizeValue("2022-01-01T00:00:00Z", pgtype.TimestamptzOID)
+	fields := []pgproto3.FieldDescription{{DataTypeOID: pgtype.TimestamptzOID, Format: pgtype.TextFormatCode}}
+	encoded, _, err := encodeRow(pgtype.NewMap(), fields, []any{"2022-01-01T00:00:00Z"}, nil, nil)
 	require.NoError(t, err)
-	encoded, err := encodeValue(pgtype.NewMap(), pgtype.TimestamptzOID, pgtype.TextFormatCode, value)
-	require.NoError(t, err)
-	require.Equal(t, "2022-01-01 00:00:00+00:00", string(encoded))
+	require.Equal(t, "2022-01-01 00:00:00+00:00", string(encoded[0]))
 }
 
 func TestNormalizeNumericForBinaryEncoding(t *testing.T) {
