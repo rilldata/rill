@@ -166,6 +166,13 @@ always_apply: true           # Optional: load the skill up front in every conver
 - **`agents`** selects the agents the skill applies to: `analyst` for answering questions about your data, `developer` for editing the project's files. It defaults to `[developer]`, so skills written for coding agents (such as the Rill development skills that `rill init` writes to `.agents/skills/`) are not offered to the analyst. Set `agents: [analyst]` on analysis skills.
 - **`always_apply`** loads the skill up front in every conversation instead of on demand, like `ai_instructions`. Use it for short, broadly applicable guidance such as glossaries. For external MCP clients, always-apply skills are also appended to the `ai_instructions` returned by `list_metrics_views`, up to 32 KiB in total; a skill that doesn't fit must be loaded with `load_skill` and a warning is logged.
 
+Users can also invoke a skill directly by typing `/` in [AI Chat](/guide/ai/ai-chat#using-project-skills) and picking it from a list. The AI then loads that skill before answering, instead of relying on the description to match the question. The list shows each skill's `name` and `description`, so choose a short, recognizable name and a description that reads well to people as well as to the AI. The `agents` field controls where a skill is listed:
+
+- Skills with `analyst` are listed in the project chat, the Explore and Canvas dashboard chats, and chat in embedded dashboards.
+- Skills with `developer` are listed in the developer chat in Rill Developer.
+
+Skills with an error are not listed. In analysis chats, a skill that was already loaded earlier in the conversation is not loaded again. The developer chat loads a referenced skill on every message that references it, because the developer agent only sees the current message's tool calls. An `always_apply` skill is already loaded, so picking it has no additional effect.
+
 Other agent clients ignore Rill's extension fields, so a Rill skill remains a valid Agent Skill and vice versa. A skill directory may also hold supporting files (such as `references/` or `scripts/`) as the format allows; Rill ignores everything in a skill directory except `SKILL.md`, so a SQL or YAML example inside a skill is not parsed as a project resource.
 
 Skills are parsed into resources like the rest of your project: invalid skill files (e.g. a missing `description`) show an error on the file in Rill Developer. When the AI uses a skill, the chat response's activity trace shows a "Loaded skill" step, so you can verify a skill was applied and iterate on it: edit the file, ask a test question, and check the trace.
