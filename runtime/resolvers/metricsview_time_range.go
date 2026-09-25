@@ -19,7 +19,7 @@ import (
 const defaultTimestampsCacheTTL = 5 * time.Minute
 
 func init() {
-	runtime.RegisterResolverInitializer("metrics_time_range", newMetricsViewTimeRangeResolver)
+	runtime.RegisterResolver("metrics_time_range", newMetricsViewTimeRangeResolver, runtime.AnalysisUnsupported)
 }
 
 type metricsViewTimeRangeResolver struct {
@@ -182,10 +182,6 @@ func (r *metricsViewTimeRangeResolver) ResolveInteractive(ctx context.Context) (
 
 func (r *metricsViewTimeRangeResolver) ResolveExport(ctx context.Context, w io.Writer, opts *runtime.ResolverExportOptions) error {
 	return errors.New("not implemented")
-}
-
-func (r *metricsViewTimeRangeResolver) InferRequiredSecurityRules() ([]*runtimev1.SecurityRule, error) {
-	return nil, errors.New("security rule inference not implemented")
 }
 
 // resolveTimestampResult resolves timestamps for a metrics view including rollup data.

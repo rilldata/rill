@@ -47,7 +47,6 @@ type Resolver interface {
 	CacheKey(ctx context.Context) (key []byte, ok bool, err error)
 	// Refs access by the resolver. The output may be approximate, i.e. some of the refs may not exist.
 	// The output should avoid duplicates and be stable between invocations.
-	// This is also used while resolving transitive access rules, resources retuned by Refs() will be given access.
 	Refs() []*runtimev1.ResourceName
 	// Validate the properties and args without running any expensive operations.
 	Validate(ctx context.Context) error
@@ -55,8 +54,6 @@ type Resolver interface {
 	ResolveInteractive(ctx context.Context) (ResolverResult, error)
 	// ResolveExport resolve data for export (e.g. downloads or reports).
 	ResolveExport(ctx context.Context, w io.Writer, opts *ResolverExportOptions) error
-	// InferRequiredSecurityRules attempts to infer the security rules that are required to be able to execute the resolver for the currently configured properties.
-	InferRequiredSecurityRules() ([]*runtimev1.SecurityRule, error)
 }
 
 // ResolverResult is the result of a resolver's execution.
@@ -98,12 +95,17 @@ type ResolverInitializer func(ctx context.Context, opts *ResolverOptions) (Resol
 // ResolverInitializers tracks resolver initializers by name.
 var ResolverInitializers = make(map[string]ResolverInitializer)
 
-// RegisterResolverInitializer registers a resolver initializer by name.
-func RegisterResolverInitializer(name string, initializer ResolverInitializer) {
+// RegisterResolver registers a resolver by name.
+// Every resolver must provide an analyzer; use AnalysisUnsupported if it cannot infer security rules.
+func RegisterResolver(name string, initializer ResolverInitializer, analyzer ResolverAnalyzer) {
+	if initializer == nil || analyzer == nil {
+		panic(fmt.Errorf("resolver %q must register both an initializer and an analyzer", name))
+	}
 	if ResolverInitializers[name] != nil {
 		panic(fmt.Errorf("resolver already registered for name %q", name))
 	}
 	ResolverInitializers[name] = initializer
+	resolverAnalyzers[name] = analyzer
 }
 
 // ResolveOptions are the options passed to the runtime's Resolve method.

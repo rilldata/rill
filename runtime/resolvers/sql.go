@@ -2,7 +2,6 @@ package resolvers
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"io"
 	"strings"
@@ -22,7 +21,7 @@ import (
 )
 
 func init() {
-	runtime.RegisterResolverInitializer("sql", newSQL)
+	runtime.RegisterResolver("sql", newSQL, runtime.AnalysisUnsupported)
 }
 
 type sqlResolver struct {
@@ -195,11 +194,6 @@ func (r *sqlResolver) ResolveExport(ctx context.Context, w io.Writer, opts *runt
 	default:
 		return fmt.Errorf("export not available for dialect %q", r.olap.Dialect().String())
 	}
-}
-
-func (r *sqlResolver) InferRequiredSecurityRules() ([]*runtimev1.SecurityRule, error) {
-	// NOTE - This is the regular SQL resolver, so the only refs would be to models, which don't have security policies / access checks
-	return nil, errors.New("security rule inference not implemented")
 }
 
 func (r *sqlResolver) generalExport(ctx context.Context, w io.Writer, filename string, opts *runtime.ExportOptions) error {

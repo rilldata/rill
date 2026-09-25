@@ -15,7 +15,7 @@ import (
 )
 
 func init() {
-	runtime.RegisterResolverInitializer("metrics_summary", newMetricsSummaryResolver)
+	runtime.RegisterResolver("metrics_summary", newMetricsSummaryResolver, runtime.AnalysisUnsupported)
 }
 
 type metricsSummaryResolver struct {
@@ -133,8 +133,4 @@ func (r *metricsSummaryResolver) ResolveInteractive(ctx context.Context) (runtim
 
 func (r *metricsSummaryResolver) ResolveExport(ctx context.Context, w io.Writer, opts *runtime.ResolverExportOptions) error {
 	return errors.New("not implemented")
-}
-
-func (r *metricsSummaryResolver) InferRequiredSecurityRules() ([]*runtimev1.SecurityRule, error) {
-	return nil, errors.New("security rule inference not implemented")
 }

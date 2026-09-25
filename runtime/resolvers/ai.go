@@ -20,7 +20,7 @@ import (
 )
 
 func init() {
-	runtime.RegisterResolverInitializer("ai", newAI)
+	runtime.RegisterResolver("ai", newAI, analyzeAI)
 }
 
 // aiProps contains the static properties for the AI resolver.
@@ -50,76 +50,10 @@ type aiArgs struct {
 
 // newAI creates a new AI resolver.
 func newAI(ctx context.Context, opts *runtime.ResolverOptions) (runtime.Resolver, error) {
-	// Parse props
-	props := &aiProps{}
-	if err := mapstructureutil.WeakDecode(opts.Properties, props); err != nil {
+	props, args, mv, err := parseAI(ctx, opts.Runtime, opts.InstanceID, opts.Properties, opts.Args)
+	if err != nil {
 		return nil, err
 	}
-
-	// Parse args
-	args := &aiArgs{}
-	if err := mapstructureutil.WeakDecode(opts.Args, args); err != nil {
-		return nil, err
-	}
-
-	// Default execution time to now
-	if args.ExecutionTime.IsZero() {
-		args.ExecutionTime = time.Now()
-	}
-
-	// Default to the analyst agent, which is the only agent supported as of now
-	if props.Agent == "" {
-		props.Agent = ai.AnalystAgentName
-	}
-	if props.Agent != ai.AnalystAgentName {
-		return nil, errors.New("only 'analyst_agent' is supported as agent as of now")
-	}
-
-	if !props.IsReport && props.Prompt == "" {
-		return nil, errors.New("prompt is required for non-report AI sessions")
-	}
-
-	// Default omitted time ranges to empty values, which resolveTimeRange treats as a no-op.
-	if props.TimeRange == nil {
-		props.TimeRange = &metricsview.TimeRange{}
-	}
-	if props.ComparisonTimeRange == nil {
-		props.ComparisonTimeRange = &metricsview.TimeRange{}
-	}
-
-	if props.TimeRange.IsoDuration != "" || props.TimeRange.IsoOffset != "" {
-		return nil, errors.New("iso_duration and iso_offset are deprecated in favor of rilltime expressions")
-	}
-
-	if props.ComparisonTimeRange.IsoDuration != "" || props.ComparisonTimeRange.IsoOffset != "" {
-		return nil, errors.New("iso_duration and iso_offset are deprecated in favor of rilltime expressions")
-	}
-
-	// Get metrics view if explore is provided
-	var mv string
-	if props.Explore != "" {
-		c, err := opts.Runtime.Controller(ctx, opts.InstanceID)
-		if err != nil {
-			return nil, fmt.Errorf("failed to get controller: %w", err)
-		}
-		e, err := c.Get(ctx, &runtimev1.ResourceName{
-			Kind: runtime.ResourceKindExplore,
-			Name: props.Explore,
-		}, false)
-		if err != nil {
-			return nil, fmt.Errorf("failed to get explore %q: %w", props.Explore, err)
-		}
-		exp := e.GetExplore()
-		if exp == nil {
-			return nil, fmt.Errorf("resource %q is not an explore", props.Explore)
-		}
-		spec := exp.State.ValidSpec
-		if spec == nil {
-			return nil, fmt.Errorf("explore %q has no valid spec", props.Explore)
-		}
-		mv = spec.MetricsView
-	}
-
 	return &aiResolver{
 		runtime:     opts.Runtime,
 		instanceID:  opts.InstanceID,
@@ -284,11 +218,6 @@ func (r *aiResolver) ResolveExport(ctx context.Context, w io.Writer, opts *runti
 	return fmt.Errorf("AI resolver does not support export")
 }
 
-// InferRequiredSecurityRules implements runtime.Resolver.
-func (r *aiResolver) InferRequiredSecurityRules() ([]*runtimev1.SecurityRule, error) {
-	return nil, nil
-}
-
 // resolveTimeRange resolves and rewrites the time range to actual timestamps using rilltime.
 func (r *aiResolver) resolveTimeRange(ctx context.Context, tr *metricsview.TimeRange, tz string) error {
 	// if time range is not provided, or already has start and end, do nothing
@@ -414,4 +343,85 @@ func extractSummary(response string) string {
 		return strings.TrimSpace(response[start+9 : end])
 	}
 	return ""
+}
+
+func parseAI(ctx context.Context, rt *runtime.Runtime, instanceID string, properties, arguments map[string]any) (*aiProps, *aiArgs, string, error) {
+	// Parse props
+	props := &aiProps{}
+	if err := mapstructureutil.WeakDecode(properties, props); err != nil {
+		return nil, nil, "", err
+	}
+
+	// Parse args
+	args := &aiArgs{}
+	if err := mapstructureutil.WeakDecode(arguments, args); err != nil {
+		return nil, nil, "", err
+	}
+
+	// Default execution time to now
+	if args.ExecutionTime.IsZero() {
+		args.ExecutionTime = time.Now()
+	}
+
+	// Default to the analyst agent, which is the only agent supported as of now
+	if props.Agent == "" {
+		props.Agent = ai.AnalystAgentName
+	}
+	if props.Agent != ai.AnalystAgentName {
+		return nil, nil, "", errors.New("only 'analyst_agent' is supported as agent as of now")
+	}
+
+	if !props.IsReport && props.Prompt == "" {
+		return nil, nil, "", errors.New("prompt is required for non-report AI sessions")
+	}
+
+	// Default omitted time ranges to empty values, which resolveTimeRange treats as a no-op.
+	if props.TimeRange == nil {
+		props.TimeRange = &metricsview.TimeRange{}
+	}
+	if props.ComparisonTimeRange == nil {
+		props.ComparisonTimeRange = &metricsview.TimeRange{}
+	}
+
+	if props.TimeRange.IsoDuration != "" || props.TimeRange.IsoOffset != "" {
+		return nil, nil, "", errors.New("iso_duration and iso_offset are deprecated in favor of rilltime expressions")
+	}
+
+	if props.ComparisonTimeRange.IsoDuration != "" || props.ComparisonTimeRange.IsoOffset != "" {
+		return nil, nil, "", errors.New("iso_duration and iso_offset are deprecated in favor of rilltime expressions")
+	}
+
+	// Get metrics view if explore is provided
+	var mv string
+	if props.Explore != "" {
+		c, err := rt.Controller(ctx, instanceID)
+		if err != nil {
+			return nil, nil, "", fmt.Errorf("failed to get controller: %w", err)
+		}
+		e, err := c.Get(ctx, &runtimev1.ResourceName{
+			Kind: runtime.ResourceKindExplore,
+			Name: props.Explore,
+		}, false)
+		if err != nil {
+			return nil, nil, "", fmt.Errorf("failed to get explore %q: %w", props.Explore, err)
+		}
+		exp := e.GetExplore()
+		if exp == nil {
+			return nil, nil, "", fmt.Errorf("resource %q is not an explore", props.Explore)
+		}
+		spec := exp.State.ValidSpec
+		if spec == nil {
+			return nil, nil, "", fmt.Errorf("explore %q has no valid spec", props.Explore)
+		}
+		mv = spec.MetricsView
+	}
+
+	return props, args, mv, nil
+}
+
+func analyzeAI(ctx context.Context, rt *runtime.Runtime, opts *runtime.ResolverAnalysisOptions) (*runtime.ResolverAnalysis, error) {
+	if _, _, _, err := parseAI(ctx, rt, opts.InstanceID, opts.Properties, opts.Args); err != nil {
+		return nil, err
+	}
+	return &runtime.ResolverAnalysis{}, nil
 }
