@@ -179,6 +179,9 @@ mock_users:
 
 On the dashboard page (provided you've added a policy), you'll see a "View as" button in the top right corner. Click this button and select one of your mock users. You'll see the dashboard as that user would see it.
 
+### Cloud Editing
+If you [edit your project in Rill Cloud](/developers/deploy/cloud-editing), the same "View as" button and `mock_users` are available in the dashboard preview of the cloud editor. This lets you test policy changes on a branch before publishing them. See [Test security policies with View as](/developers/deploy/cloud-editing#test-security-policies-with-view-as).
+
 ### Rill Cloud
 If you want to test what your users are seeing in Rill Cloud after deploying, you can find this in the dropdown of your account. You will see the actual users in the dropdown of this list, not the mock users defined in the rill.yaml file.
 
