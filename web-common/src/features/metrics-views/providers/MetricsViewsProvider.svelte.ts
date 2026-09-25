@@ -187,9 +187,13 @@ export class MetricsViewsProvider {
     const dimensions: MetricsViewSpecDimension[] = [];
 
     for (const metricsViewName of this.metricsViewNames) {
+      // Resource names are case-insensitive in the runtime, so an explore or canvas can reference
+      // a metrics view with different casing than the resource itself. Keep the maps keyed by the
+      // requested name, since that is what the callers use to look them up.
+      const lowerName = metricsViewName.toLowerCase();
       const res = this.resources.find(
         (resource) =>
-          resource.meta?.name?.name === metricsViewName &&
+          resource.meta?.name?.name?.toLowerCase() === lowerName &&
           resource.meta?.name?.kind === ResourceKind.MetricsView,
       );
       const spec = res?.metricsView?.state?.validSpec;
