@@ -538,32 +538,6 @@ func (s *Server) SudoUpdateOrganizationBillingCustomer(ctx context.Context, req 
 		return nil, err
 	}
 
-	opts := &database.UpdateOrganizationOptions{
-		Name:                                org.Name,
-		DisplayName:                         org.DisplayName,
-		Description:                         org.Description,
-		LogoAssetID:                         org.LogoAssetID,
-		LogoDarkAssetID:                     org.LogoDarkAssetID,
-		FaviconAssetID:                      org.FaviconAssetID,
-		ThumbnailAssetID:                    org.ThumbnailAssetID,
-		CustomDomain:                        org.CustomDomain,
-		DefaultProjectRoleID:                org.DefaultProjectRoleID,
-		DefaultProvisioner:                  org.DefaultProvisioner,
-		QuotaProjects:                       org.QuotaProjects,
-		QuotaDeployments:                    org.QuotaDeployments,
-		QuotaSlotsTotal:                     org.QuotaSlotsTotal,
-		QuotaSlotsPerDeployment:             org.QuotaSlotsPerDeployment,
-		QuotaOutstandingInvites:             org.QuotaOutstandingInvites,
-		QuotaStorageLimitBytesPerDeployment: org.QuotaStorageLimitBytesPerDeployment,
-		QuotaSeats:                          org.QuotaSeats,
-		BillingCustomerID:                   valOrDefault(req.BillingCustomerId, org.BillingCustomerID),
-		PaymentCustomerID:                   valOrDefault(req.PaymentCustomerId, org.PaymentCustomerID),
-		BillingEmail:                        org.BillingEmail,
-		BillingPlanName:                     org.BillingPlanName,
-		BillingPlanDisplayName:              org.BillingPlanDisplayName,
-		CreatedByUserID:                     org.CreatedByUserID,
-	}
-
 	var sub *billing.Subscription
 	if req.BillingCustomerId != nil {
 		// get active subscriptions if present
@@ -573,20 +547,22 @@ func (s *Server) SudoUpdateOrganizationBillingCustomer(ctx context.Context, req 
 				return nil, err
 			}
 		}
-
-		if sub != nil {
-			opts.QuotaProjects = biggerOfInt(sub.Plan.Quotas.NumProjects, org.QuotaProjects)
-			opts.QuotaDeployments = biggerOfInt(sub.Plan.Quotas.NumDeployments, org.QuotaDeployments)
-			opts.QuotaSlotsTotal = biggerOfInt(sub.Plan.Quotas.NumSlotsTotal, org.QuotaSlotsTotal)
-			opts.QuotaSlotsPerDeployment = biggerOfInt(sub.Plan.Quotas.NumSlotsPerDeployment, org.QuotaSlotsPerDeployment)
-			opts.QuotaOutstandingInvites = biggerOfInt(sub.Plan.Quotas.NumOutstandingInvites, org.QuotaOutstandingInvites)
-			opts.QuotaStorageLimitBytesPerDeployment = biggerOfInt64(sub.Plan.Quotas.StorageLimitBytesPerDeployment, org.QuotaStorageLimitBytesPerDeployment)
-			opts.BillingPlanName = &sub.Plan.Name
-			opts.BillingPlanDisplayName = &sub.Plan.DisplayName
-		}
 	}
 
-	org, err = s.admin.DB.UpdateOrganization(ctx, org.ID, opts)
+	org, err = s.admin.UpdateOrganizationBilling(ctx, org.ID, func(latest *database.Organization) {
+		latest.BillingCustomerID = valOrDefault(req.BillingCustomerId, latest.BillingCustomerID)
+		latest.PaymentCustomerID = valOrDefault(req.PaymentCustomerId, latest.PaymentCustomerID)
+		if sub != nil {
+			latest.QuotaProjects = biggerOfInt(sub.Plan.Quotas.NumProjects, latest.QuotaProjects)
+			latest.QuotaDeployments = biggerOfInt(sub.Plan.Quotas.NumDeployments, latest.QuotaDeployments)
+			latest.QuotaSlotsTotal = biggerOfInt(sub.Plan.Quotas.NumSlotsTotal, latest.QuotaSlotsTotal)
+			latest.QuotaSlotsPerDeployment = biggerOfInt(sub.Plan.Quotas.NumSlotsPerDeployment, latest.QuotaSlotsPerDeployment)
+			latest.QuotaOutstandingInvites = biggerOfInt(sub.Plan.Quotas.NumOutstandingInvites, latest.QuotaOutstandingInvites)
+			latest.QuotaStorageLimitBytesPerDeployment = biggerOfInt64(sub.Plan.Quotas.StorageLimitBytesPerDeployment, latest.QuotaStorageLimitBytesPerDeployment)
+			latest.BillingPlanName = &sub.Plan.Name
+			latest.BillingPlanDisplayName = &sub.Plan.DisplayName
+		}
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -1157,30 +1133,16 @@ func (s *Server) SudoDeleteOrganizationBillingMessage(ctx context.Context, req *
 }
 
 func (s *Server) updateQuotasAndHandleBillingIssues(ctx context.Context, org *database.Organization, sub *billing.Subscription) (*database.Organization, error) {
-	org, err := s.admin.DB.UpdateOrganization(ctx, org.ID, &database.UpdateOrganizationOptions{
-		Name:                                org.Name,
-		DisplayName:                         org.DisplayName,
-		Description:                         org.Description,
-		LogoAssetID:                         org.LogoAssetID,
-		LogoDarkAssetID:                     org.LogoDarkAssetID,
-		FaviconAssetID:                      org.FaviconAssetID,
-		ThumbnailAssetID:                    org.ThumbnailAssetID,
-		CustomDomain:                        org.CustomDomain,
-		DefaultProjectRoleID:                org.DefaultProjectRoleID,
-		DefaultProvisioner:                  org.DefaultProvisioner,
-		QuotaProjects:                       valOrDefault(sub.Plan.Quotas.NumProjects, org.QuotaProjects),
-		QuotaDeployments:                    valOrDefault(sub.Plan.Quotas.NumDeployments, org.QuotaDeployments),
-		QuotaSlotsTotal:                     valOrDefault(sub.Plan.Quotas.NumSlotsTotal, org.QuotaSlotsTotal),
-		QuotaSlotsPerDeployment:             valOrDefault(sub.Plan.Quotas.NumSlotsPerDeployment, org.QuotaSlotsPerDeployment),
-		QuotaOutstandingInvites:             valOrDefault(sub.Plan.Quotas.NumOutstandingInvites, org.QuotaOutstandingInvites),
-		QuotaStorageLimitBytesPerDeployment: valOrDefault(sub.Plan.Quotas.StorageLimitBytesPerDeployment, org.QuotaStorageLimitBytesPerDeployment),
-		QuotaSeats:                          valOrDefault(sub.Plan.Quotas.NumSeats, org.QuotaSeats),
-		BillingCustomerID:                   org.BillingCustomerID,
-		BillingPlanName:                     &sub.Plan.Name,
-		BillingPlanDisplayName:              &sub.Plan.DisplayName,
-		PaymentCustomerID:                   org.PaymentCustomerID,
-		BillingEmail:                        org.BillingEmail,
-		CreatedByUserID:                     org.CreatedByUserID,
+	org, err := s.admin.UpdateOrganizationBilling(ctx, org.ID, func(latest *database.Organization) {
+		latest.QuotaProjects = valOrDefault(sub.Plan.Quotas.NumProjects, latest.QuotaProjects)
+		latest.QuotaDeployments = valOrDefault(sub.Plan.Quotas.NumDeployments, latest.QuotaDeployments)
+		latest.QuotaSlotsTotal = valOrDefault(sub.Plan.Quotas.NumSlotsTotal, latest.QuotaSlotsTotal)
+		latest.QuotaSlotsPerDeployment = valOrDefault(sub.Plan.Quotas.NumSlotsPerDeployment, latest.QuotaSlotsPerDeployment)
+		latest.QuotaOutstandingInvites = valOrDefault(sub.Plan.Quotas.NumOutstandingInvites, latest.QuotaOutstandingInvites)
+		latest.QuotaStorageLimitBytesPerDeployment = valOrDefault(sub.Plan.Quotas.StorageLimitBytesPerDeployment, latest.QuotaStorageLimitBytesPerDeployment)
+		latest.QuotaSeats = valOrDefault(sub.Plan.Quotas.NumSeats, latest.QuotaSeats)
+		latest.BillingPlanName = &sub.Plan.Name
+		latest.BillingPlanDisplayName = &sub.Plan.DisplayName
 	})
 	if err != nil {
 		return nil, err
