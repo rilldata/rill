@@ -379,6 +379,18 @@ Example: a `key_sql` of `SELECT MAX(updated_at) FROM orders` with `key_ttl: 5m` 
 
   - **`timestamps_ttl`** - _[string]_ - TTL for caching the min/max timestamp queries used to populate a metrics view's rollups. Only takes effect when the metrics view has rollups defined and query result caching (`enabled`) is off — otherwise rollup timestamps are cached alongside other query results under `key_ttl`. Go duration string (e.g. `5m`). Defaults to `5m`.
 
+### `query_attributes`
+
+_[object]_ - Key-value pairs that Rill attaches to every query the metrics view sends to the OLAP engine, for example to attribute warehouse cost or audit queries by user. Values support templating with user attributes and environment variables, such as `'{{ .user.email }}'` or `'{{ .env.team }}'`, and are resolved for each query. Keys may contain only letters, digits, underscores, hyphens, and dots.
+How the attributes are delivered depends on the OLAP engine: ClickHouse receives them as query settings, Druid as query context parameters, and Databricks as query tags. Other engines ignore them. See [Query attributes](/developers/build/metrics-view/query-attributes) for details.
+
+
+```yaml
+query_attributes:
+    rill_user: '{{ .user.email }}'
+    department: '{{ .user.department | default "unknown" }}'
+```
+
 ### `explore`
 
 _[object]_ - Defines an optional inline explore view for the metrics view. If not specified a default explore will be emitted unless `skip` is set to true.
