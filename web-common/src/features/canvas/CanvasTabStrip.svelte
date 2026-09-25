@@ -53,6 +53,7 @@
   let renamingIndex = -1;
   let tabStripWrapper: HTMLDivElement | undefined;
   let tabList: HTMLDivElement | undefined;
+  let grip: HTMLDivElement | undefined;
   let canScrollToStart = false;
   let canScrollToEnd = false;
   let dragOverTabIndex = -1;
@@ -108,13 +109,19 @@
     onSelectGroup();
   }
 
-  // Mousedown on the strip's non-interactive area starts a drag of the whole group. Tabs,
-  // the rename input, the ⋯ menus and the scroll/add buttons keep their own behavior.
+  // Mousedown on the grip or on the strip's own empty area starts a drag of the whole group.
+  // This is an allow list rather than an exclusion of interactive elements: the strip's
+  // buttons wrap SVG icons, and anything not listed here (tabs, the rename input, the ⋯ menus,
+  // the scroll and add buttons) keeps its own behavior.
   function handleStripMouseDown(e: MouseEvent) {
     if (!onGroupMouseDown) return;
-    if (e.target instanceof HTMLElement && e.target.closest("button, input")) {
-      return;
-    }
+    const target = e.target;
+    if (!(target instanceof Element)) return;
+    const onStripBackground =
+      target === e.currentTarget ||
+      target === tabStripWrapper ||
+      target === tabList;
+    if (!onStripBackground && !grip?.contains(target)) return;
     onGroupMouseDown(e);
   }
 
@@ -162,7 +169,12 @@
   on:mousedown={handleStripMouseDown}
 >
   {#if editable && onGroupMouseDown}
-    <div class="grip" title="Drag to move this tab group" role="presentation">
+    <div
+      bind:this={grip}
+      class="grip"
+      title="Drag to move this tab group"
+      role="presentation"
+    >
       <GripVertical size="14px" />
     </div>
   {/if}

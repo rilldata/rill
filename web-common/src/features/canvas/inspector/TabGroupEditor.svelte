@@ -29,6 +29,9 @@
   // Re-point the selection at a group by name: after a rename, so the inspector stays open on
   // it (the group is re-keyed by name when the spec reprocesses), or at a freshly made copy.
   export let onSelectGroup: (name: string) => void;
+  // Re-key index-named groups ahead of an edit that shifts top-level rows (see
+  // CanvasEntity.rekeyTabGroups).
+  export let rekeyTabGroups: (newIndexOf: (rowIndex: number) => number) => void;
 
   $: ({ editorContent, updateEditorContent, saveLocalContent } = fileArtifact);
 
@@ -116,6 +119,10 @@
   }
 
   async function duplicateGroup() {
+    // The copy pushes every block after the original down one row.
+    rekeyTabGroups((rowIndex) =>
+      rowIndex > blockIndex ? rowIndex + 1 : rowIndex,
+    );
     await applyEdit((doc) => {
       duplicateTabGroup(doc, blockIndex);
     });

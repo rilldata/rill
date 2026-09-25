@@ -39,6 +39,7 @@
   import { useDefaultMetrics } from "./selector";
   import { getCanvasStore } from "./state-managers/state-managers";
   import { rowColFromPath } from "./stores/canvas-entity";
+  import { rowIndexAfterMove } from "./stores/tab-group";
   import {
     addTab,
     addTabGroup,
@@ -91,9 +92,8 @@
       setActiveTabInURL,
       setSelectedComponent,
       setSelectedTabGroup,
-      activateTabWhenGroupReady,
+      rekeyTabGroups,
       selectedComponent,
-      selectedTabGroup,
       componentsStore,
       processRows,
       specStore,
@@ -543,6 +543,10 @@
   function duplicateTabGroupAction(blockIndex: number) {
     const newIndex = duplicateTabGroup(contents, blockIndex);
     if (newIndex < 0) return;
+    // The copy pushes every block after the original down one row.
+    rekeyTabGroups((rowIndex) =>
+      rowIndex > blockIndex ? rowIndex + 1 : rowIndex,
+    );
     updateContents();
     // The copy has no name, so it is keyed by its index; select it like a duplicated tab.
     selectTabGroup(`group-${newIndex}`);
@@ -560,15 +564,8 @@
     const newIndex = moveTabGroup(contents, from, to);
     if (newIndex < 0) return;
 
-    // An unnamed group is keyed by its row index, so the move re-keys it: carry the active
-    // tab and the inspector selection over to the group's new name.
-    const yamlName = contents.getIn(["rows", newIndex, "name"]);
-    const newName =
-      typeof yamlName === "string" && yamlName.trim()
-        ? yamlName.trim()
-        : `group-${newIndex}`;
-    activateTabWhenGroupReady(newName, get(block.group.activeTabIndex));
-    if ($selectedTabGroup === block.group.name) setSelectedTabGroup(newName);
+    // Index-keyed groups (the moved one and any it slid past) follow their rows.
+    rekeyTabGroups(rowIndexAfterMove(from, newIndex));
 
     // Mirror the move in the optimistic spec and reprocess, so the canvas reorders now
     // rather than on the next reconcile (component names are re-derived then).
