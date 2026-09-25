@@ -3312,6 +3312,32 @@ definitions:
         items:
           type: string
         description: List of measures to display
+      adhoc_measures:
+        type: array
+        description: Adhoc measures defined on this component, derived from the metrics view's measures with an arithmetic expression. Reference them by `name` in `measures`. See [Adhoc measures](/developers/build/dashboards/canvas-widgets/data#adhoc-measures).
+        items:
+          type: object
+          properties:
+            name:
+              type: string
+              description: Name used to reference the measure. Must not match a dimension or measure in the metrics view.
+            display_name:
+              type: string
+              description: Label shown in the component. Defaults to `name`.
+            expression:
+              type: string
+              description: Arithmetic expression over the metrics view's measure names, for example `(revenue - cost) / revenue`.
+            format_preset:
+              type: string
+              enum: ["humanize", "none", "currency_usd", "currency_eur", "percentage"]
+              description: Format preset for the values. Defaults to `humanize`.
+            description:
+              type: string
+              description: Text shown in the measure's tooltip instead of the expression.
+          required:
+            - name
+            - expression
+          additionalProperties: false
       time_range:
         type: string
         description: Time range for the table

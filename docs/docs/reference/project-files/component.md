@@ -258,6 +258,18 @@ _[object]_ - (no description)
 
   - **`measures`** - _[array of string]_ - List of measures to display _(required)_
 
+  - **`adhoc_measures`** - _[array of object]_ - Adhoc measures defined on this component, derived from the metrics view's measures with an arithmetic expression. Reference them by `name` in `measures`. See [Adhoc measures](/developers/build/dashboards/canvas-widgets/data#adhoc-measures).
+
+    - **`name`** - _[string]_ - Name used to reference the measure. Must not match a dimension or measure in the metrics view. _(required)_
+
+    - **`display_name`** - _[string]_ - Label shown in the component. Defaults to `name`.
+
+    - **`expression`** - _[string]_ - Arithmetic expression over the metrics view's measure names, for example `(revenue - cost) / revenue`. _(required)_
+
+    - **`format_preset`** - _[string]_ - Format preset for the values. Defaults to `humanize`.
+
+    - **`description`** - _[string]_ - Text shown in the measure's tooltip instead of the expression.
+
   - **`time_range`** - _[string]_ - Time range for the table _(required)_
 
   - **`row_dimensions`** - _[array of string]_ - Dimensions for table rows
