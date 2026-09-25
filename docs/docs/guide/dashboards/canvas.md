@@ -67,3 +67,63 @@ If you want to further drill into a component's data, select the top right butto
 If no Explore dashboard exists, and/or you don't have [permissions to view it](/developers/build/dashboards/customization#define-dashboard-access), no button will appear and is as designed.
 
 :::
+
+## Pin and Require Filters
+
+Dashboard authors can keep specific filters in the filter bar, and can block a canvas until the viewer picks a value for them. This is useful when a canvas only makes sense for one region, customer, or account at a time.
+
+| Setting | Effect for viewers |
+|---------|--------------------|
+| **Pinned** | The filter always appears in the filter bar, even when it has no value. Viewers can change its value but cannot remove the filter. |
+| **Required** | The canvas does not load until the filter has a value. A required filter is always pinned. |
+
+### Configure Pinned and Required Filters in YAML
+
+List dimension or measure names under `filters` in the canvas file:
+
+```yaml
+type: canvas
+display_name: "Regional bids overview"
+
+filters:
+  enable: true
+  pinned:
+    - device_type
+  required:
+    - auction_type
+```
+
+Because required filters are implicitly pinned, you do not need to list a name under both `pinned` and `required`.
+
+Each name in `required` must be a dimension or measure on a metrics view used by the canvas's components. If it is not, the canvas fails to reconcile with an error like:
+
+```
+required filter "auction_typ" is not a dimension or measure on any metrics view referenced by this canvas
+```
+
+See the [`filters`](/reference/project-files/canvas-dashboards#filters) reference for the full list of properties.
+
+### Configure Pinned and Required Filters in the Editor
+
+When you edit a canvas in [Rill Developer](/developers/build/dashboards/canvas) or in Rill Cloud, each dimension and measure filter's dropdown shows two extra controls in its top-right corner:
+
+- The **asterisk** marks the filter as required.
+- The **pin** icon pins the filter.
+
+![Pin and required controls in a canvas filter dropdown](/img/explore/canvas/pin-required-filter-toggles.png)
+
+These controls change only your current editing session. To write them to the canvas file, click **Save as default** in the canvas editor header. This saves the pinned and required filters to `filters.pinned` and `filters.required`, and also saves the current filter values and time range as the canvas's [`defaults`](/reference/project-files/canvas-dashboards#defaults).
+
+### What Viewers See
+
+Until every required filter has a value, the canvas body is replaced by a **Select a value to continue** message that lists the missing filters, and the missing filters are highlighted in the filter bar. Once the viewer selects a value for each one, the canvas loads. Clearing a required filter's value blocks the canvas again.
+
+![A canvas blocked by a required filter](/img/explore/canvas/required-filter-blocked.png)
+
+:::tip Start viewers with a value
+If you want the canvas to load immediately but never without a value, save a default value for the required filter. Viewers start with that value and can switch to another one, but cannot clear it without blocking the canvas.
+:::
+
+:::note Exports
+A canvas with missing required filters has nothing to export. Set a value for every required filter before you export the canvas to PDF or schedule a PDF report of it.
+:::

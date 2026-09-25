@@ -103,3 +103,7 @@ Metric filters are a good way to "sort" by two different metrics. First, apply y
 
 As an example - to see the most active enterprise customers - filter all customers with revenue greater than $1000, then sort by number of users in descending order.
 :::
+
+## Pinned and Required Filters
+
+On canvas dashboards, authors can pin a filter so it always stays in the filter bar, or require a filter so the dashboard does not load until you select a value for it. Required filters are highlighted in the filter bar until they have a value. See [Pin and require filters](/guide/dashboards/canvas#pin-and-require-filters) for how to configure them.
