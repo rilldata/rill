@@ -17,8 +17,9 @@ export function ephemeralMeasureToSpecMeasure(
     name: def.name,
     displayName: def.displayName,
     expression: def.expression,
-    // Surfaces the calculation in description-driven tooltips.
-    description: def.expression,
+    // Description-driven tooltips show the calculation unless the user
+    // described the measure.
+    description: def.description || def.expression,
     formatPreset: def.formatPreset ?? (FormatPreset.HUMANIZE as string),
   };
 }

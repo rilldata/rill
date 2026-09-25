@@ -13,6 +13,8 @@ export type EphemeralMeasureDef = {
   displayName: string;
   // Arithmetic expression over existing measure names, e.g. "revenue - cost".
   expression: string;
+  // Optional description shown in tooltips instead of the expression.
+  description?: string;
   // Optional FormatPreset for rendering values; defaults to humanize.
   formatPreset?: string;
 };

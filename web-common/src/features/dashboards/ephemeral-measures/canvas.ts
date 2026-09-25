@@ -6,6 +6,7 @@ export interface EphemeralMeasureSpec {
   display_name: string;
   expression: string;
   format_preset?: string;
+  description?: string;
 }
 
 export function ephemeralSpecsToDefs(
@@ -19,6 +20,7 @@ export function ephemeralSpecsToDefs(
       displayName: spec.display_name || spec.name,
       expression: spec.expression,
       ...(spec.format_preset ? { formatPreset: spec.format_preset } : {}),
+      ...(spec.description ? { description: spec.description } : {}),
     }));
 }
 
@@ -30,6 +32,7 @@ export function ephemeralDefsToSpecs(
     display_name: def.displayName,
     expression: def.expression,
     ...(def.formatPreset ? { format_preset: def.formatPreset } : {}),
+    ...(def.description ? { description: def.description } : {}),
   }));
 }
 
