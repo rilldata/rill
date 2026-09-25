@@ -28,6 +28,24 @@ _[string]_ - Description for the canvas dashboard
 
 _[string]_ - Refers to the custom banner displayed in the header of a Canvas dashboard.
 
+### `ai_prompts`
+
+_[array of oneOf]_ - Suggested prompts shown as starters in the AI chat for this dashboard. Each entry is either a prompt string or an object with `label` and `prompt`. If not set, the project-level `ai_prompts` from rill.yaml are shown instead. At most 8 distinct entries.
+
+  - **option 1** - _[string]_ - The prompt. A short label is derived from its first words.
+
+  - **option 2** - _[object]_ - A prompt with an explicit label.
+
+    - **`label`** - _[string]_ - Short label shown on the prompt's button (at most 40 characters). Derived from the prompt if omitted.
+
+    - **`prompt`** - _[string]_ - The full question sent to the AI when the user picks the prompt. _(required)_
+
+```yaml
+- Which campaigns drove the biggest change in impressions this week?
+- label: CTR outliers
+  prompt: Which publishers have a click-through rate far above or below the average?
+```
+
 ### `rows`
 
 _[array of object]_ - Refers to all of the rows displayed on the Canvas. Each entry is either a plain row (with `items`) or a tab group (with `tabs`), but not both.

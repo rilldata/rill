@@ -657,6 +657,7 @@
   "chat_new_conversation": "Nueva conversación",
   "chat_no_conversations": "Aún no hay conversaciones.",
   "chat_placeholder_analyst": "Escribe una pregunta, o presiona @ para insertar una métrica, dimensión o medida.",
+  "chat_prompts_heading": "Preguntas sugeridas",
   "chat_read_only_notice": "Inicia sesión para continuar esta conversación. Solo los miembros de este proyecto pueden enviar mensajes.",
   "chat_report_prompt": "Informe de IA",
   "chat_report_prompt_comparison": "{prompt}, comparado con {comparisonTimeRange}",

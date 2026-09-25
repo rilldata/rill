@@ -55,6 +55,10 @@ This context-aware functionality means you can ask questions like:
 Opening AI Chat from within a dashboard allows for more natural, context-aware questions. The AI understands what you're looking at, so you don't need to repeat filters or time ranges in your questions.
 :::
 
+### Suggested Prompts
+
+If the project administrator has configured starter prompts for a dashboard or for the project, a new chat shows them as clickable suggestions. Click one to send it with your current filters and time range applied. Prompts are configured with the `ai_prompts` key; see [AI Configuration](/developers/build/ai-configuration#suggested-prompts).
+
 ## Understanding Responses
 
 AI Chat provides rich, multi-layered responses to help you understand your data quickly while maintaining easy access to deeper exploration:

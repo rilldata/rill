@@ -39,6 +39,7 @@ type ExploreDefinitionYAML struct {
 	Embeds               struct {
 		HidePivot bool `yaml:"hide_pivot"`
 	} `yaml:"embeds"`
+	AIPrompts []AIPromptYAML `yaml:"ai_prompts"`
 }
 
 // ExploreDefaultsYAML represents the `defaults` block of an explore definition.
@@ -205,6 +206,7 @@ type exploreDefinition struct {
 	timeRanges           []*runtimev1.ExploreTimeRange
 	defaultPreset        *runtimev1.ExplorePreset
 	allowCustomTimeRange bool
+	aiPrompts            []*runtimev1.AIPrompt
 }
 
 // parseExploreDefinition parses and validates the explore definition fields shared between
@@ -334,6 +336,12 @@ func (p *Parser) parseExploreDefinition(tmp *ExploreDefinitionYAML) (*exploreDef
 		def.allowCustomTimeRange = *tmp.AllowCustomTimeRange
 	}
 
+	// Validate the configured AI prompts
+	def.aiPrompts, err = parseAIPrompts(tmp.AIPrompts)
+	if err != nil {
+		return nil, err
+	}
+
 	return def, nil
 }
 
@@ -355,6 +363,7 @@ func (d *exploreDefinition) applyToSpec(spec *runtimev1.ExploreSpec, tmp *Explor
 	spec.EmbedsHidePivot = tmp.Embeds.HidePivot
 	spec.LockTimeZone = tmp.LockTimeZone
 	spec.AllowCustomTimeRange = d.allowCustomTimeRange
+	spec.AiPrompts = d.aiPrompts
 }
 
 // parseThemeRef parses a theme from a YAML node.

@@ -32,6 +32,18 @@ _[string]_ - Specifies the default AI connector for the project. Defaults to Ril
 
 _[string]_ - Extra instructions for LLM/AI features. Used to guide natural language question answering and routing.
 
+### `ai_prompts`
+
+_[array of oneOf]_ - Suggested prompts shown as starters in the project-wide AI chat, and on dashboards that have no `ai_prompts` of their own. Each entry is either a prompt string or an object with `label` and `prompt`. At most 8 distinct entries.
+
+  - **option 1** - _[string]_ - The prompt. A short label is derived from its first words.
+
+  - **option 2** - _[object]_ - A prompt with an explicit label.
+
+    - **`label`** - _[string]_ - Short label shown on the prompt's button (at most 40 characters). Derived from the prompt if omitted.
+
+    - **`prompt`** - _[string]_ - The full question sent to the AI when the user picks the prompt. _(required)_
+
 ## Configuring the default OLAP Engine
 
 Rill allows you to specify the default OLAP engine to use in your project via `rill.yaml`.
