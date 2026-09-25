@@ -356,30 +356,9 @@ func (w *PlanChangedWorker) Work(ctx context.Context, job *river.Job[PlanChanged
 	}
 
 	if org.BillingPlanName == nil || *org.BillingPlanName != planName {
-		_, err = w.admin.DB.UpdateOrganization(ctx, org.ID, &database.UpdateOrganizationOptions{
-			Name:                                org.Name,
-			DisplayName:                         org.DisplayName,
-			Description:                         org.Description,
-			LogoAssetID:                         org.LogoAssetID,
-			LogoDarkAssetID:                     org.LogoDarkAssetID,
-			FaviconAssetID:                      org.FaviconAssetID,
-			ThumbnailAssetID:                    org.ThumbnailAssetID,
-			CustomDomain:                        org.CustomDomain,
-			DefaultProjectRoleID:                org.DefaultProjectRoleID,
-			DefaultProvisioner:                  org.DefaultProvisioner,
-			QuotaProjects:                       org.QuotaProjects,
-			QuotaDeployments:                    org.QuotaDeployments,
-			QuotaSlotsTotal:                     org.QuotaSlotsTotal,
-			QuotaSlotsPerDeployment:             org.QuotaSlotsPerDeployment,
-			QuotaOutstandingInvites:             org.QuotaOutstandingInvites,
-			QuotaStorageLimitBytesPerDeployment: org.QuotaStorageLimitBytesPerDeployment,
-			QuotaSeats:                          org.QuotaSeats,
-			BillingCustomerID:                   org.BillingCustomerID,
-			PaymentCustomerID:                   org.PaymentCustomerID,
-			BillingEmail:                        org.BillingEmail,
-			BillingPlanName:                     &planName,
-			BillingPlanDisplayName:              &planDisplayName,
-			CreatedByUserID:                     org.CreatedByUserID,
+		_, err = w.admin.UpdateOrganizationBilling(ctx, org.ID, func(latest *database.Organization) {
+			latest.BillingPlanName = &planName
+			latest.BillingPlanDisplayName = &planDisplayName
 		})
 		if err != nil {
 			return fmt.Errorf("failed to update plan cache for org %q: %w", orgName, err)

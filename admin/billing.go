@@ -45,7 +45,7 @@ func (s *Service) InitOrganizationBilling(ctx context.Context, org *database.Org
 
 	org.BillingCustomerID = bc.ID
 
-	org, err = s.updateOrganizationBilling(ctx, org.ID, func(latest *database.Organization) {
+	org, err = s.UpdateOrganizationBilling(ctx, org.ID, func(latest *database.Organization) {
 		latest.PaymentCustomerID = pc.ID
 		latest.BillingCustomerID = bc.ID
 	})
@@ -134,7 +134,7 @@ func (s *Service) RepairOrganizationBilling(ctx context.Context, org *database.O
 	}
 
 	// update billing and payment customer id
-	org, err = s.updateOrganizationBilling(ctx, org.ID, func(latest *database.Organization) {
+	org, err = s.UpdateOrganizationBilling(ctx, org.ID, func(latest *database.Organization) {
 		latest.BillingCustomerID = org.BillingCustomerID
 		latest.PaymentCustomerID = org.PaymentCustomerID
 	})
@@ -179,7 +179,7 @@ func (s *Service) RepairOrganizationBilling(ctx context.Context, org *database.O
 	} else {
 		s.Logger.Named("billing").Warn("subscription already exists for org", zap.String("org_id", org.ID), zap.String("org_name", org.Name))
 		// update org quotas, this subscription might have been manually created
-		updatedOrg, err = s.updateOrganizationBilling(ctx, org.ID, func(latest *database.Organization) {
+		updatedOrg, err = s.UpdateOrganizationBilling(ctx, org.ID, func(latest *database.Organization) {
 			raiseQuotasToPlan(latest, sub.Plan)
 		})
 		if err != nil {
@@ -254,7 +254,7 @@ func (s *Service) StartCreditTrial(ctx context.Context, org *database.Organizati
 		zap.String("plan_name", plan.Name),
 	)
 
-	org, err = s.updateOrganizationBilling(ctx, org.ID, func(latest *database.Organization) {
+	org, err = s.UpdateOrganizationBilling(ctx, org.ID, func(latest *database.Organization) {
 		raiseQuotasToPlan(latest, plan)
 		latest.BillingPlanName = &plan.Name
 		latest.BillingPlanDisplayName = &plan.DisplayName
@@ -340,7 +340,7 @@ func (s *Service) StartTrial(ctx context.Context, org *database.Organization) (*
 		zap.String("user_email", userEmail),
 	)
 
-	org, err = s.updateOrganizationBilling(ctx, org.ID, func(latest *database.Organization) {
+	org, err = s.UpdateOrganizationBilling(ctx, org.ID, func(latest *database.Organization) {
 		raiseQuotasToPlan(latest, plan)
 		latest.BillingPlanName = &plan.Name
 		latest.BillingPlanDisplayName = &plan.DisplayName
@@ -516,12 +516,13 @@ func (s *Service) CheckBlockingBillingErrors(ctx context.Context, orgID string) 
 	return nil
 }
 
-// updateOrganizationBilling applies fn to the latest version of the org and saves the result.
-// Billing flows call external billing systems between reading the org and writing it back,
+// UpdateOrganizationBilling applies fn to the latest version of the org and saves the result.
+// Billing flows should use it instead of DB.UpdateOrganization:
+// they call external billing systems between reading the org and writing it back,
 // so writing their initial snapshot would silently revert concurrent changes to the org,
 // such as a superuser raising its quotas.
 // The org's row stays locked from the re-read until the update commits.
-func (s *Service) updateOrganizationBilling(ctx context.Context, orgID string, fn func(latest *database.Organization)) (*database.Organization, error) {
+func (s *Service) UpdateOrganizationBilling(ctx context.Context, orgID string, fn func(latest *database.Organization)) (*database.Organization, error) {
 	ctx, tx, err := s.DB.NewTx(ctx, true)
 	if err != nil {
 		return nil, err

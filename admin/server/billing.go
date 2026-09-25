@@ -1251,30 +1251,9 @@ func (s *Server) getSubscriptionAndUpdateOrg(ctx context.Context, org *database.
 
 	// update the cached plan
 	if org.BillingPlanName == nil || *org.BillingPlanName != planName {
-		org, err = s.admin.DB.UpdateOrganization(ctx, org.ID, &database.UpdateOrganizationOptions{
-			Name:                                org.Name,
-			DisplayName:                         org.DisplayName,
-			Description:                         org.Description,
-			LogoAssetID:                         org.LogoAssetID,
-			LogoDarkAssetID:                     org.LogoDarkAssetID,
-			FaviconAssetID:                      org.FaviconAssetID,
-			ThumbnailAssetID:                    org.ThumbnailAssetID,
-			CustomDomain:                        org.CustomDomain,
-			DefaultProjectRoleID:                org.DefaultProjectRoleID,
-			DefaultProvisioner:                  org.DefaultProvisioner,
-			QuotaProjects:                       org.QuotaProjects,
-			QuotaDeployments:                    org.QuotaDeployments,
-			QuotaSlotsTotal:                     org.QuotaSlotsTotal,
-			QuotaSlotsPerDeployment:             org.QuotaSlotsPerDeployment,
-			QuotaOutstandingInvites:             org.QuotaOutstandingInvites,
-			QuotaStorageLimitBytesPerDeployment: org.QuotaStorageLimitBytesPerDeployment,
-			QuotaSeats:                          org.QuotaSeats,
-			BillingCustomerID:                   org.BillingCustomerID,
-			PaymentCustomerID:                   org.PaymentCustomerID,
-			BillingEmail:                        org.BillingEmail,
-			BillingPlanName:                     &planName,
-			BillingPlanDisplayName:              &planDisplayName,
-			CreatedByUserID:                     org.CreatedByUserID,
+		org, err = s.admin.UpdateOrganizationBilling(ctx, org.ID, func(latest *database.Organization) {
+			latest.BillingPlanName = &planName
+			latest.BillingPlanDisplayName = &planDisplayName
 		})
 		if err != nil {
 			return nil, nil, err
