@@ -30,6 +30,10 @@
   export let columnWidth: number;
   export let components: Map<string, BaseCanvasComponent>;
   export let dragComponent: BaseCanvasComponent | null;
+  // True while a whole tab group is being dragged. Top-level rows (zoneScope "canvas") then
+  // expose their row drop zones as landing slots for the group; rows inside a tab do not, and
+  // all rows suspend component interaction for the duration of the drag.
+  export let blockDragging = false;
   export let selectedComponent: Writable<string | null>;
   export let addItems: (
     position: { row: number; column: number },
@@ -72,6 +76,9 @@
 
   $: isSpreadEvenly = widths.every((w) => w === widths[0]);
   $: activelyDragging = !!dragComponent;
+  // Either kind of drag suspends component and divider interaction in this row.
+  $: interactionSuspended = activelyDragging || blockDragging;
+  $: allowBlockDrop = blockDragging && zoneScope === "canvas";
 
   $: updateHeightFromSpec($height);
   $: updateWidthsFromSpec($itemWidths);
@@ -204,7 +211,7 @@
           addIndex={columnIndex}
           {zoneScope}
           rowLength={itemCount}
-          dragging={activelyDragging}
+          dragging={interactionSuspended}
           {isSpreadEvenly}
           {spreadEvenly}
           {addItems}
@@ -216,7 +223,7 @@
         columnWidth={widths[columnIndex]}
         {rowIndex}
         {zoneScope}
-        dragging={activelyDragging}
+        dragging={interactionSuspended}
         resizeIndex={columnIndex}
         addIndex={columnIndex + 1}
         rowLength={itemCount}
@@ -244,7 +251,7 @@
           editable
           ghost={dragComponent === component}
           selected={$selectedComponent === id}
-          allowPointerEvents={!$activeDivider && !activelyDragging}
+          allowPointerEvents={!$activeDivider && !interactionSuspended}
           onMouseDown={(event) => {
             onComponentMouseDown({
               event,
@@ -267,7 +274,7 @@
     </ItemWrapper>
   {/each}
   <RowDropZone
-    allowDrop={activelyDragging}
+    allowDrop={activelyDragging || allowBlockDrop}
     resizeIndex={rowIndex}
     dropIndex={rowIndex + 1}
     {zoneScope}
@@ -283,7 +290,7 @@
 
   {#if rowIndex === 0}
     <RowDropZone
-      allowDrop={activelyDragging}
+      allowDrop={activelyDragging || allowBlockDrop}
       dropIndex={0}
       {zoneScope}
       {onDrop}

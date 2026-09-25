@@ -248,6 +248,47 @@ export function duplicateTab(
 }
 
 /**
+ * Duplicate the whole tab group at the given top-level index, inserting the copy immediately
+ * after it. Every tab and its rows are copied; the group's `name` is dropped so the copy gets
+ * a fresh URL key (tab names are scoped to their group, so they can stay). Inline component
+ * definitions are position-keyed, so the parser derives fresh names for the copies.
+ * Returns the index of the new group, or -1 if the entry is not a tab group.
+ */
+export function duplicateTabGroup(doc: Document, blockIndex: number): number {
+  if (!isTabGroupRow(doc, blockIndex)) return -1;
+  const rows = doc.get("rows");
+  if (!isSeq(rows)) return -1;
+  const original = rows.items[blockIndex];
+  if (!isMap(original)) return -1;
+
+  const { name, ...rest } = original.toJSON() as {
+    name?: string;
+    [key: string]: unknown;
+  };
+  void name;
+  rows.items.splice(blockIndex + 1, 0, doc.createNode(rest));
+  return blockIndex + 1;
+}
+
+/**
+ * Move the tab group at top-level index `from` to the insertion index `to` (drag-to-reorder).
+ * `to` is a slot in the pre-move list, as a row drop zone reports it: 0 is above the first
+ * block and rows.length is below the last. Returns the group's new index, or -1 if nothing
+ * moved (not a tab group, out of range, or dropped in one of its own two adjacent slots).
+ */
+export function moveTabGroup(doc: Document, from: number, to: number): number {
+  if (!isTabGroupRow(doc, from)) return -1;
+  const rows = doc.get("rows");
+  if (!isSeq(rows)) return -1;
+  if (to < 0 || to > rows.items.length) return -1;
+  if (to === from || to === from + 1) return -1;
+  const [moved] = rows.items.splice(from, 1);
+  const newIndex = to > from ? to - 1 : to;
+  rows.items.splice(newIndex, 0, moved);
+  return newIndex;
+}
+
+/**
  * Delete the entire tab group (and all of its tabs/components) at the given top-level index.
  * Returns true if a tab group was removed.
  */

@@ -39,7 +39,7 @@ import {
   isTableComponentType,
 } from "../components/util";
 import { Grid } from "./grid";
-import { TabGroup, type LayoutBlock } from "./tab-group";
+import { TabGroup, rekeyedTabGroupNames, type LayoutBlock } from "./tab-group";
 import { getComparisonTypeFromRangeString } from "./time-state";
 import { TimeManager } from "./time-manager";
 import { Theme } from "../../themes/theme";
@@ -943,6 +943,26 @@ export class CanvasEntity {
 
   // Look up a tab group by its stable name (for the inspector panel).
   getTabGroup = (name: string) => this.tabGroups.get(name);
+
+  // Re-key tab groups ahead of a top-level row edit (move, insert or delete of a block), so
+  // each index-keyed group's instance, with its active tab, follows the group to its new row.
+  // Without this the next layout pass would hand a shifted group its neighbour's instance,
+  // and a selection on it would silently point at a different group. `newIndexOf` maps a
+  // row index before the edit to the index after it, or -1 if that row is removed.
+  rekeyTabGroups = (newIndexOf: (rowIndex: number) => number) => {
+    const pairs = rekeyedTabGroupNames(get(this.layout), newIndexOf);
+    const remapped = new Map<string, TabGroup>();
+    for (const [from, to] of pairs) {
+      const group = this.tabGroups.get(from);
+      if (group) remapped.set(to, group);
+    }
+    this.tabGroups = remapped;
+
+    const selected = get(this.selectedTabGroup);
+    const renamed = pairs.find(([from]) => from === selected);
+    if (renamed && renamed[1] !== selected)
+      this.selectedTabGroup.set(renamed[1]);
+  };
 
   setActiveComponent = (id: string) => {
     this.activeComponent.set(id);
