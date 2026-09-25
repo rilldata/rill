@@ -807,6 +807,8 @@
   "dashboard_filter_by_value": "Filtrar por este valor",
   "dashboard_filter_dimension_value": "Filtrar valor de dimensión",
   "dashboard_filter_required_set_value": "Este filtro es obligatorio. Establece un valor para cargar el dashboard.",
+  "dashboard_fit_to_width": "Ajustar al ancho",
+  "dashboard_fit_to_width_tooltip": "Cambia el tamaño de todas las columnas una vez para ajustarlas al ancho disponible. Después puedes seguir redimensionando columnas individuales.",
   "dashboard_flat": "Plana",
   "dashboard_generated": "Generado {time}",
   "dashboard_generating": "Generando…",
