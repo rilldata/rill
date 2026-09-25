@@ -20,6 +20,7 @@ import type {
   V1AnalystAgentContext,
 } from "@rilldata/web-common/runtime-client";
 import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
+import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import { derived, type Readable } from "svelte/store";
 import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 
@@ -48,10 +49,13 @@ function getExploreSuggestedPrompts(
   return derived(
     [exploreNameStore, projectPromptsStore],
     ([exploreName, projectPrompts], set) => {
+      // Pass the query client explicitly: this callback re-runs outside component initialization, where getContext is unavailable.
       const exploreQuery = useResource(
         client,
         exploreName,
         ResourceKind.Explore,
+        undefined,
+        queryClient,
       );
       return exploreQuery.subscribe((res) => {
         const explore = res.data?.explore;

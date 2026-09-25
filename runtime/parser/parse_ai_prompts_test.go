@@ -36,6 +36,11 @@ ai_prompts:
 			wantErr: "ai_prompts entry 1 must have a non-empty prompt",
 		},
 		{
+			name:    "duplicate prompt",
+			yaml:    "ai_prompts:\n  - What is the total?\n  - label: Again\n    prompt: 'What is the total? '\n",
+			wantErr: "ai_prompts entry 2 duplicates an earlier prompt",
+		},
+		{
 			name:    "too many prompts",
 			yaml:    "ai_prompts: [a, b, c, d, e, f, g, h, i]\n",
 			wantErr: "ai_prompts can have at most 8 entries",

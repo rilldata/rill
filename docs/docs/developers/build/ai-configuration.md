@@ -106,7 +106,7 @@ You can give users a few clickable starter prompts when they open the AI chat, s
 
 If neither is configured, no prompts are shown.
 
-Each entry is either a prompt string or an object with a `label` (at most 40 characters, shown on the button) and a `prompt` (the full question sent to the AI). When only a string is given, the label is derived from its first words. A list can hold at most 8 prompts; the chat shows the first four. When a user picks a prompt on a dashboard, their current filters and time range are sent along with it.
+Each entry is either a prompt string or an object with a `label` (at most 40 characters, shown on the button) and a `prompt` (the full question sent to the AI). When only a string is given, the label is derived from its first words. A list can hold at most 8 prompts, all of which are shown, and prompts within a list must be distinct. When a user picks a prompt on a dashboard, their current filters and time range are sent along with it.
 
 **Example (explore or canvas YAML):**
 

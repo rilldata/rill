@@ -61,11 +61,16 @@ func parseAIPrompts(prompts []AIPromptYAML) ([]*runtimev1.AIPrompt, error) {
 	}
 
 	res := make([]*runtimev1.AIPrompt, 0, len(prompts))
+	seen := make(map[string]bool, len(prompts))
 	for i, p := range prompts {
 		prompt := strings.TrimSpace(p.Prompt)
 		if prompt == "" {
 			return nil, fmt.Errorf("ai_prompts entry %d must have a non-empty prompt", i+1)
 		}
+		if seen[prompt] {
+			return nil, fmt.Errorf("ai_prompts entry %d duplicates an earlier prompt", i+1)
+		}
+		seen[prompt] = true
 		if utf8.RuneCountInString(prompt) > maxAIPromptLength {
 			return nil, fmt.Errorf("ai_prompts entry %d exceeds the maximum prompt length of %d characters", i+1, maxAIPromptLength)
 		}

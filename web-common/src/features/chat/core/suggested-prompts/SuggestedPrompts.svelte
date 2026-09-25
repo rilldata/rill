@@ -20,7 +20,7 @@
   role="group"
   aria-label={m.chat_prompts_heading()}
 >
-  {#each prompts as prompt (prompt.prompt)}
+  {#each prompts as prompt, i (i)}
     <button
       type="button"
       class="suggested-prompt"

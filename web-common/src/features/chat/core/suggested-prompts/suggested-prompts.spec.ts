@@ -1,7 +1,4 @@
-import {
-  MAX_SUGGESTED_PROMPTS,
-  resolveSuggestedPrompts,
-} from "@rilldata/web-common/features/chat/core/suggested-prompts/suggested-prompts";
+import { resolveSuggestedPrompts } from "@rilldata/web-common/features/chat/core/suggested-prompts/suggested-prompts";
 import { describe, expect, it } from "vitest";
 
 describe("resolveSuggestedPrompts", () => {
@@ -27,12 +24,12 @@ describe("resolveSuggestedPrompts", () => {
     ).toEqual(fallback);
   });
 
-  it("caps the result", () => {
+  it("shows every prompt of the winning source", () => {
     const many = Array.from({ length: 8 }, (_, i) => ({
       label: `L${i}`,
       prompt: `P${i}`,
     }));
-    expect(resolveSuggestedPrompts([many])).toHaveLength(MAX_SUGGESTED_PROMPTS);
+    expect(resolveSuggestedPrompts([many, fallback])).toEqual(many);
   });
 
   it("returns an empty list when nothing is usable", () => {

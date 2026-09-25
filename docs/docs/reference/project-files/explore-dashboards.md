@@ -30,7 +30,7 @@ _[string]_ - Refers to the custom banner displayed at the header of an explore d
 
 ### `ai_prompts`
 
-_[array of oneOf]_ - Suggested prompts shown as starters in the AI chat for this dashboard. Each entry is either a prompt string or an object with `label` and `prompt`. If not set, the project-level `ai_prompts` from rill.yaml are shown instead. At most 8 entries.
+_[array of oneOf]_ - Suggested prompts shown as starters in the AI chat for this dashboard. Each entry is either a prompt string or an object with `label` and `prompt`. If not set, the project-level `ai_prompts` from rill.yaml are shown instead. At most 8 distinct entries.
 
   - **option 1** - _[string]_ - The prompt. A short label is derived from its first words.
 

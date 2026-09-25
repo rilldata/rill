@@ -393,7 +393,7 @@ _[object]_ - Defines an optional inline explore view for the metrics view. If no
 
   - **`banner`** - _[string]_ - Custom banner displayed at the header of the explore view.
 
-  - **`ai_prompts`** - _[array of oneOf]_ - Suggested prompts shown as starters in the AI chat for this dashboard. Each entry is either a prompt string or an object with `label` and `prompt`. If not set, the project-level `ai_prompts` from rill.yaml are shown instead. At most 8 entries.
+  - **`ai_prompts`** - _[array of oneOf]_ - Suggested prompts shown as starters in the AI chat for this dashboard. Each entry is either a prompt string or an object with `label` and `prompt`. If not set, the project-level `ai_prompts` from rill.yaml are shown instead. At most 8 distinct entries.
 
     - **option 1** - _[string]_ - The prompt. A short label is derived from its first words.
 

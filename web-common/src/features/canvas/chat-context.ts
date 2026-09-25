@@ -11,6 +11,7 @@ import { getCanvasNameStore } from "@rilldata/web-common/features/dashboards/nav
 import { derived, type Readable } from "svelte/store";
 import { getCanvasStoreUnguarded } from "@rilldata/web-common/features/canvas/state-managers/state-managers.ts";
 import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
+import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 import {
   createProjectPromptsStore,
@@ -45,7 +46,14 @@ function getCanvasSuggestedPrompts(
   return derived(
     [canvasNameStore, projectPromptsStore],
     ([canvasName, projectPrompts], set) => {
-      const canvasQuery = useResource(client, canvasName, ResourceKind.Canvas);
+      // Pass the query client explicitly: this callback re-runs outside component initialization, where getContext is unavailable.
+      const canvasQuery = useResource(
+        client,
+        canvasName,
+        ResourceKind.Canvas,
+        undefined,
+        queryClient,
+      );
       return canvasQuery.subscribe((res) => {
         const canvas = res.data?.canvas;
         set(
