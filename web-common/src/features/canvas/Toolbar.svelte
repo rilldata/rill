@@ -94,10 +94,8 @@
       </DropdownMenu.Content>
     </DropdownMenu.Root>
   {:else}
-    <!-- Non-editable mode: one-click explore jump plus a menu for the rest -->
-    {#if showExplore && exploreComponent}
-      <ExploreLink component={exploreComponent} mode="icon-button" />
-    {/if}
+    <!-- Non-editable mode: the menu sits inward of the explore jump so the
+         corner slot users already aim for keeps taking them to explore. -->
     <DropdownMenu.Root bind:open={dropdownOpen}>
       <DropdownMenu.Trigger
         class="size-7 grid place-content-center bg-surface-card hover:brightness-[85%] active:brightness-75"
@@ -118,5 +116,8 @@
         </DropdownMenu.Item>
       </DropdownMenu.Content>
     </DropdownMenu.Root>
+    {#if showExplore && exploreComponent}
+      <ExploreLink component={exploreComponent} mode="icon-button" />
+    {/if}
   {/if}
 </div>
