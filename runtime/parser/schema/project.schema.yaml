@@ -2416,6 +2416,7 @@ definitions:
                               - **table** - Similar to Pivot table, add dimensions and measures to visualize your data
                               - **heatmap** - Heat Map chart to visualize distribution of data
                               - **donut_chart** - Donut or Pie chart to display sums of total
+                              - **map** - Map of points or regions, colored and sized by measures
                       width:
                         type:
                           - string
@@ -3192,6 +3193,8 @@ definitions:
             $ref: '#/definitions/markdown_properties'
           image:
             $ref: '#/definitions/image_properties'
+          map:
+            $ref: '#/definitions/map_properties'
         required:
           - type
         additionalProperties: false
@@ -3387,6 +3390,111 @@ definitions:
     required:
       - url
     additionalProperties: false
+
+  # Map Properties
+  map_properties:
+    type: object
+    properties:
+      metrics_view:
+        type: string
+        description: Reference to the metrics view to use
+      geo_dimension:
+        type: object
+        description: 'Dimension that holds the location of each row, as a GeoJSON geometry string or a DuckDB `POINT_2D` or `POLYGON_2D` value, in longitude and latitude. Only dimensions with `type: geo` are offered in the visual editor.'
+        properties:
+          field:
+            type: string
+            description: Name of the dimension
+          type:
+            type: string
+            description: Field type, always `nominal`
+        required:
+          - field
+      color:
+        type: object
+        description: Measure that colors each point or region
+        properties:
+          measure:
+            type: string
+            description: Name of the measure
+          colorRange:
+            type: object
+            description: 'Color scale for the measure. Use `mode: scheme` with a `scheme` (`sequential`, `diverging`, `tealblues`, `viridis`, `magma`, `inferno`, `plasma`, `cividis`, `blues`, `teals`, `greens`, `greys`, `oranges`, `purples`, `reds`, `turbo`, `spectral`), or `mode: gradient` with `start` and `end` colors. Defaults to the `tealblues` scheme.'
+            properties:
+              mode:
+                type: string
+                enum: ["scheme", "gradient"]
+                description: Whether to use a named color scheme or a two-color gradient
+              scheme:
+                type: string
+                description: Name of the color scheme, used when `mode` is `scheme`
+              start:
+                type: string
+                description: Color for the lowest value, used when `mode` is `gradient`. A hex color, `primary` or `secondary`.
+              end:
+                type: string
+                description: Color for the highest value, used when `mode` is `gradient`. A hex color, `primary` or `secondary`.
+        required:
+          - measure
+      size_measure:
+        type: object
+        description: Measure that scales the radius of each point. Points only; ignored for polygons.
+        properties:
+          field:
+            type: string
+            description: Name of the measure
+          type:
+            type: string
+            description: Field type, always `quantitative`
+        required:
+          - field
+      tooltip_dimension:
+        type: object
+        description: Dimension whose value is shown as the heading of the hover tooltip
+        properties:
+          field:
+            type: string
+            description: Name of the dimension
+          type:
+            type: string
+            description: Field type, always `nominal`
+        required:
+          - field
+      initial_view:
+        type: object
+        description: Camera position the map opens with. When set, the map does not zoom to fit the data.
+        properties:
+          longitude:
+            type: number
+            description: Longitude of the map center
+          latitude:
+            type: number
+            description: Latitude of the map center
+          zoom:
+            type: number
+            description: Zoom level, from `0` (whole world) to about `22` (building level)
+        required:
+          - longitude
+          - latitude
+      title:
+        type: string
+        description: Map title
+      description:
+        type: string
+        description: Map description
+      show_description_as_tooltip:
+        type: boolean
+        description: Show the description as a tooltip on the title instead of below it
+      time_filters:
+        type: string
+        description: Time range and comparison for this map, as `tr` and `compare_tr` URL parameters. Defaults to the canvas time range.
+      dimension_filters:
+        type: string
+        description: SQL filter expression applied to this map only, such as `country IN ('US')`
+    required:
+      - metrics_view
+      - geo_dimension
+      - color
 
 
   # Common Properties
