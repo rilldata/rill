@@ -2472,6 +2472,16 @@ definitions:
               enable:
                 type: boolean
                 description: Toggles filtering functionality for the canvas dashboard.
+              pinned:
+                type: array
+                description: Dimension or measure names to pin in the filter bar. Pinned filters stay visible even when they have no value, and viewers cannot remove them.
+                items:
+                  type: string
+              required:
+                type: array
+                description: Dimension or measure names that must have a value before the canvas renders. Required filters are implicitly pinned. Each name must be a dimension or measure on a metrics view referenced by the canvas.
+                items:
+                  type: string
           allow_custom_time_range:
             type: boolean
             description: Defaults to true. When set to false, hides the ability to set a custom time range for the user.
@@ -3182,12 +3192,48 @@ definitions:
             $ref: '#/definitions/chart_properties'
           bar_chart:
             $ref: '#/definitions/chart_properties'
-          stacked_bar_chart:
+          stacked_bar:
             $ref: '#/definitions/chart_properties'
+          stacked_bar_normalized:
+            type: object
+            description: Stacked bar chart normalized to 100%
+          area_chart:
+            type: object
+            description: Area chart
+          combo_chart:
+            type: object
+            description: Dual-axis chart that draws one measure as bars and another as a line
+          donut_chart:
+            type: object
+            description: Donut chart
+          pie_chart:
+            type: object
+            description: Pie chart
+          scatter_plot:
+            type: object
+            description: Scatter plot
+          funnel_chart:
+            type: object
+            description: Funnel chart
+          heatmap:
+            type: object
+            description: Heat map
+          custom_chart:
+            type: object
+            description: Custom Vega-Lite chart built from Metrics SQL queries
           kpi:
             $ref: '#/definitions/kpi_properties'
+          kpi_grid:
+            type: object
+            description: Grid of KPIs
           table:
             $ref: '#/definitions/table_properties'
+          pivot:
+            type: object
+            description: Pivot table
+          leaderboard:
+            type: object
+            description: Leaderboard
           markdown:
             $ref: '#/definitions/markdown_properties'
           image:
