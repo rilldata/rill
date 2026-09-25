@@ -1,6 +1,7 @@
 package s3_test
 
 import (
+	"context"
 	"testing"
 
 	"github.com/rilldata/rill/runtime/drivers"
@@ -15,7 +16,7 @@ import (
 func TestObjectStore(t *testing.T) {
 	testmode.Expensive(t)
 	cfg := testruntime.AcquireConnector(t, "s3")
-	conn, err := drivers.Open("s3", "", "default", cfg, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
+	conn, err := drivers.Open(context.Background(), "s3", "", "default", cfg, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
 	t.Cleanup(func() { conn.Close() })
 
@@ -54,7 +55,7 @@ func TestObjectStorePathPrefixes(t *testing.T) {
 	testmode.Expensive(t)
 	cfg := testruntime.AcquireConnector(t, "s3")
 	cfg["path_prefixes"] = "s3://integration-test.rilldata.com/glob_test/"
-	conn, err := drivers.Open("s3", "", "default", cfg, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
+	conn, err := drivers.Open(context.Background(), "s3", "", "default", cfg, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
 	t.Cleanup(func() { conn.Close() })
 

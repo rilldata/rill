@@ -221,7 +221,7 @@ func (c *configProperties) validate() error {
 
 // Open connects to Clickhouse using std API.
 // Connection string format : https://github.com/ClickHouse/clickhouse-go?tab=readme-ov-file#dsn
-func (d driver) Open(connectorName, instanceID string, config map[string]any, st *storage.Client, ac *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
+func (d driver) Open(ctx context.Context, connectorName, instanceID string, config map[string]any, st *storage.Client, ac *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
 	if instanceID == "" {
 		return nil, errors.New("clickhouse driver can't be shared")
 	}
@@ -296,7 +296,7 @@ func (d driver) Open(connectorName, instanceID string, config map[string]any, st
 		if err != nil {
 			return nil, err
 		}
-		opts, err = embed.start()
+		opts, err = embed.start(ctx)
 		if err != nil {
 			return nil, err
 		}
@@ -305,7 +305,7 @@ func (d driver) Open(connectorName, instanceID string, config map[string]any, st
 	}
 
 	// Open the main database connection
-	db, err := openHandle(instanceID, conf, opts, logger)
+	db, err := openHandle(ctx, instanceID, conf, opts, logger)
 	if err != nil {
 		return nil, err
 	}
@@ -317,13 +317,15 @@ func (d driver) Open(connectorName, instanceID string, config map[string]any, st
 		if err != nil {
 			return nil, fmt.Errorf("failed to parse write DSN: %w", err)
 		}
-		writeDB, err = openHandle(instanceID, conf, writeOpts, logger)
+		writeDB, err = openHandle(ctx, instanceID, conf, writeOpts, logger)
 		if err != nil {
 			return nil, fmt.Errorf("failed to open write connection: %w", err)
 		}
 	}
-	// group by positional args are supported post 22.7 and we use them heavily in our queries
-	row := db.QueryRow(`
+	// group by positional args are supported post 22.7 and we use them heavily in our queries.
+	// Note the statements below strip the ctx deadline: see the note in openHandle.
+	stmtCtx := contextWithoutDeadline(ctx)
+	row := db.QueryRowContext(stmtCtx, `
         WITH
             splitByChar('.', version()) AS parts,
             toInt32(parts[1]) AS major,
@@ -344,7 +346,7 @@ func (d driver) Open(connectorName, instanceID string, config map[string]any, st
 	// whether the cluster mode supports modifying query settings. This setting
 	// has no practical use for our purposes.
 	supportSettings := true
-	if _, err := db.Exec("SET show_table_uuid_in_table_create_query_if_not_nil = 1"); err != nil {
+	if _, err := db.ExecContext(stmtCtx, "SET show_table_uuid_in_table_create_query_if_not_nil = 1"); err != nil {
 		if strings.Contains(err.Error(), "Cannot modify") && strings.Contains(err.Error(), "setting in readonly mode") {
 			supportSettings = false
 		}
@@ -364,7 +366,8 @@ func (d driver) Open(connectorName, instanceID string, config map[string]any, st
 		olapSemSize = 1
 	}
 
-	ctx, cancel := context.WithCancel(context.Background())
+	// Note the handle's ctx tracks the handle's lifetime, so it must not derive from the ctx passed to Open.
+	bgctx, cancel := context.WithCancel(context.Background())
 	c := &Connection{
 		readDB:          db,
 		writeDB:         writeDB,
@@ -374,7 +377,7 @@ func (d driver) Open(connectorName, instanceID string, config map[string]any, st
 		instanceID:      instanceID,
 		connectorName:   connectorName,
 		supportSettings: supportSettings,
-		ctx:             ctx,
+		ctx:             bgctx,
 		cancel:          cancel,
 		metaSem:         semaphore.NewWeighted(1),
 		olapSem:         priorityqueue.NewSemaphore(olapSemSize),
@@ -877,7 +880,7 @@ func (c *Connection) checkBillingTableExists(ctx context.Context, cluster string
 	return existsEverywhere, nil
 }
 
-func openHandle(instanceID string, conf *configProperties, opts *clickhouse.Options, logger *zap.Logger) (*sqlx.DB, error) {
+func openHandle(ctx context.Context, instanceID string, conf *configProperties, opts *clickhouse.Options, logger *zap.Logger) (*sqlx.DB, error) {
 	// Apply certain options from conf that are not set in the DSN.
 	if conf.MaxIdleConns != 0 {
 		opts.MaxIdleConns = conf.MaxIdleConns
@@ -917,7 +920,8 @@ func openHandle(instanceID string, conf *configProperties, opts *clickhouse.Opti
 	// It prevents invalid host/port combinations from proceeding to db.Ping, which uses a longer timeout to handle scale-to-zero scenarios.
 	if conf.Host != "" && conf.Port != 0 {
 		target := net.JoinHostPort(conf.Host, fmt.Sprintf("%d", conf.Port))
-		conn, err := net.DialTimeout("tcp", target, 10*time.Second)
+		dialer := net.Dialer{Timeout: 10 * time.Second}
+		conn, err := dialer.DialContext(ctx, "tcp", target)
 		if err != nil {
 			return nil, fmt.Errorf("please check that the host and port are correct %s: %w", target, err)
 		}
@@ -927,9 +931,13 @@ func openHandle(instanceID string, conf *configProperties, opts *clickhouse.Opti
 		opts.DialTimeout = time.Second * 60
 	}
 
-	// Open the connection
+	// Open the connection.
+	// The clickhouse-go driver derives a 'max_execution_time' setting from the ctx deadline,
+	// which a readonly server rejects; we can't know yet whether this one is readonly.
+	// So strip the deadline while keeping cancellation: the dial and read timeouts in opts already bound the ping.
+	pingCtx := contextWithoutDeadline(ctx)
 	db := sqlx.NewDb(otelsql.OpenDB(clickhouse.Connector(opts)), "clickhouse")
-	err := db.Ping()
+	err := db.PingContext(pingCtx)
 	if err != nil {
 		// Detect SSL/TLS mismatch (common causes: "read: EOF" or TLS Alert [21])
 		if strings.Contains(err.Error(), "EOF") ||
@@ -947,7 +955,7 @@ func openHandle(instanceID string, conf *configProperties, opts *clickhouse.Opti
 		// may be the port is http, also try with http protocol if DSN is not provided
 		opts.Protocol = clickhouse.HTTP
 		db = sqlx.NewDb(otelsql.OpenDB(clickhouse.Connector(opts)), "clickhouse")
-		err := db.Ping()
+		err := db.PingContext(pingCtx)
 		if err != nil {
 			// Detect SSL/TLS mismatch (common causes: "read: EOF" or  \x15 means TLS Alert [21]"])
 			if strings.Contains(err.Error(), "EOF") ||

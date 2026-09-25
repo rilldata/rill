@@ -1,6 +1,7 @@
 package snowflake_test
 
 import (
+	"context"
 	"encoding/json"
 	"strings"
 	"testing"
@@ -186,7 +187,7 @@ func TestDryRun(t *testing.T) {
 
 func acquireTestSnowflake(t *testing.T) (drivers.Handle, drivers.OLAPStore) {
 	cfg := testruntime.AcquireConnector(t, "snowflake")
-	conn, err := drivers.Open("snowflake", "", "default", cfg, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
+	conn, err := drivers.Open(context.Background(), "snowflake", "", "default", cfg, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
 	t.Cleanup(func() { conn.Close() })
 

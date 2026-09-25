@@ -1,6 +1,7 @@
 package sqlite
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -36,7 +37,7 @@ func TestBackupAndRestore(t *testing.T) {
 	}
 
 	// Create a database with an instance in it, then back it up.
-	h, err := driver{}.Open("", "", cfg, storage.MustNew(storageDir, nil), activity.NewNoopClient(), zap.NewNop())
+	h, err := driver{}.Open(context.Background(), "", "", cfg, storage.MustNew(storageDir, nil), activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
 	require.NoError(t, h.Migrate(t.Context()))
 	registry, ok := h.AsRegistry()
@@ -50,7 +51,7 @@ func TestBackupAndRestore(t *testing.T) {
 	require.NoError(t, restoreBackup(t.Context(), bucket, dbPath, zap.NewNop()))
 
 	// Reopen the database and check the instance is back.
-	h, err = driver{}.Open("", "", cfg, storage.MustNew(storageDir, nil), activity.NewNoopClient(), zap.NewNop())
+	h, err = driver{}.Open(context.Background(), "", "", cfg, storage.MustNew(storageDir, nil), activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
 	defer h.Close()
 	require.NoError(t, h.Migrate(t.Context()))
@@ -134,7 +135,7 @@ func TestShouldRestoreBackup(t *testing.T) {
 	require.Equal(t, dsn, dbPath)
 
 	// Once migrated, the database has data and must not be overwritten by a restore.
-	h, err := driver{}.Open("", "", map[string]any{"dsn": dsn}, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
+	h, err := driver{}.Open(context.Background(), "", "", map[string]any{"dsn": dsn}, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
 	require.NoError(t, h.Migrate(t.Context()))
 	require.NoError(t, h.Close())

@@ -165,7 +165,7 @@ const (
 	defaultPort    = 9030
 )
 
-func (d driver) Open(_, instanceID string, config map[string]any, st *storage.Client, ac *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
+func (d driver) Open(ctx context.Context, _, instanceID string, config map[string]any, st *storage.Client, ac *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
 	if instanceID == "" {
 		return nil, errors.New("starrocks driver: instance ID is required")
 	}
@@ -194,7 +194,7 @@ func (d driver) Open(_, instanceID string, config map[string]any, st *storage.Cl
 
 	// Open database connection immediately in drivers.Open
 	// This ensures the connection is established and validated upfront
-	if err := conn.initDB(); err != nil {
+	if err := conn.initDB(ctx); err != nil {
 		return nil, fmt.Errorf("failed to initialize database connection: %w", err)
 	}
 
@@ -328,7 +328,7 @@ func (c *connection) AsModelManager(instanceID string) (drivers.ModelManager, er
 
 // initDB initializes the database connection.
 // Called during drivers.Open to establish connection upfront.
-func (c *connection) initDB() error {
+func (c *connection) initDB(ctx context.Context) error {
 	dsn := c.buildDSN()
 
 	db, err := sqlx.Open("mysql", dsn)
@@ -344,10 +344,9 @@ func (c *connection) initDB() error {
 	db.SetConnMaxLifetime(30 * time.Minute)
 	db.SetConnMaxIdleTime(5 * time.Minute)
 
-	// Test connection with an independent context to prevent premature cancellation
-	// Use a context with sufficient timeout (30 seconds) instead of the request context
-	// This prevents 499 errors when the frontend request is cancelled quickly
-	pingCtx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	// Cap the connection test and validation queries below at 30 seconds.
+	// The ctx scopes the open as a whole; it is not the request context, so it won't be cancelled by a frontend request going away.
+	pingCtx, cancel := context.WithTimeout(ctx, 30*time.Second)
 	defer cancel()
 	if err := db.PingContext(pingCtx); err != nil {
 		db.Close()
