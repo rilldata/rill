@@ -167,7 +167,16 @@
   .wrapper {
     @apply flex w-fit;
     @apply h-[26px] rounded-full;
-    @apply overflow-hidden;
+    /* The hidden y-axis keeps the pill clip; the x-axis scrolls when the
+       flex row squeezes the pill below its content (phones), so trailing
+       controls stay reachable instead of being clipped away.
+       The scrollbar is hidden: a classic one would take ~15px of the 26px pill on Windows and Linux. */
+    @apply overflow-x-auto overflow-y-hidden;
+    scrollbar-width: none;
+  }
+
+  .wrapper::-webkit-scrollbar {
+    display: none;
   }
 
   /* Match both direct child buttons and buttons inside display:contents wrappers */

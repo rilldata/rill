@@ -73,7 +73,7 @@
       <div {...props} class="hidden"></div>
     {/snippet}
   </Dialog.Trigger>
-  <Dialog.Content class="w-[520px]" noClose>
+  <Dialog.Content class="w-[min(520px,calc(100vw-2rem))]" noClose>
     <Dialog.Header>
       <Dialog.Title>{m.billing_change_billing_contact()}</Dialog.Title>
 

@@ -110,4 +110,12 @@
     position: relative;
     flex-shrink: 0;
   }
+
+  /* On narrow viewports the resizable sidebar takes over the full width rather
+     than squeezing the dashboard into an unusable sliver. */
+  @media (max-width: 640px) {
+    .chat-sidebar {
+      width: 100vw;
+    }
+  }
 </style>

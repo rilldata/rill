@@ -78,7 +78,7 @@
       </svelte:fragment>
     </IconButton>
   </PopoverTrigger>
-  <PopoverContent align="end" class="w-[320px] p-4">
+  <PopoverContent align="end" class="w-[min(320px,calc(100vw-2rem))] p-4">
     <div class="flex flex-col gap-y-3">
       <h3 class="text-sm font-medium text-fg-primary">
         {m.chat_share_conversation()}

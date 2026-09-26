@@ -219,6 +219,12 @@
     @apply w-full max-h-32 overflow-auto;
   }
 
+  /* iOS Safari zooms into a focused field whose text is under 16px,
+     so the composer stays at 16px on phones. */
+  .chat-input-container :global(.tiptap) {
+    @apply max-sm:text-[16px];
+  }
+
   :global(.tiptap p.is-editor-empty:first-child::before) {
     content: attr(data-placeholder);
     @apply text-fg-muted pointer-events-none absolute;
@@ -246,5 +252,12 @@
 
   .chat-input-footer {
     @apply flex flex-row gap-x-2;
+  }
+
+  /* Comfortable touch targets on mobile; desktop sizing is unchanged. */
+  @media (max-width: 640px) {
+    .chat-input-footer :global(button) {
+      @apply inline-flex items-center justify-center min-h-[44px] min-w-[44px];
+    }
   }
 </style>

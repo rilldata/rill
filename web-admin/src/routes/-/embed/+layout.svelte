@@ -157,7 +157,7 @@
     {/if}
 
     <div class="flex h-full overflow-hidden">
-      <div class="flex-1 overflow-hidden">
+      <div class="flex-1 min-w-0 overflow-hidden">
         <slot />
       </div>
       {#if showDashboardChat && correctedKindForChat}
