@@ -4,9 +4,11 @@ import type { ConnectError } from "@connectrpc/connect";
 import type { Readable } from "svelte/store";
 import type { GridItemHTMLElement, GridStackNode } from "gridstack";
 
-export type CanvasSpecResponseStore = Readable<
-  QueryObserverResult<CanvasResponse, ConnectError>
+export type CanvasSpecResponse = QueryObserverResult<
+  CanvasResponse,
+  ConnectError
 >;
+export type CanvasSpecResponseStore = Readable<CanvasSpecResponse>;
 
 export type GridstackDispatchEvents = {
   added: { event: Event; nodes: GridStackNode[] };
