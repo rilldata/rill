@@ -31,9 +31,13 @@ import {
 import { filterSchemaValuesForSubmit } from "@rilldata/web-common/features/templates/schema-utils.ts";
 import type { MultiStepFormSchema } from "@rilldata/web-common/features/templates/schemas/types.ts";
 
-function yamlModelTemplate(driverName: string) {
+// Fallback for the header link when the runtime does not report a docs URL for the driver
+const MODELS_DOCS_URL =
+  "https://docs.rilldata.com/reference/project-files/models";
+
+function yamlModelTemplate(docsUrl: string) {
   return `# Model YAML
-# Reference documentation: https://docs.rilldata.com/developers/build/connectors/data-source/${driverName}
+# Reference documentation: ${docsUrl}
 
 type: model
 materialize: true
@@ -458,7 +462,9 @@ export async function createYamlModelFromTable(
     ? `\n\ndev:\n  sql: ${selectStatement} limit 10000`
     : "";
 
-  const yamlContent = yamlModelTemplate(driverName)
+  const yamlContent = yamlModelTemplate(
+    analyzedConnector.driver?.docsUrl || MODELS_DOCS_URL,
+  )
     .replace("{{ connector }}", connector)
     .replace(/{{ sql }}/g, selectStatement)
     .replace("{{ dev_section }}", devSection)
@@ -524,7 +530,7 @@ export async function createSqlModelFromTable(
   );
 
   // Create model — OLAP models use the same connector for both source and output
-  const topComments = `-- Model SQL\n-- Reference documentation: https://docs.rilldata.com/developers/build/connectors/data-source/${driverName}`;
+  const topComments = `-- Model SQL\n-- Reference documentation: ${analyzedConnector.driver?.docsUrl || MODELS_DOCS_URL}`;
   const connectorLine = `-- @connector: ${connector}`;
   const outputConnectorLine = `-- @output.connector: ${connector}`;
   const selectStatement = isNonStandardIdentifier(
