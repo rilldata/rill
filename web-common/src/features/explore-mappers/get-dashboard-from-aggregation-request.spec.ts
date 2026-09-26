@@ -15,6 +15,7 @@ import {
   AD_BIDS_EXPLORE_NAME,
   AD_BIDS_EXPLORE_WITH_3_MEASURES_DIMENSIONS,
   AD_BIDS_IMPRESSIONS_MEASURE,
+  AD_BIDS_METRICS_3_MEASURES_DIMENSIONS,
   AD_BIDS_METRICS_3_MEASURES_DIMENSIONS_WITH_TIME,
   AD_BIDS_METRICS_NAME,
   AD_BIDS_PUBLISHER_DIMENSION,
@@ -29,12 +30,23 @@ import {
 import { waitUntil } from "@rilldata/web-common/lib/waitUtils.ts";
 import { DashboardState_ActivePage } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb.ts";
 import {
+  type V1ExploreSpec,
   type V1MetricsViewAggregationRequest,
+  type V1MetricsViewSpec,
   V1Operation,
   V1TimeGrain,
+  type V1TimeRangeSummary,
 } from "@rilldata/web-common/runtime-client";
 import { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
-import { beforeEach, describe, expect, it } from "vitest";
+import {
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  type MockInstance,
+  vi,
+} from "vitest";
 
 describe("getDashboardFromAggregationRequest", () => {
   const mocks = DashboardFetchMocks.useDashboardFetchMocks();
@@ -383,6 +395,167 @@ describe("getDashboardFromAggregationRequest", () => {
     ]);
   });
 
+  describe("metrics view without a time dimension", () => {
+    let fetchSpy: MockInstance<typeof fetch>;
+
+    beforeEach(() => {
+      mocks.mockMetricsView(NO_TIME_SOURCE.metricsViewName, NO_TIME_METRICS);
+      mocks.mockMetricsExplore(
+        NO_TIME_SOURCE.exploreName,
+        NO_TIME_METRICS,
+        NO_TIME_EXPLORE,
+      );
+      fetchSpy = vi.spyOn(globalThis, "fetch");
+    });
+
+    afterEach(() => {
+      fetchSpy.mockRestore();
+    });
+
+    // The runtime rejects a time range summary request for this metrics view.
+    function expectNoTimeRangeSummaryRequest() {
+      expect(
+        fetchSpy.mock.calls.filter(([input]) =>
+          (input instanceof Request ? input.url : input.toString()).endsWith(
+            "/MetricsViewTimeRange",
+          ),
+        ),
+      ).toEqual([]);
+    }
+
+    const where = createAndExpression([
+      createInExpression(AD_BIDS_PUBLISHER_DIMENSION, ["Yahoo"]),
+    ]);
+    const TestCases: {
+      title: string;
+      aggregationRequest: V1MetricsViewAggregationRequest;
+      expectedNonPivotState: Partial<ExploreState>;
+      expectedPivotState: Partial<ExploreState>;
+    }[] = [
+      {
+        title: "With a dimension, measure and filter",
+        aggregationRequest: {
+          dimensions: [{ name: AD_BIDS_DOMAIN_DIMENSION }],
+          measures: [{ name: AD_BIDS_BID_PRICE_MEASURE }],
+          sort: [{ desc: true, name: AD_BIDS_BID_PRICE_MEASURE }],
+          where,
+        },
+        expectedNonPivotState: {
+          activePage: DashboardState_ActivePage.DIMENSION_TABLE,
+          allMeasuresVisible: false,
+          visibleMeasures: [AD_BIDS_BID_PRICE_MEASURE],
+          selectedDimensionName: AD_BIDS_DOMAIN_DIMENSION,
+          leaderboardSortByMeasureName: AD_BIDS_BID_PRICE_MEASURE,
+          whereFilter: where,
+        },
+        expectedPivotState: {
+          activePage: DashboardState_ActivePage.PIVOT,
+          whereFilter: where,
+          pivot: {
+            rows: [],
+            columns: [
+              {
+                id: AD_BIDS_DOMAIN_DIMENSION,
+                title: AD_BIDS_DOMAIN_DIMENSION,
+                type: PivotChipType.Dimension,
+              },
+              {
+                id: AD_BIDS_BID_PRICE_MEASURE,
+                title: AD_BIDS_BID_PRICE_MEASURE,
+                type: PivotChipType.Measure,
+              },
+            ],
+            sorting: [
+              {
+                desc: true,
+                id: AD_BIDS_BID_PRICE_MEASURE,
+              },
+            ],
+            expanded: {},
+            columnPage: 1,
+            rowPage: 1,
+            enableComparison: true,
+            activeCell: null,
+            showTotalsColumn: true,
+            showTotalsRow: true,
+            tableMode: "flat",
+          },
+        },
+      },
+
+      {
+        title: "With only a single measure",
+        aggregationRequest: {
+          dimensions: [],
+          measures: [{ name: AD_BIDS_BID_PRICE_MEASURE }],
+          sort: [{ desc: true, name: AD_BIDS_BID_PRICE_MEASURE }],
+        },
+        // Time dimension details are not opened without a time dimension
+        expectedNonPivotState: {
+          allMeasuresVisible: false,
+          visibleMeasures: [AD_BIDS_BID_PRICE_MEASURE],
+          leaderboardSortByMeasureName: AD_BIDS_BID_PRICE_MEASURE,
+        },
+        expectedPivotState: {
+          activePage: DashboardState_ActivePage.PIVOT,
+          pivot: {
+            rows: [],
+            columns: [
+              {
+                id: AD_BIDS_BID_PRICE_MEASURE,
+                title: AD_BIDS_BID_PRICE_MEASURE,
+                type: PivotChipType.Measure,
+              },
+            ],
+            sorting: [
+              {
+                desc: true,
+                id: AD_BIDS_BID_PRICE_MEASURE,
+              },
+            ],
+            expanded: {},
+            columnPage: 1,
+            rowPage: 1,
+            enableComparison: true,
+            activeCell: null,
+            showTotalsColumn: true,
+            showTotalsRow: true,
+            tableMode: "flat",
+          },
+        },
+      },
+    ];
+
+    for (const {
+      title,
+      aggregationRequest,
+      expectedNonPivotState,
+      expectedPivotState,
+    } of TestCases) {
+      it(`${title} : non-pivot state`, async () => {
+        await runTest({
+          aggregationRequest,
+          expectedAdditionalExploreState: expectedNonPivotState,
+          ignoreFilters: false,
+          forceOpenPivot: false,
+          source: NO_TIME_SOURCE,
+        });
+        expectNoTimeRangeSummaryRequest();
+      });
+
+      it(`${title} : pivot state`, async () => {
+        await runTest({
+          aggregationRequest,
+          expectedAdditionalExploreState: expectedPivotState,
+          ignoreFilters: false,
+          forceOpenPivot: true,
+          source: NO_TIME_SOURCE,
+        });
+        expectNoTimeRangeSummaryRequest();
+      });
+    }
+  });
+
   // TODO: add more extensive tests for other parts
 });
 
@@ -419,16 +592,52 @@ async function getExploreState(
   return mapQueryResp.data.exploreState;
 }
 
+type TestSource = {
+  metricsViewName: string;
+  exploreName: string;
+  metricsView: V1MetricsViewSpec;
+  explore: V1ExploreSpec;
+  timeRangeSummary: V1TimeRangeSummary | undefined;
+};
+
+const AD_BIDS_SOURCE: TestSource = {
+  metricsViewName: AD_BIDS_METRICS_NAME,
+  exploreName: AD_BIDS_EXPLORE_NAME,
+  metricsView: AD_BIDS_METRICS_3_MEASURES_DIMENSIONS_WITH_TIME,
+  explore: AD_BIDS_EXPLORE_WITH_3_MEASURES_DIMENSIONS,
+  timeRangeSummary: AD_BIDS_TIME_RANGE_SUMMARY.timeRangeSummary,
+};
+
+const NO_TIME_METRICS: V1MetricsViewSpec = {
+  displayName: AD_BIDS_METRICS_3_MEASURES_DIMENSIONS.displayName,
+  table: AD_BIDS_METRICS_3_MEASURES_DIMENSIONS.table,
+  measures: AD_BIDS_METRICS_3_MEASURES_DIMENSIONS.measures,
+  dimensions: AD_BIDS_METRICS_3_MEASURES_DIMENSIONS.dimensions,
+};
+const NO_TIME_EXPLORE: V1ExploreSpec = {
+  ...AD_BIDS_EXPLORE_WITH_3_MEASURES_DIMENSIONS,
+  metricsView: "AdBids_no_time_metrics",
+};
+const NO_TIME_SOURCE: TestSource = {
+  metricsViewName: "AdBids_no_time_metrics",
+  exploreName: "AdBids_no_time_explore",
+  metricsView: NO_TIME_METRICS,
+  explore: NO_TIME_EXPLORE,
+  timeRangeSummary: undefined,
+};
+
 async function runTest({
   aggregationRequest,
   expectedAdditionalExploreState,
   ignoreFilters,
   forceOpenPivot,
+  source = AD_BIDS_SOURCE,
 }: {
   aggregationRequest: V1MetricsViewAggregationRequest;
   expectedAdditionalExploreState: Partial<ExploreState>;
   ignoreFilters: boolean;
   forceOpenPivot: boolean;
+  source?: TestSource;
 }) {
   const mockClient = new RuntimeClient({
     host: "http://localhost:9009",
@@ -437,10 +646,10 @@ async function runTest({
   const mapQueryStore = mapQueryToDashboard(
     mockClient,
     {
-      exploreName: AD_BIDS_EXPLORE_NAME,
+      exploreName: source.exploreName,
       queryName: "MetricsViewAggregation",
       queryArgsJson: JSON.stringify({
-        metricsView: AD_BIDS_METRICS_NAME,
+        metricsView: source.metricsViewName,
         ...aggregationRequest,
       }),
       executionTime: AD_BIDS_TIME_RANGE_SUMMARY.timeRangeSummary!.max!,
@@ -451,26 +660,29 @@ async function runTest({
     },
   );
 
-  let mapQueryResp: MapQueryResponse | undefined;
-  const unsub = mapQueryStore.subscribe((r) => (mapQueryResp = r));
-  await waitUntil(() => !!mapQueryResp?.data, 1000, 50);
+  // The store starts out undefined when its queries are already cached.
+  const responses: (MapQueryResponse | undefined)[] = [];
+  const unsub = mapQueryStore.subscribe((r) => responses.push(r));
+  await waitUntil(() => !!responses.at(-1)?.data, 1000, 50);
   unsub();
 
+  const mapQueryResp = responses.at(-1);
   if (!mapQueryResp) {
     throw new Error("mapQueryStore did not return a response");
   }
 
-  expect(mapQueryResp.error).toBeNull();
+  // No response along the way, not just the last one, should carry an error.
+  expect(responses.map((r) => r?.error).filter(Boolean)).toEqual([]);
 
   const rillDefaultExploreState = getRillDefaultExploreState(
-    AD_BIDS_METRICS_3_MEASURES_DIMENSIONS_WITH_TIME,
-    AD_BIDS_EXPLORE_WITH_3_MEASURES_DIMENSIONS,
-    AD_BIDS_TIME_RANGE_SUMMARY.timeRangeSummary,
+    source.metricsView,
+    source.explore,
+    source.timeRangeSummary,
   );
   const exploreStateFromYAMLConfig = getExploreStateFromYAMLConfig(
-    AD_BIDS_EXPLORE_WITH_3_MEASURES_DIMENSIONS,
-    AD_BIDS_TIME_RANGE_SUMMARY.timeRangeSummary,
-    AD_BIDS_METRICS_3_MEASURES_DIMENSIONS_WITH_TIME.smallestTimeGrain,
+    source.explore,
+    source.timeRangeSummary,
+    source.metricsView.smallestTimeGrain,
   );
   const expectedExploreState = {
     ...rillDefaultExploreState,
