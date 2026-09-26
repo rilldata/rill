@@ -63,43 +63,4 @@ Please note when you run `rill env pull`, Rill will *automatically override any 
 
 ### Credentials Naming Schema
 
-Connector credentials use a standardized naming convention. Generic credentials (shared across connectors like cloud providers) use standard names without a driver prefix, while driver-specific credentials use the `DRIVER_PROPERTY` format. Please see below for each source and its required properties. If you have any questions or need specifics, [contact us](/contact)!
-
-:::note Legacy Naming Convention
-Older projects may use the `connector.<connector_name>.<property>` syntax (e.g., `connector.druid.dsn`, `connector.clickhouse.dsn`). This format is still supported for backwards compatibility.
-:::
-
-<div
-    style={{
-    width: '100%',
-    margin: 'auto',
-    padding: '20px',
-    textAlign: 'center',
-    display: 'flex',
-    justifyContent: 'center',
-    alignItems: 'center'
-    }}
->
-| **Source Name** |             Property             | Environment Variable                |
-| :-------------: | :------------------------------: | :---------------------------------- |
-|     **GCS**     | `google_application_credentials` | `GOOGLE_APPLICATION_CREDENTIALS`    |
-|                 |             `key_id`             | `GCP_ACCESS_KEY_ID`                 |
-|                 |             `secret`             | `GCP_SECRET_ACCESS_KEY`             |
-|   **AWS S3**    |       `aws_access_key_id`        | `AWS_ACCESS_KEY_ID`                 |
-|                 |     `aws_secret_access_key`      | `AWS_SECRET_ACCESS_KEY`             |
-|    **Azure**    |     `azure_storage_account`      | `AZURE_STORAGE_ACCOUNT`             |
-|                 |       `azure_storage_key`        | `AZURE_STORAGE_KEY`                 |
-|                 | `azure_storage_connection_string`| `AZURE_STORAGE_CONNECTION_STRING`   |
-|                 |     `azure_storage_sas_token`    | `AZURE_STORAGE_SAS_TOKEN`           |
-|  **Big Query**  | `google_application_credentials` | `GOOGLE_APPLICATION_CREDENTIALS`    |
-|  **Snowflake**  |              `dsn`               | `SNOWFLAKE_DSN`                     |
-|                 |           `password`             | `SNOWFLAKE_PASSWORD`                |
-| **ClickHouse**  |              `host`              | `CLICKHOUSE_HOST`                   |
-|                 |              `port`              | `CLICKHOUSE_PORT`                   |
-|                 |            `username`            | `CLICKHOUSE_USERNAME`               |
-|                 |            `password`            | `CLICKHOUSE_PASSWORD`               |
-|                 |              `ssl`               | `CLICKHOUSE_SSL`                    |
-|                 |            `database`            | `CLICKHOUSE_DATABASE`               |
-|                 |              `dsn`               | `CLICKHOUSE_DSN`                    |
-
-</div>
+When you add a connector in Rill Developer, its credentials are saved to `.env` under standard names such as `AWS_ACCESS_KEY_ID` or `SNOWFLAKE_PASSWORD`. Use the same names when you add variables here by hand; the full list is in the [credentials naming schema](/developers/build/connectors/credentials#credentials-naming-schema).

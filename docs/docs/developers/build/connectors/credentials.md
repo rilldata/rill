@@ -88,33 +88,31 @@ Additional variables can then be usable and referenceable for [templating](/deve
 
 ### Credentials Naming Schema
 
-When you create a connector through Rill's UI, credentials are automatically saved to your `.env` file using a standardized naming convention:
+When you add a connector through the Add Data form, Rill saves its secrets to `.env` and references them from the connector YAML. Everything else, such as host, port and database, is written into the connector YAML directly. The form uses these variable names:
 
-#### Generic Credentials (Shared Across Connectors)
+| Connector | Property | Variable written by the Add Data form |
+|-----------|----------|---------------------------------------|
+| Athena, Redshift, S3 | `aws_access_key_id` | `AWS_ACCESS_KEY_ID` |
+| Athena, Redshift, S3 | `aws_secret_access_key` | `AWS_SECRET_ACCESS_KEY` |
+| S3 | `aws_role_arn` | `AWS_ROLE_ARN` |
+| Azure | `azure_storage_connection_string` | `AZURE_STORAGE_CONNECTION_STRING` |
+| Azure | `azure_storage_key` | `AZURE_STORAGE_KEY` |
+| Azure | `azure_storage_sas_token` | `AZURE_STORAGE_SAS_TOKEN` |
+| BigQuery, GCS | `google_application_credentials` | `GOOGLE_APPLICATION_CREDENTIALS` |
+| GCS | `key_id` | `GCP_ACCESS_KEY_ID` |
+| GCS | `secret` | `GCP_SECRET_ACCESS_KEY` |
+| ClickHouse | `dsn`, `password` | `CLICKHOUSE_DSN`, `CLICKHOUSE_PASSWORD` |
+| Druid | `dsn`, `password` | `DRUID_DSN`, `DRUID_PASSWORD` |
+| Pinot | `dsn`, `password` | `PINOT_DSN`, `PINOT_PASSWORD` |
+| MySQL | `dsn`, `password` | `MYSQL_DSN`, `MYSQL_PASSWORD` |
+| Postgres | `dsn`, `password` | `POSTGRES_DSN`, `POSTGRES_PASSWORD` |
+| Supabase | `dsn`, `password` | `SUPABASE_DSN`, `SUPABASE_PASSWORD` |
+| Snowflake | `dsn`, `password`, `privateKey` | `SNOWFLAKE_DSN`, `SNOWFLAKE_PASSWORD`, `SNOWFLAKE_PRIVATE_KEY` |
+| Salesforce | `password`, `key` | `SALESFORCE_PASSWORD`, `SALESFORCE_KEY` |
+| MotherDuck | `token` | `MOTHERDUCK_TOKEN` |
+| DuckLake | Postgres or MySQL catalog password | `DUCKLAKE_CATALOG_POSTGRES_PASSWORD`, `DUCKLAKE_CATALOG_MYSQL_PASSWORD` |
 
-Common cloud provider credentials use standard names without a driver prefix:
-
-| Property | Environment Variable |
-|----------|---------------------|
-| Google Application Credentials | `GOOGLE_APPLICATION_CREDENTIALS` |
-| AWS Access Key ID | `AWS_ACCESS_KEY_ID` |
-| AWS Secret Access Key | `AWS_SECRET_ACCESS_KEY` |
-| Azure Storage Connection String | `AZURE_STORAGE_CONNECTION_STRING` |
-| Azure Storage Key | `AZURE_STORAGE_KEY` |
-| Azure Storage SAS Token | `AZURE_STORAGE_SAS_TOKEN` |
-| Snowflake Private Key | `PRIVATE_KEY` |
-
-#### Driver-Specific Credentials
-
-Credentials specific to a database driver use the `DRIVER_PROPERTY` format:
-
-| Driver | Property | Environment Variable |
-|--------|----------|---------------------|
-| PostgreSQL | password | `POSTGRES_PASSWORD` |
-| PostgreSQL | dsn | `POSTGRES_DSN` |
-| MySQL | password | `MYSQL_PASSWORD` |
-| Snowflake | password | `SNOWFLAKE_PASSWORD` |
-| ClickHouse | password | `CLICKHOUSE_PASSWORD` |
+Any other secret is named after the connector and the property in capitals. For example, a Databricks connector named `databricks` stores its `token` as `DATABRICKS_TOKEN`.
 
 #### Handling Multiple Connectors
 

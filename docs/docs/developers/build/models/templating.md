@@ -1,6 +1,6 @@
 ---
 title: Model Environment Templating
-description: Dev/Prod Setup
+description: Change a model's SQL between development and production with templating
 sidebar_label: Environment Templating
 sidebar_position: 40
 ---
