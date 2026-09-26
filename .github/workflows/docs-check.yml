@@ -7,6 +7,7 @@ on:
       - "cli/**"
       - "docs/**"
       - "runtime/parser/schema/**"
+      - "scripts/check-docs-links.js"
 env:
   NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
   NETLIFY_SITE_ID: 23baf08e-2d3e-44db-8bd4-938e54467a29
@@ -47,6 +48,10 @@ jobs:
         run: |-
           npm ci -w docs
           npm run build -w docs
+
+      - name: Check docs links
+        if: github.event_name == 'pull_request'
+        run: node scripts/check-docs-links.js
 
       - name: Deploy Docs to Netlify docs.rilldata.com
         uses: nwtgck/actions-netlify@v3.0
