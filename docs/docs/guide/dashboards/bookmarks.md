@@ -54,12 +54,9 @@ On the bookmark screen, you'll then be able to set the options related to the sa
 
 ![Setbookmark](/img/explore/bookmarks/setbookmark.png)
 
-
-
-
 ## Manage all bookmarks in a project
 
-The **Bookmarks** tab of a project lists every bookmark you can see across all of the project's explore and canvas dashboards, so you don't need to open each dashboard's bookmark menu to find a saved view. Open a project in Rill Cloud and select **Bookmarks** in the project tabs.
+The **Bookmarks** tab of a project lists every bookmark you can see across all of the project's Explore and Canvas dashboards, so you don't need to open each dashboard's bookmark menu to find a saved view. Open a project in Rill Cloud and select **Bookmarks** in the project tabs.
 
 ![Project Bookmarks tab](/img/explore/bookmarks/bookmarks-tab.png)
 
@@ -80,7 +77,7 @@ The Bookmarks tab and the home page section are only shown to signed-in users. A
 
 ### Search and sort bookmarks
 
-Use the search box to filter the list by bookmark name, description, or dashboard title.
+Use the search box to filter the list by bookmark name, description, or dashboard title or name.
 
 Use the sort menu to change the order:
 
