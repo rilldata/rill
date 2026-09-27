@@ -234,11 +234,11 @@ _[object]_ - (no description)
 
 ### `stacked_bar_normalized`
 
-_[object]_ - Stacked bar chart normalized to 100%
+_[object]_ - Bar chart normalized to 100% values
 
 ### `area_chart`
 
-_[object]_ - Area chart
+_[object]_ - Line chart with area
 
 ### `combo_chart`
 
@@ -262,7 +262,7 @@ _[object]_ - Funnel chart
 
 ### `heatmap`
 
-_[object]_ - Heat map
+_[object]_ - Heat map chart to visualize distribution of data
 
 ### `custom_chart`
 

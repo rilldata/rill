@@ -112,7 +112,7 @@ When you edit a canvas in [Rill Developer](/developers/build/dashboards/canvas) 
 
 ![Pin and required controls in a canvas filter dropdown](/img/explore/canvas/pin-required-filter-toggles.png)
 
-These controls change only your current editing session. To write them to the canvas file, click **Save as default** in the canvas editor header. This saves the pinned and required filters to `filters.pinned` and `filters.required`, and also saves the current filter values and time range as the canvas's [`defaults`](/reference/project-files/canvas-dashboards#defaults).
+These controls change only your current editing session. To write them to the canvas file, click **Save as default** in the canvas editor header. This saves the pinned and required filters to `filters.pinned` and `filters.required`, and also saves the current filter values, time range and comparison setting as the canvas's [`defaults`](/reference/project-files/canvas-dashboards#defaults).
 
 ### What Viewers See
 

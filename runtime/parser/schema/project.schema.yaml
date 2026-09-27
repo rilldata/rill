@@ -3196,10 +3196,10 @@ definitions:
             $ref: '#/definitions/chart_properties'
           stacked_bar_normalized:
             type: object
-            description: Stacked bar chart normalized to 100%
+            description: Bar chart normalized to 100% values
           area_chart:
             type: object
-            description: Area chart
+            description: Line chart with area
           combo_chart:
             type: object
             description: Dual-axis chart that draws one measure as bars and another as a line
@@ -3217,7 +3217,7 @@ definitions:
             description: Funnel chart
           heatmap:
             type: object
-            description: Heat map
+            description: Heat map chart to visualize distribution of data
           custom_chart:
             type: object
             description: Custom Vega-Lite chart built from Metrics SQL queries
