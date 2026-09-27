@@ -1,5 +1,5 @@
 ---
-title: Snowflake (OLAP engine)
+title: Snowflake (OLAP Engine)
 description: Power Rill dashboards using Snowflake
 sidebar_label: Snowflake
 sidebar_position: 24
