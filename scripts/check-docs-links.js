@@ -15,6 +15,10 @@
 //   4. It warns about absolute self-links in docs prose, which the Docusaurus
 //      link checker cannot see; prefer site-relative links there.
 //
+// URLs inside code blocks are checked too, so examples must use real pages.
+// CI runs this in the docs workflow, which triggers on docs changes only;
+// a product-only change is checked on the next docs pull request.
+//
 // Run it after `npm run build -w docs`:
 //   node scripts/check-docs-links.js [--dist docs/dist]
 
@@ -46,10 +50,10 @@ const SOURCE_ROOTS = [
 ];
 
 // Directories and files that are generated or only used by tests.
+// Match by directory name, so never add a name that docs pages use (such as "build").
 const SKIP_DIRS = new Set([
   "node_modules",
   ".svelte-kit",
-  "build",
   "dist",
   "gen",
   "testdata",
@@ -79,6 +83,7 @@ const KNOWN_BROKEN = new Set([
   "https://docs.rilldata.com/developers/build/connectors/source/",
   "https://docs.rilldata.com/reference/project-files/metrics_views",
   "https://docs.rilldata.com/guide/dashboard-101",
+  "https://docs.rilldata.com/reference/project-files/explores",
   "https://docs.rilldata.com/developers/build/connectors/olap/clickhouse#connecting-to-clickhouse-cloud",
   // The rill.yaml schema, and the rill.yaml template written by `rill init`.
   "https://docs.rilldata.com/developers/build/rill-project-file#dashboard-defaults",
