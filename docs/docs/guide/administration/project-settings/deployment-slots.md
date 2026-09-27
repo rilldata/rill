@@ -62,7 +62,7 @@ Your organization's plan sets two slot limits:
 If a change exceeds either limit, Rill rejects it with a `quota exceeded` error and the current slots stay in place. To raise your limits, [contact us](/contact).
 
 :::note
-The total slot limit is currently calculated from each project's production slots only. Development slots are checked against the per-deployment limit but are not added to the organization's running total.
+The organization's slot usage currently counts each project's production slots only, so existing development slots do not use up the total. Raising either setting on an existing project is still checked against the total limit.
 :::
 
 Changing slots changes the resources your project uses, which can affect your costs. For details, see [Billing Plans Explained](/developers/other/plans).
