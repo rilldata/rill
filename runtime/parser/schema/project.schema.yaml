@@ -3394,6 +3394,7 @@ definitions:
   # Map Properties
   map_properties:
     type: object
+    description: Map of points or regions from a geo dimension, colored by a measure and, for points, sized by a second measure
     properties:
       metrics_view:
         type: string

@@ -308,7 +308,7 @@ _[object]_ - (no description)
 
 ### `map`
 
-_[object]_ - (no description)
+_[object]_ - Map of points or regions from a geo dimension, colored by a measure and, for points, sized by a second measure
 
   - **`metrics_view`** - _[string]_ - Reference to the metrics view to use _(required)_
 
