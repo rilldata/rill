@@ -228,19 +228,7 @@ For detailed instructions and examples on how to configure AI instructions at bo
 
 ## Testing Security
 
-### Test Access Policies in Rill Developer
-
-Testing access policies in your local environment is a crucial step before deploying to Rill Cloud. This is done via the `mock_users` in the project file. You can create pseudo-users with specific domains, admin/non-admin roles, or user groups to ensure that access policies work as intended. For comprehensive information on security policies, see our [data access policies documentation](/developers/build/metrics-view/security). 
-
-Let's assume that the following security policy is applied to the metrics view.
-
-```yaml
-security:
-    access: "{{ .user.admin }} OR '{{ .user.domain }}' == 'rilldata.com'"
-    row_filter: "region = '{{ .user.region }}'"
-```
-
-To test both access to the dashboard and the row filter, you can create the following in the project YAML.
+Rill Developer lets you preview dashboards as synthetic **mock users** so you can verify [security policies](/developers/build/metrics-view/security) locally before deploying. Define them under `mock_users` in `rill.yaml`:
 
 ```yaml
 mock_users:
@@ -255,50 +243,13 @@ mock_users:
     region: europe
 ```
 
-See our embedded example, [here](https://rill-embedding-example.netlify.app/security/filter-by-user).
+Every mock user needs an `email`; any other keys (`admin`, `groups`, `region`, or custom attributes passed from an [embedded dashboard](/developers/embed/iframe)) become available as `.user.<attribute>` inside your security templates.
 
-### Custom Attributes
-
-Embedded dashboards allow passing custom attributes (variables) from your application to control access and filtering. These attributes are set when generating the embed JWT token in your application code. For more information on embedding dashboards, see our [embedding documentation](/developers/embed/iframe).
-
-To test embedded dashboards locally with custom attributes, add them to `mock_users`:
-
-```yaml
-- email: embed@rilldata.com
-  name: embed
-  custom_variable_1: Value_1 #this is passed at embed creation
-  custom_variable_2: Value_2 #this is passed at embed creation
-```
-
-See our [Custom Attributes Embedded Dashboard](https://rill-embedding-example.netlify.app/security/filter-by-custom-attributes) live!
-
-Let's assume a similar setup to the above example. Within the metrics view, we define:
-
-```yaml
-security:
-  access: true
-  row_filter: >
-    app_site_name = '{{ .user.app_site_name }}' AND
-      pub_name = '{{ .user.pub_name }}'
-```
-
-Then within the application we are passing
-
-```yaml
-app_site_name='Sling'
-pub_name='MobilityWare'
-```
-
-You can create a test mock user to ensure that this dashboard is working as designed with the following:
-
-```yaml
-- email: embed@rilldata.com
-  name: embed
-  app_site_name: 'Sling' 
-  pub_name: 'MobilityWare'
-```
+Once a policy is defined, open a dashboard and pick a mock user from the **View as** button in the top-right corner. Full workflow, screenshots, and worked examples for row filters, group access, admin gating, and embedded custom attributes are in the [View as User guide](/developers/build/metrics-view/view-as-user).
 
 ![Custom Attribute Mock User](/img/tutorials/admin/custom-attribute-mock-user.png)
+
+See our embedded examples for [row filters by user](https://rill-embedding-example.netlify.app/security/filter-by-user) and [custom attributes](https://rill-embedding-example.netlify.app/security/filter-by-custom-attributes) live.
 
 ## Feature Flags
 
