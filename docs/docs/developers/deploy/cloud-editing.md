@@ -92,44 +92,18 @@ If the primary branch has changed since you started editing, Rill asks you to pu
 
 ## Test security policies with View as
 
-When a dashboard has [data access policies](/developers/build/metrics-view/security), you can preview it as a mock user from inside the editor. This lets you check row filters, field restrictions and access rules on your branch before publishing them.
-
-**View as** in the cloud editor uses the `mock_users` defined in your project's `rill.yaml`, the same list that Rill Developer uses:
-
-```yaml
-# rill.yaml
-mock_users:
-  - email: john@yourcompany.com
-    name: John Doe
-    admin: true
-  - email: jane@partnercompany.com
-    groups:
-      - partners
-  - email: embed@rilldata.com
-    tenant_id: acme # custom attribute
-```
-
-Each mock user can set `email`, `name`, `admin`, `groups`, and any custom attributes your policies reference. Rill derives `domain` from the email address. See [`mock_users`](/reference/project-files/rill-yaml#mock_users) for the full reference.
-
-To preview a dashboard as a mock user:
+When a dashboard has [data access policies](/developers/build/metrics-view/security), you can preview it as a mock user from inside the editor, so you can check row filters, field restrictions and access rules on your branch before you publish them. **View as** in the cloud editor uses the `mock_users` defined in your project's `rill.yaml`, the same list Rill Developer uses.
 
 1. In the cloud editor, open an explore or canvas dashboard and click **Preview**.
-2. Click **View as** in the header and select a mock user.
+2. Click **View as** in the header and select a mock user. The dashboard reloads with that user's attributes, and the header shows **Viewing as** with the user's email.
 
-   ![View as picker in the cloud editor](/img/deploy/cloud-editing/view-as-edit-mode.png)
+   ![View as menu in the cloud editor listing mock users and Add mock user](/img/deploy/cloud-editing/view-as-edit-mode.png)
 
-3. The dashboard reloads with that user's attributes applied, and the header shows **Viewing as** with the user's email.
-4. To go back to your own view, click the **x** on the **Viewing as** chip. Navigating to a different dashboard also clears the selection.
+3. To return to your own view, click the **x** on the **Viewing as** chip. Navigating to a different dashboard also clears the selection.
 
-To add a mock user, click **Add mock user** in the **View as** menu. Rill opens `rill.yaml` in the editor so you can add an entry.
+**View as** only appears on dashboards that have a security policy. It applies the attributes you define in `mock_users` and doesn't look up real users, so give your mock users the same email domains, groups and custom attributes as the people you're testing for. It doesn't change your own role or what you can edit.
 
-:::info The View as button is not visible
-**View as** only appears on dashboards that have a security policy, either on the dashboard, on a metrics view it uses, or in `rill.yaml`. By default, dashboards without policies are visible to every user.
-:::
-
-:::tip Mock users are not real users
-**View as** applies the attributes you define in `mock_users`. It doesn't look up real users, so make sure your mock users carry the same email domains, groups and custom attributes as the people you're testing for. View as only changes the attributes your policies evaluate; it doesn't change your own role or what you can edit. To check how a published dashboard looks for an actual member of your organization, use [View as in Rill Cloud](/developers/build/metrics-view/security#rill-cloud).
-:::
+For defining mock users, example policies to test and troubleshooting, see [Test Access Policies with View As](/developers/build/metrics-view/view-as-user).
 
 ## Manage branches and resources
 
@@ -147,11 +121,11 @@ Go to **Status** > **Branches** to see all branches with a deployment, including
 
 - **Open editor** to continue editing it.
 - **Hibernate** a running branch to free its resources, or **Resume** a hibernated one.
-- **Delete** the branch and its deployment. For projects connected to GitHub, this also deletes the branch in your repository.
+- **Delete** the branch and its deployment. For editable branches, this also deletes the remote branch, and any unpushed changes are lost.
 
 ### Development slots
 
-Each dev deployment gets the number of **Development slots** configured for the project. Each slot provides 1 vCPU and 4 GiB of memory. Project admins can change the value under **Status** > **Branches** > **Deployment slots**, or with [`rill project edit --dev-slots`](/reference/cli/project/edit). Changing slots restarts the affected deployments.
+Each dev deployment gets the number of **Development slots** configured for the project. Each slot provides 1 vCPU and 4 GiB of memory. Project admins can change the value under **Status** > **Branches** > **Deployment slots**, or with [`rill project edit --dev-slots`](/reference/cli/project/edit). Changing slots may restart the affected deployments.
 
 ## Cloud editing and Rill Developer
 

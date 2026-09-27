@@ -159,13 +159,10 @@ Note: Rill requires users to confirm their email address before letting them int
 
 Once you've written a policy, preview a dashboard from another user's perspective to confirm it does what you expect:
 
-- In **Rill Developer** (or a **Rill Cloud edit session**), add `mock_users` to `rill.yaml` and pick one from the **View as** button in the top-right of the dashboard preview.
+- In **Rill Developer** (or a [Rill Cloud edit session](/developers/deploy/cloud-editing#test-security-policies-with-view-as)), add `mock_users` to `rill.yaml` and pick one from the **View as** button in the top-right of the dashboard preview.
 - On a **deployed Rill Cloud dashboard**, project admins can preview as any real project user from the avatar dropdown → **View as**.
 
 See the [View as User guide](/developers/build/metrics-view/view-as-user) for the full workflow, screenshots, and example policies you can test.
-
-### Cloud Editing
-If you [edit your project in Rill Cloud](/developers/deploy/cloud-editing), the same "View as" button and `mock_users` are available in the dashboard preview of the cloud editor. This lets you test policy changes on a branch before publishing them. See [Test security policies with View as](/developers/deploy/cloud-editing#test-security-policies-with-view-as).
 
 ### Rill Cloud
 
