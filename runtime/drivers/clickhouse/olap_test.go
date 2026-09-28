@@ -1115,6 +1115,15 @@ func testQueryAttributesReadonlyUser(t *testing.T, olap drivers.OLAPStore, dsn s
 		QueryAttributes: map[string]string{"custom_test": "value"},
 	})
 	require.ErrorContains(t, err, "readonly")
+
+	// Connector query settings are not silently dropped
+	handle, err = drivers.Open("clickhouse", "", "readonly", map[string]any{"dsn": u.String(), "query_settings": "max_threads = 4"}, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
+	require.NoError(t, err)
+	defer handle.Close()
+	readonlyOLAP, ok = handle.AsOLAP("default")
+	require.True(t, ok)
+	_, err = readonlyOLAP.Query(ctx, &drivers.Statement{Query: "SELECT 1"})
+	require.ErrorContains(t, err, "readonly")
 }
 
 func testEntityTypeRestrictedUser(t *testing.T, olap drivers.OLAPStore, dsn, cluster string) {
