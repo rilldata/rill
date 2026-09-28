@@ -57,12 +57,8 @@ The same restart behavior applies as in the UI.
 Your organization's plan sets two slot limits:
 
 - **Slots per deployment**: the most slots that any single production or development deployment can use.
-- **Total slots**: the most production slots that all projects in the organization can use combined.
+- **Total slots**: the most slots that all projects in the organization can use combined. Both production and development slots are checked against this limit, both when you raise a project's slots and when Rill creates a new deployment, such as a branch deployment or a deployment for editing in Rill Cloud.
 
-If a change exceeds either limit, Rill rejects it with a `quota exceeded` error and the current slots stay in place. To raise your limits, [contact us](/contact).
-
-:::note
-The organization's slot usage currently counts each project's production slots only, so existing development slots do not use up the total. Raising either setting on an existing project is still checked against the total limit.
-:::
+If a slot change or a new deployment exceeds either limit, Rill rejects it with a `quota exceeded` error. A rejected slot change leaves the current slots in place. To raise your limits, [contact us](/contact).
 
 Changing slots changes the resources your project uses, which can affect your costs. For details, see [Billing Plans Explained](/developers/other/plans).
