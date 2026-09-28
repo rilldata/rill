@@ -68,31 +68,31 @@ func TestLookup(t *testing.T) {
 	// Verify expected columns and types from the init SQL.
 	// Databricks information_schema uses its own type aliases (e.g. SHORT, LONG, BYTE)
 	// and strips precision/length from scalar types (e.g. DECIMAL instead of DECIMAL(18,6)).
-	expected := []struct {
-		Name string
-		Type string
-	}{
-		{Name: "id", Type: "INT"},
-		{Name: "boolean_col", Type: "BOOLEAN"},
-		{Name: "tinyint_col", Type: "BYTE"},
-		{Name: "smallint_col", Type: "SHORT"},
-		{Name: "int32_col", Type: "INT"},
-		{Name: "int64_col", Type: "LONG"},
-		{Name: "float_col", Type: "FLOAT"},
-		{Name: "double_col", Type: "DOUBLE"},
-		{Name: "decimal_col", Type: "DECIMAL"},
-		{Name: "string_col", Type: "STRING"},
-		{Name: "tinyint_col", Type: "BYTE"},
-		{Name: "varchar_col", Type: "STRING"},
-		{Name: "date_col", Type: "DATE"},
-		{Name: "timestamp_col", Type: "TIMESTAMP"},
-		{Name: "timestamp_ntz_col", Type: "TIMESTAMP_NTZ"},
-		{Name: "binary_col", Type: "BINARY"},
-		{Name: "array_col", Type: "ARRAY"},
-		{Name: "map_col", Type: "MAP"},
-		{Name: "struct_col", Type: "STRUCT"},
+	expected := map[string]string{
+		"id":                "INT",
+		"boolean_col":       "BOOLEAN",
+		"tinyint_col":       "BYTE",
+		"smallint_col":      "SHORT",
+		"int32_col":         "INT",
+		"int64_col":         "LONG",
+		"float_col":         "FLOAT",
+		"double_col":        "DOUBLE",
+		"decimal_col":       "DECIMAL",
+		"string_col":        "STRING",
+		"varchar_col":       "STRING",
+		"date_col":          "DATE",
+		"timestamp_col":     "TIMESTAMP",
+		"timestamp_ntz_col": "TIMESTAMP_NTZ",
+		"binary_col":        "BINARY",
+		"array_col":         "ARRAY",
+		"map_col":           "MAP",
+		"struct_col":        "STRUCT",
+	}
+	actual := make(map[string]string, len(meta.Schema.Fields))
+	for _, f := range meta.Schema.Fields {
+		actual[f.Name] = f.Type.RawType
 	}
 	for col, typ := range expected {
-		require.Equal(t, typ, meta.Schema.Fields[col].Type.Code, "unexpected type for column %q", col)
+		require.Equal(t, typ, actual[col], "unexpected type for column %q", col)
 	}
 }
