@@ -150,8 +150,7 @@ func (c *connection) Lookup(ctx context.Context, database, databaseSchema, name 
 	// Use system.information_schema filtered by table_catalog (see ListTables), and query
 	// tables/columns separately rather than JOINing them: RT's Photon rejects the join's
 	// shuffle with PHOTON_INTERNAL_ERROR. Equivalent on DBSQL.
-	catPred, catArgs := catalogPredicate(database)
-	args := append([]any{}, catArgs...)
+	catPred, args := catalogPredicate(database)
 	args = append(args, databaseSchema, name)
 
 	var tableType string
