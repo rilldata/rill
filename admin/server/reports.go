@@ -66,36 +66,45 @@ func (s *Server) GetReportMeta(ctx context.Context, req *adminv1.GetReportMetaRe
 		recipients = append(recipients, "")
 	}
 
+	ownerId := ""
 	var ownerEmail string
+	var ownerAttrs *structpb.Struct
+	isEmbed := false
 	if req.OwnerId != "" {
-		owner, err := s.admin.DB.FindUser(ctx, req.OwnerId)
-		if err != nil {
-			return nil, err
+		projectIdPrefix := fmt.Sprintf("%s::", proj.ID)
+		if strings.HasPrefix(req.OwnerId, projectIdPrefix) {
+			isEmbed = true
+			ownerEmail = req.OwnerId[len(projectIdPrefix):]
+		} else {
+			ownerId = req.OwnerId
+
+			owner, err := s.admin.DB.FindUser(ctx, req.OwnerId)
+			if err != nil {
+				return nil, err
+			}
+			ownerEmail = owner.Email
+
+			attr, _, _, err := s.getAttributesForUser(ctx, proj.OrganizationID, proj.ID, req.OwnerId, "")
+			if err != nil {
+				return nil, err
+			}
+			ownerAttrs, err = structpb.NewStruct(attr)
+			if err != nil {
+				return nil, err
+			}
 		}
-		ownerEmail = owner.Email
 	}
 
 	var tokens map[string]string
 	if webOpenMode == WebOpenModeRecipient {
-		tokens, err = s.createUnsubMagicTokens(ctx, proj.ID, req.Report, req.OwnerId, ownerEmail, recipients)
+		tokens, err = s.createUnsubMagicTokens(ctx, proj.ID, req.Report, ownerId, ownerEmail, recipients)
 	} else {
-		tokens, err = s.createMagicTokens(ctx, proj.OrganizationID, proj.ID, req.Report, req.OwnerId, recipients, req.Resources)
+		tokens, err = s.createMagicTokens(ctx, proj.OrganizationID, proj.ID, req.Report, ownerId, recipients, req.Resources)
 	}
 	if err != nil {
 		return nil, fmt.Errorf("failed to issue magic auth tokens: %w", err)
 	}
 
-	var ownerAttrs *structpb.Struct
-	if req.OwnerId != "" {
-		attr, _, _, err := s.getAttributesForUser(ctx, proj.OrganizationID, proj.ID, req.OwnerId, "")
-		if err != nil {
-			return nil, err
-		}
-		ownerAttrs, err = structpb.NewStruct(attr)
-		if err != nil {
-			return nil, err
-		}
-	}
 	// Generate URLs for each recipient based on web open mode, and whether they are the owner -
 	// 	Owner does not get a token in recipient mode and does not get an unsubscribe link.
 	// 	Recipients in creator mode get a token and an unsubscribe link.
@@ -104,7 +113,7 @@ func (s *Server) GetReportMeta(ctx context.Context, req *adminv1.GetReportMetaRe
 	// 	Recipients other than owner do not get an edit link, they can edit from the project UI if they have permissions.
 	for _, recipient := range recipients {
 		if recipient == ownerEmail {
-			if webOpenMode == WebOpenModeRecipient {
+			if webOpenMode == WebOpenModeRecipient && !isEmbed {
 				// owner in recipient mode gets plain open and export url without token as token does not have any access
 				delivery[recipient] = &adminv1.GetReportMetaResponse_DeliveryMeta{
 					OpenUrl:   s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportOpen(org.Name, proj.Name, req.Report, "", req.ExecutionTime.AsTime()),
@@ -188,7 +197,7 @@ func (s *Server) CreateReport(ctx context.Context, req *adminv1.CreateReportRequ
 		return nil, status.Error(codes.PermissionDenied, "does not have permission to read project repo")
 	}
 
-	if claims.OwnerType() != auth.OwnerTypeUser {
+	if claims.OwnerType() != auth.OwnerTypeUser && claims.OwnerType() != auth.OwnerTypeEmbed {
 		return nil, status.Error(codes.PermissionDenied, "only users can create reports")
 	}
 
@@ -209,7 +218,7 @@ func (s *Server) CreateReport(ctx context.Context, req *adminv1.CreateReportRequ
 		return nil, err
 	}
 
-	data, err := s.yamlForManagedReport(req.Options, claims.OwnerID())
+	data, err := s.yamlForManagedReport(req.Options, claims.OwnerID(), claims.OwnerType() == auth.OwnerTypeEmbed)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "failed to generate report YAML: %s", err.Error())
 	}
@@ -272,12 +281,20 @@ func (s *Server) EditReport(ctx context.Context, req *adminv1.EditReportRequest)
 		return nil, status.Error(codes.FailedPrecondition, "can't edit report because it was not created from the UI")
 	}
 
-	isOwner := claims.OwnerType() == auth.OwnerTypeUser && annotations.AdminOwnerUserID == claims.OwnerID()
-	if !permissions.ManageReports && !isOwner {
+	switch claims.OwnerType() {
+	case auth.OwnerTypeUser:
+		if !permissions.ManageReports || annotations.AdminOwnerUserID != claims.OwnerID() {
+			return nil, status.Error(codes.PermissionDenied, "does not have permission to edit report")
+		}
+
+	case auth.OwnerTypeEmbed:
+		// TODO: check if the user has permission to edit the report
+
+	default:
 		return nil, status.Error(codes.PermissionDenied, "does not have permission to edit report")
 	}
 
-	data, err := s.yamlForManagedReport(req.Options, annotations.AdminOwnerUserID)
+	data, err := s.yamlForManagedReport(req.Options, annotations.AdminOwnerUserID, claims.OwnerType() == auth.OwnerTypeEmbed)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "failed to generate report YAML: %s", err.Error())
 	}
@@ -553,7 +570,7 @@ func (s *Server) GenerateReportYAML(ctx context.Context, req *adminv1.GenerateRe
 	}, nil
 }
 
-func (s *Server) yamlForManagedReport(opts *adminv1.ReportOptions, ownerUserID string) ([]byte, error) {
+func (s *Server) yamlForManagedReport(opts *adminv1.ReportOptions, ownerUserID string, personal bool) ([]byte, error) {
 	res := reportYAML{}
 	res.Type = "report"
 	res.DisplayName = opts.DisplayName
@@ -588,6 +605,9 @@ func (s *Server) yamlForManagedReport(opts *adminv1.ReportOptions, ownerUserID s
 	res.Notify.Slack.Webhooks = opts.SlackWebhooks
 	res.Annotations.AdminOwnerUserID = ownerUserID
 	res.Annotations.AdminManaged = true
+	if personal {
+		res.Annotations.Personal = true
+	}
 	res.Annotations.AdminNonce = time.Now().Format(time.RFC3339Nano)
 	res.Annotations.WebOpenPath = opts.WebOpenPath
 	res.Annotations.WebOpenState = opts.WebOpenState
@@ -929,6 +949,7 @@ type reportYAML struct {
 type reportAnnotations struct {
 	AdminOwnerUserID string      `yaml:"admin_owner_user_id"`
 	AdminManaged     bool        `yaml:"admin_managed"`
+	Personal         bool        `yaml:"personal,omitempty"`
 	AdminNonce       string      `yaml:"admin_nonce"` // To ensure spec version gets updated on writes, to enable polling in TriggerReconcileAndAwaitReport
 	WebOpenPath      string      `yaml:"web_open_path"`
 	WebOpenState     string      `yaml:"web_open_state"`
@@ -966,6 +987,7 @@ func parseReportAnnotations(annotations map[string]string) reportAnnotations {
 	res.AdminOwnerUserID = annotations["admin_owner_user_id"]
 	res.AdminManaged, _ = strconv.ParseBool(annotations["admin_managed"])
 	res.AdminNonce = annotations["admin_nonce"]
+	res.Personal = annotations["personal"] == "true"
 	res.WebOpenPath = annotations["web_open_path"]
 	res.WebOpenState = annotations["web_open_state"]
 	res.Explore = annotations["explore"]

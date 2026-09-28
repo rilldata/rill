@@ -52,7 +52,7 @@
     expressionFilterManager,
   } = stateManagers;
 
-  const { adminServer, exports } = featureFlags;
+  const { exports } = featureFlags;
 
   let exploreHasTimeDimension = $derived(!!$timeRangeSummaryStore.data);
 
@@ -167,7 +167,7 @@
       {#if $exports}
         <ExportMenu
           label={m.dashboard_export_dimension_table_data()}
-          includeScheduledReport={$adminServer && exploreHasTimeDimension}
+          includeScheduledReport={exploreHasTimeDimension}
           getQuery={(isScheduled) =>
             getDimensionTableExportQuery(stateManagers, isScheduled)}
           exploreName={$exploreName}

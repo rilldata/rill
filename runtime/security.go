@@ -413,6 +413,12 @@ func (p *securityEngine) resolveRules(claims *SecurityClaims, rules []*runtimev1
 	case ResourceKindReport:
 		spec := r.GetReport().Spec
 		rule := p.builtInReportSecurityRule(r.Meta.Name, spec, claims, rules)
+		if isPersonalAnnotations(spec.Annotations) {
+			rule := p.personalReportSecurityRule(r.Meta.Name, spec, claims)
+			if rule != nil {
+				rules = append([]*runtimev1.SecurityRule{rule}, rules...)
+			}
+		}
 		if rule != nil {
 			// Prepend instead of append since the rule is likely to lead to a quick deny access
 			rules = append([]*runtimev1.SecurityRule{rule}, rules...)
@@ -625,6 +631,44 @@ func (p *securityEngine) builtInCanvasSecurityRule(canvasRes *runtimev1.Resource
 				Access: &runtimev1.SecurityRuleAccess{
 					Allow:              true,
 					ConditionResources: []*runtimev1.ResourceName{canvasRes},
+				},
+			},
+		}
+	}
+
+	return nil
+}
+
+func isPersonalAnnotations(annotations map[string]string) bool {
+	if annotations == nil {
+		return false
+	}
+	v, _ := strconv.ParseBool(annotations["personal"])
+	return v
+}
+
+func (p *securityEngine) personalReportSecurityRule(reportRes *runtimev1.ResourceName, spec *runtimev1.ReportSpec, claims *SecurityClaims) *runtimev1.SecurityRule {
+	// Allow if the user is an admin
+	if claims.Admin() {
+		return &runtimev1.SecurityRule{
+			Rule: &runtimev1.SecurityRule_Access{
+				Access: &runtimev1.SecurityRuleAccess{
+					Allow:              true,
+					ConditionResources: []*runtimev1.ResourceName{reportRes},
+				},
+			},
+		}
+	}
+
+	ownedByUser := claims.UserID == spec.Annotations["admin_owner_user_id"]
+
+	// Allow if the calling user is the owner
+	if ownedByUser {
+		return &runtimev1.SecurityRule{
+			Rule: &runtimev1.SecurityRule_Access{
+				Access: &runtimev1.SecurityRuleAccess{
+					Allow:              true,
+					ConditionResources: []*runtimev1.ResourceName{reportRes},
 				},
 			},
 		}

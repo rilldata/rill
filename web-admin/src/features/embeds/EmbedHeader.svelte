@@ -89,6 +89,9 @@
       <div class="flex-1"></div>
     {/if}
 
+    <a class="text-fg-muted hover:text-fg-secondary" href="/-/embed/reports">
+      R
+    </a>
     {#if showDashboardChat}
       <div class="flex gap-x-4 items-center">
         <LastRefreshedDate dashboard={activeResource?.name} />
