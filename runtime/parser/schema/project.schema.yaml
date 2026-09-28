@@ -3492,11 +3492,14 @@ definitions:
       dimension_filters:
         type: string
         description: SQL filter expression applied to this map only, such as `country IN ('US')`
+      hide_local_filters:
+        type: boolean
+        description: Hide the local filter chips on the map; the filters still apply to its queries
     required:
       - metrics_view
       - geo_dimension
       - color
-
+    additionalProperties: false
 
   # Common Properties
   common_properties:

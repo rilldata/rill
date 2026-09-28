@@ -361,3 +361,5 @@ _[object]_ - Map of points or regions from a geo dimension, colored by a measure
   - **`time_filters`** - _[string]_ - Time range and comparison for this map, as `tr` and `compare_tr` URL parameters. Defaults to the canvas time range.
 
   - **`dimension_filters`** - _[string]_ - SQL filter expression applied to this map only, such as `country IN ('US')`
+
+  - **`hide_local_filters`** - _[boolean]_ - Hide the local filter chips on the map; the filters still apply to its queries
