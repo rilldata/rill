@@ -36,7 +36,6 @@ var catalogRewrites = []struct {
 	{regexp.MustCompile(`(?i)pg_catalog\.pg_get_serial_sequence\([^)]*\)`), "NULL"},
 	{regexp.MustCompile(`(?i)(?:pg_catalog\.)?pg_get_indexdef\([^)]*\)`), "NULL"},
 	{regexp.MustCompile(regexp.QuoteMeta("'pg_class'::regclass")), `(SELECT oid FROM pg_class WHERE relname = 'pg_class')`},
-	{regexp.MustCompile(`(?is)\(SELECT\s+json_build_object\([^)]*\)\s*FROM[^)]*\)\s+as\s+identity_options`), "NULL AS identity_options"},
 }
 
 func rewriteCatalogSQL(query string) (string, error) {
@@ -56,6 +55,14 @@ func rewriteCatalogSQL(query string) (string, error) {
 		text string
 	}
 	replacements := make(map[int]replacement)
+	// Metrics views never have PostgreSQL identity sequences.
+	// SQLAlchemy's identity_options probe contains nested calls and regclass casts that DuckDB cannot parse,
+	// so replace the complete subquery with a null value.
+	for i := 3; i < len(parsed.tokens); i++ {
+		if open := identityOptionsSubquery(parsed, i); open >= 0 {
+			replacements[parsed.tokens[open].start] = replacement{parsed.tokens[i].end, "NULL AS identity_options"}
+		}
+	}
 	for _, rule := range catalogRewrites {
 		for _, match := range rule.pattern.FindAllStringSubmatchIndex(query, -1) {
 			valid := true
@@ -153,6 +160,43 @@ func rewriteCatalogSQL(query string) (string, error) {
 	}
 	out.WriteString(query[start:])
 	return out.String(), nil
+}
+
+// identityOptionsSubquery returns the index of the opening parenthesis of
+// `(SELECT json_build_object(...) FROM [pg_catalog.]pg_sequence ...) AS identity_options` ending at token i,
+// or -1 if there is no such subquery.
+func identityOptionsSubquery(parsed *parsedSQL, i int) int {
+	wordAt := func(index int, word string) bool {
+		token := parsed.tokens[index]
+		return token.kind == 'w' && strings.EqualFold(parsed.text[token.start:token.end], word)
+	}
+	if !wordAt(i, "identity_options") || !wordAt(i-1, "AS") || parsed.tokens[i-2].kind != ')' {
+		return -1
+	}
+	depth, open := 0, -1
+	for j := i - 2; open < 0 && j >= 0; j-- {
+		switch parsed.tokens[j].kind {
+		case ')':
+			depth++
+		case '(':
+			depth--
+			if depth == 0 {
+				open = j
+			}
+		}
+	}
+	if open < 0 || !wordAt(open+1, "SELECT") || !wordAt(open+2, "json_build_object") {
+		return -1
+	}
+	for j := open + 3; j+1 < i-2; j++ {
+		if !wordAt(j, "FROM") {
+			continue
+		}
+		if wordAt(j+1, "pg_sequence") || j+3 < i-2 && wordAt(j+1, "pg_catalog") && parsed.tokens[j+2].kind == '.' && wordAt(j+3, "pg_sequence") {
+			return open
+		}
+	}
+	return -1
 }
 
 func balancedTokens(tokens []sqlToken) bool {

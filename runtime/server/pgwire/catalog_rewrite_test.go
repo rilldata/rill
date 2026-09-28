@@ -16,11 +16,33 @@ func TestCatalogRewritesPreserveQuotedText(t *testing.T) {
 		`SELECT 1 /* version() pg_get_indexdef(foo) pg_catalog.pg_matviews */ -- pg_backend_pid()`,
 		`SELECT custom_version(), app.version(), app.pg_backend_pid(), app.pg_catalog.pg_matviews`,
 		`SELECT my_pg_get_indexdef(foo), my_pg_catalog.pg_matviews`,
+		`SELECT '(SELECT json_build_object(1) FROM pg_catalog.pg_sequence) AS identity_options'`,
+		`SELECT 1 /* (SELECT json_build_object(1) FROM pg_catalog.pg_sequence) AS identity_options */`,
+		`SELECT (SELECT json_build_object('a', 1) FROM pg_catalog.pg_sequence) AS "identity_options"`,
+		`SELECT (SELECT json_build_object('a', 1) FROM pg_catalog.pg_class) AS identity_options`,
 	} {
 		t.Run(query, func(t *testing.T) {
 			rewritten, err := rewriteCatalogSQL(query)
 			require.NoError(t, err)
 			require.Equal(t, query, rewritten)
+		})
+	}
+}
+
+func TestCatalogIdentityOptionsRewrite(t *testing.T) {
+	for _, tc := range []struct {
+		name  string
+		query string
+	}{
+		{"sqlalchemy 1.4", `SELECT a.attname, (SELECT json_build_object('always', a.attidentity = 'a', 'start', s.seqstart) FROM pg_catalog.pg_sequence s JOIN pg_catalog.pg_class c ON s.seqrelid = c."oid" WHERE s.seqrelid = pg_catalog.pg_get_serial_sequence(a.attrelid::regclass::text, a.attname)::regclass::oid) AS identity_options FROM pg_catalog.pg_attribute a`},
+		{"sqlalchemy 2.x", `SELECT a.attname, (SELECT json_build_object('always', a.attidentity = 'a', 'start', pg_catalog.pg_sequence.seqstart) AS json_build_object_1 FROM pg_catalog.pg_sequence WHERE a.attidentity != '' AND pg_catalog.pg_sequence.seqrelid = CAST(CAST(pg_catalog.pg_get_serial_sequence(CAST(CAST(a.attrelid AS REGCLASS) AS TEXT), a.attname) AS REGCLASS) AS OID)) AS identity_options FROM pg_catalog.pg_attribute a`},
+		{"unqualified lowercase", `select a.attname, (select json_build_object('start', s.seqstart) from pg_sequence s where s.seqrelid = a.attrelid::regclass::oid) as identity_options from pg_catalog.pg_attribute a`},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			rewritten, err := rewriteCatalogSQL(tc.query)
+			require.NoError(t, err)
+			require.Contains(t, rewritten, "a.attname, NULL AS identity_options")
+			require.NotContains(t, rewritten, "json_build_object")
 		})
 	}
 }
