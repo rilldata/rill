@@ -609,7 +609,7 @@ export function getValuesForFlatTable(
  * merge config.whereFilter themselves.
  *
  * Every public getFiltersFor* function delegates here after extracting its
- * dimension entries from whichever data source it uses (positional rowId,
+ * dimension entries from whichever data source it uses (value-based rowId,
  * direct rowData, column header path, etc.).
  */
 export function buildPivotFilter(

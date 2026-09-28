@@ -218,9 +218,12 @@ export function queryExpandedRowMeasureValues(
         expandIndex,
       );
 
+      // A key that resolves only partway is either still loading or stale
+      // (e.g. a dimension was inserted above it), so don't query with a
+      // partial filter.
       if (
         !anchorDimension ||
-        !values.length ||
+        values.length !== nestLevel ||
         values.some((v) => v === undefined || v === LOADING_CELL)
       )
         return readable({

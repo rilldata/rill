@@ -14,6 +14,7 @@ import {
   dimKeyFromDimValues,
   dimKeyFromRow,
 } from "../../../dashboards/pivot/pivot-click-selection";
+import { buildExpandKey } from "../../../dashboards/pivot/pivot-expand-keys";
 import type { FilterManager } from "../../stores/filter-manager";
 import { createPivotClickToFilter } from "./pivot-click-to-filter";
 
@@ -23,6 +24,11 @@ import { createPivotClickToFilter } from "./pivot-click-to-filter";
 
 function dk(dims: Record<string, string | null>, order: string[]): string {
   return dimKeyFromDimValues(dims, order);
+}
+
+/** TanStack row id as PivotTable's getRowId builds it: the values from the root to the row. */
+function rowId(...values: (string | null)[]): string {
+  return buildExpandKey(values);
 }
 
 function stubFilterManager() {
@@ -209,10 +215,15 @@ describe("flat table: single-cell-per-row", () => {
   it("replaces existing cell in the same row", () => {
     const { result } = setup(config, data);
 
-    result.handleCellClickToFilter("0", "country", false, data[0]);
+    result.handleCellClickToFilter(
+      rowId("US", "NYC"),
+      "country",
+      false,
+      data[0],
+    );
     expect(sel(result).isCellSelected(dkRow0, "country")).toBe(true);
 
-    result.handleCellClickToFilter("0", "city", false, data[0]);
+    result.handleCellClickToFilter(rowId("US", "NYC"), "city", false, data[0]);
     expect(sel(result).isCellSelected(dkRow0, "country")).toBe(false);
     expect(sel(result).isCellSelected(dkRow0, "city")).toBe(true);
     expect(sel(result).cellSelections.size).toBe(1);
@@ -223,8 +234,18 @@ describe("flat table: single-cell-per-row", () => {
   it("deselects by re-clicking the same cell", () => {
     const { result } = setup(config, data);
 
-    result.handleCellClickToFilter("0", "country", false, data[0]);
-    result.handleCellClickToFilter("0", "country", false, data[0]);
+    result.handleCellClickToFilter(
+      rowId("US", "NYC"),
+      "country",
+      false,
+      data[0],
+    );
+    result.handleCellClickToFilter(
+      rowId("US", "NYC"),
+      "country",
+      false,
+      data[0],
+    );
     expect(sel(result).cellSelections.size).toBe(0);
 
     result.destroy();
@@ -233,8 +254,18 @@ describe("flat table: single-cell-per-row", () => {
   it("allows selections across different rows", () => {
     const { result } = setup(config, data);
 
-    result.handleCellClickToFilter("0", "country", false, data[0]);
-    result.handleCellClickToFilter("1", "country", false, data[1]);
+    result.handleCellClickToFilter(
+      rowId("US", "NYC"),
+      "country",
+      false,
+      data[0],
+    );
+    result.handleCellClickToFilter(
+      rowId("UK", "London"),
+      "country",
+      false,
+      data[1],
+    );
 
     expect(sel(result).isCellSelected(dkRow0, "country")).toBe(true);
     expect(sel(result).isCellSelected(dkRow1, "country")).toBe(true);
@@ -261,8 +292,13 @@ describe("nested table: multi-select", () => {
   it("allows multiple cells in the same row", () => {
     const { result } = setup(config, data);
 
-    result.handleCellClickToFilter("1", "revenue", false, data[0]);
-    result.handleCellClickToFilter("1", "other_measure", false, data[0]);
+    result.handleCellClickToFilter(rowId("US"), "revenue", false, data[0]);
+    result.handleCellClickToFilter(
+      rowId("US"),
+      "other_measure",
+      false,
+      data[0],
+    );
 
     expect(sel(result).isCellSelected(dkRow0, "revenue")).toBe(true);
     expect(sel(result).isCellSelected(dkRow0, "other_measure")).toBe(true);
@@ -303,7 +339,12 @@ describe("nested table: cross-parent selection isolation", () => {
   it("does NOT select X under B when clicking X under A", () => {
     const { result } = setup(config, data);
 
-    result.handleCellClickToFilter("1.0", "revenue", false, innerRowXUnderA);
+    result.handleCellClickToFilter(
+      rowId("A", "X"),
+      "revenue",
+      false,
+      innerRowXUnderA,
+    );
 
     expect(
       sel(result).isCellSelected(
@@ -325,7 +366,12 @@ describe("nested table: cross-parent selection isolation", () => {
   it("does NOT select row header X under B when clicking X under A", () => {
     const { result } = setup(config, data);
 
-    result.handleCellClickToFilter("1.0", "outer", true, innerRowXUnderA);
+    result.handleCellClickToFilter(
+      rowId("A", "X"),
+      "outer",
+      true,
+      innerRowXUnderA,
+    );
 
     expect(
       sel(result).isRowHeaderSelected(dk({ outer: "A", inner: "X" }, dims)),
@@ -353,7 +399,7 @@ describe("null dimension values", () => {
   it("selects a cell with null dimension value", () => {
     const { result, filterClass } = setup(config, data);
 
-    result.handleCellClickToFilter("0", "total", false, data[0]);
+    result.handleCellClickToFilter(rowId(null), "total", false, data[0]);
     expect(sel(result).isCellSelected(dkNull, "total")).toBe(true);
     expect(filterClass.addDimensionValueSelections).toHaveBeenCalledWith(
       "country",
@@ -366,8 +412,8 @@ describe("null dimension values", () => {
   it("deselects a cell with null dimension value", () => {
     const { result, filterClass } = setup(config, data);
 
-    result.handleCellClickToFilter("0", "total", false, data[0]);
-    result.handleCellClickToFilter("0", "total", false, data[0]);
+    result.handleCellClickToFilter(rowId(null), "total", false, data[0]);
+    result.handleCellClickToFilter(rowId(null), "total", false, data[0]);
 
     expect(sel(result).cellSelections.size).toBe(0);
     expect(filterClass.toggleDimensionValueSelections).toHaveBeenCalled();
@@ -408,7 +454,7 @@ describe("selection survives sorting", () => {
     );
 
     const usDk = dimKeyFromRow(dataBefore[0], ["country"]);
-    result.handleCellClickToFilter("0", "total", false, dataBefore[0]);
+    result.handleCellClickToFilter(rowId("US"), "total", false, dataBefore[0]);
     expect(sel(result).isCellSelected(usDk, "total")).toBe(true);
 
     // Simulate sort: UK now first
@@ -613,8 +659,8 @@ describe("deselect retains shared column filters", () => {
 
     const { result, filterClass } = setup(config, data, columnDimensionAxes);
 
-    result.handleCellClickToFilter("1", colId, false, data[0]);
-    result.handleCellClickToFilter("2", colId, false, data[1]);
+    result.handleCellClickToFilter(rowId("New York"), colId, false, data[0]);
+    result.handleCellClickToFilter(rowId("Bronx"), colId, false, data[1]);
 
     const dkNY = dimKeyFromRow(data[0], ["borough"]);
     const dkBronx = dimKeyFromRow(data[1], ["borough"]);
@@ -622,7 +668,7 @@ describe("deselect retains shared column filters", () => {
     expect(sel(result).isCellSelected(dkBronx, colId)).toBe(true);
 
     filterClass.toggleDimensionValueSelections.mockClear();
-    result.handleCellClickToFilter("2", colId, false, data[1]);
+    result.handleCellClickToFilter(rowId("Bronx"), colId, false, data[1]);
 
     expect(sel(result).isCellSelected(dkBronx, colId)).toBe(false);
     expect(sel(result).isCellSelected(dkNY, colId)).toBe(true);
@@ -678,7 +724,7 @@ describe("unrelated global filters are left alone", () => {
       globalFilter,
     );
 
-    result.handleCellClickToFilter("0", "revenue", false, flatData[0]);
+    result.handleCellClickToFilter(rowId("US"), "revenue", false, flatData[0]);
 
     expect(filterClass.addDimensionValueSelections).toHaveBeenCalledWith(
       "country",
@@ -698,7 +744,7 @@ describe("unrelated global filters are left alone", () => {
       globalFilter,
     );
 
-    result.handleCellClickToFilter("0", "revenue", false, flatData[0]);
+    result.handleCellClickToFilter(rowId("US"), "revenue", false, flatData[0]);
 
     expect([...get(selfFilteredDimensions)]).toEqual(["country"]);
 
@@ -713,10 +759,10 @@ describe("unrelated global filters are left alone", () => {
       globalFilter,
     );
 
-    result.handleCellClickToFilter("0", "revenue", false, flatData[0]);
+    result.handleCellClickToFilter(rowId("US"), "revenue", false, flatData[0]);
     filterClass.toggleDimensionValueSelections.mockClear();
     filterClass.addDimensionValueSelections.mockClear();
-    result.handleCellClickToFilter("0", "revenue", false, flatData[0]);
+    result.handleCellClickToFilter(rowId("US"), "revenue", false, flatData[0]);
 
     expect(sel(result).cellSelections.size).toBe(0);
     expect(filterClass.toggleDimensionValueSelections).toHaveBeenCalledWith(
@@ -746,12 +792,12 @@ describe("unrelated global filters are left alone", () => {
       globalFilter,
     );
 
-    result.handleCellClickToFilter("1", "country", true, nestedData[0]);
+    result.handleCellClickToFilter(rowId("US"), "country", true, nestedData[0]);
     expect(sel(result).rowHeaderSelections.size).toBe(1);
 
     filterClass.toggleDimensionValueSelections.mockClear();
     filterClass.addDimensionValueSelections.mockClear();
-    result.handleCellClickToFilter("1", "country", true, nestedData[0]);
+    result.handleCellClickToFilter(rowId("US"), "country", true, nestedData[0]);
 
     expect(sel(result).rowHeaderSelections.size).toBe(0);
     expect(filterClass.toggleDimensionValueSelections).toHaveBeenCalledWith(
@@ -841,14 +887,14 @@ describe("unrelated global filters are left alone", () => {
     );
 
     result.handleCellClickToFilter(
-      "1.0",
+      rowId("Zoom", "US-East"),
       "revenue",
       false,
       nestedData[0].subRows![0],
     );
     filterClass.toggleDimensionValueSelections.mockClear();
     filterClass.addDimensionValueSelections.mockClear();
-    result.handleCellClickToFilter("1", "outer", true, nestedData[0]);
+    result.handleCellClickToFilter(rowId("Zoom"), "outer", true, nestedData[0]);
 
     expect(filterClass.toggleDimensionValueSelections).toHaveBeenCalledWith(
       "inner",
@@ -894,11 +940,16 @@ describe("header/cell mutual exclusivity", () => {
     const dkChild = dk({ outer: "Zoom", inner: "US-East" }, dims);
     const dkZoom = dk({ outer: "Zoom" }, dims);
 
-    result.handleCellClickToFilter("1.0", "revenue", false, childUSEast);
+    result.handleCellClickToFilter(
+      rowId("Zoom", "US-East"),
+      "revenue",
+      false,
+      childUSEast,
+    );
     expect(sel(result).isCellSelected(dkChild, "revenue")).toBe(true);
 
     filterClass.toggleDimensionValueSelections.mockClear();
-    result.handleCellClickToFilter("1", "outer", true, parentZoom);
+    result.handleCellClickToFilter(rowId("Zoom"), "outer", true, parentZoom);
 
     expect(sel(result).isRowHeaderSelected(dkZoom)).toBe(true);
     expect(sel(result).isCellSelected(dkChild, "revenue")).toBe(false);
@@ -917,10 +968,15 @@ describe("header/cell mutual exclusivity", () => {
     const dkZoom = dk({ outer: "Zoom" }, dims);
     const dkChild = dk({ outer: "Zoom", inner: "US-East" }, dims);
 
-    result.handleCellClickToFilter("1", "outer", true, parentZoom);
+    result.handleCellClickToFilter(rowId("Zoom"), "outer", true, parentZoom);
     expect(sel(result).isRowHeaderSelected(dkZoom)).toBe(true);
 
-    result.handleCellClickToFilter("1.0", "revenue", false, childUSEast);
+    result.handleCellClickToFilter(
+      rowId("Zoom", "US-East"),
+      "revenue",
+      false,
+      childUSEast,
+    );
 
     expect(sel(result).isCellSelected(dkChild, "revenue")).toBe(true);
     expect(sel(result).isRowHeaderSelected(dkZoom)).toBe(false);
@@ -931,8 +987,13 @@ describe("header/cell mutual exclusivity", () => {
   it("different lineage coexists: header + cell under different parent", () => {
     const { result } = setupNested();
 
-    result.handleCellClickToFilter("1", "outer", true, parentZoom);
-    result.handleCellClickToFilter("2.0", "revenue", false, childUSWest);
+    result.handleCellClickToFilter(rowId("Zoom"), "outer", true, parentZoom);
+    result.handleCellClickToFilter(
+      rowId("Airtable", "US-West"),
+      "revenue",
+      false,
+      childUSWest,
+    );
 
     expect(sel(result).isRowHeaderSelected(dk({ outer: "Zoom" }, dims))).toBe(
       true,
@@ -953,12 +1014,17 @@ describe("header/cell mutual exclusivity", () => {
     const dkChild = dk({ outer: "Zoom", inner: "US-East" }, dims);
 
     // Select child row header first
-    result.handleCellClickToFilter("1.0", "inner", true, childUSEast);
+    result.handleCellClickToFilter(
+      rowId("Zoom", "US-East"),
+      "inner",
+      true,
+      childUSEast,
+    );
     expect(sel(result).isRowHeaderSelected(dkChild)).toBe(true);
 
     // Click parent row header — child must be evicted
     filterClass.toggleDimensionValueSelections.mockClear();
-    result.handleCellClickToFilter("1", "outer", true, parentZoom);
+    result.handleCellClickToFilter(rowId("Zoom"), "outer", true, parentZoom);
 
     expect(sel(result).isRowHeaderSelected(dkZoom)).toBe(true);
     expect(sel(result).isRowHeaderSelected(dkChild)).toBe(false);
@@ -980,11 +1046,16 @@ describe("header/cell mutual exclusivity", () => {
     const dkChild = dk({ outer: "Zoom", inner: "US-East" }, dims);
 
     // Select parent first
-    result.handleCellClickToFilter("1", "outer", true, parentZoom);
+    result.handleCellClickToFilter(rowId("Zoom"), "outer", true, parentZoom);
     expect(sel(result).isRowHeaderSelected(dkZoom)).toBe(true);
 
     // Click child row header — parent must be evicted
-    result.handleCellClickToFilter("1.0", "inner", true, childUSEast);
+    result.handleCellClickToFilter(
+      rowId("Zoom", "US-East"),
+      "inner",
+      true,
+      childUSEast,
+    );
 
     expect(sel(result).isRowHeaderSelected(dkChild)).toBe(true);
     expect(sel(result).isRowHeaderSelected(dkZoom)).toBe(false);
@@ -999,11 +1070,16 @@ describe("header/cell mutual exclusivity", () => {
     const dkAirtableChild = dk({ outer: "Airtable", inner: "US-West" }, dims);
 
     // Select a child under a different parent first
-    result.handleCellClickToFilter("2.0", "inner", true, childUSWest);
+    result.handleCellClickToFilter(
+      rowId("Airtable", "US-West"),
+      "inner",
+      true,
+      childUSWest,
+    );
     expect(sel(result).isRowHeaderSelected(dkAirtableChild)).toBe(true);
 
     // Click Zoom parent — Airtable's child header is a different lineage, must coexist
-    result.handleCellClickToFilter("1", "outer", true, parentZoom);
+    result.handleCellClickToFilter(rowId("Zoom"), "outer", true, parentZoom);
 
     expect(sel(result).isRowHeaderSelected(dkZoom)).toBe(true);
     expect(sel(result).isRowHeaderSelected(dkAirtableChild)).toBe(true);
@@ -1018,12 +1094,17 @@ describe("header/cell mutual exclusivity", () => {
     const dkZoom = dk({ outer: "Zoom" }, dims);
 
     // Select a child row header first
-    result.handleCellClickToFilter("1.0", "inner", true, childUSEast);
+    result.handleCellClickToFilter(
+      rowId("Zoom", "US-East"),
+      "inner",
+      true,
+      childUSEast,
+    );
     expect(sel(result).isRowHeaderSelected(dkChildHeader)).toBe(true);
 
     // Click parent row's measure cell — child row header must be evicted
     filterClass.toggleDimensionValueSelections.mockClear();
-    result.handleCellClickToFilter("1", "revenue", false, parentZoom);
+    result.handleCellClickToFilter(rowId("Zoom"), "revenue", false, parentZoom);
 
     expect(sel(result).isCellSelected(dkZoom, "revenue")).toBe(true);
     expect(sel(result).isRowHeaderSelected(dkChildHeader)).toBe(false);
@@ -1044,11 +1125,16 @@ describe("header/cell mutual exclusivity", () => {
     const dkChild = dk({ outer: "Zoom", inner: "US-East" }, dims);
 
     // Select parent row header first
-    result.handleCellClickToFilter("1", "outer", true, parentZoom);
+    result.handleCellClickToFilter(rowId("Zoom"), "outer", true, parentZoom);
     expect(sel(result).isRowHeaderSelected(dkZoom)).toBe(true);
 
     // Click child row's measure cell — parent row header must be evicted
-    result.handleCellClickToFilter("1.0", "revenue", false, childUSEast);
+    result.handleCellClickToFilter(
+      rowId("Zoom", "US-East"),
+      "revenue",
+      false,
+      childUSEast,
+    );
 
     expect(sel(result).isCellSelected(dkChild, "revenue")).toBe(true);
     expect(sel(result).isRowHeaderSelected(dkZoom)).toBe(false);
@@ -1063,12 +1149,17 @@ describe("header/cell mutual exclusivity", () => {
     const dkZoom = dk({ outer: "Zoom" }, dims);
 
     // Select a child measure cell first
-    result.handleCellClickToFilter("1.0", "revenue", false, childUSEast);
+    result.handleCellClickToFilter(
+      rowId("Zoom", "US-East"),
+      "revenue",
+      false,
+      childUSEast,
+    );
     expect(sel(result).isCellSelected(dkChild, "revenue")).toBe(true);
 
     // Click the parent row's measure cell — child cell must be evicted
     filterClass.toggleDimensionValueSelections.mockClear();
-    result.handleCellClickToFilter("1", "revenue", false, parentZoom);
+    result.handleCellClickToFilter(rowId("Zoom"), "revenue", false, parentZoom);
 
     expect(sel(result).isCellSelected(dkZoom, "revenue")).toBe(true);
     expect(sel(result).isCellSelected(dkChild, "revenue")).toBe(false);
@@ -1096,9 +1187,14 @@ describe("header/cell mutual exclusivity", () => {
     };
     nestedData[0].subRows = [...dkChildExpanded, childUSWestUnderZoom];
 
-    result.handleCellClickToFilter("1.0", "revenue", false, childUSEast);
     result.handleCellClickToFilter(
-      "1.1",
+      rowId("Zoom", "US-East"),
+      "revenue",
+      false,
+      childUSEast,
+    );
+    result.handleCellClickToFilter(
+      rowId("Zoom", "US-West"),
       "revenue",
       false,
       childUSWestUnderZoom,
@@ -1106,7 +1202,7 @@ describe("header/cell mutual exclusivity", () => {
     expect(sel(result).cellSelections.size).toBe(2);
 
     // Click parent row cell — both children evicted
-    result.handleCellClickToFilter("1", "revenue", false, parentZoom);
+    result.handleCellClickToFilter(rowId("Zoom"), "revenue", false, parentZoom);
 
     expect(
       sel(result).isCellSelected(dk({ outer: "Zoom" }, dims), "revenue"),
@@ -1125,11 +1221,16 @@ describe("header/cell mutual exclusivity", () => {
     const dkChild = dk({ outer: "Zoom", inner: "US-East" }, dims);
 
     // Select parent row cell first
-    result.handleCellClickToFilter("1", "revenue", false, parentZoom);
+    result.handleCellClickToFilter(rowId("Zoom"), "revenue", false, parentZoom);
     expect(sel(result).isCellSelected(dkZoom, "revenue")).toBe(true);
 
     // Click child row cell — parent cell must be evicted
-    result.handleCellClickToFilter("1.0", "revenue", false, childUSEast);
+    result.handleCellClickToFilter(
+      rowId("Zoom", "US-East"),
+      "revenue",
+      false,
+      childUSEast,
+    );
 
     expect(sel(result).isCellSelected(dkChild, "revenue")).toBe(true);
     expect(sel(result).isCellSelected(dkZoom, "revenue")).toBe(false);
@@ -1143,12 +1244,17 @@ describe("header/cell mutual exclusivity", () => {
     const dkAirtableChild = dk({ outer: "Airtable", inner: "US-West" }, dims);
 
     // Select a cell under Airtable parent
-    result.handleCellClickToFilter("2.0", "revenue", false, childUSWest);
+    result.handleCellClickToFilter(
+      rowId("Airtable", "US-West"),
+      "revenue",
+      false,
+      childUSWest,
+    );
     expect(sel(result).isCellSelected(dkAirtableChild, "revenue")).toBe(true);
 
     // Click Zoom parent row cell — Airtable's child cell is a different
     // lineage and must coexist
-    result.handleCellClickToFilter("1", "revenue", false, parentZoom);
+    result.handleCellClickToFilter(rowId("Zoom"), "revenue", false, parentZoom);
 
     expect(
       sel(result).isCellSelected(dk({ outer: "Zoom" }, dims), "revenue"),
@@ -1165,8 +1271,13 @@ describe("header/cell mutual exclusivity", () => {
 
     // Two cells in the same parent row, different columns: same dimValues,
     // not in a strict subset/superset relationship — both must coexist.
-    result.handleCellClickToFilter("1", "revenue", false, parentZoom);
-    result.handleCellClickToFilter("1", "other_measure", false, parentZoom);
+    result.handleCellClickToFilter(rowId("Zoom"), "revenue", false, parentZoom);
+    result.handleCellClickToFilter(
+      rowId("Zoom"),
+      "other_measure",
+      false,
+      parentZoom,
+    );
 
     expect(sel(result).isCellSelected(dkZoom, "revenue")).toBe(true);
     expect(sel(result).isCellSelected(dkZoom, "other_measure")).toBe(true);
@@ -1223,20 +1334,25 @@ describe("header/cell mutual exclusivity", () => {
       const dkZoom = dk({ outer: "Zoom" }, colDims);
 
       result.handleCellClickToFilter(
-        "1.0",
+        rowId("Zoom", "US-East"),
         childEastColId,
         false,
         childEastCol,
       );
       result.handleCellClickToFilter(
-        "1.1",
+        rowId("Zoom", "US-West"),
         childWestColId,
         false,
         childWestCol,
       );
       expect(sel(result).cellSelections.size).toBe(2);
 
-      result.handleCellClickToFilter("1", totalsColId, false, parentZoomCol);
+      result.handleCellClickToFilter(
+        rowId("Zoom"),
+        totalsColId,
+        false,
+        parentZoomCol,
+      );
 
       expect(sel(result).isCellSelected(dkZoom, totalsColId)).toBe(true);
       expect(sel(result).isCellSelected(dkChildEast, childEastColId)).toBe(
@@ -1258,13 +1374,13 @@ describe("header/cell mutual exclusivity", () => {
 
       // Children sit at different quarters
       result.handleCellClickToFilter(
-        "1.0",
+        rowId("Zoom", "US-East"),
         childEastColId,
         false,
         childEastCol,
       );
       result.handleCellClickToFilter(
-        "1.1",
+        rowId("Zoom", "US-West"),
         childWestColId,
         false,
         childWestCol,
@@ -1273,7 +1389,12 @@ describe("header/cell mutual exclusivity", () => {
 
       // Click parent's Q1-total cell — both children must be evicted even
       // though one is at Q2.
-      result.handleCellClickToFilter("1", q1TotalColId, false, parentZoomCol);
+      result.handleCellClickToFilter(
+        rowId("Zoom"),
+        q1TotalColId,
+        false,
+        parentZoomCol,
+      );
 
       expect(sel(result).isCellSelected(dkZoom, q1TotalColId)).toBe(true);
       expect(sel(result).isCellSelected(dkChildEast, childEastColId)).toBe(
@@ -1294,13 +1415,13 @@ describe("header/cell mutual exclusivity", () => {
       const dkZoom = dk({ outer: "Zoom" }, colDims);
 
       result.handleCellClickToFilter(
-        "1.0",
+        rowId("Zoom", "US-East"),
         childEastColId,
         false,
         childEastCol,
       );
       result.handleCellClickToFilter(
-        "1.1",
+        rowId("Zoom", "US-West"),
         childWestColId,
         false,
         childWestCol,
@@ -1309,7 +1430,12 @@ describe("header/cell mutual exclusivity", () => {
 
       // Click parent's Q1×Prod leaf cell — both children must be evicted
       // regardless of which column they sit in.
-      result.handleCellClickToFilter("1", q1ProdColId, false, parentZoomCol);
+      result.handleCellClickToFilter(
+        rowId("Zoom"),
+        q1ProdColId,
+        false,
+        parentZoomCol,
+      );
 
       expect(sel(result).isCellSelected(dkZoom, q1ProdColId)).toBe(true);
       expect(sel(result).isCellSelected(dkChildEast, childEastColId)).toBe(
@@ -1346,7 +1472,12 @@ describe("header/cell mutual exclusivity", () => {
     );
     const dkUS = dimKeyFromRow(nestedFlatData[0], ["country"]);
 
-    result.handleCellClickToFilter("1", naColId, false, nestedFlatData[0]);
+    result.handleCellClickToFilter(
+      rowId("US"),
+      naColId,
+      false,
+      nestedFlatData[0],
+    );
     expect(sel(result).isCellSelected(dkUS, naColId)).toBe(true);
 
     filterClass.toggleDimensionValueSelections.mockClear();
@@ -1371,7 +1502,12 @@ describe("header/cell mutual exclusivity", () => {
     result.handleColumnHeaderClick({ region: "NA" });
     expect(sel(result).isColumnHeaderSelected({ region: "NA" })).toBe(true);
 
-    result.handleCellClickToFilter("1", naColId, false, nestedFlatData[0]);
+    result.handleCellClickToFilter(
+      rowId("US"),
+      naColId,
+      false,
+      nestedFlatData[0],
+    );
 
     expect(sel(result).isCellSelected(dkUS, naColId)).toBe(true);
     expect(sel(result).isColumnHeaderSelected({ region: "NA" })).toBe(false);
@@ -1385,7 +1521,12 @@ describe("header/cell mutual exclusivity", () => {
 
     result.handleColumnHeaderClick({ region: "NA" }); // header is NA
     // cell is in EU column, so they do NOT overlap
-    result.handleCellClickToFilter("1", euColId, false, nestedFlatData[0]);
+    result.handleCellClickToFilter(
+      rowId("US"),
+      euColId,
+      false,
+      nestedFlatData[0],
+    );
 
     expect(sel(result).isColumnHeaderSelected({ region: "NA" })).toBe(true);
     expect(sel(result).isCellSelected(dkUS, euColId)).toBe(true);

@@ -20,6 +20,7 @@ import {
   dimKeyFromDimValues,
   dimKeyFromRow,
 } from "@rilldata/web-common/features/dashboards/pivot/pivot-click-selection";
+import { parentExpandKey } from "@rilldata/web-common/features/dashboards/pivot/pivot-expand-keys";
 import {
   type ExtractedFilter,
   type PivotRowSelectionState,
@@ -642,7 +643,7 @@ export function createPivotClickToFilter(
     const $clickSelection = get(clickSelectionStore);
 
     // In nested mode, row data stores all values under rowDimensions[0],
-    // so we must use positional rowId navigation to get correct dim→value pairs.
+    // so we must resolve the value-based rowId to get correct dim→value pairs.
     const isNested = !$config.isFlat;
     const dimValues = isNested
       ? Object.fromEntries(
@@ -655,7 +656,7 @@ export function createPivotClickToFilter(
     // For nested child rows (depth > 0), build dimKey from the fully-resolved
     // dimValues (which include parent dimension values); dimKeyFromRow only
     // sees rowDimensions[0] and would produce identical keys across parents.
-    const isNestedChild = isNested && rowId.includes(".");
+    const isNestedChild = isNested && parentExpandKey(rowId) !== "";
     const dk = isNestedChild
       ? dimKeyFromDimValues(dimValues, $config.rowDimensionNames)
       : dimKeyFromRow(rowData, $config.rowDimensionNames);

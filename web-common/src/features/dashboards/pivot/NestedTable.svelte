@@ -28,6 +28,7 @@
     getNestedRowDimensionWidthKey,
     COLUMN_WIDTH_CONSTANTS as WIDTHS,
   } from "./pivot-column-width-utils";
+  import { PIVOT_TOTALS_ROW_ID } from "./pivot-expand-keys";
   import type { PivotRowSelectionState } from "./pivot-row-selection";
   import {
     computeAncestorRowIds,
@@ -567,7 +568,7 @@
         rows[row.index].depth > 0
           ? nestedDimKeyFromRow(rows[row.index], rowDimensionNames)
           : dimKeyFromRow(rowData, rowDimensionNames)}
-      {@const isTotalsRow = !!totalsRow && rowId === "0"}
+      {@const isTotalsRow = !!totalsRow && rowId === PIVOT_TOTALS_ROW_ID}
       {@const filterSelected =
         rowSelectionState?.isRowSelected(
           rowData,

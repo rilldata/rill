@@ -27,6 +27,7 @@
     type PivotClickSelectionState,
     dimKeyFromRow,
   } from "./pivot-click-selection";
+  import { PIVOT_TOTALS_ROW_ID } from "./pivot-expand-keys";
   import type { PivotRowSelectionState } from "./pivot-row-selection";
   import type { CellFormatter } from "./pivot-conditional-formatting";
   import PivotHeaderLabel from "./PivotHeaderLabel.svelte";
@@ -242,7 +243,7 @@
       {@const rowId = rows[row.index].id}
       {@const rowData = rows[row.index].original}
       {@const dk = dimKeyFromRow(rowData, config?.rowDimensionNames ?? [])}
-      {@const isTotalsRow = !!totalsRow && rowId === "0"}
+      {@const isTotalsRow = !!totalsRow && rowId === PIVOT_TOTALS_ROW_ID}
       {@const isSelected = rowSelectionState?.isRowSelected(rowData) ?? false}
       {@const hasClickedCell =
         clickSelection?.hasSelectedCellInRow(dk) ?? false}

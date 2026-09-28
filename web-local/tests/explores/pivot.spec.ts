@@ -707,7 +707,7 @@ test.describe("pivot expansion persistence", () => {
   // Expanded rows are keyed by dimension values, so they survive config
   // changes that keep the same rows.
   // https://github.com/rilldata/rill/issues/9781
-  test("expanded rows survive adding a measure and sorting", async ({
+  test("expanded rows survive adding a measure, sorting, and a refresh", async ({
     page,
   }) => {
     test.setTimeout(45_000);
@@ -761,6 +761,19 @@ test.describe("pivot expansion persistence", () => {
       .filter({ hasText: "Total records" })
       .first()
       .click();
+    await expect(page.locator(".status.running")).toHaveCount(0);
+    await expect(
+      page.locator("td").filter({ hasText: "Facebook" }).first(),
+    ).toBeVisible();
+
+    // And after a data refresh: a wider time range re-queries every row but
+    // still includes January.
+    await interactWithTimeRangeMenu(page, async () => {
+      await page.getByRole("menuitem", { name: "Last 12 Months" }).click();
+    });
+    await expect(page.getByLabel("Select time range")).toContainText(
+      "Last 12 Months",
+    );
     await expect(page.locator(".status.running")).toHaveCount(0);
     await expect(
       page.locator("td").filter({ hasText: "Facebook" }).first(),

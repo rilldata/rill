@@ -62,7 +62,7 @@ export interface PivotState {
   showTotalsRow: boolean;
   rowLimit?: number;
   outermostRowLimit?: number; // Local limit for outermost dimension only
-  nestedRowLimits?: Record<string, number>; // Local per-row limits keyed by expand index (e.g., "0.1.2")
+  nestedRowLimits?: Record<string, number>; // Local per-row limits keyed by value-based row id (see pivot-expand-keys.ts)
   // Per-measure conditional formatting, keyed by measure name. Measures not
   // present here render without any cell formatting.
   measureFormatting?: Record<string, PivotMeasureFormatting>;

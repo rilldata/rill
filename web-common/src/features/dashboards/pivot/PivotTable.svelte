@@ -388,7 +388,7 @@
       if (row.getCanExpand()) row.getToggleExpandedHandler()();
     } else {
       // Skip totals row for filtering
-      const isTotalsRow = totalsRow && rowId === "0";
+      const isTotalsRow = totalsRow && rowId === PIVOT_TOTALS_ROW_ID;
       if (isTotalsRow && onCellClickToFilter) {
         return;
       }

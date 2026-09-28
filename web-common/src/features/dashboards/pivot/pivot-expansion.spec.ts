@@ -1,12 +1,24 @@
-import { describe, expect, it } from "vitest";
+import { readable } from "svelte/store";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { LOADING_CELL } from "@rilldata/web-common/features/dashboards/pivot/pivot-constants";
 import { createAndExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import { buildExpandKey } from "./pivot-expand-keys";
 import {
   addExpandedDataToPivot,
   getValuesForExpandedKey,
+  queryExpandedRowMeasureValues,
 } from "./pivot-expansion";
-import { type PivotDataRow, type PivotDataStoreConfig } from "./types";
+import { getAxisForDimensions } from "./pivot-queries";
+import {
+  type PivotDashboardContext,
+  type PivotDataRow,
+  type PivotDataStoreConfig,
+} from "./types";
+
+vi.mock("./pivot-queries", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("./pivot-queries")>()),
+  getAxisForDimensions: vi.fn(() => readable({ isFetching: true })),
+}));
 
 function getConfig(
   showTotalsRow: boolean,
@@ -169,5 +181,44 @@ describe("getValuesForExpandedKey", () => {
         buildExpandKey(["A", "missing"]),
       ),
     ).toEqual(["A"]);
+  });
+});
+
+describe("queryExpandedRowMeasureValues", () => {
+  const rowDimensionNames = ["publisher", "domain", "campaign"];
+  // Rows are [publisher, domain, campaign], so A's children are domains.
+  const tableData: PivotDataRow[] = [
+    { publisher: "A", subRows: [{ publisher: "example.com" }] },
+  ];
+
+  function query(expandedKey: string) {
+    const config = getConfig(false, rowDimensionNames);
+    config.pivot.expanded = { [expandedKey]: true };
+    return queryExpandedRowMeasureValues(
+      {} as PivotDashboardContext,
+      config,
+      tableData,
+      {},
+      {},
+    );
+  }
+
+  beforeEach(() => {
+    vi.mocked(getAxisForDimensions).mockClear();
+  });
+
+  it("queries the next dimension for a fully resolved key", () => {
+    query(buildExpandKey(["A"]));
+    expect(getAxisForDimensions).toHaveBeenCalledTimes(1);
+    expect(vi.mocked(getAxisForDimensions).mock.calls[0][2]).toEqual([
+      "domain",
+    ]);
+  });
+
+  it("does not query for a key that only partially resolves", () => {
+    // Expanded as [publisher, campaign] before domain was inserted: "camp1"
+    // no longer matches a row at depth 1, so only "A" resolves.
+    query(buildExpandKey(["A", "camp1"]));
+    expect(getAxisForDimensions).not.toHaveBeenCalled();
   });
 });
