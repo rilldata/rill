@@ -18,6 +18,7 @@
   import { derived } from "svelte/store";
   import { slide } from "svelte/transition";
   import { useTimeControlStore } from "web-common/src/features/dashboards/time-controls/time-control-store.ts";
+  import { ephemeralMeasureDialog } from "../ephemeral-measures/dialog-store";
   import { getPivotConfig } from "./pivot-data-config";
   import { usePivotForExplore } from "./pivot-data-store";
   import PivotEmpty from "./PivotEmpty.svelte";
@@ -62,6 +63,7 @@
   });
 
   let showPanels = true;
+  let pivotTable: PivotTable | undefined;
 
   $: pivotDataStore = usePivotForExplore(stateManagers);
   $: pivotConfig = getPivotConfig(stateManagers);
@@ -171,6 +173,19 @@
             fmt,
           )}
         {lowerIsBetterMap}
+        ephemeralMeasures={$dashboardStore.ephemeralMeasures}
+        onEditEphemeralMeasure={(id) => {
+          const def = $dashboardStore.ephemeralMeasures?.find(
+            (d) => d.name === id,
+          );
+          if (def) ephemeralMeasureDialog.set({ def });
+        }}
+        onDeleteEphemeralMeasure={(id) =>
+          metricsExplorerStore.removeEphemeralMeasure(
+            $exploreName,
+            id,
+            $validSpecStore.data?.explore,
+          )}
       />
     {/if}
     <div
@@ -198,8 +213,15 @@
             totals.showTotalsColumn,
             totals.showTotalsRow,
           )}
+        setTotalsRowPosition={(position) =>
+          metricsExplorerStore.setPivotTotalsRowPosition(
+            $exploreName,
+            position,
+          )}
         collapseAll={() =>
           metricsExplorerStore.setPivotExpanded($exploreName, {})}
+        fitToWidth={() => pivotTable?.fitColumnsToWidth()}
+        canFitToWidth={assembled && !!pivotTable}
         {isFetching}
         bind:showPanels
       >
@@ -227,6 +249,7 @@
         />
       {:else}
         <PivotTable
+          bind:this={pivotTable}
           {widthScopeKey}
           {pivotDataStore}
           overscan={60}

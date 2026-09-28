@@ -776,7 +776,7 @@ func (c *connection) triggerReopen() {
 // It should be wrapped around errors returned from DuckDB queries. **It must be called while still holding an acquired DuckDB connection.**
 func (c *connection) checkErr(err error) error {
 	if err != nil {
-		if strings.HasPrefix(err.Error(), "INTERNAL Error:") || strings.HasPrefix(err.Error(), "FATAL Error") {
+		if strings.HasPrefix(err.Error(), "INTERNAL Error:") || strings.HasPrefix(err.Error(), "FATAL Error") || strings.Contains(err.Error(), "TransactionContext Error: Current transaction is aborted") {
 			c.dbCond.L.Lock()
 			defer c.dbCond.L.Unlock()
 			c.dbReopen = true

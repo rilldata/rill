@@ -39,6 +39,7 @@ type ExploreDefinitionYAML struct {
 	Embeds               struct {
 		HidePivot bool `yaml:"hide_pivot"`
 	} `yaml:"embeds"`
+	AIPrompts []AIPromptYAML `yaml:"ai_prompts"`
 }
 
 // ExploreDefaultsYAML represents the `defaults` block of an explore definition.
@@ -176,7 +177,7 @@ func (p *Parser) parseExplore(node *Node) error {
 	}
 
 	// Track explore
-	r, err := p.insertResource(ResourceKindExplore, node.Name, node.Paths, node.Tags, node.Refs...)
+	r, err := p.insertResource(ResourceKindExplore, node.Name, node.Paths, node.Tags, node.Metadata, node.Refs...)
 	if err != nil {
 		return err
 	}
@@ -205,6 +206,7 @@ type exploreDefinition struct {
 	timeRanges           []*runtimev1.ExploreTimeRange
 	defaultPreset        *runtimev1.ExplorePreset
 	allowCustomTimeRange bool
+	aiPrompts            []*runtimev1.AIPrompt
 }
 
 // parseExploreDefinition parses and validates the explore definition fields shared between
@@ -216,10 +218,16 @@ func (p *Parser) parseExploreDefinition(tmp *ExploreDefinitionYAML) (*exploreDef
 	// Parse the dimensions and measures selectors
 	var ok bool
 	def.dimensions, ok = tmp.Dimensions.TryResolve()
+	if name, ok := hasDuplicates(def.dimensions); ok {
+		return nil, fmt.Errorf("duplicate field %q in dimensions", name)
+	}
 	if !ok {
 		def.dimensionsSelector = tmp.Dimensions.Proto()
 	}
 	def.measures, ok = tmp.Measures.TryResolve()
+	if name, ok := hasDuplicates(def.measures); ok {
+		return nil, fmt.Errorf("duplicate field %q in measures", name)
+	}
 	if !ok {
 		def.measuresSelector = tmp.Measures.Proto()
 	}
@@ -287,12 +295,18 @@ func (p *Parser) parseExploreDefinition(tmp *ExploreDefinitionYAML) (*exploreDef
 
 		var presetDimensionsSelector *runtimev1.FieldSelector
 		presetDimensions, ok := tmp.Defaults.Dimensions.TryResolve()
+		if name, ok := hasDuplicates(presetDimensions); ok {
+			return nil, fmt.Errorf("duplicate field %q in defaults.dimensions", name)
+		}
 		if !ok {
 			presetDimensionsSelector = tmp.Defaults.Dimensions.Proto()
 		}
 
 		var presetMeasuresSelector *runtimev1.FieldSelector
 		presetMeasures, ok := tmp.Defaults.Measures.TryResolve()
+		if name, ok := hasDuplicates(presetMeasures); ok {
+			return nil, fmt.Errorf("duplicate field %q in defaults.measures", name)
+		}
 		if !ok {
 			presetMeasuresSelector = tmp.Defaults.Measures.Proto()
 		}
@@ -322,6 +336,12 @@ func (p *Parser) parseExploreDefinition(tmp *ExploreDefinitionYAML) (*exploreDef
 		def.allowCustomTimeRange = *tmp.AllowCustomTimeRange
 	}
 
+	// Validate the configured AI prompts
+	def.aiPrompts, err = parseAIPrompts(tmp.AIPrompts)
+	if err != nil {
+		return nil, err
+	}
+
 	return def, nil
 }
 
@@ -343,6 +363,7 @@ func (d *exploreDefinition) applyToSpec(spec *runtimev1.ExploreSpec, tmp *Explor
 	spec.EmbedsHidePivot = tmp.Embeds.HidePivot
 	spec.LockTimeZone = tmp.LockTimeZone
 	spec.AllowCustomTimeRange = d.allowCustomTimeRange
+	spec.AiPrompts = d.aiPrompts
 }
 
 // parseThemeRef parses a theme from a YAML node.
@@ -377,4 +398,15 @@ func (p *Parser) parseThemeRef(n *yaml.Node) (string, *runtimev1.ThemeSpec, erro
 	default:
 		return "", nil, fmt.Errorf("invalid theme: should be a string or mapping, got %s", n.Tag)
 	}
+}
+
+func hasDuplicates(names []string) (string, bool) {
+	seen := make(map[string]struct{}, len(names))
+	for _, name := range names {
+		if _, ok := seen[name]; ok {
+			return name, true
+		}
+		seen[name] = struct{}{}
+	}
+	return "", false
 }

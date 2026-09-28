@@ -6,17 +6,18 @@ import {
   type MeasureFilterEntry,
 } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
 import { MeasureFilterType } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-options";
-import { mergeDimensionAndMeasureFilters } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
+import { mapEphemeralMeasuresForRequest } from "@rilldata/web-common/features/dashboards/ephemeral-measures/measure-mapping";
+import type { EphemeralMeasureDef } from "@rilldata/web-common/features/dashboards/ephemeral-measures/types";
 import { sanitiseExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import {
   mapSelectedComparisonTimeRangeToV1TimeRange,
   mapSelectedTimeRangeToV1TimeRange,
 } from "@rilldata/web-common/features/dashboards/time-controls/time-range-mappers.ts";
-import type { FiltersState } from "@rilldata/web-common/features/dashboards/stores/Filters.ts";
 import type { TimeControlState } from "@rilldata/web-common/features/dashboards/stores/TimeControls.ts";
 import { getInitialScheduleFormValues } from "@rilldata/web-common/features/scheduled-reports/time-utils.ts";
 import type {
   V1ExploreSpec,
+  V1Expression,
   V1MetricsViewAggregationRequest,
   V1Operation,
 } from "@rilldata/web-common/runtime-client";
@@ -42,11 +43,14 @@ export type AlertFormValues = {
   // it's helpful to have them here. Also, in the future they may be editable in the form.
   metricsViewName: string;
   exploreName: string;
+  // Definitions for the dashboard's ephemeral measures, so an alert can be
+  // built on one: the saved query embeds the expression it needs.
+  ephemeralMeasures?: EphemeralMeasureDef[];
 } & ReturnType<typeof getInitialScheduleFormValues>;
 
 export function getAlertQueryArgsFromFormValues(
   formValues: AlertFormValues,
-  filtersArgs: FiltersState,
+  expr: V1Expression | undefined,
   timeControlArgs: TimeControlState,
   exploreSpec: V1ExploreSpec,
 ): V1MetricsViewAggregationRequest {
@@ -63,43 +67,40 @@ export function getAlertQueryArgsFromFormValues(
 
   return {
     metricsView: formValues.metricsViewName,
-    measures: [
-      {
-        name: formValues.measure,
-      },
-      ...(comparisonTimeRange
-        ? [
-            {
-              name: formValues.measure + ComparisonDeltaAbsoluteSuffix,
-              comparisonDelta: { measure: formValues.measure },
-            },
-            {
-              name: formValues.measure + ComparisonDeltaRelativeSuffix,
-              comparisonRatio: { measure: formValues.measure },
-            },
-          ]
-        : []),
-      ...(formValues.criteria.some(
-        (c) => c.type === MeasureFilterType.PercentOfTotal,
-      )
-        ? [
-            {
-              name: formValues.measure + ComparisonPercentOfTotal,
-              percentOfTotal: { measure: formValues.measure },
-            },
-          ]
-        : []),
-    ],
+    measures: mapEphemeralMeasuresForRequest(
+      [
+        {
+          name: formValues.measure,
+        },
+        ...(comparisonTimeRange
+          ? [
+              {
+                name: formValues.measure + ComparisonDeltaAbsoluteSuffix,
+                comparisonDelta: { measure: formValues.measure },
+              },
+              {
+                name: formValues.measure + ComparisonDeltaRelativeSuffix,
+                comparisonRatio: { measure: formValues.measure },
+              },
+            ]
+          : []),
+        ...(formValues.criteria.some(
+          (c) => c.type === MeasureFilterType.PercentOfTotal,
+        )
+          ? [
+              {
+                name: formValues.measure + ComparisonPercentOfTotal,
+                percentOfTotal: { measure: formValues.measure },
+              },
+            ]
+          : []),
+      ],
+      formValues.ephemeralMeasures,
+    ),
     dimensions: formValues.splitByDimension
       ? [{ name: formValues.splitByDimension }]
       : [],
-    where: sanitiseExpression(
-      mergeDimensionAndMeasureFilters(
-        filtersArgs.whereFilter,
-        filtersArgs.dimensionThresholdFilters,
-      ),
-      undefined,
-    ),
+    where: sanitiseExpression(expr, undefined),
     having: sanitiseExpression(undefined, {
       cond: {
         op: formValues.criteriaOperation,

@@ -3,9 +3,9 @@
     createAdminServiceRemoveOrganizationMemberUsergroup,
     createAdminServiceSetOrganizationMemberUsergroupRole,
     createAdminServiceAddOrganizationMemberUsergroup,
-    getAdminServiceListOrganizationMemberUsergroupsQueryKey,
   } from "@rilldata/web-admin/client";
   import type { V1MemberUsergroup } from "@rilldata/web-admin/client";
+  import { invalidateOrgUsergroups } from "@rilldata/web-admin/features/organizations/user-management/utils";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import { capitalize } from "@rilldata/web-common/components/table/utils";
   import { OrgUserRoles } from "@rilldata/web-common/features/users/roles.ts";
@@ -46,10 +46,7 @@
         },
       });
 
-      await queryClient.invalidateQueries({
-        queryKey:
-          getAdminServiceListOrganizationMemberUsergroupsQueryKey(organization),
-      });
+      await invalidateOrgUsergroups(queryClient, organization);
 
       eventBus.emit("notification", {
         message: m.groups_role_added(),
@@ -74,10 +71,7 @@
         },
       });
 
-      await queryClient.invalidateQueries({
-        queryKey:
-          getAdminServiceListOrganizationMemberUsergroupsQueryKey(organization),
-      });
+      await invalidateOrgUsergroups(queryClient, organization);
 
       eventBus.emit("notification", {
         message: m.groups_role_updated(),
@@ -99,10 +93,7 @@
         usergroup: group.groupName,
       });
 
-      await queryClient.invalidateQueries({
-        queryKey:
-          getAdminServiceListOrganizationMemberUsergroupsQueryKey(organization),
-      });
+      await invalidateOrgUsergroups(queryClient, organization);
 
       eventBus.emit("notification", {
         message: m.groups_removed(),

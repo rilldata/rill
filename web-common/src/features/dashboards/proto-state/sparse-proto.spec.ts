@@ -6,6 +6,8 @@ import {
   AD_BIDS_EXPLORE_INIT,
   AD_BIDS_EXPLORE_NAME,
   AD_BIDS_METRICS_INIT,
+  AD_BIDS_METRICS_VIEW,
+  AD_BIDS_NAME,
   AD_BIDS_TIME_RANGE_SUMMARY,
 } from "@rilldata/web-common/features/dashboards/stores/test-data/data";
 import {
@@ -34,6 +36,7 @@ import {
 import { deepClone } from "@vitest/utils/helpers";
 import { get } from "svelte/store";
 import { beforeEach, describe, expect, it } from "vitest";
+import { useTestFilterManager } from "@rilldata/web-common/features/dashboards/url-state/test/url-state-test-utils.ts";
 
 const TestCases: {
   title: string;
@@ -81,6 +84,12 @@ const TestCasesOppositeMutations = [
   AD_BIDS_OPEN_DOM_BP_PIVOT,
 ];
 
+// Filters live in the ExpressionFilterManager rather than in explore state, so the tests need the
+// specs of the metrics view backing AD_BIDS_EXPLORE to build the filter chips.
+const getFilterManager = useTestFilterManager({
+  [AD_BIDS_NAME]: AD_BIDS_METRICS_VIEW,
+});
+
 describe("sparse proto", () => {
   beforeEach(() => {
     resetDashboardStore();
@@ -102,7 +111,11 @@ describe("sparse proto", () => {
           AD_BIDS_EXPLORE_INIT,
         );
 
-        await applyMutationsToDashboard(AD_BIDS_EXPLORE_NAME, mutations);
+        await applyMutationsToDashboard(
+          AD_BIDS_EXPLORE_NAME,
+          mutations,
+          getFilterManager(),
+        );
 
         metricsExplorerStore.syncFromUrl(
           AD_BIDS_EXPLORE_NAME,
@@ -118,7 +131,11 @@ describe("sparse proto", () => {
   describe("should reset partial dashboard store", () => {
     for (const { title, mutations, keys } of TestCases) {
       it(`to ${title}`, async () => {
-        await applyMutationsToDashboard(AD_BIDS_EXPLORE_NAME, mutations);
+        await applyMutationsToDashboard(
+          AD_BIDS_EXPLORE_NAME,
+          mutations,
+          getFilterManager(),
+        );
         const partialDashboard = getPartialDashboard(
           AD_BIDS_EXPLORE_NAME,
           keys,
@@ -131,6 +148,7 @@ describe("sparse proto", () => {
         await applyMutationsToDashboard(
           AD_BIDS_EXPLORE_NAME,
           TestCasesOppositeMutations,
+          getFilterManager(),
         );
 
         metricsExplorerStore.syncFromUrl(

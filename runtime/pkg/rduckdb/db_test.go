@@ -480,6 +480,45 @@ func TestViews(t *testing.T) {
 	require.NoError(t, testDB.Close())
 }
 
+func TestRenameViewSurvivesRestart(t *testing.T) {
+	for _, replace := range []bool{false, true} {
+		t.Run(fmt.Sprintf("replace=%t", replace), func(t *testing.T) {
+			opts := &DBOptions{
+				LocalPath:      t.TempDir(),
+				MemoryLimitGB:  2,
+				CPU:            1,
+				ReadWriteRatio: 0.5,
+				Logger:         zap.NewNop(),
+			}
+			// Leave remote storage disabled so reopening cannot repair local metadata from a backup.
+			db, err := NewDB(t.Context(), opts)
+			require.NoError(t, err)
+			defer func() {
+				if db != nil {
+					require.NoError(t, db.Close())
+				}
+			}()
+
+			_, err = db.CreateTableAsSelect(t.Context(), "source", "SELECT 2 AS id, 'USA' AS country", &CreateTableOptions{})
+			require.NoError(t, err)
+			if replace {
+				_, err = db.CreateTableAsSelect(t.Context(), "resolved", "SELECT 1 AS id, 'India' AS country", &CreateTableOptions{View: true})
+				require.NoError(t, err)
+			}
+			_, err = db.CreateTableAsSelect(t.Context(), "staged", "SELECT * FROM source", &CreateTableOptions{View: true})
+			require.NoError(t, err)
+
+			require.NoError(t, db.RenameTable(t.Context(), "staged", "resolved"))
+			verifyTable(t, db, "SELECT id, country FROM resolved", []testData{{ID: 2, Country: "USA"}})
+
+			require.NoError(t, db.Close())
+			db, err = NewDB(t.Context(), opts)
+			require.NoError(t, err)
+			verifyTable(t, db, "SELECT id, country FROM resolved", []testData{{ID: 2, Country: "USA"}})
+		})
+	}
+}
+
 func TestCloseDB(t *testing.T) {
 	localDir := t.TempDir()
 	db, err := NewDB(t.Context(), &DBOptions{

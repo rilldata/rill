@@ -5,6 +5,12 @@
     exploreName: string;
   };
 
+  // Creates a canvas PDF report: no query, rendered from the canvas at download time.
+  export type CreateCanvasReportProps = {
+    mode: "create-canvas";
+    canvasName: string;
+  };
+
   export type EditReportProps = {
     mode: "edit";
     reportSpec: V1ReportSpec;
@@ -12,6 +18,8 @@
 </script>
 
 <script lang="ts">
+  import { ephemeralDefsFromRequestMeasures } from "@rilldata/web-common/features/dashboards/ephemeral-measures/measure-mapping";
+  import { useExploreState } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import { page } from "$app/stores";
   import {
@@ -22,7 +30,6 @@
   } from "@rilldata/web-admin/client";
   import * as Dialog from "@rilldata/web-common/components/dialog";
   import {
-    aggregationRequestWithFilters,
     aggregationRequestWithRowsAndColumns,
     aggregationRequestWithTimeRange,
     buildAggregationRequest,
@@ -33,8 +40,11 @@
     getDashboardNameFromReport,
     getExistingReportInitialFormValues,
     getFiltersAndTimeControlsFromAggregationRequest,
+    getNewCanvasReportInitialFormValues,
     getNewReportInitialFormValues,
     getQueryNameFromQuery,
+    parseMetricsViewFiltersAnnotation,
+    stripInternalReportParams,
     ReportRunAs,
     type ReportValues,
   } from "@rilldata/web-common/features/scheduled-reports/utils";
@@ -48,24 +58,44 @@
   import {
     getRuntimeServiceGetResourceQueryKey,
     getRuntimeServiceListResourcesQueryKey,
+    V1ExportFormat,
     type V1MetricsViewAggregationRequest,
     type V1Query,
     type V1ReportSpec,
     type V1ReportSpecAnnotations,
   } from "../../runtime-client";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
+  import { getCanvasFilters } from "../canvas/filters/canvas-filter-expressions";
+  import { getCanvasStoreUnguarded } from "../canvas/state-managers/state-managers";
   import { getStateManagers } from "../dashboards/state-managers/state-managers";
   import { ResourceKind } from "../entity-management/resource-selectors";
   import BaseScheduledReportForm from "./BaseScheduledReportForm.svelte";
   import { convertFormValuesToCronExpression } from "./time-utils";
+  import type { ExpressionFilterManager } from "@rilldata/web-common/features/dashboards/filters/ExpressionFilterManager.svelte.ts";
+  import type { TimeControls } from "@rilldata/web-common/features/dashboards/stores/TimeControls.ts";
+  import { onDestroy } from "svelte";
 
   export let open: boolean;
-  export let props: CreateReportProps | EditReportProps;
+  export let props:
+    | CreateReportProps
+    | CreateCanvasReportProps
+    | EditReportProps;
 
   const user = createAdminServiceGetCurrentUser();
   const FORM_ID = "scheduled-report-form";
 
   const runtimeClient = useRuntimeClient();
+
+  // The dialog is mounted fresh for each report, so deriving these once at init is safe.
+  const isCanvasReport =
+    props.mode === "create-canvas" ||
+    (props.mode === "edit" && !!props.reportSpec.annotations?.canvas);
+  const canvasName =
+    props.mode === "create-canvas"
+      ? props.canvasName
+      : props.mode === "edit"
+        ? (props.reportSpec.annotations?.canvas ?? "")
+        : "";
 
   $: ({ organization, project, report: reportName } = $page.params);
   $: ({ instanceId } = runtimeClient);
@@ -78,13 +108,17 @@
     $listProjectMemberUsersQuery.data?.members?.map((m) => m.userEmail) ?? [],
   );
 
-  $: exploreName =
-    props.mode === "create"
+  $: exploreName = isCanvasReport
+    ? ""
+    : props.mode === "create"
       ? props.exploreName
-      : getDashboardNameFromReport(props.reportSpec);
+      : props.mode === "edit"
+        ? getDashboardNameFromReport(props.reportSpec)
+        : "";
 
   $: validExploreSpec = useExploreValidSpec(runtimeClient, exploreName);
   $: exploreSpec = $validExploreSpec.data?.explore ?? {};
+  $: exploreStateStore = useExploreState(exploreName);
   $: metricsViewName = exploreSpec.metricsView ?? "";
 
   $: allTimeRangeResp = useMetricsViewTimeRange(
@@ -95,36 +129,56 @@
   );
 
   $: mutation =
-    props.mode === "create"
-      ? createAdminServiceCreateReport()
-      : createAdminServiceEditReport();
+    props.mode === "edit"
+      ? createAdminServiceEditReport()
+      : createAdminServiceCreateReport();
 
   $: queryName =
     props.mode === "create"
       ? getQueryNameFromQuery(props.query)
-      : ((props.reportSpec.resolverProperties?.query_name as
-          | string
-          | undefined) ?? props.reportSpec.queryName);
+      : props.mode === "edit"
+        ? ((props.reportSpec.resolverProperties?.query_name as
+            | string
+            | undefined) ?? props.reportSpec.queryName)
+        : undefined;
+  // Canvas reports have no query, and their queryArgsJson is an empty string (not undefined),
+  // so they must not go through JSON.parse.
   $: aggregationRequest = (
     props.mode === "create"
       ? props.query.metricsViewAggregationRequest
-      : JSON.parse(
-          (props.reportSpec.resolverProperties?.query_args_json as
-            | string
-            | undefined) ??
-            props.reportSpec.queryArgsJson ??
-            "{}",
-        )
+      : props.mode === "edit" && !isCanvasReport
+        ? JSON.parse(
+            (props.reportSpec.resolverProperties?.query_args_json as
+              | string
+              | undefined) ||
+              props.reportSpec.queryArgsJson ||
+              "{}",
+          )
+        : {}
   ) as V1MetricsViewAggregationRequest;
 
-  $: ({ filters, timeControls } =
-    getFiltersAndTimeControlsFromAggregationRequest(
-      runtimeClient,
-      metricsViewName,
-      exploreName,
-      aggregationRequest,
-      $allTimeRangeResp.data?.timeRangeSummary,
-    ));
+  // The explore state only exists on the explore page (create mode);
+  // an edited report carries its definitions in the saved request.
+  $: ephemeralMeasures =
+    props.mode === "edit"
+      ? ephemeralDefsFromRequestMeasures(aggregationRequest.measures)
+      : $exploreStateStore?.ephemeralMeasures;
+
+  let filters: ExpressionFilterManager | undefined;
+  let timeControls: TimeControls | undefined;
+  let cleanup: (() => void) | undefined = undefined;
+  $: {
+    cleanup?.();
+    ({ filters, timeControls, cleanup } = isCanvasReport
+      ? { filters: undefined, timeControls: undefined, cleanup: undefined }
+      : getFiltersAndTimeControlsFromAggregationRequest(
+          runtimeClient,
+          metricsViewName,
+          exploreName,
+          aggregationRequest,
+          $allTimeRangeResp.data?.timeRangeSummary,
+        ));
+  }
 
   let currentProtobufState: string | undefined = undefined;
   if (open && props.mode === "create") {
@@ -132,6 +186,17 @@
     const { dashboardStore } = stateManagers;
     currentProtobufState = get(dashboardStore).proto;
   }
+
+  // Canvas state is URL-param based. In create mode, the canvas page's current URL is the
+  // state to display and save. In edit mode, the report's stored state is applied to the
+  // form's canvas store directly (via urlStateOverride), never through the page URL: the
+  // dialog is on the report page, whose URL must not be rewritten.
+  const canvasStateOverride =
+    props.mode === "edit" && isCanvasReport
+      ? stripInternalReportParams(
+          new URLSearchParams(props.reportSpec.annotations?.web_open_state),
+        ).toString()
+      : undefined;
 
   const schema = yup(
     object({
@@ -143,7 +208,9 @@
       enableSlackNotification: boolean(), // Needed to get the type for validation
       slackChannels: array().of(string()),
       slackUsers: array().of(string().email(m.report_form_invalid_email())),
-      columns: array().of(string()).min(1),
+      columns: isCanvasReport
+        ? array().of(string())
+        : array().of(string()).min(1),
     })
       .test(
         "at-least-one-recipient",
@@ -186,11 +253,13 @@
           $user.data?.user?.email,
           aggregationRequest,
         )
-      : getExistingReportInitialFormValues(
-          props.reportSpec,
-          $user.data?.user?.email,
-          aggregationRequest,
-        );
+      : props.mode === "create-canvas"
+        ? getNewCanvasReportInitialFormValues($user.data?.user?.email)
+        : getExistingReportInitialFormValues(
+            props.reportSpec,
+            $user.data?.user?.email,
+            aggregationRequest,
+          );
 
   $: ({ form, errors, enhance, submit, submitting } = superForm(
     defaults(initialValues, schema),
@@ -211,63 +280,123 @@
     },
   ));
 
-  $: generalErrors = $errors._errors?.[0] ?? $mutation.error?.message;
+  let localError: string | undefined = undefined;
+  $: generalErrors =
+    $errors._errors?.[0] ?? localError ?? $mutation.error?.message;
 
-  async function handleSubmit(values: ReportValues) {
+  function buildReportOptions(values: ReportValues) {
     const refreshCron = convertFormValuesToCronExpression(
       values.frequency,
       values.dayOfWeek,
       values.timeOfDay,
       values.dayOfMonth,
     );
-    const filtersState = filters.toState();
-    const timeControlsState = timeControls.toState();
+    const commonOptions = {
+      displayName: values.title,
+      refreshCron: refreshCron, // for testing: "* * * * *"
+      refreshTimeZone: values.timeZone,
+      emailRecipients: values.emailRecipients.filter(Boolean),
+      slackChannels: values.enableSlackNotification
+        ? values.slackChannels.filter(Boolean)
+        : undefined,
+      slackUsers: values.enableSlackNotification
+        ? values.slackUsers.filter(Boolean)
+        : undefined,
+      webOpenMode: values.webOpenMode,
+    };
+
+    if (isCanvasReport) {
+      // The canvas state (filters, time range, tabs) the report will render with,
+      // plus the PDF rendering options, which the export page reads back from this state.
+      // Create mode captures the canvas page's URL; edit mode reuses the report's stored
+      // state (the dialog is on the report page, whose URL carries no canvas state).
+      const stateParams = new URLSearchParams(
+        props.mode === "edit"
+          ? (props.reportSpec.annotations?.web_open_state ?? "")
+          : window.location.search,
+      );
+      stateParams.set("pdf_include_filters", String(values.pdfIncludeFilters));
+      stateParams.set("pdf_all_tabs", String(values.pdfAllTabs));
+
+      // The selected filters are also baked into the report's security rules,
+      // so magic-token recipients cannot query data beyond them.
+      // The filter capture must not silently fail open: if the canvas store is
+      // not available, fall back to the report's stored filters in edit mode,
+      // and refuse to submit in create mode.
+      const canvasStore = getCanvasStoreUnguarded(canvasName, instanceId);
+      let metricsViewFilters = canvasStore
+        ? getCanvasFilters(canvasStore.canvasEntity)
+        : undefined;
+      if (!canvasStore) {
+        if (props.mode === "edit") {
+          metricsViewFilters = parseMetricsViewFiltersAnnotation(
+            props.reportSpec.annotations?.metrics_view_filters,
+          );
+        } else {
+          throw new Error(m.report_form_canvas_loading());
+        }
+      }
+
+      return {
+        ...commonOptions,
+        canvas: canvasName,
+        exportFormat: V1ExportFormat.EXPORT_FORMAT_PDF,
+        webOpenState: stateParams.toString(),
+        metricsViewFilters,
+      };
+    }
+
+    const timeControlsState = timeControls!.toState();
     const updatedAggregationRequest = buildAggregationRequest(
       aggregationRequest,
       [
         aggregationRequestWithTimeRange(exploreSpec, timeControlsState),
-        aggregationRequestWithFilters(filtersState),
         aggregationRequestWithRowsAndColumns({
           exploreSpec,
           rows: values.rows,
           columns: values.columns,
           showTimeComparison: timeControlsState.showTimeComparison,
           selectedTimezone: timeControlsState.selectedTimezone,
+          ephemeralMeasures,
         }),
       ],
     );
+    updatedAggregationRequest.where = filters?.topLevelJoiner[metricsViewName];
+    return {
+      ...commonOptions,
+      explore: exploreName,
+      queryName: queryName,
+      queryArgsJson: JSON.stringify(updatedAggregationRequest),
+      exportLimit: values.exportLimit || undefined,
+      exportIncludeHeader: values.exportIncludeHeader || false,
+      exportFormat: values.exportFormat,
+      webOpenState:
+        props.mode === "create"
+          ? currentProtobufState
+          : props.mode === "edit"
+            ? (props.reportSpec.annotations as V1ReportSpecAnnotations)[
+                "web_open_state"
+              ]
+            : undefined,
+    };
+  }
 
+  async function handleSubmit(values: ReportValues) {
+    localError = undefined;
+    let options: ReturnType<typeof buildReportOptions>;
+    try {
+      options = buildReportOptions(values);
+    } catch (e) {
+      localError = e instanceof Error ? e.message : String(e);
+      return;
+    }
     try {
       await $mutation.mutateAsync({
         org: organization,
         project,
         name: reportName,
         data: {
-          options: {
-            displayName: values.title,
-            refreshCron: refreshCron, // for testing: "* * * * *"
-            refreshTimeZone: values.timeZone,
-            explore: exploreName,
-            queryName: queryName,
-            queryArgsJson: JSON.stringify(updatedAggregationRequest),
-            exportLimit: values.exportLimit || undefined,
-            exportIncludeHeader: values.exportIncludeHeader || false,
-            exportFormat: values.exportFormat,
-            emailRecipients: values.emailRecipients.filter(Boolean),
-            slackChannels: values.enableSlackNotification
-              ? values.slackChannels.filter(Boolean)
-              : undefined,
-            slackUsers: values.enableSlackNotification
-              ? values.slackUsers.filter(Boolean)
-              : undefined,
-            webOpenState:
-              props.mode === "create"
-                ? currentProtobufState
-                : (props.reportSpec.annotations as V1ReportSpecAnnotations)[
-                    "web_open_state"
-                  ],
-            webOpenMode: values.webOpenMode,
-          },
+          options,
         },
       });
 
@@ -290,22 +419,26 @@
 
       eventBus.emit("notification", {
         message:
-          props.mode === "create"
-            ? m.report_form_created_notification()
-            : m.report_form_edited_notification(),
+          props.mode === "edit"
+            ? m.report_form_edited_notification()
+            : m.report_form_created_notification(),
         link:
-          props.mode === "create"
-            ? {
+          props.mode === "edit"
+            ? undefined
+            : {
                 href: `/${organization}/${project}/-/reports`,
                 text: m.report_form_go_to_reports(),
-              }
-            : undefined,
+              },
         type: "success",
       });
     } catch {
       // showing error below
     }
   }
+
+  onDestroy(() => {
+    cleanup?.();
+  });
 </script>
 
 <Dialog.Root bind:open>
@@ -318,9 +451,13 @@
       {errors}
       {submit}
       {enhance}
+      metricsViewName={metricsViewName ?? ""}
       exploreName={exploreName ?? ""}
+      {canvasName}
+      {canvasStateOverride}
       {filters}
       {timeControls}
+      {ephemeralMeasures}
     />
 
     {#if generalErrors}
@@ -336,13 +473,13 @@
         form={FORM_ID}
         submitForm
         type="primary"
-        label={props.mode === "create"
-          ? m.report_form_create()
-          : m.report_form_save()}
+        label={props.mode === "edit"
+          ? m.report_form_save()
+          : m.report_form_create()}
       >
-        {props.mode === "create"
-          ? m.report_form_create_button()
-          : m.report_form_save_button()}
+        {props.mode === "edit"
+          ? m.report_form_save_button()
+          : m.report_form_create_button()}
       </Button>
     </div>
   </Dialog.Content>

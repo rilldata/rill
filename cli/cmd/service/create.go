@@ -38,7 +38,9 @@ func CreateCmd(ch *cmdutil.Helper) *cobra.Command {
 				Org:  ch.Org,
 			}
 
-			if ch.Interactive && orgRole == "" {
+			hasFlags := cmd.Flags().Changed("org-role") || cmd.Flags().Changed("project-role") || cmd.Flags().Changed("project") || cmd.Flags().Changed("attributes")
+
+			if ch.Interactive && !hasFlags {
 				ok, err := cmdutil.YesNoPrompt("Do you want to assign an organization role to the service?", false)
 				if err != nil {
 					return err
@@ -51,7 +53,7 @@ func CreateCmd(ch *cmdutil.Helper) *cobra.Command {
 				}
 			}
 
-			if ch.Interactive && projectRole == "" && !cmd.Flags().Changed("org-role") {
+			if ch.Interactive && !hasFlags {
 				ok, err := cmdutil.YesNoPrompt("Do you want to assign a project role to the service?", false)
 				if err != nil {
 					return err
@@ -72,6 +74,12 @@ func CreateCmd(ch *cmdutil.Helper) *cobra.Command {
 				}
 			}
 
+			if projectRole != "" && projectName == "" {
+				return fmt.Errorf("--project must be specified when --project-role is set")
+			}
+			if projectRole == "" && projectName != "" {
+				return fmt.Errorf("--project-role must be specified when --project is set")
+			}
 			if orgRole == "" && projectRole == "" {
 				return fmt.Errorf("either --org-role or --project-role must be specified")
 			}

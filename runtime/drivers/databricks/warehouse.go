@@ -1,6 +1,7 @@
 package databricks
 
 import (
+	"bytes"
 	"context"
 	"database/sql"
 	sqld "database/sql/driver"
@@ -15,7 +16,11 @@ import (
 	"github.com/apache/arrow-go/v18/parquet"
 	"github.com/apache/arrow-go/v18/parquet/compress"
 	"github.com/apache/arrow-go/v18/parquet/pqarrow"
+	// v12 Arrow IPC writer (kernel exports v12 records); aliased to avoid clashing
+	// with the v18 arrow/ipc import above.
+	dbipc "github.com/apache/arrow/go/v12/arrow/ipc"
 	"github.com/c2h5oh/datasize"
+	dbsqlerr "github.com/databricks/databricks-sql-go/errors"
 	dbsqlrows "github.com/databricks/databricks-sql-go/rows"
 	"github.com/mitchellh/mapstructure"
 	"github.com/rilldata/rill/runtime/drivers"
@@ -48,7 +53,16 @@ func (c *connection) QueryAsFiles(ctx context.Context, props map[string]any) (ou
 		return nil, err
 	}
 
-	db, err := sql.Open("databricks", c.config.resolveDSN())
+	err = c.dbMu.Acquire(ctx, 1)
+	if err != nil {
+		return nil, err
+	}
+	dsn, err := c.backendDSN(ctx)
+	c.dbMu.Release(1)
+	if err != nil {
+		return nil, err
+	}
+	db, err := sql.Open("databricks", dsn)
 	if err != nil {
 		return nil, err
 	}
@@ -82,7 +96,18 @@ func (c *connection) QueryAsFiles(ctx context.Context, props map[string]any) (ou
 		}
 	}()
 
-	ipcStreams, err := rows.(dbsqlrows.Rows).GetArrowIPCStreams(ctx)
+	// Thrift/DBSQL uses native IPC streams. The SEA backend (Lakehouse//RT) doesn't
+	// implement them and returns ErrNotSupportedByKernel, so fall back to
+	// GetArrowBatches via kernelIPCStreams; the parquet path is identical for both.
+	dr := rows.(dbsqlrows.Rows)
+	ipcStreams, err := dr.GetArrowIPCStreams(ctx)
+	if errors.Is(err, dbsqlerr.ErrNotSupportedByKernel) {
+		var batches dbsqlrows.ArrowBatchIterator
+		batches, err = dr.GetArrowBatches(ctx)
+		if err == nil {
+			ipcStreams = &kernelIPCStreams{batches: batches}
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -124,6 +149,51 @@ type fileIterator struct {
 }
 
 var _ drivers.FileIterator = &fileIterator{}
+
+// kernelIPCStreams adapts the SEA backend's ArrowBatchIterator to the
+// ArrowIPCStreamIterator this file consumes, re-serializing each batch to a
+// self-contained IPC stream with the driver's v12 writer.
+type kernelIPCStreams struct {
+	batches dbsqlrows.ArrowBatchIterator
+}
+
+var _ dbsqlrows.ArrowIPCStreamIterator = &kernelIPCStreams{}
+
+func (k *kernelIPCStreams) HasNext() bool { return k.batches.HasNext() }
+
+func (k *kernelIPCStreams) Next() (io.Reader, error) {
+	rec, err := k.batches.Next()
+	if err != nil {
+		return nil, err // propagates io.EOF
+	}
+	defer rec.Release()
+
+	var buf bytes.Buffer
+	w := dbipc.NewWriter(&buf, dbipc.WithSchema(rec.Schema()))
+	if err := w.Write(rec); err != nil {
+		_ = w.Close()
+		return nil, err
+	}
+	if err := w.Close(); err != nil {
+		return nil, err
+	}
+	return &buf, nil
+}
+
+func (k *kernelIPCStreams) Close() { k.batches.Close() }
+
+func (k *kernelIPCStreams) SchemaBytes() ([]byte, error) {
+	sc, err := k.batches.Schema()
+	if err != nil {
+		return nil, err
+	}
+	var buf bytes.Buffer
+	w := dbipc.NewWriter(&buf, dbipc.WithSchema(sc))
+	if err := w.Close(); err != nil {
+		return nil, err
+	}
+	return buf.Bytes(), nil
+}
 
 // Close implements drivers.FileIterator.
 func (f *fileIterator) Close() error {

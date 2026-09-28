@@ -1,3 +1,4 @@
+import { parseMeasureExpression } from "@rilldata/web-common/features/dashboards/ephemeral-measures/expression-parser";
 import { PivotChipType } from "@rilldata/web-common/features/dashboards/pivot/types";
 import { getProtoFromDashboardState } from "@rilldata/web-common/features/dashboards/proto-state/toProto";
 import { getAllIdentifiers } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
@@ -7,26 +8,123 @@ import type {
   MetricsViewSpecDimension,
   MetricsViewSpecMeasure,
   V1ExploreSpec,
+  V1Expression,
 } from "@rilldata/web-common/runtime-client";
+import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors.ts";
+import { derived } from "svelte/store";
+import { page } from "$app/stores";
+import { ExploreStateURLParams } from "@rilldata/web-common/features/dashboards/url-state/url-params.ts";
+import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers.ts";
+import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store.ts";
+import type { ExpressionFilterManager } from "@rilldata/web-common/features/dashboards/filters/ExpressionFilterManager.svelte.ts";
 
-export function hasDashboardWhereFilter(exploreState: ExploreState) {
-  return exploreState.whereFilter?.cond?.exprs?.length;
+/**
+ * An ad-hoc (ephemeral) measure that is omitted from a public URL because it
+ * references measures the recipient cannot see.
+ */
+export type DroppedEphemeralMeasure = {
+  name: string;
+  displayName: string;
+  // Display names of the referenced measures that are hidden.
+  hiddenMeasures: string[];
+};
+
+export function convertDateToMinutes(date: string) {
+  const now = new Date();
+  const future = new Date(date);
+  const diff = future.getTime() - now.getTime();
+  return Math.floor(diff / 60000);
 }
 
-export function hasDashboardDimensionThresholdFilter(
-  exploreState: ExploreState,
+/**
+ * Creates a store for fields and sanitized state based on dashboard kind.
+ * For Canvas, we return only return the sanitized url state.
+ * For Explore, we return specific fields and sanitized url state. Check {@link getSanitizedExploreStateParam}
+ */
+export function createFieldsAndStateForKind(
+  resourceKind: ResourceKind | undefined,
+  expressionFilterManager: ExpressionFilterManager,
 ) {
-  return exploreState.dimensionThresholdFilters?.length;
+  if (!resourceKind || resourceKind === ResourceKind.Canvas) {
+    return derived(page, (pageState) => {
+      return {
+        fields: undefined,
+        sanitizedState: getSanitizedStateUrl(pageState.url),
+        droppedEphemeralMeasures: [] as DroppedEphemeralMeasure[],
+        queryTimeStart: undefined,
+        queryTimeEnd: undefined,
+      };
+    });
+  }
+
+  const stateManagers = getStateManagers();
+  const {
+    dashboardStore,
+    selectors: {
+      measures: { visibleMeasures },
+      dimensions: { visibleDimensions },
+    },
+    validSpecStore,
+  } = stateManagers;
+  const timeControlStore = useTimeControlStore(stateManagers);
+  return derived(
+    [
+      dashboardStore,
+      expressionFilterManager.getExprStoreForFirstMetricsView(),
+      visibleMeasures,
+      visibleDimensions,
+      validSpecStore,
+      timeControlStore,
+    ],
+    ([
+      dashboardState,
+      { expr },
+      $visibleMeasures,
+      $visibleDimensions,
+      validSpecState,
+      timeControlState,
+    ]) => {
+      const metricsViewSpec = validSpecState.data?.metricsView ?? {};
+      const exploreSpec = validSpecState.data?.explore ?? {};
+
+      const exploreFields = getExploreFields(
+        dashboardState,
+        expr,
+        metricsViewSpec.dimensions ?? [],
+        $visibleDimensions,
+        $visibleMeasures,
+      );
+      const droppedEphemeralMeasures = getDroppedEphemeralMeasures(
+        dashboardState,
+        exploreFields,
+        metricsViewSpec.measures ?? [],
+      );
+      const sanitizedState = getSanitizedExploreStateParam(
+        dashboardState,
+        exploreFields,
+        exploreSpec,
+        new Set(droppedEphemeralMeasures.map((def) => def.name)),
+      );
+
+      return {
+        fields: exploreFields,
+        sanitizedState,
+        droppedEphemeralMeasures,
+        queryTimeStart: timeControlState.timeStart,
+        queryTimeEnd: timeControlState.timeEnd,
+      };
+    },
+  );
 }
 
-export function getExploreFields(
+function getExploreFields(
   exploreState: ExploreState,
+  expr: V1Expression | undefined,
+  allDimensions: MetricsViewSpecDimension[],
   visibleDimensions: MetricsViewSpecDimension[],
   visibleMeasures: MetricsViewSpecMeasure[],
 ): string[] | undefined {
-  const hasFilter =
-    hasDashboardWhereFilter(exploreState) ||
-    hasDashboardDimensionThresholdFilter(exploreState);
+  const hasFilter = !!expr?.cond?.exprs?.length;
 
   const everythingIsVisible =
     exploreState.allDimensionsVisible &&
@@ -36,11 +134,8 @@ export function getExploreFields(
   if (everythingIsVisible) return undefined; // Not specifying any fields means all fields are visible
 
   // Check both where and threshold filters for dimensions
-  const dimensionsWithThresholdFilters = exploreState.dimensionThresholdFilters
-    .filter((dt) => dt.filters.length > 0)
-    .map((dt) => dt.name);
-  const filteredDimensions = getAllIdentifiers(exploreState.whereFilter).concat(
-    dimensionsWithThresholdFilters,
+  const filteredDimensions = getAllIdentifiers(expr).filter((i) =>
+    allDimensions?.find((d) => d.name === i),
   );
 
   return [
@@ -55,32 +150,82 @@ export function getExploreFields(
   ] as string[];
 }
 
-export function convertDateToMinutes(date: string) {
-  const now = new Date();
-  const future = new Date(date);
-  const diff = future.getTime() - now.getTime();
-  return Math.floor(diff / 60000);
+/**
+ * Returns the ephemeral measures that will be omitted from the public URL
+ * because they reference a measure outside `metricsViewFields`, along with the
+ * hidden measures each one depends on. Ephemeral measures are kept only when
+ * every measure they reference is visible to the recipient, so hidden fields
+ * cannot leak through expressions. An undefined `metricsViewFields` means
+ * everything is visible.
+ */
+export function getDroppedEphemeralMeasures(
+  exploreState: Pick<ExploreState, "ephemeralMeasures">,
+  metricsViewFields: string[] | undefined,
+  allMeasures: MetricsViewSpecMeasure[],
+): DroppedEphemeralMeasure[] {
+  if (!metricsViewFields || !exploreState.ephemeralMeasures?.length) return [];
+
+  const displayNameFor = (name: string) =>
+    allMeasures.find((measure) => measure.name === name)?.displayName || name;
+
+  return exploreState.ephemeralMeasures.flatMap((def) => {
+    const parsed = parseMeasureExpression(def.expression);
+    // An unparsable expression cannot be shared either, but it is not a
+    // hidden-field problem, so it is not reported to the user.
+    if (parsed.error)
+      return [
+        { name: def.name, displayName: def.displayName, hiddenMeasures: [] },
+      ];
+    const hiddenRefs = parsed.refs.filter(
+      (ref) => !metricsViewFields.includes(ref),
+    );
+    if (!hiddenRefs.length) return [];
+    return [
+      {
+        name: def.name,
+        displayName: def.displayName,
+        hiddenMeasures: hiddenRefs.map(displayNameFor),
+      },
+    ];
+  });
 }
 
 /**
  * Returns the serialized *sanitized* `state` for the current dashboard.
  * It removes all state that refers to fields that will be hidden, like filters, pivot chips, and visible field keys.
  * This ensures we do not leak hidden information to the URL recipient.
+ * `droppedEphemeralNames` holds the ephemeral measures to omit; see {@link getDroppedEphemeralMeasures}.
  */
-export function getSanitizedExploreStateParam(
+function getSanitizedExploreStateParam(
   exploreState: ExploreState,
   metricsViewFields: string[] | undefined,
   exploreSpec: V1ExploreSpec,
+  droppedEphemeralNames: Set<string>,
 ): string {
   // If no metrics view fields are specified, everything is visible, and there's no need to sanitize
   if (!metricsViewFields)
     return getProtoFromDashboardState(exploreState, exploreSpec);
 
   // Else, explicitly add the sanitized state that we want to remember.
+  const sanitizedEphemeralMeasures = exploreState.ephemeralMeasures?.filter(
+    (def) => !droppedEphemeralNames.has(def.name),
+  );
+  const sanitizedEphemeralNames = new Set(
+    sanitizedEphemeralMeasures?.map((def) => def.name) ?? [],
+  );
+  const isSharedPivotChip = (chip: { id: string; type: PivotChipType }) =>
+    metricsViewFields.includes(chip.id) ||
+    sanitizedEphemeralNames.has(chip.id) ||
+    chip.type === PivotChipType.Time;
   const sanitizedDashboardState = {
+    ephemeralMeasures: sanitizedEphemeralMeasures?.length
+      ? sanitizedEphemeralMeasures
+      : undefined,
     // Remove any measures not specified in the metrics view fields
-    visibleMeasures: exploreState.visibleMeasures.filter((measure) =>
-      metricsViewFields?.includes(measure),
+    visibleMeasures: exploreState.visibleMeasures.filter(
+      (measure) =>
+        metricsViewFields?.includes(measure) ||
+        sanitizedEphemeralNames.has(measure),
     ),
     allMeasuresVisible: exploreState.allMeasuresVisible,
     // Remove any dimensions not specified in the metrics view fields
@@ -93,9 +238,6 @@ export function getSanitizedExploreStateParam(
     sortDirection: exploreState.sortDirection,
 
     // Remove the filters
-    // whereFilter: dashboard.whereFilter,
-    // dimensionThresholdFilters: exploreState.dimensionThresholdFilters,
-    // dimensionFilterExcludeMode: exploreState.dimensionFilterExcludeMode,
 
     // There's no need to share filters-in-progress
     // temporaryFilterName: dashboard.temporaryFilterName,
@@ -123,18 +265,31 @@ export function getSanitizedExploreStateParam(
     tdd: exploreState.tdd,
     pivot: {
       ...exploreState.pivot,
-      rows: exploreState.pivot.rows.filter(
-        (chip) =>
-          metricsViewFields?.includes(chip.id) ||
-          chip.type === PivotChipType.Time,
-      ),
-      columns: exploreState.pivot.columns.filter(
-        (chip) =>
-          metricsViewFields?.includes(chip.id) ||
-          chip.type === PivotChipType.Time,
-      ),
+      rows: exploreState.pivot.rows.filter(isSharedPivotChip),
+      columns: exploreState.pivot.columns.filter(isSharedPivotChip),
     },
   } as ExploreState;
 
   return getProtoFromDashboardState(sanitizedDashboardState, exploreSpec);
+}
+
+/**
+ * Returns the sanitized state from the URL.
+ * Removes filter parameters (f and f.*) so locked filters don't appear in the shared URL.
+ * This ensures we do not leak hidden filter information to the URL recipient.
+ */
+export function getSanitizedStateUrl(currentUrl: URL): string {
+  const searchParams = new URLSearchParams(currentUrl.search);
+  const filterPrefix: string = ExploreStateURLParams.Filters; // "f"
+
+  // Remove all filter-related parameters (f, f.metricsViewName, etc.)
+  const keysToDelete: string[] = [];
+  searchParams.forEach((_, key) => {
+    if (key === filterPrefix || key.startsWith(`${filterPrefix}.`)) {
+      keysToDelete.push(key);
+    }
+  });
+  keysToDelete.forEach((key) => searchParams.delete(key));
+
+  return searchParams.toString();
 }

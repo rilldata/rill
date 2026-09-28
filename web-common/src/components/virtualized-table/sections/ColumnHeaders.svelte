@@ -41,18 +41,19 @@
 
 <div class="w-full sticky top-0 z-10">
   {#each virtualColumnItems as header (header.key)}
-    {@const props = getColumnHeaderProps(header)}
-    <ColumnHeader
-      {...props}
-      {header}
-      {noPin}
-      {showDataIcon}
-      onPin={() => {
-        onPin(columns[header.index]);
-      }}
-      onClickColumn={() => {
-        onClickColumn(columns[header.index].name);
-      }}
-    />
+    {#if columns[header.index]}
+      <ColumnHeader
+        {...getColumnHeaderProps(header)}
+        {header}
+        {noPin}
+        {showDataIcon}
+        onPin={() => {
+          onPin(columns[header.index]);
+        }}
+        onClickColumn={() => {
+          onClickColumn(columns[header.index].name);
+        }}
+      />
+    {/if}
   {/each}
 </div>

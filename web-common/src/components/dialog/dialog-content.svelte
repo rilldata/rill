@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { getThemeBoundaryClass } from "@rilldata/web-common/features/themes/theme-boundary";
   import { cn } from "@rilldata/web-common/lib/shadcn";
   import { Dialog as DialogPrimitive } from "bits-ui";
   import { X } from "lucide-svelte";
@@ -9,12 +10,15 @@
   let className: $$Props["class"] = undefined;
   export let noClose = false;
   export { className as class };
+
+  const themeBoundaryClass = getThemeBoundaryClass();
 </script>
 
 <Dialog.Portal>
   <Dialog.Overlay />
   <DialogPrimitive.Content
     class={cn(
+      themeBoundaryClass,
       "fixed left-[50%] top-[50%] z-50 grid w-full max-w-xl translate-x-[-50%] translate-y-[-50%] gap-4 border bg-surface-overlay p-6 shadow-lg sm:rounded-lg md:w-full",
       className,
     )}

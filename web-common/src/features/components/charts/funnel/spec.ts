@@ -189,7 +189,7 @@ export function generateVLFunnelChartSpec(
 
   const yEncoding = isMultiMeasure
     ? { field: "Measure", type: "nominal" as const }
-    : createPositionEncoding(config.stage, data);
+    : createPositionEncoding(config.stage, data, "y");
 
   const percentTooltipFields = [
     {

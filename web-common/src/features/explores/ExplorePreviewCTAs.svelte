@@ -43,14 +43,19 @@
   {#if $explorePolicyCheck.data || $metricsPolicyCheck.data || $rillYamlPolicyCheck.data}
     <ViewAsButton />
   {/if}
-  <StateManagersProvider {metricsViewName} {exploreName} let:ready>
-    {#if $dashboardChat}
-      <ChatToggle open={dashboardChatOpen} actions={dashboardChatActions} />
-    {/if}
-    {#if ready}
-      <GlobalDimensionSearch />
-    {/if}
-  </StateManagersProvider>
+  <!-- StateManagersProvider creates its state managers once on init, so wait for the metrics view name to resolve before mounting it (and re-mount if it changes). -->
+  {#if metricsViewName}
+    {#key metricsViewName + exploreName}
+      <StateManagersProvider {metricsViewName} {exploreName} let:ready>
+        {#if $dashboardChat}
+          <ChatToggle open={dashboardChatOpen} actions={dashboardChatActions} />
+        {/if}
+        {#if ready}
+          <GlobalDimensionSearch />
+        {/if}
+      </StateManagersProvider>
+    {/key}
+  {/if}
   {#if !$readOnly}
     <ExploreEditDropdown {exploreName} />
   {/if}

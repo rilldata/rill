@@ -52,6 +52,44 @@ export function distributeColumnWidthsToFillContainer(
   );
 }
 
+export type FitWidthColumn = {
+  width: number;
+  min: number;
+  max: number;
+};
+
+/**
+ * One-shot resize of every column so the table fits the available width.
+ * When the columns overflow, each shrinks in proportion to its slack above
+ * its minimum; when they underflow, each grows in proportion to its headroom
+ * below its maximum. Bounds are never crossed, so if even the minimums
+ * overflow the table still scrolls by the remainder. Results are whole pixels
+ * and never sum to more than the available width when a fit is feasible.
+ */
+export function fitColumnWidthsToContainer(
+  columns: FitWidthColumn[],
+  availableWidth: number,
+): number[] {
+  if (!columns.length) return [];
+
+  const totalWidth = columns.reduce((sum, { width }) => sum + width, 0);
+  const delta = availableWidth - totalWidth;
+  if (delta === 0) return columns.map(({ width }) => width);
+
+  // Positive delta grows toward max; negative delta shrinks toward min.
+  const room = columns.map(({ width, min, max }) =>
+    delta > 0 ? Math.max(0, max - width) : Math.max(0, width - min),
+  );
+  const totalRoom = room.reduce((sum, r) => sum + r, 0);
+  if (totalRoom === 0) return columns.map(({ width }) => width);
+
+  // Never move further than the room allows, so bounds are respected.
+  const applied = Math.sign(delta) * Math.min(Math.abs(delta), totalRoom);
+  return columns.map(({ width }, i) =>
+    Math.floor(width + (applied * room[i]) / totalRoom),
+  );
+}
+
 export function calculateColumnWidth(
   columnName: string,
   timeDimension: string,

@@ -220,6 +220,20 @@ func (s *Server) HTTPHandler(ctx context.Context) (http.Handler, error) {
 	observability.MuxHandle(mux, "/v1/organizations/{org}/projects/{project}/runtime/{path...}", proxyHandler)        // Backwards compatibility
 	observability.MuxHandle(mux, "/v1/orgs/{org}/projects/{project}/branch/{branch}/runtime/{path...}", proxyHandler) // Branch-specific deployment
 
+	// Add MCP server.
+	// Note this is the admin service's MCP server, not a runtime MCP server (although this includes an ability to proxy certain tool calls to a project's runtime).
+	mcpHandler, err := s.mcpHandler()
+	if err != nil {
+		return nil, err
+	}
+	mcpHandler = observability.Middleware(
+		"mcp",
+		s.logger,
+		runtimeProxyCORSMiddleware(s.authenticator.HTTPMiddlewareLenient(s.mcpRequireAuth(mcpHandler))),
+	)
+	observability.MuxHandle(mux, "/v1/mcp", mcpHandler)
+	observability.MuxHandle(mux, "/v1/mcp/{$}", mcpHandler) // Avoids falling through to the gRPC transcoder on a trailing slash
+
 	// Add backwards compatibility alias for iframe endpoint
 	observability.MuxHandle(mux, "/v1/organizations/{org}/projects/{project}/iframe", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		r.URL.Path = strings.Replace(r.URL.Path, "/v1/organizations/", "/v1/orgs/", 1)

@@ -1,3 +1,5 @@
+import { mapEphemeralMeasuresForRequest } from "@rilldata/web-common/features/dashboards/ephemeral-measures/measure-mapping";
+import type { EphemeralMeasureDef } from "@rilldata/web-common/features/dashboards/ephemeral-measures/types";
 import {
   createAndExpression,
   createInExpression,
@@ -33,6 +35,7 @@ export function createDimensionAggregationQuery(
   client: RuntimeClient,
   metricsViewName: string,
   measureName: string,
+  ephemeralMeasures: EphemeralMeasureDef[] | undefined,
   dimensionName: string,
   dimensionValues: (string | null)[],
   where: V1Expression | undefined,
@@ -55,7 +58,10 @@ export function createDimensionAggregationQuery(
     client,
     {
       metricsView: metricsViewName,
-      measures: [{ name: measureName }],
+      measures: mapEphemeralMeasuresForRequest(
+        [{ name: measureName }],
+        ephemeralMeasures,
+      ),
       dimensions: [
         { name: dimensionName },
         { name: timeDimension, timeGrain: timeGranularity as any, timeZone },

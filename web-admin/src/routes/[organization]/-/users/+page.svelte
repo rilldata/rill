@@ -1,23 +1,30 @@
 <script lang="ts">
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import { page } from "$app/stores";
-  import type { V1OrganizationInvite } from "@rilldata/web-admin/client";
   import { createAdminServiceGetCurrentUser } from "@rilldata/web-admin/client";
   import ChangeBillingContactDialog from "@rilldata/web-admin/features/billing/contact/ChangeBillingContactDialog.svelte";
   import { getOrganizationBillingContactUser } from "@rilldata/web-admin/features/billing/contact/selectors";
   import AddUsersDialog from "@rilldata/web-admin/features/organizations/user-management/dialogs/AddUsersDialog.svelte";
   import ChangingBillingContactRoleDialog from "@rilldata/web-admin/features/organizations/user-management/dialogs/ChangingBillingContactRoleDialog.svelte";
   import EditUserGroupDialog from "@rilldata/web-admin/features/organizations/user-management/dialogs/EditUserGroupDialog.svelte";
+  import ManageUserGroupsDialog from "@rilldata/web-admin/features/organizations/user-management/dialogs/ManageUserGroupsDialog.svelte";
   import OrgUsersFilters from "@rilldata/web-admin/features/organizations/user-management/OrgUsersFilters.svelte";
   import OrgUsersTable from "@rilldata/web-admin/features/organizations/user-management/table/users/OrgUsersTable.svelte";
   import RemovingBillingContactDialog from "@rilldata/web-admin/features/organizations/user-management/dialogs/RemovingBillingContactDialog.svelte";
   import {
     getOrgUserInvites,
     getOrgUserMembers,
+    type OrgUserMemberFilters,
   } from "@rilldata/web-admin/features/organizations/user-management/selectors.ts";
+  import {
+    coerceInvitesToUsers,
+    type OrgUserRow,
+  } from "@rilldata/web-admin/features/organizations/user-management/utils.ts";
   import Button from "@rilldata/web-common/components/button/Button.svelte";
   import { Search } from "@rilldata/web-common/components/search";
-  import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
+  import { debounce } from "@rilldata/web-common/lib/create-debouncer";
+  import { onDestroy } from "svelte";
+  import { writable } from "svelte/store";
   import { OrgUserRoles } from "@rilldata/web-common/features/users/roles.ts";
   import { Plus } from "lucide-svelte";
   import type { PageData } from "./$types";
@@ -35,23 +42,45 @@
   let isUpdateBillingContactDialogOpen = false;
   let isEditUserGroupDialogOpen = false;
   let editingUserGroupName = "";
+  let isManageGroupsDialogOpen = false;
+  let manageGroupsUser: {
+    email: string;
+    userId: string;
+    pendingAcceptance: boolean;
+    usergroups: string[];
+  } | null = null;
 
   let searchText = "";
+  let debouncedSearchText = "";
+  const updateSearch = debounce((value: string) => {
+    debouncedSearchText = value;
+  }, 250);
+  $: updateSearch(searchText);
+  onDestroy(updateSearch.cancel);
+
+  const memberFilters = writable<OrgUserMemberFilters>({
+    organization: "",
+    guestOnly: false,
+  });
   let filterSelection: "all" | "members" | "guests" | "pending" = "all";
   let roleFilter: "all" | "admin" | "editor" | "viewer" = "all";
 
   let scrollToTopTrigger: unknown = null;
   $: {
-    // Update trigger when filter selection or role filter changes to scroll to top
-    scrollToTopTrigger = { filterSelection, roleFilter };
+    // Scroll to the top when the search or filters change.
+    scrollToTopTrigger = { searchText, filterSelection, roleFilter };
   }
 
   $: organization = $page.params.organization;
 
-  $: orgMemberUsersInfiniteQuery = getOrgUserMembers({
+  $: memberFilters.set({
     organization,
     guestOnly: false,
+    searchText: debouncedSearchText,
+    role: roleFilter === "all" ? undefined : roleFilter,
+    enabled: filterSelection !== "pending",
   });
+  const orgMemberUsersInfiniteQuery = getOrgUserMembers(memberFilters);
   $: orgInvitesInfiniteQuery = getOrgUserInvites(organization);
 
   $: allOrgMemberUsersRows =
@@ -63,27 +92,20 @@
       (page) => page.invites ?? [],
     ) ?? [];
 
-  function coerceInvitesToUsers(invites: V1OrganizationInvite[]) {
-    return invites.map((invite) => ({
-      ...invite,
-      userEmail: invite.email,
-      roleName: invite.roleName,
-    }));
-  }
-
   $: combinedRows = [
-    ...allOrgMemberUsersRows,
+    ...(allOrgMemberUsersRows as OrgUserRow[]),
     ...coerceInvitesToUsers(allOrgInvitesRows),
   ];
 
-  // Filter by user type and role
-  // Filter by search text
+  // Members are searched by the API. Filter invites locally, leaving member
+  // placeholder rows visible until a new search or role query finishes.
   $: filteredUsers = combinedRows
     .filter((user) => {
       if (user.roleName === OrgUserRoles.Guest) return false;
 
-      const searchLower = searchText.toLowerCase();
+      const searchLower = debouncedSearchText.toLowerCase();
       const matchesSearch =
+        !user.pendingAcceptance ||
         (user.userEmail?.toLowerCase() || "").includes(searchLower) ||
         ("userName" in user &&
           (user.userName?.toLowerCase() || "").includes(searchLower));
@@ -96,17 +118,18 @@
       } else if (filterSelection === "members") {
         // Only members (org admin, editor, viewer)
         matchesUserType =
-          !("invitedBy" in user) &&
+          !user.pendingAcceptance &&
           (user.roleName === OrgUserRoles.Admin ||
             user.roleName === OrgUserRoles.Editor ||
             user.roleName === OrgUserRoles.Viewer);
       } else if (filterSelection === "pending") {
         // Only users with pending invites
-        matchesUserType = "invitedBy" in user;
+        matchesUserType = !!user.pendingAcceptance;
       }
 
       // Filter by selected role
       const matchesRoleFilter =
+        !user.pendingAcceptance ||
         roleFilter === "all" ||
         (roleFilter === "admin" && user.roleName === OrgUserRoles.Admin) ||
         (roleFilter === "editor" && user.roleName === OrgUserRoles.Editor) ||
@@ -126,60 +149,64 @@
 </script>
 
 <div class="flex flex-col w-full">
-  {#if $orgMemberUsersInfiniteQuery.isLoading || $orgInvitesInfiniteQuery.isLoading}
-    <DelayedSpinner
-      isLoading={$orgMemberUsersInfiniteQuery.isLoading ||
-        $orgInvitesInfiniteQuery.isLoading}
-      size="1rem"
-    />
-  {:else if $orgMemberUsersInfiniteQuery.isError || $orgInvitesInfiniteQuery.isError}
+  {#if $orgMemberUsersInfiniteQuery.isError || $orgInvitesInfiniteQuery.isError}
     <div class="text-red-500">
       {m.users_error_loading_members()}
       {$orgMemberUsersInfiniteQuery.error ?? $orgInvitesInfiniteQuery.error}
     </div>
-  {:else if $orgMemberUsersInfiniteQuery.isSuccess && $orgInvitesInfiniteQuery.isSuccess}
-    <div class="flex flex-col">
-      <div class="flex flex-row gap-x-4">
-        <Search
-          bind:value={searchText}
-          large
-          autofocus={false}
-          showBorderOnFocus={false}
-        />
-        <OrgUsersFilters bind:filterSelection bind:roleFilter />
-        <Button
-          type="primary"
-          large
-          onClick={() => (isAddUserDialogOpen = true)}
-        >
-          <Plus size="16px" />
-          <span>{m.users_add_users()}</span>
-        </Button>
-      </div>
-      <div class="mt-6">
-        <OrgUsersTable
-          {organization}
-          data={filteredUsers}
-          usersQuery={$orgMemberUsersInfiniteQuery}
-          invitesQuery={$orgInvitesInfiniteQuery}
-          currentUserEmail={$currentUser.data?.user.email}
-          {organizationPermissions}
-          billingContact={$billingContactUser?.email}
-          {scrollToTopTrigger}
-          guestOnly={false}
-          onAttemptRemoveBillingContactUser={() =>
-            (isRemovingBillingContactDialogOpen = true)}
-          onAttemptChangeBillingContactUserRole={() =>
-            (isChangingBillingContactRoleDialogOpen = true)}
-          onEditUserGroup={(groupName) => {
-            editingUserGroupName = groupName;
-            isEditUserGroupDialogOpen = true;
-          }}
-          onConvertToMember={() => {}}
-        />
-      </div>
-    </div>
   {/if}
+  <div class="flex flex-col">
+    <div class="flex flex-row gap-x-4">
+      <Search
+        bind:value={searchText}
+        large
+        autofocus={false}
+        showBorderOnFocus={false}
+      />
+      <OrgUsersFilters bind:filterSelection bind:roleFilter />
+      <Button type="primary" large onClick={() => (isAddUserDialogOpen = true)}>
+        <Plus size="16px" />
+        <span>{m.users_add_users()}</span>
+      </Button>
+    </div>
+    <div class="mt-6">
+      <OrgUsersTable
+        {organization}
+        data={filteredUsers}
+        usersQuery={$orgMemberUsersInfiniteQuery}
+        invitesQuery={$orgInvitesInfiniteQuery}
+        currentUserEmail={$currentUser.data?.user.email}
+        {organizationPermissions}
+        billingContact={$billingContactUser?.email}
+        {scrollToTopTrigger}
+        isSearchPending={searchText !== debouncedSearchText}
+        showMembers={filterSelection !== "pending"}
+        showInvites={filterSelection !== "members"}
+        hasActiveFilters={!!searchText ||
+          filterSelection !== "all" ||
+          roleFilter !== "all"}
+        guestOnly={false}
+        onAttemptRemoveBillingContactUser={() =>
+          (isRemovingBillingContactDialogOpen = true)}
+        onAttemptChangeBillingContactUserRole={() =>
+          (isChangingBillingContactRoleDialogOpen = true)}
+        onEditUserGroup={(groupName) => {
+          editingUserGroupName = groupName;
+          isEditUserGroupDialogOpen = true;
+        }}
+        onManageGroups={(user: OrgUserRow) => {
+          manageGroupsUser = {
+            email: user.userEmail ?? "",
+            userId: user.userId ?? "",
+            pendingAcceptance: !!user.pendingAcceptance,
+            usergroups: user.usergroups ?? [],
+          };
+          isManageGroupsDialogOpen = true;
+        }}
+        onConvertToMember={() => {}}
+      />
+    </div>
+  </div>
 </div>
 
 <AddUsersDialog
@@ -210,5 +237,16 @@
     bind:open={isEditUserGroupDialogOpen}
     groupName={editingUserGroupName}
     currentUserEmail={$currentUser.data?.user.email}
+  />
+{/if}
+
+{#if manageGroupsUser}
+  <ManageUserGroupsDialog
+    bind:open={isManageGroupsDialogOpen}
+    {organization}
+    email={manageGroupsUser.email}
+    userId={manageGroupsUser.userId}
+    pendingAcceptance={manageGroupsUser.pendingAcceptance}
+    currentGroups={manageGroupsUser.usergroups}
   />
 {/if}

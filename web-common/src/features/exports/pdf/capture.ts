@@ -1,69 +1,10 @@
-import { toJpeg } from "html-to-image";
+import { getFontEmbedCSS } from "html-to-image";
+import { needsCanvasWarmup, rasterizeNode } from "../rasterize";
 import {
   FILTER_BAR_ID,
   FILTER_BAR_ROW_INDEX,
   type CapturedBlock,
 } from "./types";
-
-// Properties that don't reliably serialize from <svg> subtrees during cloning,
-// so we pin their computed values inline before capture. Mirrors the approach in
-// time-series/ScreenshotContainer.svelte.
-const SVG_PROPS = [
-  "fill",
-  "fill-opacity",
-  "stroke",
-  "stroke-width",
-  "stroke-opacity",
-  "stroke-dasharray",
-  "stroke-linecap",
-  "opacity",
-  "font-family",
-  "font-size",
-  "font-weight",
-  "color",
-];
-
-export function inlineSvgStyles(root: HTMLElement): () => void {
-  const previousStyles: Array<{ el: Element; style: string | null }> = [];
-  root.querySelectorAll("svg, svg *").forEach((el) => {
-    const cs = getComputedStyle(el);
-    const inline = SVG_PROPS.map((p) => `${p}: ${cs.getPropertyValue(p)}`).join(
-      "; ",
-    );
-    previousStyles.push({ el, style: el.getAttribute("style") });
-    el.setAttribute("style", `${inline}; ${el.getAttribute("style") ?? ""}`);
-  });
-
-  return () => {
-    for (const { el, style } of previousStyles) {
-      if (style === null) el.removeAttribute("style");
-      else el.setAttribute("style", style);
-    }
-  };
-}
-
-const PIXEL_RATIO = 2;
-// JPEG keeps PDFs an order of magnitude smaller than lossless PNG while staying
-// crisp for dashboard charts/text. JPEG has no alpha, so we supply a background.
-const JPEG_QUALITY = 0.85;
-
-// Rasterizes a single element to a JPEG data URL.
-export async function rasterizeNode(
-  node: HTMLElement,
-  backgroundColor: string,
-): Promise<string> {
-  const restoreSvgStyles = inlineSvgStyles(node);
-  try {
-    return await toJpeg(node, {
-      cacheBust: true,
-      pixelRatio: PIXEL_RATIO,
-      quality: JPEG_QUALITY,
-      backgroundColor,
-    });
-  } finally {
-    restoreSvgStyles();
-  }
-}
 
 export interface CaptureResult {
   blocks: CapturedBlock[];
@@ -111,6 +52,14 @@ export async function captureCanvasBlocks(
 
   const targets = captureTargetsIn(rowContainer);
 
+  // Probed once per page load, not per block or per export: the answer is a
+  // property of the browser, and the probe itself rasterizes.
+  const warmUpCanvas = await needsCanvasWarmup();
+  // Collected from the whole export view rather than the rows: the header is a
+  // sibling of the row container, and getFontEmbedCSS keeps only the @font-face
+  // rules whose family is used inside the node it is handed.
+  const fontEmbedCSS = await getFontEmbedCSS(exportView);
+
   const blocks: CapturedBlock[] = [];
   const total = targets.length + (opts.includeFilters ? 1 : 0);
   let done = 0;
@@ -129,7 +78,11 @@ export async function captureCanvasBlocks(
       header.style.width = `${contentWidthPx}px`;
       if (header.scrollHeight > 0) {
         try {
-          const dataUrl = await rasterizeNode(header, backgroundColor);
+          const dataUrl = await rasterizeNode(header, {
+            backgroundColor,
+            fontEmbedCSS,
+            warmUpCanvas,
+          });
           blocks.push({
             id: FILTER_BAR_ID,
             dataUrl,
@@ -151,7 +104,11 @@ export async function captureCanvasBlocks(
   for (const target of targets) {
     const rect = target.getBoundingClientRect();
     try {
-      const dataUrl = await rasterizeNode(target, backgroundColor);
+      const dataUrl = await rasterizeNode(target, {
+        backgroundColor,
+        fontEmbedCSS,
+        warmUpCanvas,
+      });
       blocks.push({
         id: target.id,
         dataUrl,

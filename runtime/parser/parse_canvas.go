@@ -45,6 +45,7 @@ type CanvasYAML struct {
 	Rows        []*canvasRowYAML         `yaml:"rows"`
 	Security    *SecurityPolicyYAML      `yaml:"security"`
 	Annotations map[string]string        `yaml:"annotations"`
+	AIPrompts   []AIPromptYAML           `yaml:"ai_prompts"`
 }
 
 // canvasRowYAML is a single entry in a canvas's (or tab's) rows list.
@@ -208,8 +209,14 @@ func (p *Parser) parseCanvas(node *Node) error {
 		}
 	}
 
+	// Validate the configured AI prompts
+	aiPrompts, err := parseAIPrompts(tmp.AIPrompts)
+	if err != nil {
+		return err
+	}
+
 	// Track canvas
-	r, err := p.insertResource(ResourceKindCanvas, node.Name, node.Paths, node.Tags, node.Refs...)
+	r, err := p.insertResource(ResourceKindCanvas, node.Name, node.Paths, node.Tags, node.Metadata, node.Refs...)
 	if err != nil {
 		return err
 	}
@@ -239,10 +246,11 @@ func (p *Parser) parseCanvas(node *Node) error {
 	r.CanvasSpec.PinnedFilters = tmp.Filters.Pinned
 	r.CanvasSpec.RequiredFilters = tmp.Filters.Required
 	r.CanvasSpec.Annotations = tmp.Annotations
+	r.CanvasSpec.AiPrompts = aiPrompts
 
 	// Track inline components
 	for _, def := range inlineComponentDefs {
-		r, err := p.insertResource(ResourceKindComponent, def.name, node.Paths, nil, def.refs...)
+		r, err := p.insertResource(ResourceKindComponent, def.name, node.Paths, nil, nil, def.refs...)
 		if err != nil {
 			// Normally we could return the error, but we can't do that here because we've already inserted the canvas.
 			// Since the component has been validated with insertDryRun in parseCanvasItemComponent, this error should never happen in practice.

@@ -10,6 +10,7 @@ export enum InlineContextType {
   DimensionValues = "dimensionValues",
   Model = "model",
   Column = "column",
+  Skill = "skill",
 }
 
 export type InlineContext = {
@@ -30,6 +31,7 @@ export type InlineContext = {
   model?: string;
   column?: string;
   columnType?: string; // TODO: is this needed here?
+  skill?: string;
 };
 
 export function getIdForContext(ctx: InlineContext) {
@@ -91,6 +93,10 @@ export function normalizeInlineContext(ctx: InlineContext) {
 
     case InlineContextType.DimensionValues:
       normalisedContext.value = normalisedContext.values!.join(",");
+      break;
+
+    case InlineContextType.Skill:
+      normalisedContext.value = normalisedContext.skill!;
       break;
   }
 

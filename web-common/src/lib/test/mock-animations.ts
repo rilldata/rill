@@ -8,6 +8,25 @@ export function mockAnimationsForComponentTesting() {
     vi.stubGlobal("requestAnimationFrame", (fn) => {
       return window.setTimeout(() => fn(Date.now()), 1);
     });
+
+    // Svelte 5 transitions drive themselves with the Web Animations API, which jsdom does not
+    // implement. Without this, a component that transitions throws "element.animate is not a
+    // function" from a task that no test can catch.
+    if (!Element.prototype.animate) {
+      Element.prototype.animate = () => {
+        const animation = {
+          currentTime: 0,
+          // Reports the animation as done so that the transition does not start a tick loop.
+          playState: "finished",
+          effect: null,
+          onfinish: null as (() => void) | null,
+          cancel: () => {},
+        };
+        // The caller assigns `onfinish` right after this returns, so it needs a tick to get there.
+        window.setTimeout(() => animation.onfinish?.());
+        return animation as unknown as Animation;
+      };
+    }
   });
 
   afterAll(() => {

@@ -1,9 +1,9 @@
 import { DashboardFetchMocks } from "@rilldata/web-common/features/dashboards/dashboard-fetch-mocks";
 import DashboardStateManagerTest from "@rilldata/web-common/features/dashboards/state-managers/loaders/test/DashboardStateManagerTest.svelte";
 import {
-  type HoistedPageForExploreTests,
-  PageMockForExploreTests,
-} from "@rilldata/web-common/features/dashboards/state-managers/loaders/test/PageMockForExploreTests";
+  type HoistedPageForComponentTests,
+  PageMockForComponentTests,
+} from "@rilldata/web-common/features/dashboards/state-managers/loaders/test/PageMockForComponentTests.ts";
 import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
 import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
 import {
@@ -12,6 +12,7 @@ import {
   AD_BIDS_EXPLORE_NAME,
   AD_BIDS_METRICS_3_MEASURES_DIMENSIONS,
   AD_BIDS_METRICS_NAME,
+  AD_BIDS_NAME,
   AD_BIDS_PUBLISHER_DIMENSION,
   AD_BIDS_TIME_RANGE_SUMMARY,
 } from "@rilldata/web-common/features/dashboards/stores/test-data/data";
@@ -25,7 +26,10 @@ import {
   applyMutationsToDashboard,
   type TestDashboardMutation,
 } from "@rilldata/web-common/features/dashboards/stores/test-data/store-mutations";
-import { getCleanMetricsExploreForAssertion } from "@rilldata/web-common/features/dashboards/url-state/url-state-variations.spec";
+import {
+  getCleanMetricsExploreForAssertion,
+  useTestFilterManager,
+} from "@rilldata/web-common/features/dashboards/url-state/test/url-state-test-utils";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import {
   DashboardState_LeaderboardSortDirection,
@@ -38,7 +42,7 @@ import {
 import { render, screen, waitFor } from "@testing-library/svelte";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const hoistedPage: HoistedPageForExploreTests = vi.hoisted(() => ({}) as any);
+const hoistedPage: HoistedPageForComponentTests = vi.hoisted(() => ({}) as any);
 
 vi.stubEnv("TZ", "UTC");
 
@@ -109,12 +113,18 @@ const TestCases: {
   },
 ];
 
+// Filters live in the ExpressionFilterManager rather than in explore state, so the tests need the
+// specs of the metrics view backing AD_BIDS_EXPLORE to build the filter chips.
+const getFilterManager = useTestFilterManager({
+  [AD_BIDS_NAME]: AD_BIDS_METRICS_3_MEASURES_DIMENSIONS,
+});
+
 describe("Most recent explore state", () => {
   const mocks = DashboardFetchMocks.useDashboardFetchMocks();
-  let pageMock!: PageMockForExploreTests;
+  let pageMock!: PageMockForComponentTests;
 
   beforeEach(async () => {
-    pageMock = new PageMockForExploreTests(hoistedPage);
+    pageMock = new PageMockForComponentTests(hoistedPage);
 
     mocks.mockMetricsView(
       AD_BIDS_METRICS_NAME,
@@ -151,7 +161,11 @@ describe("Most recent explore state", () => {
       const initState = getCleanMetricsExploreForAssertion();
 
       pageMock.gotoSearch(urlSearch);
-      await applyMutationsToDashboard(AD_BIDS_EXPLORE_NAME, mutations);
+      await applyMutationsToDashboard(
+        AD_BIDS_EXPLORE_NAME,
+        mutations,
+        getFilterManager(),
+      );
 
       // clear the old dashboard to simulate closing the tab
       unmount();

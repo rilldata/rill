@@ -30,6 +30,7 @@
     instanceId,
     missingRequireParams,
     navigationEnabled,
+    navigationBarEnabled,
     runtimeHost,
     accessToken,
   } = data;
@@ -62,7 +63,7 @@
           | ResourceKind.Canvas
           | undefined);
 
-  $: showTopBar = navigationEnabled || showDashboardChat;
+  $: showTopBar = navigationBarEnabled || showDashboardChat;
 
   // Suppress browser back/forward
   beforeNavigate((nav) => {
@@ -150,7 +151,7 @@
           class="flex items-center w-full pr-4 py-1 min-h-[2.5rem] bg-surface-subtle"
           class:border-b={!onProjectPage}
         >
-          <EmbedHeader {activeResource} {navigationEnabled} />
+          <EmbedHeader {activeResource} {navigationBarEnabled} />
         </div>
       </ThemeProvider>
     {/if}

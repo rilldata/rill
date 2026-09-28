@@ -47,6 +47,12 @@ func TestEmbedOpen(t *testing.T) {
 	require.Equal(t, 0, res.ExitCode, res.Output)
 	require.Contains(t, res.Output, "Open browser at:")
 
+	// The navigation bar can be hidden without disabling navigation.
+	res = u1.Run(t, "sudo", "embed", "open", "embed-test", "embed-project", "--no-open", "--navigation", "--hide-navigation-bar")
+	require.Equal(t, 0, res.ExitCode, res.Output)
+	require.Contains(t, res.Output, "hide_navigation_bar=true")
+	require.Contains(t, res.Output, "navigation=true")
+
 	// Normal user cannot get an embed URL for the project.
 	res = u3.Run(t, "sudo", "embed", "open", "embed-test", "embed-project", "--no-open", "--navigation")
 	require.NotEqual(t, 0, res.ExitCode)

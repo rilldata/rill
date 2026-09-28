@@ -112,15 +112,17 @@ export async function invalidateAllMetricsViews(
     queryKey: getRuntimeServiceGetInstanceQueryKey(instanceId),
   });
 
-  // Second, refetch the resource entries (which returns the available dimensions and measures)
+  // Second, refetch the resource entries (which return the available dimensions and measures)
   await queryClient.refetchQueries({
     type: "active",
     predicate: (query) => {
       const key = query.queryKey;
-      // Format: ["RuntimeService", "getResource" or "listResources", instanceId, ...]
+      // Format: ["RuntimeService", "getResource" or "getExplore" or "listResources", instanceId, ...]
       return (
         key[0] === "RuntimeService" &&
-        (key[1] === "getResource" || key[1] === "listResources") &&
+        (key[1] === "getResource" ||
+          key[1] === "getExplore" ||
+          key[1] === "listResources") &&
         key[2] === instanceId
       );
     },

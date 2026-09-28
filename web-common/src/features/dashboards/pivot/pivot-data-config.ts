@@ -1,4 +1,4 @@
-import { mergeDimensionAndMeasureFilters } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
+import { appendEphemeralSpecMeasures } from "@rilldata/web-common/features/dashboards/ephemeral-measures/measure-mapping";
 import { allDimensions } from "@rilldata/web-common/features/dashboards/state-managers/selectors/dimensions";
 import { allMeasures } from "@rilldata/web-common/features/dashboards/state-managers/selectors/measures";
 import type { StateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
@@ -96,6 +96,8 @@ export function getPivotConfig(
       const { dimension: colDimensions, measure: colMeasures } =
         splitPivotChips(dashboardStore.pivot.columns);
 
+      const ephemeralMeasures = dashboardStore.ephemeralMeasures ?? [];
+
       const measureNames = colMeasures.flatMap((m) => {
         const measureName = m.id;
         const group = [measureName];
@@ -139,24 +141,27 @@ export function getPivotConfig(
         measureNames,
         rowDimensionNames,
         colDimensionNames,
-        allMeasures: allMeasures({
-          validMetricsView: metricsView,
-          validExplore: explore,
-        }),
+        // Ephemeral measures get a synthetic spec entry so column definitions
+        // (labels, formatters, tooltips) resolve them like any other measure.
+        allMeasures: appendEphemeralSpecMeasures(
+          allMeasures({
+            validMetricsView: metricsView,
+            validExplore: explore,
+          }),
+          ephemeralMeasures,
+        ),
         allDimensions: allDimensions({
           validMetricsView: metricsView,
           validExplore: explore,
         }),
-        whereFilter: mergeDimensionAndMeasureFilters(
-          dashboardStore.whereFilter,
-          dashboardStore.dimensionThresholdFilters,
-        ),
+        whereFilter: dashboardStore.whereFilter,
         pivot: dashboardStore.pivot,
         enableComparison,
         comparisonTime,
         time,
         searchText,
         isFlat,
+        ephemeralMeasures,
       };
 
       const currentKey = getPivotConfigKey(config);

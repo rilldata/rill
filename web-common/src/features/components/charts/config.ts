@@ -19,6 +19,7 @@ import {
 } from "./cartesian/CartesianChartProvider";
 import { generateVLLineChartSpec } from "./cartesian/line-chart/spec";
 import { generateVLMultiMetricChartSpec } from "./cartesian/multi-metric-chart";
+import { measureChannel } from "./cartesian/orientation";
 import { generateVLStackedBarChartSpec } from "./cartesian/stacked-bar/default";
 import { generateVLStackedBarNormalizedSpec } from "./cartesian/stacked-bar/normalized";
 import { CircularChartProvider } from "./circular/CircularChartProvider";
@@ -57,7 +58,10 @@ export const CHART_CONFIG: Record<ChartType, ChartMetadataConfig> = {
     provider: CartesianChartProvider,
     generateSpec: (config: ChartSpec, data: ChartDataResult) => {
       const cartesianConfig = config as CartesianChartSpec;
-      const isMultiMeasure = isMultiFieldConfig(cartesianConfig.y);
+      // The measure may sit on either axis (horizontal bars), so read it by role.
+      const isMultiMeasure = isMultiFieldConfig(
+        cartesianConfig[measureChannel(cartesianConfig)],
+      );
       return isMultiMeasure
         ? generateVLMultiMetricChartSpec(cartesianConfig, data, "grouped_bar")
         : generateVLBarChartSpec(cartesianConfig, data);
@@ -69,7 +73,9 @@ export const CHART_CONFIG: Record<ChartType, ChartMetadataConfig> = {
     provider: CartesianChartProvider,
     generateSpec: (config: ChartSpec, data: ChartDataResult) => {
       const cartesianConfig = config as CartesianChartSpec;
-      const isMultiMeasure = isMultiFieldConfig(cartesianConfig.y);
+      const isMultiMeasure = isMultiFieldConfig(
+        cartesianConfig[measureChannel(cartesianConfig)],
+      );
       return isMultiMeasure
         ? generateVLMultiMetricChartSpec(cartesianConfig, data, "line")
         : generateVLLineChartSpec(cartesianConfig, data);
@@ -81,7 +87,9 @@ export const CHART_CONFIG: Record<ChartType, ChartMetadataConfig> = {
     provider: CartesianChartProvider,
     generateSpec: (config: ChartSpec, data: ChartDataResult) => {
       const cartesianConfig = config as CartesianChartSpec;
-      const isMultiMeasure = isMultiFieldConfig(cartesianConfig.y);
+      const isMultiMeasure = isMultiFieldConfig(
+        cartesianConfig[measureChannel(cartesianConfig)],
+      );
       return isMultiMeasure
         ? generateVLMultiMetricChartSpec(cartesianConfig, data, "stacked_area")
         : generateVLAreaChartSpec(cartesianConfig, data);
@@ -93,7 +101,9 @@ export const CHART_CONFIG: Record<ChartType, ChartMetadataConfig> = {
     provider: CartesianChartProvider,
     generateSpec: (config: ChartSpec, data: ChartDataResult) => {
       const cartesianConfig = config as CartesianChartSpec;
-      const isMultiMeasure = isMultiFieldConfig(cartesianConfig.y);
+      const isMultiMeasure = isMultiFieldConfig(
+        cartesianConfig[measureChannel(cartesianConfig)],
+      );
       return isMultiMeasure
         ? generateVLMultiMetricChartSpec(cartesianConfig, data, "stacked_bar")
         : generateVLStackedBarChartSpec(cartesianConfig, data);
@@ -105,7 +115,9 @@ export const CHART_CONFIG: Record<ChartType, ChartMetadataConfig> = {
     provider: CartesianChartProvider,
     generateSpec: (config: ChartSpec, data: ChartDataResult) => {
       const cartesianConfig = config as CartesianChartSpec;
-      const isMultiMeasure = isMultiFieldConfig(cartesianConfig.y);
+      const isMultiMeasure = isMultiFieldConfig(
+        cartesianConfig[measureChannel(cartesianConfig)],
+      );
       return isMultiMeasure
         ? generateVLMultiMetricChartSpec(
             cartesianConfig,

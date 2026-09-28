@@ -5,8 +5,8 @@
 
 import type { BinaryReadOptions, FieldList, JsonReadOptions, JsonValue, PartialMessage, PlainMessage } from "@bufbuild/protobuf";
 import { Message as Message$1, proto3, Struct, Timestamp } from "@bufbuild/protobuf";
+import { AIPrompt, RefreshModelTrigger, Resource, ResourceName } from "./resources_pb.js";
 import { StructType } from "./schema_pb.js";
-import { RefreshModelTrigger, Resource, ResourceName } from "./resources_pb.js";
 import { ContentBlock, Tool } from "../../ai/v1/ai_pb.js";
 import { Expression } from "./expression_pb.js";
 
@@ -515,6 +515,11 @@ export class Instance extends Message$1<Instance> {
   aiInstructions = "";
 
   /**
+   * @generated from field: repeated rill.runtime.v1.AIPrompt ai_prompts = 27;
+   */
+  aiPrompts: AIPrompt[] = [];
+
+  /**
    * @generated from field: string frontend_url = 24;
    */
   frontendUrl = "";
@@ -548,6 +553,7 @@ export class Instance extends Message$1<Instance> {
     { no: 22, name: "feature_flags", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 8 /* ScalarType.BOOL */} },
     { no: 14, name: "annotations", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
     { no: 23, name: "ai_instructions", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 27, name: "ai_prompts", kind: "message", T: AIPrompt, repeated: true },
     { no: 24, name: "frontend_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 26, name: "theme", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
@@ -2973,6 +2979,13 @@ export class ListResourcesResponse extends Message$1<ListResourcesResponse> {
    */
   nextPageToken = "";
 
+  /**
+   * True while the instance may still produce more resources, i.e. it has not finished its initial parse and reconcile.
+   *
+   * @generated from field: bool initializing = 3;
+   */
+  initializing = false;
+
   constructor(data?: PartialMessage<ListResourcesResponse>) {
     super();
     proto3.util.initPartial(data, this);
@@ -2983,6 +2996,7 @@ export class ListResourcesResponse extends Message$1<ListResourcesResponse> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "resources", kind: "message", T: Resource, repeated: true },
     { no: 2, name: "next_page_token", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "initializing", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListResourcesResponse {

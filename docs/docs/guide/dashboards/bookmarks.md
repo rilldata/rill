@@ -10,7 +10,7 @@ Bookmarks are useful to return to regular analyses and filter sets commonly used
 
 Common use cases for Bookmarks include:
 - Weekly/Monthly reporting
-- Setting filters for specific users/use cases (eg. teams or executives with a narrower view, an account manager's book of clients)
+- Setting filters for specific users/use cases (e.g., teams or executives with a narrower view, an account manager's book of clients)
 - Answering common troubleshooting questions by starting with a subset of problem dimensions
 
 <div style={{ 
@@ -49,12 +49,10 @@ On the bookmark screen, you'll then be able to set the options related to the sa
 - **Name:** Set a name and description (_optional_)
 - **Filters:** All filters from your previous analysis will be carried into the bookmark. Add/remove any additional filters as necessary
 - **Shared or Local:** Select a category (_for admins who wish to make a public bookmark_)
-- **Save Filters Only:** this option will save only the filter combination to be re-used later without restricting the measures and dimensions
-- **Absolute Dates:** use this option if you have a saved time period and return exactly to that period versus using the time period filter  
+- **Save Filters Only:** This option will save only the filter combination to be reused later without restricting the measures and dimensions
+- **Absolute Dates:** Use this option if you have a saved time period and return exactly to that period versus using the time period filter
 
 ![Setbookmark](/img/explore/bookmarks/setbookmark.png)
-
-
 
 
 

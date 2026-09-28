@@ -11,32 +11,25 @@ test.describe("canvas time filters", () => {
 
     await page.getByLabel("total_records KPI data").first().click();
 
-    await page.getByRole("button", { name: "Filters" }).click();
-    await page
+    await page.getByRole("button", { name: "Time & filters" }).click();
+
+    // The widget follows the canvas until a range is picked.
+    const timeRangeSelect = page
       .getByRole("complementary", { name: "Inspector Panel" })
-      .getByRole("switch")
-      .first()
-      .click();
+      .getByLabel("Select time range");
+    await expect(timeRangeSelect).toContainText("Inherit from canvas");
 
     // Set local time range
-    await page
-      .getByRole("complementary", { name: "Inspector Panel" })
-      .getByLabel("Select time range")
-      .click();
+    await timeRangeSelect.click();
     await page.getByRole("menuitem", { name: "Last 7 days" }).click();
 
-    // Wait for the local time range to apply before enabling comparison,
-    // otherwise the comparison toggle can race the range change.
+    // Wait for the local time range to apply before choosing a comparison,
+    // otherwise the comparison change can race the range change.
     await expect(
       page
         .getByRole("complementary", { name: "Inspector Panel" })
         .getByLabel("Select time range"),
     ).toContainText("Last 7");
-
-    await page
-      .getByRole("complementary", { name: "Inspector Panel" })
-      .getByLabel("Toggle time comparison")
-      .click();
 
     await page
       .getByRole("complementary", { name: "Inspector Panel" })
@@ -57,6 +50,57 @@ test.describe("canvas time filters", () => {
     });
 
     await expect(page.getByText("7,863")).toBeVisible();
+
+    // Handing the range back to the canvas drops the local override,
+    // so the widget follows the 6 hour canvas range again.
+    await page.getByLabel("total_records KPI data").first().click();
+    await page
+      .getByRole("button", { name: "Time & filters", exact: true })
+      .click();
+    await timeRangeSelect.click();
+    await page.getByRole("menuitem", { name: "Inherit from canvas" }).click();
+    await expect(timeRangeSelect).toContainText("Inherit from canvas");
+    await expect(page.getByText("7,863")).not.toBeVisible();
+  });
+
+  test("can disable comparison for a single widget", async ({ page }) => {
+    await gotoNavEntry(page, "/dashboards/AdBids_metrics_canvas.yaml");
+
+    const kpi = page.getByLabel("total_records KPI data").first();
+    // The canvas can take a while to render under parallel workers.
+    await expect(kpi).toBeVisible({ timeout: 30_000 });
+
+    // Make sure comparison is on at the canvas level.
+    const globalToggle = page.getByLabel("Toggle time comparison").first();
+    const globalSwitch = globalToggle.getByRole("switch");
+    if (!(await globalSwitch.isChecked())) {
+      await globalToggle.click();
+    }
+    await expect(globalSwitch).toBeChecked();
+    await expect(kpi).toContainText("vs");
+
+    await kpi.click();
+    await page
+      .getByRole("button", { name: "Time & filters", exact: true })
+      .click();
+
+    const inspector = page.getByRole("complementary", {
+      name: "Inspector Panel",
+    });
+    const comparisonSelect = inspector.getByLabel(
+      "Select time comparison option",
+    );
+    await expect(comparisonSelect).toContainText("Inherit from canvas");
+
+    // The widget toggle only affects this widget; the canvas comparison stays on.
+    await inspector.getByLabel("Toggle time comparison").click();
+    await expect(kpi).not.toContainText("vs");
+    await expect(globalSwitch).toBeChecked();
+
+    await comparisonSelect.click();
+    await page.getByRole("menuitem", { name: "Inherit from canvas" }).click();
+    await expect(comparisonSelect).toContainText("Inherit from canvas");
+    await expect(kpi).toContainText("vs");
   });
 
   test("can update domain filters", async ({ page }) => {
@@ -69,7 +113,6 @@ test.describe("canvas time filters", () => {
     await page.getByRole("menuitem", { name: "Domain" }).click();
 
     await page.getByLabel("domain results").getByText("facebook.com").click();
-
     await page
       .getByLabel("domain results")
       .getByText("google.com", { exact: true })
@@ -84,7 +127,10 @@ test.describe("canvas time filters", () => {
 
     await expect(page.locator(".kpi-wrapper").getByText("797")).toBeVisible();
 
-    await page.getByRole("button", { name: "Filters", exact: true }).click();
+    await page
+      .getByRole("button", { name: "Time & filters", exact: true })
+      .click();
+    // The first switch in the panel is the widget comparison toggle.
     await page
       .getByRole("complementary", { name: "Inspector Panel" })
       .getByRole("switch")
@@ -102,6 +148,27 @@ test.describe("canvas time filters", () => {
     // intercepts pointer events on the underlying trigger button.
     await page.keyboard.press("Escape");
 
+    await expect(page.getByText("375")).toBeVisible();
+
+    // The local filter is shown as chips on the component
+    const kpiComponent = page
+      .locator(".component-card")
+      .filter({ has: page.getByLabel("total_records KPI data") })
+      .first();
+    await expect(
+      kpiComponent.getByLabel("Readonly Filter Chips"),
+    ).toBeVisible();
+
+    // Hiding local filters removes the chips but keeps the filter applied
+    await page
+      .getByRole("complementary", { name: "Inspector Panel" })
+      .getByRole("switch")
+      .last()
+      .click();
+
+    await expect(
+      kpiComponent.getByLabel("Readonly Filter Chips"),
+    ).not.toBeVisible();
     await expect(page.getByText("375")).toBeVisible();
   });
 });

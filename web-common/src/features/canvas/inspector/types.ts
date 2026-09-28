@@ -10,6 +10,7 @@ type SemanticInputTypes =
   | "dimension"
   | "multi_fields"
   | "multi_fields_format"
+  | "adhoc_measures"
   | "metrics_sql";
 type NativeInputTypes = "text" | "number" | "boolean" | "textarea" | "select";
 type ChartInputTypes = "positional" | "mark" | "tooltip" | "config";
@@ -17,6 +18,7 @@ type CustomInputTypes =
   | "rill_time"
   | "sparkline"
   | "comparison_options"
+  | "map_color"
   | "vega_spec"
   | "switcher_tab"
   | "ai_generate"
@@ -46,6 +48,7 @@ export type ChartFieldInput = {
   excludedValues?: string[];
   axisTitleSelector?: boolean;
   hideTimeDimension?: boolean;
+  geoOnly?: boolean;
   originSelector?: boolean;
   sortSelector?: SortSelectorConfig;
   limitSelector?: { defaultLimit: number };
@@ -90,6 +93,21 @@ export interface ComponentInputParam {
     allowedTypes?: FieldType[]; // Specify which field types are allowed for multi-field selection
     defaultAlignment?: ComponentAlignment;
     chartFieldInput?: ChartFieldInput;
+    /**
+     * For positional fields whose axis can change (e.g. horizontal bars):
+     * the axis the field is currently drawn on, shown beside the label.
+     */
+    axisLabel?: string;
+    /**
+     * For a switcher whose value is derived from the spec rather than stored
+     * under its key: the value to show. Takes precedence over the spec.
+     */
+    value?: string;
+    /**
+     * Marks a measure/dimension field as removable, showing a remove button on
+     * the selected chip. On removal the property is cleared from the spec.
+     */
+    isRemovable?: boolean;
     layout?: "default" | "grouped";
     /**
      * If true, the boolean input will be inverted. This is useful when true

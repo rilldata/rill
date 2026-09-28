@@ -106,6 +106,7 @@
             class:active={conversation.id === currentConversationDto?.id}
             data-testid="conversation-item"
             data-conversation-id={conversation.id}
+            title={conversation.title || m.chat_new_conversation()}
             onclick={handleConversationItemClick}
           >
             <div class="conversation-title" data-testid="conversation-title">

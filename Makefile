@@ -4,11 +4,11 @@ all: cli
 .PHONE: cli-only
 cli-only:
 	go run scripts/embed_duckdb_ext/main.go
-	go build -o rill cli/main.go
+	go build -tags databricks_kernel -o rill cli/main.go
 
 .PHONY: cli
 cli: cli.prepare
-	go build -o rill cli/main.go 
+	go build -tags databricks_kernel -o rill cli/main.go
 
 .PHONY: cli.prepare
 cli.prepare: runtime.examples.embed

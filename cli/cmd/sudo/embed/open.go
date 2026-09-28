@@ -23,6 +23,7 @@ func OpenCmd(ch *cmdutil.Helper) *cobra.Command {
 	var theme string
 	var themeMode string
 	var navigation bool
+	var hideNavigationBar bool
 	var query map[string]string
 	var noOpen bool
 
@@ -45,6 +46,7 @@ func OpenCmd(ch *cmdutil.Helper) *cobra.Command {
 				Theme:                theme,
 				ThemeMode:            themeMode,
 				Navigation:           navigation,
+				HideNavigationBar:    hideNavigationBar,
 				Query:                query,
 				SuperuserForceAccess: true,
 			}
@@ -107,6 +109,7 @@ func OpenCmd(ch *cmdutil.Helper) *cobra.Command {
 	openCmd.Flags().StringVar(&theme, "theme", "", "Theme for the embedded resource")
 	openCmd.Flags().StringVar(&themeMode, "theme-mode", "", "Theme mode")
 	openCmd.Flags().BoolVar(&navigation, "navigation", false, "Enable navigation between resources")
+	openCmd.Flags().BoolVar(&hideNavigationBar, "hide-navigation-bar", false, "Hide the navigation bar while keeping navigation enabled")
 	openCmd.Flags().StringToStringVar(&query, "query", nil, "Additional query parameters (key=value)")
 	openCmd.Flags().BoolVar(&noOpen, "no-open", false, "Print the URL without opening the browser")
 

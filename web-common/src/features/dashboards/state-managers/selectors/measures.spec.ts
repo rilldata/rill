@@ -1,4 +1,7 @@
-import { filterOutSomeAdvancedMeasures } from "@rilldata/web-common/features/dashboards/state-managers/selectors/measures";
+import {
+  filterOutSomeAdvancedMeasures,
+  measureSupportsTotalsQuery,
+} from "@rilldata/web-common/features/dashboards/state-managers/selectors/measures";
 import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
 import {
   type V1MetricsViewSpec,
@@ -126,6 +129,38 @@ describe("measures selectors", () => {
           false,
         ),
       ).toEqual(["mes"]);
+    });
+  });
+
+  describe("measureSupportsTotalsQuery", () => {
+    it("supports a measure without requiredDimensions", () => {
+      expect(measureSupportsTotalsQuery({ name: "mes" })).toBe(true);
+    });
+
+    it("supports a measure with empty requiredDimensions", () => {
+      expect(
+        measureSupportsTotalsQuery({ name: "mes", requiredDimensions: [] }),
+      ).toBe(true);
+    });
+
+    it("does not support a measure with a required time dimension", () => {
+      expect(
+        measureSupportsTotalsQuery({
+          name: "mes_time_no_grain",
+          requiredDimensions: [
+            { name: "time", timeGrain: V1TimeGrain.TIME_GRAIN_UNSPECIFIED },
+          ],
+        }),
+      ).toBe(false);
+    });
+
+    it("does not support a measure with a required categorical dimension", () => {
+      expect(
+        measureSupportsTotalsQuery({
+          name: "mes_per_dim",
+          requiredDimensions: [{ name: "domain" }],
+        }),
+      ).toBe(false);
     });
   });
 });

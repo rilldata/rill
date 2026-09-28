@@ -8,6 +8,7 @@
   } from "@rilldata/web-common/features/components/charts/highlight-controller";
   import type { ChartProvider } from "@rilldata/web-common/features/components/charts/types";
   import { THEME_STORE_CONTEXT_KEY } from "@rilldata/web-common/features/themes/theme-boundary";
+  import type { EphemeralMeasureDef } from "@rilldata/web-common/features/dashboards/ephemeral-measures/types";
   import type { TimeAndFilterStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
   import {
     chartBrushStore,
@@ -37,6 +38,7 @@
 
   export let metricsViewName: string;
   export let measure: MetricsViewSpecMeasure;
+  export let ephemeralMeasures: EphemeralMeasureDef[] | undefined = undefined;
   export let timeDimension: string | undefined = undefined;
   export let interval: Interval<true> | undefined = undefined;
   export let comparisonInterval: Interval<true> | undefined = undefined;
@@ -49,6 +51,7 @@
   export let showComparison: boolean = false;
   export let showTimeDimensionDetail: boolean = true;
   export let chartType: TDDChart;
+  export let dynamicYAxis: boolean = false;
   export let onChartHover: (
     dimension: undefined | string | null,
     ts: Date | undefined,
@@ -78,6 +81,8 @@
     dimensionValues,
     dimensionData,
     showTimeDimensionDetail,
+    dynamicYAxis,
+    ephemeralMeasures,
   );
 
   $: componentChartType = TDD_TO_COMPONENT_CHART_TYPE[chartType];

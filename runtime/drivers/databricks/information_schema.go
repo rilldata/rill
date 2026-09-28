@@ -2,6 +2,8 @@ package databricks
 
 import (
 	"context"
+	"database/sql"
+	"errors"
 	"fmt"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
@@ -73,14 +75,18 @@ func (c *connection) ListDatabaseSchemas(ctx context.Context, pageSize uint32, p
 func (c *connection) ListTables(ctx context.Context, database, databaseSchema string, pageSize uint32, pageToken string) ([]*drivers.TableInfo, string, error) {
 	limit := pagination.ValidPageSize(pageSize, drivers.DefaultPageSize)
 
+	// Use system.information_schema filtered by table_catalog:
+	// Lakehouse//RT rejects the catalog-local <catalog>.information_schema with MALFORMED_UC_RESPONSE.
+	// Equivalent on DBSQL.
+	catPred, catArgs := catalogPredicate(database)
 	q := fmt.Sprintf(`
 	SELECT
 		table_name,
 		CASE WHEN table_type = 'VIEW' THEN true ELSE false END AS is_view
-	FROM %sinformation_schema.tables
-	WHERE table_schema = ?
-	`, catalogPrefix(database))
-	var args []any
+	FROM system.information_schema.tables
+	WHERE %s AND table_schema = ?
+	`, catPred)
+	args := append([]any{}, catArgs...)
 	args = append(args, databaseSchema)
 	if pageToken != "" {
 		var startAfter string
@@ -136,35 +142,42 @@ func (c *connection) ListTables(ctx context.Context, database, databaseSchema st
 }
 
 func (c *connection) Lookup(ctx context.Context, database, databaseSchema, name string) (*drivers.OlapTable, error) {
-	prefix := catalogPrefix(database)
-	q := fmt.Sprintf(`
-	SELECT
-		CASE WHEN t.table_type = 'VIEW' THEN true ELSE false END AS is_view,
-		c.column_name,
-		c.data_type
-	FROM %sinformation_schema.tables t
-	JOIN %sinformation_schema.columns c
-	ON t.table_schema = c.table_schema AND t.table_name = c.table_name
-	WHERE t.table_schema = ? AND t.table_name = ?
-	ORDER BY c.ordinal_position
-	`, prefix, prefix)
-
 	conn, err := c.getDB(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	rows, err := conn.QueryContext(ctx, q, databaseSchema, name)
+	// Use system.information_schema filtered by table_catalog (see ListTables), and query
+	// tables/columns separately rather than JOINing them: RT's Photon rejects the join's
+	// shuffle with PHOTON_INTERNAL_ERROR. Equivalent on DBSQL.
+	catPred, args := catalogPredicate(database)
+	args = append(args, databaseSchema, name)
+
+	var tableType string
+	err = conn.QueryRowContext(ctx,
+		fmt.Sprintf("SELECT table_type FROM system.information_schema.tables WHERE %s AND table_schema = ? AND table_name = ?", catPred),
+		args...,
+	).Scan(&tableType)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, drivers.ErrNotFound
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	rows, err := conn.QueryContext(ctx,
+		fmt.Sprintf("SELECT column_name, data_type FROM system.information_schema.columns WHERE %s AND table_schema = ? AND table_name = ? ORDER BY ordinal_position", catPred),
+		args...,
+	)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 
-	var isView bool
 	var fields []*runtimev1.StructType_Field
 	var colName, colType string
 	for rows.Next() {
-		if err := rows.Scan(&isView, &colName, &colType); err != nil {
+		if err := rows.Scan(&colName, &colType); err != nil {
 			return nil, err
 		}
 		fields = append(fields, &runtimev1.StructType_Field{
@@ -180,7 +193,7 @@ func (c *connection) Lookup(ctx context.Context, database, databaseSchema, name 
 		Database:       database,
 		DatabaseSchema: databaseSchema,
 		Name:           name,
-		View:           isView,
+		View:           tableType == "VIEW",
 		Schema:         &runtimev1.StructType{Fields: fields},
 	}, nil
 }
@@ -218,10 +231,11 @@ func (c *connection) LoadDDL(ctx context.Context, table *drivers.OlapTable) erro
 	return nil
 }
 
-// catalogPrefix returns "<catalog>." if catalog is non-empty, or "" otherwise.
-func catalogPrefix(catalog string) string {
+// catalogPredicate scopes an information_schema query to one catalog: the given one, or the
+// session's current_catalog() when empty (matching the old catalog-local scoping).
+func catalogPredicate(catalog string) (string, []any) {
 	if catalog == "" {
-		return ""
+		return "table_catalog = current_catalog()", nil
 	}
-	return DatabricksEscapeIdentifier(catalog) + "."
+	return "table_catalog = ?", []any{catalog}
 }

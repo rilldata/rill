@@ -206,7 +206,7 @@ Along with setting time ranges, you have the ability to set a comparison period 
 
 ### Understanding Comparison Results
 
-Once comparison is enabled, you'll see slightly different information in your dashboard. Along with the current value, you'll see both change in value as well as % change over periods. This gives you a quick glance at how your metrics are performing compared to the previous period.
+Once comparison is enabled, you'll see slightly different information in your dashboard. Along with the current value, you'll see both change in value and percentage change over periods. This gives you a quick glance at how your metrics are performing compared to the previous period.
 
 ![Comparison](/img/explore/filters/comparison.png)
 
@@ -237,7 +237,7 @@ Time dimensions appear in the filter panel alongside your other dimensions. When
 3. **Combine with other filters** to create complex queries
 
 :::tip
-Time dimension filters work independently from the main time series selector. This means you can view your time series chart by order date while filtering to only show records with a ship date in the last 7 days.
+Time dimension filters work independently of the main time series selector. This means you can view your time series chart by order date while filtering to only show records with a ship date in the last 7 days.
 :::
 
 ### Example: Analyzing Fulfillment Delays
@@ -251,4 +251,3 @@ To find orders placed last month that haven't shipped yet:
 This combination lets you identify orders that are still pending fulfillment.
 
 For more details on configuring time dimensions, see the [Time Dimensions](/developers/build/metrics-view/dimensions/time-dimensions) developer documentation.
-

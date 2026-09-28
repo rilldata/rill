@@ -8,6 +8,7 @@ import {
   AD_BIDS_EXPLORE_NAME,
   AD_BIDS_METRICS_3_MEASURES_DIMENSIONS_WITH_TIME,
   AD_BIDS_METRICS_VIEW,
+  AD_BIDS_NAME,
   AD_BIDS_PIVOT_PRESET,
   AD_BIDS_PRESET,
   AD_BIDS_PUBLISHER_DIMENSION,
@@ -33,6 +34,7 @@ import {
   AD_BIDS_OPEN_IMP_TDD,
   AD_BIDS_OPEN_PIVOT_WITH_ALL_FIELDS,
   AD_BIDS_OPEN_PUB_DIMENSION_TABLE,
+  AD_BIDS_PIVOT_TOTALS_ROW_AT_BOTTOM,
   AD_BIDS_SET_ALL_TIME_RANGE_FILTER,
   AD_BIDS_SET_DOMAIN_COMPARE_DIMENSION,
   AD_BIDS_SET_KATHMANDU_TIMEZONE,
@@ -77,6 +79,11 @@ import { getCleanedUrlParamsForGoto } from "@rilldata/web-common/features/dashbo
 import { getRillDefaultExploreUrlParams } from "@rilldata/web-common/features/dashboards/url-state/get-rill-default-explore-url-params";
 import { getDefaultExplorePreset } from "@rilldata/web-common/features/dashboards/url-state/getDefaultExplorePreset";
 import {
+  applyURLToExploreState,
+  getCleanMetricsExploreForAssertion,
+  useTestFilterManager,
+} from "@rilldata/web-common/features/dashboards/url-state/test/url-state-test-utils";
+import {
   type DashboardTimeControls,
   TimeComparisonOption,
   TimeRangePreset,
@@ -86,13 +93,17 @@ import {
   type V1ExplorePreset,
   type V1ExploreSpec,
 } from "@rilldata/web-common/runtime-client";
-import { deepClone } from "@vitest/utils/helpers";
 import { get } from "svelte/store";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { ALL_TIME_RANGE_ALIAS } from "../time-controls/new-time-controls";
 import { convertURLSearchParamsToExploreState } from "./convertURLSearchParamsToExploreState";
 
 vi.stubEnv("TZ", "UTC");
+
+// Filters live in the ExpressionFilterManager rather than in explore state, so the tests need the
+// specs of the metrics view backing AD_BIDS_EXPLORE to build the filter chips.
+const getFilterManager = useTestFilterManager({
+  [AD_BIDS_NAME]: AD_BIDS_METRICS_VIEW,
+});
 
 const TestCases: {
   title: string;
@@ -113,13 +124,13 @@ const TestCases: {
       AD_BIDS_APPLY_IMP_COUNTRY_BETWEEN_MEASURE_FILTER,
     ],
     expectedSearch:
-      "f=publisher+IN+LIST+%28%27Facebook%27%2C%27Google%27%29+AND+domain+LIKE+%27%25%25oo%25%25%27+AND+country+having+%28%28bid_price+GT+10+AND+bid_price+LT+20%29%29",
+      "f=publisher+IN+LIST+%28%27Facebook%27%2C%27Google%27%29+AND+domain+LIKE+%27%25%25oo%25%25%27+AND+country+having+%28bid_price+GT+10+AND+bid_price+LT+20%29",
   },
   {
     title: "Not-between measure filter",
     mutations: [AD_BIDS_APPLY_IMP_COUNTRY_NOT_BETWEEN_MEASURE_FILTER],
     expectedSearch:
-      "f=country+having+%28%28bid_price+LTE+10+OR+bid_price+GTE+20%29%29",
+      "f=country+having+%28bid_price+LTE+10+OR+bid_price+GTE+20%29",
   },
 
   {
@@ -503,6 +514,16 @@ const TestCases: {
     legacyNotSupported: true,
   },
   {
+    title: "Pivot with totals row at the bottom",
+    mutations: [
+      AD_BIDS_OPEN_DOMAIN_BID_PRICE_PIVOT,
+      AD_BIDS_PIVOT_TOTALS_ROW_AT_BOTTOM,
+    ],
+    expectedSearch:
+      "view=pivot&rows=domain%2Ctime.day&cols=impressions&sort_by=&table_mode=nest&totals_row_position=bottom",
+    legacyNotSupported: true,
+  },
+  {
     title: "Pivot with valid row limit in preset",
     mutations: [
       AD_BIDS_OPEN_DOMAIN_BID_PRICE_PIVOT,
@@ -590,7 +611,11 @@ describe("Human readable URL state variations", () => {
           AD_BIDS_TIME_RANGE_SUMMARY.timeRangeSummary,
         );
 
-        await applyMutationsToDashboard(AD_BIDS_EXPLORE_NAME, mutations);
+        await applyMutationsToDashboard(
+          AD_BIDS_EXPLORE_NAME,
+          mutations,
+          getFilterManager(),
+        );
 
         // load url params with updated metrics state
         const updateUrlParams = getCleanedUrlParamsForGoto(
@@ -613,6 +638,7 @@ describe("Human readable URL state variations", () => {
           defaultUrl,
           explore,
           defaultExplorePreset,
+          getFilterManager(),
         );
         expect(errors.length).toEqual(0);
         const currentState = getCleanMetricsExploreForAssertion();
@@ -651,7 +677,11 @@ describe("Human readable URL state variations", () => {
         );
 
         const initState = getCleanMetricsExploreForAssertion();
-        await applyMutationsToDashboard(AD_BIDS_EXPLORE_NAME, mutations);
+        await applyMutationsToDashboard(
+          AD_BIDS_EXPLORE_NAME,
+          mutations,
+          getFilterManager(),
+        );
         const curState = getCleanMetricsExploreForAssertion() as ExploreState;
 
         const url = new URL("http://localhost");
@@ -709,12 +739,16 @@ describe("Human readable URL state variations", () => {
       AD_BIDS_TIME_RANGE_SUMMARY.timeRangeSummary,
     );
 
-    await applyMutationsToDashboard(AD_BIDS_EXPLORE_NAME, [
-      AD_BIDS_APPLY_LARGE_FILTERS,
-      AD_BIDS_SET_P4W_TIME_RANGE_FILTER,
-      AD_BIDS_SET_PREVIOUS_PERIOD_COMPARE_TIME_RANGE_FILTER,
-      AD_BIDS_OPEN_PIVOT_WITH_ALL_FIELDS,
-    ]);
+    await applyMutationsToDashboard(
+      AD_BIDS_EXPLORE_NAME,
+      [
+        AD_BIDS_APPLY_LARGE_FILTERS,
+        AD_BIDS_SET_P4W_TIME_RANGE_FILTER,
+        AD_BIDS_SET_PREVIOUS_PERIOD_COMPARE_TIME_RANGE_FILTER,
+        AD_BIDS_OPEN_PIVOT_WITH_ALL_FIELDS,
+      ],
+      getFilterManager(),
+    );
 
     // load url params with updated metrics state
     const url = new URL("http://localhost");
@@ -737,9 +771,15 @@ describe("Human readable URL state variations", () => {
       new URL("http://localhost"),
       AD_BIDS_EXPLORE,
       defaultExplorePreset,
+      getFilterManager(),
     );
     // reapply the compressed url
-    applyURLToExploreState(url, AD_BIDS_EXPLORE, defaultExplorePreset);
+    applyURLToExploreState(
+      url,
+      AD_BIDS_EXPLORE,
+      defaultExplorePreset,
+      getFilterManager(),
+    );
 
     const currentState = getCleanMetricsExploreForAssertion();
     expect(currentState.selectedTimeRange?.name).toEqual(
@@ -809,7 +849,12 @@ describe("Human readable URL state variations", () => {
       // Deserialize URL back to state (simulates page refresh)
       const url = new URL("http://localhost");
       url.search = urlParams.toString();
-      applyURLToExploreState(url, explore, defaultExplorePreset);
+      applyURLToExploreState(
+        url,
+        explore,
+        defaultExplorePreset,
+        getFilterManager(),
+      );
 
       const stateAfterRoundtrip = getCleanMetricsExploreForAssertion();
       expect(stateAfterRoundtrip.pivot?.sorting).toEqual(
@@ -848,7 +893,12 @@ describe("Human readable URL state variations", () => {
       // Deserialize URL back to state (simulates page refresh)
       const url = new URL("http://localhost");
       url.search = urlParams.toString();
-      applyURLToExploreState(url, explore, defaultExplorePreset);
+      applyURLToExploreState(
+        url,
+        explore,
+        defaultExplorePreset,
+        getFilterManager(),
+      );
 
       const stateAfterRoundtrip = getCleanMetricsExploreForAssertion();
       expect(stateAfterRoundtrip.pivot?.sorting).toEqual(
@@ -857,48 +907,3 @@ describe("Human readable URL state variations", () => {
     });
   });
 });
-
-export function applyURLToExploreState(
-  url: URL,
-  exploreSpec: V1ExploreSpec,
-  defaultExplorePreset: V1ExplorePreset,
-) {
-  const { partialExploreState: partialExploreStateDefaultUrl, errors } =
-    convertURLSearchParamsToExploreState(
-      url.searchParams,
-      AD_BIDS_METRICS_VIEW,
-      exploreSpec,
-      defaultExplorePreset,
-    );
-  metricsExplorerStore.mergePartialExplorerEntity(
-    AD_BIDS_EXPLORE_NAME,
-    partialExploreStateDefaultUrl,
-  );
-  return errors;
-}
-
-// cleans the metrics explore of any state that is not stored or restored from url state
-export function getCleanMetricsExploreForAssertion() {
-  // clone the existing state so that any mutations do affect the copy during assertion
-  const cleanedState = deepClone(
-    get(metricsExplorerStore).entities[AD_BIDS_EXPLORE_NAME],
-  ) as Partial<ExploreState>;
-
-  delete cleanedState.name;
-  delete cleanedState.proto;
-  delete cleanedState.dimensionFilterExcludeMode;
-  delete cleanedState.temporaryFilterName;
-  delete cleanedState.contextColumnWidths;
-  if (cleanedState.selectedTimeRange) {
-    cleanedState.selectedTimeRange = {
-      name: cleanedState.selectedTimeRange?.name ?? ALL_TIME_RANGE_ALIAS,
-      interval: cleanedState.selectedTimeRange?.interval,
-    } as DashboardTimeControls;
-  }
-  delete cleanedState.lastDefinedScrubRange;
-
-  // TODO
-  delete cleanedState.leaderboardContextColumn;
-
-  return cleanedState;
-}

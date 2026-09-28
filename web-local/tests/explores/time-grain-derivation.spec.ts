@@ -72,6 +72,10 @@ test.describe("Time grain derivation from URL", () => {
   ];
 
   test("derives correct grain for all time ranges", async ({ page }) => {
+    // Each case is a full page load, and there are 22 of them, so the default
+    // 30s budget leaves no headroom on CI hardware.
+    test.setTimeout(90_000);
+
     for (const [label, timeRange, expectedGrain] of cases) {
       await test.step(`${label} → ${expectedGrain}`, async () => {
         await testGrainDerivation(page, timeRange, expectedGrain);

@@ -27,6 +27,11 @@ func (d *dialect) SupportsRegexMatch() bool { return true }
 
 func (d *dialect) GetRegexMatchFunction() (string, error) { return "REGEXP_LIKE", nil }
 
+// GetRegexMatchCastExpr casts expr to VARCHAR since REGEXP_LIKE only accepts string operands (it rejects TIMESTAMP and numeric columns).
+func (d *dialect) GetRegexMatchCastExpr(expr string) (string, error) {
+	return fmt.Sprintf("CAST(%s AS VARCHAR)", expr), nil
+}
+
 // DimensionSelect for Druid skips unnesting even when dim.Unnest is true.
 func (d *dialect) DimensionSelect(_ string, dim *runtimev1.MetricsViewSpec_Dimension) (dimSelect, unnestClause string, err error) {
 	alias := d.EscapeAlias(dim.Name)

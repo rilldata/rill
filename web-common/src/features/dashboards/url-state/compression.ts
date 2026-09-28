@@ -1,4 +1,5 @@
 import { protoBase64 } from "@bufbuild/protobuf";
+import { ExploreStateURLParams } from "@rilldata/web-common/features/dashboards/url-state/url-params";
 import { gzipSync, gunzipSync } from "fflate";
 
 const URL_SIZE_THRESHOLD = 2000;
@@ -20,4 +21,17 @@ export function decompressUrlParams(compressedParam: string) {
   const compressedParamAsUint8Array = protoBase64.dec(compressedParam);
   const decompressedParams = gunzipSync(compressedParamAsUint8Array);
   return String.fromCharCode(...decompressedParams);
+}
+
+/**
+ * Replaces the params with the ones held by `gzipped_state`, if present.
+ * Compression swaps out the whole search string, so anything else in it is not state.
+ */
+export function expandCompressedParams(searchParams: URLSearchParams) {
+  const compressedParams = searchParams.get(
+    ExploreStateURLParams.GzippedParams,
+  );
+  if (!compressedParams) return searchParams;
+
+  return new URLSearchParams(decompressUrlParams(compressedParams));
 }

@@ -26,7 +26,7 @@ import {
   getTimeGrainFromDimension,
   getUriMeasuresForDimensions,
   isTimeDimension,
-  prepareMeasureForComparison,
+  prepareMeasuresForRequest,
 } from "./pivot-utils";
 import {
   COMPARISON_DELTA,
@@ -79,7 +79,10 @@ export function createPivotAggregationRowQuery(
         ctx.runtimeClient,
         {
           metricsView: metricsViewName,
-          measures: prepareMeasureForComparison(measures),
+          measures: prepareMeasuresForRequest(
+            measures,
+            config.ephemeralMeasures,
+          ),
           dimensions,
           where: sanitiseExpression(whereFilter, undefined),
           timeRange: {
@@ -207,6 +210,13 @@ export function getAxisForDimensions(
           error: errors,
         };
       }
+
+      // A disabled query reports `isFetching: false` with no data at all: canvas
+      // components gate their queries on `visible`, so a pivot that just mounted
+      // sits in that state until the intersection observer fires. That is not an
+      // empty result (which still carries a `data` object), so keep waiting
+      // rather than reporting zero axis values downstream.
+      if (data.some((d) => d?.data === undefined)) return { isFetching: true };
 
       data.forEach((d, i: number) => {
         const dimensionName = dimensions[i];

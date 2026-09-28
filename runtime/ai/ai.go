@@ -20,6 +20,7 @@ import (
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/activity"
+	"github.com/rilldata/rill/runtime/pkg/ctxsync"
 	"github.com/rilldata/rill/runtime/pkg/graceful"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"go.opentelemetry.io/otel"
@@ -61,6 +62,8 @@ func NewRunner(rt *runtime.Runtime, activity *activity.Client) *Runner {
 	RegisterTool(r, &QueryMetricsViewSummary{Runtime: rt})
 	RegisterTool(r, &QueryMetricsView{Runtime: rt})
 	RegisterTool(r, &CreateChart{Runtime: rt})
+	RegisterTool(r, &ListSkills{Runtime: rt})
+	RegisterTool(r, &LoadSkill{Runtime: rt})
 
 	RegisterTool(r, &DevelopFile{Runtime: rt})
 	RegisterTool(r, &ListFiles{Runtime: rt})
@@ -81,8 +84,10 @@ func NewRunner(rt *runtime.Runtime, activity *activity.Client) *Runner {
 
 // SessionOptions provides options for initializing a new session.
 type SessionOptions struct {
-	InstanceID        string
-	SessionID         string
+	InstanceID string
+	SessionID  string
+	// CreateIfNotExists creates the session if it does not exist.
+	// If SessionID is set, the session is created with that ID.
 	CreateIfNotExists bool
 	Claims            *runtime.SecurityClaims
 	UserAgent         string
@@ -109,9 +114,15 @@ func (r *Runner) Session(ctx context.Context, opts *SessionOptions) (res *Sessio
 	if opts.SessionID != "" {
 		session, err = catalog.FindAISession(ctx, opts.SessionID)
 		if err != nil {
-			return nil, fmt.Errorf("failed to find session %q: %w", opts.SessionID, err)
+			// If CreateIfNotExists is set, an unknown session ID is created below instead of erroring.
+			// This lets a caller that doesn't know Rill's session IDs address a stable session,
+			// which the unified MCP server in the admin service relies on to keep one session per project.
+			if !errors.Is(err, drivers.ErrNotFound) || !opts.CreateIfNotExists {
+				return nil, fmt.Errorf("failed to find session %q: %w", opts.SessionID, err)
+			}
 		}
-
+	}
+	if session != nil {
 		// Check access: you can access anonymous sessions, your own sessions, and shared sessions.
 		// For shared sessions, if you are not the owner, you can only see messages up to the SharedUntilMessageID (inclusive).
 		// For sessions without an owner (unauthenticated users using a public project), we don't check access and rely on security by obscurity (generally a decent trade-off, but specifically introduced to get citation links over MCP working for unauthenticated demos).
@@ -147,9 +158,13 @@ func (r *Runner) Session(ctx context.Context, opts *SessionOptions) (res *Sessio
 			}
 		}
 	}
-	if opts.SessionID == "" {
+	if session == nil {
+		id := opts.SessionID
+		if id == "" {
+			id = uuid.NewString()
+		}
 		session = &drivers.AISession{
-			ID:         uuid.NewString(),
+			ID:         id,
 			InstanceID: opts.InstanceID,
 			OwnerID:    opts.Claims.UserID,
 			Title:      "",
@@ -198,6 +213,7 @@ func (r *Runner) Session(ctx context.Context, opts *SessionOptions) (res *Sessio
 		acquireCatalog: func(ctx context.Context) (drivers.CatalogStore, func(), error) {
 			return r.Runtime.Catalog(ctx, opts.InstanceID)
 		},
+		skillsMu: ctxsync.NewRWMutex(),
 
 		dto:         session,
 		messages:    messages,
@@ -526,6 +542,10 @@ type BaseSession struct {
 	messages      []*Message
 	messagesDirty bool
 	subscribers   map[chan *Message]struct{}
+
+	skillsMu     ctxsync.RWMutex
+	skillsLoaded bool
+	skills       []*Skill
 }
 
 func (s *BaseSession) Flush(ctx context.Context) error {

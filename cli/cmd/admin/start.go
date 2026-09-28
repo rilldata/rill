@@ -285,7 +285,7 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 			// Init AssetsBucket handle
 			var clientOpts []option.ClientOption
 			if conf.AssetsBucketGoogleCredentialsJSON != "" {
-				clientOpts = append(clientOpts, option.WithCredentialsJSON([]byte(conf.AssetsBucketGoogleCredentialsJSON)))
+				clientOpts = append(clientOpts, option.WithAuthCredentialsJSON(option.ServiceAccount, []byte(conf.AssetsBucketGoogleCredentialsJSON)))
 			}
 			storageClient, err := storage.NewClient(cmd.Context(), clientOpts...)
 			if err != nil {

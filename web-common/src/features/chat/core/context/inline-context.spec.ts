@@ -77,6 +77,16 @@ describe("should convert to and from inline prompt", () => {
       },
       expectedPrompt: `<chat-reference>type="column" model="adbids_model" column="pub"</chat-reference>`,
     },
+
+    {
+      title: "skill",
+      ctx: {
+        type: InlineContextType.Skill,
+        skill: "monthly-close",
+        value: "monthly-close",
+      },
+      expectedPrompt: `<chat-reference>type="skill" skill="monthly-close"</chat-reference>`,
+    },
   ];
 
   for (const { title, ctx, expectedPrompt } of testCases) {

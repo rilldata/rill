@@ -14,6 +14,8 @@
   export let project: string;
   export let pathname: string;
   export let branchPrefix: string = "";
+  // Bookmarks belong to users, so anonymous viewers of public projects have none to manage.
+  export let hasUser: boolean = false;
 
   const { chat, reports, alerts } = featureFlags;
 
@@ -32,6 +34,11 @@
       route: `/${organization}/${project}${branchPrefix}/-/dashboards`,
       label: m.nav_tab_dashboards(),
       hasPermission: true,
+    },
+    {
+      route: `/${organization}/${project}${branchPrefix}/-/bookmarks`,
+      label: m.nav_tab_bookmarks(),
+      hasPermission: hasUser,
     },
     {
       route: `/${organization}/${project}${branchPrefix}/-/query`,

@@ -27,6 +27,18 @@ export function dateToIndex(
   return best;
 }
 
+/**
+ * Clamp a pixel position into a d3 scale's range.
+ *
+ * When the y-axis is dynamic, its domain can exclude zero, so yScale(0) falls outside the
+ * plot. Marks anchored at zero (bar baselines, area fills) use this to stay inside the plot.
+ * The range is passed as d3 emits it, so the two bounds may be in either order.
+ */
+export function clampToRange(value: number, range: number[]): number {
+  const [a, b] = range;
+  return Math.min(Math.max(value, Math.min(a, b)), Math.max(a, b));
+}
+
 export interface BarSlotGeometry {
   slotWidth: number;
   gap: number;

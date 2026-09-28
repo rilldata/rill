@@ -20,6 +20,15 @@ export function isNewRillTimeFormat(rillTime: string): boolean {
   }
 }
 
+export function isAbsoluteTimeRange(rillTime: string): boolean {
+  try {
+    const parser = parseRillTime(rillTime);
+    return parser.isAbsolute;
+  } catch {
+    return false;
+  }
+}
+
 export function validateRillTime(rillTime: string): Error | undefined {
   try {
     const parser = parseRillTime(rillTime);

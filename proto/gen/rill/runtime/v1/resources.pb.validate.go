@@ -661,6 +661,47 @@ func (m *Resource) validate(all bool) error {
 			}
 		}
 
+	case *Resource_Skill:
+		if v == nil {
+			err := ResourceValidationError{
+				field:  "Resource",
+				reason: "oneof value cannot be a typed-nil",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
+
+		if all {
+			switch v := interface{}(m.GetSkill()).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, ResourceValidationError{
+						field:  "Skill",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, ResourceValidationError{
+						field:  "Skill",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(m.GetSkill()).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return ResourceValidationError{
+					field:  "Skill",
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
 	default:
 		_ = v // ensures v is used
 	}
@@ -826,6 +867,8 @@ func (m *ResourceMeta) validate(all bool) error {
 		}
 
 	}
+
+	// no validation rules for Metadata
 
 	// no validation rules for Hidden
 
@@ -4920,6 +4963,40 @@ func (m *ExploreSpec) validate(all bool) error {
 
 	// no validation rules for DefinedInMetricsView
 
+	for idx, item := range m.GetAiPrompts() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, ExploreSpecValidationError{
+						field:  fmt.Sprintf("AiPrompts[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, ExploreSpecValidationError{
+						field:  fmt.Sprintf("AiPrompts[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return ExploreSpecValidationError{
+					field:  fmt.Sprintf("AiPrompts[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
+
 	if len(errors) > 0 {
 		return ExploreSpecMultiError(errors)
 	}
@@ -5153,6 +5230,109 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = ExploreStateValidationError{}
+
+// Validate checks the field values on AIPrompt with the rules defined in the
+// proto definition for this message. If any rules are violated, the first
+// error encountered is returned, or nil if there are no violations.
+func (m *AIPrompt) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on AIPrompt with the rules defined in
+// the proto definition for this message. If any rules are violated, the
+// result is a list of violation errors wrapped in AIPromptMultiError, or nil
+// if none found.
+func (m *AIPrompt) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *AIPrompt) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for Label
+
+	// no validation rules for Prompt
+
+	if len(errors) > 0 {
+		return AIPromptMultiError(errors)
+	}
+
+	return nil
+}
+
+// AIPromptMultiError is an error wrapping multiple validation errors returned
+// by AIPrompt.ValidateAll() if the designated constraints aren't met.
+type AIPromptMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m AIPromptMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m AIPromptMultiError) AllErrors() []error { return m }
+
+// AIPromptValidationError is the validation error returned by
+// AIPrompt.Validate if the designated constraints aren't met.
+type AIPromptValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e AIPromptValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e AIPromptValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e AIPromptValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e AIPromptValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e AIPromptValidationError) ErrorName() string { return "AIPromptValidationError" }
+
+// Error satisfies the builtin error interface
+func (e AIPromptValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sAIPrompt.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = AIPromptValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = AIPromptValidationError{}
 
 // Validate checks the field values on ExploreTimeRange with the rules defined
 // in the proto definition for this message. If any rules are violated, the
@@ -5603,8 +5783,16 @@ func (m *ExplorePreset) validate(all bool) error {
 		// no validation rules for PivotShowTotalsRow
 	}
 
+	if m.PivotTotalsRowPosition != nil {
+		// no validation rules for PivotTotalsRowPosition
+	}
+
 	if m.PivotFormatting != nil {
 		// no validation rules for PivotFormatting
+	}
+
+	if m.EphemeralMeasures != nil {
+		// no validation rules for EphemeralMeasures
 	}
 
 	if m.ChartDynamicYAxis != nil {
@@ -8795,6 +8983,366 @@ var _ interface {
 	ErrorName() string
 } = RefreshModelTriggerValidationError{}
 
+// Validate checks the field values on Skill with the rules defined in the
+// proto definition for this message. If any rules are violated, the first
+// error encountered is returned, or nil if there are no violations.
+func (m *Skill) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on Skill with the rules defined in the
+// proto definition for this message. If any rules are violated, the result is
+// a list of violation errors wrapped in SkillMultiError, or nil if none found.
+func (m *Skill) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *Skill) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if all {
+		switch v := interface{}(m.GetSpec()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, SkillValidationError{
+					field:  "Spec",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, SkillValidationError{
+					field:  "Spec",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetSpec()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return SkillValidationError{
+				field:  "Spec",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if all {
+		switch v := interface{}(m.GetState()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, SkillValidationError{
+					field:  "State",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, SkillValidationError{
+					field:  "State",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetState()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return SkillValidationError{
+				field:  "State",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if len(errors) > 0 {
+		return SkillMultiError(errors)
+	}
+
+	return nil
+}
+
+// SkillMultiError is an error wrapping multiple validation errors returned by
+// Skill.ValidateAll() if the designated constraints aren't met.
+type SkillMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m SkillMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m SkillMultiError) AllErrors() []error { return m }
+
+// SkillValidationError is the validation error returned by Skill.Validate if
+// the designated constraints aren't met.
+type SkillValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e SkillValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e SkillValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e SkillValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e SkillValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e SkillValidationError) ErrorName() string { return "SkillValidationError" }
+
+// Error satisfies the builtin error interface
+func (e SkillValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sSkill.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = SkillValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = SkillValidationError{}
+
+// Validate checks the field values on SkillSpec with the rules defined in the
+// proto definition for this message. If any rules are violated, the first
+// error encountered is returned, or nil if there are no violations.
+func (m *SkillSpec) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on SkillSpec with the rules defined in
+// the proto definition for this message. If any rules are violated, the
+// result is a list of violation errors wrapped in SkillSpecMultiError, or nil
+// if none found.
+func (m *SkillSpec) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *SkillSpec) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for Description
+
+	// no validation rules for Body
+
+	// no validation rules for AlwaysApply
+
+	if len(errors) > 0 {
+		return SkillSpecMultiError(errors)
+	}
+
+	return nil
+}
+
+// SkillSpecMultiError is an error wrapping multiple validation errors returned
+// by SkillSpec.ValidateAll() if the designated constraints aren't met.
+type SkillSpecMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m SkillSpecMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m SkillSpecMultiError) AllErrors() []error { return m }
+
+// SkillSpecValidationError is the validation error returned by
+// SkillSpec.Validate if the designated constraints aren't met.
+type SkillSpecValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e SkillSpecValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e SkillSpecValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e SkillSpecValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e SkillSpecValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e SkillSpecValidationError) ErrorName() string { return "SkillSpecValidationError" }
+
+// Error satisfies the builtin error interface
+func (e SkillSpecValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sSkillSpec.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = SkillSpecValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = SkillSpecValidationError{}
+
+// Validate checks the field values on SkillState with the rules defined in the
+// proto definition for this message. If any rules are violated, the first
+// error encountered is returned, or nil if there are no violations.
+func (m *SkillState) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on SkillState with the rules defined in
+// the proto definition for this message. If any rules are violated, the
+// result is a list of violation errors wrapped in SkillStateMultiError, or
+// nil if none found.
+func (m *SkillState) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *SkillState) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if len(errors) > 0 {
+		return SkillStateMultiError(errors)
+	}
+
+	return nil
+}
+
+// SkillStateMultiError is an error wrapping multiple validation errors
+// returned by SkillState.ValidateAll() if the designated constraints aren't met.
+type SkillStateMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m SkillStateMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m SkillStateMultiError) AllErrors() []error { return m }
+
+// SkillStateValidationError is the validation error returned by
+// SkillState.Validate if the designated constraints aren't met.
+type SkillStateValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e SkillStateValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e SkillStateValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e SkillStateValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e SkillStateValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e SkillStateValidationError) ErrorName() string { return "SkillStateValidationError" }
+
+// Error satisfies the builtin error interface
+func (e SkillStateValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sSkillState.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = SkillStateValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = SkillStateValidationError{}
+
 // Validate checks the field values on Theme with the rules defined in the
 // proto definition for this message. If any rules are violated, the first
 // error encountered is returned, or nil if there are no violations.
@@ -10429,6 +10977,40 @@ func (m *CanvasSpec) validate(all bool) error {
 	}
 
 	// no validation rules for Annotations
+
+	for idx, item := range m.GetAiPrompts() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, CanvasSpecValidationError{
+						field:  fmt.Sprintf("AiPrompts[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, CanvasSpecValidationError{
+						field:  fmt.Sprintf("AiPrompts[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return CanvasSpecValidationError{
+					field:  fmt.Sprintf("AiPrompts[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
 
 	if len(errors) > 0 {
 		return CanvasSpecMultiError(errors)

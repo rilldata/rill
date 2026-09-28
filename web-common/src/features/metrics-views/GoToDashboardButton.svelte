@@ -31,7 +31,7 @@
   export let hasInlineExplore = false;
 
   // When a dashboard is defined inline in a metrics view file, its file path is the
-  // metrics view file itself; the ?view=explore param opens the workspace on the
+  // metrics view file itself; the ?editor=explore param opens the workspace on the
   // explore view.
   function dashboardHref(dashboard: V1Resource): string {
     const filePath = `/${removeLeadingSlash(dashboard?.meta?.filePaths?.[0] ?? "")}`;

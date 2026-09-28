@@ -33,7 +33,7 @@ func newAPI(ctx context.Context, opts *runtime.ResolverOptions) (runtime.Resolve
 	}
 
 	// Find the API
-	api, err := opts.Runtime.APIForName(ctx, opts.InstanceID, props.API)
+	api, err := opts.Runtime.APIForName(ctx, opts.InstanceID, props.API, opts.Claims)
 	if err != nil {
 		return nil, err
 	}

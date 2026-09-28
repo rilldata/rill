@@ -16,6 +16,7 @@
     getDashboardFavouritesStore,
     sortByFavourites,
   } from "../../dashboards/listing/dashboard-favourites.ts";
+  import { resourceTableGetRowId } from "@rilldata/web-common/features/resources/overview-utils.ts";
   import { page } from "$app/state";
 
   let {
@@ -42,14 +43,13 @@
     filterResources(allDashboards, [], searchText, [], selectedTagsStore.value),
   );
 
-  let filteredDashboardNames = $derived(
-    new Set(
-      filteredDashboards.map((r) => r.meta?.name?.name?.toLowerCase() ?? ""),
-    ),
+  // Option ids are `kind/name` resource keys, the same as table row ids.
+  let filteredDashboardIds = $derived(
+    new Set(filteredDashboards.map(resourceTableGetRowId)),
   );
 
   let filteredOptions = $derived(
-    [...options].filter(([id]) => filteredDashboardNames.has(id)),
+    [...options].filter(([id]) => filteredDashboardIds.has(id)),
   );
 
   let { organization, project } = $derived(page.params);

@@ -54,7 +54,7 @@ func (e *selfToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExe
 		}
 		warnings = append(warnings, fmt.Sprintf("Undefined fields %q in input properties. Will be ignored.", strings.Join(unused, ", ")))
 	}
-	if err := inputProps.Validate(); err != nil {
+	if err := inputProps.ValidateAndApplyDefaults(); err != nil {
 		return nil, fmt.Errorf("invalid input properties: %w", err)
 	}
 
@@ -69,7 +69,7 @@ func (e *selfToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExe
 		}
 		warnings = append(warnings, fmt.Sprintf("Undefined fields %q in output properties. Will be ignored.", strings.Join(unused, ", ")))
 	}
-	if err := outputProps.validateAndApplyDefaults(opts, inputProps, outputProps); err != nil {
+	if err := outputProps.validateAndApplyDefaults(opts, inputProps); err != nil {
 		return nil, fmt.Errorf("invalid output properties: %w", err)
 	}
 
@@ -361,12 +361,13 @@ func (e *selfToSelfExecutor) createOrInsertIntoDuckDB(ctx context.Context, opts 
 	}
 	// Insert into the table
 	insertTableOpts := &InsertTableOptions{
-		BeforeInsert: inputProps.PreExec,
-		AfterInsert:  inputProps.PostExec,
-		ByName:       false,
-		Strategy:     outputProps.IncrementalStrategy,
-		UniqueKey:    outputProps.UniqueKey,
-		PartitionBy:  outputProps.PartitionBy,
+		BeforeInsert:   inputProps.PreExec,
+		AfterInsert:    inputProps.PostExec,
+		ByName:         false,
+		Strategy:       outputProps.IncrementalStrategy,
+		UniqueKey:      outputProps.UniqueKey,
+		PartitionBy:    outputProps.PartitionBy,
+		OnSchemaChange: outputProps.OnSchemaChange,
 	}
 	if inputProps.InitQueries != "" {
 		insertTableOpts.InitQueries = []string{inputProps.InitQueries}

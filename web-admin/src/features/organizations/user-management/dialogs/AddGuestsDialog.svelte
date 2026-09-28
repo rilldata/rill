@@ -3,12 +3,19 @@
   import { page } from "$app/stores";
   import {
     createAdminServiceAddProjectMemberUser,
-    getAdminServiceListOrganizationInvitesQueryKey,
-    getAdminServiceListOrganizationMemberUsersQueryKey,
     type V1Project,
   } from "@rilldata/web-admin/client";
   import { getRpcErrorMessage } from "@rilldata/web-admin/components/errors/error-utils";
   import { getOrgRolesOptions } from "@rilldata/web-admin/features/organizations/constants";
+  import UserGroupsMultiSelect from "@rilldata/web-admin/features/organizations/user-management/UserGroupsMultiSelect.svelte";
+  import {
+    buildInviteAttributes,
+    buildInviteUsergroups,
+    invalidateOrgInvites,
+    invalidateOrgMemberUsers,
+    invalidateOrgUsergroups,
+    type AttributeRow,
+  } from "@rilldata/web-admin/features/organizations/user-management/utils";
   import { listProjectsForOrgQueryOptions } from "@rilldata/web-admin/features/projects/list-projects-query-options";
   import { Button } from "@rilldata/web-common/components/button";
   import {
@@ -21,6 +28,7 @@
     DialogTrigger,
   } from "@rilldata/web-common/components/dialog";
   import * as Dropdown from "@rilldata/web-common/components/dropdown-menu";
+  import KeyValueInput from "@rilldata/web-common/components/forms/KeyValueInput.svelte";
   import MultiInput from "@rilldata/web-common/components/forms/MultiInput.svelte";
   import { RFC5322EmailRegex } from "@rilldata/web-common/components/forms/validation";
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
@@ -31,7 +39,7 @@
   import { createQuery, useQueryClient } from "@tanstack/svelte-query";
   import { defaults, superForm } from "sveltekit-superforms";
   import { yup } from "sveltekit-superforms/adapters";
-  import { array, object, string } from "yup";
+  import { array, mixed, object, string } from "yup";
 
   export let open = false;
 
@@ -46,14 +54,20 @@
   let selectedRole: OrgUserRoles = OrgUserRoles.Viewer;
   let roleDropdownOpen = false;
   let hasAutoSelectedProject = false;
+  let showAttributes = false;
+  // Names of the user groups every invited guest is added to (or joins on acceptance)
+  let selectedGroups: string[] = [];
 
   function resetDialogState() {
     failedInvites = [];
     selectedProjects = [];
+    selectedGroups = [];
     selectedRole = OrgUserRoles.Viewer;
     hasAutoSelectedProject = false;
     projectDropdownOpen = false;
     roleDropdownOpen = false;
+    showAttributes = false;
+    $form.attributes = [];
   }
 
   // Projects list
@@ -83,6 +97,13 @@
     }
   }
 
+  // Collapsing the section reads as discarding what was typed there, so drop the rows
+  // rather than silently applying them to every invite.
+  function toggleAttributes() {
+    showAttributes = !showAttributes;
+    if (!showAttributes) $form.attributes = [];
+  }
+
   function toggleProjectSelection(projectName: string) {
     const idx = selectedProjects.indexOf(projectName);
     if (idx >= 0) {
@@ -95,21 +116,28 @@
     projectDropdownOpen = true;
   }
 
-  async function handleCreate(email: string) {
+  async function handleCreate(
+    email: string,
+    attributes: Record<string, string> | undefined,
+    usergroups: string[] | undefined,
+  ) {
     // Loop selected projects and add as selectedRole
     await Promise.all(
       selectedProjects.map((projectName) =>
         $addProjectMemberUser.mutateAsync({
           org: organization,
           project: projectName,
-          data: { email, role: selectedRole },
+          data: { email, role: selectedRole, attributes, usergroups },
         }),
       ),
     );
   }
 
   const formId = "create-guests-form";
-  const initialValues: { emails: string[] } = { emails: [""] };
+  const initialValues: {
+    emails: string[];
+    attributes: AttributeRow[];
+  } = { emails: [""], attributes: [] };
   const schema = yup(
     object({
       emails: array(
@@ -118,6 +146,9 @@
           message: m.users_invalid_email(),
         }),
       ),
+      // Modelled as mixed() rather than array(object(...)):
+      // yup infers object fields as optional, which does not match KeyValueInput's row type.
+      attributes: mixed<AttributeRow[]>().defined(),
     }),
   );
 
@@ -134,10 +165,14 @@
         if (emails.length === 0) return;
         if (selectedProjects.length === 0) return;
 
+        // The same attributes and groups apply to every invited email
+        const attributes = buildInviteAttributes(form.data.attributes);
+        const usergroups = buildInviteUsergroups(selectedGroups);
+
         const results = await Promise.all(
           emails.map(async (email, index) => {
             try {
-              await handleCreate(email);
+              await handleCreate(email, attributes, usergroups);
               return { index, email, success: true };
             } catch {
               return { index, email, success: false };
@@ -166,14 +201,10 @@
         if (failed.length > 0) failedInvites = failed;
 
         // Invalidate lists
-        await queryClient.invalidateQueries({
-          queryKey:
-            getAdminServiceListOrganizationMemberUsersQueryKey(organization),
-        });
-        await queryClient.invalidateQueries({
-          queryKey:
-            getAdminServiceListOrganizationInvitesQueryKey(organization),
-        });
+        await invalidateOrgMemberUsers(queryClient, organization);
+        await invalidateOrgInvites(queryClient, organization);
+        if (usergroups)
+          await invalidateOrgUsergroups(queryClient, organization);
 
         if (failedInvites.length === 0) {
           open = false;
@@ -316,6 +347,48 @@
             {/each}
           </Dropdown.Content>
         </Dropdown.Root>
+      </div>
+
+      <!-- User groups multi-select -->
+      <div class="mt-3">
+        <label for="invite-guest-usergroups" class="text-xs font-medium">
+          {m.users_user_groups()}
+        </label>
+        <div class="text-[11px] text-fg-secondary mb-1">
+          {m.users_user_groups_hint()}
+        </div>
+        <UserGroupsMultiSelect
+          id="invite-guest-usergroups"
+          {organization}
+          bind:selected={selectedGroups}
+        />
+      </div>
+
+      <div class="mt-3 flex flex-col gap-y-1">
+        <button
+          type="button"
+          class="flex items-center gap-x-1 text-xs font-medium text-fg-secondary hover:text-fg-primary w-fit"
+          onclick={toggleAttributes}
+        >
+          <CaretDownIcon
+            size="12px"
+            className={showAttributes ? "" : "-rotate-90"}
+          />
+          {m.users_custom_attributes()}
+        </button>
+        {#if showAttributes}
+          <div class="text-[11px] text-fg-secondary">
+            {m.users_custom_attributes_hint()}
+          </div>
+          <KeyValueInput
+            id="invite-guest-attributes"
+            bind:value={$form.attributes}
+            keyPlaceholder={m.users_attribute_key_placeholder()}
+            valuePlaceholder={m.users_attribute_value_placeholder()}
+            itemLabel={m.users_custom_attributes()}
+            addLabel={m.users_add_attribute()}
+          />
+        {/if}
       </div>
 
       {#if failedInvites.length > 0}

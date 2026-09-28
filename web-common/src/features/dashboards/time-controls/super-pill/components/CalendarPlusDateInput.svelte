@@ -4,6 +4,7 @@
   import Calendar from "@rilldata/web-common/components/date-picker/Calendar.svelte";
   import DateInput from "@rilldata/web-common/components/date-picker/DateInput.svelte";
   import { DateTime, Duration, Interval, type DateTimeUnit } from "luxon";
+  import { snapToDayOrLargerGrain } from "@rilldata/web-common/lib/time/new-grains.ts";
 
   export let interval: Interval<true> | undefined;
   export let minDate: DateTime | undefined = undefined;
@@ -32,10 +33,13 @@
     ? inputInterval?.end
     : inputInterval?.end.minus({ millisecond: 1 });
 
+  // Calender picker is for selecting days. So always snap to day.
   $: adjustedMinDate = minDate?.startOf("day");
+  // The exception is end date and the min grain is larger than day.
+  // For grains like week, month, year, etc. we need to snap to that instead.
   $: adjustedMaxDate = maxDate
-    ?.plus({ [minTimeGrain]: 1 })
-    .startOf(minTimeGrain);
+    ? snapToDayOrLargerGrain(maxDate, minTimeGrain, zone)
+    : undefined;
 
   $: capMs = maxQueryTimeRange?.as("milliseconds") ?? 0;
   $: exceedsCap =
@@ -115,10 +119,10 @@
     <DateInput
       boundary="start"
       {zone}
+      date={startDate}
       minDate={adjustedMinDate}
       maxDate={adjustedMaxDate}
       currentYear={firstVisibleMonth.year}
-      date={startDate}
       {onValidDateInput}
       onFocus={() => {
         firstVisibleMonth = inputInterval.start;

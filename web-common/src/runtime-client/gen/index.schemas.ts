@@ -502,6 +502,8 @@ The values should be valid IANA location identifiers. */
   pinnedFilters?: string[];
   requiredFilters?: string[];
   annotations?: Record<string, string>;
+  /** Suggested prompts configured by the project author, shown as starters in the AI chat. */
+  aiPrompts?: V1AIPrompt[];
 }
 
 export interface V1CanvasState {
@@ -947,8 +949,12 @@ If not found in `time_ranges`, it should be added to the list. */
   pivotRowLimit?: number;
   pivotShowTotalsColumn?: boolean;
   pivotShowTotalsRow?: boolean;
+  /** Where the pivot totals row is pinned: "top" (default) or "bottom". */
+  pivotTotalsRowPosition?: string;
   /** Per-measure pivot conditional formatting, serialized in the URL param format. */
   pivotFormatting?: string;
+  /** Ephemeral measures for the explore, serialized in the URL param format. */
+  ephemeralMeasures?: string;
   /** When true, time-series charts use a dynamic Y-axis scale that fits the visible data range. */
   chartDynamicYAxis?: boolean;
 }
@@ -997,6 +1003,8 @@ These are not currently parsed from YAML, but will be derived from the parent me
   allowCustomTimeRange?: boolean;
   /** When true, it indicates that the explore was defined in a metrics view either explicitly or emitted because version was not set. */
   definedInMetricsView?: boolean;
+  /** Suggested prompts configured by the project author, shown as starters in the AI chat. */
+  aiPrompts?: V1AIPrompt[];
 }
 
 export interface V1ExploreState {
@@ -1004,6 +1012,14 @@ export interface V1ExploreState {
   /** The last time the underlying metrics view's data was refreshed.
 This may be empty if the data refresh time is not known, e.g. if the metrics view is based on an externally managed table. */
   dataRefreshedOn?: string;
+}
+
+/** AIPrompt is a starter prompt shown in the AI chat. */
+export interface V1AIPrompt {
+  /** Short label displayed on the prompt's button. */
+  label?: string;
+  /** Full prompt sent to the AI when the user picks it. */
+  prompt?: string;
 }
 
 export interface V1ExploreTimeRange {
@@ -1032,6 +1048,7 @@ export const V1ExportFormat = {
   EXPORT_FORMAT_CSV: "EXPORT_FORMAT_CSV",
   EXPORT_FORMAT_XLSX: "EXPORT_FORMAT_XLSX",
   EXPORT_FORMAT_PARQUET: "EXPORT_FORMAT_PARQUET",
+  EXPORT_FORMAT_PDF: "EXPORT_FORMAT_PDF",
 } as const;
 
 export interface V1ExportReportResponse {
@@ -1278,6 +1295,7 @@ export interface V1Instance {
   featureFlags?: V1InstanceFeatureFlags;
   annotations?: V1InstanceAnnotations;
   aiInstructions?: string;
+  aiPrompts?: V1AIPrompt[];
   frontendUrl?: string;
   theme?: string;
 }
@@ -1370,6 +1388,13 @@ export interface V1ListObjectsResponse {
 
 export interface V1ListResourcesResponse {
   resources?: V1Resource[];
+  nextPageToken?: string;
+  /**
+   * True while the runtime may still produce more resources, i.e. it has not finished its initial
+   * parse and reconcile. Computed before security policies are applied, so it stays meaningful when
+   * every resource is denied.
+   */
+  initializing?: boolean;
 }
 
 export interface V1ListTablesResponse {
@@ -1444,10 +1469,18 @@ export interface V1MetricsViewAggregationMeasure {
   percentOfTotal?: V1MetricsViewAggregationMeasureComputePercentOfTotal;
   uri?: V1MetricsViewAggregationMeasureComputeURI;
   comparisonTime?: V1MetricsViewAggregationMeasureComputeComparisonTime;
+  expression?: V1MetricsViewAggregationMeasureComputeExpression;
 }
 
 export interface V1MetricsViewAggregationMeasureComputeComparisonDelta {
   measure?: string;
+}
+
+export interface V1MetricsViewAggregationMeasureComputeExpression {
+  /** Arithmetic expression over existing measure names, e.g. "revenue - cost". */
+  expression?: string;
+  /** Optional display name used in exports and result metadata. */
+  displayName?: string;
 }
 
 export interface V1MetricsViewAggregationMeasureComputeComparisonRatio {
@@ -1795,6 +1828,9 @@ export interface V1MetricsViewTimeSeriesRequest {
   instanceId?: string;
   metricsViewName?: string;
   measureNames?: string[];
+  /** Optional ephemeral measures, i.e. measures defined by the query rather than the metrics view.
+Only the `expression` compute is supported for time series. */
+  ephemeralMeasures?: V1MetricsViewAggregationMeasure[];
   timeStart?: string;
   timeEnd?: string;
   timeGranularity?: V1TimeGrain;
@@ -2343,6 +2379,7 @@ export interface V1Resource {
   canvas?: V1Canvas;
   api?: V1API;
   connector?: V1ConnectorV2;
+  skill?: V1Skill;
 }
 
 export type V1ResourceEvent =
@@ -2355,6 +2392,8 @@ export const V1ResourceEvent = {
   RESOURCE_EVENT_DELETE: "RESOURCE_EVENT_DELETE",
 } as const;
 
+export type V1ResourceMetaMetadata = { [key: string]: string };
+
 export interface V1ResourceMeta {
   name?: V1ResourceName;
   refs?: V1ResourceName[];
@@ -2362,6 +2401,9 @@ export interface V1ResourceMeta {
   filePaths?: string[];
   /** Tags for organizing and filtering resources. Parsed generically from any resource YAML's top-level "tags:" field. */
   tags?: string[];
+  /** Metadata is free-form key-value metadata for the resource, parsed generically from any resource YAML's top-level "metadata:" field.
+It is user-defined: Rill does not read or write keys in it and exposes it as-is over the API for external tooling. */
+  metadata?: V1ResourceMetaMetadata;
   hidden?: boolean;
   version?: string;
   specVersion?: string;
@@ -2561,6 +2603,30 @@ export type V1TableRowsResponseDataItem = { [key: string]: unknown };
 
 export interface V1TableRowsResponse {
   data?: V1TableRowsResponseDataItem[];
+}
+
+export interface V1Skill {
+  spec?: V1SkillSpec;
+  state?: V1SkillState;
+}
+
+/** SkillSpec is parsed from a SKILL.md file that follows the Agent Skills format (https://agentskills.io).
+Skills teach AI agents project-specific practices, such as analysis playbooks and business glossaries. */
+export interface V1SkillSpec {
+  /** Description of what the skill does and when to use it. */
+  description?: string;
+  /** Markdown body with the skill's full instructions. */
+  body?: string;
+  /** Rill extension: metrics views the skill is relevant to. Empty means all. */
+  metricsViews?: string[];
+  /** Rill extension: Rill agents the skill applies to ("analyst" and/or "developer"). */
+  agents?: string[];
+  /** Rill extension: if true, the skill's body is always injected into the agent's context instead of being loaded on demand. */
+  alwaysApply?: boolean;
+}
+
+export interface V1SkillState {
+  [key: string]: unknown;
 }
 
 export interface V1Theme {
@@ -3197,6 +3263,9 @@ export type QueryServiceMetricsViewTimeRangesBody = {
 
 export type QueryServiceMetricsViewTimeSeriesBody = {
   measureNames?: string[];
+  /** Optional ephemeral measures, i.e. measures defined by the query rather than the metrics view.
+Only the `expression` compute is supported for time series. */
+  ephemeralMeasures?: V1MetricsViewAggregationMeasure[];
   timeStart?: string;
   timeEnd?: string;
   timeGranularity?: V1TimeGrain;

@@ -33,6 +33,7 @@
   )}
   aria-label={label}
 >
+  <!-- TODO: Revisit the bg-white case. There is not good replacement right and background doesnt look bad on dark mode. -->
   <SwitchPrimitive.Thumb
     class={cn(
       "pointer-events-none block h-4 w-4 rounded-full bg-white shadow-lg ring-0 transition-transform data-[state=checked]:translate-x-4 data-[state=unchecked]:translate-x-0",

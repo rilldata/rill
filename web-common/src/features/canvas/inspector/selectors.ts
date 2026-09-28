@@ -1,3 +1,5 @@
+import { appendEphemeralSpecMeasures } from "@rilldata/web-common/features/dashboards/ephemeral-measures/measure-mapping";
+import type { EphemeralMeasureDef } from "@rilldata/web-common/features/dashboards/ephemeral-measures/types";
 import type { FieldType } from "@rilldata/web-common/features/canvas/inspector/types";
 import type { CanvasStore } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
 import {
@@ -7,7 +9,10 @@ import {
 import type { FileArtifact } from "@rilldata/web-common/features/entity-management/file-artifact";
 import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
 import { isGrainBigger } from "@rilldata/web-common/lib/time/grains";
-import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
+import {
+  V1TimeGrain,
+  MetricsViewSpecDimensionType,
+} from "@rilldata/web-common/runtime-client";
 import { derived } from "svelte/store";
 import { parseDocument } from "yaml";
 
@@ -25,6 +30,9 @@ export function useMetricFieldData(
   searchableItems: string[] | undefined = undefined,
   searchValue = "",
   excludedValues: string[] | undefined = undefined,
+  // ephemeral measures defined on the component spec.
+  ephemeralMeasures: EphemeralMeasureDef[] | undefined = undefined,
+  geoOnly: boolean = false,
 ) {
   const { metricsView, timeManager } = ctx.canvasEntity;
 
@@ -42,11 +50,15 @@ export function useMetricFieldData(
       const timeDimension = metricsViewSpec?.timeDimension;
 
       if (type.includes("measure")) {
-        items = measures.map((m) => m.name as string);
+        const allMeasures = appendEphemeralSpecMeasures(
+          measures,
+          ephemeralMeasures,
+        );
+        items = allMeasures.map((m) => m.name as string);
         Object.assign(
           displayMap,
           Object.fromEntries(
-            measures.map((item) => [
+            allMeasures.map((item) => [
               item.name as string,
               { label: getMeasureDisplayName(item), type: "measure" },
             ]),
@@ -54,13 +66,20 @@ export function useMetricFieldData(
         );
       }
       if (type.includes("dimension")) {
+        const filteredDimensions = geoOnly
+          ? dimensions.filter(
+              (d) =>
+                d.type ===
+                MetricsViewSpecDimensionType.DIMENSION_TYPE_GEOSPATIAL,
+            )
+          : dimensions;
         items = items.concat(
-          dimensions?.map((d) => d.name || (d.column as string)) ?? [],
+          filteredDimensions?.map((d) => d.name || (d.column as string)) ?? [],
         );
         Object.assign(
           displayMap,
           Object.fromEntries(
-            dimensions.map((item) => [
+            filteredDimensions.map((item) => [
               item.name || (item.column as string),
               { label: getDimensionDisplayName(item), type: "dimension" },
             ]),

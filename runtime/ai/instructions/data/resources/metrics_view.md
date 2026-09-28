@@ -165,7 +165,8 @@ format_d3: ",.0f"   # 1,235 (rounded, with thousands separator)
 
 ### Inline explore
 
-New metrics views should set `version: 1` and include an `explore:` block, which makes Rill emit an explore dashboard for the metrics view (named after the metrics view unless `name:` is set):
+New metrics views should set `version: 1` and include an `explore:` block, which makes Rill emit an explore dashboard for the metrics view (named after the metrics view unless `name:` is set).
+This inline block IS the explore dashboard: do not create a separate `type: explore` file for the same metrics view, as that would produce a second, duplicate dashboard. Configure dashboard defaults (time range, measures, dimensions) directly in this block.
 
 ```yaml
 version: 1
@@ -183,6 +184,60 @@ explore:
 An empty block (`explore: {}`) is enough to enable the dashboard with all dimensions and measures. Note that `explore:` with no value (null) does NOT enable it. Set `explore: {skip: true}` to create a metrics view without a dashboard.
 
 **Legacy behavior**: Files without `version:` (or `version: 0`) auto-generate an explore even without an `explore:` block. Files with `version: 1` only get an explore if an `explore:` block is present.
+
+### Derived metrics views
+
+A derived metrics view inherits its data source, dimensions, and measures from an existing *parent* metrics view. Use it to expose a focused subset of a large metrics view to a specific team or use case without duplicating definitions. Set `parent:` instead of `model:`:
+
+```yaml
+# metrics/orders_sales.yaml
+version: 1
+type: metrics_view
+parent: orders                 # Name of an existing metrics view in the project
+display_name: Orders (Sales)
+
+# Select which of the parent's dimensions and measures to expose (defaults to all)
+parent_dimensions:
+  - country
+  - product_category
+parent_measures:
+  - total_orders
+  - total_revenue
+
+explore:
+  display_name: Sales Dashboard
+```
+
+**Selecting fields**: `parent_dimensions:` and `parent_measures:` accept the same selector forms:
+- `'*'` (or omit the property) to inherit all fields
+- A list of names to inherit only those fields
+- `{exclude: [name, ...]}` to inherit everything except the listed fields
+- `{regex: "^total_.*"}` to inherit fields whose names match a regex
+
+**Rules that will cause parse errors if violated:**
+- Do NOT set `dimensions:` or `measures:` in a derived metrics view. It can only select from the parent's fields, never define new ones. If a new dimension or measure is needed, add it to the parent metrics view first, then select it in the derived view.
+- Do NOT set `model:`, `table:`, `connector:`, `database:`, `database_schema:` or `cache:`. These are always inherited from the parent.
+- `parent_dimensions:` and `parent_measures:` are only valid when `parent:` is set.
+- `smallest_time_grain:`, if set, must be equal to or coarser than the parent's (e.g. parent `hour`, child `day` is fine; child `minute` is not).
+- The parent must be a valid metrics view in the project. If the parent has an error, fix the parent first.
+
+**Properties you can override**: `display_name`, `description`, `timeseries`, `smallest_time_grain`, `first_day_of_week`, `first_month_of_year`, `ai_instructions`. If omitted, `timeseries` and the time settings are inherited from the parent; `display_name` and `description` are not inherited.
+
+**Security**: the parent's security rules are always inherited. If the derived view sets its own `security.access`, it replaces the parent's `access` rule; all other parent rules (`row_filter`, `exclude`, etc.) still apply, and any rules on the derived view are added on top. This makes derived views a good fit for narrowing access for a particular audience:
+
+```yaml
+type: metrics_view
+parent: orders
+parent_dimensions: '*'
+parent_measures:
+  exclude:
+    - average_order_value
+security:
+  access: "'{{ .user.domain }}' = 'partner.com'"
+  row_filter: "country = 'US'"
+```
+
+**Explore**: the same `version:` and `explore:` rules apply as for regular metrics views. Prefer `version: 1` with an `explore:` block; use `explore: {skip: true}` to create a derived metrics view without a dashboard.
 
 ## Full Example
 

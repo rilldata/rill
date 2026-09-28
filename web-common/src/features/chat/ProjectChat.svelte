@@ -1,8 +1,11 @@
 <script lang="ts">
   import FullPageChat from "./layouts/fullpage/FullPageChat.svelte";
+
+  export let readOnly = false;
+  export let beforeFork: (() => Promise<void> | void) | undefined = undefined;
 </script>
 
-<FullPageChat>
+<FullPageChat {readOnly} {beforeFork}>
   <svelte:fragment slot="sidebar-footer">
     <slot name="sidebar-footer" />
   </svelte:fragment>

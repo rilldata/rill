@@ -97,7 +97,10 @@ function drawTitle(
   doc.setFontSize(TITLE_FONT_SIZE_PT);
   setTextColor(doc, TITLE_COLOR);
 
-  const maxWidthPt = result.pageWidthPt - 2 * result.marginPt;
+  // Content narrower than the page is centred (see paginate), and the title
+  // follows it rather than sitting at the page margin.
+  const contentLeftPt = result.marginPt + result.contentOffsetPt;
+  const maxWidthPt = result.pageWidthPt - 2 * contentLeftPt;
   let title = meta.title;
   if (doc.getTextWidth(title) > maxWidthPt) {
     while (title.length > 1 && doc.getTextWidth(`${title}…`) > maxWidthPt) {
@@ -107,7 +110,7 @@ function drawTitle(
   }
 
   // Baseline near the bottom of the reserved band, leaving a gap before content.
-  doc.text(title, result.marginPt, result.marginPt + TITLE_FONT_SIZE_PT);
+  doc.text(title, contentLeftPt, result.marginPt + TITLE_FONT_SIZE_PT);
   doc.setFont("helvetica", "normal");
 }
 
@@ -116,6 +119,7 @@ function drawFooter(
   result: PaginationResult,
   meta: AssembleMeta,
 ): void {
+  const contentLeftPt = result.marginPt + result.contentOffsetPt;
   const yPt = result.pageHeightPt - 10;
   const generatedText = `Generated ${meta.generatedAt}`;
   const linkPrefix = "Open the live dashboard: ";
@@ -123,11 +127,11 @@ function drawFooter(
 
   doc.setFontSize(8);
   setTextColor(doc, FOOTER_TEXT_COLOR);
-  doc.text(generatedText, result.marginPt, yPt);
+  doc.text(generatedText, contentLeftPt, yPt);
 
   const linkXPt =
     result.pageWidthPt -
-    result.marginPt -
+    contentLeftPt -
     doc.getTextWidth(`${linkPrefix}${linkText}`);
   doc.text(linkPrefix, linkXPt, yPt);
   setTextColor(doc, FOOTER_LINK_COLOR);

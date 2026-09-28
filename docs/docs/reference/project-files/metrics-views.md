@@ -379,6 +379,18 @@ Example: a `key_sql` of `SELECT MAX(updated_at) FROM orders` with `key_ttl: 5m` 
 
   - **`timestamps_ttl`** - _[string]_ - TTL for caching the min/max timestamp queries used to populate a metrics view's rollups. Only takes effect when the metrics view has rollups defined and query result caching (`enabled`) is off — otherwise rollup timestamps are cached alongside other query results under `key_ttl`. Go duration string (e.g. `5m`). Defaults to `5m`.
 
+### `query_attributes`
+
+_[object]_ - Key-value pairs that Rill attaches to every query the metrics view sends to the OLAP engine, for example to attribute warehouse cost or audit queries by user. Values support templating with user attributes and environment variables, such as `'{{ .user.email }}'` or `'{{ .env.team }}'`, and are resolved for each query. Keys may contain only letters, digits, underscores, hyphens, and dots.
+How the attributes are delivered depends on the OLAP engine: ClickHouse receives them as query settings, Druid as query context parameters, and Databricks as query tags. Other engines ignore them. See [Query attributes](/developers/build/metrics-view/query-attributes) for details.
+
+
+```yaml
+query_attributes:
+    rill_user: '{{ .user.email }}'
+    department: '{{ .user.department | default "unknown" }}'
+```
+
 ### `explore`
 
 _[object]_ - Defines an optional inline explore view for the metrics view. If not specified a default explore will be emitted unless `skip` is set to true.
@@ -392,6 +404,22 @@ _[object]_ - Defines an optional inline explore view for the metrics view. If no
   - **`description`** - _[string]_ - Description for the explore view.
 
   - **`banner`** - _[string]_ - Custom banner displayed at the header of the explore view.
+
+  - **`ai_prompts`** - _[array of oneOf]_ - Suggested prompts shown as starters in the AI chat for this dashboard. Each entry is either a prompt string or an object with `label` and `prompt`. If not set, the project-level `ai_prompts` from rill.yaml are shown instead. At most 8 distinct entries.
+
+    - **option 1** - _[string]_ - The prompt. A short label is derived from its first words.
+
+    - **option 2** - _[object]_ - A prompt with an explicit label.
+
+      - **`label`** - _[string]_ - Short label shown on the prompt's button (at most 40 characters). Derived from the prompt if omitted.
+
+      - **`prompt`** - _[string]_ - The full question sent to the AI when the user picks the prompt. _(required)_
+
+```yaml
+- Which campaigns drove the biggest change in impressions this week?
+- label: CTR outliers
+  prompt: Which publishers have a click-through rate far above or below the average?
+```
 
   - **`dimensions`** - _[oneOf]_ - Dimensions to include in the explore view. Defaults to all dimensions in the metrics view.
 
@@ -534,6 +562,10 @@ _[array of string]_ - List of resource references
 ### `tags`
 
 _[array of string]_ - Tags for organizing and filtering the resource (e.g. on the project dashboards list).
+
+### `metadata`
+
+_[object]_ - User-defined key-value metadata attached to the resource. Rill does not read or write it; it is exposed as-is on the resource's meta over the API for external tooling. Values are strings, with numbers and booleans coerced. Not supported in rill.yaml defaults.
 
 ### `dev`
 

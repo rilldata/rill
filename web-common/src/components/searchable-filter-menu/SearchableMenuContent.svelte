@@ -3,6 +3,7 @@
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import type { SearchableFilterSelectableGroup } from "@rilldata/web-common/components/searchable-filter-menu/SearchableFilterSelectableItem";
   import { matchSorter } from "match-sorter";
+  import { PencilIcon } from "lucide-svelte";
   import Button from "../button/Button.svelte";
   import { Search } from "../search";
 
@@ -21,6 +22,8 @@
   export let side: "top" | "right" | "bottom" | "left" = "bottom";
   export let onSelect: (name: string) => void;
   export let onToggleSelectAll: () => void = voidFn;
+  // When set, items flagged `ephemeral` get an edit button invoking this.
+  export let onEditItem: ((name: string) => void) | undefined = undefined;
 
   $: allSelected = selectableGroups.every((g, i) => {
     return (
@@ -84,41 +87,96 @@
             {label ?? name}
           </DropdownMenu.Label>
         {/if}
-        {#each items as { name, label } (name)}
+        {#each items as { name, label, description, ephemeral } (name)}
           {@const selected = selectedItems[index]?.includes(name)}
 
-          <svelte:component
-            this={allowMultiSelect || showSelection
-              ? DropdownMenu.CheckboxItem
-              : DropdownMenu.Item}
-            {...allowMultiSelect || showSelection
-              ? {
-                  checked: selected,
-                  showXForSelected,
-                  closeOnSelect: !allowMultiSelect,
-                }
-              : {}}
-            class="text-xs cursor-pointer"
-            disabled={requireSelection && singleSelection && selected}
-            aria-disabled={requireSelection && singleSelection && selected}
-            onclick={() => {
-              if (requireSelection && singleSelection && selected) return;
+          {#if allowMultiSelect || showSelection}
+            <DropdownMenu.CheckboxItem
+              checked={selected}
+              {showXForSelected}
+              closeOnSelect={!allowMultiSelect}
+              class="text-xs cursor-pointer"
+              disabled={requireSelection && singleSelection && selected}
+              aria-disabled={requireSelection && singleSelection && selected}
+              onCheckedChange={() => {
+                if (requireSelection && singleSelection && selected) return;
 
-              onSelect(name);
-            }}
-          >
-            <span
-              class:text-fg-disabled={fadeUnselected &&
-                !selected &&
-                allowMultiSelect}
+                onSelect(name);
+              }}
             >
-              {#if label.length > 240}
-                {label.slice(0, 240)}...
-              {:else}
-                {label}
+              <span
+                class="inline-flex items-center gap-x-1"
+                class:text-fg-disabled={fadeUnselected &&
+                  !selected &&
+                  allowMultiSelect}
+                title={description}
+              >
+                {#if label.length > 240}
+                  {label.slice(0, 240)}...
+                {:else}
+                  {label}
+                {/if}
+                {#if ephemeral}
+                  <span class="text-[10px] font-semibold italic">ƒx</span>
+                {/if}
+              </span>
+              {#if ephemeral && onEditItem}
+                <button
+                  class="ml-auto flex-none text-fg-secondary hover:text-fg-primary"
+                  type="button"
+                  aria-label={m.dashboard_pivot_ephemeral_edit_title()}
+                  onpointerdown={(e) => e.stopPropagation()}
+                  onpointerup={(e) => e.stopPropagation()}
+                  onclick={(e) => {
+                    e.stopPropagation();
+                    onEditItem?.(name);
+                  }}
+                >
+                  <PencilIcon size="12px" />
+                </button>
               {/if}
-            </span>
-          </svelte:component>
+            </DropdownMenu.CheckboxItem>
+          {:else}
+            <DropdownMenu.Item
+              class="text-xs cursor-pointer"
+              disabled={requireSelection && singleSelection && selected}
+              aria-disabled={requireSelection && singleSelection && selected}
+              onclick={() => {
+                if (requireSelection && singleSelection && selected) return;
+
+                onSelect(name);
+              }}
+            >
+              <span
+                class="inline-flex items-center gap-x-1"
+                title={description}
+              >
+                {#if label.length > 240}
+                  {label.slice(0, 240)}...
+                {:else}
+                  {label}
+                {/if}
+                {#if ephemeral}
+                  <span class="text-[10px] font-semibold italic">ƒx</span>
+                {/if}
+              </span>
+              {#if ephemeral && onEditItem}
+                <button
+                  class="ml-auto flex-none text-fg-secondary hover:text-fg-primary"
+                  type="button"
+                  aria-label={m.dashboard_pivot_ephemeral_edit_title()}
+                  onpointerdown={(e) => e.stopPropagation()}
+                  onpointerup={(e) => e.stopPropagation()}
+                  onclick={(e) => {
+                    e.stopPropagation();
+                    onEditItem?.(name);
+                  }}
+                >
+                  <PencilIcon size="12px" />
+                </button>
+              {/if}
+            </DropdownMenu.Item>
+          {/if}
         {:else}
           <div
             data-testid="searchable-menu-no-results"
@@ -145,13 +203,18 @@
         {/if}
       </Button>
 
-      <slot name="action" />
       {#if numSelectedNotShown && showHiddenSelectionsCount}
         <div class="ui-label">
           {m.common_other_values_selected({ count: numSelectedNotShown })}
         </div>
       {/if}
     </footer>
+  {/if}
+
+  {#if $$slots.action}
+    <div class="flex-none border-t border-border">
+      <slot name="action" />
+    </div>
   {/if}
 </DropdownMenu.Content>
 

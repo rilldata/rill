@@ -19,6 +19,7 @@ type Node struct {
 	Name              string
 	Refs              []ResourceName
 	Tags              []string
+	Metadata          map[string]string
 	Paths             []string
 	YAML              *yaml.Node
 	YAMLOverride      *yaml.Node
@@ -81,6 +82,9 @@ type commonYAML struct {
 	Refs []yaml.Node `yaml:"refs"`
 	// Tags are user-defined labels for organizing and filtering resources. Parsed generically for all resource types.
 	Tags []string `yaml:"tags"`
+	// Metadata is free-form key-value metadata. Parsed generically for all resource types and stored on ResourceMeta.
+	// Non-string scalars are coerced to strings by the YAML decoder, so `tier: 1` is equivalent to `tier: "1"`.
+	Metadata map[string]string `yaml:"metadata" mapstructure:"metadata"`
 	// ParserConfig enables setting file-level parser config.
 	ParserConfig struct {
 		Templating *bool `yaml:"templating"`
@@ -163,6 +167,7 @@ func (p *Parser) parseStem(paths []string, ymlPath, yml, sqlPath, sql string) (*
 		res.Version = cfg.Version
 		res.Name = cfg.Name
 		res.Tags = cfg.Tags
+		res.Metadata = cfg.Metadata
 		res.Connector = cfg.Connector
 		res.SQL = cfg.SQL
 		res.SQLPath = ymlPath
@@ -272,7 +277,20 @@ func (p *Parser) parseStem(paths []string, ymlPath, yml, sqlPath, sql string) (*
 				break
 			}
 			res.Connector = v
+		case "metadata":
+			m, ok := v.(map[string]any)
+			if !ok {
+				err = fmt.Errorf("invalid type %T for property 'metadata'", v)
+				break
+			}
+			if mErr := mapstructureUnmarshal(m, &res.Metadata); mErr != nil {
+				err = fmt.Errorf("invalid metadata: %w", mErr)
+			}
 		}
+	}
+	if len(res.Metadata) == 0 {
+		// Normalize to nil since an empty map does not survive the catalog's proto marshalling anyway.
+		res.Metadata = nil
 	}
 	if err != nil {
 		if sqlPath != "" {

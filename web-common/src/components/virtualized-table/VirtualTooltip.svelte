@@ -34,7 +34,7 @@
     {#if hovering.isPin}
       {pinned ? "Unpin" : "Pin"} this column to left side of the table
     {:else}
-      <TooltipTitle>
+      <TooltipTitle wrap={!hovering.isHeader}>
         <svelte:fragment slot="name">
           {#if hovering.isHeader}
             {hovering.value}

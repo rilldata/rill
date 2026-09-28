@@ -33,6 +33,7 @@ export enum ResourceKind {
   API = "rill.runtime.v1.API",
   RefreshTrigger = "rill.runtime.v1.RefreshTrigger",
   Migration = "rill.runtime.v1.Migration",
+  Skill = "rill.runtime.v1.Skill",
 }
 
 export function displayResourceKind(kind: ResourceKind | undefined) {
@@ -63,6 +64,8 @@ export function displayResourceKind(kind: ResourceKind | undefined) {
       return "API";
     case ResourceKind.RefreshTrigger:
       return "refresh trigger";
+    case ResourceKind.Skill:
+      return "AI skill";
     default:
       return undefined;
   }
@@ -102,6 +105,8 @@ export type UserFacingResourceKinds = Exclude<
   | ResourceKind.ProjectParser
   | ResourceKind.RefreshTrigger
   | ResourceKind.Migration
+  // Skills are user-facing but follow a dedicated creation flow (skills/<name>/SKILL.md), so they are excluded from the generic resource-file machinery.
+  | ResourceKind.Skill
 >;
 
 export const SingletonProjectParserName = "parser";
