@@ -69,12 +69,6 @@ The tab lists two categories of bookmarks:
 
 Each row shows the bookmark's name, the type and title of the dashboard it belongs to, when it was last updated, when you last opened it, and its description. A funnel icon marks a bookmark that saves only filters and the time range; a bookmark icon marks one that saves the full dashboard view. Select a row to open the dashboard with the bookmark applied.
 
-Home bookmarks are not listed, since opening a dashboard already shows its home view. Manage a dashboard's home bookmark from the home button next to the bookmark icon on that dashboard.
-
-:::note
-The Bookmarks tab and the home page section are only shown to signed-in users. Anonymous viewers of a [public project](/guide/administration/project-settings#make-a-project-public) have no bookmarks.
-:::
-
 ### Search and sort bookmarks
 
 Use the search box to filter the list by bookmark name, description, or dashboard title or name.
@@ -115,11 +109,9 @@ The project home page shows a **Bookmarks** section below the list of dashboards
 
 ## Bookmark permissions
 
-Who can create, edit, and delete a bookmark depends on its category and your project role. The underlying permissions are `create_bookmarks` and `manage_bookmarks`; see [Roles and Permissions](/guide/administration/users-and-access/roles-permissions#project-level-permissions).
-
 | Category | Who can see it | Who can create, edit, and delete it |
 | :------- | :------------- | :---------------------------------- |
-| Your bookmarks | Only the user who created it | That user. Any project member can create personal bookmarks, and so can any signed-in user on a public project. |
+| Your bookmarks | Only the user who created it | That user |
 | Managed bookmarks | Everyone with access to the project | Users with `manage_bookmarks` (project admins by default) |
 | Home bookmark | Everyone with access to the project, from the dashboard's home button | Users with `manage_bookmarks` (project admins by default) |
 
