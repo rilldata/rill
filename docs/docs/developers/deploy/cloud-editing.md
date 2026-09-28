@@ -37,7 +37,7 @@ New projects created with `rill init` or from an empty project in Rill Developer
 
 ### Required permissions
 
-To edit a project, you need the project **Admin** or **Editor** role (the `manage_dev` permission). Organization admins can edit every project in the organization. Viewers don't see the **Edit** button. See [Roles and Permissions](/guide/administration/users-and-access/roles-permissions#project-level-permissions).
+To edit a project, you need the project **Admin** or **Editor** role (the `manage_dev` permission). Organization admins can edit every project in the organization. The organization **Editor** role alone isn't enough; you also need the **Admin** or **Editor** role on the project itself. Viewers don't see the **Edit** button. See [Roles and Permissions](/guide/administration/users-and-access/roles-permissions#project-level-permissions).
 
 ## Start editing
 
@@ -117,11 +117,13 @@ To resume a hibernated branch, click **Edit** and pick it under **Existing branc
 
 ### View and manage branches
 
-Go to **Status** > **Branches** to see all branches with a deployment, including their author, status, slot count and last update. From the menu next to a branch you can:
+Project admins (the `manage_project` permission) can go to **Status** > **Branches** to see all branches with a deployment, including their author, status, slot count and last update. From the menu next to a branch you can:
 
 - **Open editor** to continue editing it.
 - **Hibernate** a running branch to free its resources, or **Resume** a hibernated one.
 - **Delete** the branch and its deployment. For editable branches, this also deletes the remote branch, and any unpushed changes are lost.
+
+Project editors can create branches but can't open the **Status** pages. To return to a branch, click **Edit** and pick it under **Existing branch**.
 
 ### Development slots
 
