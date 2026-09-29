@@ -19,37 +19,42 @@ Run `rill init` to create a new project. The interactive setup will prompt you f
 rill init
 ? Project name my-rill-project
 ? OLAP engine clickhouse
-? Agent instructions claude
+? Agent instructions all
 ```
 
 This creates a project directory with:
 - `rill.yaml` — project configuration
-- `.claude/CLAUDE.md` — entry point that tells Claude Code to load Rill development skills
-- `.claude/skills/` — detailed instructions for each resource type (models, metrics views, dashboards, etc.)
-- `.mcp.json` — connects Claude Code to Rill's local [MCP server](/guide/ai/mcp)
+- `.claude/CLAUDE.md` and `.claude/skills/` — entry point and skills for Claude Code, with detailed instructions for each resource type (models, metrics views, dashboards, etc.)
+- `.cursor/` — the same instructions as Cursor rules
+- `AGENTS.md` and `.agents/skills/` — the same instructions in the tool-agnostic `AGENTS.md` format
+- `.mcp.json` — connects your agent to Rill's local [MCP server](/guide/ai/mcp)
 
-:::tip Using a different AI agent?
-Select a different option in the "Agent instructions" prompt, or use the `--agent` flag:
+See the [Agent Skills documentation](/developers/agent-skills) for details on what each skill covers and the files generated for each tool.
+
+:::tip Only using one AI agent?
+Select a specific option in the "Agent instructions" prompt, or use the `--agent` flag to generate files for just that tool:
 
 ```bash
+# Claude Code skills
+rill init my-project --agent claude
+
 # Cursor rules
 rill init my-project --agent cursor
 
 # Tool-agnostic AGENTS.md format
 rill init my-project --agent agentsmd
-
-# All formats at once
-rill init my-project --agent all
 ```
 :::
 
 ### Adding agent instructions to an existing project
 
-If you already have a Rill project, you can add agent instructions without affecting your existing files:
+If you already have a Rill project, run `rill init` with only the `--agent` flag to generate the agent instruction files:
 
 ```bash
-rill init ./my-existing-project --agent claude
+rill init ./my-existing-project --agent all
 ```
+
+The command only writes agent instruction files and MCP configuration — but note that it [overwrites existing agent files](/developers/agent-skills/install#existing-project) at the generated paths.
 
 ## Step 2: Start Rill in preview mode
 
@@ -96,6 +101,7 @@ If something isn't working, ask your agent to check the project status. The MCP 
 
 ## Next steps
 
+- **[Agent Skills](/developers/agent-skills)** — learn more about the skills, supported tools, and how to keep them updated
 - **[Deploy to Rill Cloud](/developers/deploy/deploy-dashboard)** — share your dashboards with your team
 - **[AI Chat](/guide/ai/ai-chat)** — ask questions about your data in natural language from Rill Cloud
 - **[AI Configuration](/developers/build/ai-configuration)** — add `ai_instructions` to improve AI responses for your project

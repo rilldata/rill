@@ -32,7 +32,7 @@
     </CtaMessage>
     <CtaMessage>
       {m.github_click_to_retry()}
-      <KeyboardKey label="Control" /> + <KeyboardKey label="C" />
+      <KeyboardKey label={m.github_control_key()} /> + <KeyboardKey label="C" />
       {m.github_cancel_in_cli()}
     </CtaMessage>
     <CtaButton

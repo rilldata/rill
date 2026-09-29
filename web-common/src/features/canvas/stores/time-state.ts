@@ -130,6 +130,7 @@ export class TimeState {
         typeof this.parent._metricsViews,
         typeof this.timeZoneStore,
         typeof this.manager.hasTimeSeriesMap,
+        typeof this.manager.executionTimeStore,
       ],
       Interval<true> | undefined
     >(
@@ -138,8 +139,12 @@ export class TimeState {
         this.parent._metricsViews,
         this.timeZoneStore,
         this.manager.hasTimeSeriesMap,
+        this.manager.executionTimeStore,
       ],
-      ([range, allMetricsViews, timeZone, hasTimeSeriesMap], set) => {
+      (
+        [range, allMetricsViews, timeZone, hasTimeSeriesMap, executionTime],
+        set,
+      ) => {
         const allMetricsViewNames = this.metricsViewName
           ? [this.metricsViewName]
           : Object.keys(allMetricsViews || {});
@@ -156,7 +161,14 @@ export class TimeState {
         }
 
         const promises = metricsViewsWithTimeSeries.map((mvName) => {
-          return deriveInterval(range, this.parent.client, mvName, timeZone);
+          return deriveInterval(
+            range,
+            this.parent.client,
+            mvName,
+            timeZone,
+            undefined,
+            executionTime,
+          );
         });
 
         Promise.all(promises)

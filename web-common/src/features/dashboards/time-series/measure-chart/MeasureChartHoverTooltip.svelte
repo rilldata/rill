@@ -86,7 +86,7 @@
       <div class="period current">
         <span
           class="value primary-value"
-          aria-label="main value"
+          aria-label={m.chart_main_value_aria()}
           class:italic={currentValue === null}>{formatter(currentValue)}</span
         >
         <span class="date">
@@ -132,7 +132,7 @@
     <div class="simple-tooltip">
       <span
         class="simple-value"
-        aria-label="main value"
+        aria-label={m.chart_main_value_aria()}
         class:italic={currentValue === null}>{formatter(currentValue)}</span
       >
       <span class="simple-date">

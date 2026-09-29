@@ -4,6 +4,7 @@
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
   import { DateTime, Interval } from "luxon";
   import type {
+    InheritRangeOption,
     ISODurationString,
     NamedRange,
     RangeBuckets,
@@ -20,6 +21,7 @@
   export let interval: Interval<true>;
   export let zone: string;
   export let showDefaultItem: boolean;
+  export let inheritOption: InheritRangeOption | undefined = undefined;
   export let minDate: DateTime | undefined = undefined;
   export let maxDate: DateTime | undefined = undefined;
   export let showFullRange: boolean;
@@ -48,7 +50,14 @@
         aria-label={m.dashboard_select_time_range_aria()}
         type="button"
       >
-        <b class="mr-1 line-clamp-1 flex-none">{getRangeLabel(selected)}</b>
+        {#if inheritOption?.selected}
+          <b class="line-clamp-1 flex-none">{inheritOption.label}</b>
+          <span class="mr-1 line-clamp-1 flex-none text-fg-secondary">
+            · {getRangeLabel(selected)}
+          </span>
+        {:else}
+          <b class="mr-1 line-clamp-1 flex-none">{getRangeLabel(selected)}</b>
+        {/if}
 
         {#if interval.isValid && showFullRange}
           <RangeDisplay {interval} />
@@ -66,6 +75,13 @@
           {ranges}
           {selected}
           {showDefaultItem}
+          inheritOption={inheritOption && {
+            ...inheritOption,
+            onSelect: () => {
+              inheritOption?.onSelect();
+              open = false;
+            },
+          }}
           {defaultTimeRange}
           {allowCustomTimeRange}
           onSelectRange={(selected) => {

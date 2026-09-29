@@ -57,7 +57,7 @@
           showStartTeamPlanDialog = true;
         }}
       >
-        Upgrade
+        {m.billing_upgrade()}
       </Button>
       <Button type="secondary" noStroke href="/{organization}"
         >{m.common_back()}</Button

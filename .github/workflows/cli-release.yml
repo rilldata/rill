@@ -70,7 +70,7 @@ jobs:
             VERSION='${{ github.ref_name }}'
           fi
           
-          go build -o rill \
+          go build -tags databricks_kernel -o rill \
             -mod=readonly \
             -ldflags="-s -w -X main.Version=${VERSION} -X main.Commit=${{ github.sha }} -X main.BuildDate=$(date +%FT%TZ)" \
             cli/main.go

@@ -1,13 +1,12 @@
 import { splitDimensionsAndMeasuresAsRowsAndColumns } from "@rilldata/web-common/features/dashboards/aggregation-request-utils.ts";
+import { ephemeralDefsFromRequestMeasures } from "@rilldata/web-common/features/dashboards/ephemeral-measures/measure-mapping.ts";
 import {
   ComparisonDeltaAbsoluteSuffix,
   ComparisonDeltaPreviousSuffix,
   ComparisonDeltaRelativeSuffix,
   ComparisonPercentOfTotal,
-  mapExprToMeasureFilter,
   measureHasSuffix,
 } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
-import { splitWhereFilter } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
 import { mergeFilters } from "@rilldata/web-common/features/dashboards/pivot/pivot-merge-filters";
 import {
   COMPARISON_DELTA,
@@ -74,6 +73,19 @@ export async function getDashboardFromAggregationRequest({
     loadedFromState = true;
   }
 
+  // Reports and alerts embed ephemeral measure definitions in the request itself,
+  // so recover them here: the saved dashboard state may be missing (older reports)
+  // or absent entirely, and without the definitions the names cannot be resolved.
+  const requestEphemeralMeasures = ephemeralDefsFromRequestMeasures(
+    req.measures,
+  );
+  if (requestEphemeralMeasures && !dashboard.ephemeralMeasures?.length) {
+    dashboard.ephemeralMeasures = requestEphemeralMeasures;
+  }
+  const ephemeralMeasureNames = new Set(
+    dashboard.ephemeralMeasures?.map((def) => def.name) ?? [],
+  );
+
   await fillTimeRange(
     client,
     explore,
@@ -86,11 +98,8 @@ export async function getDashboardFromAggregationRequest({
 
   const shouldParseWhereFilter = Boolean(!ignoreFilters && req.where);
   if (shouldParseWhereFilter) {
-    const { dimensionFilters, dimensionThresholdFilters } = splitWhereFilter(
-      req.where,
-    );
-    dashboard.whereFilter = dimensionFilters;
-    dashboard.dimensionThresholdFilters = dimensionThresholdFilters;
+    // Explore state keeps dimension and measure filters collapsed into the where filter.
+    dashboard.whereFilter = req.where!;
   }
 
   const shouldParseHavingFilter = Boolean(
@@ -100,51 +109,31 @@ export async function getDashboardFromAggregationRequest({
   );
   if (shouldParseHavingFilter) {
     const dimension = req.dimensions![0].name!;
+
+    let havingFilter: V1Expression;
     if (exprHasComparison(req.having!)) {
-      // We do not support comparison based dimension threshold filter in dashboards right now.
+      // We do not support comparison based measure filters in dashboards right now.
       // So convert it to a toplist and add `in` filter.
-      const expr = await convertQueryFilterToToplistQuery(
+      havingFilter = await convertQueryFilterToToplistQuery(
         client,
         explore.metricsView ?? "",
         req,
         dimension,
       );
-      dashboard.whereFilter =
-        mergeFilters(
-          dashboard.whereFilter ?? createAndExpression([]),
-          createAndExpression([expr]),
-        ) ?? createAndExpression([]);
-    } else if (
-      req.having!.cond!.exprs!.length > 1 ||
-      dashboard.dimensionThresholdFilters.length > 0
-    ) {
-      // If there are dimension threshold and having filter we just add a subquery in where filter.
-      // This will be marked as "advanced filter" that is not editable.
-      // TODO: find a way to merge having filter into dimension threshold
-      const extraFilter = createSubQueryExpression(
+    } else {
+      // Measure filters are stored as a subquery on the dimension within the where filter.
+      havingFilter = createSubQueryExpression(
         dimension,
         getAllIdentifiers(req.having),
         req.having,
       );
-      if (dashboard.whereFilter?.cond?.exprs?.length) {
-        dashboard.whereFilter = createAndExpression([
-          dashboard.whereFilter,
-          extraFilter,
-        ]);
-      } else {
-        dashboard.whereFilter = extraFilter;
-      }
-    } else {
-      dashboard.dimensionThresholdFilters = [
-        {
-          name: dimension,
-          filters:
-            req.having?.cond?.exprs
-              ?.map(mapExprToMeasureFilter)
-              .filter((f): f is NonNullable<typeof f> => f != null) ?? [],
-        },
-      ];
     }
+
+    dashboard.whereFilter =
+      mergeFilters(
+        dashboard.whereFilter ?? createAndExpression([]),
+        createAndExpression([havingFilter]),
+      ) ?? createAndExpression([]);
   }
 
   // everything after this can be loaded from the dashboard state if present
@@ -164,8 +153,11 @@ export async function getDashboardFromAggregationRequest({
     dashboard.visibleMeasures = req.measures
       .map((m) => m.name ?? "")
       .filter((m) => !measureHasSuffix(m));
+    // Ephemeral measures are not part of the explore spec, so they must not
+    // count towards "all spec measures are visible".
     dashboard.allMeasuresVisible =
-      dashboard.visibleMeasures.length === explore.measures?.length;
+      dashboard.visibleMeasures.filter((m) => !ephemeralMeasureNames.has(m))
+        .length === explore.measures?.length;
   }
 
   // if the selected sort is a measure set it to leaderboardSortByMeasureName
@@ -255,7 +247,8 @@ function getPivotStateFromRequest(
   const mapMeasure = (mes: V1MetricsViewAggregationMeasure): PivotChipData => {
     return {
       id: mes.name!,
-      title: mes.name!,
+      // Ephemeral measures carry their display name on the expression compute.
+      title: mes.expression?.displayName || mes.name!,
       type: PivotChipType.Measure,
     };
   };

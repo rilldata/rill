@@ -32,6 +32,29 @@ Bar charts are ideal for comparing values across different categories.
          
 />
 
+### Horizontal Bar Chart
+
+`x` and `y` always name the field drawn on that axis. To draw the bars from left to right, which works well for long category labels or many categories, put the measure on `x` and the dimension on `y`. Sort values refer to axes, so `sort: -x` on `y` orders the categories by the measure. The same layout works for `stacked_bar` and `stacked_bar_normalized`; line and area charts always keep the dimension on `x`.
+
+```yaml
+- bar_chart:
+    metrics_view: bids_metrics
+    color: primary
+    x:
+      field: total_bids
+      type: quantitative
+      zeroBasedOrigin: true
+    y:
+      field: advertiser_name
+      limit: 20
+      type: nominal
+      sort: -x
+```
+
+### Axis label orientation
+
+Category labels on the x-axis are laid out automatically: they stay upright when they fit, tilt to 45° when they do not, and only turn vertical when the chart is too narrow for angled text. Long labels are shortened with an ellipsis; hovering a bar shows the full value in its tooltip. To force an orientation, choose **Label orientation** in the field settings or set `labelAngle` on the `x` field to `0` (horizontal), `-45` (angled) or `-90` (vertical).
+
 ## Line Chart
 
 Line charts are perfect for showing trends over time.

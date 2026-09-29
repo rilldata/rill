@@ -117,13 +117,10 @@
           <Lock size="16px" />
         {/if}
         <TooltipContent slot="tooltip-content">
-          <span class="text-xs"
-            >This project is
-            {#if projectData.public}
-              <span class="font-medium"> public</span>
-            {:else}
-              <span class="font-medium"> private</span>
-            {/if}
+          <span class="text-xs">
+            {projectData.public
+              ? m.project_card_visibility_public()
+              : m.project_card_visibility_private()}
           </span>
         </TooltipContent>
       </Tooltip>

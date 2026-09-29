@@ -27,38 +27,15 @@ test.describe("Breadcrumbs", () => {
         exact: true,
       });
 
-      await expect(link).toBeVisible();
-      await expect(link).toHaveClass(/selected/g);
-
-      await page.getByText("Generate Explore Dashboard").click();
-
-      await page.waitForURL("**/files/dashboards/AdBids_metrics_explore.yaml");
-
-      link = page.getByRole("link", {
-        name: "AdBids_metrics_explore",
-        exact: true,
-      });
-
-      await expect(link).toBeVisible();
-      await expect(link).toHaveClass(/selected/g);
+      // The generated metrics view defines its explore dashboard inline, so the
+      // metrics view crumb and the dashboard crumb both point at this file.
+      await expect(link.first()).toBeVisible();
+      await expect(link.first()).toHaveClass(/selected/g);
 
       await page
-        .getByRole("link", {
-          name: "AdBids_metrics",
-          exact: true,
-        })
+        .getByRole("link", { name: "AdBids", exact: true })
+        .first()
         .click();
-
-      await page.getByRole("button", { name: "Create resource menu" }).click();
-      await page
-        .getByRole("menuitem", { name: "Generate Explore Dashboard" })
-        .click();
-
-      await page.waitForURL(
-        "**/files/dashboards/AdBids_metrics_explore_1.yaml",
-      );
-
-      await page.getByRole("link", { name: "AdBids", exact: true }).click();
 
       await page.waitForURL("**/files/models/AdBids.yaml");
 
@@ -70,36 +47,20 @@ test.describe("Breadcrumbs", () => {
       ).toBeVisible();
 
       await expect(
-        page.getByRole("link", {
-          name: "AdBids_metrics",
-          exact: true,
-        }),
-      ).toBeVisible();
-
-      await expect(
-        page.getByRole("button", {
-          name: "2 dashboards",
-          exact: true,
-        }),
+        page
+          .getByRole("link", {
+            name: "AdBids_metrics",
+            exact: true,
+          })
+          .first(),
       ).toBeVisible();
 
       await page
         .getByRole("link", { name: "AdBids_metrics", exact: true })
+        .first()
         .click();
 
       await page.waitForURL("**/files/metrics/AdBids_metrics.yaml");
-
-      await page
-        .getByRole("button", { name: "2 dashboards", exact: true })
-        .click();
-      await page
-        .getByRole("menuitem", {
-          name: "AdBids_metrics_explore",
-          exact: true,
-        })
-        .click();
-
-      await page.waitForURL("**/files/dashboards/AdBids_metrics_explore.yaml");
     });
   });
 });

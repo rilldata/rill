@@ -7,6 +7,7 @@
   import { BaseChart } from "@rilldata/web-common/features/canvas/components/charts/BaseChart";
   import VegaSpecInput from "@rilldata/web-common/features/canvas/inspector/chart/VegaSpecInput.svelte";
   import type { BaseCanvasComponent } from "../components/BaseCanvasComponent";
+  import MapColorSelector from "../components/map/MapColorSelector.svelte";
   import { PivotCanvasComponent } from "../components/pivot";
   import type { ComponentSpec } from "../components/types";
   import AIGenerateButton from "./AIGenerateButton.svelte";
@@ -18,6 +19,7 @@
   import PositionalFieldConfig from "./chart/PositionalFieldConfig.svelte";
   import ComparisonInput from "./ComparisonInput.svelte";
   import DefaultSortInput from "./DefaultSortInput.svelte";
+  import { ephemeralSpecsToDefs } from "@rilldata/web-common/features/dashboards/ephemeral-measures/canvas";
   import MultiFieldFormatInput from "./fields/MultiFieldFormatInput.svelte";
   import MultiFieldInput from "./fields/MultiFieldInput.svelte";
   import SingleFieldInput from "./fields/SingleFieldInput.svelte";
@@ -56,6 +58,16 @@
 
   $: metricsView =
     "metrics_view" in localParamValues ? localParamValues.metrics_view : null;
+
+  $: componentEphemeralMeasures = ephemeralSpecsToDefs(
+    "adhoc_measures" in localParamValues
+      ? localParamValues.adhoc_measures
+      : undefined,
+  );
+
+  // Components that support ephemeral measures declare the param (hidden from
+  // the UI); their measure selectors then offer creating and editing them.
+  $: supportsEphemeralMeasures = "adhoc_measures" in inputParams;
 
   $: entries = Object.entries(inputParams) as [
     AllKeys<ComponentSpec>,
@@ -114,8 +126,14 @@
             id={key}
             type={config.type}
             selectedItem={localParamValues[key]}
+            ephemeralMeasures={componentEphemeralMeasures}
+            component={supportsEphemeralMeasures ? component : undefined}
+            isRemovable={config.meta?.isRemovable ?? false}
             onSelect={(field) => {
               component.updateProperty(key, field);
+            }}
+            onRemove={() => {
+              component.updateProperty(key, undefined);
             }}
           />
 
@@ -128,6 +146,8 @@
             id={key}
             types={config.meta?.allowedTypes ?? ["measure", "dimension"]}
             selectedItems={localParamValues[key]}
+            ephemeralMeasures={componentEphemeralMeasures}
+            component={supportsEphemeralMeasures ? component : undefined}
             onMultiSelect={(field) => {
               component.updateProperty(key, field);
             }}
@@ -143,6 +163,7 @@
             id={key}
             types={config.meta?.allowedTypes ?? ["measure", "dimension"]}
             selectedItems={localParamValues[key]}
+            ephemeralMeasures={componentEphemeralMeasures}
           />
 
           <!-- BOOLEAN SWITCH -->
@@ -259,7 +280,9 @@
             {key}
             label={config.label ?? key}
             options={config.meta?.options ?? []}
-            value={localParamValues[key] ?? config.meta?.default}
+            value={config.meta?.value ??
+              localParamValues[key] ??
+              config.meta?.default}
             onChange={(newValue) => {
               component.updateProperty(key, newValue);
             }}
@@ -321,6 +344,8 @@
             {config}
             {metricsView}
             fieldConfig={localParamValues[key] || {}}
+            ephemeralMeasures={componentEphemeralMeasures}
+            component={supportsEphemeralMeasures ? component : undefined}
             onChange={(updatedConfig) => {
               localParamValues[key] = updatedConfig;
               component.updateProperty(key, updatedConfig);
@@ -334,6 +359,17 @@
             {config}
             {metricsView}
             markConfig={localParamValues[key] || {}}
+            onChange={(updatedConfig) => {
+              localParamValues[key] = updatedConfig;
+              component.updateProperty(key, updatedConfig);
+            }}
+          />
+          <!-- MAP COLOR CONFIG -->
+        {:else if metricsView && config.type === "map_color"}
+          <MapColorSelector
+            {canvasName}
+            {metricsView}
+            colorConfig={localParamValues[key]}
             onChange={(updatedConfig) => {
               localParamValues[key] = updatedConfig;
               component.updateProperty(key, updatedConfig);

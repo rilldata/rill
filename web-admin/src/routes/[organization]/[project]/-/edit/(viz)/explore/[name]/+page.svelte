@@ -28,7 +28,7 @@
 </script>
 
 <svelte:head>
-  <title>Rill | {exploreName}</title>
+  <title>{m.explore_page_title({ exploreName })}</title>
 </svelte:head>
 
 {#if measures.length === 0}

@@ -258,6 +258,18 @@ _[object]_ - (no description)
 
   - **`measures`** - _[array of string]_ - List of measures to display _(required)_
 
+  - **`adhoc_measures`** - _[array of object]_ - Adhoc measures defined on this component, derived from the metrics view's measures with an arithmetic expression. Reference them by `name` in `measures`. See [Adhoc measures](/developers/build/dashboards/canvas-widgets/data#adhoc-measures).
+
+    - **`name`** - _[string]_ - Name used to reference the measure. Must not match a dimension or measure in the metrics view. _(required)_
+
+    - **`display_name`** - _[string]_ - Label shown in the component. Defaults to `name`.
+
+    - **`expression`** - _[string]_ - Arithmetic expression over the metrics view's measure names, for example `(revenue - cost) / revenue`. _(required)_
+
+    - **`format_preset`** - _[string]_ - Format preset for the values. Defaults to `humanize`.
+
+    - **`description`** - _[string]_ - Text shown in the measure's tooltip instead of the expression.
+
   - **`time_range`** - _[string]_ - Time range for the table _(required)_
 
   - **`row_dimensions`** - _[array of string]_ - Dimensions for table rows
@@ -267,6 +279,8 @@ _[object]_ - (no description)
   - **`hide_totals_row`** - _[boolean]_ - Whether to hide the totals row. Defaults to false.
 
   - **`hide_totals_col`** - _[boolean]_ - Whether to hide the totals column. Defaults to false.
+
+  - **`totals_row_position`** - _[string]_ - Where to pin the totals row, either "top" (default) or "bottom".
 
   - **`row_limit`** - _[string]_ - Maximum number of rows to display in a pivot table (one of "5", "10", "25", "50", "100"). Omit or set to "all" for all rows.
 
@@ -294,7 +308,9 @@ _[object]_ - (no description)
 
 _[object]_ - (no description)
 
-  - **`url`** - _[string]_ - Image URL _(required)_
+  - **`url`** - _[string]_ - Image URL. Used in light mode, and in dark mode when `dark_url` is not set. _(required)_
+
+  - **`dark_url`** - _[string]_ - Image URL to use when the dashboard is displayed in dark mode. Defaults to `url`.
 
   - **`css`** - _[object]_ - CSS styles
 

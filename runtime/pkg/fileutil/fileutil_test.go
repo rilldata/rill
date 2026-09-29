@@ -2,6 +2,7 @@ package fileutil
 
 import (
 	"os/user"
+	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -70,6 +71,52 @@ func TestExpandHome(t *testing.T) {
 			home, err := ExpandHome(tt.Path)
 			require.NoError(t, err)
 			require.Equal(t, tt.ExpectedPath, home)
+		})
+	}
+}
+
+func TestResolveLocalPath(t *testing.T) {
+	sep := string(filepath.Separator)
+	root := filepath.Clean("/data/proj123")
+
+	variations := []struct {
+		Name            string
+		Path            string
+		Root            string
+		AllowHostAccess bool
+		Expected        string
+		ExpectErr       bool
+	}{
+		// Relative paths within the root are joined and cleaned.
+		{"relative within root", "sub/file.csv", root, false, filepath.Join(root, "sub", "file.csv"), false},
+		{"relative to root itself", ".", root, false, root, false},
+
+		// Absolute paths within the root are allowed.
+		{"absolute within root", filepath.Join(root, "file.csv"), root, false, filepath.Join(root, "file.csv"), false},
+
+		// Absolute path traversal must be rejected once cleaned.
+		{"absolute traversal", root + sep + ".." + sep + ".." + sep + "etc" + sep + "passwd", root, false, "", true},
+
+		// Relative traversal escaping the root must be rejected.
+		{"relative traversal", ".." + sep + ".." + sep + "etc" + sep + "passwd", root, false, "", true},
+
+		// Sibling directory sharing the root's prefix must not pass the check.
+		{"sibling prefix collision", "/data/proj123-x/secret", root, false, "", true},
+		{"relative sibling prefix collision", ".." + sep + "proj123-x" + sep + "secret", root, false, "", true},
+
+		// With host access enabled, any path is allowed (but still cleaned).
+		{"host access bypasses sandbox", root + sep + ".." + sep + "etc" + sep + "passwd", root, true, filepath.Clean("/data/etc/passwd"), false},
+	}
+
+	for _, tt := range variations {
+		t.Run(tt.Name, func(t *testing.T) {
+			got, err := ResolveLocalPath(tt.Path, tt.Root, tt.AllowHostAccess)
+			if tt.ExpectErr {
+				require.Error(t, err)
+				return
+			}
+			require.NoError(t, err)
+			require.Equal(t, tt.Expected, got)
 		})
 	}
 }

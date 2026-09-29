@@ -72,7 +72,7 @@ rollups:
 
 ### Declaring Coverage with `data_time_range`
 
-By default Rill discovers a rollup's time coverage at query time by running `SELECT min(time), max(time)` against the rollup table. If you'd rather declare coverage statically — to skip the probe, or to scope a rollup to a specific window — set `data_time_range` on the rollup. The value is a [rilltime expression](/reference/time-syntax):
+By default, Rill discovers a rollup's time coverage at query time by running `SELECT min(time), max(time)` against the rollup table. If you'd rather declare coverage statically — to skip the probe, or to scope a rollup to a specific window — set `data_time_range` on the rollup. The value is a [rilltime expression](/reference/time-syntax):
 
 ```yaml
 rollups:
@@ -161,13 +161,13 @@ For each eligible rollup, Rill checks that the rollup actually contains data for
 
 - **With a time range.** The query range is first clamped to the base table's `[min, max]` (so a query that extends past the base data isn't penalized for the rollup also stopping there). The rollup must then cover the clamped start and end.
 - **Without a time range** ("all data"). The rollup must cover the base table's full `[min, max]`.
-- **End alignment.** If the base table has data beyond the query's end time, the end must also be aligned to the rollup grain. Otherwise the last rollup bucket would pull in data from outside the requested range. Queries whose end falls past the latest base data don't need to be end-aligned, because there is no extra data to pull in.
+- **End alignment.** If the base table has data beyond the query's end time, the end must also be aligned to the rollup grain. Otherwise, the last rollup bucket would pull in data from outside the requested range. Queries whose end falls past the latest base data don't need to be end-aligned, because there is no extra data to pull in.
 
 ### 4. Selection
 
 Among rollups that pass eligibility and coverage:
 
-1. Prefer the **coarsest grain** — fewer rows to scan.
+1. Prefer the **coarsest grain** — it has fewer rows to scan.
 2. On a tie, prefer the rollup **declared earlier** in the `rollups` list — this is the lever for explicit priority among same-grain rollups.
 
 The base table is used if no rollup is eligible.

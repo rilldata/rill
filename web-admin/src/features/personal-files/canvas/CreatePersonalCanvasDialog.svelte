@@ -22,6 +22,7 @@
   import { setCanvasMode } from "@rilldata/web-admin/features/personal-files/canvas/mode-utils.ts";
   import Switch from "@rilldata/web-common/components/forms/Switch.svelte";
   import Label from "@rilldata/web-common/components/forms/Label.svelte";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 
   let {
     org,
@@ -54,11 +55,12 @@
 
   const schema = yup(
     object({
-      name: string().trim().required("Name is required"),
+      name: string().trim().required(m.personal_files_create_name_required()),
       copy: boolean(),
       copySource: string().when("copy", {
         is: true,
-        then: (schema) => schema.required("Copy source is required"),
+        then: (schema) =>
+          schema.required(m.personal_files_create_copy_source_required()),
         otherwise: (schema) => schema.notRequired(),
       }),
     }),
@@ -136,15 +138,16 @@
 <Dialog.Root bind:open>
   <Dialog.Trigger>
     {#snippet child({ props })}
-      <Button {...props} type="primary">Create dashboard</Button>
+      <Button {...props} type="primary">
+        {m.personal_files_create_trigger()}
+      </Button>
     {/snippet}
   </Dialog.Trigger>
   <Dialog.Content class="top-[30%] translate-y-0">
     <Dialog.Header>
-      <Dialog.Title>Create personal dashboard</Dialog.Title>
+      <Dialog.Title>{m.personal_files_create_title()}</Dialog.Title>
       <Dialog.Description>
-        Personal dashboards are only visible to you. They live alongside the
-        project but never sync to git.
+        {m.personal_files_create_description()}
       </Dialog.Description>
     </Dialog.Header>
 
@@ -160,15 +163,19 @@
       <Input
         bind:value={$form.name}
         id="name"
-        label="Display name"
-        placeholder="e.g. My revenue dashboard"
+        label={m.personal_files_create_name_label()}
+        placeholder={m.personal_files_create_name_placeholder()}
       />
 
       {#if personalCanvasOptions.length}
         <div class="flex items-center space-x-2">
-          <Switch bind:checked={$form["copy"]} id="copy" label="Copy from" />
+          <Switch
+            bind:checked={$form["copy"]}
+            id="copy"
+            label={m.personal_files_create_copy_label()}
+          />
           <Label class="font-normal flex gap-x-1 items-center" for="copy">
-            Start from an existing dashboard
+            {m.personal_files_create_copy_hint()}
           </Label>
         </div>
 
@@ -176,7 +183,7 @@
           <Select
             bind:value={$form.copySource}
             id="source"
-            placeholder="Select a dashboard..."
+            placeholder={m.personal_files_create_copy_source_placeholder()}
             options={personalCanvasOptions}
             optionsLoading={$personalCanvasesQuery.isPending}
             sameWidth
@@ -191,15 +198,17 @@
     </form>
 
     <Dialog.Footer>
-      <Button type="secondary" onClick={() => (open = false)}>Cancel</Button>
+      <Button type="secondary" onClick={() => (open = false)}>
+        {m.personal_files_create_cancel()}
+      </Button>
       <Button
         type="primary"
         onClick={submit}
         loading={$submitting}
-        loadingCopy="Creating..."
+        loadingCopy={m.personal_files_create_submitting()}
         disabled={$submitting}
       >
-        Create
+        {m.personal_files_create_submit()}
       </Button>
     </Dialog.Footer>
   </Dialog.Content>

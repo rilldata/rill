@@ -139,7 +139,10 @@
         </ProjectAccessControls>
       </div>
       <div class="flex gap-x-2 items-center">
-        <h1 class="text-fg-primary text-lg font-bold" aria-label="Alert name">
+        <h1
+          class="text-fg-primary text-lg font-bold"
+          aria-label={m.alert_metadata_name_aria()}
+        >
           {alertSpec.displayName}
         </h1>
         <div class="grow"></div>
@@ -164,7 +167,10 @@
     <!-- Five columns of metadata -->
     <div class="flex flex-wrap gap-x-16 gap-y-6">
       <!-- Dashboard -->
-      <div class="flex flex-col gap-y-3" aria-label="Alert dashboard name">
+      <div
+        class="flex flex-col gap-y-3"
+        aria-label={m.alert_metadata_dashboard_name_aria()}
+      >
         {#if dashboardTitle}
           <MetadataLabel>{m.alert_dashboard()}</MetadataLabel>
           <MetadataValue>
@@ -193,7 +199,10 @@
       </div>
 
       <!-- Split by dimension -->
-      <div class="flex flex-col gap-y-3" aria-label="Alert split by dimension">
+      <div
+        class="flex flex-col gap-y-3"
+        aria-label={m.alert_metadata_split_by_dimension_aria()}
+      >
         <MetadataLabel>{m.alert_split_by_dimension()}</MetadataLabel>
         <MetadataValue>
           {metricsViewAggregationRequest?.dimensions?.[0]?.name ??
@@ -202,7 +211,10 @@
       </div>
 
       <!-- Schedule: TODO: change based on non UI settings -->
-      <div class="flex flex-col gap-y-3" aria-label="Alert schedule">
+      <div
+        class="flex flex-col gap-y-3"
+        aria-label={m.alert_metadata_schedule_aria()}
+      >
         <MetadataLabel>{m.alert_schedule()}</MetadataLabel>
         <MetadataValue>{humanReadableFrequency}</MetadataValue>
       </div>

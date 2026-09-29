@@ -147,7 +147,10 @@ func (r *repo) Get(ctx context.Context, path string) (string, error) {
 
 	var readErr error
 	for _, root := range r.roots() { // Search in every underlying file system.
-		fp := filepath.Join(root, path)
+		fp, err := drivers.ResolveRepoPath(root, path)
+		if err != nil {
+			return "", err
+		}
 		b, err := os.ReadFile(fp)
 		if err != nil {
 			// Keep searching if it's a not exist error. Otherwise break and return the error immediately.
@@ -185,7 +188,10 @@ func (r *repo) Hash(ctx context.Context, paths []string) (string, error) {
 		if drivers.IsIgnored(path, r.ignorePaths) {
 			continue // Skip if file does not exist
 		}
-		fp := filepath.Join(root, path)
+		fp, err := drivers.ResolveRepoPath(root, path)
+		if err != nil {
+			return "", err
+		}
 		file, err := os.Open(fp)
 		if err != nil {
 			if os.IsNotExist(err) {
@@ -218,7 +224,10 @@ func (r *repo) Stat(ctx context.Context, path string) (*drivers.FileInfo, error)
 
 	var statErr error
 	for _, root := range r.roots() { // Search in every underlying file system.
-		fp := filepath.Join(root, path)
+		fp, err := drivers.ResolveRepoPath(root, path)
+		if err != nil {
+			return nil, err
+		}
 		info, err := os.Stat(fp)
 		if err != nil {
 			// Keep searching if it's a not exist error. Otherwise break and return the error immediately.
@@ -254,7 +263,10 @@ func (r *repo) Put(ctx context.Context, path string, reader io.Reader) error {
 		return fmt.Errorf("can't write to ignored path %q", path)
 	}
 
-	fp := filepath.Join(root, path)
+	fp, err := drivers.ResolveRepoPath(root, path)
+	if err != nil {
+		return err
+	}
 
 	err = os.MkdirAll(filepath.Dir(fp), os.ModePerm)
 	if err != nil {
@@ -292,7 +304,10 @@ func (r *repo) MkdirAll(ctx context.Context, path string) error {
 		return fmt.Errorf("can't write to ignored path %q", path)
 	}
 
-	fp := filepath.Join(root, path)
+	fp, err := drivers.ResolveRepoPath(root, path)
+	if err != nil {
+		return err
+	}
 
 	err = os.MkdirAll(fp, os.ModePerm)
 	if err != nil {
@@ -322,8 +337,14 @@ func (r *repo) Rename(ctx context.Context, fromPath, toPath string) error {
 		return fmt.Errorf("can't write to ignored path %q", toPath)
 	}
 
-	fromPath = filepath.Join(root, fromPath)
-	toPath = filepath.Join(root, toPath)
+	fromPath, err = drivers.ResolveRepoPath(root, fromPath)
+	if err != nil {
+		return err
+	}
+	toPath, err = drivers.ResolveRepoPath(root, toPath)
+	if err != nil {
+		return err
+	}
 
 	if _, err := os.Stat(toPath); !strings.EqualFold(fromPath, toPath) && err == nil {
 		return os.ErrExist
@@ -358,7 +379,10 @@ func (r *repo) Delete(ctx context.Context, path string, force bool) error {
 		return fmt.Errorf("can't write to ignored path %q", path)
 	}
 
-	fp := filepath.Join(root, path)
+	fp, err := drivers.ResolveRepoPath(root, path)
+	if err != nil {
+		return err
+	}
 
 	if force {
 		err = os.RemoveAll(fp)

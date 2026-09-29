@@ -131,7 +131,7 @@ export function generateVLPieChartSpec(
     "right",
   );
 
-  const theta = createPositionEncoding(config.measure, data);
+  const theta = createPositionEncoding(config.measure, data, "theta");
   const color = createColorEncoding(config.color, data);
   // When "Other" is in the data, order arcs by a synthetic key that pins
   // "Other" to the end. Otherwise, fall back to ordering by the measure.

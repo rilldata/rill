@@ -14,7 +14,7 @@ import (
 func TestSimpleMetricsSQLApi(t *testing.T) {
 	rt, instanceID := testruntime.NewInstanceForProject(t, "ad_bids")
 
-	api, err := rt.APIForName(context.Background(), instanceID, "simple_mv_sql_api")
+	api, err := rt.APIForName(context.Background(), instanceID, "simple_mv_sql_api", &runtime.SecurityClaims{})
 	require.NoError(t, err)
 
 	res, _, err := rt.Resolve(context.Background(), &runtime.ResolveOptions{
@@ -41,7 +41,7 @@ func TestTemplateMetricsSQLAPI(t *testing.T) {
 
 	testruntime.RequireParseErrors(t, rt, instanceID, nil)
 
-	api, err := rt.APIForName(context.Background(), instanceID, "templated_mv_sql_api")
+	api, err := rt.APIForName(context.Background(), instanceID, "templated_mv_sql_api", &runtime.SecurityClaims{})
 	require.NoError(t, err)
 
 	res, _, err := rt.Resolve(context.Background(), &runtime.ResolveOptions{
@@ -68,7 +68,7 @@ func TestComplexTemplateMetricsSQLAPI(t *testing.T) {
 
 	testruntime.RequireParseErrors(t, rt, instanceID, nil)
 
-	api, err := rt.APIForName(context.Background(), instanceID, "templated_mv_sql_api_2")
+	api, err := rt.APIForName(context.Background(), instanceID, "templated_mv_sql_api_2", &runtime.SecurityClaims{UserAttributes: map[string]any{"domain": "yahoo.com"}})
 	require.NoError(t, err)
 
 	res, _, err := rt.Resolve(context.Background(), &runtime.ResolveOptions{
@@ -93,7 +93,7 @@ func TestComplexTemplateMetricsSQLAPI(t *testing.T) {
 func TestPolicyMetricsSQLAPI(t *testing.T) {
 	rt, instanceID := testruntime.NewInstanceForProject(t, "ad_bids")
 
-	api, err := rt.APIForName(context.Background(), instanceID, "mv_sql_policy_api")
+	api, err := rt.APIForName(context.Background(), instanceID, "mv_sql_policy_api", &runtime.SecurityClaims{UserAttributes: map[string]any{"domain": "yahoo.com", "email": "user@yahoo.com"}})
 	require.NoError(t, err)
 
 	_, _, err = rt.Resolve(context.Background(), &runtime.ResolveOptions{
@@ -105,7 +105,7 @@ func TestPolicyMetricsSQLAPI(t *testing.T) {
 	})
 	require.Error(t, err)
 
-	api, err = rt.APIForName(context.Background(), instanceID, "mv_sql_policy_api")
+	api, err = rt.APIForName(context.Background(), instanceID, "mv_sql_policy_api", &runtime.SecurityClaims{UserAttributes: map[string]any{"domain": "msn.com", "email": "user@msn.com"}})
 	require.NoError(t, err)
 
 	res, _, err := rt.Resolve(context.Background(), &runtime.ResolveOptions{

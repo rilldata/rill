@@ -79,6 +79,13 @@ var spec = drivers.Spec{
 			Placeholder: "default",
 			Hint:        "Schema within the catalog (optional; defaults to the workspace default)",
 		},
+		{
+			Key:         "use_kernel",
+			Type:        drivers.BooleanPropertyType,
+			DisplayName: "Use SEA (Statement Execution API)",
+			Hint: "Force the SEA backend instead of Thrift. Lakehouse//RT warehouses are " +
+				"auto-detected and switched to SEA automatically, so this is usually unnecessary.",
+		},
 	},
 	ImplementsOLAP:      true,
 	ImplementsWarehouse: true,
@@ -94,6 +101,9 @@ type configProperties struct {
 	Catalog    string `mapstructure:"catalog"`
 	Schema     string `mapstructure:"schema"`
 	LogQueries bool   `mapstructure:"log_queries"`
+	// UseKernel forces the driver's SEA backend. Lakehouse//RT is auto-detected and
+	// switched to SEA even when this is false (see getDB), so it's an override.
+	UseKernel bool `mapstructure:"use_kernel"`
 }
 
 func (c *configProperties) validate() error {
@@ -124,10 +134,17 @@ func (c *configProperties) validate() error {
 
 func (c *configProperties) resolveDSN() string {
 	if c.DSN != "" {
+		if c.UseKernel {
+			return withUseKernel(c.DSN)
+		}
 		return c.DSN
 	}
 	params := url.Values{}
 	params.Set("timezone", "UTC")
+	// Opt in to the SEA backend (required for Lakehouse//RT); default is Thrift.
+	if c.UseKernel {
+		params.Set("useKernel", "true")
+	}
 	if c.Catalog != "" {
 		params.Set("catalog", c.Catalog)
 	}
@@ -143,6 +160,32 @@ func (c *configProperties) resolveDSN() string {
 		RawQuery: params.Encode(),
 	}
 	return u.String()
+}
+
+// withUseKernel forces useKernel=true on a resolved DSN, dropping any existing useKernel param.
+// It rewrites only the query part after the first '?' rather than using url.Parse,
+// because the driver also accepts scheme-less DSNs (token:...@host) which url.Parse misreads.
+func withUseKernel(dsn string) string {
+	base, query, hasQuery := strings.Cut(dsn, "?")
+	if !hasQuery || query == "" {
+		return base + "?useKernel=true"
+	}
+	parts := strings.Split(query, "&")
+	kept := parts[:0]
+	for _, p := range parts {
+		if strings.HasPrefix(p, "useKernel=") {
+			continue
+		}
+		kept = append(kept, p)
+	}
+	kept = append(kept, "useKernel=true")
+	return base + "?" + strings.Join(kept, "&")
+}
+
+// rtRequiresSEA reports whether err is a Lakehouse//RT warehouse rejecting the
+// Thrift protocol (the driver surfaces the server's message verbatim).
+func rtRequiresSEA(err error) bool {
+	return err != nil && strings.Contains(err.Error(), "not supported for Thrift protocol")
 }
 
 func (d driver) Open(_, instanceID string, config map[string]any, st *storage.Client, ac *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
@@ -187,6 +230,7 @@ type connection struct {
 	db    *sqlx.DB // lazily populated using getDB
 	dbErr error
 	dbMu  *semaphore.Weighted
+	dsn   string // set by backendDSN; carries useKernel=true when Lakehouse//RT was detected
 }
 
 // Ping implements drivers.Handle.
@@ -303,9 +347,49 @@ func (c *connection) getDB(ctx context.Context) (*sqlx.DB, error) {
 		return c.db, c.dbErr
 	}
 
-	c.db, c.dbErr = sqlx.Open("databricks", c.config.resolveDSN())
-	if c.dbErr != nil {
-		return nil, c.dbErr
+	dsn, err := c.backendDSN(ctx)
+	if err != nil {
+		return nil, err
 	}
+	c.db, c.dbErr = sqlx.Open("databricks", dsn)
 	return c.db, c.dbErr
+}
+
+// backendDSN returns the DSN to connect with, auto-detecting Lakehouse//RT on first call:
+// unless SEA was requested explicitly (use_kernel), it pings over Thrift and switches to SEA if the warehouse rejects it.
+// The probe pool is closed right away so callers that only need the DSN (QueryAsFiles) leave no connection open.
+// Other ping errors are cached in dbErr so callers queued behind dbMu do not each re-probe;
+// a cancelled or timed-out probe is not cached since the caller's ctx, not the warehouse, failed.
+// Caller must hold dbMu.
+func (c *connection) backendDSN(ctx context.Context) (string, error) {
+	if c.dbErr != nil {
+		return "", c.dbErr
+	}
+	if c.dsn != "" {
+		return c.dsn, nil
+	}
+
+	dsn := c.config.resolveDSN()
+	if !c.config.UseKernel {
+		probe, err := sqlx.Open("databricks", dsn)
+		if err != nil {
+			c.dbErr = err
+			return "", err
+		}
+		defer probe.Close()
+		err = probe.PingContext(ctx)
+		switch {
+		case rtRequiresSEA(err):
+			c.logger.Info("databricks: warehouse rejected Thrift (Lakehouse//RT); switching to the SEA backend")
+			dsn = withUseKernel(dsn)
+		case err != nil:
+			if ctx.Err() == nil {
+				c.dbErr = err
+			}
+			return "", err
+		}
+	}
+
+	c.dsn = dsn
+	return dsn, nil
 }

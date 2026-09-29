@@ -1,4 +1,5 @@
 import { COMPARISON_COLORS } from "@rilldata/web-common/features/dashboards/config";
+import { ComparisonMarkOpacity } from "@rilldata/web-common/features/components/charts/comparison-builder";
 import {
   isAdaptiveChartType,
   TDDChart,
@@ -25,13 +26,30 @@ export function buildChartSeries(
   showComparison: boolean,
 ): ChartSeries[] {
   if (dimData.length > 0) {
-    return dimData.map((dim, i) => ({
+    const currentSeries: ChartSeries[] = dimData.map((dim, i) => ({
       id: `dim-${dim.dimensionValue ?? i}`,
       values: dim.data.map((pt) => pt.value),
       color: dim.color || COMPARISON_COLORS[i % COMPARISON_COLORS.length],
       opacity: dim.isFetching ? 0.5 : 1,
       strokeWidth: 1.5,
     }));
+
+    if (!showComparison) return currentSeries;
+
+    // Previous-period lines: same hue as the current-period series,
+    // faded to the same opacity as comparison marks in the Vega charts.
+    const comparisonSeries: ChartSeries[] = dimData.map((dim, i) => ({
+      id: `dim-${dim.dimensionValue ?? i}-comparison`,
+      values: dim.data.map((pt) => pt.comparisonValue ?? null),
+      color: dim.color || COMPARISON_COLORS[i % COMPARISON_COLORS.length],
+      opacity: dim.isFetching ? 0.2 : ComparisonMarkOpacity,
+      strokeWidth: 1.5,
+    }));
+
+    // TimeSeriesChart paints series[0] last (on top) and the rest in array
+    // order, so this keeps every faded previous-period line beneath every
+    // current-period line.
+    return [currentSeries[0], ...comparisonSeries, ...currentSeries.slice(1)];
   }
 
   const result: ChartSeries[] = [];

@@ -71,7 +71,7 @@
           type="secondary"
           disabled={!hasChanges || isCommitting}
         >
-          Commit
+          {m.edit_commit()}
         </Button>
       {/snippet}
     </Popover.Trigger>
@@ -92,7 +92,7 @@
           loadingCopy={m.edit_pushing()}
           onClick={handleCommit}
         >
-          Commit & push
+          {m.edit_commit_and_push()}
         </Button>
       </div>
     </Popover.Content>
@@ -100,9 +100,9 @@
   <TooltipContent slot="tooltip-content">
     <span class="text-xs">
       {#if hasChanges}
-        Commit and push changes to this branch
+        {m.edit_commit_tooltip()}
       {:else}
-        No uncommitted changes detected
+        {m.edit_no_uncommitted_changes()}
       {/if}
     </span>
   </TooltipContent>

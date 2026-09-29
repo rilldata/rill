@@ -47,6 +47,8 @@ type Dialect interface {
 	GetCastExprForLike() string
 	SupportsRegexMatch() bool
 	GetRegexMatchFunction() (string, error)
+	// GetRegexMatchCastExpr returns expr cast to the string type accepted by the dialect's regex match function.
+	GetRegexMatchCastExpr(expr string) (string, error)
 	RequiresArrayContainsForInOperator() bool
 	GetArrayContainsFunction() (string, error)
 	DimensionSelect(escapeTable string, dim *runtimev1.MetricsViewSpec_Dimension) (dimSelect, unnestClause string, err error)
@@ -159,6 +161,10 @@ func (b *BaseDialect) SupportsRegexMatch() bool {
 }
 
 func (b *BaseDialect) GetRegexMatchFunction() (string, error) {
+	return "", fmt.Errorf("regex match not supported for %s dialect", b.String())
+}
+
+func (b *BaseDialect) GetRegexMatchCastExpr(expr string) (string, error) {
 	return "", fmt.Errorf("regex match not supported for %s dialect", b.String())
 }
 
@@ -275,8 +281,9 @@ func (b *BaseDialect) CastToDataType(typ runtimev1.Type_Code) (string, error) {
 	}
 }
 
+// SafeDivideExpression returns a division that yields NULL instead of an error, infinity or NaN when the denominator is zero.
 func (b *BaseDialect) SafeDivideExpression(numExpr, denExpr string) string {
-	return fmt.Sprintf("(%s)/CAST(%s AS DOUBLE)", numExpr, denExpr)
+	return fmt.Sprintf("(%s)/NULLIF(CAST(%s AS DOUBLE), 0)", numExpr, denExpr)
 }
 
 func (b *BaseDialect) OrderByExpression(name string, desc bool) string {

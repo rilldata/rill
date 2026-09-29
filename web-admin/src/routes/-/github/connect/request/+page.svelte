@@ -26,7 +26,7 @@
     </CtaMessage>
     <CtaMessage>
       {m.github_cli_polling()}
-      <KeyboardKey label="Control" /> +
+      <KeyboardKey label={m.github_control_key()} /> +
       <KeyboardKey label="C" />
       {m.github_and_run()}
       <CodeBlockInline code="rill deploy" />

@@ -16,7 +16,10 @@
   import { ArrowUp, ArrowDown, ArrowLeft, ArrowRight } from "lucide-svelte";
   import * as Kbd from "@rilldata/web-common/components/kbd";
   import { ContextPickerUIState } from "@rilldata/web-common/features/chat/core/context/picker/ui-state.ts";
-  import { getFilteredPickerItems } from "@rilldata/web-common/features/chat/core/context/picker/filters.ts";
+  import {
+    getFilteredPickerItems,
+    type PickerOptionsGetter,
+  } from "@rilldata/web-common/features/chat/core/context/picker/filters.ts";
   import { buildPickerTree } from "@rilldata/web-common/features/chat/core/context/picker/picker-tree.ts";
   import { KeyboardNavigationManager } from "@rilldata/web-common/features/chat/core/context/picker/keyboard-navigation.ts";
   import ExpandableOption from "@rilldata/web-common/features/chat/core/context/picker/ExpandableOption.svelte";
@@ -28,6 +31,10 @@
   export let refNode: HTMLElement;
   export let onSelect: (ctx: InlineContext) => void;
   export let focusEditor: () => void;
+  // Defaults to metrics views, canvases and models.
+  export let getOptions: PickerOptionsGetter | undefined = undefined;
+  // Like a select's `multiple`: several options are picked, so each one shows whether it is selected.
+  export let multiple = true;
 
   $: selectedItemId = selectedChatContext
     ? getIdForContext(selectedChatContext)
@@ -44,8 +51,11 @@
     runtimeClient,
     uiState,
     searchTextStore,
+    getOptions,
   );
   $: pickerTree = buildPickerTree($filteredOptions);
+  // Nothing to open or close when no option has children.
+  $: expandable = pickerTree.rootNodes.some((node) => node.item.hasChildren);
 
   const keyboardNavigationManager = new KeyboardNavigationManager(uiState);
   $: keyboardNavigationManager.setPickerItems(
@@ -129,6 +139,7 @@
           {selectedChatContext}
           {keyboardNavigationManager}
           {onSelect}
+          {multiple}
         />
       {/if}
     {:else}
@@ -140,9 +151,11 @@
       <Kbd.Root><ArrowUp size="12px" /></Kbd.Root>
       <Kbd.Root><ArrowDown size="12px" /></Kbd.Root>
       <span>Navigate,</span>
-      <Kbd.Root><ArrowLeft size="12px" /></Kbd.Root>
-      <Kbd.Root><ArrowRight size="12px" /></Kbd.Root>
-      <span>Open/Close,</span>
+      {#if expandable}
+        <Kbd.Root><ArrowLeft size="12px" /></Kbd.Root>
+        <Kbd.Root><ArrowRight size="12px" /></Kbd.Root>
+        <span>Open/Close,</span>
+      {/if}
       <Kbd.Root><span>Enter</span></Kbd.Root>
       <span>Select</span>
     </Kbd.Group>

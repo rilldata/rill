@@ -29,32 +29,33 @@
 
   $: isLoading = $triggerMutation.isPending;
 
+  $: isModel = resourceKind === ResourceKind.Model;
   $: supportsIncremental =
-    resourceKind === ResourceKind.Model &&
-    resource?.model?.spec?.incremental === true;
+    isModel && resource?.model?.spec?.incremental === true;
 
-  async function handleRefresh(refreshType: "full" | "incremental") {
+  async function handleRefresh(
+    refreshType: "refresh" | "full" | "incremental",
+  ) {
     if (isLoading) return;
 
     try {
-      const body =
-        resourceKind === ResourceKind.Model
-          ? {
-              models: [
-                {
-                  model: resourceName,
-                  full: refreshType === "full",
-                },
-              ],
-            }
-          : {
-              resources: [
-                {
-                  kind: resourceKind,
-                  name: resourceName,
-                },
-              ],
-            };
+      const body = isModel
+        ? {
+            models: [
+              {
+                model: resourceName,
+                full: refreshType === "full",
+              },
+            ],
+          }
+        : {
+            resources: [
+              {
+                kind: resourceKind,
+                name: resourceName,
+              },
+            ],
+          };
 
       await $triggerMutation.mutateAsync(body);
 
@@ -89,7 +90,7 @@
         class="font-normal flex items-center"
         disabled={isLoading}
         onclick={() => {
-          handleRefresh("full");
+          handleRefresh(isModel ? "full" : "refresh");
         }}
       >
         <div class="flex items-center">
@@ -97,7 +98,9 @@
           <span class="ml-2"
             >{isLoading
               ? m.status_refreshing()
-              : m.status_action_full_refresh()}</span
+              : isModel
+                ? m.status_action_full_refresh()
+                : m.status_action_refresh()}</span
           >
         </div>
       </DropdownMenu.Item>

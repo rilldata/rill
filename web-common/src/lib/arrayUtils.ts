@@ -1,12 +1,3 @@
-export function removeIfExists<T>(array: Array<T>, checker: (e: T) => boolean) {
-  const index = array.findIndex(checker);
-  if (index >= 0) {
-    array.splice(index, 1);
-    return true;
-  }
-  return false;
-}
-
 export function getMapFromArray<T, K, V = T>(
   array: T[],
   keyGetter: (entity: T) => K,
@@ -27,11 +18,15 @@ export function createBatches<T>(array: T[], batchSize: number): T[][] {
   return batches;
 }
 
-export function arrayUnorderedEquals<T>(src: T[], tar: T[]) {
+export function arrayUnorderedEquals<T>(src: Iterable<T>, tar: Iterable<T>) {
   const srcSet = new Set<T>(src);
   const tarSet = new Set<T>(tar);
   if (srcSet.size !== tarSet.size) return false;
-  return tar.every((t) => srcSet.has(t));
+
+  for (const t of tarSet) {
+    if (!srcSet.has(t)) return false;
+  }
+  return true;
 }
 
 export function arrayOrderedEquals<T>(src: T[], tar: T[]) {
@@ -49,7 +44,10 @@ export function getMissingValues<T>(src: T[], tar: T[]) {
   return tar.filter((v) => !src.includes(v));
 }
 
-export function dedupe<T, K>(array: T[], keyGetter: (entry: T) => K) {
+export function dedupe<T, K>(
+  array: T[],
+  keyGetter: (entry: T) => K = (e) => e as unknown as K,
+) {
   const seen = new Set<K>();
   return array.filter((entry) => {
     const key = keyGetter(entry);

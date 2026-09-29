@@ -48,7 +48,9 @@ export const MeasureFilterBaseTypeOptions = [
       return m.filter_measure_type_value();
     },
     shortLabel: "",
-    description: "value",
+    get description() {
+      return m.filter_measure_type_value();
+    },
   },
 ];
 export const MeasureFilterComparisonTypeOptions = [
@@ -57,16 +59,24 @@ export const MeasureFilterComparisonTypeOptions = [
     get label() {
       return m.filter_measure_type_percent_change_from();
     },
-    shortLabel: "% change",
-    description: "% change",
+    get shortLabel() {
+      return m.filter_measure_type_percent_change();
+    },
+    get description() {
+      return m.filter_measure_type_percent_change();
+    },
   },
   {
     value: MeasureFilterType.AbsoluteChange,
     get label() {
       return m.filter_measure_type_change_from();
     },
-    shortLabel: "change",
-    description: "change",
+    get shortLabel() {
+      return m.filter_measure_type_change();
+    },
+    get description() {
+      return m.filter_measure_type_change();
+    },
   },
 ];
 export const MeasureFilterPercentOfTotalOption = {
@@ -74,8 +84,12 @@ export const MeasureFilterPercentOfTotalOption = {
   get label() {
     return m.filter_measure_type_percent_of_total();
   },
-  shortLabel: "% of total",
-  description: "% of total",
+  get shortLabel() {
+    return m.filter_measure_type_percent_of_total();
+  },
+  get description() {
+    return m.filter_measure_type_percent_of_total();
+  },
 };
 export const AllMeasureFilterTypeOptions = [
   ...MeasureFilterBaseTypeOptions,

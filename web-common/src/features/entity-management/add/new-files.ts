@@ -142,6 +142,26 @@ export const ResourceKindMap: Record<
   },
 };
 
+// Skills are directories containing a SKILL.md file (following the Agent Skills format, https://agentskills.io),
+// so they are created outside the ResourceKind machinery above.
+export const skillFileTemplate = (name: string) => `---
+name: ${name}
+# The AI uses the required description to decide when to load this skill, so phrase it as "what it does + when to use it".
+description: Describe what this skill does and when to use it.
+# agents: [analyst]                 # Optional: analyst (questions about your data) and/or developer (editing project files); defaults to [developer]
+# metrics_views: [my_metrics_view]  # Optional: the metrics views this skill is relevant to
+# always_apply: true                # Optional: load the skill up front in every conversation instead of on demand
+---
+
+# My skill
+
+Write instructions for Rill's AI here, for example an analysis playbook or a business glossary.
+
+1. When asked about ..., always start by ...
+2. Break down changes by ...
+3. Account for known seasonality: ...
+`;
+
 export function getBaseNameForNewResourceFile(
   newKind: ResourceKind,
   baseResource?: V1Resource,
@@ -178,10 +198,13 @@ version: 1
 type: metrics_view
 
 model: # Choose a model to underpin your metrics view
-timeseries: # Choose a timestamp column (if any) from your model 
+timeseries: # Choose a timestamp column (if any) from your model
 
 dimensions:
 measures:
+
+explore:
+  display_name: # Optional: display name for this metrics view's explore dashboard
 `;
     case ResourceKind.Explore:
       if (baseResource) {

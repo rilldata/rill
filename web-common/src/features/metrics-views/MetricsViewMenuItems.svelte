@@ -22,7 +22,10 @@
     createCanvasDashboardFromMetricsView,
     createCanvasDashboardFromMetricsViewWithAgent,
   } from "./ai-generation/generateMetricsView";
-  import { createAndPreviewExplore } from "./create-and-preview-explore";
+  import {
+    enableInlineExploreAndPreview,
+    parseInlineExploreState,
+  } from "./inline-explore";
 
   const runtimeClient = useRuntimeClient();
   const { ai, developerChat } = featureFlags;
@@ -31,9 +34,15 @@
 
   $: fileArtifact = fileArtifacts.getFileArtifact(filePath);
 
-  $: ({ instanceId } = runtimeClient);
   $: resourceQuery = fileArtifact.getResource(queryClient);
   $: resource = $resourceQuery.data;
+
+  $: ({ editorContent, remoteContent } = fileArtifact);
+  // Legacy (unversioned) metrics views auto-emit an explore, so there is nothing
+  // to create; the explore item is only shown for latest-version metrics views.
+  $: ({ isLatestVersion, exploreEnabled } = parseInlineExploreState(
+    $editorContent ?? $remoteContent,
+  ));
 
   /**
    * Get the name of the dashboard's underlying model (if any).
@@ -119,24 +128,12 @@
       </div>
     </NavigationMenuItem>
   {/if}
-  {#if resource}
+  {#if resource && isLatestVersion}
     <NavigationMenuItem
-      onclick={() =>
-        createAndPreviewExplore(
-          runtimeClient,
-          queryClient,
-          instanceId,
-          resource,
-        )}
+      onclick={() => enableInlineExploreAndPreview(queryClient, filePath)}
     >
       <ExploreIcon slot="icon" />
-      <div class="flex gap-x-2 items-center">
-        Generate Explore Dashboard
-        {#if $ai}
-          with AI
-          <WandIcon class="w-3 h-3" />
-        {/if}
-      </div>
+      {exploreEnabled ? "Edit Explore Dashboard" : "Create Explore Dashboard"}
     </NavigationMenuItem>
   {/if}
 {:else}

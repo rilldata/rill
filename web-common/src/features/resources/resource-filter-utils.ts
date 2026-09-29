@@ -27,6 +27,19 @@ export const filterableTypes = [
   ResourceKind.Connector,
 ];
 
+// Resource kinds that support a manual refresh trigger from the resource listing.
+// Excludes Alert and Report: triggering those executes them and dispatches notifications to recipients.
+export const refreshableTypes = [
+  ResourceKind.Source,
+  ResourceKind.Model,
+  ResourceKind.MetricsView,
+  ResourceKind.Explore,
+  ResourceKind.Canvas,
+  ResourceKind.Theme,
+  ResourceKind.API,
+  ResourceKind.Connector,
+];
+
 export function getResourceStatus(r: V1Resource): ResourceStatus {
   if (r.meta?.reconcileError) return "error";
   const status = r.meta?.reconcileStatus;

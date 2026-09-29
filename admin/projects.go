@@ -195,8 +195,7 @@ func (s *Service) UpdateProject(ctx context.Context, oldProj *database.Project, 
 		return nil, err
 	}
 
-	impactsDeployments := (oldProj.ProdVersion != opts.ProdVersion) ||
-		(oldProj.ProdSlots != opts.ProdSlots) ||
+	impactsAllDeployments := (oldProj.ProdVersion != opts.ProdVersion) ||
 		(oldProj.Name != opts.Name) ||
 		(oldProj.Subpath != opts.Subpath) ||
 		(oldProj.PrimaryBranch != opts.PrimaryBranch) ||
@@ -206,7 +205,9 @@ func (s *Service) UpdateProject(ctx context.Context, oldProj *database.Project, 
 		!reflect.DeepEqual(oldProj.ArchiveAssetID, opts.ArchiveAssetID) ||
 		!reflect.DeepEqual(oldProj.OverrideDiskGB, opts.OverrideDiskGB)
 
-	if !impactsDeployments {
+	prodSlotsChanged := oldProj.ProdSlots != opts.ProdSlots
+	devSlotsChanged := oldProj.DevSlots != opts.DevSlots
+	if !impactsAllDeployments && !prodSlotsChanged && !devSlotsChanged {
 		return proj, nil
 	}
 
@@ -246,9 +247,17 @@ func (s *Service) UpdateProject(ctx context.Context, oldProj *database.Project, 
 		}
 	}
 
-	// TODO: changing prod related fields like slots, branch etc should only impact prod deployments, but for now we update all deployments
-	// NOTE: there is no way to change dev-slots right now
-	err = s.UpdateDeploymentsForProject(ctx, proj)
+	// Slot-only changes should only reconcile deployments in the affected environment.
+	// An empty environment updates all deployments for shared changes or changes to both slot counts.
+	environment := ""
+	if !impactsAllDeployments {
+		if prodSlotsChanged && !devSlotsChanged {
+			environment = "prod"
+		} else if devSlotsChanged && !prodSlotsChanged {
+			environment = "dev"
+		}
+	}
+	err = s.UpdateDeploymentsForProject(ctx, proj, environment)
 	if err != nil {
 		return nil, err
 	}
@@ -294,7 +303,7 @@ func (s *Service) UpdateProjectVariables(ctx context.Context, project *database.
 	// Update deployments
 	s.Logger.Info("update project variables: updating deployments", observability.ZapCtx(ctx))
 
-	err = s.UpdateDeploymentsForProject(ctx, project)
+	err = s.UpdateDeploymentsForProject(ctx, project, "")
 	if err != nil {
 		return err
 	}
@@ -315,7 +324,7 @@ func (s *Service) UpdateOrgDeploymentAnnotations(ctx context.Context, org *datab
 		}
 
 		for _, proj := range projs {
-			err := s.UpdateDeploymentsForProject(ctx, proj)
+			err := s.UpdateDeploymentsForProject(ctx, proj, "")
 			if err != nil {
 				return err
 			}
@@ -399,6 +408,20 @@ func (s *Service) RedeployProject(ctx context.Context, proj *database.Project, p
 		err := s.TeardownDeployment(ctx, prevDepl)
 		if err != nil {
 			s.Logger.Error("trigger redeploy: could not teardown old deployment", zap.String("deployment_id", prevDepl.ID), zap.Error(err), observability.ZapCtx(ctx))
+		}
+	}
+	// also delete stopped deployments, if any
+	stoppedDepls, err := s.DB.FindDeploymentsForProject(ctx, proj.ID, environment, branch)
+	if err != nil {
+		s.Logger.Error("trigger redeploy: could not find stopped deployments", zap.String("project_id", proj.ID), zap.Error(err), observability.ZapCtx(ctx))
+		return proj, nil
+	}
+	for _, d := range stoppedDepls {
+		if d.Status == database.DeploymentStatusStopped {
+			err := s.TeardownDeployment(ctx, d)
+			if err != nil {
+				s.Logger.Error("trigger redeploy: could not teardown old stopped deployment", zap.String("deployment_id", d.ID), zap.Error(err), observability.ZapCtx(ctx))
+			}
 		}
 	}
 

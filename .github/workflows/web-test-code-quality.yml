@@ -4,6 +4,7 @@ on:
     paths:
       - ".github/workflows/web-test.yml"
       - ".github/workflows/web-test-code-quality.yml"
+      - "scripts/i18n-guard.js"
       - "scripts/web-test-code-quality.sh"
       - "web-admin/**"
       - "web-common/**"

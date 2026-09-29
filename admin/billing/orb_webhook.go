@@ -175,7 +175,6 @@ func (o *orbWebhook) handleInvoicePaymentFailed(ctx context.Context, ie invoiceE
 		ie.OrbInvoice.AmountDue,
 		ie.OrbInvoice.Currency,
 		ie.OrbInvoice.DueDate,
-		ie.OrbInvoice.PaymentFailedAt,
 	)
 	if err != nil {
 		o.orb.logger.Error("failed to insert invoice payment failed job", zap.String("billing_customer_id", ie.OrbInvoice.Customer.ExternalCustomerID), zap.Error(err), observability.ZapCtx(ctx))

@@ -124,7 +124,7 @@
   {#if expanded}
     {#if error && (!typedData || typedData.length === 0)}
       <div class="message {database ? 'pl-[78px]' : 'pl-[60px]'}">
-        Error: {error.message}
+        {m.connector_explorer_error({ error: error.message })}
       </div>
     {:else if isLoading && (!typedData || typedData.length === 0)}
       <div class="message {database ? 'pl-[78px]' : 'pl-[60px]'}">
@@ -136,11 +136,11 @@
       </div>
     {:else if !connector.driver || !connector.driver.name}
       <div class="message {database ? 'pl-[78px]' : 'pl-[60px]'}">
-        Connector not found
+        {m.connector_explorer_connector_not_found()}
       </div>
     {:else if !typedData || typedData.length === 0}
       <div class="message {database ? 'pl-[78px]' : 'pl-[60px]'}">
-        No tables found
+        {m.status_no_tables()}
       </div>
     {:else if typedData.length > 0}
       <ol>
@@ -165,9 +165,11 @@
           bind:this={loadMoreContainer}
         >
           {#if error}
-            <span class="error">Failed to load more tables.</span>
+            <span class="error">
+              {m.connector_explorer_load_more_tables_error()}
+            </span>
             <Button type="tertiary" small onClick={() => fetchNextPage()}>
-              Retry
+              {m.common_retry()}
             </Button>
           {:else}
             <Button

@@ -26,7 +26,6 @@ describe("buildWhereParamForDimensionTableAndTDDExports", () => {
 
     const result = buildWhereParamForDimensionTableAndTDDExports(
       params.whereFilter,
-      params.measureFilters,
       params.dimensionName,
       params.searchText,
     );
@@ -42,7 +41,6 @@ describe("buildWhereParamForDimensionTableAndTDDExports", () => {
 
     const result = buildWhereParamForDimensionTableAndTDDExports(
       params.whereFilter,
-      params.measureFilters,
       params.dimensionName,
       params.searchText,
     );
@@ -59,7 +57,6 @@ describe("buildWhereParamForDimensionTableAndTDDExports", () => {
 
     const result = buildWhereParamForDimensionTableAndTDDExports(
       params.whereFilter,
-      params.measureFilters,
       params.dimensionName,
       params.searchText,
     );

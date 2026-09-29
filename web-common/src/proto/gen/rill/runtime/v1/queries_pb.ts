@@ -1375,6 +1375,12 @@ export class MetricsViewAggregationMeasure extends Message<MetricsViewAggregatio
      */
     value: MetricsViewAggregationMeasureComputeComparisonTime;
     case: "comparisonTime";
+  } | {
+    /**
+     * @generated from field: rill.runtime.v1.MetricsViewAggregationMeasureComputeExpression expression = 13;
+     */
+    value: MetricsViewAggregationMeasureComputeExpression;
+    case: "expression";
   } | { case: undefined; value?: undefined } = { case: undefined };
 
   constructor(data?: PartialMessage<MetricsViewAggregationMeasure>) {
@@ -1397,6 +1403,7 @@ export class MetricsViewAggregationMeasure extends Message<MetricsViewAggregatio
     { no: 10, name: "percent_of_total", kind: "message", T: MetricsViewAggregationMeasureComputePercentOfTotal, oneof: "compute" },
     { no: 11, name: "uri", kind: "message", T: MetricsViewAggregationMeasureComputeURI, oneof: "compute" },
     { no: 12, name: "comparison_time", kind: "message", T: MetricsViewAggregationMeasureComputeComparisonTime, oneof: "compute" },
+    { no: 13, name: "expression", kind: "message", T: MetricsViewAggregationMeasureComputeExpression, oneof: "compute" },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewAggregationMeasure {
@@ -1703,6 +1710,58 @@ export class MetricsViewAggregationMeasureComputeComparisonTime extends Message<
 
   static equals(a: MetricsViewAggregationMeasureComputeComparisonTime | PlainMessage<MetricsViewAggregationMeasureComputeComparisonTime> | undefined, b: MetricsViewAggregationMeasureComputeComparisonTime | PlainMessage<MetricsViewAggregationMeasureComputeComparisonTime> | undefined): boolean {
     return proto3.util.equals(MetricsViewAggregationMeasureComputeComparisonTime, a, b);
+  }
+}
+
+/**
+ * Computes an ephemeral measure derived from other measures in the metrics view.
+ * The expression may only contain measure references, numeric literals, NULL,
+ * the arithmetic operators + - * / %, parentheses, and a small allowlist of scalar functions.
+ * Referenced measures are subject to the metrics view's security policies.
+ *
+ * @generated from message rill.runtime.v1.MetricsViewAggregationMeasureComputeExpression
+ */
+export class MetricsViewAggregationMeasureComputeExpression extends Message<MetricsViewAggregationMeasureComputeExpression> {
+  /**
+   * Arithmetic expression over existing measure names, e.g. "revenue - cost".
+   *
+   * @generated from field: string expression = 1;
+   */
+  expression = "";
+
+  /**
+   * Optional display name used in exports and result metadata.
+   *
+   * @generated from field: string display_name = 2;
+   */
+  displayName = "";
+
+  constructor(data?: PartialMessage<MetricsViewAggregationMeasureComputeExpression>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.MetricsViewAggregationMeasureComputeExpression";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "expression", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "display_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewAggregationMeasureComputeExpression {
+    return new MetricsViewAggregationMeasureComputeExpression().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): MetricsViewAggregationMeasureComputeExpression {
+    return new MetricsViewAggregationMeasureComputeExpression().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): MetricsViewAggregationMeasureComputeExpression {
+    return new MetricsViewAggregationMeasureComputeExpression().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: MetricsViewAggregationMeasureComputeExpression | PlainMessage<MetricsViewAggregationMeasureComputeExpression> | undefined, b: MetricsViewAggregationMeasureComputeExpression | PlainMessage<MetricsViewAggregationMeasureComputeExpression> | undefined): boolean {
+    return proto3.util.equals(MetricsViewAggregationMeasureComputeExpression, a, b);
   }
 }
 
@@ -2513,9 +2572,20 @@ export class MetricsViewTimeSeriesRequest extends Message<MetricsViewTimeSeriesR
   metricsViewName = "";
 
   /**
+   * Names of measures in the metrics view to include.
+   * At least one of measure_names or ephemeral_measures must be provided.
+   *
    * @generated from field: repeated string measure_names = 3;
    */
   measureNames: string[] = [];
+
+  /**
+   * Optional ephemeral measures, i.e. measures defined by the query rather than the metrics view.
+   * Only the `expression` compute is supported for time series.
+   *
+   * @generated from field: repeated rill.runtime.v1.MetricsViewAggregationMeasure ephemeral_measures = 17;
+   */
+  ephemeralMeasures: MetricsViewAggregationMeasure[] = [];
 
   /**
    * Optional. Defaults to min
@@ -2610,6 +2680,7 @@ export class MetricsViewTimeSeriesRequest extends Message<MetricsViewTimeSeriesR
     { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "metrics_view_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "measure_names", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 17, name: "ephemeral_measures", kind: "message", T: MetricsViewAggregationMeasure, repeated: true },
     { no: 4, name: "time_start", kind: "message", T: Timestamp },
     { no: 5, name: "time_end", kind: "message", T: Timestamp },
     { no: 6, name: "time_granularity", kind: "enum", T: proto3.getEnumType(TimeGrain) },

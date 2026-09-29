@@ -13,8 +13,12 @@
   // in the future.
   export let runExport: (opts: PdfExportRunOptions) => Promise<void>;
   export let onComplete: () => void = () => {};
+  // Shown only when the dashboard has tab groups: whether to export every tab
+  // or only each group's active tab.
+  export let showTabOptions = false;
 
   let includeFilters = true;
+  let allTabs = true;
 
   let exporting = false;
   let progressLabel = m.export_pdf_button();
@@ -34,6 +38,7 @@
     try {
       await runExport({
         includeFilters,
+        allTabs,
         onProgress: ({ phase }) => {
           progressLabel = PROGRESS_COPY[phase];
         },
@@ -65,6 +70,14 @@
     bind:checked={includeFilters}
     label={m.export_pdf_include_filters()}
   />
+
+  {#if showTabOptions}
+    <Checkbox
+      id="pdf-all-tabs"
+      bind:checked={allTabs}
+      label={m.export_pdf_tabs_all()}
+    />
+  {/if}
 
   <Button
     type="primary"

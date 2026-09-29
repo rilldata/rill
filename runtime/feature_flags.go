@@ -3,6 +3,7 @@ package runtime
 import (
 	"context"
 	"fmt"
+	"strconv"
 	"strings"
 
 	"github.com/iancoleman/strcase"
@@ -10,6 +11,10 @@ import (
 	"github.com/rilldata/rill/runtime/parser"
 	"golang.org/x/exp/maps"
 )
+
+// CloudEditingDisabledAnnotation is an admin-managed project annotation that
+// disables the cloud editing UI regardless of the cloud_editing feature flag.
+const CloudEditingDisabledAnnotation = "cloud_editing_disabled"
 
 // FeatureFlags finds and resolves the feature flags for the given instance ID and claims.
 // It's designed for use in the backend. Use runtime.ResolveFeatureFlags for resolving flags that will be exposed to the UI.
@@ -114,6 +119,17 @@ func ResolveFeatureFlags(inst *drivers.Instance, userAttributes map[string]any, 
 			k = strcase.ToLowerCamel(k)
 		}
 		featureFlags[k] = bv
+	}
+
+	// Admin-managed disables take precedence over project-configured feature
+	// flags. This is intentionally a UI-only control; backend permissions for
+	// editable deployments are enforced independently.
+	cloudEditingKey := "cloud_editing"
+	if camelCase {
+		cloudEditingKey = "cloudEditing"
+	}
+	if disabled, _ := strconv.ParseBool(inst.Annotations[CloudEditingDisabledAnnotation]); disabled {
+		featureFlags[cloudEditingKey] = false
 	}
 
 	// Apply feature flag dependencies:

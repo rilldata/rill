@@ -702,6 +702,10 @@ func (s *Server) GetIFrame(ctx context.Context, req *adminv1.GetIFrameRequest) (
 		iframeQuery["navigation"] = "true"
 	}
 
+	if req.HideNavigationBar {
+		iframeQuery["hide_navigation_bar"] = "true"
+	}
+
 	if req.State != "" {
 		iframeQuery["state"] = req.State
 	}

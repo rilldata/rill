@@ -1,11 +1,90 @@
 import {
+  getAdminServiceListOrganizationInvitesInfiniteQueryKey,
   getAdminServiceListOrganizationInvitesQueryKey,
+  getAdminServiceListOrganizationMemberUsergroupsInfiniteQueryKey,
+  getAdminServiceListOrganizationMemberUsergroupsQueryKey,
+  getAdminServiceListOrganizationMemberUsersInfiniteQueryKey,
   getAdminServiceListOrganizationMemberUsersQueryKey,
   getAdminServiceListUsergroupMemberUsersQueryKey,
+  getAdminServiceListUsergroupsForOrganizationAndUserQueryKey,
+  type V1OrganizationInvite,
+  type V1OrganizationMemberUser,
   type V1OrganizationPermissions,
 } from "@rilldata/web-admin/client";
 import { OrgUserRoles } from "@rilldata/web-common/features/users/roles.ts";
 import type { QueryClient } from "@tanstack/query-core";
+
+// A single row of the custom attributes editor, as bound to KeyValueInput.
+export type AttributeRow = { key: string; value: string };
+
+// A row of the org users table: a member, or a pending invite coerced into the same shape.
+export interface OrgUserRow
+  extends V1OrganizationMemberUser,
+    V1OrganizationInvite {
+  invitedBy?: string;
+  // Set by coerceInvitesToUsers; members never carry it.
+  pendingAcceptance?: boolean;
+}
+
+// Coerces org invites into rows of the org users table, tagging them as pending.
+// The tag is explicit rather than derived from invitedBy, which is empty for an invite
+// sent by a service token or by a since-deleted user.
+export function coerceInvitesToUsers(
+  invites: V1OrganizationInvite[],
+): OrgUserRow[] {
+  return invites.map((invite) => ({
+    ...invite,
+    userEmail: invite.email,
+    roleName: invite.roleName,
+    pendingAcceptance: true,
+  }));
+}
+
+// A member of a user group as shown in the group dialogs.
+// Pending members come from an org invite and only have an email.
+export type GroupMemberRow = {
+  userEmail: string;
+  userName?: string;
+  userPhotoUrl?: string;
+  roleName?: string;
+  pendingAcceptance?: boolean;
+};
+
+// Filters org invites by email prefix (case-insensitive) into group member rows flagged as pending.
+// Returns nothing when there is no search text, matching the member search which is only enabled while typing.
+export function pendingInviteesMatching(
+  invites: V1OrganizationInvite[] | undefined,
+  searchText: string,
+): GroupMemberRow[] {
+  const prefix = searchText.trim().toLowerCase();
+  if (!prefix || !invites) return [];
+  return invites
+    .filter((invite) => (invite.email ?? "").toLowerCase().startsWith(prefix))
+    .map((invite) => ({
+      userEmail: invite.email ?? "",
+      pendingAcceptance: true,
+    }));
+}
+
+// Turns a list of selected group names into the request field: undefined when empty, so the field is omitted.
+export function buildInviteUsergroups(
+  groups: string[] | undefined,
+): string[] | undefined {
+  return groups && groups.length > 0 ? groups : undefined;
+}
+
+// Builds the attributes object for an invite from key/value form rows, skipping rows with an empty key.
+// Returns undefined when no attributes are set, so the request field is omitted entirely.
+export function buildInviteAttributes(
+  rows: AttributeRow[] | undefined,
+): Record<string, string> | undefined {
+  const attrs: Record<string, string> = {};
+  for (const { key, value } of rows ?? []) {
+    const trimmedKey = key.trim();
+    if (trimmedKey) attrs[trimmedKey] = value;
+  }
+  return Object.keys(attrs).length > 0 ? attrs : undefined;
+}
 
 export function canManageOrgUser(
   organizationPermissions: V1OrganizationPermissions,
@@ -17,17 +96,86 @@ export function canManageOrgUser(
   );
 }
 
+// The org user, invite and group lists are read through both plain and infinite queries.
+// Orval caches the infinite variants under an "infinite"-prefixed query key,
+// so invalidating the plain key alone leaves the paginated tables showing stale data.
+// Always invalidate through these helpers rather than a single key.
+
+export function invalidateOrgMemberUsers(
+  queryClient: QueryClient,
+  organization: string,
+) {
+  return Promise.all([
+    queryClient.invalidateQueries({
+      queryKey:
+        getAdminServiceListOrganizationMemberUsersQueryKey(organization),
+    }),
+    queryClient.invalidateQueries({
+      queryKey:
+        getAdminServiceListOrganizationMemberUsersInfiniteQueryKey(
+          organization,
+        ),
+    }),
+  ]);
+}
+
+export function invalidateOrgInvites(
+  queryClient: QueryClient,
+  organization: string,
+) {
+  return Promise.all([
+    queryClient.invalidateQueries({
+      queryKey: getAdminServiceListOrganizationInvitesQueryKey(organization),
+    }),
+    queryClient.invalidateQueries({
+      queryKey:
+        getAdminServiceListOrganizationInvitesInfiniteQueryKey(organization),
+    }),
+  ]);
+}
+
+export function invalidateOrgUsergroups(
+  queryClient: QueryClient,
+  organization: string,
+) {
+  return Promise.all([
+    queryClient.invalidateQueries({
+      queryKey:
+        getAdminServiceListOrganizationMemberUsergroupsQueryKey(organization),
+    }),
+    queryClient.invalidateQueries({
+      queryKey:
+        getAdminServiceListOrganizationMemberUsergroupsInfiniteQueryKey(
+          organization,
+        ),
+    }),
+  ]);
+}
+
+// The groups of one org user are read with different params by the users table dropdown (defaults)
+// and the manage groups dialog (one large page), so their query keys differ.
+// TanStack matches keys partially, so a key holding only the userId covers every variant for that user;
+// without a userId the key covers every user in the org.
+export function invalidateUserGroupsForUser(
+  queryClient: QueryClient,
+  organization: string,
+  userId?: string,
+) {
+  return queryClient.invalidateQueries({
+    queryKey: getAdminServiceListUsergroupsForOrganizationAndUserQueryKey(
+      organization,
+      userId ? { userId } : undefined,
+    ),
+  });
+}
+
 export async function invalidateAfterUserDelete(
   queryClient: QueryClient,
   organization: string,
 ) {
-  await queryClient.invalidateQueries({
-    queryKey: getAdminServiceListOrganizationMemberUsersQueryKey(organization),
-  });
+  await invalidateOrgMemberUsers(queryClient, organization);
 
-  await queryClient.invalidateQueries({
-    queryKey: getAdminServiceListOrganizationInvitesQueryKey(organization),
-  });
+  await invalidateOrgInvites(queryClient, organization);
 
   await queryClient.invalidateQueries({
     queryKey: getAdminServiceListUsergroupMemberUsersQueryKey(

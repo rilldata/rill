@@ -51,12 +51,9 @@
       <AlertDialogDescription>
         <div class="mt-1">
           {#if refreshType === "full"}
-            ⚠️ Warning: A full refresh will re-ingest ALL data from scratch.
-            This operation can take a significant amount of time and will update
-            all dependent resources. Only proceed if you're certain this is
-            necessary.
+            {m.status_full_refresh_warning()}
           {:else}
-            Refreshing this resource will update all dependent resources.
+            {m.status_incremental_refresh_description()}
           {/if}
         </div>
       </AlertDialogDescription>

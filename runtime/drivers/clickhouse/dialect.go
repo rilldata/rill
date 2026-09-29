@@ -93,6 +93,26 @@ func (d *dialect) CastToDataType(typ runtimev1.Type_Code) (string, error) {
 	}
 }
 
+// OrderByExpression and OrderByAliasExpression place NULLs last regardless of the sort direction,
+// matching the behavior of the DuckDB dialect.
+func (d *dialect) OrderByExpression(name string, desc bool) string {
+	res := d.EscapeIdentifier(name)
+	if desc {
+		res += " DESC"
+	}
+	res += " NULLS LAST"
+	return res
+}
+
+func (d *dialect) OrderByAliasExpression(name string, desc bool) string {
+	res := d.EscapeAlias(name)
+	if desc {
+		res += " DESC"
+	}
+	res += " NULLS LAST"
+	return res
+}
+
 func (d *dialect) JoinOnExpression(lhs, rhs string) string {
 	return fmt.Sprintf("isNotDistinctFrom(%s, %s)", lhs, rhs)
 }

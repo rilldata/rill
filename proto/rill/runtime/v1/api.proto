@@ -473,6 +473,7 @@ message Instance {
   map<string, bool> feature_flags = 22;
   map<string, string> annotations = 14;
   string ai_instructions = 23;
+  repeated AIPrompt ai_prompts = 27;
   string frontend_url = 24;
   string theme = 26;
 }
@@ -853,6 +854,8 @@ message ListResourcesRequest {
 message ListResourcesResponse {
   repeated Resource resources = 1;
   string next_page_token = 2;
+  // True while the instance may still produce more resources, i.e. it has not finished its initial parse and reconcile.
+  bool initializing = 3;
 }
 
 message WatchResourcesRequest {

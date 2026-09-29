@@ -1,4 +1,11 @@
 <script lang="ts">
+  import { ephemeralSpecsToDefs } from "@rilldata/web-common/features/dashboards/ephemeral-measures/canvas";
+  import {
+    ephemeralMeasureToSpecMeasure,
+    mapEphemeralMeasuresForRequest,
+    splitTimeSeriesMeasures,
+  } from "@rilldata/web-common/features/dashboards/ephemeral-measures/measure-mapping";
+  import { measureSupportsTotalsQuery } from "@rilldata/web-common/features/dashboards/state-managers/selectors/measures";
   import type { TimeAndFilterStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
   import { TIME_COMPARISON } from "@rilldata/web-common/lib/time/config";
   import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
@@ -47,8 +54,21 @@
   $: schema = validateKPISchema(ctx, spec);
   $: ({ isValid } = $schema);
 
+  $: ephemeralMeasures = ephemeralSpecsToDefs(spec.adhoc_measures);
+  $: ephemeralDef = ephemeralMeasures?.find((def) => def.name === measureName);
+
   $: measureStore = getMeasureForMetricView(measureName, metricsViewName);
-  $: measure = $measureStore;
+  // ephemeral measures have no spec entry; synthesize one.
+  $: measure =
+    $measureStore ??
+    (ephemeralDef ? ephemeralMeasureToSpecMeasure(ephemeralDef) : undefined);
+
+  // Measures with required dimensions (e.g. a rolling window ordered by the time
+  // dimension) produce one value per dimension value and have no single total,
+  // so we skip the totals queries; the KPI shows an explanatory hint instead.
+  // The measure metadata must have loaded before we can tell, so the queries
+  // also wait for it.
+  $: supportsTotal = !!measure && measureSupportsTotalsQuery(measure);
 
   $: showSparkline = sparkline !== "none" && hasTimeSeries;
 
@@ -59,7 +79,12 @@
     (TIME_COMPARISON[comparisonTimeRangeState?.selectedComparisonTimeRange.name]
       ?.label as string | undefined);
 
-  $: queryMeasures = [{ name: measureName }];
+  $: queryMeasures = mapEphemeralMeasuresForRequest(
+    [{ name: measureName }],
+    ephemeralMeasures,
+  );
+  $: ({ measureNames: tsMeasureNames, ephemeralMeasures: tsEphemeralMeasures } =
+    splitTimeSeriesMeasures([measureName], ephemeralMeasures));
 
   $: totalQuery = createQueryServiceMetricsViewAggregation(
     client,
@@ -76,7 +101,11 @@
     },
     {
       query: {
-        enabled: isValid && visible && (!hasTimeSeries || (!!start && !!end)),
+        enabled:
+          isValid &&
+          supportsTotal &&
+          visible &&
+          (!hasTimeSeries || (!!start && !!end)),
       },
     },
   );
@@ -96,6 +125,7 @@
           comparisonTimeRange &&
           showComparison &&
           isValid &&
+          supportsTotal &&
           !!start &&
           !!end &&
           visible,
@@ -107,7 +137,8 @@
     client,
     {
       metricsViewName,
-      measureNames: [measureName],
+      measureNames: tsMeasureNames,
+      ephemeralMeasures: tsEphemeralMeasures,
       timeStart: start,
       timeEnd: end,
       timeGranularity: timeGrain || V1TimeGrain.TIME_GRAIN_HOUR,
@@ -126,7 +157,8 @@
     client,
     {
       metricsViewName,
-      measureNames: [measureName],
+      measureNames: tsMeasureNames,
+      ephemeralMeasures: tsEphemeralMeasures,
       timeStart: comparisonTimeRange?.start,
       timeEnd: comparisonTimeRange?.end,
       timeGranularity: timeGrain || V1TimeGrain.TIME_GRAIN_HOUR,

@@ -155,40 +155,26 @@ Note: Rill requires users to confirm their email address before letting them int
 
 
 
-## Testing Policies in Rill Developer
+## Testing Policies with View As
 
-In development (on `localhost`), you can test your policies by adding "mock users" to your project and viewing the dashboard as one of them.
+Once you've written a policy, preview a dashboard from another user's perspective to confirm it does what you expect:
 
-:::tip Test policies in Rill Developer
-Use `mock_users` in rill.yaml to test your security policies before deploying.
-[Learn more about testing security →](/developers/build/project-configuration#testing-security)
-:::
+- In **Rill Developer** (or a **Rill Cloud edit session**), add `mock_users` to `rill.yaml` and pick one from the **View as** button in the top-right of the dashboard preview.
+- On a **deployed Rill Cloud dashboard**, project admins can preview as any real project user from the avatar dropdown → **View as**.
 
-In your project's `rill.yaml` file, add a `mock_users` section. Each mock user must have an `email` attribute and can optionally have `name` and `admin` attributes. For example:
-```yaml
-# rill.yaml
-mock_users:
-- email: john@yourcompany.com
-  name: John Doe
-  admin: true
-- email: jane@partnercompany.com
-  groups:
-    - partners
-- email: anon@unknown.com
-```
-
-On the dashboard page (provided you've added a policy), you'll see a "View as" button in the top right corner. Click this button and select one of your mock users. You'll see the dashboard as that user would see it.
+See the [View as User guide](/developers/build/metrics-view/view-as-user) for the full workflow, screenshots, and example policies you can test.
 
 ### Rill Cloud
-If you want to test what your users are seeing in Rill Cloud after deploying, you can find this in the dropdown of your account. You will see the actual users in the dropdown of this list, not the mock users defined in the rill.yaml file.
 
-![Rill Cloud View As](/img/manage/access-policies/rill-cloud-view-as.png)
+On a deployed dashboard, project admins can preview as any real project user via the avatar dropdown → **View as**. The full walkthrough lives in [Rill Cloud: View as User](/developers/build/metrics-view/view-as-user#rill-cloud).
+
+![View as user in Rill Cloud](/img/manage/access-policies/rill-cloud-view-as.png)
 
 ### Embedded Dashboards
 
 When [requesting an embedded dashboard from Rill](/developers/embed/iframe) from your frontend, you can pass the `attributes` parameter with custom names to ensure that the resulting dashboard displays the correct information.
 
-For more information, see [our embedding docs](/developers/embed/iframe#2-build-the-iframe-url-backend).
+For more information, see [our embedding docs](/developers/embed/iframe#2-build-the-iframe-url-backend). To preview the embed locally, mirror those attributes on a `mock_user` — see [Custom attributes for embedded dashboards](/developers/build/metrics-view/view-as-user#custom-attributes-for-embedded-dashboards).
 
 
 ## Examples

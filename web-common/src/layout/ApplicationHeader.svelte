@@ -33,6 +33,7 @@
   import { fileArtifacts } from "../features/entity-management/file-artifacts";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors.ts";
   import { addLeadingSlash } from "@rilldata/web-common/features/entity-management/entity-mappers.ts";
+  import { resourceKey } from "@rilldata/web-common/features/resources/overview-utils.ts";
 
   const { deploy, developerChat, stickyDashboardState } = featureFlags;
   const runtimeClient = useRuntimeClient();
@@ -74,6 +75,14 @@
 
   $: dashboardOptions = {
     options: getBreadcrumbOptions(explores, canvases),
+    currentId: dashboardName
+      ? resourceKey(
+          route.id?.includes("canvas")
+            ? ResourceKind.Canvas
+            : ResourceKind.Explore,
+          dashboardName,
+        )
+      : undefined,
     carryOverSearchParams: $stickyDashboardState,
   } satisfies PathOptions;
 

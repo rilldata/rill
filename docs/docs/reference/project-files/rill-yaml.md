@@ -32,6 +32,18 @@ _[string]_ - Specifies the default AI connector for the project. Defaults to Ril
 
 _[string]_ - Extra instructions for LLM/AI features. Used to guide natural language question answering and routing.
 
+### `ai_prompts`
+
+_[array of oneOf]_ - Suggested prompts shown as starters in the project-wide AI chat, and on dashboards that have no `ai_prompts` of their own. Each entry is either a prompt string or an object with `label` and `prompt`. At most 8 distinct entries.
+
+  - **option 1** - _[string]_ - The prompt. A short label is derived from its first words.
+
+  - **option 2** - _[object]_ - A prompt with an explicit label.
+
+    - **`label`** - _[string]_ - Short label shown on the prompt's button (at most 40 characters). Derived from the prompt if omitted.
+
+    - **`prompt`** - _[string]_ - The full question sent to the AI when the user picks the prompt. _(required)_
+
 ## Configuring the default OLAP Engine
 
 Rill allows you to specify the default OLAP engine to use in your project via `rill.yaml`.
@@ -155,6 +167,10 @@ _[object]_ - A map of key-value pairs for setting variables on your project. It 
   - **`rill.metrics.approximate_comparisons_two_phase_limit`** - _[integer]_ - Row-limit threshold under which metrics comparison queries use a two-phase strategy (base values first, comparison values second). Default: 250.
 
   - **`rill.metrics.exactify_druid_topn`** - _[boolean]_ - Split Druid TopN queries into two queries to improve measure accuracy, at the cost of performance. Default: false.
+
+  - **`rill.metrics.druid_mvd_filtered_group_by`** - _[boolean]_ - Narrow unnested (multi-value) dimensions to the filtered values when grouping in Druid, so results contain only the filtered values rather than every value co-occurring in matching rows. Default: false.
+
+  - **`rill.metrics.druid_mvd_filtered_search`** - _[boolean]_ - Extends rill.metrics.druid_mvd_filtered_group_by to dimension search (ILIKE filters) using MV_FILTER_REGEX, so search results contain only values matching the search text. Requires Druid 35.0.0 or newer. Default: false.
 
   - **`rill.metrics.timeseries_null_filling_implementation`** - _[string]_ - Null-filling implementation for timeseries queries. One of `none`, `new`, or `pushdown`. Default: `pushdown`.
 

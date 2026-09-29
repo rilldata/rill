@@ -39,7 +39,7 @@
 <Tooltip distance={8}>
   <Button type="secondary" {href} onClick={handleClick}>
     <LogOut size="14" />
-    Exit
+    {m.edit_exit()}
   </Button>
   <TooltipContent slot="tooltip-content" maxWidth="200px">
     <span class="text-xs">

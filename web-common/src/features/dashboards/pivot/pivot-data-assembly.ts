@@ -7,6 +7,7 @@ import {
   getFiltersForCell,
   getPivotConfigKey,
 } from "@rilldata/web-common/features/dashboards/pivot/pivot-utils";
+import { mergeFilters } from "./pivot-merge-filters";
 import { reduceTableCellDataIntoRows } from "./pivot-table-transformations";
 import type { PivotDataRow, PivotDataStoreConfig, PivotFilter } from "./types";
 
@@ -211,17 +212,25 @@ function getActiveCellFilters(
   config: PivotDataStoreConfig,
   columnDimensionAxes: Record<string, string[]> | undefined,
   tableData: PivotDataRow[],
-) {
+): PivotFilter | undefined {
   const activeCell = config.pivot.activeCell;
   if (!activeCell) return undefined;
 
-  return getFiltersForCell(
+  const cellFilter = getFiltersForCell(
     config,
     activeCell.rowId,
     activeCell.columnId,
     columnDimensionAxes,
     tableData,
   );
+
+  // getFiltersForCell only describes the cell itself. The rows viewer queries
+  // actual rows with this expression, so it must also honour the dashboard's
+  // global filters.
+  return {
+    ...cellFilter,
+    filters: mergeFilters(cellFilter.filters, config.whereFilter),
+  };
 }
 
 function getReachedEndForRowData(

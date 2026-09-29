@@ -2,6 +2,7 @@ import { expect, type Page } from "@playwright/test";
 import { assertUrlParams } from "@rilldata/web-common/tests/utils/assert-url-params";
 import { interactWithTimeRangeMenu } from "@rilldata/web-common/tests/utils/explore-interactions";
 import { test } from "./setup/base";
+import { asyncWait } from "@rilldata/web-common/lib/waitUtils.ts";
 
 test.describe("Bookmarks", () => {
   // TODO: use a separate explore to isolate bookmarks to avoid conflicts.
@@ -25,6 +26,9 @@ test.describe("Bookmarks", () => {
         await adminPage
           .getByRole("row", { name: "My Little Universe 4.6k" })
           .click();
+        // There is a delay in filters syncing with session storage.
+        // TODO: once time selections have been moved out of explore-state revisit this along with session storage.
+        await asyncWait(250);
 
         // Enter dimension table "App Site Name"
         await adminPage.getByText("App Site Domain").click();
@@ -117,7 +121,7 @@ test.describe("Bookmarks", () => {
     });
 
     test.describe.serial("Complete explore bookmarks", () => {
-      test("Create a complete bookmark.", async ({ adminPage }) => {
+      test("Create a complete explore bookmark", async ({ adminPage }) => {
         // This would ideally be done in a beforeAll hook. But adminPage fixture is not supported in that hook.
         await adminPage.goto("/e2e/openrtb/explore/auction_explore_bookmarks");
 
@@ -133,6 +137,8 @@ test.describe("Bookmarks", () => {
         await adminPage
           .getByRole("row", { name: "My Little Universe 4.6k" })
           .click();
+        // There is a delay in filters syncing with session storage.
+        await asyncWait(250);
 
         // Enter dimension table "App Site Name"
         await adminPage.getByText("App Site Domain").click();
@@ -164,7 +170,7 @@ test.describe("Bookmarks", () => {
         await expect(adminPage.getByText("Bookmark created")).toBeVisible();
       });
 
-      test("Applying complete bookmark replaces every setting", async ({
+      test("Applying complete explore bookmark replaces every setting", async ({
         adminPage,
       }) => {
         await adminPage.goto("/e2e/openrtb/explore/auction_explore_bookmarks");
@@ -229,8 +235,7 @@ test.describe("Bookmarks", () => {
 
     // Home bookmark interferes with other bookmark creation since we are adding some filters.
     // So adding it to the end.
-    // Skipping for now since this is unstable
-    test.describe.skip("Home explore bookmarks", () => {
+    test.describe.serial("Home explore bookmarks", () => {
       test("Should create a home bookmark", async ({ adminPage }) => {
         // This would ideally be done in a beforeAll hook. But adminPage fixture is not supported in that hook.
         await adminPage.goto("/e2e/openrtb/explore/auction_explore_bookmarks");
@@ -250,6 +255,8 @@ test.describe("Bookmarks", () => {
         await adminPage
           .getByRole("row", { name: "Not Available 1.0M" })
           .click();
+        // There is a delay in filters syncing with session storage.
+        await asyncWait(250);
 
         // Open the bookmarks dropdown
         await adminPage.getByLabel("Home bookmark dropdown").click();
@@ -341,7 +348,7 @@ test.describe("Bookmarks", () => {
 
   test.describe.serial("Canvas bookmarks", () => {
     test.describe.serial("Complete canvas bookmarks", () => {
-      test("Create a complete bookmark.", async ({ adminPage }) => {
+      test("Create a complete canvas bookmark", async ({ adminPage }) => {
         // This would ideally be done in a beforeAll hook. But adminPage fixture is not supported in that hook.
         await adminPage.goto("/e2e/openrtb/canvas/bids_canvas_bookmarks");
 
@@ -358,6 +365,8 @@ test.describe("Bookmarks", () => {
           .scrollIntoViewIfNeeded();
         await adminPage.getByRole("row", { name: "Instacart $252.33" }).click();
         await adminPage.getByRole("row", { name: "Leafly $195.89" }).click();
+        // There is a delay in filters syncing with session storage.
+        await asyncWait(250);
 
         // Open the bookmarks dropdown
         await adminPage.getByLabel("Other bookmark dropdown").click();
@@ -391,7 +400,7 @@ test.describe("Bookmarks", () => {
         await expect(adminPage.getByText("Bookmark created")).toBeVisible();
       });
 
-      test("Applying complete bookmark replaces every setting", async ({
+      test("Applying complete canvas bookmark replaces every setting", async ({
         adminPage,
       }) => {
         await adminPage.goto("/e2e/openrtb/canvas/bids_canvas_bookmarks");
@@ -536,7 +545,7 @@ test.describe("Bookmarks", () => {
         ).toBeVisible();
       });
 
-      test.skip("Visiting home should restore home bookmark", async ({
+      test("Visiting home should restore home bookmark", async ({
         adminPage,
       }) => {
         // Navigate to the canvas

@@ -11,17 +11,23 @@
   // svelte-ignore custom_element_props_identifier
   let {
     resources,
+    hrefForResource = undefined,
     ...triggerProps
   }: {
     resources: V1Resource[];
+    hrefForResource?: (resource: V1Resource) => string;
     [key: string]: unknown;
   } = $props();
 
   let firstResource = $derived(resources?.[0]);
+  // Spell out "canvas dashboard" to distinguish the target from the metrics
+  // view's own explore dashboard (displayResourceKind flattens both to "dashboard").
   let firstResourceType = $derived(
-    displayResourceKind(
-      firstResource?.meta?.name?.kind as ResourceKind | undefined,
-    ),
+    firstResource?.meta?.name?.kind === ResourceKind.Canvas
+      ? "canvas dashboard"
+      : displayResourceKind(
+          firstResource?.meta?.name?.kind as ResourceKind | undefined,
+        ),
   );
 </script>
 
@@ -30,9 +36,10 @@
     class="border-accent-primary-action flex items-center border h-7 rounded-[2px] bg-transparent text-accent-primary-action"
   >
     <a
-      href={getFileHref(
-        `/${removeLeadingSlash(firstResource.meta?.filePaths?.[0])}`,
-      )}
+      href={hrefForResource?.(firstResource) ??
+        getFileHref(
+          `/${removeLeadingSlash(firstResource.meta?.filePaths?.[0])}`,
+        )}
       class="text-inherit font-medium flex items-center border-r px-3 size-full hover:bg-surface-hover border-accent-primary-action hover:text-fg-accent"
     >
       Go to {firstResourceType}

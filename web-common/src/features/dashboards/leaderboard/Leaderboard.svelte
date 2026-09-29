@@ -1,6 +1,8 @@
 <script lang="ts">
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
+  import { mapEphemeralMeasuresForRequest } from "@rilldata/web-common/features/dashboards/ephemeral-measures/measure-mapping";
+  import type { EphemeralMeasureDef } from "@rilldata/web-common/features/dashboards/ephemeral-measures/types";
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import { DashboardState_LeaderboardSortType } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
   import type {
@@ -16,12 +18,10 @@
   } from "@rilldata/web-common/runtime-client";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { onMount } from "svelte";
-  import type { DimensionThresholdFilter } from "web-common/src/features/dashboards/stores/explore-state";
   import {
     getComparisonRequestMeasures,
     getURIRequestMeasure,
   } from "../dashboard-utils";
-  import { mergeDimensionAndMeasureFilters } from "../filters/measure-filters/measure-filter-utils";
   import { SortType } from "../proto-state/derived-types";
   import { getFiltersForOtherDimensions } from "../selectors";
   import { getMeasuresForDimensionOrLeaderboardDisplay } from "../state-managers/selectors/dashboard-queries";
@@ -42,7 +42,11 @@
     getSort,
     prepareLeaderboardItemData,
   } from "./leaderboard-utils";
-  import { COMPARISON_COLUMN_WIDTH, valueColumn } from "./leaderboard-widths";
+  import {
+    COMPARISON_COLUMN_WIDTH,
+    deltaColumn,
+    valueColumn,
+  } from "./leaderboard-widths";
 
   const runtimeClient = useRuntimeClient();
   const gutterWidth = 24;
@@ -51,10 +55,12 @@
   export let timeRange: V1TimeRange;
   export let comparisonTimeRange: V1TimeRange | undefined;
   export let selectedValues: ReturnType<typeof selectedDimensionValues>;
-  export let whereFilter: V1Expression;
-  export let dimensionThresholdFilters: DimensionThresholdFilter[];
+  export let whereFilter: V1Expression | undefined;
   export let leaderboardSortByMeasureName: string;
   export let leaderboardMeasures: MetricsViewSpecMeasure[];
+  // ephemeral measure definitions; their names may appear in
+  // leaderboardMeasures and are sent with an `expression` compute.
+  export let ephemeralMeasures: EphemeralMeasureDef[] | undefined = undefined;
   export let leaderboardShowContextForAllMeasures: boolean;
   export let metricsViewName: string;
   export let sortType: SortType;
@@ -139,36 +145,35 @@
   $: atLeastOneActive = Boolean($selectedValues.data?.length);
 
   $: isComplexFilter = isExpressionUnsupported(whereFilter);
-  $: where = isComplexFilter
-    ? whereFilter
-    : sanitiseExpression(
-        mergeDimensionAndMeasureFilters(
-          getFiltersForOtherDimensions(whereFilter, dimensionName),
-          dimensionThresholdFilters,
-        ),
-        undefined,
-      );
+  $: where = sanitiseExpression(
+    isComplexFilter
+      ? whereFilter
+      : getFiltersForOtherDimensions(whereFilter, dimensionName),
+  );
 
-  $: measures = [
-    ...getMeasuresForDimensionOrLeaderboardDisplay(
-      leaderboardShowContextForAllMeasures
-        ? null
-        : leaderboardSortByMeasureName,
-      dimensionThresholdFilters,
-      leaderboardMeasureNames,
-    ).map((name) => ({ name }) as V1MetricsViewAggregationMeasure),
+  $: measures = mapEphemeralMeasuresForRequest(
+    [
+      ...getMeasuresForDimensionOrLeaderboardDisplay(
+        leaderboardShowContextForAllMeasures
+          ? null
+          : leaderboardSortByMeasureName,
+        whereFilter,
+        leaderboardMeasureNames,
+      ).map((name) => ({ name }) as V1MetricsViewAggregationMeasure),
 
-    // Add comparison measures if there's a comparison time range
-    ...(comparisonTimeRange
-      ? (leaderboardShowContextForAllMeasures
-          ? leaderboardMeasureNames
-          : [leaderboardSortByMeasureName]
-        ).flatMap((name) => getComparisonRequestMeasures(name))
-      : []),
+      // Add comparison measures if there's a comparison time range.
+      ...(comparisonTimeRange
+        ? (leaderboardShowContextForAllMeasures
+            ? leaderboardMeasureNames
+            : [leaderboardSortByMeasureName]
+          ).flatMap((name) => getComparisonRequestMeasures(name))
+        : []),
 
-    // Add URI measure if URI is present
-    ...(uri ? [getURIRequestMeasure(dimensionName)] : []),
-  ];
+      // Add URI measure if URI is present
+      ...(uri ? [getURIRequestMeasure(dimensionName)] : []),
+    ],
+    ephemeralMeasures,
+  );
 
   $: sort = getSort(
     sortedAscending,
@@ -202,7 +207,10 @@
     runtimeClient,
     {
       metricsView: metricsViewName,
-      measures: leaderboardMeasureNames.map((name) => ({ name })),
+      measures: mapEphemeralMeasuresForRequest(
+        leaderboardMeasureNames.map((name) => ({ name })),
+        ephemeralMeasures,
+      ),
       where,
       timeRange,
     },
@@ -298,14 +306,28 @@
 
   $: isTimeComparisonActive = !!comparisonTimeRange;
 
+  // Measures that render context columns (percent of total, delta absolute and
+  // delta percent). This must be a reactive value rather than a function: a
+  // function called from the markup does not track the props it reads, so the
+  // columns would go stale when the context toggle changes.
+  $: measuresWithContext = new Set(
+    leaderboardShowContextForAllMeasures
+      ? leaderboardMeasureNames
+      : [leaderboardSortByMeasureName],
+  );
+
   $: columnCount =
     1 + // Base column (dimension)
-    leaderboardMeasureNames.length + // Value column for each measure
-    (isTimeComparisonActive
-      ? leaderboardMeasureNames.length * // For each measure
-        ((isValidPercentOfTotal(leaderboardSortByMeasureName) ? 1 : 0) + // Percent of total column
-          (isTimeComparisonActive ? 2 : 0)) // Delta absolute and delta percent columns
-      : 0);
+    leaderboardMeasureNames.reduce(
+      (count, measureName) =>
+        count +
+        1 + // Value column
+        (measuresWithContext.has(measureName)
+          ? (isValidPercentOfTotal(measureName) ? 1 : 0) + // Percent of total column
+            (isTimeComparisonActive ? 2 : 0) // Delta absolute and delta percent columns
+          : 0),
+      0,
+    );
 
   // Calculate maximum values for relative magnitude bar sizing
   // This includes both above-the-fold and below-the-fold data for accurate scaling
@@ -313,18 +335,11 @@
     [...aboveTheFold, ...belowTheFoldRows],
     leaderboardMeasures,
   );
-
-  function shouldShowContextColumns(measureName: string): boolean {
-    return (
-      leaderboardShowContextForAllMeasures ||
-      measureName === leaderboardSortByMeasureName
-    );
-  }
 </script>
 
 <div
   class="flex flex-col"
-  aria-label="{dimensionName} leaderboard"
+  aria-label={m.dashboard_dimension_leaderboard_aria({ name: dimensionName })}
   role="table"
   bind:this={container}
   onmouseenter={() => (hovered = true)}
@@ -339,17 +354,14 @@
       <col data-dimension-column style:width="{dimensionColumnWidth}px" />
       {#each leaderboardMeasureNames as measureName, index (index)}
         <col data-measure-column style:width="{$valueColumn}px" />
-        {#if isValidPercentOfTotal(measureName) && shouldShowContextColumns(measureName)}
+        {#if isValidPercentOfTotal(measureName) && measuresWithContext.has(measureName)}
           <col
             data-percent-of-total-column
             style:width="{COMPARISON_COLUMN_WIDTH}px"
           />
         {/if}
-        {#if isTimeComparisonActive && shouldShowContextColumns(measureName)}
-          <col
-            data-absolute-change-column
-            style:width="{COMPARISON_COLUMN_WIDTH}px"
-          />
+        {#if isTimeComparisonActive && measuresWithContext.has(measureName)}
+          <col data-absolute-change-column style:width="{$deltaColumn}px" />
           <col
             data-percent-change-column
             style:width="{COMPARISON_COLUMN_WIDTH}px"
@@ -372,7 +384,7 @@
       {isTimeComparisonActive}
       {sortedAscending}
       {leaderboardMeasureNames}
-      {leaderboardShowContextForAllMeasures}
+      {measuresWithContext}
       {toggleSort}
       {setPrimaryDimension}
       {toggleComparisonDimension}
@@ -399,11 +411,10 @@
             {dimensionName}
             {itemData}
             {isValidPercentOfTotal}
-            {leaderboardShowContextForAllMeasures}
+            {measuresWithContext}
             {isTimeComparisonActive}
             {leaderboardMeasureNames}
             {toggleDimensionValueSelection}
-            {leaderboardSortByMeasureName}
             {formatters}
             {tooltipFormatters}
             {dimensionColumnWidth}
@@ -421,13 +432,12 @@
           {filterExcludeMode}
           {atLeastOneActive}
           {isValidPercentOfTotal}
-          {leaderboardShowContextForAllMeasures}
+          {measuresWithContext}
           {isTimeComparisonActive}
           {leaderboardMeasureNames}
           borderTop={i === 0}
           borderBottom={i === belowTheFoldRows.length - 1}
           {toggleDimensionValueSelection}
-          {leaderboardSortByMeasureName}
           {formatters}
           {tooltipFormatters}
           {dimensionColumnWidth}

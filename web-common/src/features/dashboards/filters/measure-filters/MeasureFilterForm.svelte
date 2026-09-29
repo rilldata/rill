@@ -129,7 +129,6 @@
   class="p-2 px-3 w-[250px]"
   strategy="fixed"
   preventScroll
-  id="measure-filter-popover"
 >
   {#if showPinControl || showRequiredControl}
     <div

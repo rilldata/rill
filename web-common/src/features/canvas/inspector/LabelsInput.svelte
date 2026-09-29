@@ -19,8 +19,8 @@
   $: show = value?.show === true;
 
   const formatOptions: { value: LabelsFormat; label: string }[] = [
-    { value: "percent", label: "Percent" },
-    { value: "value", label: "Value" },
+    { value: "percent", label: m.canvas_percent_option() },
+    { value: "value", label: m.canvas_value_option() },
   ];
 
   function toggleShow() {

@@ -501,6 +501,11 @@ test.describe("Embeds", () => {
       await recorder.waitForReady();
       const frame = embedPage.frameLocator("iframe");
 
+      // Wait for canvas to load
+      await expect(frame.getByLabel("overall_spend KPI data")).toContainText(
+        /Advertising Spend Overall\s*\$3,900/,
+      );
+
       await embedPage.evaluate(() => {
         const iframe = document.querySelector("iframe");
         iframe?.contentWindow?.postMessage(
@@ -597,9 +602,61 @@ test.describe("Embeds", () => {
         );
 
         await recorder.expectContaining(
-          "tr=PT6H&compare_tr=rill-PP&f=advertiser_name+IN+%28%27Instacart%27%29",
+          "tr=PT6H&compare_tr=rill-PP&f.bids_metrics=advertiser_name+IN+%28%27Instacart%27%29",
         );
       });
+    });
+  });
+
+  test.describe("embedded canvas with a hidden navigation bar", () => {
+    test.use({
+      embeddedResourceName: "bids_canvas",
+      embeddedResourceType: "rill.runtime.v1.Canvas",
+      embeddedHideNavigationBar: true,
+    });
+
+    test("hides the navigation bar but keeps the drill-through to explore", async ({
+      embedPage,
+    }) => {
+      const recorder = new EmbedMessageRecorder(embedPage);
+      await recorder.waitForReady();
+      const frame = embedPage.frameLocator("iframe");
+
+      const kpi = frame.getByLabel("overall_spend KPI data");
+      await expect(kpi).toContainText("Advertising Spend Overall");
+
+      // The navigation bar is gone. Assert on DOM presence rather than
+      // visibility, since Playwright's locators also match hidden elements.
+      await expect(frame.getByLabel("Breadcrumb dropdown")).toHaveCount(0);
+      await expect(frame.getByText("Home", { exact: true })).toHaveCount(0);
+
+      // The component's drill-through to an explore dashboard is still offered.
+      // Every explore-linkable component on this canvas renders its own toolbar,
+      // so scope the link to the component being hovered rather than taking the
+      // canvas's first one.
+      const kpiComponent = frame
+        .locator("article.component-card")
+        .filter({ has: kpi });
+      const exploreLink = kpiComponent.getByLabel(
+        "Go to Programmatic Ads Bids",
+      );
+      await expect(exploreLink).toHaveCount(1);
+
+      // The toolbar is revealed on hover.
+      await kpiComponent.hover();
+      await expect(exploreLink).toBeVisible();
+
+      await exploreLink.click();
+
+      // The explore dashboard renders, and the host is still notified of the
+      // navigation even though the navigation bar is hidden.
+      await recorder.expectContaining(
+        `{"method":"navigation","params":{"from":"bids_canvas","to":"bids_explore"}}`,
+      );
+      await expect(frame.getByLabel("Select time range")).toBeVisible();
+
+      // The navigation bar stays hidden on the dashboard we drilled into.
+      await expect(frame.getByLabel("Breadcrumb dropdown")).toHaveCount(0);
     });
   });
 

@@ -13,7 +13,7 @@ import type { RillTime } from "@rilldata/web-common/features/dashboards/url-stat
 
 export function unitToTimeGrain(unit: string): V1TimeGrain {
   return (
-    Object.values(TIME_GRAIN).find((timeGrain) => timeGrain.label === unit)
+    Object.values(TIME_GRAIN).find((timeGrain) => timeGrain.unit === unit)
       ?.grain || V1TimeGrain.TIME_GRAIN_UNSPECIFIED
   );
 }

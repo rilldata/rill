@@ -10,6 +10,7 @@
   import { DateTime, Duration, Interval } from "luxon";
   import {
     bucketYamlRanges,
+    type InheritRangeOption,
     type ISODurationString,
     type NamedRange,
   } from "../new-time-controls";
@@ -27,6 +28,7 @@
   export let availableTimeZones: string[];
   export let timeRanges: V1ExploreTimeRange[];
   export let showDefaultItem: boolean;
+  export let inheritOption: InheritRangeOption | undefined = undefined;
   export let activeTimeGrain: V1TimeGrain | undefined;
   export let interval: Interval<true> | undefined;
   export let hidePan = false;
@@ -91,6 +93,7 @@
       {maxDate}
       {watermark}
       {showDefaultItem}
+      {inheritOption}
       {defaultTimeRange}
       {rangeBuckets}
       timeString={v2TimeString || selectedRangeAlias}
@@ -115,6 +118,7 @@
       {maxDate}
       ranges={rangeBuckets}
       {showDefaultItem}
+      {inheritOption}
       {showFullRange}
       {defaultTimeRange}
       {allowCustomTimeRange}
