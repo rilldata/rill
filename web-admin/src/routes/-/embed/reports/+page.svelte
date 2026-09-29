@@ -10,7 +10,7 @@
   const personalReports = useClientFilteredResources(
     runtimeClient,
     ResourceKind.Report,
-    (res) => !!res.report?.spec?.annotations?.personal,
+    (res) => !!res.report?.spec?.annotations?.admin_owner_user_email,
   );
 </script>
 

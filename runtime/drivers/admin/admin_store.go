@@ -11,8 +11,8 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-func (h *Handle) GetReportMetadata(ctx context.Context, reportName, ownerID, webOpenMode string, emailRecipients []string, anonRecipients bool, executionTime time.Time) (*drivers.ReportMetadata, error) {
-	res, err := h.admin.GetReportMeta(ctx, &adminv1.GetReportMetaRequest{
+func (h *Handle) GetReportMetadata(ctx context.Context, reportName, ownerID, webOpenMode string, emailRecipients []string, anonRecipients bool, executionTime time.Time, queryForUserID, queryForUserEmail string, queryForAttributes map[string]any) (*drivers.ReportMetadata, error) {
+	req := &adminv1.GetReportMetaRequest{
 		ProjectId:       h.config.ProjectID,
 		Report:          reportName,
 		OwnerId:         ownerID,
@@ -26,7 +26,21 @@ func (h *Handle) GetReportMetadata(ctx context.Context, reportName, ownerID, web
 			},
 		},
 		WebOpenMode: webOpenMode,
-	})
+	}
+
+	if queryForUserID != "" {
+		req.QueryFor = &adminv1.GetReportMetaRequest_QueryForUserId{QueryForUserId: queryForUserID}
+	} else if queryForUserEmail != "" {
+		req.QueryFor = &adminv1.GetReportMetaRequest_QueryForUserEmail{QueryForUserEmail: queryForUserEmail}
+	} else if len(queryForAttributes) > 0 {
+		attrs, err := structpb.NewStruct(queryForAttributes)
+		if err != nil {
+			return nil, err
+		}
+		req.QueryFor = &adminv1.GetReportMetaRequest_QueryForAttributes{QueryForAttributes: attrs}
+	}
+
+	res, err := h.admin.GetReportMeta(ctx, req)
 	if err != nil {
 		return nil, err
 	}

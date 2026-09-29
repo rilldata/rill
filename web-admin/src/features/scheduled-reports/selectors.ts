@@ -40,9 +40,7 @@ export function useReportDashboardName(client: RuntimeClient, name: string) {
     {
       query: {
         select: (data) =>
-          getDashboardNameFromReport(
-            data.resource?.report?.spec as V1ReportSpec,
-          ),
+          getDashboardNameFromReport(data.resource?.report?.spec),
       },
     },
   );
@@ -64,6 +62,7 @@ export function useReportOwnerName(
     {
       query: {
         select: (data) => data.users.find((u) => u.id === ownerId)?.displayName,
+        enabled: !!ownerId,
       },
     },
   );

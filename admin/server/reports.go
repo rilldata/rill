@@ -34,6 +34,7 @@ func (s *Server) GetReportMeta(ctx context.Context, req *adminv1.GetReportMetaRe
 		attribute.String("args.execution_time", req.ExecutionTime.String()),
 		attribute.Bool("args.anon_recipients", req.AnonRecipients),
 		attribute.String("args.owner_id", req.OwnerId),
+		attribute.Bool("args.query_for", req.GetQueryFor() != nil),
 		attribute.String("args.web_open_mode", req.WebOpenMode),
 	)
 
@@ -66,40 +67,60 @@ func (s *Server) GetReportMeta(ctx context.Context, req *adminv1.GetReportMetaRe
 		recipients = append(recipients, "")
 	}
 
-	ownerId := ""
-	var ownerEmail string
-	var ownerAttrs *structpb.Struct
-	isEmbed := false
-	if req.OwnerId != "" {
-		projectIdPrefix := fmt.Sprintf("%s::", proj.ID)
-		if strings.HasPrefix(req.OwnerId, projectIdPrefix) {
-			isEmbed = true
-			ownerEmail = req.OwnerId[len(projectIdPrefix):]
-		} else {
-			ownerId = req.OwnerId
+	// The query_for identity is used in place of the owner's identity, so it only applies when recipients access the report as the creator.
+	if req.QueryFor != nil && webOpenMode != WebOpenModeCreator {
+		return nil, status.Errorf(codes.InvalidArgument, "query_for is only supported in %q web open mode", WebOpenModeCreator)
+	}
 
-			owner, err := s.admin.DB.FindUser(ctx, req.OwnerId)
-			if err != nil {
-				return nil, err
-			}
-			ownerEmail = owner.Email
-
-			attr, _, _, err := s.getAttributesForUser(ctx, proj.OrganizationID, proj.ID, req.OwnerId, "")
-			if err != nil {
-				return nil, err
-			}
-			ownerAttrs, err = structpb.NewStruct(attr)
-			if err != nil {
-				return nil, err
-			}
+	// Resolve the identity to evaluate security policies for when accessing the report's data.
+	// An explicit query_for takes precedence over the owner (consistent with alerts).
+	// NOTE: userID is empty for explicit attributes and for emails that don't belong to a Rill user.
+	var userID string
+	var userAttrs map[string]any
+	switch forVal := req.QueryFor.(type) {
+	case nil:
+		if req.OwnerId != "" {
+			userAttrs, userID, _, err = s.getAttributesForUser(ctx, proj.OrganizationID, proj.ID, req.OwnerId, "")
 		}
+	case *adminv1.GetReportMetaRequest_QueryForUserId:
+		userAttrs, userID, _, err = s.getAttributesForUser(ctx, proj.OrganizationID, proj.ID, forVal.QueryForUserId, "")
+	case *adminv1.GetReportMetaRequest_QueryForUserEmail:
+		userAttrs, userID, _, err = s.getAttributesForUser(ctx, proj.OrganizationID, proj.ID, "", forVal.QueryForUserEmail)
+	case *adminv1.GetReportMetaRequest_QueryForAttributes:
+		userAttrs = forVal.QueryForAttributes.AsMap()
+	default:
+		return nil, status.Error(codes.InvalidArgument, "invalid 'query_for' type")
+	}
+	if err != nil {
+		return nil, err
+	}
+	userAttrsPb, err := structpb.NewStruct(userAttrs)
+	if err != nil {
+		return nil, err
+	}
+
+	// Resolve the owner, who gets an edit link and no unsubscribe link.
+	// If no owner is set, the query_for user (if any) is treated as the owner; for example, the embed user who created the report.
+	ownerID := req.OwnerId
+	if ownerID == "" {
+		ownerID = userID
+	}
+	var ownerEmail string
+	if ownerID != "" {
+		owner, err := s.admin.DB.FindUser(ctx, ownerID)
+		if err != nil {
+			return nil, err
+		}
+		ownerEmail = owner.Email
+	} else {
+		ownerEmail = req.GetQueryForUserEmail()
 	}
 
 	var tokens map[string]string
 	if webOpenMode == WebOpenModeRecipient {
-		tokens, err = s.createUnsubMagicTokens(ctx, proj.ID, req.Report, ownerId, ownerEmail, recipients)
+		tokens, err = s.createUnsubMagicTokens(ctx, proj.ID, req.Report, ownerID, ownerEmail, recipients)
 	} else {
-		tokens, err = s.createMagicTokens(ctx, proj.OrganizationID, proj.ID, req.Report, ownerId, recipients, req.Resources)
+		tokens, err = s.createMagicTokens(ctx, proj.ID, req.Report, ownerID, recipients, req.Resources, userAttrs)
 	}
 	if err != nil {
 		return nil, fmt.Errorf("failed to issue magic auth tokens: %w", err)
@@ -113,22 +134,22 @@ func (s *Server) GetReportMeta(ctx context.Context, req *adminv1.GetReportMetaRe
 	// 	Recipients other than owner do not get an edit link, they can edit from the project UI if they have permissions.
 	for _, recipient := range recipients {
 		if recipient == ownerEmail {
-			if webOpenMode == WebOpenModeRecipient && !isEmbed {
+			if webOpenMode == WebOpenModeRecipient && ownerID != "" {
 				// owner in recipient mode gets plain open and export url without token as token does not have any access
 				delivery[recipient] = &adminv1.GetReportMetaResponse_DeliveryMeta{
 					OpenUrl:   s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportOpen(org.Name, proj.Name, req.Report, "", req.ExecutionTime.AsTime()),
 					ExportUrl: s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportExport(org.Name, proj.Name, req.Report, ""),
 					EditUrl:   s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportEdit(org.Name, proj.Name, req.Report),
-					UserId:    req.OwnerId,
-					UserAttrs: ownerAttrs,
+					UserId:    userID,
+					UserAttrs: userAttrsPb,
 				}
 			} else {
 				delivery[recipient] = &adminv1.GetReportMetaResponse_DeliveryMeta{
 					OpenUrl:   s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportOpen(org.Name, proj.Name, req.Report, tokens[recipient], req.ExecutionTime.AsTime()),
 					ExportUrl: s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportExport(org.Name, proj.Name, req.Report, tokens[recipient]),
 					EditUrl:   s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportEdit(org.Name, proj.Name, req.Report),
-					UserId:    req.OwnerId,
-					UserAttrs: ownerAttrs,
+					UserId:    userID,
+					UserAttrs: userAttrsPb,
 				}
 			}
 			continue
@@ -138,8 +159,8 @@ func (s *Server) GetReportMeta(ctx context.Context, req *adminv1.GetReportMetaRe
 				OpenUrl:        s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportOpen(org.Name, proj.Name, req.Report, tokens[recipient], req.ExecutionTime.AsTime()),
 				ExportUrl:      s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportExport(org.Name, proj.Name, req.Report, tokens[recipient]),
 				UnsubscribeUrl: s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportUnsubscribe(org.Name, proj.Name, req.Report, tokens[recipient], recipient),
-				UserId:         req.OwnerId,
-				UserAttrs:      ownerAttrs,
+				UserId:         userID,
+				UserAttrs:      userAttrsPb,
 			}
 		} else if webOpenMode == WebOpenModeRecipient {
 			attr, userID, err := s.getAttributesForProjectMember(ctx, recipient, proj.OrganizationID, proj.ID)
@@ -197,7 +218,18 @@ func (s *Server) CreateReport(ctx context.Context, req *adminv1.CreateReportRequ
 		return nil, status.Error(codes.PermissionDenied, "does not have permission to read project repo")
 	}
 
-	if claims.OwnerType() != auth.OwnerTypeUser && claims.OwnerType() != auth.OwnerTypeEmbed {
+	ownerId := ""
+	ownerEmail := ""
+	switch claims.OwnerType() {
+	case auth.OwnerTypeUser:
+		ownerId = claims.OwnerID()
+	case auth.OwnerTypeEmbed:
+		mdl, ok := claims.AuthTokenModel().(*database.EmbedAuthToken)
+		if !ok {
+			return nil, status.Error(codes.PermissionDenied, "invalid embed token")
+		}
+		ownerEmail = mdl.Email
+	default:
 		return nil, status.Error(codes.PermissionDenied, "only users can create reports")
 	}
 
@@ -218,7 +250,7 @@ func (s *Server) CreateReport(ctx context.Context, req *adminv1.CreateReportRequ
 		return nil, err
 	}
 
-	data, err := s.yamlForManagedReport(req.Options, claims.OwnerID(), claims.OwnerType() == auth.OwnerTypeEmbed)
+	data, err := s.yamlForManagedReport(req.Options, ownerId, ownerEmail)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "failed to generate report YAML: %s", err.Error())
 	}
@@ -280,21 +312,32 @@ func (s *Server) EditReport(ctx context.Context, req *adminv1.EditReportRequest)
 	if !annotations.AdminManaged {
 		return nil, status.Error(codes.FailedPrecondition, "can't edit report because it was not created from the UI")
 	}
-
-	switch claims.OwnerType() {
-	case auth.OwnerTypeUser:
-		if !permissions.ManageReports || annotations.AdminOwnerUserID != claims.OwnerID() {
-			return nil, status.Error(codes.PermissionDenied, "does not have permission to edit report")
-		}
-
-	case auth.OwnerTypeEmbed:
-		// TODO: check if the user has permission to edit the report
-
-	default:
+	if !permissions.ManageReports {
 		return nil, status.Error(codes.PermissionDenied, "does not have permission to edit report")
 	}
 
-	data, err := s.yamlForManagedReport(req.Options, annotations.AdminOwnerUserID, claims.OwnerType() == auth.OwnerTypeEmbed)
+	ownerId := ""
+	ownerEmail := ""
+	switch claims.OwnerType() {
+	case auth.OwnerTypeUser:
+		ownerId = claims.OwnerID()
+		if annotations.AdminOwnerUserID != ownerId {
+			return nil, status.Error(codes.PermissionDenied, "does not have permission to edit report")
+		}
+	case auth.OwnerTypeEmbed:
+		mdl, ok := claims.AuthTokenModel().(*database.EmbedAuthToken)
+		if !ok {
+			return nil, status.Error(codes.PermissionDenied, "invalid embed token")
+		}
+		ownerEmail = mdl.Email
+		if annotations.AdminOwnerUserEmail != ownerEmail {
+			return nil, status.Error(codes.PermissionDenied, "does not have permission to edit report")
+		}
+	default:
+		return nil, status.Error(codes.PermissionDenied, "only users can create reports")
+	}
+
+	data, err := s.yamlForManagedReport(req.Options, ownerId, ownerEmail)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "failed to generate report YAML: %s", err.Error())
 	}
@@ -570,7 +613,7 @@ func (s *Server) GenerateReportYAML(ctx context.Context, req *adminv1.GenerateRe
 	}, nil
 }
 
-func (s *Server) yamlForManagedReport(opts *adminv1.ReportOptions, ownerUserID string, personal bool) ([]byte, error) {
+func (s *Server) yamlForManagedReport(opts *adminv1.ReportOptions, ownerUserID, ownerEmail string) ([]byte, error) {
 	res := reportYAML{}
 	res.Type = "report"
 	res.DisplayName = opts.DisplayName
@@ -603,11 +646,18 @@ func (s *Server) yamlForManagedReport(opts *adminv1.ReportOptions, ownerUserID s
 	res.Notify.Slack.Channels = opts.SlackChannels
 	res.Notify.Slack.Users = opts.SlackUsers
 	res.Notify.Slack.Webhooks = opts.SlackWebhooks
-	res.Annotations.AdminOwnerUserID = ownerUserID
 	res.Annotations.AdminManaged = true
-	if personal {
-		res.Annotations.Personal = true
+
+	if ownerEmail != "" {
+		res.For.UserEmail = ownerEmail
+		res.Query.For.UserEmail = ownerEmail
+		res.Annotations.AdminOwnerUserEmail = ownerEmail
+	} else if ownerUserID != "" {
+		res.For.UserID = ownerUserID
+		res.Query.For.UserID = ownerUserID
+		res.Annotations.AdminOwnerUserID = ownerUserID
 	}
+
 	res.Annotations.AdminNonce = time.Now().Format(time.RFC3339Nano)
 	res.Annotations.WebOpenPath = opts.WebOpenPath
 	res.Annotations.WebOpenState = opts.WebOpenState
@@ -732,7 +782,7 @@ func metricsViewFiltersJSON(filters map[string]*runtimev1.Expression) (string, e
 	return string(data), nil
 }
 
-func (s *Server) createMagicTokens(ctx context.Context, orgID, projectID, reportName, ownerID string, emails []string, resources []*adminv1.ResourceName) (map[string]string, error) {
+func (s *Server) createMagicTokens(ctx context.Context, projectID, reportName, ownerID string, emails []string, resources []*adminv1.ResourceName, userAttrs map[string]any) (map[string]string, error) {
 	var createdByUserID *string
 	if ownerID != "" {
 		createdByUserID = &ownerID
@@ -755,28 +805,11 @@ func (s *Server) createMagicTokens(ctx context.Context, orgID, projectID, report
 
 	mgcOpts.Resources = res
 
-	if ownerID != "" {
-		// Get the project-level permissions for the creating user.
-		orgPerms, err := s.admin.OrganizationPermissionsForUser(ctx, orgID, ownerID)
-		if err != nil {
-			return nil, err
-		}
-		projectPermissions, err := s.admin.ProjectPermissionsForUser(ctx, projectID, ownerID, orgPerms)
-		if err != nil {
-			return nil, err
-		}
-
-		// Generate JWT attributes based on the creating user's, but with limited project-level permissions.
-		// We store these attributes with the magic token, so it can simulate the creating user (even if the creating user is later deleted or their permissions change).
-		//
-		// NOTE: A problem with this approach is that if we change the built-in format of JWT attributes, these will remain as they were when captured.
-		// NOTE: Another problem is that if the creator is an admin, attrs["admin"] will be true. It shouldn't be a problem today, but could end up leaking some privileges in the future if we're not careful.
-		attrs, err := s.jwtAttributesForUser(ctx, ownerID, orgID, projectPermissions)
-		if err != nil {
-			return nil, err
-		}
-		mgcOpts.Attributes = attrs
-	}
+	// We store the attributes with the magic token, so it can simulate the user (even if the user is later deleted or their permissions change).
+	//
+	// NOTE: A problem with this approach is that if we change the built-in format of JWT attributes, these will remain as they were when captured.
+	// NOTE: Another problem is that if the user is an admin, attrs["admin"] will be true. It shouldn't be a problem today, but could end up leaking some privileges in the future if we're not careful.
+	mgcOpts.Attributes = userAttrs
 
 	// issue magic tokens
 	cctx, tx, err := s.admin.DB.NewTx(ctx, false)
@@ -787,7 +820,7 @@ func (s *Server) createMagicTokens(ctx context.Context, orgID, projectID, report
 
 	emailTokens := make(map[string]string)
 	for _, email := range emails {
-		if ownerID == "" {
+		if userAttrs == nil {
 			// set user attrs as per the email
 			mgcOpts.Attributes = map[string]interface{}{
 				"name":   "",
@@ -922,11 +955,19 @@ type reportYAML struct {
 	Intervals struct {
 		Duration string `yaml:"duration"`
 	} `yaml:"intervals"`
-	Data  map[string]any `yaml:"data,omitempty"` // Generic data resolver block (e.g., data.ai, data.sql)
-	Query struct {       // Legacy query-based report (deprecated - use data instead)
+	Data map[string]any `yaml:"data,omitempty"` // Generic data resolver block (e.g., data.ai, data.sql)
+	For  struct {
+		UserID    string `yaml:"user_id"`
+		UserEmail string `yaml:"user_email"`
+	} `yaml:"for"`
+	Query struct { // Legacy query-based report (deprecated - use data instead)
 		Name     string         `yaml:"name,omitempty"`
 		Args     map[string]any `yaml:"args,omitempty"`
 		ArgsJSON string         `yaml:"args_json,omitempty"`
+		For      struct {
+			UserID    string `yaml:"user_id"`
+			UserEmail string `yaml:"user_email"`
+		} `yaml:"for"`
 	} `yaml:"query,omitempty"`
 	Export struct {
 		Format        string `yaml:"format"`
@@ -947,15 +988,15 @@ type reportYAML struct {
 }
 
 type reportAnnotations struct {
-	AdminOwnerUserID string      `yaml:"admin_owner_user_id"`
-	AdminManaged     bool        `yaml:"admin_managed"`
-	Personal         bool        `yaml:"personal,omitempty"`
-	AdminNonce       string      `yaml:"admin_nonce"` // To ensure spec version gets updated on writes, to enable polling in TriggerReconcileAndAwaitReport
-	WebOpenPath      string      `yaml:"web_open_path"`
-	WebOpenState     string      `yaml:"web_open_state"`
-	WebOpenMode      WebOpenMode `yaml:"web_open_mode,omitempty"`
-	Explore          string      `yaml:"explore,omitempty"`
-	Canvas           string      `yaml:"canvas,omitempty"`
+	AdminOwnerUserID    string      `yaml:"admin_owner_user_id"`
+	AdminOwnerUserEmail string      `yaml:"admin_owner_user_email"`
+	AdminManaged        bool        `yaml:"admin_managed"`
+	AdminNonce          string      `yaml:"admin_nonce"` // To ensure spec version gets updated on writes, to enable polling in TriggerReconcileAndAwaitReport
+	WebOpenPath         string      `yaml:"web_open_path"`
+	WebOpenState        string      `yaml:"web_open_state"`
+	WebOpenMode         WebOpenMode `yaml:"web_open_mode,omitempty"`
+	Explore             string      `yaml:"explore,omitempty"`
+	Canvas              string      `yaml:"canvas,omitempty"`
 	// Per-metrics-view filters of the canvas at scheduling time, as a JSON object of
 	// metrics view name to filter expression in protojson format (canvas reports only).
 	// The report reconciler bakes these into the report's transitive security rules.
@@ -985,9 +1026,9 @@ func parseReportAnnotations(annotations map[string]string) reportAnnotations {
 
 	res := reportAnnotations{}
 	res.AdminOwnerUserID = annotations["admin_owner_user_id"]
+	res.AdminOwnerUserEmail = annotations["admin_owner_user_email"]
 	res.AdminManaged, _ = strconv.ParseBool(annotations["admin_managed"])
 	res.AdminNonce = annotations["admin_nonce"]
-	res.Personal = annotations["personal"] == "true"
 	res.WebOpenPath = annotations["web_open_path"]
 	res.WebOpenState = annotations["web_open_state"]
 	res.Explore = annotations["explore"]

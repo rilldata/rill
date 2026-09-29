@@ -3744,6 +3744,29 @@ export class ReportSpec extends Message<ReportSpec> {
   resolverProperties?: Struct;
 
   /**
+   * @generated from oneof rill.runtime.v1.ReportSpec.query_for
+   */
+  queryFor: {
+    /**
+     * @generated from field: string query_for_user_id = 19;
+     */
+    value: string;
+    case: "queryForUserId";
+  } | {
+    /**
+     * @generated from field: string query_for_user_email = 20;
+     */
+    value: string;
+    case: "queryForUserEmail";
+  } | {
+    /**
+     * @generated from field: google.protobuf.Struct query_for_attributes = 21;
+     */
+    value: Struct;
+    case: "queryForAttributes";
+  } | { case: undefined; value?: undefined } = { case: undefined };
+
+  /**
    * Legacy query-based report fields (deprecated - use resolver/resolver_properties instead)
    *
    * @generated from field: string query_name = 5;
@@ -3816,6 +3839,9 @@ export class ReportSpec extends Message<ReportSpec> {
     { no: 4, name: "timeout_seconds", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
     { no: 17, name: "resolver", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 18, name: "resolver_properties", kind: "message", T: Struct },
+    { no: 19, name: "query_for_user_id", kind: "scalar", T: 9 /* ScalarType.STRING */, oneof: "query_for" },
+    { no: 20, name: "query_for_user_email", kind: "scalar", T: 9 /* ScalarType.STRING */, oneof: "query_for" },
+    { no: 21, name: "query_for_attributes", kind: "message", T: Struct, oneof: "query_for" },
     { no: 5, name: "query_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 6, name: "query_args_json", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 7, name: "export_limit", kind: "scalar", T: 4 /* ScalarType.UINT64 */ },

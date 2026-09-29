@@ -2477,6 +2477,8 @@ export type AdminServiceGetReportMetaBody = {
   anonRecipients?: boolean;
   resources?: V1ResourceName[];
   webOpenMode?: string;
+  queryForUserId?: string;
+  queryForUserEmail?: string;
   whereFilterJson?: string;
   accessibleFields?: string[];
 };

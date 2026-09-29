@@ -27,12 +27,14 @@ type ReportYAML struct {
 		Limit         uint   `yaml:"limit"`
 		CheckUnclosed bool   `yaml:"check_unclosed"`
 	} `yaml:"intervals"`
-	Timeout string    `yaml:"timeout"`
-	Data    *DataYAML `yaml:"data"` // Generic data resolver (preferred for new reports)
-	Query   struct {  // Legacy query-based report
+	Timeout string       `yaml:"timeout"`
+	Data    *DataYAML    `yaml:"data"` // Generic data resolver (preferred for new reports)
+	For     QueryForYAML `yaml:"for"`
+	Query   struct {     // Legacy query-based report
 		Name     string         `yaml:"name"`
 		Args     map[string]any `yaml:"args"`
 		ArgsJSON string         `yaml:"args_json"`
+		For      QueryForYAML   `yaml:"for"`
 	} `yaml:"query"`
 	Export struct {
 		Format           string         `yaml:"format"`
@@ -157,6 +159,18 @@ func (p *Parser) parseReport(node *Node) error {
 		}
 	}
 
+	// Parse the user identity or attributes to evaluate security policies for.
+	// Legacy query-based reports use "query.for"; all other reports use "for".
+	var qf *queryFor
+	if resolver == "legacy_metrics" {
+		qf, err = parseQueryForYAML(&tmp.Query.For, "query.for")
+	} else {
+		qf, err = parseQueryForYAML(&tmp.For, "for")
+	}
+	if err != nil {
+		return err
+	}
+
 	// Parse export format
 	exportFormat, err := parseExportFormat(tmp.Export.Format)
 	if err != nil {
@@ -237,6 +251,16 @@ func (p *Parser) parseReport(node *Node) error {
 
 	r.ReportSpec.Resolver = resolver
 	r.ReportSpec.ResolverProperties = resolverProps
+
+	// Note: have already validated that at most one of the cases match
+	if qf.userID != "" {
+		r.ReportSpec.QueryFor = &runtimev1.ReportSpec_QueryForUserId{QueryForUserId: qf.userID}
+	} else if qf.userEmail != "" {
+		r.ReportSpec.QueryFor = &runtimev1.ReportSpec_QueryForUserEmail{QueryForUserEmail: qf.userEmail}
+	} else if qf.attributes != nil {
+		r.ReportSpec.QueryFor = &runtimev1.ReportSpec_QueryForAttributes{QueryForAttributes: qf.attributes}
+	}
+
 	r.ReportSpec.ExportLimit = uint64(tmp.Export.Limit)
 	r.ReportSpec.ExportFormat = exportFormat
 	r.ReportSpec.ExportIncludeHeader = tmp.Export.IncludeHeader

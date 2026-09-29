@@ -610,14 +610,16 @@ type alertYAML struct {
 	} `yaml:"intervals"`
 	Data map[string]any `yaml:"data,omitempty"`
 	For  struct {
-		UserID string `yaml:"user_id"`
+		UserID    string `yaml:"user_id"`
+		UserEmail string `yaml:"user_email"`
 	} `yaml:"for"`
 	Query struct {
 		Name     string         `yaml:"name"`
 		Args     map[string]any `yaml:"args,omitempty"`
 		ArgsJSON string         `yaml:"args_json,omitempty"`
 		For      struct {
-			UserID string `yaml:"user_id"`
+			UserID    string `yaml:"user_id"`
+			UserEmail string `yaml:"user_email"`
 		} `yaml:"for"`
 	} `yaml:"query"`
 	Renotify      bool   `yaml:"renotify"`

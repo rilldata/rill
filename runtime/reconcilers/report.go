@@ -125,6 +125,11 @@ func (r *ReportReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceN
 		return runtime.ReconcileResult{Err: fmt.Errorf("reports with 'ai' resolver only support non-email notifications in 'creator' web open mode")}
 	} // TODO add support for slack users who are also rill users in recipient mode
 
+	// The "for" identity replaces the creator's identity, so it doesn't apply when recipients access the report as themselves.
+	if rep.Spec.QueryFor != nil && mode != "creator" {
+		return runtime.ReconcileResult{Err: fmt.Errorf(`reports with "for" are only supported in 'creator' web open mode`)}
+	}
+
 	// Determine whether to trigger
 	adhocTrigger := rep.Spec.Trigger
 	scheduleTrigger := rep.State.NextRunOn != nil && !rep.State.NextRunOn.AsTime().After(time.Now())
@@ -551,7 +556,7 @@ func (r *ReportReconciler) sendReport(ctx context.Context, self *runtimev1.Resou
 		}
 	}
 
-	meta, err := admin.GetReportMetadata(ctx, self.Meta.Name.Name, ownerID, webOpenMode, emailRecipients, anonRecipients, t)
+	meta, err := admin.GetReportMetadata(ctx, self.Meta.Name.Name, ownerID, webOpenMode, emailRecipients, anonRecipients, t, rep.Spec.GetQueryForUserId(), rep.Spec.GetQueryForUserEmail(), rep.Spec.GetQueryForAttributes().AsMap())
 	if err != nil {
 		if errors.Is(err, drivers.ErrNotImplemented) {
 			r.C.Logger.Info("Skipped sending report: admin service does not support reports", zap.String("report", self.Meta.Name.Name), observability.ZapCtx(ctx))
@@ -570,13 +575,14 @@ func (r *ReportReconciler) sendReport(ctx context.Context, self *runtimev1.Resou
 	case "ai": // generate ai sessions
 		aiReports := make(map[string]*aiReport)
 		// For AI reports, in recipient mode, we require the metadata to contain user attributes for reach recipient, since we'll need them to trigger the report and generate personalized content.
-		// In creator mode, we create a shared session for all recipients and create the session with creator's attributes.
+		// In creator mode, we create a shared session for all recipients and create the session with creator's (or the "for" identity's) attributes.
+		// NOTE: The user ID is empty when the report is run for explicit attributes or for an email that doesn't belong to a Rill user.
 		for recipient, delivery := range meta.ReportDelivery {
-			if delivery.UserID == "" || len(delivery.UserAttrs) == 0 {
+			if len(delivery.UserAttrs) == 0 {
 				r.C.Logger.Warn("Skipping recipient - no user attributes found in metadata", zap.String("recipient", recipient), zap.String("report", self.Meta.Name.Name), observability.ZapCtx(ctx))
 				continue
 			}
-			// In recipient mode, delivery.UserID will be recipients userId, in creator mode, delivery.UserID will be the ownerID which is same for all recipients so report will be triggered once.
+			// In recipient mode, delivery.UserID will be recipients userId, in creator mode, delivery.UserID will be the same for all recipients so report will be triggered once.
 			report, exists := aiReports[delivery.UserID]
 			if !exists {
 				var triggerWarnings []string
@@ -767,14 +773,15 @@ type aiReport struct {
 }
 
 // triggerAIReport executes an AI-powered report and returns session id with summary.
-// If userID is provided, the session will be created with that user's claims for row-level security.
+// The session will be created with the given user's claims for row-level security.
+// The userID may be empty if the user is not a Rill user, in which case the session has no owner.
 func (r *ReportReconciler) triggerAIReport(ctx context.Context, self *runtimev1.Resource, rep *runtimev1.Report, t time.Time, webOpenMode, userID string, userAttrs map[string]any) (*aiReport, []string, error) {
 	if rep.Spec.Resolver != "ai" {
 		return nil, nil, fmt.Errorf("triggerAIReport called for non-AI report")
 	}
 
-	if userID == "" || len(userAttrs) == 0 {
-		return nil, nil, fmt.Errorf("userID and userAttrs are required for AI report")
+	if len(userAttrs) == 0 {
+		return nil, nil, fmt.Errorf("userAttrs are required for AI report")
 	}
 
 	// Create claims for executing the AI resolver
