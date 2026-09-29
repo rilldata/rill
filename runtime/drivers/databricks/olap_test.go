@@ -110,8 +110,7 @@ func TestComplexTypes(t *testing.T) {
 
 	require.Nil(t, res2["array_col"])
 	require.Nil(t, res2["map_col"])
-	// Databricks expands NULL structs into their fields with null values
-	require.Equal(t, `{"city":null,"zip":null}`, res2["struct_col"])
+	require.Nil(t, res2["struct_col"])
 
 	require.False(t, rows2.Next())
 	require.NoError(t, rows2.Err())
