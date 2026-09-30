@@ -347,7 +347,9 @@ export class DashboardStateSync {
       // must still be picked up by gotoNewState.
       this.updating = false;
       if (redirectUrl) {
-        this.expressionFilterManager.setUrlParams(redirectUrl.searchParams);
+        this.expressionFilterParamsTracker.setUrlParams(
+          redirectUrl.searchParams,
+        );
       }
     }
     // Try-finally without a catch. Rest of the code is not run if the above try body throws.
