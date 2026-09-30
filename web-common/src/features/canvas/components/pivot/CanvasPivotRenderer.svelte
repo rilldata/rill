@@ -4,6 +4,7 @@
   import PivotEmpty from "@rilldata/web-common/features/dashboards/pivot/PivotEmpty.svelte";
   import PivotError from "@rilldata/web-common/features/dashboards/pivot/PivotError.svelte";
   import PivotTable from "@rilldata/web-common/features/dashboards/pivot/PivotTable.svelte";
+  import { encodePivotSort } from "@rilldata/web-common/features/dashboards/pivot/pivot-sort";
   import { EmbedStore } from "@rilldata/web-common/features/embeds/embed-store";
   import type {
     PivotDataStore,
@@ -86,6 +87,25 @@
   $: rowSelectionState = rowSelectionStateStore
     ? $rowSelectionStateStore
     : undefined;
+
+  // Keep semantic defaults out of the mutable pivot state. The table only
+  // needs a current accessor to render its sort indicator and handle clicks.
+  $: displayPivotState =
+    pivotDataStore && pivotConfig
+      ? derived(
+          [pivotState, pivotDataStore, pivotConfig],
+          ([state, data, config]) => ({
+            ...state,
+            sorting: state.sorting.length
+              ? state.sorting
+              : encodePivotSort(
+                  config.defaultSort,
+                  config,
+                  data.columnDimensionAxes ?? {},
+                ),
+          }),
+        )
+      : pivotState;
 </script>
 
 <div
@@ -113,7 +133,7 @@
         rounded={hasHeader}
         {pivotDataStore}
         config={pivotConfig}
-        {pivotState}
+        pivotState={displayPivotState}
         {rowSelectionState}
         {clickSelection}
         fillWidth

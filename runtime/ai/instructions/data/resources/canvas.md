@@ -852,7 +852,17 @@ pivot:
     - average_order_value
   hide_totals_row: false
   hide_totals_col: false
+  default_sort:
+    measure: total_revenue
+    column_values:
+      - dimension: quarter
+        value: Q1
+    desc: true
 ```
+
+For a pivoted measure column, `default_sort` identifies the measure and each
+column dimension value by name. These names and values remain stable when the
+order of pivot columns changes.
 
 **Simple pivot (rows only):**
 
@@ -884,6 +894,9 @@ table:
     - order_count
     - average_price
   hide_totals_row: false
+  default_sort:
+    field: total_revenue
+    desc: true
 ```
 
 **With dimension filters:**

@@ -3,7 +3,6 @@
     conditionalFormatSpecToMeasureFormatting,
     type PivotCanvasComponent,
   } from "@rilldata/web-common/features/canvas/components/pivot";
-  import type { SortingState } from "tanstack-table-8-svelte-5";
   import ComponentHeader from "../../ComponentHeader.svelte";
   import CanvasPivotRenderer from "./CanvasPivotRenderer.svelte";
   import { validateTableSchema } from "./selector";
@@ -44,10 +43,7 @@
   $: schema = validateTableSchema($_metricViewSpec, tableSpec);
   $: widthScopeKey = `canvas:${component.parent.name}:${component.id}`;
 
-  let defaultSorting: SortingState;
-  $: defaultSorting = tableSpec.default_sort
-    ? [{ id: tableSpec.default_sort.id, desc: tableSpec.default_sort.desc }]
-    : [];
+  let previousStructureKey: string | undefined;
 
   // Seed the shared pivot state with per-measure formatting from the YAML spec.
   $: measureFormatting = conditionalFormatSpecToMeasureFormatting(
@@ -56,9 +52,18 @@
 
   $: if ("columns" in tableSpec && schema.isValid && !schema.isLoading) {
     const columns = tableSpec?.columns || [];
+    const structureKey = JSON.stringify([
+      "table",
+      tableSpec.metrics_view,
+      columns,
+      tableSpec.adhoc_measures,
+    ]);
+    const structureChanged =
+      previousStructureKey !== undefined &&
+      previousStructureKey !== structureKey;
     pivotState.update((state) => ({
       ...state,
-      sorting: defaultSorting,
+      sorting: structureChanged ? [] : state.sorting,
       expanded: {},
       activeCell: null,
       columnPage: 1,
@@ -73,13 +78,25 @@
       totalsRowPosition: tableSpec.totals_row_position ?? "top",
       measureFormatting,
     }));
+    previousStructureKey = structureKey;
   } else if (!("columns" in tableSpec) && schema.isValid && !schema.isLoading) {
     const measures = tableSpec.measures || [];
     const colDimensions = tableSpec.col_dimensions || [];
     const rowDimensions = tableSpec.row_dimensions || [];
+    const structureKey = JSON.stringify([
+      "pivot",
+      tableSpec.metrics_view,
+      measures,
+      colDimensions,
+      rowDimensions,
+      tableSpec.adhoc_measures,
+    ]);
+    const structureChanged =
+      previousStructureKey !== undefined &&
+      previousStructureKey !== structureKey;
     pivotState.update((state) => ({
       ...state,
-      sorting: defaultSorting,
+      sorting: structureChanged ? [] : state.sorting,
       expanded: {},
       activeCell: null,
       columnPage: 1,
@@ -100,6 +117,7 @@
       rowLimit: normalizeRowLimit(tableSpec.row_limit),
       outermostRowLimit: undefined,
     }));
+    previousStructureKey = structureKey;
   }
 </script>
 

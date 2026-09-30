@@ -13,6 +13,7 @@ import type {
   PivotDataStoreConfig,
   PivotFormatRule,
   PivotMeasureFormatting,
+  PivotSortTarget,
   PivotState,
   PivotTotalsRowPosition,
 } from "@rilldata/web-common/features/dashboards/pivot/types";
@@ -100,17 +101,8 @@ export function measureFormattingToConditionalFormatSpec(
   );
 }
 
-/**
- * Default sort applied when the table first loads. Mirrors how explore
- * persists pivot sort: `id` is the raw TanStack sort id (measure, dimension,
- * time grain, or nested leaf accessor), decoded at query time. `label` is
- * stored purely for human-readable display in the inspector.
- */
-export interface DefaultSort {
-  id: string;
-  desc: boolean;
-  label: string;
-}
+/** Stable default sort persisted in canvas YAML. */
+export type DefaultSort = PivotSortTarget;
 
 export interface PivotSpec
   extends ComponentCommonProperties,
@@ -168,6 +160,7 @@ export class PivotCanvasComponent extends BaseCanvasComponent<
     "col_dimensions",
     "conditional_format",
     "adhoc_measures",
+    "default_sort",
   ];
   type: CanvasComponentType;
   component = CanvasPivotDisplay;
@@ -333,7 +326,10 @@ export class PivotCanvasComponent extends BaseCanvasComponent<
             meta: { defaultValue: false },
             showInUI: canShowTotalRow,
           },
-          default_sort: { type: "default_sort", label: "Default sort" },
+          default_sort: {
+            type: "default_sort",
+            label: m.canvas_default_sort_label(),
+          },
           totals_row_position: {
             type: "select",
             label: m.canvas_totals_row_position_label(),
@@ -397,7 +393,10 @@ export class PivotCanvasComponent extends BaseCanvasComponent<
             meta: { defaultValue: false },
             showInUI: canShowTotalRow,
           },
-          default_sort: { type: "default_sort", label: "Default sort" },
+          default_sort: {
+            type: "default_sort",
+            label: m.canvas_default_sort_label(),
+          },
           totals_row_position: {
             type: "select",
             label: m.canvas_totals_row_position_label(),

@@ -4,14 +4,13 @@
   import InputLabel from "@rilldata/web-common/components/forms/InputLabel.svelte";
   import ArrowDown from "@rilldata/web-common/components/icons/ArrowDown.svelte";
   import ChevronRight from "@rilldata/web-common/components/icons/ChevronRight.svelte";
-  import LoadingCircleOutline from "@rilldata/web-common/components/icons/LoadingCircleOutline.svelte";
-  import type { PivotCanvasComponent } from "../components/pivot";
   import {
-    areSortChipsReady,
-    getSortChips,
-    getSortLabel,
-    sortEquals,
-  } from "../components/pivot/default-sort";
+    decodePivotSort,
+    pivotSortTargetsEqual,
+  } from "@rilldata/web-common/features/dashboards/pivot/pivot-sort";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
+  import type { PivotCanvasComponent } from "../components/pivot";
+  import { getSortChips } from "../components/pivot/default-sort";
 
   export let component: PivotCanvasComponent;
   export let label: string;
@@ -26,26 +25,21 @@
 
   $: columnDimensionAxes = $pivotDataStore?.columnDimensionAxes ?? {};
 
+  $: activeTarget = activeSort
+    ? decodePivotSort([activeSort], $config, columnDimensionAxes)
+    : undefined;
+
   // Show the active sort while the user is sorting; otherwise the stored default.
-  $: shownSort = activeSort ?? storedDefault;
+  $: shownSort = activeTarget ?? storedDefault;
 
-  $: chipsReady = shownSort
-    ? areSortChipsReady(shownSort.id, $config, columnDimensionAxes)
-    : true;
+  $: chips = shownSort ? getSortChips(shownSort, $config) : [];
 
-  $: chips = shownSort
-    ? getSortChips(shownSort.id, $config, columnDimensionAxes)
-    : [];
-
-  $: canMakeDefault = !!activeSort && !sortEquals(storedDefault, activeSort);
+  $: canMakeDefault =
+    !!activeTarget && !pivotSortTargetsEqual(storedDefault, activeTarget);
 
   function makeDefault() {
-    if (!activeSort) return;
-    component.updateProperty("default_sort", {
-      id: activeSort.id,
-      desc: activeSort.desc,
-      label: getSortLabel(activeSort.id, $config, columnDimensionAxes),
-    });
+    if (!activeTarget) return;
+    component.updateProperty("default_sort", activeTarget);
   }
 
   function clearDefault() {
@@ -57,43 +51,41 @@
   <InputLabel small {label} id="default_sort" />
 
   {#if shownSort}
-    {#if chipsReady}
-      <div class="flex items-center gap-1 flex-wrap">
-        {#each chips as chip, i (i)}
-          {#if i > 0}
-            <span class="text-fg-disabled shrink-0">
-              <ChevronRight size="12px" />
-            </span>
-          {/if}
-          <Chip readOnly compact type={chip.type} label={chip.label}>
-            <span class="font-bold truncate" slot="body">{chip.label}</span>
-          </Chip>
-        {/each}
-        <span
-          class="ml-0.5 text-fg-secondary transition-transform"
-          class:-rotate-180={!shownSort.desc}
-          title={shownSort.desc ? "Descending" : "Ascending"}
-        >
-          <ArrowDown size="14px" />
-        </span>
-      </div>
-    {:else}
-      <div class="flex items-center gap-1 text-fg-secondary">
-        <LoadingCircleOutline size="14px" />
-      </div>
-    {/if}
+    <div class="flex items-center gap-1 flex-wrap">
+      {#each chips as chip, i (i)}
+        {#if i > 0}
+          <span class="text-fg-disabled shrink-0">
+            <ChevronRight size="12px" />
+          </span>
+        {/if}
+        <Chip readOnly compact type={chip.type} label={chip.label}>
+          <span class="font-bold truncate" slot="body">{chip.label}</span>
+        </Chip>
+      {/each}
+      <span
+        class="ml-0.5 text-fg-secondary transition-transform"
+        class:-rotate-180={!shownSort.desc}
+        title={shownSort.desc
+          ? m.canvas_default_sort_descending()
+          : m.canvas_default_sort_ascending()}
+      >
+        <ArrowDown size="14px" />
+      </span>
+    </div>
 
     <div class="flex items-center justify-between">
       <Button type="text" disabled={!canMakeDefault} onclick={makeDefault}>
-        Set default
+        {m.canvas_default_sort_set()}
       </Button>
       {#if storedDefault}
-        <Button type="text" onclick={clearDefault}>Clear</Button>
+        <Button type="text" onclick={clearDefault}
+          >{m.canvas_default_sort_clear()}</Button
+        >
       {/if}
     </div>
   {:else}
     <span class="text-xs text-fg-disabled">
-      Sort a column on the table to set it as the default.
+      {m.canvas_default_sort_empty()}
     </span>
   {/if}
 </div>
