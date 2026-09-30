@@ -1,7 +1,6 @@
 package clickhouse_test
 
 import (
-	"context"
 	"fmt"
 	"regexp"
 	"sort"
@@ -38,7 +37,7 @@ func newInstance(t *testing.T, dsn string, opts testruntime.InstanceOptions) (*r
 	t.Helper()
 
 	database := nonAlphanumeric.ReplaceAllString(t.Name(), "_")
-	conn, err := drivers.Open(context.Background(), "clickhouse", "", "default", map[string]any{"dsn": dsn, "mode": "readwrite"}, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
+	conn, err := drivers.Open(t.Context(), "clickhouse", "", "default", map[string]any{"dsn": dsn, "mode": "readwrite"}, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
 	defer conn.Close()
 	olap, ok := conn.AsOLAP("")

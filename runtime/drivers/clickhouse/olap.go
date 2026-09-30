@@ -507,27 +507,25 @@ type SQLConn struct {
 }
 
 func (sc *SQLConn) ExecContext(ctx context.Context, query string, args ...any) (sql.Result, error) {
-	if sc.supportSettings {
-		return sc.Conn.ExecContext(ctx, query, args...)
-	}
-	ctx2 := contextWithoutDeadline(ctx)
-	return sc.Conn.ExecContext(ctx2, query, args...)
+	return sc.Conn.ExecContext(settingsCtx(ctx, sc.supportSettings), query, args...)
 }
 
 func (sc *SQLConn) QueryxContext(ctx context.Context, query string, args ...any) (*sqlx.Rows, error) {
-	if sc.supportSettings {
-		return sc.Conn.QueryxContext(ctx, query, args...)
-	}
-	ctx2 := contextWithoutDeadline(ctx)
-	return sc.Conn.QueryxContext(ctx2, query, args...)
+	return sc.Conn.QueryxContext(settingsCtx(ctx, sc.supportSettings), query, args...)
 }
 
 func (sc *SQLConn) QueryRowContext(ctx context.Context, query string, args ...any) *sqlx.Row {
-	if sc.supportSettings {
-		return sc.Conn.QueryRowxContext(ctx, query, args...)
+	return sc.Conn.QueryRowxContext(settingsCtx(ctx, sc.supportSettings), query, args...)
+}
+
+// settingsCtx returns the ctx to use for a statement sent to a server that may not support modifying settings.
+// When the server is readonly, it strips the deadline (keeping cancellation),
+// since clickhouse-go would otherwise derive a `max_execution_time` setting from the deadline, which the server rejects.
+func settingsCtx(ctx context.Context, supportSettings bool) context.Context {
+	if supportSettings {
+		return ctx
 	}
-	ctx2 := contextWithoutDeadline(ctx)
-	return sc.Conn.QueryRowxContext(ctx2, query, args...)
+	return contextWithoutDeadline(ctx)
 }
 
 func contextWithoutDeadline(parent context.Context) context.Context {

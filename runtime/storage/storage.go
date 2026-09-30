@@ -170,8 +170,10 @@ func (c *Client) path(base string, elem ...string) string {
 }
 
 func (c *Client) newGCPClient(ctx context.Context) (*gcp.HTTPClient, error) {
-	// Detach cancellation: the credentials capture the ctx and reuse it to refresh tokens for as long as the bucket is used.
-	// Some credential types bind that ctx to the refresh request, so a cancelled ctx would permanently break a long-lived bucket.
+	// The credentials capture the ctx and reuse it to refresh tokens for as long as the bucket is used,
+	// and some credential types bind it to the refresh request, so a cancelled ctx would permanently break a long-lived bucket.
+	// Detaching cancellation costs nothing here: the call does no I/O on this path.
+	// It only parses the JSON into a lazily-refreshing token source, and never reaches the metadata server since allowHostAccess is false.
 	creds, err := gcputil.Credentials(context.WithoutCancel(ctx), c.bucketConfig.GoogleApplicationCredentialsJSON, false)
 	if err != nil {
 		return nil, err

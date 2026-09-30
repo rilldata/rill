@@ -322,10 +322,23 @@ func (d driver) Open(ctx context.Context, connectorName, instanceID string, conf
 			return nil, fmt.Errorf("failed to open write connection: %w", err)
 		}
 	}
-	// group by positional args are supported post 22.7 and we use them heavily in our queries.
-	// Note the statements below strip the ctx deadline: see the note in openHandle.
-	stmtCtx := contextWithoutDeadline(ctx)
-	row := db.QueryRowContext(stmtCtx, `
+	// Using the harmless, non–side-effecting setting
+	// `show_table_uuid_in_table_create_query_if_not_nil` as a probe to check
+	// whether the cluster mode supports modifying query settings. This setting
+	// has no practical use for our purposes.
+	// It runs before the other statements below because they need to know the result.
+	// The probe itself is safe to run on the raw ctx:
+	// if the ctx has a deadline, clickhouse-go derives a `max_execution_time` setting from it,
+	// which a readonly server rejects with the same error we're matching on here.
+	supportSettings := true
+	if _, err := db.ExecContext(ctx, "SET show_table_uuid_in_table_create_query_if_not_nil = 1"); err != nil {
+		if strings.Contains(err.Error(), "Cannot modify") && strings.Contains(err.Error(), "setting in readonly mode") {
+			supportSettings = false
+		}
+	}
+
+	// group by positional args are supported post 22.7 and we use them heavily in our queries
+	row := db.QueryRowContext(settingsCtx(ctx, supportSettings), `
         WITH
             splitByChar('.', version()) AS parts,
             toInt32(parts[1]) AS major,
@@ -339,17 +352,6 @@ func (d driver) Open(ctx context.Context, connectorName, instanceID string, conf
 	}
 	if !isSupported {
 		return nil, fmt.Errorf("clickhouse version must be 22.7 or higher")
-	}
-
-	// Using the harmless, non–side-effecting setting
-	// `show_table_uuid_in_table_create_query_if_not_nil` as a probe to check
-	// whether the cluster mode supports modifying query settings. This setting
-	// has no practical use for our purposes.
-	supportSettings := true
-	if _, err := db.ExecContext(stmtCtx, "SET show_table_uuid_in_table_create_query_if_not_nil = 1"); err != nil {
-		if strings.Contains(err.Error(), "Cannot modify") && strings.Contains(err.Error(), "setting in readonly mode") {
-			supportSettings = false
-		}
 	}
 
 	// Compute OLAP queue size
@@ -931,13 +933,9 @@ func openHandle(ctx context.Context, instanceID string, conf *configProperties, 
 		opts.DialTimeout = time.Second * 60
 	}
 
-	// Open the connection.
-	// The clickhouse-go driver derives a 'max_execution_time' setting from the ctx deadline,
-	// which a readonly server rejects; we can't know yet whether this one is readonly.
-	// So strip the deadline while keeping cancellation: the dial and read timeouts in opts already bound the ping.
-	pingCtx := contextWithoutDeadline(ctx)
+	// Open the connection
 	db := sqlx.NewDb(otelsql.OpenDB(clickhouse.Connector(opts)), "clickhouse")
-	err := db.PingContext(pingCtx)
+	err := db.PingContext(ctx)
 	if err != nil {
 		// Detect SSL/TLS mismatch (common causes: "read: EOF" or TLS Alert [21])
 		if strings.Contains(err.Error(), "EOF") ||
@@ -955,7 +953,7 @@ func openHandle(ctx context.Context, instanceID string, conf *configProperties, 
 		// may be the port is http, also try with http protocol if DSN is not provided
 		opts.Protocol = clickhouse.HTTP
 		db = sqlx.NewDb(otelsql.OpenDB(clickhouse.Connector(opts)), "clickhouse")
-		err := db.PingContext(pingCtx)
+		err := db.PingContext(ctx)
 		if err != nil {
 			// Detect SSL/TLS mismatch (common causes: "read: EOF" or  \x15 means TLS Alert [21]"])
 			if strings.Contains(err.Error(), "EOF") ||
