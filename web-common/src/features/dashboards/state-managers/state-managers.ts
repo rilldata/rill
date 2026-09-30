@@ -175,6 +175,12 @@ export function createStateManagers({
     dashboardProvider.metricsViewsProvider,
     dashboardProvider.yamlConfigProvider,
   );
+  expressionFilterManager.storeSync.on("internal-change", () => {
+    metricsExplorerStore.syncExpressionFilter(
+      exploreName,
+      expressionFilterManager,
+    );
+  });
 
   return {
     runtimeClient,

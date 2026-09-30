@@ -268,14 +268,14 @@ export class JoinerFilterManager {
     };
   }
 
-  public removeManagerByName(name: string) {
+  public removeEmptyManagers() {
     this.managers = {
       ...this.managers,
       dimensionManagers: this.managers.dimensionManagers.filter(
-        (dfm) => dfm.name !== name,
+        (dfm) => !!dfm.expr,
       ),
       measureManagers: this.managers.measureManagers.filter(
-        (mfm) => mfm.name !== name,
+        (mfm) => !!mfm.expr,
       ),
     };
   }

@@ -69,7 +69,7 @@ export function applyURLToExploreState(
   defaultExplorePreset: V1ExplorePreset,
   filterManager: ExpressionFilterManager,
 ) {
-  filterManager.setUrlParams(url.searchParams);
+  filterManager.storeSync.setUrlParams(url.searchParams);
 
   const { partialExploreState: partialExploreStateDefaultUrl, errors } =
     convertURLSearchParamsToExploreState(
