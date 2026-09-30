@@ -4,7 +4,7 @@
     type AdminServiceUnsubscribeAlertBodyBody,
     type RpcStatus,
   } from "@rilldata/web-admin/client";
-  import { createAdminServiceUnsubscribeReportUsingToken } from "@rilldata/web-admin/features/scheduled-reports/report-client-using-token";
+  import { createAdminServiceUnsubscribeReportUsingToken } from "@rilldata/web-common/features/scheduled-reports/report-client-using-token.ts";
   import CtaContentContainer from "@rilldata/web-common/components/calls-to-action/CTAContentContainer.svelte";
   import CtaLayoutContainer from "@rilldata/web-common/components/calls-to-action/CTALayoutContainer.svelte";
   import CtaMessage from "@rilldata/web-common/components/calls-to-action/CTAMessage.svelte";

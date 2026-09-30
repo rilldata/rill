@@ -68,11 +68,8 @@
   import type { ExpressionFilterManager } from "@rilldata/web-common/features/dashboards/filters/ExpressionFilterManager.svelte.ts";
   import type { TimeControls } from "@rilldata/web-common/features/dashboards/stores/TimeControls.ts";
   import { untrack } from "svelte";
-  import { EmbedStore } from "@rilldata/web-common/features/embeds/embed-store.ts";
-  import {
-    AdminReportFormMetadataProvider,
-    EmbedReportFormMetadataProvider,
-  } from "@rilldata/web-common/features/scheduled-reports/ReportFormMetadataProvider.svelte.ts";
+  import { createFormMetadataProvider } from "@rilldata/web-common/features/scheduled-reports/FormMetadataProvider.svelte.ts";
+  import { getReportMutationFactory } from "@rilldata/web-common/features/scheduled-reports/ReportFormMetadataProvider.ts";
 
   let {
     open = $bindable(),
@@ -86,9 +83,10 @@
 
   const runtimeClient = useRuntimeClient();
   // svelte-ignore state_referenced_locally
-  const provider = EmbedStore.isEmbedded()
-    ? new EmbedReportFormMetadataProvider(runtimeClient, props.mode === "edit")
-    : new AdminReportFormMetadataProvider(runtimeClient, props.mode === "edit");
+  const provider = createFormMetadataProvider(
+    runtimeClient,
+    getReportMutationFactory(props.mode === "edit"),
+  );
   const { mutation } = provider;
 
   // The dialog is mounted fresh for each report, so deriving these once at init is safe.

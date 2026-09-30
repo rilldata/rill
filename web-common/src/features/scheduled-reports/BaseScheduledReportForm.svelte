@@ -1,6 +1,9 @@
 <script lang="ts">
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
+  import { escapeHtml } from "@rilldata/web-common/lib/i18n";
   import InputLabel from "@rilldata/web-common/components/forms/InputLabel.svelte";
+  import MultiInput from "@rilldata/web-common/components/forms/MultiInput.svelte";
+  import FormSection from "@rilldata/web-common/components/forms/FormSection.svelte";
   import type { TimeControls } from "@rilldata/web-common/features/dashboards/stores/TimeControls.ts";
   import FiltersForm from "@rilldata/web-common/features/scheduled-reports/FiltersForm.svelte";
   import RowsAndColumnsForm from "@rilldata/web-common/features/scheduled-reports/fields/RowsAndColumnsForm.svelte";
@@ -14,7 +17,7 @@
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import InfoCircle from "@rilldata/web-common/components/icons/InfoCircle.svelte";
   import type { Readable } from "svelte/store";
-  import type { SuperFormErrors } from "sveltekit-superforms/client";
+  import type { SuperForm, SuperFormErrors } from "sveltekit-superforms/client";
   import Input from "../../components/forms/Input.svelte";
   import Select from "../../components/forms/Select.svelte";
   import Checkbox from "../../components/forms/Checkbox.svelte";
@@ -31,24 +34,39 @@
   import { specHasTabGroups } from "@rilldata/web-common/features/canvas/stores/tab-group";
   import type { EphemeralMeasureDef } from "@rilldata/web-common/features/dashboards/ephemeral-measures/types.ts";
   import type { V1Resource } from "@rilldata/web-common/runtime-client";
-  import type { ReportFormMetadataProvider } from "@rilldata/web-common/features/scheduled-reports/ReportFormMetadataProvider.svelte.ts";
-  import NotificationForm from "@rilldata/web-common/features/scheduled-reports/NotificationForm.svelte";
+  import type { ReportFormMetadataProvider } from "@rilldata/web-common/features/scheduled-reports/ReportFormMetadataProvider.ts";
 
-  export let formId: string;
-  export let data: Readable<ReportValues>;
-  export let errors: SuperFormErrors<ReportValues>;
-  export let submit: () => void;
-  export let enhance;
-  export let metricsViewName: string;
-  export let exploreName: string;
-  export let canvasName: string = "";
-  // Canvas state (URL search string) to display instead of the page URL; set when
-  // editing a report so the filter bar shows the report's captured state.
-  export let canvasStateOverride: string | undefined = undefined;
-  export let filters: ExpressionFilterManager | undefined = undefined;
-  export let timeControls: TimeControls | undefined = undefined;
-  export let ephemeralMeasures: EphemeralMeasureDef[] | undefined = undefined;
-  export let provider: ReportFormMetadataProvider;
+  let {
+    formId,
+    data,
+    errors,
+    submit,
+    enhance,
+    metricsViewName,
+    exploreName,
+    canvasName = "",
+    canvasStateOverride,
+    filters,
+    timeControls,
+    ephemeralMeasures,
+    provider,
+  }: {
+    formId: string;
+    data: Readable<ReportValues>;
+    errors: SuperFormErrors<ReportValues>;
+    submit: () => void;
+    enhance: SuperForm<ReportValues>["enhance"];
+    metricsViewName: string;
+    exploreName: string;
+    canvasName?: string;
+    // Canvas state (URL search string) to display instead of the page URL; set when
+    // editing a report so the filter bar shows the report's captured state.
+    canvasStateOverride?: string;
+    filters?: ExpressionFilterManager;
+    timeControls?: TimeControls;
+    ephemeralMeasures?: EphemeralMeasureDef[];
+    provider: ReportFormMetadataProvider;
+  } = $props();
 
   const RUN_AS_OPTIONS = [
     {
@@ -64,27 +82,30 @@
   ];
   const runtimeClient = useRuntimeClient();
 
-  $: selectedRunAsOption = RUN_AS_OPTIONS.find(
-    (o) => o.value === $data["webOpenMode"],
+  const selectedRunAsOption = $derived(
+    RUN_AS_OPTIONS.find((o) => o.value === $data["webOpenMode"]),
   );
 
   // Pull the time zone options from the dashboard's spec
-  $: exploreSpecQuery = useExploreValidSpec(runtimeClient, exploreName);
-  $: canvasQuery = useResource<V1Resource>(
-    runtimeClient,
-    canvasName,
-    ResourceKind.Canvas,
+  const exploreSpecQuery = $derived(
+    useExploreValidSpec(runtimeClient, exploreName),
   );
-  $: availableTimeZones = canvasName
-    ? $canvasQuery.data?.canvas?.state?.validSpec?.timeZones
-    : $exploreSpecQuery.data?.explore?.timeZones;
+  const canvasQuery = $derived(
+    useResource<V1Resource>(runtimeClient, canvasName, ResourceKind.Canvas),
+  );
+  const availableTimeZones = $derived(
+    canvasName
+      ? $canvasQuery.data?.canvas?.state?.validSpec?.timeZones
+      : $exploreSpecQuery.data?.explore?.timeZones,
+  );
 
   // Gates the all-tabs option in the canvas PDF variant.
-  $: showTabOptions = specHasTabGroups(
-    $canvasQuery.data?.canvas?.state?.validSpec?.rows,
+  const showTabOptions = $derived(
+    specHasTabGroups($canvasQuery.data?.canvas?.state?.validSpec?.rows),
   );
-  $: canvasFiltersEnabled =
-    $canvasQuery.data?.canvas?.state?.validSpec?.filtersEnabled ?? true;
+  const canvasFiltersEnabled = $derived(
+    $canvasQuery.data?.canvas?.state?.validSpec?.filtersEnabled ?? true,
+  );
 
   // Keyboard counterpart of the read-only filter bar's pointer-events guard:
   // its controls remain focusable, so kick focus back out to keep them inoperable.
@@ -268,7 +289,55 @@
       />
     {/if}
 
-    <NotificationForm {data} {errors} {provider} />
+    <MultiInput
+      id="emailRecipients"
+      label={m.report_form_email_recipients()}
+      hint={m.report_form_email_hint()}
+      bind:values={$data["emailRecipients"]}
+      errors={$errors["emailRecipients"]}
+      singular="email"
+      plural="emails"
+      placeholder={m.report_form_email_placeholder()}
+    />
+    {#if provider.hasSlackNotifier}
+      <FormSection
+        bind:enabled={$data["enableSlackNotification"]}
+        showSectionToggle
+        title={m.report_form_slack_title()}
+        padding=""
+      >
+        <MultiInput
+          id="slackChannels"
+          label={m.report_form_channels()}
+          hint={m.report_form_slack_channels_hint()}
+          bind:values={$data["slackChannels"]}
+          errors={$errors["slackChannels"]}
+          singular="channel"
+          plural="channels"
+          placeholder={m.alert_form_slack_placeholder()}
+        />
+        <MultiInput
+          id="slackUsers"
+          label={m.report_form_slack_users()}
+          hint={m.report_form_slack_users_hint()}
+          bind:values={$data["slackUsers"]}
+          errors={$errors["slackUsers"]}
+          singular="user"
+          plural="users"
+          placeholder={m.report_form_email_placeholder()}
+        />
+      </FormSection>
+    {:else}
+      <FormSection title={m.report_form_slack_title()} padding="">
+        <svelte:fragment slot="description">
+          <span class="text-sm text-fg-secondary">
+            {@html m.report_form_slack_not_configured({
+              link: `<a href="https://docs.rilldata.com/guides/alerts#configuring-slack-targets" target="_blank">${escapeHtml(m.report_form_docs())}</a>`,
+            })}
+          </span>
+        </svelte:fragment>
+      </FormSection>
+    {/if}
   </div>
 </form>
 

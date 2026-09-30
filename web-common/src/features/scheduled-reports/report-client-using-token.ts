@@ -20,7 +20,7 @@ import {
   type V1EditReportResponse,
   type V1UnsubscribeReportResponse,
 } from "@rilldata/web-admin/client";
-import httpClient from "@rilldata/web-admin/client/http-client";
+import httpClient from "@rilldata/web-admin/client/http-client.ts";
 
 export const adminServiceCreateReportUsingToken = (
   org: string,
