@@ -8,7 +8,10 @@ import {
   getValuesInExpression,
   createInExpression,
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
-import type { V1Expression } from "@rilldata/web-common/runtime-client";
+import type {
+  V1Expression,
+  V1MetricsViewSpec,
+} from "@rilldata/web-common/runtime-client";
 import { get, writable, type Readable } from "svelte/store";
 import {
   afterAll,
@@ -24,6 +27,7 @@ import {
   dimKeyFromRow,
 } from "../../../dashboards/pivot/pivot-click-selection";
 import { createPivotClickToFilter } from "./pivot-click-to-filter";
+import { DimensionFilterManager } from "@rilldata/web-common/features/dashboards/filters/dimension-filters/DimensionFilterManager.svelte.ts";
 import { ExpressionFilterManager } from "@rilldata/web-common/features/dashboards/filters/ExpressionFilterManager.svelte.ts";
 import type { MetricsViewsProvider } from "@rilldata/web-common/features/metrics-views/providers/MetricsViewsProvider.svelte.ts";
 import { YAMLConfigProvider } from "@rilldata/web-common/features/dashboards/providers/YAMLConfigProvider.svelte.ts";
@@ -32,13 +36,31 @@ import {
   createTestMetricsViewsProvider,
   useMetricsViewMocks,
 } from "@rilldata/web-common/features/metrics-views/providers/test/metrics-views-test-utils.svelte.ts";
-import { PIVOT_METRICS_INIT, PIVOT_TEST_METRICS_NAME } from "./pivot-test-data";
+import {
+  PIVOT_COUNTRY_DIMENSION,
+  PIVOT_METRICS_INIT,
+  PIVOT_TEST_METRICS_NAME,
+  PIVOT_TOTAL_MEASURE,
+} from "./pivot-test-data";
 
 // ---------------------------------------------------------------------------
 // Shared test helpers
 // ---------------------------------------------------------------------------
 
-useMetricsViewMocks({ [PIVOT_TEST_METRICS_NAME]: PIVOT_METRICS_INIT });
+// Second metrics view declaring the same dimensions, mirroring a canvas with
+// two metrics views such as `duckdb_commits_metrics` and `rill_commits_metrics`
+// in https://github.com/rilldata/rill/issues/9845.
+const PIVOT_MIRROR_METRICS_NAME = "mv2";
+const PIVOT_METRICS_MIRROR_INIT: V1MetricsViewSpec = {
+  ...PIVOT_METRICS_INIT,
+  displayName: "PivotTest Mirror",
+  table: "PivotTest_Mirror_Source",
+};
+
+useMetricsViewMocks({
+  [PIVOT_TEST_METRICS_NAME]: PIVOT_METRICS_INIT,
+  [PIVOT_MIRROR_METRICS_NAME]: PIVOT_METRICS_MIRROR_INIT,
+});
 
 // The specs are read-only, so a single provider serves every test in this file.
 // Each test still gets its own ExpressionFilterManager.
@@ -1339,5 +1361,98 @@ describe("header/cell mutual exclusivity", () => {
     expect(sel(result).isCellSelected(dkUS, euColId)).toBe(true);
 
     result.destroy();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Canvas filter scope parity (https://github.com/rilldata/rill/issues/9845)
+//
+// The filter bar and a table click must write the same URL params: one chip
+// for the dimension, fanned out to every metrics view that declares it.
+// ---------------------------------------------------------------------------
+
+describe("canvas filter scope parity", () => {
+  let twoMvProvider: MetricsViewsProvider;
+  let destroyTwoMvProvider: () => void;
+
+  beforeAll(async () => {
+    const provider = await createTestMetricsViewsProvider([
+      PIVOT_TEST_METRICS_NAME,
+      PIVOT_MIRROR_METRICS_NAME,
+    ]);
+    twoMvProvider = provider.value;
+    destroyTwoMvProvider = provider.destroy;
+  });
+
+  afterAll(() => destroyTwoMvProvider());
+
+  /** A real filter manager over both metrics views, torn down after the test. */
+  function createTwoMvFilterManager() {
+    const { value, destroy } = createInEffectRoot(() => {
+      return new ExpressionFilterManager(
+        twoMvProvider,
+        new YAMLConfigProvider(),
+      );
+    });
+    filterManagerCleanups.push(destroy);
+    return value;
+  }
+
+  /** Clicks the `country` cell of a one-row pivot and returns the URL params. */
+  function clickCountryCell() {
+    const filterManager = createTwoMvFilterManager();
+    const config = makeConfig({
+      rowDimensionNames: [PIVOT_COUNTRY_DIMENSION],
+      measureNames: [PIVOT_TOTAL_MEASURE],
+      isFlat: true,
+    });
+    const data: PivotDataRow[] = [{ country: "US", total: 100 }];
+    const result = createPivotClickToFilter(
+      createFactoryArgs({
+        pivotConfig: writable(config) as Readable<PivotDataStoreConfig>,
+        pivotDataStore: stubPivotDataStore(data),
+        filterManager,
+        activeComponent: writable<string | null>("pivot-1"),
+      }),
+    );
+
+    result.handleCellClickToFilter(
+      "0",
+      PIVOT_COUNTRY_DIMENSION,
+      false,
+      data[0],
+    );
+
+    const searchParams = new URLSearchParams();
+    filterManager.applyFilterToParams(searchParams);
+    result.destroy();
+    return searchParams;
+  }
+
+  it("table click writes the filter for every metrics view declaring the dimension", () => {
+    const searchParams = clickCountryCell();
+
+    expect(searchParams.get(`f.${PIVOT_TEST_METRICS_NAME}`)).toBe(
+      `${PIVOT_COUNTRY_DIMENSION} IN ('US')`,
+    );
+    expect(searchParams.get(`f.${PIVOT_MIRROR_METRICS_NAME}`)).toBe(
+      `${PIVOT_COUNTRY_DIMENSION} IN ('US')`,
+    );
+  });
+
+  it("filter bar writes byte-identical params for the same selection", () => {
+    // The filter bar edits the shared manager directly: AddExpressionFilterButton
+    // calls addNewFilter, then the DimensionFilter chip applies the selection.
+    const filterManager = createTwoMvFilterManager();
+    filterManager.addNewFilter(PIVOT_COUNTRY_DIMENSION);
+    const dfm = filterManager.filterManagersMap[PIVOT_COUNTRY_DIMENSION];
+    expect(dfm).toBeInstanceOf(DimensionFilterManager);
+    (dfm as DimensionFilterManager).setSelectedValues(["US"], false);
+
+    const searchParams = new URLSearchParams();
+    filterManager.applyFilterToParams(searchParams);
+
+    expect(searchParams.toString()).toBe(clickCountryCell().toString());
+    expect(filterManager.sortedFilterManagers.dimensions).toHaveLength(1);
   });
 });
