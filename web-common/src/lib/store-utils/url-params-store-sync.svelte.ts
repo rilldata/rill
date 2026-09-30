@@ -16,7 +16,7 @@ export interface UrlParamsStore {
   on: EventEmitter<UrlParamsStoreEvents>["on"];
 
   /**
-   * Keys set by this class.
+   * Url param keys set by this class.
    */
   paramKeys: Set<string>;
   normalizeParams(urlParams: URLSearchParams): URLSearchParams;
@@ -67,11 +67,6 @@ export class UrlParamsChangeTracker {
    */
   public setUrlParams(urlParams: URLSearchParams) {
     if (!this.store.ready) {
-      if (this.log)
-        console.log(
-          "UrlParamsChangeTracker::setUrlParams::delay",
-          urlParams.toString(),
-        );
       this.pendingParams = urlParams;
       return;
     }
@@ -88,12 +83,6 @@ export class UrlParamsChangeTracker {
       expandedUrlParams,
       this.store.paramKeys,
     );
-    if (this.log)
-      console.log(
-        "UrlParamsChangeTracker::setUrlParams",
-        this.searchParams?.toString() === relevantParams.toString(),
-        relevantParams.toString(),
-      );
     if (this.searchParams?.toString() === relevantParams.toString()) return;
 
     this.searchParams = this.store.normalizeParams(relevantParams);

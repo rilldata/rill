@@ -272,10 +272,16 @@ export class JoinerFilterManager {
     this.managers = {
       ...this.managers,
       dimensionManagers: this.managers.dimensionManagers.filter(
-        (dfm) => !!dfm.expr,
+        (dfm) =>
+          !!dfm.expr ||
+          this.yamlConfigProvider?.requiredFilters[dfm.name] ||
+          this.yamlConfigProvider?.pinnedFilters[dfm.name],
       ),
       measureManagers: this.managers.measureManagers.filter(
-        (mfm) => !!mfm.expr,
+        (mfm) =>
+          !!mfm.expr ||
+          this.yamlConfigProvider?.requiredFilters[mfm.name] ||
+          this.yamlConfigProvider?.pinnedFilters[mfm.name],
       ),
     };
   }

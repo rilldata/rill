@@ -71,7 +71,7 @@ export class ExpressionFilterManager implements UrlParamsStore {
     public readonly yamlConfigProvider: YAMLConfigProvider,
     private readonly singleParamFormMv = false,
   ) {
-    this.storeSync = new UrlParamsChangeTracker(this, true);
+    this.storeSync = new UrlParamsChangeTracker(this);
 
     const syncParamKeys = (names: string[]) => {
       this.paramKeys = new Set([

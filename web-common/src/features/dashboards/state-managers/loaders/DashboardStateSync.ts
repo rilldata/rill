@@ -309,11 +309,9 @@ export class DashboardStateSync {
       }
 
       // Merge the partial state from url into the store
-      this.expressionFilterParamsTracker.setUrlParams(urlSearchParams);
       metricsExplorerStore.mergePartialExplorerEntity(
         this.exploreName,
         partialExplore,
-        this.expressionFilterManager,
       );
       // Get time controls state after explore state is updated.
       const timeControlsState = get(this.timeControlStore);
@@ -348,6 +346,9 @@ export class DashboardStateSync {
       // Release before the goto below: state changes made while the navigation is in flight
       // must still be picked up by gotoNewState.
       this.updating = false;
+      if (redirectUrl) {
+        this.expressionFilterManager.setUrlParams(redirectUrl.searchParams);
+      }
     }
     // Try-finally without a catch. Rest of the code is not run if the above try body throws.
 
