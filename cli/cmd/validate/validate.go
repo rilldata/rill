@@ -63,6 +63,7 @@ func ValidateCmd(ch *cmdutil.Helper) *cobra.Command {
 	var environment string
 	var modelTimeoutSeconds uint32
 	var outputFile string
+	var dangerouslySkipRunningRillCheck bool
 
 	validateCmd := &cobra.Command{
 		Use:   "validate [<path>]",
@@ -81,7 +82,7 @@ func ValidateCmd(ch *cmdutil.Helper) *cobra.Command {
 				return fmt.Errorf("only human and json output format is supported for validate command")
 			}
 
-			if cmdutil.IsLocalRillRunning(cmd.Context()) {
+			if !dangerouslySkipRunningRillCheck && cmdutil.IsLocalRillRunning(cmd.Context()) {
 				return fmt.Errorf("`rill start` appears to be running on http://localhost:9009; stop it and rerun validate")
 			}
 
@@ -144,6 +145,7 @@ func ValidateCmd(ch *cmdutil.Helper) *cobra.Command {
 	validateCmd.Flags().StringVar(&logFormat, "log-format", "console", "Log format (options: \"console\", \"json\")")
 	validateCmd.Flags().Uint32Var(&modelTimeoutSeconds, "model-timeout-seconds", 60, "Timeout for reconciliation of models, set 0 for no timeout")
 	validateCmd.Flags().StringVarP(&outputFile, "output-file", "o", "", "Output file for validation results (JSON format)")
+	validateCmd.Flags().BoolVar(&dangerouslySkipRunningRillCheck, "dangerously-skip-running-rill-check", false, "Skip checking for a running Rill instance on localhost:9009; concurrent access to the same project can cause database conflicts")
 
 	return validateCmd
 }
