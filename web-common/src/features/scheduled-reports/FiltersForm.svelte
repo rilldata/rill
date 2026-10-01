@@ -43,11 +43,15 @@
     side?: "top" | "right" | "bottom" | "left";
   } = $props();
 
+  // The filters belong to the report or alert in the form, not to the page the form is opened on.
+  // Syncing with the page URL would replace them with the filters in that URL, which are usually none.
   // svelte-ignore state_referenced_locally
   syncStoreWithSource(
     filters,
     async (newUrlParams) => filters.setUrlParams(newUrlParams),
     () => filters.metricsViewsProvider.ready,
+    undefined,
+    true,
   );
 
   let {
