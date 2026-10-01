@@ -179,6 +179,9 @@ export class MetricsViewsProvider {
     });
 
     this.metricsViewNames = metricsViewNames;
+    // The specs for the new set have to load before dependents can use them.
+    // `processResources` below marks them ready again if they are already available.
+    this.specsReady = false;
     this.pendingSpecs = new Set(metricsViewNames);
     this.events.emit("update-metrics-views", this.metricsViewNames);
     this.processResources();

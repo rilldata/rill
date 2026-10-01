@@ -50,6 +50,7 @@ export function useTestFilterManager(specs: MetricsViewSpecs) {
         new ExpressionFilterManager(
           metricsViewsProvider,
           new YAMLConfigProvider(),
+          true,
         ),
     );
     filterManager = created.value;

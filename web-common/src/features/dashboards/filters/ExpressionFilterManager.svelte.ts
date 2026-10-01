@@ -84,7 +84,11 @@ export class ExpressionFilterManager implements UrlParamsStore {
     };
     const unsubUpdate = metricsViewsProvider.on(
       "update-metrics-views",
-      syncParamKeys,
+      (names) => {
+        syncParamKeys(names);
+        // Specs for the new metrics views are loading, so params are queued until `specs-loaded`.
+        this.ready = metricsViewsProvider.specsReady;
+      },
     );
     // Call sync immediately for already loaded metricsViewsProvider
     syncParamKeys(metricsViewsProvider.metricsViewNames);

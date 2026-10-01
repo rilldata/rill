@@ -516,6 +516,126 @@ describe("setUrlParams", () => {
   });
 });
 
+describe("single param form", () => {
+  function createSingleParamFilterManager() {
+    const { value, destroy } = createInEffectRoot(
+      () =>
+        new ExpressionFilterManager(
+          metricsViewsProvider,
+          new YAMLConfigProvider(),
+          true,
+        ),
+    );
+    cleanups.push(destroy);
+    return value;
+  }
+
+  it("ignores per metrics view params", () => {
+    const filterManager = createSingleParamFilterManager();
+
+    // Explore only reads the singular param, so the chips must not pick up anything else.
+    filterManager.storeSync.setUrlParams(
+      perMetricsViewParams({
+        [AD_BIDS_METRICS_NAME]: `${AD_BIDS_PUBLISHER_DIMENSION} IN ('Google')`,
+      }),
+    );
+
+    expect(filterManager.sortedFilterManagers.dimensions).toEqual([]);
+  });
+
+  it("reads and writes back the singular param", () => {
+    const filterManager = createSingleParamFilterManager();
+    const filter = `${AD_BIDS_PUBLISHER_DIMENSION} IN ('Google')`;
+
+    filterManager.storeSync.setUrlParams(sharedParam(filter));
+    expect(names(filterManager.sortedFilterManagers.dimensions)).toEqual([
+      AD_BIDS_PUBLISHER_DIMENSION,
+    ]);
+
+    const searchParams = new URLSearchParams();
+    filterManager.applyFilterToParams(searchParams);
+    expect(searchParams.toString()).toEqual(sharedParam(filter).toString());
+  });
+});
+
+describe("metrics view names change", () => {
+  // These tests change the metrics views, so each gets its own provider.
+  async function createFilterManagerWithOwnProvider(
+    metricsViewNames: string[],
+  ) {
+    const provider = await createTestMetricsViewsProvider(metricsViewNames);
+    const { value, destroy } = createInEffectRoot(
+      () =>
+        new ExpressionFilterManager(provider.value, new YAMLConfigProvider()),
+    );
+    cleanups.push(() => {
+      destroy();
+      provider.value.cleanup();
+      provider.destroy();
+    });
+    return { provider: provider.value, filterManager: value };
+  }
+
+  it("queues params until the specs of the new metrics views load", async () => {
+    const { provider, filterManager } =
+      await createFilterManagerWithOwnProvider([AD_BIDS_METRICS_NAME]);
+    expect(filterManager.ready).toBe(true);
+
+    // A metrics view that is never mocked stays loading.
+    provider.setMetricsViewNames([AD_BIDS_METRICS_NAME, "missing_metrics"]);
+    expect(provider.specsReady).toBe(false);
+    expect(filterManager.ready).toBe(false);
+
+    filterManager.storeSync.setUrlParams(
+      sharedParam(`${AD_BIDS_DOMAIN_DIMENSION} IN ('google.com')`),
+    );
+    expect(filterManager.sortedFilterManagers.dimensions).toEqual([]);
+
+    provider.setMetricsViewNames([AD_BIDS_METRICS_NAME]);
+    expect(filterManager.ready).toBe(true);
+    expect(names(filterManager.sortedFilterManagers.dimensions)).toEqual([
+      AD_BIDS_DOMAIN_DIMENSION,
+    ]);
+  });
+
+  it("drops filters the new metrics views do not define", async () => {
+    const { provider, filterManager } =
+      await createFilterManagerWithOwnProvider([
+        AD_BIDS_METRICS_NAME,
+        AD_BIDS_MIRROR_METRICS_NAME,
+      ]);
+    filterManager.storeSync.setUrlParams(
+      sharedParam(
+        `${AD_BIDS_PUBLISHER_DIMENSION} IN ('Google') AND ${AD_BIDS_COUNTRY_DIMENSION} IN ('US')`,
+      ),
+    );
+    expect(names(filterManager.sortedFilterManagers.dimensions)).toEqual([
+      AD_BIDS_COUNTRY_DIMENSION,
+      AD_BIDS_PUBLISHER_DIMENSION,
+    ]);
+
+    const internalChanges: string[] = [];
+    cleanups.push(
+      filterManager.storeSync.on("internal-change", (params) =>
+        internalChanges.push(params.toString()),
+      ),
+    );
+
+    // Only the mirror defines country.
+    provider.setMetricsViewNames([AD_BIDS_METRICS_NAME]);
+    await new Promise<void>((resolve) => queueMicrotask(resolve));
+
+    expect(names(filterManager.sortedFilterManagers.dimensions)).toEqual([
+      AD_BIDS_PUBLISHER_DIMENSION,
+    ]);
+    expect(internalChanges).toEqual([
+      perMetricsViewParams({
+        [AD_BIDS_METRICS_NAME]: `${AD_BIDS_PUBLISHER_DIMENSION} IN ('Google')`,
+      }).toString(),
+    ]);
+  });
+});
+
 describe("applyFilterToParams", () => {
   it("writes a param per metrics view and drops the legacy singular one", () => {
     const filterManager = createFilterManager();

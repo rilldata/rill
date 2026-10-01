@@ -54,10 +54,7 @@ export class UrlParamsChangeTracker {
     this.events,
   ) as typeof this.events.on;
 
-  public constructor(
-    private readonly store: UrlParamsStore,
-    private readonly log = false,
-  ) {
+  public constructor(private readonly store: UrlParamsStore) {
     this.store.on("ready", () => this.replayPendingParams());
   }
 
@@ -122,13 +119,32 @@ export class UrlParamsChangeTracker {
   }
 
   private replayPendingParams() {
-    if (!this.pendingParams) return;
+    if (!this.pendingParams) {
+      this.reapplyCurrentParams();
+      return;
+    }
     const pendingParams = this.pendingParams;
     // Unset before calling setUrlParams.
     // This will ensure that if params are still supposed to be pending, they are not cleared.
     this.pendingParams = undefined;
 
     this.setUrlParams(pendingParams);
+  }
+
+  /**
+   * Parses the current params again once the store is ready after a change in its dependencies.
+   * Goes around `setUrlParams` since the params themselves have not changed.
+   * Parts the store can no longer represent, like a filter on a dropped dimension, are removed,
+   * and `stateChanged` reports the removal.
+   */
+  private reapplyCurrentParams() {
+    if (!this.searchParams) return;
+
+    this.searchParams = this.store.normalizeParams(
+      copySubsetParams(this.searchParams, this.store.paramKeys),
+    );
+    this.store.setUrlParams(this.searchParams);
+    this.stateChanged();
   }
 
   private maybeNotifyStateChange() {
