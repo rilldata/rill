@@ -20,10 +20,6 @@ _[string]_ - Refers to the display name for the canvas
 
 _[string]_ - Deprecated: use display_name instead. Refers to the display name for the canvas
 
-### `description`
-
-_[string]_ - Description for the canvas dashboard
-
 ### `banner`
 
 _[string]_ - Refers to the custom banner displayed in the header of a Canvas dashboard.

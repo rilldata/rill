@@ -63,7 +63,7 @@ For each metrics view that is using a separate OLAP engine (other than the defau
 
 ```yaml
 type: metrics_view
-title: <metrics_view_name>
+display_name: <metrics_view_display_name>
 connector: <olap_engine>
 table: <external_table_in_olap>
 ...
