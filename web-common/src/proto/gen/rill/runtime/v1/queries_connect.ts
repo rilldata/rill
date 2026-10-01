@@ -3,7 +3,7 @@
 /* eslint-disable */
 // @ts-nocheck
 
-import { ColumnCardinalityRequest, ColumnCardinalityResponse, ColumnDescriptiveStatisticsRequest, ColumnDescriptiveStatisticsResponse, ColumnNullCountRequest, ColumnNullCountResponse, ColumnNumericHistogramRequest, ColumnNumericHistogramResponse, ColumnRollupIntervalRequest, ColumnRollupIntervalResponse, ColumnRugHistogramRequest, ColumnRugHistogramResponse, ColumnTimeGrainRequest, ColumnTimeGrainResponse, ColumnTimeRangeRequest, ColumnTimeRangeResponse, ColumnTimeSeriesRequest, ColumnTimeSeriesResponse, ColumnTopKRequest, ColumnTopKResponse, ConvertExpressionToMetricsSQLRequest, ConvertExpressionToMetricsSQLResponse, ExportReportRequest, ExportReportResponse, ExportRequest, ExportResponse, MetricsViewAggregationRequest, MetricsViewAggregationResponse, MetricsViewAnnotationsRequest, MetricsViewAnnotationsResponse, MetricsViewComparisonRequest, MetricsViewComparisonResponse, MetricsViewRowsRequest, MetricsViewRowsResponse, MetricsViewSchemaRequest, MetricsViewSchemaResponse, MetricsViewSearchRequest, MetricsViewSearchResponse, MetricsViewTimeRangeRequest, MetricsViewTimeRangeResponse, MetricsViewTimeRangesRequest, MetricsViewTimeRangesResponse, MetricsViewTimeSeriesRequest, MetricsViewTimeSeriesResponse, MetricsViewToplistRequest, MetricsViewToplistResponse, MetricsViewTotalsRequest, MetricsViewTotalsResponse, ProjectStorageRequest, ProjectStorageResponse, QueryRequest, QueryResponse, ResolveCanvasRequest, ResolveCanvasResponse, ResolveComponentRequest, ResolveComponentResponse, ResolveTemplatedStringRequest, ResolveTemplatedStringResponse, TableCardinalityRequest, TableCardinalityResponse, TableColumnsRequest, TableColumnsResponse, TableRowsRequest, TableRowsResponse } from "./queries_pb.js";
+import { ColumnCardinalityRequest, ColumnCardinalityResponse, ColumnDescriptiveStatisticsRequest, ColumnDescriptiveStatisticsResponse, ColumnNullCountRequest, ColumnNullCountResponse, ColumnNumericHistogramRequest, ColumnNumericHistogramResponse, ColumnRollupIntervalRequest, ColumnRollupIntervalResponse, ColumnRugHistogramRequest, ColumnRugHistogramResponse, ColumnTimeGrainRequest, ColumnTimeGrainResponse, ColumnTimeRangeRequest, ColumnTimeRangeResponse, ColumnTimeSeriesRequest, ColumnTimeSeriesResponse, ColumnTopKRequest, ColumnTopKResponse, ConvertExpressionToMetricsSQLRequest, ConvertExpressionToMetricsSQLResponse, ExportReportRequest, ExportReportResponse, ExportRequest, ExportResponse, MetricsViewAggregationRequest, MetricsViewAggregationResponse, MetricsViewAnnotationsRequest, MetricsViewAnnotationsResponse, MetricsViewComparisonRequest, MetricsViewComparisonResponse, MetricsViewEvaluateRequest, MetricsViewEvaluateResponse, MetricsViewRowsRequest, MetricsViewRowsResponse, MetricsViewSchemaRequest, MetricsViewSchemaResponse, MetricsViewSearchRequest, MetricsViewSearchResponse, MetricsViewTimeRangeRequest, MetricsViewTimeRangeResponse, MetricsViewTimeRangesRequest, MetricsViewTimeRangesResponse, MetricsViewTimeSeriesRequest, MetricsViewTimeSeriesResponse, MetricsViewToplistRequest, MetricsViewToplistResponse, MetricsViewTotalsRequest, MetricsViewTotalsResponse, ProjectStorageRequest, ProjectStorageResponse, QueryRequest, QueryResponse, ResolveCanvasRequest, ResolveCanvasResponse, ResolveComponentRequest, ResolveComponentResponse, ResolveTemplatedStringRequest, ResolveTemplatedStringResponse, TableCardinalityRequest, TableCardinalityResponse, TableColumnsRequest, TableColumnsResponse, TableRowsRequest, TableRowsResponse } from "./queries_pb.js";
 import { MethodKind } from "@bufbuild/protobuf";
 
 /**
@@ -211,6 +211,17 @@ export const QueryService = {
       name: "MetricsViewAnnotations",
       I: MetricsViewAnnotationsRequest,
       O: MetricsViewAnnotationsResponse,
+      kind: MethodKind.Unary,
+    },
+    /**
+     * MetricsViewEvaluate runs a query for measures/dimensions and passes it off to an AI model to give structured evaluation.
+     *
+     * @generated from rpc rill.runtime.v1.QueryService.MetricsViewEvaluate
+     */
+    metricsViewEvaluate: {
+      name: "MetricsViewEvaluate",
+      I: MetricsViewEvaluateRequest,
+      O: MetricsViewEvaluateResponse,
       kind: MethodKind.Unary,
     },
     /**

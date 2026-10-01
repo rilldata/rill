@@ -2,6 +2,7 @@ package ai_test
 
 import (
 	"context"
+	"errors"
 	"sync"
 	"testing"
 
@@ -52,6 +53,10 @@ func (s *scriptedAIService) Complete(_ context.Context, opts *drivers.CompleteOp
 		InputTokens:  1,
 		OutputTokens: 1,
 	}, nil
+}
+
+func (s *scriptedAIService) Evaluate(ctx context.Context, req *aiv1.EvaluateRequest) (*aiv1.EvaluateResponse, error) {
+	return nil, errors.New("not implemented")
 }
 
 // textTurn makes the model reply with a plain text message (ending the tool loop).

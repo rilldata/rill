@@ -14,6 +14,7 @@
   import {
     createQueryServiceMetricsViewAggregation,
     type MetricsViewSpecDimension,
+    queryServiceMetricsViewEvaluate,
     type V1Expression,
     type V1MetricsViewAggregationMeasure,
     type V1TimeRange,
@@ -152,19 +153,20 @@
     !!comparisonTimeRange,
   );
 
+  $: aggregationRequest = {
+    metricsView: metricsViewName,
+    dimensions: [{ name: dimensionName }],
+    measures: sortedMeasures,
+    timeRange,
+    comparisonTimeRange,
+    sort,
+    where: sanitiseExpression(filterSet),
+    limit: queryLimit.toString(),
+    offset: "0",
+  };
   $: sortedQuery = createQueryServiceMetricsViewAggregation(
     client,
-    {
-      metricsView: metricsViewName,
-      dimensions: [{ name: dimensionName }],
-      measures: sortedMeasures,
-      timeRange,
-      comparisonTimeRange,
-      sort,
-      where: sanitiseExpression(filterSet),
-      limit: queryLimit.toString(),
-      offset: "0",
-    },
+    aggregationRequest,
     {
       query: {
         enabled: timeControlsReady,
@@ -234,6 +236,32 @@
       if (areAllTableRowsSelected) return;
       toggleAllSearchItems();
     }
+
+    if ((e.ctrlKey || e.metaKey) && e.key === "e") {
+      if (e.target instanceof HTMLElement && e.target.tagName === "INPUT")
+        return;
+      e.preventDefault();
+      void evaluate();
+    }
+  }
+
+  async function evaluate() {
+    await queryServiceMetricsViewEvaluate(client, {
+      metricsViewName,
+      query: {
+        ...aggregationRequest,
+        limit: "5",
+      },
+      question: {
+        noul: {
+          instructions: "Is this a significant contributor?",
+          criteria: {
+            true: "Has high impressions/records or high revenue",
+            false: "Has low impressions/records or high revenue",
+          },
+        },
+      },
+    });
   }
 </script>
 

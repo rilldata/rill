@@ -2,12 +2,15 @@ package server
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
+	"sort"
 	"strings"
 	"time"
 
+	aiv1 "github.com/rilldata/rill/proto/gen/rill/ai/v1"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/metricsview"
@@ -19,8 +22,11 @@ import (
 	"github.com/rilldata/rill/runtime/queries"
 	"github.com/rilldata/rill/runtime/server/auth"
 	"go.opentelemetry.io/otel/attribute"
+	"golang.org/x/sync/errgroup"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/types/known/structpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -48,48 +54,7 @@ func (s *Server) MetricsViewAggregation(ctx context.Context, req *runtimev1.Metr
 		return nil, ErrForbidden
 	}
 
-	tr := req.TimeRange
-	if req.TimeStart != nil || req.TimeEnd != nil {
-		tr = &runtimev1.TimeRange{
-			Start: req.TimeStart,
-			End:   req.TimeEnd,
-		}
-	}
-
-	q := &queries.MetricsViewAggregation{
-		MetricsViewName:     req.MetricsView,
-		Dimensions:          req.Dimensions,
-		Measures:            req.Measures,
-		Sort:                req.Sort,
-		TimeRange:           tr,
-		ComparisonTimeRange: req.ComparisonTimeRange,
-		Where:               req.Where,
-		WhereSQL:            req.WhereSql,
-		Having:              req.Having,
-		HavingSQL:           req.HavingSql,
-		Filter:              req.Filter,
-		Limit:               &req.Limit,
-		Offset:              req.Offset,
-		PivotOn:             req.PivotOn,
-		SecurityClaims:      claims,
-		Exact:               req.Exact,
-		Aliases:             req.Aliases,
-		FillMissing:         req.FillMissing,
-		Rows:                req.Rows,
-	}
-	var collector *observability.RequestScopedCollector
-	if req.Trace && canTrace(claims) {
-		collector = &observability.RequestScopedCollector{}
-		ctx = observability.WithRequestScopedCollector(ctx, collector)
-	}
-	err := s.runtime.Query(ctx, req.InstanceId, q, int(req.Priority))
-	if err != nil {
-		return nil, withTrace(err, collector)
-	}
-	if collector != nil {
-		q.Result.Trace = collector.ToProto()
-	}
-	return q.Result, nil
+	return s.runAggregationQuery(ctx, req, claims)
 }
 
 // MetricsViewToplist implements QueryService.
@@ -716,6 +681,124 @@ func (s *Server) MetricsViewAnnotations(ctx context.Context, req *runtimev1.Metr
 	}, nil
 }
 
+// evaluateConcurrency is the maximum number of rows evaluated in parallel by MetricsViewEvaluate.
+const evaluateConcurrency = 8
+
+func (s *Server) MetricsViewEvaluate(ctx context.Context, req *runtimev1.MetricsViewEvaluateRequest) (*runtimev1.MetricsViewEvaluateResponse, error) {
+	claims := auth.GetClaims(ctx, req.InstanceId)
+	if !claims.Can(runtime.ReadMetrics) {
+		return nil, ErrForbidden
+	}
+
+	if req.Query == nil {
+		return nil, status.Error(codes.InvalidArgument, "query is required")
+	}
+	if req.Question == nil {
+		return nil, status.Error(codes.InvalidArgument, "question is required")
+	}
+	// Ensure the query runs against the instance and metrics view that the claims were checked for.
+	req.Query.InstanceId = req.InstanceId
+	req.Query.MetricsView = req.MetricsViewName
+
+	aggregationResp, err := s.runAggregationQuery(ctx, req.Query, claims)
+	if err != nil {
+		return nil, err
+	}
+
+	// The request currently only supports a single question, so we give it a fixed label.
+	// TODO: Accept multiple labeled questions in the request.
+	reqQuestions := map[string]*aiv1.EvaluateQuestion{"answer": req.Question}
+
+	// The resolver expects the questions as maps, so we round-trip them through JSON.
+	questions := make(map[string]any, len(reqQuestions))
+	labels := make([]string, 0, len(reqQuestions))
+	for label, q := range reqQuestions {
+		questionJSON, err := protojson.Marshal(q)
+		if err != nil {
+			return nil, err
+		}
+		var question map[string]any
+		if err := json.Unmarshal(questionJSON, &question); err != nil {
+			return nil, err
+		}
+		questions[label] = question
+		labels = append(labels, label)
+	}
+	sort.Strings(labels)
+
+	// Evaluate the questions separately for each row, passing the row as state, and append a column per question.
+	// Rows are evaluated in parallel; each goroutine only mutates its own row, so no locking is needed.
+	grp, grpCtx := errgroup.WithContext(ctx)
+	grp.SetLimit(evaluateConcurrency)
+	for _, row := range aggregationResp.Data {
+		grp.Go(func() error {
+			res, _, err := s.runtime.Resolve(grpCtx, &runtime.ResolveOptions{
+				InstanceID: req.InstanceId,
+				Resolver:   "ai_evaluate",
+				ResolverProperties: map[string]any{
+					// TODO: Use the instance's configured AI connector instead of hardcoding ollama.
+					"connector": "ollama",
+					"questions": questions,
+				},
+				Args: map[string]any{
+					"state": row.AsMap(),
+				},
+				Claims: claims,
+			})
+			if err != nil {
+				return err
+			}
+			defer res.Close()
+
+			// The resolver returns one row per question.
+			for {
+				evalRow, err := res.Next()
+				if err != nil {
+					if errors.Is(err, io.EOF) {
+						return nil
+					}
+					return err
+				}
+
+				// The answer contains typed maps (e.g. map[string]float64) that structpb can't convert directly, so we round-trip it through JSON.
+				answerJSON, err := json.Marshal(evalRow["answer"])
+				if err != nil {
+					return err
+				}
+				answer := &structpb.Value{}
+				if err := protojson.Unmarshal(answerJSON, answer); err != nil {
+					return err
+				}
+				label, ok := evalRow["label"].(string)
+				if !ok {
+					return fmt.Errorf("ai_evaluate resolver returned an invalid label: %v", evalRow["label"])
+				}
+				row.Fields[evaluateColumnName(label)] = answer
+			}
+		})
+	}
+	if err := grp.Wait(); err != nil {
+		return nil, err
+	}
+
+	schema := &runtimev1.StructType{}
+	if aggregationResp.Schema != nil {
+		schema.Fields = append(schema.Fields, aggregationResp.Schema.Fields...)
+	}
+	for _, label := range labels {
+		schema.Fields = append(schema.Fields, &runtimev1.StructType_Field{
+			Name: evaluateColumnName(label),
+			Type: &runtimev1.Type{Code: runtimev1.Type_CODE_STRUCT},
+		})
+	}
+
+	return &runtimev1.MetricsViewEvaluateResponse{
+		Schema: schema,
+		Data:   aggregationResp.Data,
+		Trace:  aggregationResp.Trace,
+	}, nil
+}
+
 type annotation struct {
 	Time             time.Time      `mapstructure:"time"`
 	TimeEnd          time.Time      `mapstructure:"time_end"`
@@ -803,6 +886,56 @@ func lookupMetricsView(ctx context.Context, rt *runtime.Runtime, instanceID, nam
 	}
 
 	return res, mv.State, nil
+}
+
+func (s *Server) runAggregationQuery(ctx context.Context, req *runtimev1.MetricsViewAggregationRequest, claims *runtime.SecurityClaims) (*runtimev1.MetricsViewAggregationResponse, error) {
+	tr := req.TimeRange
+	if req.TimeStart != nil || req.TimeEnd != nil {
+		tr = &runtimev1.TimeRange{
+			Start: req.TimeStart,
+			End:   req.TimeEnd,
+		}
+	}
+
+	q := &queries.MetricsViewAggregation{
+		MetricsViewName:     req.MetricsView,
+		Dimensions:          req.Dimensions,
+		Measures:            req.Measures,
+		Sort:                req.Sort,
+		TimeRange:           tr,
+		ComparisonTimeRange: req.ComparisonTimeRange,
+		Where:               req.Where,
+		WhereSQL:            req.WhereSql,
+		Having:              req.Having,
+		HavingSQL:           req.HavingSql,
+		Filter:              req.Filter,
+		Limit:               &req.Limit,
+		Offset:              req.Offset,
+		PivotOn:             req.PivotOn,
+		SecurityClaims:      claims,
+		Exact:               req.Exact,
+		Aliases:             req.Aliases,
+		FillMissing:         req.FillMissing,
+		Rows:                req.Rows,
+	}
+	var collector *observability.RequestScopedCollector
+	if req.Trace && canTrace(claims) {
+		collector = &observability.RequestScopedCollector{}
+		ctx = observability.WithRequestScopedCollector(ctx, collector)
+	}
+	err := s.runtime.Query(ctx, req.InstanceId, q, int(req.Priority))
+	if err != nil {
+		return nil, withTrace(err, collector)
+	}
+	if collector != nil {
+		q.Result.Trace = collector.ToProto()
+	}
+	return q.Result, nil
+}
+
+// evaluateColumnName returns the name of the column that holds the answer to an evaluated question.
+func evaluateColumnName(label string) string {
+	return "__rill_" + label
 }
 
 func valOrNullTime(v time.Time) *timestamppb.Timestamp {

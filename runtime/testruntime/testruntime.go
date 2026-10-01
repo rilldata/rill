@@ -40,6 +40,7 @@ import (
 	_ "github.com/rilldata/rill/runtime/drivers/gemini"
 	_ "github.com/rilldata/rill/runtime/drivers/https"
 	_ "github.com/rilldata/rill/runtime/drivers/mock/ai"
+	_ "github.com/rilldata/rill/runtime/drivers/ollama"
 	_ "github.com/rilldata/rill/runtime/drivers/openai"
 	_ "github.com/rilldata/rill/runtime/drivers/postgres"
 	_ "github.com/rilldata/rill/runtime/drivers/redshift"
