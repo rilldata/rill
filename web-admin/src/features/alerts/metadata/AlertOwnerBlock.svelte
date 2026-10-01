@@ -4,15 +4,18 @@
 
   export let organization: string;
   export let project: string;
-  export let ownerId: string;
+  export let ownerId: string | undefined = undefined;
+  export let ownerEmail: string | undefined = undefined;
 
-  $: ownerName = useAlertOwnerName(organization, project, ownerId);
+  $: ownerNameQuery = useAlertOwnerName(organization, project, ownerId);
+  $: ownerName = $ownerNameQuery.data ?? ownerEmail;
+  $: isSuccess = ownerId ? $ownerNameQuery.isSuccess : true;
 </script>
 
-{#if $ownerName.isSuccess}
+{#if isSuccess}
   <span>
-    {$ownerName.data
-      ? m.alert_meta_created_by({ name: $ownerName.data })
+    {ownerName
+      ? m.alert_meta_created_by({ name: ownerName })
       : m.alert_meta_created_through_code()}
   </span>
 {/if}

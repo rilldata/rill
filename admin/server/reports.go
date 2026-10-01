@@ -322,7 +322,7 @@ func (s *Server) EditReport(ctx context.Context, req *adminv1.EditReportRequest)
 	case auth.OwnerTypeUser:
 		ownerId = claims.OwnerID()
 		if annotations.AdminOwnerUserID != ownerId {
-			return nil, status.Error(codes.PermissionDenied, "does not have permission to edit report")
+			return nil, status.Error(codes.PermissionDenied, fmt.Sprintf("does not have permission to edit report. %q not the owner", ownerId))
 		}
 	case auth.OwnerTypeEmbed:
 		mdl, ok := claims.AuthTokenModel().(*database.EmbedAuthToken)
@@ -331,7 +331,7 @@ func (s *Server) EditReport(ctx context.Context, req *adminv1.EditReportRequest)
 		}
 		ownerEmail = mdl.Email
 		if annotations.AdminOwnerUserEmail != ownerEmail {
-			return nil, status.Error(codes.PermissionDenied, "does not have permission to edit report")
+			return nil, status.Error(codes.PermissionDenied, fmt.Sprintf("does not have permission to edit report. %q not the owner", ownerEmail))
 		}
 	default:
 		return nil, status.Error(codes.PermissionDenied, "only users can create reports")
