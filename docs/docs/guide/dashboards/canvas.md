@@ -68,6 +68,10 @@ If no Explore dashboard exists, and/or you don't have [permissions to view it](/
 
 :::
 
+## Maps
+
+Map widgets plot a measure by location, as points or as shaded regions. Drag to pan, scroll or use the buttons in the top-right corner to zoom, and hover over a point or region to see its values. The map keeps your position when you change filters or the time range. To add a map to a dashboard, see [Map widget](/developers/build/dashboards/canvas-widgets/map).
+
 ## Pin and Require Filters
 
 Dashboard authors can keep specific filters in the filter bar, and can block a canvas until the viewer picks a value for them. This is useful when a canvas only makes sense for one region, customer, or account at a time.
