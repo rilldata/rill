@@ -7,7 +7,9 @@
 
 <a
   {href}
-  class="grid place-content-center rounded {logoUrl ? 'pl-2 pr-2' : 'p-2'}"
+  class="grid place-content-center rounded shrink-0 {logoUrl
+    ? 'pl-2 pr-2'
+    : 'p-2'}"
 >
   {#if logoUrl}
     <img src={logoUrl} alt="logo" class="h-7" />

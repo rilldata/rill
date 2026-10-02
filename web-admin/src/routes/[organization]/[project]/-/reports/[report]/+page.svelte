@@ -11,7 +11,7 @@
 
 <ContentContainer>
   <div class="flex justify-center">
-    <div class="w-[960px] flex flex-col items-start gap-y-9">
+    <div class="w-full max-w-[960px] flex flex-col items-start gap-y-9">
       <ReportMetadata {organization} {project} {report} />
       <ReportHistoryTable {report} />
     </div>

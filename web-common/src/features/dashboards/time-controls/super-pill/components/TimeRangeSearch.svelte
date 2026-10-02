@@ -30,7 +30,7 @@
 
 <div
   class="border-b h-fit pt-2.5 py-0 flex p-3 gap-y-2 flex-col overflow-y-auto"
-  style:width="{width}px"
+  style:width="min({width}px, calc(100vw - 2rem))"
 >
   <form
     class:error={(inError || unableToParse) &&

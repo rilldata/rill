@@ -13,6 +13,7 @@
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
   import { connectorExplorerStore } from "@rilldata/web-common/features/connectors/explorer/connector-explorer-store";
   import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
+  import { onMount } from "svelte";
   import { writable } from "svelte/store";
   import ConnectorExplorer from "../../features/connectors/explorer/ConnectorExplorer.svelte";
   import AddAssetButton from "../../features/entity-management/add/AddAssetButton.svelte";
@@ -63,6 +64,16 @@
 
     previousWidth = currentWidth;
   }
+
+  onMount(() => {
+    previousWidth = window.innerWidth;
+
+    // handleResize only reacts to resize events, so collapse the sidebar here
+    // for viewports that load below the breakpoint (e.g. direct mobile visits).
+    if (window.innerWidth < 768) {
+      $navigationOpen = null;
+    }
+  });
 </script>
 
 <svelte:window

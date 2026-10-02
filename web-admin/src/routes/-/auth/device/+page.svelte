@@ -92,7 +92,7 @@
       {userCode}
     </div>
 
-    <div class="flex flex-col gap-y-4 w-[400px]">
+    <div class="flex flex-col gap-y-4 w-full sm:w-[400px]">
       <CtaButton
         variant="primary"
         onClick={() => {

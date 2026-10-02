@@ -349,7 +349,9 @@
               <Tooltip location="bottom" distance={8}>
                 <span class="readonly-badge">{m.branch_read_only()}</span>
                 <TooltipContent slot="tooltip-content">
-                  <div class="text-xs max-w-[360px] flex flex-col gap-y-1">
+                  <div
+                    class="text-xs max-w-[min(360px,calc(100vw-2rem))] flex flex-col gap-y-1"
+                  >
                     <span>{m.branch_not_editable()}</span>
                     <span>
                       {m.branch_recreate_with()}
