@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/coreos/go-oidc/v3/oidc"
+	"github.com/gorilla/sessions"
 	"github.com/rilldata/rill/admin/database"
 	"github.com/rilldata/rill/admin/pkg/urlutil"
 	"github.com/rilldata/rill/runtime/pkg/httputil"
@@ -30,6 +31,8 @@ const (
 	cookieFieldRedirect         = "redirect"
 	cookieFieldCustomDomainFlow = "custom_domain_flow"
 	cookieFieldAccessToken      = "access_token"
+	idTokenCookieName           = "auth_id_token" // nolint:gosec // cookie name, not a credential
+	cookieFieldIDToken          = "id_token"
 )
 
 var (
@@ -207,9 +210,8 @@ func (a *Authenticator) authStart(w http.ResponseWriter, r *http.Request, signup
 	// Redirect to auth provider (canonical domain flow)
 	redirectURL := a.oauth2.AuthCodeURL(state)
 	if signup {
-		// Set custom parameters for signup using AuthCodeOption
-		customOption := oauth2.SetAuthURLParam("screen_hint", "signup")
-		redirectURL = a.oauth2.AuthCodeURL(state, customOption)
+		// Send both signup hints: Auth0 only honors screen_hint, standard OIDC providers only honor prompt=create.
+		redirectURL = a.oauth2.AuthCodeURL(state, oauth2.SetAuthURLParam("screen_hint", "signup"), oauth2.SetAuthURLParam("prompt", "create"))
 	}
 
 	http.Redirect(w, r, redirectURL, http.StatusTemporaryRedirect)
@@ -279,33 +281,9 @@ func (a *Authenticator) authLoginCallback(w http.ResponseWriter, r *http.Request
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	email, ok := profile["email"].(string)
-	if !ok || email == "" {
-		http.Error(w, "claim 'email' not found", http.StatusInternalServerError)
-		return
-	}
-	emailVerified, ok := profile["email_verified"].(bool)
-	if !ok {
-		// For SAML flows, it is passed as a string
-		emailVerifiedStr, ok := profile["email_verified"].(string)
-		if !ok {
-			http.Error(w, "claim 'email_verified' not found", http.StatusInternalServerError)
-			return
-		}
-		emailVerified, err = strconv.ParseBool(emailVerifiedStr)
-		if err != nil {
-			http.Error(w, fmt.Sprintf("claim 'email_verified' could not be parsed as a boolean (got %q)", emailVerifiedStr), http.StatusInternalServerError)
-			return
-		}
-	}
-	name, ok := profile["name"].(string)
-	if !ok {
-		http.Error(w, "claim 'name' not found", http.StatusInternalServerError)
-		return
-	}
-	photoURL, ok := profile["picture"].(string)
-	if !ok {
-		http.Error(w, "claim 'picture' not found", http.StatusInternalServerError)
+	info, err := parseUserProfile(profile)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -317,18 +295,21 @@ func (a *Authenticator) authLoginCallback(w http.ResponseWriter, r *http.Request
 	delete(sess.Values, cookieFieldRedirect)
 
 	// Check that the user's email is verified
-	if !emailVerified {
+	if !info.emailVerified {
 		redirectURL := a.admin.URLs.WithCustomDomainFromRedirectURL(redirect).AuthVerifyEmailUI()
 		http.Redirect(w, r, redirectURL, http.StatusTemporaryRedirect)
 		return
 	}
 
 	// Create (or update) user in our DB
-	user, err := a.admin.CreateOrUpdateUser(r.Context(), email, name, photoURL)
+	user, err := a.admin.CreateOrUpdateUser(r.Context(), info.email, info.name, info.photoURL)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("failed to update user: %s", err), http.StatusInternalServerError)
 		return
 	}
+
+	// Keep the ID token for logout. This callback and authLogoutProvider both run on the canonical domain, so it works for both flows below.
+	a.saveIDTokenHint(w, r, rawIDToken)
 
 	// If it's part of a custom domain login flow, redirect back to the custom domain with a short-lived access token for the user.
 	customDomainFlow, ok := sess.Values[cookieFieldCustomDomainFlow].(bool)
@@ -381,6 +362,47 @@ func (a *Authenticator) authLoginCallback(w http.ResponseWriter, r *http.Request
 
 	// Redirect to UI
 	http.Redirect(w, r, redirect, http.StatusTemporaryRedirect)
+}
+
+// userProfile is the user information authLoginCallback reads from the ID token claims.
+type userProfile struct {
+	email         string
+	emailVerified bool
+	name          string
+	photoURL      string
+}
+
+// parseUserProfile reads the user's profile from the ID token claims.
+func parseUserProfile(claims map[string]any) (*userProfile, error) {
+	email, ok := claims["email"].(string)
+	if !ok || email == "" {
+		return nil, errors.New("claim 'email' not found")
+	}
+	emailVerified, ok := claims["email_verified"].(bool)
+	if !ok {
+		// For SAML flows, it is passed as a string
+		emailVerifiedStr, ok := claims["email_verified"].(string)
+		if !ok {
+			return nil, errors.New("claim 'email_verified' not found")
+		}
+		var err error
+		emailVerified, err = strconv.ParseBool(emailVerifiedStr)
+		if err != nil {
+			return nil, fmt.Errorf("claim 'email_verified' could not be parsed as a boolean (got %q)", emailVerifiedStr)
+		}
+	}
+	name, ok := claims["name"].(string)
+	if !ok {
+		return nil, errors.New("claim 'name' not found")
+	}
+	// The picture claim is optional: some providers never emit it (e.g. Dex), or only for users who have one (e.g. Keycloak)
+	photoURL, _ := claims["picture"].(string)
+	return &userProfile{
+		email:         email,
+		emailVerified: emailVerified,
+		name:          name,
+		photoURL:      photoURL,
+	}, nil
 }
 
 // authLoginCustomDomainCallback first verifies the state for CSRF protection, then extracts
@@ -611,17 +633,104 @@ func (a *Authenticator) authLogoutProvider(w http.ResponseWriter, r *http.Reques
 		}
 	}
 
-	// Build and redirect to the auth provider logout URL.
-	logoutURL, err := url.Parse("https://" + a.opts.AuthDomain + "/v2/logout")
+	// Take the ID token saved at login (if any) to send as id_token_hint
+	idTokenHint := a.takeIDTokenHint(w, r)
+
+	// Build the provider logout URL.
+	// Standard OIDC providers expose end_session_endpoint; Auth0 uses /v2/logout with "returnTo".
+	logoutEndpoint := a.endSessionEndpoint
+	redirectParam := "post_logout_redirect_uri"
+	if logoutEndpoint == "" {
+		if !isBareDomain(a.opts.AuthDomain) {
+			// The provider has no logout endpoint we can call (e.g. Dex), so only the Rill session is ended.
+			http.Redirect(w, r, a.admin.URLs.AuthLogoutCallback(), http.StatusTemporaryRedirect)
+			return
+		}
+		logoutEndpoint = "https://" + a.opts.AuthDomain + "/v2/logout"
+		redirectParam = "returnTo"
+	}
+
+	logoutURL, err := url.Parse(logoutEndpoint)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	parameters := url.Values{}
-	parameters.Add("returnTo", a.admin.URLs.AuthLogoutCallback())
-	parameters.Add("client_id", a.opts.AuthClientID)
-	logoutURL.RawQuery = parameters.Encode()
+	params := url.Values{}
+	params.Set("client_id", a.opts.AuthClientID)
+	params.Set(redirectParam, a.admin.URLs.AuthLogoutCallback())
+	if a.endSessionEndpoint != "" && idTokenHint != "" {
+		params.Set("id_token_hint", idTokenHint)
+	}
+	logoutURL.RawQuery = params.Encode()
 	http.Redirect(w, r, logoutURL.String(), http.StatusTemporaryRedirect)
+}
+
+// saveIDTokenHint keeps the raw ID token from login so that authLogoutProvider can send it as id_token_hint.
+// Without the hint, standard OIDC providers (e.g. Keycloak) show a logout confirmation page and keep the user's
+// session alive until it is confirmed.
+//
+// It is only kept when the provider publishes an end_session_endpoint: Auth0's /v2/logout does not use it, so
+// Auth0 deployments are unaffected.
+//
+// It goes in its own cookie rather than in the auth cookie: ID tokens can be large enough to push the auth cookie
+// past the 4096-byte cookie limit, which would fail the login. If the ID token does not fit on its own either, it
+// is skipped, and logout falls back to the provider's confirmation page.
+//
+// The cookie is scoped to the path of authLogoutProvider, so browsers only send it on logout rather than adding
+// the ID token to every request to the admin service.
+func (a *Authenticator) saveIDTokenHint(w http.ResponseWriter, r *http.Request, rawIDToken string) {
+	if a.endSessionEndpoint == "" {
+		return
+	}
+
+	sess := a.cookies.Get(r, idTokenCookieName)
+	sess.Options = a.idTokenCookieOptions(sess.Options, false)
+	sess.Values[cookieFieldIDToken] = rawIDToken
+	if err := sess.Save(r, w); err != nil {
+		a.logger.Info("not keeping ID token for logout", zap.Error(err), observability.ZapCtx(r.Context()))
+	}
+}
+
+// takeIDTokenHint returns the ID token kept by saveIDTokenHint and clears its cookie.
+// It returns an empty string if there is none, or if its signature no longer verifies (e.g. after the provider
+// rotated its keys): providers such as Keycloak fail the whole logout on an invalid hint, whereas without one
+// they only ask for confirmation. Expiry is not checked: the Rill session outlives the ID token by weeks, and the
+// OIDC RP-Initiated Logout spec asks providers to accept hints whose exp has passed.
+func (a *Authenticator) takeIDTokenHint(w http.ResponseWriter, r *http.Request) string {
+	if _, err := r.Cookie(idTokenCookieName); err != nil {
+		return ""
+	}
+
+	sess := a.cookies.Get(r, idTokenCookieName)
+	rawIDToken, _ := sess.Values[cookieFieldIDToken].(string)
+	sess.Options = a.idTokenCookieOptions(sess.Options, true)
+	if err := sess.Save(r, w); err != nil {
+		a.logger.Info("failed to clear ID token cookie", zap.Error(err), observability.ZapCtx(r.Context()))
+	}
+	if rawIDToken == "" {
+		return ""
+	}
+
+	verifier := a.oidc.Verifier(&oidc.Config{ClientID: a.oauth2.ClientID, SkipExpiryCheck: true})
+	if _, err := verifier.Verify(r.Context(), rawIDToken); err != nil {
+		a.logger.Info("not sending ID token as logout hint", zap.Error(err), observability.ZapCtx(r.Context()))
+		return ""
+	}
+	return rawIDToken
+}
+
+// idTokenCookieOptions returns a copy of opts for the ID token cookie, scoped to the path of authLogoutProvider.
+// It copies because cookies.Store.Get may return the store's shared options.
+func (a *Authenticator) idTokenCookieOptions(opts *sessions.Options, expire bool) *sessions.Options {
+	res := *opts
+	res.Path = "/"
+	if u, err := url.Parse(a.admin.URLs.AuthLogoutProvider("")); err == nil {
+		res.Path = u.Path
+	}
+	if expire {
+		res.MaxAge = -1
+	}
+	return &res
 }
 
 // authLogoutCallback is called by the auth provider when a logout flow iniated by authLogout has completed.
