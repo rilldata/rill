@@ -1,7 +1,6 @@
 import { createAdminServiceSearchProjectUsers } from "@rilldata/web-admin/client";
 import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
 import { getDashboardNameFromReport } from "@rilldata/web-common/features/scheduled-reports/utils";
-import type { V1ReportSpec } from "@rilldata/web-common/runtime-client/gen/index.schemas";
 import {
   createRuntimeServiceGetResource,
   createRuntimeServiceListResources,
@@ -77,7 +76,8 @@ export function useIsReportCreatedByCode(client: RuntimeClient, name: string) {
     {
       query: {
         select: (data) =>
-          !data.resource.report.spec.annotations["admin_owner_user_id"],
+          !data.resource.report.spec.annotations["admin_owner_user_id"] &&
+          !data.resource.report.spec.annotations["admin_owner_user_email"],
       },
     },
   );

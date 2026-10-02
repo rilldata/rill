@@ -13409,6 +13409,12 @@ export class GetReportMetaRequest extends Message<GetReportMetaRequest> {
      */
     value: string;
     case: "queryForUserEmail";
+  } | {
+    /**
+     * @generated from field: google.protobuf.Struct query_for_attributes = 15;
+     */
+    value: Struct;
+    case: "queryForAttributes";
   } | { case: undefined; value?: undefined } = { case: undefined };
 
   /**
@@ -13441,6 +13447,7 @@ export class GetReportMetaRequest extends Message<GetReportMetaRequest> {
     { no: 10, name: "web_open_mode", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 13, name: "query_for_user_id", kind: "scalar", T: 9 /* ScalarType.STRING */, oneof: "query_for" },
     { no: 14, name: "query_for_user_email", kind: "scalar", T: 9 /* ScalarType.STRING */, oneof: "query_for" },
+    { no: 15, name: "query_for_attributes", kind: "message", T: Struct, oneof: "query_for" },
     { no: 11, name: "where_filter_json", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 12, name: "accessible_fields", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
   ]);

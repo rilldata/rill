@@ -28,6 +28,8 @@ export interface FormMetadataProvider<M> {
 
   organization: string;
   project: string;
+  pageBasePath: string;
+
   userEmail: string;
   // True until the current user has loaded.
   isLoading: boolean;
@@ -51,6 +53,8 @@ class AdminFormMetadataProvider<M> implements FormMetadataProvider<M> {
 
   public organization: string;
   public project: string;
+  public pageBasePath: string;
+
   public userEmail = $state<string>("");
   public isLoading = $state(true);
   public projectMembersSet = $state<Set<string>>(new Set());
@@ -68,6 +72,7 @@ class AdminFormMetadataProvider<M> implements FormMetadataProvider<M> {
 
     this.organization = page.params.organization;
     this.project = page.params.project;
+    this.pageBasePath = `/${this.organization}/${this.project}/-`;
 
     const user = createAdminServiceGetCurrentUser();
     this.userUnsub = user.subscribe((userResp) => {
@@ -112,6 +117,7 @@ class EmbedFormMetadataProvider<M> implements FormMetadataProvider<M> {
 
   public organization = "";
   public project = "";
+  public pageBasePath = "/-/embed";
   public userEmail = "";
   public isLoading = false;
   public projectMembersSet = new Set<string>();

@@ -7358,6 +7358,8 @@ paths:
                                     type: string
                                 ownerId:
                                     type: string
+                                queryForAttributes:
+                                    type: object
                                 queryForUserEmail:
                                     type: string
                                 queryForUserId:

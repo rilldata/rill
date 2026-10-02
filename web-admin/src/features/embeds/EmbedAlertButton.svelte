@@ -4,7 +4,7 @@
   import { EmbedStore } from "@rilldata/web-common/features/embeds/embed-store.ts";
   import Button from "@rilldata/web-common/components/button/Button.svelte";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
-  import { BellPlusIcon } from "lucide-svelte";
+  import { BellIcon } from "lucide-svelte";
   import { getDashboardFromEmbedRoute } from "@rilldata/web-admin/features/embeds/embed-route-utils.ts";
   import { page } from "$app/state";
   import AlertFormDataWrapper from "@rilldata/web-common/features/alerts/AlertFormDataWrapper.svelte";
@@ -27,7 +27,7 @@
     <DropdownMenu.Trigger>
       {#snippet child({ props })}
         <Button {...props} type="secondary" noStroke>
-          <BellPlusIcon class="flex-none" size="14px" />
+          <BellIcon class="flex-none text-icon-muted" size="14px" />
         </Button>
       {/snippet}
     </DropdownMenu.Trigger>

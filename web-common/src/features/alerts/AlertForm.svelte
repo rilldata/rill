@@ -234,7 +234,7 @@
       eventBus.emit("notification", {
         message: m.alert_form_created(),
         link: {
-          href: `/${provider.organization}/${provider.project}/-/alerts`,
+          href: `${provider.pageBasePath}/alerts`,
           text: m.alert_form_go_to_alerts(),
         },
       });

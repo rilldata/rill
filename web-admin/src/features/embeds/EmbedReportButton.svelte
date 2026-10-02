@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags.ts";
   import { EmbedStore } from "@rilldata/web-common/features/embeds/embed-store.ts";
   import Button from "@rilldata/web-common/components/button/Button.svelte";
@@ -7,9 +6,6 @@
   import ReportIcon from "@rilldata/web-common/components/icons/ReportIcon.svelte";
   import { getDashboardFromEmbedRoute } from "@rilldata/web-admin/features/embeds/embed-route-utils.ts";
   import { page } from "$app/state";
-  import AlertFormDataWrapper from "@rilldata/web-common/features/alerts/AlertFormDataWrapper.svelte";
-  import { DialogContent } from "@rilldata/web-common/components/dialog";
-  import GuardedDialog from "@rilldata/web-common/components/dialog/GuardedDialog.svelte";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors.ts";
   import ScheduledReportDialog from "@rilldata/web-common/features/scheduled-reports/ScheduledReportDialog.svelte";
 
@@ -30,7 +26,7 @@
     <DropdownMenu.Trigger>
       {#snippet child({ props })}
         <Button {...props} type="secondary" noStroke>
-          <ReportIcon size="14px" />
+          <ReportIcon className="text-icon-muted" size="14px" />
         </Button>
       {/snippet}
     </DropdownMenu.Trigger>

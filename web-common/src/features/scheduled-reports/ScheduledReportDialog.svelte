@@ -444,7 +444,7 @@
           props.mode === "edit"
             ? undefined
             : {
-                href: `/${provider.organization}/${provider.project}/-/reports`,
+                href: `${provider.pageBasePath}/reports`,
                 text: m.report_form_go_to_reports(),
               },
         type: "success",
