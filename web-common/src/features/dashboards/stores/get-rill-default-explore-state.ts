@@ -246,7 +246,10 @@ export function getGrainForRange(
 }
 
 export function getDefaultTimeZone(explore: V1ExploreSpec) {
-  const preference = explore.timeZones?.[0] ?? DEFAULT_TIMEZONES[0];
+  const preference =
+    explore.defaultPreset?.timezone ||
+    explore.timeZones?.[0] ||
+    DEFAULT_TIMEZONES[0];
 
   if (preference === "Local") {
     return getLocalIANA();
