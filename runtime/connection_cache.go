@@ -2,9 +2,10 @@ package runtime
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/json"
 	"errors"
 	"fmt"
-	"slices"
 	"strings"
 	"time"
 
@@ -35,6 +36,7 @@ type cachedConnectionConfig struct {
 	config        map[string]any
 	provision     bool
 	provisionArgs map[string]any
+	key           string // Set by getConnection, which is the only caller of Acquire
 }
 
 // newConnectionCache returns a concurrency-safe cache for open connections.
@@ -54,7 +56,7 @@ func (r *Runtime) newConnectionCache() conncache.Cache {
 		},
 		KeyFunc: func(cfg any) string {
 			x := cfg.(cachedConnectionConfig)
-			return generateKey(x)
+			return x.key
 		},
 		HangingFunc: func(cfg any, open bool) {
 			x := cfg.(cachedConnectionConfig)
@@ -74,6 +76,12 @@ func (r *Runtime) newConnectionCache() conncache.Cache {
 // getConnection returns a cached connection for the given driver configuration.
 // If instanceID is empty, the connection is considered shared (see drivers.Open for details).
 func (r *Runtime) getConnection(ctx context.Context, cfg cachedConnectionConfig) (drivers.Handle, func(), error) {
+	key, err := generateKey(cfg)
+	if err != nil {
+		return nil, nil, err
+	}
+	cfg.key = key
+
 	handle, release, err := r.connCache.Acquire(ctx, cfg)
 	if err != nil {
 		return nil, nil, err
@@ -192,7 +200,7 @@ func (r *Runtime) openAndMigrate(ctx context.Context, cfg cachedConnectionConfig
 	return handle, nil
 }
 
-func generateKey(cfg cachedConnectionConfig) string {
+func generateKey(cfg cachedConnectionConfig) (string, error) {
 	sb := strings.Builder{}
 	sb.WriteString(cfg.instanceID) // Empty if cfg.shared
 	sb.WriteString(":")
@@ -200,24 +208,27 @@ func generateKey(cfg cachedConnectionConfig) string {
 	sb.WriteString(":")
 	sb.WriteString(cfg.driver)
 	sb.WriteString(":")
-	keys := maps.Keys(cfg.config)
-	slices.Sort(keys)
-	for _, key := range keys {
-		sb.WriteString(key)
-		sb.WriteString(":")
-		sb.WriteString(fmt.Sprint(cfg.config[key]))
-		sb.WriteString(" ")
+	if err := writeConfigHash(&sb, cfg.config); err != nil {
+		return "", fmt.Errorf("connector %q: invalid config: %w", cfg.name, err)
 	}
 	if cfg.provision {
 		sb.WriteString(":provision=true:")
-		keys := maps.Keys(cfg.provisionArgs)
-		slices.Sort(keys)
-		for _, key := range keys {
-			sb.WriteString(key)
-			sb.WriteString(":")
-			sb.WriteString(fmt.Sprint(cfg.provisionArgs[key]))
-			sb.WriteString(" ")
+		if err := writeConfigHash(&sb, cfg.provisionArgs); err != nil {
+			return "", fmt.Errorf("connector %q: invalid provision args: %w", cfg.name, err)
 		}
 	}
-	return sb.String()
+	return sb.String(), nil
+}
+
+// writeConfigHash adds a deterministic, type-preserving identity for a connector configuration without embedding
+// credentials in the cache key. JSON is canonical for the JSON-shaped connector maps produced by the parser (map
+// keys are sorted by encoding/json, and strings/maps/slices remain distinct).
+func writeConfigHash(sb *strings.Builder, config map[string]any) error {
+	canonical, err := json.Marshal(config)
+	if err != nil {
+		return err
+	}
+	sum := sha256.Sum256(canonical)
+	fmt.Fprintf(sb, "%x", sum)
+	return nil
 }

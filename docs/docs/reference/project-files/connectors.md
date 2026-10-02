@@ -748,6 +748,14 @@ _[string]_ - The type of OpenAI API to use
 
 _[string]_ - The version of the OpenAI API to use (e.g., '2023-05-15'). Required when API Type is AZURE or AZURE_AD
 
+### `structured_output_mode`
+
+_[string]_ - How output schemas are requested: json_schema (default) or json_object for compatible providers that do not support JSON Schema
+
+### `extra_body`
+
+_[object]_ - Advanced map of provider-specific JSON fields added to chat completion requests. Core request and response-shape fields (e.g., 'model', 'messages', 'tools', 'response_format') cannot be overridden
+
 ```yaml
 # Example: OpenAI connector configuration
 type: connector # Must be `connector` (required)
@@ -759,6 +767,19 @@ reasoning_effort: "medium" # Constrains effort on reasoning for reasoning models
 base_url: "https://api.openai.com/v1" # The base URL for the OpenAI API (e.g., 'https://api.openai.com/v1')
 api_type: "openai" # The type of OpenAI API to use
 api_version: "2023-05-15" # The version of the OpenAI API to use (e.g., '2023-05-15'). Required when API Type is AZURE or AZURE_AD
+```
+
+```yaml
+# Example: OpenAI-compatible provider configuration
+type: connector # Must be `connector` (required)
+driver: openai # Must be `openai` _(required)_
+api_key: "{{ .env.PROVIDER_API_KEY }}" # API key for the provider
+base_url: "https://llm.example.com/v1" # The provider's OpenAI-compatible endpoint
+model: "example-model" # The provider's model name
+structured_output_mode: "json_object" # Use JSON mode when the provider does not support JSON Schema
+extra_body: # Provider-specific fields added to chat completion requests
+    chat_template_kwargs:
+        enable_thinking: false
 ```
 
 ## Claude
