@@ -13,17 +13,17 @@ rill validate [<path>] [flags]
 ### Flags
 
 ```
-  -e, --env strings                           Set environment variables
-      --reset                                 Clear and re-ingest source data
-      --pull-env                              Pull environment variables from Rill Cloud before starting the project (default true)
-      --environment string                    Environment name (default "dev")
-      --verbose                               Sets the log level to debug
-      --silent                                Suppress all log output by setting log level to panic, overrides verbose flag
-      --debug                                 Collect additional debug info
-      --log-format string                     Log format (options: "console", "json") (default "console")
-      --model-timeout-seconds uint32          Timeout for reconciliation of models, set 0 for no timeout (default 60)
-  -o, --output-file string                    Output file for validation results (JSON format)
-      --dangerously-skip-running-rill-check   Skip checking for a running Rill instance on localhost:9009; concurrent access to the same project can cause database conflicts
+  -e, --env strings                    Set environment variables
+      --reset                          Clear and re-ingest source data
+      --pull-env                       Pull environment variables from Rill Cloud before starting the project (default true)
+      --environment string             Environment name (default "dev")
+      --verbose                        Sets the log level to debug
+      --silent                         Suppress all log output by setting log level to panic, overrides verbose flag
+      --debug                          Collect additional debug info
+      --log-format string              Log format (options: "console", "json") (default "console")
+      --model-timeout-seconds uint32   Timeout for reconciliation of models, set 0 for no timeout (default 60)
+  -o, --output-file string             Output file for validation results (JSON format)
+      --skip-running-rill-check        Skip checking for a running Rill instance on localhost:9009; concurrent access to the same project can cause database conflicts
 ```
 
 ### Global flags
