@@ -43,8 +43,8 @@ import (
 	_ "github.com/rilldata/rill/runtime/drivers/claude"
 	_ "github.com/rilldata/rill/runtime/drivers/gemini"
 	_ "github.com/rilldata/rill/runtime/drivers/mock/ai"
-	_ "github.com/rilldata/rill/runtime/drivers/ollama"
 	_ "github.com/rilldata/rill/runtime/drivers/openai"
+	_ "github.com/rilldata/rill/runtime/drivers/typesafe"
 )
 
 // Config describes admin server config derived from environment variables.

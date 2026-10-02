@@ -1,4 +1,4 @@
-package ollama
+package typesafe
 
 import (
 	"bytes"
@@ -21,20 +21,20 @@ import (
 const defaultBaseURL = "https://api.typesafe.ai"
 
 func init() {
-	drivers.Register("ollama", driver{})
-	drivers.RegisterAsConnector("ollama", driver{})
+	drivers.Register("typesafe", driver{})
+	drivers.RegisterAsConnector("typesafe", driver{})
 }
 
 var spec = drivers.Spec{
-	DisplayName: "Ollama",
-	Description: "Connect to an Ollama server for language models.",
+	DisplayName: "Typesafe",
+	Description: "Connect to an Typesafe API server for language models.",
 	ConfigProperties: []*drivers.PropertySpec{
 		{
 			Key:         "api_key",
 			Type:        drivers.StringPropertyType,
 			Required:    false,
 			DisplayName: "API Key",
-			Description: "API key for connecting to Ollama.",
+			Description: "API key for connecting to a Typesafe server.",
 			Secret:      true,
 		},
 		{
@@ -42,7 +42,7 @@ var spec = drivers.Spec{
 			Type:        drivers.StringPropertyType,
 			Required:    false,
 			DisplayName: "Model",
-			Description: "The Ollama model to use.",
+			Description: "The model to use.",
 			Placeholder: "",
 		},
 		{
@@ -50,7 +50,7 @@ var spec = drivers.Spec{
 			Type:        drivers.StringPropertyType,
 			Required:    false,
 			DisplayName: "Base URL",
-			Description: "Custom base URL for the Ollama API.",
+			Description: "Custom base URL for the Typesafe API.",
 			Placeholder: "",
 		},
 	},
@@ -180,7 +180,7 @@ func (h *handle) Config() map[string]any {
 
 // Driver implements drivers.Handle.
 func (h *handle) Driver() string {
-	return "ollama"
+	return "typesafe"
 }
 
 // Migrate implements drivers.Handle.

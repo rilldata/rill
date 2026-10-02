@@ -40,7 +40,6 @@ import (
 	_ "github.com/rilldata/rill/runtime/drivers/gemini"
 	_ "github.com/rilldata/rill/runtime/drivers/https"
 	_ "github.com/rilldata/rill/runtime/drivers/mock/ai"
-	_ "github.com/rilldata/rill/runtime/drivers/ollama"
 	_ "github.com/rilldata/rill/runtime/drivers/openai"
 	_ "github.com/rilldata/rill/runtime/drivers/postgres"
 	_ "github.com/rilldata/rill/runtime/drivers/redshift"
@@ -48,6 +47,7 @@ import (
 	_ "github.com/rilldata/rill/runtime/drivers/snowflake"
 	_ "github.com/rilldata/rill/runtime/drivers/sqlite"
 	_ "github.com/rilldata/rill/runtime/drivers/starrocks"
+	_ "github.com/rilldata/rill/runtime/drivers/typesafe"
 	_ "github.com/rilldata/rill/runtime/reconcilers"
 )
 

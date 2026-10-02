@@ -736,8 +736,8 @@ func (s *Server) MetricsViewEvaluate(ctx context.Context, req *runtimev1.Metrics
 				InstanceID: req.InstanceId,
 				Resolver:   "ai_evaluate",
 				ResolverProperties: map[string]any{
-					// TODO: Use the instance's configured AI connector instead of hardcoding ollama.
-					"connector": "ollama",
+					// TODO: Use the instance's configured AI connector instead of hardcoding typesafe.
+					"connector": "typesafe",
 					"questions": questions,
 				},
 				Args: map[string]any{
