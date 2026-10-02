@@ -3,7 +3,6 @@
   import ExpressionFilters from "@rilldata/web-common/features/dashboards/filters/ExpressionFilters.svelte";
   import { YAMLConfigProvider } from "@rilldata/web-common/features/dashboards/providers/YAMLConfigProvider.svelte.ts";
   import { MetricsViewsProvider } from "@rilldata/web-common/features/metrics-views/providers/MetricsViewsProvider.svelte.ts";
-  import { syncStoreWithSource } from "@rilldata/web-common/lib/store-utils/url-params-store-sync.svelte.ts";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 
   /**
@@ -33,15 +32,11 @@
     new YAMLConfigProvider(),
   );
   // svelte-ignore state_referenced_locally
+  metricsViewsProvider.setMetricsViewNames(metricsViewNames);
+  // svelte-ignore state_referenced_locally
   onManagerCreated?.(expressionFilterManager);
 
-  syncStoreWithSource(
-    expressionFilterManager,
-    async (newUrlParams) => expressionFilterManager.setUrlParams(newUrlParams),
-    () => metricsViewsProvider.ready,
-    undefined,
-    true,
-  );
+  expressionFilterManager.storeSync.setUrlParams(new URLSearchParams());
 </script>
 
 <ExpressionFilters
