@@ -32,13 +32,21 @@ import {
   createTestMetricsViewsProvider,
   useMetricsViewMocks,
 } from "@rilldata/web-common/features/metrics-views/providers/test/metrics-views-test-utils.svelte.ts";
-import { PIVOT_METRICS_INIT, PIVOT_TEST_METRICS_NAME } from "./pivot-test-data";
+import {
+  PIVOT_METRICS_INIT,
+  PIVOT_METRICS_MIRROR_INIT,
+  PIVOT_MIRROR_METRICS_NAME,
+  PIVOT_TEST_METRICS_NAME,
+} from "./pivot-test-data";
 
 // ---------------------------------------------------------------------------
 // Shared test helpers
 // ---------------------------------------------------------------------------
 
-useMetricsViewMocks({ [PIVOT_TEST_METRICS_NAME]: PIVOT_METRICS_INIT });
+useMetricsViewMocks({
+  [PIVOT_TEST_METRICS_NAME]: PIVOT_METRICS_INIT,
+  [PIVOT_MIRROR_METRICS_NAME]: PIVOT_METRICS_MIRROR_INIT,
+});
 
 // The specs are read-only, so a single provider serves every test in this file.
 // Each test still gets its own ExpressionFilterManager.
@@ -49,6 +57,7 @@ const filterManagerCleanups: (() => void)[] = [];
 beforeAll(async () => {
   const provider = await createTestMetricsViewsProvider([
     PIVOT_TEST_METRICS_NAME,
+    PIVOT_MIRROR_METRICS_NAME,
   ]);
   metricsViewsProvider = provider.value;
   destroyProvider = provider.destroy;
@@ -80,8 +89,9 @@ function createFilterManager() {
 function selectedValues(
   fm: ExpressionFilterManager,
   dimensionName: string,
+  metricsViewName = PIVOT_TEST_METRICS_NAME,
 ): (string | null)[] {
-  const expr = fm.topLevelJoiner.expr[PIVOT_TEST_METRICS_NAME];
+  const expr = fm.topLevelJoiner.expr[metricsViewName];
   const dimensionExpr = expr?.cond?.exprs?.find(
     (e) => e.cond?.exprs?.[0]?.ident === dimensionName,
   );
@@ -245,15 +255,27 @@ describe("flat table: single-cell-per-row", () => {
   const dkRow1 = dimKeyFromRow(data[1], ["country", "city"]);
 
   it("replaces existing cell in the same row", () => {
-    const { result } = setup(config, data);
+    const { result, fm } = setup(config, data);
 
     result.handleCellClickToFilter("0", "country", false, data[0]);
     expect(sel(result).isCellSelected(dkRow0, "country")).toBe(true);
+    expect(selectedValues(fm, "country")).toEqual(["US"]);
+    expect(selectedValues(fm, "country", PIVOT_MIRROR_METRICS_NAME)).toEqual([
+      "US",
+    ]);
 
     result.handleCellClickToFilter("0", "city", false, data[0]);
     expect(sel(result).isCellSelected(dkRow0, "country")).toBe(false);
     expect(sel(result).isCellSelected(dkRow0, "city")).toBe(true);
     expect(sel(result).cellSelections.size).toBe(1);
+    expect(selectedValues(fm, "city")).toEqual(["NYC"]);
+    expect(selectedValues(fm, "city", PIVOT_MIRROR_METRICS_NAME)).toEqual([
+      "NYC",
+    ]);
+    expect(selectedValues(fm, "country")).toEqual(["US"]);
+    expect(selectedValues(fm, "country", PIVOT_MIRROR_METRICS_NAME)).toEqual([
+      "US",
+    ]);
 
     result.destroy();
   });
@@ -297,7 +319,7 @@ describe("nested table: multi-select", () => {
   const dkRow0 = dimKeyFromRow(data[0], ["country"]);
 
   it("allows multiple cells in the same row", () => {
-    const { result } = setup(config, data);
+    const { result, fm } = setup(config, data);
 
     result.handleCellClickToFilter("1", "revenue", false, data[0]);
     result.handleCellClickToFilter("1", "other_measure", false, data[0]);
@@ -305,6 +327,10 @@ describe("nested table: multi-select", () => {
     expect(sel(result).isCellSelected(dkRow0, "revenue")).toBe(true);
     expect(sel(result).isCellSelected(dkRow0, "other_measure")).toBe(true);
     expect(sel(result).cellSelections.size).toBe(2);
+    expect(selectedValues(fm, "country")).toEqual(["US"]);
+    expect(selectedValues(fm, "country", PIVOT_MIRROR_METRICS_NAME)).toEqual([
+      "US",
+    ]);
 
     result.destroy();
   });
@@ -339,7 +365,7 @@ describe("nested table: cross-parent selection isolation", () => {
   });
 
   it("does NOT select X under B when clicking X under A", () => {
-    const { result } = setup(config, data);
+    const { result, fm } = setup(config, data);
 
     result.handleCellClickToFilter("1.0", "revenue", false, innerRowXUnderA);
 
@@ -356,6 +382,14 @@ describe("nested table: cross-parent selection isolation", () => {
       ),
     ).toBe(false);
     expect(sel(result).cellSelections.size).toBe(1);
+    expect(selectedValues(fm, "outer")).toEqual(["A"]);
+    expect(selectedValues(fm, "inner")).toEqual(["X"]);
+    expect(selectedValues(fm, "outer", PIVOT_MIRROR_METRICS_NAME)).toEqual([
+      "A",
+    ]);
+    expect(selectedValues(fm, "inner", PIVOT_MIRROR_METRICS_NAME)).toEqual([
+      "X",
+    ]);
 
     result.destroy();
   });
