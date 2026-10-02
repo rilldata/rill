@@ -1,13 +1,32 @@
-import { describe, expect, it } from "vitest";
+import { readable } from "svelte/store";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { LOADING_CELL } from "@rilldata/web-common/features/dashboards/pivot/pivot-constants";
 import { createAndExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
-import { addExpandedDataToPivot } from "./pivot-expansion";
-import { type PivotDataRow, type PivotDataStoreConfig } from "./types";
+import { buildExpandKey } from "./pivot-expand-keys";
+import {
+  addExpandedDataToPivot,
+  getValuesForExpandedKey,
+  queryExpandedRowMeasureValues,
+} from "./pivot-expansion";
+import { getAxisForDimensions } from "./pivot-queries";
+import {
+  type PivotDashboardContext,
+  type PivotDataRow,
+  type PivotDataStoreConfig,
+} from "./types";
 
-function getConfig(showTotalsRow: boolean): PivotDataStoreConfig {
+vi.mock("./pivot-queries", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("./pivot-queries")>()),
+  getAxisForDimensions: vi.fn(() => readable({ isFetching: true })),
+}));
+
+function getConfig(
+  showTotalsRow: boolean,
+  rowDimensionNames = ["publisher", "campaign"],
+): PivotDataStoreConfig {
   return {
     measureNames: ["impressions"],
-    rowDimensionNames: ["publisher", "campaign"],
+    rowDimensionNames,
     colDimensionNames: [],
     allMeasures: [],
     allDimensions: [],
@@ -38,19 +57,77 @@ function getConfig(showTotalsRow: boolean): PivotDataStoreConfig {
   } as unknown as PivotDataStoreConfig;
 }
 
-describe("pivot expansion", () => {
-  it("adds expanded rows at the correct index when totals row is hidden", () => {
+describe("pivot expansion (value-based keys)", () => {
+  it("fills the node matched by dimension value, regardless of totals row", () => {
+    for (const showTotals of [false, true]) {
+      const tableData: PivotDataRow[] = [
+        { publisher: "A", subRows: [{ publisher: LOADING_CELL }] },
+        { publisher: "B", subRows: [{ publisher: LOADING_CELL }] },
+      ];
+
+      addExpandedDataToPivot(
+        getConfig(showTotals),
+        tableData,
+        ["publisher", "campaign"],
+        {},
+        [
+          {
+            isFetching: false,
+            expandIndex: buildExpandKey(["B"]),
+            rowDimensionValues: ["B"],
+            totals: [{ campaign: "campaign-1", impressions: 10 }],
+            data: [],
+          },
+        ],
+      );
+
+      // Row "A" is untouched; row "B" (matched by value, not position) is filled.
+      expect(tableData[0].subRows?.[0]?.publisher).toBe(LOADING_CELL);
+      expect(tableData[1].subRows?.[0]).toMatchObject({
+        publisher: "campaign-1",
+        campaign: "campaign-1",
+        impressions: 10,
+      });
+    }
+  });
+
+  it("resolves a nested value path to the correct deep node", () => {
     const tableData: PivotDataRow[] = [
       {
         publisher: "A",
-        subRows: [{ publisher: LOADING_CELL }],
-      },
-      {
-        publisher: "B",
-        subRows: [{ publisher: LOADING_CELL }],
+        subRows: [
+          { publisher: "camp1", subRows: [{ publisher: LOADING_CELL }] },
+        ],
       },
     ];
 
+    addExpandedDataToPivot(
+      getConfig(true, ["publisher", "campaign", "adgroup"]),
+      tableData,
+      ["publisher", "campaign", "adgroup"],
+      {},
+      [
+        {
+          isFetching: false,
+          expandIndex: buildExpandKey(["A", "camp1"]),
+          rowDimensionValues: ["A", "camp1"],
+          totals: [{ adgroup: "ad-1", impressions: 5 }],
+          data: [],
+        },
+      ],
+    );
+
+    expect(tableData[0].subRows?.[0]?.subRows?.[0]).toMatchObject({
+      publisher: "ad-1",
+      adgroup: "ad-1",
+      impressions: 5,
+    });
+  });
+
+  it("does nothing when the value path matches no row", () => {
+    const tableData: PivotDataRow[] = [
+      { publisher: "A", subRows: [{ publisher: LOADING_CELL }] },
+    ];
     addExpandedDataToPivot(
       getConfig(false),
       tableData,
@@ -59,55 +136,89 @@ describe("pivot expansion", () => {
       [
         {
           isFetching: false,
-          expandIndex: "1",
-          rowDimensionValues: ["B"],
-          totals: [{ campaign: "campaign-1", impressions: 10 }],
+          expandIndex: buildExpandKey(["does-not-exist"]),
+          rowDimensionValues: ["does-not-exist"],
+          totals: [{ campaign: "c", impressions: 1 }],
           data: [],
         },
       ],
     );
-
     expect(tableData[0].subRows?.[0]?.publisher).toBe(LOADING_CELL);
-    expect(tableData[1].subRows?.[0]).toMatchObject({
-      publisher: "campaign-1",
-      campaign: "campaign-1",
-      impressions: 10,
-    });
+  });
+});
+
+describe("getValuesForExpandedKey", () => {
+  const tableData: PivotDataRow[] = [
+    {
+      publisher: "A",
+      subRows: [{ publisher: "camp1" }, { publisher: "camp2" }],
+    },
+    { publisher: "B", subRows: [{ publisher: "camp3" }] },
+  ];
+
+  it("returns the actual values along the matched path", () => {
+    expect(
+      getValuesForExpandedKey(
+        tableData,
+        ["publisher", "campaign"],
+        buildExpandKey(["B"]),
+      ),
+    ).toEqual(["B"]);
+    expect(
+      getValuesForExpandedKey(
+        tableData,
+        ["publisher", "campaign"],
+        buildExpandKey(["A", "camp2"]),
+      ),
+    ).toEqual(["A", "camp2"]);
   });
 
-  it("keeps the totals row offset when totals row is visible", () => {
-    const tableData: PivotDataRow[] = [
-      {
-        publisher: "A",
-        subRows: [{ publisher: LOADING_CELL }],
-      },
-      {
-        publisher: "B",
-        subRows: [{ publisher: LOADING_CELL }],
-      },
-    ];
+  it("stops at the deepest resolvable segment", () => {
+    expect(
+      getValuesForExpandedKey(
+        tableData,
+        ["publisher", "campaign"],
+        buildExpandKey(["A", "missing"]),
+      ),
+    ).toEqual(["A"]);
+  });
+});
 
-    addExpandedDataToPivot(
-      getConfig(true),
+describe("queryExpandedRowMeasureValues", () => {
+  const rowDimensionNames = ["publisher", "domain", "campaign"];
+  // Rows are [publisher, domain, campaign], so A's children are domains.
+  const tableData: PivotDataRow[] = [
+    { publisher: "A", subRows: [{ publisher: "example.com" }] },
+  ];
+
+  function query(expandedKey: string) {
+    const config = getConfig(false, rowDimensionNames);
+    config.pivot.expanded = { [expandedKey]: true };
+    return queryExpandedRowMeasureValues(
+      {} as PivotDashboardContext,
+      config,
       tableData,
-      ["publisher", "campaign"],
       {},
-      [
-        {
-          isFetching: false,
-          expandIndex: "2",
-          rowDimensionValues: ["B"],
-          totals: [{ campaign: "campaign-1", impressions: 10 }],
-          data: [],
-        },
-      ],
+      {},
     );
+  }
 
-    expect(tableData[0].subRows?.[0]?.publisher).toBe(LOADING_CELL);
-    expect(tableData[1].subRows?.[0]).toMatchObject({
-      publisher: "campaign-1",
-      campaign: "campaign-1",
-      impressions: 10,
-    });
+  beforeEach(() => {
+    vi.mocked(getAxisForDimensions).mockClear();
+  });
+
+  it("queries the next dimension for a fully resolved key", () => {
+    query(buildExpandKey(["A"]));
+    expect(getAxisForDimensions).toHaveBeenCalledTimes(1);
+    expect(vi.mocked(getAxisForDimensions).mock.calls[0][2]).toEqual([
+      "domain",
+    ]);
+  });
+
+  it("does not query for a key that only partially resolves", () => {
+    // Expanded as [publisher, campaign] before domain was inserted: "camp1"
+    // no longer matches a row at depth 1, so only "A" resolves.
+    query(buildExpandKey(["A", "camp1"]));
+    expect(getAxisForDimensions).not.toHaveBeenCalled();
   });
 });

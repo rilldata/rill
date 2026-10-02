@@ -29,6 +29,7 @@
     getNestedRowDimensionWidthKey,
     COLUMN_WIDTH_CONSTANTS as WIDTHS,
   } from "./pivot-column-width-utils";
+  import { PIVOT_TOTALS_ROW_ID } from "./pivot-expand-keys";
   import type { PivotRowSelectionState } from "./pivot-row-selection";
   import {
     computeAncestorRowIds,
@@ -120,9 +121,10 @@
   $: hasExpandableRows = rowDimensions.length > 1;
   $: hasMeasures = measures.length > 0;
 
-  // The totals row is always tanstack row "0" (see PivotTable.svelte). When
-  // pinned to the bottom it is skipped in the virtualized body and rendered
-  // once more in a sticky <tfoot>, so no row ids or index math change.
+  // The totals row is always the first tanstack row, with id
+  // PIVOT_TOTALS_ROW_ID (see PivotTable.svelte). When pinned to the bottom it
+  // is skipped in the virtualized body and rendered once more in a sticky
+  // <tfoot>, so no row ids or index math change.
   $: totalsRowAtBottom = !!totalsRow && totalsRowPosition === "bottom";
   $: rowDimensionNames = rowDimensions.map((d) => d.name);
   $: rowDimensionLabel = getRowNestedLabel(rowDimensions);
@@ -631,7 +633,7 @@
     rows[rowIndex].depth > 0
       ? nestedDimKeyFromRow(rows[rowIndex], rowDimensionNames)
       : dimKeyFromRow(rowData, rowDimensionNames)}
-  {@const isTotalsRow = !!totalsRow && rowId === "0"}
+  {@const isTotalsRow = !!totalsRow && rowId === PIVOT_TOTALS_ROW_ID}
   {@const filterSelected =
     rowSelectionState?.isRowSelected(
       rowData,
