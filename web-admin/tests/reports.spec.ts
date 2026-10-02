@@ -231,6 +231,13 @@ test.describe.serial("Reports", () => {
     await expect(adminPage.getByLabel("Report schedule")).toHaveText(
       /Repeats\s+At 10:00 PM, on the 1st of each month/m,
     );
+
+    // Reopen the report and assert that the filter was saved with it
+    await adminPage.getByLabel("Report context menu").click();
+    await adminPage.getByRole("menuitem", { name: "Edit Report" }).click();
+    await expect(filtersForm.getByLabel("Open ad_size filter")).toHaveText(
+      /Ad Size\s*1024x768\s*\+2 others/,
+    );
   });
 
   test("Should delete report", async ({ adminPage }) => {
