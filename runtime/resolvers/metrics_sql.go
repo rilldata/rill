@@ -16,7 +16,7 @@ import (
 )
 
 func init() {
-	runtime.RegisterResolverInitializer("metrics_sql", newMetricsSQL)
+	runtime.RegisterResolver("metrics_sql", newMetricsSQL, analyzeMetricsSQL)
 }
 
 type metricsSQLProps struct {
@@ -37,38 +37,8 @@ type metricsSQLArgs struct {
 	// NOTE: Not exhaustive. Any other args are passed to the "args" property of sqlResolverOpts.
 }
 
-// newMetricsSQL creates a resolver for evaluating metrics SQL.
-// It wraps the regular SQL resolver and compiles the metrics SQL to a regular SQL query first.
-// The compiler preserves templating in the SQL, allowing the regular SQL resolver to handle SQL templating rules.
+// newMetricsSQL compiles metrics SQL and creates an authorized metrics resolver.
 func newMetricsSQL(ctx context.Context, opts *runtime.ResolverOptions) (runtime.Resolver, error) {
-	props := &metricsSQLProps{}
-	if err := mapstructureutil.WeakDecode(opts.Properties, props); err != nil {
-		return nil, err
-	}
-	if props.SQL == "" {
-		return nil, errors.New(`metrics SQL: missing required property "sql"`)
-	}
-
-	span := trace.SpanFromContext(ctx)
-	if span.SpanContext().IsValid() {
-		span.SetAttributes(
-			attribute.String("metrics_sql", props.SQL),
-			attribute.String("time_zone", props.TimeZone),
-			attribute.Bool("has_additional_where", props.AdditionalWhere != nil || len(props.AdditionalWhereByMetricsView) > 0),
-			attribute.Bool("has_additional_time_range", props.AdditionalTimeRange != nil),
-		)
-	}
-
-	instance, err := opts.Runtime.Instance(ctx, opts.InstanceID)
-	if err != nil {
-		return nil, err
-	}
-
-	props.SQL, _, err = resolveTemplate(props.SQL, opts.Args, instance, opts.Claims.UserAttributes, opts.ForExport)
-	if err != nil {
-		return nil, err
-	}
-
 	ctrl, err := opts.Runtime.Controller(ctx, opts.InstanceID)
 	if err != nil {
 		return nil, err
@@ -80,7 +50,7 @@ func newMetricsSQL(ctx context.Context, opts *runtime.ResolverOptions) (runtime.
 	}
 
 	// Create a metrics SQL parser
-	compiler := metricssql.New(&metricssql.CompilerOptions{
+	compilerOpts := &metricssql.CompilerOptions{
 		GetMetricsView: func(ctx context.Context, name string) (*runtimev1.Resource, error) {
 			mv, err := ctrl.Get(ctx, &runtimev1.ResourceName{Kind: runtime.ResourceKindMetricsView, Name: name}, false)
 			if err != nil {
@@ -108,28 +78,20 @@ func newMetricsSQL(ctx context.Context, opts *runtime.ResolverOptions) (runtime.
 			if err != nil {
 				return metricsview.TimestampsResult{}, err
 			}
+			defer e.Close()
 			return e.Timestamps(ctx, timeDim)
 		},
-	})
+	}
 
-	// Parse the metrics SQL query
-	query, err := compiler.Parse(ctx, props.SQL)
+	query, err := parseMetricsSQL(ctx, opts.Runtime, &runtime.ResolverAnalysisOptions{
+		InstanceID:     opts.InstanceID,
+		Properties:     opts.Properties,
+		Args:           opts.Args,
+		UserAttributes: opts.Claims.UserAttributes,
+		ForExport:      opts.ForExport,
+	}, compilerOpts)
 	if err != nil {
 		return nil, err
-	}
-
-	// Inject the additional where clause if provided
-	query.Where = applyAdditionalWhere(query.Where, props.AdditionalWhere)
-	if where, ok := props.AdditionalWhereByMetricsView[query.MetricsView]; ok {
-		query.Where = applyAdditionalWhere(query.Where, where)
-	}
-
-	// Inject the additional time range if provided
-	query.TimeRange = applyAdditionalTimeRange(query.TimeRange, props.AdditionalTimeRange)
-
-	// Set the additional timezone if provided
-	if props.TimeZone != "" {
-		query.TimeZone = props.TimeZone
 	}
 
 	// Build the options for the metrics resolver
@@ -211,4 +173,99 @@ func applyAdditionalTimeRange(current, additional *metricsview.TimeRange) *metri
 	}
 
 	return timeRange
+}
+
+// parseMetricsSQL shares query parsing and transformations between execution and analysis.
+// Callers provide catalog and timestamp callbacks appropriate to their authorization context.
+func parseMetricsSQL(ctx context.Context, rt *runtime.Runtime, opts *runtime.ResolverAnalysisOptions, compilerOpts *metricssql.CompilerOptions) (*metricsview.Query, error) {
+	props := &metricsSQLProps{}
+	if err := mapstructureutil.WeakDecode(opts.Properties, props); err != nil {
+		return nil, err
+	}
+	if props.SQL == "" {
+		return nil, errors.New(`metrics SQL: missing required property "sql"`)
+	}
+
+	span := trace.SpanFromContext(ctx)
+	if span.SpanContext().IsValid() {
+		span.SetAttributes(
+			attribute.String("metrics_sql", props.SQL),
+			attribute.String("time_zone", props.TimeZone),
+			attribute.Bool("has_additional_where", props.AdditionalWhere != nil || len(props.AdditionalWhereByMetricsView) > 0),
+			attribute.Bool("has_additional_time_range", props.AdditionalTimeRange != nil),
+		)
+	}
+
+	instance, err := rt.Instance(ctx, opts.InstanceID)
+	if err != nil {
+		return nil, err
+	}
+
+	props.SQL, _, err = resolveTemplate(props.SQL, opts.Args, instance, opts.UserAttributes, opts.ForExport)
+	if err != nil {
+		return nil, err
+	}
+
+	// Parse the metrics SQL query
+	query, err := metricssql.New(compilerOpts).Parse(ctx, props.SQL)
+	if err != nil {
+		return nil, err
+	}
+
+	// Inject the additional where clause if provided
+	query.Where = applyAdditionalWhere(query.Where, props.AdditionalWhere)
+	if where, ok := props.AdditionalWhereByMetricsView[query.MetricsView]; ok {
+		query.Where = applyAdditionalWhere(query.Where, where)
+	}
+
+	// Inject the additional time range if provided
+	query.TimeRange = applyAdditionalTimeRange(query.TimeRange, props.AdditionalTimeRange)
+
+	// Set the additional timezone if provided
+	if props.TimeZone != "" {
+		query.TimeZone = props.TimeZone
+	}
+
+	return query, nil
+}
+
+func analyzeMetricsSQL(ctx context.Context, rt *runtime.Runtime, opts *runtime.ResolverAnalysisOptions) (*runtime.ResolverAnalysis, error) {
+	ctrl, err := rt.Controller(ctx, opts.InstanceID)
+	if err != nil {
+		return nil, err
+	}
+	args := &metricsSQLArgs{}
+	if err := mapstructure.Decode(opts.Args, args); err != nil {
+		return nil, err
+	}
+	query, err := parseMetricsSQL(ctx, rt, opts, &metricssql.CompilerOptions{
+		GetMetricsView: func(ctx context.Context, name string) (*runtimev1.Resource, error) {
+			return ctrl.Get(ctx, &runtimev1.ResourceName{Kind: runtime.ResourceKindMetricsView, Name: name}, false)
+		},
+		GetTimestamps: func(ctx context.Context, mv *runtimev1.Resource, timeDim string) (metricsview.TimestampsResult, error) {
+			return analysisTimestamps(ctx, rt, opts, mv, timeDim, args.Priority)
+		},
+	})
+	if err != nil {
+		return nil, err
+	}
+	// Match execution's map conversion, including serialization of timestamp literals.
+	properties, err := query.AsMap()
+	if err != nil {
+		return nil, err
+	}
+	child := *opts
+	child.Properties = properties
+	return rt.AnalyzeResolver(ctx, "metrics", &child)
+}
+
+// analysisTimestamps is the only data lookup allowed during resolver analysis.
+// Timestamp bounds are global (Executor.Timestamps ignores row filters) and do not authorize queries.
+func analysisTimestamps(ctx context.Context, rt *runtime.Runtime, opts *runtime.ResolverAnalysisOptions, mv *runtimev1.Resource, timeDim string, priority int) (metricsview.TimestampsResult, error) {
+	e, err := executor.New(ctx, rt, opts.InstanceID, mv.GetMetricsView().State.ValidSpec, false, runtime.ResolvedSecurityOpen, priority, opts.UserAttributes)
+	if err != nil {
+		return metricsview.TimestampsResult{}, err
+	}
+	defer e.Close()
+	return e.Timestamps(ctx, timeDim)
 }

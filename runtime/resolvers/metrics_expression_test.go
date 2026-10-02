@@ -109,10 +109,7 @@ func TestMetricsResolverExpressionSecurity(t *testing.T) {
 func TestMetricsResolverExpressionInferredSecurityRules(t *testing.T) {
 	rt, instanceID := testruntime.NewInstanceForProject(t, "ad_bids_2rows")
 
-	initializer, ok := runtime.ResolverInitializers["metrics"]
-	require.True(t, ok)
-	resolver, err := initializer(context.Background(), &runtime.ResolverOptions{
-		Runtime:    rt,
+	analysis, err := rt.AnalyzeResolver(context.Background(), "metrics", &runtime.ResolverAnalysisOptions{
 		InstanceID: instanceID,
 		Properties: map[string]any{
 			"metrics_view": "ad_bids_metrics",
@@ -125,16 +122,11 @@ func TestMetricsResolverExpressionInferredSecurityRules(t *testing.T) {
 				},
 			},
 		},
-		Claims: &runtime.SecurityClaims{},
 	})
-	require.NoError(t, err)
-	defer resolver.Close()
-
-	rules, err := resolver.InferRequiredSecurityRules()
 	require.NoError(t, err)
 
 	var fields []string
-	for _, rule := range rules {
+	for _, rule := range analysis.RequiredSecurityRules {
 		if fa := rule.GetFieldAccess(); fa != nil {
 			fields = append(fields, fa.Fields...)
 		}

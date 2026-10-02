@@ -480,7 +480,7 @@ func getMeasureNames(m Measure) []string {
 		return []string{m.Compute.ComparisonTime.Dimension}
 	case m.Compute.Expression != nil:
 		// The expression itself is ephemeral, but it references measures in the metrics view.
-		// Report those so that inferred security rules (see InferRequiredSecurityRules) grant access to them.
+		// Report those so that inferred security rules grant access to them.
 		// Parse errors are ignored here; the executor reports them when the query runs.
 		expr, err := ParseMeasureExpression(m.Compute.Expression.Expression)
 		if err != nil {

@@ -199,30 +199,19 @@ func (r *ReportReconciler) ResolveTransitiveAccess(ctx context.Context, claims *
 
 	var mvName string
 	if spec.Resolver != "" {
-		initializer, ok := runtime.ResolverInitializers[spec.Resolver]
-		if !ok {
-			return nil, fmt.Errorf("no resolver found for name 'legacy_metrics'")
-		}
-		resolver, err := initializer(ctx, &runtime.ResolverOptions{
-			Runtime:    r.C.Runtime,
-			InstanceID: r.C.InstanceID,
-			Properties: resolverProperties(spec),
-			Claims:     claims,
-			ForExport:  false,
+		analysis, err := r.C.Runtime.AnalyzeResolver(ctx, spec.Resolver, &runtime.ResolverAnalysisOptions{
+			InstanceID:     r.C.InstanceID,
+			Properties:     resolverProperties(spec),
+			UserAttributes: claims.UserAttributes,
+			ForExport:      false,
 		})
 		if err != nil {
 			return nil, err
 		}
-		defer resolver.Close()
-		inferred, err := resolver.InferRequiredSecurityRules()
-		if err != nil {
-			return nil, err
-		}
 
-		rules = append(rules, inferred...)
+		rules = append(rules, analysis.RequiredSecurityRules...)
 
-		refs := resolver.Refs()
-		for _, ref := range refs {
+		for _, ref := range analysis.Refs {
 			// need access to the referenced resources
 			conditionRes = append(conditionRes, &runtimev1.ResourceName{Kind: ref.Kind, Name: ref.Name})
 			if ref.Kind == runtime.ResourceKindMetricsView {

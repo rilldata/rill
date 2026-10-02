@@ -665,3 +665,82 @@ func must[T any](v T, err error) T {
 	}
 	return v
 }
+
+func TestAlertResolveTransitiveAccess(t *testing.T) {
+	rt, id := testruntime.NewInstance(t)
+	testruntime.PutFiles(t, rt, id, map[string]string{
+		"/models/bar.sql": `
+SELECT '2024-01-01T00:00:00Z'::TIMESTAMP as __time, 'Denmark' as country
+`,
+		"/metrics/mv1.yaml": `
+version: 1
+type: metrics_view
+model: bar
+timeseries: __time
+dimensions:
+- column: country
+measures:
+- expression: count(*)
+`,
+		"/metrics/mv2.yaml": `
+version: 1
+type: metrics_view
+model: bar
+timeseries: __time
+dimensions:
+- column: country
+measures:
+- expression: count(*)
+`,
+		"/alerts/a1.yaml": `
+type: alert
+display_name: Test Alert
+refs:
+- type: MetricsView
+  name: mv1
+watermark: inherit
+intervals:
+  duration: P1D
+data:
+  metrics_sql: |-
+    select measure_0 from mv1 where country <> 'Denmark' having measure_0 > 0
+notify:
+  email:
+    recipients:
+      - somebody@example.com
+`,
+	})
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireReconcileState(t, rt, id, 5, 0, 0)
+
+	claims := &runtime.SecurityClaims{
+		UserAttributes: map[string]any{"email": "somebody@example.com"},
+		AdditionalRules: []*runtimev1.SecurityRule{{
+			Rule: &runtimev1.SecurityRule_TransitiveAccess{
+				TransitiveAccess: &runtimev1.SecurityRuleTransitiveAccess{
+					Resource: &runtimev1.ResourceName{Kind: runtime.ResourceKindAlert, Name: "a1"},
+				},
+			},
+		}},
+	}
+	ctx := t.Context()
+
+	a1 := testruntime.GetResource(t, rt, id, runtime.ResourceKindAlert, "a1")
+	sec, err := rt.ResolveSecurity(ctx, id, claims, a1)
+	require.NoError(t, err)
+	require.True(t, sec.CanAccess())
+
+	mv1 := testruntime.GetResource(t, rt, id, runtime.ResourceKindMetricsView, "mv1")
+	sec, err = rt.ResolveSecurity(ctx, id, claims, mv1)
+	require.NoError(t, err)
+	require.True(t, sec.CanAccess())
+	require.True(t, sec.CanAccessField("measure_0"))
+	require.True(t, sec.CanAccessField("country"))
+	require.False(t, sec.CanAccessField("__time"))
+	require.NotNil(t, sec.QueryFilter())
+
+	mv2 := testruntime.GetResource(t, rt, id, runtime.ResourceKindMetricsView, "mv2")
+	sec, err = rt.ResolveSecurity(ctx, id, claims, mv2)
+	require.NoError(t, err)
+	require.False(t, sec.CanAccess())
+}
