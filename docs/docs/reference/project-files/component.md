@@ -375,3 +375,29 @@ _[object]_ - Map of points or regions from a geo dimension, colored by a measure
   - **`dimension_filters`** - _[string]_ - SQL filter expression applied to this map only, such as `country IN ('US')`
 
   - **`hide_local_filters`** - _[boolean]_ - Hide the local filter chips on the map; the filters still apply to its queries
+
+## Common Properties
+
+### `name`
+
+_[string]_ - Name is usually inferred from the filename, but can be specified manually.
+
+### `refs`
+
+_[array of string]_ - List of resource references
+
+### `tags`
+
+_[array of string]_ - Tags for organizing and filtering the resource (e.g. on the project dashboards list).
+
+### `metadata`
+
+_[object]_ - User-defined key-value metadata attached to the resource. Rill does not read or write it; it is exposed as-is on the resource's meta over the API for external tooling. Values are strings, with numbers and booleans coerced. Not supported in rill.yaml defaults.
+
+### `dev`
+
+_[object]_ - Overrides any properties in development environment.
+
+### `prod`
+
+_[object]_ - Overrides any properties in production environment.
