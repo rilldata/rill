@@ -23,6 +23,7 @@ rill validate [<path>] [flags]
       --log-format string              Log format (options: "console", "json") (default "console")
       --model-timeout-seconds uint32   Timeout for reconciliation of models, set 0 for no timeout (default 60)
   -o, --output-file string             Output file for validation results (JSON format)
+      --skip-running-rill-check        Skip checking for a running Rill instance on localhost:9009; concurrent access to the same project can cause database conflicts
 ```
 
 ### Global flags
