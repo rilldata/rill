@@ -361,7 +361,8 @@
         }),
       ],
     );
-    updatedAggregationRequest.where = filters?.topLevelJoiner[metricsViewName];
+    updatedAggregationRequest.where =
+      filters?.topLevelJoiner.expr[metricsViewName];
     return {
       ...commonOptions,
       explore: exploreName,
