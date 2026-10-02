@@ -4,7 +4,6 @@
   import InputLabel from "@rilldata/web-common/components/forms/InputLabel.svelte";
   import MultiInput from "@rilldata/web-common/components/forms/MultiInput.svelte";
   import FormSection from "@rilldata/web-common/components/forms/FormSection.svelte";
-  import { getHasSlackConnection } from "@rilldata/web-common/features/alerts/delivery-tab/notifiers-utils";
   import type { TimeControls } from "@rilldata/web-common/features/dashboards/stores/TimeControls.ts";
   import FiltersForm from "@rilldata/web-common/features/scheduled-reports/FiltersForm.svelte";
   import RowsAndColumnsForm from "@rilldata/web-common/features/scheduled-reports/fields/RowsAndColumnsForm.svelte";
@@ -18,7 +17,7 @@
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import InfoCircle from "@rilldata/web-common/components/icons/InfoCircle.svelte";
   import type { Readable } from "svelte/store";
-  import type { SuperFormErrors } from "sveltekit-superforms/client";
+  import type { SuperForm, SuperFormErrors } from "sveltekit-superforms/client";
   import Input from "../../components/forms/Input.svelte";
   import Select from "../../components/forms/Select.svelte";
   import Checkbox from "../../components/forms/Checkbox.svelte";
@@ -35,21 +34,40 @@
   import { specHasTabGroups } from "@rilldata/web-common/features/canvas/stores/tab-group";
   import type { EphemeralMeasureDef } from "@rilldata/web-common/features/dashboards/ephemeral-measures/types.ts";
   import type { V1Resource } from "@rilldata/web-common/runtime-client";
+  import { EmbedStore } from "@rilldata/web-common/features/embeds/embed-store.ts";
+  import type { ReportFormMetadataProvider } from "@rilldata/web-common/features/scheduled-reports/ReportFormMetadataProvider.ts";
 
-  export let formId: string;
-  export let data: Readable<ReportValues>;
-  export let errors: SuperFormErrors<ReportValues>;
-  export let submit: () => void;
-  export let enhance;
-  export let metricsViewName: string;
-  export let exploreName: string;
-  export let canvasName: string = "";
-  // Canvas state (URL search string) to display instead of the page URL; set when
-  // editing a report so the filter bar shows the report's captured state.
-  export let canvasStateOverride: string | undefined = undefined;
-  export let filters: ExpressionFilterManager | undefined = undefined;
-  export let timeControls: TimeControls | undefined = undefined;
-  export let ephemeralMeasures: EphemeralMeasureDef[] | undefined = undefined;
+  let {
+    formId,
+    data,
+    errors,
+    submit,
+    enhance,
+    metricsViewName,
+    exploreName,
+    canvasName = "",
+    canvasStateOverride,
+    filters,
+    timeControls,
+    ephemeralMeasures,
+    provider,
+  }: {
+    formId: string;
+    data: Readable<ReportValues>;
+    errors: SuperFormErrors<ReportValues>;
+    submit: () => void;
+    enhance: SuperForm<ReportValues>["enhance"];
+    metricsViewName: string;
+    exploreName: string;
+    canvasName?: string;
+    // Canvas state (URL search string) to display instead of the page URL; set when
+    // editing a report so the filter bar shows the report's captured state.
+    canvasStateOverride?: string;
+    filters?: ExpressionFilterManager;
+    timeControls?: TimeControls;
+    ephemeralMeasures?: EphemeralMeasureDef[];
+    provider: ReportFormMetadataProvider;
+  } = $props();
 
   const RUN_AS_OPTIONS = [
     {
@@ -64,30 +82,33 @@
     },
   ];
   const runtimeClient = useRuntimeClient();
+  // Reports created from an embed always run as the creator.
+  const isEmbedded = EmbedStore.isEmbedded();
 
-  $: selectedRunAsOption = RUN_AS_OPTIONS.find(
-    (o) => o.value === $data["webOpenMode"],
+  const selectedRunAsOption = $derived(
+    RUN_AS_OPTIONS.find((o) => o.value === $data["webOpenMode"]),
   );
-
-  $: hasSlackNotifier = getHasSlackConnection(runtimeClient);
 
   // Pull the time zone options from the dashboard's spec
-  $: exploreSpecQuery = useExploreValidSpec(runtimeClient, exploreName);
-  $: canvasQuery = useResource<V1Resource>(
-    runtimeClient,
-    canvasName,
-    ResourceKind.Canvas,
+  const exploreSpecQuery = $derived(
+    useExploreValidSpec(runtimeClient, exploreName),
   );
-  $: availableTimeZones = canvasName
-    ? $canvasQuery.data?.canvas?.state?.validSpec?.timeZones
-    : $exploreSpecQuery.data?.explore?.timeZones;
+  const canvasQuery = $derived(
+    useResource<V1Resource>(runtimeClient, canvasName, ResourceKind.Canvas),
+  );
+  const availableTimeZones = $derived(
+    canvasName
+      ? $canvasQuery.data?.canvas?.state?.validSpec?.timeZones
+      : $exploreSpecQuery.data?.explore?.timeZones,
+  );
 
   // Gates the all-tabs option in the canvas PDF variant.
-  $: showTabOptions = specHasTabGroups(
-    $canvasQuery.data?.canvas?.state?.validSpec?.rows,
+  const showTabOptions = $derived(
+    specHasTabGroups($canvasQuery.data?.canvas?.state?.validSpec?.rows),
   );
-  $: canvasFiltersEnabled =
-    $canvasQuery.data?.canvas?.state?.validSpec?.filtersEnabled ?? true;
+  const canvasFiltersEnabled = $derived(
+    $canvasQuery.data?.canvas?.state?.validSpec?.filtersEnabled ?? true,
+  );
 
   // Keyboard counterpart of the read-only filter bar's pointer-events guard:
   // its controls remain focusable, so kick focus back out to keep them inoperable.
@@ -115,17 +136,20 @@
       label={m.report_form_title_label()}
       placeholder={m.report_form_title_placeholder()}
     />
-    <Select
-      bind:value={$data["webOpenMode"]}
-      id="webOpenMode"
-      label={m.report_form_run_as()}
-      options={RUN_AS_OPTIONS}
-      dropdownWidth="w-[400px]"
-    />
-    {#if selectedRunAsOption}
-      <div>
-        {selectedRunAsOption.description}
-      </div>
+    <!-- TODO: Support other run as options in embed. They currently require recipients to be Rill project members. -->
+    {#if !isEmbedded}
+      <Select
+        bind:value={$data["webOpenMode"]}
+        id="webOpenMode"
+        label={m.report_form_run_as()}
+        options={RUN_AS_OPTIONS}
+        dropdownWidth="w-[400px]"
+      />
+      {#if selectedRunAsOption}
+        <div>
+          {selectedRunAsOption.description}
+        </div>
+      {/if}
     {/if}
     <ScheduleForm {data} {availableTimeZones} />
     {#if canvasName}
@@ -281,7 +305,7 @@
       plural="emails"
       placeholder={m.report_form_email_placeholder()}
     />
-    {#if $hasSlackNotifier.data}
+    {#if provider.hasSlackNotifier}
       <FormSection
         bind:enabled={$data["enableSlackNotification"]}
         showSectionToggle

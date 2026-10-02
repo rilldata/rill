@@ -41,7 +41,7 @@
   }
 
   const exportDash = createQueryServiceExportMutation(runtimeClient);
-  const { reports, adminServer, exportHeader } = featureFlags;
+  const { adminServer, exportHeader } = featureFlags;
 
   async function handleExport(options: {
     format: V1ExportFormat;
@@ -151,7 +151,7 @@
         Export as XLSX with metadata
       </DropdownMenu.Item>
     {/if}
-    {#if includeScheduledReport && $reports && exploreName}
+    {#if includeScheduledReport && exploreName}
       <DropdownMenu.Item
         onclick={() => (showScheduledReportDialog = true)}
         disabled={!scheduledReportQuery}

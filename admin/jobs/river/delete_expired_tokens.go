@@ -36,5 +36,9 @@ func (w *DeleteExpiredTokensWorker) Work(ctx context.Context, job *river.Job[Del
 	if err != nil {
 		return err
 	}
+	err = w.admin.DB.DeleteExpiredEmbedAuthTokens(ctx, retention)
+	if err != nil {
+		return err
+	}
 	return nil
 }

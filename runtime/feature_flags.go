@@ -48,9 +48,9 @@ var defaultFeatureFlags = map[string]string{
 	// TODO: more info
 	"export_header": "false",
 	// Controls visibility of alert creation functionality
-	"alerts": "true",
+	"alerts": "{{ not .user.embed }}",
 	// Controls visibility of report creation functionality
-	"reports": "true",
+	"reports": "{{ not .user.embed }}",
 	// Controls visibility of project-level chat functionality
 	"chat": "true",
 	// Controls visibility of dashboard-level chat functionality

@@ -22,6 +22,7 @@ const (
 	OwnerTypeService        OwnerType = "service"
 	OwnerTypeDeployment     OwnerType = "deployment"
 	OwnerTypeMagicAuthToken OwnerType = "magic_auth_token" // nolint:gosec // It's not a credential
+	OwnerTypeEmbed          OwnerType = "embed"
 )
 
 // Claims resolves permissions for a requester.
@@ -128,6 +129,8 @@ func (c *authTokenClaims) OwnerType() OwnerType {
 		return OwnerTypeDeployment
 	case authtoken.TypeMagic:
 		return OwnerTypeMagicAuthToken
+	case authtoken.TypeEmbed:
+		return OwnerTypeEmbed
 	default:
 		panic(fmt.Errorf("unexpected token type %q", t))
 	}
@@ -165,6 +168,9 @@ func (c *authTokenClaims) Superuser(ctx context.Context) bool {
 		return false
 	case authtoken.TypeMagic:
 		// magic tokens can't be superusers
+		return false
+	case authtoken.TypeEmbed:
+		// embedded tokens can't be superusers
 		return false
 	default:
 		panic(fmt.Errorf("unexpected token type %q", c.token.Token().Type))
@@ -227,6 +233,13 @@ func (c *authTokenClaims) ProjectPermissions(ctx context.Context, orgID, project
 		} else {
 			err = fmt.Errorf("unexpected token model type %T", c.token.TokenModel())
 		}
+	case authtoken.TypeEmbed:
+		mdl, ok := c.token.TokenModel().(*database.EmbedAuthToken)
+		if ok {
+			perm, err = c.admin.ProjectPermissionsForEmbedAuthToken(ctx, projectID, mdl)
+		} else {
+			err = fmt.Errorf("unexpected token model type %T", c.token.TokenModel())
+		}
 	default:
 		err = fmt.Errorf("unexpected token type %q", c.token.Token().Type)
 	}
@@ -264,6 +277,8 @@ func (c *authTokenClaims) organizationPermissionsUnsafe(ctx context.Context, org
 		} else {
 			err = fmt.Errorf("unexpected token model type %T", c.token.TokenModel())
 		}
+	case authtoken.TypeEmbed:
+		return &adminv1.OrganizationPermissions{}, true
 	default:
 		err = fmt.Errorf("unexpected token type %q", c.token.Token().Type)
 	}

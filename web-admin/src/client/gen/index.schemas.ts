@@ -2469,6 +2469,10 @@ It is optional. If the call is made with a deployment access token, it defaults 
   superuserForceAccess?: boolean;
 };
 
+export type AdminServiceGetReportMetaBodyQueryForAttributes = {
+  [key: string]: unknown;
+};
+
 export type AdminServiceGetReportMetaBody = {
   report?: string;
   ownerId?: string;
@@ -2477,6 +2481,9 @@ export type AdminServiceGetReportMetaBody = {
   anonRecipients?: boolean;
   resources?: V1ResourceName[];
   webOpenMode?: string;
+  queryForUserId?: string;
+  queryForUserEmail?: string;
+  queryForAttributes?: AdminServiceGetReportMetaBodyQueryForAttributes;
   whereFilterJson?: string;
   accessibleFields?: string[];
 };

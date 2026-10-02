@@ -133,6 +133,7 @@
                 {organization}
                 {project}
                 ownerId={alertSpec.annotations["admin_owner_user_id"]}
+                ownerEmail={alertSpec.annotations["admin_owner_user_email"]}
               />
             {/if}
           </svelte:fragment>

@@ -140,7 +140,18 @@ func (s *Server) CreateAlert(ctx context.Context, req *adminv1.CreateAlertReques
 		return nil, status.Error(codes.PermissionDenied, "does not have permission to read project repo")
 	}
 
-	if claims.OwnerType() != auth.OwnerTypeUser {
+	ownerId := ""
+	ownerEmail := ""
+	switch claims.OwnerType() {
+	case auth.OwnerTypeUser:
+		ownerId = claims.OwnerID()
+	case auth.OwnerTypeEmbed:
+		mdl, ok := claims.AuthTokenModel().(*database.EmbedAuthToken)
+		if !ok {
+			return nil, status.Error(codes.PermissionDenied, "invalid embed token")
+		}
+		ownerEmail = mdl.Email
+	default:
 		return nil, status.Error(codes.PermissionDenied, "only users can create alerts")
 	}
 
@@ -161,7 +172,7 @@ func (s *Server) CreateAlert(ctx context.Context, req *adminv1.CreateAlertReques
 		return nil, err
 	}
 
-	data, err := s.yamlForManagedAlert(req.Options, claims.OwnerID())
+	data, err := s.yamlForManagedAlert(req.Options, ownerId, ownerEmail)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "failed to generate alert YAML: %s", err.Error())
 	}
@@ -226,13 +237,12 @@ func (s *Server) EditAlert(ctx context.Context, req *adminv1.EditAlertRequest) (
 	if !annotations.AdminManaged {
 		return nil, status.Error(codes.FailedPrecondition, "can't edit alert because it was not created from the UI")
 	}
-
-	isOwner := claims.OwnerType() == auth.OwnerTypeUser && annotations.AdminOwnerUserID == claims.OwnerID()
-	if !permissions.ManageAlerts && !isOwner {
+	if !permissions.ManageAlerts && !isAdminManagedOwner(claims, annotations.AdminOwnerUserID, annotations.AdminOwnerUserEmail) {
 		return nil, status.Error(codes.PermissionDenied, "does not have permission to edit alert")
 	}
 
-	data, err := s.yamlForManagedAlert(req.Options, annotations.AdminOwnerUserID)
+	// Preserve the original owner, since the editor may be someone with manage permissions.
+	data, err := s.yamlForManagedAlert(req.Options, annotations.AdminOwnerUserID, annotations.AdminOwnerUserEmail)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "failed to generate alert YAML: %s", err.Error())
 	}
@@ -445,8 +455,7 @@ func (s *Server) DeleteAlert(ctx context.Context, req *adminv1.DeleteAlertReques
 		return nil, status.Error(codes.FailedPrecondition, "can't edit alert because it was not created from the UI")
 	}
 
-	isOwner := claims.OwnerType() == auth.OwnerTypeUser && annotations.AdminOwnerUserID == claims.OwnerID()
-	if !permissions.ManageAlerts && !isOwner {
+	if !permissions.ManageAlerts && !isAdminManagedOwner(claims, annotations.AdminOwnerUserID, annotations.AdminOwnerUserEmail) {
 		return nil, status.Error(codes.PermissionDenied, "does not have permission to edit alert")
 	}
 
@@ -517,7 +526,7 @@ func (s *Server) GetAlertYAML(ctx context.Context, req *adminv1.GetAlertYAMLRequ
 	}, nil
 }
 
-func (s *Server) yamlForManagedAlert(opts *adminv1.AlertOptions, ownerUserID string) ([]byte, error) {
+func (s *Server) yamlForManagedAlert(opts *adminv1.AlertOptions, ownerUserID, ownerEmail string) ([]byte, error) {
 	res := alertYAML{}
 	res.Type = "alert"
 	// Trigger the alert when the metrics view refreshes.
@@ -536,9 +545,18 @@ func (s *Server) yamlForManagedAlert(opts *adminv1.AlertOptions, ownerUserID str
 	}
 	res.Query.Name = opts.QueryName
 	res.Query.ArgsJSON = opts.QueryArgsJson
+
 	// Hard code the user id to run for (to avoid exposing data through alert creation)
-	res.For.UserID = ownerUserID
-	res.Query.For.UserID = ownerUserID
+	if ownerEmail != "" {
+		res.For.UserEmail = ownerEmail
+		res.Query.For.UserEmail = ownerEmail
+		res.Annotations.AdminOwnerUserEmail = ownerEmail
+	} else if ownerUserID != "" {
+		res.For.UserID = ownerUserID
+		res.Query.For.UserID = ownerUserID
+		res.Annotations.AdminOwnerUserID = ownerUserID
+	}
+
 	// Notification options
 	res.Renotify = opts.Renotify
 	res.RenotifyAfter = opts.RenotifyAfterSeconds
@@ -610,14 +628,16 @@ type alertYAML struct {
 	} `yaml:"intervals"`
 	Data map[string]any `yaml:"data,omitempty"`
 	For  struct {
-		UserID string `yaml:"user_id"`
+		UserID    string `yaml:"user_id"`
+		UserEmail string `yaml:"user_email"`
 	} `yaml:"for"`
 	Query struct {
 		Name     string         `yaml:"name"`
 		Args     map[string]any `yaml:"args,omitempty"`
 		ArgsJSON string         `yaml:"args_json,omitempty"`
 		For      struct {
-			UserID string `yaml:"user_id"`
+			UserID    string `yaml:"user_id"`
+			UserEmail string `yaml:"user_email"`
 		} `yaml:"for"`
 	} `yaml:"query"`
 	Renotify      bool   `yaml:"renotify"`
@@ -636,11 +656,12 @@ type alertYAML struct {
 }
 
 type alertAnnotations struct {
-	AdminOwnerUserID string `yaml:"admin_owner_user_id"`
-	AdminManaged     bool   `yaml:"admin_managed"`
-	AdminNonce       string `yaml:"admin_nonce"` // To ensure spec version gets updated on writes, to enable polling in TriggerReconcileAndAwaitAlert
-	WebOpenPath      string `yaml:"web_open_path"`
-	WebOpenState     string `yaml:"web_open_state"`
+	AdminOwnerUserID    string `yaml:"admin_owner_user_id"`
+	AdminOwnerUserEmail string `yaml:"admin_owner_user_email"`
+	AdminManaged        bool   `yaml:"admin_managed"`
+	AdminNonce          string `yaml:"admin_nonce"` // To ensure spec version gets updated on writes, to enable polling in TriggerReconcileAndAwaitAlert
+	WebOpenPath         string `yaml:"web_open_path"`
+	WebOpenState        string `yaml:"web_open_state"`
 }
 
 func parseAlertAnnotations(annotations map[string]string) alertAnnotations {
@@ -650,6 +671,7 @@ func parseAlertAnnotations(annotations map[string]string) alertAnnotations {
 
 	res := alertAnnotations{}
 	res.AdminOwnerUserID = annotations["admin_owner_user_id"]
+	res.AdminOwnerUserEmail = annotations["admin_owner_user_email"]
 	res.AdminManaged, _ = strconv.ParseBool(annotations["admin_managed"])
 	res.AdminNonce = annotations["admin_nonce"]
 
@@ -726,4 +748,18 @@ func (s *Server) createMagicTokensAlert(ctx context.Context, projectID, alertNam
 	}
 
 	return emailTokens, nil
+}
+
+// isAdminManagedOwner returns true if the claims belong to the owner of an admin-managed alert or report.
+// Rill users are matched by user ID; embed users don't have a user ID, so they are matched by email.
+func isAdminManagedOwner(claims auth.Claims, ownerUserID, ownerEmail string) bool {
+	switch claims.OwnerType() {
+	case auth.OwnerTypeUser:
+		return ownerUserID != "" && ownerUserID == claims.OwnerID()
+	case auth.OwnerTypeEmbed:
+		tkn, ok := claims.AuthTokenModel().(*database.EmbedAuthToken)
+		return ok && ownerUserID == "" && ownerEmail != "" && ownerEmail == tkn.Email
+	default:
+		return false
+	}
 }

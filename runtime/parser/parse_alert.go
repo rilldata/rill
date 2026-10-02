@@ -27,22 +27,14 @@ type AlertYAML struct {
 		Limit         uint   `yaml:"limit"`
 		CheckUnclosed bool   `yaml:"check_unclosed"`
 	} `yaml:"intervals"`
-	Timeout string    `yaml:"timeout"`
-	Data    *DataYAML `yaml:"data"`
-	For     struct {
-		UserID     string         `yaml:"user_id"`
-		UserEmail  string         `yaml:"user_email"`
-		Attributes map[string]any `yaml:"attributes"`
-	} `yaml:"for"`
-	Query struct { // legacy query
+	Timeout string       `yaml:"timeout"`
+	Data    *DataYAML    `yaml:"data"`
+	For     QueryForYAML `yaml:"for"`
+	Query   struct {     // legacy query
 		Name     string         `yaml:"name"`
 		Args     map[string]any `yaml:"args"`
 		ArgsJSON string         `yaml:"args_json"`
-		For      struct {
-			UserID     string         `yaml:"user_id"`
-			UserEmail  string         `yaml:"user_email"`
-			Attributes map[string]any `yaml:"attributes"`
-		} `yaml:"for"`
+		For      QueryForYAML   `yaml:"for"`
 	} `yaml:"query"`
 	OnRecover     *bool  `yaml:"on_recover"`
 	OnFail        *bool  `yaml:"on_fail"`
@@ -132,8 +124,7 @@ func (p *Parser) parseAlert(node *Node) error {
 	// Data and query
 	var resolver string
 	var resolverProps *structpb.Struct
-	var queryForUserID, queryForUserEmail string
-	var queryForAttributes *structpb.Struct
+	var qf *queryFor
 	isLegacyQuery := tmp.Data == nil
 
 	if !isLegacyQuery {
@@ -144,29 +135,9 @@ func (p *Parser) parseAlert(node *Node) error {
 		}
 		node.Refs = append(node.Refs, refs...)
 
-		// Query for: validate only one of user_id, user_email, or attributes is set
-		n := 0
-		if tmp.For.UserID != "" {
-			n++
-			queryForUserID = tmp.For.UserID
-		}
-		if tmp.For.UserEmail != "" {
-			n++
-			_, err := mail.ParseAddress(tmp.For.UserEmail)
-			if err != nil {
-				return fmt.Errorf(`invalid value %q for property "for.user_email"`, tmp.For.UserEmail)
-			}
-			queryForUserEmail = tmp.For.UserEmail
-		}
-		if len(tmp.For.Attributes) > 0 {
-			n++
-			queryForAttributes, err = structpb.NewStruct(tmp.For.Attributes)
-			if err != nil {
-				return fmt.Errorf(`failed to serialize property "for.attributes": %w`, err)
-			}
-		}
-		if n > 1 {
-			return fmt.Errorf(`only one of "for.user_id", "for.user_email", or "for.attributes" may be set`)
+		qf, err = parseQueryForYAML(&tmp.For, "for")
+		if err != nil {
+			return err
 		}
 	} else {
 		// Query name
@@ -192,29 +163,9 @@ func (p *Parser) parseAlert(node *Node) error {
 			return errors.New(`missing query args (must set either "query.args" or "query.args_json")`)
 		}
 
-		// Query for: validate only one of user_id, user_email, or attributes is set
-		n := 0
-		if tmp.Query.For.UserID != "" {
-			n++
-			queryForUserID = tmp.Query.For.UserID
-		}
-		if tmp.Query.For.UserEmail != "" {
-			n++
-			_, err := mail.ParseAddress(tmp.Query.For.UserEmail)
-			if err != nil {
-				return fmt.Errorf(`invalid value %q for property "query.for.user_email"`, tmp.Query.For.UserEmail)
-			}
-			queryForUserEmail = tmp.Query.For.UserEmail
-		}
-		if len(tmp.Query.For.Attributes) > 0 {
-			n++
-			queryForAttributes, err = structpb.NewStruct(tmp.Query.For.Attributes)
-			if err != nil {
-				return fmt.Errorf(`failed to serialize property "query.for.attributes": %w`, err)
-			}
-		}
-		if n > 1 {
-			return fmt.Errorf(`only one of "query.for.user_id", "query.for.user_email", or "query.for.attributes" may be set`)
+		qf, err = parseQueryForYAML(&tmp.Query.For, "query.for")
+		if err != nil {
+			return err
 		}
 
 		resolver = "legacy_metrics"
@@ -295,12 +246,12 @@ func (p *Parser) parseAlert(node *Node) error {
 	r.AlertSpec.ResolverProperties = resolverProps
 
 	// Note: have already validated that at most one of the cases match
-	if queryForUserID != "" {
-		r.AlertSpec.QueryFor = &runtimev1.AlertSpec_QueryForUserId{QueryForUserId: queryForUserID}
-	} else if queryForUserEmail != "" {
-		r.AlertSpec.QueryFor = &runtimev1.AlertSpec_QueryForUserEmail{QueryForUserEmail: queryForUserEmail}
-	} else if queryForAttributes != nil {
-		r.AlertSpec.QueryFor = &runtimev1.AlertSpec_QueryForAttributes{QueryForAttributes: queryForAttributes}
+	if qf.userID != "" {
+		r.AlertSpec.QueryFor = &runtimev1.AlertSpec_QueryForUserId{QueryForUserId: qf.userID}
+	} else if qf.userEmail != "" {
+		r.AlertSpec.QueryFor = &runtimev1.AlertSpec_QueryForUserEmail{QueryForUserEmail: qf.userEmail}
+	} else if qf.attributes != nil {
+		r.AlertSpec.QueryFor = &runtimev1.AlertSpec_QueryForAttributes{QueryForAttributes: qf.attributes}
 	}
 
 	// Notification default settings
