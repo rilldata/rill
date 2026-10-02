@@ -385,6 +385,7 @@ func (a *App) Close() error {
 type ServeOptions struct {
 	HTTPPort    int
 	GRPCPort    int
+	PSQLPort    int
 	EnableUI    bool
 	OpenBrowser bool
 	Readonly    bool
@@ -439,6 +440,7 @@ func (a *App) Serve(opts ServeOptions) error {
 	runtimeOpts := &runtimeserver.Options{
 		HTTPPort:        opts.HTTPPort,
 		GRPCPort:        opts.GRPCPort,
+		PSQLPort:        opts.PSQLPort,
 		TLSCertPath:     opts.TLSCertPath,
 		TLSKeyPath:      opts.TLSKeyPath,
 		AllowedOrigins:  a.allowedOrigins,
@@ -459,6 +461,9 @@ func (a *App) Serve(opts ServeOptions) error {
 			localServer.RegisterHandlers(mux, opts.HTTPPort, secure, opts.EnableUI)
 		}, opts.EnableUI)
 	})
+	if opts.PSQLPort != 0 {
+		group.Go(func() error { return runtimeServer.ServePGWire(ctx, false) })
+	}
 
 	// Start debug server on port 6060
 	if a.Debug {

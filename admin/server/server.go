@@ -53,6 +53,10 @@ var (
 type Options struct {
 	HTTPPort               int
 	GRPCPort               int
+	PSQLPort               int
+	RuntimePSQLPort        int
+	TLSCertPath            string
+	TLSKeyPath             string
 	AllowedOrigins         []string
 	SessionKeyPairs        [][]byte
 	ServePrometheus        bool

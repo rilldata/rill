@@ -41,6 +41,7 @@ var ErrForbidden = status.Error(codes.PermissionDenied, "action not allowed")
 type Options struct {
 	HTTPPort        int
 	GRPCPort        int
+	PSQLPort        int
 	AllowedOrigins  []string
 	ServePrometheus bool
 	SessionKeyPairs [][]byte
