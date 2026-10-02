@@ -34,6 +34,7 @@
   import { specHasTabGroups } from "@rilldata/web-common/features/canvas/stores/tab-group";
   import type { EphemeralMeasureDef } from "@rilldata/web-common/features/dashboards/ephemeral-measures/types.ts";
   import type { V1Resource } from "@rilldata/web-common/runtime-client";
+  import { EmbedStore } from "@rilldata/web-common/features/embeds/embed-store.ts";
   import type { ReportFormMetadataProvider } from "@rilldata/web-common/features/scheduled-reports/ReportFormMetadataProvider.ts";
 
   let {
@@ -81,6 +82,8 @@
     },
   ];
   const runtimeClient = useRuntimeClient();
+  // Reports created from an embed always run as the creator.
+  const isEmbedded = EmbedStore.isEmbedded();
 
   const selectedRunAsOption = $derived(
     RUN_AS_OPTIONS.find((o) => o.value === $data["webOpenMode"]),
@@ -133,17 +136,20 @@
       label={m.report_form_title_label()}
       placeholder={m.report_form_title_placeholder()}
     />
-    <Select
-      bind:value={$data["webOpenMode"]}
-      id="webOpenMode"
-      label={m.report_form_run_as()}
-      options={RUN_AS_OPTIONS}
-      dropdownWidth="w-[400px]"
-    />
-    {#if selectedRunAsOption}
-      <div>
-        {selectedRunAsOption.description}
-      </div>
+    <!-- TODO: Support other run as options in embed. They currently require recipients to be Rill project members. -->
+    {#if !isEmbedded}
+      <Select
+        bind:value={$data["webOpenMode"]}
+        id="webOpenMode"
+        label={m.report_form_run_as()}
+        options={RUN_AS_OPTIONS}
+        dropdownWidth="w-[400px]"
+      />
+      {#if selectedRunAsOption}
+        <div>
+          {selectedRunAsOption.description}
+        </div>
+      {/if}
     {/if}
     <ScheduleForm {data} {availableTimeZones} />
     {#if canvasName}

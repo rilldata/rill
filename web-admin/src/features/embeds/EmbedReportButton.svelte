@@ -32,9 +32,9 @@
     </DropdownMenu.Trigger>
 
     <DropdownMenu.Content>
-      <DropdownMenu.Item href="/-/embed/reports"
-        >Go to reports</DropdownMenu.Item
-      >
+      <DropdownMenu.Item href="/-/embed/reports">
+        Go to reports
+      </DropdownMenu.Item>
       {#if activeResource?.kind === ResourceKind.Explore}
         <DropdownMenu.Item onclick={() => (open = true)}>
           Create report
@@ -49,7 +49,7 @@
     bind:open
     props={{
       mode: "create",
-      query: {},
+      query: { metricsViewAggregationRequest: {} },
       exploreName: activeResource.name,
     }}
   />

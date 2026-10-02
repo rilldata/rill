@@ -237,32 +237,12 @@ func (s *Server) EditAlert(ctx context.Context, req *adminv1.EditAlertRequest) (
 	if !annotations.AdminManaged {
 		return nil, status.Error(codes.FailedPrecondition, "can't edit alert because it was not created from the UI")
 	}
-	if !permissions.ManageAlerts {
+	if !permissions.ManageAlerts && !isAdminManagedOwner(claims, annotations.AdminOwnerUserID, annotations.AdminOwnerUserEmail) {
 		return nil, status.Error(codes.PermissionDenied, "does not have permission to edit alert")
 	}
 
-	ownerId := ""
-	ownerEmail := ""
-	switch claims.OwnerType() {
-	case auth.OwnerTypeUser:
-		ownerId = claims.OwnerID()
-		if annotations.AdminOwnerUserID != ownerId {
-			return nil, status.Error(codes.PermissionDenied, fmt.Sprintf("does not have permission to edit alert. %q not the owner", ownerId))
-		}
-	case auth.OwnerTypeEmbed:
-		mdl, ok := claims.AuthTokenModel().(*database.EmbedAuthToken)
-		if !ok {
-			return nil, status.Error(codes.PermissionDenied, "invalid embed token")
-		}
-		ownerEmail = mdl.Email
-		if annotations.AdminOwnerUserEmail != ownerEmail {
-			return nil, status.Error(codes.PermissionDenied, fmt.Sprintf("does not have permission to edit alert. %q not the owner", ownerEmail))
-		}
-	default:
-		return nil, status.Error(codes.PermissionDenied, "only users can create alerts")
-	}
-
-	data, err := s.yamlForManagedAlert(req.Options, ownerId, ownerEmail)
+	// Preserve the original owner, since the editor may be someone with manage permissions.
+	data, err := s.yamlForManagedAlert(req.Options, annotations.AdminOwnerUserID, annotations.AdminOwnerUserEmail)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "failed to generate alert YAML: %s", err.Error())
 	}
@@ -475,8 +455,7 @@ func (s *Server) DeleteAlert(ctx context.Context, req *adminv1.DeleteAlertReques
 		return nil, status.Error(codes.FailedPrecondition, "can't edit alert because it was not created from the UI")
 	}
 
-	isOwner := claims.OwnerType() == auth.OwnerTypeUser && annotations.AdminOwnerUserID == claims.OwnerID()
-	if !permissions.ManageAlerts && !isOwner {
+	if !permissions.ManageAlerts && !isAdminManagedOwner(claims, annotations.AdminOwnerUserID, annotations.AdminOwnerUserEmail) {
 		return nil, status.Error(codes.PermissionDenied, "does not have permission to edit alert")
 	}
 
@@ -769,4 +748,18 @@ func (s *Server) createMagicTokensAlert(ctx context.Context, projectID, alertNam
 	}
 
 	return emailTokens, nil
+}
+
+// isAdminManagedOwner returns true if the claims belong to the owner of an admin-managed alert or report.
+// Rill users are matched by user ID; embed users don't have a user ID, so they are matched by email.
+func isAdminManagedOwner(claims auth.Claims, ownerUserID, ownerEmail string) bool {
+	switch claims.OwnerType() {
+	case auth.OwnerTypeUser:
+		return ownerUserID != "" && ownerUserID == claims.OwnerID()
+	case auth.OwnerTypeEmbed:
+		tkn, ok := claims.AuthTokenModel().(*database.EmbedAuthToken)
+		return ok && ownerUserID == "" && ownerEmail != "" && ownerEmail == tkn.Email
+	default:
+		return false
+	}
 }

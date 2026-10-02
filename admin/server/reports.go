@@ -312,32 +312,12 @@ func (s *Server) EditReport(ctx context.Context, req *adminv1.EditReportRequest)
 	if !annotations.AdminManaged {
 		return nil, status.Error(codes.FailedPrecondition, "can't edit report because it was not created from the UI")
 	}
-	if !permissions.ManageReports {
+	if !permissions.ManageReports && !isAdminManagedOwner(claims, annotations.AdminOwnerUserID, annotations.AdminOwnerUserEmail) {
 		return nil, status.Error(codes.PermissionDenied, "does not have permission to edit report")
 	}
 
-	ownerId := ""
-	ownerEmail := ""
-	switch claims.OwnerType() {
-	case auth.OwnerTypeUser:
-		ownerId = claims.OwnerID()
-		if annotations.AdminOwnerUserID != ownerId {
-			return nil, status.Error(codes.PermissionDenied, fmt.Sprintf("does not have permission to edit report. %q not the owner", ownerId))
-		}
-	case auth.OwnerTypeEmbed:
-		mdl, ok := claims.AuthTokenModel().(*database.EmbedAuthToken)
-		if !ok {
-			return nil, status.Error(codes.PermissionDenied, "invalid embed token")
-		}
-		ownerEmail = mdl.Email
-		if annotations.AdminOwnerUserEmail != ownerEmail {
-			return nil, status.Error(codes.PermissionDenied, fmt.Sprintf("does not have permission to edit report. %q not the owner", ownerEmail))
-		}
-	default:
-		return nil, status.Error(codes.PermissionDenied, "only users can create reports")
-	}
-
-	data, err := s.yamlForManagedReport(req.Options, ownerId, ownerEmail)
+	// Preserve the original owner, since the editor may be someone with manage permissions.
+	data, err := s.yamlForManagedReport(req.Options, annotations.AdminOwnerUserID, annotations.AdminOwnerUserEmail)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "failed to generate report YAML: %s", err.Error())
 	}
@@ -533,8 +513,7 @@ func (s *Server) DeleteReport(ctx context.Context, req *adminv1.DeleteReportRequ
 		return nil, status.Error(codes.FailedPrecondition, "can't edit report because it was not created from the UI")
 	}
 
-	isOwner := claims.OwnerType() == auth.OwnerTypeUser && annotations.AdminOwnerUserID == claims.OwnerID()
-	if !permissions.ManageReports && !isOwner {
+	if !permissions.ManageReports && !isAdminManagedOwner(claims, annotations.AdminOwnerUserID, annotations.AdminOwnerUserEmail) {
 		return nil, status.Error(codes.PermissionDenied, "does not have permission to edit report")
 	}
 
@@ -584,8 +563,7 @@ func (s *Server) TriggerReport(ctx context.Context, req *adminv1.TriggerReportRe
 	}
 	annotations := parseReportAnnotations(spec.Annotations)
 
-	isOwner := claims.OwnerType() == auth.OwnerTypeUser && annotations.AdminOwnerUserID == claims.OwnerID()
-	if !permissions.ManageReports && !isOwner {
+	if !permissions.ManageReports && !isAdminManagedOwner(claims, annotations.AdminOwnerUserID, annotations.AdminOwnerUserEmail) {
 		return nil, status.Error(codes.PermissionDenied, "does not have permission to edit report")
 	}
 
@@ -648,16 +626,6 @@ func (s *Server) yamlForManagedReport(opts *adminv1.ReportOptions, ownerUserID, 
 	res.Notify.Slack.Webhooks = opts.SlackWebhooks
 	res.Annotations.AdminManaged = true
 
-	if ownerEmail != "" {
-		res.For.UserEmail = ownerEmail
-		res.Query.For.UserEmail = ownerEmail
-		res.Annotations.AdminOwnerUserEmail = ownerEmail
-	} else if ownerUserID != "" {
-		res.For.UserID = ownerUserID
-		res.Query.For.UserID = ownerUserID
-		res.Annotations.AdminOwnerUserID = ownerUserID
-	}
-
 	res.Annotations.AdminNonce = time.Now().Format(time.RFC3339Nano)
 	res.Annotations.WebOpenPath = opts.WebOpenPath
 	res.Annotations.WebOpenState = opts.WebOpenState
@@ -667,6 +635,20 @@ func (s *Server) yamlForManagedReport(opts *adminv1.ReportOptions, ownerUserID, 
 	}
 	if !res.Annotations.WebOpenMode.Valid() {
 		return nil, fmt.Errorf("invalid web open mode %q", opts.WebOpenMode)
+	}
+
+	// Rill users are identified by the owner annotation, which the report reconciler resolves to the user's attributes.
+	// Embed users don't have a user ID, so we run the report for their email instead.
+	if ownerEmail != "" {
+		// TODO: Support other web open modes for embed users. They currently require recipients to be Rill project members.
+		if res.Annotations.WebOpenMode != WebOpenModeCreator {
+			return nil, fmt.Errorf("reports created from an embed only support the %q web open mode", WebOpenModeCreator)
+		}
+		res.For.UserEmail = ownerEmail
+		res.Query.For.UserEmail = ownerEmail
+		res.Annotations.AdminOwnerUserEmail = ownerEmail
+	} else {
+		res.Annotations.AdminOwnerUserID = ownerUserID
 	}
 	if opts.Explore != "" && opts.Canvas != "" {
 		return nil, fmt.Errorf("cannot set both explore and canvas")
@@ -957,17 +939,17 @@ type reportYAML struct {
 	} `yaml:"intervals"`
 	Data map[string]any `yaml:"data,omitempty"` // Generic data resolver block (e.g., data.ai, data.sql)
 	For  struct {
-		UserID    string `yaml:"user_id"`
-		UserEmail string `yaml:"user_email"`
-	} `yaml:"for"`
+		UserID    string `yaml:"user_id,omitempty"`
+		UserEmail string `yaml:"user_email,omitempty"`
+	} `yaml:"for,omitempty"`
 	Query struct { // Legacy query-based report (deprecated - use data instead)
 		Name     string         `yaml:"name,omitempty"`
 		Args     map[string]any `yaml:"args,omitempty"`
 		ArgsJSON string         `yaml:"args_json,omitempty"`
 		For      struct {
-			UserID    string `yaml:"user_id"`
-			UserEmail string `yaml:"user_email"`
-		} `yaml:"for"`
+			UserID    string `yaml:"user_id,omitempty"`
+			UserEmail string `yaml:"user_email,omitempty"`
+		} `yaml:"for,omitempty"`
 	} `yaml:"query,omitempty"`
 	Export struct {
 		Format        string `yaml:"format"`

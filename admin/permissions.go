@@ -275,7 +275,8 @@ func (s *Service) ProjectPermissionsForEmbedAuthToken(ctx context.Context, proje
 		return &adminv1.ProjectPermissions{}, nil
 	}
 
-	// Grant basic read access to the project and its prod deployment
+	// Grant basic read access to the project and its prod deployment.
+	// Embed users can create reports and alerts, but can only manage the ones they own (enforced by the handlers).
 	return &adminv1.ProjectPermissions{
 		Admin:                      false,
 		ReadProject:                true,
@@ -294,9 +295,9 @@ func (s *Service) ProjectPermissionsForEmbedAuthToken(ctx context.Context, proje
 		CreateMagicAuthTokens:      false,
 		ManageMagicAuthTokens:      false,
 		CreateReports:              true,
-		ManageReports:              true,
+		ManageReports:              false,
 		CreateAlerts:               true,
-		ManageAlerts:               true,
+		ManageAlerts:               false,
 		CreateBookmarks:            false,
 		ManageBookmarks:            false,
 	}, nil
