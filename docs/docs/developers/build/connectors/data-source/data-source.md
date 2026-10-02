@@ -111,7 +111,7 @@ Rill supports connecting your data to both [DuckDB](/developers/build/connectors
     content="Connect to PostgreSQL databases with support for SSL connections and various authentication methods."
     link="/developers/build/connectors/data-source/postgres"
     linkLabel="Learn more"
-    referenceLink="postgresql"
+    referenceLink="postgres"
   />
   <ConnectorIcon
     icon={<img src="/img/build/connectors/icons/Logo-SQLite.svg" alt="SQLite" />}

@@ -79,7 +79,7 @@ Rill offers flexible connection strategies to fit different data architectures a
     content="Open lakehouse format built on DuckDB — catalog in SQL, data in Parquet."
     link="/developers/build/connectors/olap/ducklake"
     linkLabel="Learn more"
-    referenceLink="ducklake"
+    referenceLink="duckdb"
   />
   
   <ConnectorIcon
@@ -204,7 +204,7 @@ Rill is continually evaluating additional OLAP engines that can be added. For a 
     content="Connect to PostgreSQL databases with support for SSL connections and various authentication methods."
     link="/developers/build/connectors/data-source/postgres"
     linkLabel="Learn more"
-    referenceLink="postgresql"
+    referenceLink="postgres"
   />
   <ConnectorIcon
     icon={<img src="/img/build/connectors/icons/Logo-SQLite.svg" alt="SQLite" />}
