@@ -312,6 +312,11 @@ func (h *handle) Complete(ctx context.Context, opts *drivers.CompleteOptions) (*
 	}, nil
 }
 
+// Evaluate implements drivers.AIService.
+func (h *handle) Evaluate(ctx context.Context, req *aiv1.EvaluateRequest) (*aiv1.EvaluateResponse, error) {
+	return nil, errors.New("not implemented")
+}
+
 // convertMessages converts Rill messages to Claude beta message format.
 // It returns system blocks separately because Claude's API treats them differently.
 func convertMessages(msgs []*aiv1.CompletionMessage) ([]anthropic.BetaTextBlockParam, []anthropic.BetaMessageParam, error) {

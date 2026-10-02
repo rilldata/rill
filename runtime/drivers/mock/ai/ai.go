@@ -2,6 +2,7 @@ package ai
 
 import (
 	"context"
+	"errors"
 	"strings"
 
 	aiv1 "github.com/rilldata/rill/proto/gen/rill/ai/v1"
@@ -175,6 +176,11 @@ func (c *connection) Complete(ctx context.Context, opts *drivers.CompleteOptions
 		InputTokens:  10,
 		OutputTokens: 20,
 	}, nil
+}
+
+// Evaluate implements drivers.AIService.
+func (c *connection) Evaluate(ctx context.Context, req *aiv1.EvaluateRequest) (*aiv1.EvaluateResponse, error) {
+	return nil, errors.New("not implemented")
 }
 
 // handleToolCalling returns a simple mock tool call for testing

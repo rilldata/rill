@@ -336,6 +336,11 @@ func (h *handle) Complete(ctx context.Context, opts *drivers.CompleteOptions) (*
 	}, nil
 }
 
+// Evaluate implements drivers.AIService.
+func (h *handle) Evaluate(ctx context.Context, req *aiv1.EvaluateRequest) (*aiv1.EvaluateResponse, error) {
+	return nil, errors.New("not implemented")
+}
+
 // usageTokens maps Gemini's usage metadata to Rill's token counts.
 //
 // Gemini's PromptTokenCount already includes cached content tokens; CachedInputTokens is the subset.
