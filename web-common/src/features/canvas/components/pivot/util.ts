@@ -236,6 +236,7 @@ export function processPivot(
     whereFilter: where ?? createAndExpression([]),
     searchText: "",
     isFlat: false,
+    defaultSort: $tableSpec.default_sort,
     pivot: $pivotState,
     enableComparison,
     comparisonTime: {
@@ -335,6 +336,7 @@ export function processFlat(
     whereFilter: where ?? createAndExpression([]),
     searchText: "",
     isFlat: true,
+    defaultSort: $tableSpec.default_sort,
     pivot: $pivotState,
     enableComparison,
     comparisonTime: {

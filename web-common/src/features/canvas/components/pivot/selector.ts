@@ -3,8 +3,8 @@ import {
   validateMeasures,
 } from "@rilldata/web-common/features/canvas/components/validators";
 import { isTimeDimension } from "@rilldata/web-common/features/dashboards/pivot/pivot-utils";
-import type { PivotSpec, TableSpec } from "./";
 import type { V1MetricsViewSpec } from "@rilldata/web-common/runtime-client";
+import type { PivotSpec, TableSpec } from "./";
 
 export function validateTableSchema(
   metricsViewQuery: {

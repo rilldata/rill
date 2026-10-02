@@ -13,6 +13,7 @@ import type {
   PivotDataStoreConfig,
   PivotFormatRule,
   PivotMeasureFormatting,
+  PivotSortTarget,
   PivotState,
   PivotTotalsRowPosition,
 } from "@rilldata/web-common/features/dashboards/pivot/types";
@@ -100,6 +101,9 @@ export function measureFormattingToConditionalFormatSpec(
   );
 }
 
+/** Stable default sort persisted in canvas YAML. */
+export type DefaultSort = PivotSortTarget;
+
 export interface PivotSpec
   extends ComponentCommonProperties,
     ComponentFilterProperties {
@@ -111,6 +115,7 @@ export interface PivotSpec
   col_dimensions?: string[];
   hide_totals_row?: boolean;
   hide_totals_col?: boolean;
+  default_sort?: DefaultSort;
   totals_row_position?: PivotTotalsRowPosition;
   conditional_format?: PivotConditionalFormatSpec[];
   row_limit?: string;
@@ -125,6 +130,7 @@ export interface TableSpec
   adhoc_measures?: EphemeralMeasureSpec[];
   hide_totals_row?: boolean;
   hide_totals_col?: boolean;
+  default_sort?: DefaultSort;
   totals_row_position?: PivotTotalsRowPosition;
   conditional_format?: PivotConditionalFormatSpec[];
 }
@@ -154,6 +160,7 @@ export class PivotCanvasComponent extends BaseCanvasComponent<
     "col_dimensions",
     "conditional_format",
     "adhoc_measures",
+    "default_sort",
   ];
   type: CanvasComponentType;
   component = CanvasPivotDisplay;
@@ -319,6 +326,10 @@ export class PivotCanvasComponent extends BaseCanvasComponent<
             meta: { defaultValue: false },
             showInUI: canShowTotalRow,
           },
+          default_sort: {
+            type: "default_sort",
+            label: m.canvas_default_sort_label(),
+          },
           totals_row_position: {
             type: "select",
             label: m.canvas_totals_row_position_label(),
@@ -381,6 +392,10 @@ export class PivotCanvasComponent extends BaseCanvasComponent<
             label: m.canvas_hide_total_row_label(),
             meta: { defaultValue: false },
             showInUI: canShowTotalRow,
+          },
+          default_sort: {
+            type: "default_sort",
+            label: m.canvas_default_sort_label(),
           },
           totals_row_position: {
             type: "select",
@@ -456,6 +471,7 @@ export class PivotCanvasComponent extends BaseCanvasComponent<
         PivotSpec,
         | "hide_totals_row"
         | "hide_totals_col"
+        | "default_sort"
         | "totals_row_position"
         | "conditional_format"
       > = {
@@ -465,6 +481,7 @@ export class PivotCanvasComponent extends BaseCanvasComponent<
       time_filters: currentSpec.time_filters,
       hide_totals_row: currentSpec.hide_totals_row,
       hide_totals_col: currentSpec.hide_totals_col,
+      default_sort: undefined,
       totals_row_position: currentSpec.totals_row_position,
       conditional_format: currentSpec.conditional_format,
     };

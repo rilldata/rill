@@ -43,6 +43,8 @@
   $: schema = validateTableSchema($_metricViewSpec, tableSpec);
   $: widthScopeKey = `canvas:${component.parent.name}:${component.id}`;
 
+  let previousStructureKey: string | undefined;
+
   // Seed the shared pivot state with per-measure formatting from the YAML spec.
   $: measureFormatting = conditionalFormatSpecToMeasureFormatting(
     tableSpec.conditional_format,
@@ -50,9 +52,18 @@
 
   $: if ("columns" in tableSpec && schema.isValid && !schema.isLoading) {
     const columns = tableSpec?.columns || [];
+    const structureKey = JSON.stringify([
+      "table",
+      tableSpec.metrics_view,
+      columns,
+      tableSpec.adhoc_measures,
+    ]);
+    const structureChanged =
+      previousStructureKey !== undefined &&
+      previousStructureKey !== structureKey;
     pivotState.update((state) => ({
       ...state,
-      sorting: [],
+      sorting: structureChanged ? [] : state.sorting,
       expanded: {},
       activeCell: null,
       columnPage: 1,
@@ -67,13 +78,25 @@
       totalsRowPosition: tableSpec.totals_row_position ?? "top",
       measureFormatting,
     }));
+    previousStructureKey = structureKey;
   } else if (!("columns" in tableSpec) && schema.isValid && !schema.isLoading) {
     const measures = tableSpec.measures || [];
     const colDimensions = tableSpec.col_dimensions || [];
     const rowDimensions = tableSpec.row_dimensions || [];
+    const structureKey = JSON.stringify([
+      "pivot",
+      tableSpec.metrics_view,
+      measures,
+      colDimensions,
+      rowDimensions,
+      tableSpec.adhoc_measures,
+    ]);
+    const structureChanged =
+      previousStructureKey !== undefined &&
+      previousStructureKey !== structureKey;
     pivotState.update((state) => ({
       ...state,
-      sorting: [],
+      sorting: structureChanged ? [] : state.sorting,
       expanded: {},
       activeCell: null,
       columnPage: 1,
@@ -94,6 +117,7 @@
       rowLimit: normalizeRowLimit(tableSpec.row_limit),
       outermostRowLimit: undefined,
     }));
+    previousStructureKey = structureKey;
   }
 </script>
 
