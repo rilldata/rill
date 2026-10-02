@@ -188,7 +188,7 @@ func rtRequiresSEA(err error) bool {
 	return err != nil && strings.Contains(err.Error(), "not supported for Thrift protocol")
 }
 
-func (d driver) Open(_, instanceID string, config map[string]any, st *storage.Client, ac *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
+func (d driver) Open(_ context.Context, _, instanceID string, config map[string]any, st *storage.Client, ac *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
 	if instanceID == "" {
 		return nil, errors.New("databricks driver can't be shared")
 	}

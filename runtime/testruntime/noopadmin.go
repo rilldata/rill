@@ -52,7 +52,7 @@ func (n *noopAdminService) HasAnonymousSourceAccess(ctx context.Context, srcProp
 }
 
 // Open implements [drivers.Driver].
-func (n *noopAdminService) Open(connectorName, instanceID string, config map[string]any, st *storage.Client, ac *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
+func (n *noopAdminService) Open(_ context.Context, connectorName, instanceID string, config map[string]any, st *storage.Client, ac *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
 	return n, nil
 }
 

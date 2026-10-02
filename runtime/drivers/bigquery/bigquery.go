@@ -67,7 +67,7 @@ type configProperties struct {
 	LogQueries bool `mapstructure:"log_queries"`
 }
 
-func (d driver) Open(_, instanceID string, config map[string]any, st *storage.Client, ac *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
+func (d driver) Open(_ context.Context, _, instanceID string, config map[string]any, st *storage.Client, ac *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
 	if instanceID == "" {
 		return nil, errors.New("bigquery driver can't be shared")
 	}
@@ -78,10 +78,14 @@ func (d driver) Open(_, instanceID string, config map[string]any, st *storage.Cl
 		return nil, err
 	}
 
+	// Note the handle's ctx tracks the handle's lifetime, so it must not derive from the ctx passed to Open.
+	bgctx, cancel := context.WithCancel(context.Background())
 	conn := &Connection{
 		config:   conf,
 		storage:  st,
 		logger:   logger,
+		ctx:      bgctx,
+		cancel:   cancel,
 		clientMu: semaphore.NewWeighted(1),
 	}
 	return conn, nil
@@ -105,6 +109,12 @@ type Connection struct {
 	storage *storage.Client
 	logger  *zap.Logger
 
+	// ctx tracks the handle's lifetime and is cancelled by Close.
+	// The cached client's credentials capture it and reuse it to refresh tokens,
+	// so it must outlive any single request that happens to open the client.
+	ctx    context.Context
+	cancel context.CancelFunc
+
 	client    *bigquery.Client // lazily populated using getClient
 	clientErr error
 	clientMu  *semaphore.Weighted
@@ -114,11 +124,11 @@ var _ drivers.Handle = &Connection{}
 
 // Ping implements drivers.Handle.
 func (c *Connection) Ping(ctx context.Context) error {
+	// NOTE: Not closing the client here since getClient caches it for the handle's lifetime. Close does that.
 	client, err := c.getClient(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to create client: %w", err)
 	}
-	defer client.Close()
 
 	// Run a simple query to verify connection
 	q := client.Query("SELECT 1")
@@ -144,6 +154,7 @@ func (c *Connection) Config() map[string]any {
 
 // Close implements drivers.Connection.
 func (c *Connection) Close() error {
+	c.cancel()
 	if c.client != nil {
 		return c.client.Close()
 	}
@@ -244,7 +255,9 @@ func (c *Connection) getClient(ctx context.Context) (*bigquery.Client, error) {
 	if c.client != nil || c.clientErr != nil {
 		return c.client, c.clientErr
 	}
-	client, err := c.createClient(ctx, "")
+	// The client is cached for the handle's lifetime, so it's created with the handle's ctx instead of the caller's.
+	// Its credentials reuse that ctx to refresh tokens, which a cancelled request ctx would permanently break.
+	client, err := c.createClient(c.ctx, "")
 	if err != nil {
 		if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
 			// don't cache context errors

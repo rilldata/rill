@@ -38,7 +38,7 @@ type configProperties struct {
 	BackupsEnable bool `mapstructure:"backups_enable"`
 }
 
-func (d driver) Open(_, _ string, config map[string]any, st *storage.Client, ac *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
+func (d driver) Open(ctx context.Context, _, _ string, config map[string]any, st *storage.Client, ac *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
 	// Parse config
 	conf := &configProperties{}
 	err := mapstructure.WeakDecode(config, conf)
@@ -62,7 +62,7 @@ func (d driver) Open(_, _ string, config map[string]any, st *storage.Client, ac 
 	// This must run before the handle is opened below because it replaces the database file,
 	// which an already-open SQLite connection would not observe.
 	if conf.ID != "" && conf.BackupsEnable {
-		err := restoreBackupIfEmpty(context.Background(), st, conf.ID, conf.DSN, logger)
+		err := restoreBackupIfEmpty(ctx, st, conf.ID, conf.DSN, logger)
 		if err != nil {
 			return nil, fmt.Errorf("sqlite: failed to restore backup %q: %w", conf.ID, err)
 		}
@@ -76,13 +76,14 @@ func (d driver) Open(_, _ string, config map[string]any, st *storage.Client, ac 
 	dbx := sqlx.NewDb(db, "sqlite")
 	db.SetMaxOpenConns(1)
 
-	// Create the handle
-	ctx, cancel := context.WithCancel(context.Background())
+	// Create the handle.
+	// Note the handle's ctx tracks the handle's lifetime, so it must not derive from the ctx passed to Open.
+	bgctx, cancel := context.WithCancel(context.Background())
 	h := &connection{
 		db:            dbx,
 		logger:        logger,
 		config:        config,
-		ctx:           ctx,
+		ctx:           bgctx,
 		cancel:        cancel,
 		storage:       st,
 		backupID:      conf.ID,
