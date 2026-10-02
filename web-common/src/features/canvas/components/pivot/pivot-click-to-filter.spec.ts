@@ -24,7 +24,6 @@ import {
   dimKeyFromRow,
 } from "../../../dashboards/pivot/pivot-click-selection";
 import { createPivotClickToFilter } from "./pivot-click-to-filter";
-import { DimensionFilterManager } from "@rilldata/web-common/features/dashboards/filters/dimension-filters/DimensionFilterManager.svelte.ts";
 import { ExpressionFilterManager } from "@rilldata/web-common/features/dashboards/filters/ExpressionFilterManager.svelte.ts";
 import type { MetricsViewsProvider } from "@rilldata/web-common/features/metrics-views/providers/MetricsViewsProvider.svelte.ts";
 import { YAMLConfigProvider } from "@rilldata/web-common/features/dashboards/providers/YAMLConfigProvider.svelte.ts";
@@ -34,12 +33,10 @@ import {
   useMetricsViewMocks,
 } from "@rilldata/web-common/features/metrics-views/providers/test/metrics-views-test-utils.svelte.ts";
 import {
-  PIVOT_COUNTRY_DIMENSION,
   PIVOT_METRICS_INIT,
   PIVOT_METRICS_MIRROR_INIT,
   PIVOT_MIRROR_METRICS_NAME,
   PIVOT_TEST_METRICS_NAME,
-  PIVOT_TOTAL_MEASURE,
 } from "./pivot-test-data";
 
 // ---------------------------------------------------------------------------
