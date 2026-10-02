@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
 	"time"
 
 	aiv1 "github.com/rilldata/rill/proto/gen/rill/ai/v1"
@@ -601,7 +602,7 @@ func sessionToPB(s *drivers.AISession, messages []*runtimev1.Message) *runtimev1
 	return &runtimev1.Conversation{
 		Id:        s.ID,
 		OwnerId:   s.OwnerID,
-		Title:     s.Title,
+		Title:     strings.ToValidUTF8(s.Title, "\uFFFD"),
 		UserAgent: s.UserAgent,
 		CreatedOn: timestamppb.New(s.CreatedOn),
 		UpdatedOn: timestamppb.New(s.UpdatedOn),
