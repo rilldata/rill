@@ -97,12 +97,14 @@ export class DashboardFetchMocks {
   /**
    * Mocks the ResolveCanvas response, which is the single request a canvas dashboard loads from.
    * `metricsViews` are the metrics views the canvas references, which reach the canvas as
-   * resources rather than through GetResource.
+   * resources rather than through GetResource. `resolvedComponents` are the component resources
+   * the canvas rows point at, keyed by component name.
    */
   public mockCanvas(
     name: string,
     canvas: V1CanvasSpec,
     metricsViews: Record<string, V1MetricsViewSpec>,
+    resolvedComponents: Record<string, V1Resource> = {},
   ) {
     this.responses.set(`canvas__${name}`, {
       canvas: {
@@ -136,6 +138,7 @@ export class DashboardFetchMocks {
           },
         ]),
       ),
+      resolvedComponents,
     } as V1ResolveCanvasResponse);
   }
 
