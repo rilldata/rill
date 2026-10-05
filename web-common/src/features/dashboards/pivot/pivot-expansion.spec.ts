@@ -75,7 +75,9 @@ describe("pivot expansion", () => {
     });
   });
 
-  it("keeps the totals row offset when totals row is visible", () => {
+  it("does not offset the expand index when totals row is visible", () => {
+    // The totals row is rendered outside the table's row model, so expand
+    // indices always match the position in the pivot data.
     const tableData: PivotDataRow[] = [
       {
         publisher: "A",
@@ -95,7 +97,7 @@ describe("pivot expansion", () => {
       [
         {
           isFetching: false,
-          expandIndex: "2",
+          expandIndex: "1",
           rowDimensionValues: ["B"],
           totals: [{ campaign: "campaign-1", impressions: 10 }],
           data: [],

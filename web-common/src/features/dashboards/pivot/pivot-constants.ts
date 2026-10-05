@@ -1,5 +1,8 @@
 export const SHOW_MORE_BUTTON = "__rill_type_SHOW_MORE_BUTTON";
 export const LOADING_CELL = "__rill_type_LOADING_CELL";
+// Row id of the grand-totals row. It is rendered from a standalone tanstack row
+// that is not part of the table's row model, so it never collides with data row ids.
+export const PIVOT_TOTALS_ROW_ID = "__rill_totals_row";
 
 export const MAX_ROW_EXPANSION_LIMIT = 100;
 

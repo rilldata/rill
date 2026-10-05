@@ -27,7 +27,7 @@ import type { ConnectError } from "@connectrpc/connect";
 import type { QueryObserverResult } from "@tanstack/svelte-query";
 import type { Row } from "tanstack-table-8-svelte-5";
 import { getURIRequestMeasure } from "@rilldata/web-common/features/dashboards/dashboard-utils";
-import { SHOW_MORE_BUTTON } from "./pivot-constants";
+import { PIVOT_TOTALS_ROW_ID, SHOW_MORE_BUTTON } from "./pivot-constants";
 import { getColumnFiltersForPage } from "./pivot-infinite-scroll";
 import { mergeFilters } from "./pivot-merge-filters";
 import type { EphemeralMeasureDef } from "@rilldata/web-common/features/dashboards/ephemeral-measures/types";
@@ -603,14 +603,12 @@ export function getValuesForFlatTable(
   tableData: PivotDataRow[],
   rowDimensions: string[],
   rowId: string,
-  hasTotalsRow: boolean,
 ): string[] {
-  let index = parseInt(rowId, 10);
   const dimensionValues: string[] = [];
+  // The totals row is not part of the table data and has no dimension values.
+  if (rowId === PIVOT_TOTALS_ROW_ID) return dimensionValues;
 
-  if (hasTotalsRow) index = index - 1;
-
-  const row = tableData?.[index];
+  const row = tableData?.[parseInt(rowId, 10)];
   if (!row) return dimensionValues;
 
   // For flat tables, collect all dimension values in order
@@ -673,28 +671,16 @@ export function getFiltersForCell(
   tableData: PivotDataRow[],
   upToDimensionIndex?: number,
 ): PivotFilter {
-  const { rowDimensionNames, measureNames, isFlat } = config;
-  const hasTotalsRow =
-    config.pivot?.showTotalsRow !== false && measureNames.length > 0;
+  const { rowDimensionNames, isFlat } = config;
 
   let values: string[];
   if (isFlat) {
-    values = getValuesForFlatTable(
-      tableData,
-      rowDimensionNames,
-      rowId,
-      hasTotalsRow,
-    );
+    values = getValuesForFlatTable(tableData, rowDimensionNames, rowId);
     if (upToDimensionIndex !== undefined && upToDimensionIndex >= 0) {
       values = values.slice(0, upToDimensionIndex + 1);
     }
   } else {
-    values = getValuesForExpandedKey(
-      tableData,
-      rowDimensionNames,
-      rowId,
-      hasTotalsRow,
-    );
+    values = getValuesForExpandedKey(tableData, rowDimensionNames, rowId);
   }
 
   const rowEntries = values.map((value, index) => ({
