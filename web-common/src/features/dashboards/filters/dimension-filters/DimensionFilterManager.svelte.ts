@@ -228,12 +228,7 @@ export class DimensionFilterManager {
     this.rawExpr = undefined;
     this.selectedValues = [];
     this.inputText = "";
-    const wasEmpty = this.expr === undefined;
     this.commit();
-    this.events?.emit("filter-removed", {
-      name: this.name,
-      wasEmpty,
-    });
   }
 
   /**
