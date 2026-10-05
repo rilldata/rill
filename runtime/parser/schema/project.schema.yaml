@@ -2387,9 +2387,6 @@ definitions:
           title:
             type: string
             description: "Deprecated: use display_name instead. Refers to the display name for the canvas"
-          description:
-            type: string
-            description: Description for the canvas dashboard
           banner:
             type: string
             description: Refers to the custom banner displayed in the header of a Canvas dashboard.
@@ -2761,9 +2758,6 @@ definitions:
           display_name:
             type: string
             description: Display name for the alert
-          description:
-            type: string
-            description: Description for the alert
           intervals:
             type: object
             description: Defines the alert interval to check.
@@ -3208,7 +3202,7 @@ definitions:
             $ref: '#/definitions/map_properties'
         required:
           - type
-        additionalProperties: false
+      - $ref: '#/definitions/common_properties'
 
   # Chart Properties
   chart_properties:
