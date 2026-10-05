@@ -317,3 +317,87 @@ _[object]_ - (no description)
   - **`title`** - _[string]_ - Image title
 
   - **`description`** - _[string]_ - Image description
+
+### `map`
+
+_[object]_ - Map of points or regions from a geo dimension, colored by a measure and, for points, sized by a second measure
+
+  - **`metrics_view`** - _[string]_ - Reference to the metrics view to use _(required)_
+
+  - **`geo_dimension`** - _[object]_ - Dimension that holds the location of each row, as a GeoJSON geometry string or a DuckDB `POINT_2D` or `POLYGON_2D` value, in longitude and latitude. Only dimensions with `type: geo` are offered in the visual editor. _(required)_
+
+    - **`field`** - _[string]_ - Name of the dimension _(required)_
+
+    - **`type`** - _[string]_ - Field type, always `nominal`
+
+  - **`color`** - _[object]_ - Measure that colors each point or region _(required)_
+
+    - **`measure`** - _[string]_ - Name of the measure _(required)_
+
+    - **`colorRange`** - _[object]_ - Color scale for the measure. Use `mode: scheme` with a `scheme` (`sequential`, `diverging`, `tealblues`, `viridis`, `magma`, `inferno`, `plasma`, `cividis`, `blues`, `teals`, `greens`, `greys`, `oranges`, `purples`, `reds`, `turbo`, `spectral`), or `mode: gradient` with `start` and `end` colors. Defaults to the `tealblues` scheme.
+
+      - **`mode`** - _[string]_ - Whether to use a named color scheme or a two-color gradient
+
+      - **`scheme`** - _[string]_ - Name of the color scheme, used when `mode` is `scheme`
+
+      - **`start`** - _[string]_ - Color for the lowest value, used when `mode` is `gradient`. A hex color, `primary` or `secondary`.
+
+      - **`end`** - _[string]_ - Color for the highest value, used when `mode` is `gradient`. A hex color, `primary` or `secondary`.
+
+  - **`size_measure`** - _[object]_ - Measure that scales the radius of each point. Points only; ignored for polygons.
+
+    - **`field`** - _[string]_ - Name of the measure _(required)_
+
+    - **`type`** - _[string]_ - Field type, always `quantitative`
+
+  - **`tooltip_dimension`** - _[object]_ - Dimension whose value is shown as the heading of the hover tooltip
+
+    - **`field`** - _[string]_ - Name of the dimension _(required)_
+
+    - **`type`** - _[string]_ - Field type, always `nominal`
+
+  - **`initial_view`** - _[object]_ - Camera position the map opens with. When set, the map does not zoom to fit the data.
+
+    - **`longitude`** - _[number]_ - Longitude of the map center _(required)_
+
+    - **`latitude`** - _[number]_ - Latitude of the map center _(required)_
+
+    - **`zoom`** - _[number]_ - Zoom level, from `0` (whole world) to about `22` (building level)
+
+  - **`title`** - _[string]_ - Map title
+
+  - **`description`** - _[string]_ - Map description
+
+  - **`show_description_as_tooltip`** - _[boolean]_ - Show the description as a tooltip on the title instead of below it
+
+  - **`time_filters`** - _[string]_ - Time range and comparison for this map, as `tr` and `compare_tr` URL parameters. Defaults to the canvas time range.
+
+  - **`dimension_filters`** - _[string]_ - SQL filter expression applied to this map only, such as `country IN ('US')`
+
+  - **`hide_local_filters`** - _[boolean]_ - Hide the local filter chips on the map; the filters still apply to its queries
+
+## Common Properties
+
+### `name`
+
+_[string]_ - Name is usually inferred from the filename, but can be specified manually.
+
+### `refs`
+
+_[array of string]_ - List of resource references
+
+### `tags`
+
+_[array of string]_ - Tags for organizing and filtering the resource (e.g. on the project dashboards list).
+
+### `metadata`
+
+_[object]_ - User-defined key-value metadata attached to the resource. Rill does not read or write it; it is exposed as-is on the resource's meta over the API for external tooling. Values are strings, with numbers and booleans coerced. Not supported in rill.yaml defaults.
+
+### `dev`
+
+_[object]_ - Overrides any properties in development environment.
+
+### `prod`
+
+_[object]_ - Overrides any properties in production environment.

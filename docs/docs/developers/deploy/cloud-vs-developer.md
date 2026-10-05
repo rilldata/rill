@@ -73,6 +73,8 @@ Once the dashboard has been [deployed to Rill Cloud](/developers/deploy/deploy-d
 
  After selecting a specific project, they will be directed to a list of dashboards. From Rill Cloud, the dashboard consumer does not have the ability to make any modifications to sources or models. However, they are given some additional capabilities that are not accessible in Rill Developer, such as alerting, creating bookmarks or shareable public URLs, checking the project status, and more.
 
+ Project admins and editors can also make changes to a deployed project directly in the browser with [cloud editing](/developers/deploy/cloud-editing), which works on a Git branch and publishes to production when ready.
+
  :::info Dashboard 101
 
  For more details about using a Rill Cloud dashboard, please refer to our [Explore section](/guide/dashboards/explore)!
