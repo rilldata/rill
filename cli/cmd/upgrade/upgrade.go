@@ -71,6 +71,20 @@ func isUpToDate(cmd *cobra.Command, ch *cmdutil.Helper) (bool, string, error) {
 		return false, "", err
 	}
 
+	// The cached latest version can be stale. Only trust it when it says an upgrade is needed;
+	// otherwise refetch from Github so a new release is not missed.
+	if upToDate {
+		latest, err = ch.RefreshLatestVersion(cmd.Context())
+		if err != nil {
+			return false, "", err
+		}
+
+		upToDate, err = versionUpToDate(ch.Version.Number, latest)
+		if err != nil {
+			return false, "", err
+		}
+	}
+
 	return upToDate, latest, nil
 }
 
