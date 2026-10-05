@@ -164,17 +164,23 @@ export class ExpressionFilterManager implements UrlParamsStore {
     this.unsubscribers.forEach((unsub) => unsub());
   }
 
+  /**
+   * Folds the legacy singular `f` param into a param per metrics view.
+   *
+   * A metrics view that already has a param of its own keeps it, since that is the newer state:
+   * an embed host passes the singular param, and the dashboard then writes per metrics view params
+   * as the filter is edited. Merging the two instead would AND the host's condition with the edited
+   * one on the same dimension, which no chip can show and which usually matches nothing.
+   */
   public normalizeParams(urlParams: URLSearchParams): URLSearchParams {
     const singularParam = urlParams.get(ExploreStateURLParams.Filters);
     if (!singularParam || this.singleParamFormMv) return urlParams;
 
     const newUrlParams = new URLSearchParams();
-    this.metricsViewsProvider.metricsViewNames.forEach((mvName) =>
-      newUrlParams.set(
-        getParamKeyForMv(mvName, this.singleParamFormMv),
-        singularParam,
-      ),
-    );
+    this.metricsViewsProvider.metricsViewNames.forEach((mvName) => {
+      const paramKey = getParamKeyForMv(mvName, this.singleParamFormMv);
+      newUrlParams.set(paramKey, urlParams.get(paramKey) ?? singularParam);
+    });
     return newUrlParams;
   }
 
