@@ -334,7 +334,7 @@ func (allowAllSecurity) QueryFilter() *runtimev1.Expression { return nil }
 
 func acquireTestSnowflake(t *testing.T) (drivers.Handle, drivers.OLAPStore) {
 	cfg := testruntime.AcquireConnector(t, "snowflake")
-	conn, err := drivers.Open("snowflake", "", "default", cfg, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
+	conn, err := drivers.Open(t.Context(), "snowflake", "", "default", cfg, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
 	t.Cleanup(func() { conn.Close() })
 

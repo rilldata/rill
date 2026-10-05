@@ -60,10 +60,8 @@ func newEmbedClickHouse(tcpPort int, dataDir, tempDir string, logger *zap.Logger
 // start installs (depending on OS and platform) and starts ClickHouse server.
 // The destination directory for the ClickHouse binary is .rill/clickhouse.
 // The function returns the DSN for the ClickHouse server and close function.
-//
-// TODO: Since this can be a long-running process, we should accept a `ctx`,
-// but the `drivers.Open` function currently doesn't propagate that.
-func (e *embedClickHouse) start() (*clickhouse.Options, error) {
+// The ctx cancels the install and the wait for the server to become ready.
+func (e *embedClickHouse) start(ctx context.Context) (*clickhouse.Options, error) {
 	e.mu.Lock()
 	defer e.mu.Unlock()
 	if e.opts != nil {
@@ -77,7 +75,7 @@ func (e *embedClickHouse) start() (*clickhouse.Options, error) {
 		return nil, err
 	}
 
-	binPath, err := e.install(destDir, e.logger)
+	binPath, err := e.install(ctx, destDir, e.logger)
 	if err != nil {
 		return nil, err
 	}
@@ -95,7 +93,7 @@ func (e *embedClickHouse) start() (*clickhouse.Options, error) {
 	}
 
 	// Start the ClickHouse server
-	stderr, err := e.startClickhouse(binPath, configPath)
+	stderr, err := e.startClickhouse(ctx, binPath, configPath)
 	if err != nil {
 		if !errors.Is(err, errAlreadyRunning) {
 			return nil, err
@@ -105,7 +103,7 @@ func (e *embedClickHouse) start() (*clickhouse.Options, error) {
 		if err != nil {
 			return nil, fmt.Errorf("failed to kill existing ClickHouse process: %w", err)
 		}
-		stderr, err = e.startClickhouse(binPath, configPath)
+		stderr, err = e.startClickhouse(ctx, binPath, configPath)
 		if err != nil {
 			return nil, err
 		}
@@ -164,7 +162,7 @@ func (e *embedClickHouse) start() (*clickhouse.Options, error) {
 	return e.opts, nil
 }
 
-func (e *embedClickHouse) startClickhouse(binPath, configPath string) (io.ReadCloser, error) {
+func (e *embedClickHouse) startClickhouse(ctx context.Context, binPath, configPath string) (io.ReadCloser, error) {
 	e.cmd = exec.Command(binPath, "server", "--config-file", configPath)
 	e.cmd.Stdout = io.Discard
 
@@ -175,7 +173,7 @@ func (e *embedClickHouse) startClickhouse(binPath, configPath string) (io.ReadCl
 
 	ready := make(chan error, 1)
 	go func() {
-		err := e.startAndWaitUntilReady(stderr)
+		err := e.startAndWaitUntilReady(ctx, stderr)
 		ready <- err
 		if err != nil && e.cmd != nil && e.cmd.Process != nil {
 			_ = e.cmd.Process.Kill()
@@ -183,8 +181,18 @@ func (e *embedClickHouse) startClickhouse(binPath, configPath string) (io.ReadCl
 		}
 	}()
 
-	if err := <-ready; err != nil {
-		return nil, err
+	select {
+	case err := <-ready:
+		if err != nil {
+			return nil, err
+		}
+	case <-ctx.Done():
+		// Kill the server so it doesn't outlive the cancelled open.
+		// The goroutine above may also kill it, which is harmless.
+		if e.cmd != nil && e.cmd.Process != nil {
+			_ = e.cmd.Process.Kill()
+		}
+		return nil, ctx.Err()
 	}
 	return stderr, nil
 }
@@ -217,7 +225,7 @@ func (e *embedClickHouse) stop() error {
 	return nil
 }
 
-func (e *embedClickHouse) install(destDir string, logger *zap.Logger) (string, error) {
+func (e *embedClickHouse) install(ctx context.Context, destDir string, logger *zap.Logger) (string, error) {
 	release := "v" + embedVersion + "-stable"
 	destPath := filepath.Join(destDir, embedVersion, "clickhouse")
 
@@ -252,7 +260,7 @@ func (e *embedClickHouse) install(destDir string, logger *zap.Logger) (string, e
 		}
 		url := "https://github.com/ClickHouse/ClickHouse/releases/download/" + release + "/" + fileName
 		logger.Info("Downloading ClickHouse binary", zap.String("url", url), zap.String("dst", destPath))
-		if err := downloadFile(destPath, url); err != nil {
+		if err := downloadFile(ctx, destPath, url); err != nil {
 			return "", fmt.Errorf("error downloading ClickHouse: %w", err)
 		}
 	case "linux":
@@ -268,7 +276,7 @@ func (e *embedClickHouse) install(destDir string, logger *zap.Logger) (string, e
 		url := "https://github.com/ClickHouse/ClickHouse/releases/download/" + release + "/" + fileName
 		destTgzPath := filepath.Join(destDir, release, fileName)
 		logger.Info("Downloading ClickHouse binary", zap.String("url", url), zap.String("dst", destTgzPath))
-		if err := downloadFile(destTgzPath, url); err != nil {
+		if err := downloadFile(ctx, destTgzPath, url); err != nil {
 			return "", fmt.Errorf("error downloading ClickHouse: %w", err)
 		}
 		fileToExtract := filepath.Join("clickhouse-common-static-"+embedVersion, "usr", "bin", "clickhouse")
@@ -394,7 +402,7 @@ func (e *embedClickHouse) getConfigContent() ([]byte, error) {
 	return config, nil
 }
 
-func (e *embedClickHouse) startAndWaitUntilReady(stderr io.Reader) error {
+func (e *embedClickHouse) startAndWaitUntilReady(ctx context.Context, stderr io.Reader) error {
 	if err := e.cmd.Start(); err != nil {
 		return fmt.Errorf("failed to start clickhouse: %w", err)
 	}
@@ -408,6 +416,8 @@ func (e *embedClickHouse) startAndWaitUntilReady(stderr io.Reader) error {
 		select {
 		case <-timer.C:
 			return fmt.Errorf("clickhouse is not ready: timeout")
+		case <-ctx.Done():
+			return ctx.Err()
 		default:
 			if !scanner.Scan() {
 				if scanner.Err() != nil {
@@ -434,7 +444,7 @@ func (e *embedClickHouse) startAndWaitUntilReady(stderr io.Reader) error {
 	}
 }
 
-func downloadFile(path, url string) error {
+func downloadFile(ctx context.Context, path, url string) error {
 	if err := os.MkdirAll(filepath.Dir(path), os.ModePerm); err != nil {
 		return err
 	}
@@ -445,7 +455,12 @@ func downloadFile(path, url string) error {
 	}
 	defer out.Close()
 
-	resp, err := http.Get(url)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, http.NoBody)
+	if err != nil {
+		return err
+	}
+
+	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return err
 	}
