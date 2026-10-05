@@ -2319,9 +2319,9 @@ paths:
               query:
                 $ref: '#/definitions/v1MetricsViewAggregationRequest'
                 title: Required. Query used to serialise as state
-              question:
-                $ref: '#/definitions/v1EvaluateQuestion'
-                title: Required. Question asked against the resolved query
+              request:
+                $ref: '#/definitions/v1EvaluateRequest'
+                title: Required. Templated request resolved against the resolved query and evaluated
       tags:
         - QueryService
   /v1/instances/{instanceId}/queries/metrics-views/{metricsViewName}/rows:
@@ -5345,6 +5345,16 @@ definitions:
         $ref: '#/definitions/v1EvaluateChoiceQuestion'
       score:
         $ref: '#/definitions/v1EvaluateScoreQuestion'
+  v1EvaluateRequest:
+    type: object
+    properties:
+      model:
+        type: string
+      state: {}
+      questions:
+        type: object
+        additionalProperties:
+          $ref: '#/definitions/v1EvaluateQuestion'
   v1EvaluateScoreQuestion:
     type: object
     properties:

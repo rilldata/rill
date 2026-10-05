@@ -10750,11 +10750,11 @@ func (m *MetricsViewEvaluateRequest) validate(all bool) error {
 	}
 
 	if all {
-		switch v := interface{}(m.GetQuestion()).(type) {
+		switch v := interface{}(m.GetRequest()).(type) {
 		case interface{ ValidateAll() error }:
 			if err := v.ValidateAll(); err != nil {
 				errors = append(errors, MetricsViewEvaluateRequestValidationError{
-					field:  "Question",
+					field:  "Request",
 					reason: "embedded message failed validation",
 					cause:  err,
 				})
@@ -10762,16 +10762,16 @@ func (m *MetricsViewEvaluateRequest) validate(all bool) error {
 		case interface{ Validate() error }:
 			if err := v.Validate(); err != nil {
 				errors = append(errors, MetricsViewEvaluateRequestValidationError{
-					field:  "Question",
+					field:  "Request",
 					reason: "embedded message failed validation",
 					cause:  err,
 				})
 			}
 		}
-	} else if v, ok := interface{}(m.GetQuestion()).(interface{ Validate() error }); ok {
+	} else if v, ok := interface{}(m.GetRequest()).(interface{ Validate() error }); ok {
 		if err := v.Validate(); err != nil {
 			return MetricsViewEvaluateRequestValidationError{
-				field:  "Question",
+				field:  "Request",
 				reason: "embedded message failed validation",
 				cause:  err,
 			}

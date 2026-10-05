@@ -10,7 +10,7 @@ import { ExportFormat } from "./export_format_pb.js";
 import { Resource, ResourceName } from "./resources_pb.js";
 import { Expression } from "./expression_pb.js";
 import { TimeGrain } from "./time_grain_pb.js";
-import { EvaluateQuestion } from "../../ai/v1/ai_pb.js";
+import { EvaluateRequest } from "../../ai/v1/ai_pb.js";
 
 /**
  * @generated from enum rill.runtime.v1.BuiltinMeasure
@@ -4271,11 +4271,11 @@ export class MetricsViewEvaluateRequest extends Message<MetricsViewEvaluateReque
   query?: MetricsViewAggregationRequest;
 
   /**
-   * Required. Question asked against the resolved query
+   * Required. Templated request resolved against the resolved query and evaluated
    *
-   * @generated from field: rill.ai.v1.EvaluateQuestion question = 4;
+   * @generated from field: rill.ai.v1.EvaluateRequest request = 4;
    */
-  question?: EvaluateQuestion;
+  request?: EvaluateRequest;
 
   constructor(data?: PartialMessage<MetricsViewEvaluateRequest>) {
     super();
@@ -4288,7 +4288,7 @@ export class MetricsViewEvaluateRequest extends Message<MetricsViewEvaluateReque
     { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "metrics_view_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "query", kind: "message", T: MetricsViewAggregationRequest },
-    { no: 4, name: "question", kind: "message", T: EvaluateQuestion },
+    { no: 4, name: "request", kind: "message", T: EvaluateRequest },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewEvaluateRequest {

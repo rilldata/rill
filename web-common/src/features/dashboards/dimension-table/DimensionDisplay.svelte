@@ -14,7 +14,6 @@
   import {
     createQueryServiceMetricsViewAggregation,
     type MetricsViewSpecDimension,
-    queryServiceMetricsViewEvaluate,
     type V1Expression,
     type V1MetricsViewAggregationMeasure,
     type V1TimeRange,
@@ -32,6 +31,7 @@
   import DimensionTable from "./DimensionTable.svelte";
   import { getDimensionFilterWithSearch } from "./dimension-table-utils";
   import { sanitiseExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils.ts";
+  import EvaluationsDialog from "@rilldata/web-common/features/evaluations/EvaluationsDialog.svelte";
 
   const queryLimit = 250;
 
@@ -223,6 +223,8 @@
     }
   }
 
+  let evaluationOpen = false;
+
   // Select all items on Meta+A
   function handleKeyDown(
     e: KeyboardEvent & {
@@ -241,27 +243,8 @@
       if (e.target instanceof HTMLElement && e.target.tagName === "INPUT")
         return;
       e.preventDefault();
-      void evaluate();
+      evaluationOpen = true;
     }
-  }
-
-  async function evaluate() {
-    await queryServiceMetricsViewEvaluate(client, {
-      metricsViewName,
-      query: {
-        ...aggregationRequest,
-        limit: "5",
-      },
-      question: {
-        noul: {
-          instructions: "Is this a significant contributor?",
-          criteria: {
-            true: "Has high impressions/records or high revenue",
-            false: "Has low impressions/records or high revenue",
-          },
-        },
-      },
-    });
   }
 </script>
 
@@ -296,3 +279,5 @@
 {/if}
 
 <svelte:window onkeydown={handleKeyDown} />
+
+<EvaluationsDialog bind:open={evaluationOpen} {aggregationRequest} />
