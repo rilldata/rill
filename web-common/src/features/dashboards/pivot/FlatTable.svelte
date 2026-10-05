@@ -28,6 +28,7 @@
     type PivotClickSelectionState,
     dimKeyFromRow,
   } from "./pivot-click-selection";
+  import { PIVOT_TOTALS_ROW_ID } from "./pivot-expand-keys";
   import type { PivotRowSelectionState } from "./pivot-row-selection";
   import type { CellFormatter } from "./pivot-conditional-formatting";
   import PivotHeaderLabel from "./PivotHeaderLabel.svelte";
@@ -76,9 +77,10 @@
 
   $: headers = headerGroups[0].headers;
 
-  // The totals row is always tanstack row "0" (see PivotTable.svelte). When
-  // pinned to the bottom it is skipped in the virtualized body and rendered
-  // once more in a sticky <tfoot>, so no row ids or index math change.
+  // The totals row is always the first tanstack row, with id
+  // PIVOT_TOTALS_ROW_ID (see PivotTable.svelte). When pinned to the bottom it
+  // is skipped in the virtualized body and rendered once more in a sticky
+  // <tfoot>, so no row ids or index math change.
   $: totalsRowAtBottom = !!totalsRow && totalsRowPosition === "bottom";
 
   // Initialize column lengths if not already set
@@ -291,7 +293,7 @@
   {@const rowId = rows[rowIndex].id}
   {@const rowData = rows[rowIndex].original}
   {@const dk = dimKeyFromRow(rowData, config?.rowDimensionNames ?? [])}
-  {@const isTotalsRow = !!totalsRow && rowId === "0"}
+  {@const isTotalsRow = !!totalsRow && rowId === PIVOT_TOTALS_ROW_ID}
   {@const isSelected = rowSelectionState?.isRowSelected(rowData) ?? false}
   {@const hasClickedCell = clickSelection?.hasSelectedCellInRow(dk) ?? false}
   {@const effectiveDimIdx = computeEffectiveDimIdx(

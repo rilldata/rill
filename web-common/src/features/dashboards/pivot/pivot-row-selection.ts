@@ -39,17 +39,10 @@ function getRawRowValues(
   rowId: string,
   tableData: PivotDataRow[],
 ): string[] {
-  const { rowDimensionNames, measureNames, isFlat } = config;
-  const hasTotalsRow =
-    config.pivot?.showTotalsRow !== false && measureNames.length > 0;
+  const { rowDimensionNames, isFlat } = config;
   return isFlat
-    ? getValuesForFlatTable(tableData, rowDimensionNames, rowId, hasTotalsRow)
-    : getValuesForExpandedKey(
-        tableData,
-        rowDimensionNames,
-        rowId,
-        hasTotalsRow,
-      );
+    ? getValuesForFlatTable(tableData, rowDimensionNames, rowId)
+    : getValuesForExpandedKey(tableData, rowDimensionNames, rowId);
 }
 
 /**
@@ -77,7 +70,7 @@ export function getDimensionValuesForRow(
 
 /**
  * Like getDimensionValuesForRow but reads values directly from a PivotDataRow
- * instead of using positional rowId indexing. Stable across sorting.
+ * instead of resolving a rowId against the table data.
  */
 export function getDimensionValuesFromRowData(
   config: PivotDataStoreConfig,
