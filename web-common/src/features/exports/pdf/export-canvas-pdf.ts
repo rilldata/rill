@@ -3,7 +3,7 @@ import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryCl
 import { getCanvasStore } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
 import { assemblePdf, TITLE_BAND_PT } from "./assemble";
 import { captureCanvasBlocks } from "./capture";
-import { buildPdfFilename } from "./filename";
+import { buildExportFilename } from "../filename";
 import { paginate } from "./layout";
 import { prepareCanvasForCapture } from "./settle";
 import {
@@ -61,7 +61,7 @@ export async function exportCanvasPdf(
     const generatedAt = `${new Date().toISOString().replace("T", " ").slice(0, 16)} UTC`;
     await assemblePdf(pagination, {
       title,
-      filename: buildPdfFilename(title),
+      filename: buildExportFilename(title, "pdf"),
       backgroundColor,
       generatedAt,
       dashboardUrl: opts.dashboardUrl ?? window.location.href,

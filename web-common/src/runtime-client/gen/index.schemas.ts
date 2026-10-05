@@ -502,6 +502,8 @@ The values should be valid IANA location identifiers. */
   pinnedFilters?: string[];
   requiredFilters?: string[];
   annotations?: Record<string, string>;
+  /** Suggested prompts configured by the project author, shown as starters in the AI chat. */
+  aiPrompts?: V1AIPrompt[];
 }
 
 export interface V1CanvasState {
@@ -1001,6 +1003,8 @@ These are not currently parsed from YAML, but will be derived from the parent me
   allowCustomTimeRange?: boolean;
   /** When true, it indicates that the explore was defined in a metrics view either explicitly or emitted because version was not set. */
   definedInMetricsView?: boolean;
+  /** Suggested prompts configured by the project author, shown as starters in the AI chat. */
+  aiPrompts?: V1AIPrompt[];
 }
 
 export interface V1ExploreState {
@@ -1008,6 +1012,14 @@ export interface V1ExploreState {
   /** The last time the underlying metrics view's data was refreshed.
 This may be empty if the data refresh time is not known, e.g. if the metrics view is based on an externally managed table. */
   dataRefreshedOn?: string;
+}
+
+/** AIPrompt is a starter prompt shown in the AI chat. */
+export interface V1AIPrompt {
+  /** Short label displayed on the prompt's button. */
+  label?: string;
+  /** Full prompt sent to the AI when the user picks it. */
+  prompt?: string;
 }
 
 export interface V1ExploreTimeRange {
@@ -1283,6 +1295,7 @@ export interface V1Instance {
   featureFlags?: V1InstanceFeatureFlags;
   annotations?: V1InstanceAnnotations;
   aiInstructions?: string;
+  aiPrompts?: V1AIPrompt[];
   frontendUrl?: string;
   theme?: string;
 }

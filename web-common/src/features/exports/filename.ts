@@ -1,7 +1,9 @@
-// Builds a download filename from a dashboard title plus a local timestamp,
-// e.g. "sales-overview-20260619-130412.pdf". Shared by the canvas and explore
-// PDF export orchestrators.
-export function buildPdfFilename(title: string): string {
+// Builds a download filename from a title plus a local timestamp, e.g.
+// "sales-overview-20260619-130412.pdf". Shared by the PDF and PNG exports.
+export function buildExportFilename(
+  title: string,
+  extension: "pdf" | "png",
+): string {
   const slug =
     title
       .toLowerCase()
@@ -12,5 +14,5 @@ export function buildPdfFilename(title: string): string {
   const stamp =
     `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}` +
     `-${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}`;
-  return `${slug}-${stamp}.pdf`;
+  return `${slug}-${stamp}.${extension}`;
 }

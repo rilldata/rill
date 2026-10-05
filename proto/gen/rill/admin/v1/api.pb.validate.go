@@ -1533,10 +1533,6 @@ func (m *UpdateOrganizationRequest) validate(all bool) error {
 		// no validation rules for DefaultProjectRole
 	}
 
-	if m.DefaultProvisioner != nil {
-		// no validation rules for DefaultProvisioner
-	}
-
 	if m.BillingEmail != nil {
 
 		if err := m._validateEmail(m.GetBillingEmail()); err != nil {

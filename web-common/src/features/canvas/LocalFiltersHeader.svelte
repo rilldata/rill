@@ -1,6 +1,8 @@
 <script lang="ts">
   import Filter from "@rilldata/web-common/components/icons/Filter.svelte";
   import type { BaseCanvasComponent } from "@rilldata/web-common/features/canvas/components/BaseCanvasComponent";
+  import { resolveTimeFilters } from "@rilldata/web-common/features/canvas/components/time-filters";
+  import type { ComponentFilterProperties } from "@rilldata/web-common/features/canvas/components/types";
   import type { V1TimeRange } from "@rilldata/web-common/runtime-client";
   import ReadonlyExpressionFilters from "@rilldata/web-common/features/dashboards/filters/ReadonlyExpressionFilters.svelte";
 
@@ -13,20 +15,9 @@
     localTimeControls,
   } = component);
 
-  $: ({
-    showTimeComparisonStore,
-    interval: intervalStore,
-    rangeStore,
-    grainStore,
-    comparisonRangeStore,
-    comparisonIntervalStore,
-  } = localTimeControls);
+  $: ({ interval: intervalStore, rangeStore, grainStore } = localTimeControls);
 
-  $: showTimeComparison = $showTimeComparisonStore;
   $: activeTimeGrain = $grainStore;
-
-  $: comparisonRange = $comparisonRangeStore;
-  $: comparisonInterval = $comparisonIntervalStore;
 
   $: interval = $intervalStore;
   $: selectedRangeAlias = $rangeStore;
@@ -40,14 +31,24 @@
       }
     : undefined;
 
-  // $: selectedTimeRange = $timeRangeStateStore?.selectedTimeRange;
+  $: ({ showTimeComparison, comparisonTimeRangeState, timeGrain } =
+    $timeAndFilterStore);
+  $: selectedComparisonTimeRange =
+    comparisonTimeRangeState?.selectedComparisonTimeRange;
+
+  // Only a range or comparison the component sets itself counts as a local filter.
+  $: ({ hasLocalTimeRange, comparison } = resolveTimeFilters(
+    ($specStore as ComponentFilterProperties).time_filters,
+  ));
+  $: hasLocalComparison = comparison.mode === "local";
+
   $: displayComparisonTimeRange =
-    showTimeComparison && comparisonInterval && comparisonRange
+    hasLocalComparison && showTimeComparison && selectedComparisonTimeRange
       ? <V1TimeRange>{
-          name: comparisonRange,
-          start: comparisonInterval.start.toISO(),
-          end: comparisonInterval.end.toISO(),
-          interval: activeTimeGrain,
+          name: selectedComparisonTimeRange.name,
+          start: selectedComparisonTimeRange.start.toISOString(),
+          end: selectedComparisonTimeRange.end.toISOString(),
+          interval: timeGrain,
         }
       : undefined;
 
@@ -55,8 +56,6 @@
     ...$timeAndFilterStore.timeRange,
     isoDuration: selectedTimeRange?.name,
   };
-
-  $: hasTimeFilters = "time_filters" in $specStore && $specStore.time_filters;
 </script>
 
 {#if "metrics_view" in $specStore}
@@ -67,7 +66,7 @@
 
     <ReadonlyExpressionFilters
       expressionFilterManager={localExpressionFilters}
-      displayTimeRange={hasTimeFilters ? displayTimeRange : undefined}
+      displayTimeRange={hasLocalTimeRange ? displayTimeRange : undefined}
       {displayComparisonTimeRange}
       queryTimeStart={selectedTimeRange?.start?.toISOString()}
       queryTimeEnd={selectedTimeRange?.end?.toISOString()}

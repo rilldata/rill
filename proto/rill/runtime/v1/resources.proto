@@ -505,6 +505,8 @@ message ExploreSpec {
   bool allow_custom_time_range = 20;
   // When true, it indicates that the explore was defined in a metrics view either explicitly or emitted because version was not set.
   bool defined_in_metrics_view = 21;
+  // Suggested prompts configured by the project author, shown as starters in the AI chat.
+  repeated AIPrompt ai_prompts = 22;
 }
 
 message ExploreState {
@@ -514,6 +516,14 @@ message ExploreState {
   // The last time the underlying metrics view's data was refreshed.
   // This may be empty if the data refresh time is not known, e.g. if the metrics view is based on an externally managed table.
   google.protobuf.Timestamp data_refreshed_on = 2;
+}
+
+// AIPrompt is a starter prompt shown in the AI chat.
+message AIPrompt {
+  // Short label displayed on the prompt's button.
+  string label = 1;
+  // Full prompt sent to the AI when the user picks it.
+  string prompt = 2;
 }
 
 message ExploreTimeRange {
@@ -924,6 +934,8 @@ message CanvasSpec {
   repeated string required_filters = 19;
   // Annotations are arbitrary key-value pairs that can be used to attach metadata to the canvas (e.g. used to mark personal canvases created by the admin server).
   map<string, string> annotations = 20;
+  // Suggested prompts configured by the project author, shown as starters in the AI chat.
+  repeated AIPrompt ai_prompts = 21;
 }
 
 message CanvasState {

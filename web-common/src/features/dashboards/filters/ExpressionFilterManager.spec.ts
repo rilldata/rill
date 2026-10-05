@@ -9,7 +9,10 @@ import {
 import { YAMLConfigProvider } from "@rilldata/web-common/features/dashboards/providers/YAMLConfigProvider.svelte.ts";
 import {
   createAndExpression,
+  createBinaryExpression,
   createInExpression,
+  createSubQueryExpression,
+  flattenExpression,
   getAllIdentifiers,
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils.ts";
 import {
@@ -23,8 +26,12 @@ import {
   AD_BIDS_PUBLISHER_DIMENSION,
 } from "@rilldata/web-common/features/dashboards/stores/test-data/data";
 import { compressUrlParams } from "@rilldata/web-common/features/dashboards/url-state/compression.ts";
+import { convertExpressionToFilterParam } from "@rilldata/web-common/features/dashboards/url-state/filters/converters.ts";
+import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus.ts";
+import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 import { ExploreStateURLParams } from "@rilldata/web-common/features/dashboards/url-state/url-params.ts";
 import { MetricsViewsProvider } from "@rilldata/web-common/features/metrics-views/providers/MetricsViewsProvider.svelte.ts";
+import { V1Operation } from "@rilldata/web-common/runtime-client";
 import {
   createInEffectRoot,
   createTestMetricsViewsProvider,
@@ -156,7 +163,7 @@ describe("setUrlParams", () => {
   it("builds a dimension chip from a per metrics view param", () => {
     const filterManager = createFilterManager();
 
-    filterManager.setUrlParams(
+    filterManager.storeSync.setUrlParams(
       perMetricsViewParams({
         [AD_BIDS_METRICS_NAME]: `${AD_BIDS_PUBLISHER_DIMENSION} IN ('Google')`,
       }),
@@ -178,7 +185,7 @@ describe("setUrlParams", () => {
   it("builds a measure chip from a having param", () => {
     const filterManager = createFilterManager();
 
-    filterManager.setUrlParams(
+    filterManager.storeSync.setUrlParams(
       perMetricsViewParams({
         [AD_BIDS_METRICS_NAME]: `${AD_BIDS_PUBLISHER_DIMENSION} having (${AD_BIDS_IMPRESSIONS_MEASURE} gt 10)`,
       }),
@@ -194,10 +201,89 @@ describe("setUrlParams", () => {
     expect(filterManager.sortedFilterManagers.dimensions).toEqual([]);
   });
 
+  describe("comparison measure filters", () => {
+    // The having clause references a suffixed accessor of the base measure.
+    // The chip is keyed by the base measure and the suffix decides the filter type.
+    // Relative values are stored as decimals in the param and shown as percentages.
+    const cases = [
+      {
+        suffix: "_delta",
+        type: MeasureFilterType.AbsoluteChange,
+        paramValue: "10",
+        value1: "10",
+      },
+      {
+        suffix: "_delta_perc",
+        type: MeasureFilterType.PercentChange,
+        paramValue: "0.1",
+        value1: "10",
+      },
+      {
+        suffix: "_percent_of_total",
+        type: MeasureFilterType.PercentOfTotal,
+        paramValue: "0.25",
+        value1: "25",
+      },
+    ];
+
+    for (const { suffix, type, paramValue, value1 } of cases) {
+      it(`builds a chip for the base measure from a ${suffix} filter`, () => {
+        const filterManager = createFilterManager();
+
+        filterManager.storeSync.setUrlParams(
+          perMetricsViewParams({
+            [AD_BIDS_METRICS_NAME]: `${AD_BIDS_PUBLISHER_DIMENSION} having (${AD_BIDS_IMPRESSIONS_MEASURE}${suffix} gt ${paramValue})`,
+          }),
+        );
+
+        expect(names(filterManager.sortedFilterManagers.measures)).toEqual([
+          AD_BIDS_IMPRESSIONS_MEASURE,
+        ]);
+        const measureManager = filterManager.sortedFilterManagers.measures[0];
+        expect(measureManager.dimension).toBe(AD_BIDS_PUBLISHER_DIMENSION);
+        expect(measureManager.type).toBe(type);
+        expect(measureManager.operation).toBe(
+          MeasureFilterOperation.GreaterThan,
+        );
+        expect(measureManager.value1).toBe(value1);
+
+        // The condition is applied to the metrics view with the suffixed accessor, exactly once.
+        expect(exprOf(filterManager, AD_BIDS_METRICS_NAME)).toEqual(
+          createAndExpression([
+            createSubQueryExpression(
+              AD_BIDS_PUBLISHER_DIMENSION,
+              [AD_BIDS_IMPRESSIONS_MEASURE],
+              createBinaryExpression(
+                `${AD_BIDS_IMPRESSIONS_MEASURE}${suffix}`,
+                V1Operation.OPERATION_GT,
+                Number(paramValue),
+              ),
+            ),
+          ]),
+        );
+      });
+
+      it(`writes a ${suffix} filter back to the param unchanged`, () => {
+        const filterManager = createFilterManager();
+        const param = `${AD_BIDS_DOMAIN_DIMENSION} having (${AD_BIDS_BID_PRICE_MEASURE}${suffix} GT ${paramValue})`;
+        filterManager.storeSync.setUrlParams(
+          perMetricsViewParams({ [AD_BIDS_METRICS_NAME]: param }),
+        );
+
+        const searchParams = new URLSearchParams();
+        filterManager.applyFilterToParams(searchParams);
+
+        expect(searchParams.toString()).toEqual(
+          perMetricsViewParams({ [AD_BIDS_METRICS_NAME]: param }).toString(),
+        );
+      });
+    }
+  });
+
   it("reads an in-list filter back as in-list mode", () => {
     const filterManager = createFilterManager();
 
-    filterManager.setUrlParams(
+    filterManager.storeSync.setUrlParams(
       perMetricsViewParams({
         [AD_BIDS_METRICS_NAME]: `${AD_BIDS_PUBLISHER_DIMENSION} IN LIST ('Google','Facebook')`,
       }),
@@ -214,7 +300,7 @@ describe("setUrlParams", () => {
   it("applies the singular param to every metrics view and shares one manager", () => {
     const filterManager = createFilterManager();
 
-    filterManager.setUrlParams(
+    filterManager.storeSync.setUrlParams(
       sharedParam(`${AD_BIDS_PUBLISHER_DIMENSION} IN ('Google')`),
     );
 
@@ -242,7 +328,7 @@ describe("setUrlParams", () => {
         }).toString(),
       ),
     });
-    filterManager.setUrlParams(compressed);
+    filterManager.storeSync.setUrlParams(compressed);
 
     expect(names(filterManager.sortedFilterManagers.dimensions)).toEqual([
       AD_BIDS_PUBLISHER_DIMENSION,
@@ -262,7 +348,7 @@ describe("setUrlParams", () => {
       `${ExploreStateURLParams.Filters}.${AD_BIDS_MIRROR_METRICS_NAME}`,
       `${AD_BIDS_COUNTRY_DIMENSION} IN ('US')`,
     );
-    filterManager.setUrlParams(searchParams);
+    filterManager.storeSync.setUrlParams(searchParams);
 
     // The mirror reads its own param rather than the singular one. The two are then merged into
     // the one filter the chips edit, and each metrics view gets the part of it that it defines:
@@ -285,7 +371,7 @@ describe("setUrlParams", () => {
     const filterManager = createFilterManager();
 
     // `country` belongs to the mirror only, so AdBids cannot filter on it.
-    filterManager.setUrlParams(
+    filterManager.storeSync.setUrlParams(
       perMetricsViewParams({
         [AD_BIDS_METRICS_NAME]: `${AD_BIDS_COUNTRY_DIMENSION} IN ('US')`,
       }),
@@ -306,7 +392,7 @@ describe("setUrlParams", () => {
 
     // `domain` is AdBids only and `country` is mirror only, so the merged filter splits back into
     // one condition per metrics view.
-    filterManager.setUrlParams(
+    filterManager.storeSync.setUrlParams(
       perMetricsViewParams({
         [AD_BIDS_METRICS_NAME]: `${AD_BIDS_DOMAIN_DIMENSION} IN ('google.com')`,
         [AD_BIDS_MIRROR_METRICS_NAME]: `${AD_BIDS_COUNTRY_DIMENSION} IN ('US')`,
@@ -335,7 +421,7 @@ describe("setUrlParams", () => {
     const filterManager = createFilterManager();
 
     // `bid_price` on `domain` is AdBids only, `publisher_count` on `country` is mirror only.
-    filterManager.setUrlParams(
+    filterManager.storeSync.setUrlParams(
       perMetricsViewParams({
         [AD_BIDS_METRICS_NAME]: `${AD_BIDS_DOMAIN_DIMENSION} having (${AD_BIDS_BID_PRICE_MEASURE} gt 10)`,
         [AD_BIDS_MIRROR_METRICS_NAME]: `${AD_BIDS_COUNTRY_DIMENSION} having (${AD_BIDS_PUBLISHER_COUNT_MEASURE} lt 5)`,
@@ -361,7 +447,7 @@ describe("setUrlParams", () => {
   it("flags an OR filter as complex", () => {
     const filterManager = createFilterManager();
 
-    filterManager.setUrlParams(
+    filterManager.storeSync.setUrlParams(
       perMetricsViewParams({
         [AD_BIDS_METRICS_NAME]: `${AD_BIDS_PUBLISHER_DIMENSION} IN ('Google') OR ${AD_BIDS_DOMAIN_DIMENSION} IN ('google.com')`,
       }),
@@ -373,7 +459,7 @@ describe("setUrlParams", () => {
   it("flags two filters on the same dimension as complex", () => {
     const filterManager = createFilterManager();
 
-    filterManager.setUrlParams(
+    filterManager.storeSync.setUrlParams(
       perMetricsViewParams({
         [AD_BIDS_METRICS_NAME]: `${AD_BIDS_PUBLISHER_DIMENSION} IN ('Google') AND ${AD_BIDS_PUBLISHER_DIMENSION} NIN ('Facebook')`,
       }),
@@ -387,7 +473,7 @@ describe("setUrlParams", () => {
 
     // A single chip can only show one of the two, and editing it would leave the mirror on
     // `Facebook`, so the whole filter falls back to the read only advanced filter.
-    filterManager.setUrlParams(
+    filterManager.storeSync.setUrlParams(
       perMetricsViewParams({
         [AD_BIDS_METRICS_NAME]: `${AD_BIDS_PUBLISHER_DIMENSION} IN ('Google')`,
         [AD_BIDS_MIRROR_METRICS_NAME]: `${AD_BIDS_PUBLISHER_DIMENSION} IN ('Facebook')`,
@@ -400,7 +486,7 @@ describe("setUrlParams", () => {
   it("does not flag the same filter in every metrics view as complex", () => {
     const filterManager = createFilterManager();
 
-    filterManager.setUrlParams(
+    filterManager.storeSync.setUrlParams(
       perMetricsViewParams({
         [AD_BIDS_METRICS_NAME]: `${AD_BIDS_PUBLISHER_DIMENSION} IN ('Google')`,
         [AD_BIDS_MIRROR_METRICS_NAME]: `${AD_BIDS_PUBLISHER_DIMENSION} IN ('Google')`,
@@ -417,7 +503,7 @@ describe("setUrlParams", () => {
     filterManager.addNewFilter(AD_BIDS_DOMAIN_DIMENSION);
     expect(filterManager.temporaryFilterName).toBe(AD_BIDS_DOMAIN_DIMENSION);
 
-    filterManager.setUrlParams(
+    filterManager.storeSync.setUrlParams(
       perMetricsViewParams({
         [AD_BIDS_METRICS_NAME]: `${AD_BIDS_PUBLISHER_DIMENSION} IN ('Google')`,
       }),
@@ -430,10 +516,130 @@ describe("setUrlParams", () => {
   });
 });
 
+describe("single param form", () => {
+  function createSingleParamFilterManager() {
+    const { value, destroy } = createInEffectRoot(
+      () =>
+        new ExpressionFilterManager(
+          metricsViewsProvider,
+          new YAMLConfigProvider(),
+          true,
+        ),
+    );
+    cleanups.push(destroy);
+    return value;
+  }
+
+  it("ignores per metrics view params", () => {
+    const filterManager = createSingleParamFilterManager();
+
+    // Explore only reads the singular param, so the chips must not pick up anything else.
+    filterManager.storeSync.setUrlParams(
+      perMetricsViewParams({
+        [AD_BIDS_METRICS_NAME]: `${AD_BIDS_PUBLISHER_DIMENSION} IN ('Google')`,
+      }),
+    );
+
+    expect(filterManager.sortedFilterManagers.dimensions).toEqual([]);
+  });
+
+  it("reads and writes back the singular param", () => {
+    const filterManager = createSingleParamFilterManager();
+    const filter = `${AD_BIDS_PUBLISHER_DIMENSION} IN ('Google')`;
+
+    filterManager.storeSync.setUrlParams(sharedParam(filter));
+    expect(names(filterManager.sortedFilterManagers.dimensions)).toEqual([
+      AD_BIDS_PUBLISHER_DIMENSION,
+    ]);
+
+    const searchParams = new URLSearchParams();
+    filterManager.applyFilterToParams(searchParams);
+    expect(searchParams.toString()).toEqual(sharedParam(filter).toString());
+  });
+});
+
+describe("metrics view names change", () => {
+  // These tests change the metrics views, so each gets its own provider.
+  async function createFilterManagerWithOwnProvider(
+    metricsViewNames: string[],
+  ) {
+    const provider = await createTestMetricsViewsProvider(metricsViewNames);
+    const { value, destroy } = createInEffectRoot(
+      () =>
+        new ExpressionFilterManager(provider.value, new YAMLConfigProvider()),
+    );
+    cleanups.push(() => {
+      destroy();
+      provider.value.cleanup();
+      provider.destroy();
+    });
+    return { provider: provider.value, filterManager: value };
+  }
+
+  it("queues params until the specs of the new metrics views load", async () => {
+    const { provider, filterManager } =
+      await createFilterManagerWithOwnProvider([AD_BIDS_METRICS_NAME]);
+    expect(filterManager.ready).toBe(true);
+
+    // A metrics view that is never mocked stays loading.
+    provider.setMetricsViewNames([AD_BIDS_METRICS_NAME, "missing_metrics"]);
+    expect(provider.specsReady).toBe(false);
+    expect(filterManager.ready).toBe(false);
+
+    filterManager.storeSync.setUrlParams(
+      sharedParam(`${AD_BIDS_DOMAIN_DIMENSION} IN ('google.com')`),
+    );
+    expect(filterManager.sortedFilterManagers.dimensions).toEqual([]);
+
+    provider.setMetricsViewNames([AD_BIDS_METRICS_NAME]);
+    expect(filterManager.ready).toBe(true);
+    expect(names(filterManager.sortedFilterManagers.dimensions)).toEqual([
+      AD_BIDS_DOMAIN_DIMENSION,
+    ]);
+  });
+
+  it("drops filters the new metrics views do not define", async () => {
+    const { provider, filterManager } =
+      await createFilterManagerWithOwnProvider([
+        AD_BIDS_METRICS_NAME,
+        AD_BIDS_MIRROR_METRICS_NAME,
+      ]);
+    filterManager.storeSync.setUrlParams(
+      sharedParam(
+        `${AD_BIDS_PUBLISHER_DIMENSION} IN ('Google') AND ${AD_BIDS_COUNTRY_DIMENSION} IN ('US')`,
+      ),
+    );
+    expect(names(filterManager.sortedFilterManagers.dimensions)).toEqual([
+      AD_BIDS_COUNTRY_DIMENSION,
+      AD_BIDS_PUBLISHER_DIMENSION,
+    ]);
+
+    const internalChanges: string[] = [];
+    cleanups.push(
+      filterManager.storeSync.on("internal-change", (params) =>
+        internalChanges.push(params.toString()),
+      ),
+    );
+
+    // Only the mirror defines country.
+    provider.setMetricsViewNames([AD_BIDS_METRICS_NAME]);
+    await new Promise<void>((resolve) => queueMicrotask(resolve));
+
+    expect(names(filterManager.sortedFilterManagers.dimensions)).toEqual([
+      AD_BIDS_PUBLISHER_DIMENSION,
+    ]);
+    expect(internalChanges).toEqual([
+      perMetricsViewParams({
+        [AD_BIDS_METRICS_NAME]: `${AD_BIDS_PUBLISHER_DIMENSION} IN ('Google')`,
+      }).toString(),
+    ]);
+  });
+});
+
 describe("applyFilterToParams", () => {
   it("writes a param per metrics view and drops the legacy singular one", () => {
     const filterManager = createFilterManager();
-    filterManager.setUrlParams(
+    filterManager.storeSync.setUrlParams(
       sharedParam(`${AD_BIDS_PUBLISHER_DIMENSION} IN ('Google')`),
     );
 
@@ -454,7 +660,7 @@ describe("applyFilterToParams", () => {
 
   it("leaves nothing behind once the filter is removed", () => {
     const filterManager = createFilterManager();
-    filterManager.setUrlParams(
+    filterManager.storeSync.setUrlParams(
       sharedParam(`${AD_BIDS_PUBLISHER_DIMENSION} IN ('Google')`),
     );
     filterManager.sortedFilterManagers.dimensions[0].clear();
@@ -473,7 +679,9 @@ describe("applyFilterToParams", () => {
       [AD_BIDS_METRICS_NAME]: `${AD_BIDS_DOMAIN_DIMENSION} IN ('google.com')`,
       [AD_BIDS_MIRROR_METRICS_NAME]: `${AD_BIDS_COUNTRY_DIMENSION} IN ('US')`,
     };
-    filterManager.setUrlParams(perMetricsViewParams(filterByMetricsView));
+    filterManager.storeSync.setUrlParams(
+      perMetricsViewParams(filterByMetricsView),
+    );
 
     const searchParams = new URLSearchParams();
     filterManager.applyFilterToParams(searchParams);
@@ -485,7 +693,7 @@ describe("applyFilterToParams", () => {
 
   it("writes back a measure filter each metrics view holds on its own", () => {
     const filterManager = createFilterManager();
-    filterManager.setUrlParams(
+    filterManager.storeSync.setUrlParams(
       perMetricsViewParams({
         [AD_BIDS_METRICS_NAME]: `${AD_BIDS_DOMAIN_DIMENSION} having (${AD_BIDS_BID_PRICE_MEASURE} gt 10)`,
         [AD_BIDS_MIRROR_METRICS_NAME]: `${AD_BIDS_COUNTRY_DIMENSION} having (${AD_BIDS_PUBLISHER_COUNT_MEASURE} lt 5)`,
@@ -505,11 +713,170 @@ describe("applyFilterToParams", () => {
   });
 });
 
+describe("dimension params with a binary operator", () => {
+  /** The param the filter is written back as. */
+  function roundTrip(filterManager: ExpressionFilterManager) {
+    const searchParams = new URLSearchParams();
+    filterManager.applyFilterToParams(searchParams);
+    return searchParams.toString();
+  }
+
+  it("reads EQ as a single value selection and writes it back as IN", () => {
+    const filterManager = createFilterManager();
+
+    filterManager.storeSync.setUrlParams(
+      perMetricsViewParams({
+        [AD_BIDS_METRICS_NAME]: `${AD_BIDS_DOMAIN_DIMENSION} EQ 'google.com'`,
+      }),
+    );
+
+    const [chip] = filterManager.sortedFilterManagers.dimensions;
+    expect(chip.name).toBe(AD_BIDS_DOMAIN_DIMENSION);
+    expect(chip.mode).toBe(DimensionFilterMode.Select);
+    expect(chip.selectedValues).toEqual(["google.com"]);
+    expect(chip.exclude).toBe(false);
+    expect(filterManager.isComplexFilter).toBe(false);
+    expect(exprOf(filterManager, AD_BIDS_METRICS_NAME)).toEqual(
+      createAndExpression([
+        createInExpression(AD_BIDS_DOMAIN_DIMENSION, ["google.com"]),
+      ]),
+    );
+    expect(roundTrip(filterManager)).toEqual(
+      perMetricsViewParams({
+        [AD_BIDS_METRICS_NAME]: `${AD_BIDS_DOMAIN_DIMENSION} IN ('google.com')`,
+      }).toString(),
+    );
+  });
+
+  it("reads NEQ as an excluded single value selection and writes it back as NIN", () => {
+    const filterManager = createFilterManager();
+
+    filterManager.storeSync.setUrlParams(
+      perMetricsViewParams({
+        [AD_BIDS_METRICS_NAME]: `${AD_BIDS_DOMAIN_DIMENSION} NEQ 'google.com'`,
+      }),
+    );
+
+    const [chip] = filterManager.sortedFilterManagers.dimensions;
+    expect(chip.mode).toBe(DimensionFilterMode.Select);
+    expect(chip.selectedValues).toEqual(["google.com"]);
+    expect(chip.exclude).toBe(true);
+    expect(filterManager.isComplexFilter).toBe(false);
+    expect(exprOf(filterManager, AD_BIDS_METRICS_NAME)).toEqual(
+      createAndExpression([
+        createInExpression(AD_BIDS_DOMAIN_DIMENSION, ["google.com"], true),
+      ]),
+    );
+    expect(roundTrip(filterManager)).toEqual(
+      perMetricsViewParams({
+        [AD_BIDS_METRICS_NAME]: `${AD_BIDS_DOMAIN_DIMENSION} NIN ('google.com')`,
+      }).toString(),
+    );
+  });
+
+  it("applies a canvas default written with an equality", () => {
+    const filterManager = createFilterManager();
+
+    // A canvas `defaults.filters` of `domain = 'google.com' AND publisher IN ('Google')` reaches the
+    // filter bar as the backend expression, flattened and converted to a param.
+    const param = convertExpressionToFilterParam(
+      flattenExpression(
+        createAndExpression([
+          createBinaryExpression(
+            AD_BIDS_DOMAIN_DIMENSION,
+            V1Operation.OPERATION_EQ,
+            "google.com",
+          ),
+          createInExpression(AD_BIDS_PUBLISHER_DIMENSION, ["Google"]),
+        ]),
+      ),
+      [],
+    );
+    expect(param).toEqual(
+      `${AD_BIDS_DOMAIN_DIMENSION} EQ 'google.com' AND ${AD_BIDS_PUBLISHER_DIMENSION} IN ('Google')`,
+    );
+
+    filterManager.storeSync.setUrlParams(
+      perMetricsViewParams({ [AD_BIDS_METRICS_NAME]: param }),
+    );
+
+    expect(names(filterManager.sortedFilterManagers.dimensions)).toEqual([
+      AD_BIDS_DOMAIN_DIMENSION,
+      AD_BIDS_PUBLISHER_DIMENSION,
+    ]);
+    expect(filterManager.isComplexFilter).toBe(false);
+    expect(exprOf(filterManager, AD_BIDS_METRICS_NAME)).toEqual(
+      createAndExpression([
+        createInExpression(AD_BIDS_DOMAIN_DIMENSION, ["google.com"]),
+        createInExpression(AD_BIDS_PUBLISHER_DIMENSION, ["Google"]),
+      ]),
+    );
+  });
+
+  it("keeps an operator the chips cannot show and flags the filter as complex", () => {
+    const filterManager = createFilterManager();
+
+    filterManager.storeSync.setUrlParams(
+      perMetricsViewParams({
+        [AD_BIDS_METRICS_NAME]: `${AD_BIDS_DOMAIN_DIMENSION} GT 'g' AND ${AD_BIDS_PUBLISHER_DIMENSION} IN ('Google')`,
+      }),
+    );
+
+    expect(filterManager.isComplexFilter).toBe(true);
+    expect(exprOf(filterManager, AD_BIDS_METRICS_NAME)).toEqual(
+      createAndExpression([
+        createBinaryExpression(
+          AD_BIDS_DOMAIN_DIMENSION,
+          V1Operation.OPERATION_GT,
+          "g",
+        ),
+        createInExpression(AD_BIDS_PUBLISHER_DIMENSION, ["Google"]),
+      ]),
+    );
+    // `publisher` is defined by both metrics views, so the mirror carries it too.
+    expect(roundTrip(filterManager)).toEqual(
+      perMetricsViewParams({
+        [AD_BIDS_METRICS_NAME]: `${AD_BIDS_DOMAIN_DIMENSION} GT 'g' AND ${AD_BIDS_PUBLISHER_DIMENSION} IN ('Google')`,
+        [AD_BIDS_MIRROR_METRICS_NAME]: `${AD_BIDS_PUBLISHER_DIMENSION} IN ('Google')`,
+      }).toString(),
+    );
+  });
+
+  it("keeps the operator through the dropdown clone and drops it once the chip is edited", () => {
+    const filterManager = createFilterManager();
+    filterManager.storeSync.setUrlParams(
+      perMetricsViewParams({
+        [AD_BIDS_METRICS_NAME]: `${AD_BIDS_DOMAIN_DIMENSION} LTE 'g'`,
+      }),
+    );
+    const [chip] = filterManager.sortedFilterManagers.dimensions;
+
+    // Opening and applying the dropdown without a change is a no-op.
+    chip.apply(chip.clone());
+    expect(roundTrip(filterManager)).toEqual(
+      perMetricsViewParams({
+        [AD_BIDS_METRICS_NAME]: `${AD_BIDS_DOMAIN_DIMENSION} LTE 'g'`,
+      }).toString(),
+    );
+
+    // A selection replaces the condition.
+    chip.toggleValue("google.com", false);
+    expect(exprOf(filterManager, AD_BIDS_METRICS_NAME)).toEqual(
+      createAndExpression([
+        createInExpression(AD_BIDS_DOMAIN_DIMENSION, ["google.com"]),
+      ]),
+    );
+
+    chip.clear();
+    expect(roundTrip(filterManager)).toEqual("");
+  });
+});
+
 describe("setExprForMetricsView / setParamForMetricsView", () => {
   it("sets the filter for one metrics view without touching the others", () => {
     const filterManager = createFilterManager();
 
-    filterManager.setUrlParams(
+    filterManager.storeSync.setUrlParams(
       sharedParam(`${AD_BIDS_DOMAIN_DIMENSION} IN ('google.com')`),
     );
     filterManager.setParamForMetricsView(
@@ -593,7 +960,7 @@ describe("setExprForMetricsView / setParamForMetricsView", () => {
   it("clears the filter for a metrics view when given no expression", () => {
     const filterManager = createFilterManager();
 
-    filterManager.setUrlParams(
+    filterManager.storeSync.setUrlParams(
       perMetricsViewParams({
         [AD_BIDS_METRICS_NAME]: `${AD_BIDS_DOMAIN_DIMENSION} IN ('google.com')`,
         [AD_BIDS_MIRROR_METRICS_NAME]: `${AD_BIDS_COUNTRY_DIMENSION} IN ('US')`,
@@ -615,7 +982,7 @@ describe("chip order", () => {
     yamlConfigProvider.pinnedFilters = { [AD_BIDS_PUBLISHER_DIMENSION]: true };
     const filterManager = createFilterManager(yamlConfigProvider);
 
-    filterManager.setUrlParams(
+    filterManager.storeSync.setUrlParams(
       perMetricsViewParams({
         [AD_BIDS_METRICS_NAME]: `${AD_BIDS_PUBLISHER_DIMENSION} IN ('Google') AND ${AD_BIDS_DOMAIN_DIMENSION} IN ('google.com')`,
         [AD_BIDS_MIRROR_METRICS_NAME]: `${AD_BIDS_COUNTRY_DIMENSION} IN ('US')`,
@@ -659,7 +1026,7 @@ describe("chip order", () => {
   it("sorts the param measures by name", () => {
     const filterManager = createFilterManager();
 
-    filterManager.setUrlParams(
+    filterManager.storeSync.setUrlParams(
       perMetricsViewParams({
         [AD_BIDS_METRICS_NAME]: `${AD_BIDS_PUBLISHER_DIMENSION} having (${AD_BIDS_IMPRESSIONS_MEASURE} gt 10) AND ${AD_BIDS_DOMAIN_DIMENSION} having (${AD_BIDS_BID_PRICE_MEASURE} lt 2)`,
       }),
@@ -674,7 +1041,7 @@ describe("chip order", () => {
   it("keys filterManagersMap by chip name", () => {
     const filterManager = createFilterManager();
 
-    filterManager.setUrlParams(
+    filterManager.storeSync.setUrlParams(
       perMetricsViewParams({
         [AD_BIDS_METRICS_NAME]: `${AD_BIDS_PUBLISHER_DIMENSION} IN ('Google') AND ${AD_BIDS_DOMAIN_DIMENSION} having (${AD_BIDS_BID_PRICE_MEASURE} lt 2)`,
       }),
@@ -732,7 +1099,7 @@ describe("addNewFilter", () => {
   it("does not duplicate a chip the param already covers", () => {
     const filterManager = createFilterManager();
 
-    filterManager.setUrlParams(
+    filterManager.storeSync.setUrlParams(
       perMetricsViewParams({
         [AD_BIDS_METRICS_NAME]: `${AD_BIDS_PUBLISHER_DIMENSION} IN ('Google')`,
       }),
@@ -782,7 +1149,7 @@ describe("dimensionFilterAction", () => {
   it("reuses the manager the param created", () => {
     const filterManager = createFilterManager();
 
-    filterManager.setUrlParams(
+    filterManager.storeSync.setUrlParams(
       perMetricsViewParams({
         [AD_BIDS_METRICS_NAME]: `${AD_BIDS_PUBLISHER_DIMENSION} IN ('Google')`,
       }),
@@ -815,7 +1182,7 @@ describe("dimensionFilterAction", () => {
 
   it("does nothing for a measure or an unknown name", () => {
     const filterManager = createFilterManager();
-    filterManager.setUrlParams(
+    filterManager.storeSync.setUrlParams(
       perMetricsViewParams({
         [AD_BIDS_METRICS_NAME]: `${AD_BIDS_PUBLISHER_DIMENSION} having (${AD_BIDS_IMPRESSIONS_MEASURE} gt 10)`,
       }),
@@ -852,12 +1219,7 @@ describe("dimensionFilterAction", () => {
       AD_BIDS_PUBLISHER_DIMENSION,
       (manager) => manager.toggleValue("Google", false),
     );
-    expect(
-      filterManager.sortedFilterManagers.dimensions[0],
-    ).not.toBeUndefined();
-    expect(
-      filterManager.sortedFilterManagers.dimensions[0].selectedValues,
-    ).toEqual([]);
+    expect(filterManager.sortedFilterManagers.dimensions[0]).toBeUndefined();
 
     filterManager.dimensionFilterAction(
       AD_BIDS_PUBLISHER_DIMENSION,
@@ -870,13 +1232,111 @@ describe("dimensionFilterAction", () => {
       filterManager.sortedFilterManagers.dimensions[0].selectedValues,
     ).toEqual(["Google"]);
   });
+
+  // Click to filter from a chart, table, leaderboard or search while the dimension has a
+  // Contains filter. The click selects a concrete value, so the filter converts to Select
+  // the way it did before the filter managers existed, and the user is told about it.
+  describe("with a Contains filter applied", () => {
+    function createWithContainsFilter() {
+      const filterManager = createFilterManager();
+      filterManager.storeSync.setUrlParams(
+        perMetricsViewParams({
+          [AD_BIDS_METRICS_NAME]: `${AD_BIDS_PUBLISHER_DIMENSION} LIKE '%oo%'`,
+        }),
+      );
+      const manager = filterManager.sortedFilterManagers.dimensions[0];
+      expect(manager.mode).toBe(DimensionFilterMode.Contains);
+      expect(manager.inputText).toBe("oo");
+
+      const emit = vi.spyOn(eventBus, "emit");
+      cleanups.push(() => emit.mockRestore());
+      return { filterManager, manager, emit };
+    }
+
+    it("toggleValue converts the filter to Select with the clicked value", () => {
+      const { filterManager, manager, emit } = createWithContainsFilter();
+
+      filterManager.dimensionFilterAction(
+        AD_BIDS_PUBLISHER_DIMENSION,
+        (manager) => manager.toggleValue("Google", false),
+      );
+
+      expect(manager.mode).toBe(DimensionFilterMode.Select);
+      expect(manager.inputText).toBe("");
+      expect(manager.selectedValues).toEqual(["Google"]);
+      expect(manager.expr).toEqual(
+        createInExpression(AD_BIDS_PUBLISHER_DIMENSION, ["Google"]),
+      );
+      expect(filterManager.topLevelJoiner.param[AD_BIDS_METRICS_NAME]).toBe(
+        `${AD_BIDS_PUBLISHER_DIMENSION} IN ('Google')`,
+      );
+      expect(emit).toHaveBeenCalledWith(
+        "notification",
+        expect.objectContaining({ message: m.filter_converted_to_select() }),
+      );
+    });
+
+    it("toggleValue keeps exclude when converting", () => {
+      const filterManager = createFilterManager();
+      filterManager.storeSync.setUrlParams(
+        perMetricsViewParams({
+          [AD_BIDS_METRICS_NAME]: `${AD_BIDS_PUBLISHER_DIMENSION} NLIKE '%oo%'`,
+        }),
+      );
+
+      filterManager.dimensionFilterAction(
+        AD_BIDS_PUBLISHER_DIMENSION,
+        (manager) => manager.toggleValue("Google", false),
+      );
+
+      expect(filterManager.topLevelJoiner.param[AD_BIDS_METRICS_NAME]).toBe(
+        `${AD_BIDS_PUBLISHER_DIMENSION} NIN ('Google')`,
+      );
+    });
+
+    it("appendSelectedValues converts the filter to Select with the added values", () => {
+      const { filterManager, manager, emit } = createWithContainsFilter();
+
+      // The callback return type is `any`, hence the cast.
+      const added = filterManager.dimensionFilterAction(
+        AD_BIDS_PUBLISHER_DIMENSION,
+        (manager) => manager.appendSelectedValues(["Google", "Facebook"]),
+      ) as string[];
+
+      expect(added).toEqual(["Google", "Facebook"]);
+      expect(manager.mode).toBe(DimensionFilterMode.Select);
+      expect(manager.selectedValues).toEqual(["Google", "Facebook"]);
+      expect(filterManager.topLevelJoiner.param[AD_BIDS_METRICS_NAME]).toBe(
+        `${AD_BIDS_PUBLISHER_DIMENSION} IN ('Google','Facebook')`,
+      );
+      expect(emit).toHaveBeenCalledWith(
+        "notification",
+        expect.objectContaining({ message: m.filter_converted_to_select() }),
+      );
+    });
+
+    it("removeSelectedValues leaves the Contains filter alone", () => {
+      const { filterManager, manager, emit } = createWithContainsFilter();
+
+      filterManager.dimensionFilterAction(
+        AD_BIDS_PUBLISHER_DIMENSION,
+        (manager) => manager.removeSelectedValues(["Google"]),
+      );
+
+      expect(manager.mode).toBe(DimensionFilterMode.Contains);
+      expect(filterManager.topLevelJoiner.param[AD_BIDS_METRICS_NAME]).toBe(
+        `${AD_BIDS_PUBLISHER_DIMENSION} LIKE '%oo%'`,
+      );
+      expect(emit).not.toHaveBeenCalledWith("notification", expect.anything());
+    });
+  });
 });
 
 describe("clear", () => {
   it("removes every chip and the temporary filter", () => {
     const filterManager = createFilterManager();
 
-    filterManager.setUrlParams(
+    filterManager.storeSync.setUrlParams(
       perMetricsViewParams({
         [AD_BIDS_METRICS_NAME]: `${AD_BIDS_PUBLISHER_DIMENSION} IN ('Google')`,
         [AD_BIDS_MIRROR_METRICS_NAME]: `${AD_BIDS_COUNTRY_DIMENSION} IN ('US')`,
@@ -897,7 +1357,7 @@ describe("clear", () => {
     yamlConfigProvider.requiredFilters = { [AD_BIDS_DOMAIN_DIMENSION]: true };
     const filterManager = createFilterManager(yamlConfigProvider);
 
-    filterManager.setUrlParams(
+    filterManager.storeSync.setUrlParams(
       perMetricsViewParams({
         [AD_BIDS_METRICS_NAME]: `${AD_BIDS_DOMAIN_DIMENSION} IN ('google.com')`,
       }),
@@ -916,7 +1376,7 @@ describe("clear", () => {
 describe("getOtherDimensionsFilter", () => {
   function setupThreeDimensions() {
     const filterManager = createFilterManager();
-    filterManager.setUrlParams(
+    filterManager.storeSync.setUrlParams(
       perMetricsViewParams({
         [AD_BIDS_METRICS_NAME]: `${AD_BIDS_PUBLISHER_DIMENSION} IN ('Google') AND ${AD_BIDS_DOMAIN_DIMENSION} IN ('google.com')`,
         [AD_BIDS_MIRROR_METRICS_NAME]: `${AD_BIDS_PUBLISHER_DIMENSION} IN ('Google') AND ${AD_BIDS_COUNTRY_DIMENSION} IN ('US')`,
@@ -959,7 +1419,7 @@ describe("getOtherDimensionsFilter", () => {
   it("returns undefined when no other dimension is filtered", () => {
     const filterManager = createFilterManager();
 
-    filterManager.setUrlParams(
+    filterManager.storeSync.setUrlParams(
       perMetricsViewParams({
         [AD_BIDS_METRICS_NAME]: `${AD_BIDS_PUBLISHER_DIMENSION} IN ('Google')`,
       }),
@@ -1011,10 +1471,12 @@ describe("createLocalFilterStore", () => {
     expect(local.yamlConfigProvider).toBe(yamlConfigProvider);
 
     // The mirror-only dimension is out of scope for the local store.
-    local.setUrlParams(sharedParam(`${AD_BIDS_COUNTRY_DIMENSION} IN ('US')`));
+    local.storeSync.setUrlParams(
+      sharedParam(`${AD_BIDS_COUNTRY_DIMENSION} IN ('US')`),
+    );
     expect(local.sortedFilterManagers.dimensions).toEqual([]);
 
-    local.setUrlParams(
+    local.storeSync.setUrlParams(
       sharedParam(`${AD_BIDS_PUBLISHER_DIMENSION} IN ('Google')`),
     );
     expect(names(local.sortedFilterManagers.dimensions)).toEqual([
@@ -1031,7 +1493,7 @@ describe("exprByMetricsView", () => {
   it("builds an expression per metrics view", () => {
     const filterManager = createFilterManager();
 
-    filterManager.setUrlParams(
+    filterManager.storeSync.setUrlParams(
       perMetricsViewParams({
         [AD_BIDS_METRICS_NAME]: `${AD_BIDS_PUBLISHER_DIMENSION} IN ('Google') AND ${AD_BIDS_DOMAIN_DIMENSION} IN ('google.com')`,
         [AD_BIDS_MIRROR_METRICS_NAME]: `${AD_BIDS_COUNTRY_DIMENSION} IN ('US')`,
@@ -1055,7 +1517,7 @@ describe("exprByMetricsView", () => {
   it("omits metrics views with no filter", () => {
     const filterManager = createFilterManager();
 
-    filterManager.setUrlParams(
+    filterManager.storeSync.setUrlParams(
       perMetricsViewParams({
         [AD_BIDS_METRICS_NAME]: `${AD_BIDS_DOMAIN_DIMENSION} IN ('google.com')`,
       }),
@@ -1095,7 +1557,7 @@ describe("exprByMetricsView", () => {
   it("mirrors exprByMetricsView into the svelte 4 store", () => {
     const filterManager = createFilterManager();
 
-    filterManager.setUrlParams(
+    filterManager.storeSync.setUrlParams(
       perMetricsViewParams({
         [AD_BIDS_METRICS_NAME]: `${AD_BIDS_DOMAIN_DIMENSION} IN ('google.com')`,
       }),
@@ -1122,7 +1584,7 @@ describe("filter-changed", () => {
 
   it("reports a chip edit with no source", () => {
     const filterManager = createFilterManager();
-    filterManager.setUrlParams(
+    filterManager.storeSync.setUrlParams(
       perMetricsViewParams({
         [AD_BIDS_METRICS_NAME]: `${AD_BIDS_PUBLISHER_DIMENSION} IN ('Google')`,
       }),
@@ -1180,7 +1642,7 @@ describe("filter-changed", () => {
 
   it("reports clear with no source", () => {
     const filterManager = createFilterManager();
-    filterManager.setUrlParams(
+    filterManager.storeSync.setUrlParams(
       perMetricsViewParams({
         [AD_BIDS_METRICS_NAME]: `${AD_BIDS_PUBLISHER_DIMENSION} IN ('Google')`,
       }),
@@ -1196,7 +1658,7 @@ describe("filter-changed", () => {
     const filterManager = createFilterManager();
     const sources = recordSources(filterManager);
 
-    filterManager.setUrlParams(
+    filterManager.storeSync.setUrlParams(
       perMetricsViewParams({
         [AD_BIDS_METRICS_NAME]: `${AD_BIDS_PUBLISHER_DIMENSION} IN ('Google') AND ${AD_BIDS_PUBLISHER_DIMENSION} having (${AD_BIDS_IMPRESSIONS_MEASURE} gt 10)`,
       }),

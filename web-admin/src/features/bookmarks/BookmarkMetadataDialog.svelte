@@ -57,8 +57,7 @@
             bookmarkId: bookmark.id,
             displayName: values.displayName,
             description: values.description,
-            // Home bookmarks are always shared.
-            shared: bookmark.default || values.shared === "true",
+            shared: values.shared === "true",
             urlSearch: bookmark.urlSearch ?? "",
           },
         });
@@ -108,21 +107,19 @@
         label={m.bookmark_description()}
         optional
       />
-      {#if !bookmark.default}
-        <ProjectAccessControls {organization} {project}>
-          <Select
-            bind:value={$form["shared"]}
-            id="shared"
-            label={m.bookmark_category()}
-            options={[
-              { value: "false", label: m.bookmark_your_bookmarks() },
-              { value: "true", label: m.bookmark_managed_bookmarks() },
-            ]}
-            slot="manage-project"
-            tooltip={m.bookmark_category_tooltip()}
-          />
-        </ProjectAccessControls>
-      {/if}
+      <ProjectAccessControls {organization} {project}>
+        <Select
+          bind:value={$form["shared"]}
+          id="shared"
+          label={m.bookmark_category()}
+          options={[
+            { value: "false", label: m.bookmark_your_bookmarks() },
+            { value: "true", label: m.bookmark_managed_bookmarks() },
+          ]}
+          slot="manage-project"
+          tooltip={m.bookmark_category_tooltip()}
+        />
+      </ProjectAccessControls>
       {#if href}
         <div class="text-sm text-fg-secondary">
           {m.bookmark_filters()}:

@@ -12,10 +12,11 @@ Canvas dashboards are built using various components that can display data, crea
 
 ## Available Components
 
-Canvas dashboards support three main types of components:
+Canvas dashboards support four main types of components:
 
 - **[Data components](/developers/build/dashboards/canvas-widgets/data)** - Display structured data and key metrics (KPIs, leaderboards, tables)
 - **[Chart components](/developers/build/dashboards/canvas-widgets/chart)** - Create rich visualizations (bar charts, line charts, heat maps, etc.)
+- **[Map components](/developers/build/dashboards/canvas-widgets/map)** - Plot measures by location as points or shaded regions
 - **[Miscellaneous components](/developers/build/dashboards/canvas-widgets/misc)** - Add text, images, and other content
 
 Each component page shows both the visual result and the corresponding YAML code, making it easy to understand how to implement them in your own dashboards.
@@ -36,6 +37,8 @@ Optionally toggle on the **global filter bar** under Canvas properties to give d
 ![Global Filter Bar](/img/build/dashboard/canvas/global-filter-bar.png)
 
 **Local filters** for a single KPI, Chart, or Table can be separated from the global filters via the "Filters" tab in the properties panel, where you can set filters that are local to just that widget.
+
+Local filters are shown as chips in the widget's header. To keep the filter but hide the chips from viewers, turn off **Show filters on component** in the same "Filters" tab (or set `hide_local_filters: true` in YAML).
 
 
 ![Local Filters](/img/build/dashboard/canvas/local-filters.png)

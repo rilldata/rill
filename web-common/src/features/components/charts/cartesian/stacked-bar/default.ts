@@ -19,12 +19,22 @@ import type { VisualizationSpec } from "svelte-vega";
 import type { Field } from "vega-lite/types_unstable/channeldef.js";
 import type { UnitSpec } from "vega-lite/types_unstable/spec/unit.js";
 import { type CartesianChartSpec } from "../CartesianChartProvider";
+import {
+  isHorizontal,
+  toVerticalSpec,
+  transposeCartesianSpec,
+} from "../orientation";
 import { createVegaTransformPivotConfig } from "../util";
 
 export function generateVLStackedBarChartSpec(
-  config: CartesianChartSpec,
+  chartConfig: CartesianChartSpec,
   data: ChartDataResult,
 ): VisualizationSpec {
+  // The spec is built for the vertical layout and transposed at the end when
+  // the measure sits on x.
+  const horizontal = isHorizontal(chartConfig);
+  const config = toVerticalSpec(chartConfig);
+
   const spec = createMultiLayerBaseSpec();
   const vegaConfig = createConfigWithLegend(config, config.color);
 
@@ -42,12 +52,19 @@ export function generateVLStackedBarChartSpec(
     { x: config.x, colorField, yField },
     data,
   );
+  // Axis label layout depends on the channel the axis ends up on.
   spec.encoding = {
-    x: { ...createPositionEncoding(config.x, data, "x"), bandPosition: 0 },
+    x: {
+      ...createPositionEncoding(config.x, data, horizontal ? "y" : "x"),
+      bandPosition: 0,
+    },
   };
 
   // Check if comparison mode is enabled
   const hasComparison = data.hasComparison;
+
+  // Brushing is tied to the x channel, so it is disabled for horizontal charts.
+  const isInteractive = !!config.isInteractive && !horizontal;
 
   const hoverRuleLayer = buildHoverRuleLayer({
     xField: sanitizedXField,
@@ -58,7 +75,7 @@ export function generateVLStackedBarChartSpec(
     xSort: config.x?.sort,
     primaryColor: data.theme.primary,
     isDarkMode: data.isDarkMode,
-    isInteractive: config.isInteractive,
+    isInteractive,
     pivot: createVegaTransformPivotConfig(
       sanitizedXField,
       sanitizedYField,
@@ -104,11 +121,13 @@ export function generateVLStackedBarChartSpec(
 
   spec.layer = [hoverRuleLayer, barLayer];
 
-  return {
+  const result: VisualizationSpec = {
     ...spec,
     ...(vegaConfig && { config: vegaConfig }),
-    ...(config.isInteractive && sanitizedXField
+    ...(isInteractive && sanitizedXField
       ? { usermeta: { brushTemporalField: sanitizedXField } }
       : {}),
   };
+
+  return horizontal ? transposeCartesianSpec(result) : result;
 }

@@ -97,6 +97,37 @@ ai_instructions: |
   - Weekend traffic patterns are anomalous due to our B2B focus.
 ```
 
+## Suggested Prompts
+
+You can give users a few clickable starter prompts when they open the AI chat, so they do not have to begin from a blank input. Prompts are configured with the `ai_prompts` list and shown verbatim, in the order you write them:
+
+- On an explore or canvas dashboard, the dashboard's own `ai_prompts` are shown in the dashboard chat. If the dashboard has none, the project-level prompts from `rill.yaml` are shown instead.
+- In `rill.yaml`, `ai_prompts` are shown in the project-wide AI chat.
+
+If neither is configured, no prompts are shown.
+
+Each entry is either a prompt string or an object with a `label` (at most 40 characters, shown on the button) and a `prompt` (the full question sent to the AI). When only a string is given, the label is derived from its first words. A list can hold at most 8 prompts, all of which are shown, and prompts within a list must be distinct. When a user picks a prompt on a dashboard, their current filters and time range are sent along with it.
+
+**Example (explore or canvas YAML):**
+
+```yaml
+ai_prompts:
+  - Which campaigns drove the biggest change in impressions this week?
+  - label: CTR outliers
+    prompt: Which publishers have a click-through rate far above or below the average, and why?
+  - label: Weekly summary
+    prompt: Summarize the key trends in this dashboard for the selected time range.
+```
+
+**Example (`rill.yaml`):**
+
+```yaml
+ai_prompts:
+  - What data is available in this project?
+  - label: Key metrics
+    prompt: Give me an overview of the key metrics across the project.
+```
+
 ## Skills
 
 Skills teach Rill's AI project-specific practices, such as analysis playbooks (e.g. how to do root-cause analysis for a revenue drop) or business glossaries. Where `ai_instructions` is best for short guidance that always applies, skills hold longer, structured instructions that the AI loads only when they are relevant to the question at hand. Skills apply both in [AI Chat](/guide/ai/ai-chat) and to external AI clients connected via the [MCP Server](/guide/ai/mcp).
@@ -134,6 +165,13 @@ always_apply: true           # Optional: load the skill up front in every conver
 - **`metrics_views`** tells the AI which metrics views a skill is relevant to, so for example a marketing playbook is not used during a finance analysis. It is a relevance hint, not access control. Referencing a metrics view that doesn't exist shows an error on the skill file, and the skill is not offered to the AI until the error is fixed.
 - **`agents`** selects the agents the skill applies to: `analyst` for answering questions about your data, `developer` for editing the project's files. It defaults to `[developer]`, so skills written for coding agents (such as the Rill development skills that `rill init` writes to `.agents/skills/`) are not offered to the analyst. Set `agents: [analyst]` on analysis skills.
 - **`always_apply`** loads the skill up front in every conversation instead of on demand, like `ai_instructions`. Use it for short, broadly applicable guidance such as glossaries. For external MCP clients, always-apply skills are also appended to the `ai_instructions` returned by `list_metrics_views`, up to 32 KiB in total; a skill that doesn't fit must be loaded with `load_skill` and a warning is logged.
+
+Users can also invoke a skill directly by typing `/` in [AI Chat](/guide/ai/ai-chat#using-project-skills) and picking it from a list. The AI then loads that skill before answering, instead of relying on the description to match the question. The list shows each skill's `name` and `description`, so choose a short, recognizable name and a description that reads well to people as well as to the AI. The `agents` field controls where a skill is listed:
+
+- Skills with `analyst` are listed in the project chat, the Explore and Canvas dashboard chats, and chat in embedded dashboards.
+- Skills with `developer` are listed in the developer chat in Rill Developer.
+
+Skills with an error are not listed. In analysis chats, a skill that was already loaded earlier in the conversation is not loaded again. The developer chat loads a referenced skill on every message that references it, because the developer agent only sees the current message's tool calls. An `always_apply` skill is already loaded, so picking it has no additional effect.
 
 Other agent clients ignore Rill's extension fields, so a Rill skill remains a valid Agent Skill and vice versa. A skill directory may also hold supporting files (such as `references/` or `scripts/`) as the format allows; Rill ignores everything in a skill directory except `SKILL.md`, so a SQL or YAML example inside a skill is not parsed as a project resource.
 

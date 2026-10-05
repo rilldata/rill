@@ -50,6 +50,7 @@ export function useTestFilterManager(specs: MetricsViewSpecs) {
         new ExpressionFilterManager(
           metricsViewsProvider,
           new YAMLConfigProvider(),
+          true,
         ),
     );
     filterManager = created.value;
@@ -69,7 +70,7 @@ export function applyURLToExploreState(
   defaultExplorePreset: V1ExplorePreset,
   filterManager: ExpressionFilterManager,
 ) {
-  filterManager.setUrlParams(url.searchParams);
+  filterManager.storeSync.setUrlParams(url.searchParams);
 
   const { partialExploreState: partialExploreStateDefaultUrl, errors } =
     convertURLSearchParamsToExploreState(

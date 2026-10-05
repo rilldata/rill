@@ -60,17 +60,23 @@ func (s *Server) apiHandler(w http.ResponseWriter, req *http.Request) error {
 	}
 
 	// Find the API resource
-	api, err := s.runtime.APIForName(ctx, instanceID, apiName)
+	api, err := s.runtime.APIForName(ctx, instanceID, apiName, claims)
 	if err != nil {
 		if errors.Is(err, drivers.ErrResourceNotFound) {
 			return httputil.Errorf(http.StatusNotFound, "api with name %q not found", apiName)
 		}
+		if errors.Is(err, runtime.ErrForbidden) {
+			return httputil.Errorf(http.StatusForbidden, "does not have access to api %q", apiName)
+		}
 		return httputil.Error(http.StatusInternalServerError, err)
 	}
 
-	// Rewrite the claims before passing them to the resolver
+	// Rewrite the claims before passing them to the resolver.
+	// Claims are not shared(except in tests) but copy just to be safe.
 	if api.Spec.SkipNestedSecurity {
-		claims.SkipChecks = true
+		nested := *claims
+		nested.SkipChecks = true
+		claims = &nested
 	}
 
 	// Resolve the API to JSON data
@@ -82,6 +88,9 @@ func (s *Server) apiHandler(w http.ResponseWriter, req *http.Request) error {
 		Claims:             claims,
 	})
 	if err != nil {
+		if errors.Is(err, runtime.ErrForbidden) {
+			return httputil.Error(http.StatusForbidden, err)
+		}
 		return httputil.Error(http.StatusBadRequest, err)
 	}
 	defer res.Close()

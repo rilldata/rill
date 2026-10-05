@@ -61,13 +61,15 @@ export class DashboardFetchMocks {
     name: string,
     metricsView: V1MetricsViewSpec,
     explore: V1ExploreSpec,
+    // The resource name of the metrics view, which can differ in casing from `explore.metricsView`.
+    metricsViewName = explore.metricsView ?? name,
   ) {
     this.responses.set(`resources__explore__${name}`, {
       metricsView: {
         meta: {
           name: {
             kind: ResourceKind.MetricsView,
-            name,
+            name: metricsViewName,
           },
         },
         metricsView: {

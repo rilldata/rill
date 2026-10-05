@@ -44,8 +44,15 @@ export type ComponentComparisonOptions =
   | "percent_change";
 
 export interface ComponentFilterProperties {
+  // Explore URL params (`tr`, `compare_tr`, `grain`, `tz`). See time-filters.ts for how
+  // `inherit` and an absent `compare_tr` resolve.
   time_filters?: string;
   dimension_filters?: string;
+  /**
+   * Hides the local filter chips from the rendered component.
+   * The filters still apply to the component's queries.
+   */
+  hide_local_filters?: boolean;
 }
 
 export interface ComponentSize {

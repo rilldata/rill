@@ -782,11 +782,6 @@ export class UpdateOrganizationRequest extends Message<UpdateOrganizationRequest
   defaultProjectRole?: string;
 
   /**
-   * @generated from field: optional string default_provisioner = 10;
-   */
-  defaultProvisioner?: string;
-
-  /**
    * @generated from field: optional string billing_email = 4;
    */
   billingEmail?: string;
@@ -808,7 +803,6 @@ export class UpdateOrganizationRequest extends Message<UpdateOrganizationRequest
     { no: 7, name: "favicon_asset_id", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 9, name: "thumbnail_asset_id", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 8, name: "default_project_role", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
-    { no: 10, name: "default_provisioner", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 4, name: "billing_email", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
   ]);
 
@@ -3840,6 +3834,8 @@ export class CreateProjectRequest extends Message<CreateProjectRequest> {
   directoryName = "";
 
   /**
+   * Provisioner to use for the project's deployments. Superuser-only; empty means the org's default provisioner (or the global default) is used.
+   *
    * @generated from field: string provisioner = 5;
    */
   provisioner = "";
@@ -4103,6 +4099,9 @@ export class UpdateProjectRequest extends Message<UpdateProjectRequest> {
   prodSlots?: bigint;
 
   /**
+   * Provisioner to use for the project's deployments. Superuser-only; empty unsets it so the org's default provisioner (or the global default) is used.
+   * It only affects deployments provisioned after the change; existing deployments stay on their current provisioner.
+   *
    * @generated from field: optional string provisioner = 8;
    */
   provisioner?: string;

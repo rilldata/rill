@@ -6,7 +6,7 @@ import { ResourceKind } from "@rilldata/web-common/features/entity-management/re
 import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 import type { V1Resource } from "@rilldata/web-common/runtime-client";
 
-export type BookmarkCategory = "home" | "managed" | "personal";
+export type BookmarkCategory = "managed" | "personal";
 
 export type BookmarkListRow = {
   bookmark: V1Bookmark;
@@ -19,7 +19,7 @@ export type BookmarkListRow = {
   dashboardTitle: string;
   // Opens the bookmark on its dashboard. Undefined when the dashboard kind is unknown.
   href: string | undefined;
-  // The owner may manage personal bookmarks; managed and home bookmarks need the manage bookmarks permission.
+  // The owner may manage personal bookmarks; managed bookmarks need the manage bookmarks permission.
   canManage: boolean;
   // Epoch milliseconds of the last time the bookmark was opened in this browser. Zero when never opened.
   lastUsed: number;
@@ -58,16 +58,16 @@ export function buildBookmarkRows({
     dashboardTitles.set(dashboardKey(kind, name), title || name);
   }
 
-  return bookmarks.map((bookmark) => {
+  // Home bookmarks are not listed: opening a dashboard already shows its home view, so a row for it would only duplicate the dashboard's own link.
+  // They are managed from the home menu on the dashboard.
+  const listedBookmarks = bookmarks.filter((bookmark) => !bookmark.default);
+
+  return listedBookmarks.map((bookmark) => {
     const kind = bookmark.resourceKind ?? "";
     const name = bookmark.resourceName ?? "";
     const slug = DashboardSlugByKind[kind];
     const urlSearch = bookmarkUrlSearch(bookmark);
-    const category: BookmarkCategory = bookmark.default
-      ? "home"
-      : bookmark.shared
-        ? "managed"
-        : "personal";
+    const category: BookmarkCategory = bookmark.shared ? "managed" : "personal";
 
     return {
       bookmark,

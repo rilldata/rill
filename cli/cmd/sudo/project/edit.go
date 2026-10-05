@@ -11,7 +11,7 @@ import (
 
 func EditCmd(ch *cmdutil.Helper) *cobra.Command {
 	var prodSlots, devSlots int
-	var prodVersion string
+	var prodVersion, provisioner string
 	var overrideDiskGB int64
 	var cloudEditingDisabled bool
 
@@ -47,6 +47,10 @@ func EditCmd(ch *cmdutil.Helper) *cobra.Command {
 				}
 				devSlotsInt64 := int64(devSlots)
 				req.DevSlots = &devSlotsInt64
+				isProjectEditRequested = true
+			}
+			if cmd.Flags().Changed("provisioner") {
+				req.Provisioner = &provisioner
 				isProjectEditRequested = true
 			}
 			if cmd.Flags().Changed("override-disk-gb") {
@@ -114,6 +118,7 @@ func EditCmd(ch *cmdutil.Helper) *cobra.Command {
 	editCmd.Flags().IntVar(&prodSlots, "prod-slots", 0, "Slots to allocate for production deployments")
 	editCmd.Flags().IntVar(&devSlots, "dev-slots", 0, "Slots to allocate for dev deployments")
 	editCmd.Flags().StringVar(&prodVersion, "prod-version", "", "Rill version for production deployment")
+	editCmd.Flags().StringVar(&provisioner, "provisioner", "", "Provisioner for new deployments (empty to unset, falls back to the org default)")
 	editCmd.Flags().Int64Var(&overrideDiskGB, "override-disk-gb", 0, "Override disk size in GB for prod and dev deployments (0 clears the override)")
 	editCmd.Flags().BoolVar(&cloudEditingDisabled, "cloud-editing-disabled", false, "Hide cloud editing in the UI even when enabled in rill.yaml")
 	return editCmd

@@ -37,6 +37,10 @@ sql: |
     WHERE '{{ .partition.uri }}' IS NOT NULL
 ```
 
+:::note Schema changes between partitions
+By default, an incremental run fails if a new partition adds or drops columns. To allow this, set `on_schema_change` under `output`. See [Handling Schema Changes](/developers/build/models/incremental-models#handling-schema-changes).
+:::
+
 ### Refreshing Partitions in Incremental Models
 
 When this model loads, you will be able to both view the partitions and select a specific partition to refresh via the UI in Rill Developer. Unlike **partitioned-only** models, a new button is added in each of the partitions.

@@ -646,8 +646,19 @@ test.describe("pivot run through", () => {
     await validateTableContents(page, "table", expectedOneMeasureOneDim);
     expect(page.url()).not.toContain("totals_row_position");
 
-    // add second measure using menu and add column dimension
+    // add column dimension; the domain columns overflow the container
     await dragPivotChip(page, domain, columnZone);
+    await expect(page.locator(".status.running")).toHaveCount(0);
+
+    // Fit to width shrinks every column once so no horizontal scroll remains
+    const tableWrapper = page.locator(".table-wrapper");
+    const horizontalOverflow = () =>
+      tableWrapper.evaluate((el) => el.scrollWidth - el.clientWidth);
+    await expect.poll(horizontalOverflow).toBeGreaterThan(0);
+    await page.getByRole("button", { name: "Fit to width" }).click();
+    await expect.poll(horizontalOverflow).toBeLessThanOrEqual(0);
+
+    // add second measure using menu
     const addColumnField = page
       .getByRole("button", { name: "Add filter button" })
       .nth(2);

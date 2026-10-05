@@ -181,9 +181,6 @@ func (s *Server) UpdateOrganization(ctx context.Context, req *adminv1.UpdateOrga
 	if req.DisplayName != nil {
 		observability.AddRequestAttributes(ctx, attribute.String("args.display_name", *req.DisplayName))
 	}
-	if req.DefaultProvisioner != nil {
-		observability.AddRequestAttributes(ctx, attribute.String("args.default_provisioner", *req.DefaultProvisioner))
-	}
 
 	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Org)
 	if err != nil {
@@ -193,13 +190,6 @@ func (s *Server) UpdateOrganization(ctx context.Context, req *adminv1.UpdateOrga
 	claims := auth.GetClaims(ctx)
 	if !claims.OrganizationPermissions(ctx, org.ID).ManageOrg {
 		return nil, status.Error(codes.PermissionDenied, "not allowed to update org")
-	}
-
-	if req.DefaultProvisioner != nil {
-		err := s.validateRuntimeProvisioner(*req.DefaultProvisioner)
-		if err != nil {
-			return nil, err
-		}
 	}
 
 	logoAssetID := org.LogoAssetID
@@ -263,7 +253,7 @@ func (s *Server) UpdateOrganization(ctx context.Context, req *adminv1.UpdateOrga
 		ThumbnailAssetID:                    thumbnailAssetID,
 		CustomDomain:                        org.CustomDomain,
 		DefaultProjectRoleID:                defaultProjectRoleID,
-		DefaultProvisioner:                  valOrDefault(req.DefaultProvisioner, org.DefaultProvisioner),
+		DefaultProvisioner:                  org.DefaultProvisioner,
 		QuotaProjects:                       org.QuotaProjects,
 		QuotaDeployments:                    org.QuotaDeployments,
 		QuotaSlotsTotal:                     org.QuotaSlotsTotal,

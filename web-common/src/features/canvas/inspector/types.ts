@@ -94,6 +94,16 @@ export interface ComponentInputParam {
     defaultAlignment?: ComponentAlignment;
     chartFieldInput?: ChartFieldInput;
     /**
+     * For positional fields whose axis can change (e.g. horizontal bars):
+     * the axis the field is currently drawn on, shown beside the label.
+     */
+    axisLabel?: string;
+    /**
+     * For a switcher whose value is derived from the spec rather than stored
+     * under its key: the value to show. Takes precedence over the spec.
+     */
+    value?: string;
+    /**
      * Marks a measure/dimension field as removable, showing a remove button on
      * the selected chip. On removal the property is cleared from the spec.
      */

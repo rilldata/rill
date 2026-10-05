@@ -93,7 +93,7 @@ func TestSQLLimit(t *testing.T) {
 func TestSimpleSQLApi(t *testing.T) {
 	rt, instanceID := testruntime.NewInstanceForProject(t, "ad_bids")
 
-	api, err := rt.APIForName(context.Background(), instanceID, "simple_sql_api")
+	api, err := rt.APIForName(context.Background(), instanceID, "simple_sql_api", &runtime.SecurityClaims{})
 	require.NoError(t, err)
 
 	res, _, err := rt.Resolve(context.Background(), &runtime.ResolveOptions{
@@ -122,7 +122,7 @@ func TestSimpleSQLApi(t *testing.T) {
 func TestTemplateSQLApi(t *testing.T) {
 	rt, instanceID := testruntime.NewInstanceForProject(t, "ad_bids")
 
-	api, err := rt.APIForName(context.Background(), instanceID, "templated_sql_api")
+	api, err := rt.APIForName(context.Background(), instanceID, "templated_sql_api", &runtime.SecurityClaims{})
 	require.NoError(t, err)
 
 	res, _, err := rt.Resolve(context.Background(), &runtime.ResolveOptions{
@@ -154,7 +154,7 @@ func TestTemplateSQLApi(t *testing.T) {
 func TestTemplateSQLApi2(t *testing.T) {
 	rt, instanceID := testruntime.NewInstanceForProject(t, "ad_bids")
 
-	api, err := rt.APIForName(context.Background(), instanceID, "templated_sql_api_2")
+	api, err := rt.APIForName(context.Background(), instanceID, "templated_sql_api_2", &runtime.SecurityClaims{UserAttributes: map[string]any{"domain": "msn.com"}})
 	require.NoError(t, err)
 
 	res, _, err := rt.Resolve(context.Background(), &runtime.ResolveOptions{

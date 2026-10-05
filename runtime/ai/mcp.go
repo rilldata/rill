@@ -32,7 +32,7 @@ In the workflow, do not proceed with the next step until the previous step has b
 If a response contains an "ai_instructions" field, you should interpret it as additional instructions for how to behave in subsequent responses that relate to that tool call.
 
 ## Skills
-Projects may define **skills**: instruction files that teach agents project-specific analysis or development practices, such as analysis playbooks and business glossaries. The skill tools are only exposed when the project defines skills:
+Projects may define **skills**: instruction files that teach agents project-specific analysis or development practices, such as analysis playbooks and business glossaries:
 - Use "list_skills" early in a session to discover the project's skills.
 - Before doing work that a skill's description covers, use "load_skill" to fetch its full instructions and follow them.
 - Load any skill marked "always_apply" up front and treat its instructions as always in effect.
@@ -63,7 +63,6 @@ func MCPToolSpecs() map[string]*mcp.Tool {
 // Using a separate MCP server for each client enables tailoring the server's instructions and available tools to the end user's claims.
 func (s *Session) MCPServer(ctx context.Context) *mcp.Server {
 	// Create the MCP server.
-	// The instructions omit the skills section; it is added during the initialization handshake if the project defines skills (see below).
 	srv := mcp.NewServer(
 		&mcp.Implementation{
 			Name:    "rill",

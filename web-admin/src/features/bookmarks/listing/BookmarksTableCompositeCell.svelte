@@ -3,7 +3,6 @@
   import Button from "@rilldata/web-common/components/button/Button.svelte";
   import BookmarkOutline from "@rilldata/web-common/components/icons/BookmarkOutline.svelte";
   import FilterOutline from "@rilldata/web-common/components/icons/FilterOutline.svelte";
-  import HomeBookmark from "@rilldata/web-common/components/icons/HomeBookmark.svelte";
   import Trash from "@rilldata/web-common/components/icons/Trash.svelte";
   import Tag from "@rilldata/web-common/components/tag/Tag.svelte";
   import * as Tooltip from "@rilldata/web-common/components/tooltip-v2";
@@ -24,13 +23,7 @@
     onDelete: (row: BookmarkListRow) => void;
   } = $props();
 
-  let Icon = $derived(
-    row.category === "home"
-      ? HomeBookmark
-      : row.filtersOnly
-        ? FilterOutline
-        : BookmarkOutline,
-  );
+  let Icon = $derived(row.filtersOnly ? FilterOutline : BookmarkOutline);
   let displayName = $derived(row.bookmark.displayName ?? "");
   let updatedOn = $derived(
     row.bookmark.updatedOn ? new Date(row.bookmark.updatedOn) : null,
@@ -40,7 +33,7 @@
 
 <div class="flex flex-row items-center gap-x-2 group px-4 w-full h-full">
   <a
-    class="flex flex-row items-start gap-x-3 min-w-0 grow h-full py-2.5"
+    class="flex flex-row items-start gap-x-3 min-w-0 grow h-full py-2"
     href={row.href}
     aria-label={m.bookmark_entry_aria_label({ name: displayName })}
     onclick={() => onOpen(row)}
@@ -54,14 +47,13 @@
         >
           {displayName}
         </span>
-        {#if row.category === "home"}
-          <Tag color="blue">{m.bookmark_tag_home()}</Tag>
-        {:else if row.category === "managed"}
+        {#if row.category === "managed"}
           <Tag color="gray">{m.bookmark_tag_managed()}</Tag>
         {/if}
       </div>
+      <!-- Both lines are 20px so the resource badge keeps its natural height and the row fills its fixed 60px height exactly. -->
       <div
-        class="flex gap-x-1 items-center text-fg-tertiary text-xs font-normal min-h-[16px] overflow-hidden"
+        class="flex gap-x-1 items-center text-fg-tertiary text-xs font-normal min-h-[20px] overflow-hidden"
       >
         {#if row.dashboardKind}
           <ResourceTypeBadge kind={row.dashboardKind} />

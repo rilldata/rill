@@ -25,9 +25,14 @@ import {
 } from "../builder";
 import type { ChartDataResult } from "../types";
 import type { CartesianChartSpec } from "./CartesianChartProvider";
+import {
+  isHorizontal,
+  toVerticalSpec,
+  transposeCartesianSpec,
+} from "./orientation";
 
 export function generateVLMultiMetricChartSpec(
-  config: CartesianChartSpec,
+  chartConfig: CartesianChartSpec,
   data: ChartDataResult,
   markType:
     | "grouped_bar"
@@ -36,6 +41,15 @@ export function generateVLMultiMetricChartSpec(
     | "stacked_area"
     | "line" = "grouped_bar",
 ): VisualizationSpec {
+  // The spec is built for the vertical layout and, for the bar variants,
+  // transposed at the end when the measures sit on x.
+  const horizontal =
+    isHorizontal(chartConfig) &&
+    (markType === "grouped_bar" ||
+      markType === "stacked_bar" ||
+      markType === "stacked_bar_normalized");
+  const config = toVerticalSpec(chartConfig);
+
   const measureField = "Measure";
   const valueField = "value";
   const measureNormalizedField = "Measure_normalized";
@@ -95,8 +109,12 @@ export function generateVLMultiMetricChartSpec(
 
   spec.transform = transforms;
 
+  // Axis label layout depends on the channel the axis ends up on.
   spec.encoding = {
-    x: { ...createPositionEncoding(config.x, data, "x"), bandPosition: 0 },
+    x: {
+      ...createPositionEncoding(config.x, data, horizontal ? "y" : "x"),
+      bandPosition: 0,
+    },
   };
 
   const xField = sanitizeValueForVega(config.x?.field);
@@ -362,8 +380,10 @@ export function generateVLMultiMetricChartSpec(
     }
   }
 
-  return {
+  const result: VisualizationSpec = {
     ...spec,
     ...(vegaConfig && { config: vegaConfig }),
   };
+
+  return horizontal ? transposeCartesianSpec(result) : result;
 }

@@ -1,6 +1,9 @@
 <script lang="ts">
   import { getEditorPlugins } from "@rilldata/web-common/features/chat/core/context/editor-plugins.svelte.ts";
-  import { getSkillsPickerOptions } from "@rilldata/web-common/features/chat/core/context/picker/data/skills.ts";
+  import {
+    getSkillAgent,
+    getSkillsPickerOptions,
+  } from "@rilldata/web-common/features/chat/core/context/picker/data/skills.ts";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { chatMounted } from "@rilldata/web-common/features/chat/layouts/sidebar/sidebar-store.ts";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus.ts";
@@ -26,9 +29,10 @@
 
   let value = "";
 
-  const skillsEnabled = !!config.skills;
-  const skillsStore = skillsEnabled
-    ? getSkillsPickerOptions(useRuntimeClient())
+  // The project's skills for this chat's agent can be picked with "/".
+  const skillAgent = getSkillAgent(config.agent);
+  const skillsStore = skillAgent
+    ? getSkillsPickerOptions(useRuntimeClient(), skillAgent)
     : readable([]);
   $: hasSkills = $skillsStore.length > 0;
 
@@ -104,7 +108,9 @@
       extensions: getEditorPlugins({
         placeholder,
         onSubmit: () => void sendMessage(),
-        skillOptions: skillsEnabled ? getSkillsPickerOptions : undefined,
+        skillOptions: skillAgent
+          ? (client) => getSkillsPickerOptions(client, skillAgent)
+          : undefined,
       }),
       content: "",
       editorProps: {

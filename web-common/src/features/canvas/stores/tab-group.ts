@@ -171,3 +171,44 @@ export type LayoutBlock =
 export function specHasTabGroups(rows: V1CanvasRow[] | undefined): boolean {
   return !!rows?.some((row) => !!row.tabGroup);
 }
+
+/**
+ * The key each tab group carries after a top-level row edit, as [oldKey, newKey] pairs.
+ * Unnamed groups are keyed `group-<rowIndex>` (see CanvasEntity.processLayout), so an edit
+ * that shifts row indices shifts their keys too; explicitly named groups keep their key.
+ * `newIndexOf` maps a row index before the edit to the index after it, or -1 if that row
+ * is removed, in which case the group is left out.
+ */
+export function rekeyedTabGroupNames(
+  blocks: LayoutBlock[],
+  newIndexOf: (rowIndex: number) => number,
+): Array<[string, string]> {
+  const pairs: Array<[string, string]> = [];
+  for (const block of blocks) {
+    if (block.kind !== "tab-group") continue;
+    const newIndex = newIndexOf(block.rowIndex);
+    if (newIndex < 0) continue;
+    const { name } = block.group;
+    const isIndexKeyed = name === `group-${block.rowIndex}`;
+    pairs.push([name, isIndexKeyed ? `group-${newIndex}` : name]);
+  }
+  return pairs;
+}
+
+/** Row index mapping for moving the top-level row at `from` to `newIndex`. */
+export function rowIndexAfterMove(
+  from: number,
+  newIndex: number,
+): (rowIndex: number) => number {
+  return (rowIndex) => {
+    if (rowIndex === from) return newIndex;
+    // Rows between the two positions slide one step toward the vacated slot.
+    if (from < newIndex && rowIndex > from && rowIndex <= newIndex) {
+      return rowIndex - 1;
+    }
+    if (newIndex < from && rowIndex >= newIndex && rowIndex < from) {
+      return rowIndex + 1;
+    }
+    return rowIndex;
+  };
+}

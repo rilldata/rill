@@ -241,7 +241,7 @@ const metricsViewReducers = {
   mergePartialExplorerEntity(
     name: string,
     partialExploreState: Partial<ExploreState>,
-    expressionFilterManager: ExpressionFilterManager,
+    expressionFilterManager?: ExpressionFilterManager,
   ) {
     partialExploreState = structuredClone(partialExploreState);
 
@@ -250,14 +250,16 @@ const metricsViewReducers = {
         exploreState[key] = partialExploreState[key];
       }
 
-      const mvName =
-        expressionFilterManager.metricsViewsProvider.metricsViewNames[0];
-      if (mvName) {
-        exploreState.whereFilter =
-          expressionFilterManager.topLevelJoiner.expr[mvName] ??
-          createAndExpression([]);
-        exploreState.dimensionsWithInlistFilter =
-          expressionFilterManager.inList;
+      if (expressionFilterManager) {
+        const mvName =
+          expressionFilterManager.metricsViewsProvider.metricsViewNames[0];
+        if (mvName) {
+          exploreState.whereFilter =
+            expressionFilterManager.topLevelJoiner.expr[mvName] ??
+            createAndExpression([]);
+          exploreState.dimensionsWithInlistFilter =
+            expressionFilterManager.inList;
+        }
       }
 
       // this hack is needed since what is shown for comparison is not a single source

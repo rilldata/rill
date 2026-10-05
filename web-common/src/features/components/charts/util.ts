@@ -337,7 +337,9 @@ export function sanitizeSortFieldForVega(sort: ChartSortDirection | undefined) {
     sort === ChartSortType.MEASURE_ASC ||
     sort === ChartSortType.MEASURE_DESC ||
     sort === ChartSortType.Y_DELTA_ASC ||
-    sort === ChartSortType.Y_DELTA_DESC
+    sort === ChartSortType.Y_DELTA_DESC ||
+    sort === ChartSortType.X_DELTA_ASC ||
+    sort === ChartSortType.X_DELTA_DESC
   ) {
     return undefined;
   }

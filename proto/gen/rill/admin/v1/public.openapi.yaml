@@ -2682,8 +2682,6 @@ paths:
                                     type: string
                                 defaultProjectRole:
                                     type: string
-                                defaultProvisioner:
-                                    type: string
                                 description:
                                     type: string
                                 displayName:
@@ -2964,6 +2962,7 @@ paths:
                                 project:
                                     type: string
                                 provisioner:
+                                    description: Provisioner to use for the project's deployments. Superuser-only; empty means the org's default provisioner (or the global default) is used.
                                     type: string
                                 public:
                                     type: boolean
@@ -3113,6 +3112,9 @@ paths:
                                 prodVersion:
                                     type: string
                                 provisioner:
+                                    description: |-
+                                        Provisioner to use for the project's deployments. Superuser-only; empty unsets it so the org's default provisioner (or the global default) is used.
+                                        It only affects deployments provisioned after the change; existing deployments stay on their current provisioner.
                                     type: string
                                 public:
                                     type: boolean

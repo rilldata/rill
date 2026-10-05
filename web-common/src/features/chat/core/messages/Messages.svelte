@@ -16,7 +16,9 @@
   import WorkingBlock from "./working/WorkingBlock.svelte";
   import SimpleToolCallBlock from "@rilldata/web-common/features/chat/core/messages/simple-tool-call/SimpleToolCallBlock.svelte";
   import ErrorMessage from "@rilldata/web-common/features/chat/core/messages/error/ErrorMessage.svelte";
+  import SuggestedPrompts from "@rilldata/web-common/features/chat/core/suggested-prompts/SuggestedPrompts.svelte";
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
+  import { readable } from "svelte/store";
 
   export let conversationManager: ConversationManager;
   export let layout: "sidebar" | "fullpage";
@@ -55,6 +57,11 @@
   // Check if conversation is empty (for empty state display)
   $: isConversationEmpty =
     ($getConversationQuery.data?.messages?.length ?? 0) === 0;
+
+  // Starter prompts for the empty state
+  $: suggestedPromptsStore =
+    config.suggestedPromptsStoreGetter?.(runtimeClient) ?? readable([]);
+  $: suggestedPrompts = $suggestedPromptsStore;
 
   // Track previous block count to detect new content and previous block type to detect block changing.
   // This is used to determine whether to scroll to bottom of messages container or not.
@@ -125,6 +132,9 @@
       <div class="chat-empty-subtitle">
         {config.emptyChatLabel}
       </div>
+      {#if suggestedPrompts.length > 0}
+        <SuggestedPrompts prompts={suggestedPrompts} {layout} />
+      {/if}
     </div>
   {:else}
     {#each blocks as block (block.id)}

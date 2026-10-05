@@ -4154,6 +4154,16 @@ definitions:
         type: string
         title: raw_type is the original database-specific type (e.g. "VARCHAR(255)")
     title: Type represents a data type in a schema
+  v1AIPrompt:
+    type: object
+    properties:
+      label:
+        type: string
+        description: Short label displayed on the prompt's button.
+      prompt:
+        type: string
+        description: Full prompt sent to the AI when the user picks it.
+    description: AIPrompt is a starter prompt shown in the AI chat.
   v1API:
     type: object
     properties:
@@ -4596,6 +4606,12 @@ definitions:
         additionalProperties:
           type: string
         description: Annotations are arbitrary key-value pairs that can be used to attach metadata to the canvas (e.g. used to mark personal canvases created by the admin server).
+      aiPrompts:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1AIPrompt'
+        description: Suggested prompts configured by the project author, shown as starters in the AI chat.
   v1CanvasState:
     type: object
     properties:
@@ -5499,6 +5515,12 @@ definitions:
       definedInMetricsView:
         type: boolean
         description: When true, it indicates that the explore was defined in a metrics view either explicitly or emitted because version was not set.
+      aiPrompts:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1AIPrompt'
+        description: Suggested prompts configured by the project author, shown as starters in the AI chat.
   v1ExploreState:
     type: object
     properties:
@@ -5884,6 +5906,11 @@ definitions:
           type: string
       aiInstructions:
         type: string
+      aiPrompts:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1AIPrompt'
       frontendUrl:
         type: string
       theme:
