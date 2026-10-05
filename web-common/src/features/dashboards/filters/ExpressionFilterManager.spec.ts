@@ -367,6 +367,36 @@ describe("setUrlParams", () => {
     ]);
   });
 
+  it("lets the per metrics view params override the singular one", () => {
+    const filterManager = createFilterManager();
+
+    // An embed host passes the legacy singular param, and the dashboard has since written its own
+    // per metrics view params. The latter are the newer state, so the singular param must not be
+    // ANDed in as a second condition on the same dimension: the chips cannot show that, and the
+    // two value sets together match nothing.
+    const searchParams = sharedParam(
+      `${AD_BIDS_PUBLISHER_DIMENSION} IN ('Google')`,
+    );
+    const ownParams = perMetricsViewParams({
+      [AD_BIDS_METRICS_NAME]: `${AD_BIDS_PUBLISHER_DIMENSION} IN ('Facebook')`,
+      [AD_BIDS_MIRROR_METRICS_NAME]: `${AD_BIDS_PUBLISHER_DIMENSION} IN ('Facebook')`,
+    });
+    ownParams.forEach((value, key) => searchParams.set(key, value));
+    filterManager.storeSync.setUrlParams(searchParams);
+
+    expect(filterManager.isComplexFilter).toBe(false);
+    expect(names(filterManager.sortedFilterManagers.dimensions)).toEqual([
+      AD_BIDS_PUBLISHER_DIMENSION,
+    ]);
+    expect(
+      filterManager.sortedFilterManagers.dimensions[0].selectedValues,
+    ).toEqual(["Facebook"]);
+    expect(filterManager.topLevelJoiner.param).toEqual({
+      [AD_BIDS_METRICS_NAME]: `${AD_BIDS_PUBLISHER_DIMENSION} IN ('Facebook')`,
+      [AD_BIDS_MIRROR_METRICS_NAME]: `${AD_BIDS_PUBLISHER_DIMENSION} IN ('Facebook')`,
+    });
+  });
+
   it("drops filters on identifiers the metrics view does not define", () => {
     const filterManager = createFilterManager();
 
