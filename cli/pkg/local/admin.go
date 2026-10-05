@@ -165,7 +165,7 @@ func (l *localAdminService) HasAnonymousSourceAccess(ctx context.Context, srcPro
 }
 
 // Open implements [drivers.Driver].
-func (l *localAdminService) Open(connectorName, instanceID string, config map[string]any, st *storage.Client, ac *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
+func (l *localAdminService) Open(_ context.Context, connectorName, instanceID string, config map[string]any, st *storage.Client, ac *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
 	return l, nil
 }
 

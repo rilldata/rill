@@ -99,12 +99,15 @@ func NewGeneric(ctx context.Context, opts *GenericOptions) (res DB, dbErr error)
 	}
 
 	localFileName := filepath.Join(opts.LocalDataDir, "main"+uuid.NewString()[:8]+".db")
+	// The init queries run for every new connection the pool opens, for as long as the returned DB is in use.
+	// So they must not observe cancellation of the caller's ctx, which may be cancelled while the DB is still open.
+	connCtx := context.WithoutCancel(ctx)
 	connector, err := duckdb.NewConnector(dsnForLocalDuckDB(localFileName, opts.Settings), func(execer driver.ExecerContext) error {
 		for _, qry := range opts.ConnInitQueries {
-			_, err := execer.ExecContext(ctx, qry, nil)
+			_, err := execer.ExecContext(connCtx, qry, nil)
 			if err != nil && strings.Contains(err.Error(), "Failed to download extension") {
 				// Retry using another mirror. Based on: https://github.com/duckdb/duckdb/issues/9378
-				_, err = execer.ExecContext(ctx, qry+" FROM 'http://nightly-extensions.duckdb.org'", nil)
+				_, err = execer.ExecContext(connCtx, qry+" FROM 'http://nightly-extensions.duckdb.org'", nil)
 			}
 			if err != nil {
 				return err
