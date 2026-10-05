@@ -185,9 +185,7 @@ export class ExpressionFilterManager implements UrlParamsStore {
   }
 
   public setUrlParams(searchParams: URLSearchParams) {
-    const { expr, inList, advanced } = mergeFilterParams(
-      this.normalizeParams(searchParams),
-    );
+    const { expr, inList, advanced } = mergeFilterParams(searchParams);
 
     this.temporaryFilterName = undefined;
     this.topLevelJoiner = JoinerFilterManager.parse(

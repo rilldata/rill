@@ -83,7 +83,7 @@ export class UrlParamsChangeTracker {
     if (this.searchParams?.toString() === relevantParams.toString()) return;
 
     this.searchParams = this.store.normalizeParams(relevantParams);
-    this.store.setUrlParams(relevantParams);
+    this.store.setUrlParams(this.searchParams);
     this.events.emit("change", this.searchParams);
   }
 
