@@ -1,5 +1,6 @@
 ---
 title: Data Quality Tests
+description: Define SQL checks that run whenever a model refreshes
 sidebar_label: Data Quality Tests
 sidebar_position: 14
 ---

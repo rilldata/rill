@@ -1,5 +1,5 @@
 ---
-title: Alerts
+title: Alerts as Code
 description: Define alerts as code for automated monitoring and notifications
 sidebar_label: Alerts
 sidebar_position: 45
