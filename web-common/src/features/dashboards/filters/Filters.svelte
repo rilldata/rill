@@ -42,7 +42,6 @@
   import { createAndExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils.ts";
   import { untrack } from "svelte";
   import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
-  import { syncStoreWithSource } from "@rilldata/web-common/lib/store-utils/url-params-store-sync.svelte.ts";
 
   const { rillTime } = featureFlags;
 
@@ -68,15 +67,6 @@
     dashboardStore,
     expressionFilterManager,
   } = StateManagers;
-
-  syncStoreWithSource(
-    expressionFilterManager,
-    syncExpressionFilters,
-    () => expressionFilterManager.metricsViewsProvider.ready,
-    undefined,
-    // URL sync is managed by DashboardStateSync
-    true,
-  );
 
   const timeControlsStore = useTimeControlStore(StateManagers);
 
@@ -394,19 +384,11 @@
         dimensionsWithInlistFilter: tempFilterManger.inList,
       };
 
+      tempFilterManger.cleanup();
+
       const url = dashboardStateSync.getUrlForExploreState(exploreState);
       return isUrlTooLong(url);
     });
-  }
-
-  function syncExpressionFilters() {
-    if (!expressionFilterManager.updating) {
-      metricsExplorerStore.syncExpressionFilter(
-        $exploreName,
-        expressionFilterManager,
-      );
-    }
-    return Promise.resolve();
   }
 </script>
 
