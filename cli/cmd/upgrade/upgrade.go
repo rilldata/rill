@@ -66,15 +66,25 @@ func isUpToDate(cmd *cobra.Command, ch *cmdutil.Helper) (bool, string, error) {
 		return false, "", err
 	}
 
-	current, err := goversion.NewVersion(ch.Version.Number)
+	upToDate, err := versionUpToDate(ch.Version.Number, latest)
 	if err != nil {
 		return false, "", err
+	}
+
+	return upToDate, latest, nil
+}
+
+// versionUpToDate reports whether current is greater than or equal to latest.
+func versionUpToDate(current, latest string) (bool, error) {
+	currentV, err := goversion.NewVersion(current)
+	if err != nil {
+		return false, err
 	}
 
 	latestV, err := goversion.NewVersion(latest)
 	if err != nil {
-		return false, "", err
+		return false, err
 	}
 
-	return current.GreaterThanOrEqual(latestV), latest, nil
+	return currentV.GreaterThanOrEqual(latestV), nil
 }
