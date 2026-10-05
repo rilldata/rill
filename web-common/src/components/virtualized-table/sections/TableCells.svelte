@@ -33,6 +33,7 @@
       value,
       formattedValue: rows[virtRow.index]["__formatted_" + columnName],
       tooltipFormatter: column.tooltipFormatter,
+      cellComponent: column.cellComponent,
       type: column.type,
       lowerIsBetter: column.lowerIsBetter ?? false,
       barValue: column.max ? value / column.max : 0,

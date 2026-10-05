@@ -10,7 +10,6 @@ import { ExportFormat } from "./export_format_pb.js";
 import { Resource, ResourceName } from "./resources_pb.js";
 import { Expression } from "./expression_pb.js";
 import { TimeGrain } from "./time_grain_pb.js";
-import { EvaluateRequest } from "../../ai/v1/ai_pb.js";
 
 /**
  * @generated from enum rill.runtime.v1.BuiltinMeasure
@@ -4271,11 +4270,11 @@ export class MetricsViewEvaluateRequest extends Message<MetricsViewEvaluateReque
   query?: MetricsViewAggregationRequest;
 
   /**
-   * Required. Templated request resolved against the resolved query and evaluated
+   * Required. Evaluate measures to run evaluate against.
    *
-   * @generated from field: rill.ai.v1.EvaluateRequest request = 4;
+   * @generated from field: repeated string measures = 4;
    */
-  request?: EvaluateRequest;
+  measures: string[] = [];
 
   constructor(data?: PartialMessage<MetricsViewEvaluateRequest>) {
     super();
@@ -4288,7 +4287,7 @@ export class MetricsViewEvaluateRequest extends Message<MetricsViewEvaluateReque
     { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "metrics_view_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "query", kind: "message", T: MetricsViewAggregationRequest },
-    { no: 4, name: "request", kind: "message", T: EvaluateRequest },
+    { no: 4, name: "measures", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewEvaluateRequest {

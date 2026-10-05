@@ -19,7 +19,8 @@ import (
 )
 
 // evaluateConcurrency is the maximum number of rows evaluated in parallel.
-const evaluateConcurrency = 8
+const evaluateConcurrency = 5
+const hardLimit = 10
 
 // Evaluation evaluates AI questions for each row of a metrics view aggregation.
 type Evaluation struct {
@@ -95,6 +96,9 @@ func (e *Evaluation) Execute(ctx context.Context) (*runtimev1.MetricsViewEvaluat
 	grp, grpCtx := errgroup.WithContext(ctx)
 	grp.SetLimit(evaluateConcurrency)
 	for i, row := range res.Data {
+		if i >= hardLimit {
+			break
+		}
 		grp.Go(func() error {
 			evalRow, err := e.executeRow(grpCtx, aiService, row, meta)
 			if err != nil {
@@ -121,7 +125,7 @@ func (e *Evaluation) Execute(ctx context.Context) (*runtimev1.MetricsViewEvaluat
 	}
 	for _, label := range labels {
 		schema.Fields = append(schema.Fields, &runtimev1.StructType_Field{
-			Name: evaluateColumnName(label),
+			Name: label,
 			Type: &runtimev1.Type{Code: runtimev1.Type_CODE_STRUCT},
 		})
 	}
@@ -212,7 +216,7 @@ func (e *Evaluation) executeRow(ctx context.Context, aiService drivers.AIService
 		if err := protojson.Unmarshal(answerJSON, answerVal); err != nil {
 			return nil, err
 		}
-		fields[evaluateColumnName(label)] = answerVal
+		fields[label] = answerVal
 	}
 
 	return &structpb.Struct{Fields: fields}, nil
@@ -362,9 +366,4 @@ func resolveValueTemplates(v *structpb.Value, data parser.TemplateData) error {
 		}
 	}
 	return nil
-}
-
-// evaluateColumnName returns the name of the column that holds the answer to an evaluated question.
-func evaluateColumnName(label string) string {
-	return "__rill_" + label
 }

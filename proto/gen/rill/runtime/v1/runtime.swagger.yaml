@@ -2319,9 +2319,11 @@ paths:
               query:
                 $ref: '#/definitions/v1MetricsViewAggregationRequest'
                 title: Required. Query used to serialise as state
-              request:
-                $ref: '#/definitions/v1EvaluateRequest'
-                title: Required. Templated request resolved against the resolved query and evaluated
+              measures:
+                type: array
+                items:
+                  type: string
+                description: Required. Evaluate measures to run evaluate against.
       tags:
         - QueryService
   /v1/instances/{instanceId}/queries/metrics-views/{metricsViewName}/rows:
@@ -3990,6 +3992,8 @@ definitions:
       lowerIsBetter:
         type: boolean
         description: When true, decreases in this measure are favorable (e.g. bounce rate, latency, error count). UI surfaces that render comparison deltas (KPIs, big numbers, leaderboards, pivot tables, time-series tooltips) swap their positive/negative coloring accordingly.
+      evalQuestion:
+        $ref: '#/definitions/v1EvaluateQuestion'
     title: Measures are aggregated computed values
   MetricsViewSpecMeasureType:
     type: string
@@ -3998,6 +4002,7 @@ definitions:
       - MEASURE_TYPE_SIMPLE
       - MEASURE_TYPE_DERIVED
       - MEASURE_TYPE_TIME_COMPARISON
+      - MEASURE_TYPE_EVALUATION
     default: MEASURE_TYPE_UNSPECIFIED
     title: Type of measure query to generate
   MetricsViewSpecMeasureWindow:
@@ -5345,16 +5350,6 @@ definitions:
         $ref: '#/definitions/v1EvaluateChoiceQuestion'
       score:
         $ref: '#/definitions/v1EvaluateScoreQuestion'
-  v1EvaluateRequest:
-    type: object
-    properties:
-      model:
-        type: string
-      state: {}
-      questions:
-        type: object
-        additionalProperties:
-          $ref: '#/definitions/v1EvaluateQuestion'
   v1EvaluateScoreQuestion:
     type: object
     properties:

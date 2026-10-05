@@ -19,7 +19,7 @@ export interface VirtualizedTableConfig {
 }
 
 import type { SortDirection } from "@rilldata/web-common/features/dashboards/proto-state/derived-types";
-import type { SvelteComponent } from "svelte";
+import type { Component, SvelteComponent } from "svelte";
 
 export interface VirtualizedTableColumns {
   name: string;
@@ -38,6 +38,8 @@ export interface VirtualizedTableColumns {
   sorted?: SortDirection;
   format?: string;
   lowerIsBetter?: boolean;
+  // Renders the cell contents instead of the default formatted value.
+  cellComponent?: Component<{ value: unknown }>;
   tooltipFormatter?: (
     value: number | string | null | undefined,
   ) => string | null | undefined;

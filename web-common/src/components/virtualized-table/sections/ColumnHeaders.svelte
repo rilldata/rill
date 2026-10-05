@@ -24,7 +24,7 @@
     const enableResize = isEnableResizeDefined ? column.enableResize : true;
     const enableSorting =
       "enableSorting" in column
-        ? column.enableResize
+        ? column.enableSorting
         : config.table === "DimensionTable";
     return {
       name,

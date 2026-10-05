@@ -115,6 +115,7 @@ export interface MetricsViewSpecMeasure {
   validPercentOfTotal?: boolean;
   treatNullsAs?: string;
   dataType?: Runtimev1Type;
+  evalQuestion?: V1EvaluateQuestion;
   lowerIsBetter?: boolean;
 }
 
@@ -127,6 +128,7 @@ export const MetricsViewSpecMeasureType = {
   MEASURE_TYPE_SIMPLE: "MEASURE_TYPE_SIMPLE",
   MEASURE_TYPE_DERIVED: "MEASURE_TYPE_DERIVED",
   MEASURE_TYPE_TIME_COMPARISON: "MEASURE_TYPE_TIME_COMPARISON",
+  MEASURE_TYPE_EVALUATION: "MEASURE_TYPE_EVALUATION",
 } as const;
 
 export interface MetricsViewSpecMeasureWindow {
@@ -1722,8 +1724,8 @@ export interface V1MetricsViewEvaluateRequest {
   metricsViewName?: string;
   /** Required. Query used to serialise as state */
   query?: V1MetricsViewAggregationRequest;
-  /** Required. Templated request resolved against the resolved query and evaluated */
-  request?: V1EvaluateRequest;
+  /** Required. Evaluate measures to run evaluate against. */
+  measures?: string[];
 }
 
 export type V1MetricsViewEvaluateResponseDataItem = { [key: string]: unknown };
@@ -3265,8 +3267,8 @@ export type QueryServiceMetricsViewComparisonBody = {
 export type QueryServiceMetricsViewEvaluateBody = {
   /** Required. Query used to serialise as state */
   query?: V1MetricsViewAggregationRequest;
-  /** Required. Templated request resolved against the resolved query and evaluated */
-  request?: V1EvaluateRequest;
+  /** Required. Evaluate measures to run evaluate against. */
+  measures?: string[];
 };
 
 export type QueryServiceMetricsViewRowsBody = {
