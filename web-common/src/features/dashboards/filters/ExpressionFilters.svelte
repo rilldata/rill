@@ -89,7 +89,10 @@
   <div class="relative flex flex-row flex-wrap gap-x-2 gap-y-2">
     {#if expressionFilterManager.isComplexFilter}
       {#each Object.entries(expressionFilterManager.exprByMetricsView) as [mv, expr] (mv)}
-        <AdvancedFilter advancedFilter={expr} />
+        <AdvancedFilter
+          advancedFilter={expr}
+          onRemove={() => expressionFilterManager.clear()}
+        />
       {/each}
     {:else}
       {#if !hasFilters}
@@ -135,14 +138,16 @@
         {excludedDimensions}
         {excludedMeasures}
       />
+    {/if}
 
-      <!-- if filters are present, place a chip at the end of the flex container
-      that enables clearing all filters -->
-      {#if hasClearableFilters}
-        <Button type="text" onClick={() => expressionFilterManager.clear()}>
-          {m.dashboard_clear_filters()}
-        </Button>
-      {/if}
+    <!-- if filters are present, place a chip at the end of the flex container
+    that enables clearing all filters.
+    An advanced filter is gated on the flag rather than on its pill: a param the chips cannot
+    show may also parse to no pill at all, and it still has to be clearable. -->
+    {#if expressionFilterManager.isComplexFilter || hasClearableFilters}
+      <Button type="text" onClick={() => expressionFilterManager.clear()}>
+        {m.dashboard_clear_filters()}
+      </Button>
     {/if}
   </div>
 </div>

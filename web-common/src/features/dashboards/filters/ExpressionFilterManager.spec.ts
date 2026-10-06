@@ -1382,6 +1382,26 @@ describe("clear", () => {
     expect(filterManager.sortedFilterManagers.measures).toEqual([]);
   });
 
+  it("resets the complex flag", () => {
+    const filterManager = createFilterManager();
+
+    // A top level OR has no chip, so the bar shows the read only advanced filter.
+    filterManager.storeSync.setUrlParams(
+      perMetricsViewParams({
+        [AD_BIDS_METRICS_NAME]: `${AD_BIDS_PUBLISHER_DIMENSION} IN ('Google') OR ${AD_BIDS_DOMAIN_DIMENSION} IN ('google.com')`,
+      }),
+    );
+    expect(filterManager.isComplexFilter).toBe(true);
+
+    filterManager.clear();
+
+    // The navigation after a clear does not parse the params again, so `clear` resets the flag itself.
+    expect(filterManager.isComplexFilter).toBe(false);
+    expect(filterManager.topLevelJoiner.expr).toEqual({});
+    expect(filterManager.sortedFilterManagers.dimensions).toEqual([]);
+    expect(filterManager.sortedFilterManagers.measures).toEqual([]);
+  });
+
   it("keeps the required and pinned chips", () => {
     const yamlConfigProvider = new YAMLConfigProvider();
     yamlConfigProvider.requiredFilters = { [AD_BIDS_DOMAIN_DIMENSION]: true };
