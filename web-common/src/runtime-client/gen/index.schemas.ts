@@ -793,6 +793,8 @@ export interface V1Conversation {
   ownerId?: string;
   title?: string;
   userAgent?: string;
+  /** True if the owner excluded this conversation from AI memory formation. */
+  memoryDisabled?: boolean;
   createdOn?: string;
   updatedOn?: string;
   /** NOTE: Deprecated. */
@@ -1144,6 +1146,75 @@ export interface V1GenerateResolverResponse {
 export interface V1GetAIMessageResponse {
   message?: V1Message;
   result?: V1Message;
+}
+
+/** AIMemory is a short preference or fact the AI has learned about the current user in an instance. */
+export interface V1AIMemory {
+  id?: string;
+  /** One of: preference, definition, context, feedback. */
+  category?: string;
+  content?: string;
+  /** One of: active, pending, deleted. */
+  status?: string;
+  /** One of: explicit, extracted, manual. */
+  source?: string;
+  /** The conversation and message the memory was learned from (empty for manually created memories). */
+  sourceConversationId?: string;
+  sourceMessageId?: string;
+  createdOn?: string;
+  updatedOn?: string;
+}
+
+export interface V1ListAIMemoriesResponse {
+  memories?: V1AIMemory[];
+  /** False if memory is not available to the current user (feature disabled or anonymous user). */
+  enabled?: boolean;
+  /** True if the user has paused memory. */
+  paused?: boolean;
+}
+
+export type RuntimeServiceCreateAIMemoryBody = {
+  category?: string;
+  content?: string;
+};
+
+export interface V1CreateAIMemoryResponse {
+  memory?: V1AIMemory;
+}
+
+export type RuntimeServiceUpdateAIMemoryBody = {
+  category?: string;
+  content?: string;
+  /** Set to "active" to restore a deleted memory, or "deleted" to soft-delete it. */
+  status?: string;
+};
+
+export interface V1UpdateAIMemoryResponse {
+  memory?: V1AIMemory;
+}
+
+export interface V1DeleteAIMemoryResponse {
+  [key: string]: unknown;
+}
+
+export interface V1DeleteAllAIMemoriesResponse {
+  [key: string]: unknown;
+}
+
+export interface V1GetAIMemorySettingsResponse {
+  /** False if memory is not available to the current user (feature disabled or anonymous user). */
+  enabled?: boolean;
+  paused?: boolean;
+  activeCount?: number;
+  maxCount?: number;
+}
+
+export type RuntimeServiceUpdateAIMemorySettingsBody = {
+  paused?: boolean;
+};
+
+export interface V1UpdateAIMemorySettingsResponse {
+  paused?: boolean;
 }
 
 export interface V1GetConversationResponse {
@@ -2837,6 +2908,9 @@ If not set, it will infer an agent based on the prompt and conversation history.
   analystAgentContext?: V1AnalystAgentContext;
   developerAgentContext?: V1DeveloperAgentContext;
   feedbackAgentContext?: V1FeedbackAgentContext;
+  /** Sets whether the conversation is excluded from AI memory formation ("don't remember this chat").
+When present, the value is persisted on the conversation; when absent, the persisted value is kept. */
+  disableMemory?: boolean;
 };
 
 export type RuntimeServiceCompleteStreamingBody = {
@@ -2850,6 +2924,9 @@ If not set, it will infer an agent based on the prompt and conversation history.
   analystAgentContext?: V1AnalystAgentContext;
   developerAgentContext?: V1DeveloperAgentContext;
   feedbackAgentContext?: V1FeedbackAgentContext;
+  /** If true, the conversation is excluded from AI memory formation ("don't remember this chat").
+The flag is persisted on the conversation, so it only needs to be sent once. */
+  disableMemory?: boolean;
 };
 
 export type RuntimeServiceCompleteStreaming200 = {

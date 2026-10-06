@@ -60,6 +60,10 @@ export const ToolName = {
   // Feedback agent
   FEEDBACK_AGENT: "feedback_agent",
 
+  // Memory tools
+  UPDATE_MEMORY: "update_memory",
+  EXTRACT_MEMORIES: "extract_memories",
+
   // Common tools
   NAVIGATE: "navigate",
   LIST_SKILLS: "list_skills",

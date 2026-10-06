@@ -38,6 +38,14 @@ import {
   NEW_CONVERSATION_ID,
 } from "./utils";
 import { formatTransportError } from "./errors";
+import { featureFlags } from "@rilldata/web-common/features/feature-flags";
+import { invalidateAIMemories } from "@rilldata/web-common/features/chat/memory/memory-store";
+
+/**
+ * Gaps between the polls that pick up background memory extraction results once a stream has closed.
+ * Together they span the runtime's default extraction timeout (60s), and polling stops early once the result arrives.
+ */
+const MEMORY_REFETCH_DELAYS_MS = [3_000, 5_000, 12_000, 25_000, 20_000];
 
 type ConversationEvents = {
   "conversation-created": string;
@@ -72,6 +80,8 @@ export class Conversation {
   public readonly draftMessage = writable<string>("");
   public readonly isStreaming = writable(false);
   public readonly streamError = writable<string | null>(null);
+  /** "Don't remember this chat": excludes the conversation from AI memory formation. Persisted by the runtime once sent. */
+  public readonly memoryDisabled = writable(false);
 
   // Events
   private readonly events = new EventEmitter<ConversationEvents>();
@@ -93,6 +103,10 @@ export class Conversation {
 
   // Reactive store for conversationId - enables query to auto-update when ID changes
   private readonly conversationIdStore: Writable<string>;
+
+  // Background memory extraction finishes after the stream closes; this timer drives the poll that refetches
+  // the conversation so its "Memory updated" notice appears without a reload.
+  private memoryRefetchTimer: ReturnType<typeof setTimeout> | null = null;
 
   private get instanceId(): string {
     return this.client.instanceId;
@@ -251,6 +265,8 @@ export class Conversation {
 
       // Temporary fix to make sure the title of the conversation is updated.
       void invalidateConversationsList(this.instanceId);
+
+      this.scheduleMemoryRefetch();
     } catch (error) {
       // Transport errors can occur at two different stages:
       // 1. Before streaming starts: message not persisted, needs rollback
@@ -326,6 +342,7 @@ export class Conversation {
    */
   public cleanup(): void {
     this.cancelStream();
+    this.clearMemoryRefetch();
 
     if (this.stream) {
       this.stream.cleanup();
@@ -369,6 +386,7 @@ export class Conversation {
         ? ToolName.FEEDBACK_AGENT
         : this.agent,
       feedbackAgentContext: request.feedbackAgentContext,
+      disableMemory: get(this.memoryDisabled),
       ...request.context,
     };
 
@@ -456,6 +474,74 @@ export class Conversation {
     });
   }
 
+  // ----- Memory refetch -----
+
+  /**
+   * Memory extraction runs in the background after a turn, so its "Memory updated" notice arrives after
+   * the stream has closed and has to be polled for. Polling stops as soon as the notice shows up, when the
+   * user moves to another conversation or starts a new turn, or when the schedule runs out.
+   * Skipped when memory is off or the chat opted out of memory.
+   */
+  private scheduleMemoryRefetch(): void {
+    this.clearMemoryRefetch();
+    if (!get(featureFlags.chatMemory) || get(this.memoryDisabled)) return;
+    if (this.conversationId === NEW_CONVERSATION_ID) return;
+
+    const conversationId = this.conversationId;
+    const before = this.countMemoryExtractionResults(conversationId);
+
+    const poll = async (attempt: number) => {
+      this.memoryRefetchTimer = null;
+      if (this.conversationId !== conversationId || get(this.isStreaming))
+        return;
+
+      await queryClient.invalidateQueries({
+        queryKey: getRuntimeServiceGetConversationQueryKey(this.instanceId, {
+          conversationId,
+        }),
+      });
+
+      // Stop as soon as the extraction has landed; it may also have changed the user's memories.
+      if (this.countMemoryExtractionResults(conversationId) > before) {
+        void invalidateAIMemories(this.instanceId);
+        return;
+      }
+
+      const next = attempt + 1;
+      if (next >= MEMORY_REFETCH_DELAYS_MS.length) return;
+      if (this.conversationId !== conversationId || get(this.isStreaming))
+        return;
+      this.memoryRefetchTimer = setTimeout(
+        () => void poll(next),
+        MEMORY_REFETCH_DELAYS_MS[next],
+      );
+    };
+
+    this.memoryRefetchTimer = setTimeout(
+      () => void poll(0),
+      MEMORY_REFETCH_DELAYS_MS[0],
+    );
+  }
+
+  /** Number of completed memory extractions currently cached for the conversation. */
+  private countMemoryExtractionResults(conversationId: string): number {
+    const data = queryClient.getQueryData<V1GetConversationResponse>(
+      getRuntimeServiceGetConversationQueryKey(this.instanceId, {
+        conversationId,
+      }),
+    );
+    return (data?.messages ?? []).filter(
+      (msg) =>
+        msg.tool === ToolName.EXTRACT_MEMORIES &&
+        msg.type === MessageType.RESULT,
+    ).length;
+  }
+
+  private clearMemoryRefetch(): void {
+    if (this.memoryRefetchTimer !== null) clearTimeout(this.memoryRefetchTimer);
+    this.memoryRefetchTimer = null;
+  }
+
   // ----- Business Logic Layer: Message Processing -----
 
   /**
@@ -495,6 +581,7 @@ export class Conversation {
         config?.onResult?.(
           this.messageById.get(response.message.parentId ?? ""),
           response.message,
+          this.instanceId,
         );
       }
     }

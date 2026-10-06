@@ -7,6 +7,7 @@
   import { EntityStatus } from "../../../entity-management/types";
   import type { ConversationManager } from "../../core/conversation-manager";
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
+  import MemoryButton from "../../memory/MemoryButton.svelte";
 
   export let conversationManager: ConversationManager;
   export let basePath: string;
@@ -61,6 +62,7 @@
     </div>
 
     <div class="collapsed-footer">
+      <MemoryButton conversationBasePath={basePath} />
       <slot name="collapsed-footer" />
     </div>
   {:else}
@@ -121,8 +123,9 @@
       {/if}
     </div>
 
-    <!-- Footer slot for additional actions (e.g., MCP config button) -->
+    <!-- Footer: memory manager plus a slot for additional actions (e.g., MCP config button) -->
     <div class="conversation-sidebar-footer">
+      <MemoryButton variant="button" conversationBasePath={basePath} />
       <slot name="footer" />
     </div>
   {/if}
@@ -166,6 +169,7 @@
 
   .conversation-sidebar-footer {
     @apply shrink-0 p-3 border-t border-border mt-auto;
+    @apply flex flex-col gap-2;
   }
 
   .loading-conversations {

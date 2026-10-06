@@ -4308,6 +4308,13 @@ export class Conversation extends Message$1<Conversation> {
   userAgent = "";
 
   /**
+   * True if the owner excluded this conversation from AI memory formation.
+   *
+   * @generated from field: bool memory_disabled = 8;
+   */
+  memoryDisabled = false;
+
+  /**
    * @generated from field: google.protobuf.Timestamp created_on = 4;
    */
   createdOn?: Timestamp;
@@ -4336,6 +4343,7 @@ export class Conversation extends Message$1<Conversation> {
     { no: 2, name: "owner_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "title", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 6, name: "user_agent", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 8, name: "memory_disabled", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 4, name: "created_on", kind: "message", T: Timestamp },
     { no: 5, name: "updated_on", kind: "message", T: Timestamp },
     { no: 7, name: "messages", kind: "message", T: Message, repeated: true },
@@ -5178,6 +5186,14 @@ export class CompleteRequest extends Message$1<CompleteRequest> {
    */
   feedbackAgentContext?: FeedbackAgentContext;
 
+  /**
+   * Sets whether the conversation is excluded from AI memory formation ("don't remember this chat").
+   * When present, the value is persisted on the conversation; when absent, the persisted value is kept.
+   *
+   * @generated from field: optional bool disable_memory = 14;
+   */
+  disableMemory?: boolean;
+
   constructor(data?: PartialMessage<CompleteRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -5193,6 +5209,7 @@ export class CompleteRequest extends Message$1<CompleteRequest> {
     { no: 11, name: "analyst_agent_context", kind: "message", T: AnalystAgentContext },
     { no: 12, name: "developer_agent_context", kind: "message", T: DeveloperAgentContext },
     { no: 13, name: "feedback_agent_context", kind: "message", T: FeedbackAgentContext },
+    { no: 14, name: "disable_memory", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CompleteRequest {
@@ -5316,6 +5333,14 @@ export class CompleteStreamingRequest extends Message$1<CompleteStreamingRequest
    */
   feedbackAgentContext?: FeedbackAgentContext;
 
+  /**
+   * Sets whether the conversation is excluded from AI memory formation ("don't remember this chat").
+   * When present, the value is persisted on the conversation; when absent, the persisted value is kept.
+   *
+   * @generated from field: optional bool disable_memory = 14;
+   */
+  disableMemory?: boolean;
+
   constructor(data?: PartialMessage<CompleteStreamingRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -5331,6 +5356,7 @@ export class CompleteStreamingRequest extends Message$1<CompleteStreamingRequest
     { no: 11, name: "analyst_agent_context", kind: "message", T: AnalystAgentContext },
     { no: 12, name: "developer_agent_context", kind: "message", T: DeveloperAgentContext },
     { no: 13, name: "feedback_agent_context", kind: "message", T: FeedbackAgentContext },
+    { no: 14, name: "disable_memory", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CompleteStreamingRequest {
@@ -5488,6 +5514,729 @@ export class GetAIMessageResponse extends Message$1<GetAIMessageResponse> {
 
   static equals(a: GetAIMessageResponse | PlainMessage<GetAIMessageResponse> | undefined, b: GetAIMessageResponse | PlainMessage<GetAIMessageResponse> | undefined): boolean {
     return proto3.util.equals(GetAIMessageResponse, a, b);
+  }
+}
+
+/**
+ * AIMemory is a short preference or fact the AI has learned about the current user in an instance.
+ *
+ * @generated from message rill.runtime.v1.AIMemory
+ */
+export class AIMemory extends Message$1<AIMemory> {
+  /**
+   * @generated from field: string id = 1;
+   */
+  id = "";
+
+  /**
+   * One of: preference, definition, context, feedback.
+   *
+   * @generated from field: string category = 2;
+   */
+  category = "";
+
+  /**
+   * @generated from field: string content = 3;
+   */
+  content = "";
+
+  /**
+   * One of: active, pending, deleted.
+   *
+   * @generated from field: string status = 4;
+   */
+  status = "";
+
+  /**
+   * One of: explicit, extracted, manual.
+   *
+   * @generated from field: string source = 5;
+   */
+  source = "";
+
+  /**
+   * The conversation and message the memory was learned from (empty for manually created memories).
+   *
+   * @generated from field: string source_conversation_id = 6;
+   */
+  sourceConversationId = "";
+
+  /**
+   * @generated from field: string source_message_id = 7;
+   */
+  sourceMessageId = "";
+
+  /**
+   * @generated from field: google.protobuf.Timestamp created_on = 8;
+   */
+  createdOn?: Timestamp;
+
+  /**
+   * @generated from field: google.protobuf.Timestamp updated_on = 9;
+   */
+  updatedOn?: Timestamp;
+
+  constructor(data?: PartialMessage<AIMemory>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.AIMemory";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "category", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "content", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "status", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 5, name: "source", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 6, name: "source_conversation_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 7, name: "source_message_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 8, name: "created_on", kind: "message", T: Timestamp },
+    { no: 9, name: "updated_on", kind: "message", T: Timestamp },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): AIMemory {
+    return new AIMemory().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): AIMemory {
+    return new AIMemory().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): AIMemory {
+    return new AIMemory().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: AIMemory | PlainMessage<AIMemory> | undefined, b: AIMemory | PlainMessage<AIMemory> | undefined): boolean {
+    return proto3.util.equals(AIMemory, a, b);
+  }
+}
+
+/**
+ * Request message for RuntimeService.ListAIMemories
+ *
+ * @generated from message rill.runtime.v1.ListAIMemoriesRequest
+ */
+export class ListAIMemoriesRequest extends Message$1<ListAIMemoriesRequest> {
+  /**
+   * @generated from field: string instance_id = 1;
+   */
+  instanceId = "";
+
+  /**
+   * If true, recently deleted memories (which can still be restored) are included.
+   *
+   * @generated from field: bool include_deleted = 2;
+   */
+  includeDeleted = false;
+
+  constructor(data?: PartialMessage<ListAIMemoriesRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.ListAIMemoriesRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "include_deleted", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListAIMemoriesRequest {
+    return new ListAIMemoriesRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ListAIMemoriesRequest {
+    return new ListAIMemoriesRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ListAIMemoriesRequest {
+    return new ListAIMemoriesRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: ListAIMemoriesRequest | PlainMessage<ListAIMemoriesRequest> | undefined, b: ListAIMemoriesRequest | PlainMessage<ListAIMemoriesRequest> | undefined): boolean {
+    return proto3.util.equals(ListAIMemoriesRequest, a, b);
+  }
+}
+
+/**
+ * Response message for RuntimeService.ListAIMemories
+ *
+ * @generated from message rill.runtime.v1.ListAIMemoriesResponse
+ */
+export class ListAIMemoriesResponse extends Message$1<ListAIMemoriesResponse> {
+  /**
+   * @generated from field: repeated rill.runtime.v1.AIMemory memories = 1;
+   */
+  memories: AIMemory[] = [];
+
+  /**
+   * False if memory is not available to the current user (feature disabled or anonymous user).
+   *
+   * @generated from field: bool enabled = 2;
+   */
+  enabled = false;
+
+  /**
+   * True if the user has paused memory.
+   *
+   * @generated from field: bool paused = 3;
+   */
+  paused = false;
+
+  constructor(data?: PartialMessage<ListAIMemoriesResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.ListAIMemoriesResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "memories", kind: "message", T: AIMemory, repeated: true },
+    { no: 2, name: "enabled", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 3, name: "paused", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListAIMemoriesResponse {
+    return new ListAIMemoriesResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ListAIMemoriesResponse {
+    return new ListAIMemoriesResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ListAIMemoriesResponse {
+    return new ListAIMemoriesResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: ListAIMemoriesResponse | PlainMessage<ListAIMemoriesResponse> | undefined, b: ListAIMemoriesResponse | PlainMessage<ListAIMemoriesResponse> | undefined): boolean {
+    return proto3.util.equals(ListAIMemoriesResponse, a, b);
+  }
+}
+
+/**
+ * Request message for RuntimeService.CreateAIMemory
+ *
+ * @generated from message rill.runtime.v1.CreateAIMemoryRequest
+ */
+export class CreateAIMemoryRequest extends Message$1<CreateAIMemoryRequest> {
+  /**
+   * @generated from field: string instance_id = 1;
+   */
+  instanceId = "";
+
+  /**
+   * @generated from field: string category = 2;
+   */
+  category = "";
+
+  /**
+   * @generated from field: string content = 3;
+   */
+  content = "";
+
+  constructor(data?: PartialMessage<CreateAIMemoryRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.CreateAIMemoryRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "category", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "content", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CreateAIMemoryRequest {
+    return new CreateAIMemoryRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): CreateAIMemoryRequest {
+    return new CreateAIMemoryRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): CreateAIMemoryRequest {
+    return new CreateAIMemoryRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: CreateAIMemoryRequest | PlainMessage<CreateAIMemoryRequest> | undefined, b: CreateAIMemoryRequest | PlainMessage<CreateAIMemoryRequest> | undefined): boolean {
+    return proto3.util.equals(CreateAIMemoryRequest, a, b);
+  }
+}
+
+/**
+ * Response message for RuntimeService.CreateAIMemory
+ *
+ * @generated from message rill.runtime.v1.CreateAIMemoryResponse
+ */
+export class CreateAIMemoryResponse extends Message$1<CreateAIMemoryResponse> {
+  /**
+   * @generated from field: rill.runtime.v1.AIMemory memory = 1;
+   */
+  memory?: AIMemory;
+
+  constructor(data?: PartialMessage<CreateAIMemoryResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.CreateAIMemoryResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "memory", kind: "message", T: AIMemory },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CreateAIMemoryResponse {
+    return new CreateAIMemoryResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): CreateAIMemoryResponse {
+    return new CreateAIMemoryResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): CreateAIMemoryResponse {
+    return new CreateAIMemoryResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: CreateAIMemoryResponse | PlainMessage<CreateAIMemoryResponse> | undefined, b: CreateAIMemoryResponse | PlainMessage<CreateAIMemoryResponse> | undefined): boolean {
+    return proto3.util.equals(CreateAIMemoryResponse, a, b);
+  }
+}
+
+/**
+ * Request message for RuntimeService.UpdateAIMemory
+ *
+ * @generated from message rill.runtime.v1.UpdateAIMemoryRequest
+ */
+export class UpdateAIMemoryRequest extends Message$1<UpdateAIMemoryRequest> {
+  /**
+   * @generated from field: string instance_id = 1;
+   */
+  instanceId = "";
+
+  /**
+   * @generated from field: string memory_id = 2;
+   */
+  memoryId = "";
+
+  /**
+   * @generated from field: optional string category = 3;
+   */
+  category?: string;
+
+  /**
+   * @generated from field: optional string content = 4;
+   */
+  content?: string;
+
+  /**
+   * Set to "active" to restore a deleted memory, or "deleted" to soft-delete it.
+   *
+   * @generated from field: optional string status = 5;
+   */
+  status?: string;
+
+  constructor(data?: PartialMessage<UpdateAIMemoryRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.UpdateAIMemoryRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "memory_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "category", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 4, name: "content", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 5, name: "status", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): UpdateAIMemoryRequest {
+    return new UpdateAIMemoryRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): UpdateAIMemoryRequest {
+    return new UpdateAIMemoryRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): UpdateAIMemoryRequest {
+    return new UpdateAIMemoryRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: UpdateAIMemoryRequest | PlainMessage<UpdateAIMemoryRequest> | undefined, b: UpdateAIMemoryRequest | PlainMessage<UpdateAIMemoryRequest> | undefined): boolean {
+    return proto3.util.equals(UpdateAIMemoryRequest, a, b);
+  }
+}
+
+/**
+ * Response message for RuntimeService.UpdateAIMemory
+ *
+ * @generated from message rill.runtime.v1.UpdateAIMemoryResponse
+ */
+export class UpdateAIMemoryResponse extends Message$1<UpdateAIMemoryResponse> {
+  /**
+   * @generated from field: rill.runtime.v1.AIMemory memory = 1;
+   */
+  memory?: AIMemory;
+
+  constructor(data?: PartialMessage<UpdateAIMemoryResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.UpdateAIMemoryResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "memory", kind: "message", T: AIMemory },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): UpdateAIMemoryResponse {
+    return new UpdateAIMemoryResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): UpdateAIMemoryResponse {
+    return new UpdateAIMemoryResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): UpdateAIMemoryResponse {
+    return new UpdateAIMemoryResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: UpdateAIMemoryResponse | PlainMessage<UpdateAIMemoryResponse> | undefined, b: UpdateAIMemoryResponse | PlainMessage<UpdateAIMemoryResponse> | undefined): boolean {
+    return proto3.util.equals(UpdateAIMemoryResponse, a, b);
+  }
+}
+
+/**
+ * Request message for RuntimeService.DeleteAIMemory
+ *
+ * @generated from message rill.runtime.v1.DeleteAIMemoryRequest
+ */
+export class DeleteAIMemoryRequest extends Message$1<DeleteAIMemoryRequest> {
+  /**
+   * @generated from field: string instance_id = 1;
+   */
+  instanceId = "";
+
+  /**
+   * @generated from field: string memory_id = 2;
+   */
+  memoryId = "";
+
+  constructor(data?: PartialMessage<DeleteAIMemoryRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.DeleteAIMemoryRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "memory_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): DeleteAIMemoryRequest {
+    return new DeleteAIMemoryRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): DeleteAIMemoryRequest {
+    return new DeleteAIMemoryRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): DeleteAIMemoryRequest {
+    return new DeleteAIMemoryRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: DeleteAIMemoryRequest | PlainMessage<DeleteAIMemoryRequest> | undefined, b: DeleteAIMemoryRequest | PlainMessage<DeleteAIMemoryRequest> | undefined): boolean {
+    return proto3.util.equals(DeleteAIMemoryRequest, a, b);
+  }
+}
+
+/**
+ * Response message for RuntimeService.DeleteAIMemory
+ *
+ * @generated from message rill.runtime.v1.DeleteAIMemoryResponse
+ */
+export class DeleteAIMemoryResponse extends Message$1<DeleteAIMemoryResponse> {
+  constructor(data?: PartialMessage<DeleteAIMemoryResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.DeleteAIMemoryResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): DeleteAIMemoryResponse {
+    return new DeleteAIMemoryResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): DeleteAIMemoryResponse {
+    return new DeleteAIMemoryResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): DeleteAIMemoryResponse {
+    return new DeleteAIMemoryResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: DeleteAIMemoryResponse | PlainMessage<DeleteAIMemoryResponse> | undefined, b: DeleteAIMemoryResponse | PlainMessage<DeleteAIMemoryResponse> | undefined): boolean {
+    return proto3.util.equals(DeleteAIMemoryResponse, a, b);
+  }
+}
+
+/**
+ * Request message for RuntimeService.DeleteAllAIMemories
+ *
+ * @generated from message rill.runtime.v1.DeleteAllAIMemoriesRequest
+ */
+export class DeleteAllAIMemoriesRequest extends Message$1<DeleteAllAIMemoriesRequest> {
+  /**
+   * @generated from field: string instance_id = 1;
+   */
+  instanceId = "";
+
+  constructor(data?: PartialMessage<DeleteAllAIMemoriesRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.DeleteAllAIMemoriesRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): DeleteAllAIMemoriesRequest {
+    return new DeleteAllAIMemoriesRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): DeleteAllAIMemoriesRequest {
+    return new DeleteAllAIMemoriesRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): DeleteAllAIMemoriesRequest {
+    return new DeleteAllAIMemoriesRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: DeleteAllAIMemoriesRequest | PlainMessage<DeleteAllAIMemoriesRequest> | undefined, b: DeleteAllAIMemoriesRequest | PlainMessage<DeleteAllAIMemoriesRequest> | undefined): boolean {
+    return proto3.util.equals(DeleteAllAIMemoriesRequest, a, b);
+  }
+}
+
+/**
+ * Response message for RuntimeService.DeleteAllAIMemories
+ *
+ * @generated from message rill.runtime.v1.DeleteAllAIMemoriesResponse
+ */
+export class DeleteAllAIMemoriesResponse extends Message$1<DeleteAllAIMemoriesResponse> {
+  constructor(data?: PartialMessage<DeleteAllAIMemoriesResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.DeleteAllAIMemoriesResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): DeleteAllAIMemoriesResponse {
+    return new DeleteAllAIMemoriesResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): DeleteAllAIMemoriesResponse {
+    return new DeleteAllAIMemoriesResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): DeleteAllAIMemoriesResponse {
+    return new DeleteAllAIMemoriesResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: DeleteAllAIMemoriesResponse | PlainMessage<DeleteAllAIMemoriesResponse> | undefined, b: DeleteAllAIMemoriesResponse | PlainMessage<DeleteAllAIMemoriesResponse> | undefined): boolean {
+    return proto3.util.equals(DeleteAllAIMemoriesResponse, a, b);
+  }
+}
+
+/**
+ * Request message for RuntimeService.GetAIMemorySettings
+ *
+ * @generated from message rill.runtime.v1.GetAIMemorySettingsRequest
+ */
+export class GetAIMemorySettingsRequest extends Message$1<GetAIMemorySettingsRequest> {
+  /**
+   * @generated from field: string instance_id = 1;
+   */
+  instanceId = "";
+
+  constructor(data?: PartialMessage<GetAIMemorySettingsRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.GetAIMemorySettingsRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetAIMemorySettingsRequest {
+    return new GetAIMemorySettingsRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetAIMemorySettingsRequest {
+    return new GetAIMemorySettingsRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetAIMemorySettingsRequest {
+    return new GetAIMemorySettingsRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: GetAIMemorySettingsRequest | PlainMessage<GetAIMemorySettingsRequest> | undefined, b: GetAIMemorySettingsRequest | PlainMessage<GetAIMemorySettingsRequest> | undefined): boolean {
+    return proto3.util.equals(GetAIMemorySettingsRequest, a, b);
+  }
+}
+
+/**
+ * Response message for RuntimeService.GetAIMemorySettings
+ *
+ * @generated from message rill.runtime.v1.GetAIMemorySettingsResponse
+ */
+export class GetAIMemorySettingsResponse extends Message$1<GetAIMemorySettingsResponse> {
+  /**
+   * False if memory is not available to the current user (feature disabled or anonymous user).
+   *
+   * @generated from field: bool enabled = 1;
+   */
+  enabled = false;
+
+  /**
+   * @generated from field: bool paused = 2;
+   */
+  paused = false;
+
+  /**
+   * @generated from field: uint32 active_count = 3;
+   */
+  activeCount = 0;
+
+  /**
+   * @generated from field: uint32 max_count = 4;
+   */
+  maxCount = 0;
+
+  constructor(data?: PartialMessage<GetAIMemorySettingsResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.GetAIMemorySettingsResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "enabled", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 2, name: "paused", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 3, name: "active_count", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
+    { no: 4, name: "max_count", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetAIMemorySettingsResponse {
+    return new GetAIMemorySettingsResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetAIMemorySettingsResponse {
+    return new GetAIMemorySettingsResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetAIMemorySettingsResponse {
+    return new GetAIMemorySettingsResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: GetAIMemorySettingsResponse | PlainMessage<GetAIMemorySettingsResponse> | undefined, b: GetAIMemorySettingsResponse | PlainMessage<GetAIMemorySettingsResponse> | undefined): boolean {
+    return proto3.util.equals(GetAIMemorySettingsResponse, a, b);
+  }
+}
+
+/**
+ * Request message for RuntimeService.UpdateAIMemorySettings
+ *
+ * @generated from message rill.runtime.v1.UpdateAIMemorySettingsRequest
+ */
+export class UpdateAIMemorySettingsRequest extends Message$1<UpdateAIMemorySettingsRequest> {
+  /**
+   * @generated from field: string instance_id = 1;
+   */
+  instanceId = "";
+
+  /**
+   * @generated from field: bool paused = 2;
+   */
+  paused = false;
+
+  constructor(data?: PartialMessage<UpdateAIMemorySettingsRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.UpdateAIMemorySettingsRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "paused", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): UpdateAIMemorySettingsRequest {
+    return new UpdateAIMemorySettingsRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): UpdateAIMemorySettingsRequest {
+    return new UpdateAIMemorySettingsRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): UpdateAIMemorySettingsRequest {
+    return new UpdateAIMemorySettingsRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: UpdateAIMemorySettingsRequest | PlainMessage<UpdateAIMemorySettingsRequest> | undefined, b: UpdateAIMemorySettingsRequest | PlainMessage<UpdateAIMemorySettingsRequest> | undefined): boolean {
+    return proto3.util.equals(UpdateAIMemorySettingsRequest, a, b);
+  }
+}
+
+/**
+ * Response message for RuntimeService.UpdateAIMemorySettings
+ *
+ * @generated from message rill.runtime.v1.UpdateAIMemorySettingsResponse
+ */
+export class UpdateAIMemorySettingsResponse extends Message$1<UpdateAIMemorySettingsResponse> {
+  /**
+   * @generated from field: bool paused = 1;
+   */
+  paused = false;
+
+  constructor(data?: PartialMessage<UpdateAIMemorySettingsResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.UpdateAIMemorySettingsResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "paused", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): UpdateAIMemorySettingsResponse {
+    return new UpdateAIMemorySettingsResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): UpdateAIMemorySettingsResponse {
+    return new UpdateAIMemorySettingsResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): UpdateAIMemorySettingsResponse {
+    return new UpdateAIMemorySettingsResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: UpdateAIMemorySettingsResponse | PlainMessage<UpdateAIMemorySettingsResponse> | undefined, b: UpdateAIMemorySettingsResponse | PlainMessage<UpdateAIMemorySettingsResponse> | undefined): boolean {
+    return proto3.util.equals(UpdateAIMemorySettingsResponse, a, b);
   }
 }
 

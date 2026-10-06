@@ -244,12 +244,22 @@ func (s *Server) Complete(ctx context.Context, req *runtimev1.CompleteRequest) (
 	if err != nil {
 		return nil, err
 	}
+	// Flush the session when done. After a successful flush, learn memories from the turn in the background.
+	// The extraction is spawned after the flush so it never races with it.
+	var rootCallID string
 	defer func() {
 		err := session.Flush(ctx)
 		if err != nil {
 			resErr = errors.Join(resErr, err)
+			return
+		}
+		if rootCallID != "" {
+			s.ai.SpawnMemoryExtraction(ctx, session, rootCallID)
 		}
 	}()
+	if req.DisableMemory != nil {
+		_ = session.UpdateMemoryDisabled(ctx, *req.DisableMemory)
+	}
 
 	// Prepare agent args if provided
 	var analystAgentArgs *ai.AnalystAgentArgs
@@ -300,6 +310,9 @@ func (s *Server) Complete(ctx context.Context, req *runtimev1.CompleteRequest) (
 	if err != nil && msg == nil {
 		// We only return errors when msg == nil. When msg != nil, the error was a tool call error, which will be captured in the messages.
 		return nil, err
+	}
+	if msg != nil && msg.Call != nil && req.FeedbackAgentContext == nil {
+		rootCallID = msg.Call.ID
 	}
 
 	// Lookup the result message and all its descendents
@@ -363,12 +376,22 @@ func (s *Server) CompleteStreaming(req *runtimev1.CompleteStreamingRequest, stre
 	if err != nil {
 		return err
 	}
+	// Flush the session when done. After a successful flush, learn memories from the turn in the background.
+	// The extraction is spawned after the flush so it never races with it.
+	var rootCallID string
 	defer func() {
 		err := session.Flush(ctx)
 		if err != nil {
 			resErr = errors.Join(resErr, err)
+			return
+		}
+		if rootCallID != "" {
+			s.ai.SpawnMemoryExtraction(ctx, session, rootCallID)
 		}
 	}()
+	if req.DisableMemory != nil {
+		_ = session.UpdateMemoryDisabled(ctx, *req.DisableMemory)
+	}
 
 	// Open subscription for session messages and stream them to the client in the background
 	subCh := session.Subscribe()
@@ -455,6 +478,9 @@ func (s *Server) CompleteStreaming(req *runtimev1.CompleteStreamingRequest, stre
 	if err != nil && !errors.Is(err, context.Canceled) && msg == nil {
 		// We only return errors when msg == nil. When msg != nil, the error was a tool call error, which will be captured in the messages.
 		return err
+	}
+	if msg != nil && msg.Call != nil && req.FeedbackAgentContext == nil {
+		rootCallID = msg.Call.ID
 	}
 	return nil
 }
@@ -599,13 +625,14 @@ func (s *Server) GetAIMessage(ctx context.Context, req *runtimev1.GetAIMessageRe
 // sessionToPB converts a drivers.AISession to a runtimev1.Conversation.
 func sessionToPB(s *drivers.AISession, messages []*runtimev1.Message) *runtimev1.Conversation {
 	return &runtimev1.Conversation{
-		Id:        s.ID,
-		OwnerId:   s.OwnerID,
-		Title:     s.Title,
-		UserAgent: s.UserAgent,
-		CreatedOn: timestamppb.New(s.CreatedOn),
-		UpdatedOn: timestamppb.New(s.UpdatedOn),
-		Messages:  messages,
+		Id:             s.ID,
+		OwnerId:        s.OwnerID,
+		Title:          s.Title,
+		UserAgent:      s.UserAgent,
+		MemoryDisabled: s.MemoryDisabled,
+		CreatedOn:      timestamppb.New(s.CreatedOn),
+		UpdatedOn:      timestamppb.New(s.UpdatedOn),
+		Messages:       messages,
 	}
 }
 

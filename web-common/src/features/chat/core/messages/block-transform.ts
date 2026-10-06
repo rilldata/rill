@@ -31,6 +31,7 @@ import {
 } from "./tools/tool-registry";
 import { shouldShowWorking, type WorkingBlock } from "./working/working-block";
 import type { SimpleToolCall } from "@rilldata/web-common/features/chat/core/messages/simple-tool-call/simple-tool-call.ts";
+import type { MemoryUpdateBlock } from "@rilldata/web-common/features/chat/memory/memory-update-block";
 
 // =============================================================================
 // TYPES
@@ -42,7 +43,8 @@ export type Block =
   | ChartBlock
   | FileDiffBlock
   | WorkingBlock
-  | SimpleToolCall;
+  | SimpleToolCall
+  | MemoryUpdateBlock;
 
 export type {
   ChartBlock,
@@ -51,6 +53,7 @@ export type {
   ThinkingBlock,
   WorkingBlock,
   SimpleToolCall,
+  MemoryUpdateBlock,
 };
 
 // =============================================================================
@@ -73,6 +76,7 @@ export function transformToBlocks(
   // messages in the array, so we need the data ready before we encounter the target.
   const resultMap = buildResultMessageMap(messages);
   const feedbackMap = buildFeedbackMap(messages);
+  const memoryExtractionCallIds = buildMemoryExtractionCallIds(messages);
 
   // Accumulator for messages going into the current thinking block
   let thinkingMessages: V1Message[] = [];
@@ -93,6 +97,15 @@ export function transformToBlocks(
 
   // Process each message
   for (const msg of messages) {
+    // Background memory extraction runs an LLM call whose intermediate output is not part of the conversation;
+    // only its call (rendered as a "Memory updated" notice) and result matter.
+    if (
+      msg.type === MessageType.PROGRESS &&
+      memoryExtractionCallIds.has(msg.parentId)
+    ) {
+      continue;
+    }
+
     const routing = getBlockRoute(msg);
 
     switch (routing.route) {
@@ -236,6 +249,25 @@ function buildResultMessageMap(
           msg.type === MessageType.RESULT && msg.tool !== ToolName.ROUTER_AGENT,
       )
       .map((msg) => [msg.parentId, msg]),
+  );
+}
+
+// ----- Memory Extraction -----
+
+/**
+ * Collect the IDs of extract_memories CALL messages so their nested progress messages can be skipped.
+ */
+function buildMemoryExtractionCallIds(
+  messages: V1Message[],
+): Set<string | undefined> {
+  return new Set(
+    messages
+      .filter(
+        (msg) =>
+          msg.type === MessageType.CALL &&
+          msg.tool === ToolName.EXTRACT_MEMORIES,
+      )
+      .map((msg) => msg.id),
   );
 }
 

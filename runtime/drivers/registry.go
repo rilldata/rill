@@ -136,6 +136,8 @@ type InstanceConfig struct {
 	// AILLMTimeoutSeconds is the maximum duration of a single LLM completion request.
 	// Note: when using Rill's hosted AI service (i.e. not a self-configured LLM), the admin server enforces a hard upper bound of 10 minutes, so values above that have no effect.
 	AILLMTimeoutSeconds uint32 `mapstructure:"rill.ai.llm_timeout_seconds"`
+	// AIMemoryExtractionTimeoutSeconds is the maximum duration of the background memory extraction that runs after a chat turn.
+	AIMemoryExtractionTimeoutSeconds uint32 `mapstructure:"rill.ai.memory_extraction_timeout_seconds"`
 	// AIDefaultQueryLimit is the default row limit applied to AI tool queries when no limit is specified.
 	AIDefaultQueryLimit int64 `mapstructure:"rill.ai.default_query_limit"`
 	// AIMaxQueryLimit is the maximum row limit allowed for AI tool queries.
@@ -230,6 +232,7 @@ func (i *Instance) Config() (InstanceConfig, error) {
 		AlertsFastStreamingRefreshCron:       "*/10 * * * *", // Every 10 minutes
 		AICompletionTimeoutSeconds:           60 * 10,        // 10 minutes
 		AILLMTimeoutSeconds:                  60 * 4,         // 4 minutes
+		AIMemoryExtractionTimeoutSeconds:     60,
 		AIDefaultQueryLimit:                  25,
 		AIMaxQueryLimit:                      250,
 		AIRequireTimeRange:                   true,

@@ -41,6 +41,9 @@ type Runner struct {
 	Runtime  *runtime.Runtime
 	Activity *activity.Client
 	Tools    map[string]*CompiledTool
+
+	// memoryExtractions tracks sessions with a background memory extraction in flight (see SpawnMemoryExtraction).
+	memoryExtractions sync.Map
 }
 
 // NewRunner creates a new Runner.
@@ -55,6 +58,8 @@ func NewRunner(rt *runtime.Runtime, activity *activity.Client) *Runner {
 	RegisterTool(r, &AnalystAgent{Runtime: rt})
 	RegisterTool(r, &DeveloperAgent{Runtime: rt})
 	RegisterTool(r, &FeedbackAgent{Runtime: rt})
+	RegisterTool(r, &UpdateMemory{Runtime: rt})
+	RegisterTool(r, &ExtractMemories{Runtime: rt})
 
 	RegisterTool(r, &ListMetricsViews{Runtime: rt})
 	RegisterTool(r, &GetMetricsView{Runtime: rt})
@@ -178,6 +183,29 @@ func (r *Runner) Session(ctx context.Context, opts *SessionOptions) (res *Sessio
 		}
 	}
 
+	// Load the owner's memories.
+	// Memory is only loaded for the owner's own sessions (not for shared sessions viewed by others),
+	// and never for MCP clients, AI reports or anonymous users (see memoryEnabled).
+	// Failures are logged and ignored: memory must never break a chat.
+	var memories []*drivers.AIMemory
+	var memEnabled, memPaused bool
+	if session.OwnerID == opts.Claims.UserID {
+		memEnabled, err = memoryEnabled(ctx, r.Runtime, opts.InstanceID, session.UserAgent, opts.Claims)
+		if err != nil {
+			r.Runtime.Logger.Warn("ai: failed to resolve memory availability", zap.String("instance_id", opts.InstanceID), zap.Error(err))
+			memEnabled = false
+		}
+		if memEnabled {
+			memories, memPaused, err = loadUserMemories(ctx, catalog, opts.Claims.UserID)
+			if err != nil {
+				// Disable memory for the session rather than run with an empty list, which could re-learn duplicates.
+				r.Runtime.Logger.Warn("ai: failed to load user memories", zap.String("instance_id", opts.InstanceID), zap.Error(err))
+				memEnabled = false
+				memories = nil
+			}
+		}
+	}
+
 	// Setup logger
 	logger := r.Runtime.Logger.Named("ai").With(
 		zap.String("instance_id", opts.InstanceID),
@@ -206,6 +234,9 @@ func (r *Runner) Session(ctx context.Context, opts *SessionOptions) (res *Sessio
 		logger:              logger,
 		activity:            activityClient,
 		projectInstructions: instance.AIInstructions,
+		memoryEnabled:       memEnabled,
+		memoryPaused:        memPaused,
+		userMemories:        memories,
 		managedAI:           instance.ResolveAIConnector() == instance.AdminConnector,
 		acquireLLM: func(ctx context.Context) (drivers.AIService, func(), error) {
 			return r.Runtime.AI(ctx, opts.InstanceID)
@@ -532,7 +563,10 @@ type BaseSession struct {
 	logger              *zap.Logger
 	activity            *activity.Client
 	projectInstructions string
-	managedAI           bool // true if completions use the Rill-managed AI connector (billable tokens); false for bring-your-own-model
+	memoryEnabled       bool                // true if memory applies to this session (see memoryEnabled)
+	memoryPaused        bool                // true if the owner has paused memory; existing memories are then neither used nor updated
+	userMemories        []*drivers.AIMemory // the owner's active memories, loaded at session creation and refreshed on writes
+	managedAI           bool                // true if completions use the Rill-managed AI connector (billable tokens); false for bring-your-own-model
 	acquireLLM          func(ctx context.Context) (drivers.AIService, func(), error)
 	acquireCatalog      func(ctx context.Context) (drivers.CatalogStore, func(), error)
 
@@ -576,10 +610,20 @@ func (s *BaseSession) Flush(ctx context.Context) error {
 
 	// Flush messages
 	if s.messagesDirty {
+		// Indexes are (re)assigned here rather than at append time because a session can be flushed more than once,
+		// and a background task (memory extraction) may flush it while a new request flushes its own messages.
+		// Deriving the base from the database keeps indexes unique and ordered whichever flush wins the race.
+		idx, err := catalog.FindMaxAIMessageIndex(ctx, s.id)
+		if err != nil {
+			return err
+		}
+
 		for _, msg := range s.messages {
 			if !msg.dirty {
 				continue
 			}
+			idx++
+			msg.Index = idx
 			err = catalog.InsertAIMessage(ctx, &drivers.AIMessage{
 				ID:          msg.ID,
 				ParentID:    msg.ParentID,
@@ -596,6 +640,8 @@ func (s *BaseSession) Flush(ctx context.Context) error {
 			if err != nil {
 				return err
 			}
+			msg.dirty = false
+
 			content := "<redacted>"
 			if msg.ContentType == MessageContentTypeError {
 				content = msg.Content
@@ -693,6 +739,52 @@ func (s *BaseSession) WithParent(messageID string) *Session {
 
 func (s *BaseSession) ProjectInstructions() string {
 	return s.projectInstructions
+}
+
+// MemoryEnabled reports whether memory applies to this session.
+func (s *BaseSession) MemoryEnabled() bool {
+	return s.memoryEnabled
+}
+
+// MemoryPaused reports whether the owner has paused memory.
+func (s *BaseSession) MemoryPaused() bool {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	return s.memoryPaused
+}
+
+// MemoryFormationEnabled reports whether new memories may be written from this session.
+// It is false when memory is disabled or paused, and when the owner opted this conversation out of memory.
+func (s *BaseSession) MemoryFormationEnabled() bool {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	return s.memoryEnabled && !s.memoryPaused && !s.dto.MemoryDisabled
+}
+
+// UserMemories returns the owner's active memories. It is empty when memory is disabled or paused.
+func (s *BaseSession) UserMemories() []*drivers.AIMemory {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	return s.userMemories
+}
+
+func (s *BaseSession) setUserMemories(memories []*drivers.AIMemory, paused bool) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.userMemories = memories
+	s.memoryPaused = paused
+}
+
+// UpdateMemoryDisabled sets whether this conversation is excluded from memory formation.
+func (s *BaseSession) UpdateMemoryDisabled(ctx context.Context, disabled bool) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if s.dto.MemoryDisabled == disabled {
+		return nil
+	}
+	s.dto.MemoryDisabled = disabled
+	s.dtoDirty = true
+	return nil
 }
 
 func (s *BaseSession) SetLLM(acquireLLM func(ctx context.Context) (drivers.AIService, func(), error)) {
@@ -1090,10 +1182,12 @@ type CallToolOptions struct {
 
 // nonBillableToolCalls are high-level orchestration tools (the agents) that don't do real work themselves; all other tool calls count as billable api_calls.
 var nonBillableToolCalls = map[string]bool{
-	RouterAgentName:    true,
-	AnalystAgentName:   true,
-	DeveloperAgentName: true,
-	FeedbackAgentName:  true,
+	RouterAgentName:     true,
+	AnalystAgentName:    true,
+	DeveloperAgentName:  true,
+	FeedbackAgentName:   true,
+	UpdateMemoryName:    true, // bookkeeping about the user, not work on their data
+	ExtractMemoriesName: true, // system-initiated, not an agent action
 }
 
 // CallToolWithOptions runs a tool call in the current session and adds it, its result, and all messages from nested calls to the session.
