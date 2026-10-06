@@ -20,6 +20,8 @@ func TestVersionUpToDate(t *testing.T) {
 		{name: "older minor", current: "v0.89.5", latest: "v0.90.0", want: false},
 		{name: "newer than latest", current: "v0.91.0", latest: "v0.90.2", want: true},
 		{name: "prerelease is older than release", current: "v0.90.2-rc1", latest: "v0.90.2", want: false},
+		{name: "nightly is never up to date", current: "v0.91.0-nightly", latest: "v0.90.2", want: false},
+		{name: "prerelease ahead of release", current: "v0.91.0-rc1", latest: "v0.90.2", want: false},
 		{name: "invalid current", current: "dev", latest: "v0.90.2", wantErr: true},
 		{name: "invalid latest", current: "v0.90.2", latest: "", wantErr: true},
 	}

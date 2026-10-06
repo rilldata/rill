@@ -1,8 +1,6 @@
 package upgrade
 
 import (
-	"fmt"
-
 	goversion "github.com/hashicorp/go-version"
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	"github.com/rilldata/rill/cli/pkg/installscript"
@@ -35,10 +33,12 @@ func UpgradeCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 
 			// Skip the download if the current version is already the latest release.
-			if !force {
-				upToDate, latest, err := isUpToDate(cmd, ch)
-				if err == nil && upToDate {
-					fmt.Printf("Rill is already up to date (%s). Use --force to reinstall.\n", latest)
+			if !force && !ch.IsDev() {
+				latest, err := ch.RefreshLatestVersion(cmd.Context())
+				if err != nil {
+					ch.PrintfWarn("Could not check latest version: %v\n", err)
+				} else if upToDate, err := versionUpToDate(ch.Version.Number, latest); err == nil && upToDate {
+					ch.Printf("Rill is already up to date (%s). Use --force to reinstall.\n", latest)
 					return nil
 				}
 			}
@@ -54,45 +54,15 @@ func UpgradeCmd(ch *cmdutil.Helper) *cobra.Command {
 	return upgradeCmd
 }
 
-// isUpToDate reports whether the running CLI version is greater than or equal to the latest released version.
-// It returns false (without error) for development builds, where the current version is unknown.
-func isUpToDate(cmd *cobra.Command, ch *cmdutil.Helper) (bool, string, error) {
-	if ch.Version.Number == "" {
-		return false, "", nil
-	}
-
-	latest, err := ch.LatestVersion(cmd.Context())
-	if err != nil {
-		return false, "", err
-	}
-
-	upToDate, err := versionUpToDate(ch.Version.Number, latest)
-	if err != nil {
-		return false, "", err
-	}
-
-	// The cached latest version can be stale. Only trust it when it says an upgrade is needed;
-	// otherwise refetch from Github so a new release is not missed.
-	if upToDate {
-		latest, err = ch.RefreshLatestVersion(cmd.Context())
-		if err != nil {
-			return false, "", err
-		}
-
-		upToDate, err = versionUpToDate(ch.Version.Number, latest)
-		if err != nil {
-			return false, "", err
-		}
-	}
-
-	return upToDate, latest, nil
-}
-
 // versionUpToDate reports whether current is greater than or equal to latest.
+// Prerelease builds (e.g. nightly) are never up to date, so upgrading moves them to the latest stable release.
 func versionUpToDate(current, latest string) (bool, error) {
 	currentV, err := goversion.NewVersion(current)
 	if err != nil {
 		return false, err
+	}
+	if currentV.Prerelease() != "" {
+		return false, nil
 	}
 
 	latestV, err := goversion.NewVersion(latest)
