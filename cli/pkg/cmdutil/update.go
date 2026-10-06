@@ -82,11 +82,6 @@ func (h *Helper) LatestVersion(ctx context.Context) (string, error) {
 	}
 
 	// Check with latest release on github if cached version is not available
-	return h.RefreshLatestVersion(ctx)
-}
-
-// RefreshLatestVersion fetches the latest available version of Rill from Github, bypassing the cache, and updates the cache.
-func (h *Helper) RefreshLatestVersion(ctx context.Context) (string, error) {
 	info, err := fetchLatestVersion(ctx)
 	if err != nil {
 		return "", err

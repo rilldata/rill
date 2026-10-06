@@ -25,50 +25,20 @@ func UpgradeCmd(ch *cmdutil.Helper) *cobra.Command {
 				}
 				version = "v" + v.String()
 
-				return installscript.Install(cmd.Context(), version)
+				return installscript.Install(cmd.Context(), version, force)
 			}
 
 			if nightly {
-				return installscript.Install(cmd.Context(), "nightly")
+				return installscript.Install(cmd.Context(), "nightly", force)
 			}
 
-			// Skip the download if the current version is already the latest release.
-			if !force && !ch.IsDev() {
-				latest, err := ch.RefreshLatestVersion(cmd.Context())
-				if err != nil {
-					ch.PrintfWarn("Could not check latest version: %v\n", err)
-				} else if upToDate, err := versionUpToDate(ch.Version.Number, latest); err == nil && upToDate {
-					ch.Printf("Rill is already up to date (%s). Use --force to reinstall.\n", latest)
-					return nil
-				}
-			}
-
-			return installscript.Install(cmd.Context(), "")
+			return installscript.Install(cmd.Context(), "", force)
 		},
 	}
 
 	upgradeCmd.Flags().StringVar(&version, "version", "", "Install a specific version of Rill")
 	upgradeCmd.Flags().BoolVar(&nightly, "nightly", false, "Install the latest nightly build")
-	upgradeCmd.Flags().BoolVar(&force, "force", false, "Reinstall even if the current version is already the latest")
+	upgradeCmd.Flags().BoolVar(&force, "force", false, "Reinstall even if the latest version is already installed")
 
 	return upgradeCmd
-}
-
-// versionUpToDate reports whether current is greater than or equal to latest.
-// Prerelease builds (e.g. nightly) are never up to date, so upgrading moves them to the latest stable release.
-func versionUpToDate(current, latest string) (bool, error) {
-	currentV, err := goversion.NewVersion(current)
-	if err != nil {
-		return false, err
-	}
-	if currentV.Prerelease() != "" {
-		return false, nil
-	}
-
-	latestV, err := goversion.NewVersion(latest)
-	if err != nil {
-		return false, err
-	}
-
-	return currentV.GreaterThanOrEqual(latestV), nil
 }
