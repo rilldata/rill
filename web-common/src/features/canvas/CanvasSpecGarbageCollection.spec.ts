@@ -25,6 +25,7 @@ import {
   RuntimeClient,
 } from "@rilldata/web-common/runtime-client/v2";
 import { render, screen, waitFor } from "@testing-library/svelte";
+import { get } from "svelte/store";
 import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 
 // The SvelteKit mocks have to be declared in the spec file, since `vi.mock` is hoisted per file.
@@ -158,22 +159,49 @@ describe("Canvas spec after garbage collection", () => {
     expect(screen.queryByText(/No valid component/)).toBeNull();
   }
 
-  it("Should render the components when returning after the spec query was garbage collected", async () => {
-    const { unmount } = renderCanvas();
-    await assertComponentRendered();
-
-    unmount();
-    // Nothing observes the spec query any more, so this is what `gcTime` does to it.
+  // Nothing observes the spec query once the canvas is unmounted, so this is what `gcTime` does to it.
+  function garbageCollectSpecQuery() {
     const queries = specQueries();
     expect(queries).toHaveLength(1);
     for (const query of queries) {
       expect(query.getObserversCount()).toBe(0);
       queryClient.getQueryCache().remove(query);
     }
+  }
+
+  it("Should render the components when returning after the spec query was garbage collected", async () => {
+    const { unmount } = renderCanvas();
+    await assertComponentRendered();
+
+    unmount();
+    garbageCollectSpecQuery();
 
     // The same cached entity is reused on the way back.
     renderCanvas();
 
     await assertComponentRendered();
+  });
+
+  it("Should keep the canvas theme when returning after the spec query was garbage collected", async () => {
+    // The theme store is derived from the spec store when the entity is created.
+    mocks.mockCanvas(
+      CANVAS_NAME,
+      { ...CANVAS_INIT, embeddedTheme: { primaryColorRaw: "#ff0000" } },
+      { [METRICS_VIEW_NAME]: AD_BIDS_METRICS_INIT },
+      { [COMPONENT_NAME]: IMAGE_COMPONENT },
+    );
+    const theme = () =>
+      get(getCanvasStore(CANVAS_NAME, INSTANCE_ID).canvasEntity.theme);
+
+    const { unmount } = renderCanvas();
+    await assertComponentRendered();
+    expect(theme()).toBeDefined();
+
+    unmount();
+    garbageCollectSpecQuery();
+    renderCanvas();
+
+    await assertComponentRendered();
+    await waitFor(() => expect(theme()).toBeDefined());
   });
 });
