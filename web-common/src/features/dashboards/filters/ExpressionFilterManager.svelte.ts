@@ -66,7 +66,7 @@ export class ExpressionFilterManager implements UrlParamsStore {
   public paramKeys = new Set<string>([ExploreStateURLParams.Filters]);
   public readonly storeSync: UrlParamsChangeTracker;
 
-  // Unsubscribes from `metricsViewsProvider`, which can outlive this manager. See `cleanup`.
+  // Unsubscribes from the providers, which can outlive this manager. See `cleanup`.
   private readonly unsubscribers: (() => void)[];
 
   public constructor(
@@ -100,7 +100,11 @@ export class ExpressionFilterManager implements UrlParamsStore {
       this.ready = true;
       this.events.emit("ready");
     });
-    this.unsubscribers = [unsubUpdate, unsubSpecsLoaded];
+    // The config can land after the params were parsed. See `addRequiredAndPinnedFilters`.
+    const unsubYamlConfig = yamlConfigProvider.on("update", () =>
+      this.topLevelJoiner.addRequiredAndPinnedFilters(),
+    );
+    this.unsubscribers = [unsubUpdate, unsubSpecsLoaded, unsubYamlConfig];
 
     this.topLevelJoiner = $state(
       JoinerFilterManager.parse(
@@ -157,8 +161,8 @@ export class ExpressionFilterManager implements UrlParamsStore {
   }
 
   /**
-   * Removes the listeners on `metricsViewsProvider`.
-   * Call this when the manager is discarded before the provider, e.g. a temporary `clone`.
+   * Removes the listeners on `metricsViewsProvider` and `yamlConfigProvider`.
+   * Call this when the manager is discarded before the providers, e.g. a temporary `clone`.
    */
   public cleanup() {
     this.unsubscribers.forEach((unsub) => unsub());
