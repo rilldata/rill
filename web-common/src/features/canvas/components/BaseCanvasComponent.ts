@@ -415,16 +415,25 @@ export abstract class BaseCanvasComponent<T = ComponentSpec> {
   }
 
   updateProperty(key: AllKeys<T>, value: T[AllKeys<T>]) {
+    this.updateProperties({ [key]: value } as unknown as Partial<T>);
+  }
+
+  // Writes several properties in one YAML update, so dependent keys (such as
+  // a sort field and its direction) never reach the reconciler half-applied.
+  // A key whose value is undefined or empty is removed from the spec.
+  updateProperties(patch: Partial<T>) {
     const currentSpec = get(this.specStore);
 
-    const newSpec = { ...currentSpec, [key]: value };
+    const newSpec = { ...currentSpec, ...patch };
 
-    if (value === undefined || value == "") {
-      delete newSpec[key];
+    for (const [key, value] of Object.entries(patch)) {
+      if (value === undefined || value == "") {
+        delete newSpec[key];
+      }
     }
 
     // If the metrics_view is changed, clear the time_filters and dimension_filters
-    if (key === "metrics_view") {
+    if ("metrics_view" in patch) {
       if ("time_filters" in newSpec) {
         delete newSpec.time_filters;
       }

@@ -16,7 +16,10 @@
   export let absolute = true;
   export let onMouseDown: ((e: MouseEvent) => void) | null = null;
   export let onUpdate: ((dimension: number) => void) | null = null;
-  export let onMouseUp: (() => void) | null = null;
+  // Called with the final dimension once the drag ends.
+  export let onMouseUp: ((dimension: number) => void) | null = null;
+  // Called after a double-click has reset the dimension to `basis`.
+  export let onReset: (() => void) | null = null;
   export let disabled = false;
   export let justify: "center" | "start" | "end" = "center";
   export let hang = true;
@@ -25,6 +28,10 @@
   let startingDimension = dimension;
   let hover = false;
   let timeout: ReturnType<typeof setTimeout> | null = null;
+  // Pending animation frame for the latest mouse move, so the drag end can
+  // flush it and report the final dimension.
+  let frame: number | null = null;
+  let pendingDelta = 0;
 
   function handleMousedown(e: Event) {
     startingDimension = dimension;
@@ -39,6 +46,11 @@
     if (onMouseDown) onMouseDown(e);
     window.addEventListener("mousemove", onMouseMove);
     window.addEventListener("mouseup", handleMouseUp);
+  }
+
+  function applyDelta(delta: number) {
+    dimension = Math.min(max, Math.max(min, startingDimension + delta));
+    if (onUpdate) onUpdate(dimension);
   }
 
   function onMouseMove(e: MouseEvent) {
@@ -58,16 +70,25 @@
         delta = e.clientY - start;
       }
     }
-    requestAnimationFrame(() => {
-      dimension = Math.min(max, Math.max(min, startingDimension + delta));
-      if (onUpdate) onUpdate(dimension);
-    });
+    pendingDelta = delta;
+    if (frame === null) {
+      frame = requestAnimationFrame(() => {
+        frame = null;
+        applyDelta(pendingDelta);
+      });
+    }
   }
 
   function handleMouseUp() {
+    // Flush the last move so the final dimension is applied before it is reported.
+    if (frame !== null) {
+      cancelAnimationFrame(frame);
+      frame = null;
+      applyDelta(pendingDelta);
+    }
     resizing = false;
     hover = false;
-    if (onMouseUp) onMouseUp();
+    if (onMouseUp) onMouseUp(dimension);
     window.removeEventListener("mousemove", onMouseMove);
     window.removeEventListener("mouseup", handleMouseUp);
   }
@@ -75,6 +96,7 @@
   function handleDoubleClick() {
     dimension = basis;
     if (onUpdate) onUpdate(dimension);
+    if (onReset) onReset();
   }
 </script>
 

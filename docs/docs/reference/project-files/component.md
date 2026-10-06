@@ -256,7 +256,45 @@ _[object]_ - (no description)
 
   - **`metrics_view`** - _[string]_ - Reference to the metrics view to use _(required)_
 
-  - **`measures`** - _[array of string]_ - List of measures to display _(required)_
+  - **`columns`** - _[array of oneOf]_ - Ordered columns of a `table`, dimensions and measures alike. Each entry is a field name or an object with the name and per-column overrides.
+
+    - **option 1** - _[string]_ - Name of the dimension, measure, adhoc measure, or encoded time column (for example `ts_rill_TIME_GRAIN_DAY`)
+
+    - **option 2** - _[object]_ - (no description)
+
+      - **`name`** - _[string]_ - Name of the dimension, measure, adhoc measure, or encoded time column _(required)_
+
+      - **`width`** - _[integer]_ - Column width in pixels. Measures and adhoc measures accept 60–300, dimensions and time columns 100–600. The column keeps this width under stretch and `fit_to_width`. Not allowed on `col_dimensions`.
+
+      - **`wrap`** - _[boolean]_ - Wrap the cell text over `wrap_lines` lines instead of truncating it. Dimension columns only; overrides the component-level `wrap`.
+
+      - **`align`** - _[string]_ - Text alignment of the header and cells. Defaults to right for measures and left for dimensions. Not allowed on `col_dimensions`.
+
+      - **`label`** - _[string]_ - Header text, replacing the display name from the metrics view.
+
+      - **`format_preset`** - _[string]_ - Number format preset for a measure in this component only. Mutually exclusive with `format_d3`.
+
+      - **`format_d3`** - _[string]_ - d3 format string for a measure in this component only (for example `.3s` or `,.2f`). Mutually exclusive with `format_preset`.
+
+  - **`measures`** - _[array of oneOf]_ - List of measures to display. Each entry is a field name or an object with the name and per-column overrides. _(required)_
+
+    - **option 1** - _[string]_ - Name of the dimension, measure, adhoc measure, or encoded time column (for example `ts_rill_TIME_GRAIN_DAY`)
+
+    - **option 2** - _[object]_ - (no description)
+
+      - **`name`** - _[string]_ - Name of the dimension, measure, adhoc measure, or encoded time column _(required)_
+
+      - **`width`** - _[integer]_ - Column width in pixels. Measures and adhoc measures accept 60–300, dimensions and time columns 100–600. The column keeps this width under stretch and `fit_to_width`. Not allowed on `col_dimensions`.
+
+      - **`wrap`** - _[boolean]_ - Wrap the cell text over `wrap_lines` lines instead of truncating it. Dimension columns only; overrides the component-level `wrap`.
+
+      - **`align`** - _[string]_ - Text alignment of the header and cells. Defaults to right for measures and left for dimensions. Not allowed on `col_dimensions`.
+
+      - **`label`** - _[string]_ - Header text, replacing the display name from the metrics view.
+
+      - **`format_preset`** - _[string]_ - Number format preset for a measure in this component only. Mutually exclusive with `format_d3`.
+
+      - **`format_d3`** - _[string]_ - d3 format string for a measure in this component only (for example `.3s` or `,.2f`). Mutually exclusive with `format_preset`.
 
   - **`adhoc_measures`** - _[array of object]_ - Adhoc measures defined on this component, derived from the metrics view's measures with an arithmetic expression. Reference them by `name` in `measures`. See [Adhoc measures](/developers/build/dashboards/canvas-widgets/data#adhoc-measures).
 
@@ -272,9 +310,45 @@ _[object]_ - (no description)
 
   - **`time_range`** - _[string]_ - Time range for the table _(required)_
 
-  - **`row_dimensions`** - _[array of string]_ - Dimensions for table rows
+  - **`row_dimensions`** - _[array of oneOf]_ - Dimensions for pivot rows. The first one keys the merged row-header column, so only it takes `width`, `wrap` and `align`.
 
-  - **`col_dimensions`** - _[array of string]_ - Dimensions for table columns
+    - **option 1** - _[string]_ - Name of the dimension, measure, adhoc measure, or encoded time column (for example `ts_rill_TIME_GRAIN_DAY`)
+
+    - **option 2** - _[object]_ - (no description)
+
+      - **`name`** - _[string]_ - Name of the dimension, measure, adhoc measure, or encoded time column _(required)_
+
+      - **`width`** - _[integer]_ - Column width in pixels. Measures and adhoc measures accept 60–300, dimensions and time columns 100–600. The column keeps this width under stretch and `fit_to_width`. Not allowed on `col_dimensions`.
+
+      - **`wrap`** - _[boolean]_ - Wrap the cell text over `wrap_lines` lines instead of truncating it. Dimension columns only; overrides the component-level `wrap`.
+
+      - **`align`** - _[string]_ - Text alignment of the header and cells. Defaults to right for measures and left for dimensions. Not allowed on `col_dimensions`.
+
+      - **`label`** - _[string]_ - Header text, replacing the display name from the metrics view.
+
+      - **`format_preset`** - _[string]_ - Number format preset for a measure in this component only. Mutually exclusive with `format_d3`.
+
+      - **`format_d3`** - _[string]_ - d3 format string for a measure in this component only (for example `.3s` or `,.2f`). Mutually exclusive with `format_preset`.
+
+  - **`col_dimensions`** - _[array of oneOf]_ - Dimensions pivoted into column groups. They span their measure columns, so they take only `name` and `label`; set widths on the measures.
+
+    - **option 1** - _[string]_ - Name of the dimension, measure, adhoc measure, or encoded time column (for example `ts_rill_TIME_GRAIN_DAY`)
+
+    - **option 2** - _[object]_ - (no description)
+
+      - **`name`** - _[string]_ - Name of the dimension, measure, adhoc measure, or encoded time column _(required)_
+
+      - **`width`** - _[integer]_ - Column width in pixels. Measures and adhoc measures accept 60–300, dimensions and time columns 100–600. The column keeps this width under stretch and `fit_to_width`. Not allowed on `col_dimensions`.
+
+      - **`wrap`** - _[boolean]_ - Wrap the cell text over `wrap_lines` lines instead of truncating it. Dimension columns only; overrides the component-level `wrap`.
+
+      - **`align`** - _[string]_ - Text alignment of the header and cells. Defaults to right for measures and left for dimensions. Not allowed on `col_dimensions`.
+
+      - **`label`** - _[string]_ - Header text, replacing the display name from the metrics view.
+
+      - **`format_preset`** - _[string]_ - Number format preset for a measure in this component only. Mutually exclusive with `format_d3`.
+
+      - **`format_d3`** - _[string]_ - d3 format string for a measure in this component only (for example `.3s` or `,.2f`). Mutually exclusive with `format_preset`.
 
   - **`hide_totals_row`** - _[boolean]_ - Whether to hide the totals row. Defaults to false.
 
@@ -283,6 +357,18 @@ _[object]_ - (no description)
   - **`totals_row_position`** - _[string]_ - Where to pin the totals row, either "top" (default) or "bottom".
 
   - **`row_limit`** - _[string]_ - Maximum number of rows to display in a pivot table (one of "5", "10", "25", "50", "100"). Omit or set to "all" for all rows.
+
+  - **`fit_to_width`** - _[boolean]_ - When the columns overflow the component, shrink every column that has no configured width (down to its minimum) so the table fits instead of scrolling. Defaults to false.
+
+  - **`wrap`** - _[boolean]_ - Wrap the text of dimension cells over `wrap_lines` lines instead of truncating it. Defaults to false.
+
+  - **`wrap_headers`** - _[boolean]_ - Wrap header labels over `wrap_lines` lines instead of truncating them. Defaults to false.
+
+  - **`wrap_lines`** - _[integer]_ - Lines per row (and per header row) when wrapping is on, between 1 and 5. Defaults to 2.
+
+  - **`sort_by`** - _[string]_ - Initial sort field. In a table any column; in a pivot a measure (rows are ordered by its row total) or a row dimension. Viewers can still re-sort by clicking headers.
+
+  - **`sort_dir`** - _[string]_ - Direction of the initial sort. Defaults to desc for measures and asc for dimensions.
 
   - **`comparison_range`** - _[string]_ - Comparison time range
 

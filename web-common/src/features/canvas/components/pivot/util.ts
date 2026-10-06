@@ -41,6 +41,7 @@ import {
 } from "svelte/store";
 import type { CanvasEntity } from "../../stores/canvas-entity";
 import type { PivotSpec, TableSpec } from "./";
+import { applyFieldConfigToMetricsView, fieldNames } from "./field-config";
 
 /**
  * Strips filters for the pivot's own dimensions from the where filter.
@@ -212,9 +213,17 @@ export function processPivot(
   const ephemeralMeasures = ephemeralSpecsToDefs($tableSpec?.adhoc_measures);
   const ephemeralMeasureNames = ephemeralMeasureNameSet(ephemeralMeasures);
 
+  // Per-field label and format overrides are applied to the metrics view
+  // fields here, so the shared column definitions need no knowledge of them.
+  const fields = applyFieldConfigToMetricsView(
+    appendEphemeralSpecMeasures(metricsView?.measures || [], ephemeralMeasures),
+    metricsView?.dimensions || [],
+    $tableSpec,
+  );
+
   const config: PivotDataStoreConfig = {
     ready,
-    measureNames: ($tableSpec?.measures || []).flatMap((name) => {
+    measureNames: fieldNames($tableSpec?.measures).flatMap((name) => {
       const group = [name];
       // Comparison columns are not supported for ephemeral measures.
       if (enableComparison && !ephemeralMeasureNames.has(name)) {
@@ -225,14 +234,11 @@ export function processPivot(
       }
       return group;
     }),
-    rowDimensionNames: $tableSpec?.row_dimensions || [],
-    colDimensionNames: $tableSpec?.col_dimensions || [],
-    allMeasures: appendEphemeralSpecMeasures(
-      metricsView?.measures || [],
-      ephemeralMeasures,
-    ),
+    rowDimensionNames: fieldNames($tableSpec?.row_dimensions),
+    colDimensionNames: fieldNames($tableSpec?.col_dimensions),
+    allMeasures: fields.measures,
     ephemeralMeasures,
-    allDimensions: metricsView?.dimensions || [],
+    allDimensions: fields.dimensions,
     whereFilter: where ?? createAndExpression([]),
     searchText: "",
     isFlat: false,
@@ -296,7 +302,7 @@ export function processFlat(
     };
   }
 
-  const columns = $tableSpec?.columns || [];
+  const columns = fieldNames($tableSpec?.columns);
   const ephemeralMeasures = ephemeralSpecsToDefs($tableSpec?.adhoc_measures);
   const ephemeralMeasureNames = ephemeralMeasureNameSet(ephemeralMeasures);
   const allMeasureNames = [
@@ -310,6 +316,14 @@ export function processFlat(
   const enableComparison =
     canEnablePivotComparison($pivotState, comparisonTimeRange?.start) &&
     $timeAndFilterStore.showTimeComparison;
+
+  // Per-field label and format overrides are applied to the metrics view
+  // fields here, so the shared column definitions need no knowledge of them.
+  const fields = applyFieldConfigToMetricsView(
+    appendEphemeralSpecMeasures(metricsView?.measures || [], ephemeralMeasures),
+    metricsView?.dimensions || [],
+    $tableSpec,
+  );
 
   const config: PivotDataStoreConfig = {
     ready,
@@ -326,12 +340,9 @@ export function processFlat(
     }),
     rowDimensionNames: dimensions || [],
     colDimensionNames: [],
-    allMeasures: appendEphemeralSpecMeasures(
-      metricsView?.measures || [],
-      ephemeralMeasures,
-    ),
+    allMeasures: fields.measures,
     ephemeralMeasures,
-    allDimensions: metricsView?.dimensions || [],
+    allDimensions: fields.dimensions,
     whereFilter: where ?? createAndExpression([]),
     searchText: "",
     isFlat: true,
