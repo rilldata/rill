@@ -115,22 +115,25 @@ func NewWithOptionalRuntime(t *testing.T, startRt bool) *Fixture {
 	issuer, err := runtimeauth.NewEphemeralIssuer(externalURL)
 	require.NoError(t, err)
 
-	// Runtime provisioner - if startRt is false, we set up a provisioner that points to a non-existent runtime server.
+	// Runtime provisioners - if startRt is false, we set up provisioners that point to a non-existent runtime server.
+	// The "static-alt" provisioner points to the same runtime; it is used to test switching a deployment's provisioner.
 	runtimeAudienceURL := runtimeExternalURL
 	defaultProvisioner := "static"
-	provisionerSetJSON := must(json.Marshal(map[string]any{
-		"static": map[string]any{
-			"type": "static",
-			"spec": map[string]any{
-				"runtimes": []map[string]any{
-					{
-						"host":         runtimeExternalURL,
-						"slots":        1000000,
-						"audience_url": runtimeAudienceURL,
-					},
+	staticSpec := map[string]any{
+		"type": "static",
+		"spec": map[string]any{
+			"runtimes": []map[string]any{
+				{
+					"host":         runtimeExternalURL,
+					"slots":        1000000,
+					"audience_url": runtimeAudienceURL,
 				},
 			},
 		},
+	}
+	provisionerSetJSON := must(json.Marshal(map[string]any{
+		"static":     staticSpec,
+		"static-alt": staticSpec,
 	}))
 
 	// Initialize mock AI using drivers.Open pattern

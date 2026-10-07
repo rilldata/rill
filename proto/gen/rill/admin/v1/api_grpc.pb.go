@@ -418,7 +418,7 @@ type AdminServiceClient interface {
 	// The DNS records and ingress TLS must be configured separately.
 	SudoUpdateOrganizationCustomDomain(ctx context.Context, in *SudoUpdateOrganizationCustomDomainRequest, opts ...grpc.CallOption) (*SudoUpdateOrganizationCustomDomainResponse, error)
 	// SudoUpdateOrganizationDefaultProvisioner sets the provisioner used by default for an organization's deployments.
-	// It only affects deployments provisioned after the change; existing deployments stay on their current provisioner.
+	// Running deployments keep their current provisioner; the change is applied to each deployment the next time it is started (stopped deployments are moved to the new provisioner, keeping their IDs).
 	SudoUpdateOrganizationDefaultProvisioner(ctx context.Context, in *SudoUpdateOrganizationDefaultProvisionerRequest, opts ...grpc.CallOption) (*SudoUpdateOrganizationDefaultProvisionerResponse, error)
 	// SudoUpdateAnnotations endpoint for superusers to update project annotations
 	SudoUpdateAnnotations(ctx context.Context, in *SudoUpdateAnnotationsRequest, opts ...grpc.CallOption) (*SudoUpdateAnnotationsResponse, error)
@@ -2480,7 +2480,7 @@ type AdminServiceServer interface {
 	// The DNS records and ingress TLS must be configured separately.
 	SudoUpdateOrganizationCustomDomain(context.Context, *SudoUpdateOrganizationCustomDomainRequest) (*SudoUpdateOrganizationCustomDomainResponse, error)
 	// SudoUpdateOrganizationDefaultProvisioner sets the provisioner used by default for an organization's deployments.
-	// It only affects deployments provisioned after the change; existing deployments stay on their current provisioner.
+	// Running deployments keep their current provisioner; the change is applied to each deployment the next time it is started (stopped deployments are moved to the new provisioner, keeping their IDs).
 	SudoUpdateOrganizationDefaultProvisioner(context.Context, *SudoUpdateOrganizationDefaultProvisionerRequest) (*SudoUpdateOrganizationDefaultProvisionerResponse, error)
 	// SudoUpdateAnnotations endpoint for superusers to update project annotations
 	SudoUpdateAnnotations(context.Context, *SudoUpdateAnnotationsRequest) (*SudoUpdateAnnotationsResponse, error)

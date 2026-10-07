@@ -16,6 +16,7 @@ func ProjectCmd(ch *cmdutil.Helper) *cobra.Command {
 	projectCmd.AddCommand(SearchCmd(ch))
 	projectCmd.AddCommand(HibernateCmd(ch))
 	projectCmd.AddCommand(ResetCmd(ch))
+	projectCmd.AddCommand(RestartCmd(ch))
 	projectCmd.AddCommand(DumpResources(ch))
 	projectCmd.AddCommand(DumpInstances(ch))
 

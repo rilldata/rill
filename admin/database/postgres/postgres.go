@@ -3439,8 +3439,8 @@ func (c *connection) UpdateProvisionerResource(ctx context.Context, id string, o
 
 	res := &provisionerResourceDTO{}
 	err = c.getDB(ctx).QueryRowxContext(ctx, `
-		UPDATE provisioner_resources SET status = $1, status_message = $2, args_json = $3, state_json = $4, config_json = $5, updated_on = now() WHERE id = $6 RETURNING *`,
-		opts.Status, opts.StatusMessage, args, state, config, id,
+		UPDATE provisioner_resources SET status = $1, status_message = $2, provisioner = $3, args_json = $4, state_json = $5, config_json = $6, updated_on = now() WHERE id = $7 RETURNING *`,
+		opts.Status, opts.StatusMessage, opts.Provisioner, args, state, config, id,
 	).StructScan(res)
 	if err != nil {
 		return nil, parseErr("provisioner resource", err)
