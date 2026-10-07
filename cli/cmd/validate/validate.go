@@ -155,7 +155,7 @@ func isLocalProjectRunning(ctx context.Context, projectPath, baseURL string) boo
 	ctx, cancel := context.WithTimeout(ctx, time.Second)
 	defer cancel()
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, baseURL+"/local/config", nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, baseURL+"/local/config", http.NoBody)
 	if err != nil {
 		return false
 	}
