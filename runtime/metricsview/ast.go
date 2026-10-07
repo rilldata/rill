@@ -710,6 +710,12 @@ func (a *AST) LookupDimension(name string, visible bool) (*runtimev1.MetricsView
 		}
 	}
 
+	for _, m := range a.MetricsView.Measures {
+		if m.Name == name {
+			return nil, fmt.Errorf("dimension %q not found: %q is a measure", name, name)
+		}
+	}
+
 	return nil, fmt.Errorf("dimension %q not found", name)
 }
 
@@ -725,6 +731,15 @@ func (a *AST) LookupMeasure(name string, visible bool) (*runtimev1.MetricsViewSp
 	for _, m := range a.MetricsView.Measures {
 		if m.Name == name {
 			return m, nil
+		}
+	}
+
+	if name == a.MetricsView.TimeDimension {
+		return nil, fmt.Errorf("measure %q not found: %q is the time dimension", name, name)
+	}
+	for _, dim := range a.MetricsView.Dimensions {
+		if dim.Name == name {
+			return nil, fmt.Errorf("measure %q not found: %q is a dimension", name, name)
 		}
 	}
 
@@ -1008,7 +1023,7 @@ func (a *AST) addTimeComparisonMeasure(n *SelectNode, m *runtimev1.MetricsViewSp
 	// We use the hardcoded aliases "base" and "comparison" for the two SELECTs (which must be used in the comparison measure expression).
 	if n.JoinComparisonSelect == nil {
 		if a.Query.ComparisonTimeRange == nil {
-			return errors.New("comparison time range not provided")
+			return errors.New("comparison time range not provided: comparison measures require 'comparison_time_range'")
 		}
 
 		a.WrapSelect(n, "base")
