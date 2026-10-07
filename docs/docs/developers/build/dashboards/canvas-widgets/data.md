@@ -112,12 +112,12 @@ Per-column overrides on an entry:
 | `name` | Required. The dimension, measure, adhoc measure, or encoded time column, exactly as you would write the plain string. |
 | `width` | Pixel width. Measures accept `60` to `300`, dimensions and time columns `100` to `600`. A column with a configured width is pinned: stretching and `fit_to_width` leave it alone. |
 | `wrap` | Overrides the component-level `wrap` for one dimension column. |
-| `align` | `left`, `center`, or `right` for the header and cells. Measures default to `right`, dimensions to `left`. |
+| `align` | `left`, `center`, or `right` for the header and cells of table columns and measures. Measures default to `right`, dimensions to `left`. Row dimensions and column dimensions do not take it. |
 | `label` | Header text, replacing the display name from the metrics view. In a pivot it also renames the field in the merged row-header label and the column-dimension group header. |
 | `format_preset` | Number format for a measure in this widget only: `humanize`, `none`, `currency_usd`, `currency_eur`, `percentage`, or `interval_ms`. Mutually exclusive with `format_d3`. |
 | `format_d3` | A [d3 format](https://d3js.org/d3-format) string for a measure in this widget only, such as `.3s` for three significant digits or `,.2f`. Mutually exclusive with `format_preset`. |
 
-In a pivot, only measures and the first row dimension render a column of their own. A measure's `width` applies to its column under every column-dimension value, and the first row dimension's `width`, `wrap`, and `align` apply to the merged row-header column. Entries in `col_dimensions` are header groups spanning their measure columns, so they accept only `name` and `label`; to make a pivoted group wider, widen its measures. Sorting by a measure orders the rows by that measure's row total.
+In a pivot, only measures and the first row dimension render a column of their own. A measure's `width` applies to its column under every column-dimension value, and the first row dimension's `width` and `wrap` apply to the merged row-header column; row dimensions after the first take only `name` and `label`, and row dimensions never take `align`. Entries in `col_dimensions` are header groups spanning their measure columns, so they accept only `name` and `label`; to make a pivoted group wider, widen its measures. Sorting by a measure orders the rows by that measure's row total.
 
 In the canvas editor, the widget's sidebar has switches for fitting and wrapping and a sort selector, and each field chip opens a column settings menu with the label, width, wrapping, alignment, and number format. Dragging a column edge in the editor writes the width to the YAML, and clicking a header writes the sort. Viewers of the published dashboard can still resize and re-sort; their changes are not saved.
 

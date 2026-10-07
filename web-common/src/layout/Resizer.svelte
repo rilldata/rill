@@ -16,8 +16,10 @@
   export let absolute = true;
   export let onMouseDown: ((e: MouseEvent) => void) | null = null;
   export let onUpdate: ((dimension: number) => void) | null = null;
-  // Called with the final dimension once the drag ends.
-  export let onMouseUp: ((dimension: number) => void) | null = null;
+  // Called with the final dimension once the drag ends. `moved` is false when
+  // the pointer never moved, so a plain click can be told apart from a resize.
+  export let onMouseUp: ((dimension: number, moved: boolean) => void) | null =
+    null;
   // Called after a double-click has reset the dimension to `basis`.
   export let onReset: (() => void) | null = null;
   export let disabled = false;
@@ -32,10 +34,12 @@
   // flush it and report the final dimension.
   let frame: number | null = null;
   let pendingDelta = 0;
+  let moved = false;
 
   function handleMousedown(e: Event) {
     startingDimension = dimension;
     resizing = true;
+    moved = false;
 
     if (direction === "EW") {
       start = e.clientX;
@@ -49,6 +53,7 @@
   }
 
   function applyDelta(delta: number) {
+    if (delta !== 0) moved = true;
     dimension = Math.min(max, Math.max(min, startingDimension + delta));
     if (onUpdate) onUpdate(dimension);
   }
@@ -88,7 +93,7 @@
     }
     resizing = false;
     hover = false;
-    if (onMouseUp) onMouseUp(dimension);
+    if (onMouseUp) onMouseUp(dimension, moved);
     window.removeEventListener("mousemove", onMouseMove);
     window.removeEventListener("mouseup", handleMouseUp);
   }

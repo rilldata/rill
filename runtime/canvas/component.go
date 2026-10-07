@@ -369,7 +369,11 @@ func validateTable(props map[string]any, metricsViews map[string]*runtimev1.Metr
 		if !metricsViewHasDimension(mv, col.Name) && !isMeasure && !isEncodedTimeDimension(mv, col.Name) {
 			return fmt.Errorf("referenced columns value %q is not a dimension or measure in metrics view %q", col.Name, mvn)
 		}
-		if err := validateFieldEntryProps("columns", col, isMeasure, false); err != nil {
+		role := fieldRoleTableDimension
+		if isMeasure {
+			role = fieldRoleMeasure
+		}
+		if err := validateFieldEntryProps("columns", col, role); err != nil {
 			return err
 		}
 		sortable = append(sortable, col.Name)
@@ -412,16 +416,21 @@ func validatePivot(props map[string]any, metricsViews map[string]*runtimev1.Metr
 		if !metricsViewHasMeasure(mv, m.Name) && !ephemeralNames[m.Name] {
 			return fmt.Errorf("referenced measures value %q is not a measure in metrics view %q", m.Name, mvn)
 		}
-		if err := validateFieldEntryProps("measures", m, true, false); err != nil {
+		if err := validateFieldEntryProps("measures", m, fieldRoleMeasure); err != nil {
 			return err
 		}
 		sortable = append(sortable, m.Name)
 	}
-	for _, d := range rowDims {
+	for i, d := range rowDims {
 		if !metricsViewHasDimension(mv, d.Name) && !isEncodedTimeDimension(mv, d.Name) {
 			return fmt.Errorf("referenced row_dimensions value %q is not a dimension in metrics view %q", d.Name, mvn)
 		}
-		if err := validateFieldEntryProps("row_dimensions", d, false, false); err != nil {
+		// All row dimensions share one merged row-header column keyed by the first one.
+		role := fieldRoleRowDimension
+		if i == 0 {
+			role = fieldRoleRowHeader
+		}
+		if err := validateFieldEntryProps("row_dimensions", d, role); err != nil {
 			return err
 		}
 		sortable = append(sortable, d.Name)
@@ -430,7 +439,7 @@ func validatePivot(props map[string]any, metricsViews map[string]*runtimev1.Metr
 		if !metricsViewHasDimension(mv, d.Name) && !isEncodedTimeDimension(mv, d.Name) {
 			return fmt.Errorf("referenced col_dimensions value %q is not a dimension in metrics view %q", d.Name, mvn)
 		}
-		if err := validateFieldEntryProps("col_dimensions", d, false, true); err != nil {
+		if err := validateFieldEntryProps("col_dimensions", d, fieldRoleColumnDimension); err != nil {
 			return err
 		}
 	}
@@ -638,20 +647,37 @@ var columnAligns = []string{"left", "center", "right"}
 
 var measureFormatPresets = []string{"humanize", "none", "currency_usd", "currency_eur", "percentage", "interval_ms"}
 
-// validateFieldEntryProps validates the per-column overrides of a field entry:
-// width (an integer within the bounds of the field's role), wrap (dimension columns only), align, label,
-// and the number format keys (measures only; mutually exclusive).
-// Column dimensions are header groups spanning their measure columns, so they take no width, wrap or alignment.
+// fieldRole describes which per-column overrides a field entry may carry.
+type fieldRole int
+
+const (
+	// fieldRoleTableDimension is a dimension or time column of a table: width, wrap, align and label.
+	fieldRoleTableDimension fieldRole = iota
+	// fieldRoleMeasure is a measure of a table or pivot: width, align, label and the number formats.
+	fieldRoleMeasure
+	// fieldRoleRowHeader is the first row dimension of a pivot, which keys the merged row-header column: width, wrap and label.
+	fieldRoleRowHeader
+	// fieldRoleRowDimension is a row dimension after the first, which renders no column of its own: label only.
+	fieldRoleRowDimension
+	// fieldRoleColumnDimension is a column dimension, a header group spanning its measure columns: label only.
+	fieldRoleColumnDimension
+)
+
+// validateFieldEntryProps validates the per-column overrides of a field entry against its role:
+// width (an integer within the bounds of the role), wrap, align, label, and the number format keys.
 // Unknown keys are ignored so that future keys need no lockstep validation.
-func validateFieldEntryProps(path string, entry fieldEntry, isMeasure, isColumnDimension bool) error {
+func validateFieldEntryProps(path string, entry fieldEntry, role fieldRole) error {
 	if entry.Props == nil {
 		return nil
 	}
 	prefix := fmt.Sprintf("field %q in %q", entry.Name, path)
 
 	if raw, ok := entry.Props["width"]; ok {
-		if isColumnDimension {
+		switch role {
+		case fieldRoleColumnDimension:
 			return fmt.Errorf("%s: column dimensions span their measure columns and take no 'width'; set it on the measures instead", prefix)
+		case fieldRoleRowDimension:
+			return fmt.Errorf("%s: only the first row dimension renders a column; set 'width' on it", prefix)
 		}
 		// Numbers arrive as float64 after the structpb round trip.
 		f, ok := raw.(float64)
@@ -659,7 +685,7 @@ func validateFieldEntryProps(path string, entry fieldEntry, isMeasure, isColumnD
 			return fmt.Errorf("%s: 'width' must be an integer number of pixels", prefix)
 		}
 		minWidth, maxWidth := minDimensionColumnWidth, maxDimensionColumnWidth
-		if isMeasure {
+		if role == fieldRoleMeasure {
 			minWidth, maxWidth = minMeasureColumnWidth, maxMeasureColumnWidth
 		}
 		if f < float64(minWidth) || f > float64(maxWidth) {
@@ -668,10 +694,12 @@ func validateFieldEntryProps(path string, entry fieldEntry, isMeasure, isColumnD
 	}
 
 	if raw, ok := entry.Props["wrap"]; ok {
-		if isColumnDimension {
+		switch role {
+		case fieldRoleColumnDimension:
 			return fmt.Errorf("%s: column dimensions take no 'wrap'", prefix)
-		}
-		if isMeasure {
+		case fieldRoleRowDimension:
+			return fmt.Errorf("%s: only the first row dimension renders a column; set 'wrap' on it", prefix)
+		case fieldRoleMeasure:
 			return fmt.Errorf("%s: 'wrap' only applies to dimension columns", prefix)
 		}
 		if _, ok := raw.(bool); !ok {
@@ -680,8 +708,11 @@ func validateFieldEntryProps(path string, entry fieldEntry, isMeasure, isColumnD
 	}
 
 	if raw, ok := entry.Props["align"]; ok {
-		if isColumnDimension {
+		switch role {
+		case fieldRoleColumnDimension:
 			return fmt.Errorf("%s: column dimensions take no 'align'", prefix)
+		case fieldRoleRowHeader, fieldRoleRowDimension:
+			return fmt.Errorf("%s: 'align' is not supported on row dimensions", prefix)
 		}
 		s, ok := raw.(string)
 		if !ok || !slices.Contains(columnAligns, s) {
@@ -697,7 +728,7 @@ func validateFieldEntryProps(path string, entry fieldEntry, isMeasure, isColumnD
 
 	rawPreset, hasPreset := entry.Props["format_preset"]
 	rawD3, hasD3 := entry.Props["format_d3"]
-	if (hasPreset || hasD3) && !isMeasure {
+	if (hasPreset || hasD3) && role != fieldRoleMeasure {
 		return fmt.Errorf("%s: number formats only apply to measures", prefix)
 	}
 	if hasPreset && hasD3 {

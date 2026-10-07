@@ -201,6 +201,25 @@ export function stripColumnDimensionKeys(
   })[0];
 }
 
+/**
+ * Row dimensions share one merged row-header column keyed by the first entry:
+ * only it takes `width` and `wrap`, and row dimensions never take `align`.
+ * Applied on every editor write so reordering never produces YAML the
+ * runtime rejects.
+ */
+export function normalizeRowDimensionEntries(
+  entries: PivotFieldEntry[],
+): PivotFieldEntry[] {
+  return entries.map((entry, index) => {
+    if (typeof entry !== "object" || entry === null) return entry;
+    return setFieldConfig(
+      [entry],
+      entry.name,
+      index === 0 ? { align: null } : { align: null, width: null, wrap: null },
+    )[0];
+  });
+}
+
 /** Which overrides the inspector offers for a chip in a given list. */
 export function columnSettingsCapabilities(
   listKey: PivotFieldListKey,
@@ -244,7 +263,11 @@ export function resolveColumnStyles(
   isMeasure: (name: string) => boolean,
 ): PivotColumnStyles {
   const styles: PivotColumnStyles = {};
-  const add = (entry: PivotFieldEntry, role: ColumnWidthRole) => {
+  const add = (
+    entry: PivotFieldEntry,
+    role: ColumnWidthRole,
+    allowAlign: boolean,
+  ) => {
     if (typeof entry === "string") return;
     const config = sanitizeFieldConfig(entry);
     const style: PivotColumnStyles[string] = {};
@@ -254,18 +277,21 @@ export function resolveColumnStyles(
     if (role === "dimension" && config.wrap !== undefined) {
       style.wrap = config.wrap;
     }
-    if (config.align !== undefined) style.align = config.align;
+    if (allowAlign && config.align !== undefined) style.align = config.align;
     if (Object.keys(style).length) styles[config.name] = style;
   };
   if ("columns" in spec) {
     for (const entry of spec.columns ?? []) {
       const name = fieldName(entry);
-      if (name !== "") add(entry, isMeasure(name) ? "measure" : "dimension");
+      if (name !== "") {
+        add(entry, isMeasure(name) ? "measure" : "dimension", true);
+      }
     }
   } else {
-    for (const entry of spec.measures ?? []) add(entry, "measure");
+    for (const entry of spec.measures ?? []) add(entry, "measure", true);
+    // The row header is a flex cell with expand chevrons; it takes no alignment.
     const first = spec.row_dimensions?.[0];
-    if (first !== undefined) add(first, "dimension");
+    if (first !== undefined) add(first, "dimension", false);
   }
   return styles;
 }

@@ -552,6 +552,8 @@
       dimension={baseRowDimensionWidth}
       onUpdate={(d: number) => {
         if (!rowDimensionWidthKey) return;
+        // Pinned once the pointer has actually moved, not on mousedown.
+        if (firstRowDimensionName) markDragged(firstRowDimensionName);
 
         rowDimensionLengths.update((rowDimensionLengths) => {
           return rowDimensionLengths.set(rowDimensionWidthKey, d);
@@ -560,11 +562,11 @@
       onMouseDown={(e: MouseEvent) => {
         resizingMeasure = false;
         onResizeStart(e);
-        if (firstRowDimensionName) markDragged(firstRowDimensionName);
       }}
-      onMouseUp={(d: number) => {
+      onMouseUp={(d: number, moved: boolean) => {
         resizingMeasure = false;
-        if (firstRowDimensionName) {
+        // A click without movement must neither persist nor pin the column.
+        if (moved && firstRowDimensionName) {
           onColumnResizeEnd?.(firstRowDimensionName, d);
         }
       }}
@@ -599,18 +601,23 @@
             dimension={baseLength}
             justify={last ? "end" : "center"}
             hang={!last}
-            onUpdate={(d: number) =>
+            onUpdate={(d: number) => {
+              // Pinned once the pointer has actually moved, not on mousedown.
+              markDragged(name);
               measureLengths.update((measureLengths) => {
                 return measureLengths.set(name, d);
-              })}
+              });
+            }}
             onMouseDown={(e: MouseEvent) => {
               resizingMeasure = true;
               onResizeStart(e);
-              markDragged(name);
             }}
-            onMouseUp={(d: number) => {
+            onMouseUp={(d: number, moved: boolean) => {
               resizingMeasure = false;
-              if (isPersistableMeasure(name)) onColumnResizeEnd?.(name, d);
+              // A click without movement must neither persist nor pin the column.
+              if (moved && isPersistableMeasure(name)) {
+                onColumnResizeEnd?.(name, d);
+              }
             }}
             onReset={() => {
               unmarkDragged(name);

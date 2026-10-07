@@ -264,11 +264,11 @@ _[object]_ - (no description)
 
       - **`name`** - _[string]_ - Name of the dimension, measure, adhoc measure, or encoded time column _(required)_
 
-      - **`width`** - _[integer]_ - Column width in pixels. Measures and adhoc measures accept 60–300, dimensions and time columns 100–600. The column keeps this width under stretch and `fit_to_width`. Not allowed on `col_dimensions`.
+      - **`width`** - _[integer]_ - Column width in pixels. Measures and adhoc measures accept 60–300, dimensions and time columns 100–600. The column keeps this width under stretch and `fit_to_width`. Not allowed on `col_dimensions`, nor on row dimensions after the first.
 
-      - **`wrap`** - _[boolean]_ - Wrap the cell text over `wrap_lines` lines instead of truncating it. Dimension columns only; overrides the component-level `wrap`.
+      - **`wrap`** - _[boolean]_ - Wrap the cell text over `wrap_lines` lines instead of truncating it; overrides the component-level `wrap`. Only on a table's dimension columns and on the first row dimension of a pivot.
 
-      - **`align`** - _[string]_ - Text alignment of the header and cells. Defaults to right for measures and left for dimensions. Not allowed on `col_dimensions`.
+      - **`align`** - _[string]_ - Text alignment of the header and cells, for table columns and measures. Defaults to right for measures and left for dimensions. Not allowed on `row_dimensions` or `col_dimensions`.
 
       - **`label`** - _[string]_ - Header text, replacing the display name from the metrics view.
 
@@ -284,11 +284,11 @@ _[object]_ - (no description)
 
       - **`name`** - _[string]_ - Name of the dimension, measure, adhoc measure, or encoded time column _(required)_
 
-      - **`width`** - _[integer]_ - Column width in pixels. Measures and adhoc measures accept 60–300, dimensions and time columns 100–600. The column keeps this width under stretch and `fit_to_width`. Not allowed on `col_dimensions`.
+      - **`width`** - _[integer]_ - Column width in pixels. Measures and adhoc measures accept 60–300, dimensions and time columns 100–600. The column keeps this width under stretch and `fit_to_width`. Not allowed on `col_dimensions`, nor on row dimensions after the first.
 
-      - **`wrap`** - _[boolean]_ - Wrap the cell text over `wrap_lines` lines instead of truncating it. Dimension columns only; overrides the component-level `wrap`.
+      - **`wrap`** - _[boolean]_ - Wrap the cell text over `wrap_lines` lines instead of truncating it; overrides the component-level `wrap`. Only on a table's dimension columns and on the first row dimension of a pivot.
 
-      - **`align`** - _[string]_ - Text alignment of the header and cells. Defaults to right for measures and left for dimensions. Not allowed on `col_dimensions`.
+      - **`align`** - _[string]_ - Text alignment of the header and cells, for table columns and measures. Defaults to right for measures and left for dimensions. Not allowed on `row_dimensions` or `col_dimensions`.
 
       - **`label`** - _[string]_ - Header text, replacing the display name from the metrics view.
 
@@ -310,7 +310,7 @@ _[object]_ - (no description)
 
   - **`time_range`** - _[string]_ - Time range for the table _(required)_
 
-  - **`row_dimensions`** - _[array of oneOf]_ - Dimensions for pivot rows. The first one keys the merged row-header column, so only it takes `width`, `wrap` and `align`.
+  - **`row_dimensions`** - _[array of oneOf]_ - Dimensions for pivot rows. The first one keys the merged row-header column, so only it takes `width` and `wrap`; row dimensions never take `align`.
 
     - **option 1** - _[string]_ - Name of the dimension, measure, adhoc measure, or encoded time column (for example `ts_rill_TIME_GRAIN_DAY`)
 
@@ -318,11 +318,11 @@ _[object]_ - (no description)
 
       - **`name`** - _[string]_ - Name of the dimension, measure, adhoc measure, or encoded time column _(required)_
 
-      - **`width`** - _[integer]_ - Column width in pixels. Measures and adhoc measures accept 60–300, dimensions and time columns 100–600. The column keeps this width under stretch and `fit_to_width`. Not allowed on `col_dimensions`.
+      - **`width`** - _[integer]_ - Column width in pixels. Measures and adhoc measures accept 60–300, dimensions and time columns 100–600. The column keeps this width under stretch and `fit_to_width`. Not allowed on `col_dimensions`, nor on row dimensions after the first.
 
-      - **`wrap`** - _[boolean]_ - Wrap the cell text over `wrap_lines` lines instead of truncating it. Dimension columns only; overrides the component-level `wrap`.
+      - **`wrap`** - _[boolean]_ - Wrap the cell text over `wrap_lines` lines instead of truncating it; overrides the component-level `wrap`. Only on a table's dimension columns and on the first row dimension of a pivot.
 
-      - **`align`** - _[string]_ - Text alignment of the header and cells. Defaults to right for measures and left for dimensions. Not allowed on `col_dimensions`.
+      - **`align`** - _[string]_ - Text alignment of the header and cells, for table columns and measures. Defaults to right for measures and left for dimensions. Not allowed on `row_dimensions` or `col_dimensions`.
 
       - **`label`** - _[string]_ - Header text, replacing the display name from the metrics view.
 
@@ -338,11 +338,11 @@ _[object]_ - (no description)
 
       - **`name`** - _[string]_ - Name of the dimension, measure, adhoc measure, or encoded time column _(required)_
 
-      - **`width`** - _[integer]_ - Column width in pixels. Measures and adhoc measures accept 60–300, dimensions and time columns 100–600. The column keeps this width under stretch and `fit_to_width`. Not allowed on `col_dimensions`.
+      - **`width`** - _[integer]_ - Column width in pixels. Measures and adhoc measures accept 60–300, dimensions and time columns 100–600. The column keeps this width under stretch and `fit_to_width`. Not allowed on `col_dimensions`, nor on row dimensions after the first.
 
-      - **`wrap`** - _[boolean]_ - Wrap the cell text over `wrap_lines` lines instead of truncating it. Dimension columns only; overrides the component-level `wrap`.
+      - **`wrap`** - _[boolean]_ - Wrap the cell text over `wrap_lines` lines instead of truncating it; overrides the component-level `wrap`. Only on a table's dimension columns and on the first row dimension of a pivot.
 
-      - **`align`** - _[string]_ - Text alignment of the header and cells. Defaults to right for measures and left for dimensions. Not allowed on `col_dimensions`.
+      - **`align`** - _[string]_ - Text alignment of the header and cells, for table columns and measures. Defaults to right for measures and left for dimensions. Not allowed on `row_dimensions` or `col_dimensions`.
 
       - **`label`** - _[string]_ - Header text, replacing the display name from the metrics view.
 

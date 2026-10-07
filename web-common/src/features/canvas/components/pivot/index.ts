@@ -44,6 +44,7 @@ import {
   fieldConfigs,
   fieldName,
   fieldNames,
+  normalizeRowDimensionEntries,
   setFieldConfig as setFieldConfigInList,
   sortableFieldNames,
   stripColumnDimensionKeys,
@@ -295,11 +296,12 @@ export class PivotCanvasComponent extends BaseCanvasComponent<
 
   /**
    * Keeps dependent properties consistent on every write: column dimensions
-   * never carry width/wrap/align, `wrap_lines` stays in range, and the sort
-   * only names a field that is still in the component (its direction only
-   * exists together with a field). Writing a value the runtime would reject
-   * must be avoided here, because the component's spec would then silently
-   * revert to the last valid one while the editor shows the new YAML.
+   * never carry width/wrap/align, row dimensions never carry align and only
+   * the first one carries width/wrap, `wrap_lines` stays in range, and the
+   * sort only names a field that is still in the component (its direction
+   * only exists together with a field). Writing a value the runtime would
+   * reject must be avoided here, because the component's spec would then
+   * silently revert to the last valid one while the editor shows the new YAML.
    */
   updateProperties(patch: Partial<PivotSpec | TableSpec>) {
     const current = get(this.specStore);
@@ -309,6 +311,11 @@ export class PivotCanvasComponent extends BaseCanvasComponent<
     if (Array.isArray(normalized.col_dimensions)) {
       normalized.col_dimensions = normalized.col_dimensions.map(
         stripColumnDimensionKeys,
+      );
+    }
+    if (Array.isArray(normalized.row_dimensions)) {
+      normalized.row_dimensions = normalizeRowDimensionEntries(
+        normalized.row_dimensions,
       );
     }
 
@@ -728,8 +735,9 @@ export class PivotCanvasComponent extends BaseCanvasComponent<
 
     if ("columns" in currentSpec) {
       const entries = currentSpec.columns ?? [];
-      const row_dimensions = entries.filter((entry) =>
-        allDimensions.includes(fieldName(entry)),
+      // Table columns may carry `align`, which row dimensions do not take.
+      const row_dimensions = normalizeRowDimensionEntries(
+        entries.filter((entry) => allDimensions.includes(fieldName(entry))),
       );
       const measures = entries.filter((entry) =>
         allMeasures.includes(fieldName(entry)),

@@ -1216,6 +1216,25 @@ pivot:
   - name: y
     width: 301
 `, "between 60 and 300"},
+		{"align on the first row dimension", `
+type: component
+pivot:
+  metrics_view: mv1
+  measures: [y]
+  row_dimensions:
+  - name: foo
+    align: center
+`, "'align' is not supported on row dimensions"},
+		{"width on a later row dimension", `
+type: component
+pivot:
+  metrics_view: mv1
+  measures: [y]
+  row_dimensions:
+  - foo
+  - name: bar
+    width: 200
+`, "only the first row dimension renders a column"},
 	}
 	for _, tc := range invalid {
 		t.Run(tc.name, func(t *testing.T) {

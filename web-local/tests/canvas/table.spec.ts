@@ -119,6 +119,7 @@ rows:
       - table:
           metrics_view: AdBids_metrics
           fit_to_width: ${fit}
+          time_filters: tr=PT24H
           columns:
             - publisher
             - domain

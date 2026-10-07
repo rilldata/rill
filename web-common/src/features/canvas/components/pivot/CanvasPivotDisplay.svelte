@@ -82,7 +82,14 @@
     timeDimension: metricsViewSpec?.timeDimension ?? null,
   });
 
-  $: if (schema.isValid && !schema.isLoading) seedPivotState(dataKey);
+  // `schema` is a new object on every spec write, so the statement re-runs
+  // then too; only a changed data key actually reseeds (and so resets the
+  // sort, expansion and paging).
+  let seededDataKey: string | undefined;
+  $: if (schema.isValid && !schema.isLoading && dataKey !== seededDataKey) {
+    seededDataKey = dataKey;
+    seedPivotState(dataKey);
+  }
 
   // Formatting changes apply in place without restarting the pivot.
   let appliedFormattingKey = "";

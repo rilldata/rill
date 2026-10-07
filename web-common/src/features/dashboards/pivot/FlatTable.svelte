@@ -307,12 +307,15 @@
         dimension={baseLength}
         justify={last ? "end" : "center"}
         hang={!last}
-        onMouseDown={() => markDragged(columnId)}
-        onUpdate={(d: number) =>
-          columnLengths.update((lengths) => {
-            return lengths.set(columnId, d);
-          })}
-        onMouseUp={(d: number) => onColumnResizeEnd?.(columnId, d)}
+        onUpdate={(d: number) => {
+          // Pinned once the pointer has actually moved, not on mousedown.
+          markDragged(columnId);
+          columnLengths.update((lengths) => lengths.set(columnId, d));
+        }}
+        onMouseUp={(d: number, moved: boolean) => {
+          // A click without movement must neither persist nor pin the column.
+          if (moved) onColumnResizeEnd?.(columnId, d);
+        }}
         onReset={() => {
           unmarkDragged(columnId);
           onColumnResizeEnd?.(columnId, null);

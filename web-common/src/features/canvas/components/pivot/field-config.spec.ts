@@ -7,6 +7,7 @@ import {
   fieldName,
   fieldNames,
   mergeFieldList,
+  normalizeRowDimensionEntries,
   resolveColumnStyles,
   setFieldConfig,
   sortableFieldNames,
@@ -230,6 +231,32 @@ describe("resolveColumnStyles", () => {
     expect(resolveColumnStyles(reordered, isMeasure)).toEqual({
       impressions: { width: 120 },
     });
+  });
+
+  it("ignores align on the row header", () => {
+    const spec: PivotSpec = {
+      ...pivotSpec,
+      row_dimensions: [{ name: "campaign", width: 200, align: "center" }],
+    };
+    expect(resolveColumnStyles(spec, isMeasure).campaign).toEqual({
+      width: 200,
+    });
+  });
+});
+
+describe("normalizeRowDimensionEntries", () => {
+  it("drops align everywhere and width/wrap after the first entry", () => {
+    expect(
+      normalizeRowDimensionEntries([
+        { name: "campaign", width: 200, wrap: true, align: "center" },
+        { name: "device", width: 150, wrap: true, label: "Device" },
+        "country",
+      ]),
+    ).toEqual([
+      { name: "campaign", width: 200, wrap: true },
+      { name: "device", label: "Device" },
+      "country",
+    ]);
   });
 });
 

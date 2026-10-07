@@ -3309,14 +3309,14 @@ definitions:
             description: Name of the dimension, measure, adhoc measure, or encoded time column
           width:
             type: integer
-            description: Column width in pixels. Measures and adhoc measures accept 60–300, dimensions and time columns 100–600. The column keeps this width under stretch and `fit_to_width`. Not allowed on `col_dimensions`.
+            description: Column width in pixels. Measures and adhoc measures accept 60–300, dimensions and time columns 100–600. The column keeps this width under stretch and `fit_to_width`. Not allowed on `col_dimensions`, nor on row dimensions after the first.
           wrap:
             type: boolean
-            description: Wrap the cell text over `wrap_lines` lines instead of truncating it. Dimension columns only; overrides the component-level `wrap`.
+            description: Wrap the cell text over `wrap_lines` lines instead of truncating it; overrides the component-level `wrap`. Only on a table's dimension columns and on the first row dimension of a pivot.
           align:
             type: string
             enum: ["left", "center", "right"]
-            description: Text alignment of the header and cells. Defaults to right for measures and left for dimensions. Not allowed on `col_dimensions`.
+            description: Text alignment of the header and cells, for table columns and measures. Defaults to right for measures and left for dimensions. Not allowed on `row_dimensions` or `col_dimensions`.
           label:
             type: string
             description: Header text, replacing the display name from the metrics view.
@@ -3381,7 +3381,7 @@ definitions:
         type: array
         items:
           $ref: '#/definitions/table_field_entry'
-        description: Dimensions for pivot rows. The first one keys the merged row-header column, so only it takes `width`, `wrap` and `align`.
+        description: Dimensions for pivot rows. The first one keys the merged row-header column, so only it takes `width` and `wrap`; row dimensions never take `align`.
       col_dimensions:
         type: array
         items:
