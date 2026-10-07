@@ -30,25 +30,31 @@
     }
   }
 
+  // Read the form before handleClose(): onClose clears the messageId prop
+  // and resetForm clears the categories and comment.
   function handleSubmit() {
     if (!messageId || isSubmitDisabled) return;
+    const targetMessageId = messageId;
+    const feedbackCategories = selectedCategories;
+    const feedbackComment = comment || undefined;
     // Close immediately - let the chat show the feedback response
     handleClose();
     // Submit asynchronously - conversation will handle streaming
     void conversation.submitFeedback(
-      messageId,
+      targetMessageId,
       "negative",
-      selectedCategories,
-      comment || undefined,
+      feedbackCategories,
+      feedbackComment,
     );
   }
 
   function handleSkip() {
     if (!messageId) return;
+    const targetMessageId = messageId;
     // Close immediately - let the chat show the feedback response
     handleClose();
     // Submit asynchronously with no categories
-    void conversation.submitFeedback(messageId, "negative");
+    void conversation.submitFeedback(targetMessageId, "negative");
   }
 
   function handleClose() {
