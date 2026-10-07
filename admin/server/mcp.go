@@ -143,7 +143,12 @@ func (s *Server) mcpAdminTools() []mcpAdminTool {
 				Name:        "list_projects",
 				Title:       "List Projects",
 				Description: `List the Rill projects you have access to. Pass a returned value as the "project" argument of other tools. The list may be incomplete; if you already know a project, you can pass it directly.`,
-				Annotations: &mcp.ToolAnnotations{ReadOnlyHint: true},
+				Annotations: &mcp.ToolAnnotations{
+					DestructiveHint: new(false),
+					IdempotentHint:  true,
+					OpenWorldHint:   new(false),
+					ReadOnlyHint:    true,
+				},
 				InputSchema: &jsonschema.Schema{Type: "object"},
 			},
 			handler: s.mcpListProjects,
