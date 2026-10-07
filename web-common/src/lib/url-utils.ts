@@ -33,6 +33,35 @@ export function copyWithAdditionalArguments(
   return newUrl;
 }
 
+const LOCAL_UI_HOSTS = new Set(["localhost", "127.0.0.1", "[::1]"]);
+
+// `rill start` advertises http://localhost:<port> even when the UI is opened
+// through another host. Keep the path, and use the page the browser loaded.
+export function usePageOriginForLocalhost(
+  advertised: string,
+  pageHref: string,
+): string {
+  let advertisedURL: URL;
+  try {
+    advertisedURL = new URL(advertised);
+  } catch {
+    return advertised;
+  }
+  if (!LOCAL_UI_HOSTS.has(advertisedURL.hostname)) {
+    return advertised;
+  }
+  const pageURL = new URL(pageHref);
+  if (
+    advertisedURL.protocol === pageURL.protocol &&
+    advertisedURL.host === pageURL.host
+  ) {
+    return advertised;
+  }
+  advertisedURL.protocol = pageURL.protocol;
+  advertisedURL.host = pageURL.host;
+  return advertisedURL.toString();
+}
+
 export function copySubsetParams(src: URLSearchParams, keys: Set<string>) {
   const newParams = new URLSearchParams();
   for (const key of keys) {
