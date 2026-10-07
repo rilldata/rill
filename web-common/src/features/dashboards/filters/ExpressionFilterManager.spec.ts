@@ -666,6 +666,81 @@ describe("metrics view names change", () => {
   });
 });
 
+describe("yaml config change", () => {
+  // A canvas applies its metrics views and then its config, both from the same ResolveCanvas
+  // response. When the metrics view specs are already loaded, applying the names parses the
+  // queued params right away, before the config is known.
+  it("adds required and pinned chips when the config lands after the params", async () => {
+    const provider = await createTestMetricsViewsProvider([
+      AD_BIDS_METRICS_NAME,
+    ]);
+    provider.value.setMetricsViewNames([]);
+    const yamlConfigProvider = new YAMLConfigProvider();
+    const { value: filterManager, destroy } = createInEffectRoot(
+      () => new ExpressionFilterManager(provider.value, yamlConfigProvider),
+    );
+    cleanups.push(() => {
+      destroy();
+      provider.value.cleanup();
+      provider.destroy();
+    });
+    expect(filterManager.ready).toBe(false);
+
+    // Queued until the specs are ready, which they are as soon as the names are applied.
+    filterManager.storeSync.setUrlParams(new URLSearchParams());
+    provider.value.setMetricsViewNames([AD_BIDS_METRICS_NAME]);
+    expect(filterManager.ready).toBe(true);
+    expect(filterManager.sortedFilterManagers.dimensions).toEqual([]);
+
+    yamlConfigProvider.update(
+      {},
+      [AD_BIDS_PUBLISHER_DIMENSION, AD_BIDS_IMPRESSIONS_MEASURE],
+      [AD_BIDS_DOMAIN_DIMENSION],
+    );
+
+    expect(names(filterManager.sortedFilterManagers.dimensions)).toEqual([
+      AD_BIDS_DOMAIN_DIMENSION,
+      AD_BIDS_PUBLISHER_DIMENSION,
+    ]);
+    expect(names(filterManager.sortedFilterManagers.measures)).toEqual([
+      AD_BIDS_IMPRESSIONS_MEASURE,
+    ]);
+    expect(exprOf(filterManager, AD_BIDS_METRICS_NAME)).toBeUndefined();
+  });
+
+  it("keeps the chips it has when the config is applied again", () => {
+    const yamlConfigProvider = new YAMLConfigProvider();
+    yamlConfigProvider.update({}, [AD_BIDS_PUBLISHER_DIMENSION], []);
+    const filterManager = createFilterManager(yamlConfigProvider);
+    filterManager.storeSync.setUrlParams(
+      perMetricsViewParams({
+        [AD_BIDS_METRICS_NAME]: `${AD_BIDS_DOMAIN_DIMENSION} IN ('google.com')`,
+      }),
+    );
+    const chipsBefore = filterManager.sortedFilterManagers.dimensions;
+    expect(names(chipsBefore)).toEqual([
+      AD_BIDS_PUBLISHER_DIMENSION,
+      AD_BIDS_DOMAIN_DIMENSION,
+    ]);
+
+    yamlConfigProvider.update({}, [AD_BIDS_PUBLISHER_DIMENSION], []);
+
+    const chipsAfter = filterManager.sortedFilterManagers.dimensions;
+    expect(chipsAfter.length).toBe(chipsBefore.length);
+    chipsAfter.forEach((chip, i) => expect(chip).toBe(chipsBefore[i]));
+  });
+
+  it("skips pinned filters the metrics views do not define", () => {
+    const yamlConfigProvider = new YAMLConfigProvider();
+    const filterManager = createFilterManager(yamlConfigProvider);
+
+    yamlConfigProvider.update({}, ["not_a_field"], []);
+
+    expect(filterManager.sortedFilterManagers.dimensions).toEqual([]);
+    expect(filterManager.sortedFilterManagers.measures).toEqual([]);
+  });
+});
+
 describe("applyFilterToParams", () => {
   it("writes a param per metrics view and drops the legacy singular one", () => {
     const filterManager = createFilterManager();

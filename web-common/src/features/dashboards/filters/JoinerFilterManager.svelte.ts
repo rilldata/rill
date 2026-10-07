@@ -268,6 +268,39 @@ export class JoinerFilterManager {
     };
   }
 
+  /**
+   * Adds a chip for each required and pinned filter that does not have one yet.
+   * `parse` only adds the filters the YAML config held at the time, and the config can land after
+   * the params: a canvas applies its metrics views before its config, both from the same spec,
+   * and when the metrics view specs are already loaded the queued params are parsed in between.
+   */
+  public addRequiredAndPinnedFilters() {
+    if (!this.yamlConfigProvider) return;
+
+    Object.keys(this.yamlConfigProvider.requiredFilters)
+      .concat(Object.keys(this.yamlConfigProvider.pinnedFilters))
+      .forEach((name) => {
+        if (this.managerLookup[name]) return;
+
+        const dimensionManager = DimensionFilterManager.createForMetricsViews(
+          this.metricsViewsProvider,
+          name,
+          { events: this.events },
+        );
+        if (dimensionManager) {
+          this.maybeAddDimensionFilter(dimensionManager);
+          return;
+        }
+
+        const measureManager = MeasureFilterManager.createForMetricsViews(
+          this.metricsViewsProvider,
+          name,
+          { events: this.events },
+        );
+        if (measureManager) this.maybeAddMeasureFilter(measureManager);
+      });
+  }
+
   public removeEmptyManagers() {
     this.managers = {
       ...this.managers,
