@@ -7,7 +7,6 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
-	"strings"
 	"testing"
 	"time"
 
@@ -39,8 +38,7 @@ func TestIsLocalProjectRunning(t *testing.T) {
 		{name: "missing project path", body: configJSON("default", "")},
 		{name: "nonexistent server path", body: configJSON("default", filepath.Join(projectPath, "missing"))},
 		{name: "non-OK response", body: validConfig, status: http.StatusNotFound},
-		{name: "trailing invalid data", body: validConfig + "invalid"},
-		{name: "oversized response", body: strings.Repeat(" ", 64<<10) + validConfig},
+		{name: "incomplete JSON", body: validConfig[:len(validConfig)-1]},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

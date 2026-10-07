@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io"
 	"net/http"
 	"os"
 	"strings"
@@ -174,15 +173,11 @@ func isLocalProjectRunning(ctx context.Context, projectPath, baseURL string) boo
 		return false
 	}
 
-	body, err := io.ReadAll(io.LimitReader(resp.Body, 64<<10))
-	if err != nil {
-		return false
-	}
 	var config struct {
 		InstanceID  string `json:"instance_id"`
 		ProjectPath string `json:"project_path"`
 	}
-	if err := json.Unmarshal(body, &config); err != nil || config.InstanceID == "" {
+	if err := json.NewDecoder(resp.Body).Decode(&config); err != nil || config.InstanceID == "" {
 		return false
 	}
 
