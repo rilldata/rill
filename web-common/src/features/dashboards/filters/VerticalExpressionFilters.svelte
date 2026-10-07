@@ -54,7 +54,10 @@
   <div class="relative flex flex-row flex-wrap gap-x-2 gap-y-2">
     {#if expressionFilterManager.isComplexFilter}
       {#each Object.entries(expressionFilterManager.exprByMetricsView) as [mv, expr] (mv)}
-        <AdvancedFilter advancedFilter={expr} />
+        <AdvancedFilter
+          advancedFilter={expr}
+          onRemove={() => expressionFilterManager.clear()}
+        />
       {/each}
     {:else}
       {#each sortedDimensionManagers as dimensionManager (dimensionManager.name)}
@@ -83,7 +86,7 @@
   </div>
 
   <div class="ml-auto">
-    {#if hasFilters}
+    {#if hasFilters || expressionFilterManager.isComplexFilter}
       <Button type="text" onClick={() => expressionFilterManager.clear()}>
         {m.dashboard_clear_filters()}
       </Button>

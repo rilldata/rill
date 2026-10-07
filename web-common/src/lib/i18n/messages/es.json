@@ -1301,6 +1301,7 @@
   "field_list_measures": "MEDIDAS",
   "field_list_time": "TIEMPO",
   "filter_advanced_beta": "Avanzado (BETA)",
+  "filter_advanced_remove": "Eliminar",
   "filter_advanced_warning": "Los filtros avanzados son una funcionalidad experimental. Puede haber errores.",
   "filter_converted_to_select": "Tipo de filtro convertido a Seleccionar",
   "filter_dimension": "dimensión",

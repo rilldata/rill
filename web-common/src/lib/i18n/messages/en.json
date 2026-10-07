@@ -1292,6 +1292,7 @@
   "field_list_measures": "MEASURES",
   "field_list_time": "TIME",
   "filter_advanced_beta": "Advanced (BETA)",
+  "filter_advanced_remove": "Remove",
   "filter_advanced_warning": "Advanced filters are a bleeding edge feature! There may be bugs.",
   "filter_converted_to_select": "Converted filter type to Select",
   "filter_dimension": "dimension",
