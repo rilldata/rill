@@ -36,8 +36,8 @@
   $: selectedComparisonTimeRange =
     comparisonTimeRangeState?.selectedComparisonTimeRange;
 
-  // Only a range or comparison the component sets itself counts as a local filter.
-  $: ({ hasLocalTimeRange, comparison } = resolveTimeFilters(
+  // Only a range, comparison or grain the component sets itself counts as a local filter.
+  $: ({ hasLocalTimeRange, comparison, grain } = resolveTimeFilters(
     ($specStore as ComponentFilterProperties).time_filters,
   ));
   $: hasLocalComparison = comparison.mode === "local";
@@ -68,6 +68,7 @@
       expressionFilterManager={localExpressionFilters}
       displayTimeRange={hasLocalTimeRange ? displayTimeRange : undefined}
       {displayComparisonTimeRange}
+      displayTimeGrain={grain ? timeGrain : undefined}
       queryTimeStart={selectedTimeRange?.start?.toISOString()}
       queryTimeEnd={selectedTimeRange?.end?.toISOString()}
       hasBoldTimeRange={false}

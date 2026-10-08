@@ -27,7 +27,7 @@
     ($specStore as ComponentFilterProperties).hide_local_filters,
   );
 
-  $: ({ hasLocalTimeRange, comparison } = resolveTimeFilters(
+  $: ({ hasLocalTimeRange, comparison, grain } = resolveTimeFilters(
     filters?.time_filters,
   ));
 
@@ -35,7 +35,8 @@
     !hideLocalFilters &&
     (Boolean(filters?.dimension_filters) ||
       hasLocalTimeRange ||
-      comparison.mode === "local");
+      comparison.mode === "local" ||
+      Boolean(grain));
 
   onMount(() => {
     resizeObserver = new ResizeObserver(([entry]) => {
