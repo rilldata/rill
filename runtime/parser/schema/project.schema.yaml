@@ -3361,6 +3361,48 @@ definitions:
       row_limit:
         type: string
         description: Maximum number of rows to display in a pivot table (one of "5", "10", "25", "50", "100"). Omit or set to "all" for all rows.
+      default_sort:
+        description: Default sort for the table. Use a field for a flat column, outer row dimension, or total measure. Use a measure and column values for a pivoted measure column.
+        oneOf:
+          - type: object
+            properties:
+              field:
+                type: string
+                description: Dimension or measure name to sort by
+              desc:
+                type: boolean
+                description: Whether to sort in descending order
+            required:
+              - field
+              - desc
+            additionalProperties: false
+          - type: object
+            properties:
+              measure:
+                type: string
+                description: Measure name to sort by
+              column_values:
+                type: array
+                description: Stable column dimension names and values identifying the pivoted measure column
+                items:
+                  type: object
+                  properties:
+                    dimension:
+                      type: string
+                    value:
+                      type: string
+                  required:
+                    - dimension
+                    - value
+                  additionalProperties: false
+              desc:
+                type: boolean
+                description: Whether to sort in descending order
+            required:
+              - measure
+              - column_values
+              - desc
+            additionalProperties: false
       comparison_range:
         type: string
         description: Comparison time range

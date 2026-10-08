@@ -45,6 +45,7 @@ import {
   applyOutermostRowLimit,
   createPivotBaseQueryPlan,
 } from "./pivot-query-plan";
+import { getEffectivePivotSort } from "./pivot-sort";
 import {
   getTotalsRow,
   getTotalsRowSkeleton,
@@ -610,12 +611,12 @@ export function createTableCellQuery(
 
   let sortBy: V1MetricsViewAggregationSort[] = [];
   if (isFlat) {
-    const sortConfig = config.pivot.sorting?.[0];
-    if (sortConfig) {
+    const sortConfig = getEffectivePivotSort(config, columnDimensionAxesData);
+    if (sortConfig && "field" in sortConfig) {
       sortBy = [
         {
           desc: sortConfig.desc,
-          name: sortConfig.id, // For flat tables, sort ID is directly the measure or dimension name
+          name: sortConfig.field,
         },
       ];
     } else {

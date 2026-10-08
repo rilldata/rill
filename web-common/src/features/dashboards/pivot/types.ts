@@ -71,6 +71,25 @@ export interface PivotState {
   measureFormatting?: Record<string, PivotMeasureFormatting>;
 }
 
+/**
+ * Stable description of a pivot sort. TanStack column IDs for nested pivot
+ * leaves are positional (for example, `c0v2m0`), so they must not be persisted
+ * as configuration.
+ */
+export type PivotSortTarget =
+  | {
+      field: string;
+      desc: boolean;
+    }
+  | {
+      measure: string;
+      column_values: Array<{
+        dimension: string;
+        value: string;
+      }>;
+      desc: boolean;
+    };
+
 export type PivotTableMode = "flat" | "nest";
 
 export type PivotTotalsRowPosition = "top" | "bottom";
@@ -164,6 +183,8 @@ export interface PivotDataStoreConfig {
   comparisonTime: TimeRangeString | undefined;
   searchText: string | undefined;
   isFlat: boolean;
+  /** Canvas-only persisted default. Interactive sorting remains in pivot.sorting. */
+  defaultSort?: PivotSortTarget;
   // ephemeral measure definitions available to this pivot.
   // Sourced from the explore state in explore dashboards, and from the
   // component spec in canvas table/pivot components.
