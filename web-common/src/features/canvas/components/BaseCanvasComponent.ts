@@ -21,6 +21,7 @@ import type { Interval } from "luxon";
 import type { Component, ComponentType, SvelteComponent } from "svelte";
 import type { Readable, Unsubscriber } from "svelte/store";
 import { derived, get, writable, type Writable } from "svelte/store";
+import { isMap } from "yaml";
 import { mergeFilters } from "../../dashboards/pivot/pivot-merge-filters";
 import {
   createAndExpression,
@@ -422,7 +423,7 @@ export abstract class BaseCanvasComponent<T = ComponentSpec> {
   // a sort field and its direction) never reach the reconciler half-applied.
   // A key whose value is undefined or empty is removed from the spec.
   updateProperties(patch: Partial<T>) {
-    const currentSpec = get(this.specStore);
+    const currentSpec = this.specInYAML() ?? get(this.specStore);
 
     const newSpec = { ...currentSpec, ...patch };
 
@@ -451,6 +452,19 @@ export abstract class BaseCanvasComponent<T = ComponentSpec> {
       this.updateYAML(newSpec);
     }
     this.specStore.set(newSpec);
+  }
+
+  // The component's properties as currently written in the file. While
+  // editing, the spec store trails the file by a reconcile: a write built on
+  // the store would drop a previous write the runtime has not echoed back yet,
+  // and would come back with the runtime's alphabetical key order.
+  private specInYAML(): T | undefined {
+    if (!this.parent.fileArtifact || !this.parent.parsedContent) return;
+    const document = get(this.parent.parsedContent);
+    const node: unknown = document.getIn(this.pathInYAML);
+    if (!isMap(node)) return;
+    const spec: unknown = node.toJS(document);
+    return spec as T;
   }
 
   // Sets how this component compares against a previous period:

@@ -83,10 +83,12 @@ test.describe("canvas table column config", () => {
       ),
     );
 
-    // Label override (the first render waits for the project to reconcile)
-    await expect(page.getByText("Publisher name")).toBeVisible({
-      timeout: 60_000,
-    });
+    // Label override in the table header (the first render waits for the
+    // project to reconcile). Scoped to the header so the wait cannot be
+    // satisfied by the same text elsewhere while the previous table is up.
+    await expect(page.locator("thead").getByText("Publisher name")).toBeVisible(
+      { timeout: 60_000 },
+    );
     // Configured width
     await expect(page.locator("table colgroup col").first()).toHaveCSS(
       "width",
