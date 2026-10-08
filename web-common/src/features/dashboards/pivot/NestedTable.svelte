@@ -24,11 +24,13 @@
   import {
     calculateMeasureWidth,
     calculateRowDimensionWidth,
-    distributeColumnWidthsToFillContainer,
+    clampColumnWidth,
     fitColumnWidthsToContainer,
     getNestedRowDimensionWidthKey,
+    layoutColumnWidths,
     COLUMN_WIDTH_CONSTANTS as WIDTHS,
   } from "./pivot-column-width-utils";
+  import PivotExpandableCell from "./PivotExpandableCell.svelte";
   import type { PivotRowSelectionState } from "./pivot-row-selection";
   import {
     computeAncestorRowIds,
@@ -44,7 +46,12 @@
   import type { CellFormatter } from "./pivot-conditional-formatting";
   import { isShowMoreRow } from "./pivot-utils";
   import PivotHeaderLabel from "./PivotHeaderLabel.svelte";
-  import type { PivotDataRow, PivotTotalsRowPosition } from "./types";
+  import {
+    type PivotColumnAlign,
+    type PivotColumnStyles,
+    type PivotDataRow,
+    type PivotTotalsRowPosition,
+  } from "./types";
 
   // State props
   export let hasColumnDimension: boolean;
@@ -66,6 +73,16 @@
   export let activeCell: { rowId: string; columnId: string } | null | undefined;
   export let fillWidth = false;
   export let containerWidth = 0;
+  export let headerHeight = 30;
+  // Per-column presentation overrides keyed by measure name, or by the first
+  // row dimension name for the merged row-header column.
+  export let columnStyles: PivotColumnStyles = {};
+  export let fitToWidth = false;
+  export let wrapText = false;
+  export let wrapHeaders = false;
+  export let onColumnResizeEnd:
+    | ((columnId: string, width: number | null) => void)
+    | undefined = undefined;
 
   // Table props
   export let headerGroups: HeaderGroup<PivotDataRow>[];
@@ -86,8 +103,9 @@
 
   const measureLengths = writable(new Map<string, number>());
   const rowDimensionLengths = writable(new Map<string, number>());
-
-  const HEADER_HEIGHT = 30;
+  // First estimates, used as the double-click reset widths.
+  let rowHeaderEstimate = WIDTHS.ROW_DIMENSION_MIN_WIDTH;
+  const measureEstimates = new Map<string, number>();
 
   // Hover state for column dimension headers
   let hoveredColRange: HoveredColRange | null = null;
@@ -124,6 +142,9 @@
 
   $: totalsRowAtBottom = totalsRowPosition === "bottom";
   $: rowDimensionNames = rowDimensions.map((d) => d.name);
+  // The merged row-header column is keyed (for widths and styles) by the
+  // first row dimension.
+  $: firstRowDimensionName = rowDimensions[0]?.name;
   $: rowDimensionLabel = getRowNestedLabel(rowDimensions);
   $: rowDimensionName = rowDimensionLabel ? rowDimensionLabel : null;
   $: rowDimensionWidthKey = getNestedRowDimensionWidthKey(
@@ -131,20 +152,30 @@
     rowDimensions,
   );
 
+  // Seed the row-header width: the configured width when there is one, else
+  // an estimate from the data.
   $: if (
     hasRowDimension &&
     rowDimensionName &&
+    firstRowDimensionName &&
     rowDimensionWidthKey &&
     !$rowDimensionLengths.has(rowDimensionWidthKey)
   ) {
     const estimatedWidth = calculateRowDimensionWidth(
+      firstRowDimensionName,
       rowDimensionName,
       timeDimension,
       dataRows,
     );
+    rowHeaderEstimate = estimatedWidth;
+    const configured = columnStyles[firstRowDimensionName]?.width;
+    const initialWidth =
+      configured === undefined
+        ? estimatedWidth
+        : clampColumnWidth("dimension", configured);
 
     rowDimensionLengths.update((rowDimensionLengths) => {
-      return rowDimensionLengths.set(rowDimensionWidthKey, estimatedWidth);
+      return rowDimensionLengths.set(rowDimensionWidthKey, initialWidth);
     });
   }
 
@@ -169,12 +200,112 @@
           dataRows,
           hasColumnDimension ? maxColumnDimensionHeader : undefined,
         );
+        measureEstimates.set(name, estimatedWidth);
+        const configured = columnStyles[name]?.width;
+        const initialWidth =
+          configured === undefined
+            ? estimatedWidth
+            : clampColumnWidth("measure", configured);
 
         measureLengths.update((measureLengths) => {
-          return measureLengths.set(name, estimatedWidth);
+          return measureLengths.set(name, initialWidth);
         });
       }
     });
+  }
+
+  // Re-apply configured widths when they change (e.g. the YAML is edited while
+  // the table is open) without touching columns the user resized. Compares
+  // against the last applied values so unrelated spec emissions are no-ops,
+  // and does not read the width stores so it never re-runs per drag frame.
+  let appliedConfiguredWidths: Record<string, number> = {};
+  $: applyConfiguredWidths(
+    columnStyles,
+    firstRowDimensionName,
+    rowDimensionWidthKey,
+  );
+  function applyConfiguredWidths(
+    styles: PivotColumnStyles,
+    rowHeaderId: string | undefined,
+    rowHeaderKey: string | undefined,
+  ) {
+    const next: Record<string, number> = {};
+    for (const [id, style] of Object.entries(styles)) {
+      if (typeof style?.width === "number") next[id] = style.width;
+    }
+    const changed = Object.keys(next).filter(
+      (id) => appliedConfiguredWidths[id] !== next[id],
+    );
+    const removed = Object.keys(appliedConfiguredWidths).filter(
+      (id) => !(id in next),
+    );
+    appliedConfiguredWidths = next;
+    if (!changed.length && !removed.length) return;
+
+    const isRowHeader = (id: string) => id === rowHeaderId;
+    if (rowHeaderId && rowHeaderKey) {
+      if (changed.some(isRowHeader)) {
+        rowDimensionLengths.update((lengths) =>
+          lengths.set(
+            rowHeaderKey,
+            clampColumnWidth("dimension", next[rowHeaderId]),
+          ),
+        );
+      } else if (removed.some(isRowHeader)) {
+        // Dropping the entry makes the seeding above estimate the width again.
+        rowDimensionLengths.update((lengths) => {
+          lengths.delete(rowHeaderKey);
+          return lengths;
+        });
+      }
+    }
+
+    const changedMeasures = changed.filter((id) => !isRowHeader(id));
+    const removedMeasures = removed.filter((id) => !isRowHeader(id));
+    if (changedMeasures.length || removedMeasures.length) {
+      measureLengths.update((lengths) => {
+        for (const id of changedMeasures) {
+          lengths.set(id, clampColumnWidth("measure", next[id]));
+        }
+        for (const id of removedMeasures) lengths.delete(id);
+        return lengths;
+      });
+    }
+  }
+
+  // Configured columns and columns the user resized in this session keep
+  // their width: stretch and fit only move the other columns.
+  let draggedIds = new Set<string>();
+  $: pinnedIds = new Set<string>([
+    ...Object.keys(columnStyles).filter(
+      (id) => typeof columnStyles[id]?.width === "number",
+    ),
+    ...draggedIds,
+  ]);
+
+  $: rowHeaderWrap =
+    hasRowDimension &&
+    !!firstRowDimensionName &&
+    (columnStyles[firstRowDimensionName]?.wrap ?? wrapText);
+
+  // Alignment overrides keyed by measure name, applied to the measure's leaf
+  // columns (and its comparison sub-columns) in every column group.
+  $: measureAlign = new Map<string, PivotColumnAlign>(
+    Object.entries(columnStyles).flatMap(([id, style]) =>
+      style?.align ? [[id, style.align] as [string, PivotColumnAlign]] : [],
+    ),
+  );
+
+  function markDragged(columnId: string) {
+    if (draggedIds.has(columnId)) return;
+    draggedIds = new Set(draggedIds).add(columnId);
+  }
+
+  function unmarkDragged(columnId: string) {
+    if (!draggedIds.has(columnId)) return;
+    const next = new Set(draggedIds);
+    next.delete(columnId);
+    draggedIds = next;
   }
 
   $: if (resizingMeasure && containerRefElement && measureLengths) {
@@ -233,25 +364,28 @@
       }) => ({ name }),
     ),
   );
-  $: displayColumnWidths = fillWidth
-    ? distributeColumnWidthsToFillContainer(
-        [
-          ...(hasRowDimension
-            ? [{ width: baseRowDimensionWidth, role: "dimension" as const }]
-            : []),
-          ...visibleMeasureColumns.map(({ name }) => ({
-            width: $measureLengths.get(name) ?? WIDTHS.INIT_MEASURE_WIDTH,
-            role: "measure" as const,
-          })),
-        ],
-        containerWidth,
-      )
-    : [
-        ...(hasRowDimension ? [baseRowDimensionWidth] : []),
-        ...visibleMeasureColumns.map(
-          ({ name }) => $measureLengths.get(name) ?? WIDTHS.INIT_MEASURE_WIDTH,
-        ),
-      ];
+  $: displayColumnWidths = layoutColumnWidths(
+    [
+      ...(hasRowDimension
+        ? [
+            {
+              width: baseRowDimensionWidth,
+              role: "dimension" as const,
+              pinned:
+                firstRowDimensionName !== undefined &&
+                pinnedIds.has(firstRowDimensionName),
+            },
+          ]
+        : []),
+      ...visibleMeasureColumns.map(({ name }) => ({
+        width: $measureLengths.get(name) ?? WIDTHS.INIT_MEASURE_WIDTH,
+        role: "measure" as const,
+        pinned: pinnedIds.has(name),
+      })),
+    ],
+    containerWidth,
+    { fill: fillWidth, fit: fitToWidth },
+  );
   $: displayRowDimensionWidth = hasRowDimension
     ? (displayColumnWidths[0] ?? baseRowDimensionWidth)
     : 0;
@@ -385,7 +519,7 @@
     return (index + offset) % measureCount === 0;
   }
 
-  $: totalHeaderHeight = headerGroups.length * HEADER_HEIGHT;
+  $: totalHeaderHeight = headerGroups.length * headerHeight;
 </script>
 
 <div
@@ -402,9 +536,14 @@
       direction="EW"
       min={WIDTHS.MIN_COL_WIDTH}
       max={WIDTHS.MAX_COL_WIDTH}
+      basis={(firstRowDimensionName &&
+        columnStyles[firstRowDimensionName]?.width) ||
+        rowHeaderEstimate}
       dimension={baseRowDimensionWidth}
       onUpdate={(d: number) => {
         if (!rowDimensionWidthKey) return;
+        // Pinned once the pointer has actually moved, not on mousedown.
+        if (firstRowDimensionName) markDragged(firstRowDimensionName);
 
         rowDimensionLengths.update((rowDimensionLengths) => {
           return rowDimensionLengths.set(rowDimensionWidthKey, d);
@@ -414,8 +553,17 @@
         resizingMeasure = false;
         onResizeStart(e);
       }}
-      onMouseUp={() => {
+      onMouseUp={(d: number, moved: boolean) => {
         resizingMeasure = false;
+        // A click without movement must neither persist nor pin the column.
+        if (moved && firstRowDimensionName) {
+          onColumnResizeEnd?.(firstRowDimensionName, d);
+        }
+      }}
+      onReset={() => {
+        if (!firstRowDimensionName) return;
+        unmarkDragged(firstRowDimensionName);
+        onColumnResizeEnd?.(firstRowDimensionName, null);
       }}
     >
       <div class="resize-bar"></div>
@@ -437,19 +585,31 @@
             direction="EW"
             min={WIDTHS.MIN_MEASURE_WIDTH}
             max={WIDTHS.MAX_MEASURE_WIDTH}
+            basis={columnStyles[name]?.width ??
+              measureEstimates.get(name) ??
+              WIDTHS.INIT_MEASURE_WIDTH}
             dimension={baseLength}
             justify={last ? "end" : "center"}
             hang={!last}
-            onUpdate={(d: number) =>
+            onUpdate={(d: number) => {
+              // Pinned once the pointer has actually moved, not on mousedown.
+              markDragged(name);
               measureLengths.update((measureLengths) => {
                 return measureLengths.set(name, d);
-              })}
+              });
+            }}
             onMouseDown={(e: MouseEvent) => {
               resizingMeasure = true;
               onResizeStart(e);
             }}
-            onMouseUp={() => {
+            onMouseUp={(d: number, moved: boolean) => {
               resizingMeasure = false;
+              // A click without movement must neither persist nor pin the column.
+              if (moved) onColumnResizeEnd?.(name, d);
+            }}
+            onReset={() => {
+              unmarkDragged(name);
+              onColumnResizeEnd?.(name, null);
             }}
           >
             <div class="resize-bar"></div>
@@ -502,6 +662,7 @@
           {@const icon = dimMeta?.icon}
           {@const isColDimHeader =
             !header.isPlaceholder && !!dimMeta?.dimensionPath}
+          {@const headerAlign = measureAlign.get(dimMeta?.measureName ?? "")}
           {@const colStart = headerGroup.headers
             .slice(0, i)
             .reduce((sum, h) => sum + h.colSpan, 0)}
@@ -567,7 +728,10 @@
               class:cursor-pointer={header.column.getCanSort() ||
                 (isColDimHeader && !!onColumnHeaderClick)}
               class:select-none={header.column.getCanSort()}
-              class:flex-row-reverse={isMeasureColumn(header, i)}
+              class:flex-row-reverse={isMeasureColumn(header, i) &&
+                headerAlign !== "left" &&
+                headerAlign !== "center"}
+              class:justify-center={headerAlign === "center"}
               class:border-r={shouldShowHeaderRightBorder(header, i)}
               onclick={(e) => {
                 if (isColDimHeader && onColumnHeaderClick) {
@@ -584,9 +748,13 @@
                   <PivotHeaderLabel
                     label={String(header.column.columnDef.header)}
                     description={dimMeta?.description}
+                    wrap={wrapHeaders}
                   />
                 {:else}
-                  <p class="truncate">
+                  <p
+                    class:truncate={!wrapHeaders}
+                    class:wrap-text={wrapHeaders}
+                  >
                     {header.column.columnDef.header}
                   </p>
                 {/if}
@@ -687,11 +855,19 @@
         ? cell.column.columnDef.meta.tooltipFormatter(cell.getValue())
         : cell.getValue()}
       {@const cellFmt = getCellFormatting(cell, isTotalsRow)}
+      {@const isRowHeaderCell = hasRowDimension && i === 0}
+      {@const wrapCell = isRowHeaderCell && rowHeaderWrap}
+      {@const cellAlign = isRowHeaderCell
+        ? undefined
+        : measureAlign.get(cell.column.columnDef.meta?.measureName ?? "")}
       <td
-        class="ui-copy-number cell truncate group/cell"
+        class="ui-copy-number cell group/cell"
+        class:truncate={!wrapCell}
+        class:wrap-cell={wrapCell}
         class:has-conditional-format={cellFmt !== null}
         style:--cf-bg={cellFmt?.background ?? null}
         style:--cf-color={cellFmt?.color ?? null}
+        style:text-align={cellAlign ?? null}
         class:active-cell={cs.activeCell}
         class:selected-cell={cs.selectedCell}
         class:col-dim-hover-body={cs.colDimHoverBody}
@@ -721,6 +897,9 @@
             this={result.component}
             {...result.props}
             {assembled}
+            {...wrapCell && result.component === PivotExpandableCell
+              ? { wrap: true }
+              : {}}
           />
         {:else if typeof result === "string" || typeof result === "number"}
           {result}
@@ -801,6 +980,21 @@
 
   .cell {
     @apply size-full p-1 px-2 text-fg-primary;
+  }
+
+  /* Wrapped row-header cells: the row keeps its fixed height and the text is
+     clamped to --wrap-lines lines */
+  td.wrap-cell {
+    @apply whitespace-normal;
+  }
+
+  .wrap-text {
+    @apply whitespace-normal overflow-hidden;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: var(--wrap-lines, 2);
+    overflow-wrap: anywhere;
+    line-height: 1rem;
   }
 
   /* Conditional formatting (heatmap / data bar). Placed before the

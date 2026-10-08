@@ -41,6 +41,7 @@
     makeCellFormatter,
   } from "./pivot-conditional-formatting";
   import type {
+    PivotColumnStyles,
     PivotDataRow,
     PivotDataStore,
     PivotDataStoreConfig,
@@ -49,8 +50,13 @@
 
   // Distance threshold (in pixels) for triggering data fetch
   const ROW_THRESHOLD = 200;
-  const ROW_HEIGHT = 24;
-  const HEADER_HEIGHT = 30;
+  const BASE_ROW_HEIGHT = 24;
+  const BASE_HEADER_HEIGHT = 30;
+  // Wrapped rows and headers keep a uniform height: the text-xs line height
+  // per line plus the cell's vertical padding, so virtualization stays fixed-size.
+  const WRAP_LINE_HEIGHT = 16;
+  const CELL_VERTICAL_PADDING = 8;
+  const HEADER_VERTICAL_PADDING = 14;
 
   export let pivotDataStore: PivotDataStore;
   export let widthScopeKey: string;
@@ -61,6 +67,21 @@
   export let overscan = 20;
   export let rounded = true;
   export let fillWidth = false;
+  // Per-column presentation overrides keyed by column id (see PivotColumnStyles).
+  export let columnStyles: PivotColumnStyles = {};
+  // Shrink the columns so the table fits the container instead of scrolling.
+  // Only applied with fillWidth, since otherwise the wrapper tracks the content
+  // width and a reactive fit would feed back on itself.
+  export let fitToWidth = false;
+  // Wrap dimension cells / header labels over `wrapLines` lines.
+  export let wrapText = false;
+  export let wrapHeaders = false;
+  export let wrapLines = 2;
+  // Called when the user finishes resizing a column; null means the column was
+  // reset to its automatic width.
+  export let onColumnResizeEnd:
+    | ((columnId: string, width: number | null) => void)
+    | undefined = undefined;
   export let setPivotExpanded: (expanded: ExpandedState) => void;
   export let setPivotSort: (sorting: SortingState) => void;
   export let setPivotRowPage: (page: number) => void;
@@ -159,8 +180,18 @@
     $config.allMeasures,
   );
 
+  $: effectiveFitToWidth = fitToWidth && fillWidth;
+  $: wrapAnyCells =
+    wrapText || Object.values(columnStyles).some((style) => style?.wrap);
+  $: rowHeight = wrapAnyCells
+    ? WRAP_LINE_HEIGHT * wrapLines + CELL_VERTICAL_PADDING
+    : BASE_ROW_HEIGHT;
+  $: headerHeight = wrapHeaders
+    ? WRAP_LINE_HEIGHT * wrapLines + HEADER_VERTICAL_PADDING
+    : BASE_HEADER_HEIGHT;
+
   $: headerGroups = $table.getHeaderGroups();
-  $: totalHeaderHeight = headerGroups.length * HEADER_HEIGHT;
+  $: totalHeaderHeight = headerGroups.length * headerHeight;
 
   $: rows = $table.getRowModel().rows;
 
@@ -181,7 +212,7 @@
   $: virtualizer = createVirtualizer<HTMLDivElement, HTMLTableRowElement>({
     count: rows.length,
     getScrollElement: () => containerRefElement,
-    estimateSize: () => ROW_HEIGHT,
+    estimateSize: () => rowHeight,
     overscan,
     initialOffset: rowScrollOffset,
   });
@@ -486,9 +517,10 @@
   class:border
   class:rounded-sm={rounded}
   class="table-wrapper relative"
-  style:--row-height="{ROW_HEIGHT}px"
-  style:--header-height="{HEADER_HEIGHT}px"
+  style:--row-height="{rowHeight}px"
+  style:--header-height="{headerHeight}px"
   style:--total-header-height="{totalHeaderHeight + 1}px"
+  style:--wrap-lines={wrapLines}
   bind:this={containerRefElement}
   bind:clientWidth={containerWidth}
   class:w-full={fillWidth}
@@ -522,6 +554,12 @@
       {onTableLeave}
       {fillWidth}
       {containerWidth}
+      {headerHeight}
+      {columnStyles}
+      fitToWidth={effectiveFitToWidth}
+      {wrapText}
+      {wrapHeaders}
+      {onColumnResizeEnd}
       onCellCopy={handleClick}
     />
   {:else}
@@ -556,6 +594,12 @@
       {onTableLeave}
       {fillWidth}
       {containerWidth}
+      {headerHeight}
+      {columnStyles}
+      fitToWidth={effectiveFitToWidth}
+      {wrapText}
+      {wrapHeaders}
+      {onColumnResizeEnd}
       onCellCopy={handleClick}
     />
   {/if}

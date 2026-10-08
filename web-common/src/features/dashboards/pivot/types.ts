@@ -73,6 +73,21 @@ export interface PivotState {
 
 export type PivotTableMode = "flat" | "nest";
 
+export type PivotColumnAlign = "left" | "center" | "right";
+
+// Presentation overrides for one column, keyed in PivotColumnStyles by the
+// tanstack column id: the field name in flat tables; the measure name or the
+// first row dimension name in nested tables.
+export interface PivotColumnStyle {
+  // Pixel width; the column is pinned, so stretch and fit never change it.
+  width?: number;
+  // Wrap cell text instead of truncating it. Dimension columns only.
+  wrap?: boolean;
+  align?: PivotColumnAlign;
+}
+
+export type PivotColumnStyles = Record<string, PivotColumnStyle>;
+
 export type PivotTotalsRowPosition = "top" | "bottom";
 export const PIVOT_TOTALS_ROW_POSITIONS: readonly PivotTotalsRowPosition[] = [
   "top",
