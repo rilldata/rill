@@ -123,6 +123,22 @@ func TestOLAP_LakehouseRT(t *testing.T) {
 		require.NoError(t, err)
 		require.Equal(t, len(explicit), len(implicit), "empty-database ListTables must match current_catalog() scoping")
 	})
+
+	// QueryAsFiles opens its own pool, so it needs the driver's SEA fallback separately from getDB.
+	t.Run("query_as_files", func(t *testing.T) {
+		w, ok := conn.AsWarehouse()
+		require.True(t, ok)
+		it, err := w.QueryAsFiles(t.Context(), map[string]any{"sql": "SELECT 1 AS x"})
+		require.NoError(t, err)
+		defer it.Close()
+
+		files, err := it.Next(t.Context())
+		require.NoError(t, err)
+		require.NotEmpty(t, files)
+		st, err := os.Stat(files[0])
+		require.NoError(t, err)
+		require.Positive(t, st.Size())
+	})
 }
 
 func acquireTestDatabricksRT(t *testing.T, dsn string) (drivers.Handle, drivers.OLAPStore) {
