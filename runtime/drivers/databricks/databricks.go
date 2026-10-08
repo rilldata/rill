@@ -101,8 +101,7 @@ type configProperties struct {
 	Catalog    string `mapstructure:"catalog"`
 	Schema     string `mapstructure:"schema"`
 	LogQueries bool   `mapstructure:"log_queries"`
-	// UseKernel forces the driver's SEA backend. The driver auto-detects Lakehouse//RT
-	// and switches to SEA even when this is false, so it's an override.
+	// UseKernel forces SEA; the driver already switches to SEA for Lakehouse//RT.
 	UseKernel bool `mapstructure:"use_kernel"`
 }
 
@@ -343,8 +342,7 @@ func (c *connection) getDB(ctx context.Context) (*sqlx.DB, error) {
 		return c.db, c.dbErr
 	}
 
-	// The driver transparently re-opens Lakehouse//RT sessions on the SEA backend when
-	// the warehouse rejects Thrift, so no RT detection is needed here.
+	// The driver falls back to SEA when a Lakehouse//RT warehouse rejects Thrift.
 	c.db, c.dbErr = sqlx.Open("databricks", c.config.resolveDSN())
 	return c.db, c.dbErr
 }
