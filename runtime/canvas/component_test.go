@@ -871,6 +871,7 @@ table:
   wrap_lines: 3
   sort_by: y
   sort_dir: asc
+  sort_comparison: delta
   columns:
   - name: foo
     width: 240
@@ -1011,6 +1012,29 @@ table:
   sort_dir: asc
   columns: [foo, y]
 `, "requires"},
+		{"unknown sort_comparison", `
+type: component
+table:
+  metrics_view: mv1
+  sort_by: y
+  sort_comparison: previous
+  columns: [foo, y]
+`, "sort_comparison"},
+		{"sort_comparison on a dimension", `
+type: component
+table:
+  metrics_view: mv1
+  sort_by: foo
+  sort_comparison: delta
+  columns: [foo, y]
+`, "name a measure"},
+		{"sort_comparison without sort_by", `
+type: component
+table:
+  metrics_view: mv1
+  sort_comparison: percent_change
+  columns: [foo, y]
+`, "requires"},
 	}
 	for _, tc := range invalid {
 		t.Run(tc.name, func(t *testing.T) {
@@ -1142,6 +1166,7 @@ pivot:
   metrics_view: mv1
   fit_to_width: true
   sort_by: y
+  sort_comparison: percent_change
   measures:
   - name: y
     width: 120

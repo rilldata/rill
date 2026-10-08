@@ -103,6 +103,7 @@ Every entry of a table's `columns` (and of a pivot's `measures`, `row_dimensions
 | `wrap_headers` | Wrap header labels over `wrap_lines` lines instead of truncating them. Defaults to `false`. |
 | `wrap_lines` | Lines per row, and per header row, when wrapping is on. Rows keep a uniform height; longer text is clipped with an ellipsis and the full value stays available in the hover tooltip. `1` to `5`, defaults to `2`. |
 | `sort_by` | Initial sort. In a `table` any column; in a `pivot` a measure (rows are ordered by its row total) or a row dimension. Viewers can still click a header to re-sort. |
+| `sort_comparison` | `delta` or `percent_change`: sort on the measure's comparison column instead of its value. Only for measures of the metrics view, and only while the widget shows a time comparison; otherwise the measure's value is sorted. Clicking a Δ or Δ% header in the editor writes it. |
 | `sort_dir` | `asc` or `desc`. Defaults to `desc` for measures and `asc` for dimensions. |
 
 Per-column overrides on an entry:

@@ -54,6 +54,7 @@ import {
   type PivotFieldConfigPatch,
   type PivotFieldEntry,
   type PivotFieldListKey,
+  type PivotSortComparison,
   type PivotSortDir,
 } from "./field-config";
 import {
@@ -142,6 +143,9 @@ export interface TablePresentationProperties {
   // dimension of a pivot.
   sort_by?: string;
   sort_dir?: PivotSortDir;
+  // Sort on the measure's delta or percent-change column instead of its
+  // value; only takes effect while the component shows a time comparison.
+  sort_comparison?: PivotSortComparison;
 }
 
 export interface PivotSpec
@@ -202,6 +206,7 @@ export class PivotCanvasComponent extends BaseCanvasComponent<
     "adhoc_measures",
     "sort_by",
     "sort_dir",
+    "sort_comparison",
   ];
   type: CanvasComponentType;
   component = CanvasPivotDisplay;
@@ -333,8 +338,18 @@ export class PivotCanvasComponent extends BaseCanvasComponent<
     if (sortBy && !sortableFieldNames(next).includes(sortBy)) {
       normalized.sort_by = undefined;
       normalized.sort_dir = undefined;
-    } else if (!sortBy && next.sort_dir !== undefined) {
-      normalized.sort_dir = undefined;
+      normalized.sort_comparison = undefined;
+    } else if (!sortBy) {
+      if (next.sort_dir !== undefined) normalized.sort_dir = undefined;
+      if (next.sort_comparison !== undefined) {
+        normalized.sort_comparison = undefined;
+      }
+    } else if (
+      next.sort_comparison !== undefined &&
+      !this.isMetricsViewMeasure(sortBy)
+    ) {
+      // Comparison columns exist only for the metrics view's own measures.
+      normalized.sort_comparison = undefined;
     }
 
     super.updateProperties(normalized);
@@ -400,9 +415,17 @@ export class PivotCanvasComponent extends BaseCanvasComponent<
     this.setFieldConfig(listKey, columnId, { width });
   }
 
-  /** Persist the initial sort; both keys are cleared when `sortBy` is undefined. */
-  setSort(sortBy: string | undefined, sortDir: PivotSortDir | undefined) {
-    this.updateProperties({ sort_by: sortBy, sort_dir: sortDir });
+  /** Persist the initial sort; every key is cleared when `sortBy` is undefined. */
+  setSort(
+    sortBy: string | undefined,
+    sortDir: PivotSortDir | undefined,
+    sortComparison: PivotSortComparison | undefined,
+  ) {
+    this.updateProperties({
+      sort_by: sortBy,
+      sort_dir: sortDir,
+      sort_comparison: sortComparison,
+    });
   }
 
   private fieldRole(listKey: PivotFieldListKey, name: string): ColumnWidthRole {
@@ -411,11 +434,18 @@ export class PivotCanvasComponent extends BaseCanvasComponent<
     return "dimension";
   }
 
+  /** A measure of the metrics view or an adhoc measure of this component. */
   private isMeasureName(name: string): boolean {
     const spec = get(this.specStore);
     if (spec.adhoc_measures?.some((measure) => measure.name === name)) {
       return true;
     }
+    return this.isMetricsViewMeasure(name);
+  }
+
+  /** Only the metrics view's own measures get comparison columns in the pivot. */
+  private isMetricsViewMeasure(name: string): boolean {
+    const spec = get(this.specStore);
     const metricsViewSpec = get(
       this.parent.metricsView.getMetricsViewFromName(spec.metrics_view),
     ).metricsView;
@@ -455,6 +485,9 @@ export class PivotCanvasComponent extends BaseCanvasComponent<
       typeof spec.sort_by === "string" && sortable.includes(spec.sort_by)
         ? spec.sort_by
         : "";
+    const comparableMeasureNames = new Set(
+      metricsViewSpec?.measures?.map((measure) => measure.name as string) ?? [],
+    );
 
     return {
       fit_to_width: {
@@ -500,6 +533,24 @@ export class PivotCanvasComponent extends BaseCanvasComponent<
             })),
           ],
         },
+      },
+      sort_comparison: {
+        type: "select",
+        label: m.canvas_sort_on_label(),
+        meta: {
+          default: "",
+          placeholder: m.canvas_sort_on_value(),
+          options: [
+            { value: "", label: m.canvas_sort_on_value() },
+            { value: "delta", label: m.canvas_sort_on_delta() },
+            {
+              value: "percent_change",
+              label: m.canvas_sort_on_percent_change(),
+            },
+          ],
+        },
+        // Comparison columns exist only for the metrics view's own measures.
+        showInUI: sortBy !== "" && comparableMeasureNames.has(sortBy),
       },
       sort_dir: {
         type: "select",
@@ -731,6 +782,7 @@ export class PivotCanvasComponent extends BaseCanvasComponent<
       wrap_lines: currentSpec.wrap_lines,
       sort_by: currentSpec.sort_by,
       sort_dir: currentSpec.sort_dir,
+      sort_comparison: currentSpec.sort_comparison,
     };
 
     if ("columns" in currentSpec) {
@@ -768,6 +820,13 @@ export class PivotCanvasComponent extends BaseCanvasComponent<
     ) {
       delete newSpec.sort_by;
       delete newSpec.sort_dir;
+      delete newSpec.sort_comparison;
+    }
+    if (
+      newSpec.sort_comparison !== undefined &&
+      !(newSpec.sort_by && allMeasures.includes(newSpec.sort_by))
+    ) {
+      delete newSpec.sort_comparison;
     }
 
     const width = parsedDocument.getIn([...parentPath, "width"]);

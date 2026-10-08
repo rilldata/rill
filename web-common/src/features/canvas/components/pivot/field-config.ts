@@ -2,9 +2,11 @@ import {
   clampColumnWidth,
   type ColumnWidthRole,
 } from "@rilldata/web-common/features/dashboards/pivot/pivot-column-width-utils";
-import type {
-  PivotColumnAlign,
-  PivotColumnStyles,
+import {
+  COMPARISON_DELTA,
+  COMPARISON_PERCENT,
+  type PivotColumnAlign,
+  type PivotColumnStyles,
 } from "@rilldata/web-common/features/dashboards/pivot/types";
 import type {
   MetricsViewSpecDimension,
@@ -48,6 +50,38 @@ export type PivotFieldConfigPatch = {
 export type PivotSortDir = "asc" | "desc";
 
 export const PIVOT_SORT_DIRS: readonly PivotSortDir[] = ["asc", "desc"];
+
+// Sort on a measure's comparison column instead of its value.
+export type PivotSortComparison = "delta" | "percent_change";
+
+export const PIVOT_SORT_COMPARISONS: readonly PivotSortComparison[] = [
+  "delta",
+  "percent_change",
+];
+
+/** The column id suffix the pivot gives a measure's comparison column. */
+export function sortComparisonSuffix(comparison: PivotSortComparison): string {
+  return comparison === "delta" ? COMPARISON_DELTA : COMPARISON_PERCENT;
+}
+
+/** Splits a comparison column id into its measure and comparison; undefined for other ids. */
+export function splitSortComparisonId(
+  id: string,
+): { measure: string; comparison: PivotSortComparison } | undefined {
+  if (id.endsWith(COMPARISON_DELTA)) {
+    return {
+      measure: id.slice(0, -COMPARISON_DELTA.length),
+      comparison: "delta",
+    };
+  }
+  if (id.endsWith(COMPARISON_PERCENT)) {
+    return {
+      measure: id.slice(0, -COMPARISON_PERCENT.length),
+      comparison: "percent_change",
+    };
+  }
+  return undefined;
+}
 
 export const PIVOT_COLUMN_ALIGNS: readonly PivotColumnAlign[] = [
   "left",
@@ -357,14 +391,18 @@ export function defaultSortDir(
 }
 
 /**
- * The initial tanstack sorting state for the spec's `sort_by` / `sort_dir`.
- * Empty when there is no (valid) sort, so the pivot's own default applies. In
- * a pivot any row dimension sorts the row axis, whose column is keyed by the
- * first row dimension.
+ * The initial tanstack sorting state for the spec's `sort_by`, `sort_dir` and
+ * `sort_comparison`. Empty when there is no (valid) sort, so the pivot's own
+ * default applies. In a pivot any row dimension sorts the row axis, whose
+ * column is keyed by the first row dimension. A comparison sort targets the
+ * measure's delta or percent-change column, which only exists while the
+ * widget compares (`comparisonEnabled`); otherwise the measure's own value is
+ * sorted.
  */
 export function sortingFromSpec(
   spec: PivotSpec | TableSpec,
   isMeasure: (name: string) => boolean,
+  comparisonEnabled = false,
 ): SortingState {
   const sortBy = spec.sort_by;
   if (typeof sortBy !== "string" || sortBy === "") return [];
@@ -372,28 +410,57 @@ export function sortingFromSpec(
   const dir = PIVOT_SORT_DIRS.includes(spec.sort_dir as PivotSortDir)
     ? (spec.sort_dir as PivotSortDir)
     : defaultSortDir(sortBy, isMeasure);
+  const isMeasureSort =
+    "columns" in spec
+      ? isMeasure(sortBy)
+      : fieldNames(spec.measures).includes(sortBy);
   let id = sortBy;
-  if (!("columns" in spec) && !fieldNames(spec.measures).includes(sortBy)) {
+  if (!("columns" in spec) && !isMeasureSort) {
     id = fieldNames(spec.row_dimensions)[0] ?? sortBy;
+  }
+  const comparison = spec.sort_comparison;
+  if (
+    isMeasureSort &&
+    comparisonEnabled &&
+    PIVOT_SORT_COMPARISONS.includes(comparison as PivotSortComparison)
+  ) {
+    id = `${sortBy}${sortComparisonSuffix(comparison as PivotSortComparison)}`;
   }
   return [{ id, desc: dir === "desc" }];
 }
 
+export interface PivotSortSpec {
+  sort_by: string | undefined;
+  sort_dir: PivotSortDir | undefined;
+  sort_comparison: PivotSortComparison | undefined;
+}
+
 /**
- * The spec keys for a sorting state the user produced by clicking a header.
- * Undefined when the sorted column cannot be expressed in YAML (a measure
- * under one column-dimension value in a nested pivot).
+ * The spec keys for a sorting state the user produced by clicking a header,
+ * including a measure's delta or percent-change column. Undefined when the
+ * sorted column cannot be expressed in YAML (a measure under one
+ * column-dimension value in a nested pivot).
  */
 export function sortingToSpec(
   sorting: SortingState,
   spec: PivotSpec | TableSpec,
-):
-  | { sort_by: string | undefined; sort_dir: PivotSortDir | undefined }
-  | undefined {
+): PivotSortSpec | undefined {
   const first = sorting[0];
-  if (!first) return { sort_by: undefined, sort_dir: undefined };
-  if (!sortableFieldNames(spec).includes(first.id)) return undefined;
-  return { sort_by: first.id, sort_dir: first.desc ? "desc" : "asc" };
+  if (!first) {
+    return {
+      sort_by: undefined,
+      sort_dir: undefined,
+      sort_comparison: undefined,
+    };
+  }
+  const split = splitSortComparisonId(first.id);
+  const sortBy = split ? split.measure : first.id;
+  if (!sortableFieldNames(spec).includes(sortBy)) return undefined;
+  return {
+    sort_by: sortBy,
+    sort_dir: first.desc ? "desc" : "asc",
+    sort_comparison: split?.comparison,
+  };
 }
 
 /** The inspector's per-chip column settings for one field list. */

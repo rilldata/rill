@@ -368,6 +368,8 @@ _[object]_ - (no description)
 
   - **`sort_by`** - _[string]_ - Initial sort field. In a table any column; in a pivot a measure (rows are ordered by its row total) or a row dimension. Viewers can still re-sort by clicking headers.
 
+  - **`sort_comparison`** - _[string]_ - Sort on the measure's comparison column instead of its value, `delta` or `percent_change`. Requires `sort_by` to name a measure of the metrics view (not an adhoc measure) and only applies while the component shows a time comparison; otherwise the measure's value is sorted.
+
   - **`sort_dir`** - _[string]_ - Direction of the initial sort. Defaults to desc for measures and asc for dimensions.
 
   - **`comparison_range`** - _[string]_ - Comparison time range

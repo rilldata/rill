@@ -41,7 +41,11 @@ import {
 } from "svelte/store";
 import type { CanvasEntity } from "../../stores/canvas-entity";
 import type { PivotSpec, TableSpec } from "./";
-import { applyFieldConfigToMetricsView, fieldNames } from "./field-config";
+import {
+  applyFieldConfigToMetricsView,
+  fieldNames,
+  splitSortComparisonId,
+} from "./field-config";
 
 /**
  * Strips filters for the pivot's own dimensions from the where filter.
@@ -209,6 +213,7 @@ export function processPivot(
   const enableComparison =
     canEnablePivotComparison($pivotState, comparisonTimeRange?.start) &&
     $timeAndFilterStore.showTimeComparison;
+  const pivot = withoutStaleComparisonSort($pivotState, enableComparison);
 
   const ephemeralMeasures = ephemeralSpecsToDefs($tableSpec?.adhoc_measures);
   const ephemeralMeasureNames = ephemeralMeasureNameSet(ephemeralMeasures);
@@ -242,7 +247,7 @@ export function processPivot(
     whereFilter: where ?? createAndExpression([]),
     searchText: "",
     isFlat: false,
-    pivot: $pivotState,
+    pivot,
     enableComparison,
     comparisonTime: {
       start: comparisonTimeRange?.start,
@@ -316,6 +321,7 @@ export function processFlat(
   const enableComparison =
     canEnablePivotComparison($pivotState, comparisonTimeRange?.start) &&
     $timeAndFilterStore.showTimeComparison;
+  const pivot = withoutStaleComparisonSort($pivotState, enableComparison);
 
   // Per-field label and format overrides are applied to the metrics view
   // fields here, so the shared column definitions need no knowledge of them.
@@ -346,7 +352,7 @@ export function processFlat(
     whereFilter: where ?? createAndExpression([]),
     searchText: "",
     isFlat: true,
-    pivot: $pivotState,
+    pivot,
     enableComparison,
     comparisonTime: {
       start: comparisonTimeRange?.start,
@@ -375,6 +381,22 @@ export function processFlat(
   }
 
   return config;
+}
+
+/**
+ * A sort on a measure's delta or percent-change column cannot outlive the
+ * comparison columns (the comparison may be switched off after the sort was
+ * seeded or clicked), so it falls back to the measure's own value.
+ */
+function withoutStaleComparisonSort(
+  state: PivotState,
+  enableComparison: boolean,
+): PivotState {
+  const first = state.sorting[0];
+  if (enableComparison || !first) return state;
+  const split = splitSortComparisonId(first.id);
+  if (!split) return state;
+  return { ...state, sorting: [{ ...first, id: split.measure }] };
 }
 
 export const usePivotForCanvas = (

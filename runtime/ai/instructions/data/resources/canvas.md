@@ -916,7 +916,7 @@ table:
 
 **With column widths, wrapping, and an initial sort:**
 
-Any entry of `columns` can be an object with the field `name` plus overrides: `width` (pixels; measures 60–300, dimensions 100–600), `wrap` (dimension columns), `align` (`left`, `center`, `right`), `label`, and for measures `format_preset` or `format_d3`. Component-level `fit_to_width`, `wrap`, `wrap_headers`, `wrap_lines`, `sort_by`, and `sort_dir` apply to the whole table.
+Any entry of `columns` can be an object with the field `name` plus overrides: `width` (pixels; measures 60–300, dimensions 100–600), `wrap` (dimension columns), `align` (`left`, `center`, `right`), `label`, and for measures `format_preset` or `format_d3`. Component-level `fit_to_width`, `wrap`, `wrap_headers`, `wrap_lines`, `sort_by`, and `sort_dir` apply to the whole table; `sort_comparison: delta` or `percent_change` sorts on a measure's comparison column while a time comparison is shown.
 
 ```yaml
 table:

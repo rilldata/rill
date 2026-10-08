@@ -349,14 +349,52 @@ describe("sorting", () => {
     ).toEqual([{ id: "spend", desc: true }]);
   });
 
+  it("targets the comparison column only while the widget compares", () => {
+    const spec: TableSpec = {
+      ...tableSpec,
+      sort_by: "impressions",
+      sort_comparison: "delta",
+    };
+    expect(sortingFromSpec(spec, isMeasure, true)).toEqual([
+      { id: "impressions__delta_abs", desc: true },
+    ]);
+    expect(sortingFromSpec(spec, isMeasure, false)).toEqual([
+      { id: "impressions", desc: true },
+    ]);
+    expect(
+      sortingFromSpec(
+        { ...spec, sort_comparison: "percent_change", sort_dir: "asc" },
+        isMeasure,
+        true,
+      ),
+    ).toEqual([{ id: "impressions__delta_rel", desc: false }]);
+    // Row dimensions have no comparison columns.
+    expect(
+      sortingFromSpec(
+        { ...pivotSpec, sort_by: "campaign", sort_comparison: "delta" },
+        isMeasure,
+        true,
+      ),
+    ).toEqual([{ id: "campaign", desc: false }]);
+  });
+
   it("converts a clicked header back to the spec keys", () => {
     expect(sortingToSpec([{ id: "spend", desc: false }], pivotSpec)).toEqual({
       sort_by: "spend",
       sort_dir: "asc",
+      sort_comparison: undefined,
+    });
+    expect(
+      sortingToSpec([{ id: "spend__delta_rel", desc: true }], pivotSpec),
+    ).toEqual({
+      sort_by: "spend",
+      sort_dir: "desc",
+      sort_comparison: "percent_change",
     });
     expect(sortingToSpec([], pivotSpec)).toEqual({
       sort_by: undefined,
       sort_dir: undefined,
+      sort_comparison: undefined,
     });
     // A measure under one column-dimension value has no YAML form.
     expect(sortingToSpec([{ id: "c0v1m0", desc: true }], pivotSpec)).toBe(

@@ -379,7 +379,7 @@ func validateTable(props map[string]any, metricsViews map[string]*runtimev1.Metr
 		sortable = append(sortable, col.Name)
 	}
 
-	return validateTablePresentation(props, sortable)
+	return validateTablePresentation(props, sortable, func(name string) bool { return metricsViewHasMeasure(mv, name) })
 }
 
 // validatePivot validates properties for pivot.
@@ -444,7 +444,7 @@ func validatePivot(props map[string]any, metricsViews map[string]*runtimev1.Metr
 		}
 	}
 
-	return validateTablePresentation(props, sortable)
+	return validateTablePresentation(props, sortable, func(name string) bool { return metricsViewHasMeasure(mv, name) })
 }
 
 // validateLeaderboard validates properties for leaderboard.
@@ -751,9 +751,10 @@ func validateFieldEntryProps(path string, entry fieldEntry, role fieldRole) erro
 }
 
 // validateTablePresentation validates the presentation properties shared by tables and pivots:
-// fit_to_width, wrap, wrap_headers, wrap_lines, sort_by and sort_dir.
-// sortable lists the field names that sort_by may reference.
-func validateTablePresentation(props map[string]any, sortable []string) error {
+// fit_to_width, wrap, wrap_headers, wrap_lines, sort_by, sort_dir and sort_comparison.
+// sortable lists the field names that sort_by may reference;
+// comparable reports whether the pivot builds comparison columns for a field (a measure of the metrics view, not an adhoc one).
+func validateTablePresentation(props map[string]any, sortable []string, comparable func(name string) bool) error {
 	for _, key := range []string{"fit_to_width", "wrap", "wrap_headers"} {
 		if _, _, err := getOptionalPathBool(props, key); err != nil {
 			return err
@@ -779,6 +780,18 @@ func validateTablePresentation(props map[string]any, sortable []string) error {
 	}
 	if _, hasSortDir := props["sort_dir"]; hasSortDir && (!hasSortBy || sortBy == "") {
 		return errors.New("renderer property \"sort_dir\" requires \"sort_by\"")
+	}
+
+	if err := validateOptionalStringEnum(props, "sort_comparison", []string{"delta", "percent_change"}); err != nil {
+		return err
+	}
+	if _, hasSortComparison := props["sort_comparison"]; hasSortComparison {
+		if !hasSortBy || sortBy == "" {
+			return errors.New("renderer property \"sort_comparison\" requires \"sort_by\"")
+		}
+		if !comparable(sortBy) {
+			return fmt.Errorf("renderer property \"sort_comparison\" requires \"sort_by\" to name a measure of the metrics view, got %q", sortBy)
+		}
 	}
 
 	return nil

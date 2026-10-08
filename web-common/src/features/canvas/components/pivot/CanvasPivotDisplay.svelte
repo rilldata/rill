@@ -56,6 +56,12 @@
     tableSpec.conditional_format,
   );
 
+  // A comparison sort targets columns that only exist while the widget
+  // compares, so such a spec reseeds when the comparison is toggled; other
+  // specs keep the viewer's sort and expansion across the toggle. The config
+  // store value is undefined on the first reactive pass.
+  $: comparisonEnabled = $config?.enableComparison === true;
+
   // The spec keys whose change restarts the pivot (resetting sort, expansion
   // and paging). Presentation keys such as widths, wrapping, labels and number
   // formats are left out on purpose, so editing them keeps the viewer's state.
@@ -78,6 +84,8 @@
     rowLimit: "row_limit" in tableSpec ? (tableSpec.row_limit ?? null) : null,
     sortBy: tableSpec.sort_by ?? null,
     sortDir: tableSpec.sort_dir ?? null,
+    sortComparison: tableSpec.sort_comparison ?? null,
+    comparisonEnabled: tableSpec.sort_comparison ? comparisonEnabled : null,
     metricsViewMeasures: metricsViewSpec?.measures?.map((m) => m.name) ?? null,
     timeDimension: metricsViewSpec?.timeDimension ?? null,
   });
@@ -104,7 +112,7 @@
   function seedPivotState(_dataKey: string) {
     const spec = tableSpec;
     const isMeasure = (name: string) => measureNames.has(name);
-    const sorting = sortingFromSpec(spec, isMeasure);
+    const sorting = sortingFromSpec(spec, isMeasure, comparisonEnabled);
 
     if ("columns" in spec) {
       pivotState.update((state) => ({

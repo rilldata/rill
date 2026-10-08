@@ -163,7 +163,13 @@
             // A measure under one column-dimension value cannot be expressed
             // in the YAML; that sort stays local.
             const next = sortingToSpec(sorting, $spec);
-            if (next) component.setSort(next.sort_by, next.sort_dir);
+            if (next) {
+              component.setSort(
+                next.sort_by,
+                next.sort_dir,
+                next.sort_comparison,
+              );
+            }
           }
         }}
         setPivotRowPage={(page) => {

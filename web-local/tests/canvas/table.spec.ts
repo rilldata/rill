@@ -204,6 +204,10 @@ rows:
       .locator("thead")
       .getByRole("button", { name: "Domain", exact: true })
       .click();
+    // The fixture compares with the previous period, so the measure columns
+    // carry delta headers: publisher, domain, total_records, Δ, Δ%, ...
+    // Clicking the Δ header persists a comparison sort.
+    await page.locator("thead th").nth(3).locator("button.header-cell").click();
 
     // The fit switch in the sidebar of the selected table component.
     await tableCard.click();
@@ -224,7 +228,8 @@ rows:
     await validateYamlContents(page, [
       "- name: publisher",
       "width:",
-      "sort_by: domain",
+      "sort_by: total_records",
+      "sort_comparison: delta",
       "sort_dir:",
       "fit_to_width: true",
     ]);
