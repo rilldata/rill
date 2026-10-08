@@ -370,8 +370,10 @@ func validateTable(props map[string]any, metricsViews map[string]*runtimev1.Metr
 			return fmt.Errorf("referenced columns value %q is not a dimension or measure in metrics view %q", col.Name, mvn)
 		}
 		role := fieldRoleTableDimension
-		if isMeasure {
+		if metricsViewHasMeasure(mv, col.Name) {
 			role = fieldRoleMeasure
+		} else if isMeasure {
+			role = fieldRoleAdhocMeasure
 		}
 		if err := validateFieldEntryProps("columns", col, role); err != nil {
 			return err
@@ -413,10 +415,14 @@ func validatePivot(props map[string]any, metricsViews map[string]*runtimev1.Metr
 	// Measures and row dimensions can be sorted by; column dimensions cannot.
 	sortable := make([]string, 0, len(measures)+len(rowDims))
 	for _, m := range measures {
-		if !metricsViewHasMeasure(mv, m.Name) && !ephemeralNames[m.Name] {
-			return fmt.Errorf("referenced measures value %q is not a measure in metrics view %q", m.Name, mvn)
+		role := fieldRoleMeasure
+		if !metricsViewHasMeasure(mv, m.Name) {
+			if !ephemeralNames[m.Name] {
+				return fmt.Errorf("referenced measures value %q is not a measure in metrics view %q", m.Name, mvn)
+			}
+			role = fieldRoleAdhocMeasure
 		}
-		if err := validateFieldEntryProps("measures", m, fieldRoleMeasure); err != nil {
+		if err := validateFieldEntryProps("measures", m, role); err != nil {
 			return err
 		}
 		sortable = append(sortable, m.Name)
@@ -653,8 +659,11 @@ type fieldRole int
 const (
 	// fieldRoleTableDimension is a dimension or time column of a table: width, wrap, align and label.
 	fieldRoleTableDimension fieldRole = iota
-	// fieldRoleMeasure is a measure of a table or pivot: width, align, label and the number formats.
+	// fieldRoleMeasure is a measure of the metrics view in a table or pivot: width, align, label, the number formats,
+	// and the 'delta' and 'percent_change' objects for its comparison columns.
 	fieldRoleMeasure
+	// fieldRoleAdhocMeasure is an adhoc measure of the component: like a measure, but it has no comparison columns.
+	fieldRoleAdhocMeasure
 	// fieldRoleRowHeader is the first row dimension of a pivot, which keys the merged row-header column: width, wrap and label.
 	fieldRoleRowHeader
 	// fieldRoleRowDimension is a row dimension after the first, which renders no column of its own: label only.
@@ -662,6 +671,11 @@ const (
 	// fieldRoleColumnDimension is a column dimension, a header group spanning its measure columns: label only.
 	fieldRoleColumnDimension
 )
+
+// isMeasure reports whether the role renders a measure column: a measure of the metrics view or an adhoc measure.
+func (r fieldRole) isMeasure() bool {
+	return r == fieldRoleMeasure || r == fieldRoleAdhocMeasure
+}
 
 // validateFieldEntryProps validates the per-column overrides of a field entry against its role:
 // width (an integer within the bounds of the role), wrap, align, label, and the number format keys.
@@ -685,7 +699,7 @@ func validateFieldEntryProps(path string, entry fieldEntry, role fieldRole) erro
 			return fmt.Errorf("%s: 'width' must be an integer number of pixels", prefix)
 		}
 		minWidth, maxWidth := minDimensionColumnWidth, maxDimensionColumnWidth
-		if role == fieldRoleMeasure {
+		if role.isMeasure() {
 			minWidth, maxWidth = minMeasureColumnWidth, maxMeasureColumnWidth
 		}
 		if f < float64(minWidth) || f > float64(maxWidth) {
@@ -699,7 +713,7 @@ func validateFieldEntryProps(path string, entry fieldEntry, role fieldRole) erro
 			return fmt.Errorf("%s: column dimensions take no 'wrap'", prefix)
 		case fieldRoleRowDimension:
 			return fmt.Errorf("%s: only the first row dimension renders a column; set 'wrap' on it", prefix)
-		case fieldRoleMeasure:
+		case fieldRoleMeasure, fieldRoleAdhocMeasure:
 			return fmt.Errorf("%s: 'wrap' only applies to dimension columns", prefix)
 		}
 		if _, ok := raw.(bool); !ok {
@@ -728,7 +742,7 @@ func validateFieldEntryProps(path string, entry fieldEntry, role fieldRole) erro
 
 	rawPreset, hasPreset := entry.Props["format_preset"]
 	rawD3, hasD3 := entry.Props["format_d3"]
-	if (hasPreset || hasD3) && role != fieldRoleMeasure {
+	if (hasPreset || hasD3) && !role.isMeasure() {
 		return fmt.Errorf("%s: number formats only apply to measures", prefix)
 	}
 	if hasPreset && hasD3 {
@@ -744,6 +758,34 @@ func validateFieldEntryProps(path string, entry fieldEntry, role fieldRole) erro
 		s, ok := rawD3.(string)
 		if !ok || s == "" {
 			return fmt.Errorf("%s: 'format_d3' must be a non-empty string", prefix)
+		}
+	}
+
+	// The comparison columns a measure gets while the component compares.
+	for _, key := range []string{"delta", "percent_change"} {
+		raw, ok := entry.Props[key]
+		if !ok {
+			continue
+		}
+		switch role {
+		case fieldRoleAdhocMeasure:
+			return fmt.Errorf("%s: adhoc measures have no comparison columns, so '%s' is not allowed", prefix, key)
+		case fieldRoleMeasure:
+		default:
+			return fmt.Errorf("%s: '%s' configures a measure's comparison column and only applies to measures", prefix, key)
+		}
+		nested, ok := raw.(map[string]any)
+		if !ok {
+			return fmt.Errorf("%s: '%s' must be an object with the comparison column's overrides, such as 'width'", prefix, key)
+		}
+		if rawWidth, ok := nested["width"]; ok {
+			f, ok := rawWidth.(float64)
+			if !ok || f != math.Trunc(f) {
+				return fmt.Errorf("%s: '%s.width' must be an integer number of pixels", prefix, key)
+			}
+			if f < minMeasureColumnWidth || f > maxMeasureColumnWidth {
+				return fmt.Errorf("%s: '%s.width' must be between %d and %d pixels", prefix, key, minMeasureColumnWidth, maxMeasureColumnWidth)
+			}
 		}
 	}
 

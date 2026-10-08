@@ -83,6 +83,8 @@ describe("fieldConfig / fieldConfigs", () => {
         align: "middle",
         label: "",
         format_preset: 4,
+        delta: { width: "80" },
+        percent_change: "narrow",
       } as never,
     ];
     expect(fieldConfig(entries, "campaign")).toEqual({ name: "campaign" });
@@ -123,6 +125,20 @@ describe("setFieldConfig", () => {
     ]);
   });
 
+  it("merges comparison column patches into the nested object", () => {
+    let list: PivotFieldEntry[] = ["a"];
+    list = setFieldConfig(list, "a", { delta: { width: 80 } });
+    expect(list).toEqual([{ name: "a", delta: { width: 80 } }]);
+    list = setFieldConfig(list, "a", { percent_change: { width: 70 } });
+    expect(list).toEqual([
+      { name: "a", delta: { width: 80 }, percent_change: { width: 70 } },
+    ]);
+    list = setFieldConfig(list, "a", { delta: { width: null } });
+    expect(list).toEqual([{ name: "a", percent_change: { width: 70 } }]);
+    list = setFieldConfig(list, "a", { percent_change: null });
+    expect(list).toEqual(["a"]);
+  });
+
   it("leaves other entries untouched", () => {
     const list = setFieldConfig(tableSpec.columns, "flight_start", {
       width: 140,
@@ -157,12 +173,14 @@ describe("columnSettingsCapabilities", () => {
       wrap: true,
       align: true,
       format: false,
+      comparison: false,
     });
     expect(columnSettingsCapabilities("columns", 0, true)).toEqual({
       width: true,
       wrap: false,
       align: true,
       format: true,
+      comparison: true,
     });
     expect(columnSettingsCapabilities("measures", 1, true).width).toBe(true);
     expect(columnSettingsCapabilities("row_dimensions", 0, false)).toEqual({
@@ -170,6 +188,7 @@ describe("columnSettingsCapabilities", () => {
       wrap: true,
       align: false,
       format: false,
+      comparison: false,
     });
     expect(columnSettingsCapabilities("row_dimensions", 1, false).width).toBe(
       false,
@@ -179,7 +198,20 @@ describe("columnSettingsCapabilities", () => {
       wrap: false,
       align: false,
       format: false,
+      comparison: false,
     });
+  });
+
+  it("offers comparison widths to metrics view measures only", () => {
+    expect(columnSettingsCapabilities("measures", 0, true).comparison).toBe(
+      true,
+    );
+    expect(
+      columnSettingsCapabilities("measures", 0, true, true).comparison,
+    ).toBe(false);
+    expect(
+      columnSettingsCapabilities("columns", 0, true, true).comparison,
+    ).toBe(false);
   });
 });
 
@@ -240,6 +272,25 @@ describe("resolveColumnStyles", () => {
     };
     expect(resolveColumnStyles(spec, isMeasure).campaign).toEqual({
       width: 200,
+    });
+  });
+
+  it("keys a measure's comparison columns by the suffixed ids", () => {
+    const spec: TableSpec = {
+      ...tableSpec,
+      columns: [
+        { name: "campaign", delta: { width: 80 } },
+        {
+          name: "impressions",
+          delta: { width: 80 },
+          percent_change: { width: 500 },
+        },
+      ],
+    };
+    expect(resolveColumnStyles(spec, isMeasure)).toEqual({
+      impressions__delta_abs: { width: 80 },
+      // Clamped to the measure bounds.
+      impressions__delta_rel: { width: 300 },
     });
   });
 });

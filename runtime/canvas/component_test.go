@@ -884,6 +884,10 @@ table:
     width: 90
     format_d3: ".3s"
     align: left
+    delta:
+      width: 80
+    percent_change:
+      width: 70
   - bar
 `})
 	testruntime.ReconcileParserAndWait(t, rt, id)
@@ -1035,6 +1039,49 @@ table:
   sort_comparison: percent_change
   columns: [foo, y]
 `, "requires"},
+		{"delta on a dimension", `
+type: component
+table:
+  metrics_view: mv1
+  columns:
+  - name: foo
+    delta:
+      width: 80
+  - y
+`, "only applies to measures"},
+		{"delta width out of bounds", `
+type: component
+table:
+  metrics_view: mv1
+  columns:
+  - foo
+  - name: y
+    delta:
+      width: 20
+`, "'delta.width' must be between"},
+		{"percent_change not an object", `
+type: component
+table:
+  metrics_view: mv1
+  columns:
+  - foo
+  - name: y
+    percent_change: 80
+`, "must be an object"},
+		{"delta on an adhoc measure", `
+type: component
+table:
+  metrics_view: mv1
+  adhoc_measures:
+  - name: profit
+    display_name: Profit
+    expression: y - z
+  columns:
+  - foo
+  - name: profit
+    delta:
+      width: 80
+`, "adhoc measures have no comparison columns"},
 	}
 	for _, tc := range invalid {
 		t.Run(tc.name, func(t *testing.T) {
@@ -1171,6 +1218,8 @@ pivot:
   - name: y
     width: 120
     format_preset: percentage
+    delta:
+      width: 80
     align: center
   - z
   row_dimensions:

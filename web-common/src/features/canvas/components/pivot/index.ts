@@ -53,9 +53,12 @@ import {
   WRAP_LINES_MIN,
   type PivotFieldConfigPatch,
   type PivotFieldEntry,
+  type PivotComparison,
   type PivotFieldListKey,
-  type PivotSortComparison,
   type PivotSortDir,
+  PIVOT_COMPARISONS,
+  comparisonWidthPatch,
+  splitComparisonColumnId,
 } from "./field-config";
 import {
   createPivotConfig,
@@ -145,7 +148,7 @@ export interface TablePresentationProperties {
   sort_dir?: PivotSortDir;
   // Sort on the measure's delta or percent-change column instead of its
   // value; only takes effect while the component shows a time comparison.
-  sort_comparison?: PivotSortComparison;
+  sort_comparison?: PivotComparison;
 }
 
 export interface PivotSpec
@@ -386,12 +389,21 @@ export class PivotCanvasComponent extends BaseCanvasComponent<
   ) {
     const spec = get(this.specStore) as Partial<PivotSpec> & Partial<TableSpec>;
     const list = spec[listKey];
-    let normalized = patch;
+    const normalized: PivotFieldConfigPatch = { ...patch };
     if (typeof patch.width === "number") {
-      normalized = {
-        ...patch,
-        width: clampColumnWidth(this.fieldRole(listKey, name), patch.width),
-      };
+      normalized.width = clampColumnWidth(
+        this.fieldRole(listKey, name),
+        patch.width,
+      );
+    }
+    for (const comparison of PIVOT_COMPARISONS) {
+      const nested = patch[comparison];
+      if (nested && typeof nested.width === "number") {
+        normalized[comparison] = {
+          ...nested,
+          width: clampColumnWidth("measure", nested.width),
+        };
+      }
     }
     this.updateProperty(listKey, setFieldConfigInList(list, name, normalized));
   }
@@ -399,27 +411,38 @@ export class PivotCanvasComponent extends BaseCanvasComponent<
   /**
    * Persist a width the user set by dragging a column edge (null: a reset to
    * the automatic width). The column id is the field name in a table, the
-   * measure name or the first row dimension in a pivot.
+   * measure name or the first row dimension in a pivot; a measure's delta or
+   * percent-change column carries a suffix and is stored on the measure.
    */
   setColumnWidth(columnId: string, width: number | null) {
     const spec = get(this.specStore);
+    const split = splitComparisonColumnId(columnId);
+    const name = split?.measure ?? columnId;
     let listKey: PivotFieldListKey | undefined;
     if ("columns" in spec) {
-      if (fieldNames(spec.columns).includes(columnId)) listKey = "columns";
-    } else if (fieldNames(spec.measures).includes(columnId)) {
+      if (fieldNames(spec.columns).includes(name)) listKey = "columns";
+    } else if (fieldNames(spec.measures).includes(name)) {
       listKey = "measures";
-    } else if (fieldNames(spec.row_dimensions)[0] === columnId) {
+    } else if (!split && fieldNames(spec.row_dimensions)[0] === name) {
       listKey = "row_dimensions";
     }
     if (!listKey) return;
-    this.setFieldConfig(listKey, columnId, { width });
+    if (!split) {
+      this.setFieldConfig(listKey, name, { width });
+    } else if (this.isMetricsViewMeasure(name)) {
+      this.setFieldConfig(
+        listKey,
+        name,
+        comparisonWidthPatch(split.comparison, width),
+      );
+    }
   }
 
   /** Persist the initial sort; every key is cleared when `sortBy` is undefined. */
   setSort(
     sortBy: string | undefined,
     sortDir: PivotSortDir | undefined,
-    sortComparison: PivotSortComparison | undefined,
+    sortComparison: PivotComparison | undefined,
   ) {
     this.updateProperties({
       sort_by: sortBy,

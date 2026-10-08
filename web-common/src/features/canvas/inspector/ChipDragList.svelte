@@ -213,6 +213,7 @@
             columnSettings.listKey,
             i,
             isMeasure,
+            columnSettings.adhocNames.has(item),
           )}
           removable
           grab

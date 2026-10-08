@@ -20,6 +20,20 @@ import type { PivotSpec, TableSpec } from "./index";
  * `row_dimensions`, or `col_dimensions` list: the field name alone, or an
  * object with the name plus per-column presentation overrides.
  */
+// A measure's comparison columns, shown while the component compares.
+export type PivotComparison = "delta" | "percent_change";
+
+export const PIVOT_COMPARISONS: readonly PivotComparison[] = [
+  "delta",
+  "percent_change",
+];
+
+/** Overrides for a measure's delta or percent-change column. */
+export interface PivotComparisonColumnConfig {
+  // Pixel width within the measure bounds.
+  width?: number;
+}
+
 export interface PivotFieldConfig {
   name: string;
   // Pixel width within the resizer bounds of the column's role.
@@ -32,6 +46,10 @@ export interface PivotFieldConfig {
   // Number format overrides for measures; mutually exclusive.
   format_preset?: string;
   format_d3?: string;
+  // The measure's comparison columns. Measures of the metrics view only, as
+  // adhoc measures get no comparison columns.
+  delta?: PivotComparisonColumnConfig;
+  percent_change?: PivotComparisonColumnConfig;
 }
 
 export type PivotFieldEntry = string | PivotFieldConfig;
@@ -43,31 +61,34 @@ export type PivotFieldListKey =
   | "col_dimensions";
 
 // A patch for one entry's overrides; null removes the key.
+export type PivotComparisonColumnPatch = {
+  [K in keyof PivotComparisonColumnConfig]?:
+    | PivotComparisonColumnConfig[K]
+    | null;
+};
+
+// A null removes the key; a comparison patch merges into the nested object.
 export type PivotFieldConfigPatch = {
-  [K in keyof Omit<PivotFieldConfig, "name">]?: PivotFieldConfig[K] | null;
+  [K in keyof Omit<PivotFieldConfig, "name" | PivotComparison>]?:
+    | PivotFieldConfig[K]
+    | null;
+} & {
+  [K in PivotComparison]?: PivotComparisonColumnPatch | null;
 };
 
 export type PivotSortDir = "asc" | "desc";
 
 export const PIVOT_SORT_DIRS: readonly PivotSortDir[] = ["asc", "desc"];
 
-// Sort on a measure's comparison column instead of its value.
-export type PivotSortComparison = "delta" | "percent_change";
-
-export const PIVOT_SORT_COMPARISONS: readonly PivotSortComparison[] = [
-  "delta",
-  "percent_change",
-];
-
 /** The column id suffix the pivot gives a measure's comparison column. */
-export function sortComparisonSuffix(comparison: PivotSortComparison): string {
+export function comparisonColumnSuffix(comparison: PivotComparison): string {
   return comparison === "delta" ? COMPARISON_DELTA : COMPARISON_PERCENT;
 }
 
 /** Splits a comparison column id into its measure and comparison; undefined for other ids. */
-export function splitSortComparisonId(
+export function splitComparisonColumnId(
   id: string,
-): { measure: string; comparison: PivotSortComparison } | undefined {
+): { measure: string; comparison: PivotComparison } | undefined {
   if (id.endsWith(COMPARISON_DELTA)) {
     return {
       measure: id.slice(0, -COMPARISON_DELTA.length),
@@ -93,6 +114,7 @@ export const WRAP_LINES_MIN = 1;
 export const WRAP_LINES_MAX = 5;
 export const WRAP_LINES_DEFAULT = 2;
 
+// The flat override keys; the comparison objects are handled separately.
 const PRESENTATION_KEYS = [
   "width",
   "wrap",
@@ -100,7 +122,17 @@ const PRESENTATION_KEYS = [
   "label",
   "format_preset",
   "format_d3",
-] as const satisfies readonly (keyof Omit<PivotFieldConfig, "name">)[];
+] as const satisfies readonly (keyof Omit<
+  PivotFieldConfig,
+  "name" | PivotComparison
+>)[];
+
+function hasOverrides(config: PivotFieldConfig): boolean {
+  return (
+    PRESENTATION_KEYS.some((key) => key in config) ||
+    PIVOT_COMPARISONS.some((key) => key in config)
+  );
+}
 
 /** The field name of an entry; "" for malformed hand-edited entries. */
 export function fieldName(entry: PivotFieldEntry | undefined | null): string {
@@ -148,7 +180,20 @@ function sanitizeFieldConfig(entry: PivotFieldEntry): PivotFieldConfig {
   if (typeof entry.format_d3 === "string" && entry.format_d3 !== "") {
     config.format_d3 = entry.format_d3;
   }
+  for (const comparison of PIVOT_COMPARISONS) {
+    const nested = sanitizeComparisonColumnConfig(entry[comparison]);
+    if (nested) config[comparison] = nested;
+  }
   return config;
+}
+
+function sanitizeComparisonColumnConfig(
+  raw: unknown,
+): PivotComparisonColumnConfig | undefined {
+  if (typeof raw !== "object" || raw === null) return undefined;
+  const width = (raw as { width?: unknown }).width;
+  if (typeof width === "number" && Number.isFinite(width)) return { width };
+  return undefined;
 }
 
 /** All entries of the component's field lists as objects, keyed by name. */
@@ -215,9 +260,25 @@ export function setFieldConfig(
       (next as unknown as Record<string, unknown>)[key] = value;
     }
   }
-  const collapsed = PRESENTATION_KEYS.some((key) => key in next)
-    ? next
-    : next.name;
+  for (const comparison of PIVOT_COMPARISONS) {
+    if (!(comparison in patch)) continue;
+    const value = patch[comparison];
+    if (value === null || value === undefined) {
+      delete next[comparison];
+      continue;
+    }
+    const merged: PivotComparisonColumnConfig = { ...next[comparison] };
+    if ("width" in value) {
+      if (value.width === null || value.width === undefined) {
+        delete merged.width;
+      } else {
+        merged.width = value.width;
+      }
+    }
+    if (Object.keys(merged).length) next[comparison] = merged;
+    else delete next[comparison];
+  }
+  const collapsed = hasOverrides(next) ? next : next.name;
   if (index === -1) entries.push(collapsed);
   else entries[index] = collapsed;
   return entries;
@@ -255,16 +316,40 @@ export function normalizeRowDimensionEntries(
 }
 
 /** Which overrides the inspector offers for a chip in a given list. */
+export interface ColumnSettingsCapabilities {
+  width: boolean;
+  wrap: boolean;
+  align: boolean;
+  format: boolean;
+  // Widths of the delta and percent-change columns: measures of the metrics
+  // view only, as adhoc measures get no comparison columns.
+  comparison: boolean;
+}
+
 export function columnSettingsCapabilities(
   listKey: PivotFieldListKey,
   index: number,
   isMeasure: boolean,
-): { width: boolean; wrap: boolean; align: boolean; format: boolean } {
+  isAdhocMeasure = false,
+): ColumnSettingsCapabilities {
+  const comparison = isMeasure && !isAdhocMeasure;
   switch (listKey) {
     case "columns":
-      return { width: true, wrap: !isMeasure, align: true, format: isMeasure };
+      return {
+        width: true,
+        wrap: !isMeasure,
+        align: true,
+        format: isMeasure,
+        comparison,
+      };
     case "measures":
-      return { width: true, wrap: false, align: true, format: true };
+      return {
+        width: true,
+        wrap: false,
+        align: true,
+        format: true,
+        comparison,
+      };
     case "row_dimensions":
       // Only the first row dimension renders a column of its own.
       return {
@@ -272,9 +357,16 @@ export function columnSettingsCapabilities(
         wrap: index === 0,
         align: false,
         format: false,
+        comparison: false,
       };
     case "col_dimensions":
-      return { width: false, wrap: false, align: false, format: false };
+      return {
+        width: false,
+        wrap: false,
+        align: false,
+        format: false,
+        comparison: false,
+      };
   }
 }
 
@@ -313,6 +405,15 @@ export function resolveColumnStyles(
     }
     if (allowAlign && config.align !== undefined) style.align = config.align;
     if (Object.keys(style).length) styles[config.name] = style;
+    if (role !== "measure") return;
+    // The comparison columns are keyed by the measure name plus a suffix.
+    for (const comparison of PIVOT_COMPARISONS) {
+      const width = config[comparison]?.width;
+      if (width === undefined) continue;
+      styles[`${config.name}${comparisonColumnSuffix(comparison)}`] = {
+        width: clampColumnWidth("measure", width),
+      };
+    }
   };
   if ("columns" in spec) {
     for (const entry of spec.columns ?? []) {
@@ -422,9 +523,9 @@ export function sortingFromSpec(
   if (
     isMeasureSort &&
     comparisonEnabled &&
-    PIVOT_SORT_COMPARISONS.includes(comparison as PivotSortComparison)
+    PIVOT_COMPARISONS.includes(comparison as PivotComparison)
   ) {
-    id = `${sortBy}${sortComparisonSuffix(comparison as PivotSortComparison)}`;
+    id = `${sortBy}${comparisonColumnSuffix(comparison as PivotComparison)}`;
   }
   return [{ id, desc: dir === "desc" }];
 }
@@ -432,7 +533,7 @@ export function sortingFromSpec(
 export interface PivotSortSpec {
   sort_by: string | undefined;
   sort_dir: PivotSortDir | undefined;
-  sort_comparison: PivotSortComparison | undefined;
+  sort_comparison: PivotComparison | undefined;
 }
 
 /**
@@ -453,7 +554,7 @@ export function sortingToSpec(
       sort_comparison: undefined,
     };
   }
-  const split = splitSortComparisonId(first.id);
+  const split = splitComparisonColumnId(first.id);
   const sortBy = split ? split.measure : first.id;
   if (!sortableFieldNames(spec).includes(sortBy)) return undefined;
   return {
@@ -463,9 +564,22 @@ export function sortingToSpec(
   };
 }
 
+/** A patch for one comparison column's width; null clears it. */
+export function comparisonWidthPatch(
+  comparison: PivotComparison,
+  width: number | null,
+): PivotFieldConfigPatch {
+  return comparison === "delta"
+    ? { delta: { width } }
+    : { percent_change: { width } };
+}
+
 /** The inspector's per-chip column settings for one field list. */
 export interface ColumnSettings {
   listKey: PivotFieldListKey;
   configs: Record<string, PivotFieldConfig>;
+  // Adhoc measures get no comparison columns, so their chips offer no
+  // comparison widths.
+  adhocNames: ReadonlySet<string>;
   onChange: (name: string, patch: PivotFieldConfigPatch) => void;
 }

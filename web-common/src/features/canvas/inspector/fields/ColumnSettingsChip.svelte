@@ -9,7 +9,11 @@
     PopoverTrigger,
   } from "@rilldata/web-common/components/popover";
   import {
+    comparisonWidthPatch,
     PIVOT_COLUMN_ALIGNS,
+    PIVOT_COMPARISONS,
+    type ColumnSettingsCapabilities,
+    type PivotComparison,
     type PivotFieldConfig,
     type PivotFieldConfigPatch,
   } from "@rilldata/web-common/features/canvas/components/pivot/field-config";
@@ -32,12 +36,7 @@
     config: PivotFieldConfig | undefined;
     // The header text used when no label override is set.
     defaultLabel: string;
-    capabilities: {
-      width: boolean;
-      wrap: boolean;
-      align: boolean;
-      format: boolean;
-    };
+    capabilities: ColumnSettingsCapabilities;
     removable?: boolean;
     grab?: boolean;
     fullWidth?: boolean;
@@ -79,11 +78,25 @@
   let labelDraft = $state("");
   let widthDraft = $state("");
   let d3Draft = $state("");
+  // The widths of the measure's delta and percent-change columns.
+  let comparisonDrafts = $state<Record<PivotComparison, string>>({
+    delta: "",
+    percent_change: "",
+  });
   $effect(() => {
     labelDraft = config?.label ?? "";
     widthDraft = config?.width !== undefined ? String(config.width) : "";
     d3Draft = config?.format_d3 ?? "";
+    comparisonDrafts = {
+      delta: comparisonWidthText("delta"),
+      percent_change: comparisonWidthText("percent_change"),
+    };
   });
+
+  function comparisonWidthText(comparison: PivotComparison): string {
+    const width = config?.[comparison]?.width;
+    return width === undefined ? "" : String(width);
+  }
 
   function commitLabel() {
     const value = labelDraft.trim();
@@ -105,6 +118,36 @@
     const clamped = Math.min(bounds.max, Math.max(bounds.min, parsed));
     widthDraft = String(clamped);
     if (clamped !== config?.width) onConfigChange({ width: clamped });
+  }
+
+  const measureBounds = roleWidthBounds("measure");
+  const comparisonWidthLabels: Record<PivotComparison, () => string> = {
+    delta: m.canvas_column_delta_width_label,
+    percent_change: m.canvas_column_percent_change_width_label,
+  };
+
+  function commitComparisonWidth(comparison: PivotComparison) {
+    const current = config?.[comparison]?.width;
+    const text = comparisonDrafts[comparison].trim();
+    if (text === "") {
+      if (current !== undefined) {
+        onConfigChange(comparisonWidthPatch(comparison, null));
+      }
+      return;
+    }
+    const parsed = Math.round(Number(text));
+    if (!Number.isFinite(parsed)) {
+      comparisonDrafts[comparison] = comparisonWidthText(comparison);
+      return;
+    }
+    const clamped = Math.min(
+      measureBounds.max,
+      Math.max(measureBounds.min, parsed),
+    );
+    comparisonDrafts[comparison] = String(clamped);
+    if (clamped !== current) {
+      onConfigChange(comparisonWidthPatch(comparison, clamped));
+    }
   }
 
   function commitD3() {
@@ -241,6 +284,33 @@
           >
             {m.canvas_column_width_auto()}
           </Button>
+        </div>
+      {/if}
+
+      {#if capabilities.comparison}
+        <div class="flex flex-col gap-y-1">
+          <div class="flex gap-x-2">
+            {#each PIVOT_COMPARISONS as comparison (comparison)}
+              <div class="grow min-w-0">
+                <Input
+                  id="{item.id}-{comparison}-width"
+                  inputType="number"
+                  label={comparisonWidthLabels[comparison]()}
+                  capitalizeLabel={false}
+                  textClass="text-sm"
+                  size="sm"
+                  labelGap={2}
+                  placeholder={m.canvas_column_width_auto()}
+                  bind:value={comparisonDrafts[comparison]}
+                  onBlur={() => commitComparisonWidth(comparison)}
+                  onEnter={() => commitComparisonWidth(comparison)}
+                />
+              </div>
+            {/each}
+          </div>
+          <span class="text-xs text-fg-secondary">
+            {m.canvas_column_comparison_width_hint()}
+          </span>
         </div>
       {/if}
 

@@ -13,11 +13,16 @@ async function setCanvasYaml(page: Page, yaml: string) {
   await page.getByRole("button", { name: "Switch to visual editor" }).click();
 }
 
-function canvasYaml(component: string, width = 12) {
+// `compare` turns on the time comparison, which adds a Δ and a Δ% column
+// after every measure of a table.
+function canvasYaml(
+  component: string,
+  { width = 12, compare = false }: { width?: number; compare?: boolean } = {},
+) {
   return `type: canvas
 display_name: "Table canvas"
 defaults:
-  time_range: PT24H
+  time_range: PT24H${compare ? "\n  comparison_mode: time" : ""}
 rows:
   - items:
 ${component
@@ -55,7 +60,8 @@ test.describe("canvas table column config", () => {
     await gotoNavEntry(page, CANVAS_FILE);
     await setCanvasYaml(
       page,
-      canvasYaml(`- table:
+      canvasYaml(
+        `- table:
     metrics_view: AdBids_metrics
     title: Table component
     wrap_headers: true
@@ -70,7 +76,11 @@ test.describe("canvas table column config", () => {
       - name: total_records
         format_d3: ",.2f"
         align: center
-      - bid_price_sum`),
+        delta:
+          width: 90
+      - bid_price_sum`,
+        { compare: true },
+      ),
     );
 
     // Label override (the first render waits for the project to reconcile)
@@ -81,6 +91,12 @@ test.describe("canvas table column config", () => {
     await expect(page.locator("table colgroup col").first()).toHaveCSS(
       "width",
       "250px",
+    );
+    // With the comparison on, total_records is followed by its Δ column,
+    // which takes the width from `delta`.
+    await expect(page.locator("table colgroup col").nth(3)).toHaveCSS(
+      "width",
+      "90px",
     );
     // Number format override on the totals row (1,122 records in the fixture)
     await expect(page.getByText("1,122.00")).toBeVisible();
@@ -199,6 +215,19 @@ rows:
     await page.mouse.move(x + 80, y, { steps: 4 });
     await page.mouse.up();
 
+    // Drag the edge of the Δ column of total_records (publisher, domain,
+    // total_records, Δ, ...) 30px; its width is stored on the measure's `delta`.
+    const deltaHandle = page.locator(".table-wrapper button.EW").nth(3);
+    const deltaBox = await deltaHandle.boundingBox();
+    if (!deltaBox) throw new Error("delta column resize handle not found");
+    const dx = deltaBox.x + deltaBox.width / 2;
+    const dy = deltaBox.y + 30;
+    await page.mouse.move(dx, dy);
+    await page.mouse.down();
+    await page.mouse.move(dx + 15, dy, { steps: 3 });
+    await page.mouse.move(dx + 30, dy, { steps: 3 });
+    await page.mouse.up();
+
     // Clicking a header sorts and persists the sort.
     await page
       .locator("thead")
@@ -228,6 +257,8 @@ rows:
     await validateYamlContents(page, [
       "- name: publisher",
       "width:",
+      "- name: total_records",
+      "delta:",
       "sort_by: total_records",
       "sort_comparison: delta",
       "sort_dir:",

@@ -47,8 +47,6 @@
   import { isShowMoreRow } from "./pivot-utils";
   import PivotHeaderLabel from "./PivotHeaderLabel.svelte";
   import {
-    COMPARISON_DELTA,
-    COMPARISON_PERCENT,
     type PivotColumnAlign,
     type PivotColumnStyles,
     type PivotDataRow,
@@ -308,14 +306,6 @@
     const next = new Set(draggedIds);
     next.delete(columnId);
     draggedIds = next;
-  }
-
-  // Comparison sub-columns have no entry of their own in the spec, so their
-  // widths are never persisted.
-  function isPersistableMeasure(name: string) {
-    return (
-      !name.endsWith(COMPARISON_DELTA) && !name.endsWith(COMPARISON_PERCENT)
-    );
   }
 
   $: if (resizingMeasure && containerRefElement && measureLengths) {
@@ -615,13 +605,11 @@
             onMouseUp={(d: number, moved: boolean) => {
               resizingMeasure = false;
               // A click without movement must neither persist nor pin the column.
-              if (moved && isPersistableMeasure(name)) {
-                onColumnResizeEnd?.(name, d);
-              }
+              if (moved) onColumnResizeEnd?.(name, d);
             }}
             onReset={() => {
               unmarkDragged(name);
-              if (isPersistableMeasure(name)) onColumnResizeEnd?.(name, null);
+              onColumnResizeEnd?.(name, null);
             }}
           >
             <div class="resize-bar"></div>

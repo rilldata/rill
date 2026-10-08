@@ -276,6 +276,14 @@ _[object]_ - (no description)
 
       - **`format_d3`** - _[string]_ - d3 format string for a measure in this component only (for example `.3s` or `,.2f`). Mutually exclusive with `format_preset`.
 
+      - **`delta`** - _[object]_ - Overrides for a measure's comparison column, the Δ (`delta`) or Δ% (`percent_change`) column shown next to the measure while the component shows a time comparison. Only on measures of the metrics view; adhoc measures have no comparison columns.
+
+        - **`width`** - _[integer]_ - Column width in pixels, 60–300. The column keeps this width under stretch and `fit_to_width`.
+
+      - **`percent_change`** - _[object]_ - Overrides for a measure's comparison column, the Δ (`delta`) or Δ% (`percent_change`) column shown next to the measure while the component shows a time comparison. Only on measures of the metrics view; adhoc measures have no comparison columns.
+
+        - **`width`** - _[integer]_ - Column width in pixels, 60–300. The column keeps this width under stretch and `fit_to_width`.
+
   - **`measures`** - _[array of oneOf]_ - List of measures to display. Each entry is a field name or an object with the name and per-column overrides. _(required)_
 
     - **option 1** - _[string]_ - Name of the dimension, measure, adhoc measure, or encoded time column (for example `ts_rill_TIME_GRAIN_DAY`)
@@ -295,6 +303,14 @@ _[object]_ - (no description)
       - **`format_preset`** - _[string]_ - Number format preset for a measure in this component only. Mutually exclusive with `format_d3`.
 
       - **`format_d3`** - _[string]_ - d3 format string for a measure in this component only (for example `.3s` or `,.2f`). Mutually exclusive with `format_preset`.
+
+      - **`delta`** - _[object]_ - Overrides for a measure's comparison column, the Δ (`delta`) or Δ% (`percent_change`) column shown next to the measure while the component shows a time comparison. Only on measures of the metrics view; adhoc measures have no comparison columns.
+
+        - **`width`** - _[integer]_ - Column width in pixels, 60–300. The column keeps this width under stretch and `fit_to_width`.
+
+      - **`percent_change`** - _[object]_ - Overrides for a measure's comparison column, the Δ (`delta`) or Δ% (`percent_change`) column shown next to the measure while the component shows a time comparison. Only on measures of the metrics view; adhoc measures have no comparison columns.
+
+        - **`width`** - _[integer]_ - Column width in pixels, 60–300. The column keeps this width under stretch and `fit_to_width`.
 
   - **`adhoc_measures`** - _[array of object]_ - Adhoc measures defined on this component, derived from the metrics view's measures with an arithmetic expression. Reference them by `name` in `measures`. See [Adhoc measures](/developers/build/dashboards/canvas-widgets/data#adhoc-measures).
 
@@ -330,6 +346,14 @@ _[object]_ - (no description)
 
       - **`format_d3`** - _[string]_ - d3 format string for a measure in this component only (for example `.3s` or `,.2f`). Mutually exclusive with `format_preset`.
 
+      - **`delta`** - _[object]_ - Overrides for a measure's comparison column, the Δ (`delta`) or Δ% (`percent_change`) column shown next to the measure while the component shows a time comparison. Only on measures of the metrics view; adhoc measures have no comparison columns.
+
+        - **`width`** - _[integer]_ - Column width in pixels, 60–300. The column keeps this width under stretch and `fit_to_width`.
+
+      - **`percent_change`** - _[object]_ - Overrides for a measure's comparison column, the Δ (`delta`) or Δ% (`percent_change`) column shown next to the measure while the component shows a time comparison. Only on measures of the metrics view; adhoc measures have no comparison columns.
+
+        - **`width`** - _[integer]_ - Column width in pixels, 60–300. The column keeps this width under stretch and `fit_to_width`.
+
   - **`col_dimensions`** - _[array of oneOf]_ - Dimensions pivoted into column groups. They span their measure columns, so they take only `name` and `label`; set widths on the measures.
 
     - **option 1** - _[string]_ - Name of the dimension, measure, adhoc measure, or encoded time column (for example `ts_rill_TIME_GRAIN_DAY`)
@@ -349,6 +373,14 @@ _[object]_ - (no description)
       - **`format_preset`** - _[string]_ - Number format preset for a measure in this component only. Mutually exclusive with `format_d3`.
 
       - **`format_d3`** - _[string]_ - d3 format string for a measure in this component only (for example `.3s` or `,.2f`). Mutually exclusive with `format_preset`.
+
+      - **`delta`** - _[object]_ - Overrides for a measure's comparison column, the Δ (`delta`) or Δ% (`percent_change`) column shown next to the measure while the component shows a time comparison. Only on measures of the metrics view; adhoc measures have no comparison columns.
+
+        - **`width`** - _[integer]_ - Column width in pixels, 60–300. The column keeps this width under stretch and `fit_to_width`.
+
+      - **`percent_change`** - _[object]_ - Overrides for a measure's comparison column, the Δ (`delta`) or Δ% (`percent_change`) column shown next to the measure while the component shows a time comparison. Only on measures of the metrics view; adhoc measures have no comparison columns.
+
+        - **`width`** - _[integer]_ - Column width in pixels, 60–300. The column keeps this width under stretch and `fit_to_width`.
 
   - **`hide_totals_row`** - _[boolean]_ - Whether to hide the totals row. Defaults to false.
 

@@ -92,6 +92,8 @@ Every entry of a table's `columns` (and of a pivot's `measures`, `row_dimensions
         width: 120
         format_d3: ".3s"
         align: center
+        delta:
+          width: 80          # the Δ column shown while the widget compares
       - name: avg_bid_floor
         format_preset: currency_usd
 ```
@@ -117,6 +119,7 @@ Per-column overrides on an entry:
 | `label` | Header text, replacing the display name from the metrics view. In a pivot it also renames the field in the merged row-header label and the column-dimension group header. |
 | `format_preset` | Number format for a measure in this widget only: `humanize`, `none`, `currency_usd`, `currency_eur`, `percentage`, or `interval_ms`. Mutually exclusive with `format_d3`. |
 | `format_d3` | A [d3 format](https://d3js.org/d3-format) string for a measure in this widget only, such as `.3s` for three significant digits or `,.2f`. Mutually exclusive with `format_preset`. |
+| `delta`, `percent_change` | Overrides for the measure's Δ and Δ% comparison columns, which appear while the widget shows a time comparison: an object with `width` (`60` to `300`). Only on measures of the metrics view, as adhoc measures have no comparison columns. Dragging a Δ or Δ% column edge in the editor writes it. |
 
 In a pivot, only measures and the first row dimension render a column of their own. A measure's `width` applies to its column under every column-dimension value, and the first row dimension's `width` and `wrap` apply to the merged row-header column; row dimensions after the first take only `name` and `label`, and row dimensions never take `align`. Entries in `col_dimensions` are header groups spanning their measure columns, so they accept only `name` and `label`; to make a pivoted group wider, widen its measures. Sorting by a measure orders the rows by that measure's row total.
 

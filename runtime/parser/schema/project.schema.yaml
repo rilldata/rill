@@ -3327,9 +3327,22 @@ definitions:
           format_d3:
             type: string
             description: d3 format string for a measure in this component only (for example `.3s` or `,.2f`). Mutually exclusive with `format_preset`.
+          delta:
+            $ref: '#/definitions/table_comparison_column'
+          percent_change:
+            $ref: '#/definitions/table_comparison_column'
         required:
           - name
         additionalProperties: false
+
+  table_comparison_column:
+    type: object
+    description: Overrides for a measure's comparison column, the Δ (`delta`) or Δ% (`percent_change`) column shown next to the measure while the component shows a time comparison. Only on measures of the metrics view; adhoc measures have no comparison columns.
+    properties:
+      width:
+        type: integer
+        description: Column width in pixels, 60–300. The column keeps this width under stretch and `fit_to_width`.
+    additionalProperties: false
 
   # Table Properties
   table_properties:

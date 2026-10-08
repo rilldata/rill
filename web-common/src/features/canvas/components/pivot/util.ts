@@ -44,7 +44,7 @@ import type { PivotSpec, TableSpec } from "./";
 import {
   applyFieldConfigToMetricsView,
   fieldNames,
-  splitSortComparisonId,
+  splitComparisonColumnId,
 } from "./field-config";
 
 /**
@@ -394,7 +394,7 @@ function withoutStaleComparisonSort(
 ): PivotState {
   const first = state.sorting[0];
   if (enableComparison || !first) return state;
-  const split = splitSortComparisonId(first.id);
+  const split = splitComparisonColumnId(first.id);
   if (!split) return state;
   return { ...state, sorting: [{ ...first, id: split.measure }] };
 }

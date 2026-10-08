@@ -38,6 +38,9 @@
   $: columnSettings = {
     listKey,
     configs: fieldConfigs($spec),
+    adhocNames: new Set(
+      ($spec.adhoc_measures ?? []).map((measure) => measure.name),
+    ),
     onChange: (name, patch) => component.setFieldConfig(listKey, name, patch),
   } satisfies ColumnSettings;
 </script>

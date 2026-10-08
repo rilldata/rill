@@ -856,7 +856,7 @@ pivot:
 
 **With column widths, wrapping, and an initial sort:**
 
-Any entry of `measures`, `row_dimensions`, or `col_dimensions` can be an object with the field `name` plus overrides. In a pivot only measures and the first row dimension render a column of their own: a measure's `width` applies under every column-dimension value, and `col_dimensions` entries accept only `name` and `label` (set widths on the measures instead).
+Any entry of `measures`, `row_dimensions`, or `col_dimensions` can be an object with the field `name` plus overrides. In a pivot only measures and the first row dimension render a column of their own: a measure's `width` applies under every column-dimension value (as do `delta: { width }` and `percent_change: { width }` for its comparison columns), and `col_dimensions` entries accept only `name` and `label` (set widths on the measures instead).
 
 ```yaml
 pivot:
@@ -916,7 +916,7 @@ table:
 
 **With column widths, wrapping, and an initial sort:**
 
-Any entry of `columns` can be an object with the field `name` plus overrides: `width` (pixels; measures 60–300, dimensions 100–600), `wrap` (dimension columns), `align` (`left`, `center`, `right`), `label`, and for measures `format_preset` or `format_d3`. Component-level `fit_to_width`, `wrap`, `wrap_headers`, `wrap_lines`, `sort_by`, and `sort_dir` apply to the whole table; `sort_comparison: delta` or `percent_change` sorts on a measure's comparison column while a time comparison is shown.
+Any entry of `columns` can be an object with the field `name` plus overrides: `width` (pixels; measures 60–300, dimensions 100–600), `wrap` (dimension columns), `align` (`left`, `center`, `right`), `label`, and for measures `format_preset` or `format_d3`, plus `delta: { width }` or `percent_change: { width }` for the comparison columns a metrics view measure gets while a time comparison is shown. Component-level `fit_to_width`, `wrap`, `wrap_headers`, `wrap_lines`, `sort_by`, and `sort_dir` apply to the whole table; `sort_comparison: delta` or `percent_change` sorts on a measure's comparison column while a time comparison is shown.
 
 ```yaml
 table:
