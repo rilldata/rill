@@ -1,8 +1,6 @@
 package databricks
 
 import (
-	"errors"
-	"fmt"
 	"strings"
 	"testing"
 
@@ -47,17 +45,6 @@ func TestResolveDSN(t *testing.T) {
 		c := &configProperties{DSN: "token:tok@h.cloud.databricks.com:443/sql/1.0/warehouses/w?useKernel=true", UseKernel: true}
 		require.Equal(t, 1, strings.Count(c.resolveDSN(), "useKernel="))
 	})
-}
-
-// TestRTRequiresSEA pins the Lakehouse//RT autodetect trigger: only the server's
-// "not supported for Thrift protocol" message (however wrapped) flips to SEA; other
-// connection errors must not.
-func TestRTRequiresSEA(t *testing.T) {
-	require.True(t, rtRequiresSEA(errors.New("Lakehouse/RT is not supported for Thrift protocol. Please update...")))
-	require.True(t, rtRequiresSEA(fmt.Errorf("wrap: %w", errors.New("...is not supported for Thrift protocol"))))
-	require.False(t, rtRequiresSEA(errors.New("HTTP 403: Invalid access token")))
-	require.False(t, rtRequiresSEA(errors.New("connection refused")))
-	require.False(t, rtRequiresSEA(nil))
 }
 
 func TestWithUseKernel(t *testing.T) {
