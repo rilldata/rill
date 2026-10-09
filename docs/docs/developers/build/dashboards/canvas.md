@@ -40,6 +40,8 @@ Optionally toggle on the **global filter bar** under Canvas properties to give d
 
 Local filters are shown as chips in the widget's header. To keep the filter but hide the chips from viewers, turn off **Show filters on component** in the same "Filters" tab (or set `hide_local_filters: true` in YAML).
 
+To keep a filter in the global filter bar at all times, or to block the canvas until viewers select a value for it, use `filters.pinned` and `filters.required`. See [Pin and require filters](/guide/dashboards/canvas#pin-and-require-filters).
+
 
 ![Local Filters](/img/build/dashboard/canvas/local-filters.png)
 
