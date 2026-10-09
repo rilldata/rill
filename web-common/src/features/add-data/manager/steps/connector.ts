@@ -1,10 +1,14 @@
 import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import {
+  getRuntimeServiceAnalyzeConnectorsQueryKey,
   getRuntimeServiceGetFileQueryKey,
   getRuntimeServiceGetInstanceQueryKey,
   getRuntimeServiceGetResourceQueryKey,
+  getRuntimeServiceListResourcesQueryKey,
   runtimeServiceDeleteFile,
+  runtimeServiceAnalyzeConnectors,
   runtimeServiceGetFile,
+  runtimeServiceGetInstance,
   runtimeServicePutFile,
   runtimeServiceUnpackEmpty,
   type V1ConnectorDriver,
@@ -36,7 +40,15 @@ import {
 } from "@rilldata/web-common/features/connectors/code-utils.ts";
 import type { QueryClient } from "@tanstack/svelte-query";
 import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts.ts";
-import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors.ts";
+import {
+  fetchProjectParser,
+  fetchResource,
+  ResourceKind,
+} from "@rilldata/web-common/features/entity-management/resource-selectors.ts";
+import {
+  isControllerClosedError,
+  isNotFoundError,
+} from "@rilldata/web-common/lib/errors.ts";
 import { getConnectorYAML } from "@rilldata/web-common/features/add-data/form/connector-source-yaml-generator.ts";
 import { getName } from "@rilldata/web-common/features/entity-management/name-utils.ts";
 import {
@@ -93,6 +105,7 @@ export async function createConnector({
     // Get the project parser starting version
     const projectParserStartingVersion = getProjectParserVersion(
       runtimeClient.instanceId,
+      queryClient,
     );
     // Get the starting version of the connector resource
     const connectorStartingVersion = queryClient.getQueryData<{
@@ -121,8 +134,9 @@ export async function createConnector({
     if (validate) {
       // Wait for project parser to finish updating before checking for errors.
       await waitForProjectParserVersion(
-        runtimeClient.instanceId,
+        runtimeClient,
         projectParserStartingVersion + 1,
+        queryClient,
       );
 
       await waitForResourceReconciliation(
@@ -197,7 +211,7 @@ export async function maybeInitProject(client: RuntimeClient) {
   await runtimeServiceUnpackEmpty(client, {
     displayName: EMPTY_PROJECT_TITLE,
   });
-  await waitForProjectParser(client.instanceId);
+  await waitForProjectParser(client);
 
   // Race condition: invalidate("init") must be called before we navigate to
   // `/files/${newFilePath}`. invalidate("init") is also called in the
@@ -220,6 +234,61 @@ async function setOlapConnectorInRillYAML(
     create: true,
     createOnly: false,
   });
+
+  // Writing rill.yaml returns before the OLAP setting is applied. Wait for the
+  // updated instance and a usable controller, then refresh the explorer before
+  // the form advances. This also works when restart notifications are missed.
+  const deadline = Date.now() + 20_000;
+  while (Date.now() < deadline) {
+    try {
+      const { instance } = await queryClient.fetchQuery({
+        queryKey: getRuntimeServiceGetInstanceQueryKey(client.instanceId, {
+          sensitive: true,
+        }),
+        queryFn: ({ signal }) =>
+          runtimeServiceGetInstance(client, { sensitive: true }, { signal }),
+        staleTime: 0,
+      });
+      if (instance?.olapConnector === newConnectorName) {
+        const parser = await fetchProjectParser(client, queryClient, true);
+        const resource = await fetchResource(
+          client,
+          queryClient,
+          newConnectorName,
+          ResourceKind.Connector,
+          true,
+        );
+        const parserReady =
+          parser?.projectParser?.state?.watching ||
+          parser?.meta?.reconcileStatus === "RECONCILE_STATUS_IDLE";
+        if (parserReady && resource) {
+          await queryClient.invalidateQueries({
+            queryKey: getRuntimeServiceListResourcesQueryKey(
+              client.instanceId,
+              {},
+            ),
+            refetchType: "none",
+          });
+          await fileArtifacts.init(client, queryClient);
+          await queryClient.fetchQuery({
+            queryKey: getRuntimeServiceAnalyzeConnectorsQueryKey(
+              client.instanceId,
+            ),
+            queryFn: ({ signal }) =>
+              runtimeServiceAnalyzeConnectors(client, {}, { signal }),
+            staleTime: 0,
+          });
+          return;
+        }
+      }
+    } catch (error) {
+      if (!isControllerClosedError(error) && !isNotFoundError(error)) {
+        throw error;
+      }
+    }
+    await new Promise((resolve) => setTimeout(resolve, 300));
+  }
+  throw new Error(`Timed out waiting for OLAP connector ${newConnectorName}`);
 }
 
 const ConnectorUnsetCheckMaxRetries = 5;
