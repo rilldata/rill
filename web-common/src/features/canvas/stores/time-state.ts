@@ -274,8 +274,12 @@ export class TimeState {
     const { range, comparisonRange, zone, grain } =
       parseSearchParams(searchParams);
 
-    // Component without local time range
-    if (this.isWidgetInstance && !range) return;
+    // A component without a local time range still keeps its own grain,
+    // which the component applies on top of the inherited canvas range.
+    if (this.isWidgetInstance && !range) {
+      this.urlGrainStore.set(grain);
+      return;
+    }
 
     this.urlRangeStore.set(range);
     this.urlGrainStore.set(grain);

@@ -1,4 +1,6 @@
 import { ExploreStateURLParams } from "@rilldata/web-common/features/dashboards/url-state/url-params";
+import { DateTimeUnitToV1TimeGrain } from "@rilldata/web-common/lib/time/new-grains";
+import type { V1TimeGrain } from "@rilldata/web-common/runtime-client";
 
 // A component's `time_filters` uses the explore URL vocabulary (`tr`, `compare_tr`, `grain`, `tz`).
 // `inherit` is a special value for `tr` and `compare_tr` that follows the canvas:
@@ -8,6 +10,8 @@ import { ExploreStateURLParams } from "@rilldata/web-common/features/dashboards/
 //   tr=7D                      local time range, comparison off
 //   tr=7D&compare_tr=inherit   local time range, canvas comparison
 //   tr=7D&compare_tr=X         local time range, compare against X
+// `grain` is independent of the range: `grain=week` alone buckets the widget by week
+// on top of the inherited canvas time range, and `tr=7D&grain=hour` on its own range.
 export const TIME_FILTER_INHERIT = "inherit";
 
 export type ResolvedComparison =
@@ -19,6 +23,8 @@ export type ResolvedTimeFilters = {
   // True when `tr` is a real range rather than absent or `inherit`.
   hasLocalTimeRange: boolean;
   comparison: ResolvedComparison;
+  // The widget's own aggregation grain, whether its range is local or inherited.
+  grain: V1TimeGrain | undefined;
 };
 
 export function resolveTimeFilters(
@@ -27,6 +33,7 @@ export function resolveTimeFilters(
   const params = new URLSearchParams(timeFilters ?? "");
   const range = params.get(ExploreStateURLParams.TimeRange);
   const comparisonRange = params.get(ExploreStateURLParams.ComparisonTimeRange);
+  const grain = params.get(ExploreStateURLParams.TimeGrain);
 
   const hasLocalTimeRange = Boolean(range) && range !== TIME_FILTER_INHERIT;
 
@@ -42,12 +49,16 @@ export function resolveTimeFilters(
     comparison = { mode: "inherit" };
   }
 
-  return { hasLocalTimeRange, comparison };
+  return {
+    hasLocalTimeRange,
+    comparison,
+    grain: grain ? DateTimeUnitToV1TimeGrain[grain] : undefined,
+  };
 }
 
 /**
  * Canonical `time_filters` string for a set of params, or undefined when everything is inherited.
- * A comparison without a time range gets `tr=inherit`, grain and zone only apply to a local time range,
+ * A comparison without a time range gets `tr=inherit`, the zone only applies to a local time range,
  * and `tr` always comes first so the YAML reads the same however it was produced.
  */
 export function normalizeTimeFilters(
@@ -63,7 +74,6 @@ export function normalizeTimeFilters(
   }
 
   if (normalized.get(ExploreStateURLParams.TimeRange) === TIME_FILTER_INHERIT) {
-    normalized.delete(ExploreStateURLParams.TimeGrain);
     normalized.delete(ExploreStateURLParams.TimeZone);
     if (
       normalized.get(ExploreStateURLParams.ComparisonTimeRange) ===
