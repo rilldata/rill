@@ -87,13 +87,15 @@ var spec = drivers.Spec{
 type driver struct{}
 
 type configProperties struct {
-	DSN        string `mapstructure:"dsn"`
-	Host       string `mapstructure:"host"`
-	HTTPPath   string `mapstructure:"http_path"`
-	Token      string `mapstructure:"token"`
-	Catalog    string `mapstructure:"catalog"`
-	Schema     string `mapstructure:"schema"`
-	LogQueries bool   `mapstructure:"log_queries"`
+	DSN      string `mapstructure:"dsn"`
+	Host     string `mapstructure:"host"`
+	HTTPPath string `mapstructure:"http_path"`
+	Token    string `mapstructure:"token"`
+	Catalog  string `mapstructure:"catalog"`
+	Schema   string `mapstructure:"schema"`
+	// CatalogWhitelist is a comma separated list of catalogs to list in information schema calls.
+	CatalogWhitelist string `mapstructure:"catalog_whitelist"`
+	LogQueries       bool   `mapstructure:"log_queries"`
 }
 
 func (c *configProperties) validate() error {
