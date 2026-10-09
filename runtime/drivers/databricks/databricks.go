@@ -79,13 +79,6 @@ var spec = drivers.Spec{
 			Placeholder: "default",
 			Hint:        "Schema within the catalog (optional; defaults to the workspace default)",
 		},
-		{
-			Key:         "use_kernel",
-			Type:        drivers.BooleanPropertyType,
-			DisplayName: "Use SEA (Statement Execution API)",
-			Hint: "Force the SEA backend instead of Thrift. Lakehouse//RT warehouses are " +
-				"auto-detected and switched to SEA automatically, so this is usually unnecessary.",
-		},
 	},
 	ImplementsOLAP:      true,
 	ImplementsWarehouse: true,
@@ -101,8 +94,6 @@ type configProperties struct {
 	Catalog    string `mapstructure:"catalog"`
 	Schema     string `mapstructure:"schema"`
 	LogQueries bool   `mapstructure:"log_queries"`
-	// UseKernel forces SEA; the driver already switches to SEA for Lakehouse//RT.
-	UseKernel bool `mapstructure:"use_kernel"`
 }
 
 func (c *configProperties) validate() error {
@@ -133,17 +124,10 @@ func (c *configProperties) validate() error {
 
 func (c *configProperties) resolveDSN() string {
 	if c.DSN != "" {
-		if c.UseKernel {
-			return withUseKernel(c.DSN)
-		}
 		return c.DSN
 	}
 	params := url.Values{}
 	params.Set("timezone", "UTC")
-	// Opt in to the SEA backend (required for Lakehouse//RT); default is Thrift.
-	if c.UseKernel {
-		params.Set("useKernel", "true")
-	}
 	if c.Catalog != "" {
 		params.Set("catalog", c.Catalog)
 	}
@@ -159,26 +143,6 @@ func (c *configProperties) resolveDSN() string {
 		RawQuery: params.Encode(),
 	}
 	return u.String()
-}
-
-// withUseKernel forces useKernel=true on a resolved DSN, dropping any existing useKernel param.
-// It rewrites only the query part after the first '?' rather than using url.Parse,
-// because the driver also accepts scheme-less DSNs (token:...@host) which url.Parse misreads.
-func withUseKernel(dsn string) string {
-	base, query, hasQuery := strings.Cut(dsn, "?")
-	if !hasQuery || query == "" {
-		return base + "?useKernel=true"
-	}
-	parts := strings.Split(query, "&")
-	kept := parts[:0]
-	for _, p := range parts {
-		if strings.HasPrefix(p, "useKernel=") {
-			continue
-		}
-		kept = append(kept, p)
-	}
-	kept = append(kept, "useKernel=true")
-	return base + "?" + strings.Join(kept, "&")
 }
 
 func (d driver) Open(_ context.Context, _, instanceID string, config map[string]any, st *storage.Client, ac *activity.Client, logger *zap.Logger) (drivers.Handle, error) {

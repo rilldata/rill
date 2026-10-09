@@ -17,8 +17,8 @@ import (
 // TestOLAP_LakehouseRT runs the Rill Databricks OLAP and information_schema paths against
 // a live Lakehouse//RT warehouse. RT speaks only SEA, reached via the SEA-via-kernel
 // backend, so this file is tagged databricks_kernel (out of the default build and
-// `go test -short` CI). Config passes only the DSN (no use_kernel): a passing query proves
-// Thrift->SEA autodetect.
+// `go test -short` CI). Config passes only a plain DSN (no useKernel): a passing query proves the driver's
+// Thrift->SEA fallback.
 // Run: CGO_ENABLED=1 RILL_RUNTIME_TEST_MODE=expensive RILL_RUNTIME_DATABRICKS_RT_TEST_DSN=...
 // go test -tags databricks_kernel -run TestOLAP_LakehouseRT ./runtime/drivers/databricks/...
 func TestOLAP_LakehouseRT(t *testing.T) {
