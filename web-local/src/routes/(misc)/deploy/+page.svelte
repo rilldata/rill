@@ -23,6 +23,7 @@
   import CTANeedHelp from "@rilldata/web-common/components/calls-to-action/CTANeedHelp.svelte";
   import { onMount } from "svelte";
   import { get } from "svelte/store";
+  import { usePageOriginForLocalhost } from "@rilldata/web-common/lib/url-utils";
 
   // It would be great if this could be moved to loader function.
   // But these can take a significant time (~2sec)
@@ -47,7 +48,12 @@
     if (!isUserLoggedIn) {
       // Redirect to login url provided from metadata query.
       void behaviourEvent?.fireDeployEvent(BehaviourEventAction.LoginStart);
-      const u = new URL($metadata.data?.loginUrl);
+      const u = new URL(
+        usePageOriginForLocalhost(
+          $metadata.data!.loginUrl,
+          window.location.href,
+        ),
+      );
       // Set the redirect to this page so that deploy resumes after a login
       u.searchParams.set("redirect", get(page).url.toString());
       window.location.href = u.toString();
