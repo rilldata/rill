@@ -343,6 +343,9 @@ definitions:
             schema:
               type: string
               description: Default schema name. Optional.
+            catalog_whitelist:
+              type: string
+              description: Comma-separated list of catalogs to show
             dsn:
               type: string
               description: |
