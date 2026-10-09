@@ -167,6 +167,7 @@ describe("mapMetricsResolverQueryToDashboard", () => {
           chartType: TDDChart.DEFAULT,
           pinIndex: -1,
         },
+        adaptiveTimeGrain: false,
       },
     },
 

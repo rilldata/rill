@@ -43,6 +43,7 @@
           minMaxTimeStamps,
           interval: globalIntervalStore,
           grainStore: globalGrainStore,
+          urlGrainStore: globalUrlGrainStore,
           timeZoneStore: globalTimeZoneStore,
           showTimeComparisonStore: globalShowTimeComparisonStore,
           comparisonRangeStore: globalComparisonRangeStore,
@@ -56,6 +57,7 @@
     rangeStore: localRangeStore,
     timeZoneStore: localTimeZoneStore,
     grainStore: localGrainStore,
+    urlGrainStore: localUrlGrainStore,
     set,
   } = localTimeControls);
 
@@ -80,6 +82,10 @@
     ? $localRangeStore
     : $globalRangeStore;
   $: activeTimeGrain = hasLocalTimeRange ? $localGrainStore : $globalGrainStore;
+  // The grain is adaptive unless the URL fixes one for the range in effect.
+  $: adaptiveTimeGrain = hasLocalTimeRange
+    ? !$localUrlGrainStore
+    : !$globalUrlGrainStore;
   $: activeTimeZone = hasLocalTimeRange
     ? $localTimeZoneStore
     : $globalTimeZoneStore;
@@ -144,6 +150,9 @@
       {timeStart}
       {timeEnd}
       {activeTimeGrain}
+      {adaptiveTimeGrain}
+      allowAdaptiveTimeGrain
+      showTimeGrain
       {activeTimeZone}
       hidePan
       lockTimeZone={!hasLocalTimeRange}

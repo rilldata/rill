@@ -175,6 +175,7 @@
   const selectedTimeRange = $derived($timeControlsStore.selectedTimeRange);
 
   const activeTimeGrain = $derived(selectedTimeRange?.interval);
+  const adaptiveTimeGrain = $derived(!!$dashboardStore?.adaptiveTimeGrain);
 
   const baseTimeRange = $derived(
     selectedTimeRange?.start &&
@@ -185,7 +186,15 @@
       },
   );
 
-  function onTimeGrainSelect(timeGrain: V1TimeGrain) {
+  function onTimeGrainSelect(timeGrain: V1TimeGrain | undefined) {
+    if (timeGrain === undefined) {
+      metricsExplorerStore.setAdaptiveTimeGrain(
+        exploreName,
+        $validSpecStore.data?.metricsView ?? {},
+      );
+      return;
+    }
+    metricsExplorerStore.setTimeGrain(exploreName, timeGrain);
     if (baseTimeRange) {
       makeTimeSeriesTimeRangeAndUpdateAppState(
         baseTimeRange,
@@ -234,6 +243,8 @@
         <TimeGrainSelector
           tdd
           {activeTimeGrain}
+          {adaptiveTimeGrain}
+          allowAdaptiveTimeGrain
           {onTimeGrainSelect}
           {timeStart}
           {timeEnd}

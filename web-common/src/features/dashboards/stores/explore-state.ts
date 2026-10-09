@@ -116,6 +116,13 @@ export interface ExploreState {
   selectedTimeRange?: DashboardTimeControls;
 
   /**
+   * When true, the time grain follows the selected time range instead of staying fixed.
+   * The resolved grain is still stored in `selectedTimeRange.interval`.
+   * Cleared when the user picks a specific grain.
+   */
+  adaptiveTimeGrain?: boolean;
+
+  /**
    * user selected scrub range
    */
   selectedScrubRange?: ScrubRange;

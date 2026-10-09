@@ -147,6 +147,9 @@ export function getDashboardStateFromProto(
     if (dashboard.timeGrain) {
       entity.selectedTimeRange.interval =
         FromProtoTimeGrainMap[dashboard.timeGrain];
+      entity.adaptiveTimeGrain = false;
+    } else {
+      entity.adaptiveTimeGrain = true;
     }
   }
 
