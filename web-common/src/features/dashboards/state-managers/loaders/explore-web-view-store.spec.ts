@@ -75,14 +75,14 @@ const TestCases: {
       view: "explore",
       mutations: [],
       expectedSearch:
-        "tr=P7D&compare_tr=rill-PP&grain=day&f=publisher+IN+%28%27Google%27%29&measures=impressions&dims=publisher&sort_type=percent",
+        "tr=P7D&compare_tr=rill-PP&f=publisher+IN+%28%27Google%27%29&measures=impressions&dims=publisher&sort_type=percent",
     },
     view: {
       view: "tdd",
       additionalParams: "&measure=" + AD_BIDS_IMPRESSIONS_MEASURE,
       mutations: [],
       expectedSearch:
-        "view=tdd&tr=P7D&compare_tr=rill-PP&grain=day&f=publisher+IN+%28%27Google%27%29&measure=impressions",
+        "view=tdd&tr=P7D&compare_tr=rill-PP&f=publisher+IN+%28%27Google%27%29&measure=impressions",
     },
   },
   {
@@ -91,14 +91,14 @@ const TestCases: {
       view: "explore",
       mutations: [AD_BIDS_OPEN_PUB_DIMENSION_TABLE],
       expectedSearch:
-        "tr=P7D&compare_tr=rill-PP&grain=day&f=publisher+IN+%28%27Google%27%29&measures=impressions&dims=publisher&expand_dim=publisher&sort_type=percent",
+        "tr=P7D&compare_tr=rill-PP&f=publisher+IN+%28%27Google%27%29&measures=impressions&dims=publisher&expand_dim=publisher&sort_type=percent",
     },
     view: {
       view: "tdd",
       additionalParams: "&measure=" + AD_BIDS_IMPRESSIONS_MEASURE,
       mutations: [],
       expectedSearch:
-        "view=tdd&tr=P7D&compare_tr=rill-PP&grain=day&f=publisher+IN+%28%27Google%27%29&measure=impressions",
+        "view=tdd&tr=P7D&compare_tr=rill-PP&f=publisher+IN+%28%27Google%27%29&measure=impressions",
     },
   },
 
@@ -108,7 +108,7 @@ const TestCases: {
       view: "explore",
       mutations: [],
       expectedSearch:
-        "tr=P7D&compare_tr=rill-PP&grain=day&f=publisher+IN+%28%27Google%27%29&measures=impressions&dims=publisher&sort_type=percent",
+        "tr=P7D&compare_tr=rill-PP&f=publisher+IN+%28%27Google%27%29&measures=impressions&dims=publisher&sort_type=percent",
     },
     view: {
       view: "pivot",
@@ -126,7 +126,7 @@ const TestCases: {
       view: "explore",
       mutations: [AD_BIDS_OPEN_PUB_DIMENSION_TABLE],
       expectedSearch:
-        "tr=P7D&compare_tr=rill-PP&grain=day&f=publisher+IN+%28%27Google%27%29&measures=impressions&dims=publisher&expand_dim=publisher&sort_type=percent",
+        "tr=P7D&compare_tr=rill-PP&f=publisher+IN+%28%27Google%27%29&measures=impressions&dims=publisher&expand_dim=publisher&sort_type=percent",
     },
     view: {
       view: "pivot",
@@ -145,7 +145,7 @@ const TestCases: {
       additionalParams: "&measure=" + AD_BIDS_IMPRESSIONS_MEASURE,
       mutations: [],
       expectedSearch:
-        "view=tdd&tr=P7D&compare_tr=rill-PP&grain=day&f=publisher+IN+%28%27Google%27%29&measure=impressions",
+        "view=tdd&tr=P7D&compare_tr=rill-PP&f=publisher+IN+%28%27Google%27%29&measure=impressions",
     },
     view: {
       view: "pivot",

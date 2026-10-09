@@ -84,7 +84,7 @@ Unexpected " ".`,
   },
 
   {
-    title: "Time range only with default grain",
+    title: "Time range without a grain is adaptive",
     url: "http://localhost/explore/AdBids_explore?tr=7D",
     errors: [],
     entity: {
@@ -92,17 +92,19 @@ Unexpected " ".`,
         interval: "TIME_GRAIN_DAY",
         name: "7D",
       } as DashboardTimeControls,
+      adaptiveTimeGrain: true,
     },
   },
   {
-    title: "Time range only with no default grain",
-    url: "http://localhost/explore/AdBids_explore?tr=inf",
+    title: "Fixed grain",
+    url: "http://localhost/explore/AdBids_explore?tr=7D&grain=hour",
     errors: [],
     entity: {
       selectedTimeRange: {
         interval: "TIME_GRAIN_HOUR",
-        name: "inf",
+        name: "7D",
       } as DashboardTimeControls,
+      adaptiveTimeGrain: false,
     },
   },
   {
@@ -123,6 +125,7 @@ Unexpected " ".`,
         interval: "TIME_GRAIN_WEEK",
         name: "P4W",
       } as DashboardTimeControls,
+      adaptiveTimeGrain: false,
     },
   },
 

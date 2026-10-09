@@ -111,6 +111,7 @@
   } = $derived($timeControlsStore);
 
   let { selectedTimezone } = $derived($dashboardStore);
+  let adaptiveTimeGrain = $derived(!!$dashboardStore?.adaptiveTimeGrain);
 
   // Use the full selected time range for chart data fetching (not modified by scrub)
   let chartInterval = $derived(
@@ -361,6 +362,9 @@
                 <b>
                   {translateV1TimeGrain(activeTimeGrain)}
                 </b>
+                {#if adaptiveTimeGrain}
+                  <i class="text-fg-muted">{m.time_grain_adaptive_hint()}</i>
+                {/if}
                 <span
                   class:-rotate-90={grainDropdownOpen}
                   class="transition-transform"
@@ -371,11 +375,30 @@
             {/snippet}
           </DropdownMenu.Trigger>
 
-          <DropdownMenu.Content align="start" class="w-48">
+          <DropdownMenu.Content align="start" class="w-52">
+            <DropdownMenu.CheckboxItem
+              checkRight
+              checked={adaptiveTimeGrain}
+              class="text-xs cursor-pointer"
+              onclick={() => {
+                metricsExplorerStore.setAdaptiveTimeGrain(
+                  exploreName,
+                  $exploreValidSpec.data?.metricsView ?? {},
+                );
+              }}
+            >
+              <div class="flex flex-col">
+                <span>{m.time_grain_adaptive()}</span>
+                <span class="text-fg-muted">
+                  {m.time_grain_adaptive_description()}
+                </span>
+              </div>
+            </DropdownMenu.CheckboxItem>
+            <DropdownMenu.Separator />
             {#each aggregationOptions ?? [] as option (option)}
               <DropdownMenu.CheckboxItem
                 checkRight
-                checked={option === activeTimeGrain}
+                checked={!adaptiveTimeGrain && option === activeTimeGrain}
                 class="text-xs cursor-pointer"
                 onclick={() => {
                   metricsExplorerStore.setTimeGrain(exploreName, option);

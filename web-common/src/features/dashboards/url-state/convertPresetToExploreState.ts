@@ -141,6 +141,10 @@ function fromTimeRangesParams(
     partialExploreState.selectedTimeRange ??= {} as DashboardTimeControls;
     partialExploreState.selectedTimeRange.interval =
       DateTimeUnitToV1TimeGrain[preset.timeGrain];
+    partialExploreState.adaptiveTimeGrain = false;
+  } else if (preset.timeRange) {
+    // A time range without a grain is adaptive: `correctExploreState` derives the grain from the range.
+    partialExploreState.adaptiveTimeGrain = true;
   }
 
   if (preset.timezone) {

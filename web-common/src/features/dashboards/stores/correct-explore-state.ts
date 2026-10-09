@@ -4,6 +4,7 @@ import { AdvancedMeasureCorrector } from "@rilldata/web-common/features/dashboar
 import type { DashboardTimeControls } from "@rilldata/web-common/lib/time/types.ts";
 import { parseRillTime } from "@rilldata/web-common/features/dashboards/url-state/time-ranges/parser.ts";
 import { getRangePrecision } from "@rilldata/web-common/lib/time/rill-time-grains.ts";
+import { applyAdaptiveTimeGrain } from "@rilldata/web-common/features/dashboards/time-controls/adaptive-time-grain.ts";
 
 /**
  * Corrects the final merged explore state.
@@ -14,14 +15,17 @@ export function correctExploreState(
   metricsViewSpec: V1MetricsViewSpec,
   exploreState: ExploreState,
 ) {
+  // The grain is resolved first since measure validation below compares against it.
+  if (exploreState.adaptiveTimeGrain) {
+    applyAdaptiveTimeGrain(exploreState, metricsViewSpec);
+  } else if (exploreState.selectedTimeRange) {
+    deriveIntervalFromRillTimeName(exploreState.selectedTimeRange);
+  }
+
   // Resuse code for now. We might want to consolidate more in the future.
   AdvancedMeasureCorrector.correct(exploreState, metricsViewSpec);
 
   correctLeaderboardMeasures(exploreState);
-
-  if (exploreState.selectedTimeRange) {
-    deriveIntervalFromRillTimeName(exploreState.selectedTimeRange);
-  }
 }
 
 function correctLeaderboardMeasures(exploreState: ExploreState) {

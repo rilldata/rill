@@ -33,6 +33,7 @@
           set,
           rangeStore,
           grainStore,
+          urlGrainStore,
           comparisonRangeStore,
           interval: intervalStore,
           minMaxTimeStamps,
@@ -69,6 +70,8 @@
   let comparisonRange = $derived($comparisonRangeStore);
 
   let activeTimeGrain = $derived($grainStore);
+  // The grain is adaptive unless the URL fixes one.
+  let adaptiveTimeGrain = $derived(!$urlGrainStore);
   let defaultTimeRange = $derived($defaultTimeRangeStore);
   let availableTimeZones = $derived($availableTimeZonesStore);
   let timeRanges = $derived($timeRangeOptionsStore);
@@ -138,6 +141,9 @@
             {timeStart}
             {timeEnd}
             {activeTimeGrain}
+            {adaptiveTimeGrain}
+            allowAdaptiveTimeGrain
+            showTimeGrain
             {activeTimeZone}
             canPanLeft={canPan.left}
             canPanRight={canPan.right}

@@ -309,17 +309,22 @@ export class TimeState {
       }
       return this.searchParamsStore.set(props, checkIfSet, replaceState);
     },
+    /**
+     * Fixes the grain in the URL. Without a grain the URL param is removed,
+     * which puts the grain back in adaptive mode where it follows the time range.
+     */
     grain: (
-      timeGrain: V1TimeGrain,
+      timeGrain: V1TimeGrain | undefined,
       checkIfSet = false,
       replaceState = false,
     ) => {
-      const mappedTimeGrain = V1TimeGrainToDateTimeUnit[timeGrain];
-      const props = new Map<string, string>();
-      if (mappedTimeGrain) {
-        props.set(ExploreStateURLParams.TimeGrain, mappedTimeGrain);
-        return this.searchParamsStore.set(props, checkIfSet, replaceState);
-      }
+      const mappedTimeGrain = timeGrain
+        ? V1TimeGrainToDateTimeUnit[timeGrain]
+        : undefined;
+      const props = new Map<string, string | undefined>([
+        [ExploreStateURLParams.TimeGrain, mappedTimeGrain],
+      ]);
+      return this.searchParamsStore.set(props, checkIfSet, replaceState);
     },
     comparison: (
       range: boolean | string,
