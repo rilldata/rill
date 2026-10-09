@@ -261,7 +261,11 @@ async function setOlapConnectorInRillYAML(
         const parserReady =
           parser?.projectParser?.state?.watching ||
           parser?.meta?.reconcileStatus === "RECONCILE_STATUS_IDLE";
-        if (parserReady && resource) {
+        // An idle connector with a reconcile error is still accepted, so
+        // saving without testing keeps working with bad credentials.
+        const resourceReady =
+          resource?.meta?.reconcileStatus === "RECONCILE_STATUS_IDLE";
+        if (parserReady && resourceReady) {
           await queryClient.invalidateQueries({
             queryKey: getRuntimeServiceListResourcesQueryKey(
               client.instanceId,

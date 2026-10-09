@@ -334,6 +334,34 @@ describe("ClickHouse connector readiness", () => {
     });
   });
 
+  it("waits for the connector to finish reconciling when saving without testing", async () => {
+    const readyAt = Date.now() + 1_500;
+    vi.mocked(runtimeServiceGetResource).mockImplementation(
+      async (_, params) => {
+        if (params.name?.kind === ResourceKind.ProjectParser) {
+          return { resource: parser(2) };
+        }
+        const resource = connector();
+        if (Date.now() < readyAt) {
+          resource.meta!.reconcileStatus = "RECONCILE_STATUS_RUNNING";
+        }
+        return { resource };
+      },
+    );
+
+    const outcome = await submit(false);
+    await vi.advanceTimersByTimeAsync(1_000);
+    expect(outcome.status).toBe("pending");
+    expect(runtimeServiceAnalyzeConnectors).not.toHaveBeenCalled();
+
+    await vi.advanceTimersByTimeAsync(1_000);
+    expect(outcome).toMatchObject({
+      status: "fulfilled",
+      value: connectorPath,
+    });
+    expect(runtimeServiceAnalyzeConnectors).toHaveBeenCalled();
+  });
+
   it.each([undefined, "Authentication failed"])(
     "waits for the OLAP change and refreshes the explorer when saving without testing (error=%s)",
     async (reconcileError) => {
