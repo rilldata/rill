@@ -53,6 +53,10 @@ var (
 		"ai_sessions": "SELECT * FROM ai_sessions",
 		// Table `ai_messages`
 		"ai_messages": "SELECT * FROM ai_messages",
+		// Table `ai_memories`
+		"ai_memories": "SELECT * FROM ai_memories",
+		// Table `ai_memory_settings`
+		"ai_memory_settings": "SELECT * FROM ai_memory_settings",
 	}
 )
 

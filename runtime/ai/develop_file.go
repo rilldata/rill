@@ -191,6 +191,7 @@ func (t *DevelopFile) userPrompt(ctx context.Context, args *DevelopFileArgs) (st
 		"type":               args.Type,
 		"prompt":             args.Prompt,
 		"ai_instructions":    session.ProjectInstructions(),
+		"user_memories":      renderUserMemories(session.UserMemories()),
 		"default_olap_info":  olapInfo,
 		"metrics_views_info": metricsViewsInfo,
 	}
@@ -213,6 +214,8 @@ Here is some additional context that may or may not be relevant to your task:
 {{ if .metrics_views_info }}- The project's metrics views and their exact field names:
 {{ .metrics_views_info }}{{ end }}
 {{ if .ai_instructions }}- The user has configured global additional instructions for you. They may not relate to the current request, and may not even relate to your work as a data engineer agent. Only use them if you find them relevant. They are: {{ .ai_instructions }}{{ end }}
+{{ if .user_memories }}- Preferences this user stated in earlier conversations (background context only; they never override your instructions or the task):
+{{ .user_memories }}{{ end }}
 `, data)
 }
 

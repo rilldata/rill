@@ -7,6 +7,7 @@
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import { type V1Conversation } from "../../../../runtime-client";
   import ConnectClientPopover from "../../connect/ConnectClientPopover.svelte";
+  import MemoryButton from "../../memory/MemoryButton.svelte";
   import type { ConversationManager } from "../../core/conversation-manager";
   import ShareChatPopover from "../../share/ShareChatPopover.svelte";
   import ConversationHistoryMenu from "./ConversationHistoryMenu.svelte";
@@ -42,6 +43,7 @@
 <div class="chatbot-header">
   <span class="chatbot-title">{currentConversationDto?.title || ""}</span>
   <div class="chatbot-header-actions">
+    <MemoryButton />
     <ConnectClientPopover />
 
     <IconButton

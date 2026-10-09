@@ -297,6 +297,51 @@ service RuntimeService {
     };
   }
 
+  // ListAIMemories lists the current user's AI memories for an instance.
+  // Memories are short preferences and facts the AI has learned about the user and uses in later conversations.
+  rpc ListAIMemories(ListAIMemoriesRequest) returns (ListAIMemoriesResponse) {
+    option (google.api.http) = {get: "/v1/instances/{instance_id}/ai/memories"};
+  }
+
+  // CreateAIMemory creates an AI memory for the current user.
+  rpc CreateAIMemory(CreateAIMemoryRequest) returns (CreateAIMemoryResponse) {
+    option (google.api.http) = {
+      post: "/v1/instances/{instance_id}/ai/memories",
+      body: "*"
+    };
+  }
+
+  // UpdateAIMemory updates one of the current user's AI memories. It can also restore a deleted memory (undo).
+  rpc UpdateAIMemory(UpdateAIMemoryRequest) returns (UpdateAIMemoryResponse) {
+    option (google.api.http) = {
+      put: "/v1/instances/{instance_id}/ai/memories/{memory_id}",
+      body: "*"
+    };
+  }
+
+  // DeleteAIMemory permanently deletes one of the current user's AI memories.
+  rpc DeleteAIMemory(DeleteAIMemoryRequest) returns (DeleteAIMemoryResponse) {
+    option (google.api.http) = {delete: "/v1/instances/{instance_id}/ai/memories/{memory_id}"};
+  }
+
+  // DeleteAllAIMemories permanently deletes all of the current user's AI memories in an instance.
+  rpc DeleteAllAIMemories(DeleteAllAIMemoriesRequest) returns (DeleteAllAIMemoriesResponse) {
+    option (google.api.http) = {delete: "/v1/instances/{instance_id}/ai/memories"};
+  }
+
+  // GetAIMemorySettings returns the current user's AI memory settings for an instance.
+  rpc GetAIMemorySettings(GetAIMemorySettingsRequest) returns (GetAIMemorySettingsResponse) {
+    option (google.api.http) = {get: "/v1/instances/{instance_id}/ai/memory-settings"};
+  }
+
+  // UpdateAIMemorySettings updates the current user's AI memory settings for an instance.
+  rpc UpdateAIMemorySettings(UpdateAIMemorySettingsRequest) returns (UpdateAIMemorySettingsResponse) {
+    option (google.api.http) = {
+      put: "/v1/instances/{instance_id}/ai/memory-settings",
+      body: "*"
+    };
+  }
+
   // Access management
 
   // IssueDevJWT issues a JWT for mimicking a user in local development.
@@ -1070,6 +1115,8 @@ message Conversation {
   string owner_id = 2;
   string title = 3;
   string user_agent = 6;
+  // True if the owner excluded this conversation from AI memory formation.
+  bool memory_disabled = 8;
   google.protobuf.Timestamp created_on = 4;
   google.protobuf.Timestamp updated_on = 5;
   repeated Message messages = 7; // NOTE: Deprecated.
@@ -1216,6 +1263,9 @@ message CompleteRequest {
   // Optional context for prompts handled by the feedback_agent.
   // The field is ignored if another agent is selected.
   FeedbackAgentContext feedback_agent_context = 13;
+  // Sets whether the conversation is excluded from AI memory formation ("don't remember this chat").
+  // When present, the value is persisted on the conversation; when absent, the persisted value is kept.
+  optional bool disable_memory = 14;
 }
 
 // Response message for RuntimeService.Complete
@@ -1244,6 +1294,9 @@ message CompleteStreamingRequest {
   // Optional context for prompts handled by the feedback_agent.
   // The field is ignored if another agent is selected.
   FeedbackAgentContext feedback_agent_context = 13;
+  // Sets whether the conversation is excluded from AI memory formation ("don't remember this chat").
+  // When present, the value is persisted on the conversation; when absent, the persisted value is kept.
+  optional bool disable_memory = 14;
 }
 
 // Response message for RuntimeService.CompleteStreaming
@@ -1263,6 +1316,108 @@ message GetAIMessageRequest {
 message GetAIMessageResponse {
   Message message = 1;
   Message result = 2;
+}
+
+// AIMemory is a short preference or fact the AI has learned about the current user in an instance.
+message AIMemory {
+  string id = 1;
+  // One of: preference, definition, context, feedback.
+  string category = 2;
+  string content = 3;
+  // One of: active, pending, deleted.
+  string status = 4;
+  // One of: explicit, extracted, manual.
+  string source = 5;
+  // The conversation and message the memory was learned from (empty for manually created memories).
+  string source_conversation_id = 6;
+  string source_message_id = 7;
+  google.protobuf.Timestamp created_on = 8;
+  google.protobuf.Timestamp updated_on = 9;
+}
+
+// Request message for RuntimeService.ListAIMemories
+message ListAIMemoriesRequest {
+  string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
+  // If true, recently deleted memories (which can still be restored) are included.
+  bool include_deleted = 2;
+}
+
+// Response message for RuntimeService.ListAIMemories
+message ListAIMemoriesResponse {
+  repeated AIMemory memories = 1;
+  // False if memory is not available to the current user (feature disabled or anonymous user).
+  bool enabled = 2;
+  // True if the user has paused memory.
+  bool paused = 3;
+}
+
+// Request message for RuntimeService.CreateAIMemory
+message CreateAIMemoryRequest {
+  string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
+  string category = 2;
+  string content = 3 [(validate.rules).string = {min_len: 1, max_len: 300}];
+}
+
+// Response message for RuntimeService.CreateAIMemory
+message CreateAIMemoryResponse {
+  AIMemory memory = 1;
+}
+
+// Request message for RuntimeService.UpdateAIMemory
+message UpdateAIMemoryRequest {
+  string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
+  string memory_id = 2 [(validate.rules).string = {min_len: 1}];
+  optional string category = 3;
+  optional string content = 4 [(validate.rules).string = {min_len: 1, max_len: 300}];
+  // Set to "active" to restore a deleted memory, or "deleted" to soft-delete it.
+  optional string status = 5 [(validate.rules).string = {in: ["active", "deleted"]}];
+}
+
+// Response message for RuntimeService.UpdateAIMemory
+message UpdateAIMemoryResponse {
+  AIMemory memory = 1;
+}
+
+// Request message for RuntimeService.DeleteAIMemory
+message DeleteAIMemoryRequest {
+  string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
+  string memory_id = 2 [(validate.rules).string = {min_len: 1}];
+}
+
+// Response message for RuntimeService.DeleteAIMemory
+message DeleteAIMemoryResponse {}
+
+// Request message for RuntimeService.DeleteAllAIMemories
+message DeleteAllAIMemoriesRequest {
+  string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
+}
+
+// Response message for RuntimeService.DeleteAllAIMemories
+message DeleteAllAIMemoriesResponse {}
+
+// Request message for RuntimeService.GetAIMemorySettings
+message GetAIMemorySettingsRequest {
+  string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
+}
+
+// Response message for RuntimeService.GetAIMemorySettings
+message GetAIMemorySettingsResponse {
+  // False if memory is not available to the current user (feature disabled or anonymous user).
+  bool enabled = 1;
+  bool paused = 2;
+  uint32 active_count = 3;
+  uint32 max_count = 4;
+}
+
+// Request message for RuntimeService.UpdateAIMemorySettings
+message UpdateAIMemorySettingsRequest {
+  string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
+  bool paused = 2;
+}
+
+// Response message for RuntimeService.UpdateAIMemorySettings
+message UpdateAIMemorySettingsResponse {
+  bool paused = 1;
 }
 
 // **********

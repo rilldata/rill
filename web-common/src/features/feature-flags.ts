@@ -60,6 +60,7 @@ class FeatureFlags {
   alerts = new FeatureFlag("user", true);
   reports = new FeatureFlag("user", true);
   chat = new FeatureFlag("user", true);
+  chatMemory = new FeatureFlag("user", true);
   dashboardChat = new FeatureFlag("user", false);
   developerChat = new FeatureFlag("user", false);
   deploy = new FeatureFlag("user", true);

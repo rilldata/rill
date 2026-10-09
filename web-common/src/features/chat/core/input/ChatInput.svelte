@@ -17,6 +17,7 @@
   import Button from "@rilldata/web-common/components/button/Button.svelte";
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import { ArrowUp } from "lucide-svelte";
+  import MemoryToggleButton from "@rilldata/web-common/features/chat/memory/MemoryToggleButton.svelte";
 
   export let conversationManager: ConversationManager;
   export let onSend: (() => void) | undefined = undefined;
@@ -168,6 +169,7 @@
         /
       </button>
     {/if}
+    <MemoryToggleButton conversation={currentConversation} />
     <div class="grow"></div>
     <div>
       {#if canCancel}
