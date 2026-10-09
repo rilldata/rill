@@ -136,4 +136,73 @@ test.describe("pivot ephemeral measures from URL state", () => {
       page.getByLabel("Bad pivot chip", { exact: true }),
     ).toHaveCount(0);
   });
+
+  test("inserts a measure from the @ picker in the expression input", async ({
+    page,
+  }) => {
+    const currentUrl = new URL(page.url());
+    const baseUrl = `${currentUrl.protocol}//${currentUrl.host}`;
+
+    await waitForReconciliation(page);
+
+    await page.goto(
+      `${baseUrl}/explore/AdBids_metrics_explore?view=pivot&rows=publisher&cols=total_records`,
+    );
+
+    await page.getByRole("button", { name: "Create adhoc measure" }).click();
+    await page.getByLabel("Name", { exact: true }).fill("Doubled");
+
+    // Typing "@" opens a picker searchable by display name; the field name is
+    // shown alongside so users learn it.
+    const expression = page.getByLabel("Expression", { exact: true });
+    await expression.pressSequentially("@records");
+    const picker = page.getByRole("listbox", { name: "Measures" });
+    await expect(
+      picker.getByRole("option", { name: "Total records total_records" }),
+    ).toBeVisible();
+    await expect(
+      picker.getByRole("option", { name: "Sum of Bid Price bid_price_sum" }),
+    ).toHaveCount(0);
+    // The "@" is not a valid expression character, but no error shows while
+    // the picker is open.
+    await expect(page.getByText('unexpected character "@"')).toHaveCount(0);
+
+    // Enter replaces the "@query" with a chip showing the display name, which
+    // serializes to the measure's field name in the saved expression.
+    await expression.press("Enter");
+    await expect(picker).toHaveCount(0);
+    await expect(
+      expression.locator(".measure-chip", { hasText: "Total records" }),
+    ).toBeVisible();
+
+    // The "Insert a measure" buttons insert a chip too.
+    await expression.pressSequentially("* 2 +");
+    await page
+      .getByRole("dialog")
+      .getByRole("button", { name: "Total records", exact: true })
+      .click();
+    await expect(expression.locator(".measure-chip")).toHaveCount(2);
+    await page.getByLabel("Description").fill("Twice");
+    await page.getByRole("button", { name: "Save" }).click();
+
+    await expect(
+      page.getByLabel("Doubled pivot chip", { exact: true }),
+    ).toBeVisible();
+    // The description rides along in the URL after the (empty) format preset.
+    const url = new URL(page.url());
+    expect(url.searchParams.get("adhoc_m")).toBe(
+      "doubled:Doubled:total_records%20*%202%20%2B%20total_records::Twice",
+    );
+
+    // A second measure with the same display name gets a numeric suffix.
+    await page.getByRole("button", { name: "Create adhoc measure" }).click();
+    await page.getByLabel("Name", { exact: true }).fill("doubled");
+    await page
+      .getByLabel("Expression", { exact: true })
+      .fill("total_records * 3");
+    await page.getByRole("button", { name: "Save" }).click();
+    await expect(
+      page.getByLabel("doubled_1 pivot chip", { exact: true }),
+    ).toBeVisible();
+  });
 });

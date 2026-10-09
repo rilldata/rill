@@ -1606,6 +1606,150 @@ const config = {
             to: '/developers/build/connectors/data-source/https',
           },
 
+          // ============================================
+          // Pages moved or deleted in 2026 (no redirect was added at the time)
+          // ============================================
+          {
+            from: '/developers/guides',
+            to: '/developers/tutorials',
+          },
+          {
+            from: '/developers/guides/clone-a-project',
+            to: '/developers/tutorials/clone-a-project',
+          },
+          {
+            from: '/developers/guides/cost-monitoring-analytics',
+            to: '/developers/tutorials/cost-monitoring-analytics',
+          },
+          {
+            from: '/developers/guides/github-analytics',
+            to: '/developers/tutorials/github-analytics',
+          },
+          {
+            from: '/developers/guides/integrating-with-rill',
+            to: '/developers/tutorials/integrating-with-rill',
+          },
+          {
+            from: '/developers/guides/openrtb-analytics',
+            to: '/developers/tutorials/openrtb-analytics',
+          },
+          {
+            from: '/developers/guides/performance',
+            to: '/developers/tutorials/performance',
+          },
+          {
+            from: '/developers/guides/setting-up-mcp',
+            to: '/developers/tutorials/setting-up-mcp',
+          },
+          {
+            from: '/developers/guides/rill-basics/launch',
+            to: '/developers/tutorials/rill-basics/launch',
+          },
+          {
+            from: '/developers/guides/rill-basics/import',
+            to: '/developers/tutorials/rill-basics/import',
+          },
+          {
+            from: '/developers/guides/rill-basics/model',
+            to: '/developers/tutorials/rill-basics/model',
+          },
+          {
+            from: '/developers/guides/rill-basics/metrics-view',
+            to: '/developers/tutorials/rill-basics/metrics-view',
+          },
+          {
+            from: '/developers/guides/rill-basics/dashboard',
+            to: '/developers/tutorials/rill-basics/dashboard',
+          },
+          {
+            from: '/developers/guides/rill-basics/deploy',
+            to: '/developers/tutorials/rill-basics/deploy',
+          },
+          {
+            from: '/developers/guides/rill-basics/success',
+            to: '/developers/tutorials/rill-basics/success',
+          },
+          {
+            from: '/developers/guides/rill-clickhouse',
+            to: '/developers/tutorials/rill-clickhouse',
+          },
+          {
+            from: '/developers/guides/rill-clickhouse/r_ch_launch',
+            to: '/developers/tutorials/rill-clickhouse/r_ch_launch',
+          },
+          {
+            from: '/developers/guides/rill-clickhouse/r_ch_connect',
+            to: '/developers/tutorials/rill-clickhouse/r_ch_connect',
+          },
+          {
+            from: '/developers/guides/rill-clickhouse/r_ch_metrics-view',
+            to: '/developers/tutorials/rill-clickhouse/r_ch_metrics-view',
+          },
+          {
+            from: '/developers/guides/rill-clickhouse/r_ch_dashboard',
+            to: '/developers/tutorials/rill-clickhouse/r_ch_dashboard',
+          },
+          {
+            from: '/developers/guides/rill-clickhouse/r_ch_deploy',
+            to: '/developers/tutorials/rill-clickhouse/r_ch_deploy',
+          },
+          {
+            from: '/developers/guides/rill-clickhouse/r_ch_ingest',
+            to: '/developers/tutorials/rill-clickhouse/r_ch_ingest',
+          },
+          {
+            from: '/developers/embed/embed-api',
+            to: '/developers/embed/postmessage',
+          },
+          {
+            from: '/developers/integrate/embed-api',
+            to: '/developers/embed/postmessage',
+          },
+          {
+            from: '/developers/build/connectors/data-source/openai',
+            to: '/developers/build/connectors/services/openai',
+          },
+          {
+            from: '/developers/build/connectors/data-source/claude',
+            to: '/developers/build/connectors/services/claude',
+          },
+          {
+            from: '/developers/build/connectors/data-source/slack',
+            to: '/developers/build/connectors/services/slack',
+          },
+          {
+            from: '/developers/build/connectors/data-source/clickhouse',
+            to: '/developers/build/connectors/olap/clickhouse',
+          },
+          {
+            from: '/developers/build/connectors/data-source/druid',
+            to: '/developers/build/connectors/olap/druid',
+          },
+          {
+            from: '/developers/build/connectors/data-source/pinot',
+            to: '/developers/build/connectors/olap/pinot',
+          },
+          {
+            from: '/developers/build/connectors/data-source/starrocks',
+            to: '/developers/build/connectors/olap/starrocks',
+          },
+          {
+            from: '/developers/build/connectors/data-source/motherduck',
+            to: '/developers/build/connectors/olap/motherduck',
+          },
+          {
+            from: '/developers/build/metrics-view/time-series/time-syntax',
+            to: '/reference/time-syntax/rill-iso-extensions',
+          },
+          {
+            from: '/developers/other/v50-dashboard-changes',
+            to: '/developers/build/dashboards/explore',
+          },
+          {
+            from: '/other/v50-dashboard-changes',
+            to: '/developers/build/dashboards/explore',
+          },
+
           // {
           //   from: '/old-page',
           //   to: '/new-page',

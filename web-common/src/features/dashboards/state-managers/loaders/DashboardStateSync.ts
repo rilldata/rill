@@ -28,6 +28,8 @@ import { derived, get, type Readable } from "svelte/store";
 import type { CompoundQueryResult } from "@rilldata/web-common/features/compound-query-result";
 import type { ExpressionFilterManager } from "@rilldata/web-common/features/dashboards/filters/ExpressionFilterManager.svelte.ts";
 
+import { UrlParamsChangeTracker } from "@rilldata/web-common/lib/store-utils/url-params-store-sync.svelte.ts";
+
 export const DASHBOARD_STATE_SYNC_KEY = Symbol("state-sync");
 
 /**
@@ -54,6 +56,8 @@ export class DashboardStateSync {
   // So we need a lock to make sure an update doesn't trigger the counterpart code.
   private updating = false;
 
+  private readonly expressionFilterParamsTracker: UrlParamsChangeTracker;
+
   public static getFromContext() {
     return getContext<DashboardStateSync>(DASHBOARD_STATE_SYNC_KEY);
   }
@@ -77,6 +81,8 @@ export class DashboardStateSync {
       dataLoader.validSpecQuery,
       dataLoader.fullTimeRangeQuery,
     );
+
+    this.expressionFilterParamsTracker = expressionFilterManager.storeSync;
 
     this.unsubInit = derived(
       [dataLoader.initExploreState],
@@ -171,7 +177,6 @@ export class DashboardStateSync {
     // Ensure dashboard data is loaded before we proceed.
     if (!rillDefaultExploreURLParams) return;
     this.updating = true;
-    this.expressionFilterManager.updating = true;
 
     const pageState = get(page);
 
@@ -226,8 +231,7 @@ export class DashboardStateSync {
     }
     this.lastEphemeralMeasures = initExploreState.ephemeralMeasures;
 
-    this.expressionFilterManager.setUrlParams(redirectUrl.searchParams);
-    this.expressionFilterManager.updating = false;
+    this.expressionFilterParamsTracker.setUrlParams(redirectUrl.searchParams);
     // If the current url same as the new url then there is no need to do anything
     if (redirectUrl.search === pageState.url.search) {
       this.initialized = true;
@@ -283,7 +287,6 @@ export class DashboardStateSync {
     // Take the lock only once the guards have passed;
     // the finally ensures a throw below cannot leave it stuck.
     this.updating = true;
-    this.expressionFilterManager.updating = true;
     let redirectUrl: URL | undefined = undefined;
     // TODO: reassess this try-catch. resolveTimeRanges has error handling already.
     try {
@@ -309,7 +312,6 @@ export class DashboardStateSync {
       metricsExplorerStore.mergePartialExplorerEntity(
         this.exploreName,
         partialExplore,
-        this.expressionFilterManager,
       );
       // Get time controls state after explore state is updated.
       const timeControlsState = get(this.timeControlStore);
@@ -345,9 +347,10 @@ export class DashboardStateSync {
       // must still be picked up by gotoNewState.
       this.updating = false;
       if (redirectUrl) {
-        this.expressionFilterManager.setUrlParams(redirectUrl.searchParams);
+        this.expressionFilterParamsTracker.setUrlParams(
+          redirectUrl.searchParams,
+        );
       }
-      this.expressionFilterManager.updating = false;
     }
     // Try-finally without a catch. Rest of the code is not run if the above try body throws.
 
@@ -377,7 +380,6 @@ export class DashboardStateSync {
     // Those methods need to replace the current URL while this does a direct navigation.
     if (this.updating) return;
     this.updating = true;
-    this.expressionFilterManager.updating = true;
 
     try {
       const { data: validSpecData } = get(this.dataLoader.validSpecQuery);
@@ -413,7 +415,7 @@ export class DashboardStateSync {
         );
       }
 
-      this.expressionFilterManager.setUrlParams(newUrl.searchParams);
+      this.expressionFilterParamsTracker.setUrlParams(newUrl.searchParams);
       // If the state didnt result in a new url then skip goto.
       // This avoids adding redundant urls to the history.
       if (newUrl.search === pageState.url.search) {
@@ -424,7 +426,6 @@ export class DashboardStateSync {
       await goto(newUrl);
     } finally {
       this.updating = false;
-      this.expressionFilterManager.updating = false;
     }
   }
 }

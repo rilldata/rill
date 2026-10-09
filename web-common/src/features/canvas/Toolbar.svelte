@@ -2,7 +2,8 @@
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu/";
   import ThreeDot from "@rilldata/web-common/components/icons/ThreeDot.svelte";
   import Trash from "@rilldata/web-common/components/icons/Trash.svelte";
-  import { Copy, Columns } from "lucide-svelte";
+  import { Copy, Columns, Download } from "lucide-svelte";
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import type { BaseCanvasComponent } from "./components/BaseCanvasComponent";
   import type { ComponentWithMetricsView } from "./components/types";
   import ExploreLink from "./explore-link/ExploreLink.svelte";
@@ -10,6 +11,7 @@
   export let dropdownOpen = false;
   export let onDelete: () => void;
   export let onDuplicate: () => void;
+  export let onDownloadPng: () => void;
   // Optional: convert this component's row into a tab group. Only provided for
   // top-level rows (a tab's rows cannot be nested into another tab group).
   export let onConvertToTabGroup: (() => void) | undefined = undefined;
@@ -52,6 +54,7 @@
     <DropdownMenu.Root bind:open={dropdownOpen}>
       <DropdownMenu.Trigger
         class="size-7 grid place-content-center bg-surface-card hover:brightness-[85%] active:brightness-75"
+        aria-label={m.canvas_component_menu_aria()}
       >
         <ThreeDot size="16px" />
       </DropdownMenu.Trigger>
@@ -64,30 +67,57 @@
       >
         <DropdownMenu.Item onclick={onDuplicate}>
           <Copy size="14px" />
-          Duplicate
+          {m.canvas_component_duplicate()}
         </DropdownMenu.Item>
         {#if onConvertToTabGroup}
           <DropdownMenu.Item onclick={onConvertToTabGroup}>
             <Columns size="14px" />
-            Convert row to tab group
+            {m.canvas_component_convert_to_tab_group()}
           </DropdownMenu.Item>
         {/if}
+        <DropdownMenu.Separator />
         {#if showExplore && exploreComponent}
-          <DropdownMenu.Separator />
           <ExploreLink component={exploreComponent} mode="dropdown-item" />
         {/if}
+        <DropdownMenu.Item onclick={onDownloadPng}>
+          <Download size="14px" />
+          {m.dashboard_download_as_png()}
+        </DropdownMenu.Item>
         <DropdownMenu.Separator />
         <DropdownMenu.Item
           onclick={onDelete}
           class="text-red-600 data-[highlighted]:text-red-600"
         >
           <Trash size="14px" />
-          Delete
+          {m.canvas_delete()}
         </DropdownMenu.Item>
       </DropdownMenu.Content>
     </DropdownMenu.Root>
-  {:else if showExplore && exploreComponent}
-    <!-- Non-editable mode: Show explore icon button -->
-    <ExploreLink component={exploreComponent} mode="icon-button" />
+  {:else}
+    <!-- Non-editable mode: the menu sits inward of the explore jump so the
+         corner slot users already aim for keeps taking them to explore. -->
+    <DropdownMenu.Root bind:open={dropdownOpen}>
+      <DropdownMenu.Trigger
+        class="size-7 grid place-content-center bg-surface-card hover:brightness-[85%] active:brightness-75"
+        aria-label={m.canvas_component_menu_aria()}
+      >
+        <ThreeDot size="16px" />
+      </DropdownMenu.Trigger>
+
+      <DropdownMenu.Content
+        align="end"
+        sideOffset={8}
+        alignOffset={-4}
+        class="w-44"
+      >
+        <DropdownMenu.Item onclick={onDownloadPng}>
+          <Download size="14px" />
+          {m.dashboard_download_as_png()}
+        </DropdownMenu.Item>
+      </DropdownMenu.Content>
+    </DropdownMenu.Root>
+    {#if showExplore && exploreComponent}
+      <ExploreLink component={exploreComponent} mode="icon-button" />
+    {/if}
   {/if}
 </div>

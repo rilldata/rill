@@ -82,7 +82,7 @@ export function getNewAlertInitialFiltersFormValues(
     metricsViewProvider,
     yamlConfigProvider,
   );
-  filters.setUrlParams(get(page).url.searchParams);
+  filters.storeSync.setUrlParams(get(page).url.searchParams);
 
   const timeControls = new TimeControls(metricsViewMetadata, {
     selectedTimeRange: exploreState.selectedTimeRange,

@@ -69,6 +69,8 @@ type Instance struct {
 	IgnoreInitialInvalidProjectError bool `db:"-"`
 	// AIInstructions is extra context for LLM/AI features. Used to guide natural language question answering and routing.
 	AIInstructions string `db:"ai_instructions"`
+	// AIPrompts are suggested prompts configured in rill.yaml, shown as starters in the project-wide AI chat.
+	AIPrompts []*runtimev1.AIPrompt `db:"ai_prompts"`
 	// FrontendURL is the URL of the web interface.
 	FrontendURL string `db:"frontend_url"`
 	// Theme is the name of the theme resource to use for AI-generated charts.

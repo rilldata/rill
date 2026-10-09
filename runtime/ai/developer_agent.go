@@ -93,6 +93,12 @@ func (t *DeveloperAgent) Handler(ctx context.Context, args *DeveloperAgentArgs) 
 			return nil, err
 		}
 	}
+	// Pre-invoke the load_skill tool for each developer skill the user referenced in the prompt.
+	// The model only sees this invocation's tool calls, so only the skills loaded above in this invocation are skipped.
+	err = loadReferencedSkills(ctx, s, args.Prompt, skills, parser.SkillAgentDeveloper, loadedSkills(s, FilterByParent(s.ParentID)))
+	if err != nil {
+		return nil, err
+	}
 
 	// Build initial completion messages
 	messages := []*aiv1.CompletionMessage{NewTextCompletionMessage(RoleSystem, systemPrompt)}

@@ -63,6 +63,7 @@
   });
 
   let showPanels = true;
+  let pivotTable: PivotTable | undefined;
 
   $: pivotDataStore = usePivotForExplore(stateManagers);
   $: pivotConfig = getPivotConfig(stateManagers);
@@ -219,6 +220,8 @@
           )}
         collapseAll={() =>
           metricsExplorerStore.setPivotExpanded($exploreName, {})}
+        fitToWidth={() => pivotTable?.fitColumnsToWidth()}
+        canFitToWidth={assembled && !!pivotTable}
         {isFetching}
         bind:showPanels
       >
@@ -246,6 +249,7 @@
         />
       {:else}
         <PivotTable
+          bind:this={pivotTable}
           {widthScopeKey}
           {pivotDataStore}
           overscan={60}

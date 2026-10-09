@@ -489,3 +489,39 @@ rows:
 	require.NotNil(t, c1.GetCanvas().State.ValidSpec)
 	require.Empty(t, c1.Meta.ReconcileError)
 }
+
+func TestCanvasAIPrompts(t *testing.T) {
+	rt, id := testruntime.NewInstance(t)
+	testruntime.PutFiles(t, rt, id, map[string]string{
+		"m1.sql": `SELECT 'foo' as foo, 1 as x`,
+		"mv1.yaml": `
+version: 1
+type: metrics_view
+model: m1
+dimensions:
+- column: foo
+measures:
+- name: x
+  expression: sum(x)
+`,
+		"c1.yaml": `
+type: canvas
+ai_prompts:
+  - label: Total
+    prompt: What is the total x?
+rows:
+  - items:
+      - kpi_grid:
+          metrics_view: mv1
+          measures:
+            - x
+`,
+	})
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireReconcileState(t, rt, id, 5, 0, 0)
+	c1 := testruntime.GetResource(t, rt, id, runtime.ResourceKindCanvas, "c1").GetCanvas()
+	require.NotNil(t, c1.State.ValidSpec)
+	require.Len(t, c1.State.ValidSpec.AiPrompts, 1)
+	require.Equal(t, "Total", c1.State.ValidSpec.AiPrompts[0].Label)
+	require.Equal(t, "What is the total x?", c1.State.ValidSpec.AiPrompts[0].Prompt)
+}

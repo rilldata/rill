@@ -2885,6 +2885,13 @@ export class ExploreSpec extends Message<ExploreSpec> {
    */
   definedInMetricsView = false;
 
+  /**
+   * Suggested prompts configured by the project author, shown as starters in the AI chat.
+   *
+   * @generated from field: repeated rill.runtime.v1.AIPrompt ai_prompts = 22;
+   */
+  aiPrompts: AIPrompt[] = [];
+
   constructor(data?: PartialMessage<ExploreSpec>) {
     super();
     proto3.util.initPartial(data, this);
@@ -2911,6 +2918,7 @@ export class ExploreSpec extends Message<ExploreSpec> {
     { no: 19, name: "lock_time_zone", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 20, name: "allow_custom_time_range", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 21, name: "defined_in_metrics_view", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 22, name: "ai_prompts", kind: "message", T: AIPrompt, repeated: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ExploreSpec {
@@ -2976,6 +2984,55 @@ export class ExploreState extends Message<ExploreState> {
 
   static equals(a: ExploreState | PlainMessage<ExploreState> | undefined, b: ExploreState | PlainMessage<ExploreState> | undefined): boolean {
     return proto3.util.equals(ExploreState, a, b);
+  }
+}
+
+/**
+ * AIPrompt is a starter prompt shown in the AI chat.
+ *
+ * @generated from message rill.runtime.v1.AIPrompt
+ */
+export class AIPrompt extends Message<AIPrompt> {
+  /**
+   * Short label displayed on the prompt's button.
+   *
+   * @generated from field: string label = 1;
+   */
+  label = "";
+
+  /**
+   * Full prompt sent to the AI when the user picks it.
+   *
+   * @generated from field: string prompt = 2;
+   */
+  prompt = "";
+
+  constructor(data?: PartialMessage<AIPrompt>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.AIPrompt";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "label", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "prompt", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): AIPrompt {
+    return new AIPrompt().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): AIPrompt {
+    return new AIPrompt().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): AIPrompt {
+    return new AIPrompt().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: AIPrompt | PlainMessage<AIPrompt> | undefined, b: AIPrompt | PlainMessage<AIPrompt> | undefined): boolean {
+    return proto3.util.equals(AIPrompt, a, b);
   }
 }
 
@@ -5292,6 +5349,13 @@ export class CanvasSpec extends Message<CanvasSpec> {
    */
   annotations: { [key: string]: string } = {};
 
+  /**
+   * Suggested prompts configured by the project author, shown as starters in the AI chat.
+   *
+   * @generated from field: repeated rill.runtime.v1.AIPrompt ai_prompts = 21;
+   */
+  aiPrompts: AIPrompt[] = [];
+
   constructor(data?: PartialMessage<CanvasSpec>) {
     super();
     proto3.util.initPartial(data, this);
@@ -5318,6 +5382,7 @@ export class CanvasSpec extends Message<CanvasSpec> {
     { no: 16, name: "pinned_filters", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 19, name: "required_filters", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 20, name: "annotations", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
+    { no: 21, name: "ai_prompts", kind: "message", T: AIPrompt, repeated: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CanvasSpec {

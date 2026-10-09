@@ -94,13 +94,15 @@ var spec = drivers.Spec{
 type driver struct{}
 
 type configProperties struct {
-	DSN        string `mapstructure:"dsn"`
-	Host       string `mapstructure:"host"`
-	HTTPPath   string `mapstructure:"http_path"`
-	Token      string `mapstructure:"token"`
-	Catalog    string `mapstructure:"catalog"`
-	Schema     string `mapstructure:"schema"`
-	LogQueries bool   `mapstructure:"log_queries"`
+	DSN      string `mapstructure:"dsn"`
+	Host     string `mapstructure:"host"`
+	HTTPPath string `mapstructure:"http_path"`
+	Token    string `mapstructure:"token"`
+	Catalog  string `mapstructure:"catalog"`
+	Schema   string `mapstructure:"schema"`
+	// CatalogWhitelist is a comma separated list of catalogs to list in information schema calls.
+	CatalogWhitelist string `mapstructure:"catalog_whitelist"`
+	LogQueries       bool   `mapstructure:"log_queries"`
 	// UseKernel forces the driver's SEA backend. Lakehouse//RT is auto-detected and
 	// switched to SEA even when this is false (see getDB), so it's an override.
 	UseKernel bool `mapstructure:"use_kernel"`
@@ -188,7 +190,7 @@ func rtRequiresSEA(err error) bool {
 	return err != nil && strings.Contains(err.Error(), "not supported for Thrift protocol")
 }
 
-func (d driver) Open(_, instanceID string, config map[string]any, st *storage.Client, ac *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
+func (d driver) Open(_ context.Context, _, instanceID string, config map[string]any, st *storage.Client, ac *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
 	if instanceID == "" {
 		return nil, errors.New("databricks driver can't be shared")
 	}

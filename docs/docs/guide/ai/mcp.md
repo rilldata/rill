@@ -263,6 +263,10 @@ You can look at one of our [example projects](https://github.com/rilldata/rill-e
 - __*List skills*__ – Use `list_skills` to discover the [skills](/developers/build/ai-configuration#skills) defined in the project. It returns an empty list when the project defines no skills.
 - __*Load a skill*__ – Use `load_skill` to fetch a skill's full instructions before doing work its description covers.
 
+The skill tools are available to every user who can use AI features in the project, whether or not the project defines skills. `list_skills` returns every skill in the project with its `description`, `metrics_views`, `agents` and `always_apply` fields, so the client can pick the ones that fit its task. If `load_skill` is called with a name that doesn't exist, the error lists the skills that do.
+
+The `/` skill picker is part of Rill's [AI Chat](/guide/ai/ai-chat#using-project-skills). In an external client, ask for a skill by name instead, for example: "Use the `revenue-rca` skill to explain last week's revenue drop."
+
 
 ### Usage Examples
 
