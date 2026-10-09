@@ -28,12 +28,9 @@ import {
   getProjectParserVersion,
   waitForProjectParserVersion,
 } from "../project-parser.ts";
-import {
-  fetchProjectParser,
-  fetchResource,
-  ResourceKind,
-} from "../resource-selectors.ts";
+import { fetchResource, ResourceKind } from "../resource-selectors.ts";
 import type { QueryClient } from "@tanstack/svelte-query";
+import { queryClient as globalQueryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 
 export async function runtimeServicePutFileAndWaitForReconciliation(
   client: RuntimeClient,
@@ -46,26 +43,14 @@ export async function runtimeServicePutFileAndWaitForReconciliation(
   await runtimeServicePutFile(client, runtimeServicePutFileBody);
 
   // Wait for the file to be processed by the parser
-  await waitForProjectParserVersion(
-    client.instanceId,
-    projectParserStartingVersion + 1,
-  );
+  await waitForProjectParserVersion(client, projectParserStartingVersion + 1);
 }
 
-export async function waitForProjectParser(instanceId: string) {
-  let retryCount = 0;
-  while (retryCount < 5) {
-    try {
-      getProjectParserVersion(instanceId);
-      return;
-    } catch {
-      retryCount++;
-      await new Promise((resolve) =>
-        setTimeout(resolve, 300 + retryCount * 300),
-      );
-    }
-  }
-  throw new Error("Project parser version not found after 5 retries");
+export async function waitForProjectParser(
+  client: RuntimeClient,
+  queryClient: QueryClient = globalQueryClient,
+) {
+  await waitForProjectParserVersion(client, 1, queryClient);
 }
 
 const WaitForResourceReconciliationPollInterval = 2_000;
@@ -80,8 +65,9 @@ export async function waitForResourceReconciliation(
   prevStateVersion?: string,
 ) {
   let attempt = 0;
+  const deadline = Date.now() + 60_000;
 
-  while (true) {
+  while (Date.now() < deadline) {
     attempt++;
     try {
       const resource = await fetchResource(
@@ -95,7 +81,7 @@ export async function waitForResourceReconciliation(
       const newStateVersion = resource?.meta?.stateVersion;
       const newVersionArrived =
         prevStateVersion && newStateVersion
-          ? newStateVersion > prevStateVersion
+          ? BigInt(newStateVersion) > BigInt(prevStateVersion)
           : true;
 
       // Check if there's a reconcile error
@@ -153,6 +139,9 @@ export async function waitForResourceReconciliation(
       throw error;
     }
   }
+  throw new Error(
+    `Timed out waiting for resource ${resourceName} to reconcile`,
+  );
 }
 
 /**
@@ -288,21 +277,7 @@ export async function waitForControllerRestart(
   client: RuntimeClient,
   queryClient: QueryClient,
 ) {
-  const pollInterval = 2_000; // 2 seconds
-  let attempt = 0;
-
-  while (attempt < 5) {
-    attempt++;
-
-    try {
-      await fetchProjectParser(client, queryClient, true);
-      return;
-    } catch (e) {
-      console.log("Fetch errored", e);
-      // No-op
-    }
-    await new Promise((resolve) => setTimeout(resolve, pollInterval));
-  }
+  await waitForProjectParserVersion(client, 1, queryClient);
 }
 
 function extractMessage(msg: string) {
