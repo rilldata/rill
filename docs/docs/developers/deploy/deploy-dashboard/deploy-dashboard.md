@@ -1,5 +1,6 @@
 ---
 title: Deploy Dashboards 
+description: Deploy a Rill Developer project to Rill Cloud to share its dashboards
 sidebar_label: Deploy Dashboards 
 sidebar_position: 00
 ---

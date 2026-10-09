@@ -36,10 +36,6 @@ _[object]_ - Refresh schedule for the alert
 
 _[string]_ - Display name for the alert
 
-### `description`
-
-_[string]_ - Description for the alert
-
 ### `intervals`
 
 _[object]_ - Defines the alert interval to check.

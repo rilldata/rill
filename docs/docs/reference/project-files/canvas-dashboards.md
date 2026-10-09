@@ -20,10 +20,6 @@ _[string]_ - Refers to the display name for the canvas
 
 _[string]_ - Deprecated: use display_name instead. Refers to the display name for the canvas
 
-### `description`
-
-_[string]_ - Description for the canvas dashboard
-
 ### `banner`
 
 _[string]_ - Refers to the custom banner displayed in the header of a Canvas dashboard.
@@ -166,7 +162,7 @@ _[object]_ - Defines the defaults YAML struct.
   ```
 
 
-  - **`time_range`** - _[string]_ - Refers to the default time range shown when a user initially loads the dashboard. The value must be either an [ISO 8601 duration](https://en.wikipedia.org/wiki/ISO_8601#Durations) (for example, PT12H for 12 hours, P1M for 1 month, or P26W for 26 weeks) or one of the [Rill ISO 8601 extensions](https://docs.rilldata.com/reference/rill-iso-extensions#extensions).
+  - **`time_range`** - _[string]_ - Refers to the default time range shown when a user initially loads the dashboard. Any [time range syntax](/reference/time-syntax) expression, including legacy ISO 8601 durations and `rill-` keywords.
 
   - **`comparison_mode`** - _[string]_ - Controls how to compare current data with historical or categorical baselines. Options: `none` (no comparison), `time` (compares with past based on default_time_range), `dimension` (compares based on comparison_dimension values)
 

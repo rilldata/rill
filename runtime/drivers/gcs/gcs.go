@@ -102,7 +102,7 @@ func NewConfigProperties(prop map[string]any) (*ConfigProperties, error) {
 	return gcsConfig, nil
 }
 
-func (d driver) Open(_, instanceID string, config map[string]any, st *storage.Client, ac *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
+func (d driver) Open(ctx context.Context, _, instanceID string, config map[string]any, st *storage.Client, ac *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
 	if instanceID == "" {
 		return nil, errors.New("gcs driver can't be shared")
 	}
@@ -128,7 +128,7 @@ func (d driver) Open(_, instanceID string, config map[string]any, st *storage.Cl
 		if err != nil {
 			return nil, err
 		}
-		handle, err := drivers.Open("s3", "", instanceID, config, st, ac, logger)
+		handle, err := drivers.Open(ctx, "s3", "", instanceID, config, st, ac, logger)
 		if err != nil {
 			return nil, fmt.Errorf("failed to open s3 connection for gcs in s3 compatible mode: %w", err)
 		}

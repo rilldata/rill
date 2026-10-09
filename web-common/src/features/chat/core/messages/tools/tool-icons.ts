@@ -10,6 +10,7 @@ import {
   Pencil,
   CornerDownRight,
   GraduationCap,
+  MousePointerClick,
 } from "lucide-svelte";
 import type { ComponentType } from "svelte";
 import Chart from "../../../../../components/icons/Chart.svelte";
@@ -38,6 +39,7 @@ export const TOOL_ICONS: Record<string, ComponentType> = {
 
   // Common tools
   [ToolName.NAVIGATE]: CornerDownRight,
+  [ToolName.CLICK_UI]: MousePointerClick,
   [ToolName.LIST_SKILLS]: GraduationCap,
   [ToolName.LOAD_SKILL]: GraduationCap,
 };

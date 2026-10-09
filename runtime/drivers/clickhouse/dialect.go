@@ -80,9 +80,9 @@ func (d *dialect) AutoUnnest(expr string) string {
 	return fmt.Sprintf("arrayJoin(%s)", expr)
 }
 
-func (d *dialect) RequiresArrayContainsForInOperator() bool { return true }
-
-func (d *dialect) GetArrayContainsFunction() (string, error) { return "hasAny", nil }
+func (d *dialect) ArrayContainsAnyExpression(arrExpr, valuesExpr string) (expr string, ok bool) {
+	return fmt.Sprintf("hasAny(%s, [%s])", arrExpr, valuesExpr), true
+}
 
 func (d *dialect) CastToDataType(typ runtimev1.Type_Code) (string, error) {
 	switch typ {

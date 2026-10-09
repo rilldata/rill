@@ -44,6 +44,11 @@ To ensure you're on the latest version of Rill and enjoying all of our newest fe
 rill upgrade
 ```
 
+If the latest version is already installed, the upgrade is skipped. To reinstall anyway, run `rill upgrade --force`, or set `RILL_INSTALL_FORCE=1` when using the installation script:
+```bash
+curl https://rill.sh | RILL_INSTALL_FORCE=1 sh
+```
+
 :::info What about Rill Cloud?
 
 Rill Cloud is always on the latest stable version of Rill. To check the latest version available, please see our [Releases](https://github.com/rilldata/rill/releases) page.

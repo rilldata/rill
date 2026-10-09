@@ -102,6 +102,9 @@ func (t *DeveloperAgent) Handler(ctx context.Context, args *DeveloperAgentArgs) 
 
 	// Build initial completion messages
 	messages := []*aiv1.CompletionMessage{NewTextCompletionMessage(RoleSystem, systemPrompt)}
+	if uiMessage := uiContextCompletionMessage(ctx); uiMessage != nil {
+		messages = append(messages, uiMessage)
+	}
 	messages = append(messages, s.NewCompletionMessages(s.MessagesWithResults(FilterByType(MessageTypeCall), FilterByTool(DeveloperAgentName)))...)
 	messages = append(messages, NewTextCompletionMessage(RoleUser, userPrompt))
 	messages = append(messages, s.NewCompletionMessages(s.MessagesWithResults(FilterByParent(s.ParentID)))...)
@@ -119,6 +122,7 @@ func (t *DeveloperAgent) Handler(ctx context.Context, args *DeveloperAgentArgs) 
 		QuerySQLName,
 		DevelopFileName,
 		NavigateName,
+		ClickUIName,
 	}
 	if len(skills) > 0 {
 		tools = append(tools, ListSkillsName, LoadSkillName)

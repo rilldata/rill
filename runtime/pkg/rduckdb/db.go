@@ -893,12 +893,15 @@ func (d *db) openDBAndAttach(ctx context.Context, uri, ignoreTable string, initQ
 	}
 	// Rebuild DuckDB DSN (which should be "path?key=val&...")
 	// this is required since spaces and other special characters are valid in db file path but invalid and hence encoded in URL
+	// The init queries run for every new connection the pool opens, for as long as the returned DB is in use.
+	// So they must not use the caller's ctx, which may be cancelled while the DB is still open.
+	connCtx := d.ctx
 	connector, err := duckdb.NewConnector(generateDSN(dsn.Path, query.Encode()), func(execer driver.ExecerContext) error {
 		for _, qry := range d.opts.ConnInitQueries {
-			_, err := execer.ExecContext(ctx, qry, nil)
+			_, err := execer.ExecContext(connCtx, qry, nil)
 			if err != nil && strings.Contains(err.Error(), "Failed to download extension") {
 				// Retry using another mirror. Based on: https://github.com/duckdb/duckdb/issues/9378
-				_, err = execer.ExecContext(ctx, qry+" FROM 'http://nightly-extensions.duckdb.org'", nil)
+				_, err = execer.ExecContext(connCtx, qry+" FROM 'http://nightly-extensions.duckdb.org'", nil)
 			}
 			if err != nil {
 				return err

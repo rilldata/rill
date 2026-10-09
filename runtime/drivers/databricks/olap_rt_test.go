@@ -127,7 +127,7 @@ func TestOLAP_LakehouseRT(t *testing.T) {
 
 func acquireTestDatabricksRT(t *testing.T, dsn string) (drivers.Handle, drivers.OLAPStore) {
 	cfg := map[string]any{"dsn": dsn}
-	conn, err := drivers.Open("databricks", "", "default", cfg, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
+	conn, err := drivers.Open(t.Context(), "databricks", "", "default", cfg, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
 	t.Cleanup(func() { conn.Close() })
 

@@ -1,5 +1,5 @@
 ---
-title: Canvas Dashboards
+title: Build Canvas Dashboards
 description: Create custom dashboards by assembling visualizations and components
 sidebar_label: Canvas Dashboards
 sidebar_position: 05
