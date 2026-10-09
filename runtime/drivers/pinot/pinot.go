@@ -134,7 +134,7 @@ func (c *configProperties) validate() error {
 }
 
 // Open a connection to Apache Pinot using HTTP API.
-func (d driver) Open(connectorName, instanceID string, config map[string]any, st *storage.Client, ac *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
+func (d driver) Open(ctx context.Context, connectorName, instanceID string, config map[string]any, st *storage.Client, ac *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
 	if instanceID == "" {
 		return nil, fmt.Errorf("pinot driver can't be shared")
 	}
@@ -209,7 +209,7 @@ func (d driver) Open(connectorName, instanceID string, config map[string]any, st
 	}
 
 	dbx := sqlx.NewDb(db, "pinot")
-	err = dbx.Ping()
+	err = dbx.PingContext(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("pinot: %w", err)
 	}

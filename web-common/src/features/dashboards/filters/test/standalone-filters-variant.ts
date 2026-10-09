@@ -73,10 +73,11 @@ export function useStandaloneFiltersVariant(
       getInListDimensions: () => expressionFilterManager!.inList,
     },
 
-    render: async () => {
+    render: async (initUrlSearch?: string) => {
       render(StandaloneExpressionFiltersTest, {
         props: {
           metricsViewNames: [AD_BIDS_METRICS_NAME],
+          initUrlSearch,
           onManagerCreated: (manager: ExpressionFilterManager) =>
             (expressionFilterManager = manager),
         },

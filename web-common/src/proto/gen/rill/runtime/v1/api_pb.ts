@@ -5,8 +5,8 @@
 
 import type { BinaryReadOptions, FieldList, JsonReadOptions, JsonValue, PartialMessage, PlainMessage } from "@bufbuild/protobuf";
 import { Message as Message$1, proto3, Struct, Timestamp } from "@bufbuild/protobuf";
+import { AIPrompt, RefreshModelTrigger, Resource, ResourceName } from "./resources_pb.js";
 import { StructType } from "./schema_pb.js";
-import { RefreshModelTrigger, Resource, ResourceName } from "./resources_pb.js";
 import { ContentBlock, Tool } from "../../ai/v1/ai_pb.js";
 import { Expression } from "./expression_pb.js";
 
@@ -515,6 +515,11 @@ export class Instance extends Message$1<Instance> {
   aiInstructions = "";
 
   /**
+   * @generated from field: repeated rill.runtime.v1.AIPrompt ai_prompts = 27;
+   */
+  aiPrompts: AIPrompt[] = [];
+
+  /**
    * @generated from field: string frontend_url = 24;
    */
   frontendUrl = "";
@@ -548,6 +553,7 @@ export class Instance extends Message$1<Instance> {
     { no: 22, name: "feature_flags", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 8 /* ScalarType.BOOL */} },
     { no: 14, name: "annotations", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
     { no: 23, name: "ai_instructions", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 27, name: "ai_prompts", kind: "message", T: AIPrompt, repeated: true },
     { no: 24, name: "frontend_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 26, name: "theme", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
@@ -5172,6 +5178,20 @@ export class CompleteRequest extends Message$1<CompleteRequest> {
    */
   feedbackAgentContext?: FeedbackAgentContext;
 
+  /**
+   * Optional current browser path. The origin is intentionally omitted.
+   *
+   * @generated from field: string ui_page_path = 14;
+   */
+  uiPagePath = "";
+
+  /**
+   * Optional visible, enabled, uniquely-addressable browser actions.
+   *
+   * @generated from field: repeated rill.runtime.v1.UIAction ui_actions = 15;
+   */
+  uiActions: UIAction[] = [];
+
   constructor(data?: PartialMessage<CompleteRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -5187,6 +5207,8 @@ export class CompleteRequest extends Message$1<CompleteRequest> {
     { no: 11, name: "analyst_agent_context", kind: "message", T: AnalystAgentContext },
     { no: 12, name: "developer_agent_context", kind: "message", T: DeveloperAgentContext },
     { no: 13, name: "feedback_agent_context", kind: "message", T: FeedbackAgentContext },
+    { no: 14, name: "ui_page_path", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 15, name: "ui_actions", kind: "message", T: UIAction, repeated: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CompleteRequest {
@@ -5310,6 +5332,20 @@ export class CompleteStreamingRequest extends Message$1<CompleteStreamingRequest
    */
   feedbackAgentContext?: FeedbackAgentContext;
 
+  /**
+   * Optional current browser path. The origin is intentionally omitted.
+   *
+   * @generated from field: string ui_page_path = 14;
+   */
+  uiPagePath = "";
+
+  /**
+   * Optional visible, enabled, uniquely-addressable browser actions.
+   *
+   * @generated from field: repeated rill.runtime.v1.UIAction ui_actions = 15;
+   */
+  uiActions: UIAction[] = [];
+
   constructor(data?: PartialMessage<CompleteStreamingRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -5325,6 +5361,8 @@ export class CompleteStreamingRequest extends Message$1<CompleteStreamingRequest
     { no: 11, name: "analyst_agent_context", kind: "message", T: AnalystAgentContext },
     { no: 12, name: "developer_agent_context", kind: "message", T: DeveloperAgentContext },
     { no: 13, name: "feedback_agent_context", kind: "message", T: FeedbackAgentContext },
+    { no: 14, name: "ui_page_path", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 15, name: "ui_actions", kind: "message", T: UIAction, repeated: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CompleteStreamingRequest {
@@ -7043,6 +7081,55 @@ export class PushEnvResponse extends Message$1<PushEnvResponse> {
 
   static equals(a: PushEnvResponse | PlainMessage<PushEnvResponse> | undefined, b: PushEnvResponse | PlainMessage<PushEnvResponse> | undefined): boolean {
     return proto3.util.equals(PushEnvResponse, a, b);
+  }
+}
+
+/**
+ * A non-destructive UI action explicitly exposed to the AI by the browser.
+ *
+ * @generated from message rill.runtime.v1.UIAction
+ */
+export class UIAction extends Message$1<UIAction> {
+  /**
+   * Stable identifier from the element's data-ai-action attribute.
+   *
+   * @generated from field: string id = 1;
+   */
+  id = "";
+
+  /**
+   * Human-readable accessible label for the action.
+   *
+   * @generated from field: string label = 2;
+   */
+  label = "";
+
+  constructor(data?: PartialMessage<UIAction>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.UIAction";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "label", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): UIAction {
+    return new UIAction().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): UIAction {
+    return new UIAction().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): UIAction {
+    return new UIAction().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: UIAction | PlainMessage<UIAction> | undefined, b: UIAction | PlainMessage<UIAction> | undefined): boolean {
+    return proto3.util.equals(UIAction, a, b);
   }
 }
 

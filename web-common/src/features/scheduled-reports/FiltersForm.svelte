@@ -22,7 +22,6 @@
   import type { ExpressionFilterManager } from "../dashboards/filters/ExpressionFilterManager.svelte.ts";
   import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors.ts";
   import ExpressionFilters from "../dashboards/filters/ExpressionFilters.svelte";
-  import { syncStoreWithSource } from "@rilldata/web-common/lib/store-utils/url-params-store-sync.svelte.ts";
 
   const runtimeClient = useRuntimeClient();
 
@@ -42,13 +41,6 @@
     maxWidth?: number | undefined;
     side?: "top" | "right" | "bottom" | "left";
   } = $props();
-
-  // svelte-ignore state_referenced_locally
-  syncStoreWithSource(
-    filters,
-    async (newUrlParams) => filters.setUrlParams(newUrlParams),
-    () => filters.metricsViewsProvider.ready,
-  );
 
   let {
     selectedTimezone,

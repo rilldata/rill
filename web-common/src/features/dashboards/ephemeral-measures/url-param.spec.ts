@@ -42,6 +42,22 @@ describe("ephemeral url param", () => {
           expression: "round(revenue / users, 2)",
         },
       ],
+      // A description with and without a format preset.
+      [
+        {
+          name: "margin",
+          displayName: "Margin",
+          expression: "profit / revenue",
+          description: "Profit per dollar: of revenue; net",
+        },
+        {
+          name: "arpu",
+          displayName: "ARPU",
+          expression: "revenue / users",
+          formatPreset: "currency_usd",
+          description: "Average revenue per user",
+        },
+      ],
       // Hostile characters in display names and expressions.
       [
         {

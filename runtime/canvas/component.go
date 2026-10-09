@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"math"
+	"slices"
 	"strings"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
@@ -483,24 +485,40 @@ func (v rendererValidator) validateTable(props map[string]any) error {
 		return err
 	}
 
-	columns, err := getPathStringSlice(props, "columns")
+	columns, err := getPathFieldList(props, "columns")
 	if err != nil {
 		return err
 	}
 	if len(columns) == 0 {
-		return errors.New("renderer properties for table must include a non-empty 'columns' array of strings")
+		return errors.New("renderer properties for table must include a non-empty 'columns' array")
 	}
 	ephemeralNames, err := ephemeralMeasureNames(props, mvn, mv)
 	if err != nil {
 		return err
 	}
+	sortable := make([]string, 0, len(columns))
 	for _, col := range columns {
-		if !v.hasDimension(mv, col) && !v.hasMeasure(mv, col, ephemeralNames) && !isEncodedTimeDimension(mv, col) {
-			return fmt.Errorf("referenced columns value %q is not a dimension or measure in metrics view %q", col, mvn)
+		isMeasure := v.hasMeasure(mv, col.Name, ephemeralNames)
+		if !v.hasDimension(mv, col.Name) && !isMeasure && !isEncodedTimeDimension(mv, col.Name) {
+			return fmt.Errorf("referenced columns value %q is not a dimension or measure in metrics view %q", col.Name, mvn)
+		}
+		sortable = append(sortable, col.Name)
+		// In lenient mode an unresolved column's kind is unknown, so its overrides cannot be checked against a role.
+		if v.lenient && (mv == nil || strings.Contains(col.Name, "{{")) {
+			continue
+		}
+		role := fieldRoleTableDimension
+		if metricsViewHasMeasure(mv, col.Name) {
+			role = fieldRoleMeasure
+		} else if isMeasure {
+			role = fieldRoleAdhocMeasure
+		}
+		if err := validateFieldEntryProps("columns", col, role); err != nil {
+			return err
 		}
 	}
 
-	return nil
+	return v.validateTablePresentation(props, sortable, func(name string) bool { return v.hasMeasure(mv, name) })
 }
 
 // validatePivot validates properties for pivot.
@@ -510,15 +528,15 @@ func (v rendererValidator) validatePivot(props map[string]any) error {
 		return err
 	}
 
-	measures, err := getPathStringSlice(props, "measures")
+	measures, err := getPathFieldList(props, "measures")
 	if err != nil {
 		return err
 	}
-	rowDims, err := getPathStringSlice(props, "row_dimensions")
+	rowDims, err := getPathFieldList(props, "row_dimensions")
 	if err != nil {
 		return err
 	}
-	colDims, err := getPathStringSlice(props, "col_dimensions")
+	colDims, err := getPathFieldList(props, "col_dimensions")
 	if err != nil {
 		return err
 	}
@@ -531,23 +549,45 @@ func (v rendererValidator) validatePivot(props map[string]any) error {
 	if err != nil {
 		return err
 	}
+	// Measures and row dimensions can be sorted by; column dimensions cannot.
+	sortable := make([]string, 0, len(measures)+len(rowDims))
 	for _, m := range measures {
-		if !v.hasMeasure(mv, m, ephemeralNames) {
-			return fmt.Errorf("referenced measures value %q is not a measure in metrics view %q", m, mvn)
+		role := fieldRoleMeasure
+		if !v.hasMeasure(mv, m.Name) {
+			if !ephemeralNames[m.Name] {
+				return fmt.Errorf("referenced measures value %q is not a measure in metrics view %q", m.Name, mvn)
+			}
+			role = fieldRoleAdhocMeasure
 		}
+		if err := validateFieldEntryProps("measures", m, role); err != nil {
+			return err
+		}
+		sortable = append(sortable, m.Name)
 	}
-	for _, d := range rowDims {
-		if !v.hasDimension(mv, d) && !isEncodedTimeDimension(mv, d) {
-			return fmt.Errorf("referenced row_dimensions value %q is not a dimension in metrics view %q", d, mvn)
+	for i, d := range rowDims {
+		if !v.hasDimension(mv, d.Name) && !isEncodedTimeDimension(mv, d.Name) {
+			return fmt.Errorf("referenced row_dimensions value %q is not a dimension in metrics view %q", d.Name, mvn)
 		}
+		// All row dimensions share one merged row-header column keyed by the first one.
+		role := fieldRoleRowDimension
+		if i == 0 {
+			role = fieldRoleRowHeader
+		}
+		if err := validateFieldEntryProps("row_dimensions", d, role); err != nil {
+			return err
+		}
+		sortable = append(sortable, d.Name)
 	}
 	for _, d := range colDims {
-		if !v.hasDimension(mv, d) && !isEncodedTimeDimension(mv, d) {
-			return fmt.Errorf("referenced col_dimensions value %q is not a dimension in metrics view %q", d, mvn)
+		if !v.hasDimension(mv, d.Name) && !isEncodedTimeDimension(mv, d.Name) {
+			return fmt.Errorf("referenced col_dimensions value %q is not a dimension in metrics view %q", d.Name, mvn)
+		}
+		if err := validateFieldEntryProps("col_dimensions", d, fieldRoleColumnDimension); err != nil {
+			return err
 		}
 	}
 
-	return nil
+	return v.validateTablePresentation(props, sortable, func(name string) bool { return v.hasMeasure(mv, name) })
 }
 
 // validateLeaderboard validates properties for leaderboard.
@@ -719,6 +759,265 @@ func (v rendererValidator) validateOptionalColorDimensionField(mv *runtimev1.Met
 	}
 	// Otherwise validate color.field as a dimension
 	return v.validateOptionalDimensionField(mv, mvName, props, "color.field")
+}
+
+// fieldEntry is an entry of a table's or pivot's field list (columns, measures, row_dimensions, col_dimensions):
+// a field name, optionally with per-column presentation overrides when written as an object.
+type fieldEntry struct {
+	Name  string
+	Props map[string]any
+}
+
+// getPathFieldList extracts a field list from the props map.
+// Each entry is either a string (the field name) or an object with a non-empty "name" and optional overrides.
+// Returns (nil, nil) if the path is absent and an error if an entry is malformed or a name repeats.
+func getPathFieldList(props map[string]any, path string) ([]fieldEntry, error) {
+	raw, ok := pathutil.GetPath(props, path)
+	if !ok {
+		return nil, nil
+	}
+	arr, ok := raw.([]any)
+	if !ok {
+		return nil, fmt.Errorf("renderer property %q is malformed: must be an array of field names or field objects", path)
+	}
+	result := make([]fieldEntry, 0, len(arr))
+	seen := make(map[string]bool, len(arr))
+	for _, v := range arr {
+		var entry fieldEntry
+		switch t := v.(type) {
+		case string:
+			entry.Name = t
+		case map[string]any:
+			name, _ := t["name"].(string)
+			if name == "" {
+				return nil, fmt.Errorf("renderer property %q is malformed: field objects must have a non-empty 'name'", path)
+			}
+			entry.Name = name
+			entry.Props = t
+		default:
+			return nil, fmt.Errorf("renderer property %q is malformed: must be an array of field names or field objects", path)
+		}
+		if seen[entry.Name] {
+			return nil, fmt.Errorf("renderer property %q lists field %q more than once", path, entry.Name)
+		}
+		seen[entry.Name] = true
+		result = append(result, entry)
+	}
+	return result, nil
+}
+
+// Column width bounds in pixels, mirroring the resizer bounds of the frontend (pivot-column-width-utils.ts).
+// A configured width outside these would snap back on the first drag.
+const (
+	minMeasureColumnWidth   = 60
+	maxMeasureColumnWidth   = 300
+	minDimensionColumnWidth = 100
+	maxDimensionColumnWidth = 600
+)
+
+var columnAligns = []string{"left", "center", "right"}
+
+var measureFormatPresets = []string{"humanize", "none", "currency_usd", "currency_eur", "percentage", "interval_ms"}
+
+// fieldRole describes which per-column overrides a field entry may carry.
+type fieldRole int
+
+const (
+	// fieldRoleTableDimension is a dimension or time column of a table: width, wrap, align and label.
+	fieldRoleTableDimension fieldRole = iota
+	// fieldRoleMeasure is a measure of the metrics view in a table or pivot: width, align, label, the number formats,
+	// and the 'delta' and 'percent_change' objects for its comparison columns.
+	fieldRoleMeasure
+	// fieldRoleAdhocMeasure is an adhoc measure of the component: like a measure, but it has no comparison columns.
+	fieldRoleAdhocMeasure
+	// fieldRoleRowHeader is the first row dimension of a pivot, which keys the merged row-header column: width, wrap and label.
+	fieldRoleRowHeader
+	// fieldRoleRowDimension is a row dimension after the first, which renders no column of its own: label only.
+	fieldRoleRowDimension
+	// fieldRoleColumnDimension is a column dimension, a header group spanning its measure columns: label only.
+	fieldRoleColumnDimension
+)
+
+// isMeasure reports whether the role renders a measure column: a measure of the metrics view or an adhoc measure.
+func (r fieldRole) isMeasure() bool {
+	return r == fieldRoleMeasure || r == fieldRoleAdhocMeasure
+}
+
+// validateFieldEntryProps validates the per-column overrides of a field entry against its role:
+// width (an integer within the bounds of the role), wrap, align, label, and the number format keys.
+// Unknown keys are ignored so that future keys need no lockstep validation.
+func validateFieldEntryProps(path string, entry fieldEntry, role fieldRole) error {
+	if entry.Props == nil {
+		return nil
+	}
+	prefix := fmt.Sprintf("field %q in %q", entry.Name, path)
+
+	if raw, ok := entry.Props["width"]; ok {
+		switch role {
+		case fieldRoleColumnDimension:
+			return fmt.Errorf("%s: column dimensions span their measure columns and take no 'width'; set it on the measures instead", prefix)
+		case fieldRoleRowDimension:
+			return fmt.Errorf("%s: only the first row dimension renders a column; set 'width' on it", prefix)
+		}
+		// Numbers arrive as float64 after the structpb round trip.
+		f, ok := raw.(float64)
+		if !ok || f != math.Trunc(f) {
+			return fmt.Errorf("%s: 'width' must be an integer number of pixels", prefix)
+		}
+		minWidth, maxWidth := minDimensionColumnWidth, maxDimensionColumnWidth
+		if role.isMeasure() {
+			minWidth, maxWidth = minMeasureColumnWidth, maxMeasureColumnWidth
+		}
+		if f < float64(minWidth) || f > float64(maxWidth) {
+			return fmt.Errorf("%s: 'width' must be between %d and %d pixels", prefix, minWidth, maxWidth)
+		}
+	}
+
+	if raw, ok := entry.Props["wrap"]; ok {
+		switch role {
+		case fieldRoleColumnDimension:
+			return fmt.Errorf("%s: column dimensions take no 'wrap'", prefix)
+		case fieldRoleRowDimension:
+			return fmt.Errorf("%s: only the first row dimension renders a column; set 'wrap' on it", prefix)
+		case fieldRoleMeasure, fieldRoleAdhocMeasure:
+			return fmt.Errorf("%s: 'wrap' only applies to dimension columns", prefix)
+		}
+		if _, ok := raw.(bool); !ok {
+			return fmt.Errorf("%s: 'wrap' must be a boolean", prefix)
+		}
+	}
+
+	if raw, ok := entry.Props["align"]; ok {
+		switch role {
+		case fieldRoleColumnDimension:
+			return fmt.Errorf("%s: column dimensions take no 'align'", prefix)
+		case fieldRoleRowHeader, fieldRoleRowDimension:
+			return fmt.Errorf("%s: 'align' is not supported on row dimensions", prefix)
+		}
+		s, ok := raw.(string)
+		if !ok || !slices.Contains(columnAligns, s) {
+			return fmt.Errorf("%s: 'align' must be one of %v", prefix, columnAligns)
+		}
+	}
+
+	if raw, ok := entry.Props["label"]; ok {
+		if _, ok := raw.(string); !ok {
+			return fmt.Errorf("%s: 'label' must be a string", prefix)
+		}
+	}
+
+	rawPreset, hasPreset := entry.Props["format_preset"]
+	rawD3, hasD3 := entry.Props["format_d3"]
+	if (hasPreset || hasD3) && !role.isMeasure() {
+		return fmt.Errorf("%s: number formats only apply to measures", prefix)
+	}
+	if hasPreset && hasD3 {
+		return fmt.Errorf("%s: cannot set both 'format_preset' and 'format_d3'", prefix)
+	}
+	if hasPreset {
+		s, ok := rawPreset.(string)
+		if !ok || !slices.Contains(measureFormatPresets, s) {
+			return fmt.Errorf("%s: 'format_preset' must be one of %v", prefix, measureFormatPresets)
+		}
+	}
+	if hasD3 {
+		s, ok := rawD3.(string)
+		if !ok || s == "" {
+			return fmt.Errorf("%s: 'format_d3' must be a non-empty string", prefix)
+		}
+	}
+
+	// The comparison columns a measure gets while the component compares.
+	for _, key := range []string{"delta", "percent_change"} {
+		raw, ok := entry.Props[key]
+		if !ok {
+			continue
+		}
+		switch role {
+		case fieldRoleAdhocMeasure:
+			return fmt.Errorf("%s: adhoc measures have no comparison columns, so '%s' is not allowed", prefix, key)
+		case fieldRoleMeasure:
+		default:
+			return fmt.Errorf("%s: '%s' configures a measure's comparison column and only applies to measures", prefix, key)
+		}
+		nested, ok := raw.(map[string]any)
+		if !ok {
+			return fmt.Errorf("%s: '%s' must be an object with the comparison column's overrides, such as 'width'", prefix, key)
+		}
+		if rawWidth, ok := nested["width"]; ok {
+			f, ok := rawWidth.(float64)
+			if !ok || f != math.Trunc(f) {
+				return fmt.Errorf("%s: '%s.width' must be an integer number of pixels", prefix, key)
+			}
+			if f < minMeasureColumnWidth || f > maxMeasureColumnWidth {
+				return fmt.Errorf("%s: '%s.width' must be between %d and %d pixels", prefix, key, minMeasureColumnWidth, maxMeasureColumnWidth)
+			}
+		}
+	}
+
+	return nil
+}
+
+// validateTablePresentation validates the presentation properties shared by tables and pivots:
+// fit_to_width, wrap, wrap_headers, wrap_lines, sort_by, sort_dir and sort_comparison.
+// sortable lists the field names that sort_by may reference;
+// hasComparison reports whether the pivot builds comparison columns for a field (a measure of the metrics view, not an adhoc one).
+func (v rendererValidator) validateTablePresentation(props map[string]any, sortable []string, hasComparison func(name string) bool) error {
+	for _, key := range []string{"fit_to_width", "wrap", "wrap_headers"} {
+		if _, _, err := getOptionalPathBool(props, key); err != nil {
+			return err
+		}
+	}
+
+	if raw, ok := props["wrap_lines"]; ok {
+		f, ok := raw.(float64)
+		if !ok || f != math.Trunc(f) || f < 1 || f > 5 {
+			return errors.New("renderer property \"wrap_lines\" must be an integer between 1 and 5")
+		}
+	}
+
+	sortBy, hasSortBy, err := getOptionalPathString(props, "sort_by")
+	if err != nil {
+		return err
+	}
+	if hasSortBy && sortBy != "" && !slices.Contains(sortable, sortBy) && !(v.lenient && strings.Contains(sortBy, "{{")) {
+		return fmt.Errorf("renderer property \"sort_by\" references %q, which is not a sortable field of the component (one of %v)", sortBy, sortable)
+	}
+	if err := v.validateOptionalStringEnum(props, "sort_dir", []string{"asc", "desc"}); err != nil {
+		return err
+	}
+	if _, hasSortDir := props["sort_dir"]; hasSortDir && (!hasSortBy || sortBy == "") {
+		return errors.New("renderer property \"sort_dir\" requires \"sort_by\"")
+	}
+
+	if err := v.validateOptionalStringEnum(props, "sort_comparison", []string{"delta", "percent_change"}); err != nil {
+		return err
+	}
+	if _, hasSortComparison := props["sort_comparison"]; hasSortComparison {
+		if !hasSortBy || sortBy == "" {
+			return errors.New("renderer property \"sort_comparison\" requires \"sort_by\"")
+		}
+		if !hasComparison(sortBy) {
+			return fmt.Errorf("renderer property \"sort_comparison\" requires \"sort_by\" to name a measure of the metrics view, got %q", sortBy)
+		}
+	}
+
+	return nil
+}
+
+// getOptionalPathBool extracts a bool from a nested path in the props map.
+// Returns (false, false, nil) if the path is absent, (value, true, nil) if present
+// and a bool, and an error if present but not a bool.
+func getOptionalPathBool(props map[string]any, path string) (bool, bool, error) {
+	raw, ok := pathutil.GetPath(props, path)
+	if !ok {
+		return false, false, nil
+	}
+	b, ok := raw.(bool)
+	if !ok {
+		return false, false, fmt.Errorf("renderer property %q is malformed: must be a boolean", path)
+	}
+	return b, true, nil
 }
 
 // getPathStringSlice extracts a []string from a nested path in the props map.

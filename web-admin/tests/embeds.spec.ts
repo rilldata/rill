@@ -602,7 +602,7 @@ test.describe("Embeds", () => {
         );
 
         await recorder.expectContaining(
-          "tr=PT6H&compare_tr=rill-PP&f.bids_metrics=advertiser_name+IN+%28%27Instacart%27%29",
+          "tr=PT6H&compare_tr=rill-PP&f=advertiser_name+IN+%28%27Instacart%27%29",
         );
       });
     });

@@ -473,6 +473,7 @@ message Instance {
   map<string, bool> feature_flags = 22;
   map<string, string> annotations = 14;
   string ai_instructions = 23;
+  repeated AIPrompt ai_prompts = 27;
   string frontend_url = 24;
   string theme = 26;
 }
@@ -1215,6 +1216,10 @@ message CompleteRequest {
   // Optional context for prompts handled by the feedback_agent.
   // The field is ignored if another agent is selected.
   FeedbackAgentContext feedback_agent_context = 13;
+  // Optional current browser path. The origin is intentionally omitted.
+  string ui_page_path = 14;
+  // Optional visible, enabled, uniquely-addressable browser actions.
+  repeated UIAction ui_actions = 15;
 }
 
 // Response message for RuntimeService.Complete
@@ -1243,6 +1248,10 @@ message CompleteStreamingRequest {
   // Optional context for prompts handled by the feedback_agent.
   // The field is ignored if another agent is selected.
   FeedbackAgentContext feedback_agent_context = 13;
+  // Optional current browser path. The origin is intentionally omitted.
+  string ui_page_path = 14;
+  // Optional visible, enabled, uniquely-addressable browser actions.
+  repeated UIAction ui_actions = 15;
 }
 
 // Response message for RuntimeService.CompleteStreaming
@@ -1489,4 +1498,12 @@ message PushEnvResponse {
   int32 added_count = 1;
   // Number of variables changed
   int32 changed_count = 2;
+}
+
+// A non-destructive UI action explicitly exposed to the AI by the browser.
+message UIAction {
+  // Stable identifier from the element's data-ai-action attribute.
+  string id = 1;
+  // Human-readable accessible label for the action.
+  string label = 2;
 }

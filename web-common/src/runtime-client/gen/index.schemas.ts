@@ -507,6 +507,8 @@ The values should be valid IANA location identifiers. */
   pinnedFilters?: string[];
   requiredFilters?: string[];
   annotations?: Record<string, string>;
+  /** Suggested prompts configured by the project author, shown as starters in the AI chat. */
+  aiPrompts?: V1AIPrompt[];
 }
 
 export interface V1CanvasState {
@@ -889,6 +891,14 @@ This helps the agent understand which file the user is referring to in their req
   currentFilePath?: string;
 }
 
+/** A non-destructive UI action explicitly exposed to the AI by the browser. */
+export interface V1UIAction {
+  /** Stable identifier from the element's data-ai-action attribute. */
+  id?: string;
+  /** Human-readable accessible label for the action. */
+  label?: string;
+}
+
 export interface V1DirEntry {
   path?: string;
   isDir?: boolean;
@@ -1026,6 +1036,8 @@ These are not currently parsed from YAML, but will be derived from the parent me
   allowCustomTimeRange?: boolean;
   /** When true, it indicates that the explore was defined in a metrics view either explicitly or emitted because version was not set. */
   definedInMetricsView?: boolean;
+  /** Suggested prompts configured by the project author, shown as starters in the AI chat. */
+  aiPrompts?: V1AIPrompt[];
 }
 
 export interface V1ExploreState {
@@ -1033,6 +1045,14 @@ export interface V1ExploreState {
   /** The last time the underlying metrics view's data was refreshed.
 This may be empty if the data refresh time is not known, e.g. if the metrics view is based on an externally managed table. */
   dataRefreshedOn?: string;
+}
+
+/** AIPrompt is a starter prompt shown in the AI chat. */
+export interface V1AIPrompt {
+  /** Short label displayed on the prompt's button. */
+  label?: string;
+  /** Full prompt sent to the AI when the user picks it. */
+  prompt?: string;
 }
 
 export interface V1ExploreTimeRange {
@@ -1308,6 +1328,7 @@ export interface V1Instance {
   featureFlags?: V1InstanceFeatureFlags;
   annotations?: V1InstanceAnnotations;
   aiInstructions?: string;
+  aiPrompts?: V1AIPrompt[];
   frontendUrl?: string;
   theme?: string;
 }
@@ -2855,6 +2876,10 @@ If not set, it will infer an agent based on the prompt and conversation history.
   analystAgentContext?: V1AnalystAgentContext;
   developerAgentContext?: V1DeveloperAgentContext;
   feedbackAgentContext?: V1FeedbackAgentContext;
+  /** Optional current browser path. The origin is intentionally omitted. */
+  uiPagePath?: string;
+  /** Optional visible, enabled, uniquely-addressable browser actions. */
+  uiActions?: V1UIAction[];
 };
 
 export type RuntimeServiceCompleteStreamingBody = {
@@ -2868,6 +2893,10 @@ If not set, it will infer an agent based on the prompt and conversation history.
   analystAgentContext?: V1AnalystAgentContext;
   developerAgentContext?: V1DeveloperAgentContext;
   feedbackAgentContext?: V1FeedbackAgentContext;
+  /** Optional current browser path. The origin is intentionally omitted. */
+  uiPagePath?: string;
+  /** Optional visible, enabled, uniquely-addressable browser actions. */
+  uiActions?: V1UIAction[];
 };
 
 export type RuntimeServiceCompleteStreaming200 = {

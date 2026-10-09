@@ -858,6 +858,239 @@ table:
 `})
 	testruntime.ReconcileParserAndWait(t, rt, id)
 	testruntime.RequireReconcileState(t, rt, id, 4, 0, 0)
+
+	// Valid: object entries with per-column overrides and the presentation properties.
+	testruntime.PutFiles(t, rt, id, map[string]string{
+		"c1.yaml": `
+type: component
+table:
+  metrics_view: mv1
+  fit_to_width: true
+  wrap: true
+  wrap_headers: true
+  wrap_lines: 3
+  sort_by: y
+  sort_dir: asc
+  sort_comparison: delta
+  columns:
+  - name: foo
+    width: 240
+    wrap: true
+    label: Foo label
+    align: center
+  - name: ts_rill_TIME_GRAIN_MONTH
+    width: 120
+  - name: y
+    width: 90
+    format_d3: ".3s"
+    align: left
+    delta:
+      width: 80
+    percent_change:
+      width: 70
+  - bar
+`})
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireReconcileState(t, rt, id, 4, 0, 0)
+
+	// Invalid overrides and presentation properties.
+	invalid := []struct {
+		name        string
+		yaml        string
+		errContains string
+	}{
+		{"fit_to_width not a boolean", `
+type: component
+table:
+  metrics_view: mv1
+  fit_to_width: "yes"
+  columns: [foo, y]
+`, "fit_to_width"},
+		{"width as a string", `
+type: component
+table:
+  metrics_view: mv1
+  columns:
+  - name: foo
+    width: "140"
+`, "'width' must be an integer"},
+		{"fractional width", `
+type: component
+table:
+  metrics_view: mv1
+  columns:
+  - name: foo
+    width: 140.5
+`, "'width' must be an integer"},
+		{"measure width below the minimum", `
+type: component
+table:
+  metrics_view: mv1
+  columns:
+  - name: y
+    width: 59
+`, "between 60 and 300"},
+		{"dimension width above the maximum", `
+type: component
+table:
+  metrics_view: mv1
+  columns:
+  - name: foo
+    width: 601
+`, "between 100 and 600"},
+		{"wrap on a measure", `
+type: component
+table:
+  metrics_view: mv1
+  columns:
+  - name: y
+    wrap: true
+`, "'wrap' only applies to dimension columns"},
+		{"number format on a dimension", `
+type: component
+table:
+  metrics_view: mv1
+  columns:
+  - name: foo
+    format_d3: ".2f"
+`, "number formats only apply to measures"},
+		{"both number formats", `
+type: component
+table:
+  metrics_view: mv1
+  columns:
+  - name: y
+    format_preset: humanize
+    format_d3: ".2f"
+`, "cannot set both"},
+		{"unknown format preset", `
+type: component
+table:
+  metrics_view: mv1
+  columns:
+  - name: y
+    format_preset: money
+`, "'format_preset' must be one of"},
+		{"object without a name", `
+type: component
+table:
+  metrics_view: mv1
+  columns:
+  - width: 100
+`, "non-empty 'name'"},
+		{"duplicate field", `
+type: component
+table:
+  metrics_view: mv1
+  columns:
+  - foo
+  - name: foo
+    width: 120
+`, "more than once"},
+		{"wrap_lines out of range", `
+type: component
+table:
+  metrics_view: mv1
+  wrap_lines: 9
+  columns: [foo, y]
+`, "wrap_lines"},
+		{"sort_by not in the component", `
+type: component
+table:
+  metrics_view: mv1
+  sort_by: bar
+  columns: [foo, y]
+`, "sort_by"},
+		{"unknown sort_dir", `
+type: component
+table:
+  metrics_view: mv1
+  sort_by: y
+  sort_dir: down
+  columns: [foo, y]
+`, "sort_dir"},
+		{"sort_dir without sort_by", `
+type: component
+table:
+  metrics_view: mv1
+  sort_dir: asc
+  columns: [foo, y]
+`, "requires"},
+		{"unknown sort_comparison", `
+type: component
+table:
+  metrics_view: mv1
+  sort_by: y
+  sort_comparison: previous
+  columns: [foo, y]
+`, "sort_comparison"},
+		{"sort_comparison on a dimension", `
+type: component
+table:
+  metrics_view: mv1
+  sort_by: foo
+  sort_comparison: delta
+  columns: [foo, y]
+`, "name a measure"},
+		{"sort_comparison without sort_by", `
+type: component
+table:
+  metrics_view: mv1
+  sort_comparison: percent_change
+  columns: [foo, y]
+`, "requires"},
+		{"delta on a dimension", `
+type: component
+table:
+  metrics_view: mv1
+  columns:
+  - name: foo
+    delta:
+      width: 80
+  - y
+`, "only applies to measures"},
+		{"delta width out of bounds", `
+type: component
+table:
+  metrics_view: mv1
+  columns:
+  - foo
+  - name: y
+    delta:
+      width: 20
+`, "'delta.width' must be between"},
+		{"percent_change not an object", `
+type: component
+table:
+  metrics_view: mv1
+  columns:
+  - foo
+  - name: y
+    percent_change: 80
+`, "must be an object"},
+		{"delta on an adhoc measure", `
+type: component
+table:
+  metrics_view: mv1
+  adhoc_measures:
+  - name: profit
+    display_name: Profit
+    expression: y - z
+  columns:
+  - foo
+  - name: profit
+    delta:
+      width: 80
+`, "adhoc measures have no comparison columns"},
+	}
+	for _, tc := range invalid {
+		t.Run(tc.name, func(t *testing.T) {
+			testruntime.PutFiles(t, rt, id, map[string]string{"c1.yaml": tc.yaml})
+			testruntime.ReconcileParserAndWait(t, rt, id)
+			testruntime.RequireReconcileState(t, rt, id, 4, 1, 0)
+			testruntime.RequireReconcileErrorContains(t, rt, id, runtime.ResourceKindComponent, "c1", tc.errContains)
+		})
+	}
 }
 
 func TestValidatePivot(t *testing.T) {
@@ -971,6 +1204,120 @@ pivot:
 	testruntime.ReconcileParserAndWait(t, rt, id)
 	testruntime.RequireReconcileState(t, rt, id, 4, 1, 0)
 	testruntime.RequireReconcileErrorContains(t, rt, id, runtime.ResourceKindComponent, "c1", "is not a dimension")
+
+	// Valid: object entries with per-column overrides; the column dimension only carries a label.
+	testruntime.PutFiles(t, rt, id, map[string]string{
+		"c1.yaml": `
+type: component
+pivot:
+  metrics_view: mv1
+  fit_to_width: true
+  sort_by: y
+  sort_comparison: percent_change
+  measures:
+  - name: y
+    width: 120
+    format_preset: percentage
+    delta:
+      width: 80
+    align: center
+  - z
+  row_dimensions:
+  - name: foo
+    width: 260
+    wrap: true
+    label: Foo
+  col_dimensions:
+  - name: bar
+    label: Bar group
+`})
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireReconcileState(t, rt, id, 4, 0, 0)
+
+	// Valid: sorting by a row dimension.
+	testruntime.PutFiles(t, rt, id, map[string]string{
+		"c1.yaml": `
+type: component
+pivot:
+  metrics_view: mv1
+  sort_by: foo
+  sort_dir: desc
+  measures: [y]
+  row_dimensions: [foo]
+`})
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireReconcileState(t, rt, id, 4, 0, 0)
+
+	// Invalid overrides on pivoted dimensions and sorts by them.
+	invalid := []struct {
+		name        string
+		yaml        string
+		errContains string
+	}{
+		{"width on a column dimension", `
+type: component
+pivot:
+  metrics_view: mv1
+  measures: [y]
+  row_dimensions: [foo]
+  col_dimensions:
+  - name: bar
+    width: 120
+`, "take no 'width'"},
+		{"align on a column dimension", `
+type: component
+pivot:
+  metrics_view: mv1
+  measures: [y]
+  col_dimensions:
+  - name: bar
+    align: center
+`, "take no 'align'"},
+		{"sort by a column dimension", `
+type: component
+pivot:
+  metrics_view: mv1
+  sort_by: bar
+  measures: [y]
+  row_dimensions: [foo]
+  col_dimensions: [bar]
+`, "sort_by"},
+		{"measure width above the maximum", `
+type: component
+pivot:
+  metrics_view: mv1
+  measures:
+  - name: y
+    width: 301
+`, "between 60 and 300"},
+		{"align on the first row dimension", `
+type: component
+pivot:
+  metrics_view: mv1
+  measures: [y]
+  row_dimensions:
+  - name: foo
+    align: center
+`, "'align' is not supported on row dimensions"},
+		{"width on a later row dimension", `
+type: component
+pivot:
+  metrics_view: mv1
+  measures: [y]
+  row_dimensions:
+  - foo
+  - name: bar
+    width: 200
+`, "only the first row dimension renders a column"},
+	}
+	for _, tc := range invalid {
+		t.Run(tc.name, func(t *testing.T) {
+			testruntime.PutFiles(t, rt, id, map[string]string{"c1.yaml": tc.yaml})
+			testruntime.ReconcileParserAndWait(t, rt, id)
+			testruntime.RequireReconcileState(t, rt, id, 4, 1, 0)
+			testruntime.RequireReconcileErrorContains(t, rt, id, runtime.ResourceKindComponent, "c1", tc.errContains)
+		})
+	}
 }
 
 func TestValidateLeaderboard(t *testing.T) {

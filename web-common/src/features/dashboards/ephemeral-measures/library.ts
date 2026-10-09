@@ -156,6 +156,7 @@ function isEphemeralMeasureDef(value: unknown): value is EphemeralMeasureDef {
     !!def.displayName &&
     typeof def.expression === "string" &&
     !!def.expression &&
-    (def.formatPreset === undefined || typeof def.formatPreset === "string")
+    (def.formatPreset === undefined || typeof def.formatPreset === "string") &&
+    (def.description === undefined || typeof def.description === "string")
   );
 }

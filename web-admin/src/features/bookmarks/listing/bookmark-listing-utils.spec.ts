@@ -115,17 +115,20 @@ describe("buildBookmarkRows", () => {
     expect(row.filtersOnly).toBe(true);
   });
 
-  it("categorises home, managed and personal bookmarks", () => {
+  it("categorises managed and personal bookmarks", () => {
     const rows = rowsFor([
-      bookmark({ id: "home", default: true, shared: true }),
       bookmark({ id: "managed", shared: true }),
       bookmark({ id: "personal" }),
     ]);
-    expect(rows.map((r) => r.category)).toEqual([
-      "home",
-      "managed",
-      "personal",
+    expect(rows.map((r) => r.category)).toEqual(["managed", "personal"]);
+  });
+
+  it("omits home bookmarks, which the dashboard's own link already opens", () => {
+    const rows = rowsFor([
+      bookmark({ id: "home", default: true, shared: true }),
+      bookmark({ id: "personal" }),
     ]);
+    expect(rows.map((r) => r.bookmark.id)).toEqual(["personal"]);
   });
 
   it("lets owners manage personal bookmarks and admins manage shared ones", () => {
@@ -133,23 +136,14 @@ describe("buildBookmarkRows", () => {
       bookmark({ id: "mine" }),
       bookmark({ id: "theirs", userId: "u2" }),
       bookmark({ id: "managed", shared: true, userId: "u2" }),
-      bookmark({ id: "home", default: true, shared: true, userId: "u2" }),
     ]);
-    expect(viewerRows.map((r) => r.canManage)).toEqual([
-      true,
-      false,
-      false,
-      false,
-    ]);
+    expect(viewerRows.map((r) => r.canManage)).toEqual([true, false, false]);
 
     const adminRows = rowsFor(
-      [
-        bookmark({ id: "managed", shared: true, userId: "u2" }),
-        bookmark({ id: "home", default: true, shared: true, userId: "u2" }),
-      ],
+      [bookmark({ id: "managed", shared: true, userId: "u2" })],
       true,
     );
-    expect(adminRows.map((r) => r.canManage)).toEqual([true, true]);
+    expect(adminRows.map((r) => r.canManage)).toEqual([true]);
   });
 });
 

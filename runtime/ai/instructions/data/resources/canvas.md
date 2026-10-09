@@ -854,6 +854,34 @@ pivot:
   hide_totals_col: false
 ```
 
+**With column widths, wrapping, and an initial sort:**
+
+Any entry of `measures`, `row_dimensions`, or `col_dimensions` can be an object with the field `name` plus overrides. In a pivot only measures and the first row dimension render a column of their own: a measure's `width` applies under every column-dimension value (as do `delta: { width }` and `percent_change: { width }` for its comparison columns), and `col_dimensions` entries accept only `name` and `label` (set widths on the measures instead).
+
+```yaml
+pivot:
+  metrics_view: sales_metrics
+  fit_to_width: true          # shrink unconfigured columns to fit instead of scrolling
+  wrap_headers: true          # wrap header labels over `wrap_lines` lines (default 2)
+  sort_by: total_revenue      # a measure (by row total) or a row dimension
+  sort_dir: desc
+  row_dimensions:
+    - name: region
+      width: 220
+      wrap: true
+    - product_category
+  col_dimensions:
+    - name: quarter
+      label: Quarter
+  measures:
+    - name: total_revenue
+      width: 120
+      format_preset: currency_usd
+    - name: order_count
+      format_d3: ".3s"
+      align: center
+```
+
 **Simple pivot (rows only):**
 
 ```yaml
@@ -884,6 +912,32 @@ table:
     - order_count
     - average_price
   hide_totals_row: false
+```
+
+**With column widths, wrapping, and an initial sort:**
+
+Any entry of `columns` can be an object with the field `name` plus overrides: `width` (pixels; measures 60–300, dimensions 100–600), `wrap` (dimension columns), `align` (`left`, `center`, `right`), `label`, and for measures `format_preset` or `format_d3`, plus `delta: { width }` or `percent_change: { width }` for the comparison columns a metrics view measure gets while a time comparison is shown. Component-level `fit_to_width`, `wrap`, `wrap_headers`, `wrap_lines`, `sort_by`, and `sort_dir` apply to the whole table; `sort_comparison: delta` or `percent_change` sorts on a measure's comparison column while a time comparison is shown.
+
+```yaml
+table:
+  metrics_view: sales_metrics
+  title: "Product Performance"
+  fit_to_width: true
+  wrap: true
+  wrap_lines: 2
+  sort_by: total_revenue
+  sort_dir: desc
+  columns:
+    - name: product_name
+      width: 260
+      label: Product
+    - product_category
+    - name: total_revenue
+      width: 120
+      format_preset: currency_usd
+    - name: order_count
+      format_d3: ".3s"
+      align: center
 ```
 
 **With dimension filters:**

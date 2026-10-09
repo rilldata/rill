@@ -1,4 +1,5 @@
 import {
+  testAdvancedFilters,
   testDimensionFilters,
   testMeasureFilters,
 } from "@rilldata/web-common/features/dashboards/filters/test/expression-filters-suite";
@@ -69,4 +70,5 @@ describe("StandaloneExpressionFilters", () => {
 
   testDimensionFilters(variant);
   testMeasureFilters(variant);
+  testAdvancedFilters(variant);
 });

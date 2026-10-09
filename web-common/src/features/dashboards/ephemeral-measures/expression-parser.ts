@@ -297,9 +297,16 @@ export type MeasureExpressionError = {
   position: number;
 };
 
+// A measure reference in the expression: `start` is the 0-based offset of its
+// first character (the opening quote for quoted names) and `end` the offset
+// after its last one.
+export type MeasureRefSpan = { name: string; start: number; end: number };
+
 export type MeasureExpressionParseResult = {
   // Referenced identifiers, deduplicated in order of first appearance.
   refs: string[];
+  // Every reference in order of appearance, for editors that decorate them.
+  refSpans: MeasureRefSpan[];
   error?: MeasureExpressionError;
 };
 
@@ -335,11 +342,16 @@ export function parseMeasureExpression(
   expression: string,
 ): MeasureExpressionParseResult {
   if (expression.trim() === "") {
-    return { refs: [], error: { message: "expression is empty", position: 0 } };
+    return {
+      refs: [],
+      refSpans: [],
+      error: { message: "expression is empty", position: 0 },
+    };
   }
   if (expression.length > MAX_EPHEMERAL_EXPRESSION_LENGTH) {
     return {
       refs: [],
+      refSpans: [],
       error: {
         message: `expression exceeds the maximum length of ${MAX_EPHEMERAL_EXPRESSION_LENGTH} characters`,
         position: MAX_EPHEMERAL_EXPRESSION_LENGTH,
@@ -347,21 +359,27 @@ export function parseMeasureExpression(
     };
   }
   try {
-    const refs: string[] = [];
-    walk(parse(expression), 0, refs);
+    const refSpans: MeasureRefSpan[] = [];
+    walk(parse(expression), 0, refSpans);
+    const refs = [...new Set(refSpans.map((span) => span.name))];
     if (refs.length === 0) {
       return {
         refs: [],
+        refSpans: [],
         error: {
           message: "expression must reference at least one measure",
           position: 0,
         },
       };
     }
-    return { refs };
+    return { refs, refSpans };
   } catch (e) {
     if (e instanceof ParseError) {
-      return { refs: [], error: { message: e.message, position: e.position } };
+      return {
+        refs: [],
+        refSpans: [],
+        error: { message: e.message, position: e.position },
+      };
     }
     throw e;
   }
@@ -496,12 +514,12 @@ function partialNumberError(
 }
 
 /**
- * Validates the parsed tree and collects referenced measure names, in order of
- * first appearance. Mirrors the server's `parseNode`: every node, including
+ * Validates the parsed tree and collects the measure references in order of
+ * appearance. Mirrors the server's `parseNode`: every node, including
  * parentheses, counts one level toward the nesting limit, so a flat chain of
  * binary operators is bounded as well as deep nesting.
  */
-function walk(node: Node, depth: number, refs: string[]): void {
+function walk(node: Node, depth: number, refs: MeasureRefSpan[]): void {
   if (depth > MAX_DEPTH) {
     throw new ParseError("expression is too deeply nested", node.pos);
   }
@@ -509,11 +527,22 @@ function walk(node: Node, depth: number, refs: string[]): void {
     case "literal":
       return;
     case "ref":
-      addRef(refs, node.name);
+      // Quoted: the name plus its quotes, with inner quotes doubled.
+      refs.push({
+        name: node.name,
+        start: node.pos,
+        end: node.pos + node.name.replace(/"/g, '""').length + 2,
+      });
       return;
     case "word":
       // Bare true/false/null parse as literals server-side.
-      if (!LITERAL_WORDS.has(node.name.toLowerCase())) addRef(refs, node.name);
+      if (!LITERAL_WORDS.has(node.name.toLowerCase())) {
+        refs.push({
+          name: node.name,
+          start: node.pos,
+          end: node.pos + node.name.length,
+        });
+      }
       return;
     case "func": {
       const spec = EPHEMERAL_MEASURE_FUNCTIONS[node.name.toLowerCase()];
@@ -542,8 +571,4 @@ function walk(node: Node, depth: number, refs: string[]): void {
       walk(node.right, depth + 1, refs);
       return;
   }
-}
-
-function addRef(refs: string[], name: string): void {
-  if (!refs.includes(name)) refs.push(name);
 }

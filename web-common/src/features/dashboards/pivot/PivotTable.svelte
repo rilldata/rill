@@ -9,6 +9,7 @@
   } from "@rilldata/web-common/features/dashboards/pivot/pivot-column-definition";
   import {
     getNextRowLimit,
+    PIVOT_TOTALS_ROW_ID,
     SHOW_MORE_BUTTON,
   } from "@rilldata/web-common/features/dashboards/pivot/pivot-constants";
   import { NUM_ROWS_PER_PAGE } from "@rilldata/web-common/features/dashboards/pivot/pivot-infinite-scroll";
@@ -19,10 +20,7 @@
     splitPivotChips,
   } from "@rilldata/web-common/features/dashboards/pivot/pivot-utils";
   import { copyToClipboard } from "@rilldata/web-common/lib/actions/copy-to-clipboard";
-  import {
-    createVirtualizer,
-    defaultRangeExtractor,
-  } from "@tanstack/svelte-virtual";
+  import { createVirtualizer } from "@tanstack/svelte-virtual";
   import { onMount } from "svelte";
   import type { Readable } from "svelte/store";
   import { derived } from "svelte/store";
@@ -31,6 +29,7 @@
     type Row,
     type SortingState,
     type TableOptions,
+    createRow,
     createSvelteTable,
     getCoreRowModel,
     getExpandedRowModel,
@@ -42,6 +41,7 @@
     makeCellFormatter,
   } from "./pivot-conditional-formatting";
   import type {
+    PivotColumnStyles,
     PivotDataRow,
     PivotDataStore,
     PivotDataStoreConfig,
@@ -50,8 +50,13 @@
 
   // Distance threshold (in pixels) for triggering data fetch
   const ROW_THRESHOLD = 200;
-  const ROW_HEIGHT = 24;
-  const HEADER_HEIGHT = 30;
+  const BASE_ROW_HEIGHT = 24;
+  const BASE_HEADER_HEIGHT = 30;
+  // Wrapped rows and headers keep a uniform height: the text-xs line height
+  // per line plus the cell's vertical padding, so virtualization stays fixed-size.
+  const WRAP_LINE_HEIGHT = 16;
+  const CELL_VERTICAL_PADDING = 8;
+  const HEADER_VERTICAL_PADDING = 14;
 
   export let pivotDataStore: PivotDataStore;
   export let widthScopeKey: string;
@@ -62,6 +67,21 @@
   export let overscan = 20;
   export let rounded = true;
   export let fillWidth = false;
+  // Per-column presentation overrides keyed by column id (see PivotColumnStyles).
+  export let columnStyles: PivotColumnStyles = {};
+  // Shrink the columns so the table fits the container instead of scrolling.
+  // Only applied with fillWidth, since otherwise the wrapper tracks the content
+  // width and a reactive fit would feed back on itself.
+  export let fitToWidth = false;
+  // Wrap dimension cells / header labels over `wrapLines` lines.
+  export let wrapText = false;
+  export let wrapHeaders = false;
+  export let wrapLines = 2;
+  // Called when the user finishes resizing a column; null means the column was
+  // reset to its automatic width.
+  export let onColumnResizeEnd:
+    | ((columnId: string, width: number | null) => void)
+    | undefined = undefined;
   export let setPivotExpanded: (expanded: ExpandedState) => void;
   export let setPivotSort: (sorting: SortingState) => void;
   export let setPivotRowPage: (page: number) => void;
@@ -91,12 +111,11 @@
   const options: Readable<TableOptions<PivotDataRow>> = derived(
     [pivotDataStore, pivotState],
     ([pivotData, state]) => {
-      let tableData = [...pivotData.data];
-      if (pivotData.totalsRowData) {
-        tableData = [pivotData.totalsRowData, ...pivotData.data];
-      }
       return {
-        data: tableData,
+        // Copy the array: expanded sub-rows are merged into the existing rows
+        // in place, and tanstack only rebuilds its row model when the data
+        // array identity changes.
+        data: [...pivotData.data],
         columns: pivotData.columnDef,
         state: {
           expanded: state.expanded,
@@ -125,7 +144,8 @@
 
   let containerRefElement: HTMLDivElement;
   let containerWidth = 0;
-  let stickyRows: number[] = [];
+  let flatTable: FlatTable | undefined;
+  let nestedTable: NestedTable | undefined;
   let rowScrollOffset = 0;
   let scrollLeft = 0;
   let timeout: ReturnType<typeof setTimeout>;
@@ -138,9 +158,7 @@
   $: reachedEndForRows = !!$pivotDataStore?.reachedEndForRowData;
   $: assembled = $pivotDataStore.assembled;
   $: dataRows = $pivotDataStore.data;
-  $: totalsRow = $pivotDataStore.totalsRowData;
   $: totalsRowPosition = $pivotState.totalsRowPosition ?? "top";
-  $: stickyRows = totalsRow ? [0] : [];
   $: isFlat = $config.isFlat;
   $: hasMeasureContextColumns = $config.enableComparison;
 
@@ -153,30 +171,50 @@
   // Per-measure conditional formatting. Domains prefer leaf data cells so
   // aggregate magnitudes don't dominate the gradient, falling back to nested
   // parent rows when no leaves are present (e.g. collapsed nested rows). The
-  // grand-totals row and the row-totals column are always excluded. Recomputes
-  // when the row model or the formatting config changes.
+  // row-totals column is always excluded, and the grand-totals row is not part
+  // of the row model. Recomputes when the row model or the formatting config
+  // changes.
   $: cellFormatters = buildCellFormatters(
     $table.getRowModel().flatRows,
     $config.pivot.measureFormatting,
-    !!totalsRow,
     $config.allMeasures,
   );
 
+  $: effectiveFitToWidth = fitToWidth && fillWidth;
+  $: wrapAnyCells =
+    wrapText || Object.values(columnStyles).some((style) => style?.wrap);
+  $: rowHeight = wrapAnyCells
+    ? WRAP_LINE_HEIGHT * wrapLines + CELL_VERTICAL_PADDING
+    : BASE_ROW_HEIGHT;
+  $: headerHeight = wrapHeaders
+    ? WRAP_LINE_HEIGHT * wrapLines + HEADER_VERTICAL_PADDING
+    : BASE_HEADER_HEIGHT;
+
   $: headerGroups = $table.getHeaderGroups();
-  $: totalHeaderHeight = headerGroups.length * HEADER_HEIGHT;
+  $: totalHeaderHeight = headerGroups.length * headerHeight;
 
   $: rows = $table.getRowModel().rows;
+
+  // The grand-totals row is kept out of the row model so data row ids match
+  // their index in the pivot data. It is a standalone tanstack row (built
+  // against the same table so the column cell renderers work unchanged) that
+  // the table components pin to the top or the bottom of the body.
+  $: totalsRow = $pivotDataStore.totalsRowData
+    ? createRow(
+        $table,
+        PIVOT_TOTALS_ROW_ID,
+        $pivotDataStore.totalsRowData,
+        0,
+        0,
+      )
+    : undefined;
+
   $: virtualizer = createVirtualizer<HTMLDivElement, HTMLTableRowElement>({
     count: rows.length,
     getScrollElement: () => containerRefElement,
-    estimateSize: () => ROW_HEIGHT,
+    estimateSize: () => rowHeight,
     overscan,
     initialOffset: rowScrollOffset,
-    rangeExtractor: (range) => {
-      const next = new Set([...stickyRows, ...defaultRangeExtractor(range)]);
-
-      return [...next].sort((a, b) => a - b);
-    },
   });
 
   $: virtualRows = $virtualizer.getVirtualItems();
@@ -188,7 +226,7 @@
   // This maintains the "correct" scroll position when the user scrolls
   $: [before, after] = virtualRows.length
     ? [
-        (virtualRows[1]?.start ?? virtualRows[0].start) - ROW_HEIGHT,
+        virtualRows[0].start,
         totalRowSize - virtualRows[virtualRows.length - 1].end,
       ]
     : [0, 0];
@@ -214,7 +252,6 @@
   function buildCellFormatters(
     flatRows: Row<PivotDataRow>[],
     measureFormatting: PivotState["measureFormatting"],
-    hasTotalsRow: boolean,
     allMeasures: PivotDataStoreConfig["allMeasures"],
   ): Map<string, CellFormatter> {
     const formatters = new Map<string, CellFormatter>();
@@ -237,8 +274,6 @@
     const parentValues: { measureName: string; value: number }[] = [];
     if (needsDomains) {
       for (const row of flatRows) {
-        // Always skip the prepended grand-totals row.
-        if (hasTotalsRow && row.id === "0") continue;
         const target = row.subRows.length > 0 ? parentValues : leafValues;
         for (const cell of row.getAllCells()) {
           const meta = cell.column.columnDef.meta;
@@ -279,6 +314,27 @@
       }
     }
     return formatters;
+  }
+
+  /**
+   * One-shot resize of every column so the table fits the space available to
+   * it. The wrapper is `w-fit`, so its own width tracks the content; the
+   * available width is measured from the parent's content box instead, minus
+   * the wrapper's own horizontal border.
+   */
+  export function fitColumnsToWidth() {
+    const parent = containerRefElement?.parentElement;
+    if (!parent) return;
+    const parentStyle = getComputedStyle(parent);
+    const wrapperStyle = getComputedStyle(containerRefElement);
+    const availableWidth =
+      parent.clientWidth -
+      parseFloat(parentStyle.paddingLeft) -
+      parseFloat(parentStyle.paddingRight) -
+      parseFloat(wrapperStyle.borderLeftWidth) -
+      parseFloat(wrapperStyle.borderRightWidth);
+    if (!(availableWidth > 0)) return;
+    (isFlat ? flatTable : nestedTable)?.fitColumnsToWidth(availableWidth);
   }
 
   const handleScroll = (containerRefElement?: HTMLDivElement | null) => {
@@ -327,6 +383,20 @@
 
     if (rowId === undefined || columnId === undefined) return;
 
+    if (rowId === PIVOT_TOTALS_ROW_ID) {
+      // The totals row is not in the row model. It never filters, but the
+      // Explore data viewer can still show the rows behind a totals cell.
+      if (
+        !rowHeader &&
+        !onCellClickToFilter &&
+        setPivotActiveCell &&
+        canShowDataViewer
+      ) {
+        setPivotActiveCell(rowId, columnId);
+      }
+      return;
+    }
+
     const row = $table.getRow(rowId);
     if (!row) return;
 
@@ -367,12 +437,6 @@
       // in PivotExpandableCell (stopPropagation), so row header clicks filter instead.
       if (row.getCanExpand()) row.getToggleExpandedHandler()();
     } else {
-      // Skip totals row for filtering
-      const isTotalsRow = totalsRow && rowId === "0";
-      if (isTotalsRow && onCellClickToFilter) {
-        return;
-      }
-
       // Set active cell for Explore data viewer (if enabled)
       if (setPivotActiveCell && canShowDataViewer) {
         setPivotActiveCell(rowId, columnId);
@@ -453,9 +517,10 @@
   class:border
   class:rounded-sm={rounded}
   class="table-wrapper relative"
-  style:--row-height="{ROW_HEIGHT}px"
-  style:--header-height="{HEADER_HEIGHT}px"
+  style:--row-height="{rowHeight}px"
+  style:--header-height="{headerHeight}px"
   style:--total-header-height="{totalHeaderHeight + 1}px"
+  style:--wrap-lines={wrapLines}
   bind:this={containerRefElement}
   bind:clientWidth={containerWidth}
   class:w-full={fillWidth}
@@ -464,6 +529,7 @@
 >
   {#if isFlat}
     <FlatTable
+      bind:this={flatTable}
       {headerGroups}
       {rows}
       {virtualRows}
@@ -488,10 +554,17 @@
       {onTableLeave}
       {fillWidth}
       {containerWidth}
+      {headerHeight}
+      {columnStyles}
+      fitToWidth={effectiveFitToWidth}
+      {wrapText}
+      {wrapHeaders}
+      {onColumnResizeEnd}
       onCellCopy={handleClick}
     />
   {:else}
     <NestedTable
+      bind:this={nestedTable}
       {headerGroups}
       {rows}
       {virtualRows}
@@ -521,6 +594,12 @@
       {onTableLeave}
       {fillWidth}
       {containerWidth}
+      {headerHeight}
+      {columnStyles}
+      fitToWidth={effectiveFitToWidth}
+      {wrapText}
+      {wrapHeaders}
+      {onColumnResizeEnd}
       onCellCopy={handleClick}
     />
   {/if}

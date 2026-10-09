@@ -32,8 +32,14 @@ export class ExploreDashboardConfigProvider extends DashboardConfigProvider {
       const exploreSpec =
         getExploreResp.data?.explore?.explore?.state?.validSpec ?? {};
 
+      // Prefer the resource's own name over the explore's reference to it. Resource names are
+      // case-insensitive in the runtime, so the two can differ in casing, and the rest of the
+      // explore identifies the metrics view by the resource name.
+      const metricsViewName =
+        getExploreResp.data?.metricsView?.meta?.name?.name ??
+        exploreSpec.metricsView;
       this.metricsViewsProvider.setMetricsViewNames(
-        exploreSpec.metricsView ? [exploreSpec.metricsView] : [],
+        metricsViewName ? [metricsViewName] : [],
       );
 
       // this.yamlConfigProvider.update() // TODO: once we have this support for explore

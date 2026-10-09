@@ -40,7 +40,7 @@ import {
   isTableComponentType,
 } from "../components/util";
 import { Grid } from "./grid";
-import { TabGroup, type LayoutBlock } from "./tab-group";
+import { TabGroup, rekeyedTabGroupNames, type LayoutBlock } from "./tab-group";
 import { getComparisonTypeFromRangeString } from "./time-state";
 import { TimeManager } from "./time-manager";
 import { Theme } from "../../themes/theme";
@@ -233,6 +233,7 @@ export class CanvasEntity {
       if (source && source === get(this.activeComponent)) return;
       this.clearActiveComponent();
     });
+    this.expressionFilterManager.storeSync.syncToUrl("clear=true");
 
     this.processSpec(this.spec);
   }
@@ -497,11 +498,7 @@ export class CanvasEntity {
     if (!isolated) {
       this.saveSnapshot(searchParams.toString());
     }
-    // Only sync when metricsViewsProvider has loaded. Once loaded sync is handled by syncStoreWithSource
-    // TODO: find a good common method of sync between explore and canvas once time filters is also unified
-    if (this.dashboardProvider.metricsViewsProvider.ready) {
-      this.expressionFilterManager.setUrlParams(searchParams);
-    }
+    this.expressionFilterManager.storeSync.setUrlParams(searchParams);
     this.timeManager.state.onUrlChange(searchParams);
     this.applyTabsFromURL(searchParams);
   };
@@ -969,6 +966,26 @@ export class CanvasEntity {
 
   // Look up a tab group by its stable name (for the inspector panel).
   getTabGroup = (name: string) => this.tabGroups.get(name);
+
+  // Re-key tab groups ahead of a top-level row edit (move, insert or delete of a block), so
+  // each index-keyed group's instance, with its active tab, follows the group to its new row.
+  // Without this the next layout pass would hand a shifted group its neighbour's instance,
+  // and a selection on it would silently point at a different group. `newIndexOf` maps a
+  // row index before the edit to the index after it, or -1 if that row is removed.
+  rekeyTabGroups = (newIndexOf: (rowIndex: number) => number) => {
+    const pairs = rekeyedTabGroupNames(get(this.layout), newIndexOf);
+    const remapped = new Map<string, TabGroup>();
+    for (const [from, to] of pairs) {
+      const group = this.tabGroups.get(from);
+      if (group) remapped.set(to, group);
+    }
+    this.tabGroups = remapped;
+
+    const selected = get(this.selectedTabGroup);
+    const renamed = pairs.find(([from]) => from === selected);
+    if (renamed && renamed[1] !== selected)
+      this.selectedTabGroup.set(renamed[1]);
+  };
 
   setActiveComponent = (id: string) => {
     this.activeComponent.set(id);

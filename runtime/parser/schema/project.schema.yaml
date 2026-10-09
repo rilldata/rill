@@ -343,6 +343,9 @@ definitions:
             schema:
               type: string
               description: Default schema name. Optional.
+            catalog_whitelist:
+              type: string
+              description: Comma-separated list of catalogs to show
             dsn:
               type: string
               description: |
@@ -2089,7 +2092,7 @@ definitions:
             description: A SQL expression that tells us the max timestamp that the measures are considered valid for. Usually does not need to be overwritten
           data_time_range:
             type: string
-            description: 'Optional [rilltime](https://docs.rilldata.com/reference/time-syntax) expression describing the base table''s time coverage (e.g. `-5Y to now`). When set, Rill skips the `min`/`max` OLAP probe for the base table and uses the declared bounds for coverage checks. The start must be bounded; `inf` and `earliest` are rejected. To declare full history, use a concrete early bound such as `-100Y to now` or omit this field to probe the table.'
+            description: 'Optional [time range syntax](/reference/time-syntax) expression describing the base table''s time coverage (e.g. `-5Y to now`). When set, Rill skips the `min`/`max` OLAP probe for the base table and uses the declared bounds for coverage checks. The start must be bounded; `inf` and `earliest` are rejected. To declare full history, use a concrete early bound such as `-100Y to now` or omit this field to probe the table.'
           smallest_time_grain:
             type: string
             description: 'Refers to the smallest time granularity the user is allowed to view. The valid values are: millisecond, second, minute, hour, day, week, month, quarter, year'
@@ -2322,7 +2325,7 @@ definitions:
                   description: Optional field selectors for measures to include in the rollup from the base metrics view. If not specified, all measures are included.
                 data_time_range:
                   type: string
-                  description: 'Optional [rilltime](https://docs.rilldata.com/reference/time-syntax) expression describing the rollup''s time coverage (e.g. `-1Y to now`, `-5Y to -1Y`). When set, Rill skips the `min`/`max` OLAP probe for this rollup and uses the declared bounds for coverage checks. The start must be bounded; `inf` and `earliest` are rejected. To declare full history, use a concrete early bound such as `-100Y to now` or omit this field to probe the table.'
+                  description: 'Optional [time range syntax](/reference/time-syntax) expression describing the rollup''s time coverage (e.g. `-1Y to now`, `-5Y to -1Y`). When set, Rill skips the `min`/`max` OLAP probe for this rollup and uses the declared bounds for coverage checks. The start must be bounded; `inf` and `earliest` are rejected. To declare full history, use a concrete early bound such as `-100Y to now` or omit this field to probe the table.'
               required:
                 - model
                 - time_grain
@@ -2348,6 +2351,17 @@ definitions:
               timestamps_ttl:
                 type: string
                 description: 'TTL for caching the min/max timestamp queries used to populate a metrics view''s rollups. Only takes effect when the metrics view has rollups defined and query result caching (`enabled`) is off — otherwise rollup timestamps are cached alongside other query results under `key_ttl`. Go duration string (e.g. `5m`). Defaults to `5m`.'
+          query_attributes:
+            type: object
+            description: |
+              Key-value pairs that Rill attaches to every query the metrics view sends to the OLAP engine, for example to attribute warehouse cost or audit queries by user. Values support templating with user attributes and environment variables, such as `'{{ .user.email }}'` or `'{{ .env.team }}'`, and are resolved for each query. Keys may contain only letters, digits, underscores, hyphens, and dots.
+              How the attributes are delivered depends on the OLAP engine: ClickHouse receives them as query settings, Druid as query context parameters, and Databricks as query tags. Other engines ignore them. See [Query attributes](/developers/build/metrics-view/query-attributes) for details.
+            additionalProperties:
+              type: string
+            examples:
+              - query_attributes:
+                  rill_user: '{{ .user.email }}'
+                  department: '{{ .user.department | default "unknown" }}'
           explore:
             $ref: '#/definitions/explore_properties'
             description: Defines an optional inline explore view for the metrics view. If not specified a default explore will be emitted unless `skip` is set to true.
@@ -2376,12 +2390,11 @@ definitions:
           title:
             type: string
             description: "Deprecated: use display_name instead. Refers to the display name for the canvas"
-          description:
-            type: string
-            description: Description for the canvas dashboard
           banner:
             type: string
             description: Refers to the custom banner displayed in the header of a Canvas dashboard.
+          ai_prompts:
+            $ref: '#/definitions/ai_prompts_properties'
           rows:
             type: array
             description: Refers to all of the rows displayed on the Canvas. Each entry is either a plain row (with `items`) or a tab group (with `tabs`), but not both.
@@ -2414,6 +2427,7 @@ definitions:
                               - **table** - Similar to Pivot table, add dimensions and measures to visualize your data
                               - **heatmap** - Heat Map chart to visualize distribution of data
                               - **donut_chart** - Donut or Pie chart to display sums of total
+                              - **map** - Map of points or regions, colored and sized by measures
                       params:
                         type: object
                         description: Values bound to the referenced component's declared params. Only valid together with `component`. Values must be scalars.
@@ -2520,7 +2534,7 @@ definitions:
                 ```
             properties:
               time_range:
-                description: Refers to the default time range shown when a user initially loads the dashboard. The value must be either an [ISO 8601 duration](https://en.wikipedia.org/wiki/ISO_8601#Durations) (for example, PT12H for 12 hours, P1M for 1 month, or P26W for 26 weeks) or one of the [Rill ISO 8601 extensions](https://docs.rilldata.com/reference/rill-iso-extensions#extensions).
+                description: Refers to the default time range shown when a user initially loads the dashboard. Any [time range syntax](/reference/time-syntax) expression, including legacy ISO 8601 durations and `rill-` keywords.
                 type: string
               comparison_mode:
                 description: 'Controls how to compare current data with historical or categorical baselines. Options: `none` (no comparison), `time` (compares with past based on default_time_range), `dimension` (compares based on comparison_dimension values)'
@@ -2582,6 +2596,8 @@ definitions:
           banner:
             type: string
             description: Refers to the custom banner displayed at the header of an explore dashboard
+          ai_prompts:
+            $ref: '#/definitions/ai_prompts_properties'
           dimensions:
             description:  List of dimension names. Use '*' to select all dimensions (default)
             $ref: '#/definitions/field_selector_properties'
@@ -2753,9 +2769,6 @@ definitions:
           display_name:
             type: string
             description: Display name for the alert
-          description:
-            type: string
-            description: Description for the alert
           intervals:
             type: object
             description: Defines the alert interval to check.
@@ -3203,9 +3216,11 @@ definitions:
             $ref: '#/definitions/image_properties'
           custom_chart:
             $ref: '#/definitions/custom_chart_properties'
+          map:
+            $ref: '#/definitions/map_properties'
         required:
           - type
-        additionalProperties: false
+      - $ref: '#/definitions/common_properties'
 
   # Custom Chart Properties (Flint)
   custom_chart_properties:
@@ -3382,6 +3397,53 @@ definitions:
       - time_range
     additionalProperties: false
 
+  # A field entry of a table or pivot: the field name, or an object with the name and per-column presentation overrides.
+  table_field_entry:
+    oneOf:
+      - type: string
+        description: Name of the dimension, measure, adhoc measure, or encoded time column (for example `ts_rill_TIME_GRAIN_DAY`)
+      - type: object
+        properties:
+          name:
+            type: string
+            description: Name of the dimension, measure, adhoc measure, or encoded time column
+          width:
+            type: integer
+            description: Column width in pixels. Measures and adhoc measures accept 60–300, dimensions and time columns 100–600. The column keeps this width under stretch and `fit_to_width`. Not allowed on `col_dimensions`, nor on row dimensions after the first.
+          wrap:
+            type: boolean
+            description: Wrap the cell text over `wrap_lines` lines instead of truncating it; overrides the component-level `wrap`. Only on a table's dimension columns and on the first row dimension of a pivot.
+          align:
+            type: string
+            enum: ["left", "center", "right"]
+            description: Text alignment of the header and cells, for table columns and measures. Defaults to right for measures and left for dimensions. Not allowed on `row_dimensions` or `col_dimensions`.
+          label:
+            type: string
+            description: Header text, replacing the display name from the metrics view.
+          format_preset:
+            type: string
+            enum: ["humanize", "none", "currency_usd", "currency_eur", "percentage", "interval_ms"]
+            description: Number format preset for a measure in this component only. Mutually exclusive with `format_d3`.
+          format_d3:
+            type: string
+            description: d3 format string for a measure in this component only (for example `.3s` or `,.2f`). Mutually exclusive with `format_preset`.
+          delta:
+            $ref: '#/definitions/table_comparison_column'
+          percent_change:
+            $ref: '#/definitions/table_comparison_column'
+        required:
+          - name
+        additionalProperties: false
+
+  table_comparison_column:
+    type: object
+    description: Overrides for a measure's comparison column, the Δ (`delta`) or Δ% (`percent_change`) column shown next to the measure while the component shows a time comparison. Only on measures of the metrics view; adhoc measures have no comparison columns.
+    properties:
+      width:
+        type: integer
+        description: Column width in pixels, 60–300. The column keeps this width under stretch and `fit_to_width`.
+    additionalProperties: false
+
   # Table Properties
   table_properties:
     type: object
@@ -3389,24 +3451,55 @@ definitions:
       metrics_view:
         type: string
         description: Reference to the metrics view to use
+      columns:
+        type: array
+        items:
+          $ref: '#/definitions/table_field_entry'
+        description: Ordered columns of a `table`, dimensions and measures alike. Each entry is a field name or an object with the name and per-column overrides.
       measures:
         type: array
         items:
-          type: string
-        description: List of measures to display
+          $ref: '#/definitions/table_field_entry'
+        description: List of measures to display. Each entry is a field name or an object with the name and per-column overrides.
+      adhoc_measures:
+        type: array
+        description: Adhoc measures defined on this component, derived from the metrics view's measures with an arithmetic expression. Reference them by `name` in `measures`. See [Adhoc measures](/developers/build/dashboards/canvas-widgets/data#adhoc-measures).
+        items:
+          type: object
+          properties:
+            name:
+              type: string
+              description: Name used to reference the measure. Must not match a dimension or measure in the metrics view.
+            display_name:
+              type: string
+              description: Label shown in the component. Defaults to `name`.
+            expression:
+              type: string
+              description: Arithmetic expression over the metrics view's measure names, for example `(revenue - cost) / revenue`.
+            format_preset:
+              type: string
+              enum: ["humanize", "none", "currency_usd", "currency_eur", "percentage"]
+              description: Format preset for the values. Defaults to `humanize`.
+            description:
+              type: string
+              description: Text shown in the measure's tooltip instead of the expression.
+          required:
+            - name
+            - expression
+          additionalProperties: false
       time_range:
         type: string
         description: Time range for the table
       row_dimensions:
         type: array
         items:
-          type: string
-        description: Dimensions for table rows
+          $ref: '#/definitions/table_field_entry'
+        description: Dimensions for pivot rows. The first one keys the merged row-header column, so only it takes `width` and `wrap`; row dimensions never take `align`.
       col_dimensions:
         type: array
         items:
-          type: string
-        description: Dimensions for table columns
+          $ref: '#/definitions/table_field_entry'
+        description: Dimensions pivoted into column groups. They span their measure columns, so they take only `name` and `label`; set widths on the measures.
       hide_totals_row:
         type: boolean
         description: Whether to hide the totals row. Defaults to false.
@@ -3420,6 +3513,29 @@ definitions:
       row_limit:
         type: string
         description: Maximum number of rows to display in a pivot table (one of "5", "10", "25", "50", "100"). Omit or set to "all" for all rows.
+      fit_to_width:
+        type: boolean
+        description: When the columns overflow the component, shrink every column that has no configured width (down to its minimum) so the table fits instead of scrolling. Defaults to false.
+      wrap:
+        type: boolean
+        description: Wrap the text of dimension cells over `wrap_lines` lines instead of truncating it. Defaults to false.
+      wrap_headers:
+        type: boolean
+        description: Wrap header labels over `wrap_lines` lines instead of truncating them. Defaults to false.
+      wrap_lines:
+        type: integer
+        description: Lines per row (and per header row) when wrapping is on, between 1 and 5. Defaults to 2.
+      sort_by:
+        type: string
+        description: Initial sort field. In a table any column; in a pivot a measure (rows are ordered by its row total) or a row dimension. Viewers can still re-sort by clicking headers.
+      sort_comparison:
+        type: string
+        enum: ["delta", "percent_change"]
+        description: Sort on the measure's comparison column instead of its value, `delta` or `percent_change`. Requires `sort_by` to name a measure of the metrics view (not an adhoc measure) and only applies while the component shows a time comparison; otherwise the measure's value is sorted.
+      sort_dir:
+        type: string
+        enum: ["asc", "desc"]
+        description: Direction of the initial sort. Defaults to desc for measures and asc for dimensions.
       comparison_range:
         type: string
         description: Comparison time range
@@ -3481,6 +3597,115 @@ definitions:
       - url
     additionalProperties: false
 
+  # Map Properties
+  map_properties:
+    type: object
+    description: Map of points or regions from a geo dimension, colored by a measure and, for points, sized by a second measure
+    properties:
+      metrics_view:
+        type: string
+        description: Reference to the metrics view to use
+      geo_dimension:
+        type: object
+        description: 'Dimension that holds the location of each row, as a GeoJSON geometry string or a DuckDB `POINT_2D` or `POLYGON_2D` value, in longitude and latitude. Only dimensions with `type: geo` are offered in the visual editor.'
+        properties:
+          field:
+            type: string
+            description: Name of the dimension
+          type:
+            type: string
+            description: Field type, always `nominal`
+        required:
+          - field
+      color:
+        type: object
+        description: Measure that colors each point or region
+        properties:
+          measure:
+            type: string
+            description: Name of the measure
+          colorRange:
+            type: object
+            description: 'Color scale for the measure. Use `mode: scheme` with a `scheme` (`sequential`, `diverging`, `tealblues`, `viridis`, `magma`, `inferno`, `plasma`, `cividis`, `blues`, `teals`, `greens`, `greys`, `oranges`, `purples`, `reds`, `turbo`, `spectral`), or `mode: gradient` with `start` and `end` colors. Defaults to the `tealblues` scheme.'
+            properties:
+              mode:
+                type: string
+                enum: ["scheme", "gradient"]
+                description: Whether to use a named color scheme or a two-color gradient
+              scheme:
+                type: string
+                description: Name of the color scheme, used when `mode` is `scheme`
+              start:
+                type: string
+                description: Color for the lowest value, used when `mode` is `gradient`. A hex color, `primary` or `secondary`.
+              end:
+                type: string
+                description: Color for the highest value, used when `mode` is `gradient`. A hex color, `primary` or `secondary`.
+        required:
+          - measure
+      size_measure:
+        type: object
+        description: Measure that scales the radius of each point. Points only; ignored for polygons.
+        properties:
+          field:
+            type: string
+            description: Name of the measure
+          type:
+            type: string
+            description: Field type, always `quantitative`
+        required:
+          - field
+      tooltip_dimension:
+        type: object
+        description: Dimension whose value is shown as the heading of the hover tooltip
+        properties:
+          field:
+            type: string
+            description: Name of the dimension
+          type:
+            type: string
+            description: Field type, always `nominal`
+        required:
+          - field
+      initial_view:
+        type: object
+        description: Camera position the map opens with. When set, the map does not zoom to fit the data.
+        properties:
+          longitude:
+            type: number
+            description: Longitude of the map center
+          latitude:
+            type: number
+            description: Latitude of the map center
+          zoom:
+            type: number
+            description: Zoom level, from `0` (whole world) to about `22` (building level)
+        required:
+          - longitude
+          - latitude
+      title:
+        type: string
+        description: Map title
+      description:
+        type: string
+        description: Map description
+      show_description_as_tooltip:
+        type: boolean
+        description: Show the description as a tooltip on the title instead of below it
+      time_filters:
+        type: string
+        description: Time range and comparison for this map, as `tr` and `compare_tr` URL parameters. Defaults to the canvas time range.
+      dimension_filters:
+        type: string
+        description: SQL filter expression applied to this map only, such as `country IN ('US')`
+      hide_local_filters:
+        type: boolean
+        description: Hide the local filter chips on the map; the filters still apply to its queries
+    required:
+      - metrics_view
+      - geo_dimension
+      - color
+    additionalProperties: false
 
   # Common Properties
   common_properties:
@@ -3971,6 +4196,29 @@ definitions:
                 expression: "7D as of latest/D+1D offset -7D"
               explore: sales_explore
 
+  ai_prompts_properties:
+    type: array
+    description: Suggested prompts shown as starters in the AI chat for this dashboard. Each entry is either a prompt string or an object with `label` and `prompt`. If not set, the project-level `ai_prompts` from rill.yaml are shown instead. At most 8 distinct entries.
+    items:
+      oneOf:
+        - type: string
+          description: The prompt. A short label is derived from its first words.
+        - type: object
+          description: A prompt with an explicit label.
+          properties:
+            label:
+              type: string
+              description: Short label shown on the prompt's button (at most 40 characters). Derived from the prompt if omitted.
+            prompt:
+              type: string
+              description: The full question sent to the AI when the user picks the prompt.
+          required:
+            - prompt
+          additionalProperties: false
+    examples:
+      - - Which campaigns drove the biggest change in impressions this week?
+        - label: CTR outliers
+          prompt: Which publishers have a click-through rate far above or below the average?
   explore_time_range_properties:
     oneOf:
       - type: string
@@ -4267,6 +4515,8 @@ definitions:
           banner:
             type: string
             description: Custom banner displayed at the header of the explore view.
+          ai_prompts:
+            $ref: '#/definitions/ai_prompts_properties'
           dimensions:
             $ref: '#/definitions/field_selector_properties'
             description: Dimensions to include in the explore view. Defaults to all dimensions in the metrics view.

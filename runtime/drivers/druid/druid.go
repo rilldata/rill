@@ -113,7 +113,7 @@ type configProperties struct {
 
 // Opens a connection to Apache Druid using HTTP API.
 // Note that the Druid connection string must have the form "http://user:password@host:port/druid/v2/sql".
-func (d driver) Open(connectorName, instanceID string, config map[string]any, st *storage.Client, ac *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
+func (d driver) Open(ctx context.Context, connectorName, instanceID string, config map[string]any, st *storage.Client, ac *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
 	if instanceID == "" {
 		return nil, errors.New("druid driver can't be shared")
 	}
@@ -146,13 +146,13 @@ func (d driver) Open(connectorName, instanceID string, config map[string]any, st
 	}
 
 	dbx := sqlx.NewDb(db, "druid")
-	err = dbx.Ping()
+	err = dbx.PingContext(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("druid: %w", err)
 	}
 
 	if !conf.SkipVersionCheck {
-		err = d.checkVersion(dsn)
+		err = d.checkVersion(ctx, dsn)
 		if err != nil {
 			return nil, fmt.Errorf("druid: %w", err)
 		}
@@ -179,7 +179,7 @@ func (d *driver) TertiarySourceConnectors(ctx context.Context, src map[string]an
 	return nil, fmt.Errorf("not implemented")
 }
 
-func (d driver) checkVersion(dsn string) error {
+func (d driver) checkVersion(ctx context.Context, dsn string) error {
 	parsedURL, err := url.Parse(dsn)
 	if err != nil {
 		return err
@@ -187,7 +187,7 @@ func (d driver) checkVersion(dsn string) error {
 	parsedURL.Path = "/status"
 	statusURL := parsedURL.String()
 
-	req, err := http.NewRequest(http.MethodGet, statusURL, http.NoBody)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, statusURL, http.NoBody)
 	if err != nil {
 		return err
 	}
