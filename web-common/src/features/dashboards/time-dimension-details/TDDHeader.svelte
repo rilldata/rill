@@ -30,6 +30,7 @@
   import { getTDDExportQuery } from "./tdd-export";
   import type { TDDComparison } from "./types";
   import { V1TimeGrainToDateTimeUnit } from "@rilldata/web-common/lib/time/new-grains";
+  import { EmbedStore } from "@rilldata/web-common/features/embeds/embed-store.ts";
 
   interface Props {
     exploreName: string;
@@ -55,7 +56,12 @@
     hideStartPivotButton = false,
   }: Props = $props();
 
-  const { adminServer, exports } = featureFlags;
+  const { reports, exports } = featureFlags;
+  let enableReports = $derived(
+    $reports &&
+      (!EmbedStore.getInstance() || !!EmbedStore.getInstance()?.userEmail),
+  );
+
   const stateManagers = getStateManagers();
 
   const {
@@ -283,7 +289,7 @@
       {#if $exports}
         <ExportMenu
           label={m.dashboard_export_table_data()}
-          includeScheduledReport={$adminServer}
+          includeScheduledReport={enableReports}
           getQuery={(isScheduled) =>
             getTDDExportQuery(stateManagers, isScheduled)}
           {exploreName}

@@ -9,6 +9,8 @@ export class EmbedStore {
   public readonly instanceId: string;
   public readonly runtimeHost: string;
   public readonly accessToken: string;
+  public readonly adminToken: string;
+  public readonly userEmail: string;
   /**
    * Array of missing required params.
    * instance_id, runtime_host and access_token are required params.
@@ -52,6 +54,8 @@ export class EmbedStore {
     this.instanceId = url.searchParams.get("instance_id") ?? "";
     this.runtimeHost = url.searchParams.get("runtime_host") ?? "";
     this.accessToken = url.searchParams.get("access_token") ?? "";
+    this.adminToken = url.searchParams.get("admin_token") ?? "";
+    this.userEmail = url.searchParams.get("user_email") ?? "";
     this.navigationEnabled = url.searchParams.get("navigation") === "true";
     this.navigationBarEnabled =
       this.navigationEnabled &&

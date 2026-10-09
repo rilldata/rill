@@ -647,6 +647,9 @@ func (s *Server) GetIFrame(ctx context.Context, req *adminv1.GetIFrameRequest) (
 		ttlDuration = time.Duration(req.TtlSeconds) * time.Second
 	}
 
+	adminToken := ""
+	email := ""
+
 	opts := &issueRuntimeTokenOptions{
 		project:            proj,
 		deployment:         prodDepl,
@@ -665,6 +668,25 @@ func (s *Server) GetIFrame(ctx context.Context, req *adminv1.GetIFrameRequest) (
 		opts.forUserID = forVal.UserId
 	case *adminv1.GetIFrameRequest_UserEmail:
 		opts.forUserEmail = forVal.UserEmail
+		email = forVal.UserEmail
+
+		// TODO: is this the best solution? this will make old tabs start throwing
+		oldTokens, err := s.admin.DB.FindEmbedAuthTokens(ctx, proj.ID, opts.forUserEmail)
+		if err != nil {
+			return nil, err
+		}
+		for _, token := range oldTokens {
+			err := s.admin.DB.DeleteEmbedAuthToken(ctx, token.ID)
+			if err != nil {
+				return nil, err
+			}
+		}
+
+		tkn, err := s.admin.IssueEmbedAuthToken(ctx, proj.ID, opts.forUserEmail, &ttlDuration)
+		if err != nil {
+			return nil, err
+		}
+		adminToken = tkn.Token().String()
 	case *adminv1.GetIFrameRequest_Attributes:
 		opts.forUserAttributes = forVal.Attributes.AsMap()
 	default:
@@ -681,6 +703,9 @@ func (s *Server) GetIFrame(ctx context.Context, req *adminv1.GetIFrameRequest) (
 		"runtime_host": prodDepl.RuntimeHost,
 		"instance_id":  prodDepl.RuntimeInstanceID,
 		"access_token": jwt,
+	}
+	if adminToken != "" {
+		iframeQuery["admin_token"] = adminToken
 	}
 
 	iframeQuery["type"] = req.Type
@@ -712,6 +737,10 @@ func (s *Server) GetIFrame(ctx context.Context, req *adminv1.GetIFrameRequest) (
 
 	if req.ExternalUserId != "" {
 		iframeQuery["external_user_id"] = req.ExternalUserId
+	}
+
+	if email != "" {
+		iframeQuery["user_email"] = email
 	}
 
 	for k, v := range req.Query {

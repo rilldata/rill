@@ -3984,6 +3984,12 @@ paths:
                   $ref: '#/definitions/v1ResourceName'
               webOpenMode:
                 type: string
+              queryForUserId:
+                type: string
+              queryForUserEmail:
+                type: string
+              queryForAttributes:
+                type: object
               whereFilterJson:
                 type: string
               accessibleFields:

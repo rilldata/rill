@@ -9,7 +9,7 @@ import (
 var ErrNotAuthenticated = errors.New("not authenticated")
 
 type AdminService interface {
-	GetReportMetadata(ctx context.Context, reportName, ownerID, webOpenMode string, emailRecipients []string, anonRecipients bool, executionTime time.Time) (*ReportMetadata, error)
+	GetReportMetadata(ctx context.Context, reportName, ownerID, webOpenMode string, emailRecipients []string, anonRecipients bool, executionTime time.Time, queryForUserID, queryForUserEmail string, queryForAttributes map[string]any) (*ReportMetadata, error)
 	GetAlertMetadata(ctx context.Context, alertName, ownerID string, emailRecipients []string, anonRecipients bool, annotations map[string]string, queryForUserID, queryForUserEmail string) (*AlertMetadata, error)
 	ProvisionConnector(ctx context.Context, name, driver string, args map[string]any) (map[string]any, error)
 	GetConfig(ctx context.Context) (*Config, error)
@@ -26,8 +26,8 @@ type ReportDelivery struct {
 	ExportURL      string
 	EditURL        string
 	UnsubscribeURL string
-	UserID         string         // user ID of the intended recipient, will be empty for non-Rill users and users not having project access. In creator mode this will be the user ID of the creator.
-	UserAttrs      map[string]any // user attrs of the intended recipient, will be empty for non-Rill users and users not having project access. In creator mode this will be the user attrs of the creator.
+	UserID         string         // user ID of the intended recipient, will be empty for non-Rill users and users not having project access. In creator mode this will be the user ID of the creator or the "for" user (empty for "for" attributes).
+	UserAttrs      map[string]any // user attrs of the intended recipient, will be empty for non-Rill users and users not having project access. In creator mode this will be the user attrs of the creator or the "for" identity.
 }
 
 type AlertURLs struct {

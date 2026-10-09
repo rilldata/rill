@@ -205,6 +205,14 @@ type DB interface {
 	DeleteMagicAuthTokens(ctx context.Context, ids []string) error
 	DeleteExpiredMagicAuthTokens(ctx context.Context, retention time.Duration) error
 
+	FindEmbedAuthTokens(ctx context.Context, projectID, email string) ([]*EmbedAuthToken, error)
+	FindEmbedAuthToken(ctx context.Context, id string) (*EmbedAuthToken, error)
+	InsertEmbedAuthToken(ctx context.Context, opts *InsertEmbedAuthTokenOptions) (*EmbedAuthToken, error)
+	UpdateEmbedAuthTokenUsedOn(ctx context.Context, ids []string) error
+	DeleteEmbedAuthToken(ctx context.Context, id string) error
+	DeleteExpiredEmbedAuthTokens(ctx context.Context, retention time.Duration) error
+	DeleteInactiveEmbedAuthTokens(ctx context.Context, retention time.Duration) error
+
 	FindNotificationTokens(ctx context.Context, resourceKind, resourceName string) ([]*NotificationToken, error)
 	FindNotificationTokensWithSecret(ctx context.Context, resourceKind, resourceName string) ([]*NotificationTokenWithSecret, error)
 	FindNotificationTokenForMagicAuthToken(ctx context.Context, magicAuthTokenID string) (*NotificationToken, error)
@@ -878,6 +886,26 @@ type InsertMagicAuthTokenOptions struct {
 	State                  string
 	DisplayName            string
 	Internal               bool
+}
+
+// EmbedAuthToken is a persistent API token for an embedded project, scoped to an email.
+type EmbedAuthToken struct {
+	ID         string
+	SecretHash []byte     `db:"secret_hash"`
+	ProjectID  string     `db:"project_id"`
+	Email      string     `db:"email"`
+	CreatedOn  time.Time  `db:"created_on"`
+	ExpiresOn  *time.Time `db:"expires_on"`
+	UsedOn     time.Time  `db:"used_on"`
+}
+
+// InsertEmbedAuthTokenOptions defines options for creating an EmbedAuthToken.
+type InsertEmbedAuthTokenOptions struct {
+	ID         string
+	SecretHash []byte
+	ProjectID  string `validate:"required"`
+	Email      string `validate:"required"`
+	ExpiresOn  *time.Time
 }
 
 type NotificationToken struct {

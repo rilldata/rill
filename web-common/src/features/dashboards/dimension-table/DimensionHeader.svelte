@@ -17,6 +17,7 @@
   import SelectAllButton from "../toolbars/SelectAllButton.svelte";
   import StartPivotButton from "../toolbars/StartPivotButton.svelte";
   import { getDimensionTableExportQuery } from "./dimension-table-export";
+  import { EmbedStore } from "@rilldata/web-common/features/embeds/embed-store.ts";
 
   let {
     dimensionName,
@@ -52,7 +53,11 @@
     expressionFilterManager,
   } = stateManagers;
 
-  const { adminServer, exports } = featureFlags;
+  const { reports, exports } = featureFlags;
+  let enableReports = $derived(
+    $reports &&
+      (!EmbedStore.getInstance() || !!EmbedStore.getInstance()?.userEmail),
+  );
 
   let exploreHasTimeDimension = $derived(!!$timeRangeSummaryStore.data);
 
@@ -167,7 +172,7 @@
       {#if $exports}
         <ExportMenu
           label={m.dashboard_export_dimension_table_data()}
-          includeScheduledReport={$adminServer && exploreHasTimeDimension}
+          includeScheduledReport={enableReports && exploreHasTimeDimension}
           getQuery={(isScheduled) =>
             getDimensionTableExportQuery(stateManagers, isScheduled)}
           exploreName={$exploreName}

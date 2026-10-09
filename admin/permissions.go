@@ -269,6 +269,40 @@ func (s *Service) ProjectPermissionsForMagicAuthToken(ctx context.Context, proje
 	}, nil
 }
 
+func (s *Service) ProjectPermissionsForEmbedAuthToken(ctx context.Context, projectID string, tkn *database.EmbedAuthToken) (*adminv1.ProjectPermissions, error) {
+	// No access if the token belongs to another project
+	if projectID != tkn.ProjectID {
+		return &adminv1.ProjectPermissions{}, nil
+	}
+
+	// Grant basic read access to the project and its prod deployment.
+	// Embed users can create reports and alerts, but can only manage the ones they own (enforced by the handlers).
+	return &adminv1.ProjectPermissions{
+		Admin:                      false,
+		ReadProject:                true,
+		ManageProject:              false,
+		ReadProd:                   true,
+		ReadProdStatus:             false,
+		ManageProd:                 false,
+		ReadDev:                    false,
+		ReadDevStatus:              false,
+		ManageDev:                  false,
+		ReadProvisionerResources:   false,
+		ManageProvisionerResources: false,
+		ReadProjectMembers:         false,
+		ManageProjectMembers:       false,
+		ManageProjectAdmins:        false,
+		CreateMagicAuthTokens:      false,
+		ManageMagicAuthTokens:      false,
+		CreateReports:              true,
+		ManageReports:              false,
+		CreateAlerts:               true,
+		ManageAlerts:               false,
+		CreateBookmarks:            false,
+		ManageBookmarks:            false,
+	}, nil
+}
+
 // UnionOrgRoles merges an organization role's permissions into the given permissions object.
 func UnionOrgRoles(a *adminv1.OrganizationPermissions, b *database.OrganizationRole) *adminv1.OrganizationPermissions {
 	return &adminv1.OrganizationPermissions{

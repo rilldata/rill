@@ -8,10 +8,7 @@ import {
   createRuntimeServiceGetResource,
   createRuntimeServiceListResources,
 } from "@rilldata/web-common/runtime-client";
-import type {
-  V1AlertSpec,
-  V1ExploreSpec,
-} from "@rilldata/web-common/runtime-client/gen/index.schemas";
+import type { V1AlertSpec } from "@rilldata/web-common/runtime-client/gen/index.schemas";
 import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import { smartRefetchIntervalFunc } from "@rilldata/web-admin/lib/refetch-interval-store";
 import { derived, type Readable, readable } from "svelte/store";
@@ -104,7 +101,8 @@ export function useIsAlertCreatedByCode(client: RuntimeClient, name: string) {
     {
       query: {
         select: (data) =>
-          !data.resource.alert.spec.annotations["admin_owner_user_id"],
+          !data.resource.alert.spec.annotations["admin_owner_user_id"] &&
+          !data.resource.alert.spec.annotations["admin_owner_user_email"],
       },
     },
   );
@@ -139,7 +137,7 @@ export function useAlertDashboardState(
           getDashboardStateFromUrl(
             webState,
             data.metricsView?.metricsView?.state?.validSpec ?? {},
-            data.explore?.explore?.state?.validSpec as V1ExploreSpec,
+            data.explore?.explore?.state?.validSpec,
           ),
       },
     },

@@ -454,8 +454,12 @@ func (p *securityEngine) builtInAlertSecurityRule(alertRes *runtimev1.ResourceNa
 	}
 
 	// Allow if the owner is accessing the alert
-	if spec.Annotations != nil && userID == spec.Annotations["admin_owner_user_id"] {
-		explicitAllow = true
+	if spec.Annotations != nil && !claims.Admin() {
+		if spec.Annotations["admin_owner_user_id"] != "" {
+			explicitAllow = userID == spec.Annotations["admin_owner_user_id"]
+		} else if spec.Annotations["admin_owner_user_email"] != "" {
+			explicitAllow = email == spec.Annotations["admin_owner_user_email"]
+		}
 	}
 
 	// Allow if the user is an email recipient
@@ -530,8 +534,12 @@ func (p *securityEngine) builtInReportSecurityRule(reportRes *runtimev1.Resource
 	}
 
 	// Allow if the owner is accessing the report
-	if spec.Annotations != nil && userID == spec.Annotations["admin_owner_user_id"] {
-		explicitAllow = true
+	if spec.Annotations != nil && !claims.Admin() {
+		if spec.Annotations["admin_owner_user_id"] != "" {
+			explicitAllow = userID == spec.Annotations["admin_owner_user_id"]
+		} else if spec.Annotations["admin_owner_user_email"] != "" {
+			explicitAllow = email == spec.Annotations["admin_owner_user_email"]
+		}
 	}
 
 	// Allow if the user is an email recipient
