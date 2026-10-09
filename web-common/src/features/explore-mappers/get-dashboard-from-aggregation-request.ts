@@ -176,7 +176,8 @@ export async function getDashboardFromAggregationRequest({
   if (req.dimensions?.length) {
     dashboard.selectedDimensionName = req.dimensions[0].name;
     dashboard.activePage = DashboardState_ActivePage.DIMENSION_TABLE;
-  } else {
+  } else if (metricsView.timeDimension) {
+    // Time dimension details need a time dimension to chart against.
     dashboard.tdd = {
       chartType: TDDChart.DEFAULT,
       expandedMeasureName: req.measures?.[0]?.name ?? "",
