@@ -76,7 +76,6 @@ func (c *connection) Migrate(_ context.Context) (err error) {
 	// This can be slow on large databases, so it must not block Migrate (and therefore runtime startup).
 	// It's started here rather than in Open to guarantee the AI tables exist before the first cleanup runs.
 	go c.deleteExpiredAISessionsLoop()
-	go c.deleteExpiredAIMemoryTombstonesLoop()
 
 	return nil
 }

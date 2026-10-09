@@ -1,6 +1,6 @@
 <!--
   Lists everything the AI remembers about the current user in this project,
-  with per-item edit and delete, "Clear all", "Add memory", and a pause switch.
+  with per-item edit and delete, "Add memory", and a switch that turns memory on or off.
   Shared by the in-chat dialog (Rill Developer and Rill Cloud) and the Cloud project settings page.
 -->
 <script lang="ts">
@@ -29,14 +29,13 @@
   import {
     createAIMemory,
     deleteAIMemory,
-    deleteAllAIMemories,
+    MAX_MEMORIES,
     MAX_MEMORY_CONTENT_CHARS,
     MEMORY_CATEGORIES,
     MemoryCategory,
-    setAIMemoryPaused,
+    setAIMemoryEnabled,
     updateAIMemory,
     useAIMemories,
-    useAIMemorySettings,
   } from "./memory-store";
 
   /** Base path of the chat, used to link a memory to the conversation it was learned from. */
@@ -44,12 +43,10 @@
 
   const client = useRuntimeClient();
   const memoriesQuery = useAIMemories(client);
-  const settingsQuery = useAIMemorySettings(client);
 
   $: memories = $memoriesQuery.data?.memories ?? [];
-  $: enabled = !!$settingsQuery.data?.enabled;
-  $: paused = !!$settingsQuery.data?.paused;
-  $: maxCount = $settingsQuery.data?.maxCount ?? 0;
+  $: available = !!$memoriesQuery.data?.available;
+  $: enabled = !!$memoriesQuery.data?.enabled;
 
   // ----- Edit / add dialog -----
   let editorOpen = false;
@@ -88,10 +85,12 @@
     saving = true;
     try {
       if (editing?.id) {
-        await updateAIMemory(client, editing.id, {
-          content: editorContent.trim(),
-          category: editorCategory,
-        });
+        await updateAIMemory(
+          client,
+          editing.id,
+          editorCategory,
+          editorContent.trim(),
+        );
       } else {
         await createAIMemory(client, editorCategory, editorContent.trim());
       }
@@ -108,9 +107,8 @@
     }
   }
 
-  // ----- Delete dialogs -----
+  // ----- Delete dialog -----
   let deleting: V1AIMemory | null = null;
-  let clearAllOpen = false;
 
   async function confirmDelete() {
     if (!deleting?.id) return;
@@ -128,25 +126,10 @@
     }
   }
 
-  async function confirmClearAll() {
+  // ----- On / off -----
+  async function setEnabled(value: boolean) {
     try {
-      await deleteAllAIMemories(client);
-      eventBus.emit("notification", { message: m.chat_memory_cleared() });
-    } catch (err) {
-      console.error("Failed to clear memories", err);
-      eventBus.emit("notification", {
-        message: m.chat_memory_delete_failed(),
-        type: "error",
-      });
-    } finally {
-      clearAllOpen = false;
-    }
-  }
-
-  // ----- Pause -----
-  async function togglePaused(value: boolean) {
-    try {
-      await setAIMemoryPaused(client, value);
+      await setAIMemoryEnabled(client, value);
     } catch (err) {
       console.error("Failed to update memory settings", err);
       eventBus.emit("notification", {
@@ -182,52 +165,49 @@
 <div class="memory-manager" data-testid="memory-manager">
   <p class="memory-description">{m.chat_memory_description()}</p>
 
-  {#if $settingsQuery.isLoading || $memoriesQuery.isLoading}
+  {#if $memoriesQuery.isLoading}
     <div class="memory-loading">
       <DelayedSpinner isLoading={true} size="20px" />
     </div>
-  {:else if !enabled}
-    <p class="memory-empty">{m.chat_memory_disabled()}</p>
+  {:else if !available}
+    <p class="memory-empty">{m.chat_memory_unavailable()}</p>
   {:else}
     <div class="memory-toolbar">
-      <label class="memory-pause">
+      <label class="memory-switch">
         <Switch
-          checked={paused}
+          checked={enabled}
           medium
-          label={m.chat_memory_pause_label()}
-          onCheckedChange={(checked) => void togglePaused(checked)}
+          label={m.chat_memory_enabled_label()}
+          onCheckedChange={(checked) => void setEnabled(checked)}
         />
-        <span class="memory-pause-text">
+        <span class="memory-switch-text">
           <span class="font-medium text-fg-primary"
-            >{m.chat_memory_pause_label()}</span
+            >{m.chat_memory_enabled_label()}</span
           >
-          <span class="text-fg-muted">{m.chat_memory_pause_description()}</span>
+          <span class="text-fg-muted"
+            >{m.chat_memory_enabled_description()}</span
+          >
         </span>
       </label>
       <div class="memory-toolbar-actions">
         <span class="memory-count">
           {m.chat_memory_count({
             count: String(memories.length),
-            max: String(maxCount),
+            max: String(MAX_MEMORIES),
           })}
         </span>
-        {#if memories.length > 0}
-          <Button type="secondary" onClick={() => (clearAllOpen = true)}>
-            {m.chat_memory_clear_all()}
-          </Button>
-        {/if}
         <Button
           type="primary"
           onClick={openAdd}
-          disabled={memories.length >= maxCount}
+          disabled={memories.length >= MAX_MEMORIES}
         >
           {m.chat_memory_add()}
         </Button>
       </div>
     </div>
 
-    {#if paused}
-      <p class="memory-paused-notice">{m.chat_memory_paused_notice()}</p>
+    {#if !enabled}
+      <p class="memory-off-notice">{m.chat_memory_off_notice()}</p>
     {/if}
 
     {#if memories.length === 0}
@@ -371,26 +351,6 @@
   </AlertDialog.Content>
 </AlertDialog.Root>
 
-<!-- Clear all -->
-<AlertDialog.Root bind:open={clearAllOpen}>
-  <AlertDialog.Content>
-    <AlertDialog.Header>
-      <AlertDialog.Title>{m.chat_memory_clear_all_title()}</AlertDialog.Title>
-      <AlertDialog.Description>
-        {m.chat_memory_clear_all_description()}
-      </AlertDialog.Description>
-    </AlertDialog.Header>
-    <AlertDialog.Footer>
-      <Button type="tertiary" onClick={() => (clearAllOpen = false)}>
-        {m.common_cancel()}
-      </Button>
-      <Button type="destructive" onClick={confirmClearAll}>
-        {m.chat_memory_clear_all()}
-      </Button>
-    </AlertDialog.Footer>
-  </AlertDialog.Content>
-</AlertDialog.Root>
-
 <style lang="postcss">
   .memory-manager {
     @apply flex flex-col gap-y-4 w-full min-w-0;
@@ -412,11 +372,11 @@
     @apply flex flex-wrap items-center justify-between gap-3;
   }
 
-  .memory-pause {
+  .memory-switch {
     @apply flex items-center gap-x-3 cursor-pointer;
   }
 
-  .memory-pause-text {
+  .memory-switch-text {
     @apply flex flex-col text-xs;
   }
 
@@ -428,7 +388,7 @@
     @apply text-xs text-fg-muted tabular-nums;
   }
 
-  .memory-paused-notice {
+  .memory-off-notice {
     @apply text-xs text-fg-secondary rounded-md bg-surface-subtle px-3 py-2;
   }
 

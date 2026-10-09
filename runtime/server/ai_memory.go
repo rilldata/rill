@@ -22,12 +22,12 @@ import (
 // Memories are always scoped to the calling user: every read and write is keyed by claims.UserID and the handlers refuse to touch other users' rows.
 
 func (s *Server) ListAIMemories(ctx context.Context, req *runtimev1.ListAIMemoriesRequest) (*runtimev1.ListAIMemoriesResponse, error) {
-	claims, enabled, err := s.checkAIMemoryAccess(ctx, req.InstanceId)
+	claims, available, err := s.checkAIMemoryAccess(ctx, req.InstanceId)
 	if err != nil {
 		return nil, err
 	}
-	if !enabled {
-		return &runtimev1.ListAIMemoriesResponse{Enabled: false}, nil
+	if !available {
+		return &runtimev1.ListAIMemoriesResponse{Available: false}, nil
 	}
 
 	catalog, release, err := s.runtime.Catalog(ctx, req.InstanceId)
@@ -40,12 +40,7 @@ func (s *Server) ListAIMemories(ctx context.Context, req *runtimev1.ListAIMemori
 	if err != nil {
 		return nil, err
 	}
-
-	statuses := []string{drivers.AIMemoryStatusActive}
-	if req.IncludeDeleted {
-		statuses = append(statuses, drivers.AIMemoryStatusDeleted)
-	}
-	memories, err := catalog.FindAIMemories(ctx, claims.UserID, statuses)
+	memories, err := catalog.FindAIMemories(ctx, claims.UserID)
 	if err != nil {
 		return nil, err
 	}
@@ -55,18 +50,18 @@ func (s *Server) ListAIMemories(ctx context.Context, req *runtimev1.ListAIMemori
 		res[i] = aiMemoryToPB(m)
 	}
 	return &runtimev1.ListAIMemoriesResponse{
-		Memories: res,
-		Enabled:  true,
-		Paused:   settings.Paused,
+		Memories:  res,
+		Available: true,
+		Enabled:   settings.Enabled,
 	}, nil
 }
 
 func (s *Server) CreateAIMemory(ctx context.Context, req *runtimev1.CreateAIMemoryRequest) (*runtimev1.CreateAIMemoryResponse, error) {
-	claims, enabled, err := s.checkAIMemoryAccess(ctx, req.InstanceId)
+	claims, available, err := s.checkAIMemoryAccess(ctx, req.InstanceId)
 	if err != nil {
 		return nil, err
 	}
-	if !enabled {
+	if !available {
 		return nil, status.Error(codes.FailedPrecondition, "memory is not available")
 	}
 
@@ -81,12 +76,12 @@ func (s *Server) CreateAIMemory(ctx context.Context, req *runtimev1.CreateAIMemo
 	}
 	defer release()
 
-	active, err := catalog.FindAIMemories(ctx, claims.UserID, []string{drivers.AIMemoryStatusActive})
+	existing, err := catalog.FindAIMemories(ctx, claims.UserID)
 	if err != nil {
 		return nil, err
 	}
-	if len(active) >= ai.MaxActiveMemories {
-		return nil, status.Errorf(codes.ResourceExhausted, "memory limit of %d reached", ai.MaxActiveMemories)
+	if len(existing) >= ai.MaxMemories {
+		return nil, status.Errorf(codes.ResourceExhausted, "memory limit of %d reached", ai.MaxMemories)
 	}
 
 	now := time.Now()
@@ -96,7 +91,6 @@ func (s *Server) CreateAIMemory(ctx context.Context, req *runtimev1.CreateAIMemo
 		OwnerID:    claims.UserID,
 		Category:   category,
 		Content:    content,
-		Status:     drivers.AIMemoryStatusActive,
 		Source:     drivers.AIMemorySourceManual,
 		CreatedOn:  now,
 		UpdatedOn:  now,
@@ -110,12 +104,17 @@ func (s *Server) CreateAIMemory(ctx context.Context, req *runtimev1.CreateAIMemo
 }
 
 func (s *Server) UpdateAIMemory(ctx context.Context, req *runtimev1.UpdateAIMemoryRequest) (*runtimev1.UpdateAIMemoryResponse, error) {
-	claims, enabled, err := s.checkAIMemoryAccess(ctx, req.InstanceId)
+	claims, available, err := s.checkAIMemoryAccess(ctx, req.InstanceId)
 	if err != nil {
 		return nil, err
 	}
-	if !enabled {
+	if !available {
 		return nil, status.Error(codes.FailedPrecondition, "memory is not available")
+	}
+
+	category, content, err := validateAIMemoryInput(req.Category, req.Content)
+	if err != nil {
+		return nil, err
 	}
 
 	catalog, release, err := s.runtime.Catalog(ctx, req.InstanceId)
@@ -129,36 +128,9 @@ func (s *Server) UpdateAIMemory(ctx context.Context, req *runtimev1.UpdateAIMemo
 		return nil, err
 	}
 
-	if req.Category != nil || req.Content != nil {
-		category := m.Category
-		if req.Category != nil {
-			category = *req.Category
-		}
-		content := m.Content
-		if req.Content != nil {
-			content = *req.Content
-		}
-		category, content, err = validateAIMemoryInput(category, content)
-		if err != nil {
-			return nil, err
-		}
-		m.Category = category
-		m.Content = content
-		m.Source = drivers.AIMemorySourceManual
-	}
-	if req.Status != nil && *req.Status != m.Status {
-		if *req.Status == drivers.AIMemoryStatusActive {
-			active, err := catalog.FindAIMemories(ctx, claims.UserID, []string{drivers.AIMemoryStatusActive})
-			if err != nil {
-				return nil, err
-			}
-			if len(active) >= ai.MaxActiveMemories {
-				return nil, status.Errorf(codes.ResourceExhausted, "memory limit of %d reached", ai.MaxActiveMemories)
-			}
-		}
-		m.Status = *req.Status
-	}
-
+	m.Category = category
+	m.Content = content
+	m.Source = drivers.AIMemorySourceManual
 	err = catalog.UpdateAIMemory(ctx, m)
 	if err != nil {
 		return nil, err
@@ -168,11 +140,11 @@ func (s *Server) UpdateAIMemory(ctx context.Context, req *runtimev1.UpdateAIMemo
 }
 
 func (s *Server) DeleteAIMemory(ctx context.Context, req *runtimev1.DeleteAIMemoryRequest) (*runtimev1.DeleteAIMemoryResponse, error) {
-	claims, enabled, err := s.checkAIMemoryAccess(ctx, req.InstanceId)
+	claims, available, err := s.checkAIMemoryAccess(ctx, req.InstanceId)
 	if err != nil {
 		return nil, err
 	}
-	if !enabled {
+	if !available {
 		return nil, status.Error(codes.FailedPrecondition, "memory is not available")
 	}
 
@@ -195,67 +167,12 @@ func (s *Server) DeleteAIMemory(ctx context.Context, req *runtimev1.DeleteAIMemo
 	return &runtimev1.DeleteAIMemoryResponse{}, nil
 }
 
-func (s *Server) DeleteAllAIMemories(ctx context.Context, req *runtimev1.DeleteAllAIMemoriesRequest) (*runtimev1.DeleteAllAIMemoriesResponse, error) {
-	claims, enabled, err := s.checkAIMemoryAccess(ctx, req.InstanceId)
-	if err != nil {
-		return nil, err
-	}
-	if !enabled {
-		return nil, status.Error(codes.FailedPrecondition, "memory is not available")
-	}
-
-	catalog, release, err := s.runtime.Catalog(ctx, req.InstanceId)
-	if err != nil {
-		return nil, err
-	}
-	defer release()
-
-	err = catalog.DeleteAIMemories(ctx, claims.UserID)
-	if err != nil {
-		return nil, err
-	}
-
-	return &runtimev1.DeleteAllAIMemoriesResponse{}, nil
-}
-
-func (s *Server) GetAIMemorySettings(ctx context.Context, req *runtimev1.GetAIMemorySettingsRequest) (*runtimev1.GetAIMemorySettingsResponse, error) {
-	claims, enabled, err := s.checkAIMemoryAccess(ctx, req.InstanceId)
-	if err != nil {
-		return nil, err
-	}
-	if !enabled {
-		return &runtimev1.GetAIMemorySettingsResponse{Enabled: false, MaxCount: ai.MaxActiveMemories}, nil
-	}
-
-	catalog, release, err := s.runtime.Catalog(ctx, req.InstanceId)
-	if err != nil {
-		return nil, err
-	}
-	defer release()
-
-	settings, err := catalog.FindAIMemorySettings(ctx, claims.UserID)
-	if err != nil {
-		return nil, err
-	}
-	active, err := catalog.FindAIMemories(ctx, claims.UserID, []string{drivers.AIMemoryStatusActive})
-	if err != nil {
-		return nil, err
-	}
-
-	return &runtimev1.GetAIMemorySettingsResponse{
-		Enabled:     true,
-		Paused:      settings.Paused,
-		ActiveCount: uint32(len(active)),
-		MaxCount:    ai.MaxActiveMemories,
-	}, nil
-}
-
 func (s *Server) UpdateAIMemorySettings(ctx context.Context, req *runtimev1.UpdateAIMemorySettingsRequest) (*runtimev1.UpdateAIMemorySettingsResponse, error) {
-	claims, enabled, err := s.checkAIMemoryAccess(ctx, req.InstanceId)
+	claims, available, err := s.checkAIMemoryAccess(ctx, req.InstanceId)
 	if err != nil {
 		return nil, err
 	}
-	if !enabled {
+	if !available {
 		return nil, status.Error(codes.FailedPrecondition, "memory is not available")
 	}
 
@@ -268,13 +185,13 @@ func (s *Server) UpdateAIMemorySettings(ctx context.Context, req *runtimev1.Upda
 	err = catalog.UpsertAIMemorySettings(ctx, &drivers.AIMemorySettings{
 		InstanceID: req.InstanceId,
 		OwnerID:    claims.UserID,
-		Paused:     req.Paused,
+		Enabled:    req.Enabled,
 	})
 	if err != nil {
 		return nil, err
 	}
 
-	return &runtimev1.UpdateAIMemorySettingsResponse{Paused: req.Paused}, nil
+	return &runtimev1.UpdateAIMemorySettingsResponse{}, nil
 }
 
 // checkAIMemoryAccess checks that the caller may use AI and reports whether memory is available to them.
@@ -334,7 +251,6 @@ func aiMemoryToPB(m *drivers.AIMemory) *runtimev1.AIMemory {
 		Id:                   m.ID,
 		Category:             m.Category,
 		Content:              m.Content,
-		Status:               m.Status,
 		Source:               m.Source,
 		SourceConversationId: m.SourceSessionID,
 		SourceMessageId:      m.SourceMessageID,

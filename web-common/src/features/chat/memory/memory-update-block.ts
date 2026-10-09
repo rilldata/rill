@@ -11,9 +11,6 @@ export interface MemoryOp {
   memory_id?: string;
   category?: string;
   content?: string;
-  previous_category?: string;
-  previous_content?: string;
-  previous_status?: string;
   reason?: string;
 }
 

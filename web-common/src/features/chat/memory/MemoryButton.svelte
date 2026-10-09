@@ -9,18 +9,20 @@
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { Brain } from "lucide-svelte";
   import MemoryDialog from "./MemoryDialog.svelte";
-  import { useMemoryEnabled } from "./memory-store";
+  import { useAIMemories } from "./memory-store";
 
   export let variant: "icon" | "button" = "icon";
   export let conversationBasePath: string | undefined = undefined;
 
   const client = useRuntimeClient();
-  const enabled = useMemoryEnabled(client);
+  const memoriesQuery = useAIMemories(client);
 
   let open = false;
+
+  $: available = !!$memoriesQuery.data?.available;
 </script>
 
-{#if $enabled}
+{#if available}
   {#if variant === "icon"}
     <IconButton
       ariaLabel={m.chat_memory_open()}

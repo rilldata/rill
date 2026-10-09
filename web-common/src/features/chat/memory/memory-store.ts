@@ -4,20 +4,17 @@
  * Memories are per user and per project (instance). They are read and written through the runtime,
  * so the same store works in Rill Developer and Rill Cloud.
  */
-import { featureFlags } from "@rilldata/web-common/features/feature-flags";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import {
-  getRuntimeServiceGetAIMemorySettingsQueryOptions,
+  getRuntimeServiceListAIMemoriesQueryKey,
   getRuntimeServiceListAIMemoriesQueryOptions,
   runtimeServiceCreateAIMemory,
   runtimeServiceDeleteAIMemory,
-  runtimeServiceDeleteAllAIMemories,
   runtimeServiceUpdateAIMemory,
   runtimeServiceUpdateAIMemorySettings,
 } from "@rilldata/web-common/runtime-client/v2/gen/runtime-service";
 import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import { createQuery } from "@tanstack/svelte-query";
-import { derived, type Readable } from "svelte/store";
 
 /** Memory categories, mirroring runtime/ai/memory.go */
 export const MemoryCategory = {
@@ -36,29 +33,17 @@ export const MEMORY_CATEGORIES: MemoryCategory[] = [
   MemoryCategory.FEEDBACK,
 ];
 
-/** Memory statuses, mirroring runtime/drivers/catalog.go */
-export const MemoryStatus = {
-  ACTIVE: "active",
-  DELETED: "deleted",
-} as const;
-
-/** Maximum length of a memory, mirroring runtime/ai/memory.go */
+/** Limits mirroring runtime/ai/memory.go */
+export const MAX_MEMORIES = 50;
 export const MAX_MEMORY_CONTENT_CHARS = 300;
 
-export function useAIMemories(client: RuntimeClient, includeDeleted = false) {
+/**
+ * The user's memories plus whether memory is available to them (feature flag on, logged-in user)
+ * and whether they have it turned on.
+ */
+export function useAIMemories(client: RuntimeClient) {
   return createQuery(
     getRuntimeServiceListAIMemoriesQueryOptions(
-      client,
-      { includeDeleted },
-      { query: { enabled: !!client.instanceId } },
-    ),
-    queryClient,
-  );
-}
-
-export function useAIMemorySettings(client: RuntimeClient) {
-  return createQuery(
-    getRuntimeServiceGetAIMemorySettingsQueryOptions(
       client,
       {},
       { query: { enabled: !!client.instanceId } },
@@ -67,30 +52,10 @@ export function useAIMemorySettings(client: RuntimeClient) {
   );
 }
 
-/**
- * True when memory is available to the current user: the feature flag is on and the runtime reports it enabled
- * (it is off for anonymous users and when an admin disabled it for the project).
- */
-export function useMemoryEnabled(client: RuntimeClient): Readable<boolean> {
-  const settings = useAIMemorySettings(client);
-  return derived(
-    [featureFlags.chatMemory, settings],
-    ([$flag, $settings]) => $flag && !!$settings.data?.enabled,
-  );
-}
-
-/** Refetch memory lists and settings, for one instance or (when omitted) for all. */
-export function invalidateAIMemories(instanceId?: string) {
+/** Refetch the memory list after a change, whether made here or by the AI during a chat turn. */
+export function invalidateAIMemories(instanceId: string) {
   return queryClient.invalidateQueries({
-    predicate: (query) => {
-      const key = query.queryKey;
-      return (
-        Array.isArray(key) &&
-        key[0] === "RuntimeService" &&
-        (key[1] === "listAIMemories" || key[1] === "getAIMemorySettings") &&
-        (instanceId === undefined || key[2] === instanceId)
-      );
-    },
+    queryKey: getRuntimeServiceListAIMemoriesQueryKey(instanceId),
   });
 }
 
@@ -110,11 +75,13 @@ export async function createAIMemory(
 export async function updateAIMemory(
   client: RuntimeClient,
   memoryId: string,
-  changes: { category?: string; content?: string; status?: string },
+  category: string,
+  content: string,
 ) {
   const res = await runtimeServiceUpdateAIMemory(client, {
     memoryId,
-    ...changes,
+    category,
+    content,
   });
   await invalidateAIMemories(client.instanceId);
   return res.memory;
@@ -125,15 +92,10 @@ export async function deleteAIMemory(client: RuntimeClient, memoryId: string) {
   await invalidateAIMemories(client.instanceId);
 }
 
-export async function deleteAllAIMemories(client: RuntimeClient) {
-  await runtimeServiceDeleteAllAIMemories(client, {});
-  await invalidateAIMemories(client.instanceId);
-}
-
-export async function setAIMemoryPaused(
+export async function setAIMemoryEnabled(
   client: RuntimeClient,
-  paused: boolean,
+  enabled: boolean,
 ) {
-  await runtimeServiceUpdateAIMemorySettings(client, { paused });
+  await runtimeServiceUpdateAIMemorySettings(client, { enabled });
   await invalidateAIMemories(client.instanceId);
 }

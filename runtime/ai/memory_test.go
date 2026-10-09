@@ -18,7 +18,6 @@ func TestUpdateMemoryTool(t *testing.T) {
 	rt, instanceID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{})
 	s := newSession(t, rt, instanceID)
 	require.True(t, s.MemoryEnabled())
-	require.True(t, s.MemoryFormationEnabled())
 	require.Empty(t, s.UserMemories())
 
 	// Add
@@ -52,7 +51,7 @@ func TestUpdateMemoryTool(t *testing.T) {
 	require.Equal(t, memoryID, res.Ops[0].MemoryID)
 	require.Len(t, s.UserMemories(), 1)
 
-	// Update records the previous content
+	// Update
 	_, err = s.CallTool(t.Context(), ai.RoleAssistant, ai.UpdateMemoryName, &res, &ai.UpdateMemoryArgs{
 		Action:   ai.MemoryOpUpdate,
 		MemoryID: memoryID,
@@ -61,8 +60,6 @@ func TestUpdateMemoryTool(t *testing.T) {
 	})
 	require.NoError(t, err)
 	require.Equal(t, ai.MemoryOpUpdate, res.Ops[0].Op)
-	require.Equal(t, "Prefers tables over charts.", res.Ops[0].PreviousContent)
-	require.Equal(t, ai.MemoryCategoryPreference, res.Ops[0].PreviousCategory)
 	require.Equal(t, "Prefers tables over charts, except for time series.", s.UserMemories()[0].Content)
 
 	// Unknown ID is a noop
@@ -74,34 +71,31 @@ func TestUpdateMemoryTool(t *testing.T) {
 	require.Equal(t, ai.MemoryOpNoop, res.Ops[0].Op)
 	require.Equal(t, "memory not found", res.Ops[0].Reason)
 
-	// Delete leaves a tombstone
+	// Delete is permanent; the op echoes what was removed
 	_, err = s.CallTool(t.Context(), ai.RoleAssistant, ai.UpdateMemoryName, &res, &ai.UpdateMemoryArgs{
 		Action:   ai.MemoryOpDelete,
 		MemoryID: memoryID,
 	})
 	require.NoError(t, err)
 	require.Equal(t, ai.MemoryOpDelete, res.Ops[0].Op)
-	require.Equal(t, drivers.AIMemoryStatusActive, res.Ops[0].PreviousStatus)
 	require.Equal(t, "Prefers tables over charts, except for time series.", res.Ops[0].Content)
 	require.Empty(t, s.UserMemories())
 
 	catalog, release, err := rt.Catalog(t.Context(), instanceID)
 	require.NoError(t, err)
 	defer release()
-	m, err := catalog.FindAIMemory(t.Context(), memoryID)
-	require.NoError(t, err)
-	require.Equal(t, drivers.AIMemoryStatusDeleted, m.Status)
+	_, err = catalog.FindAIMemory(t.Context(), memoryID)
+	require.ErrorIs(t, err, drivers.ErrNotFound)
 
-	// Adding the same content again restores the tombstone instead of creating a duplicate.
-	// The category is omitted here to check that the restored memory still gets one.
+	// Adding the same content again creates a new memory.
+	// The category is omitted here to check that it gets a default.
 	_, err = s.CallTool(t.Context(), ai.RoleAssistant, ai.UpdateMemoryName, &res, &ai.UpdateMemoryArgs{
 		Action:  ai.MemoryOpAdd,
 		Content: "Prefers tables over charts, except for time series.",
 	})
 	require.NoError(t, err)
 	require.Equal(t, ai.MemoryOpAdd, res.Ops[0].Op)
-	require.Equal(t, memoryID, res.Ops[0].MemoryID)
-	require.Equal(t, drivers.AIMemoryStatusDeleted, res.Ops[0].PreviousStatus)
+	require.NotEqual(t, memoryID, res.Ops[0].MemoryID)
 	require.Equal(t, ai.MemoryCategoryContext, res.Ops[0].Category)
 	require.Len(t, s.UserMemories(), 1)
 	require.Equal(t, ai.MemoryCategoryContext, s.UserMemories()[0].Category)
@@ -133,7 +127,7 @@ func TestUpdateMemoryLimit(t *testing.T) {
 	s := newSession(t, rt, instanceID)
 
 	var res *ai.MemoryUpdateResult
-	for i := range ai.MaxActiveMemories {
+	for i := range ai.MaxMemories {
 		_, err := s.CallTool(t.Context(), ai.RoleAssistant, ai.UpdateMemoryName, &res, &ai.UpdateMemoryArgs{
 			Action:   ai.MemoryOpAdd,
 			Category: ai.MemoryCategoryContext,
@@ -142,7 +136,7 @@ func TestUpdateMemoryLimit(t *testing.T) {
 		require.NoError(t, err)
 		require.Equal(t, ai.MemoryOpAdd, res.Ops[0].Op)
 	}
-	require.Len(t, s.UserMemories(), ai.MaxActiveMemories)
+	require.Len(t, s.UserMemories(), ai.MaxMemories)
 
 	_, err := s.CallTool(t.Context(), ai.RoleAssistant, ai.UpdateMemoryName, &res, &ai.UpdateMemoryArgs{
 		Action:   ai.MemoryOpAdd,
@@ -154,32 +148,7 @@ func TestUpdateMemoryLimit(t *testing.T) {
 	require.Contains(t, res.Ops[0].Reason, "limit")
 }
 
-func TestMemoryDisabledConversation(t *testing.T) {
-	rt, instanceID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{})
-	s := newSession(t, rt, instanceID)
-	require.NoError(t, s.UpdateMemoryDisabled(t.Context(), true))
-	require.True(t, s.MemoryEnabled())
-	require.False(t, s.MemoryFormationEnabled())
-
-	var res *ai.MemoryUpdateResult
-	_, err := s.CallTool(t.Context(), ai.RoleAssistant, ai.UpdateMemoryName, &res, &ai.UpdateMemoryArgs{
-		Action:   ai.MemoryOpAdd,
-		Category: ai.MemoryCategoryPreference,
-		Content:  "Prefers tables",
-	})
-	require.ErrorContains(t, err, "access denied")
-
-	// The flag is persisted with the session
-	require.NoError(t, s.Flush(t.Context()))
-	catalog, release, err := rt.Catalog(t.Context(), instanceID)
-	require.NoError(t, err)
-	defer release()
-	dto, err := catalog.FindAISession(t.Context(), s.ID())
-	require.NoError(t, err)
-	require.True(t, dto.MemoryDisabled)
-}
-
-func TestMemoryPaused(t *testing.T) {
+func TestMemoryTurnedOff(t *testing.T) {
 	rt, instanceID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{})
 	claims := &runtime.SecurityClaims{UserID: uuid.NewString(), SkipChecks: true}
 
@@ -188,7 +157,7 @@ func TestMemoryPaused(t *testing.T) {
 	defer release()
 	require.NoError(t, catalog.InsertAIMemory(t.Context(), &drivers.AIMemory{
 		ID: uuid.NewString(), InstanceID: instanceID, OwnerID: claims.UserID, Category: ai.MemoryCategoryPreference,
-		Content: "Prefers tables", Status: drivers.AIMemoryStatusActive, Source: drivers.AIMemorySourceManual,
+		Content: "Prefers tables", Source: drivers.AIMemorySourceManual,
 	}))
 
 	r := ai.NewRunner(rt, activity.NewNoopClient())
@@ -196,13 +165,25 @@ func TestMemoryPaused(t *testing.T) {
 	require.NoError(t, err)
 	require.Len(t, s.UserMemories(), 1)
 
-	require.NoError(t, catalog.UpsertAIMemorySettings(t.Context(), &drivers.AIMemorySettings{OwnerID: claims.UserID, Paused: true}))
+	// Turning memory off disables it for new sessions: nothing is injected and nothing can be written.
+	require.NoError(t, catalog.UpsertAIMemorySettings(t.Context(), &drivers.AIMemorySettings{OwnerID: claims.UserID, Enabled: false}))
 	s, err = r.Session(t.Context(), &ai.SessionOptions{InstanceID: instanceID, Claims: claims, UserAgent: "rill/test"})
 	require.NoError(t, err)
-	require.True(t, s.MemoryEnabled())
-	require.True(t, s.MemoryPaused())
-	require.False(t, s.MemoryFormationEnabled())
+	require.False(t, s.MemoryEnabled())
 	require.Empty(t, s.UserMemories())
+
+	var res *ai.MemoryUpdateResult
+	_, err = s.CallTool(t.Context(), ai.RoleAssistant, ai.UpdateMemoryName, &res, &ai.UpdateMemoryArgs{
+		Action:   ai.MemoryOpAdd,
+		Category: ai.MemoryCategoryPreference,
+		Content:  "Prefers charts",
+	})
+	require.ErrorContains(t, err, "access denied")
+
+	// The memory itself is kept
+	memories, err := catalog.FindAIMemories(t.Context(), claims.UserID)
+	require.NoError(t, err)
+	require.Len(t, memories, 1)
 }
 
 func TestMemoryGates(t *testing.T) {
@@ -239,7 +220,6 @@ func TestMemoryFeatureFlagOff(t *testing.T) {
 	})
 	s := newSession(t, rt, instanceID)
 	require.False(t, s.MemoryEnabled())
-	require.False(t, s.MemoryFormationEnabled())
 
 	var res *ai.MemoryUpdateResult
 	_, err := s.CallTool(t.Context(), ai.RoleAssistant, ai.UpdateMemoryName, &res, &ai.UpdateMemoryArgs{

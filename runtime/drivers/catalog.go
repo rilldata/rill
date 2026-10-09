@@ -60,12 +60,11 @@ type CatalogStore interface {
 	FindMaxAIMessageIndex(ctx context.Context, sessionID string) (int, error)
 	InsertAIMessage(ctx context.Context, m *AIMessage) error
 
-	FindAIMemories(ctx context.Context, ownerID string, statuses []string) ([]*AIMemory, error)
+	FindAIMemories(ctx context.Context, ownerID string) ([]*AIMemory, error)
 	FindAIMemory(ctx context.Context, id string) (*AIMemory, error)
 	InsertAIMemory(ctx context.Context, m *AIMemory) error
 	UpdateAIMemory(ctx context.Context, m *AIMemory) error
 	DeleteAIMemory(ctx context.Context, id string) error
-	DeleteAIMemories(ctx context.Context, ownerID string) error
 	FindAIMemorySettings(ctx context.Context, ownerID string) (*AIMemorySettings, error)
 	UpsertAIMemorySettings(ctx context.Context, s *AIMemorySettings) error
 }
@@ -130,7 +129,6 @@ type AISession struct {
 	UserAgent            string    `db:"user_agent"`
 	SharedUntilMessageID string    `db:"shared_until_message_id"`
 	ForkedFromSessionID  string    `db:"forked_from_session_id"`
-	MemoryDisabled       bool      `db:"memory_disabled"` // true if the session should not contribute to the owner's AI memory
 	CreatedOn            time.Time `db:"created_on"`
 	UpdatedOn            time.Time `db:"updated_on"`
 }
@@ -150,13 +148,6 @@ type AIMessage struct {
 	Content     string    `db:"content"`
 }
 
-// Statuses of an AIMemory.
-const (
-	AIMemoryStatusActive  = "active"
-	AIMemoryStatusPending = "pending" // reserved for an approval mode where extracted memories are not used until the user accepts them
-	AIMemoryStatusDeleted = "deleted" // tombstone that allows an undo; purged after AIMemoryTombstoneTTL
-)
-
 // Sources of an AIMemory.
 const (
 	AIMemorySourceExplicit  = "explicit"  // the user asked the AI to remember or forget something
@@ -172,7 +163,6 @@ type AIMemory struct {
 	OwnerID         string    `db:"owner_id"`
 	Category        string    `db:"category"`
 	Content         string    `db:"content"`
-	Status          string    `db:"status"`
 	Source          string    `db:"source"`
 	SourceSessionID string    `db:"source_session_id"`
 	SourceMessageID string    `db:"source_message_id"`
@@ -180,10 +170,10 @@ type AIMemory struct {
 	UpdatedOn       time.Time `db:"updated_on"`
 }
 
-// AIMemorySettings holds a user's memory preferences for an instance.
+// AIMemorySettings holds a user's memory settings for an instance.
 type AIMemorySettings struct {
 	InstanceID string    `db:"instance_id"`
 	OwnerID    string    `db:"owner_id"`
-	Paused     bool      `db:"paused"` // when paused, existing memories are neither used nor updated
+	Enabled    bool      `db:"enabled"` // when false, existing memories are neither used nor updated, but the user can still manage them
 	UpdatedOn  time.Time `db:"updated_on"`
 }

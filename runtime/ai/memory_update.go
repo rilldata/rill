@@ -28,7 +28,7 @@ type UpdateMemoryArgs struct {
 }
 
 // MemoryUpdateResult is the result of update_memory and of background extraction.
-// The frontend renders the applied ops as a "Memory updated" notice and uses the previous values to undo them.
+// The frontend renders the applied ops as a "Memory updated" notice.
 type MemoryUpdateResult struct {
 	Ops []MemoryOp `json:"ops"`
 }
@@ -59,8 +59,8 @@ func (t *UpdateMemory) CheckAccess(ctx context.Context) (bool, error) {
 	if !s.Claims().Can(runtime.UseAI) {
 		return false, nil
 	}
-	// MemoryFormationEnabled already covers the feature flag, the Rill user agent, anonymous users, pause, and the per-conversation opt-out.
-	return s.MemoryFormationEnabled(), nil
+	// MemoryEnabled already covers the feature flag, the Rill user agent, anonymous users, and the user's own memory setting.
+	return s.MemoryEnabled(), nil
 }
 
 func (t *UpdateMemory) Handler(ctx context.Context, args *UpdateMemoryArgs) (*MemoryUpdateResult, error) {

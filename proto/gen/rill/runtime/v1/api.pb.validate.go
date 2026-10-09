@@ -10157,8 +10157,6 @@ func (m *Conversation) validate(all bool) error {
 
 	// no validation rules for UserAgent
 
-	// no validation rules for MemoryDisabled
-
 	if all {
 		switch v := interface{}(m.GetCreatedOn()).(type) {
 		case interface{ ValidateAll() error }:
@@ -12363,10 +12361,6 @@ func (m *CompleteRequest) validate(all bool) error {
 		}
 	}
 
-	if m.DisableMemory != nil {
-		// no validation rules for DisableMemory
-	}
-
 	if len(errors) > 0 {
 		return CompleteRequestMultiError(errors)
 	}
@@ -12726,10 +12720,6 @@ func (m *CompleteStreamingRequest) validate(all bool) error {
 				cause:  err,
 			}
 		}
-	}
-
-	if m.DisableMemory != nil {
-		// no validation rules for DisableMemory
 	}
 
 	if len(errors) > 0 {
@@ -13249,8 +13239,6 @@ func (m *AIMemory) validate(all bool) error {
 
 	// no validation rules for Content
 
-	// no validation rules for Status
-
 	// no validation rules for Source
 
 	// no validation rules for SourceConversationId
@@ -13425,8 +13413,6 @@ func (m *ListAIMemoriesRequest) validate(all bool) error {
 		errors = append(errors, err)
 	}
 
-	// no validation rules for IncludeDeleted
-
 	if len(errors) > 0 {
 		return ListAIMemoriesRequestMultiError(errors)
 	}
@@ -13565,9 +13551,9 @@ func (m *ListAIMemoriesResponse) validate(all bool) error {
 
 	}
 
-	// no validation rules for Enabled
+	// no validation rules for Available
 
-	// no validation rules for Paused
+	// no validation rules for Enabled
 
 	if len(errors) > 0 {
 		return ListAIMemoriesResponseMultiError(errors)
@@ -13952,38 +13938,17 @@ func (m *UpdateAIMemoryRequest) validate(all bool) error {
 		errors = append(errors, err)
 	}
 
-	if m.Category != nil {
-		// no validation rules for Category
-	}
+	// no validation rules for Category
 
-	if m.Content != nil {
-
-		if l := utf8.RuneCountInString(m.GetContent()); l < 1 || l > 300 {
-			err := UpdateAIMemoryRequestValidationError{
-				field:  "Content",
-				reason: "value length must be between 1 and 300 runes, inclusive",
-			}
-			if !all {
-				return err
-			}
-			errors = append(errors, err)
+	if l := utf8.RuneCountInString(m.GetContent()); l < 1 || l > 300 {
+		err := UpdateAIMemoryRequestValidationError{
+			field:  "Content",
+			reason: "value length must be between 1 and 300 runes, inclusive",
 		}
-
-	}
-
-	if m.Status != nil {
-
-		if _, ok := _UpdateAIMemoryRequest_Status_InLookup[m.GetStatus()]; !ok {
-			err := UpdateAIMemoryRequestValidationError{
-				field:  "Status",
-				reason: "value must be in list [active deleted]",
-			}
-			if !all {
-				return err
-			}
-			errors = append(errors, err)
+		if !all {
+			return err
 		}
-
+		errors = append(errors, err)
 	}
 
 	if len(errors) > 0 {
@@ -14067,11 +14032,6 @@ var _ interface {
 } = UpdateAIMemoryRequestValidationError{}
 
 var _UpdateAIMemoryRequest_InstanceId_Pattern = regexp.MustCompile("^[_\\-a-zA-Z0-9]+$")
-
-var _UpdateAIMemoryRequest_Status_InLookup = map[string]struct{}{
-	"active":  {},
-	"deleted": {},
-}
 
 // Validate checks the field values on UpdateAIMemoryResponse with the rules
 // defined in the proto definition for this message. If any rules are
@@ -14432,450 +14392,6 @@ var _ interface {
 	ErrorName() string
 } = DeleteAIMemoryResponseValidationError{}
 
-// Validate checks the field values on DeleteAllAIMemoriesRequest with the
-// rules defined in the proto definition for this message. If any rules are
-// violated, the first error encountered is returned, or nil if there are no violations.
-func (m *DeleteAllAIMemoriesRequest) Validate() error {
-	return m.validate(false)
-}
-
-// ValidateAll checks the field values on DeleteAllAIMemoriesRequest with the
-// rules defined in the proto definition for this message. If any rules are
-// violated, the result is a list of violation errors wrapped in
-// DeleteAllAIMemoriesRequestMultiError, or nil if none found.
-func (m *DeleteAllAIMemoriesRequest) ValidateAll() error {
-	return m.validate(true)
-}
-
-func (m *DeleteAllAIMemoriesRequest) validate(all bool) error {
-	if m == nil {
-		return nil
-	}
-
-	var errors []error
-
-	if !_DeleteAllAIMemoriesRequest_InstanceId_Pattern.MatchString(m.GetInstanceId()) {
-		err := DeleteAllAIMemoriesRequestValidationError{
-			field:  "InstanceId",
-			reason: "value does not match regex pattern \"^[_\\\\-a-zA-Z0-9]+$\"",
-		}
-		if !all {
-			return err
-		}
-		errors = append(errors, err)
-	}
-
-	if len(errors) > 0 {
-		return DeleteAllAIMemoriesRequestMultiError(errors)
-	}
-
-	return nil
-}
-
-// DeleteAllAIMemoriesRequestMultiError is an error wrapping multiple
-// validation errors returned by DeleteAllAIMemoriesRequest.ValidateAll() if
-// the designated constraints aren't met.
-type DeleteAllAIMemoriesRequestMultiError []error
-
-// Error returns a concatenation of all the error messages it wraps.
-func (m DeleteAllAIMemoriesRequestMultiError) Error() string {
-	var msgs []string
-	for _, err := range m {
-		msgs = append(msgs, err.Error())
-	}
-	return strings.Join(msgs, "; ")
-}
-
-// AllErrors returns a list of validation violation errors.
-func (m DeleteAllAIMemoriesRequestMultiError) AllErrors() []error { return m }
-
-// DeleteAllAIMemoriesRequestValidationError is the validation error returned
-// by DeleteAllAIMemoriesRequest.Validate if the designated constraints aren't met.
-type DeleteAllAIMemoriesRequestValidationError struct {
-	field  string
-	reason string
-	cause  error
-	key    bool
-}
-
-// Field function returns field value.
-func (e DeleteAllAIMemoriesRequestValidationError) Field() string { return e.field }
-
-// Reason function returns reason value.
-func (e DeleteAllAIMemoriesRequestValidationError) Reason() string { return e.reason }
-
-// Cause function returns cause value.
-func (e DeleteAllAIMemoriesRequestValidationError) Cause() error { return e.cause }
-
-// Key function returns key value.
-func (e DeleteAllAIMemoriesRequestValidationError) Key() bool { return e.key }
-
-// ErrorName returns error name.
-func (e DeleteAllAIMemoriesRequestValidationError) ErrorName() string {
-	return "DeleteAllAIMemoriesRequestValidationError"
-}
-
-// Error satisfies the builtin error interface
-func (e DeleteAllAIMemoriesRequestValidationError) Error() string {
-	cause := ""
-	if e.cause != nil {
-		cause = fmt.Sprintf(" | caused by: %v", e.cause)
-	}
-
-	key := ""
-	if e.key {
-		key = "key for "
-	}
-
-	return fmt.Sprintf(
-		"invalid %sDeleteAllAIMemoriesRequest.%s: %s%s",
-		key,
-		e.field,
-		e.reason,
-		cause)
-}
-
-var _ error = DeleteAllAIMemoriesRequestValidationError{}
-
-var _ interface {
-	Field() string
-	Reason() string
-	Key() bool
-	Cause() error
-	ErrorName() string
-} = DeleteAllAIMemoriesRequestValidationError{}
-
-var _DeleteAllAIMemoriesRequest_InstanceId_Pattern = regexp.MustCompile("^[_\\-a-zA-Z0-9]+$")
-
-// Validate checks the field values on DeleteAllAIMemoriesResponse with the
-// rules defined in the proto definition for this message. If any rules are
-// violated, the first error encountered is returned, or nil if there are no violations.
-func (m *DeleteAllAIMemoriesResponse) Validate() error {
-	return m.validate(false)
-}
-
-// ValidateAll checks the field values on DeleteAllAIMemoriesResponse with the
-// rules defined in the proto definition for this message. If any rules are
-// violated, the result is a list of violation errors wrapped in
-// DeleteAllAIMemoriesResponseMultiError, or nil if none found.
-func (m *DeleteAllAIMemoriesResponse) ValidateAll() error {
-	return m.validate(true)
-}
-
-func (m *DeleteAllAIMemoriesResponse) validate(all bool) error {
-	if m == nil {
-		return nil
-	}
-
-	var errors []error
-
-	if len(errors) > 0 {
-		return DeleteAllAIMemoriesResponseMultiError(errors)
-	}
-
-	return nil
-}
-
-// DeleteAllAIMemoriesResponseMultiError is an error wrapping multiple
-// validation errors returned by DeleteAllAIMemoriesResponse.ValidateAll() if
-// the designated constraints aren't met.
-type DeleteAllAIMemoriesResponseMultiError []error
-
-// Error returns a concatenation of all the error messages it wraps.
-func (m DeleteAllAIMemoriesResponseMultiError) Error() string {
-	var msgs []string
-	for _, err := range m {
-		msgs = append(msgs, err.Error())
-	}
-	return strings.Join(msgs, "; ")
-}
-
-// AllErrors returns a list of validation violation errors.
-func (m DeleteAllAIMemoriesResponseMultiError) AllErrors() []error { return m }
-
-// DeleteAllAIMemoriesResponseValidationError is the validation error returned
-// by DeleteAllAIMemoriesResponse.Validate if the designated constraints
-// aren't met.
-type DeleteAllAIMemoriesResponseValidationError struct {
-	field  string
-	reason string
-	cause  error
-	key    bool
-}
-
-// Field function returns field value.
-func (e DeleteAllAIMemoriesResponseValidationError) Field() string { return e.field }
-
-// Reason function returns reason value.
-func (e DeleteAllAIMemoriesResponseValidationError) Reason() string { return e.reason }
-
-// Cause function returns cause value.
-func (e DeleteAllAIMemoriesResponseValidationError) Cause() error { return e.cause }
-
-// Key function returns key value.
-func (e DeleteAllAIMemoriesResponseValidationError) Key() bool { return e.key }
-
-// ErrorName returns error name.
-func (e DeleteAllAIMemoriesResponseValidationError) ErrorName() string {
-	return "DeleteAllAIMemoriesResponseValidationError"
-}
-
-// Error satisfies the builtin error interface
-func (e DeleteAllAIMemoriesResponseValidationError) Error() string {
-	cause := ""
-	if e.cause != nil {
-		cause = fmt.Sprintf(" | caused by: %v", e.cause)
-	}
-
-	key := ""
-	if e.key {
-		key = "key for "
-	}
-
-	return fmt.Sprintf(
-		"invalid %sDeleteAllAIMemoriesResponse.%s: %s%s",
-		key,
-		e.field,
-		e.reason,
-		cause)
-}
-
-var _ error = DeleteAllAIMemoriesResponseValidationError{}
-
-var _ interface {
-	Field() string
-	Reason() string
-	Key() bool
-	Cause() error
-	ErrorName() string
-} = DeleteAllAIMemoriesResponseValidationError{}
-
-// Validate checks the field values on GetAIMemorySettingsRequest with the
-// rules defined in the proto definition for this message. If any rules are
-// violated, the first error encountered is returned, or nil if there are no violations.
-func (m *GetAIMemorySettingsRequest) Validate() error {
-	return m.validate(false)
-}
-
-// ValidateAll checks the field values on GetAIMemorySettingsRequest with the
-// rules defined in the proto definition for this message. If any rules are
-// violated, the result is a list of violation errors wrapped in
-// GetAIMemorySettingsRequestMultiError, or nil if none found.
-func (m *GetAIMemorySettingsRequest) ValidateAll() error {
-	return m.validate(true)
-}
-
-func (m *GetAIMemorySettingsRequest) validate(all bool) error {
-	if m == nil {
-		return nil
-	}
-
-	var errors []error
-
-	if !_GetAIMemorySettingsRequest_InstanceId_Pattern.MatchString(m.GetInstanceId()) {
-		err := GetAIMemorySettingsRequestValidationError{
-			field:  "InstanceId",
-			reason: "value does not match regex pattern \"^[_\\\\-a-zA-Z0-9]+$\"",
-		}
-		if !all {
-			return err
-		}
-		errors = append(errors, err)
-	}
-
-	if len(errors) > 0 {
-		return GetAIMemorySettingsRequestMultiError(errors)
-	}
-
-	return nil
-}
-
-// GetAIMemorySettingsRequestMultiError is an error wrapping multiple
-// validation errors returned by GetAIMemorySettingsRequest.ValidateAll() if
-// the designated constraints aren't met.
-type GetAIMemorySettingsRequestMultiError []error
-
-// Error returns a concatenation of all the error messages it wraps.
-func (m GetAIMemorySettingsRequestMultiError) Error() string {
-	var msgs []string
-	for _, err := range m {
-		msgs = append(msgs, err.Error())
-	}
-	return strings.Join(msgs, "; ")
-}
-
-// AllErrors returns a list of validation violation errors.
-func (m GetAIMemorySettingsRequestMultiError) AllErrors() []error { return m }
-
-// GetAIMemorySettingsRequestValidationError is the validation error returned
-// by GetAIMemorySettingsRequest.Validate if the designated constraints aren't met.
-type GetAIMemorySettingsRequestValidationError struct {
-	field  string
-	reason string
-	cause  error
-	key    bool
-}
-
-// Field function returns field value.
-func (e GetAIMemorySettingsRequestValidationError) Field() string { return e.field }
-
-// Reason function returns reason value.
-func (e GetAIMemorySettingsRequestValidationError) Reason() string { return e.reason }
-
-// Cause function returns cause value.
-func (e GetAIMemorySettingsRequestValidationError) Cause() error { return e.cause }
-
-// Key function returns key value.
-func (e GetAIMemorySettingsRequestValidationError) Key() bool { return e.key }
-
-// ErrorName returns error name.
-func (e GetAIMemorySettingsRequestValidationError) ErrorName() string {
-	return "GetAIMemorySettingsRequestValidationError"
-}
-
-// Error satisfies the builtin error interface
-func (e GetAIMemorySettingsRequestValidationError) Error() string {
-	cause := ""
-	if e.cause != nil {
-		cause = fmt.Sprintf(" | caused by: %v", e.cause)
-	}
-
-	key := ""
-	if e.key {
-		key = "key for "
-	}
-
-	return fmt.Sprintf(
-		"invalid %sGetAIMemorySettingsRequest.%s: %s%s",
-		key,
-		e.field,
-		e.reason,
-		cause)
-}
-
-var _ error = GetAIMemorySettingsRequestValidationError{}
-
-var _ interface {
-	Field() string
-	Reason() string
-	Key() bool
-	Cause() error
-	ErrorName() string
-} = GetAIMemorySettingsRequestValidationError{}
-
-var _GetAIMemorySettingsRequest_InstanceId_Pattern = regexp.MustCompile("^[_\\-a-zA-Z0-9]+$")
-
-// Validate checks the field values on GetAIMemorySettingsResponse with the
-// rules defined in the proto definition for this message. If any rules are
-// violated, the first error encountered is returned, or nil if there are no violations.
-func (m *GetAIMemorySettingsResponse) Validate() error {
-	return m.validate(false)
-}
-
-// ValidateAll checks the field values on GetAIMemorySettingsResponse with the
-// rules defined in the proto definition for this message. If any rules are
-// violated, the result is a list of violation errors wrapped in
-// GetAIMemorySettingsResponseMultiError, or nil if none found.
-func (m *GetAIMemorySettingsResponse) ValidateAll() error {
-	return m.validate(true)
-}
-
-func (m *GetAIMemorySettingsResponse) validate(all bool) error {
-	if m == nil {
-		return nil
-	}
-
-	var errors []error
-
-	// no validation rules for Enabled
-
-	// no validation rules for Paused
-
-	// no validation rules for ActiveCount
-
-	// no validation rules for MaxCount
-
-	if len(errors) > 0 {
-		return GetAIMemorySettingsResponseMultiError(errors)
-	}
-
-	return nil
-}
-
-// GetAIMemorySettingsResponseMultiError is an error wrapping multiple
-// validation errors returned by GetAIMemorySettingsResponse.ValidateAll() if
-// the designated constraints aren't met.
-type GetAIMemorySettingsResponseMultiError []error
-
-// Error returns a concatenation of all the error messages it wraps.
-func (m GetAIMemorySettingsResponseMultiError) Error() string {
-	var msgs []string
-	for _, err := range m {
-		msgs = append(msgs, err.Error())
-	}
-	return strings.Join(msgs, "; ")
-}
-
-// AllErrors returns a list of validation violation errors.
-func (m GetAIMemorySettingsResponseMultiError) AllErrors() []error { return m }
-
-// GetAIMemorySettingsResponseValidationError is the validation error returned
-// by GetAIMemorySettingsResponse.Validate if the designated constraints
-// aren't met.
-type GetAIMemorySettingsResponseValidationError struct {
-	field  string
-	reason string
-	cause  error
-	key    bool
-}
-
-// Field function returns field value.
-func (e GetAIMemorySettingsResponseValidationError) Field() string { return e.field }
-
-// Reason function returns reason value.
-func (e GetAIMemorySettingsResponseValidationError) Reason() string { return e.reason }
-
-// Cause function returns cause value.
-func (e GetAIMemorySettingsResponseValidationError) Cause() error { return e.cause }
-
-// Key function returns key value.
-func (e GetAIMemorySettingsResponseValidationError) Key() bool { return e.key }
-
-// ErrorName returns error name.
-func (e GetAIMemorySettingsResponseValidationError) ErrorName() string {
-	return "GetAIMemorySettingsResponseValidationError"
-}
-
-// Error satisfies the builtin error interface
-func (e GetAIMemorySettingsResponseValidationError) Error() string {
-	cause := ""
-	if e.cause != nil {
-		cause = fmt.Sprintf(" | caused by: %v", e.cause)
-	}
-
-	key := ""
-	if e.key {
-		key = "key for "
-	}
-
-	return fmt.Sprintf(
-		"invalid %sGetAIMemorySettingsResponse.%s: %s%s",
-		key,
-		e.field,
-		e.reason,
-		cause)
-}
-
-var _ error = GetAIMemorySettingsResponseValidationError{}
-
-var _ interface {
-	Field() string
-	Reason() string
-	Key() bool
-	Cause() error
-	ErrorName() string
-} = GetAIMemorySettingsResponseValidationError{}
-
 // Validate checks the field values on UpdateAIMemorySettingsRequest with the
 // rules defined in the proto definition for this message. If any rules are
 // violated, the first error encountered is returned, or nil if there are no violations.
@@ -14909,7 +14425,7 @@ func (m *UpdateAIMemorySettingsRequest) validate(all bool) error {
 		errors = append(errors, err)
 	}
 
-	// no validation rules for Paused
+	// no validation rules for Enabled
 
 	if len(errors) > 0 {
 		return UpdateAIMemorySettingsRequestMultiError(errors)
@@ -15015,8 +14531,6 @@ func (m *UpdateAIMemorySettingsResponse) validate(all bool) error {
 	}
 
 	var errors []error
-
-	// no validation rules for Paused
 
 	if len(errors) > 0 {
 		return UpdateAIMemorySettingsResponseMultiError(errors)

@@ -30,7 +30,7 @@ func TestAIMemories(t *testing.T) {
 	// Anonymous users on Rill Cloud get no memory
 	list, err := srv.ListAIMemories(anonCtx, &runtimev1.ListAIMemoriesRequest{InstanceId: instanceID})
 	require.NoError(t, err)
-	require.False(t, list.Enabled)
+	require.False(t, list.Available)
 	require.Empty(t, list.Memories)
 	_, err = srv.CreateAIMemory(anonCtx, &runtimev1.CreateAIMemoryRequest{InstanceId: instanceID, Category: "preference", Content: "x"})
 	require.Equal(t, codes.FailedPrecondition, status.Code(err))
@@ -44,7 +44,6 @@ func TestAIMemories(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, "Prefers tables", created.Memory.Content)
 	require.Equal(t, "manual", created.Memory.Source)
-	require.Equal(t, "active", created.Memory.Status)
 
 	_, err = srv.CreateAIMemory(fooCtx, &runtimev1.CreateAIMemoryRequest{InstanceId: instanceID, Category: "bogus", Content: "x"})
 	require.Equal(t, codes.InvalidArgument, status.Code(err))
@@ -52,6 +51,7 @@ func TestAIMemories(t *testing.T) {
 	// List is scoped to the owner
 	list, err = srv.ListAIMemories(fooCtx, &runtimev1.ListAIMemoriesRequest{InstanceId: instanceID})
 	require.NoError(t, err)
+	require.True(t, list.Available)
 	require.True(t, list.Enabled)
 	require.Len(t, list.Memories, 1)
 	list, err = srv.ListAIMemories(barCtx, &runtimev1.ListAIMemoriesRequest{InstanceId: instanceID})
@@ -59,49 +59,42 @@ func TestAIMemories(t *testing.T) {
 	require.Empty(t, list.Memories)
 
 	// Other users cannot update or delete it
-	content := "hijacked"
-	_, err = srv.UpdateAIMemory(barCtx, &runtimev1.UpdateAIMemoryRequest{InstanceId: instanceID, MemoryId: created.Memory.Id, Content: &content})
+	_, err = srv.UpdateAIMemory(barCtx, &runtimev1.UpdateAIMemoryRequest{InstanceId: instanceID, MemoryId: created.Memory.Id, Category: "preference", Content: "hijacked"})
 	require.Equal(t, codes.NotFound, status.Code(err))
 	_, err = srv.DeleteAIMemory(barCtx, &runtimev1.DeleteAIMemoryRequest{InstanceId: instanceID, MemoryId: created.Memory.Id})
 	require.Equal(t, codes.NotFound, status.Code(err))
 
-	// Soft delete and restore (undo)
-	deleted := "deleted"
-	updated, err := srv.UpdateAIMemory(fooCtx, &runtimev1.UpdateAIMemoryRequest{InstanceId: instanceID, MemoryId: created.Memory.Id, Status: &deleted})
+	// Update
+	updated, err := srv.UpdateAIMemory(fooCtx, &runtimev1.UpdateAIMemoryRequest{InstanceId: instanceID, MemoryId: created.Memory.Id, Category: "feedback", Content: "Prefers tables, except for time series"})
 	require.NoError(t, err)
-	require.Equal(t, "deleted", updated.Memory.Status)
+	require.Equal(t, "feedback", updated.Memory.Category)
+	require.Equal(t, "Prefers tables, except for time series", updated.Memory.Content)
+
+	// Turning memory off keeps the memories manageable
+	_, err = srv.UpdateAIMemorySettings(fooCtx, &runtimev1.UpdateAIMemorySettingsRequest{InstanceId: instanceID, Enabled: false})
+	require.NoError(t, err)
+	list, err = srv.ListAIMemories(fooCtx, &runtimev1.ListAIMemoriesRequest{InstanceId: instanceID})
+	require.NoError(t, err)
+	require.True(t, list.Available)
+	require.False(t, list.Enabled)
+	require.Len(t, list.Memories, 1)
+	list, err = srv.ListAIMemories(barCtx, &runtimev1.ListAIMemoriesRequest{InstanceId: instanceID})
+	require.NoError(t, err)
+	require.True(t, list.Enabled)
+	_, err = srv.UpdateAIMemorySettings(fooCtx, &runtimev1.UpdateAIMemorySettingsRequest{InstanceId: instanceID, Enabled: true})
+	require.NoError(t, err)
+	list, err = srv.ListAIMemories(fooCtx, &runtimev1.ListAIMemoriesRequest{InstanceId: instanceID})
+	require.NoError(t, err)
+	require.True(t, list.Enabled)
+
+	// Delete is permanent
+	_, err = srv.DeleteAIMemory(fooCtx, &runtimev1.DeleteAIMemoryRequest{InstanceId: instanceID, MemoryId: created.Memory.Id})
+	require.NoError(t, err)
 	list, err = srv.ListAIMemories(fooCtx, &runtimev1.ListAIMemoriesRequest{InstanceId: instanceID})
 	require.NoError(t, err)
 	require.Empty(t, list.Memories)
-	list, err = srv.ListAIMemories(fooCtx, &runtimev1.ListAIMemoriesRequest{InstanceId: instanceID, IncludeDeleted: true})
-	require.NoError(t, err)
-	require.Len(t, list.Memories, 1)
-	active := "active"
-	updated, err = srv.UpdateAIMemory(fooCtx, &runtimev1.UpdateAIMemoryRequest{InstanceId: instanceID, MemoryId: created.Memory.Id, Status: &active})
-	require.NoError(t, err)
-	require.Equal(t, "active", updated.Memory.Status)
-
-	// Settings
-	settings, err := srv.GetAIMemorySettings(fooCtx, &runtimev1.GetAIMemorySettingsRequest{InstanceId: instanceID})
-	require.NoError(t, err)
-	require.True(t, settings.Enabled)
-	require.False(t, settings.Paused)
-	require.Equal(t, uint32(1), settings.ActiveCount)
-	_, err = srv.UpdateAIMemorySettings(fooCtx, &runtimev1.UpdateAIMemorySettingsRequest{InstanceId: instanceID, Paused: true})
-	require.NoError(t, err)
-	settings, err = srv.GetAIMemorySettings(fooCtx, &runtimev1.GetAIMemorySettingsRequest{InstanceId: instanceID})
-	require.NoError(t, err)
-	require.True(t, settings.Paused)
-	settings, err = srv.GetAIMemorySettings(barCtx, &runtimev1.GetAIMemorySettingsRequest{InstanceId: instanceID})
-	require.NoError(t, err)
-	require.False(t, settings.Paused)
-
-	// Delete all
-	_, err = srv.DeleteAllAIMemories(fooCtx, &runtimev1.DeleteAllAIMemoriesRequest{InstanceId: instanceID})
-	require.NoError(t, err)
-	list, err = srv.ListAIMemories(fooCtx, &runtimev1.ListAIMemoriesRequest{InstanceId: instanceID, IncludeDeleted: true})
-	require.NoError(t, err)
-	require.Empty(t, list.Memories)
+	_, err = srv.DeleteAIMemory(fooCtx, &runtimev1.DeleteAIMemoryRequest{InstanceId: instanceID, MemoryId: created.Memory.Id})
+	require.Equal(t, codes.NotFound, status.Code(err))
 }
 
 func TestAIMemoriesFeatureFlagOff(t *testing.T) {
@@ -114,7 +107,7 @@ func TestAIMemoriesFeatureFlagOff(t *testing.T) {
 	ctx := auth.WithClaims(t.Context(), &runtime.SecurityClaims{UserID: "foo", Permissions: []runtime.Permission{runtime.UseAI}})
 	list, err := srv.ListAIMemories(ctx, &runtimev1.ListAIMemoriesRequest{InstanceId: instanceID})
 	require.NoError(t, err)
-	require.False(t, list.Enabled)
+	require.False(t, list.Available)
 	_, err = srv.CreateAIMemory(ctx, &runtimev1.CreateAIMemoryRequest{InstanceId: instanceID, Category: "preference", Content: "x"})
 	require.Equal(t, codes.FailedPrecondition, status.Code(err))
 }

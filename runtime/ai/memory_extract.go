@@ -66,7 +66,7 @@ func (t *ExtractMemories) Spec() *mcp.Tool {
 
 func (t *ExtractMemories) CheckAccess(ctx context.Context) (bool, error) {
 	s := GetSession(ctx)
-	if !s.Claims().Can(runtime.UseAI) || !s.MemoryFormationEnabled() {
+	if !s.Claims().Can(runtime.UseAI) || !s.MemoryEnabled() {
 		return false, nil
 	}
 	// Only the owner's own turns contribute to the owner's memory.
@@ -256,9 +256,9 @@ Rules:
 
 // SpawnMemoryExtraction runs memory extraction for a completed turn in a detached goroutine.
 // It must be called after the handler's own Flush so the goroutine never races with it.
-// It is a no-op when memory formation is not enabled for the session, the turn errored, or an extraction is already running for the session.
+// It is a no-op when memory is not enabled for the session, the turn errored, or an extraction is already running for the session.
 func (r *Runner) SpawnMemoryExtraction(parentCtx context.Context, s *Session, rootCallID string) {
-	if !s.MemoryFormationEnabled() || s.Claims().UserID != s.CatalogSession().OwnerID {
+	if !s.MemoryEnabled() || s.Claims().UserID != s.CatalogSession().OwnerID {
 		return
 	}
 	result, ok := s.Message(FilterByParent(rootCallID), FilterByType(MessageTypeResult), FilterByTool(RouterAgentName))

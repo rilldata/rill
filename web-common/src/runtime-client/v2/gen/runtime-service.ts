@@ -25,12 +25,10 @@ import {
   CreateDirectoryRequest,
   CreateTriggerRequest,
   DeleteAIMemoryRequest,
-  DeleteAllAIMemoriesRequest,
   DeleteFileRequest,
   ForkConversationRequest,
   GenerateCanvasFileRequest,
   GenerateMetricsViewFileRequest,
-  GetAIMemorySettingsRequest,
   GetAIMessageRequest,
   GetConversationRequest,
   GetExploreRequest,
@@ -87,12 +85,10 @@ import type {
   V1CreateDirectoryResponse,
   V1CreateTriggerResponse,
   V1DeleteAIMemoryResponse,
-  V1DeleteAllAIMemoriesResponse,
   V1DeleteFileResponse,
   V1ForkConversationResponse,
   V1GenerateCanvasFileResponse,
   V1GenerateMetricsViewFileResponse,
-  V1GetAIMemorySettingsResponse,
   V1GetAIMessageResponse,
   V1GetConversationResponse,
   V1GetExploreResponse,
@@ -1825,91 +1821,6 @@ export function createRuntimeServiceListAIMemories<
   queryClient?: QueryClient,
 ): CreateQueryResult<TData, ConnectError> {
   const queryOptions = getRuntimeServiceListAIMemoriesQueryOptions(
-    client,
-    request,
-    options,
-  );
-  return createQuery(queryOptions, queryClient);
-}
-
-/**
- * Raw RPC call: RuntimeService.GetAIMemorySettings
- */
-export async function runtimeServiceGetAIMemorySettings(
-  client: RuntimeClient,
-  request: Omit<PartialMessage<GetAIMemorySettingsRequest>, "instanceId">,
-  options?: { signal?: AbortSignal },
-): Promise<V1GetAIMemorySettingsResponse> {
-  const r = await client.runtimeService.getAIMemorySettings(
-    GetAIMemorySettingsRequest.fromJson(
-      stripUndefined({
-        instanceId: client.instanceId,
-        ...request,
-      }) as unknown as JsonValue,
-    ),
-    { signal: options?.signal },
-  );
-  return r.toJson({
-    emitDefaultValues: true,
-  }) as unknown as V1GetAIMemorySettingsResponse;
-}
-
-export function getRuntimeServiceGetAIMemorySettingsQueryKey(
-  instanceId: string,
-  request?: Omit<PartialMessage<GetAIMemorySettingsRequest>, "instanceId">,
-): QueryKey {
-  return [
-    "RuntimeService",
-    "getAIMemorySettings",
-    instanceId,
-    request ?? {},
-  ] as const;
-}
-
-export function getRuntimeServiceGetAIMemorySettingsQueryOptions<
-  TData = V1GetAIMemorySettingsResponse,
->(
-  client: RuntimeClient,
-  request: Omit<PartialMessage<GetAIMemorySettingsRequest>, "instanceId">,
-  options?: {
-    query?: Partial<
-      CreateQueryOptions<V1GetAIMemorySettingsResponse, ConnectError, TData>
-    >;
-  },
-): CreateQueryOptions<V1GetAIMemorySettingsResponse, ConnectError, TData> & {
-  queryKey: QueryKey;
-} {
-  const queryKey = getRuntimeServiceGetAIMemorySettingsQueryKey(
-    client.instanceId,
-    request,
-  );
-  const queryFn: QueryFunction<V1GetAIMemorySettingsResponse> = ({ signal }) =>
-    runtimeServiceGetAIMemorySettings(client, request, { signal });
-  return {
-    queryKey,
-    queryFn,
-    enabled: !!client.instanceId,
-    ...options?.query,
-  } as CreateQueryOptions<
-    V1GetAIMemorySettingsResponse,
-    ConnectError,
-    TData
-  > & { queryKey: QueryKey };
-}
-
-export function createRuntimeServiceGetAIMemorySettings<
-  TData = V1GetAIMemorySettingsResponse,
->(
-  client: RuntimeClient,
-  request: Omit<PartialMessage<GetAIMemorySettingsRequest>, "instanceId">,
-  options?: {
-    query?: Partial<
-      CreateQueryOptions<V1GetAIMemorySettingsResponse, ConnectError, TData>
-    >;
-  },
-  queryClient?: QueryClient,
-): CreateQueryResult<TData, ConnectError> {
-  const queryOptions = getRuntimeServiceGetAIMemorySettingsQueryOptions(
     client,
     request,
     options,
@@ -3824,70 +3735,6 @@ export function createRuntimeServiceDeleteAIMemoryMutation(
   Omit<PartialMessage<DeleteAIMemoryRequest>, "instanceId">
 > {
   const mutationOptions = getRuntimeServiceDeleteAIMemoryMutationOptions(
-    client,
-    options,
-  );
-  return createMutation(mutationOptions, queryClient);
-}
-
-/**
- * Raw RPC call: RuntimeService.DeleteAllAIMemories
- */
-export async function runtimeServiceDeleteAllAIMemories(
-  client: RuntimeClient,
-  request: Omit<PartialMessage<DeleteAllAIMemoriesRequest>, "instanceId">,
-  options?: { signal?: AbortSignal },
-): Promise<V1DeleteAllAIMemoriesResponse> {
-  const r = await client.runtimeService.deleteAllAIMemories(
-    DeleteAllAIMemoriesRequest.fromJson(
-      stripUndefined({
-        instanceId: client.instanceId,
-        ...request,
-      }) as unknown as JsonValue,
-    ),
-    { signal: options?.signal },
-  );
-  return r.toJson({
-    emitDefaultValues: true,
-  }) as unknown as V1DeleteAllAIMemoriesResponse;
-}
-
-export function getRuntimeServiceDeleteAllAIMemoriesMutationOptions(
-  client: RuntimeClient,
-  options?: Partial<
-    CreateMutationOptions<
-      V1DeleteAllAIMemoriesResponse,
-      unknown,
-      Omit<PartialMessage<DeleteAllAIMemoriesRequest>, "instanceId">
-    >
-  >,
-): CreateMutationOptions<
-  V1DeleteAllAIMemoriesResponse,
-  unknown,
-  Omit<PartialMessage<DeleteAllAIMemoriesRequest>, "instanceId">
-> {
-  return {
-    mutationFn: (request) => runtimeServiceDeleteAllAIMemories(client, request),
-    ...options,
-  };
-}
-
-export function createRuntimeServiceDeleteAllAIMemoriesMutation(
-  client: RuntimeClient,
-  options?: Partial<
-    CreateMutationOptions<
-      V1DeleteAllAIMemoriesResponse,
-      unknown,
-      Omit<PartialMessage<DeleteAllAIMemoriesRequest>, "instanceId">
-    >
-  >,
-  queryClient?: QueryClient,
-): CreateMutationResult<
-  V1DeleteAllAIMemoriesResponse,
-  unknown,
-  Omit<PartialMessage<DeleteAllAIMemoriesRequest>, "instanceId">
-> {
-  const mutationOptions = getRuntimeServiceDeleteAllAIMemoriesMutationOptions(
     client,
     options,
   );

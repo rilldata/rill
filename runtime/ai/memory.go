@@ -45,8 +45,8 @@ const (
 
 // Limits that bound the size and churn of a user's memory.
 const (
-	// MaxActiveMemories is the maximum number of active memories per (instance, owner).
-	MaxActiveMemories = 50
+	// MaxMemories is the maximum number of memories per (instance, owner).
+	MaxMemories = 50
 	// MaxMemoryContentChars is the maximum length of a single memory.
 	MaxMemoryContentChars = 300
 	// MaxMemoryOpsPerTurn is the maximum number of memory operations applied in one tool call or extraction.
@@ -71,16 +71,13 @@ var (
 )
 
 // MemoryOp is one change to the user's memory.
-// It is used both as the model's proposal and as the record of what was applied, so the UI can render and undo it.
+// It is used both as the model's proposal and as the record of what was applied, so the UI can render it.
 type MemoryOp struct {
-	Op               string `json:"op" jsonschema:"The operation: add, update, delete or noop.,enum=add,enum=update,enum=delete,enum=noop"`
-	MemoryID         string `json:"memory_id,omitempty" jsonschema:"ID of the memory being updated or deleted."`
-	Category         string `json:"category,omitempty" jsonschema:"Category of the memory.,enum=preference,enum=definition,enum=context,enum=feedback"`
-	Content          string `json:"content,omitempty" jsonschema:"The memory as a short standalone statement about the user."`
-	PreviousCategory string `json:"previous_category,omitempty" jsonschema:"For updates: the category before the change (set by the system)."`
-	PreviousContent  string `json:"previous_content,omitempty" jsonschema:"For updates: the content before the change (set by the system)."`
-	PreviousStatus   string `json:"previous_status,omitempty" jsonschema:"For adds that restored a deleted memory and for deletes: the status before the change (set by the system)."`
-	Reason           string `json:"reason,omitempty" jsonschema:"Why the operation was proposed, or why it was rejected."`
+	Op       string `json:"op" jsonschema:"The operation: add, update, delete or noop.,enum=add,enum=update,enum=delete,enum=noop"`
+	MemoryID string `json:"memory_id,omitempty" jsonschema:"ID of the memory being updated or deleted."`
+	Category string `json:"category,omitempty" jsonschema:"Category of the memory.,enum=preference,enum=definition,enum=context,enum=feedback"`
+	Content  string `json:"content,omitempty" jsonschema:"The memory as a short standalone statement about the user."`
+	Reason   string `json:"reason,omitempty" jsonschema:"Why the operation was proposed, or why it was rejected."`
 }
 
 // memoryEnabled reports whether memory applies to a session with the given user agent and claims.
@@ -104,21 +101,21 @@ func memoryEnabled(ctx context.Context, rt *runtime.Runtime, instanceID, userAge
 	return ff[MemoryFeatureFlag], nil
 }
 
-// loadUserMemories loads the owner's active memories and pause setting.
-// It returns no memories when the owner has paused memory.
+// loadUserMemories loads the owner's memories and reports whether the owner has memory turned on.
+// It returns no memories when the owner has turned memory off.
 func loadUserMemories(ctx context.Context, catalog drivers.CatalogStore, ownerID string) ([]*drivers.AIMemory, bool, error) {
 	settings, err := catalog.FindAIMemorySettings(ctx, ownerID)
 	if err != nil {
 		return nil, false, err
 	}
-	if settings.Paused {
-		return nil, true, nil
+	if !settings.Enabled {
+		return nil, false, nil
 	}
-	memories, err := catalog.FindAIMemories(ctx, ownerID, []string{drivers.AIMemoryStatusActive})
+	memories, err := catalog.FindAIMemories(ctx, ownerID)
 	if err != nil {
 		return nil, false, err
 	}
-	return memories, false, nil
+	return memories, true, nil
 }
 
 // renderUserMemories renders memories as a list for inclusion in a prompt.
@@ -126,7 +123,7 @@ func loadUserMemories(ctx context.Context, catalog drivers.CatalogStore, ownerID
 func renderUserMemories(memories []*drivers.AIMemory) string {
 	var b strings.Builder
 	for i, m := range memories {
-		if i >= MaxActiveMemories {
+		if i >= MaxMemories {
 			break
 		}
 		// Angle brackets are stripped so a memory cannot close the <user_memory> block it is rendered in.
@@ -143,7 +140,7 @@ func renderUserMemories(memories []*drivers.AIMemory) string {
 // It is deterministic and never calls an LLM; it is the single write path shared by the update_memory tool and background extraction.
 // It returns every op with its final outcome: rejected ops are returned as noops with a reason.
 func applyMemoryOps(ctx context.Context, s *Session, ops []MemoryOp, source, sourceMessageID string) ([]MemoryOp, error) {
-	if !s.MemoryFormationEnabled() {
+	if !s.MemoryEnabled() {
 		return nil, errors.New("memory is not enabled for this session")
 	}
 	ownerID := s.Claims().UserID
@@ -154,30 +151,21 @@ func applyMemoryOps(ctx context.Context, s *Session, ops []MemoryOp, source, sou
 	}
 	defer release()
 
-	existing, err := catalog.FindAIMemories(ctx, ownerID, []string{drivers.AIMemoryStatusActive, drivers.AIMemoryStatusDeleted})
+	existing, err := catalog.FindAIMemories(ctx, ownerID)
 	if err != nil {
 		return nil, err
 	}
 	byID := make(map[string]*drivers.AIMemory, len(existing))
 	byNormalizedContent := make(map[string]*drivers.AIMemory, len(existing))
-	activeCount := 0
 	for _, m := range existing {
 		byID[m.ID] = m
-		if m.Status == drivers.AIMemoryStatusActive {
-			activeCount++
-			byNormalizedContent[normalizeMemoryContent(m.Content)] = m
-		} else if _, ok := byNormalizedContent[normalizeMemoryContent(m.Content)]; !ok {
-			byNormalizedContent[normalizeMemoryContent(m.Content)] = m
-		}
+		byNormalizedContent[normalizeMemoryContent(m.Content)] = m
 	}
 
 	now := time.Now()
 	result := make([]MemoryOp, 0, len(ops))
 	for i, op := range ops {
 		op.Content = NormalizeMemoryWhitespace(op.Content)
-		op.PreviousCategory = ""
-		op.PreviousContent = ""
-		op.PreviousStatus = ""
 
 		// Ops beyond the per-turn budget are rejected rather than dropped, so the caller still sees what was proposed.
 		if i >= MaxMemoryOpsPerTurn {
@@ -198,34 +186,16 @@ func applyMemoryOps(ctx context.Context, s *Session, ops []MemoryOp, source, sou
 
 		switch op.Op {
 		case MemoryOpAdd:
-			// Default the category before the duplicate check, so a restored tombstone is categorized too.
 			if op.Category == "" {
 				op.Category = MemoryCategoryContext
 			}
 			if m, ok := byNormalizedContent[normalizeMemoryContent(op.Content)]; ok {
-				if m.Status == drivers.AIMemoryStatusActive {
-					op.MemoryID = m.ID
-					result = append(result, rejectMemoryOp(op, "already remembered"))
-					continue
-				}
-				// Restore the tombstone instead of inserting a duplicate.
-				op.PreviousStatus = m.Status
-				m.Status = drivers.AIMemoryStatusActive
-				m.Category = op.Category
-				m.Content = op.Content
-				m.Source = source
-				m.SourceSessionID = s.ID()
-				m.SourceMessageID = sourceMessageID
-				if err := catalog.UpdateAIMemory(ctx, m); err != nil {
-					return nil, err
-				}
 				op.MemoryID = m.ID
-				activeCount++
-				result = append(result, op)
+				result = append(result, rejectMemoryOp(op, "already remembered"))
 				continue
 			}
-			if activeCount >= MaxActiveMemories {
-				result = append(result, rejectMemoryOp(op, fmt.Sprintf("memory limit of %d reached; ask the user to remove memories they no longer need", MaxActiveMemories)))
+			if len(byID) >= MaxMemories {
+				result = append(result, rejectMemoryOp(op, fmt.Sprintf("memory limit of %d reached; ask the user to remove memories they no longer need", MaxMemories)))
 				continue
 			}
 			m := &drivers.AIMemory{
@@ -234,7 +204,6 @@ func applyMemoryOps(ctx context.Context, s *Session, ops []MemoryOp, source, sou
 				OwnerID:         ownerID,
 				Category:        op.Category,
 				Content:         op.Content,
-				Status:          drivers.AIMemoryStatusActive,
 				Source:          source,
 				SourceSessionID: s.ID(),
 				SourceMessageID: sourceMessageID,
@@ -246,13 +215,12 @@ func applyMemoryOps(ctx context.Context, s *Session, ops []MemoryOp, source, sou
 			}
 			byID[m.ID] = m
 			byNormalizedContent[normalizeMemoryContent(m.Content)] = m
-			activeCount++
 			op.MemoryID = m.ID
 			result = append(result, op)
 
 		case MemoryOpUpdate:
 			m, ok := byID[op.MemoryID]
-			if !ok || m.OwnerID != ownerID || m.Status != drivers.AIMemoryStatusActive {
+			if !ok {
 				result = append(result, rejectMemoryOp(op, "memory not found"))
 				continue
 			}
@@ -263,8 +231,6 @@ func applyMemoryOps(ctx context.Context, s *Session, ops []MemoryOp, source, sou
 				result = append(result, rejectMemoryOp(op, "no change"))
 				continue
 			}
-			op.PreviousCategory = m.Category
-			op.PreviousContent = m.Content
 			delete(byNormalizedContent, normalizeMemoryContent(m.Content))
 			m.Category = op.Category
 			m.Content = op.Content
@@ -279,18 +245,18 @@ func applyMemoryOps(ctx context.Context, s *Session, ops []MemoryOp, source, sou
 
 		case MemoryOpDelete:
 			m, ok := byID[op.MemoryID]
-			if !ok || m.OwnerID != ownerID || m.Status != drivers.AIMemoryStatusActive {
+			if !ok {
 				result = append(result, rejectMemoryOp(op, "memory not found"))
 				continue
 			}
-			op.PreviousStatus = m.Status
-			op.Category = m.Category
-			op.Content = m.Content
-			m.Status = drivers.AIMemoryStatusDeleted
-			if err := catalog.UpdateAIMemory(ctx, m); err != nil {
+			if err := catalog.DeleteAIMemory(ctx, m.ID); err != nil {
 				return nil, err
 			}
-			activeCount--
+			delete(byID, m.ID)
+			delete(byNormalizedContent, normalizeMemoryContent(m.Content))
+			// Echo what was removed so the notice in the chat can show it.
+			op.Category = m.Category
+			op.Content = m.Content
 			result = append(result, op)
 
 		case MemoryOpNoop:
@@ -302,11 +268,11 @@ func applyMemoryOps(ctx context.Context, s *Session, ops []MemoryOp, source, sou
 	}
 
 	// Refresh the in-memory copy so later turns in this request see the changes.
-	memories, paused, err := loadUserMemories(ctx, catalog, ownerID)
+	memories, enabled, err := loadUserMemories(ctx, catalog, ownerID)
 	if err != nil {
 		return nil, err
 	}
-	s.setUserMemories(memories, paused)
+	s.setUserMemories(memories, enabled)
 
 	return result, nil
 }

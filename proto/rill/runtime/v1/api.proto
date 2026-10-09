@@ -311,7 +311,7 @@ service RuntimeService {
     };
   }
 
-  // UpdateAIMemory updates one of the current user's AI memories. It can also restore a deleted memory (undo).
+  // UpdateAIMemory updates the category and content of one of the current user's AI memories.
   rpc UpdateAIMemory(UpdateAIMemoryRequest) returns (UpdateAIMemoryResponse) {
     option (google.api.http) = {
       put: "/v1/instances/{instance_id}/ai/memories/{memory_id}",
@@ -324,17 +324,8 @@ service RuntimeService {
     option (google.api.http) = {delete: "/v1/instances/{instance_id}/ai/memories/{memory_id}"};
   }
 
-  // DeleteAllAIMemories permanently deletes all of the current user's AI memories in an instance.
-  rpc DeleteAllAIMemories(DeleteAllAIMemoriesRequest) returns (DeleteAllAIMemoriesResponse) {
-    option (google.api.http) = {delete: "/v1/instances/{instance_id}/ai/memories"};
-  }
-
-  // GetAIMemorySettings returns the current user's AI memory settings for an instance.
-  rpc GetAIMemorySettings(GetAIMemorySettingsRequest) returns (GetAIMemorySettingsResponse) {
-    option (google.api.http) = {get: "/v1/instances/{instance_id}/ai/memory-settings"};
-  }
-
-  // UpdateAIMemorySettings updates the current user's AI memory settings for an instance.
+  // UpdateAIMemorySettings turns AI memory on or off for the current user in an instance.
+  // The current settings are returned by ListAIMemories.
   rpc UpdateAIMemorySettings(UpdateAIMemorySettingsRequest) returns (UpdateAIMemorySettingsResponse) {
     option (google.api.http) = {
       put: "/v1/instances/{instance_id}/ai/memory-settings",
@@ -1115,8 +1106,6 @@ message Conversation {
   string owner_id = 2;
   string title = 3;
   string user_agent = 6;
-  // True if the owner excluded this conversation from AI memory formation.
-  bool memory_disabled = 8;
   google.protobuf.Timestamp created_on = 4;
   google.protobuf.Timestamp updated_on = 5;
   repeated Message messages = 7; // NOTE: Deprecated.
@@ -1263,9 +1252,6 @@ message CompleteRequest {
   // Optional context for prompts handled by the feedback_agent.
   // The field is ignored if another agent is selected.
   FeedbackAgentContext feedback_agent_context = 13;
-  // Sets whether the conversation is excluded from AI memory formation ("don't remember this chat").
-  // When present, the value is persisted on the conversation; when absent, the persisted value is kept.
-  optional bool disable_memory = 14;
 }
 
 // Response message for RuntimeService.Complete
@@ -1294,9 +1280,6 @@ message CompleteStreamingRequest {
   // Optional context for prompts handled by the feedback_agent.
   // The field is ignored if another agent is selected.
   FeedbackAgentContext feedback_agent_context = 13;
-  // Sets whether the conversation is excluded from AI memory formation ("don't remember this chat").
-  // When present, the value is persisted on the conversation; when absent, the persisted value is kept.
-  optional bool disable_memory = 14;
 }
 
 // Response message for RuntimeService.CompleteStreaming
@@ -1324,31 +1307,27 @@ message AIMemory {
   // One of: preference, definition, context, feedback.
   string category = 2;
   string content = 3;
-  // One of: active, pending, deleted.
-  string status = 4;
   // One of: explicit, extracted, manual.
-  string source = 5;
+  string source = 4;
   // The conversation and message the memory was learned from (empty for manually created memories).
-  string source_conversation_id = 6;
-  string source_message_id = 7;
-  google.protobuf.Timestamp created_on = 8;
-  google.protobuf.Timestamp updated_on = 9;
+  string source_conversation_id = 5;
+  string source_message_id = 6;
+  google.protobuf.Timestamp created_on = 7;
+  google.protobuf.Timestamp updated_on = 8;
 }
 
 // Request message for RuntimeService.ListAIMemories
 message ListAIMemoriesRequest {
   string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
-  // If true, recently deleted memories (which can still be restored) are included.
-  bool include_deleted = 2;
 }
 
 // Response message for RuntimeService.ListAIMemories
 message ListAIMemoriesResponse {
   repeated AIMemory memories = 1;
-  // False if memory is not available to the current user (feature disabled or anonymous user).
-  bool enabled = 2;
-  // True if the user has paused memory.
-  bool paused = 3;
+  // False if memory is not available to the current user (feature disabled for the project or anonymous user).
+  bool available = 2;
+  // False if the user has turned memory off. Memories are then neither used nor updated, but can still be managed.
+  bool enabled = 3;
 }
 
 // Request message for RuntimeService.CreateAIMemory
@@ -1367,10 +1346,8 @@ message CreateAIMemoryResponse {
 message UpdateAIMemoryRequest {
   string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
   string memory_id = 2 [(validate.rules).string = {min_len: 1}];
-  optional string category = 3;
-  optional string content = 4 [(validate.rules).string = {min_len: 1, max_len: 300}];
-  // Set to "active" to restore a deleted memory, or "deleted" to soft-delete it.
-  optional string status = 5 [(validate.rules).string = {in: ["active", "deleted"]}];
+  string category = 3;
+  string content = 4 [(validate.rules).string = {min_len: 1, max_len: 300}];
 }
 
 // Response message for RuntimeService.UpdateAIMemory
@@ -1387,38 +1364,14 @@ message DeleteAIMemoryRequest {
 // Response message for RuntimeService.DeleteAIMemory
 message DeleteAIMemoryResponse {}
 
-// Request message for RuntimeService.DeleteAllAIMemories
-message DeleteAllAIMemoriesRequest {
-  string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
-}
-
-// Response message for RuntimeService.DeleteAllAIMemories
-message DeleteAllAIMemoriesResponse {}
-
-// Request message for RuntimeService.GetAIMemorySettings
-message GetAIMemorySettingsRequest {
-  string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
-}
-
-// Response message for RuntimeService.GetAIMemorySettings
-message GetAIMemorySettingsResponse {
-  // False if memory is not available to the current user (feature disabled or anonymous user).
-  bool enabled = 1;
-  bool paused = 2;
-  uint32 active_count = 3;
-  uint32 max_count = 4;
-}
-
 // Request message for RuntimeService.UpdateAIMemorySettings
 message UpdateAIMemorySettingsRequest {
   string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
-  bool paused = 2;
+  bool enabled = 2;
 }
 
 // Response message for RuntimeService.UpdateAIMemorySettings
-message UpdateAIMemorySettingsResponse {
-  bool paused = 1;
-}
+message UpdateAIMemorySettingsResponse {}
 
 // **********
 // Access management

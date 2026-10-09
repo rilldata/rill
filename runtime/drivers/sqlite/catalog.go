@@ -446,7 +446,7 @@ func (c *catalogStore) UpsertInstanceHealth(ctx context.Context, h *drivers.Inst
 
 func (c *catalogStore) FindAISessions(ctx context.Context, ownerID, userAgentPattern string) ([]*drivers.AISession, error) {
 	query := `
-		SELECT id, instance_id, owner_id, title, user_agent, shared_until_message_id, forked_from_session_id, memory_disabled, created_on, updated_on
+		SELECT id, instance_id, owner_id, title, user_agent, shared_until_message_id, forked_from_session_id, created_on, updated_on
 		FROM ai_sessions
 		WHERE instance_id = ? AND owner_id = ?
 	`
@@ -469,7 +469,7 @@ func (c *catalogStore) FindAISessions(ctx context.Context, ownerID, userAgentPat
 	var result []*drivers.AISession
 	for rows.Next() {
 		var s drivers.AISession
-		if err := rows.Scan(&s.ID, &s.InstanceID, &s.OwnerID, &s.Title, &s.UserAgent, &s.SharedUntilMessageID, &s.ForkedFromSessionID, &s.MemoryDisabled, &s.CreatedOn, &s.UpdatedOn); err != nil {
+		if err := rows.Scan(&s.ID, &s.InstanceID, &s.OwnerID, &s.Title, &s.UserAgent, &s.SharedUntilMessageID, &s.ForkedFromSessionID, &s.CreatedOn, &s.UpdatedOn); err != nil {
 			return nil, err
 		}
 		result = append(result, &s)
@@ -482,13 +482,13 @@ func (c *catalogStore) FindAISessions(ctx context.Context, ownerID, userAgentPat
 
 func (c *catalogStore) FindAISession(ctx context.Context, sessionID string) (*drivers.AISession, error) {
 	row := c.db.QueryRowxContext(ctx, `
-		SELECT id, instance_id, owner_id, title, user_agent, shared_until_message_id, forked_from_session_id, memory_disabled, created_on, updated_on
+		SELECT id, instance_id, owner_id, title, user_agent, shared_until_message_id, forked_from_session_id, created_on, updated_on
 		FROM ai_sessions
 		WHERE instance_id = ? AND id = ?
 	`, c.instanceID, sessionID)
 
 	var s drivers.AISession
-	if err := row.Scan(&s.ID, &s.InstanceID, &s.OwnerID, &s.Title, &s.UserAgent, &s.SharedUntilMessageID, &s.ForkedFromSessionID, &s.MemoryDisabled, &s.CreatedOn, &s.UpdatedOn); err != nil {
+	if err := row.Scan(&s.ID, &s.InstanceID, &s.OwnerID, &s.Title, &s.UserAgent, &s.SharedUntilMessageID, &s.ForkedFromSessionID, &s.CreatedOn, &s.UpdatedOn); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, drivers.ErrNotFound
 		}
@@ -499,9 +499,9 @@ func (c *catalogStore) FindAISession(ctx context.Context, sessionID string) (*dr
 
 func (c *catalogStore) InsertAISession(ctx context.Context, s *drivers.AISession) error {
 	_, err := c.db.ExecContext(ctx, `
-		INSERT INTO ai_sessions (id, instance_id, owner_id, title, user_agent, forked_from_session_id, memory_disabled, created_on, updated_on)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-	`, s.ID, s.InstanceID, s.OwnerID, s.Title, s.UserAgent, s.ForkedFromSessionID, s.MemoryDisabled, s.CreatedOn, s.UpdatedOn)
+		INSERT INTO ai_sessions (id, instance_id, owner_id, title, user_agent, forked_from_session_id, created_on, updated_on)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+	`, s.ID, s.InstanceID, s.OwnerID, s.Title, s.UserAgent, s.ForkedFromSessionID, s.CreatedOn, s.UpdatedOn)
 	if err != nil {
 		return err
 	}
@@ -511,9 +511,9 @@ func (c *catalogStore) InsertAISession(ctx context.Context, s *drivers.AISession
 func (c *catalogStore) UpdateAISession(ctx context.Context, s *drivers.AISession) error {
 	now := time.Now()
 	_, err := c.db.ExecContext(ctx, `
-		UPDATE ai_sessions SET owner_id = ?, title = ?, user_agent = ?, shared_until_message_id = ?, memory_disabled = ?, updated_on = ?
+		UPDATE ai_sessions SET owner_id = ?, title = ?, user_agent = ?, shared_until_message_id = ?, updated_on = ?
 		WHERE id = ?
-	`, s.OwnerID, s.Title, s.UserAgent, s.SharedUntilMessageID, s.MemoryDisabled, now, s.ID)
+	`, s.OwnerID, s.Title, s.UserAgent, s.SharedUntilMessageID, now, s.ID)
 	if err != nil {
 		return err
 	}
@@ -572,24 +572,13 @@ func (c *catalogStore) InsertAIMessage(ctx context.Context, m *drivers.AIMessage
 	return nil
 }
 
-func (c *catalogStore) FindAIMemories(ctx context.Context, ownerID string, statuses []string) ([]*drivers.AIMemory, error) {
-	query := `
-		SELECT id, instance_id, owner_id, category, content, status, source, source_session_id, source_message_id, created_on, updated_on
+func (c *catalogStore) FindAIMemories(ctx context.Context, ownerID string) ([]*drivers.AIMemory, error) {
+	rows, err := c.db.QueryxContext(ctx, `
+		SELECT id, instance_id, owner_id, category, content, source, source_session_id, source_message_id, created_on, updated_on
 		FROM ai_memories
 		WHERE instance_id = ? AND owner_id = ?
-	`
-	args := []any{c.instanceID, ownerID}
-
-	if len(statuses) > 0 {
-		query += " AND status IN (" + strings.Repeat("?,", len(statuses)-1) + "?)"
-		for _, status := range statuses {
-			args = append(args, status)
-		}
-	}
-
-	query += " ORDER BY updated_on DESC, id ASC"
-
-	rows, err := c.db.QueryxContext(ctx, query, args...)
+		ORDER BY updated_on DESC, id ASC
+	`, c.instanceID, ownerID)
 	if err != nil {
 		return nil, err
 	}
@@ -598,7 +587,7 @@ func (c *catalogStore) FindAIMemories(ctx context.Context, ownerID string, statu
 	var result []*drivers.AIMemory
 	for rows.Next() {
 		var m drivers.AIMemory
-		if err := rows.Scan(&m.ID, &m.InstanceID, &m.OwnerID, &m.Category, &m.Content, &m.Status, &m.Source, &m.SourceSessionID, &m.SourceMessageID, &m.CreatedOn, &m.UpdatedOn); err != nil {
+		if err := rows.Scan(&m.ID, &m.InstanceID, &m.OwnerID, &m.Category, &m.Content, &m.Source, &m.SourceSessionID, &m.SourceMessageID, &m.CreatedOn, &m.UpdatedOn); err != nil {
 			return nil, err
 		}
 		result = append(result, &m)
@@ -611,13 +600,13 @@ func (c *catalogStore) FindAIMemories(ctx context.Context, ownerID string, statu
 
 func (c *catalogStore) FindAIMemory(ctx context.Context, id string) (*drivers.AIMemory, error) {
 	row := c.db.QueryRowxContext(ctx, `
-		SELECT id, instance_id, owner_id, category, content, status, source, source_session_id, source_message_id, created_on, updated_on
+		SELECT id, instance_id, owner_id, category, content, source, source_session_id, source_message_id, created_on, updated_on
 		FROM ai_memories
 		WHERE instance_id = ? AND id = ?
 	`, c.instanceID, id)
 
 	var m drivers.AIMemory
-	if err := row.Scan(&m.ID, &m.InstanceID, &m.OwnerID, &m.Category, &m.Content, &m.Status, &m.Source, &m.SourceSessionID, &m.SourceMessageID, &m.CreatedOn, &m.UpdatedOn); err != nil {
+	if err := row.Scan(&m.ID, &m.InstanceID, &m.OwnerID, &m.Category, &m.Content, &m.Source, &m.SourceSessionID, &m.SourceMessageID, &m.CreatedOn, &m.UpdatedOn); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, drivers.ErrNotFound
 		}
@@ -628,18 +617,18 @@ func (c *catalogStore) FindAIMemory(ctx context.Context, id string) (*drivers.AI
 
 func (c *catalogStore) InsertAIMemory(ctx context.Context, m *drivers.AIMemory) error {
 	_, err := c.db.ExecContext(ctx, `
-		INSERT INTO ai_memories (id, instance_id, owner_id, category, content, status, source, source_session_id, source_message_id, created_on, updated_on)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-	`, m.ID, m.InstanceID, m.OwnerID, m.Category, m.Content, m.Status, m.Source, m.SourceSessionID, m.SourceMessageID, m.CreatedOn, m.UpdatedOn)
+		INSERT INTO ai_memories (id, instance_id, owner_id, category, content, source, source_session_id, source_message_id, created_on, updated_on)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+	`, m.ID, m.InstanceID, m.OwnerID, m.Category, m.Content, m.Source, m.SourceSessionID, m.SourceMessageID, m.CreatedOn, m.UpdatedOn)
 	return err
 }
 
 func (c *catalogStore) UpdateAIMemory(ctx context.Context, m *drivers.AIMemory) error {
 	now := time.Now()
 	_, err := c.db.ExecContext(ctx, `
-		UPDATE ai_memories SET category = ?, content = ?, status = ?, source = ?, source_session_id = ?, source_message_id = ?, updated_on = ?
+		UPDATE ai_memories SET category = ?, content = ?, source = ?, source_session_id = ?, source_message_id = ?, updated_on = ?
 		WHERE instance_id = ? AND id = ?
-	`, m.Category, m.Content, m.Status, m.Source, m.SourceSessionID, m.SourceMessageID, now, c.instanceID, m.ID)
+	`, m.Category, m.Content, m.Source, m.SourceSessionID, m.SourceMessageID, now, c.instanceID, m.ID)
 	if err != nil {
 		return err
 	}
@@ -652,24 +641,19 @@ func (c *catalogStore) DeleteAIMemory(ctx context.Context, id string) error {
 	return err
 }
 
-func (c *catalogStore) DeleteAIMemories(ctx context.Context, ownerID string) error {
-	_, err := c.db.ExecContext(ctx, `DELETE FROM ai_memories WHERE instance_id = ? AND owner_id = ?`, c.instanceID, ownerID)
-	return err
-}
-
 // FindAIMemorySettings returns the owner's memory settings.
-// It returns default settings (not paused) when the owner has never changed them.
+// It returns the default settings (memory enabled) when the owner has never changed them.
 func (c *catalogStore) FindAIMemorySettings(ctx context.Context, ownerID string) (*drivers.AIMemorySettings, error) {
 	row := c.db.QueryRowxContext(ctx, `
-		SELECT instance_id, owner_id, paused, updated_on
+		SELECT instance_id, owner_id, enabled, updated_on
 		FROM ai_memory_settings
 		WHERE instance_id = ? AND owner_id = ?
 	`, c.instanceID, ownerID)
 
 	var s drivers.AIMemorySettings
-	if err := row.Scan(&s.InstanceID, &s.OwnerID, &s.Paused, &s.UpdatedOn); err != nil {
+	if err := row.Scan(&s.InstanceID, &s.OwnerID, &s.Enabled, &s.UpdatedOn); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return &drivers.AIMemorySettings{InstanceID: c.instanceID, OwnerID: ownerID}, nil
+			return &drivers.AIMemorySettings{InstanceID: c.instanceID, OwnerID: ownerID, Enabled: true}, nil
 		}
 		return nil, err
 	}
@@ -679,9 +663,9 @@ func (c *catalogStore) FindAIMemorySettings(ctx context.Context, ownerID string)
 func (c *catalogStore) UpsertAIMemorySettings(ctx context.Context, s *drivers.AIMemorySettings) error {
 	now := time.Now()
 	_, err := c.db.ExecContext(ctx, `
-		INSERT INTO ai_memory_settings (instance_id, owner_id, paused, updated_on) VALUES (?, ?, ?, ?)
-		ON CONFLICT(instance_id, owner_id) DO UPDATE SET paused = excluded.paused, updated_on = excluded.updated_on
-	`, c.instanceID, s.OwnerID, s.Paused, now)
+		INSERT INTO ai_memory_settings (instance_id, owner_id, enabled, updated_on) VALUES (?, ?, ?, ?)
+		ON CONFLICT(instance_id, owner_id) DO UPDATE SET enabled = excluded.enabled, updated_on = excluded.updated_on
+	`, c.instanceID, s.OwnerID, s.Enabled, now)
 	if err != nil {
 		return err
 	}

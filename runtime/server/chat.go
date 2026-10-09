@@ -257,9 +257,6 @@ func (s *Server) Complete(ctx context.Context, req *runtimev1.CompleteRequest) (
 			s.ai.SpawnMemoryExtraction(ctx, session, rootCallID)
 		}
 	}()
-	if req.DisableMemory != nil {
-		_ = session.UpdateMemoryDisabled(ctx, *req.DisableMemory)
-	}
 
 	// Prepare agent args if provided
 	var analystAgentArgs *ai.AnalystAgentArgs
@@ -389,9 +386,6 @@ func (s *Server) CompleteStreaming(req *runtimev1.CompleteStreamingRequest, stre
 			s.ai.SpawnMemoryExtraction(ctx, session, rootCallID)
 		}
 	}()
-	if req.DisableMemory != nil {
-		_ = session.UpdateMemoryDisabled(ctx, *req.DisableMemory)
-	}
 
 	// Open subscription for session messages and stream them to the client in the background
 	subCh := session.Subscribe()
@@ -625,14 +619,13 @@ func (s *Server) GetAIMessage(ctx context.Context, req *runtimev1.GetAIMessageRe
 // sessionToPB converts a drivers.AISession to a runtimev1.Conversation.
 func sessionToPB(s *drivers.AISession, messages []*runtimev1.Message) *runtimev1.Conversation {
 	return &runtimev1.Conversation{
-		Id:             s.ID,
-		OwnerId:        s.OwnerID,
-		Title:          s.Title,
-		UserAgent:      s.UserAgent,
-		MemoryDisabled: s.MemoryDisabled,
-		CreatedOn:      timestamppb.New(s.CreatedOn),
-		UpdatedOn:      timestamppb.New(s.UpdatedOn),
-		Messages:       messages,
+		Id:        s.ID,
+		OwnerId:   s.OwnerID,
+		Title:     s.Title,
+		UserAgent: s.UserAgent,
+		CreatedOn: timestamppb.New(s.CreatedOn),
+		UpdatedOn: timestamppb.New(s.UpdatedOn),
+		Messages:  messages,
 	}
 }
 

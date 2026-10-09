@@ -54,15 +54,15 @@ func TestRenderUserMemories(t *testing.T) {
 	require.Equal(t, "- [preference] Prefers tables (id: a)\n- [definition] Revenue means net revenue (id: b)", out)
 
 	// The count cap holds
-	many := make([]*drivers.AIMemory, MaxActiveMemories+10)
+	many := make([]*drivers.AIMemory, MaxMemories+10)
 	for i := range many {
 		many[i] = &drivers.AIMemory{ID: "id", Category: MemoryCategoryContext, Content: "x"}
 	}
-	require.Equal(t, MaxActiveMemories, strings.Count(renderUserMemories(many), "\n")+1)
+	require.Equal(t, MaxMemories, strings.Count(renderUserMemories(many), "\n")+1)
 
 	// The size cap holds
-	big := make([]*drivers.AIMemory, 0, MaxActiveMemories)
-	for range MaxActiveMemories {
+	big := make([]*drivers.AIMemory, 0, MaxMemories)
+	for range MaxMemories {
 		big = append(big, &drivers.AIMemory{ID: "id", Category: MemoryCategoryContext, Content: strings.Repeat("y", MaxMemoryContentChars)})
 	}
 	require.LessOrEqual(t, len(renderUserMemories(big)), maxMemoryPromptChars)

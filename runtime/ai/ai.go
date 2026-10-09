@@ -188,7 +188,7 @@ func (r *Runner) Session(ctx context.Context, opts *SessionOptions) (res *Sessio
 	// and never for MCP clients, AI reports or anonymous users (see memoryEnabled).
 	// Failures are logged and ignored: memory must never break a chat.
 	var memories []*drivers.AIMemory
-	var memEnabled, memPaused bool
+	var memEnabled bool
 	if session.OwnerID == opts.Claims.UserID {
 		memEnabled, err = memoryEnabled(ctx, r.Runtime, opts.InstanceID, session.UserAgent, opts.Claims)
 		if err != nil {
@@ -196,7 +196,8 @@ func (r *Runner) Session(ctx context.Context, opts *SessionOptions) (res *Sessio
 			memEnabled = false
 		}
 		if memEnabled {
-			memories, memPaused, err = loadUserMemories(ctx, catalog, opts.Claims.UserID)
+			// The owner may have turned memory off, in which case it is disabled for the session as well.
+			memories, memEnabled, err = loadUserMemories(ctx, catalog, opts.Claims.UserID)
 			if err != nil {
 				// Disable memory for the session rather than run with an empty list, which could re-learn duplicates.
 				r.Runtime.Logger.Warn("ai: failed to load user memories", zap.String("instance_id", opts.InstanceID), zap.Error(err))
@@ -235,7 +236,6 @@ func (r *Runner) Session(ctx context.Context, opts *SessionOptions) (res *Sessio
 		activity:            activityClient,
 		projectInstructions: instance.AIInstructions,
 		memoryEnabled:       memEnabled,
-		memoryPaused:        memPaused,
 		userMemories:        memories,
 		managedAI:           instance.ResolveAIConnector() == instance.AdminConnector,
 		acquireLLM: func(ctx context.Context) (drivers.AIService, func(), error) {
@@ -563,9 +563,8 @@ type BaseSession struct {
 	logger              *zap.Logger
 	activity            *activity.Client
 	projectInstructions string
-	memoryEnabled       bool                // true if memory applies to this session (see memoryEnabled)
-	memoryPaused        bool                // true if the owner has paused memory; existing memories are then neither used nor updated
-	userMemories        []*drivers.AIMemory // the owner's active memories, loaded at session creation and refreshed on writes
+	memoryEnabled       bool                // true if memory applies to this session: it is available to the owner (see memoryEnabled) and the owner has it turned on
+	userMemories        []*drivers.AIMemory // the owner's memories, loaded at session creation and refreshed on writes
 	managedAI           bool                // true if completions use the Rill-managed AI connector (billable tokens); false for bring-your-own-model
 	acquireLLM          func(ctx context.Context) (drivers.AIService, func(), error)
 	acquireCatalog      func(ctx context.Context) (drivers.CatalogStore, func(), error)
@@ -741,50 +740,26 @@ func (s *BaseSession) ProjectInstructions() string {
 	return s.projectInstructions
 }
 
-// MemoryEnabled reports whether memory applies to this session.
+// MemoryEnabled reports whether memory applies to this session: its memories are injected into prompts and new ones may be written.
+// It is false when memory is not available to the owner (see memoryEnabled) and when the owner has turned memory off.
 func (s *BaseSession) MemoryEnabled() bool {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
 	return s.memoryEnabled
 }
 
-// MemoryPaused reports whether the owner has paused memory.
-func (s *BaseSession) MemoryPaused() bool {
-	s.mu.RLock()
-	defer s.mu.RUnlock()
-	return s.memoryPaused
-}
-
-// MemoryFormationEnabled reports whether new memories may be written from this session.
-// It is false when memory is disabled or paused, and when the owner opted this conversation out of memory.
-func (s *BaseSession) MemoryFormationEnabled() bool {
-	s.mu.RLock()
-	defer s.mu.RUnlock()
-	return s.memoryEnabled && !s.memoryPaused && !s.dto.MemoryDisabled
-}
-
-// UserMemories returns the owner's active memories. It is empty when memory is disabled or paused.
+// UserMemories returns the owner's memories. It is empty when memory is not enabled.
 func (s *BaseSession) UserMemories() []*drivers.AIMemory {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 	return s.userMemories
 }
 
-func (s *BaseSession) setUserMemories(memories []*drivers.AIMemory, paused bool) {
+func (s *BaseSession) setUserMemories(memories []*drivers.AIMemory, enabled bool) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.userMemories = memories
-	s.memoryPaused = paused
-}
-
-// UpdateMemoryDisabled sets whether this conversation is excluded from memory formation.
-func (s *BaseSession) UpdateMemoryDisabled(ctx context.Context, disabled bool) error {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	if s.dto.MemoryDisabled == disabled {
-		return nil
-	}
-	s.dto.MemoryDisabled = disabled
-	s.dtoDirty = true
-	return nil
+	s.memoryEnabled = enabled
 }
 
 func (s *BaseSession) SetLLM(acquireLLM func(ctx context.Context) (drivers.AIService, func(), error)) {

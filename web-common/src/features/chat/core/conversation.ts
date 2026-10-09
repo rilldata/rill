@@ -80,8 +80,6 @@ export class Conversation {
   public readonly draftMessage = writable<string>("");
   public readonly isStreaming = writable(false);
   public readonly streamError = writable<string | null>(null);
-  /** "Don't remember this chat": excludes the conversation from AI memory formation. Persisted by the runtime once sent. */
-  public readonly memoryDisabled = writable(false);
 
   // Events
   private readonly events = new EventEmitter<ConversationEvents>();
@@ -386,7 +384,6 @@ export class Conversation {
         ? ToolName.FEEDBACK_AGENT
         : this.agent,
       feedbackAgentContext: request.feedbackAgentContext,
-      disableMemory: get(this.memoryDisabled),
       ...request.context,
     };
 
@@ -480,11 +477,11 @@ export class Conversation {
    * Memory extraction runs in the background after a turn, so its "Memory updated" notice arrives after
    * the stream has closed and has to be polled for. Polling stops as soon as the notice shows up, when the
    * user moves to another conversation or starts a new turn, or when the schedule runs out.
-   * Skipped when memory is off or the chat opted out of memory.
+   * Skipped when memory is off for the project.
    */
   private scheduleMemoryRefetch(): void {
     this.clearMemoryRefetch();
-    if (!get(featureFlags.chatMemory) || get(this.memoryDisabled)) return;
+    if (!get(featureFlags.chatMemory)) return;
     if (this.conversationId === NEW_CONVERSATION_ID) return;
 
     const conversationId = this.conversationId;
