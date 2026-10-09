@@ -866,6 +866,14 @@ This helps the agent understand which file the user is referring to in their req
   currentFilePath?: string;
 }
 
+/** A non-destructive UI action explicitly exposed to the AI by the browser. */
+export interface V1UIAction {
+  /** Stable identifier from the element's data-ai-action attribute. */
+  id?: string;
+  /** Human-readable accessible label for the action. */
+  label?: string;
+}
+
 export interface V1DirEntry {
   path?: string;
   isDir?: boolean;
@@ -2837,6 +2845,10 @@ If not set, it will infer an agent based on the prompt and conversation history.
   analystAgentContext?: V1AnalystAgentContext;
   developerAgentContext?: V1DeveloperAgentContext;
   feedbackAgentContext?: V1FeedbackAgentContext;
+  /** Optional current browser path. The origin is intentionally omitted. */
+  uiPagePath?: string;
+  /** Optional visible, enabled, uniquely-addressable browser actions. */
+  uiActions?: V1UIAction[];
 };
 
 export type RuntimeServiceCompleteStreamingBody = {
@@ -2850,6 +2862,10 @@ If not set, it will infer an agent based on the prompt and conversation history.
   analystAgentContext?: V1AnalystAgentContext;
   developerAgentContext?: V1DeveloperAgentContext;
   feedbackAgentContext?: V1FeedbackAgentContext;
+  /** Optional current browser path. The origin is intentionally omitted. */
+  uiPagePath?: string;
+  /** Optional visible, enabled, uniquely-addressable browser actions. */
+  uiActions?: V1UIAction[];
 };
 
 export type RuntimeServiceCompleteStreaming200 = {

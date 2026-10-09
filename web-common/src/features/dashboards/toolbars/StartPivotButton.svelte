@@ -6,7 +6,12 @@
   export let onClick: () => void;
 </script>
 
-<Button compact type="toolbar" {onClick}>
+<Button
+  compact
+  type="toolbar"
+  {onClick}
+  dataAttributes={{ "data-ai-action": "dashboard.start-pivot" }}
+>
   <Pivot size="16px" />
   {m.dashboard_start_pivot()}
 </Button>
