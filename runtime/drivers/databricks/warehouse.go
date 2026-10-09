@@ -53,16 +53,7 @@ func (c *connection) QueryAsFiles(ctx context.Context, props map[string]any) (ou
 		return nil, err
 	}
 
-	err = c.dbMu.Acquire(ctx, 1)
-	if err != nil {
-		return nil, err
-	}
-	dsn, err := c.backendDSN(ctx)
-	c.dbMu.Release(1)
-	if err != nil {
-		return nil, err
-	}
-	db, err := sql.Open("databricks", dsn)
+	db, err := sql.Open("databricks", c.config.resolveDSN())
 	if err != nil {
 		return nil, err
 	}
