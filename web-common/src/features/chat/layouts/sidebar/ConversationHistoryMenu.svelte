@@ -45,7 +45,7 @@
   </DropdownMenu.Trigger>
 
   <DropdownMenu.Content
-    class="max-h-80 overflow-y-auto flex flex-col gap-y-1"
+    class="max-h-80 max-w-[calc(100vw-2rem)] overflow-y-auto flex flex-col gap-y-1"
     align="end"
   >
     {#if conversations.length === 0}

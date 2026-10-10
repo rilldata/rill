@@ -66,6 +66,7 @@
         <Dashboard
           {exploreName}
           metricsViewName={explore.metricsView.meta.name.name}
+          phoneLayout
         />
       </DashboardStateManager>
     </StateManagersProvider>

@@ -12,6 +12,7 @@
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { copyWithAdditionalArguments } from "@rilldata/web-common/lib/url-utils.ts";
+  import { Share } from "lucide-svelte";
   import { onMount } from "svelte";
 
   export let organization: string;
@@ -38,16 +39,28 @@
   <PopoverTrigger>
     {#snippet child({ props })}
       <Tooltip distance={8} suppress={open}>
-        <Button {...props} type="secondary" selected={open}
-          >{m.project_share()}</Button
+        <!-- On phones the label costs too much header width, so the button
+             collapses to its icon; the aria-label keeps the accessible name. -->
+        <Button
+          {...props}
+          type="secondary"
+          selected={open}
+          label={m.project_share()}
         >
+          <Share size="16px" class="sm:hidden" />
+          <span class="hidden sm:inline">{m.project_share()}</span>
+        </Button>
         <TooltipContent slot="tooltip-content"
           >{m.project_share_tooltip()}</TooltipContent
         >
       </Tooltip>
     {/snippet}
   </PopoverTrigger>
-  <PopoverContent align="end" class="w-[520px]" padding="0">
+  <PopoverContent
+    align="end"
+    class="w-[min(520px,calc(100vw-2rem))]"
+    padding="0"
+  >
     <ShareProjectForm
       {organization}
       {project}

@@ -39,7 +39,12 @@
   <HeaderLogo href={rillLogoHref} logoUrl={organizationLogoUrl} />
   <Breadcrumbs {pathParts} {currentPath} />
 
-  <div class="flex gap-x-2 items-center ml-auto">
+  <!-- max-w-full bounds the cluster so its flex-wrap can engage on narrow
+       viewports (a bare shrink-0 leaves the width unbounded and the row
+       never wraps); from sm up it keeps to one row as before. -->
+  <div
+    class="flex flex-wrap justify-end gap-y-1 gap-x-2 items-center ml-auto max-w-full sm:shrink-0"
+  >
     {#if $user.isSuccess}
       {#if $user.data?.user}
         <AvatarButton />

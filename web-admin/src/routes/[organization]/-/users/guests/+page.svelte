@@ -136,7 +136,7 @@
     </div>
   {/if}
   <div class="flex flex-col">
-    <div class="flex flex-row gap-x-4 h-9">
+    <div class="flex flex-row flex-wrap gap-x-4 gap-y-2 sm:flex-nowrap sm:h-9">
       <Search
         bind:value={searchText}
         large

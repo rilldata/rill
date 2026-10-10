@@ -30,7 +30,11 @@
     {/snippet}
   </Popover.Trigger>
 
-  <Popover.Content class="w-[380px]" align="end" sideOffset={8}>
+  <Popover.Content
+    class="w-[min(380px,calc(100vw-2rem))]"
+    align="end"
+    sideOffset={8}
+  >
     <div class="flex flex-col gap-y-3">
       <span class="text-sm text-fg-secondary">
         {m.status_clone_description()}
