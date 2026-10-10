@@ -183,8 +183,9 @@ type query struct {
 
 // selectField describes one output column of the query's select list.
 type selectField struct {
-	name  string
-	isDim bool
+	name       string
+	expression string
+	isDim      bool
 }
 
 func (q *query) parseFrom(ctx context.Context, node *ast.TableRefsClause) error {
@@ -255,7 +256,7 @@ func (q *query) parseSelect(node *ast.FieldList) error {
 			} else {
 				q.q.Measures = append(q.q.Measures, metricsview.Measure{Name: col})
 			}
-			q.selectFields = append(q.selectFields, selectField{name: col, isDim: typ == "DIMENSION"})
+			q.selectFields = append(q.selectFields, selectField{name: col, expression: restore(v), isDim: typ == "DIMENSION"})
 		case *ast.FuncCallExpr:
 			alias := field.AsName.String()
 			res, err := q.parseFuncCallExpr(v)
@@ -269,7 +270,7 @@ func (q *query) parseSelect(node *ast.FieldList) error {
 				Name:    alias,
 				Compute: res,
 			})
-			q.selectFields = append(q.selectFields, selectField{name: alias, isDim: true})
+			q.selectFields = append(q.selectFields, selectField{name: alias, expression: restore(v), isDim: true})
 		default:
 			return fmt.Errorf("metrics sql: unsupported expression in select field")
 		}
@@ -303,7 +304,16 @@ func (q *query) validateGroupBy(node *ast.GroupByClause) error {
 			}
 			name = q.selectFields[expr.N-1].name
 		default:
-			return fmt.Errorf("metrics sql: unsupported expression %q in GROUP BY", restore(item.Expr))
+			expression := restore(item.Expr)
+			for _, field := range q.selectFields {
+				if field.isDim && field.expression == expression {
+					name = field.name
+					break
+				}
+			}
+			if name == "" {
+				return fmt.Errorf("metrics sql: unsupported expression %q in GROUP BY", expression)
+			}
 		}
 
 		found := false

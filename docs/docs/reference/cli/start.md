@@ -22,6 +22,7 @@ rill start [<path>] [flags]
       --preview                   Start in dashboard-only view (no code editor)
       --port int                  Port for HTTP (default 9009)
       --port-grpc int             Port for gRPC (internal) (default 49009)
+      --port-psql int             Port for SQL (PostgreSQL wire-compatible)
       --no-ui                     Serve only the backend
       --debug                     Collect additional debug info
       --log-format string         Log format (options: "console", "json") (default "console")

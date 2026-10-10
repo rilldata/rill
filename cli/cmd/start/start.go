@@ -19,6 +19,7 @@ import (
 func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 	var httpPort int
 	var grpcPort int
+	var psqlPort int
 	var verbose bool
 	var debug bool
 	var readonly bool
@@ -151,6 +152,7 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 			err = app.Serve(local.ServeOptions{
 				HTTPPort:    httpPort,
 				GRPCPort:    grpcPort,
+				PSQLPort:    psqlPort,
 				EnableUI:    !noUI,
 				OpenBrowser: !noOpen,
 				Readonly:    readonly,
@@ -178,6 +180,7 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 	startCmd.Flags().BoolVar(&previewMode, "preview", false, "Start in dashboard-only view (no code editor)")
 	startCmd.Flags().IntVar(&httpPort, "port", 9009, "Port for HTTP")
 	startCmd.Flags().IntVar(&grpcPort, "port-grpc", 49009, "Port for gRPC (internal)")
+	startCmd.Flags().IntVar(&psqlPort, "port-psql", 0, "Port for SQL (PostgreSQL wire-compatible)")
 	startCmd.Flags().BoolVar(&noUI, "no-ui", false, "Serve only the backend")
 	startCmd.Flags().BoolVar(&debug, "debug", false, "Collect additional debug info")
 	startCmd.Flags().StringVar(&logFormat, "log-format", "console", "Log format (options: \"console\", \"json\")")

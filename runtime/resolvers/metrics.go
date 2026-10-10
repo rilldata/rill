@@ -135,7 +135,7 @@ func (r *metricsResolver) Validate(ctx context.Context) error {
 	return nil
 }
 
-func (r *metricsResolver) ResolveInteractive(ctx context.Context) (runtime.ResolverResult, error) {
+func (r *metricsResolver) bindQuery(ctx context.Context) error {
 	if r.mv.TimeDimension != "" || (r.query.TimeRange != nil && r.query.TimeRange.TimeDimension != "") {
 		timeDim := ""
 		if r.query.TimeRange != nil && r.query.TimeRange.TimeDimension != "" {
@@ -143,13 +143,21 @@ func (r *metricsResolver) ResolveInteractive(ctx context.Context) (runtime.Resol
 		}
 		tsRes, err := resolveTimestampResult(ctx, r.runtime, r.instanceID, r.query.MetricsView, timeDim, r.claims, r.args.Priority)
 		if err != nil {
-			return nil, err
+			return err
 		}
 
 		err = r.executor.BindQuery(r.query, tsRes)
 		if err != nil {
-			return nil, err
+			return err
 		}
+	}
+
+	return nil
+}
+
+func (r *metricsResolver) ResolveInteractive(ctx context.Context) (runtime.ResolverResult, error) {
+	if err := r.bindQuery(ctx); err != nil {
+		return nil, err
 	}
 
 	meta := map[string]any{}

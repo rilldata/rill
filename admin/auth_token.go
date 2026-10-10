@@ -282,6 +282,8 @@ func (s *Service) ValidateAuthToken(ctx context.Context, token string) (AuthToke
 	}
 
 	// Use a secure hash of the token string as the cache key to avoid storing raw tokens in memory.
+	// SHA256 is fine since tokens are high-entropy random secrets, not user-chosen passwords.
+	// codeql[go/weak-sensitive-data-hashing]
 	tokenHash := sha256.Sum256([]byte(token))
 	cacheKey := fmt.Sprintf("%x", tokenHash[:])
 
