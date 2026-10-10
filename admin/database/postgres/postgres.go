@@ -4289,15 +4289,17 @@ func dedupeAndSortResourceNames(resources []database.ResourceName) []database.Re
 	return deduped
 }
 
-func (c *connection) FindMCPOAuthClient(ctx context.Context, projectID, connector, serverURL string) (*database.MCPOAuthClient, error) {
-	res := &database.MCPOAuthClient{}
-	err := c.getDB(ctx).QueryRowxContext(ctx, "SELECT * FROM mcp_oauth_clients WHERE project_id=$1 AND connector=$2 AND server_url=$3", projectID, connector, serverURL).StructScan(res)
+func (c *connection) FindMCPOAuthClients(ctx context.Context, projectID, connector, serverURL string) ([]*database.MCPOAuthClient, error) {
+	var res []*database.MCPOAuthClient
+	err := c.getDB(ctx).SelectContext(ctx, &res, "SELECT * FROM mcp_oauth_clients WHERE project_id=$1 AND connector=$2 AND server_url=$3 ORDER BY created_on DESC", projectID, connector, serverURL)
 	if err != nil {
-		return nil, parseErr("mcp oauth client", err)
+		return nil, parseErr("mcp oauth clients", err)
 	}
-	err = c.decryptMCPOAuthClient(res)
-	if err != nil {
-		return nil, err
+	for _, row := range res {
+		err = c.decryptMCPOAuthClient(row)
+		if err != nil {
+			return nil, err
+		}
 	}
 	return res, nil
 }
@@ -4315,7 +4317,7 @@ func (c *connection) FindMCPOAuthClientByID(ctx context.Context, id string) (*da
 	return res, nil
 }
 
-func (c *connection) UpsertMCPOAuthClient(ctx context.Context, opts *database.UpsertMCPOAuthClientOptions) (*database.MCPOAuthClient, error) {
+func (c *connection) InsertMCPOAuthClient(ctx context.Context, opts *database.InsertMCPOAuthClientOptions) (*database.MCPOAuthClient, error) {
 	if err := database.Validate(opts); err != nil {
 		return nil, err
 	}
@@ -4327,10 +4329,6 @@ func (c *connection) UpsertMCPOAuthClient(ctx context.Context, opts *database.Up
 	err = c.getDB(ctx).QueryRowxContext(ctx, `
 		INSERT INTO mcp_oauth_clients (project_id, connector, server_url, client, client_encryption_key_id)
 		VALUES ($1, $2, $3, $4, $5)
-		ON CONFLICT (project_id, connector, server_url) DO UPDATE SET
-			client = EXCLUDED.client,
-			client_encryption_key_id = EXCLUDED.client_encryption_key_id,
-			updated_on = now()
 		RETURNING *`,
 		opts.ProjectID, opts.Connector, opts.ServerURL, value, keyID,
 	).StructScan(res)
@@ -4342,6 +4340,18 @@ func (c *connection) UpsertMCPOAuthClient(ctx context.Context, opts *database.Up
 		return nil, err
 	}
 	return res, nil
+}
+
+func (c *connection) DeleteUnusedMCPOAuthClients(ctx context.Context, projectID, connector, serverURL string, createdBefore time.Time) error {
+	_, err := c.getDB(ctx).ExecContext(ctx, `
+		DELETE FROM mcp_oauth_clients c
+		WHERE c.project_id=$1 AND c.connector=$2 AND c.server_url=$3 AND c.created_on < $4
+			AND NOT EXISTS (SELECT 1 FROM mcp_oauth_tokens t WHERE t.oauth_client_id = c.id)`,
+		projectID, connector, serverURL, createdBefore)
+	if err != nil {
+		return parseErr("mcp oauth clients", err)
+	}
+	return nil
 }
 
 func (c *connection) decryptMCPOAuthClient(res *database.MCPOAuthClient) error {

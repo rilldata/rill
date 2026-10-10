@@ -12492,6 +12492,8 @@ func (m *MCPServer) validate(all bool) error {
 
 	// no validation rules for Connected
 
+	// no validation rules for Authorized
+
 	for idx, item := range m.GetTools() {
 		_, _ = idx, item
 

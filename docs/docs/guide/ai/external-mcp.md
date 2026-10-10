@@ -50,7 +50,7 @@ oauth_scopes: [search:read, channels:history]
 
 Register the redirect URL of your Rill deployment with the server when it asks for one: `https://admin.rilldata.com/mcp/oauth/callback` in Rill Cloud, and `http://localhost:9009/mcp/oauth/callback` in Rill Developer (adjust the port if you run Rill on another one).
 
-Tokens are never shared between users. Rill Cloud stores each user's token encrypted in the control plane and refreshes it as needed; runtimes only receive short-lived access tokens. Rill Developer stores the local user's token in the project's `tmp` directory, which is not committed. Users can disconnect a server at any time from the chat, which deletes the token.
+Tokens are never shared between users. Rill Cloud stores each user's token encrypted in the control plane and refreshes it as needed; runtimes only receive short-lived access tokens. Rill Developer stores the local user's token in the project's `tmp` directory, which is not committed. Users can disconnect a server at any time from the chat, even while the server is unreachable, which deletes the token.
 
 ### Project-scoped credentials
 

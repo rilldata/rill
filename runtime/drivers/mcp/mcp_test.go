@@ -335,10 +335,14 @@ func TestLocalOAuthFlow(t *testing.T) {
 	ctx := t.Context()
 	var manager OAuthManager = h
 	require.True(t, manager.OAuthEnabled())
+	require.Equal(t, ts.url(), h.ServerURL())
 
 	connected, _, err := manager.OAuthStatus(ctx)
 	require.NoError(t, err)
 	require.False(t, connected)
+	authorized, err := h.OAuthAuthorized(ctx)
+	require.NoError(t, err)
+	require.False(t, authorized)
 
 	// Begin: discovers the authorization server through the 401 challenge and registers a client
 	authURL, verifier, err := manager.BeginOAuth(ctx, "http://localhost:9009/mcp/oauth/callback", "state-1")
@@ -371,6 +375,9 @@ func TestLocalOAuthFlow(t *testing.T) {
 	require.NoError(t, err)
 	require.True(t, connected)
 	require.WithinDuration(t, time.Now().Add(time.Hour), expiresOn, time.Minute)
+	authorized, err = h.OAuthAuthorized(ctx)
+	require.NoError(t, err)
+	require.True(t, authorized)
 
 	// Calls use the persisted token
 	res, err := h.CallTool(ctx, "echo", map[string]any{"text": "hi"}, nil)

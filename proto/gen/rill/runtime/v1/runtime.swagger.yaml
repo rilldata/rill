@@ -6488,7 +6488,15 @@ definitions:
         description: True if the server requires a per-user OAuth authorization.
       connected:
         type: boolean
-        description: True if the current user is authorized to use the server (always true for servers that don't use OAuth).
+        description: |-
+          True if the server can be used by the current user right now: it was reached and its tools were listed.
+          Always true for reachable servers that don't use OAuth.
+      authorized:
+        type: boolean
+        description: |-
+          True if the current user has granted the server an OAuth authorization that Rill still holds.
+          Unlike connected, it does not depend on the server being reachable, so an authorization can be removed during an outage.
+          Only set for servers that use OAuth.
       agents:
         type: array
         items:

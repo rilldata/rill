@@ -60,6 +60,7 @@
 
   // A server is usable only when its tools could be listed for the user. Without OAuth there is nothing
   // the user can do about it, so it shows as unavailable rather than as connected.
+  // Authorization is tracked separately: a user who authorized a server that is currently down can still disconnect it.
   function statusLabel(server: McpServer): string {
     if (server.error) return m.chat_mcp_status_error();
     if (!server.connected) {
@@ -132,26 +133,29 @@
                 {/if}
               </div>
               {#if server.oauth && connectContext}
-                {#if server.connected}
-                  <Button
-                    type="text"
-                    small
-                    onClick={() => disconnect(server)}
-                    disabled={$disconnectMutation.isPending}
-                  >
-                    {m.chat_mcp_disconnect()}
-                  </Button>
-                {:else}
-                  <Button
-                    type="secondary"
-                    small
-                    onClick={() => connect(server)}
-                    loading={connecting === server.connector}
-                    disabled={connecting !== null}
-                  >
-                    {m.chat_mcp_connect()}
-                  </Button>
-                {/if}
+                <div class="mcp-server-actions">
+                  {#if server.authorized}
+                    <Button
+                      type="text"
+                      small
+                      onClick={() => disconnect(server)}
+                      disabled={$disconnectMutation.isPending}
+                    >
+                      {m.chat_mcp_disconnect()}
+                    </Button>
+                  {/if}
+                  {#if !server.connected}
+                    <Button
+                      type="secondary"
+                      small
+                      onClick={() => connect(server)}
+                      loading={connecting === server.connector}
+                      disabled={connecting !== null}
+                    >
+                      {m.chat_mcp_connect()}
+                    </Button>
+                  {/if}
+                </div>
               {/if}
             </li>
           {/each}
@@ -179,6 +183,10 @@
 
   .mcp-server-info {
     @apply flex min-w-0 flex-col;
+  }
+
+  .mcp-server-actions {
+    @apply flex shrink-0 items-center gap-x-1;
   }
 
   .mcp-server-name {

@@ -345,12 +345,15 @@ type DB interface {
 	DeleteBillingIssue(ctx context.Context, id string) error
 	DeleteBillingIssueByTypeForOrg(ctx context.Context, orgID string, errorType BillingIssueType) error
 
-	FindMCPOAuthClient(ctx context.Context, projectID, connector, serverURL string) (*MCPOAuthClient, error)
+	// FindMCPOAuthClients returns the clients registered for a connector's server URL, newest first.
+	FindMCPOAuthClients(ctx context.Context, projectID, connector, serverURL string) ([]*MCPOAuthClient, error)
 	FindMCPOAuthClientByID(ctx context.Context, id string) (*MCPOAuthClient, error)
-	// AcquireMCPOAuthClientLock takes an exclusive lock on the client for a connector's server URL until the current transaction ends.
+	// AcquireMCPOAuthClientLock takes an exclusive lock on the clients for a connector's server URL until the current transaction ends.
 	// It must be called within a transaction started with NewTx; it serializes client registration across all admin processes.
 	AcquireMCPOAuthClientLock(ctx context.Context, projectID, connector, serverURL string) error
-	UpsertMCPOAuthClient(ctx context.Context, opts *UpsertMCPOAuthClientOptions) (*MCPOAuthClient, error)
+	InsertMCPOAuthClient(ctx context.Context, opts *InsertMCPOAuthClientOptions) (*MCPOAuthClient, error)
+	// DeleteUnusedMCPOAuthClients deletes the clients for a connector's server URL that no token is bound to and that were created before createdBefore.
+	DeleteUnusedMCPOAuthClients(ctx context.Context, projectID, connector, serverURL string, createdBefore time.Time) error
 	// AcquireMCPOAuthTokenLock takes an exclusive lock on a user's token for a connector until the current transaction ends.
 	// It must be called within a transaction started with NewTx. Reads and writes of the token (refresh, disconnect, a completed authorization)
 	// take it first, so they are serialized across all admin processes.
@@ -1285,8 +1288,10 @@ type Asset struct {
 	CreatedOn      time.Time `db:"created_on"`
 }
 
-// MCPOAuthClient is the OAuth client Rill uses with an external MCP server's authorization server, shared by all users of a project's connector.
-// There is one per server URL the connector has pointed to. Client is the JSON encoding of runtime/drivers/mcp.OAuthClient; it is decrypted when read.
+// MCPOAuthClient is an OAuth client Rill uses with an external MCP server's authorization server, shared by the users of a project's connector.
+// A client is never modified once stored, because tokens and pending authorizations are bound to it:
+// when the connector's OAuth configuration changes, a new client is registered alongside the old one.
+// Client is the JSON encoding of runtime/drivers/mcp.OAuthClient; it is decrypted when read.
 type MCPOAuthClient struct {
 	ID                    string    `db:"id"`
 	ProjectID             string    `db:"project_id"`
@@ -1298,8 +1303,8 @@ type MCPOAuthClient struct {
 	UpdatedOn             time.Time `db:"updated_on"`
 }
 
-// UpsertMCPOAuthClientOptions defines options for creating or replacing an MCPOAuthClient.
-type UpsertMCPOAuthClientOptions struct {
+// InsertMCPOAuthClientOptions defines options for creating an MCPOAuthClient.
+type InsertMCPOAuthClientOptions struct {
 	ProjectID string `validate:"required"`
 	Connector string `validate:"required"`
 	ServerURL string `validate:"required"`

@@ -36,6 +36,7 @@ func (s *Server) ListMCPServers(ctx context.Context, req *runtimev1.ListMCPServe
 			Connector:   srv.Connector,
 			DisplayName: srv.DisplayName,
 			Oauth:       srv.OAuth,
+			Authorized:  srv.Authorized,
 			Connected:   srv.Connected,
 			Agents:      srv.Agents,
 		}

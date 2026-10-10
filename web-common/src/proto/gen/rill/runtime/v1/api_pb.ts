@@ -5225,11 +5225,21 @@ export class MCPServer extends Message$1<MCPServer> {
   oauth = false;
 
   /**
-   * True if the current user is authorized to use the server (always true for servers that don't use OAuth).
+   * True if the server can be used by the current user right now: it was reached and its tools were listed.
+   * Always true for reachable servers that don't use OAuth.
    *
    * @generated from field: bool connected = 5;
    */
   connected = false;
+
+  /**
+   * True if the current user has granted the server an OAuth authorization that Rill still holds.
+   * Unlike connected, it does not depend on the server being reachable, so an authorization can be removed during an outage.
+   * Only set for servers that use OAuth.
+   *
+   * @generated from field: bool authorized = 9;
+   */
+  authorized = false;
 
   /**
    * AI agents that may use the server. Empty means all agents.
@@ -5264,6 +5274,7 @@ export class MCPServer extends Message$1<MCPServer> {
     { no: 2, name: "display_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "oauth", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 5, name: "connected", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 9, name: "authorized", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 6, name: "agents", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 7, name: "tools", kind: "message", T: MCPTool, repeated: true },
     { no: 8, name: "error", kind: "scalar", T: 9 /* ScalarType.STRING */ },

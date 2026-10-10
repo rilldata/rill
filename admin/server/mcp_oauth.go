@@ -565,11 +565,11 @@ func (s *Server) mcpOAuthConnectorConfig(ctx context.Context, depl *database.Dep
 	return nil, mcpOAuthHTTPError{status: http.StatusNotFound, msg: "connector not found"}
 }
 
-// mcpOAuthClient returns the project's OAuth client for the connector, discovering and registering one if there is none
-// or the stored one no longer matches the connector's configuration.
-// Registration is serialized per (project, connector, server URL): two users connecting a new server at the same time
-// would otherwise register two clients and upsert the same row, leaving the first user's flow with a client that cannot exchange its code.
-// The second caller waits, then finds and reuses the first caller's client.
+// mcpOAuthClient returns the project's OAuth client for the connector's current configuration, discovering and registering one if none is stored.
+// Stored clients are never modified: tokens and pending authorizations are bound to the client that obtained them and keep refreshing
+// and completing through it, so a configuration change registers a new client next to the old one.
+// Registration is serialized per (project, connector, server URL), so two users connecting a new server at the same time register one client,
+// not two; the second caller waits, then finds and reuses the first caller's client.
 func (s *Server) mcpOAuthClient(ctx context.Context, proj *database.Project, connector string, cfg *mcpOAuthConnectorConfig) (*database.MCPOAuthClient, *mcp.OAuthClient, error) {
 	redirectURL := s.admin.URLs.MCPOAuthCallback()
 
@@ -591,13 +591,12 @@ func (s *Server) mcpOAuthClient(ctx context.Context, proj *database.Project, con
 		Scopes:       cfg.Scopes,
 		HTTPClient:   mcp.NewHTTPClient(false, mcpOAuthHTTPTimeout),
 	}
-	row, err := s.admin.DB.FindMCPOAuthClient(ctx, proj.ID, connector, cfg.URL)
-	if err != nil && !errors.Is(err, database.ErrNotFound) {
+	rows, err := s.admin.DB.FindMCPOAuthClients(ctx, proj.ID, connector, cfg.URL)
+	if err != nil {
 		return nil, nil, err
 	}
-	if err == nil {
+	for _, row := range rows {
 		existing := &mcp.OAuthClient{}
-		// The row is upserted in place when the configuration changed, so tokens bound to it keep working through the updated client.
 		if json.Unmarshal(row.Client, existing) == nil && existing.Matches(opts) {
 			return row, existing, tx.Commit()
 		}
@@ -611,12 +610,18 @@ func (s *Server) mcpOAuthClient(ctx context.Context, proj *database.Project, con
 	if err != nil {
 		return nil, nil, err
 	}
-	row, err = s.admin.DB.UpsertMCPOAuthClient(ctx, &database.UpsertMCPOAuthClientOptions{
+	row, err := s.admin.DB.InsertMCPOAuthClient(ctx, &database.InsertMCPOAuthClientOptions{
 		ProjectID: proj.ID,
 		Connector: connector,
 		ServerURL: oauthClient.ServerURL,
 		Client:    clientJSON,
 	})
+	if err != nil {
+		return nil, nil, err
+	}
+	// Superseded clients that no token is bound to are not needed anymore.
+	// Recent ones are kept because an authorization started with them may still complete.
+	err = s.admin.DB.DeleteUnusedMCPOAuthClients(ctx, proj.ID, connector, cfg.URL, time.Now().Add(-mcpOAuthFlowTTL))
 	if err != nil {
 		return nil, nil, err
 	}

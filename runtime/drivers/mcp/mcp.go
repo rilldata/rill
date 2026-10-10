@@ -351,6 +351,11 @@ func (h *handle) AsMCP() (drivers.MCPService, bool) {
 	return h, true
 }
 
+// ServerURL implements drivers.MCPService.
+func (h *handle) ServerURL() string {
+	return h.config.URL
+}
+
 // ListTools implements drivers.MCPService.
 func (h *handle) ListTools(ctx context.Context, opts *drivers.MCPCallOptions) ([]*drivers.MCPTool, error) {
 	var res []*drivers.MCPTool
@@ -428,6 +433,15 @@ func (h *handle) CallTool(ctx context.Context, name string, args map[string]any,
 		return nil, err
 	}
 	return res, nil
+}
+
+// OAuthAuthorized implements drivers.MCPService.
+func (h *handle) OAuthAuthorized(ctx context.Context) (bool, error) {
+	if !h.OAuthEnabled() {
+		return false, nil
+	}
+	ok, _, err := h.OAuthStatus(ctx)
+	return ok, err
 }
 
 // ResetOAuth implements drivers.MCPService.

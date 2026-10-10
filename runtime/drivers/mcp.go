@@ -13,12 +13,18 @@ var ErrMCPAuthorizationRequired = errors.New("driver: MCP server authorization r
 // MCPService enables AI agents to discover and call tools on an external MCP (Model Context Protocol) server.
 // Handles are shared by all users of an instance; anything specific to the calling user travels in MCPCallOptions.
 type MCPService interface {
+	// ServerURL returns the URL of the server the handle talks to, with templating resolved.
+	// Callers that hold an OAuth token obtained for a specific server must compare it before supplying the token.
+	ServerURL() string
 	// ListTools lists the tools the server exposes to the caller described by opts.
 	// Implementations may cache the result for a short period.
 	ListTools(ctx context.Context, opts *MCPCallOptions) ([]*MCPTool, error)
 	// CallTool invokes a tool on the server on behalf of the caller described by opts.
 	// A failure reported by the tool itself is returned as a result with IsError set, not as an error.
 	CallTool(ctx context.Context, name string, args map[string]any, opts *MCPCallOptions) (*MCPToolResult, error)
+	// OAuthAuthorized reports whether the driver holds a locally persisted OAuth authorization (Rill Developer).
+	// It is always false when the driver holds no such state.
+	OAuthAuthorized(ctx context.Context) (bool, error)
 	// ResetOAuth deletes any OAuth authorization state the driver has persisted locally (Rill Developer).
 	// It is a no-op when the driver holds no such state.
 	ResetOAuth(ctx context.Context) error

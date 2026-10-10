@@ -53,7 +53,11 @@ type ExternalServer struct {
 	Agents []string
 	// OAuth is true if the server requires a per-user OAuth authorization.
 	OAuth bool
-	// Connected is true if the server can be used by the user. It is always true for reachable servers without OAuth.
+	// Authorized is true if the user has granted the server an OAuth authorization that Rill still holds.
+	// Unlike Connected, it does not depend on the server being reachable, so the user can disconnect a server that is down.
+	// It is only set for servers with OAuth.
+	Authorized bool
+	// Connected is true if the server can be used by the user right now. It is always true for reachable servers without OAuth.
 	Connected bool
 	// Tools the server exposes to the user, after applying the connector's security policy.
 	Tools []*drivers.MCPTool
@@ -272,20 +276,31 @@ func (r *Runner) discoverExternalServer(ctx context.Context, instanceID, environ
 		return nil, nil
 	}
 
-	// The URL may be templated ({{ .env.MCP_URL }}); hosted tokens are bound to the resolved URL, so resolve it the way the driver does.
-	cfg, err := r.Runtime.ConnectorConfig(ctx, instanceID, srv.Connector)
-	if err != nil {
-		srv.Err = fmt.Errorf("failed to resolve the connector's configuration: %w", err)
-		return srv, nil
-	}
-	srv.URL, _ = cfg.Resolve()["url"].(string)
-
 	if res.Meta.ReconcileError != "" {
 		srv.Err = errors.New(res.Meta.ReconcileError)
 		return srv, nil
 	}
 
-	// Resolve the user's OAuth token in hosted deployments. Rill Developer keeps it in the connector's local state instead.
+	// Hosted tokens are bound to the server URL they were granted for, so the URL is taken from the handle that will use the token.
+	// The URL may be templated ({{ .env.MCP_URL }}); the handle holds it resolved.
+	handle, release, err := r.Runtime.AcquireHandle(ctx, instanceID, srv.Connector)
+	if err != nil {
+		if errors.Is(err, ctx.Err()) {
+			return nil, err
+		}
+		srv.Err = fmt.Errorf("failed to open the connector: %w", err)
+		return srv, nil
+	}
+	defer release()
+	svc, ok := handle.AsMCP()
+	if !ok {
+		srv.Err = fmt.Errorf("connector %q is not an MCP server", srv.Connector)
+		return srv, nil
+	}
+	srv.URL = svc.ServerURL()
+
+	// Resolve the user's OAuth authorization: a token from the admin service in hosted deployments,
+	// or the state the driver keeps locally in Rill Developer.
 	if srv.OAuth {
 		token, hosted, err := r.externalOAuthToken(ctx, instanceID, srv, claims.UserID, false)
 		if err != nil {
@@ -295,11 +310,20 @@ func (r *Runner) discoverExternalServer(ctx context.Context, instanceID, environ
 			srv.Err = err
 			return srv, nil
 		}
-		if hosted && token == "" {
+		if hosted {
+			srv.Authorized = token != ""
+			srv.token = token
+		} else {
+			srv.Authorized, err = svc.OAuthAuthorized(ctx)
+			if err != nil {
+				srv.Err = fmt.Errorf("failed to read the connector's authorization state: %w", err)
+				return srv, nil
+			}
+		}
+		if !srv.Authorized {
 			// The user has not authorized the server yet.
 			return srv, nil
 		}
-		srv.token = token
 	}
 
 	opts := &drivers.MCPCallOptions{
@@ -308,7 +332,7 @@ func (r *Runner) discoverExternalServer(ctx context.Context, instanceID, environ
 		UserAttributes: claims.UserAttributes,
 		OAuthToken:     srv.token,
 	}
-	tools, err := r.listExternalTools(ctx, instanceID, srv, claims.UserID, opts)
+	tools, err := r.listExternalTools(ctx, instanceID, svc, srv, claims.UserID, opts)
 	if err != nil {
 		if errors.Is(err, ctx.Err()) {
 			return nil, err
@@ -361,16 +385,7 @@ func externalServerPolicyError(ctx context.Context, srv *ExternalServer, claims 
 }
 
 // listExternalTools lists a server's tools, refreshing a rejected hosted token once.
-func (r *Runner) listExternalTools(ctx context.Context, instanceID string, srv *ExternalServer, userID string, opts *drivers.MCPCallOptions) ([]*drivers.MCPTool, error) {
-	handle, release, err := r.Runtime.AcquireHandle(ctx, instanceID, srv.Connector)
-	if err != nil {
-		return nil, err
-	}
-	defer release()
-	svc, ok := handle.AsMCP()
-	if !ok {
-		return nil, fmt.Errorf("connector %q is not an MCP server", srv.Connector)
-	}
+func (r *Runner) listExternalTools(ctx context.Context, instanceID string, svc drivers.MCPService, srv *ExternalServer, userID string, opts *drivers.MCPCallOptions) ([]*drivers.MCPTool, error) {
 	tools, err := svc.ListTools(ctx, opts)
 	if err != nil && errors.Is(err, drivers.ErrMCPAuthorizationRequired) && opts.OAuthToken != "" {
 		if token, err2 := r.refreshExternalOAuthToken(ctx, instanceID, srv, userID); err2 == nil && token != "" {
@@ -504,6 +519,11 @@ func (r *Runner) compileExternalTool(instanceID, environment string, vars map[st
 			srv.mu.Lock()
 			token := srv.token
 			srv.mu.Unlock()
+			if token != "" && svc.ServerURL() != srv.URL {
+				// The connector was pointed at another server after discovery.
+				// The token was granted for the previous server and must never reach this one; the user has to connect the new one.
+				return nil, &ExternalAuthorizationRequiredError{Connector: connector, DisplayName: srv.DisplayName}
+			}
 			opts := &drivers.MCPCallOptions{
 				Environment:    environment,
 				Variables:      vars,
