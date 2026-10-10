@@ -3,6 +3,7 @@ package clickhouse
 import (
 	"context"
 	"fmt"
+	"net/url"
 	"strings"
 	"testing"
 
@@ -41,6 +42,7 @@ func TestClickhouseSingle(t *testing.T) {
 	t.Run("TestDictionary", func(t *testing.T) { testDictionary(t, c, olap) })
 	t.Run("TestIntervalType", func(t *testing.T) { testIntervalType(t, olap) })
 	t.Run("QueryAttributesAsSettings", func(t *testing.T) { testQueryAttributesAsSettings(t, olap) })
+	t.Run("QueryAttributesReadonlyUser", func(t *testing.T) { testQueryAttributesReadonlyUser(t, olap, dsn) })
 	t.Run("CreateTableAsSelect_WithPrePostExec", func(t *testing.T) { testCreateTableAsSelect_WithPrePostExec(t, c, olap) })
 	t.Run("InsertTableAsSelect_WithPrePostExec", func(t *testing.T) { testInsertTableAsSelect_WithPrePostExec(t, c, olap) })
 }
@@ -1072,6 +1074,56 @@ func testQueryAttributesAsSettings(t *testing.T, olap drivers.OLAPStore) {
 		require.Error(t, err)
 		require.Contains(t, err.Error(), "neither a builtin setting nor")
 	})
+}
+
+func testQueryAttributesReadonlyUser(t *testing.T, olap drivers.OLAPStore, dsn string) {
+	ctx := context.Background()
+	const (
+		username = "rill_readonly"
+		password = "test_password"
+	)
+
+	require.NoError(t, olap.Exec(ctx, &drivers.Statement{
+		Query: fmt.Sprintf("CREATE USER %s IDENTIFIED WITH sha256_password BY %s SETTINGS readonly = 1", safeSQLName(username), safeSQLString(password)),
+	}))
+	t.Cleanup(func() {
+		_ = olap.Exec(context.Background(), &drivers.Statement{Query: fmt.Sprintf("DROP USER IF EXISTS %s", safeSQLName(username))})
+	})
+	require.NoError(t, olap.Exec(ctx, &drivers.Statement{
+		Query: fmt.Sprintf("GRANT SELECT ON *.* TO %s", safeSQLName(username)),
+	}))
+
+	u, err := url.Parse(dsn)
+	require.NoError(t, err)
+	u.User = url.UserPassword(username, password)
+	handle, err := drivers.Open("clickhouse", "", "readonly", map[string]any{"dsn": u.String()}, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
+	require.NoError(t, err)
+	defer handle.Close()
+	require.False(t, handle.(*Connection).supportSettings)
+
+	readonlyOLAP, ok := handle.AsOLAP("default")
+	require.True(t, ok)
+
+	// Queries without attributes still work
+	res, err := readonlyOLAP.Query(ctx, &drivers.Statement{Query: "SELECT 1"})
+	require.NoError(t, err)
+	require.NoError(t, res.Close())
+
+	// Attributes are not silently dropped
+	_, err = readonlyOLAP.Query(ctx, &drivers.Statement{
+		Query:           "SELECT getSetting('custom_test')",
+		QueryAttributes: map[string]string{"custom_test": "value"},
+	})
+	require.ErrorContains(t, err, "readonly")
+
+	// Connector query settings are not silently dropped
+	handle, err = drivers.Open("clickhouse", "", "readonly", map[string]any{"dsn": u.String(), "query_settings": "max_execution_time = 123"}, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
+	require.NoError(t, err)
+	defer handle.Close()
+	readonlyOLAP, ok = handle.AsOLAP("default")
+	require.True(t, ok)
+	_, err = readonlyOLAP.Query(ctx, &drivers.Statement{Query: "SELECT 1"})
+	require.ErrorContains(t, err, "readonly")
 }
 
 func testEntityTypeRestrictedUser(t *testing.T, olap drivers.OLAPStore, dsn, cluster string) {
