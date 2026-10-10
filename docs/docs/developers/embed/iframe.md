@@ -328,6 +328,8 @@ Only one of `user_email` or `attributes` can be provided for a given iframe. The
 - `attributes`: Passes the provided attributes through directly. Make sure to include all attributes referenced in your security policies (e.g. `email`, `domain`, `admin`, or custom attributes like `tenant_id`). Does not enable per-user state on its own; combine with `external_user_id` to enable per-user state.
 - `external_user_id`: Any stable identifier for the end user. This is usually the user's ID in your own database. Setting it enables per-user state such as AI chat history.
 
+The same attributes decide what an embedded canvas shows. Canvas rows, tabs and components can have [`if` conditions](/developers/build/dashboards/canvas#show-content-to-some-viewers-only) on them, such as `'{{ eq .user.plan "premium" }}'` to show premium content only to tenants on that plan. Every embed also carries the attribute `embed: true`, so a condition like `'{{ not .user.embed }}'` keeps content out of embedded dashboards.
+
 ## Embedding the project vs embedding an individual dashboard
 
 One of the most common differences between how developers may wish to iframe Rill is whether they wish to embed at the project level or individual dashboard level. This behavior can be controlled through the combination of the `resource` and `navigation` properties!

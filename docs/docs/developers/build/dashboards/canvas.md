@@ -70,6 +70,55 @@ This lets you pre-filter data across one or more metrics views used in the canva
 
 For detailed YAML configurations, see the [`defaults`](/reference/project-files/canvas-dashboards#defaults) section in our reference documentation.
 
+## Show Content to Some Viewers Only
+
+Add an `if` condition to a row, tab group, tab or component to show it only to some viewers. One canvas can then serve several audiences, such as finance and sales teams, or the basic and premium tiers of an embedded dashboard.
+
+```yaml
+rows:
+  # Everyone sees the KPIs
+  - items:
+      - kpi_grid:
+          metrics_view: orders
+          measures: [total_revenue, order_count]
+
+  # Only members of the finance group see this row
+  - if: '{{ has "finance" .user.groups }}'
+    items:
+      - width: 8
+        line_chart:
+          metrics_view: orders
+          x: { field: order_date, type: temporal }
+          y: { field: gross_margin, type: quantitative }
+      # Only admins in the finance group see this table
+      - width: 4
+        if: '{{ .user.admin }}'
+        table:
+          metrics_view: costs
+          columns: [cost_center, total_cost]
+
+  - name: deep_dives
+    tabs:
+      - label: Pipeline
+        if: '{{ has "sales" .user.groups }}'
+        rows: # ...
+      - label: Cohorts
+        # `plan` is a custom attribute, e.g. passed by an embedding app
+        if: '{{ eq .user.plan "premium" }}'
+        rows: # ...
+```
+
+Conditions use the same templating and [user attributes](/developers/build/metrics-view/security#user-attributes) as security policies. A few things to know:
+
+- An element shows only when its own condition and the conditions of the rows, tabs and groups containing it are all true.
+- Built-in attributes (`name`, `email`, `domain`, `groups`, `admin` and `embed`) always resolve, even for an [embedded dashboard](/developers/embed/iframe) that only passes custom attributes. A condition that references a custom attribute the viewer doesn't have is false. To treat a missing attribute as a value instead, use `get`, as in `'{{ ne (get .user "plan") "premium" }}'`.
+- When components are hidden, the rest of the row widens to fill it, and rows and tabs left empty disappear.
+- Hidden content is removed before the dashboard reaches the viewer, including its components and the conditions themselves. In an embedded dashboard or a public URL that's restricted to the canvas, the viewer also can't query the metrics views that only hidden content uses.
+- Hiding content doesn't restrict data elsewhere: a viewer with access to a metrics view can still query it, for example in an Explore dashboard. To restrict data, add a [security policy](/developers/build/metrics-view/security) to the metrics view.
+- Public URLs and scheduled reports that run as their creator show what the creator can see.
+
+To check what each audience sees, add [mock users](/developers/build/metrics-view/view-as-user) with their attributes to `rill.yaml` and use **View as** in the dashboard preview. In the visual editor, components that are only shown to some viewers have an indicator, and you can set a component's condition in its **Visible when** field.
+
 ## Example Canvas Dashboards
 
 Here are a few deployed examples of Canvas dashboards that you can check out!

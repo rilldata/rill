@@ -28,7 +28,10 @@ func (s *Server) ResolveCanvas(ctx context.Context, req *runtimev1.ResolveCanvas
 		return nil, status.Error(codes.PermissionDenied, "does not have access to canvas data")
 	}
 
-	res, err := s.runtime.ResolveCanvas(ctx, req.InstanceId, req.Canvas, claims, req.Unsafe)
+	res, err := s.runtime.ResolveCanvas(ctx, req.InstanceId, req.Canvas, claims, &runtime.ResolveCanvasOptions{
+		Unsafe:        req.Unsafe,
+		IncludeHidden: req.IncludeHidden,
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -37,6 +40,7 @@ func (s *Server) ResolveCanvas(ctx context.Context, req *runtimev1.ResolveCanvas
 		Canvas:                 res.Canvas,
 		ResolvedComponents:     res.ResolvedComponents,
 		ReferencedMetricsViews: res.ReferencedMetricsViews,
+		HiddenPaths:            res.HiddenPaths,
 	}, nil
 }
 
@@ -63,6 +67,16 @@ func (s *Server) ResolveComponent(ctx context.Context, req *runtimev1.ResolveCom
 	if err != nil {
 		return nil, err
 	}
+
+	// Check the user can access the component (e.g. it's not hidden from them on its canvas)
+	res, access, err := s.runtime.ApplySecurityPolicy(ctx, req.InstanceId, claims, res)
+	if err != nil {
+		return nil, err
+	}
+	if !access {
+		return nil, status.Errorf(codes.PermissionDenied, "does not have access to component %q", req.Component)
+	}
+
 	spec := res.GetComponent().State.ValidSpec
 	if spec == nil {
 		return nil, status.Errorf(codes.FailedPrecondition, "component %q is invalid", req.Component)

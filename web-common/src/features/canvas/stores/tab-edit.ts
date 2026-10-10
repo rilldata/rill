@@ -342,7 +342,39 @@ export function deleteTab(
 
   const tabRows = doc.getIn(["rows", blockIndex, "tabs", 0, "rows"]);
   const unwrapped = isSeq(tabRows) ? tabRows.items : [];
+
+  // The unwrapped rows keep the visibility of the group and tab they came from,
+  // so content that was hidden from some viewers stays hidden from them.
+  const groupCondition = doc.getIn(["rows", blockIndex, "if"]);
+  const tabCondition = doc.getIn(["rows", blockIndex, "tabs", 0, "if"]);
+  for (const row of unwrapped) {
+    if (!isMap(row)) continue;
+    const condition = combineConditions(
+      groupCondition,
+      tabCondition,
+      row.get("if"),
+    );
+    if (condition !== undefined) row.set("if", condition);
+  }
+
   rows.items.splice(blockIndex, 1, ...unwrapped);
 
   return "unwrapped-group";
+}
+
+/**
+ * Combines `if` conditions with AND, skipping empty ones. Returns undefined if none are set.
+ * Each condition renders to a boolean expression, so the combination is a valid condition too.
+ */
+export function combineConditions(
+  ...conditions: unknown[]
+): string | undefined {
+  const parts = conditions
+    .map((c) =>
+      typeof c === "string" || typeof c === "boolean" ? String(c).trim() : "",
+    )
+    .filter((c) => c !== "");
+  if (parts.length === 0) return undefined;
+  if (parts.length === 1) return parts[0];
+  return parts.map((p) => `(${p})`).join(" AND ");
 }

@@ -1,6 +1,12 @@
 import { describe, it, expect } from "vitest";
 import { parseDocument } from "yaml";
-import { generateNewAssets, mapGuard, rowsGuard } from "./layout-util";
+import {
+  generateNewAssets,
+  getItemPropertiesExcept,
+  isHiddenPath,
+  mapGuard,
+  rowsGuard,
+} from "./layout-util";
 
 // A canvas with one free row followed by a tab group that contains a widget.
 const CANVAS = `type: canvas
@@ -16,6 +22,23 @@ rows:
 `;
 
 describe("mapGuard", () => {
+  it("keeps the `if` condition of plain rows", () => {
+    const doc = parseDocument(`type: canvas
+rows:
+  - if: '{{ has "finance" .user.groups }}'
+    height: 320px
+    items:
+      - component: margin
+`);
+    const rows = mapGuard(rowsGuard(doc.getIn(["rows"])));
+
+    expect(rows[0]).toEqual({
+      if: '{{ has "finance" .user.groups }}',
+      height: "320px",
+      items: [{ component: "margin" }],
+    });
+  });
+
   it("preserves tab group rows instead of coercing them to empty items", () => {
     const doc = parseDocument(CANVAS);
     const rows = mapGuard(rowsGuard(doc.getIn(["rows"])));
@@ -77,5 +100,40 @@ describe("generateNewAssets with a tab group present", () => {
     expect(
       specTabRow?.tabGroup?.tabs?.[0]?.rows?.[0]?.items?.[0]?.component,
     ).toBe("d1--component-g1-t0-0-0");
+  });
+});
+
+describe("getItemPropertiesExcept", () => {
+  it("returns the item's properties other than its component definition", () => {
+    const doc = parseDocument(`type: canvas
+rows:
+  - items:
+      - width: 6
+        if: '{{ .user.admin }}'
+        bar_chart:
+          metrics_view: orders
+`);
+    expect(
+      getItemPropertiesExcept(doc, ["rows", 0, "items", 0], "bar_chart"),
+    ).toEqual({ width: 6, if: "{{ .user.admin }}" });
+  });
+});
+
+describe("isHiddenPath", () => {
+  const hiddenPaths = new Set(["rows.1", "rows.3.tabs.0.rows.0.items.1"]);
+
+  it("hides an element whose own path or an ancestor's path is hidden", () => {
+    expect(isHiddenPath(hiddenPaths, ["rows", 1, "items", 0])).toBe(true);
+    expect(
+      isHiddenPath(hiddenPaths, ["rows", 3, "tabs", 0, "rows", 0, "items", 1]),
+    ).toBe(true);
+  });
+
+  it("shows other elements", () => {
+    expect(isHiddenPath(hiddenPaths, ["rows", 0, "items", 0])).toBe(false);
+    expect(isHiddenPath(hiddenPaths, ["rows", 10, "items", 0])).toBe(false);
+    expect(
+      isHiddenPath(hiddenPaths, ["rows", 3, "tabs", 0, "rows", 0, "items", 0]),
+    ).toBe(false);
   });
 });

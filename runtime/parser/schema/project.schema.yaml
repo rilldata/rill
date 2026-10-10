@@ -2404,6 +2404,8 @@ definitions:
                 height:
                   type: string
                   description: Height of the row in px
+                if:
+                  $ref: '#/definitions/canvas_if_condition'
                 items:
                   type: array
                   description: List of components to display in the row
@@ -2433,6 +2435,8 @@ definitions:
                           - string
                           - integer
                         description: Width of the component (can be a number or string with unit)
+                      if:
+                        $ref: '#/definitions/canvas_if_condition'
                     additionalProperties: true
                 name:
                   type: string
@@ -2449,6 +2453,8 @@ definitions:
                       name:
                         type: string
                         description: Stable identifier used as the tab's deep-link URL key. Defaults to a slug of the label if omitted.
+                      if:
+                        $ref: '#/definitions/canvas_if_condition'
                       rows:
                         type: array
                         description: Plain rows (with `items`) shown when this tab is active. Tab rows cannot themselves contain `tabs`.
@@ -2458,6 +2464,8 @@ definitions:
                             height:
                               type: string
                               description: Height of the row in px
+                            if:
+                              $ref: '#/definitions/canvas_if_condition'
                             items:
                               type: array
                               description: List of components to display in the row
@@ -4055,6 +4063,13 @@ definitions:
                 expression: "7D as of latest/D+1D offset -7D"
               explore: sales_explore
 
+  canvas_if_condition:
+    type:
+      - string
+      - boolean
+    description: |
+      Condition that decides who sees this element, for example `'{{ has "finance" .user.groups }}'`. It uses the same templating and expression syntax as a security policy's `access`.
+      The element is only shown to viewers for whom it evaluates to true. Built-in attributes (`name`, `email`, `domain`, `groups`, `admin`, `embed`) always resolve; a condition that references a custom attribute the viewer doesn't have is false.
   ai_prompts_properties:
     type: array
     description: Suggested prompts shown as starters in the AI chat for this dashboard. Each entry is either a prompt string or an object with `label` and `prompt`. If not set, the project-level `ai_prompts` from rill.yaml are shown instead. At most 8 distinct entries.

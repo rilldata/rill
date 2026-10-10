@@ -48,6 +48,10 @@ _[array of object]_ - Refers to all of the rows displayed on the Canvas. Each en
 
   - **`height`** - _[string]_ - Height of the row in px
 
+  - **`if`** - _[string, boolean]_ - Condition that decides who sees this element, for example `'{{ has "finance" .user.groups }}'`. It uses the same templating and expression syntax as a security policy's `access`.
+  The element is only shown to viewers for whom it evaluates to true. Built-in attributes (`name`, `email`, `domain`, `groups`, `admin`, `embed`) always resolve; a condition that references a custom attribute the viewer doesn't have is false.
+
+
   - **`items`** - _[array of object]_ - List of components to display in the row
 
     - **`component`** - _[string]_ - Name of the component to display. Each component type has its own set of properties.
@@ -69,6 +73,10 @@ _[array of object]_ - Refers to all of the rows displayed on the Canvas. Each en
 
     - **`width`** - _[string, integer]_ - Width of the component (can be a number or string with unit)
 
+    - **`if`** - _[string, boolean]_ - Condition that decides who sees this element, for example `'{{ has "finance" .user.groups }}'`. It uses the same templating and expression syntax as a security policy's `access`.
+    The element is only shown to viewers for whom it evaluates to true. Built-in attributes (`name`, `email`, `domain`, `groups`, `admin`, `embed`) always resolve; a condition that references a custom attribute the viewer doesn't have is false.
+
+
   - **`name`** - _[string]_ - Stable identifier for a tab group, used as its deep-link URL key. Defaults to `group-<index>` if omitted. Only used for tab-group entries.
 
   - **`tabs`** - _[array of object]_ - Makes this entry a tab group instead of a plain row. Only the active tab's rows render; tabs cannot be nested.
@@ -77,9 +85,17 @@ _[array of object]_ - Refers to all of the rows displayed on the Canvas. Each en
 
     - **`name`** - _[string]_ - Stable identifier used as the tab's deep-link URL key. Defaults to a slug of the label if omitted.
 
+    - **`if`** - _[string, boolean]_ - Condition that decides who sees this element, for example `'{{ has "finance" .user.groups }}'`. It uses the same templating and expression syntax as a security policy's `access`.
+    The element is only shown to viewers for whom it evaluates to true. Built-in attributes (`name`, `email`, `domain`, `groups`, `admin`, `embed`) always resolve; a condition that references a custom attribute the viewer doesn't have is false.
+
+
     - **`rows`** - _[array of object]_ - Plain rows (with `items`) shown when this tab is active. Tab rows cannot themselves contain `tabs`.
 
       - **`height`** - _[string]_ - Height of the row in px
+
+      - **`if`** - _[string, boolean]_ - Condition that decides who sees this element, for example `'{{ has "finance" .user.groups }}'`. It uses the same templating and expression syntax as a security policy's `access`.
+      The element is only shown to viewers for whom it evaluates to true. Built-in attributes (`name`, `email`, `domain`, `groups`, `admin`, `embed`) always resolve; a condition that references a custom attribute the viewer doesn't have is false.
+
 
       - **`items`** - _[array]_ - List of components to display in the row
 

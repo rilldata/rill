@@ -7,6 +7,7 @@ import (
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
+	"github.com/rilldata/rill/runtime/canvas"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/pathutil"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -189,13 +190,13 @@ func canvasTransitiveConditionResources(ctx context.Context, c *runtime.Controll
 		metricsViews: make(map[string]bool),
 	}
 
-	canvas := res.GetCanvas()
-	if canvas == nil {
+	cv := res.GetCanvas()
+	if cv == nil {
 		return nil, fmt.Errorf("resource is not a canvas")
 	}
-	spec := canvas.GetState().GetValidSpec()
+	spec := cv.GetState().GetValidSpec()
 	if spec == nil {
-		spec = canvas.GetSpec() // Fallback to spec if ValidSpec is not available
+		spec = cv.GetSpec() // Fallback to spec if ValidSpec is not available
 	}
 	if spec == nil {
 		return nil, fmt.Errorf("canvas spec is nil")
@@ -204,9 +205,17 @@ func canvasTransitiveConditionResources(ctx context.Context, c *runtime.Controll
 	// explicitly allow access to the canvas itself
 	conditionResources = append(conditionResources, res.Meta.Name)
 
+	// Only grant the content that the canvas's `if` conditions show to these claims.
+	// The conditions are evaluated directly, since going through the security engine would recurse into this function.
+	conditions, err := c.Runtime.EvaluateCanvasConditions(ctx, c.InstanceID, claims, res)
+	if err != nil {
+		return nil, err
+	}
+	rows, _ := canvas.PruneRows(spec.Rows, runtime.CanvasConditionsKeep(conditions))
+
 	// Collect all component names referenced by the canvas (including those nested in tab groups)
 	componentNames := make(map[string]bool)
-	runtime.CollectCanvasComponentNames(spec.Rows, componentNames)
+	runtime.CollectCanvasComponentNames(rows, componentNames)
 
 	// Process each component
 	for componentName := range componentNames {
@@ -214,15 +223,27 @@ func canvasTransitiveConditionResources(ctx context.Context, c *runtime.Controll
 			Kind: runtime.ResourceKindComponent,
 			Name: componentName,
 		}
-		// Allow access to the component itself
-		conditionResources = append(conditionResources, componentRef)
 
 		// Get component resource
 		componentRes, err := c.Get(ctx, componentRef, false)
 		if err != nil {
 			// If component is not found, skip it but still allow access to the component name
+			conditionResources = append(conditionResources, componentRef)
 			continue
 		}
+
+		// Skip a component whose own `if` conditions hide it from these claims,
+		// such as an inline component of another canvas referenced by name.
+		met, err := c.Runtime.ComponentConditionMet(ctx, c.InstanceID, claims, componentRes)
+		if err != nil {
+			return nil, err
+		}
+		if !met {
+			continue
+		}
+
+		// Allow access to the component itself
+		conditionResources = append(conditionResources, componentRef)
 
 		// Get component spec to extract renderer properties
 		componentSpec := componentRes.GetComponent().State.ValidSpec

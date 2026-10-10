@@ -211,6 +211,30 @@ rows:
                 bar_chart: # ...
 ```
 
+### Conditional content (`if`)
+
+Rows, tab-group rows, tabs and items accept an optional `if` condition that shows the element only to viewers for whom it's true. It uses the same templating as security policies (`.user` attributes, Sprig functions) and renders to a boolean expression. An element shows only when its own condition and those of its containers are true.
+
+```yaml
+rows:
+  - if: '{{ has "finance" .user.groups }}' # row: finance group only
+    items:
+      - width: 8
+        line_chart: # ...
+      - width: 4
+        if: '{{ .user.admin }}' # item: admins only
+        table: # ...
+  - name: deep_dives
+    tabs:
+      - label: Premium
+        if: '{{ eq .user.plan "premium" }}' # tab: custom attribute, e.g. from an embed
+        rows: # ...
+```
+
+- Prefer comparisons inside the template (`{{ eq .user.plan "premium" }}`, `{{ has "finance" .user.groups }}`) over SQL comparisons of quoted values.
+- Built-in attributes (`name`, `email`, `domain`, `groups`, `admin`, `embed`) always resolve; referencing a missing custom attribute makes the condition false. Use `get .user "plan"` to treat a missing attribute as an empty string.
+- `if` controls what the dashboard shows, not data access. Use the metrics view's `security` to restrict data.
+
 ## Dashboard Composition Best Practices
 
 When building a new canvas dashboard, follow this recommended structure:

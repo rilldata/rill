@@ -14,6 +14,7 @@
   import EphemeralMeasureEditor from "./fields/EphemeralMeasureEditor.svelte";
   import FiltersMapper from "./filters/FiltersMapper.svelte";
   import ParamMapper from "./ParamMapper.svelte";
+  import VisibilityInput from "./VisibilityInput.svelte";
   import { hasComponentFilters } from "./util";
 
   export let component: BaseCanvasComponent;
@@ -69,6 +70,7 @@
     {#if currentTab === "options"}
       {#key component}
         <ParamMapper {component} />
+        <VisibilityInput {component} />
       {/key}
     {:else if currentTab === "filters"}
       <FiltersMapper {component} />

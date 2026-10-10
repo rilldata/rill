@@ -7,7 +7,7 @@ import type {
   V1Resource,
 } from "@rilldata/web-common/runtime-client";
 import { writable } from "svelte/store";
-import { YAMLMap, YAMLSeq } from "yaml";
+import { YAMLMap, YAMLSeq, type Document } from "yaml";
 import { ResourceKind } from "../entity-management/resource-selectors";
 import type { CanvasComponentType, ComponentSpec } from "./components/types";
 import { COMPONENT_CLASS_MAP } from "./components/util";
@@ -70,6 +70,8 @@ export type YAMLRow = {
   // These are passed through row transactions untouched so their content is preserved.
   tabs?: unknown;
   name?: string;
+  // Condition that decides who sees the row (or tab group). Row transactions must keep it.
+  if?: unknown;
 };
 
 export type DragItem = {
@@ -97,7 +99,9 @@ export function mapGuard(value: unknown[]): Array<YAMLRow> {
         return jsonObject;
       }
 
+      // Keep the row's other properties, such as its `if` condition.
       return {
+        ...jsonObject,
         items: jsonObject?.items ?? [],
         height: jsonObject?.height ?? MIN_HEIGHT + "px",
       };
@@ -110,6 +114,22 @@ export function mapGuard(value: unknown[]): Array<YAMLRow> {
   });
 }
 
+/**
+ * Returns the properties of the canvas item at itemPath other than its component definition under rendererKey,
+ * such as `width` and `if`. Code that replaces an item's component spreads them into the new item to keep them.
+ */
+export function getItemPropertiesExcept(
+  doc: Document,
+  itemPath: (string | number)[],
+  rendererKey: string | number | undefined,
+): Record<string, unknown> {
+  const item = doc.getIn(itemPath);
+  if (!(item instanceof YAMLMap)) return {};
+  const properties = item.toJSON() as Record<string, unknown>;
+  if (rendererKey !== undefined) delete properties[String(rendererKey)];
+  return properties;
+}
+
 interface Position {
   row: number;
   col: number;
@@ -120,6 +140,20 @@ interface Position {
 export type EditTarget = { blockIndex: number; tabIndex: number };
 
 /** YAML path to a tab's rows sequence. */
+/**
+ * Whether the canvas element at the YAML path is hidden from the current user,
+ * because it or one of its ancestors (a row, tab group or tab) is in hiddenPaths.
+ */
+export function isHiddenPath(
+  hiddenPaths: Set<string>,
+  path: (string | number)[],
+): boolean {
+  for (let i = 1; i <= path.length; i++) {
+    if (hiddenPaths.has(path.slice(0, i).join("."))) return true;
+  }
+  return false;
+}
+
 export function tabRowsPath(blockIndex: number, tabIndex: number) {
   return ["rows", blockIndex, "tabs", tabIndex, "rows"];
 }

@@ -122,6 +122,9 @@ export class CanvasEntity {
   _embeddedTheme = writable<V1ThemeSpec | undefined>(undefined);
   _metricsViews = writable<Record<string, V1MetricsView | undefined>>({});
   bannerStore = writable<string | undefined>(undefined);
+  // YAML paths of the canvas elements hidden from the current user by `if` conditions or data access,
+  // such as "rows.0.items.1". Only the editor receives them; viewers get a canvas without that content.
+  hiddenPaths = writable<Set<string>>(new Set());
   _maxWidth = writable<number>(DEFAULT_DASHBOARD_WIDTH);
   titleStore = writable<string>("");
   // True only while this canvas is capturing a PDF export. Gates the off-screen
@@ -213,6 +216,7 @@ export class CanvasEntity {
     this.dashboardProvider = new CanvasDashboardConfigProvider(
       this.client,
       name,
+      allowUnvalidatedSpec,
     );
 
     this.expressionFilterManager = new ExpressionFilterManager(
@@ -274,6 +278,17 @@ export class CanvasEntity {
     }
   };
 
+  checkAndSetHiddenPaths = (paths: string[] | undefined) => {
+    const next = new Set(paths ?? []);
+    const current = get(this.hiddenPaths);
+    if (
+      next.size !== current.size ||
+      [...next].some((path) => !current.has(path))
+    ) {
+      this.hiddenPaths.set(next);
+    }
+  };
+
   checkAndSetFileArtifact = (filePath: string | undefined) => {
     if (!filePath) return;
     if (!this.fileArtifact) {
@@ -314,6 +329,7 @@ export class CanvasEntity {
     this.timeManager.onSpecChange(response);
 
     this.titleStore.set(validSpec.displayName ?? "");
+    this.checkAndSetHiddenPaths(response.hiddenPaths);
 
     this.processRows({ canvas, components, metricsViews, filePath });
   };
@@ -819,11 +835,13 @@ export class CanvasEntity {
 
     this.tabGroups.forEach((group, name) => {
       const tabName = active.get(name);
-      if (tabName) group.setActiveByName(tabName);
       // In view mode, a group absent from the param is reset to its first tab so back/forward
-      // restores state symmetrically. In edit mode the active tab is editor-local (driven by
-      // clicks), so don't reset it here — doing so on every URL change fought direct selection.
-      else if (!this.allowUnvalidatedSpec) group.activeTabIndex.set(0);
+      // restores state symmetrically. So is a group whose tab in the param isn't on the canvas,
+      // e.g. a shared link to a tab that's hidden from this viewer.
+      // In edit mode the active tab is editor-local (driven by clicks), so don't reset it here;
+      // doing so on every URL change fought direct selection.
+      const applied = !!tabName && group.setActiveByName(tabName);
+      if (!applied && !this.allowUnvalidatedSpec) group.activeTabIndex.set(0);
     });
   };
 

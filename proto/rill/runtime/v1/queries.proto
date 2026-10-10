@@ -1039,6 +1039,10 @@ message ResolveCanvasRequest {
   // Only for use by the visual editor in Rill Developer. Must never be sent by
   // Rill Cloud, read-only previews, shared token access, or embedded viewers.
   bool unsafe = 4;
+  // If true, return the canvas without removing the content hidden from the caller, and list that content in hidden_paths.
+  // Used by the visual editor, which maps canvas elements to their position in the YAML.
+  // Requires permission to edit the canvas.
+  bool include_hidden = 5;
 }
 
 message ResolveCanvasResponse {
@@ -1050,6 +1054,9 @@ message ResolveCanvasResponse {
   map<string, Resource> resolved_components = 2;
   // All the metrics view resources referenced in the components' renderer_properties.metrics_view field.
   map<string, Resource> referenced_metrics_views = 3;
+  // Paths of the canvas elements hidden from the caller, such as "rows.1", "rows.0.items.1" or "rows.3.tabs.0".
+  // The paths follow the canvas YAML. Only set when include_hidden is true.
+  repeated string hidden_paths = 4;
 }
 
 message ResolveComponentRequest {

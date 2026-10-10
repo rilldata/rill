@@ -143,6 +143,27 @@ A few recommendations:
 
 :::
 
+### Canvas dashboards and restricted data
+
+A canvas adapts to each viewer's metrics view policies, so one canvas can serve users with different access:
+
+- Components built on a metrics view the viewer can't access are removed from their canvas.
+- Dimensions and measures excluded for the viewer are removed from tables, pivots, KPI grids and leaderboards. A chart whose x or y field is excluded is removed.
+- A component whose own filters use an excluded field is removed rather than shown unfiltered, and so is a custom chart whose query uses an excluded field.
+- Rows and tabs left empty disappear, and the remaining components in a row widen to fill it.
+
+For example, with this policy, a pivot that lists five measures shows four to anyone outside the `finance` group:
+
+```yaml
+security:
+  access: true
+  exclude:
+    - if: 'NOT {{ has "finance" .user.groups }}'
+      names: [gross_margin]
+```
+
+If a policy can't be evaluated for a viewer, Rill treats the metrics view as inaccessible to them. This can happen when the policy references an attribute that an [embedded dashboard](/developers/embed/iframe) doesn't pass, such as `'{{ .user.admin }}'` for an embed that only sends custom attributes. Write conditions that also hold when the attribute is missing, such as `'{{ eq .user.admin true }}'`.
+
 ## User Attributes
 - `.user.email` – the current user's email address, for example john.doe@example.com (string)
 - `.user.domain` – the domain of the current user's email address, for example example.com (string)
