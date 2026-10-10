@@ -3,6 +3,7 @@
   import { ArrowLeftRight } from "lucide-svelte";
   import AddComponentDropdown from "./AddComponentDropdown.svelte";
   import type { CanvasComponentType } from "./components/types";
+  import type { AddableItem } from "./layout-util";
   import { dropZone, activeDivider } from "./stores/ui-stores";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
@@ -18,7 +19,7 @@
   export let dragging: boolean;
   export let addItems: (
     position: { row: number; column: number },
-    item: CanvasComponentType[],
+    item: AddableItem[],
   ) => void;
   export let onColumnResizeStart: ((columnIndex: number) => void) | undefined =
     undefined;
@@ -54,6 +55,12 @@
   function onItemClick(type: CanvasComponentType) {
     if (type) {
       addItems({ row: rowIndex, column: addIndex }, [type]);
+    }
+  }
+
+  function onAddComponentRef(componentName: string) {
+    if (componentName) {
+      addItems({ row: rowIndex, column: addIndex }, [{ componentName }]);
     }
   }
 </script>
@@ -105,6 +112,7 @@
         {rowIndex}
         columnIndex={addIndex}
         {onItemClick}
+        {onAddComponentRef}
         onOpenChange={(isOpen) => {
           if (!isOpen) {
             activeDivider.set(null);

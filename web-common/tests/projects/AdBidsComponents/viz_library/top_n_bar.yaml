@@ -1,0 +1,29 @@
+type: component
+display_name: Top N bar
+description: Ranked horizontal bar chart of a measure by a dimension.
+
+params:
+  - name: metrics_view
+    type: metrics_view
+    required: true
+  - name: dimension
+    type: dimension
+    required: true
+  - name: measure
+    type: measure
+    required: true
+  - name: limit
+    type: number
+    default: 10
+
+custom_chart:
+  metrics_sql: |
+    SELECT {{ .params.dimension }}, {{ .params.measure }}
+    FROM {{ .params.metrics_view }}
+    ORDER BY {{ .params.measure }} DESC
+    LIMIT {{ .params.limit }}
+  spec:
+    chartType: Bar Chart
+    encodings:
+      y: { field: "{{ .params.dimension }}", sortBy: x, sortOrder: descending }
+      x: { field: "{{ .params.measure }}" }

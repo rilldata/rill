@@ -1,6 +1,6 @@
 <script lang="ts">
   import AddComponentDropdown from "./AddComponentDropdown.svelte";
-  import type { CanvasComponentType } from "./components/types";
+  import type { AddableItem } from "./layout-util";
   import Divider from "./Divider.svelte";
   import { activeDivider, dropZone } from "./stores/ui-stores";
 
@@ -11,7 +11,7 @@
   export let position: "top" | "bottom" | undefined = undefined;
   export let onDrop: (row: number, column: number | null) => void;
   export let onRowResizeStart: (e: MouseEvent) => void = () => {};
-  export let addItem: (type: CanvasComponentType) => void;
+  export let addItem: (item: AddableItem) => void;
   // When provided, the add menu offers inserting a tab group at this position.
   export let onAddTabGroup: (() => void) | undefined = undefined;
 
@@ -93,6 +93,7 @@
           }
         }}
         onItemClick={addItem}
+        onAddComponentRef={(componentName) => addItem({ componentName })}
         {onAddTabGroup}
       />
     </span>

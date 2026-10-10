@@ -15,7 +15,7 @@
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import type { View, VisualizationSpec } from "svelte-vega";
   import { derived, get } from "svelte/store";
-  import { convertV1ExpressionToMapstructure } from "./expression-utils";
+  import { metricsSQLFilterProperties } from "./expression-utils";
 
   export let spec: string | undefined = undefined;
   export let metricsSQL: string[] = [];
@@ -42,8 +42,11 @@
   // Create a unique key that includes whereFilter and timeRange to ensure queries are invalidated when they change
   $: filterKey = JSON.stringify({ whereFilter, timeRange });
 
-  // Only enable queries when the time range has resolved
-  $: hasValidTimeRange = !!timeRange?.start && !!timeRange?.end;
+  // Only enable queries when the time range has resolved. When no timeRange is
+  // provided at all (e.g. standalone component preview, outside a canvas), queries
+  // run unfiltered instead of waiting for one.
+  $: hasValidTimeRange =
+    timeRange === undefined || (!!timeRange?.start && !!timeRange?.end);
 
   // Create queries that are reactive to whereFilter changes
   $: dataQueries = metricsSQL.map((sql, index) =>
@@ -53,13 +56,7 @@
         resolver: "metrics_sql",
         resolverProperties: {
           sql,
-          ...(whereFilter?.cond?.exprs?.length
-            ? {
-                additional_where:
-                  convertV1ExpressionToMapstructure(whereFilter),
-              }
-            : {}),
-          ...(timeRange ? { additional_time_range: timeRange } : {}),
+          ...metricsSQLFilterProperties(whereFilter, timeRange),
         } as unknown as PartialMessage<Struct>,
       },
       {
