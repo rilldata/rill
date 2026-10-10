@@ -2305,6 +2305,45 @@ paths:
             title: Request message for QueryService.MetricsViewComparison
       tags:
         - QueryService
+  /v1/instances/{instanceId}/queries/metrics-views/{metricsViewName}/evaluate:
+    post:
+      summary: MetricsViewEvaluate runs a query for measures/dimensions and passes it off to an AI model to give structured evaluation.
+      operationId: QueryService_MetricsViewEvaluate
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1MetricsViewEvaluateResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: metricsViewName
+          description: Required
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              query:
+                $ref: '#/definitions/v1MetricsViewAggregationRequest'
+                title: Required. Query used to serialise as state
+              measures:
+                type: array
+                items:
+                  type: string
+                description: Required. Evaluate measures to run evaluate against.
+      tags:
+        - QueryService
   /v1/instances/{instanceId}/queries/metrics-views/{metricsViewName}/rows:
     post:
       summary: MetricsViewRows returns the underlying model rows matching a metrics view time range and filter(s).
@@ -3820,6 +3859,11 @@ definitions:
       - TYPE_INFORMATIONAL
     default: TYPE_UNSPECIFIED
     title: Type of the property
+  EvaluateNoulQuestionCriteria:
+    type: object
+    properties:
+      "true": {}
+      "false": {}
   GitDiffResponseGitFileChange:
     type: object
     properties:
@@ -3966,6 +4010,8 @@ definitions:
       lowerIsBetter:
         type: boolean
         description: When true, decreases in this measure are favorable (e.g. bounce rate, latency, error count). UI surfaces that render comparison deltas (KPIs, big numbers, leaderboards, pivot tables, time-series tooltips) swap their positive/negative coloring accordingly.
+      evalQuestion:
+        $ref: '#/definitions/v1EvaluateQuestion'
     title: Measures are aggregated computed values
   MetricsViewSpecMeasureType:
     type: string
@@ -3974,6 +4020,7 @@ definitions:
       - MEASURE_TYPE_SIMPLE
       - MEASURE_TYPE_DERIVED
       - MEASURE_TYPE_TIME_COMPARISON
+      - MEASURE_TYPE_EVALUATION
     default: MEASURE_TYPE_UNSPECIFIED
     title: Type of measure query to generate
   MetricsViewSpecMeasureWindow:
@@ -5299,6 +5346,35 @@ definitions:
       instance:
         $ref: '#/definitions/v1Instance'
     title: Response message for RuntimeService.EditInstance
+  v1EvaluateChoiceQuestion:
+    type: object
+    properties:
+      instructions: {}
+      criteria:
+        type: object
+        additionalProperties: {}
+  v1EvaluateNoulQuestion:
+    type: object
+    properties:
+      instructions: {}
+      criteria:
+        $ref: '#/definitions/EvaluateNoulQuestionCriteria'
+  v1EvaluateQuestion:
+    type: object
+    properties:
+      noul:
+        $ref: '#/definitions/v1EvaluateNoulQuestion'
+      choice:
+        $ref: '#/definitions/v1EvaluateChoiceQuestion'
+      score:
+        $ref: '#/definitions/v1EvaluateScoreQuestion'
+  v1EvaluateScoreQuestion:
+    type: object
+    properties:
+      instructions: {}
+      criteria:
+        type: array
+        items: {}
   v1Example:
     type: object
     properties:
@@ -6611,6 +6687,20 @@ definitions:
         title: Can be null
       deltaRel:
         title: Can be null
+  v1MetricsViewEvaluateResponse:
+    type: object
+    properties:
+      schema:
+        $ref: '#/definitions/v1StructType'
+        title: Not optional, not null
+      data:
+        type: array
+        items:
+          type: object
+        title: Not optional, not null
+      trace:
+        $ref: '#/definitions/v1Trace'
+        description: Traces of spans captured during request execution. Only populated if trace was set to true in the aggregation request.
   v1MetricsViewFilter:
     type: object
     properties:

@@ -3,8 +3,10 @@ package admin
 import (
 	"context"
 	"encoding/json"
+	"errors"
 
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
+	aiv1 "github.com/rilldata/rill/proto/gen/rill/ai/v1"
 	"github.com/rilldata/rill/runtime/drivers"
 )
 
@@ -34,4 +36,8 @@ func (h *Handle) Complete(ctx context.Context, opts *drivers.CompleteOptions) (*
 		OutputTokens:      int(res.OutputTokens),
 		CachedInputTokens: int(res.GetCachedInputTokens()),
 	}, nil
+}
+
+func (h *Handle) Evaluate(ctx context.Context, req *aiv1.EvaluateRequest) (*aiv1.EvaluateResponse, error) {
+	return nil, errors.New("not implemented")
 }

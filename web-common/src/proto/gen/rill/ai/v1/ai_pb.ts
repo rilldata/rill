@@ -4,7 +4,7 @@
 // @ts-nocheck
 
 import type { BinaryReadOptions, FieldList, JsonReadOptions, JsonValue, PartialMessage, PlainMessage } from "@bufbuild/protobuf";
-import { Message, proto3, Struct } from "@bufbuild/protobuf";
+import { Message, proto3, Struct, Value } from "@bufbuild/protobuf";
 
 /**
  * Tool represents a tool definition for AI usage
@@ -298,6 +298,574 @@ export class CompletionMessage extends Message<CompletionMessage> {
 
   static equals(a: CompletionMessage | PlainMessage<CompletionMessage> | undefined, b: CompletionMessage | PlainMessage<CompletionMessage> | undefined): boolean {
     return proto3.util.equals(CompletionMessage, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.ai.v1.EvaluateRequest
+ */
+export class EvaluateRequest extends Message<EvaluateRequest> {
+  /**
+   * @generated from field: string model = 1;
+   */
+  model = "";
+
+  /**
+   * @generated from field: google.protobuf.Value state = 2;
+   */
+  state?: Value;
+
+  /**
+   * @generated from field: map<string, rill.ai.v1.EvaluateQuestion> questions = 3;
+   */
+  questions: { [key: string]: EvaluateQuestion } = {};
+
+  constructor(data?: PartialMessage<EvaluateRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.ai.v1.EvaluateRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "model", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "state", kind: "message", T: Value },
+    { no: 3, name: "questions", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "message", T: EvaluateQuestion} },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): EvaluateRequest {
+    return new EvaluateRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): EvaluateRequest {
+    return new EvaluateRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): EvaluateRequest {
+    return new EvaluateRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: EvaluateRequest | PlainMessage<EvaluateRequest> | undefined, b: EvaluateRequest | PlainMessage<EvaluateRequest> | undefined): boolean {
+    return proto3.util.equals(EvaluateRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.ai.v1.EvaluateQuestion
+ */
+export class EvaluateQuestion extends Message<EvaluateQuestion> {
+  /**
+   * @generated from oneof rill.ai.v1.EvaluateQuestion.question
+   */
+  question: {
+    /**
+     * @generated from field: rill.ai.v1.EvaluateNoulQuestion noul = 1;
+     */
+    value: EvaluateNoulQuestion;
+    case: "noul";
+  } | {
+    /**
+     * @generated from field: rill.ai.v1.EvaluateChoiceQuestion choice = 2;
+     */
+    value: EvaluateChoiceQuestion;
+    case: "choice";
+  } | {
+    /**
+     * @generated from field: rill.ai.v1.EvaluateScoreQuestion score = 3;
+     */
+    value: EvaluateScoreQuestion;
+    case: "score";
+  } | { case: undefined; value?: undefined } = { case: undefined };
+
+  constructor(data?: PartialMessage<EvaluateQuestion>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.ai.v1.EvaluateQuestion";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "noul", kind: "message", T: EvaluateNoulQuestion, oneof: "question" },
+    { no: 2, name: "choice", kind: "message", T: EvaluateChoiceQuestion, oneof: "question" },
+    { no: 3, name: "score", kind: "message", T: EvaluateScoreQuestion, oneof: "question" },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): EvaluateQuestion {
+    return new EvaluateQuestion().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): EvaluateQuestion {
+    return new EvaluateQuestion().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): EvaluateQuestion {
+    return new EvaluateQuestion().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: EvaluateQuestion | PlainMessage<EvaluateQuestion> | undefined, b: EvaluateQuestion | PlainMessage<EvaluateQuestion> | undefined): boolean {
+    return proto3.util.equals(EvaluateQuestion, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.ai.v1.EvaluateResponse
+ */
+export class EvaluateResponse extends Message<EvaluateResponse> {
+  /**
+   * @generated from field: string model = 1;
+   */
+  model = "";
+
+  /**
+   * @generated from field: map<string, rill.ai.v1.EvaluateAnswer> answers = 2;
+   */
+  answers: { [key: string]: EvaluateAnswer } = {};
+
+  /**
+   * @generated from field: rill.ai.v1.EvaluateResponse.Usage usage = 3;
+   */
+  usage?: EvaluateResponse_Usage;
+
+  constructor(data?: PartialMessage<EvaluateResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.ai.v1.EvaluateResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "model", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "answers", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "message", T: EvaluateAnswer} },
+    { no: 3, name: "usage", kind: "message", T: EvaluateResponse_Usage },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): EvaluateResponse {
+    return new EvaluateResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): EvaluateResponse {
+    return new EvaluateResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): EvaluateResponse {
+    return new EvaluateResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: EvaluateResponse | PlainMessage<EvaluateResponse> | undefined, b: EvaluateResponse | PlainMessage<EvaluateResponse> | undefined): boolean {
+    return proto3.util.equals(EvaluateResponse, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.ai.v1.EvaluateResponse.Usage
+ */
+export class EvaluateResponse_Usage extends Message<EvaluateResponse_Usage> {
+  /**
+   * @generated from field: int32 input_tokens = 1;
+   */
+  inputTokens = 0;
+
+  /**
+   * @generated from field: int32 output_tokens = 2;
+   */
+  outputTokens = 0;
+
+  constructor(data?: PartialMessage<EvaluateResponse_Usage>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.ai.v1.EvaluateResponse.Usage";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "input_tokens", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
+    { no: 2, name: "output_tokens", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): EvaluateResponse_Usage {
+    return new EvaluateResponse_Usage().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): EvaluateResponse_Usage {
+    return new EvaluateResponse_Usage().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): EvaluateResponse_Usage {
+    return new EvaluateResponse_Usage().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: EvaluateResponse_Usage | PlainMessage<EvaluateResponse_Usage> | undefined, b: EvaluateResponse_Usage | PlainMessage<EvaluateResponse_Usage> | undefined): boolean {
+    return proto3.util.equals(EvaluateResponse_Usage, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.ai.v1.EvaluateAnswer
+ */
+export class EvaluateAnswer extends Message<EvaluateAnswer> {
+  /**
+   * @generated from oneof rill.ai.v1.EvaluateAnswer.answer
+   */
+  answer: {
+    /**
+     * @generated from field: rill.ai.v1.EvaluateNoulAnswer noul = 1;
+     */
+    value: EvaluateNoulAnswer;
+    case: "noul";
+  } | {
+    /**
+     * @generated from field: rill.ai.v1.EvaluateChoiceAnswer choice = 2;
+     */
+    value: EvaluateChoiceAnswer;
+    case: "choice";
+  } | {
+    /**
+     * @generated from field: rill.ai.v1.EvaluateScoreAnswer score = 3;
+     */
+    value: EvaluateScoreAnswer;
+    case: "score";
+  } | { case: undefined; value?: undefined } = { case: undefined };
+
+  constructor(data?: PartialMessage<EvaluateAnswer>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.ai.v1.EvaluateAnswer";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "noul", kind: "message", T: EvaluateNoulAnswer, oneof: "answer" },
+    { no: 2, name: "choice", kind: "message", T: EvaluateChoiceAnswer, oneof: "answer" },
+    { no: 3, name: "score", kind: "message", T: EvaluateScoreAnswer, oneof: "answer" },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): EvaluateAnswer {
+    return new EvaluateAnswer().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): EvaluateAnswer {
+    return new EvaluateAnswer().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): EvaluateAnswer {
+    return new EvaluateAnswer().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: EvaluateAnswer | PlainMessage<EvaluateAnswer> | undefined, b: EvaluateAnswer | PlainMessage<EvaluateAnswer> | undefined): boolean {
+    return proto3.util.equals(EvaluateAnswer, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.ai.v1.EvaluateNoulQuestion
+ */
+export class EvaluateNoulQuestion extends Message<EvaluateNoulQuestion> {
+  /**
+   * @generated from field: google.protobuf.Value instructions = 1;
+   */
+  instructions?: Value;
+
+  /**
+   * @generated from field: optional rill.ai.v1.EvaluateNoulQuestion.Criteria criteria = 2;
+   */
+  criteria?: EvaluateNoulQuestion_Criteria;
+
+  constructor(data?: PartialMessage<EvaluateNoulQuestion>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.ai.v1.EvaluateNoulQuestion";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "instructions", kind: "message", T: Value },
+    { no: 2, name: "criteria", kind: "message", T: EvaluateNoulQuestion_Criteria, opt: true },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): EvaluateNoulQuestion {
+    return new EvaluateNoulQuestion().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): EvaluateNoulQuestion {
+    return new EvaluateNoulQuestion().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): EvaluateNoulQuestion {
+    return new EvaluateNoulQuestion().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: EvaluateNoulQuestion | PlainMessage<EvaluateNoulQuestion> | undefined, b: EvaluateNoulQuestion | PlainMessage<EvaluateNoulQuestion> | undefined): boolean {
+    return proto3.util.equals(EvaluateNoulQuestion, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.ai.v1.EvaluateNoulQuestion.Criteria
+ */
+export class EvaluateNoulQuestion_Criteria extends Message<EvaluateNoulQuestion_Criteria> {
+  /**
+   * @generated from field: google.protobuf.Value true = 1;
+   */
+  true?: Value;
+
+  /**
+   * @generated from field: google.protobuf.Value false = 2;
+   */
+  false?: Value;
+
+  constructor(data?: PartialMessage<EvaluateNoulQuestion_Criteria>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.ai.v1.EvaluateNoulQuestion.Criteria";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "true", kind: "message", T: Value },
+    { no: 2, name: "false", kind: "message", T: Value },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): EvaluateNoulQuestion_Criteria {
+    return new EvaluateNoulQuestion_Criteria().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): EvaluateNoulQuestion_Criteria {
+    return new EvaluateNoulQuestion_Criteria().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): EvaluateNoulQuestion_Criteria {
+    return new EvaluateNoulQuestion_Criteria().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: EvaluateNoulQuestion_Criteria | PlainMessage<EvaluateNoulQuestion_Criteria> | undefined, b: EvaluateNoulQuestion_Criteria | PlainMessage<EvaluateNoulQuestion_Criteria> | undefined): boolean {
+    return proto3.util.equals(EvaluateNoulQuestion_Criteria, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.ai.v1.EvaluateNoulAnswer
+ */
+export class EvaluateNoulAnswer extends Message<EvaluateNoulAnswer> {
+  /**
+   * @generated from field: double noul = 1;
+   */
+  noul = 0;
+
+  constructor(data?: PartialMessage<EvaluateNoulAnswer>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.ai.v1.EvaluateNoulAnswer";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "noul", kind: "scalar", T: 1 /* ScalarType.DOUBLE */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): EvaluateNoulAnswer {
+    return new EvaluateNoulAnswer().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): EvaluateNoulAnswer {
+    return new EvaluateNoulAnswer().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): EvaluateNoulAnswer {
+    return new EvaluateNoulAnswer().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: EvaluateNoulAnswer | PlainMessage<EvaluateNoulAnswer> | undefined, b: EvaluateNoulAnswer | PlainMessage<EvaluateNoulAnswer> | undefined): boolean {
+    return proto3.util.equals(EvaluateNoulAnswer, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.ai.v1.EvaluateChoiceQuestion
+ */
+export class EvaluateChoiceQuestion extends Message<EvaluateChoiceQuestion> {
+  /**
+   * @generated from field: google.protobuf.Value instructions = 1;
+   */
+  instructions?: Value;
+
+  /**
+   * @generated from field: map<string, google.protobuf.Value> criteria = 2;
+   */
+  criteria: { [key: string]: Value } = {};
+
+  constructor(data?: PartialMessage<EvaluateChoiceQuestion>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.ai.v1.EvaluateChoiceQuestion";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "instructions", kind: "message", T: Value },
+    { no: 2, name: "criteria", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "message", T: Value} },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): EvaluateChoiceQuestion {
+    return new EvaluateChoiceQuestion().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): EvaluateChoiceQuestion {
+    return new EvaluateChoiceQuestion().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): EvaluateChoiceQuestion {
+    return new EvaluateChoiceQuestion().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: EvaluateChoiceQuestion | PlainMessage<EvaluateChoiceQuestion> | undefined, b: EvaluateChoiceQuestion | PlainMessage<EvaluateChoiceQuestion> | undefined): boolean {
+    return proto3.util.equals(EvaluateChoiceQuestion, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.ai.v1.EvaluateChoiceAnswer
+ */
+export class EvaluateChoiceAnswer extends Message<EvaluateChoiceAnswer> {
+  /**
+   * @generated from field: string choice = 1;
+   */
+  choice = "";
+
+  /**
+   * @generated from field: map<string, double> probabilities = 2;
+   */
+  probabilities: { [key: string]: number } = {};
+
+  /**
+   * @generated from field: double confidence = 3;
+   */
+  confidence = 0;
+
+  constructor(data?: PartialMessage<EvaluateChoiceAnswer>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.ai.v1.EvaluateChoiceAnswer";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "choice", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "probabilities", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 1 /* ScalarType.DOUBLE */} },
+    { no: 3, name: "confidence", kind: "scalar", T: 1 /* ScalarType.DOUBLE */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): EvaluateChoiceAnswer {
+    return new EvaluateChoiceAnswer().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): EvaluateChoiceAnswer {
+    return new EvaluateChoiceAnswer().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): EvaluateChoiceAnswer {
+    return new EvaluateChoiceAnswer().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: EvaluateChoiceAnswer | PlainMessage<EvaluateChoiceAnswer> | undefined, b: EvaluateChoiceAnswer | PlainMessage<EvaluateChoiceAnswer> | undefined): boolean {
+    return proto3.util.equals(EvaluateChoiceAnswer, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.ai.v1.EvaluateScoreQuestion
+ */
+export class EvaluateScoreQuestion extends Message<EvaluateScoreQuestion> {
+  /**
+   * @generated from field: google.protobuf.Value instructions = 1;
+   */
+  instructions?: Value;
+
+  /**
+   * @generated from field: repeated google.protobuf.Value criteria = 2;
+   */
+  criteria: Value[] = [];
+
+  constructor(data?: PartialMessage<EvaluateScoreQuestion>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.ai.v1.EvaluateScoreQuestion";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "instructions", kind: "message", T: Value },
+    { no: 2, name: "criteria", kind: "message", T: Value, repeated: true },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): EvaluateScoreQuestion {
+    return new EvaluateScoreQuestion().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): EvaluateScoreQuestion {
+    return new EvaluateScoreQuestion().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): EvaluateScoreQuestion {
+    return new EvaluateScoreQuestion().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: EvaluateScoreQuestion | PlainMessage<EvaluateScoreQuestion> | undefined, b: EvaluateScoreQuestion | PlainMessage<EvaluateScoreQuestion> | undefined): boolean {
+    return proto3.util.equals(EvaluateScoreQuestion, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.ai.v1.EvaluateScoreAnswer
+ */
+export class EvaluateScoreAnswer extends Message<EvaluateScoreAnswer> {
+  /**
+   * @generated from field: double score = 1;
+   */
+  score = 0;
+
+  /**
+   * @generated from field: map<string, string> legend = 2;
+   */
+  legend: { [key: string]: string } = {};
+
+  /**
+   * @generated from field: map<string, double> probabilities = 3;
+   */
+  probabilities: { [key: string]: number } = {};
+
+  /**
+   * @generated from field: double confidence = 4;
+   */
+  confidence = 0;
+
+  constructor(data?: PartialMessage<EvaluateScoreAnswer>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.ai.v1.EvaluateScoreAnswer";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "score", kind: "scalar", T: 1 /* ScalarType.DOUBLE */ },
+    { no: 2, name: "legend", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
+    { no: 3, name: "probabilities", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 1 /* ScalarType.DOUBLE */} },
+    { no: 4, name: "confidence", kind: "scalar", T: 1 /* ScalarType.DOUBLE */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): EvaluateScoreAnswer {
+    return new EvaluateScoreAnswer().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): EvaluateScoreAnswer {
+    return new EvaluateScoreAnswer().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): EvaluateScoreAnswer {
+    return new EvaluateScoreAnswer().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: EvaluateScoreAnswer | PlainMessage<EvaluateScoreAnswer> | undefined, b: EvaluateScoreAnswer | PlainMessage<EvaluateScoreAnswer> | undefined): boolean {
+    return proto3.util.equals(EvaluateScoreAnswer, a, b);
   }
 }
 

@@ -293,7 +293,7 @@ func (e *Executor) Schema(ctx context.Context) (*runtimev1.StructType, error) {
 	}
 
 	for _, m := range e.metricsView.Measures {
-		if e.security.CanAccessField(m.Name) {
+		if e.security.CanAccessField(m.Name) && m.Type != runtimev1.MetricsViewSpec_MEASURE_TYPE_EVALUATION {
 			qry.Measures = append(qry.Measures, metricsview.Measure{Name: m.Name})
 		}
 	}

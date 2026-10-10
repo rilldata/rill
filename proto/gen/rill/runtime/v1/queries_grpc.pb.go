@@ -34,6 +34,7 @@ const (
 	QueryService_MetricsViewSearch_FullMethodName             = "/rill.runtime.v1.QueryService/MetricsViewSearch"
 	QueryService_MetricsViewTimeRanges_FullMethodName         = "/rill.runtime.v1.QueryService/MetricsViewTimeRanges"
 	QueryService_MetricsViewAnnotations_FullMethodName        = "/rill.runtime.v1.QueryService/MetricsViewAnnotations"
+	QueryService_MetricsViewEvaluate_FullMethodName           = "/rill.runtime.v1.QueryService/MetricsViewEvaluate"
 	QueryService_ConvertExpressionToMetricsSQL_FullMethodName = "/rill.runtime.v1.QueryService/ConvertExpressionToMetricsSQL"
 	QueryService_ResolveCanvas_FullMethodName                 = "/rill.runtime.v1.QueryService/ResolveCanvas"
 	QueryService_ResolveComponent_FullMethodName              = "/rill.runtime.v1.QueryService/ResolveComponent"
@@ -121,6 +122,8 @@ type QueryServiceClient interface {
 	// MetricsViewTimeRanges resolves time ranges for a metrics view.
 	MetricsViewTimeRanges(ctx context.Context, in *MetricsViewTimeRangesRequest, opts ...grpc.CallOption) (*MetricsViewTimeRangesResponse, error)
 	MetricsViewAnnotations(ctx context.Context, in *MetricsViewAnnotationsRequest, opts ...grpc.CallOption) (*MetricsViewAnnotationsResponse, error)
+	// MetricsViewEvaluate runs a query for measures/dimensions and passes it off to an AI model to give structured evaluation.
+	MetricsViewEvaluate(ctx context.Context, in *MetricsViewEvaluateRequest, opts ...grpc.CallOption) (*MetricsViewEvaluateResponse, error)
 	// ConvertExpressionToMetricsSQL converts a filter expression to a SQL filter string.
 	ConvertExpressionToMetricsSQL(ctx context.Context, in *ConvertExpressionToMetricsSQLRequest, opts ...grpc.CallOption) (*ConvertExpressionToMetricsSQLResponse, error)
 	// ResolveCanvas is a convenience API that returns a canvas and all its referenced components and metrics views.
@@ -310,6 +313,16 @@ func (c *queryServiceClient) MetricsViewAnnotations(ctx context.Context, in *Met
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(MetricsViewAnnotationsResponse)
 	err := c.cc.Invoke(ctx, QueryService_MetricsViewAnnotations_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *queryServiceClient) MetricsViewEvaluate(ctx context.Context, in *MetricsViewEvaluateRequest, opts ...grpc.CallOption) (*MetricsViewEvaluateResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(MetricsViewEvaluateResponse)
+	err := c.cc.Invoke(ctx, QueryService_MetricsViewEvaluate_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -554,6 +567,8 @@ type QueryServiceServer interface {
 	// MetricsViewTimeRanges resolves time ranges for a metrics view.
 	MetricsViewTimeRanges(context.Context, *MetricsViewTimeRangesRequest) (*MetricsViewTimeRangesResponse, error)
 	MetricsViewAnnotations(context.Context, *MetricsViewAnnotationsRequest) (*MetricsViewAnnotationsResponse, error)
+	// MetricsViewEvaluate runs a query for measures/dimensions and passes it off to an AI model to give structured evaluation.
+	MetricsViewEvaluate(context.Context, *MetricsViewEvaluateRequest) (*MetricsViewEvaluateResponse, error)
 	// ConvertExpressionToMetricsSQL converts a filter expression to a SQL filter string.
 	ConvertExpressionToMetricsSQL(context.Context, *ConvertExpressionToMetricsSQLRequest) (*ConvertExpressionToMetricsSQLResponse, error)
 	// ResolveCanvas is a convenience API that returns a canvas and all its referenced components and metrics views.
@@ -643,6 +658,9 @@ func (UnimplementedQueryServiceServer) MetricsViewTimeRanges(context.Context, *M
 }
 func (UnimplementedQueryServiceServer) MetricsViewAnnotations(context.Context, *MetricsViewAnnotationsRequest) (*MetricsViewAnnotationsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method MetricsViewAnnotations not implemented")
+}
+func (UnimplementedQueryServiceServer) MetricsViewEvaluate(context.Context, *MetricsViewEvaluateRequest) (*MetricsViewEvaluateResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method MetricsViewEvaluate not implemented")
 }
 func (UnimplementedQueryServiceServer) ConvertExpressionToMetricsSQL(context.Context, *ConvertExpressionToMetricsSQLRequest) (*ConvertExpressionToMetricsSQLResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ConvertExpressionToMetricsSQL not implemented")
@@ -982,6 +1000,24 @@ func _QueryService_MetricsViewAnnotations_Handler(srv interface{}, ctx context.C
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(QueryServiceServer).MetricsViewAnnotations(ctx, req.(*MetricsViewAnnotationsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _QueryService_MetricsViewEvaluate_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(MetricsViewEvaluateRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(QueryServiceServer).MetricsViewEvaluate(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: QueryService_MetricsViewEvaluate_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(QueryServiceServer).MetricsViewEvaluate(ctx, req.(*MetricsViewEvaluateRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -1358,6 +1394,10 @@ var QueryService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "MetricsViewAnnotations",
 			Handler:    _QueryService_MetricsViewAnnotations_Handler,
+		},
+		{
+			MethodName: "MetricsViewEvaluate",
+			Handler:    _QueryService_MetricsViewEvaluate_Handler,
 		},
 		{
 			MethodName: "ConvertExpressionToMetricsSQL",

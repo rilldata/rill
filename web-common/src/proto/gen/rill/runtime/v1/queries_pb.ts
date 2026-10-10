@@ -4247,6 +4247,122 @@ export class MetricsViewAnnotationsResponse_Annotation extends Message<MetricsVi
 }
 
 /**
+ * @generated from message rill.runtime.v1.MetricsViewEvaluateRequest
+ */
+export class MetricsViewEvaluateRequest extends Message<MetricsViewEvaluateRequest> {
+  /**
+   * @generated from field: string instance_id = 1;
+   */
+  instanceId = "";
+
+  /**
+   * Required
+   *
+   * @generated from field: string metrics_view_name = 2;
+   */
+  metricsViewName = "";
+
+  /**
+   * Required. Query used to serialise as state
+   *
+   * @generated from field: rill.runtime.v1.MetricsViewAggregationRequest query = 3;
+   */
+  query?: MetricsViewAggregationRequest;
+
+  /**
+   * Required. Evaluate measures to run evaluate against.
+   *
+   * @generated from field: repeated string measures = 4;
+   */
+  measures: string[] = [];
+
+  constructor(data?: PartialMessage<MetricsViewEvaluateRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.MetricsViewEvaluateRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "metrics_view_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "query", kind: "message", T: MetricsViewAggregationRequest },
+    { no: 4, name: "measures", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewEvaluateRequest {
+    return new MetricsViewEvaluateRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): MetricsViewEvaluateRequest {
+    return new MetricsViewEvaluateRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): MetricsViewEvaluateRequest {
+    return new MetricsViewEvaluateRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: MetricsViewEvaluateRequest | PlainMessage<MetricsViewEvaluateRequest> | undefined, b: MetricsViewEvaluateRequest | PlainMessage<MetricsViewEvaluateRequest> | undefined): boolean {
+    return proto3.util.equals(MetricsViewEvaluateRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.runtime.v1.MetricsViewEvaluateResponse
+ */
+export class MetricsViewEvaluateResponse extends Message<MetricsViewEvaluateResponse> {
+  /**
+   * Not optional, not null
+   *
+   * @generated from field: rill.runtime.v1.StructType schema = 1;
+   */
+  schema?: StructType;
+
+  /**
+   * Not optional, not null
+   *
+   * @generated from field: repeated google.protobuf.Struct data = 2;
+   */
+  data: Struct[] = [];
+
+  /**
+   * Traces of spans captured during request execution. Only populated if trace was set to true in the aggregation request.
+   *
+   * @generated from field: rill.runtime.v1.Trace trace = 3;
+   */
+  trace?: Trace;
+
+  constructor(data?: PartialMessage<MetricsViewEvaluateResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.MetricsViewEvaluateResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "schema", kind: "message", T: StructType },
+    { no: 2, name: "data", kind: "message", T: Struct, repeated: true },
+    { no: 3, name: "trace", kind: "message", T: Trace },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewEvaluateResponse {
+    return new MetricsViewEvaluateResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): MetricsViewEvaluateResponse {
+    return new MetricsViewEvaluateResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): MetricsViewEvaluateResponse {
+    return new MetricsViewEvaluateResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: MetricsViewEvaluateResponse | PlainMessage<MetricsViewEvaluateResponse> | undefined, b: MetricsViewEvaluateResponse | PlainMessage<MetricsViewEvaluateResponse> | undefined): boolean {
+    return proto3.util.equals(MetricsViewEvaluateResponse, a, b);
+  }
+}
+
+/**
  * @generated from message rill.runtime.v1.ConvertExpressionToMetricsSQLRequest
  */
 export class ConvertExpressionToMetricsSQLRequest extends Message<ConvertExpressionToMetricsSQLRequest> {

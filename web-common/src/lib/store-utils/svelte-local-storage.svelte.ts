@@ -67,6 +67,15 @@ export class SvelteLocalStorage<Val, DefaultVal>
     );
   }
 
+  public static createStringStore(key: string, defaultVal: string) {
+    return SvelteLocalStorage.getInstance<string, string>(
+      key,
+      (value: string) => value,
+      (value) => value ?? defaultVal,
+      defaultVal,
+    );
+  }
+
   public static createStringArrayStore(key: string) {
     return new ArrayRuneStore<string>(
       SvelteLocalStorage.getInstance(

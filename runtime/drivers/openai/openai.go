@@ -366,6 +366,11 @@ func (o *openaiHandle) Complete(ctx context.Context, opts *drivers.CompleteOptio
 	return result, nil
 }
 
+// Evaluate implements drivers.AIService.
+func (o *openaiHandle) Evaluate(ctx context.Context, req *aiv1.EvaluateRequest) (*aiv1.EvaluateResponse, error) {
+	return nil, errors.New("not implemented")
+}
+
 // messageToOpenAI converts a single Rill CompletionMessage to one or more OpenAI ChatCompletionMessages.
 //
 // This handles the asymmetric nature of OpenAI's tool calling pattern:

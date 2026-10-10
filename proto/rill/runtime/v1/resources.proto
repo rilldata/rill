@@ -8,6 +8,7 @@ import "rill/runtime/v1/export_format.proto";
 import "rill/runtime/v1/expression.proto";
 import "rill/runtime/v1/schema.proto";
 import "rill/runtime/v1/time_grain.proto";
+import "rill/ai/v1/ai.proto";
 
 enum ReconcileStatus {
   RECONCILE_STATUS_UNSPECIFIED = 0;
@@ -248,6 +249,7 @@ message MetricsViewSpec {
     MEASURE_TYPE_SIMPLE = 1;
     MEASURE_TYPE_DERIVED = 2;
     MEASURE_TYPE_TIME_COMPARISON = 3;
+    MEASURE_TYPE_EVALUATION = 4;
   }
   // Window to apply to the measure calculation
   message MeasureWindow {
@@ -279,6 +281,7 @@ message MetricsViewSpec {
     Type data_type = 15;
     // When true, decreases in this measure are favorable (e.g. bounce rate, latency, error count). UI surfaces that render comparison deltas (KPIs, big numbers, leaderboards, pivot tables, time-series tooltips) swap their positive/negative coloring accordingly.
     bool lower_is_better = 17;
+    rill.ai.v1.EvaluateQuestion eval_question = 18;
   }
   // name of parent metrics view, if this is a derived metrics view. If this is set then certain fields like table, connector, database*, model, dimensions, and measures will only be set in `state.valid_spec`.
   string parent = 30;

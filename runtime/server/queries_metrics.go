@@ -8,8 +8,10 @@ import (
 	"strings"
 	"time"
 
+	aiv1 "github.com/rilldata/rill/proto/gen/rill/ai/v1"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
+	"github.com/rilldata/rill/runtime/ai"
 	"github.com/rilldata/rill/runtime/metricsview"
 	"github.com/rilldata/rill/runtime/pkg/mapstructureutil"
 	"github.com/rilldata/rill/runtime/pkg/observability"
@@ -714,6 +716,66 @@ func (s *Server) MetricsViewAnnotations(ctx context.Context, req *runtimev1.Metr
 	return &runtimev1.MetricsViewAnnotationsResponse{
 		Rows: rows,
 	}, nil
+}
+
+func (s *Server) MetricsViewEvaluate(ctx context.Context, req *runtimev1.MetricsViewEvaluateRequest) (*runtimev1.MetricsViewEvaluateResponse, error) {
+	claims := auth.GetClaims(ctx, req.InstanceId)
+	if !claims.Can(runtime.ReadMetrics) {
+		return nil, ErrForbidden
+	}
+
+	if req.Query == nil {
+		return nil, status.Error(codes.InvalidArgument, "query is required")
+	}
+	if len(req.Measures) == 0 {
+		return nil, status.Error(codes.InvalidArgument, "measures are required")
+	}
+	// Ensure the query runs against the instance and metrics view that the claims were checked for.
+	req.Query.InstanceId = req.InstanceId
+	req.Query.MetricsView = req.MetricsViewName
+
+	var collector *observability.RequestScopedCollector
+	if req.Query.Trace && canTrace(claims) {
+		collector = &observability.RequestScopedCollector{}
+		ctx = observability.WithRequestScopedCollector(ctx, collector)
+	}
+
+	mv, _, err := resolveMVAndSecurity(ctx, s.runtime, req.InstanceId, req.MetricsViewName)
+	if err != nil {
+		return nil, err
+	}
+
+	state, err := pbutil.ToValue(map[string]any{
+		"data":   "{{ .data }}",
+		"meta":   "{{ .meta }}",
+		"prompt": "What was the impact of this dimension?",
+	}, nil)
+	if err != nil {
+		return nil, err
+	}
+	evalReq := &aiv1.EvaluateRequest{
+		State:     state,
+		Questions: make(map[string]*aiv1.EvaluateQuestion),
+	}
+	for _, m := range req.Measures {
+		for _, ms := range mv.ValidSpec.Measures {
+			if ms.Name == m && ms.Type == runtimev1.MetricsViewSpec_MEASURE_TYPE_EVALUATION {
+				evalReq.Questions[m] = ms.EvalQuestion
+			}
+		}
+	}
+	if len(evalReq.Questions) == 0 {
+		return nil, status.Error(codes.InvalidArgument, "no evaluation measures found")
+	}
+
+	res, err := ai.NewEvaluation(s.runtime, req.InstanceId, evalReq, req.Query, claims).Execute(ctx)
+	if err != nil {
+		return nil, withTrace(err, collector)
+	}
+	if collector != nil {
+		res.Trace = collector.ToProto()
+	}
+	return res, nil
 }
 
 type annotation struct {

@@ -249,6 +249,7 @@ const isMeasureSupported = (
 ) => {
   if (
     measure.type === MetricsViewSpecMeasureType.MEASURE_TYPE_TIME_COMPARISON ||
+    measure.type === MetricsViewSpecMeasureType.MEASURE_TYPE_EVALUATION ||
     (!allowWindowMeasure && measure.window)
   )
     return false;

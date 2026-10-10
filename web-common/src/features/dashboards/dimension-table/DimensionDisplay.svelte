@@ -14,6 +14,8 @@
   import {
     createQueryServiceMetricsViewAggregation,
     type MetricsViewSpecDimension,
+    type MetricsViewSpecMeasure,
+    MetricsViewSpecMeasureType,
     type V1Expression,
     type V1MetricsViewAggregationMeasure,
     type V1TimeRange,
@@ -30,7 +32,12 @@
   import DimensionHeader from "./DimensionHeader.svelte";
   import DimensionTable from "./DimensionTable.svelte";
   import { getDimensionFilterWithSearch } from "./dimension-table-utils";
+  import type { DimensionTableRow } from "./dimension-table-types";
   import { sanitiseExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils.ts";
+  import {
+    getEvaluationMeasureColumns,
+    getEvaluationMeasuresQuery,
+  } from "@rilldata/web-common/features/evaluations/selectors.ts";
 
   const queryLimit = 250;
 
@@ -104,6 +111,15 @@
     measures,
     false,
   );
+  $: evaluationMeasures = measures
+    .map((m) => metricsViewSpec.measures?.find((ms) => ms.name === m.name))
+    .filter(
+      (m) =>
+        m?.type === MetricsViewSpecMeasureType.MEASURE_TYPE_EVALUATION &&
+        !!m?.requiredDimensions?.find(
+          (rd) => rd.name?.toLowerCase() === dimension.name?.toLowerCase(),
+        ),
+    ) as MetricsViewSpecMeasure[];
 
   // Request the URI measure so the dimension values can be rendered as links.
   // Added after filtering (it is not a real spec measure) and only on the
@@ -152,19 +168,20 @@
     !!comparisonTimeRange,
   );
 
+  $: aggregationRequest = {
+    metricsView: metricsViewName,
+    dimensions: [{ name: dimensionName }],
+    measures: sortedMeasures,
+    timeRange,
+    comparisonTimeRange,
+    sort,
+    where: sanitiseExpression(filterSet),
+    limit: queryLimit.toString(),
+    offset: "0",
+  };
   $: sortedQuery = createQueryServiceMetricsViewAggregation(
     client,
-    {
-      metricsView: metricsViewName,
-      dimensions: [{ name: dimensionName }],
-      measures: sortedMeasures,
-      timeRange,
-      comparisonTimeRange,
-      sort,
-      where: sanitiseExpression(filterSet),
-      limit: queryLimit.toString(),
-      offset: "0",
-    },
+    aggregationRequest,
     {
       query: {
         enabled: timeControlsReady,
@@ -172,16 +189,44 @@
     },
   );
 
-  $: tableRows = $prepareDimTableRows($sortedQuery, unfilteredTotal);
+  $: evaluationData = getEvaluationMeasuresQuery(
+    client,
+    aggregationRequest,
+    evaluationMeasures.map((m) => m.name!),
+  );
+
+  $: evaluatedRowsByValue = new Map(
+    ($evaluationData?.data?.data ?? []).map((row) => [row[dimensionName], row]),
+  );
+
+  $: tableRows = $prepareDimTableRows($sortedQuery, unfilteredTotal).map(
+    (row) => {
+      if (!evaluationMeasures.length) return row;
+      const evaluatedRow = evaluatedRowsByValue.get(row[dimensionName]);
+      // Answers are objects, which DimensionTableRow doesn't model; they are rendered by EvaluationAnswerCell.
+      return {
+        ...row,
+        ...Object.fromEntries(
+          evaluationMeasures.map((m) => [
+            m.name!,
+            evaluatedRow?.[m.name!] ?? null,
+          ]),
+        ),
+      } as DimensionTableRow;
+    },
+  );
 
   $: areAllTableRowsSelected = tableRows.every((row) =>
     $selectedValues.data?.includes(row[dimensionName] as string),
   );
 
-  $: columns = $virtualizedTableColumns(
-    tableRows,
-    $leaderboardShowContextForAllMeasures ? visibleMeasureNames : undefined,
-  );
+  $: columns = [
+    ...$virtualizedTableColumns(
+      tableRows,
+      $leaderboardShowContextForAllMeasures ? visibleMeasureNames : undefined,
+    ),
+    ...getEvaluationMeasureColumns(evaluationMeasures),
+  ];
 
   function onSelectItem(data: { index: number; meta: boolean }) {
     const label = tableRows[data.index][dimensionName] as string;
