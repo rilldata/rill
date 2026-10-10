@@ -234,9 +234,12 @@ func promptToTitle(message string) string {
 	title := whitespaceRegexp.ReplaceAllString(message, " ")
 	title = strings.TrimSpace(title)
 
-	// Truncate to 50 characters.
-	if len(title) > 50 {
-		title = title[:47] + "..."
+	// Truncate to 50 characters. Count runes, not bytes: slicing a string by a
+	// byte offset can cut through the middle of a multi-byte rune (e.g. CJK),
+	// producing invalid UTF-8 that later fails gRPC marshaling of the
+	// conversation list.
+	if runes := []rune(title); len(runes) > 50 {
+		title = string(runes[:47]) + "..."
 	}
 
 	// Fallback title if empty.
