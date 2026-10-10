@@ -15,7 +15,7 @@ import (
 )
 
 func init() {
-	runtime.RegisterResolverInitializer("resource_status", newResourceStatus)
+	runtime.RegisterResolver("resource_status", newResourceStatus, runtime.AnalysisUnsupported)
 }
 
 // resourceStatusResolver is a resolver that returns an overview of the instance's resources and their reconcile status.
@@ -135,8 +135,4 @@ func (r *resourceStatusResolver) ResolveInteractive(ctx context.Context) (runtim
 
 func (r *resourceStatusResolver) ResolveExport(ctx context.Context, w io.Writer, opts *runtime.ResolverExportOptions) error {
 	return errors.New("not implemented")
-}
-
-func (r *resourceStatusResolver) InferRequiredSecurityRules() ([]*runtimev1.SecurityRule, error) {
-	return nil, errors.New("security rule inference not implemented")
 }

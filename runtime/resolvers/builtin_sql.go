@@ -11,7 +11,7 @@ import (
 )
 
 func init() {
-	runtime.RegisterResolverInitializer("builtin_sql", newBuiltinSQL)
+	runtime.RegisterResolver("builtin_sql", newBuiltinSQL, runtime.AnalysisUnsupported)
 	runtime.RegisterBuiltinAPI(&runtime.BuiltinAPIOptions{
 		Name:               "sql",
 		Resolver:           "builtin_sql",

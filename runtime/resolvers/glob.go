@@ -31,7 +31,7 @@ import (
 )
 
 func init() {
-	runtime.RegisterResolverInitializer("glob", newGlob)
+	runtime.RegisterResolver("glob", newGlob, runtime.AnalysisUnsupported)
 }
 
 // globPartitionType is the type of partitioning for a "glob" resolver.
@@ -315,10 +315,6 @@ func (r *globResolver) ResolveInteractive(ctx context.Context) (runtime.Resolver
 
 func (r *globResolver) ResolveExport(ctx context.Context, w io.Writer, opts *runtime.ResolverExportOptions) error {
 	return errors.New("not implemented")
-}
-
-func (r *globResolver) InferRequiredSecurityRules() ([]*runtimev1.SecurityRule, error) {
-	return nil, errors.New("security rule inference not implemented")
 }
 
 // buildUnpartitioned builds a result consisting of one row per file.

@@ -19,7 +19,7 @@ import (
 )
 
 func init() {
-	runtime.RegisterResolverInitializer("metrics", newMetrics)
+	runtime.RegisterResolver("metrics", newMetrics, analyzeMetrics)
 }
 
 type metricsResolver struct {
@@ -38,19 +38,14 @@ type metricsResolverArgs struct {
 }
 
 func newMetrics(ctx context.Context, opts *runtime.ResolverOptions) (runtime.Resolver, error) {
-	qry := &metricsview.Query{}
-	if err := mapstructureutil.WeakDecode(opts.Properties, qry); err != nil {
+	qry, args, err := parseMetrics(opts.Properties, opts.Args)
+	if err != nil {
 		return nil, err
 	}
 
 	span := trace.SpanFromContext(ctx)
 	if span.SpanContext().IsValid() {
 		span.SetAttributes(attribute.String("metrics_view", qry.MetricsView))
-	}
-
-	args := &metricsResolverArgs{}
-	if err := mapstructureutil.WeakDecode(opts.Args, args); err != nil {
-		return nil, err
 	}
 
 	ctrl, err := opts.Runtime.Controller(ctx, opts.InstanceID)
@@ -182,26 +177,26 @@ func (r *metricsResolver) ResolveExport(ctx context.Context, w io.Writer, opts *
 	return errors.New("not implemented")
 }
 
-func (r *metricsResolver) InferRequiredSecurityRules() ([]*runtimev1.SecurityRule, error) {
+func metricsSecurityRules(query *metricsview.Query) []*runtimev1.SecurityRule {
 	var rules []*runtimev1.SecurityRule
 
-	if r.query.Where != nil {
+	if query.Where != nil {
 		rules = append(rules, &runtimev1.SecurityRule{
 			Rule: &runtimev1.SecurityRule_RowFilter{
 				RowFilter: &runtimev1.SecurityRuleRowFilter{
-					ConditionResources: []*runtimev1.ResourceName{{Kind: runtime.ResourceKindMetricsView, Name: r.query.MetricsView}},
-					Expression:         metricsview.ExpressionToProto(r.query.Where),
+					ConditionResources: []*runtimev1.ResourceName{{Kind: runtime.ResourceKindMetricsView, Name: query.MetricsView}},
+					Expression:         metricsview.ExpressionToProto(query.Where),
 				},
 			},
 		})
 	}
 
-	fields := metricsview.AnalyzeQueryFields(r.query)
+	fields := metricsview.AnalyzeQueryFields(query)
 	if len(fields) > 0 {
 		rules = append(rules, &runtimev1.SecurityRule{
 			Rule: &runtimev1.SecurityRule_FieldAccess{
 				FieldAccess: &runtimev1.SecurityRuleFieldAccess{
-					ConditionResources: []*runtimev1.ResourceName{{Kind: runtime.ResourceKindMetricsView, Name: r.query.MetricsView}},
+					ConditionResources: []*runtimev1.ResourceName{{Kind: runtime.ResourceKindMetricsView, Name: query.MetricsView}},
 					Fields:             fields,
 					Allow:              true,
 					Exclusive:          true,
@@ -210,7 +205,7 @@ func (r *metricsResolver) InferRequiredSecurityRules() ([]*runtimev1.SecurityRul
 		})
 	}
 
-	return rules, nil
+	return rules
 }
 
 // fieldsFromQuery returns metadata for only those dimensions and measures present in the query, preserving query order.
@@ -272,4 +267,31 @@ func fieldsFromQuery(spec *runtimev1.MetricsViewSpec, q *metricsview.Query) []ma
 	}
 
 	return meta
+}
+
+func parseMetrics(properties, arguments map[string]any) (*metricsview.Query, *metricsResolverArgs, error) {
+	query := &metricsview.Query{}
+	if err := mapstructureutil.WeakDecode(properties, query); err != nil {
+		return nil, nil, err
+	}
+	args := &metricsResolverArgs{}
+	if err := mapstructureutil.WeakDecode(arguments, args); err != nil {
+		return nil, nil, err
+	}
+	return query, args, nil
+}
+
+func analyzeMetrics(ctx context.Context, rt *runtime.Runtime, opts *runtime.ResolverAnalysisOptions) (*runtime.ResolverAnalysis, error) {
+	query, _, err := parseMetrics(opts.Properties, opts.Args)
+	if err != nil {
+		return nil, err
+	}
+	_, _, err = lookupMetricsView(ctx, rt, opts.InstanceID, query.MetricsView)
+	if err != nil {
+		return nil, err
+	}
+	return &runtime.ResolverAnalysis{
+		Refs:                  []*runtimev1.ResourceName{{Kind: runtime.ResourceKindMetricsView, Name: query.MetricsView}},
+		RequiredSecurityRules: metricsSecurityRules(query),
+	}, nil
 }

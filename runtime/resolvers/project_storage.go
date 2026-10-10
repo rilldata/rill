@@ -18,7 +18,7 @@ import (
 const _projectStorageDefaultCacheTTL = 60 * time.Second
 
 func init() {
-	runtime.RegisterResolverInitializer("project_storage", newProjectStorage)
+	runtime.RegisterResolver("project_storage", newProjectStorage, runtime.AnalysisUnsupported)
 }
 
 type projectStorageResolver struct {
@@ -141,10 +141,6 @@ func (r *projectStorageResolver) ResolveInteractive(ctx context.Context) (runtim
 
 func (r *projectStorageResolver) ResolveExport(ctx context.Context, w io.Writer, opts *runtime.ResolverExportOptions) error {
 	return errors.New("not implemented")
-}
-
-func (r *projectStorageResolver) InferRequiredSecurityRules() ([]*runtimev1.SecurityRule, error) {
-	return nil, errors.New("security rule inference not implemented")
 }
 
 func (r *projectStorageResolver) resolveForConnector(ctx context.Context, name string) (size int64, driver string, err error) {

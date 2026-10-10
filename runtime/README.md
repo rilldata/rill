@@ -20,6 +20,16 @@ The base directory contains a `Runtime` type that represents the lifecycle of th
 - `storage` contains logic that wraps a project's persistent file storage (on disk and in an object store).
 - `testruntime` contains helper functions for initializing a test runtime with test data and test connectors.
 
+## Resolver analysis
+
+Transitive access for reports, alerts, and canvases uses `Runtime.AnalyzeResolver` to discover references and required security rules.
+Resolvers register an initializer and an analyzer together via `RegisterResolver`; resolvers that cannot infer security rules register `AnalysisUnsupported`, which returns an error instead of initializing an executable resolver.
+Analysis takes user attributes for templating, but no security claims, and does not authorize access.
+Normal execution still applies the caller's security policy, including before serving cached results.
+
+Analysis reads resource definitions without querying data, except for bounded timestamp lookups required by dynamic metrics SQL time expressions.
+Those lookups use the same global timestamp bounds as normal execution and release their executor immediately.
+
 ## Development
 
 ### Developing the local application
