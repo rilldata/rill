@@ -207,12 +207,36 @@ func (s *Service) StartDeploymentInner(ctx context.Context, depl *database.Deplo
 		return err
 	}
 
+	// Resolve the provisioner.
+	// The project-level provisioner takes precedence, then the org-level default, then the global default.
+	provisionerName := proj.Provisioner
+	if provisionerName == "" {
+		provisionerName = org.DefaultProvisioner
+	}
+	if provisionerName == "" {
+		provisionerName = s.opts.DefaultProvisioner
+	}
+
+	// If the runtime was previously provisioned with a different provisioner,
+	// switch its provisioner resource over to the new provisioner before provisioning it.
+	// This happens when the project's or org's provisioner was changed while the deployment was stopped.
+	// (Running deployments keep their current provisioner; see UpdateDeploymentInner.)
+	pr, ok, err := s.FindProvisionedRuntimeResource(ctx, depl.ID)
+	if err != nil {
+		return err
+	}
+	if ok && pr.Provisioner != provisionerName {
+		err = s.switchRuntimeProvisioner(ctx, depl, pr, provisionerName)
+		if err != nil {
+			return err
+		}
+	}
+
 	// Provision the runtime
 	r, err := s.provisionRuntime(ctx, &provisionRuntimeOptions{
 		DeploymentID:   depl.ID,
 		Environment:    depl.Environment,
-		Provisioner:    proj.Provisioner,
-		OrgProvisioner: org.DefaultProvisioner,
+		Provisioner:    provisionerName,
 		Slots:          slots,
 		Version:        runtimeVersion,
 		OverrideDiskGB: proj.OverrideDiskGB,
@@ -337,6 +361,61 @@ func (s *Service) StartDeploymentInner(ctx context.Context, depl *database.Deplo
 	return nil
 }
 
+// switchRuntimeProvisioner moves a deployment's runtime provisioner resource to a different provisioner.
+// It deprovisions the resource with its current provisioner, then resets it to a pending resource for the new provisioner.
+// The resource keeps its ID, which preserves the deployment's instance ID and other identifiers derived from it (such as the runtime's metastore backups).
+// The caller is responsible for provisioning the resource with the new provisioner afterwards.
+//
+// It must only be called from StartDeploymentInner.
+// The implementation is idempotent: if it fails after deprovisioning, a retry deprovisions again (which is a no-op) before resetting the resource.
+func (s *Service) switchRuntimeProvisioner(ctx context.Context, depl *database.Deployment, pr *database.ProvisionerResource, newProvisioner string) error {
+	// Check the new provisioner is valid before tearing down the old resource.
+	newP, ok := s.ProvisionerSet[newProvisioner]
+	if !ok {
+		return fmt.Errorf("provisioner: the requested provisioner %q is not in the provisioner set", newProvisioner)
+	}
+	if !newP.Supports(provisioner.ResourceType(pr.Type)) {
+		return fmt.Errorf("provisioner: the requested provisioner %q does not support resource type %q", newProvisioner, pr.Type)
+	}
+
+	s.Logger.Info("start deployment: switching runtime provisioner", zap.String("deployment_id", depl.ID), zap.String("provision_id", pr.ID), zap.String("old_provisioner", pr.Provisioner), zap.String("new_provisioner", newProvisioner), observability.ZapCtx(ctx))
+
+	// Deprovision the resource with the old provisioner.
+	// NOTE: Unlike DeleteDeploymentInner, we don't call DeleteInstance on the old runtime.
+	// It deletes the instance's data in object storage, which the new runtime may need to restore from.
+	oldP, ok := s.ProvisionerSet[pr.Provisioner]
+	if !ok {
+		s.Logger.Warn("provisioner: deprovisioning skipped, provisioner not found", zap.String("deployment_id", depl.ID), zap.String("provisioner", pr.Provisioner), zap.String("provision_id", pr.ID), observability.ZapCtx(ctx))
+	} else {
+		err := oldP.Deprovision(ctx, &provisioner.Resource{
+			ID:     pr.ID,
+			Type:   provisioner.ResourceType(pr.Type),
+			State:  pr.State,
+			Config: pr.Config,
+		})
+		if err != nil {
+			return err
+		}
+	}
+
+	// Reset the resource for the new provisioner.
+	// The state and config must be cleared since they are specific to the old provisioner.
+	_, err := s.DB.UpdateProvisionerResource(ctx, pr.ID, &database.UpdateProvisionerResourceOptions{
+		Status:        database.ProvisionerResourceStatusPending,
+		StatusMessage: "Provisioning...",
+		Provisioner:   newProvisioner,
+		Args:          pr.Args,
+		State:         nil,
+		Config:        nil,
+	})
+	if err != nil {
+		return err
+	}
+
+	s.Logger.Info("start deployment: switched runtime provisioner", zap.String("deployment_id", depl.ID), zap.String("provision_id", pr.ID), zap.String("old_provisioner", pr.Provisioner), zap.String("new_provisioner", newProvisioner), observability.ZapCtx(ctx))
+	return nil
+}
+
 // StopDeploymentInner stops a deployment by checkpointing it and hibernating its provisioner resources.
 // Persistent state (e.g. the runtime's PVC) is preserved across stop/start so that restarts are fast.
 // The implementation is idempotent, enabling it to be called from a retryable background job.
@@ -386,6 +465,7 @@ func (s *Service) StopDeploymentInner(ctx context.Context, depl *database.Deploy
 		_, err = s.DB.UpdateProvisionerResource(ctx, pr.ID, &database.UpdateProvisionerResourceOptions{
 			Status:        database.ProvisionerResourceStatusOK,
 			StatusMessage: "",
+			Provisioner:   pr.Provisioner,
 			Args:          pr.Args,
 			State:         r.State,
 			Config:        r.Config,
@@ -563,10 +643,9 @@ func (s *Service) UpdateDeploymentInner(ctx context.Context, d *database.Deploym
 			DeploymentID: d.ID,
 			Environment:  d.Environment,
 			// NOTE: Passing the already provisioned resource's provisioner (not the project's or org's).
-			// The provisioner of an existing resource is immutable, so changing the project's or org's
-			// provisioner only takes effect for newly provisioned deployments.
+			// Running deployments keep their current provisioner.
+			// A change to the project's or org's provisioner is applied by StartDeploymentInner the next time the deployment is started.
 			Provisioner:    pr.Provisioner,
-			OrgProvisioner: org.DefaultProvisioner,
 			Slots:          slots,
 			Version:        runtimeVersion,
 			OverrideDiskGB: proj.OverrideDiskGB,
@@ -669,6 +748,7 @@ func (s *Service) CheckProvisionerResource(ctx context.Context, pr *database.Pro
 		_, err2 := s.DB.UpdateProvisionerResource(ctx, pr.ID, &database.UpdateProvisionerResourceOptions{
 			Status:        database.ProvisionerResourceStatusError,
 			StatusMessage: fmt.Sprintf("check failed: %s", err.Error()),
+			Provisioner:   pr.Provisioner,
 			Args:          pr.Args,
 			State:         pr.State,
 			Config:        pr.Config,
@@ -684,6 +764,7 @@ func (s *Service) CheckProvisionerResource(ctx context.Context, pr *database.Pro
 	_, err = s.DB.UpdateProvisionerResource(ctx, pr.ID, &database.UpdateProvisionerResourceOptions{
 		Status:        database.ProvisionerResourceStatusOK,
 		StatusMessage: "",
+		Provisioner:   pr.Provisioner,
 		Args:          pr.Args,
 		State:         r.State,
 		Config:        r.Config,
@@ -802,12 +883,9 @@ func resolveSlots(proj *database.Project, environment string) (int, error) {
 }
 
 type provisionRuntimeOptions struct {
-	DeploymentID string
-	Environment  string
-	// Provisioner is the project-level provisioner. It takes precedence over OrgProvisioner.
-	Provisioner string
-	// OrgProvisioner is the org-level default provisioner. It is used if Provisioner is empty.
-	OrgProvisioner string
+	DeploymentID   string
+	Environment    string
+	Provisioner    string
 	Slots          int
 	Version        string
 	OverrideDiskGB *int64
@@ -831,15 +909,6 @@ func (s *Service) triggerDeploymentReconcileJob(ctx context.Context, deploymentI
 }
 
 func (s *Service) provisionRuntime(ctx context.Context, opts *provisionRuntimeOptions) (*database.ProvisionerResource, error) {
-	// Resolve the provisioner. The project-level provisioner takes precedence,
-	// then the org-level default, then the global default.
-	if opts.Provisioner == "" {
-		opts.Provisioner = opts.OrgProvisioner
-	}
-	if opts.Provisioner == "" {
-		opts.Provisioner = s.opts.DefaultProvisioner
-	}
-
 	// Create provisioner args
 	args := &provisioner.RuntimeArgs{
 		Slots:          opts.Slots,

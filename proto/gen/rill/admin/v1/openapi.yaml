@@ -2840,6 +2840,9 @@ paths:
                 content:
                     application/json:
                         schema:
+                            properties:
+                                superuserForceAccess:
+                                    type: boolean
                             type: object
                 required: true
                 x-originalParamName: body
@@ -2870,6 +2873,9 @@ paths:
                 content:
                     application/json:
                         schema:
+                            properties:
+                                superuserForceAccess:
+                                    type: boolean
                             type: object
                 required: true
                 x-originalParamName: body
@@ -4022,7 +4028,7 @@ paths:
                                 provisioner:
                                     description: |-
                                         Provisioner to use for the project's deployments. Superuser-only; empty unsets it so the org's default provisioner (or the global default) is used.
-                                        It only affects deployments provisioned after the change; existing deployments stay on their current provisioner.
+                                        Running deployments keep their current provisioner; the change is applied to each deployment the next time it is started (stopped deployments are moved to the new provisioner, keeping their IDs).
                                     type: string
                                 public:
                                     type: boolean
@@ -4439,6 +4445,10 @@ paths:
                   name: userId
                   schema:
                     type: string
+                - in: query
+                  name: superuserForceAccess
+                  schema:
+                    type: boolean
             responses:
                 "200":
                     content:
@@ -7613,7 +7623,7 @@ paths:
                     description: An unexpected error response.
             summary: |-
                 SudoUpdateOrganizationDefaultProvisioner sets the provisioner used by default for an organization's deployments.
-                It only affects deployments provisioned after the change; existing deployments stay on their current provisioner.
+                Running deployments keep their current provisioner; the change is applied to each deployment the next time it is started (stopped deployments are moved to the new provisioner, keeping their IDs).
     /v1/superuser/organization/trial/extend:
         post:
             operationId: AdminService_SudoExtendTrial
