@@ -70,6 +70,24 @@ describe("removeMeasureFromComponentSpec", () => {
     });
   });
 
+  it("drops KPI comparisons that use the measure on either side", () => {
+    expect(
+      removeMeasureFromComponentSpec(
+        {
+          measures: ["revenue", "margin"],
+          measure_comparisons: [
+            { measure: "revenue", compare_to: "target" },
+            { measure: "target", compare_to: "revenue" },
+            { measure: "margin", compare_to: "margin_target" },
+          ],
+        },
+        "target",
+      ),
+    ).toEqual({
+      measure_comparisons: [{ measure: "margin", compare_to: "margin_target" }],
+    });
+  });
+
   it("returns nothing when the measure is unused", () => {
     expect(
       removeMeasureFromComponentSpec(
