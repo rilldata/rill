@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"strings"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
@@ -249,12 +248,8 @@ func canvasTransitiveConditionResources(ctx context.Context, c *runtime.Controll
 		}
 
 		// Track metrics views set as defaults of the component's declared metrics_view params.
-		for _, p := range componentSpec.Params {
-			if p.Type == "metrics_view" && p.Default != nil {
-				if name, ok := p.Default.AsInterface().(string); ok && name != "" && !strings.Contains(name, "{{") {
-					refs.metricsViews[name] = true
-				}
-			}
+		for _, name := range canvas.BoundMetricsViewNames(componentSpec.Params, nil) {
+			refs.metricsViews[name] = true
 		}
 
 		if componentSpec.RendererProperties == nil {
@@ -434,18 +429,7 @@ func (r *CanvasReconciler) validateItemParamBindings(ctx context.Context, spec *
 
 		// Fetch the specs of the metrics views bound to params.
 		// It is safe to fetch them here because the parser added them as refs of the canvas, so DAG ordering holds.
-		for _, p := range componentSpec.Params {
-			if p.Type != "metrics_view" {
-				continue
-			}
-			v, ok := bound[p.Name]
-			if !ok && p.Default != nil {
-				v = p.Default.AsInterface()
-			}
-			name, ok := v.(string)
-			if !ok || name == "" || strings.Contains(name, "{{") {
-				continue
-			}
+		for _, name := range canvas.BoundMetricsViewNames(componentSpec.Params, bound) {
 			if _, ok := mvs[name]; ok {
 				continue
 			}
@@ -530,7 +514,7 @@ func (r *rendererRefs) populateRendererRefs(ctx context.Context, renderer string
 // params are tracked from the canvas items' params instead.
 func (r *rendererRefs) metricsView(mv any) error {
 	if mv, ok := mv.(string); ok {
-		if !strings.Contains(mv, "{{") {
+		if !canvas.IsTemplated(mv) {
 			r.metricsViews[mv] = true
 		}
 		return nil

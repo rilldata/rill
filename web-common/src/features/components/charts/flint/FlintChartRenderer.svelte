@@ -19,13 +19,13 @@
   import { V1TimeGrainToDateTimeUnit } from "@rilldata/web-common/lib/time/new-grains";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import type { View, VisualizationSpec } from "svelte-vega";
-  import { convertV1ExpressionToMapstructure } from "../custom/expression-utils";
+  import { metricsSQLFilterProperties } from "../custom/expression-utils";
   import {
     compileFlintSpec,
     type FlintChartSpec,
   } from "@rilldata/web-common/features/custom-viz/flint/compile";
   import { EJECTED_DATA_NAME } from "@rilldata/web-common/features/custom-viz/flint/eject";
-  import { deriveFlintFields } from "@rilldata/web-common/features/custom-viz/flint/semantic-types";
+  import { deriveResultFields } from "@rilldata/web-common/features/custom-viz/flint/semantic-types";
   import { debounce } from "@rilldata/web-common/lib/create-debouncer";
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import { onDestroy, tick } from "svelte";
@@ -93,10 +93,7 @@
       resolver: "metrics_sql",
       resolverProperties: {
         sql: metricsSQL,
-        ...(whereFilter?.cond?.exprs?.length
-          ? { additional_where: convertV1ExpressionToMapstructure(whereFilter) }
-          : {}),
-        ...(timeRange ? { additional_time_range: timeRange } : {}),
+        ...metricsSQLFilterProperties(whereFilter, timeRange),
         // The grain buckets the query's time dimensions, so the chart shows one mark per bucket of
         // the dashboard's time controls rather than one per raw timestamp. A component that writes
         // its own date_trunc keeps that bucket instead.
@@ -137,12 +134,12 @@
     type: field.type?.code,
   })) as VirtualizedTableColumns[];
 
-  $: fields = deriveFlintFields(columns, metricsViewSpec, timeGrain);
-
   // Measures present in the result, so their Rill formatters can be registered and referenced.
-  $: measures = (metricsViewSpec?.measures ?? []).filter(
-    (measure) => measure.name && columns.includes(measure.name),
-  );
+  $: ({ fields, measures } = deriveResultFields(
+    columns,
+    metricsViewSpec,
+    timeGrain,
+  ));
 
   $: expressionFunctions = measures.reduce<
     Record<string, { fn: (val: number) => string }>

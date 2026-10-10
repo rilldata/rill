@@ -61,6 +61,23 @@ const TIME_GRAIN_TO_SEMANTIC_TYPE: Partial<
   [V1TimeGrain.TIME_GRAIN_DAY]: "Date",
 };
 
+/**
+ * Derives what compiling a chart spec needs from a query result's columns: Flint's per-field
+ * metadata, and the metrics view measures present in the result (which have Rill formatters).
+ */
+export function deriveResultFields(
+  columns: string[],
+  metricsViewSpec: V1MetricsViewSpec | undefined,
+  timeGrain?: V1TimeGrain,
+): { fields: FlintFields; measures: MetricsViewSpecMeasure[] } {
+  return {
+    fields: deriveFlintFields(columns, metricsViewSpec, timeGrain),
+    measures: (metricsViewSpec?.measures ?? []).filter(
+      (measure) => measure.name && columns.includes(measure.name),
+    ),
+  };
+}
+
 export function deriveFlintFields(
   columns: string[],
   metricsViewSpec: V1MetricsViewSpec | undefined,

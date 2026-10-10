@@ -1,6 +1,7 @@
 package canvas
 
 import (
+	"slices"
 	"strconv"
 	"strings"
 
@@ -38,14 +39,12 @@ const timeDimensionDisplayName = "Time"
 func FieldTemplateData(params []*runtimev1.ComponentParam, args map[string]any, metricsViews map[string]*runtimev1.MetricsViewSpec) map[string]any {
 	res := make(map[string]any)
 	for _, p := range params {
-		switch p.Type {
-		case "measure", "dimension", "time_dimension":
-		default:
+		if !slices.Contains(ParamFieldTypes, p.Type) {
 			continue
 		}
 
 		field, ok := args[p.Name].(string)
-		if !ok || isTemplated(field) {
+		if !ok || IsTemplated(field) {
 			field = ""
 		}
 

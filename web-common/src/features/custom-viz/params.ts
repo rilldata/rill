@@ -67,6 +67,25 @@ const FIELD_PARAM_TYPES = new Set<ComponentParamType>([
   "time_dimension",
 ]);
 
+/** Whether a declared param references a field of a metrics view. */
+export function isFieldParam(param: V1ComponentParam): boolean {
+  return FIELD_PARAM_TYPES.has(param.type as ComponentParamType);
+}
+
+/**
+ * The metrics view bound to the component's first metrics_view param,
+ * falling back to its default.
+ */
+export function boundMetricsViewName(
+  params: V1ComponentParam[],
+  args: Record<string, unknown>,
+): string | undefined {
+  const param = params.find((candidate) => candidate.type === "metrics_view");
+  if (!param?.name) return undefined;
+  const name = args[param.name] ?? param.default;
+  return typeof name === "string" && name ? name : undefined;
+}
+
 /** Whether a declared param is the by-convention sort-field selector. */
 export function isOrderByParam(param: V1ComponentParam): boolean {
   return (
@@ -86,8 +105,7 @@ export function orderByOptions(
   const options: { value: string; label: string }[] = [];
   const seen = new Set<string>();
   for (const param of params) {
-    if (!param.name || !FIELD_PARAM_TYPES.has(param.type as ComponentParamType))
-      continue;
+    if (!param.name || !isFieldParam(param)) continue;
     const value = args[param.name];
     if (typeof value !== "string" || !value || seen.has(value)) continue;
     seen.add(value);
@@ -106,12 +124,22 @@ export function orderByOptions(
  */
 export function paramToInputParam(
   param: V1ComponentParam,
+  bindings?: { params: V1ComponentParam[]; args: Record<string, unknown> },
 ): ComponentInputParam {
   const common = {
     label: prettyParamLabel(param.name),
     optional: !param.required,
     description: param.description,
   };
+  // The by-convention order_by param selects among the currently bound field values
+  // instead of taking free text.
+  if (bindings && isOrderByParam(param)) {
+    return {
+      type: "select",
+      ...common,
+      meta: { options: orderByOptions(bindings.params, bindings.args) },
+    };
+  }
   switch (param.type as ComponentParamType) {
     case "metrics_view":
       return { type: "metrics", ...common };
@@ -261,7 +289,7 @@ export function reconcileOrderByArg(
     const changedParam = params.find((param) => param.name === changed.name);
     if (
       changedParam &&
-      FIELD_PARAM_TYPES.has(changedParam.type as ComponentParamType) &&
+      isFieldParam(changedParam) &&
       current !== undefined &&
       current === changed.previousValue &&
       typeof args[changed.name] === "string"

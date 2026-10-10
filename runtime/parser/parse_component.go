@@ -40,14 +40,6 @@ type ComponentParamYAML struct {
 	Options     []any  `yaml:"options"`      // For scalar params: allowed values
 }
 
-// componentParamScalarTypes are the param types that hold plain values.
-// Scalar params may declare options and are injected as native Vega-Lite params at resolve time.
-var componentParamScalarTypes = []string{"string", "number", "boolean"}
-
-// componentParamFieldTypes are the param types that reference a field of a metrics view.
-// They resolve their metrics view through a sibling param of type "metrics_view".
-var componentParamFieldTypes = []string{"measure", "dimension", "time_dimension"}
-
 // componentParamNameRegex restricts param names to valid identifiers,
 // since they are referenced as {{ .params.<name> }} in Go templates and as signal names in Vega expressions.
 var componentParamNameRegex = regexp.MustCompile(`^[a-zA-Z_][a-zA-Z0-9_]*$`)
@@ -199,7 +191,7 @@ func (p *Parser) parseComponentYAML(tmp *ComponentYAML, inline bool) (*runtimev1
 			if k == "metrics_view" {
 				name := v.GetStringValue()
 				// Skip templated values (e.g. {{ .params.metrics_view }}): refs must be static resource names.
-				if name != "" && !strings.Contains(name, "{{") {
+				if name != "" && !canvas.IsTemplated(name) {
 					refs = append(refs, ResourceName{Kind: ResourceKindMetricsView, Name: name})
 				}
 				break
@@ -216,13 +208,8 @@ func (p *Parser) parseComponentYAML(tmp *ComponentYAML, inline bool) (*runtimev1
 	// Link metrics views set as defaults of metrics_view params:
 	// a component rendered with its defaults depends on the default metrics view
 	// even when no canvas binds the param, so it needs a ref for DAG ordering and invalidation.
-	for _, param := range params {
-		if param.Type != "metrics_view" || param.Default == nil {
-			continue
-		}
-		if name, ok := param.Default.AsInterface().(string); ok && name != "" && !strings.Contains(name, "{{") {
-			refs = append(refs, ResourceName{Kind: ResourceKindMetricsView, Name: name})
-		}
+	for _, name := range canvas.BoundMetricsViewNames(params, nil) {
+		refs = append(refs, ResourceName{Kind: ResourceKindMetricsView, Name: name})
 	}
 
 	// When params are declared, require that all template references to .params (or its .args alias)
@@ -232,7 +219,7 @@ func (p *Parser) parseComponentYAML(tmp *ComponentYAML, inline bool) (*runtimev1
 		fieldTyped := make(map[string]bool, len(params))
 		for _, param := range params {
 			declared[param.Name] = true
-			fieldTyped[param.Name] = slices.Contains(componentParamFieldTypes, param.Type)
+			fieldTyped[param.Name] = slices.Contains(canvas.ParamFieldTypes, param.Type)
 		}
 		vars := make(map[string]string)
 		if err := AnalyzeTemplateRecursively(props, vars); err != nil {
@@ -246,7 +233,7 @@ func (p *Parser) parseComponentYAML(tmp *ComponentYAML, inline bool) (*runtimev1
 				}
 				// ".fields" exposes metrics view metadata, which only a field-typed param resolves against.
 				if !fieldTyped[name] {
-					return nil, nil, fmt.Errorf(`renderer properties reference ".fields.%s", but param %q is not of type %s`, name, name, strings.Join(componentParamFieldTypes, ", "))
+					return nil, nil, fmt.Errorf(`renderer properties reference ".fields.%s", but param %q is not of type %s`, name, name, strings.Join(canvas.ParamFieldTypes, ", "))
 				}
 				// A mistyped key resolves to Go's "<no value>" placeholder rather than to an error,
 				// which would then reach the renderer as a field or formatter name.
@@ -345,37 +332,43 @@ func parseComponentParams(params []*ComponentParamYAML) ([]*runtimev1.ComponentP
 	// Second pass: validate types, defaults, options and back-references, and convert to protos.
 	res := make([]*runtimev1.ComponentParam, len(params))
 	for i, param := range params {
-		isScalar := slices.Contains(componentParamScalarTypes, param.Type)
-		isField := slices.Contains(componentParamFieldTypes, param.Type)
+		isScalar := slices.Contains(canvas.ParamScalarTypes, param.Type)
+		isField := slices.Contains(canvas.ParamFieldTypes, param.Type)
 		if !isScalar && !isField && param.Type != "metrics_view" {
-			return nil, fmt.Errorf("param %q has invalid type %q (options: %s)", param.Name, param.Type, strings.Join(slices.Concat(componentParamScalarTypes, []string{"metrics_view"}, componentParamFieldTypes), ", "))
+			return nil, fmt.Errorf("param %q has invalid type %q (options: %s)", param.Name, param.Type, strings.Join(slices.Concat(canvas.ParamScalarTypes, []string{"metrics_view"}, canvas.ParamFieldTypes), ", "))
 		}
 
 		if param.Required && param.Default != nil {
 			return nil, fmt.Errorf("param %q cannot both be required and have a default", param.Name)
 		}
+		var defaultVal *structpb.Value
 		if param.Default != nil {
-			if err := validateComponentParamValue(param.Type, param.Default); err != nil {
+			if err := canvas.ValidateParamValue(param.Type, param.Default); err != nil {
+				return nil, fmt.Errorf("invalid default for param %q: %w", param.Name, err)
+			}
+			var err error
+			defaultVal, err = structpb.NewValue(param.Default)
+			if err != nil {
 				return nil, fmt.Errorf("invalid default for param %q: %w", param.Name, err)
 			}
 		}
 
-		if len(param.Options) > 0 {
-			if !isScalar {
-				return nil, fmt.Errorf("param %q cannot have options: options are only supported for scalar types (%s)", param.Name, strings.Join(componentParamScalarTypes, ", "))
+		var options []*structpb.Value
+		if len(param.Options) > 0 && !isScalar {
+			return nil, fmt.Errorf("param %q cannot have options: options are only supported for scalar types (%s)", param.Name, strings.Join(canvas.ParamScalarTypes, ", "))
+		}
+		for j, opt := range param.Options {
+			if err := canvas.ValidateParamValue(param.Type, opt); err != nil {
+				return nil, fmt.Errorf("invalid option at index %d for param %q: %w", j, param.Name, err)
 			}
-			defaultInOptions := param.Default == nil
-			for j, opt := range param.Options {
-				if err := validateComponentParamValue(param.Type, opt); err != nil {
-					return nil, fmt.Errorf("invalid option at index %d for param %q: %w", j, param.Name, err)
-				}
-				if param.Default != nil && scalarsEqual(param.Default, opt) {
-					defaultInOptions = true
-				}
+			val, err := structpb.NewValue(opt)
+			if err != nil {
+				return nil, fmt.Errorf("invalid option at index %d for param %q: %w", j, param.Name, err)
 			}
-			if !defaultInOptions {
-				return nil, fmt.Errorf("default for param %q is not one of its options", param.Name)
-			}
+			options = append(options, val)
+		}
+		if defaultVal != nil && len(options) > 0 && !canvas.IsParamOption(defaultVal, options) {
+			return nil, fmt.Errorf("default for param %q is not one of its options", param.Name)
 		}
 
 		mvParam := param.MetricsView
@@ -396,23 +389,6 @@ func parseComponentParams(params []*ComponentParamYAML) ([]*runtimev1.ComponentP
 			return nil, fmt.Errorf(`param %q of type %q cannot set "metrics_view"`, param.Name, param.Type)
 		}
 
-		var defaultVal *structpb.Value
-		if param.Default != nil {
-			var err error
-			defaultVal, err = structpb.NewValue(param.Default)
-			if err != nil {
-				return nil, fmt.Errorf("invalid default for param %q: %w", param.Name, err)
-			}
-		}
-		var options []*structpb.Value
-		for j, opt := range param.Options {
-			val, err := structpb.NewValue(opt)
-			if err != nil {
-				return nil, fmt.Errorf("invalid option at index %d for param %q: %w", j, param.Name, err)
-			}
-			options = append(options, val)
-		}
-
 		res[i] = &runtimev1.ComponentParam{
 			Name:             param.Name,
 			Type:             param.Type,
@@ -425,59 +401,4 @@ func parseComponentParams(params []*ComponentParamYAML) ([]*runtimev1.ComponentP
 	}
 
 	return res, nil
-}
-
-// validateComponentParamValue checks that a param's default or option value conforms to its declared type.
-func validateComponentParamValue(typ string, v any) error {
-	switch typ {
-	case "number":
-		switch v.(type) {
-		case int, int32, int64, uint, uint32, uint64, float32, float64:
-			return nil
-		}
-		return fmt.Errorf("expected a number, got %v", v)
-	case "boolean":
-		if _, ok := v.(bool); !ok {
-			return fmt.Errorf("expected a boolean, got %v", v)
-		}
-		return nil
-	default:
-		// "string" and all metrics view field types hold string values.
-		if _, ok := v.(string); !ok {
-			return fmt.Errorf("expected a string, got %v", v)
-		}
-		return nil
-	}
-}
-
-// scalarsEqual compares two scalar values, treating all numeric types as equal when their values match.
-func scalarsEqual(a, b any) bool {
-	af, aok := asFloat(a)
-	bf, bok := asFloat(b)
-	if aok && bok {
-		return af == bf
-	}
-	return a == b
-}
-
-func asFloat(v any) (float64, bool) {
-	switch v := v.(type) {
-	case int:
-		return float64(v), true
-	case int32:
-		return float64(v), true
-	case int64:
-		return float64(v), true
-	case uint:
-		return float64(v), true
-	case uint32:
-		return float64(v), true
-	case uint64:
-		return float64(v), true
-	case float32:
-		return float64(v), true
-	case float64:
-		return v, true
-	}
-	return 0, false
 }

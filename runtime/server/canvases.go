@@ -163,12 +163,8 @@ func (s *Server) boundMetricsViews(ctx context.Context, instanceID string, claim
 	}
 
 	res := make(map[string]*runtimev1.MetricsViewSpec)
-	for _, p := range params {
-		if p.Type != "metrics_view" {
-			continue
-		}
-		name, ok := args[p.Name].(string)
-		if !ok || name == "" || res[name] != nil {
+	for _, name := range canvas.BoundMetricsViewNames(params, args) {
+		if res[name] != nil {
 			continue
 		}
 		mvRes, err := ctrl.Get(ctx, &runtimev1.ResourceName{Kind: runtime.ResourceKindMetricsView, Name: name}, false)

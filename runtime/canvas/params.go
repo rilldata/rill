@@ -4,12 +4,21 @@ import (
 	"encoding/json"
 	"fmt"
 	"regexp"
+	"slices"
 	"strings"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
-	"google.golang.org/protobuf/proto"
+	"github.com/rilldata/rill/runtime/metricsview"
 	"google.golang.org/protobuf/types/known/structpb"
 )
+
+// ParamScalarTypes are the param types that hold plain values.
+// Scalar params may declare options and are injected as native Vega-Lite params at resolve time.
+var ParamScalarTypes = []string{"string", "number", "boolean"}
+
+// ParamFieldTypes are the param types that reference a field of a metrics view.
+// They resolve their metrics view through a sibling param of type "metrics_view".
+var ParamFieldTypes = []string{"measure", "dimension", "time_dimension"}
 
 // EffectiveArgs merges a component's declared param defaults with the provided args.
 // Provided args take precedence over declared param defaults,
@@ -46,8 +55,24 @@ func MetricsViewNamesFromBindings(bindings map[string]any) []string {
 		if !IsMetricsViewParamName(key) {
 			continue
 		}
-		name, ok := value.(string)
-		if ok && name != "" && !strings.Contains(name, "{{") {
+		if name, ok := value.(string); ok && name != "" && !IsTemplated(name) {
+			names = append(names, name)
+		}
+	}
+	return names
+}
+
+// BoundMetricsViewNames returns the static metrics view names bound to a component's params of type "metrics_view",
+// falling back to their defaults. Pass nil bound to get only the defaults.
+// Templated values are skipped since they resolve at render time and cannot be referenced statically.
+func BoundMetricsViewNames(params []*runtimev1.ComponentParam, bound map[string]any) []string {
+	var names []string
+	for _, p := range params {
+		if p.Type != "metrics_view" {
+			continue
+		}
+		v, _ := effectiveParamValue(p, bound)
+		if name, ok := v.(string); ok && name != "" && !IsTemplated(name) {
 			names = append(names, name)
 		}
 	}
@@ -85,12 +110,12 @@ func ValidateParamBindings(params []*runtimev1.ComponentParam, bound map[string]
 			// Optional and unbound with no default.
 			continue
 		}
-		if isTemplated(v) {
+		if IsTemplated(v) {
 			continue
 		}
 
-		if err := validateParamValueType(p, v); err != nil {
-			return err
+		if err := ValidateParamValue(p.Type, v); err != nil {
+			return fmt.Errorf("invalid value for param %q: %w", p.Name, err)
 		}
 
 		if len(p.Options) > 0 {
@@ -98,14 +123,7 @@ func ValidateParamBindings(params []*runtimev1.ComponentParam, bound map[string]
 			if err != nil {
 				return fmt.Errorf("invalid value for param %q: %w", p.Name, err)
 			}
-			found := false
-			for _, opt := range p.Options {
-				if proto.Equal(val, opt) {
-					found = true
-					break
-				}
-			}
-			if !found {
+			if !IsParamOption(val, p.Options) {
 				return fmt.Errorf("value %v for param %q is not one of its options", v, p.Name)
 			}
 		}
@@ -121,7 +139,7 @@ func ValidateParamBindings(params []*runtimev1.ComponentParam, bound map[string]
 			}
 		case "measure", "dimension", "time_dimension":
 			mvn, err := effectiveParamValue(declared[p.MetricsViewParam], bound)
-			if err != nil || mvn == nil || isTemplated(mvn) {
+			if err != nil || mvn == nil || IsTemplated(mvn) {
 				// The metrics view param is itself invalid or unresolvable; it reports its own error.
 				continue
 			}
@@ -140,7 +158,7 @@ func ValidateParamBindings(params []*runtimev1.ComponentParam, bound map[string]
 					return fmt.Errorf("value %q for param %q is not a dimension in metrics view %q", field, p.Name, mvn)
 				}
 			case "time_dimension":
-				if !metricsViewHasTimeDimension(mv, field) {
+				if !metricsview.IsTimeDimension(mv, field) {
 					return fmt.Errorf("value %q for param %q is not a time dimension in metrics view %q", field, p.Name, mvn)
 				}
 			}
@@ -158,22 +176,8 @@ func ValidateParamBindings(params []*runtimev1.ComponentParam, bound map[string]
 // they are substituted through templating instead.
 // Returns the spec unchanged if there is nothing to inject.
 func InjectVegaParams(vegaSpec string, params []*runtimev1.ComponentParam, args map[string]any) (string, error) {
-	var names []string
-	values := make(map[string]any)
-	for _, p := range params {
-		switch p.Type {
-		case "string", "number", "boolean":
-		default:
-			continue
-		}
-		v, ok := args[p.Name]
-		if !ok || v == nil || isTemplated(v) {
-			continue
-		}
-		names = append(names, p.Name)
-		values[p.Name] = v
-	}
-	if len(names) == 0 || strings.TrimSpace(vegaSpec) == "" {
+	values := resolvedArgsOfType(params, args, ParamScalarTypes)
+	if len(values) == 0 || strings.TrimSpace(vegaSpec) == "" {
 		return vegaSpec, nil
 	}
 
@@ -183,7 +187,12 @@ func InjectVegaParams(vegaSpec string, params []*runtimev1.ComponentParam, args 
 	}
 
 	existing, _ := spec["params"].([]any)
-	for _, name := range names {
+	// Iterate params rather than values to inject in declaration order.
+	for _, p := range params {
+		name := p.Name
+		if _, ok := values[name]; !ok {
+			continue
+		}
 		found := false
 		for _, e := range existing {
 			if m, ok := e.(map[string]any); ok && m["name"] == name {
@@ -219,19 +228,7 @@ var wholeStringParamRef = regexp.MustCompile(`^\s*\{\{\s*\.(?:params|args)\.(\w+
 //
 // It returns a copy; the input is not modified.
 func CoerceScalarParams(props map[string]any, params []*runtimev1.ComponentParam, args map[string]any) map[string]any {
-	values := make(map[string]any)
-	for _, p := range params {
-		switch p.Type {
-		case "number", "boolean":
-		default:
-			continue
-		}
-		v, ok := args[p.Name]
-		if !ok || v == nil || isTemplated(v) {
-			continue
-		}
-		values[p.Name] = v
-	}
+	values := resolvedArgsOfType(params, args, []string{"number", "boolean"})
 	if len(values) == 0 {
 		return props
 	}
@@ -269,6 +266,21 @@ func coerceScalarParams(val any, values map[string]any) any {
 	}
 }
 
+// resolvedArgsOfType returns the args bound to params of the given types, keyed by param name.
+// Unbound and templated args are omitted.
+func resolvedArgsOfType(params []*runtimev1.ComponentParam, args map[string]any, types []string) map[string]any {
+	res := make(map[string]any)
+	for _, p := range params {
+		if !slices.Contains(types, p.Type) {
+			continue
+		}
+		if v, ok := args[p.Name]; ok && v != nil && !IsTemplated(v) {
+			res[p.Name] = v
+		}
+	}
+	return res
+}
+
 // effectiveParamValue returns the value bound to a param, falling back to its default.
 // It returns nil if the param is unbound and has no default, or an error if it is required and unbound.
 func effectiveParamValue(p *runtimev1.ComponentParam, bound map[string]any) (any, error) {
@@ -287,45 +299,42 @@ func effectiveParamValue(p *runtimev1.ComponentParam, bound map[string]any) (any
 	return nil, nil
 }
 
-// validateParamValueType checks that a bound value conforms to the param's declared type.
-func validateParamValueType(p *runtimev1.ComponentParam, v any) error {
-	switch p.Type {
+// ValidateParamValue checks that a param value (a binding, default or option) conforms to the param's declared type.
+func ValidateParamValue(typ string, v any) error {
+	switch typ {
 	case "number":
 		switch v.(type) {
 		case int, int32, int64, uint, uint32, uint64, float32, float64:
 			return nil
 		}
-		return fmt.Errorf("value for param %q must be a number, got %v", p.Name, v)
+		return fmt.Errorf("expected a number, got %v", v)
 	case "boolean":
 		if _, ok := v.(bool); !ok {
-			return fmt.Errorf("value for param %q must be a boolean, got %v", p.Name, v)
+			return fmt.Errorf("expected a boolean, got %v", v)
 		}
 		return nil
 	default:
 		// "string" and the metrics view field types hold string values.
 		if _, ok := v.(string); !ok {
-			return fmt.Errorf("value for param %q must be a string, got %v", p.Name, v)
+			return fmt.Errorf("expected a string, got %v", v)
 		}
 		return nil
 	}
 }
 
-// metricsViewHasTimeDimension returns true if fieldName is the metrics view's primary time dimension
-// or a declared dimension of the time type.
-func metricsViewHasTimeDimension(mv *runtimev1.MetricsViewSpec, fieldName string) bool {
-	if mv.TimeDimension == fieldName {
-		return true
-	}
-	for _, d := range mv.Dimensions {
-		if d.Name == fieldName {
-			return d.Type == runtimev1.MetricsViewSpec_DIMENSION_TYPE_TIME
+// IsParamOption reports whether a scalar value is one of a param's options.
+// Protobuf values hold every number as a float64, so all numeric types compare equal when their values match.
+func IsParamOption(v *structpb.Value, options []*structpb.Value) bool {
+	for _, opt := range options {
+		if v.AsInterface() == opt.AsInterface() {
+			return true
 		}
 	}
 	return false
 }
 
-// isTemplated returns true if the value is a string containing template placeholders.
-func isTemplated(v any) bool {
+// IsTemplated returns true if the value is a string containing template placeholders.
+func IsTemplated(v any) bool {
 	s, ok := v.(string)
 	return ok && strings.Contains(s, "{{")
 }

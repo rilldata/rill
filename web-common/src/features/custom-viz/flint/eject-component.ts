@@ -1,8 +1,10 @@
 import { compileFlintSpec, type FlintChartSpec } from "./compile";
 import { ejectToVegaSpec, type EjectFieldBinding } from "./eject";
-import { deriveFlintFields } from "./semantic-types";
+import { deriveResultFields } from "./semantic-types";
 import {
+  boundMetricsViewName,
   getDeclaredParams,
+  isFieldParam,
   normalizeMetricsSQL,
   type ComponentParamType,
 } from "@rilldata/web-common/features/custom-viz/params";
@@ -82,10 +84,12 @@ export async function ejectComponent(
     client,
     boundMetricsViewName(params, args),
   );
-  const fields = deriveFlintFields(columns, metricsViewSpec, EJECT_TIME_GRAIN);
-  const measureFields = (metricsViewSpec?.measures ?? [])
-    .map((measure) => measure.name as string)
-    .filter((name) => name && columns.includes(name));
+  const { fields, measures } = deriveResultFields(
+    columns,
+    metricsViewSpec,
+    EJECT_TIME_GRAIN,
+  );
+  const measureFields = measures.map((measure) => measure.name as string);
 
   // Compiled without a size, so the output does not depend on how large the editor happened to be;
   // the fixed view size the compiler fills in is stripped on the way out anyway.
@@ -119,13 +123,7 @@ function fieldBindings(
 ): EjectFieldBinding[] {
   const bindings: EjectFieldBinding[] = [];
   for (const param of params) {
-    const type = param.type as ComponentParamType;
-    if (
-      !param.name ||
-      (type !== "measure" && type !== "dimension" && type !== "time_dimension")
-    ) {
-      continue;
-    }
+    if (!param.name || !isFieldParam(param)) continue;
     const field = args[param.name] ?? param.default;
     if (typeof field !== "string" || !field) continue;
     bindings.push({
@@ -135,7 +133,9 @@ function fieldBindings(
       // Only a measure has a Rill number formatter registered for it, so only a measure's
       // formatter name can appear in the compiled spec. The metrics view has the last word:
       // a component may declare a param loosely and still bind it to a measure.
-      type: measureFields.includes(field) ? "measure" : type,
+      type: measureFields.includes(field)
+        ? "measure"
+        : (param.type as ComponentParamType),
     });
   }
   return bindings;
@@ -150,15 +150,4 @@ async function fetchMetricsViewSpec(
     name: { kind: ResourceKind.MetricsView, name },
   });
   return res.resource?.metricsView?.state?.validSpec;
-}
-
-/** The metrics view bound to the component's first metrics_view param. */
-function boundMetricsViewName(
-  params: V1ComponentParam[],
-  args: Record<string, unknown>,
-): string | undefined {
-  const param = params.find((candidate) => candidate.type === "metrics_view");
-  if (!param?.name) return undefined;
-  const name = args[param.name] ?? param.default;
-  return typeof name === "string" && name ? name : undefined;
 }

@@ -104,7 +104,7 @@ func validateCustomChart(props map[string]any) error {
 	if err != nil {
 		return err
 	}
-	if ok && strings.TrimSpace(vegaSpec) != "" && !strings.Contains(vegaSpec, "{{") {
+	if ok && strings.TrimSpace(vegaSpec) != "" && !IsTemplated(vegaSpec) {
 		var m map[string]any
 		if err := json.Unmarshal([]byte(vegaSpec), &m); err != nil {
 			return fmt.Errorf("renderer property 'vega_spec' is not a valid JSON object: %w", err)
@@ -175,7 +175,7 @@ func validateFlintSpec(raw any) error {
 func hasTemplatedString(val any) bool {
 	switch val := val.(type) {
 	case string:
-		return strings.Contains(val, "{{")
+		return IsTemplated(val)
 	case map[string]any:
 		for _, v := range val {
 			if hasTemplatedString(v) {
@@ -504,7 +504,7 @@ func (v rendererValidator) validateTable(props map[string]any) error {
 		}
 		sortable = append(sortable, col.Name)
 		// In lenient mode an unresolved column's kind is unknown, so its overrides cannot be checked against a role.
-		if v.lenient && (mv == nil || strings.Contains(col.Name, "{{")) {
+		if v.lenient && (mv == nil || IsTemplated(col.Name)) {
 			continue
 		}
 		role := fieldRoleTableDimension
@@ -673,7 +673,7 @@ func (v rendererValidator) requireMetricsView(props map[string]any) (string, *ru
 	if !ok {
 		return "", nil, errors.New("renderer properties must include a string 'metrics_view' property")
 	}
-	if v.lenient && strings.Contains(mvn, "{{") {
+	if v.lenient && IsTemplated(mvn) {
 		return mvn, nil, nil
 	}
 	mv := v.metricsViews[mvn]
@@ -687,7 +687,7 @@ func (v rendererValidator) requireMetricsView(props map[string]any) (string, *ru
 // In lenient mode the check passes when it cannot run: the metrics view is unresolved
 // (templated name, mv is nil) or the field name itself is templated.
 func (v rendererValidator) hasDimension(mv *runtimev1.MetricsViewSpec, fieldName string) bool {
-	if v.lenient && (mv == nil || strings.Contains(fieldName, "{{")) {
+	if v.lenient && (mv == nil || IsTemplated(fieldName)) {
 		return true
 	}
 	return metricsViewHasDimension(mv, fieldName)
@@ -696,7 +696,7 @@ func (v rendererValidator) hasDimension(mv *runtimev1.MetricsViewSpec, fieldName
 // hasMeasure reports whether the metrics view has a measure with the given name.
 // In lenient mode the check passes when it cannot run; see hasDimension.
 func (v rendererValidator) hasMeasure(mv *runtimev1.MetricsViewSpec, fieldName string, ephemeralNames ...map[string]bool) bool {
-	if v.lenient && (mv == nil || strings.Contains(fieldName, "{{")) {
+	if v.lenient && (mv == nil || IsTemplated(fieldName)) {
 		return true
 	}
 	for _, names := range ephemeralNames {
@@ -980,7 +980,7 @@ func (v rendererValidator) validateTablePresentation(props map[string]any, sorta
 	if err != nil {
 		return err
 	}
-	if hasSortBy && sortBy != "" && !slices.Contains(sortable, sortBy) && !(v.lenient && strings.Contains(sortBy, "{{")) {
+	if hasSortBy && sortBy != "" && !slices.Contains(sortable, sortBy) && !(v.lenient && IsTemplated(sortBy)) {
 		return fmt.Errorf("renderer property \"sort_by\" references %q, which is not a sortable field of the component (one of %v)", sortBy, sortable)
 	}
 	if err := v.validateOptionalStringEnum(props, "sort_dir", []string{"asc", "desc"}); err != nil {
@@ -1069,7 +1069,7 @@ func (v rendererValidator) validateOptionalStringEnum(props map[string]any, path
 	if !ok {
 		return nil
 	}
-	if v.lenient && strings.Contains(value, "{{") {
+	if v.lenient && IsTemplated(value) {
 		return nil
 	}
 	for _, a := range allowed {

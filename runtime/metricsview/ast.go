@@ -1630,3 +1630,17 @@ func (a *AST) sqlForExpressionAdjustedByComparisonTimeRangeOffset(expr, timeDim 
 
 	return a.Dialect.IntervalSubtract(expr, dateDiff, g.ToProto())
 }
+
+// IsTimeDimension reports whether name is the metrics view's primary time dimension or a declared dimension of the time type.
+// The primary time dimension is not necessarily declared in the dimensions list, so it is checked separately.
+func IsTimeDimension(mv *runtimev1.MetricsViewSpec, name string) bool {
+	if mv.TimeDimension == name {
+		return true
+	}
+	for _, d := range mv.Dimensions {
+		if d.Name == name {
+			return d.Type == runtimev1.MetricsViewSpec_DIMENSION_TYPE_TIME
+		}
+	}
+	return false
+}

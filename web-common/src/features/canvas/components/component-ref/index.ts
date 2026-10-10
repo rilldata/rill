@@ -9,11 +9,9 @@ import type {
   ComponentPath,
 } from "@rilldata/web-common/features/canvas/stores/canvas-entity";
 import {
+  boundMetricsViewName,
   getDeclaredParams,
-  isOrderByParam,
-  orderByOptions,
   paramToInputParam,
-  prettyParamLabel,
   reconcileOrderByArg,
 } from "@rilldata/web-common/features/custom-viz/params";
 import type {
@@ -103,22 +101,10 @@ export class ComponentRefComponent extends BaseCanvasComponent<ComponentRefSpec>
 
   inputParams(): InputParams<ComponentRefSpec> {
     const options: Record<string, ReturnType<typeof paramToInputParam>> = {};
-    const args = this.args();
+    const bindings = { params: this.declaredParams, args: this.args() };
     for (const param of this.declaredParams) {
       if (!param.name) continue;
-      // The by-convention order_by param selects among the currently bound
-      // field values instead of a free-text input.
-      if (isOrderByParam(param)) {
-        options[param.name] = {
-          type: "select",
-          label: prettyParamLabel(param.name),
-          optional: !param.required,
-          description: param.description,
-          meta: { options: orderByOptions(this.declaredParams, args) },
-        };
-        continue;
-      }
-      options[param.name] = paramToInputParam(param);
+      options[param.name] = paramToInputParam(param, bindings);
     }
     return { options, filter: {} };
   }
@@ -200,14 +186,8 @@ export class ComponentRefComponent extends BaseCanvasComponent<ComponentRefSpec>
    * canvas filter and time systems know which metrics view this item uses.
    */
   private syncMetricsViewName() {
-    const spec = get(this.specStore);
-    const mvParam = this.declaredParams.find((p) => p.type === "metrics_view");
-    const name = mvParam?.name
-      ? (spec[mvParam.name] ?? mvParam.default)
-      : undefined;
-    if (typeof name !== "string" || !name || name === this.metricsViewName) {
-      return;
-    }
+    const name = boundMetricsViewName(this.declaredParams, get(this.specStore));
+    if (!name || name === this.metricsViewName) return;
     this.metricsViewName = name;
     this.localExpressionFilters.metricsViewsProvider.setMetricsViewNames([
       name,

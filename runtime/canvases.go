@@ -4,9 +4,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"strings"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
+	"github.com/rilldata/rill/runtime/canvas"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/metricsview/metricssql"
 )
@@ -45,13 +45,13 @@ type ResolveCanvasResult struct {
 	ReferencedMetricsViews map[string]*runtimev1.Resource
 }
 
-func (r *Runtime) ResolveCanvas(ctx context.Context, instanceID, canvas string, claims *SecurityClaims, unsafe bool) (*ResolveCanvasResult, error) {
+func (r *Runtime) ResolveCanvas(ctx context.Context, instanceID, canvasName string, claims *SecurityClaims, unsafe bool) (*ResolveCanvasResult, error) {
 	// Find the canvas resource
 	ctrl, err := r.Controller(ctx, instanceID)
 	if err != nil {
 		return nil, err
 	}
-	res, err := ctrl.Get(ctx, &runtimev1.ResourceName{Kind: ResourceKindCanvas, Name: canvas}, false)
+	res, err := ctrl.Get(ctx, &runtimev1.ResourceName{Kind: ResourceKindCanvas, Name: canvasName}, false)
 	if err != nil {
 		return nil, err
 	}
@@ -115,7 +115,7 @@ func (r *Runtime) ResolveCanvas(ctx context.Context, instanceID, canvas string, 
 			case "metrics_view":
 				// Skip templated values (e.g. {{ .params.metrics_view }}):
 				// metrics views bound to params are collected from the canvas items below.
-				if name := v.GetStringValue(); name != "" && !strings.Contains(name, "{{") {
+				if name := v.GetStringValue(); name != "" && !canvas.IsTemplated(name) {
 					metricsViews[name] = true
 				}
 			case "metrics_sql":
@@ -181,17 +181,8 @@ func (r *Runtime) ResolveCanvas(ctx context.Context, instanceID, canvas string, 
 		if item.Params != nil {
 			bound = item.Params.AsMap()
 		}
-		for _, p := range validSpec.Params {
-			if p.Type != "metrics_view" {
-				continue
-			}
-			v, ok := bound[p.Name]
-			if !ok && p.Default != nil {
-				v = p.Default.AsInterface()
-			}
-			if name, ok := v.(string); ok && name != "" && !strings.Contains(name, "{{") {
-				metricsViews[name] = true
-			}
+		for _, name := range canvas.BoundMetricsViewNames(validSpec.Params, bound) {
+			metricsViews[name] = true
 		}
 	}
 

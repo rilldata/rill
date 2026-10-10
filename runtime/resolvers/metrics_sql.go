@@ -198,19 +198,7 @@ func applyAdditionalTimeGrain(query *metricsview.Query, spec *runtimev1.MetricsV
 	}
 
 	for i, dim := range query.Dimensions {
-		if dim.Compute != nil {
-			continue
-		}
-
-		// The primary time dimension is not necessarily declared in the dimensions list, so check it separately.
-		isTime := dim.Name == spec.TimeDimension
-		for _, d := range spec.Dimensions {
-			if d.Name == dim.Name {
-				isTime = d.Type == runtimev1.MetricsViewSpec_DIMENSION_TYPE_TIME
-				break
-			}
-		}
-		if !isTime {
+		if dim.Compute != nil || !metricsview.IsTimeDimension(spec, dim.Name) {
 			continue
 		}
 
