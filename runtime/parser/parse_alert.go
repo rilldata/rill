@@ -5,11 +5,13 @@ import (
 	"errors"
 	"fmt"
 	"net/mail"
+	"net/url"
 	"strings"
 	"time"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers/slack"
+	"github.com/rilldata/rill/runtime/drivers/webhook"
 	"github.com/rilldata/rill/runtime/pkg/duration"
 	"github.com/rilldata/rill/runtime/pkg/pbutil"
 	"google.golang.org/protobuf/types/known/structpb"
@@ -58,6 +60,10 @@ type AlertYAML struct {
 			Channels []string `yaml:"channels"`
 			Webhooks []string `yaml:"webhooks"`
 		} `yaml:"slack"`
+		Webhook struct {
+			URLs      []string `yaml:"urls"`
+			Connector string   `yaml:"connector"`
+		} `yaml:"webhook"`
 	} `yaml:"notify"`
 	Annotations map[string]string `yaml:"annotations"`
 	// Backwards compatibility
@@ -267,6 +273,10 @@ func (p *Parser) parseAlert(node *Node) error {
 				return fmt.Errorf(`invalid value for property "renotify_after": %w`, err)
 			}
 		}
+		// Validate webhook URLs
+		if err := validateWebhookURLs(tmp.Notify.Webhook.URLs); err != nil {
+			return err
+		}
 	}
 
 	// Track alert
@@ -377,9 +387,38 @@ func (p *Parser) parseAlert(node *Node) error {
 				Properties: props,
 			})
 		}
+		// Webhook settings
+		if len(tmp.Notify.Webhook.URLs) > 0 {
+			props, err := structpb.NewStruct(webhook.EncodeProps(tmp.Notify.Webhook.URLs))
+			if err != nil {
+				return err
+			}
+			connector := tmp.Notify.Webhook.Connector
+			if connector == "" {
+				connector = "webhook"
+			}
+			r.AlertSpec.Notifiers = append(r.AlertSpec.Notifiers, &runtimev1.Notifier{
+				Connector:  connector,
+				Properties: props,
+			})
+		}
 	}
 
 	r.AlertSpec.Annotations = tmp.Annotations
 
+	return nil
+}
+
+// validateWebhookURLs validates that webhook notification URLs are absolute http(s) URLs.
+func validateWebhookURLs(urls []string) error {
+	for _, u := range urls {
+		parsed, err := url.Parse(u)
+		if err != nil {
+			return fmt.Errorf(`invalid value %q for property "notify.webhook.urls": %w`, u, err)
+		}
+		if parsed.Scheme != "http" && parsed.Scheme != "https" {
+			return fmt.Errorf(`invalid value %q for property "notify.webhook.urls": must be an absolute http(s) URL`, u)
+		}
+	}
 	return nil
 }

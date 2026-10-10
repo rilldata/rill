@@ -4988,6 +4988,10 @@ definitions:
         type: array
         items:
           type: string
+      webhookUrls:
+        type: array
+        items:
+          type: string
       webOpenPath:
         type: string
         description: Annotation for the subpath of <UI host>/org/project to open for the report.
@@ -6780,6 +6784,10 @@ definitions:
         items:
           type: string
       slackWebhooks:
+        type: array
+        items:
+          type: string
+      webhookUrls:
         type: array
         items:
           type: string

@@ -385,27 +385,12 @@ func (s *Server) UnsubscribeReport(ctx context.Context, req *adminv1.Unsubscribe
 		return nil, status.Errorf(codes.Internal, "failed to unmarshal report YAML: %s", err.Error())
 	}
 
-	found := false
-	for idx, email := range report.Notify.Email.Recipients {
-		if strings.EqualFold(userEmail, email) {
-			report.Notify.Email.Recipients = slices.Delete(report.Notify.Email.Recipients, idx, idx+1)
-			found = true
-			break
-		}
-	}
-	for idx, email := range report.Notify.Slack.Users {
-		if strings.EqualFold(slackEmail, email) {
-			report.Notify.Slack.Users = slices.Delete(report.Notify.Slack.Users, idx, idx+1)
-			found = true
-			break
-		}
-	}
-
+	found, remaining := report.unsubscribe(userEmail, slackEmail)
 	if !found {
 		return nil, status.Error(codes.FailedPrecondition, "user is not subscribed to report")
 	}
 
-	if len(report.Notify.Email.Recipients) == 0 && len(report.Notify.Slack.Users) == 0 && len(report.Notify.Slack.Channels) == 0 && len(report.Notify.Slack.Webhooks) == 0 {
+	if !remaining {
 		err = s.admin.DB.UpdateVirtualFileDeleted(ctx, proj.ID, "prod", virtualFilePathForManagedReport(req.Name))
 		if err != nil {
 			return nil, fmt.Errorf("failed to update virtual file: %w", err)
@@ -586,6 +571,7 @@ func (s *Server) yamlForManagedReport(opts *adminv1.ReportOptions, ownerUserID s
 	res.Notify.Slack.Channels = opts.SlackChannels
 	res.Notify.Slack.Users = opts.SlackUsers
 	res.Notify.Slack.Webhooks = opts.SlackWebhooks
+	res.Notify.Webhook.URLs = opts.WebhookUrls
 	res.Annotations.AdminOwnerUserID = ownerUserID
 	res.Annotations.AdminManaged = true
 	res.Annotations.AdminNonce = time.Now().Format(time.RFC3339Nano)
@@ -653,6 +639,7 @@ func (s *Server) yamlForCommittedReport(opts *adminv1.ReportOptions) ([]byte, er
 	res.Notify.Slack.Channels = opts.SlackChannels
 	res.Notify.Slack.Users = opts.SlackUsers
 	res.Notify.Slack.Webhooks = opts.SlackWebhooks
+	res.Notify.Webhook.URLs = opts.WebhookUrls
 	res.Annotations.WebOpenPath = opts.WebOpenPath
 	res.Annotations.WebOpenMode = WebOpenMode(opts.WebOpenMode)
 	if res.Annotations.WebOpenMode == "" {
@@ -922,8 +909,33 @@ type reportYAML struct {
 			Channels []string `yaml:"channels"`
 			Webhooks []string `yaml:"webhooks"`
 		} `yaml:"slack"`
+		Webhook struct {
+			URLs []string `yaml:"urls"`
+		} `yaml:"webhook,omitempty"`
 	} `yaml:"notify"`
 	Annotations reportAnnotations `yaml:"annotations,omitempty"`
+}
+
+// unsubscribe removes the email recipient and the Slack user from the report. It reports whether
+// either was subscribed, and whether the report still notifies anyone afterwards.
+func (r *reportYAML) unsubscribe(email, slackUser string) (found, remaining bool) {
+	n := &r.Notify
+	for idx, recipient := range n.Email.Recipients {
+		if strings.EqualFold(email, recipient) {
+			n.Email.Recipients = slices.Delete(n.Email.Recipients, idx, idx+1)
+			found = true
+			break
+		}
+	}
+	for idx, user := range n.Slack.Users {
+		if strings.EqualFold(slackUser, user) {
+			n.Slack.Users = slices.Delete(n.Slack.Users, idx, idx+1)
+			found = true
+			break
+		}
+	}
+	remaining = len(n.Email.Recipients) > 0 || len(n.Slack.Users) > 0 || len(n.Slack.Channels) > 0 || len(n.Slack.Webhooks) > 0 || len(n.Webhook.URLs) > 0
+	return found, remaining
 }
 
 type reportAnnotations struct {
