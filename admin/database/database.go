@@ -347,6 +347,9 @@ type DB interface {
 
 	FindMCPOAuthClient(ctx context.Context, projectID, connector, serverURL string) (*MCPOAuthClient, error)
 	FindMCPOAuthClientByID(ctx context.Context, id string) (*MCPOAuthClient, error)
+	// AcquireMCPOAuthClientLock takes an exclusive lock on the client for a connector's server URL until the current transaction ends.
+	// It must be called within a transaction started with NewTx; it serializes client registration across all admin processes.
+	AcquireMCPOAuthClientLock(ctx context.Context, projectID, connector, serverURL string) error
 	UpsertMCPOAuthClient(ctx context.Context, opts *UpsertMCPOAuthClientOptions) (*MCPOAuthClient, error)
 	// AcquireMCPOAuthTokenLock takes an exclusive lock on a user's token for a connector until the current transaction ends.
 	// It must be called within a transaction started with NewTx. Reads and writes of the token (refresh, disconnect, a completed authorization)

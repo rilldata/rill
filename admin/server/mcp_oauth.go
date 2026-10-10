@@ -255,6 +255,9 @@ func (s *Server) GetMCPOAuthToken(ctx context.Context, req *adminv1.GetMCPOAuthT
 	}
 
 	var tok *oauth2.Token
+	// Set when the refresh showed that the authorization is gone: the token is deleted inside the transaction,
+	// and the error is only returned after the deletion has been committed.
+	var expired bool
 	err = s.mcpOAuthWithTokenLock(ctx, depl.ProjectID, req.Connector, req.UserId, func(ctx context.Context) error {
 		row, err := s.admin.DB.FindMCPOAuthToken(ctx, depl.ProjectID, req.Connector, req.UserId)
 		if err != nil {
@@ -288,8 +291,8 @@ func (s *Server) GetMCPOAuthToken(ctx context.Context, req *adminv1.GetMCPOAuthT
 		if err != nil {
 			if errors.Is(err, drivers.ErrMCPAuthorizationRequired) {
 				// The authorization is gone for good; forget it so the user is asked to connect again.
-				_ = s.admin.DB.DeleteMCPOAuthToken(ctx, depl.ProjectID, req.Connector, req.UserId)
-				return status.Error(codes.NotFound, "the user's authorization has expired")
+				expired = true
+				return s.admin.DB.DeleteMCPOAuthToken(ctx, depl.ProjectID, req.Connector, req.UserId)
 			}
 			return fmt.Errorf("failed to refresh token: %w", err)
 		}
@@ -312,6 +315,9 @@ func (s *Server) GetMCPOAuthToken(ctx context.Context, req *adminv1.GetMCPOAuthT
 	})
 	if err != nil {
 		return nil, err
+	}
+	if expired {
+		return nil, status.Error(codes.NotFound, "the user's authorization has expired")
 	}
 
 	res := &adminv1.GetMCPOAuthTokenResponse{AccessToken: tok.AccessToken}
@@ -561,8 +567,21 @@ func (s *Server) mcpOAuthConnectorConfig(ctx context.Context, depl *database.Dep
 
 // mcpOAuthClient returns the project's OAuth client for the connector, discovering and registering one if there is none
 // or the stored one no longer matches the connector's configuration.
+// Registration is serialized per (project, connector, server URL): two users connecting a new server at the same time
+// would otherwise register two clients and upsert the same row, leaving the first user's flow with a client that cannot exchange its code.
+// The second caller waits, then finds and reuses the first caller's client.
 func (s *Server) mcpOAuthClient(ctx context.Context, proj *database.Project, connector string, cfg *mcpOAuthConnectorConfig) (*database.MCPOAuthClient, *mcp.OAuthClient, error) {
 	redirectURL := s.admin.URLs.MCPOAuthCallback()
+
+	ctx, tx, err := s.admin.DB.NewTx(ctx, false)
+	if err != nil {
+		return nil, nil, err
+	}
+	defer func() { _ = tx.Rollback() }()
+	err = s.admin.DB.AcquireMCPOAuthClientLock(ctx, proj.ID, connector, cfg.URL)
+	if err != nil {
+		return nil, nil, err
+	}
 
 	row, err := s.admin.DB.FindMCPOAuthClient(ctx, proj.ID, connector, cfg.URL)
 	if err != nil && !errors.Is(err, database.ErrNotFound) {
@@ -571,7 +590,7 @@ func (s *Server) mcpOAuthClient(ctx context.Context, proj *database.Project, con
 	if err == nil {
 		existing := &mcp.OAuthClient{}
 		if json.Unmarshal(row.Client, existing) == nil && existing.Matches(cfg.URL, redirectURL, cfg.ClientID) {
-			return row, existing, nil
+			return row, existing, tx.Commit()
 		}
 	}
 
@@ -599,7 +618,7 @@ func (s *Server) mcpOAuthClient(ctx context.Context, proj *database.Project, con
 	if err != nil {
 		return nil, nil, err
 	}
-	return row, oauthClient, nil
+	return row, oauthClient, tx.Commit()
 }
 
 // mcpOAuthHTTPError is an error with an HTTP status for the browser-facing handlers.

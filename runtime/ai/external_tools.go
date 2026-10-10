@@ -256,15 +256,8 @@ func (r *Runner) discoverExternalServer(ctx context.Context, instanceID, environ
 	srv.Instructions, _ = props["ai_instructions"].(string)
 	auth, _ := props["auth"].(string)
 	srv.OAuth = auth == "oauth"
-	// The URL may be templated ({{ .env.MCP_URL }}); hosted tokens are bound to the resolved URL, so resolve it the way the driver does.
-	cfg, err := r.Runtime.ConnectorConfig(ctx, instanceID, srv.Connector)
-	if err != nil {
-		srv.Err = fmt.Errorf("failed to resolve the connector's configuration: %w", err)
-		return srv, nil
-	}
-	srv.URL, _ = cfg.Resolve()["url"].(string)
 
-	// Apply the connector's access policy: denied servers are invisible.
+	// Apply the connector's access policy first: denied servers are invisible, whatever else is wrong with them.
 	sec, err := r.Runtime.ResolveConnectorSecurity(ctx, instanceID, claims, res, nil)
 	if err != nil {
 		return externalServerPolicyError(ctx, srv, claims, err)
@@ -277,6 +270,14 @@ func (r *Runner) discoverExternalServer(ctx context.Context, instanceID, environ
 	if srv.OAuth && claims.UserID == "" && !claims.SkipChecks {
 		return nil, nil
 	}
+
+	// The URL may be templated ({{ .env.MCP_URL }}); hosted tokens are bound to the resolved URL, so resolve it the way the driver does.
+	cfg, err := r.Runtime.ConnectorConfig(ctx, instanceID, srv.Connector)
+	if err != nil {
+		srv.Err = fmt.Errorf("failed to resolve the connector's configuration: %w", err)
+		return srv, nil
+	}
+	srv.URL, _ = cfg.Resolve()["url"].(string)
 
 	if res.Meta.ReconcileError != "" {
 		srv.Err = errors.New(res.Meta.ReconcileError)

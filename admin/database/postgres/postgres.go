@@ -4354,14 +4354,23 @@ func (c *connection) decryptMCPOAuthClient(res *database.MCPOAuthClient) error {
 	return nil
 }
 
+func (c *connection) AcquireMCPOAuthClientLock(ctx context.Context, projectID, connector, serverURL string) error {
+	return c.acquireMCPOAuthLock(ctx, "mcp_oauth_clients/"+projectID+"/"+connector+"/"+serverURL)
+}
+
 func (c *connection) AcquireMCPOAuthTokenLock(ctx context.Context, projectID, connector, userID string) error {
+	return c.acquireMCPOAuthLock(ctx, "mcp_oauth_tokens/"+projectID+"/"+connector+"/"+userID)
+}
+
+// acquireMCPOAuthLock takes a transaction-scoped advisory lock on key.
+// It is released automatically at commit or rollback, and is visible to every admin process sharing the database.
+func (c *connection) acquireMCPOAuthLock(ctx context.Context, key string) error {
 	if txFromContext(ctx) == nil {
-		return errors.New("postgres: AcquireMCPOAuthTokenLock must be called within a transaction")
+		return errors.New("postgres: MCP OAuth locks must be acquired within a transaction")
 	}
-	// A transaction-scoped advisory lock: released automatically at commit or rollback, and visible to every admin process sharing the database.
-	_, err := c.getDB(ctx).ExecContext(ctx, "SELECT pg_advisory_xact_lock(hashtext($1))", projectID+"/"+connector+"/"+userID)
+	_, err := c.getDB(ctx).ExecContext(ctx, "SELECT pg_advisory_xact_lock(hashtext($1))", key)
 	if err != nil {
-		return parseErr("mcp oauth token", err)
+		return parseErr("mcp oauth lock", err)
 	}
 	return nil
 }
