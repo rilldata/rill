@@ -564,6 +564,17 @@ components:
                 deploymentId:
                     type: string
             type: object
+        v1DeleteMCPOAuthTokenRequest:
+            properties:
+                connector:
+                    type: string
+                userId:
+                    type: string
+            title: Request message for AIService.DeleteMCPOAuthToken
+            type: object
+        v1DeleteMCPOAuthTokenResponse:
+            title: Response message for AIService.DeleteMCPOAuthToken
+            type: object
         v1DeleteOrganizationResponse:
             type: object
         v1DeletePersonalFileResponse:
@@ -866,6 +877,29 @@ components:
                 ttlSeconds:
                     format: int64
                     type: integer
+            type: object
+        v1GetMCPOAuthTokenRequest:
+            properties:
+                connector:
+                    description: Name of the MCP connector in the deployment's project.
+                    type: string
+                forceRefresh:
+                    description: If true, the token is refreshed even if it has not expired yet (used after the server rejected the current token).
+                    type: boolean
+                userId:
+                    description: ID of the user whose token to return.
+                    type: string
+            title: Request message for AIService.GetMCPOAuthToken
+            type: object
+        v1GetMCPOAuthTokenResponse:
+            properties:
+                accessToken:
+                    type: string
+                expiresOn:
+                    description: When the access token expires. Unset if the token does not expire.
+                    format: date-time
+                    type: string
+            title: Response message for AIService.GetMCPOAuthToken
             type: object
         v1GetOrganizationMemberUserResponse:
             properties:
@@ -2569,6 +2603,59 @@ paths:
                                 $ref: '#/components/schemas/rpcStatus'
                     description: An unexpected error response.
             summary: Complete sends the messages of a chat to the AI and asks it to generate a new message.
+    /v1/ai/mcp-oauth-token:
+        post:
+            operationId: AIService_GetMCPOAuthToken
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/v1GetMCPOAuthTokenRequest'
+                required: true
+                x-originalParamName: body
+            responses:
+                "200":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/v1GetMCPOAuthTokenResponse'
+                    description: A successful response.
+                default:
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/rpcStatus'
+                    description: An unexpected error response.
+            summary: |-
+                GetMCPOAuthToken returns a user's OAuth access token for an external MCP connector in the calling deployment's project,
+                refreshing it first if it is about to expire. It returns NotFound if the user has not authorized the connector.
+                It can only be called by deployments.
+    /v1/ai/mcp-oauth-token/delete:
+        post:
+            operationId: AIService_DeleteMCPOAuthToken
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/v1DeleteMCPOAuthTokenRequest'
+                required: true
+                x-originalParamName: body
+            responses:
+                "200":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/v1DeleteMCPOAuthTokenResponse'
+                    description: A successful response.
+                default:
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/rpcStatus'
+                    description: An unexpected error response.
+            summary: |-
+                DeleteMCPOAuthToken removes a user's OAuth authorization for an external MCP connector in the calling deployment's project.
+                It can only be called by deployments.
     /v1/billing/metrics-project-credentials:
         post:
             operationId: AdminService_GetBillingProjectCredentials

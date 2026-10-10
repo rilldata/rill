@@ -3,7 +3,7 @@
 /* eslint-disable */
 // @ts-nocheck
 
-import { AnalyzeConnectorsRequest, AnalyzeConnectorsResponse, AnalyzeVariablesRequest, AnalyzeVariablesResponse, CompleteRequest, CompleteResponse, CompleteStreamingRequest, CompleteStreamingResponse, CreateAIMemoryRequest, CreateAIMemoryResponse, CreateDirectoryRequest, CreateDirectoryResponse, CreateInstanceRequest, CreateInstanceResponse, CreateTriggerRequest, CreateTriggerResponse, DeleteAIMemoryRequest, DeleteAIMemoryResponse, DeleteFileRequest, DeleteFileResponse, DeleteInstanceRequest, DeleteInstanceResponse, EditInstanceRequest, EditInstanceResponse, ForkConversationRequest, ForkConversationResponse, GenerateCanvasFileRequest, GenerateCanvasFileResponse, GenerateMetricsViewFileRequest, GenerateMetricsViewFileResponse, GetAIMemorySettingsRequest, GetAIMemorySettingsResponse, GetAIMessageRequest, GetAIMessageResponse, GetConversationRequest, GetConversationResponse, GetExploreRequest, GetExploreResponse, GetFileRequest, GetFileResponse, GetInstanceRequest, GetInstanceResponse, GetLogsRequest, GetLogsResponse, GetModelPartitionsRequest, GetModelPartitionsResponse, GetResourceRequest, GetResourceResponse, GitCommitRequest, GitCommitResponse, GitDiffRequest, GitDiffResponse, GitMergeToBranchRequest, GitMergeToBranchResponse, GitPullRequest, GitPullResponse, GitPushRequest, GitPushResponse, GitRevertRequest, GitRevertResponse, GitStatusRequest, GitStatusResponse, GitSwitchBranchRequest, GitSwitchBranchResponse, HealthRequest, HealthResponse, InstanceHealthRequest, InstanceHealthResponse, IssueDevJWTRequest, IssueDevJWTResponse, ListAIMemoriesRequest, ListAIMemoriesResponse, ListConnectorDriversRequest, ListConnectorDriversResponse, ListConversationsRequest, ListConversationsResponse, ListExamplesRequest, ListExamplesResponse, ListFilesRequest, ListFilesResponse, ListGitBranchesRequest, ListGitBranchesResponse, ListGitCommitsRequest, ListGitCommitsResponse, ListInstancesRequest, ListInstancesResponse, ListNotifierConnectorsRequest, ListNotifierConnectorsResponse, ListResourcesRequest, ListResourcesResponse, ListToolsRequest, ListToolsResponse, PingRequest, PingResponse, PushEnvRequest, PushEnvResponse, PutFileRequest, PutFileResponse, QueryResolverRequest, QueryResolverResponse, ReloadConfigRequest, ReloadConfigResponse, RenameFileRequest, RenameFileResponse, RestoreGitCommitRequest, RestoreGitCommitResponse, ShareConversationRequest, ShareConversationResponse, SkipModelPartitionsRequest, SkipModelPartitionsResponse, UnpackEmptyRequest, UnpackEmptyResponse, UnpackExampleRequest, UnpackExampleResponse, UpdateAIMemoryRequest, UpdateAIMemoryResponse, UpdateAIMemorySettingsRequest, UpdateAIMemorySettingsResponse, WatchFilesRequest, WatchFilesResponse, WatchLogsRequest, WatchLogsResponse, WatchResourcesRequest, WatchResourcesResponse } from "./api_pb.js";
+import { AnalyzeConnectorsRequest, AnalyzeConnectorsResponse, AnalyzeVariablesRequest, AnalyzeVariablesResponse, CompleteRequest, CompleteResponse, CompleteStreamingRequest, CompleteStreamingResponse, CreateAIMemoryRequest, CreateAIMemoryResponse, CreateDirectoryRequest, CreateDirectoryResponse, CreateInstanceRequest, CreateInstanceResponse, CreateTriggerRequest, CreateTriggerResponse, DeleteAIMemoryRequest, DeleteAIMemoryResponse, DeleteFileRequest, DeleteFileResponse, DeleteInstanceRequest, DeleteInstanceResponse, DisconnectMCPServerRequest, DisconnectMCPServerResponse, EditInstanceRequest, EditInstanceResponse, ForkConversationRequest, ForkConversationResponse, GenerateCanvasFileRequest, GenerateCanvasFileResponse, GenerateMetricsViewFileRequest, GenerateMetricsViewFileResponse, GetAIMemorySettingsRequest, GetAIMemorySettingsResponse, GetAIMessageRequest, GetAIMessageResponse, GetConversationRequest, GetConversationResponse, GetExploreRequest, GetExploreResponse, GetFileRequest, GetFileResponse, GetInstanceRequest, GetInstanceResponse, GetLogsRequest, GetLogsResponse, GetModelPartitionsRequest, GetModelPartitionsResponse, GetResourceRequest, GetResourceResponse, GitCommitRequest, GitCommitResponse, GitDiffRequest, GitDiffResponse, GitMergeToBranchRequest, GitMergeToBranchResponse, GitPullRequest, GitPullResponse, GitPushRequest, GitPushResponse, GitRevertRequest, GitRevertResponse, GitStatusRequest, GitStatusResponse, GitSwitchBranchRequest, GitSwitchBranchResponse, HealthRequest, HealthResponse, InstanceHealthRequest, InstanceHealthResponse, IssueDevJWTRequest, IssueDevJWTResponse, ListAIMemoriesRequest, ListAIMemoriesResponse, ListConnectorDriversRequest, ListConnectorDriversResponse, ListConversationsRequest, ListConversationsResponse, ListExamplesRequest, ListExamplesResponse, ListFilesRequest, ListFilesResponse, ListGitBranchesRequest, ListGitBranchesResponse, ListGitCommitsRequest, ListGitCommitsResponse, ListInstancesRequest, ListInstancesResponse, ListMCPServersRequest, ListMCPServersResponse, ListNotifierConnectorsRequest, ListNotifierConnectorsResponse, ListResourcesRequest, ListResourcesResponse, ListToolsRequest, ListToolsResponse, PingRequest, PingResponse, PushEnvRequest, PushEnvResponse, PutFileRequest, PutFileResponse, QueryResolverRequest, QueryResolverResponse, ReloadConfigRequest, ReloadConfigResponse, RenameFileRequest, RenameFileResponse, RestoreGitCommitRequest, RestoreGitCommitResponse, ShareConversationRequest, ShareConversationResponse, SkipModelPartitionsRequest, SkipModelPartitionsResponse, UnpackEmptyRequest, UnpackEmptyResponse, UnpackExampleRequest, UnpackExampleResponse, UpdateAIMemoryRequest, UpdateAIMemoryResponse, UpdateAIMemorySettingsRequest, UpdateAIMemorySettingsResponse, WatchFilesRequest, WatchFilesResponse, WatchLogsRequest, WatchLogsResponse, WatchResourcesRequest, WatchResourcesResponse } from "./api_pb.js";
 import { MethodKind } from "@bufbuild/protobuf";
 
 /**
@@ -550,6 +550,29 @@ export const RuntimeService = {
       name: "UpdateAIMemorySettings",
       I: UpdateAIMemorySettingsRequest,
       O: UpdateAIMemorySettingsResponse,
+      kind: MethodKind.Unary,
+    },
+    /**
+     * ListMCPServers lists the external MCP servers (connectors with driver "mcp") that the current user may use,
+     * including the tools each server exposes to the user and whether the user has authorized it.
+     *
+     * @generated from rpc rill.runtime.v1.RuntimeService.ListMCPServers
+     */
+    listMCPServers: {
+      name: "ListMCPServers",
+      I: ListMCPServersRequest,
+      O: ListMCPServersResponse,
+      kind: MethodKind.Unary,
+    },
+    /**
+     * DisconnectMCPServer removes the current user's OAuth authorization for an external MCP server.
+     *
+     * @generated from rpc rill.runtime.v1.RuntimeService.DisconnectMCPServer
+     */
+    disconnectMCPServer: {
+      name: "DisconnectMCPServer",
+      I: DisconnectMCPServerRequest,
+      O: DisconnectMCPServerResponse,
       kind: MethodKind.Unary,
     },
     /**

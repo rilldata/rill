@@ -7,6 +7,8 @@ import (
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/structpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
@@ -183,4 +185,36 @@ func groupVariablesByEnv(variables []*adminv1.ProjectVariable) map[string]map[st
 		vars[v.Name] = v.Value
 	}
 	return perEnv
+}
+
+// GetMCPOAuthToken implements drivers.AdminService.
+func (h *Handle) GetMCPOAuthToken(ctx context.Context, connector, userID string, forceRefresh bool) (*drivers.MCPOAuthToken, error) {
+	res, err := h.admin.GetMCPOAuthToken(ctx, &adminv1.GetMCPOAuthTokenRequest{
+		Connector:    connector,
+		UserId:       userID,
+		ForceRefresh: forceRefresh,
+	})
+	if err != nil {
+		if status.Code(err) == codes.NotFound {
+			return nil, drivers.ErrNotFound
+		}
+		return nil, err
+	}
+	tok := &drivers.MCPOAuthToken{AccessToken: res.AccessToken}
+	if res.ExpiresOn != nil {
+		tok.ExpiresOn = res.ExpiresOn.AsTime()
+	}
+	return tok, nil
+}
+
+// DeleteMCPOAuthToken implements drivers.AdminService.
+func (h *Handle) DeleteMCPOAuthToken(ctx context.Context, connector, userID string) error {
+	_, err := h.admin.DeleteMCPOAuthToken(ctx, &adminv1.DeleteMCPOAuthTokenRequest{
+		Connector: connector,
+		UserId:    userID,
+	})
+	if err != nil && status.Code(err) != codes.NotFound {
+		return err
+	}
+	return nil
 }

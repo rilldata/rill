@@ -429,6 +429,15 @@ export interface V1DeleteDeploymentResponse {
   deploymentId?: string;
 }
 
+export interface V1DeleteMCPOAuthTokenRequest {
+  connector?: string;
+  userId?: string;
+}
+
+export interface V1DeleteMCPOAuthTokenResponse {
+  [key: string]: unknown;
+}
+
 export interface V1DeleteOrganizationResponse {
   [key: string]: unknown;
 }
@@ -685,6 +694,21 @@ export interface V1GetIFrameResponse {
   instanceId?: string;
   accessToken?: string;
   ttlSeconds?: number;
+}
+
+export interface V1GetMCPOAuthTokenRequest {
+  /** Name of the MCP connector in the deployment's project. */
+  connector?: string;
+  /** ID of the user whose token to return. */
+  userId?: string;
+  /** If true, the token is refreshed even if it has not expired yet (used after the server rejected the current token). */
+  forceRefresh?: boolean;
+}
+
+export interface V1GetMCPOAuthTokenResponse {
+  accessToken?: string;
+  /** When the access token expires. Unset if the token does not expire. */
+  expiresOn?: string;
 }
 
 export interface V1GetOrganizationMemberUserResponse {

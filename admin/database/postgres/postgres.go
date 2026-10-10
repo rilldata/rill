@@ -4288,3 +4288,140 @@ func dedupeAndSortResourceNames(resources []database.ResourceName) []database.Re
 
 	return deduped
 }
+
+func (c *connection) FindMCPOAuthClient(ctx context.Context, projectID, connector string) (*database.MCPOAuthClient, error) {
+	res := &database.MCPOAuthClient{}
+	err := c.getDB(ctx).QueryRowxContext(ctx, "SELECT * FROM mcp_oauth_clients WHERE project_id=$1 AND connector=$2", projectID, connector).StructScan(res)
+	if err != nil {
+		return nil, parseErr("mcp oauth client", err)
+	}
+	err = c.decryptMCPOAuthClient(res)
+	if err != nil {
+		return nil, err
+	}
+	return res, nil
+}
+
+func (c *connection) UpsertMCPOAuthClient(ctx context.Context, opts *database.UpsertMCPOAuthClientOptions) (*database.MCPOAuthClient, error) {
+	if err := database.Validate(opts); err != nil {
+		return nil, err
+	}
+	value, keyID, err := c.encryptText(opts.Client)
+	if err != nil {
+		return nil, err
+	}
+	res := &database.MCPOAuthClient{}
+	err = c.getDB(ctx).QueryRowxContext(ctx, `
+		INSERT INTO mcp_oauth_clients (project_id, connector, client, client_encryption_key_id)
+		VALUES ($1, $2, $3, $4)
+		ON CONFLICT (project_id, connector) DO UPDATE SET
+			client = EXCLUDED.client,
+			client_encryption_key_id = EXCLUDED.client_encryption_key_id,
+			updated_on = now()
+		RETURNING *`,
+		opts.ProjectID, opts.Connector, value, keyID,
+	).StructScan(res)
+	if err != nil {
+		return nil, parseErr("mcp oauth client", err)
+	}
+	err = c.decryptMCPOAuthClient(res)
+	if err != nil {
+		return nil, err
+	}
+	return res, nil
+}
+
+func (c *connection) decryptMCPOAuthClient(res *database.MCPOAuthClient) error {
+	client, err := c.decryptText(res.Client, res.ClientEncryptionKeyID)
+	if err != nil {
+		return err
+	}
+	res.Client = client
+	res.ClientEncryptionKeyID = ""
+	return nil
+}
+
+func (c *connection) FindMCPOAuthToken(ctx context.Context, projectID, connector, userID string) (*database.MCPOAuthToken, error) {
+	res := &database.MCPOAuthToken{}
+	err := c.getDB(ctx).QueryRowxContext(ctx, "SELECT * FROM mcp_oauth_tokens WHERE project_id=$1 AND connector=$2 AND user_id=$3", projectID, connector, userID).StructScan(res)
+	if err != nil {
+		return nil, parseErr("mcp oauth token", err)
+	}
+	err = c.decryptMCPOAuthToken(res)
+	if err != nil {
+		return nil, err
+	}
+	return res, nil
+}
+
+func (c *connection) UpsertMCPOAuthToken(ctx context.Context, opts *database.UpsertMCPOAuthTokenOptions) (*database.MCPOAuthToken, error) {
+	if err := database.Validate(opts); err != nil {
+		return nil, err
+	}
+	value, keyID, err := c.encryptText(opts.Token)
+	if err != nil {
+		return nil, err
+	}
+	res := &database.MCPOAuthToken{}
+	err = c.getDB(ctx).QueryRowxContext(ctx, `
+		INSERT INTO mcp_oauth_tokens (project_id, connector, user_id, token, token_encryption_key_id)
+		VALUES ($1, $2, $3, $4, $5)
+		ON CONFLICT (project_id, connector, user_id) DO UPDATE SET
+			token = EXCLUDED.token,
+			token_encryption_key_id = EXCLUDED.token_encryption_key_id,
+			updated_on = now()
+		RETURNING *`,
+		opts.ProjectID, opts.Connector, opts.UserID, value, keyID,
+	).StructScan(res)
+	if err != nil {
+		return nil, parseErr("mcp oauth token", err)
+	}
+	err = c.decryptMCPOAuthToken(res)
+	if err != nil {
+		return nil, err
+	}
+	return res, nil
+}
+
+func (c *connection) DeleteMCPOAuthToken(ctx context.Context, projectID, connector, userID string) error {
+	res, err := c.getDB(ctx).ExecContext(ctx, "DELETE FROM mcp_oauth_tokens WHERE project_id=$1 AND connector=$2 AND user_id=$3", projectID, connector, userID)
+	if err != nil {
+		return parseErr("mcp oauth token", err)
+	}
+	return checkDeleteRow("mcp oauth token", res, err)
+}
+
+func (c *connection) decryptMCPOAuthToken(res *database.MCPOAuthToken) error {
+	token, err := c.decryptText(res.Token, res.TokenEncryptionKeyID)
+	if err != nil {
+		return err
+	}
+	res.Token = token
+	res.TokenEncryptionKeyID = ""
+	return nil
+}
+
+// encryptText encrypts a value for storage in a TEXT column.
+// It returns the value to store (base64 of the ciphertext when encryption is configured, the plain text otherwise) and the key ID used.
+func (c *connection) encryptText(plain []byte) (string, string, error) {
+	encrypted, keyID, err := c.encrypt(plain)
+	if err != nil {
+		return "", "", err
+	}
+	if keyID == "" {
+		return string(plain), "", nil
+	}
+	return base64.StdEncoding.EncodeToString(encrypted), keyID, nil
+}
+
+// decryptText reverses encryptText.
+func (c *connection) decryptText(stored []byte, keyID string) ([]byte, error) {
+	if keyID == "" {
+		return stored, nil
+	}
+	decoded, err := base64.StdEncoding.DecodeString(string(stored))
+	if err != nil {
+		return nil, err
+	}
+	return c.decrypt(decoded, keyID)
+}

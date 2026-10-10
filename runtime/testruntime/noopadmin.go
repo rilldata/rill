@@ -46,6 +46,14 @@ func (n *noopAdminService) UpdateProjectVariables(ctx context.Context, environme
 	return drivers.ErrNotImplemented
 }
 
+func (n *noopAdminService) GetMCPOAuthToken(ctx context.Context, connector, userID string, forceRefresh bool) (*drivers.MCPOAuthToken, error) {
+	return nil, drivers.ErrNotImplemented
+}
+
+func (n *noopAdminService) DeleteMCPOAuthToken(ctx context.Context, connector, userID string) error {
+	return drivers.ErrNotImplemented
+}
+
 // HasAnonymousSourceAccess implements [drivers.Driver].
 func (n *noopAdminService) HasAnonymousSourceAccess(ctx context.Context, srcProps map[string]any, logger *zap.Logger) (bool, error) {
 	return true, nil
@@ -101,6 +109,11 @@ func (n *noopAdminService) AsModelExecutor(instanceID string, opts *drivers.Mode
 // AsModelManager implements [drivers.Handle].
 func (n *noopAdminService) AsModelManager(instanceID string) (drivers.ModelManager, error) {
 	return nil, drivers.ErrNotImplemented
+}
+
+// AsMCP implements drivers.Handle.
+func (n *noopAdminService) AsMCP() (drivers.MCPService, bool) {
+	return nil, false
 }
 
 // AsNotifier implements [drivers.Handle].

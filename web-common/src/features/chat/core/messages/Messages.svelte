@@ -16,6 +16,7 @@
   import WorkingBlock from "./working/WorkingBlock.svelte";
   import SimpleToolCallBlock from "@rilldata/web-common/features/chat/core/messages/simple-tool-call/SimpleToolCallBlock.svelte";
   import ErrorMessage from "@rilldata/web-common/features/chat/core/messages/error/ErrorMessage.svelte";
+  import McpAuthRequiredBlock from "./mcp-auth-required/McpAuthRequiredBlock.svelte";
   import SuggestedPrompts from "@rilldata/web-common/features/chat/core/suggested-prompts/SuggestedPrompts.svelte";
   import MemoryUpdateChip from "@rilldata/web-common/features/chat/memory/MemoryUpdateChip.svelte";
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
@@ -163,6 +164,12 @@
         <SimpleToolCallBlock {block} {tools} />
       {:else if block.type === "memory-update"}
         <MemoryUpdateChip {block} />
+      {:else if block.type === "mcp-auth-required"}
+        <McpAuthRequiredBlock
+          {block}
+          conversation={currentConversation}
+          {config}
+        />
       {/if}
     {/each}
   {/if}

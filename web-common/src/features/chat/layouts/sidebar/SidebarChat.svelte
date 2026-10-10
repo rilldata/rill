@@ -5,6 +5,7 @@
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { getConversationManager } from "../../core/conversation-manager";
   import ChatInput from "../../core/input/ChatInput.svelte";
+  import McpConnectChips from "../../connect/McpConnectChips.svelte";
   import Messages from "../../core/messages/Messages.svelte";
   import SidebarHeader from "./SidebarHeader.svelte";
   import {
@@ -84,6 +85,7 @@
       />
     </div>
     <Messages {conversationManager} layout="sidebar" {config} />
+    <McpConnectChips />
     <ChatInput
       {conversationManager}
       bind:this={chatInputComponent}

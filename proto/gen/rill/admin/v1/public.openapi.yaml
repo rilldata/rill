@@ -564,6 +564,17 @@ components:
                 deploymentId:
                     type: string
             type: object
+        v1DeleteMCPOAuthTokenRequest:
+            properties:
+                connector:
+                    type: string
+                userId:
+                    type: string
+            title: Request message for AIService.DeleteMCPOAuthToken
+            type: object
+        v1DeleteMCPOAuthTokenResponse:
+            title: Response message for AIService.DeleteMCPOAuthToken
+            type: object
         v1DeleteOrganizationResponse:
             type: object
         v1DeletePersonalFileResponse:
@@ -866,6 +877,29 @@ components:
                 ttlSeconds:
                     format: int64
                     type: integer
+            type: object
+        v1GetMCPOAuthTokenRequest:
+            properties:
+                connector:
+                    description: Name of the MCP connector in the deployment's project.
+                    type: string
+                forceRefresh:
+                    description: If true, the token is refreshed even if it has not expired yet (used after the server rejected the current token).
+                    type: boolean
+                userId:
+                    description: ID of the user whose token to return.
+                    type: string
+            title: Request message for AIService.GetMCPOAuthToken
+            type: object
+        v1GetMCPOAuthTokenResponse:
+            properties:
+                accessToken:
+                    type: string
+                expiresOn:
+                    description: When the access token expires. Unset if the token does not expire.
+                    format: date-time
+                    type: string
+            title: Response message for AIService.GetMCPOAuthToken
             type: object
         v1GetOrganizationMemberUserResponse:
             properties:
@@ -2546,6 +2580,8 @@ info:
 openapi: 3.0.3
 paths:
     /v1/ai/complete: {}
+    /v1/ai/mcp-oauth-token: {}
+    /v1/ai/mcp-oauth-token/delete: {}
     /v1/billing/metrics-project-credentials: {}
     /v1/billing/plans: {}
     /v1/deployments/{deploymentId}: {}

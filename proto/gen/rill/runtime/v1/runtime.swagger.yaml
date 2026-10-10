@@ -663,6 +663,58 @@ paths:
             title: Request message for RuntimeService.ShareConversation
       tags:
         - RuntimeService
+  /v1/instances/{instanceId}/ai/mcp-servers:
+    get:
+      summary: |-
+        ListMCPServers lists the external MCP servers (connectors with driver "mcp") that the current user may use,
+        including the tools each server exposes to the user and whether the user has authorized it.
+      operationId: RuntimeService_ListMCPServers
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1ListMCPServersResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+      tags:
+        - RuntimeService
+  /v1/instances/{instanceId}/ai/mcp-servers/{connector}/disconnect:
+    post:
+      summary: DisconnectMCPServer removes the current user's OAuth authorization for an external MCP server.
+      operationId: RuntimeService_DisconnectMCPServer
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1DisconnectMCPServerResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: connector
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            title: Request message for RuntimeService.DisconnectMCPServer
+      tags:
+        - RuntimeService
   /v1/instances/{instanceId}/ai/memories:
     get:
       summary: |-
@@ -5375,11 +5427,32 @@ definitions:
         type: boolean
       provisionArgs:
         type: object
+      securityRules:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1SecurityRule'
+        description: |-
+          Security rules that control which users may use the connector and, for MCP connectors, which of its tools.
+          Parsed from the connector's "security" YAML block; currently only the "mcp" driver supports it.
+      agents:
+        type: array
+        items:
+          type: string
+        description: AI agents that may use the connector's tools (MCP connectors only). Empty means all agents.
   v1ConnectorState:
     type: object
     properties:
       specHash:
         type: string
+      mcpTools:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1MCPTool'
+        description: |-
+          Tools discovered on an external MCP server (MCP connectors only).
+          Empty when the server's tools can only be listed with a per-user authorization.
   v1ConnectorV2:
     type: object
     properties:
@@ -5525,6 +5598,9 @@ definitions:
         type: string
       isDir:
         type: boolean
+  v1DisconnectMCPServerResponse:
+    type: object
+    title: Response message for RuntimeService.DisconnectMCPServer
   v1EditInstanceResponse:
     type: object
     properties:
@@ -6323,6 +6399,15 @@ definitions:
       nextPageToken:
         type: string
     title: Response message for RuntimeService.ListInstances
+  v1ListMCPServersResponse:
+    type: object
+    properties:
+      servers:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1MCPServer'
+    title: Response message for RuntimeService.ListMCPServers
   v1ListNotifierConnectorsResponse:
     type: object
     properties:
@@ -6397,6 +6482,47 @@ definitions:
       - LOG_LEVEL_ERROR
       - LOG_LEVEL_FATAL
     default: LOG_LEVEL_UNSPECIFIED
+  v1MCPServer:
+    type: object
+    properties:
+      connector:
+        type: string
+        description: Name of the connector that defines the server.
+      displayName:
+        type: string
+        description: Human-friendly name of the server.
+      url:
+        type: string
+        description: URL of the server's MCP endpoint.
+      oauth:
+        type: boolean
+        description: True if the server requires a per-user OAuth authorization.
+      connected:
+        type: boolean
+        description: True if the current user is authorized to use the server (always true for servers that don't use OAuth).
+      agents:
+        type: array
+        items:
+          type: string
+        description: AI agents that may use the server. Empty means all agents.
+      tools:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1MCPTool'
+        description: Tools the server exposes to the current user. Empty if the server could not be reached or the user is not connected.
+      error:
+        type: string
+        description: Error encountered when connecting to the server or listing its tools, if any.
+    description: MCPServer describes an external MCP server from the perspective of the current user.
+  v1MCPTool:
+    type: object
+    properties:
+      name:
+        type: string
+      description:
+        type: string
+    description: MCPTool describes a tool exposed by an external MCP server.
   v1MapType:
     type: object
     properties:

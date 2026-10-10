@@ -4,7 +4,7 @@
 // @ts-nocheck
 
 import type { BinaryReadOptions, FieldList, JsonReadOptions, JsonValue, PartialMessage, PlainMessage } from "@bufbuild/protobuf";
-import { Message, proto3 } from "@bufbuild/protobuf";
+import { Message, proto3, Timestamp } from "@bufbuild/protobuf";
 import { CompletionMessage, Tool } from "../../ai/v1/ai_pb.js";
 
 /**
@@ -130,6 +130,188 @@ export class CompleteResponse extends Message<CompleteResponse> {
 
   static equals(a: CompleteResponse | PlainMessage<CompleteResponse> | undefined, b: CompleteResponse | PlainMessage<CompleteResponse> | undefined): boolean {
     return proto3.util.equals(CompleteResponse, a, b);
+  }
+}
+
+/**
+ * Request message for AIService.GetMCPOAuthToken
+ *
+ * @generated from message rill.admin.v1.GetMCPOAuthTokenRequest
+ */
+export class GetMCPOAuthTokenRequest extends Message<GetMCPOAuthTokenRequest> {
+  /**
+   * Name of the MCP connector in the deployment's project.
+   *
+   * @generated from field: string connector = 1;
+   */
+  connector = "";
+
+  /**
+   * ID of the user whose token to return.
+   *
+   * @generated from field: string user_id = 2;
+   */
+  userId = "";
+
+  /**
+   * If true, the token is refreshed even if it has not expired yet (used after the server rejected the current token).
+   *
+   * @generated from field: bool force_refresh = 3;
+   */
+  forceRefresh = false;
+
+  constructor(data?: PartialMessage<GetMCPOAuthTokenRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.GetMCPOAuthTokenRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "connector", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "user_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "force_refresh", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetMCPOAuthTokenRequest {
+    return new GetMCPOAuthTokenRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetMCPOAuthTokenRequest {
+    return new GetMCPOAuthTokenRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetMCPOAuthTokenRequest {
+    return new GetMCPOAuthTokenRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: GetMCPOAuthTokenRequest | PlainMessage<GetMCPOAuthTokenRequest> | undefined, b: GetMCPOAuthTokenRequest | PlainMessage<GetMCPOAuthTokenRequest> | undefined): boolean {
+    return proto3.util.equals(GetMCPOAuthTokenRequest, a, b);
+  }
+}
+
+/**
+ * Response message for AIService.GetMCPOAuthToken
+ *
+ * @generated from message rill.admin.v1.GetMCPOAuthTokenResponse
+ */
+export class GetMCPOAuthTokenResponse extends Message<GetMCPOAuthTokenResponse> {
+  /**
+   * @generated from field: string access_token = 1;
+   */
+  accessToken = "";
+
+  /**
+   * When the access token expires. Unset if the token does not expire.
+   *
+   * @generated from field: google.protobuf.Timestamp expires_on = 2;
+   */
+  expiresOn?: Timestamp;
+
+  constructor(data?: PartialMessage<GetMCPOAuthTokenResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.GetMCPOAuthTokenResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "access_token", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "expires_on", kind: "message", T: Timestamp },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetMCPOAuthTokenResponse {
+    return new GetMCPOAuthTokenResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetMCPOAuthTokenResponse {
+    return new GetMCPOAuthTokenResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetMCPOAuthTokenResponse {
+    return new GetMCPOAuthTokenResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: GetMCPOAuthTokenResponse | PlainMessage<GetMCPOAuthTokenResponse> | undefined, b: GetMCPOAuthTokenResponse | PlainMessage<GetMCPOAuthTokenResponse> | undefined): boolean {
+    return proto3.util.equals(GetMCPOAuthTokenResponse, a, b);
+  }
+}
+
+/**
+ * Request message for AIService.DeleteMCPOAuthToken
+ *
+ * @generated from message rill.admin.v1.DeleteMCPOAuthTokenRequest
+ */
+export class DeleteMCPOAuthTokenRequest extends Message<DeleteMCPOAuthTokenRequest> {
+  /**
+   * @generated from field: string connector = 1;
+   */
+  connector = "";
+
+  /**
+   * @generated from field: string user_id = 2;
+   */
+  userId = "";
+
+  constructor(data?: PartialMessage<DeleteMCPOAuthTokenRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.DeleteMCPOAuthTokenRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "connector", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "user_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): DeleteMCPOAuthTokenRequest {
+    return new DeleteMCPOAuthTokenRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): DeleteMCPOAuthTokenRequest {
+    return new DeleteMCPOAuthTokenRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): DeleteMCPOAuthTokenRequest {
+    return new DeleteMCPOAuthTokenRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: DeleteMCPOAuthTokenRequest | PlainMessage<DeleteMCPOAuthTokenRequest> | undefined, b: DeleteMCPOAuthTokenRequest | PlainMessage<DeleteMCPOAuthTokenRequest> | undefined): boolean {
+    return proto3.util.equals(DeleteMCPOAuthTokenRequest, a, b);
+  }
+}
+
+/**
+ * Response message for AIService.DeleteMCPOAuthToken
+ *
+ * @generated from message rill.admin.v1.DeleteMCPOAuthTokenResponse
+ */
+export class DeleteMCPOAuthTokenResponse extends Message<DeleteMCPOAuthTokenResponse> {
+  constructor(data?: PartialMessage<DeleteMCPOAuthTokenResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.DeleteMCPOAuthTokenResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): DeleteMCPOAuthTokenResponse {
+    return new DeleteMCPOAuthTokenResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): DeleteMCPOAuthTokenResponse {
+    return new DeleteMCPOAuthTokenResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): DeleteMCPOAuthTokenResponse {
+    return new DeleteMCPOAuthTokenResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: DeleteMCPOAuthTokenResponse | PlainMessage<DeleteMCPOAuthTokenResponse> | undefined, b: DeleteMCPOAuthTokenResponse | PlainMessage<DeleteMCPOAuthTokenResponse> | undefined): boolean {
+    return proto3.util.equals(DeleteMCPOAuthTokenResponse, a, b);
   }
 }
 

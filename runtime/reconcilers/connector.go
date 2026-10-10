@@ -10,6 +10,7 @@ import (
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
+	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/pbutil"
 	"google.golang.org/protobuf/types/known/structpb"
 )
@@ -82,7 +83,12 @@ func (r *ConnectorReconciler) Reconcile(ctx context.Context, n *runtimev1.Resour
 
 	if specHash == t.State.SpecHash {
 		// The connector configuration should be tested even when spec has not changed since connector errors can be transient (e.g. cluster temporarily down)
-		err := r.testConnector(ctx, self.Meta.Name.Name)
+		tools, err := r.testConnector(ctx, self.Meta.Name.Name)
+		// Only replace the listed tools when the test succeeded, so a transient outage does not wipe them.
+		if err == nil && !mcpToolsEqual(tools, t.State.McpTools) {
+			t.State.McpTools = tools
+			err = r.C.UpdateState(ctx, self.Meta.Name, self)
+		}
 		return runtime.ReconcileResult{Err: err}
 	}
 
@@ -93,9 +99,10 @@ func (r *ConnectorReconciler) Reconcile(ctx context.Context, n *runtimev1.Resour
 	}
 
 	// Test the connector configuration
-	err = r.testConnector(ctx, self.Meta.Name.Name)
+	tools, err := r.testConnector(ctx, self.Meta.Name.Name)
 	// update state even if test fails because the instance connectors have already been updated
 	t.State.SpecHash = specHash
+	t.State.McpTools = tools
 
 	err = errors.Join(err, r.C.UpdateState(ctx, self.Meta.Name, self))
 	if err != nil {
@@ -148,13 +155,58 @@ func (r *ConnectorReconciler) executionSpecHash(ctx context.Context, spec *runti
 	return hex.EncodeToString(hash.Sum(nil)), nil
 }
 
-func (r *ConnectorReconciler) testConnector(ctx context.Context, connectorName string) error {
+// testConnector checks that the connector works.
+// For MCP connectors, it also lists the server's tools with the project's credentials and returns them for the connector state.
+// Servers that require a per-user OAuth authorization are only checked for reachability, since there is no user to list tools as.
+func (r *ConnectorReconciler) testConnector(ctx context.Context, connectorName string) ([]*runtimev1.MCPTool, error) {
 	// Get the connector configuration
 	handle, release, err := r.C.Runtime.AcquireHandle(ctx, r.C.InstanceID, connectorName)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	defer release()
 
-	return handle.Ping(ctx)
+	err = handle.Ping(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	svc, ok := handle.AsMCP()
+	if !ok {
+		return nil, nil
+	}
+
+	inst, err := r.C.Runtime.Instance(ctx, r.C.InstanceID)
+	if err != nil {
+		return nil, err
+	}
+	tools, err := svc.ListTools(ctx, &drivers.MCPCallOptions{
+		Environment: inst.Environment,
+		Variables:   inst.ResolveVariables(false),
+	})
+	if err != nil {
+		if errors.Is(err, drivers.ErrMCPAuthorizationRequired) {
+			return nil, nil
+		}
+		return nil, fmt.Errorf("failed to list the MCP server's tools: %w", err)
+	}
+
+	res := make([]*runtimev1.MCPTool, 0, len(tools))
+	for _, t := range tools {
+		res = append(res, &runtimev1.MCPTool{Name: t.Name, Description: t.Description})
+	}
+	return res, nil
+}
+
+// mcpToolsEqual compares two tool lists by name and description.
+func mcpToolsEqual(a, b []*runtimev1.MCPTool) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for i := range a {
+		if a[i].Name != b[i].Name || a[i].Description != b[i].Description {
+			return false
+		}
+	}
+	return true
 }

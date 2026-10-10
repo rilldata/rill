@@ -345,6 +345,12 @@ type DB interface {
 	DeleteBillingIssue(ctx context.Context, id string) error
 	DeleteBillingIssueByTypeForOrg(ctx context.Context, orgID string, errorType BillingIssueType) error
 
+	FindMCPOAuthClient(ctx context.Context, projectID, connector string) (*MCPOAuthClient, error)
+	UpsertMCPOAuthClient(ctx context.Context, opts *UpsertMCPOAuthClientOptions) (*MCPOAuthClient, error)
+	FindMCPOAuthToken(ctx context.Context, projectID, connector, userID string) (*MCPOAuthToken, error)
+	UpsertMCPOAuthToken(ctx context.Context, opts *UpsertMCPOAuthTokenOptions) (*MCPOAuthToken, error)
+	DeleteMCPOAuthToken(ctx context.Context, projectID, connector, userID string) error
+
 	FindProjectVariables(ctx context.Context, projectID string, environment *string) ([]*ProjectVariable, error)
 	UpsertProjectVariable(ctx context.Context, projectID, environment string, vars map[string]string, userID string) ([]*ProjectVariable, error)
 	DeleteProjectVariables(ctx context.Context, projectID, environment string, vars []string) error
@@ -1269,6 +1275,46 @@ type Asset struct {
 	OwnerID        string    `db:"owner_id"`
 	Public         bool      `db:"public"`
 	CreatedOn      time.Time `db:"created_on"`
+}
+
+// MCPOAuthClient is the OAuth client Rill uses with an external MCP server's authorization server, shared by all users of a project's connector.
+// Client is the JSON encoding of runtime/drivers/mcp.OAuthClient; it is decrypted when read.
+type MCPOAuthClient struct {
+	ID                    string    `db:"id"`
+	ProjectID             string    `db:"project_id"`
+	Connector             string    `db:"connector"`
+	Client                []byte    `db:"client"`
+	ClientEncryptionKeyID string    `db:"client_encryption_key_id"`
+	CreatedOn             time.Time `db:"created_on"`
+	UpdatedOn             time.Time `db:"updated_on"`
+}
+
+// UpsertMCPOAuthClientOptions defines options for creating or replacing an MCPOAuthClient.
+type UpsertMCPOAuthClientOptions struct {
+	ProjectID string `validate:"required"`
+	Connector string `validate:"required"`
+	Client    []byte `validate:"required"`
+}
+
+// MCPOAuthToken is a user's OAuth token for an external MCP server. Tokens are never shared between users.
+// Token is the JSON encoding of golang.org/x/oauth2.Token; it is decrypted when read.
+type MCPOAuthToken struct {
+	ID                   string    `db:"id"`
+	ProjectID            string    `db:"project_id"`
+	Connector            string    `db:"connector"`
+	UserID               string    `db:"user_id"`
+	Token                []byte    `db:"token"`
+	TokenEncryptionKeyID string    `db:"token_encryption_key_id"`
+	CreatedOn            time.Time `db:"created_on"`
+	UpdatedOn            time.Time `db:"updated_on"`
+}
+
+// UpsertMCPOAuthTokenOptions defines options for creating or replacing an MCPOAuthToken.
+type UpsertMCPOAuthTokenOptions struct {
+	ProjectID string `validate:"required"`
+	Connector string `validate:"required"`
+	UserID    string `validate:"required"`
+	Token     []byte `validate:"required"`
 }
 
 // ProjectVariable represents a key-value variable for a project, possible for a specific environment (e.g. production or development).
