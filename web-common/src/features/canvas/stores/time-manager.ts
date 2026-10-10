@@ -10,7 +10,11 @@ import { normalizeWeekday } from "../../dashboards/time-controls/new-time-contro
 import { type CanvasResponse } from "../selector";
 import type { CanvasEntity, SearchParamsStore } from "./canvas-entity";
 import { maybeWritable } from "@rilldata/web-common/lib/store-utils";
-import { TimeState, type MinMax } from "./time-state";
+import {
+  getDefaultComparisonRange,
+  TimeState,
+  type MinMax,
+} from "./time-state";
 
 export class TimeManager {
   minMaxTimeStamps: Readable<MinMax | undefined>;
@@ -92,7 +96,9 @@ export class TimeManager {
       defaultPreset?.comparisonMode ===
       V1ExploreComparisonMode.EXPLORE_COMPARISON_MODE_TIME
     ) {
-      this.defaultComparisonRangeStore.set("rill-PP");
+      this.defaultComparisonRangeStore.set(
+        getDefaultComparisonRange(defaultPreset.timeRange, ranges),
+      );
     } else {
       this.defaultComparisonRangeStore.set(undefined);
     }
