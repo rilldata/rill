@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/url"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/google/jsonschema-go/jsonschema"
@@ -46,7 +47,12 @@ Request:
 - Include 'limit' and 'sort' parameters to optimize performance. Keep the limit as low as realistically possible for your task (ideally below 100 rows). Regardless of whether you include a limit, the server will truncate large results (and return a warning if it does).
 - 'time_range' is inclusive of start time, exclusive of end time
 - 'time_range.time_dimension' (optional) specifies which time column to filter; defaults to the metrics view's default time column
+- Pass 'dimensions', 'measures', 'sort', 'where' and other structured parameters as JSON arrays and objects, not as JSON-encoded strings
+- Only use dimension and measure names that exist in the metrics view, in their matching list (a dimension can't be used as a measure)
+- Comparison measures ('comparison_value', 'comparison_delta', 'comparison_ratio') require 'comparison_time_range'. For a trend over consecutive periods (e.g. month over month), query a 'time_floor' dimension instead and compare the rows
 - For comparisons, 'time_range' and 'comparison_time_range' must be non-overlapping and similar in duration (~20% tolerance)
+- In 'where' and 'having', 'eq'/'neq' take a single value and 'in'/'nin' take a list. Each operand of 'and'/'or' must itself be a condition ({"cond": {...}})
+- A derived measure computes arithmetic over existing measures: {"name": "cost_per_order", "compute": {"expression": {"expression": "total_cost / total_orders"}}}
 
 Response:
 - Returns aggregated data matching your query parameters
@@ -86,7 +92,7 @@ Example: Get the total revenue by country and product category for 2024:
                         }
                     }
                 ]
-            },
+            }
         },
         "sort": [{"name": "total_revenue", "desc": true}],
         "limit": 10
@@ -158,14 +164,14 @@ Example: Get the top 10 demographic segments (by country, gender, and age group)
 		"measures": [
 			{"name": "total_revenue"},
 			{"name": "total_revenue__delta_abs", "compute": {"comparison_delta": {"measure": "total_revenue"}}},
-			{"name": "total_revenue__delta_rel", "compute": {"comparison_ratio": {"measure": "total_revenue"}}},
+			{"name": "total_revenue__delta_rel", "compute": {"comparison_ratio": {"measure": "total_revenue"}}}
 		],
 		"dimensions": [{"name": "country"}, {"name": "gender"}, {"name": "age_group"}],
 		"time_range": {
 			"expression": "1M as of latest/D"
 		},
 		"comparison_time_range": {
-			expression": "1M as of latest/D offset -1M"
+			"expression": "1M as of latest/D offset -1M"
 		},
 		"sort": [{"name": "total_revenue__delta_abs", "desc": true}],
 		"limit": 10
@@ -177,14 +183,14 @@ Example: Get the top 10 demographic segments (by country, gender, and age group)
 		"measures": [
 			{"name": "total_revenue"},
 			{"name": "total_revenue__delta_abs", "compute": {"comparison_delta": {"measure": "total_revenue"}}},
-			{"name": "total_revenue__delta_rel", "compute": {"comparison_ratio": {"measure": "total_revenue"}}},
+			{"name": "total_revenue__delta_rel", "compute": {"comparison_ratio": {"measure": "total_revenue"}}}
 		],
 		"dimensions": [{"name": "country"}, {"name": "gender"}, {"name": "age_group"}],
 		"time_range": {
 			"expression": "1D as of latest/m"
 		},
 		"comparison_time_range": {
-			expression": "1D as of latest/m offset -1D"
+			"expression": "1D as of latest/m offset -1D"
 		},
 		"sort": [{"name": "total_revenue__delta_abs", "desc": true}],
 		"limit": 10
@@ -222,6 +228,7 @@ func (t *QueryMetricsView) CheckAccess(ctx context.Context) (bool, error) {
 
 func (t *QueryMetricsView) Handler(ctx context.Context, args QueryMetricsViewArgs) (*QueryMetricsViewResult, error) {
 	session := GetSession(ctx)
+	normalizeQueryArgs(args)
 
 	// Load instance config
 	instance, err := t.Runtime.Instance(ctx, session.InstanceID())
@@ -306,6 +313,83 @@ func (t *QueryMetricsView) Handler(ctx context.Context, args QueryMetricsViewArg
 		result.TruncationWarning = msg
 	}
 	return result, nil
+}
+
+// queryArgsJSONFields are the query fields that take an object or array, which LLMs sometimes pass as a JSON-encoded string.
+var queryArgsJSONFields = []string{"dimensions", "measures", "pivot_on", "spine", "sort", "time_range", "comparison_time_range", "where", "having"}
+
+// normalizeQueryArgs repairs common LLM formatting mistakes in query args where the intent is unambiguous.
+func normalizeQueryArgs(args QueryMetricsViewArgs) {
+	for _, k := range queryArgsJSONFields {
+		s, ok := args[k].(string)
+		if !ok {
+			continue
+		}
+		s = strings.TrimSpace(s)
+		if !strings.HasPrefix(s, "[") && !strings.HasPrefix(s, "{") {
+			continue
+		}
+		var v any
+		if err := json.Unmarshal([]byte(s), &v); err == nil {
+			args[k] = v
+		}
+	}
+
+	// Derived measures nest the expression in an object, but are often passed as {"compute": {"expression": "a / b"}}.
+	measures, _ := args["measures"].([]any)
+	for _, m := range measures {
+		m, _ := m.(map[string]any)
+		compute, _ := m["compute"].(map[string]any)
+		expr, ok := compute["expression"].(string)
+		if !ok {
+			continue
+		}
+		obj := map[string]any{"expression": expr}
+		if dn, ok := compute["display_name"]; ok {
+			obj["display_name"] = dn
+			delete(compute, "display_name")
+		}
+		compute["expression"] = obj
+	}
+
+	normalizeQueryExpression(args["where"])
+	normalizeQueryExpression(args["having"])
+}
+
+// normalizeQueryExpression rewrites "eq"/"neq" conditions against a list value to "in"/"nin".
+func normalizeQueryExpression(v any) {
+	e, ok := v.(map[string]any)
+	if !ok {
+		return
+	}
+
+	if sub, ok := e["subquery"].(map[string]any); ok {
+		normalizeQueryExpression(sub["where"])
+		normalizeQueryExpression(sub["having"])
+	}
+
+	cond, ok := e["cond"].(map[string]any)
+	if !ok {
+		return
+	}
+	exprs, _ := cond["exprs"].([]any)
+	for _, x := range exprs {
+		normalizeQueryExpression(x)
+	}
+
+	if len(exprs) != 2 {
+		return
+	}
+	rhs, _ := exprs[1].(map[string]any)
+	if _, isList := rhs["val"].([]any); !isList {
+		return
+	}
+	switch cond["op"] {
+	case "eq":
+		cond["op"] = "in"
+	case "neq":
+		cond["op"] = "nin"
+	}
 }
 
 // generateOpenURL generates an open URL for the given query parameters
