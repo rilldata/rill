@@ -5040,6 +5040,14 @@ export class ComponentSpec extends Message<ComponentSpec> {
    */
   definedInCanvas = false;
 
+  /**
+   * For components defined inline in a canvas, the `if` conditions of the item and its ancestors (rows, tabs), ANDed together.
+   * Only viewers for whom it evaluates to true can access the component.
+   *
+   * @generated from field: string condition_expression = 10;
+   */
+  conditionExpression = "";
+
   constructor(data?: PartialMessage<ComponentSpec>) {
     super();
     proto3.util.initPartial(data, this);
@@ -5055,6 +5063,7 @@ export class ComponentSpec extends Message<ComponentSpec> {
     { no: 8, name: "input", kind: "message", T: ComponentVariable, repeated: true },
     { no: 9, name: "output", kind: "message", T: ComponentVariable },
     { no: 6, name: "defined_in_canvas", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 10, name: "condition_expression", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ComponentSpec {
@@ -5483,6 +5492,14 @@ export class CanvasRow extends Message<CanvasRow> {
    */
   tabGroup?: CanvasTabGroup;
 
+  /**
+   * Templated boolean expression from the row's `if` property.
+   * The row (or tab group) is only shown to viewers for whom it evaluates to true.
+   *
+   * @generated from field: string condition_expression = 5;
+   */
+  conditionExpression = "";
+
   constructor(data?: PartialMessage<CanvasRow>) {
     super();
     proto3.util.initPartial(data, this);
@@ -5495,6 +5512,7 @@ export class CanvasRow extends Message<CanvasRow> {
     { no: 2, name: "height_unit", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "items", kind: "message", T: CanvasItem, repeated: true },
     { no: 4, name: "tab_group", kind: "message", T: CanvasTabGroup },
+    { no: 5, name: "condition_expression", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CanvasRow {
@@ -5588,6 +5606,14 @@ export class CanvasTab extends Message<CanvasTab> {
    */
   rows: CanvasRow[] = [];
 
+  /**
+   * Templated boolean expression from the tab's `if` property.
+   * The tab is only shown to viewers for whom it evaluates to true.
+   *
+   * @generated from field: string condition_expression = 4;
+   */
+  conditionExpression = "";
+
   constructor(data?: PartialMessage<CanvasTab>) {
     super();
     proto3.util.initPartial(data, this);
@@ -5599,6 +5625,7 @@ export class CanvasTab extends Message<CanvasTab> {
     { no: 1, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "display_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "rows", kind: "message", T: CanvasRow, repeated: true },
+    { no: 4, name: "condition_expression", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CanvasTab {
@@ -5650,6 +5677,14 @@ export class CanvasItem extends Message<CanvasItem> {
    */
   widthUnit = "";
 
+  /**
+   * Templated boolean expression from the item's `if` property.
+   * The item is only shown to viewers for whom it evaluates to true.
+   *
+   * @generated from field: string condition_expression = 11;
+   */
+  conditionExpression = "";
+
   constructor(data?: PartialMessage<CanvasItem>) {
     super();
     proto3.util.initPartial(data, this);
@@ -5662,6 +5697,7 @@ export class CanvasItem extends Message<CanvasItem> {
     { no: 8, name: "defined_in_canvas", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 9, name: "width", kind: "scalar", T: 13 /* ScalarType.UINT32 */, opt: true },
     { no: 10, name: "width_unit", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 11, name: "condition_expression", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CanvasItem {

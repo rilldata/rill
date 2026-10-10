@@ -156,6 +156,30 @@ export async function invalidateAllMetricsViews(
   });
 }
 
+/**
+ * Removes the cached resources that aren't in use, for when the viewer's identity changes (e.g. View as).
+ * The runtime prunes canvas and component resources to what each identity can see,
+ * so resources cached for the previous identity must not be shown to the new one.
+ * (Active queries are refetched by invalidateAllMetricsViews.)
+ */
+export function removeInactiveResourceQueries(
+  queryClient: QueryClient,
+  instanceId: string,
+) {
+  queryClient.removeQueries({
+    type: "inactive",
+    predicate: (query: Query) => {
+      const key = query.queryKey;
+      // Format: ["RuntimeService", "getResource" | "listResources", instanceId, ...]
+      return (
+        key[0] === "RuntimeService" &&
+        (key[1] === "getResource" || key[1] === "listResources") &&
+        key[2] === instanceId
+      );
+    },
+  });
+}
+
 export async function invalidateCanvasQueries(
   queryClient: QueryClient,
   instanceId: string,

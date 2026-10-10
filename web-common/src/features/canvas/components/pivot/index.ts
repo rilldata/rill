@@ -60,6 +60,7 @@ import {
   comparisonWidthPatch,
   splitComparisonColumnId,
 } from "./field-config";
+import { getItemPropertiesExcept } from "../../layout-util";
 import {
   createPivotConfig,
   ROW_LIMIT_ALL_VALUE,
@@ -852,11 +853,19 @@ export class PivotCanvasComponent extends BaseCanvasComponent<
       delete newSpec.sort_comparison;
     }
 
-    const width = parsedDocument.getIn([...parentPath, "width"]);
+    // Keep the item's other properties, such as its width and `if` condition
+    const itemProperties = getItemPropertiesExcept(
+      parsedDocument,
+      parentPath,
+      this.pathInYAML.at(-1),
+    );
 
     this.specStore.set(newSpec);
 
-    parsedDocument.setIn(parentPath, { [newTableType]: newSpec, width });
+    parsedDocument.setIn(parentPath, {
+      [newTableType]: newSpec,
+      ...itemProperties,
+    });
 
     // Save the updated document
     updateEditorContent(parsedDocument.toString(), false, true);

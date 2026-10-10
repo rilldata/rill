@@ -871,6 +871,9 @@ message ComponentSpec {
   repeated ComponentVariable input = 8;
   ComponentVariable output = 9;
   bool defined_in_canvas = 6;
+  // For components defined inline in a canvas, the `if` conditions of the item and its ancestors (rows, tabs), ANDed together.
+  // Only viewers for whom it evaluates to true can access the component.
+  string condition_expression = 10;
 }
 
 message ComponentState {
@@ -956,6 +959,9 @@ message CanvasRow {
   // If set, this row renders a tab group instead of items.
   // A row has either items or a tab_group, never both.
   CanvasTabGroup tab_group = 4;
+  // Templated boolean expression from the row's `if` property.
+  // The row (or tab group) is only shown to viewers for whom it evaluates to true.
+  string condition_expression = 5;
 }
 
 message CanvasTabGroup {
@@ -974,6 +980,9 @@ message CanvasTab {
   // Rows to render when the tab is active. These are always plain rows;
   // a tab's rows never contain a nested tab_group.
   repeated CanvasRow rows = 3;
+  // Templated boolean expression from the tab's `if` property.
+  // The tab is only shown to viewers for whom it evaluates to true.
+  string condition_expression = 4;
 }
 
 message CanvasItem {
@@ -985,6 +994,9 @@ message CanvasItem {
   optional uint32 width = 9;
   // Unit of the width. Current possible values: empty string.
   string width_unit = 10;
+  // Templated boolean expression from the item's `if` property.
+  // The item is only shown to viewers for whom it evaluates to true.
+  string condition_expression = 11;
 }
 
 message CanvasPreset {

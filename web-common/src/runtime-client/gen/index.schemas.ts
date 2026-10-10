@@ -423,6 +423,9 @@ export interface V1CanvasItem {
   width?: number;
   /** Unit of the width. Current possible values: empty string. */
   widthUnit?: string;
+  /** Templated boolean expression from the item's `if` property.
+The item is only shown to viewers for whom it evaluates to true. */
+  conditionExpression?: string;
 }
 
 export type V1CanvasPresetFilterExpr = {
@@ -448,6 +451,9 @@ export interface V1CanvasTab {
   /** Rows to render when the tab is active. These are always plain rows;
 a tab's rows never contain a nested tab_group. */
   rows?: V1CanvasRow[];
+  /** Templated boolean expression from the tab's `if` property.
+The tab is only shown to viewers for whom it evaluates to true. */
+  conditionExpression?: string;
 }
 
 export interface V1CanvasTabGroup {
@@ -466,6 +472,9 @@ export interface V1CanvasRow {
   /** Items to render in the row. Empty when the row is a tab group. */
   items?: V1CanvasItem[];
   tabGroup?: V1CanvasTabGroup;
+  /** Templated boolean expression from the row's `if` property.
+The row (or tab group) is only shown to viewers for whom it evaluates to true. */
+  conditionExpression?: string;
 }
 
 export interface V1CanvasSpec {
@@ -704,6 +713,9 @@ export interface V1ComponentSpec {
   input?: V1ComponentVariable[];
   output?: V1ComponentVariable;
   definedInCanvas?: boolean;
+  /** For components defined inline in a canvas, the `if` conditions of the item and its ancestors (rows, tabs), ANDed together.
+Only viewers for whom it evaluates to true can access the component. */
+  conditionExpression?: string;
 }
 
 export interface V1ComponentState {
@@ -2343,6 +2355,9 @@ The resources state.valid_spec.renderer_properties will have templating resolved
   resolvedComponents?: V1ResolveCanvasResponseResolvedComponents;
   /** All the metrics view resources referenced in the components' renderer_properties.metrics_view field. */
   referencedMetricsViews?: V1ResolveCanvasResponseReferencedMetricsViews;
+  /** Paths of the canvas elements hidden from the caller, such as "rows.1", "rows.0.items.1" or "rows.3.tabs.0".
+The paths follow the canvas YAML. Only set when include_hidden is true. */
+  hiddenPaths?: string[];
 }
 
 export type V1ResolveComponentResponseRendererProperties = {

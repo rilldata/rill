@@ -84,6 +84,25 @@ export interface CanvasResponse {
   components: V1ResolveCanvasResponseResolvedComponents | undefined;
   metricsViews: Record<string, V1MetricsView | undefined>;
   filePath: string | undefined;
+  /** YAML paths of the canvas elements hidden from the current user, such as "rows.0.items.1". Only set for the editor. */
+  hiddenPaths?: string[];
+}
+
+/**
+ * The ResolveCanvas request for a canvas.
+ * The editor (allowUnvalidatedSpec) gets the full canvas, including the content hidden from the current user,
+ * because it maps canvas elements to their position in the YAML. Viewers get the canvas without that content.
+ * Use the same request everywhere a canvas is fetched so the queries share a cache entry.
+ */
+export function getResolveCanvasRequest(
+  canvasName: string,
+  allowUnvalidatedSpec: boolean,
+) {
+  return {
+    canvas: canvasName,
+    unsafe: allowUnvalidatedSpec,
+    includeHidden: allowUnvalidatedSpec,
+  };
 }
 
 export function useCanvas(
@@ -97,7 +116,7 @@ export function useCanvas(
 ): CreateQueryResult<CanvasResponse, ConnectError> {
   return createQueryServiceResolveCanvas(
     client,
-    { canvas: canvasName, unsafe: allowUnvalidatedSpec },
+    getResolveCanvasRequest(canvasName, allowUnvalidatedSpec),
     {
       query: {
         select: (data) => {
@@ -116,6 +135,7 @@ export function useCanvas(
             components: data.resolvedComponents,
             metricsViews,
             filePath: data.canvas?.meta?.filePaths?.[0],
+            hiddenPaths: data.hiddenPaths,
           };
         },
 

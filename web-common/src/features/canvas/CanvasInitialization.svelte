@@ -19,6 +19,7 @@
   } from "@rilldata/web-common/runtime-client";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { createQueryServiceResolveCanvas } from "@rilldata/web-common/runtime-client";
+  import { getResolveCanvasRequest } from "./selector";
   import { onDestroy } from "svelte";
   const PollIntervalWhenDashboardFirstReconciling = 1000;
   const PollIntervalWhenDashboardErrored = 5000;
@@ -56,7 +57,7 @@
   $: fetchedCanvasQuery = !existingStore
     ? createQueryServiceResolveCanvas(
         client,
-        { canvas: canvasName, unsafe: allowUnvalidatedSpec },
+        getResolveCanvasRequest(canvasName, allowUnvalidatedSpec),
         {
           query: {
             // Retry transient network failures only. A PermissionDenied or NotFound is terminal,
@@ -209,6 +210,7 @@
           components: fetchedCanvas?.resolvedComponents,
           metricsViews,
           filePath: fetchedCanvas?.canvas?.meta?.filePaths?.[0],
+          hiddenPaths: fetchedCanvas?.hiddenPaths,
         };
 
         const newStore = setCanvasStore(

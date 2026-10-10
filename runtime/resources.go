@@ -218,6 +218,9 @@ func (r *Runtime) ApplySecurityPolicy(ctx context.Context, instID string, claims
 	case *runtimev1.Resource_Explore:
 		// For explores, we need to remove fields excluded by the field access rules.
 		return r.applyExploreSecurity(res, security), true, nil
+	case *runtimev1.Resource_Canvas:
+		// For canvases, we need to remove the content hidden by `if` conditions.
+		return r.applyCanvasSecurity(res, security), true, nil
 	default:
 		// The resource can be returned as is.
 		return res, true, nil

@@ -472,7 +472,7 @@ func (t *AnalystAgent) getValidExploreAndMetricsView(ctx context.Context, explor
 func (t *AnalystAgent) getValidCanvasAndMetricsViews(ctx context.Context, canvasName string) (*runtimev1.Resource, map[string]*runtimev1.Resource, error) {
 	session := GetSession(ctx)
 
-	resolvedCanvas, err := t.Runtime.ResolveCanvas(ctx, session.InstanceID(), canvasName, session.Claims(), false)
+	resolvedCanvas, err := t.Runtime.ResolveCanvas(ctx, session.InstanceID(), canvasName, session.Claims(), &runtime.ResolveCanvasOptions{})
 	if err != nil {
 		return nil, nil, err
 	}

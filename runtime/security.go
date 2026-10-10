@@ -160,6 +160,9 @@ type ResolvedSecurity struct {
 	fieldAccess map[string]bool
 	rowFilter   string
 	queryFilter *runtimev1.Expression
+	// canvasConditions holds the results of a canvas's `if` conditions, keyed by condition.
+	// It's nil when security checks are skipped, in which case all of the canvas's content is visible.
+	canvasConditions map[string]bool
 }
 
 // CanAccess returns whether the resource can be accessed.
@@ -335,6 +338,19 @@ func (p *securityEngine) resolveSecurity(ctx context.Context, instanceID, enviro
 		res.fieldAccess = nil
 		res.rowFilter = ""
 		res.queryFilter = nil
+	}
+
+	// Evaluate the `if` conditions that decide which content of a canvas the claims can see.
+	// An inline canvas component inherits the conditions of its item, so a viewer who can't see the item can't access the component either.
+	if res.CanAccess() {
+		switch r.Meta.Name.Kind {
+		case ResourceKindCanvas:
+			res.canvasConditions = evaluateCanvasConditions(r, templateData)
+		case ResourceKindComponent:
+			if !componentConditionMet(r, templateData) {
+				res.access = new(bool)
+			}
+		}
 	}
 
 	p.cache.Add(cacheKey, res)

@@ -39,7 +39,7 @@ import {
   type CanvasEntity,
   type ComponentPath,
 } from "../../stores/canvas-entity";
-import { namePrefixFromPath } from "../../layout-util";
+import { getItemPropertiesExcept, namePrefixFromPath } from "../../layout-util";
 import type {
   ComponentCommonProperties,
   ComponentFilterProperties,
@@ -222,10 +222,14 @@ export abstract class BaseChart<
     this.parent.setSelectedComponent(newComponent.id);
     this.parent._rows.refresh();
 
-    // Preserve the width from the current chart
-    const width = parsedDocument.getIn([...parentPath, "width"]);
+    // Keep the item's other properties, such as its width and `if` condition
+    const itemProperties = getItemPropertiesExcept(
+      parsedDocument,
+      parentPath,
+      this.pathInYAML.at(-1),
+    );
 
-    parsedDocument.setIn(parentPath, { [key]: mergedSpec, width });
+    parsedDocument.setIn(parentPath, { [key]: mergedSpec, ...itemProperties });
 
     updateEditorContent(parsedDocument.toString(), false, true);
 

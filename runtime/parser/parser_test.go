@@ -2363,6 +2363,126 @@ rows:
 	require.Equal(t, "Deep Dive", tabs[1].DisplayName)
 }
 
+func TestCanvasConditions(t *testing.T) {
+	ctx := context.Background()
+	repo := makeRepo(t, map[string]string{
+		`rill.yaml`: ``,
+		`components/c1.yaml`: `
+type: component
+kpi:
+  metrics_view: foo
+`,
+		`canvases/d1.yaml`: `
+type: canvas
+rows:
+- if: '{{ has "finance" .user.groups }}'
+  items:
+  - if: '{{ .user.admin }}'
+    markdown:
+      content: "Admins in finance"
+  - component: c1
+    if: false
+- name: deep_dive
+  if: "'{{ .user.domain }}' = 'acme.com'"
+  tabs:
+  - label: Premium
+    if: '{{ eq .user.plan "premium" }}'
+    rows:
+    - items:
+      - markdown:
+          content: "Premium"
+  - label: Region
+    rows:
+    - if: '{{ .user.is_emea }}'
+      items:
+      - markdown:
+          content: "EMEA"
+`,
+	})
+
+	p, err := Parse(ctx, repo, "", "", "duckdb", true)
+	require.NoError(t, err)
+	require.Len(t, p.Errors, 0)
+
+	canvas := p.Resources[ResourceName{Kind: ResourceKindCanvas, Name: "d1"}].CanvasSpec
+	require.Equal(t, `{{ has "finance" .user.groups }}`, canvas.Rows[0].ConditionExpression)
+	require.Equal(t, `{{ .user.admin }}`, canvas.Rows[0].Items[0].ConditionExpression)
+	require.Equal(t, "false", canvas.Rows[0].Items[1].ConditionExpression)
+	require.Equal(t, `'{{ .user.domain }}' = 'acme.com'`, canvas.Rows[1].ConditionExpression)
+	tabs := canvas.Rows[1].TabGroup.Tabs
+	require.Equal(t, `{{ eq .user.plan "premium" }}`, tabs[0].ConditionExpression)
+	require.Equal(t, "", tabs[1].ConditionExpression)
+	// A condition on a custom attribute can't be evaluated at parse time, but its template is valid.
+	require.Equal(t, `{{ .user.is_emea }}`, tabs[1].Rows[0].ConditionExpression)
+
+	// Inline components inherit the conditions of their item and its ancestors.
+	component := func(name string) *runtimev1.ComponentSpec {
+		return p.Resources[ResourceName{Kind: ResourceKindComponent, Name: name}].ComponentSpec
+	}
+	require.Equal(t, `({{ has "finance" .user.groups }}) AND ({{ .user.admin }})`, component("d1--component-0-0").ConditionExpression)
+	require.Equal(t, `('{{ .user.domain }}' = 'acme.com') AND ({{ eq .user.plan "premium" }})`, component("d1--component-g1-t0-0-0").ConditionExpression)
+	require.Equal(t, `('{{ .user.domain }}' = 'acme.com') AND ({{ .user.is_emea }})`, component("d1--component-g1-t1-0-0").ConditionExpression)
+	// Components defined in their own file can be shared by canvases, so they don't inherit a canvas item's condition.
+	require.Equal(t, "", component("c1").ConditionExpression)
+}
+
+func TestCanvasConditionErrors(t *testing.T) {
+	ctx := context.Background()
+
+	cases := []struct {
+		name string
+		yaml string
+	}{
+		{
+			name: "invalid template on a row",
+			yaml: `
+type: canvas
+rows:
+- if: '{{ has "finance" .user.groups'
+  items:
+  - markdown:
+      content: "x"
+`,
+		},
+		{
+			name: "invalid expression on an item",
+			yaml: `
+type: canvas
+rows:
+- items:
+  - if: "'{{ .user.domain }}' = "
+    markdown:
+      content: "x"
+`,
+		},
+		{
+			name: "invalid template on a tab",
+			yaml: `
+type: canvas
+rows:
+- tabs:
+  - label: A
+    if: '{{ .user.plan'
+    rows: []
+`,
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			repo := makeRepo(t, map[string]string{
+				`rill.yaml`:        ``,
+				`canvases/d1.yaml`: tc.yaml,
+			})
+			p, err := Parse(ctx, repo, "", "", "duckdb", true)
+			require.NoError(t, err)
+			require.Len(t, p.Resources, 0)
+			require.Len(t, p.Errors, 1)
+			require.Contains(t, p.Errors[0].Message, "invalid 'if'")
+		})
+	}
+}
+
 func TestKindBackwardsCompatibility(t *testing.T) {
 	files := map[string]string{
 		// rill.yaml
