@@ -5218,13 +5218,6 @@ export class MCPServer extends Message$1<MCPServer> {
   displayName = "";
 
   /**
-   * URL of the server's MCP endpoint.
-   *
-   * @generated from field: string url = 3;
-   */
-  url = "";
-
-  /**
    * True if the server requires a per-user OAuth authorization.
    *
    * @generated from field: bool oauth = 4;
@@ -5269,7 +5262,6 @@ export class MCPServer extends Message$1<MCPServer> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "connector", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "display_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 3, name: "url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "oauth", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 5, name: "connected", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 6, name: "agents", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },

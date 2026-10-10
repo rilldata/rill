@@ -429,8 +429,10 @@ func TestPreregisteredOAuthClient(t *testing.T) {
 	require.Equal(t, 0, as.registerCall)
 	require.Equal(t, []string{"read"}, client.Scopes) // defaults to the scopes the server advertises
 	require.Equal(t, as.srv.URL+"/revoke", client.RevocationEndpoint)
-	require.True(t, client.Matches(ts.url(), "http://localhost:9009/mcp/oauth/callback"))
-	require.False(t, client.Matches(ts.url(), "http://other/cb"))
+	require.True(t, client.Matches(ts.url(), "http://localhost:9009/mcp/oauth/callback", ""))
+	require.True(t, client.Matches(ts.url(), "http://localhost:9009/mcp/oauth/callback", client.ClientID))
+	require.False(t, client.Matches(ts.url(), "http://localhost:9009/mcp/oauth/callback", "someone-else"))
+	require.False(t, client.Matches(ts.url(), "http://other/cb", ""))
 }
 
 func TestConfigValidation(t *testing.T) {

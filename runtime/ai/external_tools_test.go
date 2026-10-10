@@ -228,8 +228,16 @@ auth: oauth
 
 func TestExternalToolName(t *testing.T) {
 	require.Equal(t, "mcp__linear__search_issues", ai.ExternalToolName("linear", "search_issues"))
-	require.Equal(t, "mcp__my_server__get_item", ai.ExternalToolName("My-Server", "get.item"))
 	require.Equal(t, "mcp__linear__", ai.ExternalToolName("linear", ""))
+
+	// Names that change under sanitizing get a hash so they cannot collide with names that do not
+	lossy := ai.ExternalToolName("My-Server", "get.item")
+	require.Regexp(t, `^mcp__my_server__get_item_[0-9a-f]{8}$`, lossy)
+	require.NotEqual(t, lossy, ai.ExternalToolName("my_server", "get_item"))
+	require.NotEqual(t, ai.ExternalToolName("github", "search-users"), ai.ExternalToolName("github", "search_users"))
+	require.NotEqual(t, ai.ExternalToolName("a.b", "c"), ai.ExternalToolName("a", "b/c"))
+	require.NotEqual(t, ai.ExternalToolName("a__b", "c"), ai.ExternalToolName("a", "b__c"))
+	require.NotEqual(t, ai.ExternalToolName("srv", "Search"), ai.ExternalToolName("srv", "search"))
 	long := ai.ExternalToolName("a_very_long_connector_name_for_testing", "an_even_longer_tool_name_that_goes_past_the_limit_for_sure")
 	require.LessOrEqual(t, len(long), 64)
 	require.True(t, strings.HasPrefix(long, "mcp__a_very_long_connector_name_for_testing__"))

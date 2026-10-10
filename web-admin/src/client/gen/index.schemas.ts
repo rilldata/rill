@@ -703,6 +703,9 @@ export interface V1GetMCPOAuthTokenRequest {
   userId?: string;
   /** If true, the token is refreshed even if it has not expired yet (used after the server rejected the current token). */
   forceRefresh?: boolean;
+  /** URL of the MCP server the connector currently points to.
+A token is only returned if the user granted it for this server, so changing a connector's URL never sends an existing token to the new server. */
+  serverUrl?: string;
 }
 
 export interface V1GetMCPOAuthTokenResponse {

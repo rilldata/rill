@@ -241,9 +241,15 @@ func (r *Runner) discoverExternalServer(ctx context.Context, instanceID, environ
 		srv.DisplayName = srv.Connector
 	}
 	srv.Instructions, _ = props["ai_instructions"].(string)
-	srv.URL, _ = props["url"].(string)
 	auth, _ := props["auth"].(string)
 	srv.OAuth = auth == "oauth"
+	// The URL may be templated ({{ .env.MCP_URL }}); hosted tokens are bound to the resolved URL, so resolve it the way the driver does.
+	cfg, err := r.Runtime.ConnectorConfig(ctx, instanceID, srv.Connector)
+	if err != nil {
+		srv.Err = fmt.Errorf("failed to resolve the connector's configuration: %w", err)
+		return srv, nil
+	}
+	srv.URL, _ = cfg.Resolve()["url"].(string)
 
 	// Apply the connector's access policy: denied servers are invisible.
 	sec, err := r.Runtime.ResolveConnectorSecurity(ctx, instanceID, claims, res, nil)
@@ -266,7 +272,7 @@ func (r *Runner) discoverExternalServer(ctx context.Context, instanceID, environ
 
 	// Resolve the user's OAuth token in hosted deployments. Rill Developer keeps it in the connector's local state instead.
 	if srv.OAuth {
-		token, hosted, err := r.externalOAuthToken(ctx, instanceID, srv.Connector, claims.UserID, false)
+		token, hosted, err := r.externalOAuthToken(ctx, instanceID, srv, claims.UserID, false)
 		if err != nil {
 			if errors.Is(err, ctx.Err()) {
 				return nil, err
@@ -287,7 +293,7 @@ func (r *Runner) discoverExternalServer(ctx context.Context, instanceID, environ
 		UserAttributes: claims.UserAttributes,
 		OAuthToken:     srv.token,
 	}
-	tools, err := r.listExternalTools(ctx, instanceID, srv, opts)
+	tools, err := r.listExternalTools(ctx, instanceID, srv, claims.UserID, opts)
 	if err != nil {
 		if errors.Is(err, ctx.Err()) {
 			return nil, err
@@ -340,7 +346,7 @@ func externalServerPolicyError(ctx context.Context, srv *ExternalServer, claims 
 }
 
 // listExternalTools lists a server's tools, refreshing a rejected hosted token once.
-func (r *Runner) listExternalTools(ctx context.Context, instanceID string, srv *ExternalServer, opts *drivers.MCPCallOptions) ([]*drivers.MCPTool, error) {
+func (r *Runner) listExternalTools(ctx context.Context, instanceID string, srv *ExternalServer, userID string, opts *drivers.MCPCallOptions) ([]*drivers.MCPTool, error) {
 	handle, release, err := r.Runtime.AcquireHandle(ctx, instanceID, srv.Connector)
 	if err != nil {
 		return nil, err
@@ -352,7 +358,7 @@ func (r *Runner) listExternalTools(ctx context.Context, instanceID string, srv *
 	}
 	tools, err := svc.ListTools(ctx, opts)
 	if err != nil && errors.Is(err, drivers.ErrMCPAuthorizationRequired) && opts.OAuthToken != "" {
-		if token, err2 := r.refreshExternalOAuthToken(ctx, instanceID, srv); err2 == nil && token != "" {
+		if token, err2 := r.refreshExternalOAuthToken(ctx, instanceID, srv, userID); err2 == nil && token != "" {
 			opts.OAuthToken = token
 			tools, err = svc.ListTools(ctx, opts)
 		}
@@ -360,16 +366,17 @@ func (r *Runner) listExternalTools(ctx context.Context, instanceID string, srv *
 	return tools, err
 }
 
-// externalOAuthToken fetches the user's OAuth token for a connector from the admin service.
+// externalOAuthToken fetches the user's OAuth token for a server from the admin service.
+// The token is bound to the server URL it was granted for, so a connector whose URL changed gets no token until the user connects again.
 // hosted is false in Rill Developer, where tokens are persisted by the driver instead and the returned token is empty.
-func (r *Runner) externalOAuthToken(ctx context.Context, instanceID, connector, userID string, forceRefresh bool) (token string, hosted bool, err error) {
+func (r *Runner) externalOAuthToken(ctx context.Context, instanceID string, srv *ExternalServer, userID string, forceRefresh bool) (token string, hosted bool, err error) {
 	admin, release, err := r.Runtime.Admin(ctx, instanceID)
 	if err != nil {
 		// No admin connector: Rill Developer.
 		return "", false, nil
 	}
 	defer release()
-	tok, err := admin.GetMCPOAuthToken(ctx, connector, userID, forceRefresh)
+	tok, err := admin.GetMCPOAuthToken(ctx, srv.Connector, srv.URL, userID, forceRefresh)
 	if err != nil {
 		if errors.Is(err, drivers.ErrNotImplemented) {
 			return "", false, nil
@@ -377,19 +384,14 @@ func (r *Runner) externalOAuthToken(ctx context.Context, instanceID, connector, 
 		if errors.Is(err, drivers.ErrNotFound) {
 			return "", true, nil
 		}
-		return "", true, fmt.Errorf("failed to get the user's authorization for %q: %w", connector, err)
+		return "", true, fmt.Errorf("failed to get the user's authorization for %q: %w", srv.Connector, err)
 	}
 	return tok.AccessToken, true, nil
 }
 
 // refreshExternalOAuthToken force-refreshes the user's hosted token after the server rejected it.
-func (r *Runner) refreshExternalOAuthToken(ctx context.Context, instanceID string, srv *ExternalServer) (string, error) {
-	s := GetSession(ctx)
-	userID := ""
-	if s != nil {
-		userID = s.Claims().UserID
-	}
-	token, hosted, err := r.externalOAuthToken(ctx, instanceID, srv.Connector, userID, true)
+func (r *Runner) refreshExternalOAuthToken(ctx context.Context, instanceID string, srv *ExternalServer, userID string) (string, error) {
+	token, hosted, err := r.externalOAuthToken(ctx, instanceID, srv, userID, true)
 	if err != nil || !hosted {
 		return "", err
 	}
@@ -487,7 +489,7 @@ func (r *Runner) compileExternalTool(instanceID, environment string, vars map[st
 			res, err := svc.CallTool(ctx, toolName, args, opts)
 			if err != nil && errors.Is(err, drivers.ErrMCPAuthorizationRequired) && token != "" {
 				// The hosted token was rejected: refresh it once and retry.
-				if newToken, err2 := r.refreshExternalOAuthToken(ctx, instanceID, srv); err2 == nil && newToken != "" {
+				if newToken, err2 := r.refreshExternalOAuthToken(ctx, instanceID, srv, s.Claims().UserID); err2 == nil && newToken != "" {
 					opts.OAuthToken = newToken
 					res, err = svc.CallTool(ctx, toolName, args, opts)
 				}
@@ -536,20 +538,31 @@ func (s *Session) checkExternalCallBudget() error {
 }
 
 // ExternalToolName returns the prefixed name used for a tool of an external server.
-// Names are limited to the characters and length LLM providers accept; over-long names are shortened with a hash to stay unique.
+// Names are limited to the characters and length LLM providers accept.
+// Sanitizing is lossy ("get.item" and "get_item" both become "get_item"), so whenever either part changes under sanitizing,
+// or contains the "__" separator, a hash of the original identifiers is appended to keep distinct tools distinct.
+// Over-long names are shortened in front of the same hash.
 // With an empty tool, it returns the prefix shared by all of the server's tools.
 func ExternalToolName(connector, tool string) string {
-	name := ExternalToolPrefix + sanitizeToolName(connector) + "__"
+	sanitizedConnector := sanitizeToolName(connector)
+	name := ExternalToolPrefix + sanitizedConnector + "__"
 	if tool == "" {
 		return name
 	}
-	name += sanitizeToolName(tool)
-	if len(name) > maxToolNameLen {
-		sum := sha256.Sum256([]byte(connector + "/" + tool))
-		suffix := "_" + hex.EncodeToString(sum[:])[:8]
-		name = name[:maxToolNameLen-len(suffix)] + suffix
+	sanitizedTool := sanitizeToolName(tool)
+	name += sanitizedTool
+
+	lossy := sanitizedConnector != connector || sanitizedTool != tool || strings.Contains(connector, "__") || strings.Contains(tool, "__")
+	if !lossy && len(name) <= maxToolNameLen {
+		return name
 	}
-	return name
+	// The NUL separator makes the hash unambiguous for identifiers that themselves contain the separator.
+	sum := sha256.Sum256([]byte(connector + "\x00" + tool))
+	suffix := "_" + hex.EncodeToString(sum[:])[:8]
+	if len(name)+len(suffix) > maxToolNameLen {
+		name = name[:maxToolNameLen-len(suffix)]
+	}
+	return name + suffix
 }
 
 // sanitizeToolName lowercases a name and replaces characters LLM providers do not accept in tool names.

@@ -86,18 +86,23 @@ func isPrivateHost(host string) bool {
 // newHTTPClient returns a client for metadata and OAuth requests that follows redirects only within the same origin.
 func newHTTPClient(transport http.RoundTripper, timeout time.Duration) *http.Client {
 	return &http.Client{
-		Transport: transport,
-		Timeout:   timeout,
-		CheckRedirect: func(req *http.Request, via []*http.Request) error {
-			if len(via) >= 5 {
-				return errors.New("stopped after 5 redirects")
-			}
-			if !sameOrigin(req.URL, via[0].URL) {
-				return fmt.Errorf("refusing to follow redirect to a different origin: %s", req.URL.Redacted())
-			}
-			return nil
-		},
+		Transport:     transport,
+		Timeout:       timeout,
+		CheckRedirect: checkSameOriginRedirect,
 	}
+}
+
+// checkSameOriginRedirect is an http.Client redirect policy that follows at most 5 redirects, all within the origin of the original request.
+// Every client that carries the connector's headers or a bearer token must use it: authRoundTripper re-injects credentials on every hop,
+// so a redirect to another host would otherwise receive them.
+func checkSameOriginRedirect(req *http.Request, via []*http.Request) error {
+	if len(via) >= 5 {
+		return errors.New("stopped after 5 redirects")
+	}
+	if !sameOrigin(req.URL, via[0].URL) {
+		return fmt.Errorf("refusing to follow redirect to a different origin: %s", req.URL.Redacted())
+	}
+	return nil
 }
 
 // sameOrigin returns true if both URLs share scheme, host and port.

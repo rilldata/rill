@@ -6491,9 +6491,6 @@ definitions:
       displayName:
         type: string
         description: Human-friendly name of the server.
-      url:
-        type: string
-        description: URL of the server's MCP endpoint.
       oauth:
         type: boolean
         description: True if the server requires a per-user OAuth authorization.

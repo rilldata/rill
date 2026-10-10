@@ -12488,8 +12488,6 @@ func (m *MCPServer) validate(all bool) error {
 
 	// no validation rules for DisplayName
 
-	// no validation rules for Url
-
 	// no validation rules for Oauth
 
 	// no validation rules for Connected

@@ -1266,8 +1266,6 @@ message MCPServer {
   string connector = 1;
   // Human-friendly name of the server.
   string display_name = 2;
-  // URL of the server's MCP endpoint.
-  string url = 3;
   // True if the server requires a per-user OAuth authorization.
   bool oauth = 4;
   // True if the current user is authorized to use the server (always true for servers that don't use OAuth).

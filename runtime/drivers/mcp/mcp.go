@@ -566,7 +566,7 @@ func (h *handle) session(ctx context.Context, creds *credentials) (*cachedSessio
 	client := gomcp.NewClient(&gomcp.Implementation{Name: clientName, Version: clientVersion}, nil)
 	transport := &gomcp.StreamableClientTransport{
 		Endpoint:             h.config.URL,
-		HTTPClient:           &http.Client{Transport: rt},
+		HTTPClient:           &http.Client{Transport: rt, CheckRedirect: checkSameOriginRedirect},
 		MaxRetries:           1,
 		DisableStandaloneSSE: true,
 	}

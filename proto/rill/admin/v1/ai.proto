@@ -66,6 +66,9 @@ message GetMCPOAuthTokenRequest {
   string user_id = 2;
   // If true, the token is refreshed even if it has not expired yet (used after the server rejected the current token).
   bool force_refresh = 3;
+  // URL of the MCP server the connector currently points to.
+  // A token is only returned if the user granted it for this server, so changing a connector's URL never sends an existing token to the new server.
+  string server_url = 4;
 }
 
 // Response message for AIService.GetMCPOAuthToken

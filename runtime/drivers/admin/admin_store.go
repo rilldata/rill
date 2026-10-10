@@ -188,9 +188,10 @@ func groupVariablesByEnv(variables []*adminv1.ProjectVariable) map[string]map[st
 }
 
 // GetMCPOAuthToken implements drivers.AdminService.
-func (h *Handle) GetMCPOAuthToken(ctx context.Context, connector, userID string, forceRefresh bool) (*drivers.MCPOAuthToken, error) {
+func (h *Handle) GetMCPOAuthToken(ctx context.Context, connector, serverURL, userID string, forceRefresh bool) (*drivers.MCPOAuthToken, error) {
 	res, err := h.admin.GetMCPOAuthToken(ctx, &adminv1.GetMCPOAuthTokenRequest{
 		Connector:    connector,
+		ServerUrl:    serverURL,
 		UserId:       userID,
 		ForceRefresh: forceRefresh,
 	})

@@ -16,8 +16,9 @@ type AdminService interface {
 	ListDeployments(ctx context.Context) ([]*Deployment, error)
 	UpdateProjectVariables(ctx context.Context, environment string, variables map[string]string) error
 	// GetMCPOAuthToken returns a user's OAuth access token for an external MCP connector, refreshing it first if it is about to expire.
+	// serverURL is the server the connector currently points to; a token granted for a different server is reported as not found.
 	// It returns ErrNotFound if the user has not authorized the connector.
-	GetMCPOAuthToken(ctx context.Context, connector, userID string, forceRefresh bool) (*MCPOAuthToken, error)
+	GetMCPOAuthToken(ctx context.Context, connector, serverURL, userID string, forceRefresh bool) (*MCPOAuthToken, error)
 	// DeleteMCPOAuthToken removes a user's OAuth authorization for an external MCP connector.
 	DeleteMCPOAuthToken(ctx context.Context, connector, userID string) error
 }

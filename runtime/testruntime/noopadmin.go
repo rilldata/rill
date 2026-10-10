@@ -46,7 +46,7 @@ func (n *noopAdminService) UpdateProjectVariables(ctx context.Context, environme
 	return drivers.ErrNotImplemented
 }
 
-func (n *noopAdminService) GetMCPOAuthToken(ctx context.Context, connector, userID string, forceRefresh bool) (*drivers.MCPOAuthToken, error) {
+func (n *noopAdminService) GetMCPOAuthToken(ctx context.Context, connector, serverURL, userID string, forceRefresh bool) (*drivers.MCPOAuthToken, error) {
 	return nil, drivers.ErrNotImplemented
 }
 

@@ -160,6 +160,14 @@ export class GetMCPOAuthTokenRequest extends Message<GetMCPOAuthTokenRequest> {
    */
   forceRefresh = false;
 
+  /**
+   * URL of the MCP server the connector currently points to.
+   * A token is only returned if the user granted it for this server, so changing a connector's URL never sends an existing token to the new server.
+   *
+   * @generated from field: string server_url = 4;
+   */
+  serverUrl = "";
+
   constructor(data?: PartialMessage<GetMCPOAuthTokenRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -171,6 +179,7 @@ export class GetMCPOAuthTokenRequest extends Message<GetMCPOAuthTokenRequest> {
     { no: 1, name: "connector", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "user_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "force_refresh", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 4, name: "server_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetMCPOAuthTokenRequest {

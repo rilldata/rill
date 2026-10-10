@@ -4289,9 +4289,22 @@ func dedupeAndSortResourceNames(resources []database.ResourceName) []database.Re
 	return deduped
 }
 
-func (c *connection) FindMCPOAuthClient(ctx context.Context, projectID, connector string) (*database.MCPOAuthClient, error) {
+func (c *connection) FindMCPOAuthClient(ctx context.Context, projectID, connector, serverURL string) (*database.MCPOAuthClient, error) {
 	res := &database.MCPOAuthClient{}
-	err := c.getDB(ctx).QueryRowxContext(ctx, "SELECT * FROM mcp_oauth_clients WHERE project_id=$1 AND connector=$2", projectID, connector).StructScan(res)
+	err := c.getDB(ctx).QueryRowxContext(ctx, "SELECT * FROM mcp_oauth_clients WHERE project_id=$1 AND connector=$2 AND server_url=$3", projectID, connector, serverURL).StructScan(res)
+	if err != nil {
+		return nil, parseErr("mcp oauth client", err)
+	}
+	err = c.decryptMCPOAuthClient(res)
+	if err != nil {
+		return nil, err
+	}
+	return res, nil
+}
+
+func (c *connection) FindMCPOAuthClientByID(ctx context.Context, id string) (*database.MCPOAuthClient, error) {
+	res := &database.MCPOAuthClient{}
+	err := c.getDB(ctx).QueryRowxContext(ctx, "SELECT * FROM mcp_oauth_clients WHERE id=$1", id).StructScan(res)
 	if err != nil {
 		return nil, parseErr("mcp oauth client", err)
 	}
@@ -4312,14 +4325,14 @@ func (c *connection) UpsertMCPOAuthClient(ctx context.Context, opts *database.Up
 	}
 	res := &database.MCPOAuthClient{}
 	err = c.getDB(ctx).QueryRowxContext(ctx, `
-		INSERT INTO mcp_oauth_clients (project_id, connector, client, client_encryption_key_id)
-		VALUES ($1, $2, $3, $4)
-		ON CONFLICT (project_id, connector) DO UPDATE SET
+		INSERT INTO mcp_oauth_clients (project_id, connector, server_url, client, client_encryption_key_id)
+		VALUES ($1, $2, $3, $4, $5)
+		ON CONFLICT (project_id, connector, server_url) DO UPDATE SET
 			client = EXCLUDED.client,
 			client_encryption_key_id = EXCLUDED.client_encryption_key_id,
 			updated_on = now()
 		RETURNING *`,
-		opts.ProjectID, opts.Connector, value, keyID,
+		opts.ProjectID, opts.Connector, opts.ServerURL, value, keyID,
 	).StructScan(res)
 	if err != nil {
 		return nil, parseErr("mcp oauth client", err)
@@ -4338,6 +4351,18 @@ func (c *connection) decryptMCPOAuthClient(res *database.MCPOAuthClient) error {
 	}
 	res.Client = client
 	res.ClientEncryptionKeyID = ""
+	return nil
+}
+
+func (c *connection) AcquireMCPOAuthTokenLock(ctx context.Context, projectID, connector, userID string) error {
+	if txFromContext(ctx) == nil {
+		return errors.New("postgres: AcquireMCPOAuthTokenLock must be called within a transaction")
+	}
+	// A transaction-scoped advisory lock: released automatically at commit or rollback, and visible to every admin process sharing the database.
+	_, err := c.getDB(ctx).ExecContext(ctx, "SELECT pg_advisory_xact_lock(hashtext($1))", projectID+"/"+connector+"/"+userID)
+	if err != nil {
+		return parseErr("mcp oauth token", err)
+	}
 	return nil
 }
 
@@ -4364,14 +4389,15 @@ func (c *connection) UpsertMCPOAuthToken(ctx context.Context, opts *database.Ups
 	}
 	res := &database.MCPOAuthToken{}
 	err = c.getDB(ctx).QueryRowxContext(ctx, `
-		INSERT INTO mcp_oauth_tokens (project_id, connector, user_id, token, token_encryption_key_id)
-		VALUES ($1, $2, $3, $4, $5)
+		INSERT INTO mcp_oauth_tokens (project_id, connector, user_id, oauth_client_id, token, token_encryption_key_id)
+		VALUES ($1, $2, $3, $4, $5, $6)
 		ON CONFLICT (project_id, connector, user_id) DO UPDATE SET
+			oauth_client_id = EXCLUDED.oauth_client_id,
 			token = EXCLUDED.token,
 			token_encryption_key_id = EXCLUDED.token_encryption_key_id,
 			updated_on = now()
 		RETURNING *`,
-		opts.ProjectID, opts.Connector, opts.UserID, value, keyID,
+		opts.ProjectID, opts.Connector, opts.UserID, opts.OAuthClientID, value, keyID,
 	).StructScan(res)
 	if err != nil {
 		return nil, parseErr("mcp oauth token", err)

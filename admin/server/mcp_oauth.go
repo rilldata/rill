@@ -36,8 +36,6 @@ const (
 	mcpOAuthCookieName = "mcp_oauth"
 	// mcpOAuthFlowTTL is how long a pending authorization flow stays valid.
 	mcpOAuthFlowTTL = 15 * time.Minute
-	// mcpOAuthTokenRefreshLeeway is how long before expiry a token is refreshed when a runtime asks for it.
-	mcpOAuthTokenRefreshLeeway = 60 * time.Second
 	// mcpOAuthHTTPTimeout bounds discovery and token requests to authorization servers.
 	mcpOAuthHTTPTimeout = 15 * time.Second
 )
@@ -49,9 +47,11 @@ type mcpOAuthFlow struct {
 	Project     string `json:"project"`
 	Connector   string `json:"connector"`
 	DisplayName string `json:"display_name"`
-	Verifier    string `json:"verifier"`
-	Redirect    string `json:"redirect"`
-	Expires     int64  `json:"expires"`
+	// OAuthClientID is the database ID of the MCPOAuthClient the authorization was started with; the callback completes it with the same client.
+	OAuthClientID string `json:"oauth_client_id"`
+	Verifier      string `json:"verifier"`
+	Redirect      string `json:"redirect"`
+	Expires       int64  `json:"expires"`
 }
 
 // registerMCPOAuthEndpoints registers the browser-facing endpoints for authorizing external MCP servers.
@@ -108,7 +108,7 @@ func (s *Server) mcpOAuthConnect(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	oauthClient, err := s.mcpOAuthClient(ctx, proj, connector, cfg)
+	clientRow, oauthClient, err := s.mcpOAuthClient(ctx, proj, connector, cfg)
 	if err != nil {
 		s.logger.Warn("failed to prepare MCP OAuth client", zap.String("project_id", proj.ID), zap.String("connector", connector), zap.Error(err), observability.ZapCtx(ctx))
 		writeMCPOAuthError(w, err)
@@ -123,14 +123,15 @@ func (s *Server) mcpOAuthConnect(w http.ResponseWriter, r *http.Request) {
 	verifier := mcp.GenerateOAuthVerifier()
 
 	flow := &mcpOAuthFlow{
-		State:       state,
-		Org:         orgName,
-		Project:     projectName,
-		Connector:   connector,
-		DisplayName: server.DisplayName,
-		Verifier:    verifier,
-		Redirect:    redirect,
-		Expires:     time.Now().Add(mcpOAuthFlowTTL).Unix(),
+		State:         state,
+		Org:           orgName,
+		Project:       projectName,
+		Connector:     connector,
+		DisplayName:   server.DisplayName,
+		OAuthClientID: clientRow.ID,
+		Verifier:      verifier,
+		Redirect:      redirect,
+		Expires:       time.Now().Add(mcpOAuthFlowTTL).Unix(),
 	}
 	flowJSON, err := json.Marshal(flow)
 	if err != nil {
@@ -197,13 +198,13 @@ func (s *Server) mcpOAuthCallback(w http.ResponseWriter, r *http.Request) {
 		render(fmt.Sprintf("project not found: %s", err))
 		return
 	}
-	row, err := s.admin.DB.FindMCPOAuthClient(ctx, proj.ID, flow.Connector)
-	if err != nil {
-		render("no OAuth client is registered for the server; start the flow again")
+	clientRow, err := s.admin.DB.FindMCPOAuthClientByID(ctx, flow.OAuthClientID)
+	if err != nil || clientRow.ProjectID != proj.ID || clientRow.Connector != flow.Connector {
+		render("the OAuth client the flow was started with no longer exists; start the flow again")
 		return
 	}
 	oauthClient := &mcp.OAuthClient{}
-	if err := json.Unmarshal(row.Client, oauthClient); err != nil {
+	if err := json.Unmarshal(clientRow.Client, oauthClient); err != nil {
 		render("the registered OAuth client is invalid; start the flow again")
 		return
 	}
@@ -219,11 +220,15 @@ func (s *Server) mcpOAuthCallback(w http.ResponseWriter, r *http.Request) {
 		render("failed to encode token")
 		return
 	}
-	_, err = s.admin.DB.UpsertMCPOAuthToken(ctx, &database.UpsertMCPOAuthTokenOptions{
-		ProjectID: proj.ID,
-		Connector: flow.Connector,
-		UserID:    claims.OwnerID(),
-		Token:     tokJSON,
+	err = s.mcpOAuthWithTokenLock(ctx, proj.ID, flow.Connector, claims.OwnerID(), func(ctx context.Context) error {
+		_, err := s.admin.DB.UpsertMCPOAuthToken(ctx, &database.UpsertMCPOAuthTokenOptions{
+			ProjectID:     proj.ID,
+			Connector:     flow.Connector,
+			UserID:        claims.OwnerID(),
+			OAuthClientID: clientRow.ID,
+			Token:         tokJSON,
+		})
+		return err
 	})
 	if err != nil {
 		render(fmt.Sprintf("failed to store token: %s", err))
@@ -245,55 +250,68 @@ func (s *Server) GetMCPOAuthToken(ctx context.Context, req *adminv1.GetMCPOAuthT
 	if err != nil {
 		return nil, err
 	}
-	if req.Connector == "" || req.UserId == "" {
-		return nil, status.Error(codes.InvalidArgument, "connector and user_id are required")
+	if req.Connector == "" || req.UserId == "" || req.ServerUrl == "" {
+		return nil, status.Error(codes.InvalidArgument, "connector, server_url and user_id are required")
 	}
 
-	row, err := s.admin.DB.FindMCPOAuthToken(ctx, depl.ProjectID, req.Connector, req.UserId)
-	if err != nil {
-		if errors.Is(err, database.ErrNotFound) {
-			return nil, status.Error(codes.NotFound, "the user has not authorized the connector")
-		}
-		return nil, err
-	}
-	tok := &oauth2.Token{}
-	if err := json.Unmarshal(row.Token, tok); err != nil {
-		return nil, fmt.Errorf("stored token is invalid: %w", err)
-	}
-
-	expiring := !tok.Expiry.IsZero() && time.Until(tok.Expiry) < mcpOAuthTokenRefreshLeeway
-	if req.ForceRefresh || expiring {
-		clientRow, err := s.admin.DB.FindMCPOAuthClient(ctx, depl.ProjectID, req.Connector)
+	var tok *oauth2.Token
+	err = s.mcpOAuthWithTokenLock(ctx, depl.ProjectID, req.Connector, req.UserId, func(ctx context.Context) error {
+		row, err := s.admin.DB.FindMCPOAuthToken(ctx, depl.ProjectID, req.Connector, req.UserId)
 		if err != nil {
-			return nil, fmt.Errorf("failed to find the connector's OAuth client: %w", err)
+			if errors.Is(err, database.ErrNotFound) {
+				return status.Error(codes.NotFound, "the user has not authorized the connector")
+			}
+			return err
 		}
+		// The token is only ever used through the client that obtained it, and only for the server that client was discovered for.
+		clientRow, err := s.admin.DB.FindMCPOAuthClientByID(ctx, row.OAuthClientID)
+		if err != nil {
+			return fmt.Errorf("failed to find the OAuth client the token belongs to: %w", err)
+		}
+		if clientRow.ServerURL != req.ServerUrl {
+			// The connector points at a different server than the one the user authorized; never send the token there.
+			return status.Error(codes.NotFound, "the user has not authorized the connector's current server")
+		}
+		tok = &oauth2.Token{}
+		if err := json.Unmarshal(row.Token, tok); err != nil {
+			return fmt.Errorf("stored token is invalid: %w", err)
+		}
+		if !req.ForceRefresh && !mcp.TokenExpiring(tok) {
+			return nil
+		}
+
 		oauthClient := &mcp.OAuthClient{}
 		if err := json.Unmarshal(clientRow.Client, oauthClient); err != nil {
-			return nil, fmt.Errorf("stored OAuth client is invalid: %w", err)
+			return fmt.Errorf("stored OAuth client is invalid: %w", err)
 		}
 		newTok, err := oauthClient.Refresh(ctx, tok, mcp.NewHTTPClient(false, mcpOAuthHTTPTimeout))
 		if err != nil {
 			if errors.Is(err, drivers.ErrMCPAuthorizationRequired) {
 				// The authorization is gone for good; forget it so the user is asked to connect again.
 				_ = s.admin.DB.DeleteMCPOAuthToken(ctx, depl.ProjectID, req.Connector, req.UserId)
-				return nil, status.Error(codes.NotFound, "the user's authorization has expired")
+				return status.Error(codes.NotFound, "the user's authorization has expired")
 			}
-			return nil, fmt.Errorf("failed to refresh token: %w", err)
+			return fmt.Errorf("failed to refresh token: %w", err)
 		}
 		tokJSON, err := json.Marshal(newTok)
 		if err != nil {
-			return nil, err
+			return err
 		}
 		_, err = s.admin.DB.UpsertMCPOAuthToken(ctx, &database.UpsertMCPOAuthTokenOptions{
-			ProjectID: depl.ProjectID,
-			Connector: req.Connector,
-			UserID:    req.UserId,
-			Token:     tokJSON,
+			ProjectID:     depl.ProjectID,
+			Connector:     req.Connector,
+			UserID:        req.UserId,
+			OAuthClientID: clientRow.ID,
+			Token:         tokJSON,
 		})
 		if err != nil {
-			return nil, fmt.Errorf("failed to store refreshed token: %w", err)
+			return fmt.Errorf("failed to store refreshed token: %w", err)
 		}
 		tok = newTok
+		return nil
+	})
+	if err != nil {
+		return nil, err
 	}
 
 	res := &adminv1.GetMCPOAuthTokenResponse{AccessToken: tok.AccessToken}
@@ -318,32 +336,59 @@ func (s *Server) DeleteMCPOAuthToken(ctx context.Context, req *adminv1.DeleteMCP
 		return nil, status.Error(codes.InvalidArgument, "connector and user_id are required")
 	}
 
-	row, err := s.admin.DB.FindMCPOAuthToken(ctx, depl.ProjectID, req.Connector, req.UserId)
-	if err != nil {
-		if errors.Is(err, database.ErrNotFound) {
-			return &adminv1.DeleteMCPOAuthTokenResponse{}, nil
+	err = s.mcpOAuthWithTokenLock(ctx, depl.ProjectID, req.Connector, req.UserId, func(ctx context.Context) error {
+		row, err := s.admin.DB.FindMCPOAuthToken(ctx, depl.ProjectID, req.Connector, req.UserId)
+		if err != nil {
+			if errors.Is(err, database.ErrNotFound) {
+				return nil
+			}
+			return err
 		}
-		return nil, err
-	}
 
-	// Best-effort revocation at the authorization server
-	tok := &oauth2.Token{}
-	if json.Unmarshal(row.Token, tok) == nil {
-		if clientRow, err := s.admin.DB.FindMCPOAuthClient(ctx, depl.ProjectID, req.Connector); err == nil {
-			oauthClient := &mcp.OAuthClient{}
-			if json.Unmarshal(clientRow.Client, oauthClient) == nil {
-				if err := oauthClient.Revoke(ctx, tok, mcp.NewHTTPClient(false, mcpOAuthHTTPTimeout)); err != nil {
-					s.logger.Info("failed to revoke MCP OAuth token", zap.String("connector", req.Connector), zap.Error(err), observability.ZapCtx(ctx))
+		// Best-effort revocation at the authorization server, through the client that obtained the token
+		tok := &oauth2.Token{}
+		if json.Unmarshal(row.Token, tok) == nil {
+			if clientRow, err := s.admin.DB.FindMCPOAuthClientByID(ctx, row.OAuthClientID); err == nil {
+				oauthClient := &mcp.OAuthClient{}
+				if json.Unmarshal(clientRow.Client, oauthClient) == nil {
+					if err := oauthClient.Revoke(ctx, tok, mcp.NewHTTPClient(false, mcpOAuthHTTPTimeout)); err != nil {
+						s.logger.Info("failed to revoke MCP OAuth token", zap.String("connector", req.Connector), zap.Error(err), observability.ZapCtx(ctx))
+					}
 				}
 			}
 		}
-	}
 
-	err = s.admin.DB.DeleteMCPOAuthToken(ctx, depl.ProjectID, req.Connector, req.UserId)
-	if err != nil && !errors.Is(err, database.ErrNotFound) {
+		err = s.admin.DB.DeleteMCPOAuthToken(ctx, depl.ProjectID, req.Connector, req.UserId)
+		if err != nil && !errors.Is(err, database.ErrNotFound) {
+			return err
+		}
+		return nil
+	})
+	if err != nil {
 		return nil, err
 	}
 	return &adminv1.DeleteMCPOAuthTokenResponse{}, nil
+}
+
+// mcpOAuthWithTokenLock runs fn in a transaction that holds the lock on a user's token for a connector.
+// Every read-modify-write of a token (refresh, disconnect, a completed authorization) goes through it,
+// so a refresh can never resurrect a token that a disconnect deleted, and two refreshes never race on a rotating refresh token.
+// The lock lives in the database, so it also covers multiple admin processes.
+func (s *Server) mcpOAuthWithTokenLock(ctx context.Context, projectID, connector, userID string, fn func(ctx context.Context) error) error {
+	ctx, tx, err := s.admin.DB.NewTx(ctx, false)
+	if err != nil {
+		return err
+	}
+	defer func() { _ = tx.Rollback() }()
+	err = s.admin.DB.AcquireMCPOAuthTokenLock(ctx, projectID, connector, userID)
+	if err != nil {
+		return err
+	}
+	err = fn(ctx)
+	if err != nil {
+		return err
+	}
+	return tx.Commit()
 }
 
 // mcpOAuthValidateRedirect checks that a return URL points back to Rill: a relative path, the admin or frontend hosts,
@@ -516,17 +561,17 @@ func (s *Server) mcpOAuthConnectorConfig(ctx context.Context, depl *database.Dep
 
 // mcpOAuthClient returns the project's OAuth client for the connector, discovering and registering one if there is none
 // or the stored one no longer matches the connector's configuration.
-func (s *Server) mcpOAuthClient(ctx context.Context, proj *database.Project, connector string, cfg *mcpOAuthConnectorConfig) (*mcp.OAuthClient, error) {
+func (s *Server) mcpOAuthClient(ctx context.Context, proj *database.Project, connector string, cfg *mcpOAuthConnectorConfig) (*database.MCPOAuthClient, *mcp.OAuthClient, error) {
 	redirectURL := s.admin.URLs.MCPOAuthCallback()
 
-	row, err := s.admin.DB.FindMCPOAuthClient(ctx, proj.ID, connector)
+	row, err := s.admin.DB.FindMCPOAuthClient(ctx, proj.ID, connector, cfg.URL)
 	if err != nil && !errors.Is(err, database.ErrNotFound) {
-		return nil, err
+		return nil, nil, err
 	}
 	if err == nil {
 		existing := &mcp.OAuthClient{}
-		if json.Unmarshal(row.Client, existing) == nil && existing.Matches(cfg.URL, redirectURL) && (cfg.ClientID == "" || existing.ClientID == cfg.ClientID) {
-			return existing, nil
+		if json.Unmarshal(row.Client, existing) == nil && existing.Matches(cfg.URL, redirectURL, cfg.ClientID) {
+			return row, existing, nil
 		}
 	}
 
@@ -539,21 +584,22 @@ func (s *Server) mcpOAuthClient(ctx context.Context, proj *database.Project, con
 		HTTPClient:   mcp.NewHTTPClient(false, mcpOAuthHTTPTimeout),
 	})
 	if err != nil {
-		return nil, mcpOAuthHTTPError{status: http.StatusBadGateway, msg: err.Error()}
+		return nil, nil, mcpOAuthHTTPError{status: http.StatusBadGateway, msg: err.Error()}
 	}
 	clientJSON, err := json.Marshal(oauthClient)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
-	_, err = s.admin.DB.UpsertMCPOAuthClient(ctx, &database.UpsertMCPOAuthClientOptions{
+	row, err = s.admin.DB.UpsertMCPOAuthClient(ctx, &database.UpsertMCPOAuthClientOptions{
 		ProjectID: proj.ID,
 		Connector: connector,
+		ServerURL: oauthClient.ServerURL,
 		Client:    clientJSON,
 	})
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
-	return oauthClient, nil
+	return row, oauthClient, nil
 }
 
 // mcpOAuthHTTPError is an error with an HTTP status for the browser-facing handlers.

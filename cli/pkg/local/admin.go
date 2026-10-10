@@ -161,7 +161,7 @@ func (l *localAdminService) UpdateProjectVariables(ctx context.Context, environm
 
 // GetMCPOAuthToken implements drivers.AdminService.
 // Rill Developer keeps OAuth tokens for MCP servers in the connector's local data dir, not in Rill Cloud, so the runtime never asks for them here.
-func (l *localAdminService) GetMCPOAuthToken(ctx context.Context, connector, userID string, forceRefresh bool) (*drivers.MCPOAuthToken, error) {
+func (l *localAdminService) GetMCPOAuthToken(ctx context.Context, connector, serverURL, userID string, forceRefresh bool) (*drivers.MCPOAuthToken, error) {
 	return nil, drivers.ErrNotImplemented
 }
 

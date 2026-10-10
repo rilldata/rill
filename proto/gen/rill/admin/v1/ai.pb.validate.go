@@ -370,6 +370,8 @@ func (m *GetMCPOAuthTokenRequest) validate(all bool) error {
 
 	// no validation rules for ForceRefresh
 
+	// no validation rules for ServerUrl
+
 	if len(errors) > 0 {
 		return GetMCPOAuthTokenRequestMultiError(errors)
 	}

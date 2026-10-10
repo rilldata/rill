@@ -15,6 +15,7 @@
     invalidateMcpServers,
     openMcpConnectPopup,
   } from "../../../connect/mcp-servers";
+  import type { Block } from "../block-transform";
   import type { Conversation } from "../../conversation";
   import type { ChatConfig } from "../../types";
   import type { McpAuthRequiredBlock } from "./mcp-auth-required-block";
@@ -30,15 +31,24 @@
   let connecting = false;
   let error: string | null = null;
 
-  // Whether this card is the latest turn of the conversation, in which case a successful
-  // connection resumes the conversation automatically.
+  // Whether this card belongs to the latest turn of the conversation, i.e. no user message follows it.
+  // The assistant usually answers after the failed call, so the card is rarely the final block;
+  // it still offers to connect and resume until the user moves on to another question.
   $: blocksStore = conversation.getBlocks();
-  $: isLatest = $blocksStore[$blocksStore.length - 1]?.id === block.id;
+  $: isLatestTurn = isInLatestTurn($blocksStore, block.id);
   $: isStreaming = conversation.isStreaming;
   $: server = ($serversQuery.data ?? []).find(
     (s) => s.connector === block.connector,
   );
   $: alreadyConnected = !!server?.connected;
+
+  function isInLatestTurn(blocks: Block[], id: string): boolean {
+    const index = blocks.findIndex((b) => b.id === id);
+    if (index === -1) return false;
+    return !blocks
+      .slice(index + 1)
+      .some((b) => b.type === "text" && b.message.role === "user");
+  }
 
   async function connect() {
     if (!connectContext) return;
@@ -97,7 +107,7 @@
     {#if error}
       <p class="mcp-auth-error">{error}</p>
     {/if}
-    {#if isLatest}
+    {#if isLatestTurn}
       <div class="mcp-auth-actions">
         {#if alreadyConnected}
           <Button type="primary" small onClick={resume} disabled={$isStreaming}>

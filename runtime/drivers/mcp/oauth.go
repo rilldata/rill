@@ -183,8 +183,14 @@ func clientAuthStyle(supported []string) string {
 }
 
 // Matches reports whether the client is still valid for the given server URL and redirect URL.
-func (c *OAuthClient) Matches(serverURL, redirectURL string) bool {
-	return c != nil && c.ServerURL == serverURL && c.RedirectURL == redirectURL
+func (c *OAuthClient) Matches(serverURL, redirectURL, clientID string) bool {
+	return c != nil && c.ServerURL == serverURL && c.RedirectURL == redirectURL && (clientID == "" || c.ClientID == clientID)
+}
+
+// TokenExpiring reports whether a token should be refreshed before use: it has an expiry, and that expiry is less than tokenRefreshLeeway away.
+// Rill Developer (local file) and Rill Cloud (admin database) both decide refreshes with it, so they cannot drift.
+func TokenExpiring(tok *oauth2.Token) bool {
+	return !tok.Expiry.IsZero() && time.Until(tok.Expiry) < tokenRefreshLeeway
 }
 
 // AuthCodeURL returns the URL to send the user's browser to.
@@ -673,7 +679,7 @@ func (l *localOAuth) accessToken(ctx context.Context, forceRefresh bool) (string
 		return "", drivers.ErrMCPAuthorizationRequired
 	}
 	tok := state.Token
-	expiring := !tok.Expiry.IsZero() && time.Until(tok.Expiry) < tokenRefreshLeeway
+	expiring := TokenExpiring(tok)
 	if !forceRefresh && !expiring {
 		return tok.AccessToken, nil
 	}
@@ -752,7 +758,7 @@ func (h *handle) BeginOAuth(ctx context.Context, redirectURL, state string) (str
 		return "", "", err
 	}
 	var client *OAuthClient
-	if existing != nil && existing.Client.Matches(h.config.URL, redirectURL) && (h.config.OAuthClientID == "" || existing.Client.ClientID == h.config.OAuthClientID) {
+	if existing != nil && existing.Client.Matches(h.config.URL, redirectURL, h.config.OAuthClientID) {
 		client = existing.Client
 	} else {
 		opts := h.OAuthClientOptions()
