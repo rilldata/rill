@@ -25,7 +25,7 @@ ai_instructions: >
 auth: oauth
 ```
 
-The connector appears in Rill Developer with a side panel that shows the server's status and tools. In the chat, the plug icon lists the project's external servers, and the agents are told about each server's display name and instructions.
+The connector appears in Rill Developer with a side panel that shows the server's status and the tools it exposes to you. In the chat, the plug icon (**External tools**) lists the project's external servers, and the agents are told about each server's display name and instructions.
 
 ## Choose how to authenticate
 
@@ -33,7 +33,7 @@ Each server uses one of two credential scopes. The choice is visible in the YAML
 
 ### Per-user OAuth
 
-Set `auth: oauth` for servers that identify individual users, such as Linear, GitHub, Slack, Notion, or Atlassian. Each user authorizes the server from the chat: a **Connect** button opens the server's authorization page in a popup, and the conversation continues once it completes. If the assistant tries to use a server the user has not connected yet, it stops and shows a Connect card instead of failing.
+Set `auth: oauth` for servers that identify individual users, such as Linear, GitHub, Slack, Notion, or Atlassian. Each user authorizes the server from the chat's **External tools** popover: **Connect** opens the server's authorization page in a popup. If the assistant tries to use a server the user has not connected yet, it stops and shows a Connect card instead of failing; once connected, send your message again.
 
 Rill discovers the server's authorization server automatically and registers itself as an OAuth client when the server supports dynamic client registration. Servers that require a pre-registered client, such as Slack, take the client credentials from the connector:
 

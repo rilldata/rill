@@ -165,11 +165,7 @@
       {:else if block.type === "memory-update"}
         <MemoryUpdateChip {block} />
       {:else if block.type === "mcp-auth-required"}
-        <McpAuthRequiredBlock
-          {block}
-          conversation={currentConversation}
-          {config}
-        />
+        <McpAuthRequiredBlock {block} />
       {/if}
     {/each}
   {/if}

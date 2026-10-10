@@ -3,7 +3,7 @@ import type { McpAuthorizationRequired } from "../../../connect/mcp-servers";
 
 /**
  * Block shown when an external MCP tool call failed because the user has not authorized the server.
- * It renders a Connect card; once the user authorizes the server, the conversation continues automatically.
+ * It renders a Connect card that opens the external servers popover; once the user authorizes the server, they send their message again.
  */
 export type McpAuthRequiredBlock = {
   type: "mcp-auth-required";

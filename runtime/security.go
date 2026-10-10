@@ -701,21 +701,15 @@ func (p *securityEngine) applySecurityRuleAccess(res *ResolvedSecurity, r *runti
 }
 
 // applySecurityRuleFieldAccess applies a field access rule to the resolved security.
-// fields optionally overrides the fields the rule can apply to; it is used for MCP connectors, whose tools may be listed per user.
+// fields overrides the fields the rule can apply to; it is used for MCP connectors, whose tools are listed per user.
 func (p *securityEngine) applySecurityRuleFieldAccess(res *ResolvedSecurity, r *runtimev1.Resource, rule *runtimev1.SecurityRuleFieldAccess, td parser.TemplateData, fields []string) error {
 	// This rule currently only applies to metrics views, explores and MCP connectors.
 	// Skip it for other resource types.
 	var availableFields []string
 	switch r.Meta.Name.Kind {
 	case ResourceKindConnector:
-		// For MCP connectors, the "fields" are the server's tools.
-		if fields != nil {
-			availableFields = fields
-		} else {
-			for _, t := range r.GetConnector().GetState().GetMcpTools() {
-				availableFields = append(availableFields, t.Name)
-			}
-		}
+		// For MCP connectors, the "fields" are the server's tools, which the caller lists per user.
+		availableFields = fields
 	case ResourceKindMetricsView:
 		mv := r.GetMetricsView().State.ValidSpec
 		if mv == nil {

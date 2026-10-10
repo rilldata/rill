@@ -1107,9 +1107,6 @@ message ConnectorSpec {
 
 message ConnectorState {
   string spec_hash = 1;
-  // Tools discovered on an external MCP server (MCP connectors only).
-  // Empty when the server's tools can only be listed with a per-user authorization.
-  repeated MCPTool mcp_tools = 2;
 }
 
 // MCPTool describes a tool exposed by an external MCP server.

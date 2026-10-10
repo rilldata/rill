@@ -595,7 +595,6 @@ func TestResolveConnectorSecurity(t *testing.T) {
 		name       string
 		rules      []*runtimev1.SecurityRule
 		attrs      map[string]any
-		stateTools []string
 		tools      []string
 		wantAccess bool
 		wantTools  map[string]bool
@@ -655,22 +654,9 @@ func TestResolveConnectorSecurity(t *testing.T) {
 			wantAccess: true,
 			wantTools:  map[string]bool{"search": true, "delete": true},
 		},
-		{
-			name:       "tools from the connector state are used when none are given",
-			rules:      []*runtimev1.SecurityRule{access("true"), allFields(true), fieldRule("", false, "delete")},
-			attrs:      userAttrs,
-			stateTools: []string{"search", "delete"},
-			tools:      nil,
-			wantAccess: true,
-			wantTools:  map[string]bool{"search": true, "delete": false},
-		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			var stateTools []*runtimev1.MCPTool
-			for _, name := range tt.stateTools {
-				stateTools = append(stateTools, &runtimev1.MCPTool{Name: name})
-			}
 			r := &runtimev1.Resource{
 				Meta: &runtimev1.ResourceMeta{
 					Name:           &runtimev1.ResourceName{Kind: ResourceKindConnector, Name: "ext"},
@@ -679,7 +665,7 @@ func TestResolveConnectorSecurity(t *testing.T) {
 				Resource: &runtimev1.Resource_Connector{
 					Connector: &runtimev1.ConnectorV2{
 						Spec:  &runtimev1.ConnectorSpec{Driver: "mcp", SecurityRules: tt.rules},
-						State: &runtimev1.ConnectorState{McpTools: stateTools},
+						State: &runtimev1.ConnectorState{},
 					},
 				},
 			}

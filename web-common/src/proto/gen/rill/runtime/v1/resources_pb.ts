@@ -6468,14 +6468,6 @@ export class ConnectorState extends Message<ConnectorState> {
    */
   specHash = "";
 
-  /**
-   * Tools discovered on an external MCP server (MCP connectors only).
-   * Empty when the server's tools can only be listed with a per-user authorization.
-   *
-   * @generated from field: repeated rill.runtime.v1.MCPTool mcp_tools = 2;
-   */
-  mcpTools: MCPTool[] = [];
-
   constructor(data?: PartialMessage<ConnectorState>) {
     super();
     proto3.util.initPartial(data, this);
@@ -6485,7 +6477,6 @@ export class ConnectorState extends Message<ConnectorState> {
   static readonly typeName = "rill.runtime.v1.ConnectorState";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "spec_hash", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "mcp_tools", kind: "message", T: MCPTool, repeated: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ConnectorState {

@@ -1,17 +1,10 @@
 <!--
   Side panel for connector files with `driver: mcp`.
-  Shows the server's status, lets the user connect or disconnect an OAuth server, and lists the tools
-  the server exposes to the current user (falling back to the tools the reconciler listed with the project's credentials).
+  Shows the server's status and the tools it exposes to the current user.
+  Connecting and disconnecting OAuth servers happens in the chat's external servers popover.
 -->
 <script lang="ts">
-  import Button from "@rilldata/web-common/components/button/Button.svelte";
-  import { getMcpConnectContext } from "@rilldata/web-common/features/chat/connect/mcp-connect-context";
-  import {
-    createDisconnectMcpServerMutation,
-    createMcpServersQuery,
-    invalidateMcpServers,
-    openMcpConnectPopup,
-  } from "@rilldata/web-common/features/chat/connect/mcp-servers";
+  import { createMcpServersQuery } from "@rilldata/web-common/features/chat/connect/mcp-servers";
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import type { V1Resource } from "@rilldata/web-common/runtime-client";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
@@ -21,12 +14,7 @@
   export let connectorName: string;
 
   const runtimeClient = useRuntimeClient();
-  const connectContext = getMcpConnectContext();
   const serversQuery = createMcpServersQuery(runtimeClient);
-  const disconnectMutation = createDisconnectMcpServerMutation(runtimeClient);
-
-  let connecting = false;
-  let connectError: string | null = null;
 
   $: spec = resource?.connector?.spec;
   $: properties = (spec?.properties ?? {}) as Record<string, unknown>;
@@ -38,28 +26,8 @@
     (s) => s.connector === connectorName,
   );
   $: connected = !!server?.connected;
-  // Per-user tools when available, otherwise what the reconciler listed with the project's credentials
-  $: tools = server?.tools?.length
-    ? server.tools
-    : (resource?.connector?.state?.mcpTools ?? []);
+  $: tools = server?.tools ?? [];
   $: agents = spec?.agents ?? [];
-
-  async function connect() {
-    if (!connectContext) return;
-    connecting = true;
-    connectError = null;
-    const result = await openMcpConnectPopup(
-      connectContext.connectUrl(connectorName),
-      connectorName,
-    );
-    connecting = false;
-    if (result.status === "error") connectError = result.error ?? null;
-    await invalidateMcpServers(runtimeClient);
-  }
-
-  function disconnect() {
-    $disconnectMutation.mutate({ connector: connectorName });
-  }
 </script>
 
 <div class="mcp-inspector">
@@ -112,33 +80,6 @@
         <CheckCircle2 size="14px" />
         <span>{m.chat_mcp_status_connected()}</span>
       </div>
-    {/if}
-    {#if oauth && connectContext}
-      <div class="mcp-actions">
-        {#if connected}
-          <Button
-            type="secondary"
-            small
-            onClick={disconnect}
-            disabled={$disconnectMutation.isPending}
-          >
-            {m.chat_mcp_disconnect()}
-          </Button>
-        {:else}
-          <Button
-            type="primary"
-            small
-            onClick={connect}
-            loading={connecting}
-            disabled={connecting}
-          >
-            {m.chat_mcp_connect()}
-          </Button>
-        {/if}
-      </div>
-    {/if}
-    {#if connectError}
-      <pre class="mcp-error">{connectError}</pre>
     {/if}
   </div>
 
@@ -223,10 +164,6 @@
 
   .mcp-error {
     @apply whitespace-pre-wrap break-words rounded bg-surface-subtle p-2 text-xs text-red-600;
-  }
-
-  .mcp-actions {
-    @apply mt-1 flex gap-x-2;
   }
 
   .mcp-tools {

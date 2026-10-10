@@ -1,6 +1,6 @@
 <!--
   Lists the external MCP servers the current user may use in this project, with their authorization status.
-  Users connect (or disconnect) OAuth servers from here before asking a question that needs them.
+  This is the one place where users connect (or disconnect) OAuth servers; the Connect card in a conversation opens it.
   Renders nothing when the project has no external servers.
 -->
 <script lang="ts">
@@ -19,6 +19,7 @@
     createDisconnectMcpServerMutation,
     createMcpServersQuery,
     invalidateMcpServers,
+    mcpServersPopoverOpen,
     openMcpConnectPopup,
     type McpServer,
   } from "./mcp-servers";
@@ -28,7 +29,6 @@
   const serversQuery = createMcpServersQuery(runtimeClient);
   const disconnectMutation = createDisconnectMcpServerMutation(runtimeClient);
 
-  let isOpen = false;
   let connecting: string | null = null;
   let connectError: string | null = null;
 
@@ -76,13 +76,13 @@
 </script>
 
 {#if servers.length > 0}
-  <Popover bind:open={isOpen}>
+  <Popover bind:open={$mcpServersPopoverOpen}>
     <PopoverTrigger>
       <IconButton
         ariaLabel={m.chat_mcp_servers()}
         bgGray
-        active={isOpen}
-        disableTooltip={isOpen}
+        active={$mcpServersPopoverOpen}
+        disableTooltip={$mcpServersPopoverOpen}
       >
         <span class="relative flex">
           <Plug size="16px" class="text-fg-muted" />

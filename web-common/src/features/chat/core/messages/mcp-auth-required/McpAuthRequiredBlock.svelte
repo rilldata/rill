@@ -1,90 +1,30 @@
 <!--
-  Inline card asking the user to authorize an external MCP server the assistant tried to use.
-  After the popup completes, a follow-up message is sent so the assistant picks up the same task.
-  The card stays visible in the history; once the server is connected it only offers to continue.
+  Inline card shown when the assistant tried to use an external MCP server the user has not authorized.
+  It points the user to the external servers popover to connect; afterwards they send their message again.
+  The card stays in the history and only changes its text once the server is connected.
 -->
 <script lang="ts">
   import Button from "@rilldata/web-common/components/button/Button.svelte";
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { PlugZap } from "lucide-svelte";
-  import { get } from "svelte/store";
   import { getMcpConnectContext } from "../../../connect/mcp-connect-context";
   import {
     createMcpServersQuery,
-    invalidateMcpServers,
-    openMcpConnectPopup,
+    openMcpServersPopover,
   } from "../../../connect/mcp-servers";
-  import type { Block } from "../block-transform";
-  import type { Conversation } from "../../conversation";
-  import type { ChatConfig } from "../../types";
   import type { McpAuthRequiredBlock } from "./mcp-auth-required-block";
 
   export let block: McpAuthRequiredBlock;
-  export let conversation: Conversation;
-  export let config: ChatConfig;
 
   const runtimeClient = useRuntimeClient();
   const connectContext = getMcpConnectContext();
   const serversQuery = createMcpServersQuery(runtimeClient);
 
-  let connecting = false;
-  let error: string | null = null;
-
-  // Whether this card belongs to the latest turn of the conversation, i.e. no user message follows it.
-  // The assistant usually answers after the failed call, so the card is rarely the final block;
-  // it still offers to connect and resume until the user moves on to another question.
-  $: blocksStore = conversation.getBlocks();
-  $: isLatestTurn = isInLatestTurn($blocksStore, block.id);
-  $: isStreaming = conversation.isStreaming;
   $: server = ($serversQuery.data ?? []).find(
     (s) => s.connector === block.connector,
   );
-  $: alreadyConnected = !!server?.connected;
-
-  function isInLatestTurn(blocks: Block[], id: string): boolean {
-    const index = blocks.findIndex((b) => b.id === id);
-    if (index === -1) return false;
-    return !blocks
-      .slice(index + 1)
-      .some((b) => b.type === "text" && b.message.role === "user");
-  }
-
-  async function connect() {
-    if (!connectContext) return;
-    connecting = true;
-    error = null;
-    const result = await openMcpConnectPopup(
-      connectContext.connectUrl(block.connector),
-      block.connector,
-    );
-    connecting = false;
-    await invalidateMcpServers(runtimeClient);
-    if (result.status === "connected") {
-      await resume();
-    } else if (result.status === "error") {
-      error = result.error ?? m.chat_mcp_status_error();
-    }
-  }
-
-  // Sends a follow-up user message so the assistant retries with the server connected.
-  // This keeps the runtime stateless about the interrupted call. Anything the user had typed is kept.
-  async function resume() {
-    if (get(isStreaming)) return;
-    const draft = get(conversation.draftMessage);
-    conversation.draftMessage.set(
-      m.chat_mcp_continue_message({ name: block.displayName }),
-    );
-    const additionalContext = get(config.additionalContextStoreGetter());
-    try {
-      await conversation.sendMessage(additionalContext, {
-        onStreamStart: () => conversation.draftMessage.set(draft),
-      });
-    } catch (err) {
-      conversation.draftMessage.set(draft);
-      console.error("Failed to resume the conversation:", err);
-    }
-  }
+  $: connected = !!server?.connected;
 </script>
 
 <div class="mcp-auth-card" role="status">
@@ -96,7 +36,7 @@
       {m.chat_mcp_auth_required_title({ name: block.displayName })}
     </div>
     <p class="mcp-auth-text">
-      {#if alreadyConnected}
+      {#if connected}
         {m.chat_mcp_auth_connected_body({ name: block.displayName })}
       {:else if connectContext}
         {m.chat_mcp_auth_required_body({ name: block.displayName })}
@@ -104,26 +44,11 @@
         {m.chat_mcp_auth_required_no_provider({ name: block.displayName })}
       {/if}
     </p>
-    {#if error}
-      <p class="mcp-auth-error">{error}</p>
-    {/if}
-    {#if isLatestTurn}
+    {#if !connected && connectContext}
       <div class="mcp-auth-actions">
-        {#if alreadyConnected}
-          <Button type="primary" small onClick={resume} disabled={$isStreaming}>
-            {m.chat_mcp_continue()}
-          </Button>
-        {:else if connectContext}
-          <Button
-            type="primary"
-            small
-            onClick={connect}
-            loading={connecting}
-            disabled={connecting}
-          >
-            {m.chat_mcp_connect_server({ name: block.displayName })}
-          </Button>
-        {/if}
+        <Button type="primary" small onClick={openMcpServersPopover}>
+          {m.chat_mcp_connect_server({ name: block.displayName })}
+        </Button>
       </div>
     {/if}
   </div>
@@ -149,10 +74,6 @@
 
   .mcp-auth-text {
     @apply text-xs text-fg-secondary;
-  }
-
-  .mcp-auth-error {
-    @apply text-xs text-red-600;
   }
 
   .mcp-auth-actions {

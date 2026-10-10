@@ -17,6 +17,7 @@ import {
   getRuntimeServiceListToolsQueryKey,
 } from "@rilldata/web-common/runtime-client/v2/gen/runtime-service";
 import { createMutation, createQuery } from "@tanstack/svelte-query";
+import { writable } from "svelte/store";
 
 export type McpServer = PartialMessage<MCPServer>;
 
@@ -30,6 +31,16 @@ export const MCP_AUTHORIZATION_REQUIRED_CODE = "mcp_authorization_required";
 export const MCP_META_SERVER = "rill/mcpServer";
 export const MCP_META_SERVER_DISPLAY_NAME = "rill/mcpServerDisplayName";
 export const MCP_META_TOOL_NAME = "rill/mcpToolName";
+
+/**
+ * Whether the external servers popover (the one place where servers are connected and disconnected) is open.
+ * Other surfaces, such as the Connect card in a conversation, open it instead of running the authorization flow themselves.
+ */
+export const mcpServersPopoverOpen = writable(false);
+
+export function openMcpServersPopover(): void {
+  mcpServersPopoverOpen.set(true);
+}
 
 export function isMcpToolName(toolName: string | undefined): boolean {
   return !!toolName && toolName.startsWith(MCP_TOOL_PREFIX);

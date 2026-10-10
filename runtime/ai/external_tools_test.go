@@ -94,12 +94,6 @@ security:
 		},
 	})
 	testruntime.RequireReconcileState(t, rt, instanceID, 4, 0, 0)
-	// The reconciler lists the tools of servers it can reach with the project's credentials into the connector state.
-	res := testruntime.GetResource(t, rt, instanceID, runtime.ResourceKindConnector, "static")
-	require.Len(t, res.GetConnector().State.McpTools, 2)
-	// A server whose headers identify the user can only be listed per user.
-	res = testruntime.GetResource(t, rt, instanceID, runtime.ResourceKindConnector, "tracker")
-	require.Empty(t, res.GetConnector().State.McpTools)
 
 	runner := ai.NewRunner(rt, activity.NewNoopClient())
 	ctx := t.Context()
@@ -192,8 +186,6 @@ auth: oauth
 	})
 	// An OAuth server without a local token still reconciles: tools are listed per user
 	testruntime.RequireReconcileState(t, rt, instanceID, 2, 0, 0)
-	res := testruntime.GetResource(t, rt, instanceID, runtime.ResourceKindConnector, "tracker")
-	require.Empty(t, res.GetConnector().State.McpTools)
 
 	runner := ai.NewRunner(rt, activity.NewNoopClient())
 	claims := newTestClaims("u@x.com", "x.com", false)
