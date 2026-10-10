@@ -1,7 +1,11 @@
 import { fromTimeRangesParams } from "@rilldata/web-common/features/dashboards/url-state/convertURLToExplorePreset";
 import { ExploreStateURLParams } from "@rilldata/web-common/features/dashboards/url-state/url-params";
+import { TIME_COMPARISON } from "@rilldata/web-common/lib/time/config";
 import { TimeComparisonOption } from "@rilldata/web-common/lib/time/types";
-import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
+import {
+  V1TimeGrain,
+  type V1ExploreTimeRange,
+} from "@rilldata/web-common/runtime-client";
 import { DateTime, Interval } from "luxon";
 import { derived, get, writable, type Readable } from "svelte/store";
 import {
@@ -395,6 +399,26 @@ export function parseSearchParams(urlParams: URLSearchParams) {
     grain,
     comparisonRange,
   };
+}
+
+/**
+ * The comparison a canvas opens with when its default comparison mode is time.
+ * A range in `time_ranges` can declare its comparisons with `comparison_offsets`;
+ * the first one the canvas URL state understands (a `rill-P*` alias) wins.
+ * Without one, the comparison is derived from the range's grain as before.
+ */
+export function getDefaultComparisonRange(
+  range: string | undefined,
+  timeRanges: V1ExploreTimeRange[] | undefined,
+): string {
+  const declared = timeRanges
+    ?.find((tr) => tr.range === range)
+    ?.comparisonTimeRanges?.find(
+      (comparison) =>
+        !!comparison.offset && comparison.offset in TIME_COMPARISON,
+    )?.offset;
+
+  return declared ?? getComparisonTypeFromRangeString(range);
 }
 
 export function getComparisonTypeFromRangeString(
