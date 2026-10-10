@@ -7,6 +7,7 @@ import (
 	"regexp"
 	"slices"
 	"strings"
+	"unicode/utf8"
 
 	"github.com/google/jsonschema-go/jsonschema"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
@@ -234,16 +235,33 @@ func promptToTitle(message string) string {
 	title := whitespaceRegexp.ReplaceAllString(message, " ")
 	title = strings.TrimSpace(title)
 
-	// Truncate to 50 characters.
-	if len(title) > 50 {
-		title = title[:47] + "..."
-	}
+	// Truncate to 50 bytes on a UTF-8 rune boundary. Byte-wise title[:47]
+	// splits multi-byte runes (e.g. Chinese) and stores invalid UTF-8, which
+	// then fails protobuf marshaling in ListConversations.
+	title = truncateUTF8(title, 50)
 
 	// Fallback title if empty.
 	if title == "" {
 		return "New Conversation"
 	}
 	return title
+}
+
+// truncateUTF8 shortens s to at most maxBytes, appending "..." when truncated.
+// The cut is always on a UTF-8 rune boundary so the result stays valid UTF-8.
+func truncateUTF8(s string, maxBytes int) string {
+	if len(s) <= maxBytes {
+		return s
+	}
+	const ellipsis = "..."
+	if maxBytes <= len(ellipsis) {
+		return ellipsis[:maxBytes]
+	}
+	s = s[:maxBytes-len(ellipsis)]
+	for s != "" && !utf8.ValidString(s) {
+		s = s[:len(s)-1]
+	}
+	return s + ellipsis
 }
 
 // mapAgentErr maps common agent errors to more user-friendly messages.
