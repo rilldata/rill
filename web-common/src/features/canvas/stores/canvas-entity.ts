@@ -4,7 +4,10 @@ import {
   useCanvas,
   type CanvasResponse,
 } from "@rilldata/web-common/features/canvas/selector";
-import type { CanvasSpecResponseStore } from "@rilldata/web-common/features/canvas/types";
+import type {
+  CanvasSpecResponse,
+  CanvasSpecResponseStore,
+} from "@rilldata/web-common/features/canvas/types";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import {
   V1ExploreComparisonMode,
@@ -21,6 +24,7 @@ import {
 import {
   derived,
   get,
+  readable,
   writable,
   type Readable,
   type Unsubscriber,
@@ -147,12 +151,12 @@ export class CanvasEntity {
     readonly client: RuntimeClient,
     public allowUnvalidatedSpec = false,
   ) {
-    this.specStore = useCanvas(
-      client,
-      name,
-      {},
-      queryClient,
-      allowUnvalidatedSpec,
+    // Created each time it gains its first subscriber: the entity outlives its pages,
+    // and a store kept across them stays on a query that TanStack already garbage collected.
+    this.specStore = readable<CanvasSpecResponse>(undefined, (set) =>
+      useCanvas(client, name, {}, queryClient, allowUnvalidatedSpec).subscribe(
+        set,
+      ),
     );
 
     // This will be deprecated soon - bgh
