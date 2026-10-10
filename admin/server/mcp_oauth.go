@@ -583,25 +583,27 @@ func (s *Server) mcpOAuthClient(ctx context.Context, proj *database.Project, con
 		return nil, nil, err
 	}
 
-	row, err := s.admin.DB.FindMCPOAuthClient(ctx, proj.ID, connector, cfg.URL)
-	if err != nil && !errors.Is(err, database.ErrNotFound) {
-		return nil, nil, err
-	}
-	if err == nil {
-		existing := &mcp.OAuthClient{}
-		if json.Unmarshal(row.Client, existing) == nil && existing.Matches(cfg.URL, redirectURL, cfg.ClientID) {
-			return row, existing, tx.Commit()
-		}
-	}
-
-	oauthClient, err := mcp.DiscoverOAuthClient(ctx, &mcp.DiscoverOAuthClientOptions{
+	opts := &mcp.DiscoverOAuthClientOptions{
 		ServerURL:    cfg.URL,
 		RedirectURL:  redirectURL,
 		ClientID:     cfg.ClientID,
 		ClientSecret: cfg.ClientSecret,
 		Scopes:       cfg.Scopes,
 		HTTPClient:   mcp.NewHTTPClient(false, mcpOAuthHTTPTimeout),
-	})
+	}
+	row, err := s.admin.DB.FindMCPOAuthClient(ctx, proj.ID, connector, cfg.URL)
+	if err != nil && !errors.Is(err, database.ErrNotFound) {
+		return nil, nil, err
+	}
+	if err == nil {
+		existing := &mcp.OAuthClient{}
+		// The row is upserted in place when the configuration changed, so tokens bound to it keep working through the updated client.
+		if json.Unmarshal(row.Client, existing) == nil && existing.Matches(opts) {
+			return row, existing, tx.Commit()
+		}
+	}
+
+	oauthClient, err := mcp.DiscoverOAuthClient(ctx, opts)
 	if err != nil {
 		return nil, nil, mcpOAuthHTTPError{status: http.StatusBadGateway, msg: err.Error()}
 	}

@@ -429,10 +429,14 @@ func TestPreregisteredOAuthClient(t *testing.T) {
 	require.Equal(t, 0, as.registerCall)
 	require.Equal(t, []string{"read"}, client.Scopes) // defaults to the scopes the server advertises
 	require.Equal(t, as.srv.URL+"/revoke", client.RevocationEndpoint)
-	require.True(t, client.Matches(ts.url(), "http://localhost:9009/mcp/oauth/callback", ""))
-	require.True(t, client.Matches(ts.url(), "http://localhost:9009/mcp/oauth/callback", client.ClientID))
-	require.False(t, client.Matches(ts.url(), "http://localhost:9009/mcp/oauth/callback", "someone-else"))
-	require.False(t, client.Matches(ts.url(), "http://other/cb", ""))
+	redirect := "http://localhost:9009/mcp/oauth/callback"
+	require.True(t, client.Matches(&DiscoverOAuthClientOptions{ServerURL: ts.url(), RedirectURL: redirect}))
+	require.True(t, client.Matches(&DiscoverOAuthClientOptions{ServerURL: ts.url(), RedirectURL: redirect, ClientID: client.ClientID, ClientSecret: client.ClientSecret}))
+	require.True(t, client.Matches(&DiscoverOAuthClientOptions{ServerURL: ts.url(), RedirectURL: redirect, Scopes: []string{"read"}}))
+	require.False(t, client.Matches(&DiscoverOAuthClientOptions{ServerURL: ts.url(), RedirectURL: redirect, ClientID: "someone-else"}), "another client ID")
+	require.False(t, client.Matches(&DiscoverOAuthClientOptions{ServerURL: ts.url(), RedirectURL: redirect, ClientID: client.ClientID, ClientSecret: "rotated"}), "a rotated secret")
+	require.False(t, client.Matches(&DiscoverOAuthClientOptions{ServerURL: ts.url(), RedirectURL: redirect, Scopes: []string{"read", "write"}}), "changed scopes")
+	require.False(t, client.Matches(&DiscoverOAuthClientOptions{ServerURL: ts.url(), RedirectURL: "http://other/cb"}), "another redirect")
 }
 
 func TestConfigValidation(t *testing.T) {

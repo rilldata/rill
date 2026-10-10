@@ -183,8 +183,17 @@ func clientAuthStyle(supported []string) string {
 }
 
 // Matches reports whether the client is still valid for the given server URL and redirect URL.
-func (c *OAuthClient) Matches(serverURL, redirectURL, clientID string) bool {
-	return c != nil && c.ServerURL == serverURL && c.RedirectURL == redirectURL && (clientID == "" || c.ClientID == clientID)
+// Matches reports whether the client can still be used for the given discovery options: same server and redirect URL,
+// and the same pre-registered client ID, secret and scopes where the options configure them.
+// A client that no longer matches is discovered again, so changing the scopes or rotating the secret on the connector takes effect.
+func (c *OAuthClient) Matches(opts *DiscoverOAuthClientOptions) bool {
+	if c == nil || c.ServerURL != opts.ServerURL || c.RedirectURL != opts.RedirectURL {
+		return false
+	}
+	if opts.ClientID != "" && (c.ClientID != opts.ClientID || c.ClientSecret != opts.ClientSecret) {
+		return false
+	}
+	return len(opts.Scopes) == 0 || slices.Equal(c.Scopes, opts.Scopes)
 }
 
 // TokenExpiring reports whether a token should be refreshed before use: it has an expiry, and that expiry is less than tokenRefreshLeeway away.
@@ -757,12 +766,12 @@ func (h *handle) BeginOAuth(ctx context.Context, redirectURL, state string) (str
 	if err != nil {
 		return "", "", err
 	}
+	opts := h.OAuthClientOptions()
+	opts.RedirectURL = redirectURL
 	var client *OAuthClient
-	if existing != nil && existing.Client.Matches(h.config.URL, redirectURL, h.config.OAuthClientID) {
+	if existing != nil && existing.Client.Matches(opts) {
 		client = existing.Client
 	} else {
-		opts := h.OAuthClientOptions()
-		opts.RedirectURL = redirectURL
 		client, err = DiscoverOAuthClient(ctx, opts)
 		if err != nil {
 			return "", "", err

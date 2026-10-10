@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"maps"
 	"slices"
 	"strings"
 	"sync"
@@ -444,12 +445,21 @@ func (r *Runner) compileExternalTool(instanceID, environment string, vars map[st
 			if !s.Claims().Can(runtime.UseAI) {
 				return false, nil
 			}
-			// Re-evaluate the policy on every call, so a user whose attributes changed loses access immediately.
+			// Re-evaluate the policy on every call against the current connector, so a user whose attributes changed
+			// or a security block edited during the run takes effect immediately.
+			ctrl, err := r.Runtime.Controller(ctx, s.InstanceID())
+			if err != nil {
+				return false, err
+			}
+			res, err := ctrl.Get(ctx, &runtimev1.ResourceName{Kind: runtime.ResourceKindConnector, Name: connector}, false)
+			if err != nil {
+				return false, err
+			}
 			names := make([]string, 0, len(srv.Tools))
 			for _, st := range srv.Tools {
 				names = append(names, st.Name)
 			}
-			sec, err := r.Runtime.ResolveConnectorSecurity(ctx, s.InstanceID(), s.Claims(), srv.res, names)
+			sec, err := r.Runtime.ResolveConnectorSecurity(ctx, s.InstanceID(), s.Claims(), res, names)
 			if err != nil {
 				return false, err
 			}
@@ -610,6 +620,8 @@ func sanitizeExternalDescription(desc string) string {
 
 // normalizeInputSchema makes an input schema acceptable to all LLM providers: an object with explicit properties.
 func normalizeInputSchema(schema map[string]any) map[string]any {
+	// The driver caches tool schemas and hands the same maps to every caller, so defaults are added to a copy.
+	schema = maps.Clone(schema)
 	if schema == nil {
 		schema = map[string]any{}
 	}
