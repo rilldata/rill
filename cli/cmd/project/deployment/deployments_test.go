@@ -242,6 +242,11 @@ olap_connector: duckdb`,
 	}, 10*time.Second, 100*time.Millisecond, "expected model output to be 'feature' after branch change")
 }
 
+// TestProvisionerSwitch tests that restarting a deployment moves it to a changed project or org provisioner while keeping its IDs,
+// and that it isn't moved to the global default provisioner.
+// Both provisioners in the test admin service point to the same runtime, and the static provisioner doesn't delete instances when deprovisioning.
+// So the restarted deployment reuses the existing instance on that runtime;
+// the test doesn't cover a new runtime restoring the instance's state from object storage.
 func TestProvisionerSwitch(t *testing.T) {
 	testmode.Expensive(t)
 
@@ -287,25 +292,27 @@ olap_connector: duckdb`,
 
 	// restart the project's deployments.
 	// The command polls for status changes, so we run it in the background and reconcile the deployment while it runs (since the test admin service doesn't run river workers).
-	done := make(chan testcli.Result, 1)
-	go func() {
-		done <- su.Run(t, "sudo", "project", "restart", "provisioner-switch-test", "switch-test", "--force")
-	}()
-	ticker := time.NewTicker(200 * time.Millisecond)
-	defer ticker.Stop()
-	timeout := time.After(time.Minute)
-wait:
-	for {
-		select {
-		case result = <-done:
-			break wait
-		case <-ticker.C:
-			adm.TriggerDeployment(t, "provisioner-switch-test", "switch-test")
-		case <-timeout:
-			t.Fatal("timed out waiting for restart to complete")
+	restart := func() {
+		done := make(chan testcli.Result, 1)
+		go func() {
+			done <- su.Run(t, "sudo", "project", "restart", "provisioner-switch-test", "switch-test", "--force")
+		}()
+		ticker := time.NewTicker(200 * time.Millisecond)
+		defer ticker.Stop()
+		timeout := time.After(time.Minute)
+		for {
+			select {
+			case result := <-done:
+				require.Equal(t, 0, result.ExitCode, result.Output)
+				return
+			case <-ticker.C:
+				adm.TriggerDeployment(t, "provisioner-switch-test", "switch-test")
+			case <-timeout:
+				t.Fatal("timed out waiting for restart to complete")
+			}
 		}
 	}
-	require.Equal(t, 0, result.ExitCode, result.Output)
+	restart()
 
 	// the deployment should keep its IDs, but now be provisioned by the new provisioner
 	depl3, err := adm.Admin.DB.FindDeployment(t.Context(), depl.ID)
@@ -339,6 +346,25 @@ wait:
 		}
 		return rows.Err() == nil && res == 1
 	}, 10*time.Second, 100*time.Millisecond, "unexpected model output after provisioner switch")
+
+	// unsetting the project's provisioner should not move the deployment to the global default provisioner
+	result = su.Run(t, "sudo", "project", "edit", "provisioner-switch-test", "switch-test", "--provisioner=")
+	require.Equal(t, 0, result.ExitCode, result.Output)
+	restart()
+	pr4, ok, err := adm.Admin.FindProvisionedRuntimeResource(t.Context(), depl.ID)
+	require.NoError(t, err)
+	require.True(t, ok)
+	require.Equal(t, "static-alt", pr4.Provisioner)
+
+	// changing the org's default provisioner should move the deployment to it
+	result = su.Run(t, "sudo", "org", "set-default-provisioner", "provisioner-switch-test", "static")
+	require.Equal(t, 0, result.ExitCode, result.Output)
+	restart()
+	pr5, ok, err := adm.Admin.FindProvisionedRuntimeResource(t.Context(), depl.ID)
+	require.NoError(t, err)
+	require.True(t, ok)
+	require.Equal(t, pr.ID, pr5.ID)
+	require.Equal(t, "static", pr5.Provisioner)
 }
 
 func putFiles(t *testing.T, baseDir string, files map[string]string) {

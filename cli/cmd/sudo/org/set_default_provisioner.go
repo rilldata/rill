@@ -31,12 +31,13 @@ func SetDefaultProvisionerCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 
 			if provisioner == "" {
-				ch.PrintfSuccess("Unset the default provisioner for org %q. It will now use the global default provisioner.\n", args[0])
+				ch.PrintfSuccess("Unset the default provisioner for org %q. New deployments will use the global default provisioner.\n", args[0])
+				ch.PrintfWarn("Note: existing deployments keep their current provisioner.\n")
 			} else {
 				ch.PrintfSuccess("Set default provisioner %q for org %q.\n", provisioner, args[0])
+				ch.PrintfWarn("Note: running deployments keep their current provisioner. The change applies to deployments of projects without a project-level provisioner the next time they start.\n")
+				ch.PrintfWarn("To apply it to a project's running deployments now, run `rill sudo project restart %s <project>`.\n", args[0])
 			}
-			ch.PrintfWarn("Note: running deployments keep their current provisioner. The change applies to deployments of projects without a project-level provisioner the next time they start.\n")
-			ch.PrintfWarn("To apply it to a project's running deployments now, run `rill sudo project restart %s <project>`.\n", args[0])
 
 			return nil
 		},

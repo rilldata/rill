@@ -21,7 +21,7 @@ func RestartCmd(ch *cmdutil.Helper) *cobra.Command {
 		Use:   "restart <org> <project>",
 		Args:  cobra.ExactArgs(2),
 		Short: "Restart the project's deployments",
-		Long: `Stop and then start each running deployment of the project.
+		Long: `Stop all running deployments of the project, then start them again one at a time.
 Unlike "reset", this keeps the existing deployments, so the deployment and instance IDs stay the same.
 Use it to apply a provisioner change to running deployments.`,
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -59,7 +59,7 @@ Use it to apply a provisioner change to running deployments.`,
 			}
 
 			if !force {
-				ch.PrintfWarn("%d deployment(s) will be stopped and started one at a time. Each will be unavailable while it restarts.\n", len(running))
+				ch.PrintfWarn("%d deployment(s) will be stopped, then started one at a time. Each will be unavailable until it has started again.\n", len(running))
 				if !ch.Interactive {
 					return fmt.Errorf("confirmation required; use --force flag to proceed")
 				}
@@ -68,9 +68,11 @@ Use it to apply a provisioner change to running deployments.`,
 				}
 			}
 
+			// Stop all the deployments in parallel.
+			// We must wait for the deployments to stop before starting them.
+			// Otherwise the reconcile job sees a running deployment that should be running, and doesn't restart it.
+			ch.PrintfBold("Stopping %d deployment(s)...\n", len(running))
 			for _, d := range running {
-				ch.PrintfBold("Restarting deployment %s (branch %q)...\n", d.Id, d.Branch)
-
 				_, err = client.StopDeployment(ctx, &adminv1.StopDeploymentRequest{
 					DeploymentId:         d.Id,
 					SuperuserForceAccess: true,
@@ -78,14 +80,18 @@ Use it to apply a provisioner change to running deployments.`,
 				if err != nil {
 					return fmt.Errorf("failed to stop deployment %s: %w", d.Id, err)
 				}
-
-				// We must wait for the deployment to stop before starting it.
-				// Otherwise the reconcile job sees a running deployment that should be running, and doesn't restart it.
-				ch.Printf("Stopping...\n")
+			}
+			for _, d := range running {
 				_, err = awaitDeploymentStatus(ctx, client, org, project, d, adminv1.DeploymentStatus_DEPLOYMENT_STATUS_STOPPED)
 				if err != nil {
 					return err
 				}
+				ch.Printf("Stopped deployment %s (branch %q)\n", d.Id, d.Branch)
+			}
+
+			// Start the deployments one at a time.
+			for _, d := range running {
+				ch.PrintfBold("Starting deployment %s (branch %q)...\n", d.Id, d.Branch)
 
 				_, err = client.StartDeployment(ctx, &adminv1.StartDeploymentRequest{
 					DeploymentId:         d.Id,
@@ -95,7 +101,6 @@ Use it to apply a provisioner change to running deployments.`,
 					return fmt.Errorf("failed to start deployment %s: %w", d.Id, err)
 				}
 
-				ch.Printf("Starting...\n")
 				started, err := awaitDeploymentStatus(ctx, client, org, project, d, adminv1.DeploymentStatus_DEPLOYMENT_STATUS_RUNNING)
 				if err != nil {
 					return err

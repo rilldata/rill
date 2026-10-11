@@ -123,7 +123,7 @@ func EditCmd(ch *cmdutil.Helper) *cobra.Command {
 	editCmd.Flags().IntVar(&prodSlots, "prod-slots", 0, "Slots to allocate for production deployments")
 	editCmd.Flags().IntVar(&devSlots, "dev-slots", 0, "Slots to allocate for dev deployments")
 	editCmd.Flags().StringVar(&prodVersion, "prod-version", "", "Rill version for production deployment")
-	editCmd.Flags().StringVar(&provisioner, "provisioner", "", "Provisioner for the project's deployments, applied the next time each deployment starts (empty to unset, falls back to the org default)")
+	editCmd.Flags().StringVar(&provisioner, "provisioner", "", "Provisioner for the project's deployments, applied the next time each deployment starts (empty to unset; new deployments then use the org or global default, existing deployments use the org default if set)")
 	editCmd.Flags().Int64Var(&overrideDiskGB, "override-disk-gb", 0, "Override disk size in GB for prod and dev deployments (0 clears the override)")
 	editCmd.Flags().BoolVar(&cloudEditingDisabled, "cloud-editing-disabled", false, "Hide cloud editing in the UI even when enabled in rill.yaml")
 	return editCmd

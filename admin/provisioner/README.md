@@ -67,6 +67,8 @@ When provisioning a runtime, the provisioner is resolved in this order:
 
 Running deployments keep their current provisioner. A change to the project-level or org-level provisioner is applied to a deployment the next time it goes from stopped to running (see `StartDeploymentInner` in `admin/deployments.go`). Use `rill sudo project restart` to stop and start a project's running deployments.
 
+The global default provisioner only applies to newly provisioned runtimes. Changing `RILL_ADMIN_DEFAULT_PROVISIONER` doesn't move existing deployments. Similarly, if neither a project-level nor an org-level provisioner is set (for example after unsetting one), existing deployments keep their current provisioner.
+
 When a deployment starts with a different provisioner than its runtime was provisioned with, the admin service:
 1. Deprovisions the runtime resource with the old provisioner (for example deleting its Kubernetes PVC, or releasing its static slots).
 2. Resets the resource for the new provisioner, keeping its ID. The runtime instance ID is derived from the resource ID, so it stays the same.
