@@ -212,3 +212,17 @@ func applyAdditionalTimeRange(current, additional *metricsview.TimeRange) *metri
 
 	return timeRange
 }
+
+// MetricsSQLSchema compiles and describes Metrics SQL without executing its result query.
+func MetricsSQLSchema(ctx context.Context, opts *runtime.ResolverOptions) (*runtimev1.StructType, error) {
+	res, err := newMetricsSQL(ctx, opts)
+	if err != nil {
+		return nil, err
+	}
+	defer res.Close()
+	r := res.(*metricsResolver)
+	if err := r.bindQuery(ctx); err != nil {
+		return nil, err
+	}
+	return r.executor.QuerySchema(ctx, r.query, r.args.ExecutionTime)
+}
