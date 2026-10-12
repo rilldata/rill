@@ -243,62 +243,40 @@ func (r *AlertReconciler) ResolveTransitiveAccess(ctx context.Context, claims *r
 
 	var mvName string
 	if spec.QueryName != "" {
-		initializer, ok := runtime.ResolverInitializers["legacy_metrics"]
-		if !ok {
-			return nil, fmt.Errorf("no resolver found for name 'legacy_metrics'")
-		}
-		resolver, err := initializer(ctx, &runtime.ResolverOptions{
-			Runtime:    r.C.Runtime,
+		analysis, err := r.C.Runtime.AnalyzeResolver(ctx, "legacy_metrics", &runtime.ResolverAnalysisOptions{
 			InstanceID: r.C.InstanceID,
 			Properties: map[string]any{
 				"query_name":      spec.QueryName,
 				"query_args_json": spec.QueryArgsJson,
 			},
-			Claims:    claims,
-			ForExport: false,
+			UserAttributes: claims.UserAttributes,
+			ForExport:      false,
 		})
 		if err != nil {
 			return nil, err
 		}
-		defer resolver.Close()
-		inferred, err := resolver.InferRequiredSecurityRules()
-		if err != nil {
-			return nil, err
-		}
 
-		rules = append(rules, inferred...)
+		rules = append(rules, analysis.RequiredSecurityRules...)
 
-		refs := resolver.Refs()
-		for _, ref := range refs {
+		for _, ref := range analysis.Refs {
 			conditionResources = append(conditionResources, &runtimev1.ResourceName{Kind: ref.Kind, Name: ref.Name})
 		}
 	}
 
 	if spec.Resolver != "" {
-		initializer, ok := runtime.ResolverInitializers[spec.Resolver]
-		if !ok {
-			return nil, fmt.Errorf("no resolver found for name %q", spec.Resolver)
-		}
-		resolver, err := initializer(ctx, &runtime.ResolverOptions{
-			Runtime:    r.C.Runtime,
-			InstanceID: r.C.InstanceID,
-			Properties: spec.ResolverProperties.AsMap(),
-			Claims:     claims,
-			ForExport:  false,
+		analysis, err := r.C.Runtime.AnalyzeResolver(ctx, spec.Resolver, &runtime.ResolverAnalysisOptions{
+			InstanceID:     r.C.InstanceID,
+			Properties:     spec.ResolverProperties.AsMap(),
+			UserAttributes: claims.UserAttributes,
+			ForExport:      false,
 		})
 		if err != nil {
 			return nil, err
 		}
-		defer resolver.Close()
-		inferred, err := resolver.InferRequiredSecurityRules()
-		if err != nil {
-			return nil, err
-		}
 
-		rules = append(rules, inferred...)
+		rules = append(rules, analysis.RequiredSecurityRules...)
 
-		refs := resolver.Refs()
-		for _, ref := range refs {
+		for _, ref := range analysis.Refs {
 			conditionResources = append(conditionResources, &runtimev1.ResourceName{Kind: ref.Kind, Name: ref.Name})
 		}
 	}

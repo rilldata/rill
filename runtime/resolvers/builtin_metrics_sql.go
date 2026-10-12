@@ -19,7 +19,7 @@ func init() {
 		panic(fmt.Sprintf("failed to marshal expression defs: %v", err))
 	}
 
-	runtime.RegisterResolverInitializer("builtin_metrics_sql", newBuiltinMetricsSQL)
+	runtime.RegisterResolver("builtin_metrics_sql", newBuiltinMetricsSQL, analyzeBuiltinMetricsSQL)
 	runtime.RegisterBuiltinAPI(&runtime.BuiltinAPIOptions{
 		Name:               "metrics-sql",
 		Resolver:           "builtin_metrics_sql",
@@ -51,9 +51,8 @@ func newBuiltinMetricsSQL(ctx context.Context, opts *runtime.ResolverOptions) (r
 		return nil, errors.New("must be an admin to run arbitrary SQL queries")
 	}
 
-	// Decode the args
-	args := &builtinMetricsSQLArgs{}
-	if err := mapstructure.Decode(opts.Args, args); err != nil {
+	props, args, err := builtinMetricsSQLProperties(opts.Args)
+	if err != nil {
 		return nil, err
 	}
 
@@ -61,13 +60,28 @@ func newBuiltinMetricsSQL(ctx context.Context, opts *runtime.ResolverOptions) (r
 	return newMetricsSQL(ctx, &runtime.ResolverOptions{
 		Runtime:    opts.Runtime,
 		InstanceID: opts.InstanceID,
-		Properties: map[string]any{
-			"sql": args.SQL,
-		},
-		Args: map[string]any{
-			"priority": args.Priority,
-		},
-		Claims:    opts.Claims,
-		ForExport: opts.ForExport,
+		Properties: props,
+		Args:       args,
+		Claims:     opts.Claims,
+		ForExport:  opts.ForExport,
 	})
+}
+
+func builtinMetricsSQLProperties(arguments map[string]any) (map[string]any, map[string]any, error) {
+	args := &builtinMetricsSQLArgs{}
+	if err := mapstructure.Decode(arguments, args); err != nil {
+		return nil, nil, err
+	}
+	return map[string]any{"sql": args.SQL}, map[string]any{"priority": args.Priority}, nil
+}
+
+func analyzeBuiltinMetricsSQL(ctx context.Context, rt *runtime.Runtime, opts *runtime.ResolverAnalysisOptions) (*runtime.ResolverAnalysis, error) {
+	props, args, err := builtinMetricsSQLProperties(opts.Args)
+	if err != nil {
+		return nil, err
+	}
+	child := *opts
+	child.Properties = props
+	child.Args = args
+	return rt.AnalyzeResolver(ctx, "metrics_sql", &child)
 }

@@ -15,7 +15,7 @@ import (
 )
 
 func init() {
-	runtime.RegisterResolverInitializer("metrics_annotations", newAnnotationsResolver)
+	runtime.RegisterResolver("metrics_annotations", newAnnotationsResolver, runtime.AnalysisUnsupported)
 }
 
 type metricsAnnotationsResolver struct {
@@ -141,8 +141,4 @@ func (r *metricsAnnotationsResolver) ResolveInteractive(ctx context.Context) (ru
 
 func (r *metricsAnnotationsResolver) ResolveExport(ctx context.Context, w io.Writer, opts *runtime.ResolverExportOptions) error {
 	return errors.New("not implemented")
-}
-
-func (r *metricsAnnotationsResolver) InferRequiredSecurityRules() ([]*runtimev1.SecurityRule, error) {
-	return nil, errors.New("security rule inference not implemented")
 }
