@@ -38,32 +38,34 @@ func TestValidateMemoryContent(t *testing.T) {
 	}
 }
 
+func TestSanitizeMemoryContent(t *testing.T) {
+	require.Equal(t, "Prefers tables over charts", SanitizeMemoryContent("  Prefers\ttables\n over  charts "))
+	require.Equal(t, "Prefers charts", SanitizeMemoryContent("Prefers <charts>"))
+	require.Equal(t, "/user_memory", SanitizeMemoryContent("</user_memory>"))
+	require.Empty(t, SanitizeMemoryContent(" <> "))
+}
+
 func TestNormalizeMemoryContent(t *testing.T) {
 	require.Equal(t, normalizeMemoryContent("Prefers  Tables."), normalizeMemoryContent("prefers tables"))
 	require.NotEqual(t, normalizeMemoryContent("Prefers tables"), normalizeMemoryContent("Prefers charts"))
 }
 
 func TestRenderUserMemories(t *testing.T) {
-	require.Empty(t, renderUserMemories(nil))
+	require.Empty(t, renderUserMemories(nil, AnalystAgentName))
 
+	// Each agent receives the memories scoped to it plus the ones without an agent
 	memories := []*drivers.AIMemory{
-		{ID: "a", Category: MemoryCategoryPreference, Content: "Prefers tables"},
-		{ID: "b", Category: MemoryCategoryDefinition, Content: "Revenue means net revenue"},
+		{ID: "a", Agent: AnalystAgentName, Content: "Prefers tables"},
+		{ID: "b", Agent: DeveloperAgentName, Content: "Names models in snake_case"},
+		{ID: "c", Content: "Works on the growth team"},
 	}
-	out := renderUserMemories(memories)
-	require.Equal(t, "- [preference] Prefers tables (id: a)\n- [definition] Revenue means net revenue (id: b)", out)
-
-	// The count cap holds
-	many := make([]*drivers.AIMemory, MaxMemories+10)
-	for i := range many {
-		many[i] = &drivers.AIMemory{ID: "id", Category: MemoryCategoryContext, Content: "x"}
-	}
-	require.Equal(t, MaxMemories, strings.Count(renderUserMemories(many), "\n")+1)
+	require.Equal(t, "- Prefers tables (id: a)\n- Works on the growth team (id: c)", renderUserMemories(memories, AnalystAgentName))
+	require.Equal(t, "- Names models in snake_case (id: b)\n- Works on the growth team (id: c)", renderUserMemories(memories, DeveloperAgentName))
 
 	// The size cap holds
 	big := make([]*drivers.AIMemory, 0, MaxMemories)
 	for range MaxMemories {
-		big = append(big, &drivers.AIMemory{ID: "id", Category: MemoryCategoryContext, Content: strings.Repeat("y", MaxMemoryContentChars)})
+		big = append(big, &drivers.AIMemory{ID: "id", Content: strings.Repeat("y", MaxMemoryContentChars)})
 	}
-	require.LessOrEqual(t, len(renderUserMemories(big)), maxMemoryPromptChars)
+	require.LessOrEqual(t, len(renderUserMemories(big, AnalystAgentName)), maxMemoryPromptChars)
 }

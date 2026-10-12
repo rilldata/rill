@@ -1149,29 +1149,24 @@ export interface V1GetAIMessageResponse {
 /** AIMemory is a short preference or fact the AI has learned about the current user in an instance. */
 export interface V1AIMemory {
   id?: string;
-  /** One of: preference, definition, context, feedback. */
-  category?: string;
   content?: string;
-  /** One of: explicit, extracted, manual. */
-  source?: string;
-  /** The conversation and message the memory was learned from (empty for manually created memories). */
+  /** The agent the memory applies to: "analyst_agent" or "developer_agent". Empty when it applies to every agent.
+The AI scopes what it learns to the agent that learned it; the user chooses the agent for memories they add themselves. */
+  agent?: string;
+  /** The conversation the memory was learned from. Empty for memories the user added themselves. */
   sourceConversationId?: string;
-  sourceMessageId?: string;
   createdOn?: string;
   updatedOn?: string;
 }
 
 export interface V1ListAIMemoriesResponse {
   memories?: V1AIMemory[];
-  /** False if memory is not available to the current user (feature disabled for the project or anonymous user). */
-  available?: boolean;
-  /** False if the user has turned memory off. Memories are then neither used nor updated, but can still be managed. */
-  enabled?: boolean;
 }
 
 export type RuntimeServiceCreateAIMemoryBody = {
-  category?: string;
   content?: string;
+  /** The agent the memory applies to: "analyst_agent" or "developer_agent". Empty for every agent. */
+  agent?: string;
 };
 
 export interface V1CreateAIMemoryResponse {
@@ -1179,8 +1174,9 @@ export interface V1CreateAIMemoryResponse {
 }
 
 export type RuntimeServiceUpdateAIMemoryBody = {
-  category?: string;
   content?: string;
+  /** The agent the memory applies to: "analyst_agent" or "developer_agent". Empty for every agent. */
+  agent?: string;
 };
 
 export interface V1UpdateAIMemoryResponse {
@@ -1189,6 +1185,11 @@ export interface V1UpdateAIMemoryResponse {
 
 export interface V1DeleteAIMemoryResponse {
   [key: string]: unknown;
+}
+
+export interface V1GetAIMemorySettingsResponse {
+  /** False if the user has turned memory off. Memories are then neither used nor updated, but can still be managed. */
+  enabled?: boolean;
 }
 
 export type RuntimeServiceUpdateAIMemorySettingsBody = {

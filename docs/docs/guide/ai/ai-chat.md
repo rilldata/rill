@@ -147,14 +147,16 @@ AI Chat remembers durable preferences and clarifications you share with it, and 
 
 ### What is remembered
 
-Memory only holds what you tell the AI about yourself and how you want it to work:
+Memory only holds what you tell the AI about yourself and how you want it to work, for example:
 
-- **Preferences** such as tables instead of charts, units, a default time range or comparison
-- **Definitions** such as "revenue means net revenue" or "active means 30-day active"
-- **Context** such as your role, your team, and which metrics views you care about
-- **Feedback** such as "do not use the legacy metrics view"
+- Preferences such as tables instead of charts, units, a default time range or comparison
+- Definitions such as "revenue means net revenue" or "active means 30-day active"
+- Context such as your role, your team, and which metrics views you care about
+- Feedback such as "do not use the legacy metrics view"
 
-You can ask the AI directly ("remember that I always want week-over-week comparisons", "forget that") or just state a preference in passing. After each reply, the AI checks whether it learned something durable and shows a **Memory updated** notice under the reply with what changed. Open **Manage memory** from the notice to edit or delete it.
+You can ask the AI directly ("remember that I always want week-over-week comparisons", "forget that") or just state a preference in passing. When the AI saves, changes or removes a memory, it shows a **Memory updated** notice under its reply. Open **Manage memory** from the notice to edit or delete it.
+
+Memories are kept per agent: what the AI learns while analyzing data is used when it analyzes data, and what it learns while developing the project is used when it develops the project. When you add a memory yourself, you choose whether it applies to one of them or to both.
 
 ### What is never remembered
 
@@ -170,7 +172,7 @@ Open **Manage memory** from the chat sidebar (or **Settings > AI memory** in Ril
 
 Turn **Use memory** off to keep your memories but stop the AI from using or updating them until you turn it back on.
 
-Memory is available in Rill Cloud for logged-in users and in Rill Developer. It is not used by AI reports, shared conversations viewed by other users, or external AI clients connected through MCP. In Rill Developer, memories are stored with the project's local state in `tmp/meta.db` (which is not committed to git). Project administrators can turn memory off for a project with the `chat_memory` feature flag; see [AI Configuration](/developers/build/ai-configuration#user-memory).
+Memory is available in Rill Cloud for logged-in users and in Rill Developer, where it is stored locally and never committed to git. It is not used by AI reports, shared conversations viewed by other users, or external AI clients connected through MCP. Project administrators can turn memory off for a project with the `chat_memory` feature flag; see [AI Configuration](/developers/build/ai-configuration#user-memory).
 
 ## Use in Your Favorite AI Client
 

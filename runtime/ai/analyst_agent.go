@@ -205,7 +205,7 @@ func (t *AnalystAgent) Handler(ctx context.Context, args *AnalystAgentArgs) (*An
 	tools = append(tools, UpdateMemoryName)
 
 	// Build completion messages
-	systemPrompt, err := t.systemPrompt()
+	systemPrompt, err := t.systemPrompt(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -238,8 +238,8 @@ func (t *AnalystAgent) Handler(ctx context.Context, args *AnalystAgentArgs) (*An
 	return &AnalystAgentResult{Response: response}, nil
 }
 
-func (t *AnalystAgent) systemPrompt() (string, error) {
-	instr, err := instructions.Load("analysis.md", instructions.Options{})
+func (t *AnalystAgent) systemPrompt(ctx context.Context) (string, error) {
+	instr, err := instructions.Load("analysis.md", instructions.Options{Memory: GetSession(ctx).MemoryEnabled()})
 	if err != nil {
 		return "", fmt.Errorf("failed to load analyst agent system prompt: %w", err)
 	}
@@ -279,7 +279,7 @@ func (t *AnalystAgent) userPrompt(ctx context.Context, metricsViewNames []string
 	data := map[string]any{
 		"prompt":           args.Prompt,
 		"ai_instructions":  session.ProjectInstructions(),
-		"user_memories":    renderUserMemories(session.UserMemories()),
+		"user_memories":    renderUserMemories(session.UserMemories(), AnalystAgentName),
 		"is_prompt":        args.Prompt != "",
 		"metrics_views":    strings.Join(metricsViewsQuoted, ", "),
 		"explore":          args.Explore,

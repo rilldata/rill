@@ -26,16 +26,16 @@
   import type { V1AIMemory } from "@rilldata/web-common/runtime-client";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { Pencil, Trash2Icon } from "lucide-svelte";
+  import { ToolName } from "../core/types";
   import {
     createAIMemory,
     deleteAIMemory,
     MAX_MEMORIES,
     MAX_MEMORY_CONTENT_CHARS,
-    MEMORY_CATEGORIES,
-    MemoryCategory,
     setAIMemoryEnabled,
     updateAIMemory,
     useAIMemories,
+    useAIMemorySettings,
   } from "./memory-store";
 
   /** Base path of the chat, used to link a memory to the conversation it was learned from. */
@@ -43,16 +43,27 @@
 
   const client = useRuntimeClient();
   const memoriesQuery = useAIMemories(client);
+  const settingsQuery = useAIMemorySettings(client);
 
   $: memories = $memoriesQuery.data?.memories ?? [];
-  $: available = !!$memoriesQuery.data?.available;
-  $: enabled = !!$memoriesQuery.data?.enabled;
+  $: enabled = $settingsQuery.data?.enabled ?? true;
 
   // ----- Edit / add dialog -----
+  /** Select value for a memory that applies to every agent. The API represents it as an empty agent. */
+  const ALL_AGENTS = "all";
+  const agentOptions = [
+    { value: ALL_AGENTS, label: m.chat_memory_agent_all() },
+    { value: ToolName.ANALYST_AGENT, label: m.chat_memory_agent_analyst() },
+    {
+      value: ToolName.DEVELOPER_AGENT,
+      label: m.chat_memory_agent_developer(),
+    },
+  ];
+
   let editorOpen = false;
   let editing: V1AIMemory | null = null;
   let editorContent = "";
-  let editorCategory: string = MemoryCategory.PREFERENCE;
+  let editorAgent = ALL_AGENTS;
   let saving = false;
 
   $: editorError =
@@ -61,38 +72,30 @@
       : null;
   $: canSave = !saving && editorContent.trim().length > 0 && !editorError;
 
-  const categoryOptions = MEMORY_CATEGORIES.map((category) => ({
-    value: category,
-    label: categoryLabel(category),
-  }));
-
   function openAdd() {
     editing = null;
     editorContent = "";
-    editorCategory = MemoryCategory.PREFERENCE;
+    editorAgent = ALL_AGENTS;
     editorOpen = true;
   }
 
   function openEdit(memory: V1AIMemory) {
     editing = memory;
     editorContent = memory.content ?? "";
-    editorCategory = memory.category ?? MemoryCategory.CONTEXT;
+    editorAgent = memory.agent || ALL_AGENTS;
     editorOpen = true;
   }
 
   async function save() {
     if (!canSave) return;
     saving = true;
+    const content = editorContent.trim();
+    const agent = editorAgent === ALL_AGENTS ? "" : editorAgent;
     try {
       if (editing?.id) {
-        await updateAIMemory(
-          client,
-          editing.id,
-          editorCategory,
-          editorContent.trim(),
-        );
+        await updateAIMemory(client, editing.id, content, agent);
       } else {
-        await createAIMemory(client, editorCategory, editorContent.trim());
+        await createAIMemory(client, content, agent);
       }
       eventBus.emit("notification", { message: m.chat_memory_saved() });
       editorOpen = false;
@@ -139,16 +142,15 @@
     }
   }
 
-  function categoryLabel(category: string | undefined): string {
-    switch (category) {
-      case MemoryCategory.PREFERENCE:
-        return m.chat_memory_category_preference();
-      case MemoryCategory.DEFINITION:
-        return m.chat_memory_category_definition();
-      case MemoryCategory.FEEDBACK:
-        return m.chat_memory_category_feedback();
+  /** The agent a memory applies to. A memory without an agent applies to all. */
+  function agentLabel(agent: string | undefined): string {
+    switch (agent) {
+      case ToolName.ANALYST_AGENT:
+        return m.chat_memory_agent_analyst();
+      case ToolName.DEVELOPER_AGENT:
+        return m.chat_memory_agent_developer();
       default:
-        return m.chat_memory_category_context();
+        return m.chat_memory_agent_all();
     }
   }
 
@@ -169,7 +171,7 @@
     <div class="memory-loading">
       <DelayedSpinner isLoading={true} size="20px" />
     </div>
-  {:else if !available}
+  {:else if $memoriesQuery.isError}
     <p class="memory-empty">{m.chat_memory_unavailable()}</p>
   {:else}
     <div class="memory-toolbar">
@@ -217,8 +219,8 @@
         <table class="memory-table">
           <thead>
             <tr>
-              <th>{m.chat_memory_category_label()}</th>
               <th>{m.chat_memory_content_label()}</th>
+              <th>{m.chat_memory_agent_label()}</th>
               <th>{m.chat_memory_learned_from()}</th>
               <th>{m.chat_memory_updated_on()}</th>
               <th><span class="sr-only">{m.chat_memory_edit()}</span></th>
@@ -227,9 +229,8 @@
           <tbody>
             {#each memories as memory (memory.id)}
               <tr data-testid="memory-row">
-                <td class="memory-category">{categoryLabel(memory.category)}</td
-                >
                 <td class="memory-content">{memory.content}</td>
+                <td class="memory-agent">{agentLabel(memory.agent)}</td>
                 <td class="memory-source">
                   {#if memory.sourceConversationId && conversationBasePath}
                     <a
@@ -300,12 +301,6 @@
         void save();
       }}
     >
-      <Select
-        id="memory-category"
-        label={m.chat_memory_category_label()}
-        options={categoryOptions}
-        bind:value={editorCategory}
-      />
       <Textarea
         id="memory-content"
         label={m.chat_memory_content_label()}
@@ -313,6 +308,12 @@
         rows={3}
         errors={editorError}
         bind:value={editorContent}
+      />
+      <Select
+        id="memory-agent"
+        label={m.chat_memory_agent_label()}
+        options={agentOptions}
+        bind:value={editorAgent}
       />
     </form>
     <DialogFooter>
@@ -413,15 +414,12 @@
     @apply border-b-0;
   }
 
-  .memory-category {
-    @apply whitespace-nowrap text-fg-secondary;
-  }
-
   .memory-content {
     @apply text-fg-primary;
     min-width: 16rem;
   }
 
+  .memory-agent,
   .memory-source,
   .memory-date {
     @apply whitespace-nowrap text-xs text-fg-secondary;

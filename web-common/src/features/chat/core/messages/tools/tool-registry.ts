@@ -122,13 +122,8 @@ const TOOL_CONFIGS: Partial<Record<string, ToolConfig>> = {
     onCall: handleNavigateToolCall,
   },
 
-  // Memory tools: render as a "Memory updated" notice with undo; refresh the memory list when they complete
+  // Memory: render as a "Memory updated" notice and refresh the memory list when the call completes
   [ToolName.UPDATE_MEMORY]: {
-    renderMode: "block",
-    createBlock: createMemoryUpdateBlock,
-    onResult: handleMemoryToolResult,
-  },
-  [ToolName.EXTRACT_MEMORIES]: {
     renderMode: "block",
     createBlock: createMemoryUpdateBlock,
     onResult: handleMemoryToolResult,

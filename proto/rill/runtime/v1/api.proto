@@ -311,7 +311,7 @@ service RuntimeService {
     };
   }
 
-  // UpdateAIMemory updates the category and content of one of the current user's AI memories.
+  // UpdateAIMemory updates the content and agent of one of the current user's AI memories.
   rpc UpdateAIMemory(UpdateAIMemoryRequest) returns (UpdateAIMemoryResponse) {
     option (google.api.http) = {
       put: "/v1/instances/{instance_id}/ai/memories/{memory_id}",
@@ -324,8 +324,12 @@ service RuntimeService {
     option (google.api.http) = {delete: "/v1/instances/{instance_id}/ai/memories/{memory_id}"};
   }
 
+  // GetAIMemorySettings returns whether the current user has AI memory turned on in an instance.
+  rpc GetAIMemorySettings(GetAIMemorySettingsRequest) returns (GetAIMemorySettingsResponse) {
+    option (google.api.http) = {get: "/v1/instances/{instance_id}/ai/memory-settings"};
+  }
+
   // UpdateAIMemorySettings turns AI memory on or off for the current user in an instance.
-  // The current settings are returned by ListAIMemories.
   rpc UpdateAIMemorySettings(UpdateAIMemorySettingsRequest) returns (UpdateAIMemorySettingsResponse) {
     option (google.api.http) = {
       put: "/v1/instances/{instance_id}/ai/memory-settings",
@@ -1304,16 +1308,14 @@ message GetAIMessageResponse {
 // AIMemory is a short preference or fact the AI has learned about the current user in an instance.
 message AIMemory {
   string id = 1;
-  // One of: preference, definition, context, feedback.
-  string category = 2;
-  string content = 3;
-  // One of: explicit, extracted, manual.
-  string source = 4;
-  // The conversation and message the memory was learned from (empty for manually created memories).
-  string source_conversation_id = 5;
-  string source_message_id = 6;
-  google.protobuf.Timestamp created_on = 7;
-  google.protobuf.Timestamp updated_on = 8;
+  string content = 2;
+  // The agent the memory applies to: "analyst_agent" or "developer_agent". Empty when it applies to every agent.
+  // The AI scopes what it learns to the agent that learned it; the user chooses the agent for memories they add themselves.
+  string agent = 3;
+  // The conversation the memory was learned from. Empty for memories the user added themselves.
+  string source_conversation_id = 4;
+  google.protobuf.Timestamp created_on = 5;
+  google.protobuf.Timestamp updated_on = 6;
 }
 
 // Request message for RuntimeService.ListAIMemories
@@ -1324,17 +1326,14 @@ message ListAIMemoriesRequest {
 // Response message for RuntimeService.ListAIMemories
 message ListAIMemoriesResponse {
   repeated AIMemory memories = 1;
-  // False if memory is not available to the current user (feature disabled for the project or anonymous user).
-  bool available = 2;
-  // False if the user has turned memory off. Memories are then neither used nor updated, but can still be managed.
-  bool enabled = 3;
 }
 
 // Request message for RuntimeService.CreateAIMemory
 message CreateAIMemoryRequest {
   string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
-  string category = 2;
-  string content = 3 [(validate.rules).string = {min_len: 1, max_len: 300}];
+  string content = 2 [(validate.rules).string = {min_len: 1, max_len: 300}];
+  // The agent the memory applies to: "analyst_agent" or "developer_agent". Empty for every agent.
+  string agent = 3;
 }
 
 // Response message for RuntimeService.CreateAIMemory
@@ -1346,8 +1345,9 @@ message CreateAIMemoryResponse {
 message UpdateAIMemoryRequest {
   string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
   string memory_id = 2 [(validate.rules).string = {min_len: 1}];
-  string category = 3;
-  string content = 4 [(validate.rules).string = {min_len: 1, max_len: 300}];
+  string content = 3 [(validate.rules).string = {min_len: 1, max_len: 300}];
+  // The agent the memory applies to: "analyst_agent" or "developer_agent". Empty for every agent.
+  string agent = 4;
 }
 
 // Response message for RuntimeService.UpdateAIMemory
@@ -1363,6 +1363,17 @@ message DeleteAIMemoryRequest {
 
 // Response message for RuntimeService.DeleteAIMemory
 message DeleteAIMemoryResponse {}
+
+// Request message for RuntimeService.GetAIMemorySettings
+message GetAIMemorySettingsRequest {
+  string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
+}
+
+// Response message for RuntimeService.GetAIMemorySettings
+message GetAIMemorySettingsResponse {
+  // False if the user has turned memory off. Memories are then neither used nor updated, but can still be managed.
+  bool enabled = 1;
+}
 
 // Request message for RuntimeService.UpdateAIMemorySettings
 message UpdateAIMemorySettingsRequest {

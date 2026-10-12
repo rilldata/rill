@@ -16,16 +16,15 @@ function msg(overrides: Partial<V1Message>): V1Message {
   };
 }
 
-const appliedOps = JSON.stringify({
-  ops: [
-    {
-      op: "add",
-      memory_id: "m1",
-      category: "preference",
-      content: "Prefers tables over charts.",
-    },
-    { op: "noop", reason: "already remembered" },
-  ],
+const appliedResult = JSON.stringify({
+  op: "add",
+  memory_id: "m1",
+  content: "Prefers tables over charts.",
+});
+
+const rejectedResult = JSON.stringify({
+  op: "noop",
+  reason: "already remembered",
 });
 
 describe("createMemoryUpdateBlock", () => {
@@ -46,41 +45,50 @@ describe("createMemoryUpdateBlock", () => {
     expect(createMemoryUpdateBlock(call, result)).toBeNull();
   });
 
-  it("returns null when nothing changed", () => {
-    const call = msg({ id: "c1", tool: ToolName.EXTRACT_MEMORIES });
-    const result = msg({
-      parentId: "c1",
-      type: MessageType.RESULT,
-      tool: ToolName.EXTRACT_MEMORIES,
-      contentData: JSON.stringify({ ops: [{ op: "noop", reason: "x" }] }),
-    });
-    expect(createMemoryUpdateBlock(call, result)).toBeNull();
-  });
-
-  it("keeps only applied ops", () => {
+  it("returns null when the operation was rejected", () => {
     const call = msg({ id: "c1", tool: ToolName.UPDATE_MEMORY });
     const result = msg({
       parentId: "c1",
       type: MessageType.RESULT,
       tool: ToolName.UPDATE_MEMORY,
-      contentData: appliedOps,
+      contentData: rejectedResult,
+    });
+    expect(createMemoryUpdateBlock(call, result)).toBeNull();
+  });
+
+  it("returns the applied operation", () => {
+    const call = msg({ id: "c1", tool: ToolName.UPDATE_MEMORY });
+    const result = msg({
+      parentId: "c1",
+      type: MessageType.RESULT,
+      tool: ToolName.UPDATE_MEMORY,
+      contentData: appliedResult,
     });
     const block = createMemoryUpdateBlock(call, result);
     expect(block).not.toBeNull();
     expect(block!.type).toBe("memory-update");
-    expect(block!.ops).toHaveLength(1);
-    expect(block!.ops[0].memory_id).toBe("m1");
+    expect(block!.result.op).toBe("add");
+    expect(block!.result.memory_id).toBe("m1");
+    expect(block!.result.content).toBe("Prefers tables over charts.");
   });
 });
 
-describe("transformToBlocks with memory tools", () => {
-  it("renders a memory update block after the assistant answer and hides extraction progress", () => {
+describe("transformToBlocks with update_memory", () => {
+  it("renders a memory update block for an applied operation", () => {
     const messages: V1Message[] = [
       msg({
         id: "root",
         role: "user",
         tool: ToolName.ROUTER_AGENT,
         contentData: JSON.stringify({ prompt: "Always show tables" }),
+      }),
+      msg({ id: "update", parentId: "root", tool: ToolName.UPDATE_MEMORY }),
+      msg({
+        id: "update-result",
+        parentId: "update",
+        type: MessageType.RESULT,
+        tool: ToolName.UPDATE_MEMORY,
+        contentData: appliedResult,
       }),
       msg({
         id: "root-result",
@@ -93,38 +101,23 @@ describe("transformToBlocks with memory tools", () => {
           agent: ToolName.ANALYST_AGENT,
         }),
       }),
-      msg({ id: "extract", parentId: "root", tool: ToolName.EXTRACT_MEMORIES }),
-      msg({
-        id: "extract-progress",
-        parentId: "extract",
-        type: MessageType.PROGRESS,
-        contentType: MessageContentType.TEXT,
-        contentData: '{"ops":[]}',
-      }),
-      msg({
-        id: "extract-result",
-        parentId: "extract",
-        type: MessageType.RESULT,
-        tool: ToolName.EXTRACT_MEMORIES,
-        contentData: appliedOps,
-      }),
     ];
 
     const blocks = transformToBlocks(messages, false, false);
     const types = blocks.map((b) => b.type);
-    expect(types).toEqual(["text", "text", "memory-update"]);
+    expect(types).toEqual(["text", "memory-update", "text"]);
     expect(types).not.toContain("thinking");
   });
 
-  it("renders no block for an extraction that learned nothing", () => {
+  it("renders no block for a rejected operation", () => {
     const messages: V1Message[] = [
-      msg({ id: "extract", parentId: "root", tool: ToolName.EXTRACT_MEMORIES }),
+      msg({ id: "update", parentId: "root", tool: ToolName.UPDATE_MEMORY }),
       msg({
-        id: "extract-result",
-        parentId: "extract",
+        id: "update-result",
+        parentId: "update",
         type: MessageType.RESULT,
-        tool: ToolName.EXTRACT_MEMORIES,
-        contentData: JSON.stringify({ ops: [] }),
+        tool: ToolName.UPDATE_MEMORY,
+        contentData: rejectedResult,
       }),
     ];
     expect(transformToBlocks(messages, false, false)).toEqual([]);

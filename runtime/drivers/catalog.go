@@ -65,6 +65,7 @@ type CatalogStore interface {
 	InsertAIMemory(ctx context.Context, m *AIMemory) error
 	UpdateAIMemory(ctx context.Context, m *AIMemory) error
 	DeleteAIMemory(ctx context.Context, id string) error
+	// FindAIMemorySettings returns ErrNotFound when the owner has never changed their settings.
 	FindAIMemorySettings(ctx context.Context, ownerID string) (*AIMemorySettings, error)
 	UpsertAIMemorySettings(ctx context.Context, s *AIMemorySettings) error
 }
@@ -148,24 +149,18 @@ type AIMessage struct {
 	Content     string    `db:"content"`
 }
 
-// Sources of an AIMemory.
-const (
-	AIMemorySourceExplicit  = "explicit"  // the user asked the AI to remember or forget something
-	AIMemorySourceExtracted = "extracted" // extracted in the background after an AI turn
-	AIMemorySourceManual    = "manual"    // created or edited by the user in the UI
-)
-
 // AIMemory is a short fact or preference the AI has learned about a user in an instance.
 // It is scoped to (instance, owner) and is injected into the AI's prompts in later sessions.
 type AIMemory struct {
-	ID              string    `db:"id"`
-	InstanceID      string    `db:"instance_id"`
-	OwnerID         string    `db:"owner_id"`
-	Category        string    `db:"category"`
-	Content         string    `db:"content"`
-	Source          string    `db:"source"`
+	ID         string `db:"id"`
+	InstanceID string `db:"instance_id"`
+	OwnerID    string `db:"owner_id"`
+	// Agent is the name of the agent the memory applies to: the agent that learned it, or the one the user chose when adding it themselves.
+	// It is empty when the memory applies to every agent.
+	Agent   string `db:"agent"`
+	Content string `db:"content"`
+	// SourceSessionID is the session the memory was learned in. It is empty for memories the user added themselves.
 	SourceSessionID string    `db:"source_session_id"`
-	SourceMessageID string    `db:"source_message_id"`
 	CreatedOn       time.Time `db:"created_on"`
 	UpdatedOn       time.Time `db:"updated_on"`
 }

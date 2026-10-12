@@ -690,10 +690,11 @@ paths:
           schema:
             type: object
             properties:
-              category:
-                type: string
               content:
                 type: string
+              agent:
+                type: string
+                description: 'The agent the memory applies to: "analyst_agent" or "developer_agent". Empty for every agent.'
             title: Request message for RuntimeService.CreateAIMemory
       tags:
         - RuntimeService
@@ -722,7 +723,7 @@ paths:
       tags:
         - RuntimeService
     put:
-      summary: UpdateAIMemory updates the category and content of one of the current user's AI memories.
+      summary: UpdateAIMemory updates the content and agent of one of the current user's AI memories.
       operationId: RuntimeService_UpdateAIMemory
       responses:
         "200":
@@ -748,18 +749,36 @@ paths:
           schema:
             type: object
             properties:
-              category:
-                type: string
               content:
                 type: string
+              agent:
+                type: string
+                description: 'The agent the memory applies to: "analyst_agent" or "developer_agent". Empty for every agent.'
             title: Request message for RuntimeService.UpdateAIMemory
       tags:
         - RuntimeService
   /v1/instances/{instanceId}/ai/memory-settings:
+    get:
+      summary: GetAIMemorySettings returns whether the current user has AI memory turned on in an instance.
+      operationId: RuntimeService_GetAIMemorySettings
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1GetAIMemorySettingsResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+      tags:
+        - RuntimeService
     put:
-      summary: |-
-        UpdateAIMemorySettings turns AI memory on or off for the current user in an instance.
-        The current settings are returned by ListAIMemories.
+      summary: UpdateAIMemorySettings turns AI memory on or off for the current user in an instance.
       operationId: RuntimeService_UpdateAIMemorySettings
       responses:
         "200":
@@ -4300,19 +4319,16 @@ definitions:
     properties:
       id:
         type: string
-      category:
-        type: string
-        description: 'One of: preference, definition, context, feedback.'
       content:
         type: string
-      source:
+      agent:
         type: string
-        description: 'One of: explicit, extracted, manual.'
+        description: |-
+          The agent the memory applies to: "analyst_agent" or "developer_agent". Empty when it applies to every agent.
+          The AI scopes what it learns to the agent that learned it; the user chooses the agent for memories they add themselves.
       sourceConversationId:
         type: string
-        description: The conversation and message the memory was learned from (empty for manually created memories).
-      sourceMessageId:
-        type: string
+        description: The conversation the memory was learned from. Empty for memories the user added themselves.
       createdOn:
         type: string
         format: date-time
@@ -5830,6 +5846,13 @@ definitions:
         type: boolean
         description: Indicates if AI-based generation succeeded. If it failed, it falls back to the simpler heuristic approach.
     title: Response message for RuntimeService.GenerateMetricsViewFile
+  v1GetAIMemorySettingsResponse:
+    type: object
+    properties:
+      enabled:
+        type: boolean
+        description: False if the user has turned memory off. Memories are then neither used nor updated, but can still be managed.
+    title: Response message for RuntimeService.GetAIMemorySettings
   v1GetAIMessageResponse:
     type: object
     properties:
@@ -6154,12 +6177,6 @@ definitions:
         items:
           type: object
           $ref: '#/definitions/v1AIMemory'
-      available:
-        type: boolean
-        description: False if memory is not available to the current user (feature disabled for the project or anonymous user).
-      enabled:
-        type: boolean
-        description: False if the user has turned memory off. Memories are then neither used nor updated, but can still be managed.
     title: Response message for RuntimeService.ListAIMemories
   v1ListBucketsResponse:
     type: object

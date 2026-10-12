@@ -67,7 +67,7 @@ func (t *DevelopFile) Handler(ctx context.Context, args *DevelopFileArgs) (*Deve
 	args.Path = path
 
 	// Prepare the system prompts
-	generalInstructions, err := instructions.Load("development.md", instructions.Options{})
+	generalInstructions, err := instructions.Load("development.md", instructions.Options{Memory: GetSession(ctx).MemoryEnabled()})
 	if err != nil {
 		return nil, fmt.Errorf("failed to load developer agent system prompt: %w", err)
 	}
@@ -191,7 +191,7 @@ func (t *DevelopFile) userPrompt(ctx context.Context, args *DevelopFileArgs) (st
 		"type":               args.Type,
 		"prompt":             args.Prompt,
 		"ai_instructions":    session.ProjectInstructions(),
-		"user_memories":      renderUserMemories(session.UserMemories()),
+		"user_memories":      renderUserMemories(session.UserMemories(), DeveloperAgentName),
 		"default_olap_info":  olapInfo,
 		"metrics_views_info": metricsViewsInfo,
 	}

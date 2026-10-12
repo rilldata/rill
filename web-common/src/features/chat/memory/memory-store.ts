@@ -6,6 +6,8 @@
  */
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import {
+  getRuntimeServiceGetAIMemorySettingsQueryKey,
+  getRuntimeServiceGetAIMemorySettingsQueryOptions,
   getRuntimeServiceListAIMemoriesQueryKey,
   getRuntimeServiceListAIMemoriesQueryOptions,
   runtimeServiceCreateAIMemory,
@@ -16,34 +18,26 @@ import {
 import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import { createQuery } from "@tanstack/svelte-query";
 
-/** Memory categories, mirroring runtime/ai/memory.go */
-export const MemoryCategory = {
-  PREFERENCE: "preference",
-  DEFINITION: "definition",
-  CONTEXT: "context",
-  FEEDBACK: "feedback",
-} as const;
-export type MemoryCategory =
-  (typeof MemoryCategory)[keyof typeof MemoryCategory];
-
-export const MEMORY_CATEGORIES: MemoryCategory[] = [
-  MemoryCategory.PREFERENCE,
-  MemoryCategory.DEFINITION,
-  MemoryCategory.CONTEXT,
-  MemoryCategory.FEEDBACK,
-];
-
 /** Limits mirroring runtime/ai/memory.go */
 export const MAX_MEMORIES = 50;
 export const MAX_MEMORY_CONTENT_CHARS = 300;
 
-/**
- * The user's memories plus whether memory is available to them (feature flag on, logged-in user)
- * and whether they have it turned on.
- */
+/** The user's memories in the current project. */
 export function useAIMemories(client: RuntimeClient) {
   return createQuery(
     getRuntimeServiceListAIMemoriesQueryOptions(
+      client,
+      {},
+      { query: { enabled: !!client.instanceId } },
+    ),
+    queryClient,
+  );
+}
+
+/** Whether the user has memory turned on in the current project. */
+export function useAIMemorySettings(client: RuntimeClient) {
+  return createQuery(
+    getRuntimeServiceGetAIMemorySettingsQueryOptions(
       client,
       {},
       { query: { enabled: !!client.instanceId } },
@@ -59,15 +53,13 @@ export function invalidateAIMemories(instanceId: string) {
   });
 }
 
+/** Creates a memory. An empty agent makes it apply to every agent. */
 export async function createAIMemory(
   client: RuntimeClient,
-  category: string,
   content: string,
+  agent: string,
 ) {
-  const res = await runtimeServiceCreateAIMemory(client, {
-    category,
-    content,
-  });
+  const res = await runtimeServiceCreateAIMemory(client, { content, agent });
   await invalidateAIMemories(client.instanceId);
   return res.memory;
 }
@@ -75,13 +67,13 @@ export async function createAIMemory(
 export async function updateAIMemory(
   client: RuntimeClient,
   memoryId: string,
-  category: string,
   content: string,
+  agent: string,
 ) {
   const res = await runtimeServiceUpdateAIMemory(client, {
     memoryId,
-    category,
     content,
+    agent,
   });
   await invalidateAIMemories(client.instanceId);
   return res.memory;
@@ -97,5 +89,7 @@ export async function setAIMemoryEnabled(
   enabled: boolean,
 ) {
   await runtimeServiceUpdateAIMemorySettings(client, { enabled });
-  await invalidateAIMemories(client.instanceId);
+  await queryClient.invalidateQueries({
+    queryKey: getRuntimeServiceGetAIMemorySettingsQueryKey(client.instanceId),
+  });
 }

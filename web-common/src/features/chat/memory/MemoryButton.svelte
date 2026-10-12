@@ -1,28 +1,24 @@
 <!--
   Opens the memory manager. Renders as an icon button in chat headers and as a full-width
-  secondary button in the fullpage conversation sidebar. Hidden when memory is not available.
+  secondary button in the fullpage conversation sidebar. Hidden when memory is off for the project.
 -->
 <script lang="ts">
   import Button from "@rilldata/web-common/components/button/Button.svelte";
   import IconButton from "@rilldata/web-common/components/button/IconButton.svelte";
+  import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
-  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { Brain } from "lucide-svelte";
   import MemoryDialog from "./MemoryDialog.svelte";
-  import { useAIMemories } from "./memory-store";
 
   export let variant: "icon" | "button" = "icon";
   export let conversationBasePath: string | undefined = undefined;
 
-  const client = useRuntimeClient();
-  const memoriesQuery = useAIMemories(client);
+  const { chatMemory } = featureFlags;
 
   let open = false;
-
-  $: available = !!$memoriesQuery.data?.available;
 </script>
 
-{#if available}
+{#if $chatMemory}
   {#if variant === "icon"}
     <IconButton
       ariaLabel={m.chat_memory_open()}

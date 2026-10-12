@@ -244,17 +244,10 @@ func (s *Server) Complete(ctx context.Context, req *runtimev1.CompleteRequest) (
 	if err != nil {
 		return nil, err
 	}
-	// Flush the session when done. After a successful flush, learn memories from the turn in the background.
-	// The extraction is spawned after the flush so it never races with it.
-	var rootCallID string
 	defer func() {
 		err := session.Flush(ctx)
 		if err != nil {
 			resErr = errors.Join(resErr, err)
-			return
-		}
-		if rootCallID != "" {
-			s.ai.SpawnMemoryExtraction(ctx, session, rootCallID)
 		}
 	}()
 
@@ -307,9 +300,6 @@ func (s *Server) Complete(ctx context.Context, req *runtimev1.CompleteRequest) (
 	if err != nil && msg == nil {
 		// We only return errors when msg == nil. When msg != nil, the error was a tool call error, which will be captured in the messages.
 		return nil, err
-	}
-	if msg != nil && msg.Call != nil && req.FeedbackAgentContext == nil {
-		rootCallID = msg.Call.ID
 	}
 
 	// Lookup the result message and all its descendents
@@ -373,17 +363,10 @@ func (s *Server) CompleteStreaming(req *runtimev1.CompleteStreamingRequest, stre
 	if err != nil {
 		return err
 	}
-	// Flush the session when done. After a successful flush, learn memories from the turn in the background.
-	// The extraction is spawned after the flush so it never races with it.
-	var rootCallID string
 	defer func() {
 		err := session.Flush(ctx)
 		if err != nil {
 			resErr = errors.Join(resErr, err)
-			return
-		}
-		if rootCallID != "" {
-			s.ai.SpawnMemoryExtraction(ctx, session, rootCallID)
 		}
 	}()
 
@@ -472,9 +455,6 @@ func (s *Server) CompleteStreaming(req *runtimev1.CompleteStreamingRequest, stre
 	if err != nil && !errors.Is(err, context.Canceled) && msg == nil {
 		// We only return errors when msg == nil. When msg != nil, the error was a tool call error, which will be captured in the messages.
 		return err
-	}
-	if msg != nil && msg.Call != nil && req.FeedbackAgentContext == nil {
-		rootCallID = msg.Call.ID
 	}
 	return nil
 }

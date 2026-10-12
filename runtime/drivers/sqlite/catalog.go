@@ -574,7 +574,7 @@ func (c *catalogStore) InsertAIMessage(ctx context.Context, m *drivers.AIMessage
 
 func (c *catalogStore) FindAIMemories(ctx context.Context, ownerID string) ([]*drivers.AIMemory, error) {
 	rows, err := c.db.QueryxContext(ctx, `
-		SELECT id, instance_id, owner_id, category, content, source, source_session_id, source_message_id, created_on, updated_on
+		SELECT id, instance_id, owner_id, agent, content, source_session_id, created_on, updated_on
 		FROM ai_memories
 		WHERE instance_id = ? AND owner_id = ?
 		ORDER BY updated_on DESC, id ASC
@@ -587,7 +587,7 @@ func (c *catalogStore) FindAIMemories(ctx context.Context, ownerID string) ([]*d
 	var result []*drivers.AIMemory
 	for rows.Next() {
 		var m drivers.AIMemory
-		if err := rows.Scan(&m.ID, &m.InstanceID, &m.OwnerID, &m.Category, &m.Content, &m.Source, &m.SourceSessionID, &m.SourceMessageID, &m.CreatedOn, &m.UpdatedOn); err != nil {
+		if err := rows.Scan(&m.ID, &m.InstanceID, &m.OwnerID, &m.Agent, &m.Content, &m.SourceSessionID, &m.CreatedOn, &m.UpdatedOn); err != nil {
 			return nil, err
 		}
 		result = append(result, &m)
@@ -600,13 +600,13 @@ func (c *catalogStore) FindAIMemories(ctx context.Context, ownerID string) ([]*d
 
 func (c *catalogStore) FindAIMemory(ctx context.Context, id string) (*drivers.AIMemory, error) {
 	row := c.db.QueryRowxContext(ctx, `
-		SELECT id, instance_id, owner_id, category, content, source, source_session_id, source_message_id, created_on, updated_on
+		SELECT id, instance_id, owner_id, agent, content, source_session_id, created_on, updated_on
 		FROM ai_memories
 		WHERE instance_id = ? AND id = ?
 	`, c.instanceID, id)
 
 	var m drivers.AIMemory
-	if err := row.Scan(&m.ID, &m.InstanceID, &m.OwnerID, &m.Category, &m.Content, &m.Source, &m.SourceSessionID, &m.SourceMessageID, &m.CreatedOn, &m.UpdatedOn); err != nil {
+	if err := row.Scan(&m.ID, &m.InstanceID, &m.OwnerID, &m.Agent, &m.Content, &m.SourceSessionID, &m.CreatedOn, &m.UpdatedOn); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, drivers.ErrNotFound
 		}
@@ -617,18 +617,18 @@ func (c *catalogStore) FindAIMemory(ctx context.Context, id string) (*drivers.AI
 
 func (c *catalogStore) InsertAIMemory(ctx context.Context, m *drivers.AIMemory) error {
 	_, err := c.db.ExecContext(ctx, `
-		INSERT INTO ai_memories (id, instance_id, owner_id, category, content, source, source_session_id, source_message_id, created_on, updated_on)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-	`, m.ID, m.InstanceID, m.OwnerID, m.Category, m.Content, m.Source, m.SourceSessionID, m.SourceMessageID, m.CreatedOn, m.UpdatedOn)
+		INSERT INTO ai_memories (id, instance_id, owner_id, agent, content, source_session_id, created_on, updated_on)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+	`, m.ID, m.InstanceID, m.OwnerID, m.Agent, m.Content, m.SourceSessionID, m.CreatedOn, m.UpdatedOn)
 	return err
 }
 
 func (c *catalogStore) UpdateAIMemory(ctx context.Context, m *drivers.AIMemory) error {
 	now := time.Now()
 	_, err := c.db.ExecContext(ctx, `
-		UPDATE ai_memories SET category = ?, content = ?, source = ?, source_session_id = ?, source_message_id = ?, updated_on = ?
+		UPDATE ai_memories SET agent = ?, content = ?, source_session_id = ?, updated_on = ?
 		WHERE instance_id = ? AND id = ?
-	`, m.Category, m.Content, m.Source, m.SourceSessionID, m.SourceMessageID, now, c.instanceID, m.ID)
+	`, m.Agent, m.Content, m.SourceSessionID, now, c.instanceID, m.ID)
 	if err != nil {
 		return err
 	}
@@ -641,8 +641,6 @@ func (c *catalogStore) DeleteAIMemory(ctx context.Context, id string) error {
 	return err
 }
 
-// FindAIMemorySettings returns the owner's memory settings.
-// It returns the default settings (memory enabled) when the owner has never changed them.
 func (c *catalogStore) FindAIMemorySettings(ctx context.Context, ownerID string) (*drivers.AIMemorySettings, error) {
 	row := c.db.QueryRowxContext(ctx, `
 		SELECT instance_id, owner_id, enabled, updated_on
@@ -653,7 +651,7 @@ func (c *catalogStore) FindAIMemorySettings(ctx context.Context, ownerID string)
 	var s drivers.AIMemorySettings
 	if err := row.Scan(&s.InstanceID, &s.OwnerID, &s.Enabled, &s.UpdatedOn); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return &drivers.AIMemorySettings{InstanceID: c.instanceID, OwnerID: ownerID, Enabled: true}, nil
+			return nil, drivers.ErrNotFound
 		}
 		return nil, err
 	}

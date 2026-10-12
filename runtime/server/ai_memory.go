@@ -3,7 +3,6 @@ package server
 import (
 	"context"
 	"errors"
-	"fmt"
 	"time"
 	"unicode/utf8"
 
@@ -22,12 +21,9 @@ import (
 // Memories are always scoped to the calling user: every read and write is keyed by claims.UserID and the handlers refuse to touch other users' rows.
 
 func (s *Server) ListAIMemories(ctx context.Context, req *runtimev1.ListAIMemoriesRequest) (*runtimev1.ListAIMemoriesResponse, error) {
-	claims, available, err := s.checkAIMemoryAccess(ctx, req.InstanceId)
+	claims, err := s.checkAIMemoryAccess(ctx, req.InstanceId)
 	if err != nil {
 		return nil, err
-	}
-	if !available {
-		return &runtimev1.ListAIMemoriesResponse{Available: false}, nil
 	}
 
 	catalog, release, err := s.runtime.Catalog(ctx, req.InstanceId)
@@ -36,10 +32,6 @@ func (s *Server) ListAIMemories(ctx context.Context, req *runtimev1.ListAIMemori
 	}
 	defer release()
 
-	settings, err := catalog.FindAIMemorySettings(ctx, claims.UserID)
-	if err != nil {
-		return nil, err
-	}
 	memories, err := catalog.FindAIMemories(ctx, claims.UserID)
 	if err != nil {
 		return nil, err
@@ -49,23 +41,16 @@ func (s *Server) ListAIMemories(ctx context.Context, req *runtimev1.ListAIMemori
 	for i, m := range memories {
 		res[i] = aiMemoryToPB(m)
 	}
-	return &runtimev1.ListAIMemoriesResponse{
-		Memories:  res,
-		Available: true,
-		Enabled:   settings.Enabled,
-	}, nil
+	return &runtimev1.ListAIMemoriesResponse{Memories: res}, nil
 }
 
 func (s *Server) CreateAIMemory(ctx context.Context, req *runtimev1.CreateAIMemoryRequest) (*runtimev1.CreateAIMemoryResponse, error) {
-	claims, available, err := s.checkAIMemoryAccess(ctx, req.InstanceId)
+	claims, err := s.checkAIMemoryAccess(ctx, req.InstanceId)
 	if err != nil {
 		return nil, err
 	}
-	if !available {
-		return nil, status.Error(codes.FailedPrecondition, "memory is not available")
-	}
 
-	category, content, err := validateAIMemoryInput(req.Category, req.Content)
+	content, err := validateAIMemoryInput(req.Content, req.Agent)
 	if err != nil {
 		return nil, err
 	}
@@ -89,9 +74,8 @@ func (s *Server) CreateAIMemory(ctx context.Context, req *runtimev1.CreateAIMemo
 		ID:         uuid.NewString(),
 		InstanceID: req.InstanceId,
 		OwnerID:    claims.UserID,
-		Category:   category,
+		Agent:      req.Agent,
 		Content:    content,
-		Source:     drivers.AIMemorySourceManual,
 		CreatedOn:  now,
 		UpdatedOn:  now,
 	}
@@ -104,15 +88,12 @@ func (s *Server) CreateAIMemory(ctx context.Context, req *runtimev1.CreateAIMemo
 }
 
 func (s *Server) UpdateAIMemory(ctx context.Context, req *runtimev1.UpdateAIMemoryRequest) (*runtimev1.UpdateAIMemoryResponse, error) {
-	claims, available, err := s.checkAIMemoryAccess(ctx, req.InstanceId)
+	claims, err := s.checkAIMemoryAccess(ctx, req.InstanceId)
 	if err != nil {
 		return nil, err
 	}
-	if !available {
-		return nil, status.Error(codes.FailedPrecondition, "memory is not available")
-	}
 
-	category, content, err := validateAIMemoryInput(req.Category, req.Content)
+	content, err := validateAIMemoryInput(req.Content, req.Agent)
 	if err != nil {
 		return nil, err
 	}
@@ -128,9 +109,8 @@ func (s *Server) UpdateAIMemory(ctx context.Context, req *runtimev1.UpdateAIMemo
 		return nil, err
 	}
 
-	m.Category = category
+	m.Agent = req.Agent
 	m.Content = content
-	m.Source = drivers.AIMemorySourceManual
 	err = catalog.UpdateAIMemory(ctx, m)
 	if err != nil {
 		return nil, err
@@ -140,12 +120,9 @@ func (s *Server) UpdateAIMemory(ctx context.Context, req *runtimev1.UpdateAIMemo
 }
 
 func (s *Server) DeleteAIMemory(ctx context.Context, req *runtimev1.DeleteAIMemoryRequest) (*runtimev1.DeleteAIMemoryResponse, error) {
-	claims, available, err := s.checkAIMemoryAccess(ctx, req.InstanceId)
+	claims, err := s.checkAIMemoryAccess(ctx, req.InstanceId)
 	if err != nil {
 		return nil, err
-	}
-	if !available {
-		return nil, status.Error(codes.FailedPrecondition, "memory is not available")
 	}
 
 	catalog, release, err := s.runtime.Catalog(ctx, req.InstanceId)
@@ -167,13 +144,30 @@ func (s *Server) DeleteAIMemory(ctx context.Context, req *runtimev1.DeleteAIMemo
 	return &runtimev1.DeleteAIMemoryResponse{}, nil
 }
 
-func (s *Server) UpdateAIMemorySettings(ctx context.Context, req *runtimev1.UpdateAIMemorySettingsRequest) (*runtimev1.UpdateAIMemorySettingsResponse, error) {
-	claims, available, err := s.checkAIMemoryAccess(ctx, req.InstanceId)
+func (s *Server) GetAIMemorySettings(ctx context.Context, req *runtimev1.GetAIMemorySettingsRequest) (*runtimev1.GetAIMemorySettingsResponse, error) {
+	claims, err := s.checkAIMemoryAccess(ctx, req.InstanceId)
 	if err != nil {
 		return nil, err
 	}
-	if !available {
-		return nil, status.Error(codes.FailedPrecondition, "memory is not available")
+
+	catalog, release, err := s.runtime.Catalog(ctx, req.InstanceId)
+	if err != nil {
+		return nil, err
+	}
+	defer release()
+
+	enabled, err := ai.MemoryEnabledByUser(ctx, catalog, claims.UserID)
+	if err != nil {
+		return nil, err
+	}
+
+	return &runtimev1.GetAIMemorySettingsResponse{Enabled: enabled}, nil
+}
+
+func (s *Server) UpdateAIMemorySettings(ctx context.Context, req *runtimev1.UpdateAIMemorySettingsRequest) (*runtimev1.UpdateAIMemorySettingsResponse, error) {
+	claims, err := s.checkAIMemoryAccess(ctx, req.InstanceId)
+	if err != nil {
+		return nil, err
 	}
 
 	catalog, release, err := s.runtime.Catalog(ctx, req.InstanceId)
@@ -194,21 +188,21 @@ func (s *Server) UpdateAIMemorySettings(ctx context.Context, req *runtimev1.Upda
 	return &runtimev1.UpdateAIMemorySettingsResponse{}, nil
 }
 
-// checkAIMemoryAccess checks that the caller may use AI and reports whether memory is available to them.
-// Memory is unavailable to anonymous users on Rill Cloud and when the chat_memory feature flag is off.
-func (s *Server) checkAIMemoryAccess(ctx context.Context, instanceID string) (*runtime.SecurityClaims, bool, error) {
+// checkAIMemoryAccess checks that the caller may use AI and that memory is available to them.
+// It returns a FailedPrecondition error when memory is not available: for anonymous users on Rill Cloud and when the chat_memory feature flag is off.
+func (s *Server) checkAIMemoryAccess(ctx context.Context, instanceID string) (*runtime.SecurityClaims, error) {
 	claims := auth.GetClaims(ctx, instanceID)
 	if !claims.Can(runtime.UseAI) {
-		return nil, false, ErrForbidden
+		return nil, ErrForbidden
 	}
-	if claims.UserID == "" && !claims.SkipChecks {
-		return claims, false, nil
-	}
-	ff, err := s.runtime.FeatureFlags(ctx, instanceID, claims)
+	available, err := ai.MemoryAvailable(ctx, s.runtime, instanceID, claims)
 	if err != nil {
-		return nil, false, err
+		return nil, err
 	}
-	return claims, ff[ai.MemoryFeatureFlag], nil
+	if !available {
+		return nil, status.Error(codes.FailedPrecondition, "memory is not available")
+	}
+	return claims, nil
 }
 
 // findOwnedAIMemory loads a memory and verifies it belongs to the caller.
@@ -226,34 +220,31 @@ func (s *Server) findOwnedAIMemory(ctx context.Context, catalog drivers.CatalogS
 	return m, nil
 }
 
-// validateAIMemoryInput validates a user-provided category and content.
-func validateAIMemoryInput(category, content string) (string, string, error) {
-	content = ai.NormalizeMemoryWhitespace(content)
+// validateAIMemoryInput validates a user-provided content and agent, and returns the sanitized content.
+// The agent must be one of the agents that use memory, or empty for a memory that applies to every agent.
+func validateAIMemoryInput(content, agent string) (string, error) {
+	content = ai.SanitizeMemoryContent(content)
 	if content == "" {
-		return "", "", status.Error(codes.InvalidArgument, "content must not be empty")
+		return "", status.Error(codes.InvalidArgument, "content must not be empty")
 	}
 	if utf8.RuneCountInString(content) > ai.MaxMemoryContentChars {
-		return "", "", status.Errorf(codes.InvalidArgument, "content must be at most %d characters", ai.MaxMemoryContentChars)
+		return "", status.Errorf(codes.InvalidArgument, "content must be at most %d characters", ai.MaxMemoryContentChars)
 	}
-	switch category {
-	case ai.MemoryCategoryPreference, ai.MemoryCategoryDefinition, ai.MemoryCategoryContext, ai.MemoryCategoryFeedback:
-	case "":
-		category = ai.MemoryCategoryContext
+	switch agent {
+	case "", ai.AnalystAgentName, ai.DeveloperAgentName:
 	default:
-		return "", "", status.Error(codes.InvalidArgument, fmt.Sprintf("invalid category %q", category))
+		return "", status.Errorf(codes.InvalidArgument, "invalid agent %q", agent)
 	}
-	return category, content, nil
+	return content, nil
 }
 
 // aiMemoryToPB converts a drivers.AIMemory to a runtimev1.AIMemory.
 func aiMemoryToPB(m *drivers.AIMemory) *runtimev1.AIMemory {
 	return &runtimev1.AIMemory{
 		Id:                   m.ID,
-		Category:             m.Category,
 		Content:              m.Content,
-		Source:               m.Source,
+		Agent:                m.Agent,
 		SourceConversationId: m.SourceSessionID,
-		SourceMessageId:      m.SourceMessageID,
 		CreatedOn:            timestamppb.New(m.CreatedOn),
 		UpdatedOn:            timestamppb.New(m.UpdatedOn),
 	}
