@@ -102,7 +102,7 @@ Because required filters are implicitly pinned, you do not need to list a name u
 Each name in `required` must be a dimension or measure on a metrics view used by the canvas's components. If it is not, the canvas fails to reconcile with an error like:
 
 ```
-required filter "auction_typ" is not a dimension or measure on any metrics view referenced by this canvas
+required filter "auction_type" is not a dimension or measure on any metrics view referenced by this canvas
 ```
 
 See the [`filters`](/reference/project-files/canvas-dashboards#filters) reference for the full list of properties.
