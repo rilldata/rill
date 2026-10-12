@@ -168,7 +168,7 @@ _[object]_ - (no description)
 
   - **`description`** - _[string]_ - Chart description
 
-### `stacked_bar_chart`
+### `stacked_bar`
 
 _[object]_ - (no description)
 
@@ -232,6 +232,42 @@ _[object]_ - (no description)
 
   - **`description`** - _[string]_ - Chart description
 
+### `stacked_bar_normalized`
+
+_[object]_ - Bar chart normalized to 100% values
+
+### `area_chart`
+
+_[object]_ - Line chart with area
+
+### `combo_chart`
+
+_[object]_ - Dual-axis chart that draws one measure as bars and another as a line
+
+### `donut_chart`
+
+_[object]_ - Donut chart
+
+### `pie_chart`
+
+_[object]_ - Pie chart
+
+### `scatter_plot`
+
+_[object]_ - Scatter plot
+
+### `funnel_chart`
+
+_[object]_ - Funnel chart
+
+### `heatmap`
+
+_[object]_ - Heat map chart to visualize distribution of data
+
+### `custom_chart`
+
+_[object]_ - Custom Vega-Lite chart built from Metrics SQL queries
+
 ### `kpi`
 
 _[object]_ - (no description)
@@ -249,6 +285,10 @@ _[object]_ - (no description)
   - **`title`** - _[string]_ - KPI title
 
   - **`description`** - _[string]_ - KPI description
+
+### `kpi_grid`
+
+_[object]_ - Grid of KPIs
 
 ### `table`
 
@@ -411,6 +451,14 @@ _[object]_ - (no description)
   - **`title`** - _[string]_ - Table title
 
   - **`description`** - _[string]_ - Table description
+
+### `pivot`
+
+_[object]_ - Pivot table
+
+### `leaderboard`
+
+_[object]_ - Leaderboard
 
 ### `markdown`
 
