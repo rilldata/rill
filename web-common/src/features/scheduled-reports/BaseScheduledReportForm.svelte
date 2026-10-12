@@ -4,7 +4,10 @@
   import InputLabel from "@rilldata/web-common/components/forms/InputLabel.svelte";
   import MultiInput from "@rilldata/web-common/components/forms/MultiInput.svelte";
   import FormSection from "@rilldata/web-common/components/forms/FormSection.svelte";
-  import { getHasSlackConnection } from "@rilldata/web-common/features/alerts/delivery-tab/notifiers-utils";
+  import {
+    getHasSlackConnection,
+    getHasWebhookConnection,
+  } from "@rilldata/web-common/features/alerts/delivery-tab/notifiers-utils";
   import type { TimeControls } from "@rilldata/web-common/features/dashboards/stores/TimeControls.ts";
   import FiltersForm from "@rilldata/web-common/features/scheduled-reports/FiltersForm.svelte";
   import RowsAndColumnsForm from "@rilldata/web-common/features/scheduled-reports/fields/RowsAndColumnsForm.svelte";
@@ -70,6 +73,7 @@
   );
 
   $: hasSlackNotifier = getHasSlackConnection(runtimeClient);
+  $: hasWebhookNotifier = getHasWebhookConnection(runtimeClient);
 
   // Pull the time zone options from the dashboard's spec
   $: exploreSpecQuery = useExploreValidSpec(runtimeClient, exploreName);
@@ -315,6 +319,36 @@
           <span class="text-sm text-fg-secondary">
             {@html m.report_form_slack_not_configured({
               link: `<a href="https://docs.rilldata.com/guides/alerts#configuring-slack-targets" target="_blank">${escapeHtml(m.report_form_docs())}</a>`,
+            })}
+          </span>
+        </svelte:fragment>
+      </FormSection>
+    {/if}
+    {#if $hasWebhookNotifier.data}
+      <FormSection
+        bind:enabled={$data["enableWebhookNotification"]}
+        showSectionToggle
+        title={m.report_form_webhook_title()}
+        padding=""
+      >
+        <MultiInput
+          id="webhookUrls"
+          label={m.report_form_webhook_urls()}
+          hint={m.report_form_webhook_urls_hint()}
+          bind:values={$data["webhookUrls"]}
+          errors={$errors["webhookUrls"]}
+          singular="URL"
+          plural="URLs"
+          placeholder={m.report_form_webhook_placeholder()}
+        />
+      </FormSection>
+    {:else}
+      <FormSection title={m.report_form_webhook_title()} padding="">
+        <svelte:fragment slot="description">
+          <span class="text-sm text-fg-secondary">
+            {@html m.report_form_webhook_not_configured({
+              docsUrl:
+                "https://docs.rilldata.com/developers/build/connectors/services/webhook",
             })}
           </span>
         </svelte:fragment>

@@ -53,6 +53,8 @@ export function getNewAlertInitialFormValues(
     enableSlackNotification: false,
     slackChannels: [""],
     slackUsers: [user?.email ?? "", ""],
+    enableWebhookNotification: false,
+    webhookUrls: [""],
     enableEmailNotification: true,
     emailRecipients: [user?.email ?? "", ""],
 
