@@ -872,6 +872,8 @@ func (a *AST) AddMeasureField(n *SelectNode, m *runtimev1.MetricsViewSpec_Measur
 		err = a.addDerivedMeasure(n, m)
 	case runtimev1.MetricsViewSpec_MEASURE_TYPE_TIME_COMPARISON:
 		err = a.addTimeComparisonMeasure(n, m)
+	case runtimev1.MetricsViewSpec_MEASURE_TYPE_EVALUATION:
+		return nil
 	default:
 		panic("unhandled measure type")
 	}

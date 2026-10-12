@@ -45,6 +45,11 @@ export const ConnectorDriverPropertyType = {
   TYPE_INFORMATIONAL: "TYPE_INFORMATIONAL",
 } as const;
 
+export interface EvaluateNoulQuestionCriteria {
+  true?: unknown;
+  false?: unknown;
+}
+
 export interface MetricsViewFilterCond {
   name?: string;
   in?: unknown[];
@@ -110,6 +115,7 @@ export interface MetricsViewSpecMeasure {
   validPercentOfTotal?: boolean;
   treatNullsAs?: string;
   dataType?: Runtimev1Type;
+  evalQuestion?: V1EvaluateQuestion;
   lowerIsBetter?: boolean;
 }
 
@@ -122,6 +128,7 @@ export const MetricsViewSpecMeasureType = {
   MEASURE_TYPE_SIMPLE: "MEASURE_TYPE_SIMPLE",
   MEASURE_TYPE_DERIVED: "MEASURE_TYPE_DERIVED",
   MEASURE_TYPE_TIME_COMPARISON: "MEASURE_TYPE_TIME_COMPARISON",
+  MEASURE_TYPE_EVALUATION: "MEASURE_TYPE_EVALUATION",
 } as const;
 
 export interface MetricsViewSpecMeasureWindow {
@@ -881,6 +888,39 @@ export interface V1DirEntry {
 
 export interface V1EditInstanceResponse {
   instance?: V1Instance;
+}
+
+export type V1EvaluateChoiceQuestionCriteria = { [key: string]: unknown };
+
+export interface V1EvaluateChoiceQuestion {
+  instructions?: unknown;
+  criteria?: V1EvaluateChoiceQuestionCriteria;
+}
+
+export interface V1EvaluateNoulQuestion {
+  instructions?: unknown;
+  criteria?: EvaluateNoulQuestionCriteria;
+}
+
+export interface V1EvaluateQuestion {
+  noul?: V1EvaluateNoulQuestion;
+  choice?: V1EvaluateChoiceQuestion;
+  score?: V1EvaluateScoreQuestion;
+}
+
+export type V1EvaluateRequestQuestions = {
+  [key: string]: V1EvaluateQuestion;
+};
+
+export interface V1EvaluateRequest {
+  model?: string;
+  state?: unknown;
+  questions?: V1EvaluateRequestQuestions;
+}
+
+export interface V1EvaluateScoreQuestion {
+  instructions?: unknown;
+  criteria?: unknown[];
 }
 
 /**
@@ -1684,6 +1724,27 @@ export interface V1MetricsViewComparisonValue {
   comparisonValue?: unknown;
   deltaAbs?: unknown;
   deltaRel?: unknown;
+}
+
+export interface V1MetricsViewEvaluateRequest {
+  instanceId?: string;
+  /** Required */
+  metricsViewName?: string;
+  /** Required. Query used to serialise as state */
+  query?: V1MetricsViewAggregationRequest;
+  /** Required. Evaluate measures to run evaluate against. */
+  measures?: string[];
+}
+
+export type V1MetricsViewEvaluateResponseDataItem = { [key: string]: unknown };
+
+export interface V1MetricsViewEvaluateResponse {
+  /** Not optional, not null */
+  schema?: V1StructType;
+  /** Not optional, not null */
+  data?: V1MetricsViewEvaluateResponseDataItem[];
+  /** Traces of spans captured during request execution. Only populated if trace was set to true in the aggregation request. */
+  trace?: V1Trace;
 }
 
 export interface V1MetricsViewFilter {
@@ -3217,6 +3278,13 @@ export type QueryServiceMetricsViewComparisonBody = {
   filter?: V1MetricsViewFilter;
   /** Optional. If true, the response will include traces of spans captured during execution. */
   trace?: boolean;
+};
+
+export type QueryServiceMetricsViewEvaluateBody = {
+  /** Required. Query used to serialise as state */
+  query?: V1MetricsViewAggregationRequest;
+  /** Required. Evaluate measures to run evaluate against. */
+  measures?: string[];
 };
 
 export type QueryServiceMetricsViewRowsBody = {

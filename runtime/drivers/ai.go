@@ -9,6 +9,7 @@ import (
 
 type AIService interface {
 	Complete(ctx context.Context, opts *CompleteOptions) (*CompleteResult, error)
+	Evaluate(ctx context.Context, req *aiv1.EvaluateRequest) (*aiv1.EvaluateResponse, error)
 }
 
 type CompleteOptions struct {

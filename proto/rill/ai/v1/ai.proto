@@ -48,3 +48,73 @@ message CompletionMessage {
   string data = 2; // Deprecated in favor of content
   repeated ContentBlock content = 3;
 }
+
+message EvaluateRequest {
+  string model = 1;
+  google.protobuf.Value state = 2;
+  map<string, EvaluateQuestion> questions = 3;
+}
+
+message EvaluateQuestion {
+  oneof question {
+    EvaluateNoulQuestion noul = 1;
+    EvaluateChoiceQuestion choice = 2;
+    EvaluateScoreQuestion score = 3;
+  }
+}
+
+message EvaluateResponse {
+  message Usage {
+    int32 input_tokens = 1;
+    int32 output_tokens = 2;
+  }
+
+  string model = 1;
+  map<string, EvaluateAnswer> answers = 2;
+  Usage usage = 3;
+}
+
+message EvaluateAnswer {
+  oneof answer {
+    EvaluateNoulAnswer noul = 1;
+    EvaluateChoiceAnswer choice = 2;
+    EvaluateScoreAnswer score = 3;
+  }
+}
+
+message EvaluateNoulQuestion {
+  message Criteria {
+    google.protobuf.Value true = 1;
+    google.protobuf.Value false = 2;
+  }
+
+  google.protobuf.Value instructions = 1;
+  optional Criteria criteria = 2;
+}
+
+message EvaluateNoulAnswer {
+  double noul = 1;
+}
+
+message EvaluateChoiceQuestion {
+  google.protobuf.Value instructions = 1;
+  map<string, google.protobuf.Value> criteria = 2;
+}
+
+message EvaluateChoiceAnswer {
+  string choice = 1;
+  map<string, double> probabilities = 2;
+  double confidence = 3;
+}
+
+message EvaluateScoreQuestion {
+  google.protobuf.Value instructions = 1;
+  repeated google.protobuf.Value criteria = 2;
+}
+
+message EvaluateScoreAnswer {
+  double score = 1;
+  map<string, string> legend = 2;
+  map<string, double> probabilities = 3;
+  double confidence = 4;
+}

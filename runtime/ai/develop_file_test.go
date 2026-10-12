@@ -2,9 +2,11 @@ package ai_test
 
 import (
 	"context"
+	"errors"
 	"strings"
 	"testing"
 
+	aiv1 "github.com/rilldata/rill/proto/gen/rill/ai/v1"
 	"github.com/rilldata/rill/runtime/ai"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/testruntime"
@@ -256,6 +258,10 @@ func (a *capturingAIService) Complete(ctx context.Context, opts *drivers.Complet
 	return &drivers.CompleteResult{
 		Message: ai.NewTextCompletionMessage(ai.RoleAssistant, "Done."),
 	}, nil
+}
+
+func (a *capturingAIService) Evaluate(ctx context.Context, req *aiv1.EvaluateRequest) (*aiv1.EvaluateResponse, error) {
+	return nil, errors.New("not implemented")
 }
 
 // promptText returns the text content of all messages passed to the service.

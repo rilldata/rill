@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"os"
 	"path/filepath"
 	"strings"
@@ -139,6 +140,10 @@ func (r *recordingAIService) Complete(ctx context.Context, opts *drivers.Complet
 	}
 	call.Response = newRecordingAIMessages(res.Message)
 	return res, nil
+}
+
+func (r *recordingAIService) Evaluate(ctx context.Context, req *aiv1.EvaluateRequest) (*aiv1.EvaluateResponse, error) {
+	return nil, errors.New("not implemented")
 }
 
 // newRecordingAIMessages creates new recordingAIMessages from a CompletionMessage.

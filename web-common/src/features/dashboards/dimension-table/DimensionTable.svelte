@@ -260,7 +260,11 @@ TableCells – the cell contents.
         noPin={true}
         sortByMeasure={$sortByMeasure}
         columns={measureColumns}
-        onClickColumn={dimensionTable.handleDimensionMeasureColumnHeaderClick}
+        onClickColumn={(name) => {
+          const column = measureColumns.find((c) => c.name === name);
+          if (column?.enableSorting === false) return;
+          dimensionTable.handleDimensionMeasureColumnHeaderClick(name);
+        }}
       />
       <!-- dimension value and gutter column -->
       <div class="flex">

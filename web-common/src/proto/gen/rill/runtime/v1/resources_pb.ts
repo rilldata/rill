@@ -7,6 +7,7 @@ import type { BinaryReadOptions, FieldList, JsonReadOptions, JsonValue, PartialM
 import { Message, proto3, protoInt64, Struct, Timestamp, Value } from "@bufbuild/protobuf";
 import { StructType, Type } from "./schema_pb.js";
 import { TimeGrain } from "./time_grain_pb.js";
+import { EvaluateQuestion } from "../../ai/v1/ai_pb.js";
 import { Expression } from "./expression_pb.js";
 import { ExportFormat } from "./export_format_pb.js";
 import { Color } from "./color_pb.js";
@@ -1701,6 +1702,11 @@ export enum MetricsViewSpec_MeasureType {
    * @generated from enum value: MEASURE_TYPE_TIME_COMPARISON = 3;
    */
   TIME_COMPARISON = 3,
+
+  /**
+   * @generated from enum value: MEASURE_TYPE_EVALUATION = 4;
+   */
+  EVALUATION = 4,
 }
 // Retrieve enum metadata with: proto3.getEnumType(MetricsViewSpec_MeasureType)
 proto3.util.setEnumType(MetricsViewSpec_MeasureType, "rill.runtime.v1.MetricsViewSpec.MeasureType", [
@@ -1708,6 +1714,7 @@ proto3.util.setEnumType(MetricsViewSpec_MeasureType, "rill.runtime.v1.MetricsVie
   { no: 1, name: "MEASURE_TYPE_SIMPLE" },
   { no: 2, name: "MEASURE_TYPE_DERIVED" },
   { no: 3, name: "MEASURE_TYPE_TIME_COMPARISON" },
+  { no: 4, name: "MEASURE_TYPE_EVALUATION" },
 ]);
 
 /**
@@ -2048,6 +2055,11 @@ export class MetricsViewSpec_Measure extends Message<MetricsViewSpec_Measure> {
    */
   lowerIsBetter = false;
 
+  /**
+   * @generated from field: rill.ai.v1.EvaluateQuestion eval_question = 18;
+   */
+  evalQuestion?: EvaluateQuestion;
+
   constructor(data?: PartialMessage<MetricsViewSpec_Measure>) {
     super();
     proto3.util.initPartial(data, this);
@@ -2073,6 +2085,7 @@ export class MetricsViewSpec_Measure extends Message<MetricsViewSpec_Measure> {
     { no: 14, name: "treat_nulls_as", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 15, name: "data_type", kind: "message", T: Type },
     { no: 17, name: "lower_is_better", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 18, name: "eval_question", kind: "message", T: EvaluateQuestion },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewSpec_Measure {

@@ -15,7 +15,7 @@
   import { modified } from "@rilldata/web-common/lib/actions/modified-click";
   import { STRING_LIKES } from "@rilldata/web-common/lib/duckdb-data-types";
   import { formatDataTypeAsDuckDbQueryString } from "@rilldata/web-common/lib/formatters";
-  import { getContext } from "svelte";
+  import { getContext, type Component } from "svelte";
   import ExternalLink from "@rilldata/web-common/components/icons/ExternalLink.svelte";
   import BarAndLabel from "../../BarAndLabel.svelte";
   import type { VirtualizedTableConfig } from "../types";
@@ -46,6 +46,9 @@
   export let onkeydown: ((e: KeyboardEvent) => void) | undefined = undefined;
   // When set, renders a hover-revealed external link icon for URI dimensions.
   export let href: string | undefined = undefined;
+  // When set, renders the cell contents instead of the formatted value.
+  export let cellComponent: Component<{ value: unknown }> | undefined =
+    undefined;
 
   const config: VirtualizedTableConfig = getContext("config");
   const isDimensionTable = config.table === "DimensionTable";
@@ -216,15 +219,19 @@
           onclick={modified({ shift: shiftClick })}
           style:height="{row.size}px"
         >
-          <FormattedDataType
-            customStyle={formattedDataTypeStyle}
-            inTable
-            isNull={value === null || value === undefined}
-            {type}
-            value={formattedValue || value}
-            color="text-fg-secondary"
-            {lowerIsBetter}
-          />
+          {#if cellComponent}
+            <svelte:component this={cellComponent} {value} />
+          {:else}
+            <FormattedDataType
+              customStyle={formattedDataTypeStyle}
+              inTable
+              isNull={value === null || value === undefined}
+              {type}
+              value={formattedValue || value}
+              color="text-fg-secondary"
+              {lowerIsBetter}
+            />
+          {/if}
         </button>
       {/if}
     </BarAndLabel>

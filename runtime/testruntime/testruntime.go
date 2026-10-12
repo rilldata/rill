@@ -47,6 +47,7 @@ import (
 	_ "github.com/rilldata/rill/runtime/drivers/snowflake"
 	_ "github.com/rilldata/rill/runtime/drivers/sqlite"
 	_ "github.com/rilldata/rill/runtime/drivers/starrocks"
+	_ "github.com/rilldata/rill/runtime/drivers/typesafe"
 	_ "github.com/rilldata/rill/runtime/reconcilers"
 )
 

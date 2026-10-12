@@ -30,6 +30,7 @@ import {
   MetricsViewAggregationRequest,
   MetricsViewAnnotationsRequest,
   MetricsViewComparisonRequest,
+  MetricsViewEvaluateRequest,
   MetricsViewRowsRequest,
   MetricsViewSchemaRequest,
   MetricsViewSearchRequest,
@@ -77,6 +78,8 @@ import type {
   V1MetricsViewAnnotationsResponse,
   V1MetricsViewComparisonRequest,
   V1MetricsViewComparisonResponse,
+  V1MetricsViewEvaluateRequest,
+  V1MetricsViewEvaluateResponse,
   V1MetricsViewRowsRequest,
   V1MetricsViewRowsResponse,
   V1MetricsViewSchemaResponse,
@@ -1117,6 +1120,91 @@ export function createQueryServiceMetricsViewAnnotations<
   queryClient?: QueryClient,
 ): CreateQueryResult<TData, ConnectError> {
   const queryOptions = getQueryServiceMetricsViewAnnotationsQueryOptions(
+    client,
+    request,
+    options,
+  );
+  return createQuery(queryOptions, queryClient);
+}
+
+/**
+ * Raw RPC call: QueryService.MetricsViewEvaluate
+ */
+export async function queryServiceMetricsViewEvaluate(
+  client: RuntimeClient,
+  request: Omit<V1MetricsViewEvaluateRequest, "instanceId">,
+  options?: { signal?: AbortSignal },
+): Promise<V1MetricsViewEvaluateResponse> {
+  const r = await client.queryService.metricsViewEvaluate(
+    MetricsViewEvaluateRequest.fromJson(
+      stripUndefined({
+        instanceId: client.instanceId,
+        ...request,
+      }) as unknown as JsonValue,
+    ),
+    { signal: options?.signal },
+  );
+  return r.toJson({
+    emitDefaultValues: true,
+  }) as unknown as V1MetricsViewEvaluateResponse;
+}
+
+export function getQueryServiceMetricsViewEvaluateQueryKey(
+  instanceId: string,
+  request?: Omit<V1MetricsViewEvaluateRequest, "instanceId">,
+): QueryKey {
+  return [
+    "QueryService",
+    "metricsViewEvaluate",
+    instanceId,
+    request ?? {},
+  ] as const;
+}
+
+export function getQueryServiceMetricsViewEvaluateQueryOptions<
+  TData = V1MetricsViewEvaluateResponse,
+>(
+  client: RuntimeClient,
+  request: Omit<V1MetricsViewEvaluateRequest, "instanceId">,
+  options?: {
+    query?: Partial<
+      CreateQueryOptions<V1MetricsViewEvaluateResponse, ConnectError, TData>
+    >;
+  },
+): CreateQueryOptions<V1MetricsViewEvaluateResponse, ConnectError, TData> & {
+  queryKey: QueryKey;
+} {
+  const queryKey = getQueryServiceMetricsViewEvaluateQueryKey(
+    client.instanceId,
+    request,
+  );
+  const queryFn: QueryFunction<V1MetricsViewEvaluateResponse> = ({ signal }) =>
+    queryServiceMetricsViewEvaluate(client, request, { signal });
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!client.instanceId,
+    ...options?.query,
+  } as CreateQueryOptions<
+    V1MetricsViewEvaluateResponse,
+    ConnectError,
+    TData
+  > & { queryKey: QueryKey };
+}
+
+export function createQueryServiceMetricsViewEvaluate<
+  TData = V1MetricsViewEvaluateResponse,
+>(
+  client: RuntimeClient,
+  request: Omit<V1MetricsViewEvaluateRequest, "instanceId">,
+  options?: {
+    query?: Partial<
+      CreateQueryOptions<V1MetricsViewEvaluateResponse, ConnectError, TData>
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateQueryResult<TData, ConnectError> {
+  const queryOptions = getQueryServiceMetricsViewEvaluateQueryOptions(
     client,
     request,
     options,

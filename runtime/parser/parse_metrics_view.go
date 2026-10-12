@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	aiv1 "github.com/rilldata/rill/proto/gen/rill/ai/v1"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/pkg/duration"
 	"github.com/rilldata/rill/runtime/pkg/rilltime"
@@ -64,13 +65,14 @@ type MetricsViewYAML struct {
 		Window              *MetricsViewMeasureWindow
 		Per                 MetricsViewFieldSelectorsYAML
 		Requires            MetricsViewFieldSelectorsYAML
-		FormatPreset        string         `yaml:"format_preset"`
-		FormatD3            string         `yaml:"format_d3"`
-		FormatD3Locale      map[string]any `yaml:"format_d3_locale"`
-		Ignore              bool           `yaml:"ignore"` // Deprecated
-		ValidPercentOfTotal bool           `yaml:"valid_percent_of_total"`
-		TreatNullsAs        string         `yaml:"treat_nulls_as"`
-		LowerIsBetter       bool           `yaml:"lower_is_better"`
+		FormatPreset        string                `yaml:"format_preset"`
+		FormatD3            string                `yaml:"format_d3"`
+		FormatD3Locale      map[string]any        `yaml:"format_d3_locale"`
+		Ignore              bool                  `yaml:"ignore"` // Deprecated
+		ValidPercentOfTotal bool                  `yaml:"valid_percent_of_total"`
+		TreatNullsAs        string                `yaml:"treat_nulls_as"`
+		LowerIsBetter       bool                  `yaml:"lower_is_better"`
+		EvalQuestion        *EvaluateQuestionYAML `yaml:"eval_question"`
 		Tags                []string
 	}
 	ParentDimensions *FieldSelectorYAML `yaml:"parent_dimensions"` // used when Parent is set
@@ -586,8 +588,23 @@ func (p *Parser) parseMetricsView(node *Node) error {
 			typ = runtimev1.MetricsViewSpec_MEASURE_TYPE_DERIVED
 		case "time_comparison":
 			typ = runtimev1.MetricsViewSpec_MEASURE_TYPE_TIME_COMPARISON
+		case "eval":
+			typ = runtimev1.MetricsViewSpec_MEASURE_TYPE_EVALUATION
 		default:
-			return fmt.Errorf(`invalid measure type %q (allowed values: simple, derived, time_comparison)`, measure.Type)
+			return fmt.Errorf(`invalid measure type %q (allowed values: simple, derived, time_comparison, eval)`, measure.Type)
+		}
+
+		var ques *aiv1.EvaluateQuestion
+		if typ == runtimev1.MetricsViewSpec_MEASURE_TYPE_EVALUATION {
+			if measure.EvalQuestion == nil {
+				return fmt.Errorf(`measure %q of type "eval" must have an "eval_question"`, measure.Name)
+			}
+			ques, err = measure.EvalQuestion.Proto()
+			if err != nil {
+				return fmt.Errorf(`invalid "eval_question" for measure %q: %w`, measure.Name, err)
+			}
+		} else if measure.EvalQuestion != nil {
+			return fmt.Errorf(`measure %q has an "eval_question" but is not of type "eval"`, measure.Name)
 		}
 
 		measures = append(measures, &runtimev1.MetricsViewSpec_Measure{
@@ -606,6 +623,7 @@ func (p *Parser) parseMetricsView(node *Node) error {
 			ValidPercentOfTotal: measure.ValidPercentOfTotal,
 			TreatNullsAs:        measure.TreatNullsAs,
 			LowerIsBetter:       measure.LowerIsBetter,
+			EvalQuestion:        ques,
 			Tags:                measure.Tags,
 		})
 	}
