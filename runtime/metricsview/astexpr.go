@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
+	"slices"
 	"strings"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
@@ -258,20 +259,7 @@ func (b *sqlExprBuilder) writeBinaryCondition(exprs []*Expression, op Operator) 
 		// If not unnested, write the expression as-is or if its a lookup rewrite as per dialect
 		if !unnest {
 			if lookup != nil {
-				b.writeString(fmt.Sprintf("%s IN ", lookup.keyExpr))
-				b.writeByte('(')
-				ex, err := b.ast.Dialect.LookupSelectExpr(lookup.table, lookup.keyCol)
-				if err != nil {
-					return err
-				}
-				b.writeString(ex)
-				b.writeString(" WHERE ")
-				err = b.writeBinaryConditionInner(nil, right, lookup.valueCol, op)
-				if err != nil {
-					return err
-				}
-				b.writeString(")")
-				return nil
+				return b.writeLookupCondition(left, right, leftExpr, lookup, op)
 			}
 
 			// The left expression is passed along with its rendered SQL so the inner writers can look up the dimension's data type.
@@ -340,6 +328,57 @@ func (b *sqlExprBuilder) writeBinaryCondition(exprs []*Expression, op Operator) 
 
 	// Handle netiher side is a name
 	return b.writeBinaryConditionInner(left, right, "", op)
+}
+
+// writeLookupCondition writes a binary condition whose left side is a lookup dimension.
+// The dimension's value is the lookup table's value for the row's key,
+// so the condition is rewritten to one on the key: "key IN (SELECT key FROM lookup WHERE <condition on value>)".
+// This lets the database use an index on the key column instead of evaluating the lookup for every row.
+//
+// Keys that are absent from the lookup table are not covered by the rewrite.
+// Their value is NULL, or the lookup default expression if one is set (a NULL key resolves to NULL even then),
+// and a condition that matches that value must include those rows as well.
+func (b *sqlExprBuilder) writeLookupCondition(left, right *Expression, leftExpr string, lookup *lookupMeta, op Operator) error {
+	// Rows whose value is NULL cannot be found through the lookup table, so a condition that matches NULL is applied to the dimension expression itself.
+	// Such conditions (selecting NULL, or excluding values) could not use an index on the key column anyway.
+	if conditionMatchesNull(right, op) {
+		return b.writeBinaryConditionInner(left, right, leftExpr, op)
+	}
+
+	selectKeys, err := b.ast.Dialect.LookupSelectExpr(lookup.table, lookup.keyCol)
+	if err != nil {
+		return err
+	}
+
+	if lookup.defaultExpr != "" {
+		b.writeByte('(')
+	}
+	b.writeString(lookup.keyExpr)
+	b.writeString(" IN (")
+	b.writeString(selectKeys)
+	b.writeString(" WHERE ")
+	err = b.writeBinaryConditionInner(nil, right, lookup.valueCol, op)
+	if err != nil {
+		return err
+	}
+	b.writeByte(')')
+
+	if lookup.defaultExpr != "" {
+		// Absent keys resolve to the default expression, so they match when the condition holds for it.
+		// The condition on the default expression is a constant, which the database folds: when it is false, only the indexed condition above remains.
+		b.writeString(" OR (")
+		err = b.writeBinaryConditionInner(nil, right, lookup.defaultExpr, op)
+		if err != nil {
+			return err
+		}
+		b.writeString(" AND ")
+		b.writeString(lookup.keyExpr)
+		b.writeString(" NOT IN (")
+		b.writeString(selectKeys)
+		b.writeString(")))")
+	}
+
+	return nil
 }
 
 func (b *sqlExprBuilder) writeBinaryConditionInner(left, right *Expression, leftOverride string, op Operator) error {
@@ -733,6 +772,34 @@ func (b *sqlExprBuilder) writeParenthesizedString(s string) {
 	_ = b.out.WriteByte(')')
 }
 
+// conditionMatchesNull reports whether a binary condition, as written by writeBinaryConditionInner, holds when its left operand is NULL.
+// For IN and NOT IN the right operand is a list of values; for the other operators it is a single value.
+// It returns true when the right operand is not a plain value, since the outcome cannot be determined in that case.
+func conditionMatchesNull(right *Expression, op Operator) bool {
+	if right.Name != "" || right.Condition != nil || right.Subquery != nil {
+		return true
+	}
+	switch op {
+	case OperatorEq:
+		// "dim = NULL" is written as "dim IS NULL"; a comparison with any other value is not true for NULL.
+		return right.Value == nil
+	case OperatorIn:
+		// A NULL in the list is written as "OR dim IS NULL".
+		vals, _ := right.Value.([]any)
+		return slices.Contains(vals, nil)
+	case OperatorNin:
+		// NOT IN is written with "OR dim IS NULL" unless NULL is one of the excluded values, and an empty list is written as TRUE.
+		vals, _ := right.Value.([]any)
+		return !slices.Contains(vals, nil)
+	case OperatorNilike:
+		// NOT ILIKE is written with "OR dim IS NULL".
+		return true
+	default:
+		// "dim != NULL" is written as "dim IS NOT NULL"; the remaining comparisons are never true for NULL.
+		return false
+	}
+}
+
 func (b *sqlExprBuilder) sqlForName(name string) (expr string, unnest bool, lookup *lookupMeta, err error) {
 	// If node is nil, we are evaluating the expression against the underlying table.
 	// In this case, we only allow filters to reference dimension names.
@@ -766,10 +833,11 @@ func (b *sqlExprBuilder) sqlForName(name string) (expr string, unnest bool, look
 				keyExpr = dim.Expression
 			}
 			lm = &lookupMeta{
-				table:    dim.LookupTable,
-				keyExpr:  keyExpr,
-				keyCol:   dim.LookupKeyColumn,
-				valueCol: dim.LookupValueColumn,
+				table:       dim.LookupTable,
+				keyExpr:     keyExpr,
+				keyCol:      dim.LookupKeyColumn,
+				valueCol:    dim.LookupValueColumn,
+				defaultExpr: dim.LookupDefaultExpression,
 			}
 		}
 		// Note: If dim.Unnest is true, we need to unnest it inside of the generated expression (because it's not part of the dimFields and therefore not unnested with a LATERAL JOIN).

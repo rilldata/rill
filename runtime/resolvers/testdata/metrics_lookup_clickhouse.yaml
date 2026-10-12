@@ -9,15 +9,16 @@ project_files:
       select parseDateTimeBestEffort('2024-01-02T00:00:00Z') as time, 'US' as country_code, 2 as val union all
       select parseDateTimeBestEffort('2024-01-03T00:00:00Z') as time, 'US' as country_code, 3 as val union all
       select parseDateTimeBestEffort('2024-01-04T00:00:00Z') as time, 'US' as country_code, 4 as val union all
-      select parseDateTimeBestEffort('2024-01-05T00:00:00Z') as time, 'DK' as country_code, 5 as val
+      select parseDateTimeBestEffort('2024-01-05T00:00:00Z') as time, 'DK' as country_code, 5 as val union all
+      select parseDateTimeBestEffort('2024-01-03T12:00:00Z') as time, 'XX' as country_code, 7 as val
     output:
       connector: clickhouse
   clickhouse_country_dict.yaml:
     type: model
     connector: clickhouse
     sql: |
-      select 'DK' as code, 'Denmark' as name union all
-      select 'US' as code, 'United States' as name
+      select 'DK' as code, toNullable('Denmark') as name union all
+      select 'US' as code, toNullable('United States') as name
     output:
       connector: clickhouse
       type: DICTIONARY
@@ -34,6 +35,12 @@ project_files:
         lookup_table: clickhouse_country_dict
         lookup_key_column: code
         lookup_value_column: name
+      - name: country_or_unknown
+        column: country_code
+        lookup_table: clickhouse_country_dict
+        lookup_key_column: code
+        lookup_value_column: name
+        lookup_default_expression: "'Unknown'"
     measures:
       - name: count
         expression: count(*)
@@ -95,3 +102,176 @@ tests:
     result:
       - sum: 6
         country: Denmark
+  - name: lookup_dimension_null_filter
+    resolver: metrics
+    properties:
+      metrics_view: clickhouse_metrics
+      dimensions:
+        - name: country
+      measures:
+        - name: sum
+      time_range:
+        end: 2024-01-06T00:00:00Z
+        start: 2024-01-01T00:00:00Z
+      where:
+        cond:
+          op: in
+          exprs:
+            - name: country
+            - val: null
+    result:
+      - sum: 7
+        country: null
+  - name: lookup_dimension_null_filter_without_dimension
+    resolver: metrics
+    properties:
+      metrics_view: clickhouse_metrics
+      measures:
+        - name: sum
+      time_range:
+        end: 2024-01-06T00:00:00Z
+        start: 2024-01-01T00:00:00Z
+      where:
+        cond:
+          op: eq
+          exprs:
+            - name: country
+            - val: null
+    result:
+      - sum: 7
+  - name: lookup_dimension_exclude_filter
+    resolver: metrics
+    properties:
+      metrics_view: clickhouse_metrics
+      dimensions:
+        - name: country
+      measures:
+        - name: sum
+      sort:
+        - name: sum
+          desc: true
+      time_range:
+        end: 2024-01-06T00:00:00Z
+        start: 2024-01-01T00:00:00Z
+      where:
+        cond:
+          op: nin
+          exprs:
+            - name: country
+            - val: Denmark
+    result:
+      - sum: 9
+        country: United States
+      - sum: 7
+        country: null
+  - name: lookup_dimension_exclude_null_filter
+    resolver: metrics
+    properties:
+      metrics_view: clickhouse_metrics
+      dimensions:
+        - name: country
+      measures:
+        - name: sum
+      time_range:
+        end: 2024-01-06T00:00:00Z
+        start: 2024-01-01T00:00:00Z
+      where:
+        cond:
+          op: nin
+          exprs:
+            - name: country
+            - val: Denmark
+            - val: null
+    result:
+      - sum: 9
+        country: United States
+  - name: lookup_dimension_not_ilike_filter
+    resolver: metrics
+    properties:
+      metrics_view: clickhouse_metrics
+      dimensions:
+        - name: country
+      measures:
+        - name: sum
+      sort:
+        - name: sum
+          desc: true
+      time_range:
+        end: 2024-01-06T00:00:00Z
+        start: 2024-01-01T00:00:00Z
+      where:
+        cond:
+          op: nilike
+          exprs:
+            - name: country
+            - val: '%denmark%'
+    result:
+      - sum: 9
+        country: United States
+      - sum: 7
+        country: null
+  - name: lookup_dimension_default_filter
+    resolver: metrics
+    properties:
+      metrics_view: clickhouse_metrics
+      dimensions:
+        - name: country_or_unknown
+      measures:
+        - name: sum
+      time_range:
+        end: 2024-01-06T00:00:00Z
+        start: 2024-01-01T00:00:00Z
+      where:
+        cond:
+          op: in
+          exprs:
+            - name: country_or_unknown
+            - val: Unknown
+    result:
+      - sum: 7
+        country_or_unknown: Unknown
+  - name: lookup_dimension_default_include_filter
+    resolver: metrics
+    properties:
+      metrics_view: clickhouse_metrics
+      dimensions:
+        - name: country_or_unknown
+      measures:
+        - name: sum
+      time_range:
+        end: 2024-01-06T00:00:00Z
+        start: 2024-01-01T00:00:00Z
+      where:
+        cond:
+          op: in
+          exprs:
+            - name: country_or_unknown
+            - val: Denmark
+    result:
+      - sum: 6
+        country_or_unknown: Denmark
+  - name: lookup_dimension_default_exclude_filter
+    resolver: metrics
+    properties:
+      metrics_view: clickhouse_metrics
+      dimensions:
+        - name: country_or_unknown
+      measures:
+        - name: sum
+      sort:
+        - name: sum
+          desc: true
+      time_range:
+        end: 2024-01-06T00:00:00Z
+        start: 2024-01-01T00:00:00Z
+      where:
+        cond:
+          op: nin
+          exprs:
+            - name: country_or_unknown
+            - val: Denmark
+    result:
+      - sum: 9
+        country_or_unknown: United States
+      - sum: 7
+        country_or_unknown: Unknown

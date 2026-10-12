@@ -102,6 +102,8 @@ WHERE publisher_id IN (
 
 This allows ClickHouse to first resolve the small set of matching keys from the dictionary, then use the index on `publisher_id` to efficiently scan only the relevant rows in the fact table.
 
+Keys that are missing from the dictionary are not covered by this subquery. Their dimension value is `NULL`, or the `lookup_default_expression` if one is set, and that is the value shown in dashboards. A filter that matches this value, such as selecting the null value or excluding other values, is applied to the `dictGet` expression instead and reads the whole fact table. With a `lookup_default_expression`, other filters additionally check the default value, so the index optimization is kept whenever the filter does not match the default.
+
 :::tip Optimizing GROUP BY with INJECTIVE
 If the key-to-value mapping in your dictionary is 1:1 (e.g. every `code` maps to exactly one `name`), you can additionally mark the attribute columns as `INJECTIVE` in the ClickHouse dictionary definition. This tells ClickHouse that the mapping preserves uniqueness, allowing it to optimize `GROUP BY` queries by grouping on the key column instead of evaluating `dictGet` for every group. Combined with `lookup_*` properties, this gives you optimized performance for both filtering (via Rill's subquery rewrite) and grouping (via ClickHouse's INJECTIVE optimization).
 :::
