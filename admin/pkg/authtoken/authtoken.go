@@ -25,12 +25,13 @@ const (
 	TypeService    Type = "svc"
 	TypeDeployment Type = "dpl"
 	TypeMagic      Type = "mgc"
+	TypeEmbed      Type = "emb"
 )
 
 // Validate checks that the type is a known enum value.
 func (t Type) Validate() bool {
 	switch t {
-	case TypeUser, TypeService, TypeDeployment, TypeMagic:
+	case TypeUser, TypeService, TypeDeployment, TypeMagic, TypeEmbed:
 		return true
 	default:
 		return false

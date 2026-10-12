@@ -13395,6 +13395,29 @@ export class GetReportMetaRequest extends Message<GetReportMetaRequest> {
   webOpenMode = "";
 
   /**
+   * @generated from oneof rill.admin.v1.GetReportMetaRequest.query_for
+   */
+  queryFor: {
+    /**
+     * @generated from field: string query_for_user_id = 13;
+     */
+    value: string;
+    case: "queryForUserId";
+  } | {
+    /**
+     * @generated from field: string query_for_user_email = 14;
+     */
+    value: string;
+    case: "queryForUserEmail";
+  } | {
+    /**
+     * @generated from field: google.protobuf.Struct query_for_attributes = 15;
+     */
+    value: Struct;
+    case: "queryForAttributes";
+  } | { case: undefined; value?: undefined } = { case: undefined };
+
+  /**
    * @generated from field: string where_filter_json = 11 [deprecated = true];
    * @deprecated
    */
@@ -13422,6 +13445,9 @@ export class GetReportMetaRequest extends Message<GetReportMetaRequest> {
     { no: 8, name: "anon_recipients", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 9, name: "resources", kind: "message", T: ResourceName, repeated: true },
     { no: 10, name: "web_open_mode", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 13, name: "query_for_user_id", kind: "scalar", T: 9 /* ScalarType.STRING */, oneof: "query_for" },
+    { no: 14, name: "query_for_user_email", kind: "scalar", T: 9 /* ScalarType.STRING */, oneof: "query_for" },
+    { no: 15, name: "query_for_attributes", kind: "message", T: Struct, oneof: "query_for" },
     { no: 11, name: "where_filter_json", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 12, name: "accessible_fields", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
   ]);

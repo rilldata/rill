@@ -36376,6 +36376,76 @@ func (m *GetReportMetaRequest) validate(all bool) error {
 
 	// no validation rules for WhereFilterJson
 
+	switch v := m.QueryFor.(type) {
+	case *GetReportMetaRequest_QueryForUserId:
+		if v == nil {
+			err := GetReportMetaRequestValidationError{
+				field:  "QueryFor",
+				reason: "oneof value cannot be a typed-nil",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
+		// no validation rules for QueryForUserId
+	case *GetReportMetaRequest_QueryForUserEmail:
+		if v == nil {
+			err := GetReportMetaRequestValidationError{
+				field:  "QueryFor",
+				reason: "oneof value cannot be a typed-nil",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
+		// no validation rules for QueryForUserEmail
+	case *GetReportMetaRequest_QueryForAttributes:
+		if v == nil {
+			err := GetReportMetaRequestValidationError{
+				field:  "QueryFor",
+				reason: "oneof value cannot be a typed-nil",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
+
+		if all {
+			switch v := interface{}(m.GetQueryForAttributes()).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, GetReportMetaRequestValidationError{
+						field:  "QueryForAttributes",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, GetReportMetaRequestValidationError{
+						field:  "QueryForAttributes",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(m.GetQueryForAttributes()).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return GetReportMetaRequestValidationError{
+					field:  "QueryForAttributes",
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	default:
+		_ = v // ensures v is used
+	}
+
 	if len(errors) > 0 {
 		return GetReportMetaRequestMultiError(errors)
 	}

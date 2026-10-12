@@ -7788,6 +7788,12 @@ definitions:
         title: Generic resolver configuration (preferred for new reports)
       resolverProperties:
         type: object
+      queryForUserId:
+        type: string
+      queryForUserEmail:
+        type: string
+      queryForAttributes:
+        type: object
       queryName:
         type: string
         title: Legacy query-based report fields (deprecated - use resolver/resolver_properties instead)

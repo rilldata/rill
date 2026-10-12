@@ -6824,6 +6824,76 @@ func (m *ReportSpec) validate(all bool) error {
 
 	// no validation rules for IntervalsCheckUnclosed
 
+	switch v := m.QueryFor.(type) {
+	case *ReportSpec_QueryForUserId:
+		if v == nil {
+			err := ReportSpecValidationError{
+				field:  "QueryFor",
+				reason: "oneof value cannot be a typed-nil",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
+		// no validation rules for QueryForUserId
+	case *ReportSpec_QueryForUserEmail:
+		if v == nil {
+			err := ReportSpecValidationError{
+				field:  "QueryFor",
+				reason: "oneof value cannot be a typed-nil",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
+		// no validation rules for QueryForUserEmail
+	case *ReportSpec_QueryForAttributes:
+		if v == nil {
+			err := ReportSpecValidationError{
+				field:  "QueryFor",
+				reason: "oneof value cannot be a typed-nil",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
+
+		if all {
+			switch v := interface{}(m.GetQueryForAttributes()).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, ReportSpecValidationError{
+						field:  "QueryForAttributes",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, ReportSpecValidationError{
+						field:  "QueryForAttributes",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(m.GetQueryForAttributes()).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return ReportSpecValidationError{
+					field:  "QueryForAttributes",
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	default:
+		_ = v // ensures v is used
+	}
+
 	if len(errors) > 0 {
 		return ReportSpecMultiError(errors)
 	}

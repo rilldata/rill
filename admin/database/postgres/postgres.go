@@ -1740,6 +1740,70 @@ func (c *connection) DeleteExpiredMagicAuthTokens(ctx context.Context, retention
 	return parseErr("magic auth token", err)
 }
 
+// FindEmbedAuthTokens returns the embed auth tokens for an email in a project.
+func (c *connection) FindEmbedAuthTokens(ctx context.Context, projectID, email string) ([]*database.EmbedAuthToken, error) {
+	var res []*database.EmbedAuthToken
+	err := c.getDB(ctx).SelectContext(ctx, &res, "SELECT t.* FROM embed_auth_tokens t WHERE t.project_id=$1 AND t.email=$2", projectID, email)
+	if err != nil {
+		return nil, parseErr("embed auth tokens", err)
+	}
+	return res, nil
+}
+
+// FindEmbedAuthToken returns an embed auth token.
+func (c *connection) FindEmbedAuthToken(ctx context.Context, id string) (*database.EmbedAuthToken, error) {
+	res := &database.EmbedAuthToken{}
+	err := c.getDB(ctx).QueryRowxContext(ctx, "SELECT t.* FROM embed_auth_tokens t WHERE t.id=$1", id).StructScan(res)
+	if err != nil {
+		return nil, parseErr("embed auth token", err)
+	}
+	return res, nil
+}
+
+// InsertEmbedAuthToken inserts an embed auth token.
+func (c *connection) InsertEmbedAuthToken(ctx context.Context, opts *database.InsertEmbedAuthTokenOptions) (*database.EmbedAuthToken, error) {
+	if err := database.Validate(opts); err != nil {
+		return nil, err
+	}
+
+	res := &database.EmbedAuthToken{}
+	err := c.getDB(ctx).QueryRowxContext(ctx, `
+		INSERT INTO embed_auth_tokens (id, secret_hash, project_id, email, expires_on)
+		VALUES ($1, $2, $3, $4, $5) RETURNING *`,
+		opts.ID, opts.SecretHash, opts.ProjectID, opts.Email, opts.ExpiresOn,
+	).StructScan(res)
+	if err != nil {
+		return nil, parseErr("embed auth token", err)
+	}
+	return res, nil
+}
+
+func (c *connection) UpdateEmbedAuthTokenUsedOn(ctx context.Context, ids []string) error {
+	_, err := c.getDB(ctx).ExecContext(ctx, "UPDATE embed_auth_tokens SET used_on=now() WHERE id=ANY($1)", ids)
+	if err != nil {
+		return parseErr("embed auth token", err)
+	}
+	return nil
+}
+
+// DeleteEmbedAuthToken deletes an embed auth token.
+func (c *connection) DeleteEmbedAuthToken(ctx context.Context, id string) error {
+	res, err := c.getDB(ctx).ExecContext(ctx, "DELETE FROM embed_auth_tokens WHERE id=$1", id)
+	return checkDeleteRow("embed auth token", res, err)
+}
+
+// DeleteExpiredEmbedAuthTokens deletes expired embed auth tokens.
+func (c *connection) DeleteExpiredEmbedAuthTokens(ctx context.Context, retention time.Duration) error {
+	_, err := c.getDB(ctx).ExecContext(ctx, "DELETE FROM embed_auth_tokens WHERE expires_on IS NOT NULL AND expires_on + $1 < now()", retention)
+	return parseErr("embed auth token", err)
+}
+
+// DeleteInactiveEmbedAuthTokens deletes embed auth tokens that have not been used within the specified retention period.
+func (c *connection) DeleteInactiveEmbedAuthTokens(ctx context.Context, retention time.Duration) error {
+	_, err := c.getDB(ctx).ExecContext(ctx, "DELETE FROM embed_auth_tokens WHERE used_on + $1 < now() AND created_on + $1 < now()", retention)
+	return parseErr("embed auth token", err)
+}
+
 func (c *connection) FindNotificationTokens(ctx context.Context, resourceKind, resourceName string) ([]*database.NotificationToken, error) {
 	var res []*database.NotificationToken
 	err := c.getDB(ctx).SelectContext(ctx, &res, `SELECT * FROM notification_tokens WHERE resource_kind=$1 AND resource_name=$2`, resourceKind, resourceName)

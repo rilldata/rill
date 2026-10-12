@@ -226,6 +226,46 @@ func (s *Service) IssueMagicAuthToken(ctx context.Context, opts *IssueMagicAuthT
 	return &magicAuthToken{model: dat, token: tkn}, nil
 }
 
+type embedAuthToken struct {
+	model *database.EmbedAuthToken
+	token *authtoken.Token
+}
+
+func (t *embedAuthToken) Token() *authtoken.Token {
+	return t.token
+}
+
+func (t *embedAuthToken) TokenModel() any {
+	return t.model
+}
+
+func (t *embedAuthToken) OwnerID() string {
+	return fmt.Sprintf("%s::%s", t.model.ProjectID, t.model.Email)
+}
+
+func (s *Service) IssueEmbedAuthToken(ctx context.Context, projectID, email string, ttl *time.Duration) (AuthToken, error) {
+	tkn := authtoken.NewRandom(authtoken.TypeEmbed)
+
+	var expiresOn *time.Time
+	if ttl != nil {
+		t := time.Now().Add(*ttl)
+		expiresOn = &t
+	}
+
+	eat, err := s.DB.InsertEmbedAuthToken(ctx, &database.InsertEmbedAuthTokenOptions{
+		ID:         tkn.ID.String(),
+		SecretHash: tkn.SecretHash(),
+		ProjectID:  projectID,
+		Email:      email,
+		ExpiresOn:  expiresOn,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return &embedAuthToken{model: eat, token: tkn}, nil
+}
+
 // ExtendBrowserSessionAuthToken extends a Rill web browser session token when its
 // remaining lifetime is at or below refreshThreshold.
 func (s *Service) ExtendBrowserSessionAuthToken(ctx context.Context, authTok AuthToken, fullTTL, refreshThreshold time.Duration) error {
@@ -261,6 +301,8 @@ func (s *Service) RevokeAuthToken(ctx context.Context, token string) error {
 		return fmt.Errorf("deployment auth tokens cannot be revoked")
 	case authtoken.TypeMagic:
 		return s.DB.DeleteMagicAuthToken(ctx, parsed.ID.String())
+	case authtoken.TypeEmbed:
+		return s.DB.DeleteEmbedAuthToken(ctx, parsed.ID.String())
 	default:
 		return fmt.Errorf("unknown auth token type %q", parsed.Type)
 	}
@@ -391,6 +433,23 @@ func (s *Service) validateAuthTokenUncached(ctx context.Context, token string) (
 		s.Used.MagicAuthToken(mat.ID)
 
 		return &magicAuthToken{model: mat, token: parsed}, nil
+	case authtoken.TypeEmbed:
+		eat, err := s.DB.FindEmbedAuthToken(ctx, parsed.ID.String())
+		if err != nil {
+			return nil, err
+		}
+
+		if eat.ExpiresOn != nil && eat.ExpiresOn.Before(time.Now()) {
+			return nil, fmt.Errorf("auth token is expired")
+		}
+
+		if !bytes.Equal(eat.SecretHash, parsed.SecretHash()) {
+			return nil, fmt.Errorf("invalid auth token")
+		}
+
+		// TODO: used
+
+		return &embedAuthToken{model: eat, token: parsed}, err
 	default:
 		return nil, fmt.Errorf("unknown auth token type %q", parsed.Type)
 	}
