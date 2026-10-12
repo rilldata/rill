@@ -38,7 +38,7 @@ require (
 	github.com/c2h5oh/datasize v0.0.0-20220606134207-859f65c6625b
 	github.com/confluentinc/confluent-kafka-go/v2 v2.2.0
 	github.com/coreos/go-oidc/v3 v3.17.0
-	github.com/databricks/databricks-sql-go v1.15.1
+	github.com/databricks/databricks-sql-go v1.16.0
 	github.com/dgraph-io/ristretto v0.1.1
 	github.com/docker/go-connections v0.6.0
 	github.com/duckdb/duckdb-go/v2 v2.10505.0
@@ -143,13 +143,13 @@ require (
 require (
 	github.com/aws/aws-sdk-go-v2/service/signin v1.0.8 // indirect
 	github.com/cenkalti/backoff/v5 v5.0.3 // indirect
-	github.com/databricks/databricks-sql-kernel-bindings/lib/darwin_amd64 v1.0.0 // indirect
-	github.com/databricks/databricks-sql-kernel-bindings/lib/darwin_arm64 v1.0.0 // indirect
-	github.com/databricks/databricks-sql-kernel-bindings/lib/linux_amd64 v1.0.0 // indirect
-	github.com/databricks/databricks-sql-kernel-bindings/lib/linux_arm v1.0.0 // indirect
-	github.com/databricks/databricks-sql-kernel-bindings/lib/linux_arm64 v1.0.0 // indirect
-	github.com/databricks/databricks-sql-kernel-bindings/lib/windows_amd64 v1.0.0 // indirect
-	github.com/databricks/databricks-sql-kernel-bindings/lib/windows_arm64 v1.0.0 // indirect
+	github.com/databricks/databricks-sql-kernel-bindings/lib/darwin_amd64 v1.1.0 // indirect
+	github.com/databricks/databricks-sql-kernel-bindings/lib/darwin_arm64 v1.1.0 // indirect
+	github.com/databricks/databricks-sql-kernel-bindings/lib/linux_amd64 v1.1.0 // indirect
+	github.com/databricks/databricks-sql-kernel-bindings/lib/linux_arm v1.1.0 // indirect
+	github.com/databricks/databricks-sql-kernel-bindings/lib/linux_arm64 v1.1.0 // indirect
+	github.com/databricks/databricks-sql-kernel-bindings/lib/windows_amd64 v1.1.0 // indirect
+	github.com/databricks/databricks-sql-kernel-bindings/lib/windows_arm64 v1.1.0 // indirect
 	github.com/dnephin/pflag v1.0.7 // indirect
 	github.com/docker/compose/v5 v5.1.2 // indirect
 	github.com/duckdb/duckdb-go-bindings/lib/darwin-amd64 v0.10505.0 // indirect
