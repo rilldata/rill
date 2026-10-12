@@ -1214,6 +1214,29 @@ func (a *AST) buildSpineSelect(alias string, spine *Spine, tr *TimeRange) (*Sele
 	}
 
 	if spine.TimeRange != nil {
+		// An empty time range has no bins.
+		// Dialects that inline the bins (e.g. ClickHouse's VALUES(...)) cannot express a spine with zero rows,
+		// so instead select from the underlying table with the empty time range, which is guaranteed to return no rows.
+		if !spine.TimeRange.Start.IsZero() && !spine.TimeRange.End.IsZero() && !spine.TimeRange.Start.Before(spine.TimeRange.End) {
+			n := &SelectNode{
+				Alias:     alias,
+				DimFields: a.dimFields,
+				FromTable: a.underlyingTable,
+				Unnests:   a.unnests,
+				Where:     a.underlyingWhere,
+				Group:     true,
+			}
+			err := a.AddTimeRange(n, &TimeRange{
+				Start:         spine.TimeRange.Start,
+				End:           spine.TimeRange.End,
+				TimeDimension: spine.TimeRange.TimeDimension,
+			})
+			if err != nil {
+				return nil, fmt.Errorf("failed to add time range: %w", err)
+			}
+			return n, nil
+		}
+
 		// if spine generates more than 1500 values then return an error
 		bins := timeutil.ApproximateBins(spine.TimeRange.Start, spine.TimeRange.End, spine.TimeRange.Grain.ToTimeutil())
 		if bins > 1500 {
