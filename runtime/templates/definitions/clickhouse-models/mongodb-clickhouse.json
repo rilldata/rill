@@ -1,0 +1,87 @@
+{
+  "name": "mongodb-clickhouse",
+  "display_name": "MongoDB",
+  "description": "Query MongoDB collections in ClickHouse using mongodb table function",
+  "docs_url": "https://clickhouse.com/docs/en/sql-reference/table-functions/mongodb",
+  "driver": "mongodb",
+  "olap": "clickhouse",
+  "icon": "MongoDB",
+  "small_icon": "MongoDBIcon",
+  "tags": [
+    "mongodb",
+    "database",
+    "clickhouse",
+    "source"
+  ],
+  "json_schema": {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "type": "object",
+    "x-category": "sourceOnly",
+    "properties": {
+      "host": {
+        "type": "string",
+        "title": "Host",
+        "description": "MongoDB server hostname or IP",
+        "x-placeholder": "localhost"
+      },
+      "port": {
+        "type": "string",
+        "title": "Port",
+        "description": "MongoDB server port",
+        "pattern": "^\\d+$",
+        "errorMessage": {
+          "pattern": "Port must be a number"
+        },
+        "default": "27017",
+        "x-placeholder": "27017"
+      },
+      "database": {
+        "type": "string",
+        "title": "Database",
+        "description": "MongoDB database name",
+        "x-placeholder": "my_database"
+      },
+      "collection": {
+        "type": "string",
+        "title": "Collection",
+        "description": "MongoDB collection name",
+        "x-placeholder": "my_collection"
+      },
+      "user": {
+        "type": "string",
+        "title": "Username",
+        "description": "MongoDB user",
+        "x-placeholder": "mongo_user"
+      },
+      "password": {
+        "type": "string",
+        "title": "Password",
+        "description": "MongoDB password",
+        "x-placeholder": "your_password",
+        "x-secret": true,
+        "x-env-var": "MONGODB_PASSWORD"
+      },
+      "name": {
+        "type": "string",
+        "title": "Model name",
+        "description": "Name for the source model",
+        "pattern": "^[a-zA-Z0-9_]+$",
+        "x-placeholder": "my_model"
+      }
+    },
+    "required": [
+      "host",
+      "database",
+      "collection",
+      "user",
+      "name"
+    ]
+  },
+  "files": [
+    {
+      "name": "model",
+      "path_template": "models/[[ .model_name ]].yaml",
+      "code_template": "# Model YAML\n# Reference documentation: https://docs.rilldata.com/reference/project-files/models\ntype: model\nmaterialize: true\nconnector: clickhouse\nsql: |\n  SELECT * FROM mongodb(\n      '[[ .host ]]:[[ default (propVal .props \"port\") \"27017\" ]]',\n      '[[ .database ]]',\n      '[[ .collection ]]',\n      '[[ propVal .props \"user\" ]]',\n      '[[ propVal .props \"password\" ]]'\n  )\n"
+    }
+  ]
+}
