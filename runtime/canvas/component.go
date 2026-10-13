@@ -1,6 +1,7 @@
 package canvas
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"math"
@@ -16,53 +17,185 @@ import (
 // The provided metricsViews should contain every valid metrics view referenced by the component (as determined in the parser).
 // If the renderer properties reference a metrics view not in metricsViews, assume the metrics view is invalid or does not exist (don't look it up separately in the catalog).
 //
+// allowTemplated should be true when the component declares params. In that case, properties may contain
+// unresolved template placeholders (e.g. {{ .params.measure }}), which makes field-membership validation
+// impossible for the templated values; those membership checks are skipped and the bound values are
+// validated by the canvas reconciler (ValidateParamBindings) instead. All other checks still run:
+// required keys must be present, values must have the right types, and enum-valued and non-templated
+// field properties are validated as usual.
+//
 // Note: metrics views referenced through markdown content cannot be validated here.
 // This is because the upstream parser can't extract refs from templates, so the metrics views cannot be passed through to here.
 // Warning: if you try to fix this, note that the refs must be added in the parser, not looked up dynamically here;
 // a dynamic lookup will have a race condition where the metrics view may not have been reconciled yet.
-func ValidateRendererProperties(renderer string, props map[string]any, metricsViews map[string]*runtimev1.MetricsViewSpec) error {
+func ValidateRendererProperties(renderer string, props map[string]any, metricsViews map[string]*runtimev1.MetricsViewSpec, allowTemplated bool) error {
+	v := rendererValidator{
+		metricsViews: metricsViews,
+		lenient:      allowTemplated && hasTemplatedString(props),
+	}
 	switch renderer {
 	case "line_chart", "bar_chart", "area_chart", "stacked_bar", "stacked_bar_normalized":
-		return validateCartesianChart(renderer, props, metricsViews)
+		return v.validateCartesianChart(renderer, props)
 	case "donut_chart", "pie_chart":
-		return validateCircularChart(props, metricsViews)
+		return v.validateCircularChart(props)
 	case "scatter_plot":
-		return validateScatterPlot(props, metricsViews)
+		return v.validateScatterPlot(props)
 	case "funnel_chart":
-		return validateFunnelChart(props, metricsViews)
+		return v.validateFunnelChart(props)
 	case "heatmap":
-		return validateHeatmap(props, metricsViews)
+		return v.validateHeatmap(props)
 	case "combo_chart":
-		return validateComboChart(props, metricsViews)
+		return v.validateComboChart(props)
 	case "markdown":
 		return validateMarkdown(props)
 	case "image":
 		return validateImage(props)
 	case "kpi":
-		return validateKPI(props, metricsViews)
+		return v.validateKPI(props)
 	case "kpi_grid":
-		return validateKPIGrid(props, metricsViews)
+		return v.validateKPIGrid(props)
 	case "table":
-		return validateTable(props, metricsViews)
+		return v.validateTable(props)
 	case "pivot":
-		return validatePivot(props, metricsViews)
+		return v.validatePivot(props)
 	case "leaderboard":
-		return validateLeaderboard(props, metricsViews)
+		return v.validateLeaderboard(props)
 	case "map":
-		return validateMap(props, metricsViews)
+		return v.validateMap(props)
 	case "custom_chart":
-		// TODO: Implement
-		return nil
+		return validateCustomChart(props)
 	default:
 		return fmt.Errorf("unsupported renderer %q", renderer)
 	}
 }
 
-// validateCartesianChart validates properties for line_chart, bar_chart, area_chart, stacked_bar, and stacked_bar_normalized.
+// rendererValidator holds the context for validating renderer properties.
+// When lenient is true, the properties may contain unresolved template placeholders:
+// field-membership checks are skipped for templated values (and for all fields when the
+// metrics view name itself is templated), while structural checks still run.
+type rendererValidator struct {
+	metricsViews map[string]*runtimev1.MetricsViewSpec
+	lenient      bool
+}
+
+// validateCustomChart validates properties for custom_chart.
+// It only rejects malformed values, not incomplete ones: the visual editor persists draft custom
+// charts with empty properties, so completeness is enforced at render time instead.
+// metrics_sql queries are validated at query time; vega_spec (inline canvas charts) is validated as
+// JSON only when it contains no template placeholders; spec (Flint, component files) is checked
+// structurally. Which of the two is permitted is enforced at parse time, not here.
+func validateCustomChart(props map[string]any) error {
+	if raw, ok := pathutil.GetPath(props, "metrics_sql"); ok {
+		switch v := raw.(type) {
+		case string:
+			// Nothing to check.
+		case []any:
+			for i, e := range v {
+				if _, ok := e.(string); !ok {
+					return fmt.Errorf("renderer property 'metrics_sql' entry at index %d must be a string", i)
+				}
+			}
+		default:
+			return errors.New("renderer property 'metrics_sql' must be a string or an array of strings")
+		}
+	}
+
+	vegaSpec, ok, err := getOptionalPathString(props, "vega_spec")
+	if err != nil {
+		return err
+	}
+	if ok && strings.TrimSpace(vegaSpec) != "" && !IsTemplated(vegaSpec) {
+		var m map[string]any
+		if err := json.Unmarshal([]byte(vegaSpec), &m); err != nil {
+			return fmt.Errorf("renderer property 'vega_spec' is not a valid JSON object: %w", err)
+		}
+	}
+
+	if raw, ok := props["spec"]; ok {
+		if err := validateFlintSpec(raw); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// validateFlintSpec structurally checks a Flint chart spec. It deliberately does not check chartType
+// against Flint's registry: the registry lives in the JS package, so the frontend validates that.
+func validateFlintSpec(raw any) error {
+	spec, ok := raw.(map[string]any)
+	if !ok {
+		return errors.New("renderer property 'spec' must be a mapping")
+	}
+
+	if v, ok := spec["chartType"]; ok {
+		s, ok := v.(string)
+		if !ok {
+			return errors.New("renderer property 'spec.chartType' must be a string")
+		}
+		if strings.TrimSpace(s) == "" {
+			return errors.New("renderer property 'spec.chartType' must not be empty")
+		}
+	}
+
+	raw, ok = spec["encodings"]
+	if !ok {
+		return nil
+	}
+	encodings, ok := raw.(map[string]any)
+	if !ok {
+		return errors.New("renderer property 'spec.encodings' must be a mapping")
+	}
+	for channel, raw := range encodings {
+		// A channel is either a field-name shorthand, an encoding object, or an array of either.
+		entries, ok := raw.([]any)
+		if !ok {
+			entries = []any{raw}
+		}
+		for _, entry := range entries {
+			switch e := entry.(type) {
+			case string:
+				// Field-name shorthand; nothing to check.
+			case map[string]any:
+				if v, ok := e["field"]; ok {
+					if _, ok := v.(string); !ok {
+						return fmt.Errorf("renderer property 'spec.encodings.%s.field' must be a string", channel)
+					}
+				}
+			default:
+				return fmt.Errorf("renderer property 'spec.encodings.%s' must be a field name or an encoding mapping", channel)
+			}
+		}
+	}
+
+	return nil
+}
+
+// hasTemplatedString reports whether any string nested in the value contains template placeholders.
+func hasTemplatedString(val any) bool {
+	switch val := val.(type) {
+	case string:
+		return IsTemplated(val)
+	case map[string]any:
+		for _, v := range val {
+			if hasTemplatedString(v) {
+				return true
+			}
+		}
+	case []any:
+		for _, v := range val {
+			if hasTemplatedString(v) {
+				return true
+			}
+		}
+	}
+	return false
+}
+
 // The dimension is normally drawn on x and the measure on y.
 // The bar renderers also accept the measure on x (a quantitative x.type) and the dimension on y, which draws horizontal bars.
-func validateCartesianChart(renderer string, props map[string]any, metricsViews map[string]*runtimev1.MetricsViewSpec) error {
-	mvn, mv, err := requireMetricsView(props, metricsViews)
+func (v rendererValidator) validateCartesianChart(renderer string, props map[string]any) error {
+	mvn, mv, err := v.requireMetricsView(props)
 	if err != nil {
 		return err
 	}
@@ -90,7 +223,7 @@ func validateCartesianChart(renderer string, props map[string]any, metricsViews 
 	if !ok {
 		return fmt.Errorf("renderer properties must include a string '%s.field' property", dimensionAxis)
 	}
-	if !metricsViewHasDimension(mv, dimensionField) {
+	if !v.hasDimension(mv, dimensionField) {
 		return fmt.Errorf("referenced %s.field %q is not a dimension in metrics view %q", dimensionAxis, dimensionField, mvn)
 	}
 
@@ -98,7 +231,7 @@ func validateCartesianChart(renderer string, props map[string]any, metricsViews 
 	if !ok {
 		return fmt.Errorf("renderer properties must include a string '%s.field' property", measureAxis)
 	}
-	if !metricsViewHasMeasure(mv, measureField) && !ephemeralNames[measureField] {
+	if !v.hasMeasure(mv, measureField, ephemeralNames) {
 		return fmt.Errorf("referenced %s.field %q is not a measure in metrics view %q", measureAxis, measureField, mvn)
 	}
 
@@ -108,18 +241,18 @@ func validateCartesianChart(renderer string, props map[string]any, metricsViews 
 		return err
 	}
 	for _, f := range measureFields {
-		if !metricsViewHasMeasure(mv, f) && !ephemeralNames[f] {
+		if !v.hasMeasure(mv, f, ephemeralNames) {
 			return fmt.Errorf("referenced %s.fields value %q is not a measure in metrics view %q", measureAxis, f, mvn)
 		}
 	}
 
 	// Validate optional color field: can be a plain string (skip) or a map with a "field" key (validate as dimension)
-	return validateOptionalColorDimensionField(mv, mvn, props)
+	return v.validateOptionalColorDimensionField(mv, mvn, props)
 }
 
 // validateCircularChart validates properties for donut_chart and pie_chart.
-func validateCircularChart(props map[string]any, metricsViews map[string]*runtimev1.MetricsViewSpec) error {
-	mvn, mv, err := requireMetricsView(props, metricsViews)
+func (v rendererValidator) validateCircularChart(props map[string]any) error {
+	mvn, mv, err := v.requireMetricsView(props)
 	if err != nil {
 		return err
 	}
@@ -133,16 +266,16 @@ func validateCircularChart(props map[string]any, metricsViews map[string]*runtim
 	if !ok {
 		return errors.New("renderer properties must include a string 'measure.field' property")
 	}
-	if !metricsViewHasMeasure(mv, measureField) && !ephemeralNames[measureField] {
+	if !v.hasMeasure(mv, measureField, ephemeralNames) {
 		return fmt.Errorf("referenced measure.field %q is not a measure in metrics view %q", measureField, mvn)
 	}
 
-	return validateOptionalDimensionField(mv, mvn, props, "color.field")
+	return v.validateOptionalDimensionField(mv, mvn, props, "color.field")
 }
 
 // validateScatterPlot validates properties for scatter_plot.
-func validateScatterPlot(props map[string]any, metricsViews map[string]*runtimev1.MetricsViewSpec) error {
-	mvn, mv, err := requireMetricsView(props, metricsViews)
+func (v rendererValidator) validateScatterPlot(props map[string]any) error {
+	mvn, mv, err := v.requireMetricsView(props)
 	if err != nil {
 		return err
 	}
@@ -156,7 +289,7 @@ func validateScatterPlot(props map[string]any, metricsViews map[string]*runtimev
 	if !ok {
 		return errors.New("renderer properties must include a string 'x.field' property")
 	}
-	if !metricsViewHasMeasure(mv, xField) && !ephemeralNames[xField] {
+	if !v.hasMeasure(mv, xField, ephemeralNames) {
 		return fmt.Errorf("referenced x.field %q is not a measure in metrics view %q", xField, mvn)
 	}
 
@@ -164,25 +297,25 @@ func validateScatterPlot(props map[string]any, metricsViews map[string]*runtimev
 	if !ok {
 		return errors.New("renderer properties must include a string 'y.field' property")
 	}
-	if !metricsViewHasMeasure(mv, yField) && !ephemeralNames[yField] {
+	if !v.hasMeasure(mv, yField, ephemeralNames) {
 		return fmt.Errorf("referenced y.field %q is not a measure in metrics view %q", yField, mvn)
 	}
 
-	if err := validateOptionalDimensionField(mv, mvn, props, "dimension.field"); err != nil {
+	if err := v.validateOptionalDimensionField(mv, mvn, props, "dimension.field"); err != nil {
 		return err
 	}
 
-	if err := validateOptionalMeasureField(mv, mvn, props, "size.field", ephemeralNames); err != nil {
+	if err := v.validateOptionalMeasureField(mv, mvn, props, "size.field", ephemeralNames); err != nil {
 		return err
 	}
 
 	// Color can be a plain string or a map with a "field" key
-	return validateOptionalColorDimensionField(mv, mvn, props)
+	return v.validateOptionalColorDimensionField(mv, mvn, props)
 }
 
 // validateFunnelChart validates properties for funnel_chart.
-func validateFunnelChart(props map[string]any, metricsViews map[string]*runtimev1.MetricsViewSpec) error {
-	mvn, mv, err := requireMetricsView(props, metricsViews)
+func (v rendererValidator) validateFunnelChart(props map[string]any) error {
+	mvn, mv, err := v.requireMetricsView(props)
 	if err != nil {
 		return err
 	}
@@ -192,7 +325,7 @@ func validateFunnelChart(props map[string]any, metricsViews map[string]*runtimev
 		return err
 	}
 
-	if err := validateOptionalMeasureField(mv, mvn, props, "measure.field", ephemeralNames); err != nil {
+	if err := v.validateOptionalMeasureField(mv, mvn, props, "measure.field", ephemeralNames); err != nil {
 		return err
 	}
 
@@ -202,41 +335,41 @@ func validateFunnelChart(props map[string]any, metricsViews map[string]*runtimev
 		return err
 	}
 	for _, f := range fields {
-		if !metricsViewHasMeasure(mv, f) && !ephemeralNames[f] {
+		if !v.hasMeasure(mv, f, ephemeralNames) {
 			return fmt.Errorf("referenced measure.fields value %q is not a measure in metrics view %q", f, mvn)
 		}
 	}
 
-	if err := validateOptionalDimensionField(mv, mvn, props, "stage.field"); err != nil {
+	if err := v.validateOptionalDimensionField(mv, mvn, props, "stage.field"); err != nil {
 		return err
 	}
 
 	// Optional enum-valued funnel fields. The renderer falls back to defaults for
 	// unknown values, but we reject typos here so authors get a clear error.
-	if err := validateOptionalStringEnum(props, "breakdownMode", []string{"dimension", "measures"}); err != nil {
+	if err := v.validateOptionalStringEnum(props, "breakdownMode", []string{"dimension", "measures"}); err != nil {
 		return err
 	}
-	if err := validateOptionalStringEnum(props, "mode", []string{"width", "order"}); err != nil {
+	if err := v.validateOptionalStringEnum(props, "mode", []string{"width", "order"}); err != nil {
 		return err
 	}
-	if err := validateOptionalStringEnum(props, "color", []string{"stage", "measure", "name", "value"}); err != nil {
+	if err := v.validateOptionalStringEnum(props, "color", []string{"stage", "measure", "name", "value"}); err != nil {
 		return err
 	}
-	return validateOptionalStringEnum(props, "percentMode", []string{"top", "previous"})
+	return v.validateOptionalStringEnum(props, "percentMode", []string{"top", "previous"})
 }
 
 // validateHeatmap validates properties for heatmap.
-func validateHeatmap(props map[string]any, metricsViews map[string]*runtimev1.MetricsViewSpec) error {
-	mvn, mv, err := requireMetricsView(props, metricsViews)
+func (v rendererValidator) validateHeatmap(props map[string]any) error {
+	mvn, mv, err := v.requireMetricsView(props)
 	if err != nil {
 		return err
 	}
 
-	if err := validateOptionalDimensionField(mv, mvn, props, "x.field"); err != nil {
+	if err := v.validateOptionalDimensionField(mv, mvn, props, "x.field"); err != nil {
 		return err
 	}
 
-	if err := validateOptionalDimensionField(mv, mvn, props, "y.field"); err != nil {
+	if err := v.validateOptionalDimensionField(mv, mvn, props, "y.field"); err != nil {
 		return err
 	}
 
@@ -246,17 +379,17 @@ func validateHeatmap(props map[string]any, metricsViews map[string]*runtimev1.Me
 	}
 
 	// Note: for heatmap, color is a measure (not a dimension like other charts)
-	return validateOptionalMeasureField(mv, mvn, props, "color.field", ephemeralNames)
+	return v.validateOptionalMeasureField(mv, mvn, props, "color.field", ephemeralNames)
 }
 
 // validateComboChart validates properties for combo_chart.
-func validateComboChart(props map[string]any, metricsViews map[string]*runtimev1.MetricsViewSpec) error {
-	mvn, mv, err := requireMetricsView(props, metricsViews)
+func (v rendererValidator) validateComboChart(props map[string]any) error {
+	mvn, mv, err := v.requireMetricsView(props)
 	if err != nil {
 		return err
 	}
 
-	if err := validateOptionalDimensionField(mv, mvn, props, "x.field"); err != nil {
+	if err := v.validateOptionalDimensionField(mv, mvn, props, "x.field"); err != nil {
 		return err
 	}
 
@@ -265,16 +398,16 @@ func validateComboChart(props map[string]any, metricsViews map[string]*runtimev1
 		return err
 	}
 
-	if err := validateOptionalMeasureField(mv, mvn, props, "y1.field", ephemeralNames); err != nil {
+	if err := v.validateOptionalMeasureField(mv, mvn, props, "y1.field", ephemeralNames); err != nil {
 		return err
 	}
 
-	if err := validateOptionalMeasureField(mv, mvn, props, "y2.field", ephemeralNames); err != nil {
+	if err := v.validateOptionalMeasureField(mv, mvn, props, "y2.field", ephemeralNames); err != nil {
 		return err
 	}
 
 	// Combo chart color is typically {field: "measures", type: "value"} for dual-axis mode
-	return validateOptionalColorDimensionField(mv, mvn, props)
+	return v.validateOptionalColorDimensionField(mv, mvn, props)
 }
 
 // validateMarkdown validates properties for markdown.
@@ -296,8 +429,8 @@ func validateImage(props map[string]any) error {
 }
 
 // validateKPI validates properties for kpi.
-func validateKPI(props map[string]any, metricsViews map[string]*runtimev1.MetricsViewSpec) error {
-	mvn, mv, err := requireMetricsView(props, metricsViews)
+func (v rendererValidator) validateKPI(props map[string]any) error {
+	mvn, mv, err := v.requireMetricsView(props)
 	if err != nil {
 		return err
 	}
@@ -311,7 +444,7 @@ func validateKPI(props map[string]any, metricsViews map[string]*runtimev1.Metric
 	if err != nil {
 		return err
 	}
-	if !metricsViewHasMeasure(mv, measure) && !ephemeralNames[measure] {
+	if !v.hasMeasure(mv, measure, ephemeralNames) {
 		return fmt.Errorf("referenced measure %q is not a measure in metrics view %q", measure, mvn)
 	}
 
@@ -319,8 +452,8 @@ func validateKPI(props map[string]any, metricsViews map[string]*runtimev1.Metric
 }
 
 // validateKPIGrid validates properties for kpi_grid.
-func validateKPIGrid(props map[string]any, metricsViews map[string]*runtimev1.MetricsViewSpec) error {
-	mvn, mv, err := requireMetricsView(props, metricsViews)
+func (v rendererValidator) validateKPIGrid(props map[string]any) error {
+	mvn, mv, err := v.requireMetricsView(props)
 	if err != nil {
 		return err
 	}
@@ -337,7 +470,7 @@ func validateKPIGrid(props map[string]any, metricsViews map[string]*runtimev1.Me
 		return err
 	}
 	for _, m := range measures {
-		if !metricsViewHasMeasure(mv, m) && !ephemeralNames[m] {
+		if !v.hasMeasure(mv, m, ephemeralNames) {
 			return fmt.Errorf("referenced measures value %q is not a measure in metrics view %q", m, mvn)
 		}
 	}
@@ -346,8 +479,8 @@ func validateKPIGrid(props map[string]any, metricsViews map[string]*runtimev1.Me
 }
 
 // validateTable validates properties for table.
-func validateTable(props map[string]any, metricsViews map[string]*runtimev1.MetricsViewSpec) error {
-	mvn, mv, err := requireMetricsView(props, metricsViews)
+func (v rendererValidator) validateTable(props map[string]any) error {
+	mvn, mv, err := v.requireMetricsView(props)
 	if err != nil {
 		return err
 	}
@@ -365,9 +498,14 @@ func validateTable(props map[string]any, metricsViews map[string]*runtimev1.Metr
 	}
 	sortable := make([]string, 0, len(columns))
 	for _, col := range columns {
-		isMeasure := metricsViewHasMeasure(mv, col.Name) || ephemeralNames[col.Name]
-		if !metricsViewHasDimension(mv, col.Name) && !isMeasure && !isEncodedTimeDimension(mv, col.Name) {
+		isMeasure := v.hasMeasure(mv, col.Name, ephemeralNames)
+		if !v.hasDimension(mv, col.Name) && !isMeasure && !isEncodedTimeDimension(mv, col.Name) {
 			return fmt.Errorf("referenced columns value %q is not a dimension or measure in metrics view %q", col.Name, mvn)
+		}
+		sortable = append(sortable, col.Name)
+		// In lenient mode an unresolved column's kind is unknown, so its overrides cannot be checked against a role.
+		if v.lenient && (mv == nil || IsTemplated(col.Name)) {
+			continue
 		}
 		role := fieldRoleTableDimension
 		if metricsViewHasMeasure(mv, col.Name) {
@@ -378,15 +516,14 @@ func validateTable(props map[string]any, metricsViews map[string]*runtimev1.Metr
 		if err := validateFieldEntryProps("columns", col, role); err != nil {
 			return err
 		}
-		sortable = append(sortable, col.Name)
 	}
 
-	return validateTablePresentation(props, sortable, func(name string) bool { return metricsViewHasMeasure(mv, name) })
+	return v.validateTablePresentation(props, sortable, func(name string) bool { return v.hasMeasure(mv, name) })
 }
 
 // validatePivot validates properties for pivot.
-func validatePivot(props map[string]any, metricsViews map[string]*runtimev1.MetricsViewSpec) error {
-	mvn, mv, err := requireMetricsView(props, metricsViews)
+func (v rendererValidator) validatePivot(props map[string]any) error {
+	mvn, mv, err := v.requireMetricsView(props)
 	if err != nil {
 		return err
 	}
@@ -416,7 +553,7 @@ func validatePivot(props map[string]any, metricsViews map[string]*runtimev1.Metr
 	sortable := make([]string, 0, len(measures)+len(rowDims))
 	for _, m := range measures {
 		role := fieldRoleMeasure
-		if !metricsViewHasMeasure(mv, m.Name) {
+		if !v.hasMeasure(mv, m.Name) {
 			if !ephemeralNames[m.Name] {
 				return fmt.Errorf("referenced measures value %q is not a measure in metrics view %q", m.Name, mvn)
 			}
@@ -428,7 +565,7 @@ func validatePivot(props map[string]any, metricsViews map[string]*runtimev1.Metr
 		sortable = append(sortable, m.Name)
 	}
 	for i, d := range rowDims {
-		if !metricsViewHasDimension(mv, d.Name) && !isEncodedTimeDimension(mv, d.Name) {
+		if !v.hasDimension(mv, d.Name) && !isEncodedTimeDimension(mv, d.Name) {
 			return fmt.Errorf("referenced row_dimensions value %q is not a dimension in metrics view %q", d.Name, mvn)
 		}
 		// All row dimensions share one merged row-header column keyed by the first one.
@@ -442,7 +579,7 @@ func validatePivot(props map[string]any, metricsViews map[string]*runtimev1.Metr
 		sortable = append(sortable, d.Name)
 	}
 	for _, d := range colDims {
-		if !metricsViewHasDimension(mv, d.Name) && !isEncodedTimeDimension(mv, d.Name) {
+		if !v.hasDimension(mv, d.Name) && !isEncodedTimeDimension(mv, d.Name) {
 			return fmt.Errorf("referenced col_dimensions value %q is not a dimension in metrics view %q", d.Name, mvn)
 		}
 		if err := validateFieldEntryProps("col_dimensions", d, fieldRoleColumnDimension); err != nil {
@@ -450,12 +587,12 @@ func validatePivot(props map[string]any, metricsViews map[string]*runtimev1.Metr
 		}
 	}
 
-	return validateTablePresentation(props, sortable, func(name string) bool { return metricsViewHasMeasure(mv, name) })
+	return v.validateTablePresentation(props, sortable, func(name string) bool { return v.hasMeasure(mv, name) })
 }
 
 // validateLeaderboard validates properties for leaderboard.
-func validateLeaderboard(props map[string]any, metricsViews map[string]*runtimev1.MetricsViewSpec) error {
-	mvn, mv, err := requireMetricsView(props, metricsViews)
+func (v rendererValidator) validateLeaderboard(props map[string]any) error {
+	mvn, mv, err := v.requireMetricsView(props)
 	if err != nil {
 		return err
 	}
@@ -478,12 +615,12 @@ func validateLeaderboard(props map[string]any, metricsViews map[string]*runtimev
 		return err
 	}
 	for _, m := range measures {
-		if !metricsViewHasMeasure(mv, m) && !ephemeralNames[m] {
+		if !v.hasMeasure(mv, m, ephemeralNames) {
 			return fmt.Errorf("referenced measures value %q is not a measure in metrics view %q", m, mvn)
 		}
 	}
 	for _, d := range dimensions {
-		if !metricsViewHasDimension(mv, d) {
+		if !v.hasDimension(mv, d) {
 			return fmt.Errorf("referenced dimensions value %q is not a dimension in metrics view %q", d, mvn)
 		}
 	}
@@ -492,8 +629,8 @@ func validateLeaderboard(props map[string]any, metricsViews map[string]*runtimev
 }
 
 // validateMap validates properties for map.
-func validateMap(props map[string]any, metricsViews map[string]*runtimev1.MetricsViewSpec) error {
-	mvn, mv, err := requireMetricsView(props, metricsViews)
+func (v rendererValidator) validateMap(props map[string]any) error {
+	mvn, mv, err := v.requireMetricsView(props)
 	if err != nil {
 		return err
 	}
@@ -507,7 +644,7 @@ func validateMap(props map[string]any, metricsViews map[string]*runtimev1.Metric
 	if !ok {
 		return errors.New("renderer properties for map must include a string 'geo_dimension.field' property")
 	}
-	if !metricsViewHasDimension(mv, geoDim) {
+	if !v.hasDimension(mv, geoDim) {
 		return fmt.Errorf("referenced geo_dimension.field %q is not a dimension in metrics view %q", geoDim, mvn)
 	}
 
@@ -516,33 +653,62 @@ func validateMap(props map[string]any, metricsViews map[string]*runtimev1.Metric
 	if !ok {
 		return errors.New("renderer properties for map must include a string 'color.measure' property")
 	}
-	if !metricsViewHasMeasure(mv, colorMeasure) && !ephemeralNames[colorMeasure] {
+	if !v.hasMeasure(mv, colorMeasure, ephemeralNames) {
 		return fmt.Errorf("referenced color.measure %q is not a measure in metrics view %q", colorMeasure, mvn)
 	}
 
-	if err := validateOptionalMeasureField(mv, mvn, props, "size_measure.field", ephemeralNames); err != nil {
+	if err := v.validateOptionalMeasureField(mv, mvn, props, "size_measure.field", ephemeralNames); err != nil {
 		return err
 	}
 
-	return validateOptionalDimensionField(mv, mvn, props, "tooltip_dimension.field")
+	return v.validateOptionalDimensionField(mv, mvn, props, "tooltip_dimension.field")
 }
 
 // requireMetricsView extracts and validates the "metrics_view" property from renderer props.
 // It returns the metrics view name, spec, and nil error on success.
-func requireMetricsView(props map[string]any, metricsViews map[string]*runtimev1.MetricsViewSpec) (string, *runtimev1.MetricsViewSpec, error) {
+// In lenient mode, a templated metrics view name returns a nil spec without error;
+// the membership helpers skip their checks when the spec is nil.
+func (v rendererValidator) requireMetricsView(props map[string]any) (string, *runtimev1.MetricsViewSpec, error) {
 	mvn, ok := pathutil.GetPathString(props, "metrics_view")
 	if !ok {
 		return "", nil, errors.New("renderer properties must include a string 'metrics_view' property")
 	}
-	mv := metricsViews[mvn]
+	if v.lenient && IsTemplated(mvn) {
+		return mvn, nil, nil
+	}
+	mv := v.metricsViews[mvn]
 	if mv == nil {
 		return "", nil, fmt.Errorf("referenced metrics view %q is invalid", mvn)
 	}
 	return mvn, mv, nil
 }
 
+// hasDimension reports whether the metrics view has a dimension with the given name.
+// In lenient mode the check passes when it cannot run: the metrics view is unresolved
+// (templated name, mv is nil) or the field name itself is templated.
+func (v rendererValidator) hasDimension(mv *runtimev1.MetricsViewSpec, fieldName string) bool {
+	if v.lenient && (mv == nil || IsTemplated(fieldName)) {
+		return true
+	}
+	return metricsViewHasDimension(mv, fieldName)
+}
+
+// hasMeasure reports whether the metrics view has a measure with the given name.
+// In lenient mode the check passes when it cannot run; see hasDimension.
+func (v rendererValidator) hasMeasure(mv *runtimev1.MetricsViewSpec, fieldName string, ephemeralNames ...map[string]bool) bool {
+	if v.lenient && (mv == nil || IsTemplated(fieldName)) {
+		return true
+	}
+	for _, names := range ephemeralNames {
+		if names[fieldName] {
+			return true
+		}
+	}
+	return metricsViewHasMeasure(mv, fieldName)
+}
+
 // validateOptionalDimensionField validates that a field at the given path, if present, is a dimension in the metrics view.
-func validateOptionalDimensionField(mv *runtimev1.MetricsViewSpec, mvName string, props map[string]any, path string) error {
+func (v rendererValidator) validateOptionalDimensionField(mv *runtimev1.MetricsViewSpec, mvName string, props map[string]any, path string) error {
 	field, ok, err := getOptionalPathString(props, path)
 	if err != nil {
 		return err
@@ -550,7 +716,7 @@ func validateOptionalDimensionField(mv *runtimev1.MetricsViewSpec, mvName string
 	if !ok {
 		return nil
 	}
-	if !metricsViewHasDimension(mv, field) {
+	if !v.hasDimension(mv, field) {
 		return fmt.Errorf("referenced %s %q is not a dimension in metrics view %q", path, field, mvName)
 	}
 	return nil
@@ -558,7 +724,7 @@ func validateOptionalDimensionField(mv *runtimev1.MetricsViewSpec, mvName string
 
 // validateOptionalMeasureField validates that a field at the given path, if present,
 // is a measure in the metrics view or one of the component's ephemeral measures.
-func validateOptionalMeasureField(mv *runtimev1.MetricsViewSpec, mvName string, props map[string]any, path string, ephemeralNames map[string]bool) error {
+func (v rendererValidator) validateOptionalMeasureField(mv *runtimev1.MetricsViewSpec, mvName string, props map[string]any, path string, ephemeralNames ...map[string]bool) error {
 	field, ok, err := getOptionalPathString(props, path)
 	if err != nil {
 		return err
@@ -566,7 +732,7 @@ func validateOptionalMeasureField(mv *runtimev1.MetricsViewSpec, mvName string, 
 	if !ok {
 		return nil
 	}
-	if !metricsViewHasMeasure(mv, field) && !ephemeralNames[field] {
+	if !v.hasMeasure(mv, field, ephemeralNames...) {
 		return fmt.Errorf("referenced %s %q is not a measure in metrics view %q", path, field, mvName)
 	}
 	return nil
@@ -578,7 +744,7 @@ func validateOptionalMeasureField(mv *runtimev1.MetricsViewSpec, mvName string, 
 //   - a map with a "field" key: validate color.field as a dimension
 //
 // This pattern is used by cartesian charts, scatter plots, and combo charts.
-func validateOptionalColorDimensionField(mv *runtimev1.MetricsViewSpec, mvName string, props map[string]any) error {
+func (v rendererValidator) validateOptionalColorDimensionField(mv *runtimev1.MetricsViewSpec, mvName string, props map[string]any) error {
 	raw, ok := pathutil.GetPath(props, "color")
 	if !ok {
 		return nil
@@ -592,7 +758,7 @@ func validateOptionalColorDimensionField(mv *runtimev1.MetricsViewSpec, mvName s
 		return nil
 	}
 	// Otherwise validate color.field as a dimension
-	return validateOptionalDimensionField(mv, mvName, props, "color.field")
+	return v.validateOptionalDimensionField(mv, mvName, props, "color.field")
 }
 
 // fieldEntry is an entry of a table's or pivot's field list (columns, measures, row_dimensions, col_dimensions):
@@ -796,7 +962,7 @@ func validateFieldEntryProps(path string, entry fieldEntry, role fieldRole) erro
 // fit_to_width, wrap, wrap_headers, wrap_lines, sort_by, sort_dir and sort_comparison.
 // sortable lists the field names that sort_by may reference;
 // hasComparison reports whether the pivot builds comparison columns for a field (a measure of the metrics view, not an adhoc one).
-func validateTablePresentation(props map[string]any, sortable []string, hasComparison func(name string) bool) error {
+func (v rendererValidator) validateTablePresentation(props map[string]any, sortable []string, hasComparison func(name string) bool) error {
 	for _, key := range []string{"fit_to_width", "wrap", "wrap_headers"} {
 		if _, _, err := getOptionalPathBool(props, key); err != nil {
 			return err
@@ -814,17 +980,17 @@ func validateTablePresentation(props map[string]any, sortable []string, hasCompa
 	if err != nil {
 		return err
 	}
-	if hasSortBy && sortBy != "" && !slices.Contains(sortable, sortBy) {
+	if hasSortBy && sortBy != "" && !slices.Contains(sortable, sortBy) && !(v.lenient && IsTemplated(sortBy)) {
 		return fmt.Errorf("renderer property \"sort_by\" references %q, which is not a sortable field of the component (one of %v)", sortBy, sortable)
 	}
-	if err := validateOptionalStringEnum(props, "sort_dir", []string{"asc", "desc"}); err != nil {
+	if err := v.validateOptionalStringEnum(props, "sort_dir", []string{"asc", "desc"}); err != nil {
 		return err
 	}
 	if _, hasSortDir := props["sort_dir"]; hasSortDir && (!hasSortBy || sortBy == "") {
 		return errors.New("renderer property \"sort_dir\" requires \"sort_by\"")
 	}
 
-	if err := validateOptionalStringEnum(props, "sort_comparison", []string{"delta", "percent_change"}); err != nil {
+	if err := v.validateOptionalStringEnum(props, "sort_comparison", []string{"delta", "percent_change"}); err != nil {
 		return err
 	}
 	if _, hasSortComparison := props["sort_comparison"]; hasSortComparison {
@@ -894,12 +1060,16 @@ func getOptionalPathString(props map[string]any, path string) (string, bool, err
 
 // validateOptionalStringEnum validates that an optional string field at the given
 // path, if present, equals one of the allowed values.
-func validateOptionalStringEnum(props map[string]any, path string, allowed []string) error {
+// In lenient mode, templated values are skipped since they only resolve at render time.
+func (v rendererValidator) validateOptionalStringEnum(props map[string]any, path string, allowed []string) error {
 	value, ok, err := getOptionalPathString(props, path)
 	if err != nil {
 		return err
 	}
 	if !ok {
+		return nil
+	}
+	if v.lenient && IsTemplated(value) {
 		return nil
 	}
 	for _, a := range allowed {
@@ -912,6 +1082,9 @@ func validateOptionalStringEnum(props map[string]any, path string, allowed []str
 
 // metricsViewHasDimension returns true if the metrics view has a dimension with the given name.
 func metricsViewHasDimension(mv *runtimev1.MetricsViewSpec, fieldName string) bool {
+	if mv == nil {
+		return false
+	}
 	for _, d := range mv.Dimensions {
 		if d.Name == fieldName {
 			return true
@@ -930,7 +1103,7 @@ func metricsViewHasDimension(mv *runtimev1.MetricsViewSpec, fieldName string) bo
 // dimensions (time-type dimensions declared in the dimension list), this check must be extended
 // to recognize those prefixes as well.
 func isEncodedTimeDimension(mv *runtimev1.MetricsViewSpec, fieldName string) bool {
-	if mv.TimeDimension == "" {
+	if mv == nil || mv.TimeDimension == "" {
 		return false
 	}
 	grain, ok := strings.CutPrefix(fieldName, mv.TimeDimension+"_rill_")
@@ -966,7 +1139,7 @@ func ephemeralMeasureNames(props map[string]any, mvn string, mv *runtimev1.Metri
 		}
 		// Mirror metricsview.AST.checkNameForComputedField, which also rejects the time dimension.
 		// It is often absent from mv.Dimensions, so checking it here surfaces the collision at parse time rather than at query time.
-		if metricsViewHasMeasure(mv, name) || metricsViewHasDimension(mv, name) || name == mv.TimeDimension {
+		if mv != nil && (metricsViewHasMeasure(mv, name) || metricsViewHasDimension(mv, name) || name == mv.TimeDimension) {
 			return nil, fmt.Errorf("ephemeral measure %q collides with a field in metrics view %q", name, mvn)
 		}
 		if names[name] {
@@ -977,7 +1150,7 @@ func ephemeralMeasureNames(props map[string]any, mvn string, mv *runtimev1.Metri
 			return nil, fmt.Errorf("ephemeral measure %q: %w", name, err)
 		}
 		for _, ref := range parsed.Refs() {
-			if !metricsViewHasMeasure(mv, ref) {
+			if mv != nil && !metricsViewHasMeasure(mv, ref) {
 				return nil, fmt.Errorf("ephemeral measure %q references %q, which is not a measure in metrics view %q", name, ref, mvn)
 			}
 		}
@@ -988,6 +1161,9 @@ func ephemeralMeasureNames(props map[string]any, mvn string, mv *runtimev1.Metri
 
 // metricsViewHasMeasure returns true if the metrics view has a measure with the given name.
 func metricsViewHasMeasure(mv *runtimev1.MetricsViewSpec, fieldName string) bool {
+	if mv == nil {
+		return false
+	}
 	for _, m := range mv.Measures {
 		if m.Name == fieldName {
 			return true

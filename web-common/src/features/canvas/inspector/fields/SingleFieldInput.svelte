@@ -7,6 +7,7 @@
   import { getCanvasStore } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
   import type { EphemeralMeasureDef } from "@rilldata/web-common/features/dashboards/ephemeral-measures/types";
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
+  import { MetricsViewSpecDimensionType } from "@rilldata/web-common/runtime-client";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { PencilIcon, PlusIcon } from "lucide-svelte";
   import { useMetricFieldData } from "../selectors";
@@ -20,6 +21,9 @@
   export let selectedItem: string | undefined = undefined;
   export let type: "measure" | "dimension";
   export let includeTime = false;
+  // Restricts a dimension picker to time fields: the special "Time" item (see includeTime)
+  // and time-typed dimensions. Used by the time_dimension param of custom viz components.
+  export let timeFieldsOnly = false;
   export let canvasName: string;
   export let searchableItems: string[] | undefined = undefined;
   export let excludedValues: string[] | undefined = undefined;
@@ -60,10 +64,22 @@
   $: timeDimension = getTimeDimensionForMetricView(metricName);
 
   $: isTimeSelected = $timeDimension && selectedItem === $timeDimension;
-  $: effectiveExcludedValues =
-    type === "dimension" && !includeTime && $timeDimension
-      ? [...(excludedValues ?? []), $timeDimension]
-      : excludedValues;
+  $: metricsViewQuery =
+    ctx.canvasEntity.metricsView.getMetricsViewFromName(metricName);
+  $: nonTimeDimensions = timeFieldsOnly
+    ? ($metricsViewQuery.metricsView?.dimensions ?? [])
+        .filter(
+          (d) => d.type !== MetricsViewSpecDimensionType.DIMENSION_TYPE_TIME,
+        )
+        .map((d) => d.name || (d.column as string))
+    : [];
+  $: effectiveExcludedValues = [
+    ...(excludedValues ?? []),
+    ...(type === "dimension" && !includeTime && $timeDimension
+      ? [$timeDimension]
+      : []),
+    ...nonTimeDimensions,
+  ];
   $: fieldData = useMetricFieldData(
     ctx,
     metricName,

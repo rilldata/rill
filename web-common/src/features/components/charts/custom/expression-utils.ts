@@ -1,4 +1,7 @@
-import type { V1Expression } from "@rilldata/web-common/runtime-client";
+import type {
+  V1Expression,
+  V1TimeRange,
+} from "@rilldata/web-common/runtime-client";
 
 // TODO: Update resolver API to accept V1Expression directly
 
@@ -57,4 +60,20 @@ export function convertV1ExpressionToMapstructure(
   }
 
   return result;
+}
+
+/**
+ * The metrics_sql resolver properties that apply a dashboard's filters to a query:
+ * the where filter (when it has conditions) and the time range.
+ */
+export function metricsSQLFilterProperties(
+  whereFilter: V1Expression | undefined,
+  timeRange: V1TimeRange | undefined,
+): Record<string, unknown> {
+  return {
+    ...(whereFilter?.cond?.exprs?.length
+      ? { additional_where: convertV1ExpressionToMapstructure(whereFilter) }
+      : {}),
+    ...(timeRange ? { additional_time_range: timeRange } : {}),
+  };
 }
