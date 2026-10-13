@@ -1,6 +1,8 @@
 <!--
-  Opens the memory manager. Renders as an icon button in chat headers and as a full-width
-  secondary button in the fullpage conversation sidebar. Hidden when memory is off for the project.
+  Opens the memory manager. Renders as an icon button in chat headers, as a full-width
+  secondary button in the fullpage conversation sidebar footer, and as a square secondary
+  button when that sidebar is collapsed, matching the "Connect your own client" button
+  next to it. Hidden when memory is off for the project.
 -->
 <script lang="ts">
   import Button from "@rilldata/web-common/components/button/Button.svelte";
@@ -10,7 +12,7 @@
   import { Brain } from "lucide-svelte";
   import MemoryDialog from "./MemoryDialog.svelte";
 
-  export let variant: "icon" | "button" = "icon";
+  export let variant: "icon" | "button" | "square" = "icon";
   export let conversationBasePath: string | undefined = undefined;
 
   const { chatMemory } = featureFlags;
@@ -32,11 +34,22 @@
         {m.chat_memory_open()}
       </svelte:fragment>
     </IconButton>
-  {:else}
-    <Button type="secondary" wide onClick={() => (open = true)}>
+  {:else if variant === "button"}
+    <Button type="secondary" class="w-full" onClick={() => (open = true)}>
       <Brain size="14px" />
       {m.chat_memory_open()}
     </Button>
+  {:else}
+    <span title={m.chat_memory_open()}>
+      <Button
+        type="secondary"
+        square
+        label={m.chat_memory_open()}
+        onClick={() => (open = true)}
+      >
+        <Brain size="14px" />
+      </Button>
+    </span>
   {/if}
   <MemoryDialog bind:open {conversationBasePath} />
 {/if}

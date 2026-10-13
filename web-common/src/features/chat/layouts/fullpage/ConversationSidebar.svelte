@@ -62,7 +62,7 @@
     </div>
 
     <div class="collapsed-footer">
-      <MemoryButton conversationBasePath={basePath} />
+      <MemoryButton variant="square" conversationBasePath={basePath} />
       <slot name="collapsed-footer" />
     </div>
   {:else}
