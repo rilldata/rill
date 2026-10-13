@@ -1,0 +1,162 @@
+{
+  "name": "Combo chart",
+  "description": "Daily bids as bars with the win rate as a line.",
+  "expect": "canvas",
+  "arguments": {
+    "chart_type": "combo_chart",
+    "spec": {
+      "metrics_view": "bids_metrics",
+      "time_range": {
+        "start": "2023-09-09T00:00:00Z",
+        "end": "2023-09-16T00:00:00Z"
+      },
+      "time_grain": "TIME_GRAIN_DAY",
+      "x": {
+        "field": "__time",
+        "type": "temporal"
+      },
+      "y1": {
+        "field": "total_bids",
+        "type": "quantitative",
+        "mark": "bar"
+      },
+      "y2": {
+        "field": "win_rate",
+        "type": "quantitative",
+        "mark": "line"
+      },
+      "color": {
+        "field": "rill_measures",
+        "type": "nominal"
+      }
+    }
+  },
+  "result": {
+    "content": [
+      {
+        "type": "text",
+        "text": "**Combo: Total Bids & Win Rate over Time** (2023-09-09 to 2023-09-16)\n\n| Time | Total Bids | Win Rate |\n| - | - | - |\n| 2023-09-09T00:00:00Z | 41200 | 0.151 |\n| 2023-09-10T00:00:00Z | 45800 | 0.133 |\n| 2023-09-11T00:00:00Z | 39900 | 0.218 |\n| 2023-09-12T00:00:00Z | 43800 | 0.13 |\n| 2023-09-13T00:00:00Z | 47300 | 0.212 |\n| 2023-09-14T00:00:00Z | 52100 | 0.201 |\n| 2023-09-15T00:00:00Z | 36400 | 0.163 |\n\n_7 of 7 rows shown_\n\nOpen the interactive chart in Rill: https://ui.rilldata.com/demo/bids/-/ai/session-0b1c/message/call-4f2a/-/open"
+      }
+    ],
+    "structuredContent": {
+      "widget": "chart",
+      "chart_type": "combo_chart",
+      "spec": {
+        "metrics_view": "bids_metrics",
+        "time_range": {
+          "start": "2023-09-09T00:00:00Z",
+          "end": "2023-09-16T00:00:00Z"
+        },
+        "time_grain": "TIME_GRAIN_DAY",
+        "x": {
+          "field": "__time",
+          "type": "temporal"
+        },
+        "y1": {
+          "field": "total_bids",
+          "type": "quantitative",
+          "mark": "bar"
+        },
+        "y2": {
+          "field": "win_rate",
+          "type": "quantitative",
+          "mark": "line"
+        },
+        "color": {
+          "field": "rill_measures",
+          "type": "nominal"
+        }
+      },
+      "message": "Chart created successfully: combo_chart",
+      "metrics_view": {
+        "name": "bids_metrics",
+        "display_name": "Bids",
+        "time_dimension": "__time",
+        "smallest_time_grain": "TIME_GRAIN_HOUR"
+      },
+      "resolved_time_range": {
+        "start": "2023-09-09T00:00:00Z",
+        "end": "2023-09-16T00:00:00Z"
+      },
+      "theme": {
+        "primaryColorRaw": "#4f46e5",
+        "light": {
+          "primary": "#4f46e5",
+          "secondary": "#f97316"
+        },
+        "dark": {
+          "primary": "#818cf8",
+          "secondary": "#fb923c"
+        }
+      },
+      "open_url": "https://ui.rilldata.com/demo/bids/-/ai/session-0b1c/message/call-4f2a/-/open",
+      "truncated": false,
+      "title": "Total Bids & Win Rate over Time",
+      "time_grain": "TIME_GRAIN_DAY",
+      "data": [
+        {
+          "__time": "2023-09-09T00:00:00Z",
+          "total_bids": 41200,
+          "win_rate": 0.151
+        },
+        {
+          "__time": "2023-09-10T00:00:00Z",
+          "total_bids": 45800,
+          "win_rate": 0.133
+        },
+        {
+          "__time": "2023-09-11T00:00:00Z",
+          "total_bids": 39900,
+          "win_rate": 0.218
+        },
+        {
+          "__time": "2023-09-12T00:00:00Z",
+          "total_bids": 43800,
+          "win_rate": 0.13
+        },
+        {
+          "__time": "2023-09-13T00:00:00Z",
+          "total_bids": 47300,
+          "win_rate": 0.212
+        },
+        {
+          "__time": "2023-09-14T00:00:00Z",
+          "total_bids": 52100,
+          "win_rate": 0.201
+        },
+        {
+          "__time": "2023-09-15T00:00:00Z",
+          "total_bids": 36400,
+          "win_rate": 0.163
+        }
+      ],
+      "fields": {
+        "__time": {
+          "name": "__time",
+          "kind": "time",
+          "display_name": "Time",
+          "type": "TIMESTAMP"
+        },
+        "total_bids": {
+          "name": "total_bids",
+          "kind": "measure",
+          "display_name": "Total Bids",
+          "description": "Count of bid requests.",
+          "type": "INT64",
+          "format_preset": "humanize"
+        },
+        "win_rate": {
+          "name": "win_rate",
+          "kind": "measure",
+          "display_name": "Win Rate",
+          "type": "FLOAT64",
+          "format_preset": "percentage",
+          "lower_is_better": false
+        }
+      },
+      "domain_values": {
+        "rill_measures": ["total_bids", "win_rate"]
+      }
+    }
+  }
+}

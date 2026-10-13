@@ -112,6 +112,8 @@ type Config struct {
 	StripeWebhookSecret        string        `split_words:"true"`
 	PylonIdentitySecret        string        `split_words:"true"`
 	AllowMockBilling           bool          `default:"false" split_words:"true"` // set to allow sending mock usage for billing, should be false in prod env
+	// MCPAppsEnabled serves the MCP Apps chart widget on the unified MCP server (RILL_ADMIN_MCP_APPS_ENABLED).
+	MCPAppsEnabled bool `default:"false" split_words:"true"`
 }
 
 // StartCmd starts an admin server. It only allows configuration using environment variables.
@@ -409,6 +411,7 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 					GithubManagedAccount:   conf.GithubManagedAccount,
 					AssetsBucket:           conf.AssetsBucket,
 					PylonIdentitySecret:    pylonIdentitySecret,
+					MCPAppsEnabled:         conf.MCPAppsEnabled,
 				})
 				if err != nil {
 					logger.Fatal("error creating server", zap.Error(err))

@@ -1,0 +1,103 @@
+{
+  "name": "server_bar_chart",
+  "description": "Real create_chart output from rill start (bar, top 3 of 5 values)",
+  "expect": "canvas",
+  "arguments": {
+    "chart_type": "bar_chart",
+    "spec": {
+      "color": "primary",
+      "metrics_view": "bids_metrics",
+      "time_range": {
+        "end": "2024-01-22T00:00:00Z",
+        "start": "2024-01-01T00:00:00Z"
+      },
+      "x": {
+        "field": "advertiser_name",
+        "limit": 3,
+        "sort": "-y",
+        "type": "nominal"
+      },
+      "y": {
+        "field": "total_bids",
+        "type": "quantitative"
+      }
+    }
+  },
+  "result": {
+    "content": [
+      {
+        "type": "text",
+        "text": "**Bar chart: Total Bids per Advertiser Name** (2024-01-01 to 2024-01-22)\n\n| Advertiser Name | Total Bids |\n| - | - |\n| Acme Media | 2917 |\n| Beta Brands | 2914 |\n| Gamma Goods | 2911 |\n\n_3 of 3 rows shown_\n\nThe chart data is incomplete: only the top 3 values of \"advertiser_name\" are shown. To see the complete picture, lower the field limits or add filters.\n\nOpen the interactive chart in Rill: http://localhost:3001/-/ai/18b73406-dec4-4cbc-b5dd-027ce3c2a133/message/f937a2c4-ce7c-46da-92b0-17f01ec98d5a/-/open"
+      }
+    ],
+    "structuredContent": {
+      "chart_type": "bar_chart",
+      "data": [
+        {
+          "advertiser_name": "Acme Media",
+          "total_bids": 2917
+        },
+        {
+          "advertiser_name": "Beta Brands",
+          "total_bids": 2914
+        },
+        {
+          "advertiser_name": "Gamma Goods",
+          "total_bids": 2911
+        }
+      ],
+      "domain_values": {
+        "advertiser_name": ["Acme Media", "Beta Brands", "Gamma Goods"]
+      },
+      "fields": {
+        "advertiser_name": {
+          "display_name": "Advertiser Name",
+          "kind": "dimension",
+          "name": "advertiser_name",
+          "type": "STRING"
+        },
+        "total_bids": {
+          "display_name": "Total Bids",
+          "format_preset": "humanize",
+          "kind": "measure",
+          "name": "total_bids",
+          "type": "INT128"
+        }
+      },
+      "message": "Chart created successfully: bar_chart",
+      "metrics_view": {
+        "display_name": "Bids",
+        "name": "bids_metrics",
+        "smallest_time_grain": "TIME_GRAIN_HOUR",
+        "time_dimension": "event_time"
+      },
+      "open_url": "http://localhost:3001/-/ai/18b73406-dec4-4cbc-b5dd-027ce3c2a133/message/f937a2c4-ce7c-46da-92b0-17f01ec98d5a/-/open",
+      "resolved_time_range": {
+        "end": "2024-01-22T00:00:00Z",
+        "start": "2024-01-01T00:00:00Z"
+      },
+      "spec": {
+        "color": "primary",
+        "metrics_view": "bids_metrics",
+        "time_range": {
+          "end": "2024-01-22T00:00:00Z",
+          "start": "2024-01-01T00:00:00Z"
+        },
+        "x": {
+          "field": "advertiser_name",
+          "limit": 3,
+          "sort": "-y",
+          "type": "nominal"
+        },
+        "y": {
+          "field": "total_bids",
+          "type": "quantitative"
+        }
+      },
+      "title": "Total Bids per Advertiser Name",
+      "truncated": true,
+      "truncation_warning": "The chart data is incomplete: only the top 3 values of \"advertiser_name\" are shown. To see the complete picture, lower the field limits or add filters.",
+      "widget": "chart"
+    }
+  }
+}

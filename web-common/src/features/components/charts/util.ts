@@ -1,7 +1,6 @@
-import { CHART_CONFIG } from "@rilldata/web-common/features/components/charts/config";
 import { COMPARISON_COLORS } from "@rilldata/web-common/features/dashboards/config";
 import { convertISOStringToJSDateWithSameTimeAsSelectedTimeZone } from "@rilldata/web-common/lib/time/timezone";
-import { type V1MetricsViewAggregationResponseDataItem } from "@rilldata/web-common/runtime-client";
+import type { V1MetricsViewAggregationResponseDataItem } from "@rilldata/web-common/runtime-client";
 import type { Color } from "chroma-js";
 import chroma from "chroma-js";
 import merge from "deepmerge";
@@ -10,11 +9,9 @@ import { getChroma } from "../../themes/theme-utils";
 import { OTHER_VALUE } from "./circular/constants";
 import {
   ChartSortType,
-  type ChartDataResult,
   type ChartDomainValues,
   type ChartSortDirection,
   type ChartSpec,
-  type ChartType,
   type ColorMapping,
   type FieldConfig,
 } from "./types";
@@ -156,15 +153,6 @@ export function resolveColor(
     return theme.secondary.css("hsl").replace("deg", "").replaceAll(" ", ", ");
   }
   return color;
-}
-
-export function generateSpec(
-  chartType: ChartType,
-  rillChartSpec: ChartSpec,
-  data: ChartDataResult,
-) {
-  if (data.isFetching || data.error) return {};
-  return CHART_CONFIG[chartType]?.generateSpec(rillChartSpec, data);
 }
 
 export function isDomainStringArray(

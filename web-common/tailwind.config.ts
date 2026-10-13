@@ -1,4 +1,5 @@
 import type { Config } from "tailwindcss";
+import plugin from "tailwindcss/plugin";
 import {
   TailwindColorSpacing,
   TailwindColors,
@@ -26,6 +27,18 @@ function genColorObject(color: string) {
 function oklabString(variableName: string) {
   return `color-mix(in oklab, var(--${variableName}) calc(<alpha-value> * 100%), transparent)`;
 }
+
+// Tabular, lining figures for numbers in tables, tooltips and KPIs. Registered as a plugin
+// rather than in a stylesheet so that `@apply ui-copy-number` resolves in every stylesheet
+// (Svelte styles, vega.css) regardless of the order in which Tailwind processes them.
+const uiCopyNumber = plugin(({ addUtilities }) => {
+  addUtilities({
+    ".ui-copy-number": {
+      "font-feature-settings":
+        '"case" 0, "cpsp" 0, "dlig" 0, "frac" 0, "dnom" 0, "numr" 0, "salt" 0, "subs" 0, "sups" 0, "tnum", "zero" 0, "ss01", "ss02" 0, "ss03" 0, "ss04" 0, "cv01" 0, "cv02" 0, "cv03" 0, "cv04" 0, "cv05" 0, "cv06" 0, "cv07" 0, "cv08" 0, "cv09" 0, "cv10" 0, "cv11" 0, "calt", "ccmp", "kern"',
+    },
+  });
+});
 
 export default {
   // need to add this for storybook
@@ -159,4 +172,5 @@ export default {
       },
     },
   },
+  plugins: [uiCopyNumber],
 } satisfies Config;

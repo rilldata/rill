@@ -1,0 +1,33 @@
+{
+  "row_limit": 1,
+  "main": {
+    "metrics_view": "mv",
+    "dimensions": null,
+    "measures": [
+      {
+        "name": "impressions"
+      },
+      {
+        "name": "video_starts"
+      },
+      {
+        "name": "video_completes"
+      }
+    ],
+    "pivot_on": null,
+    "spine": null,
+    "sort": null,
+    "time_range": {
+      "start": "2024-01-01T00:00:00Z",
+      "end": "2024-02-01T00:00:00Z"
+    },
+    "comparison_time_range": null,
+    "where": null,
+    "having": null,
+    "limit": 2,
+    "offset": null,
+    "time_zone": "",
+    "use_display_names": false,
+    "rows": false
+  }
+}

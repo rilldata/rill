@@ -25,7 +25,8 @@
   import { discoverTemporalBrushSignal } from "./brush-builder";
   import { clearExternalBrush, setExternalBrush } from "./highlight-controller";
   import type { ChartDataResult, ChartType } from "./types";
-  import { generateSpec, getColorMappingForChart } from "./util";
+  import { generateSpec } from "./spec-generators";
+  import { getColorMappingForChart } from "./util";
 
   export let chartType: ChartType;
   export let chartSpec: CanvasChartSpec;
@@ -37,6 +38,11 @@
    * If provided, chart uses these directly. If not, falls back to defaults.
    */
   export let theme: Record<string, string> | undefined = undefined;
+  /**
+   * Font family for axis labels, legends and text marks.
+   * Rill's apps leave this unset (Inter); embedded hosts pass their own font stack.
+   */
+  export let fontFamily: string | undefined = undefined;
   export let isCanvas: boolean;
 
   export let temporalField: string | undefined = undefined;
@@ -50,7 +56,8 @@
   export let externalBrushStartMs: number | undefined = undefined;
   export let externalBrushEndMs: number | undefined = undefined;
 
-  export let view: View;
+  /** The live Vega view, set once the chart has rendered; callers bind it to drive brushes and hovers. */
+  export let view: View | undefined = undefined;
 
   $: ({ data, domainValues, hasComparison, isFetching, error } = $chartData);
 
@@ -269,7 +276,7 @@
       renderer="canvas"
       {expressionFunctions}
       {hasComparison}
-      config={getRillTheme(isThemeModeDark, theme)}
+      config={getRillTheme(isThemeModeDark, theme, { fontFamily })}
     />
   </div>
 {/if}

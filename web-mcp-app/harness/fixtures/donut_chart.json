@@ -1,0 +1,130 @@
+{
+  "name": "Donut chart",
+  "description": "Spend share per publisher with a total in the center.",
+  "expect": "canvas",
+  "arguments": {
+    "chart_type": "donut_chart",
+    "spec": {
+      "metrics_view": "bids_metrics",
+      "time_range": {
+        "start": "2023-09-09T00:00:00Z",
+        "end": "2023-09-16T00:00:00Z"
+      },
+      "measure": {
+        "field": "total_spend",
+        "type": "quantitative",
+        "showTotal": true
+      },
+      "color": {
+        "field": "publisher",
+        "type": "nominal",
+        "limit": 5
+      },
+      "innerRadius": 50
+    }
+  },
+  "result": {
+    "content": [
+      {
+        "type": "text",
+        "text": "**Donut: Total Spend split by Publisher** (2023-09-09 to 2023-09-16)\n\n| Publisher | Total Spend |\n| - | - |\n| news.example | 48210.5 |\n| sports.example | 36990.25 |\n| video.example | 25480.75 |\n| music.example | 18760 |\n| shop.example | 9340.4 |\n\n_5 of 5 rows shown_\n\nOpen the interactive chart in Rill: https://ui.rilldata.com/demo/bids/-/ai/session-0b1c/message/call-4f2a/-/open"
+      }
+    ],
+    "structuredContent": {
+      "widget": "chart",
+      "chart_type": "donut_chart",
+      "spec": {
+        "metrics_view": "bids_metrics",
+        "time_range": {
+          "start": "2023-09-09T00:00:00Z",
+          "end": "2023-09-16T00:00:00Z"
+        },
+        "measure": {
+          "field": "total_spend",
+          "type": "quantitative",
+          "showTotal": true
+        },
+        "color": {
+          "field": "publisher",
+          "type": "nominal",
+          "limit": 5
+        },
+        "innerRadius": 50
+      },
+      "message": "Chart created successfully: donut_chart",
+      "metrics_view": {
+        "name": "bids_metrics",
+        "display_name": "Bids",
+        "time_dimension": "__time",
+        "smallest_time_grain": "TIME_GRAIN_HOUR"
+      },
+      "resolved_time_range": {
+        "start": "2023-09-09T00:00:00Z",
+        "end": "2023-09-16T00:00:00Z"
+      },
+      "theme": {
+        "primaryColorRaw": "#4f46e5",
+        "light": {
+          "primary": "#4f46e5",
+          "secondary": "#f97316"
+        },
+        "dark": {
+          "primary": "#818cf8",
+          "secondary": "#fb923c"
+        }
+      },
+      "open_url": "https://ui.rilldata.com/demo/bids/-/ai/session-0b1c/message/call-4f2a/-/open",
+      "truncated": false,
+      "title": "Total Spend split by Publisher",
+      "data": [
+        {
+          "publisher": "news.example",
+          "total_spend": 48210.5
+        },
+        {
+          "publisher": "sports.example",
+          "total_spend": 36990.25
+        },
+        {
+          "publisher": "video.example",
+          "total_spend": 25480.75
+        },
+        {
+          "publisher": "music.example",
+          "total_spend": 18760
+        },
+        {
+          "publisher": "shop.example",
+          "total_spend": 9340.4
+        }
+      ],
+      "fields": {
+        "publisher": {
+          "name": "publisher",
+          "kind": "dimension",
+          "display_name": "Publisher",
+          "type": "STRING"
+        },
+        "total_spend": {
+          "name": "total_spend",
+          "kind": "measure",
+          "display_name": "Total Spend",
+          "type": "FLOAT64",
+          "format_preset": "currency_usd"
+        }
+      },
+      "domain_values": {
+        "publisher": [
+          "news.example",
+          "sports.example",
+          "video.example",
+          "music.example",
+          "shop.example"
+        ]
+      },
+      "totals": {
+        "total_spend": 151220.9
+      }
+    }
+  }
+}

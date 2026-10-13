@@ -1,0 +1,92 @@
+{
+  "row_limit": 20,
+  "main": {
+    "metrics_view": "mv",
+    "dimensions": [
+      {
+        "name": "weekday"
+      }
+    ],
+    "measures": [
+      {
+        "name": "commits"
+      }
+    ],
+    "pivot_on": null,
+    "spine": null,
+    "sort": [
+      {
+        "name": "commits",
+        "desc": true
+      }
+    ],
+    "time_range": {
+      "start": "2024-01-01T00:00:00Z",
+      "end": "2024-02-01T00:00:00Z"
+    },
+    "comparison_time_range": null,
+    "where": {
+      "cond": {
+        "op": "in",
+        "exprs": [
+          {
+            "name": "weekday"
+          },
+          {
+            "val": [
+              "Mon",
+              "Tue",
+              "Wed"
+            ]
+          }
+        ]
+      }
+    },
+    "having": null,
+    "limit": 21,
+    "offset": null,
+    "time_zone": "",
+    "use_display_names": false,
+    "rows": false
+  },
+  "extra": {
+    "total": {
+      "metrics_view": "mv",
+      "dimensions": null,
+      "measures": [
+        {
+          "name": "commits"
+        }
+      ],
+      "pivot_on": null,
+      "spine": null,
+      "sort": null,
+      "time_range": {
+        "start": "2024-01-01T00:00:00Z",
+        "end": "2024-02-01T00:00:00Z"
+      },
+      "comparison_time_range": null,
+      "where": {
+        "cond": {
+          "op": "nin",
+          "exprs": [
+            {
+              "name": "weekday"
+            },
+            {
+              "val": [
+                null
+              ]
+            }
+          ]
+        }
+      },
+      "having": null,
+      "limit": null,
+      "offset": null,
+      "time_zone": "",
+      "use_display_names": false,
+      "rows": false
+    }
+  }
+}

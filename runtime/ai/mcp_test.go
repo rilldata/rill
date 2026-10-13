@@ -3,6 +3,7 @@ package ai_test
 import (
 	"testing"
 
+	"github.com/google/jsonschema-go/jsonschema"
 	"github.com/google/uuid"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/ai"
@@ -22,6 +23,26 @@ func TestMCPToolSpecs(t *testing.T) {
 		require.NotNil(t, spec.InputSchema, "tool %q", name)
 	}
 	require.Contains(t, specs, ai.QueryMetricsViewName)
+
+	// The specs are copies: extending one does not leak into the next call.
+	schema := specs[ai.QueryMetricsViewName].InputSchema.(*jsonschema.Schema)
+	schema.Properties["project"] = &jsonschema.Schema{Type: "string"}
+	schema.Required = append(schema.Required, "project")
+	specs[ai.QueryMetricsViewName].Meta["ui"] = map[string]any{"resourceUri": "ui://x"}
+	again := ai.MCPToolSpecs()[ai.QueryMetricsViewName]
+	require.NotContains(t, again.InputSchema.(*jsonschema.Schema).Properties, "project")
+	require.NotContains(t, again.InputSchema.(*jsonschema.Schema).Required, "project")
+	require.NotContains(t, again.Meta, "ui")
+	require.Contains(t, again.Meta, "openai/toolInvocation/invoking", "the tool's own meta is kept")
+
+	// The tools that take part in the MCP Apps widget are known without a runtime too.
+	require.False(t, ai.IsMCPAppOnlyTool(ai.CreateChartName), "create_chart is called by the model")
+	require.True(t, ai.IsMCPAppOnlyTool(ai.ChartDataName))
+	require.False(t, ai.IsMCPAppOnlyTool(ai.QueryMetricsViewName))
+	require.False(t, ai.IsMCPAppOnlyTool("unknown"))
+	require.Nil(t, ai.MCPAppToolMeta(ai.QueryMetricsViewName, nil))
+	require.Nil(t, ai.MCPAppToolMeta(ai.CreateChartName, nil), "create_chart links to the widget, which requires the asset")
+	require.Equal(t, []any{"app"}, ai.MCPAppToolMeta(ai.ChartDataName, nil)["ui"].(map[string]any)["visibility"], "app-only visibility does not need the asset")
 }
 
 // TestSessionCreateIfNotExists asserts that a caller can address a session by an ID of its own choosing,

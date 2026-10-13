@@ -9,7 +9,12 @@ import { sanitizeTitleForVegaTooltip } from "./util";
 import { getRillTheme } from "./vega-config";
 
 export interface CreateBaseEmbedOptionsParams {
-  client: RuntimeClient;
+  /**
+   * Runtime client for the Vega loader (instance assets, auth header).
+   * Without one the view cannot load external resources, which standalone
+   * renderers such as the MCP chart widget never need.
+   */
+  client?: RuntimeClient | null;
   config?: Config;
   renderer?: "canvas" | "svg";
   themeMode?: "light" | "dark";
@@ -40,7 +45,7 @@ export function createBaseEmbedOptions({
   colorMapping,
   hasComparison,
 }: CreateBaseEmbedOptionsParams): EmbedOptions {
-  const jwt = client.getJwt();
+  const jwt = client?.getJwt();
 
   return {
     config: config || getRillTheme(themeMode === "dark"),
@@ -59,16 +64,18 @@ export function createBaseEmbedOptions({
       expr: expressionInterpreter,
     }),
     expressionFunctions,
-    loader: {
-      baseURL: `${client.host}/v1/instances/${client.instanceId}/assets/`,
-      ...(jwt && {
-        http: {
-          headers: {
-            Authorization: `Bearer ${jwt}`,
+    ...(client && {
+      loader: {
+        baseURL: `${client.host}/v1/instances/${client.instanceId}/assets/`,
+        ...(jwt && {
+          http: {
+            headers: {
+              Authorization: `Bearer ${jwt}`,
+            },
           },
-        },
-      }),
-    },
+        }),
+      },
+    }),
   };
 }
 
