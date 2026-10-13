@@ -3240,9 +3240,6 @@ definitions:
           heatmap:
             type: object
             description: Heat map chart to visualize distribution of data
-          custom_chart:
-            type: object
-            description: Custom Vega-Lite chart built from Metrics SQL queries
           kpi:
             $ref: '#/definitions/kpi_properties'
           kpi_grid:

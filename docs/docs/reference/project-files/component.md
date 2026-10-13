@@ -282,10 +282,6 @@ _[object]_ - Funnel chart
 
 _[object]_ - Heat map chart to visualize distribution of data
 
-### `custom_chart`
-
-_[object]_ - Custom Vega-Lite chart built from Metrics SQL queries
-
 ### `kpi`
 
 _[object]_ - (no description)
