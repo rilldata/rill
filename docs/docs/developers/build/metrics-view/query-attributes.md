@@ -94,10 +94,6 @@ Query tags are a Databricks Public Preview feature. If your workspace does not s
 
 Rill does not retry the query without tags. To fix the error, remove `query_attributes` from the metrics view, or contact your Databricks account team to get access to the query tags preview for your workspace.
 
-:::note
-Query tags are sent only over the default Thrift protocol. When the connector uses the Statement Execution API (SEA) backend, which Rill selects automatically for [Lakehouse//RT warehouses](/developers/build/connectors/data-source/databricks#manual-configuration) or when you set `use_kernel: true`, query attributes are not sent.
-:::
-
 :::info
 Refer to the [`query_attributes` property](/reference/project-files/metrics-views#query_attributes) in the metrics view YAML reference.
 :::
