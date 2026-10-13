@@ -364,6 +364,11 @@ func (s *Server) checkRateLimit(ctx context.Context) (context.Context, error) {
 	if strings.HasPrefix(method, "/rill.admin.v1.AIService") {
 		limit = ratelimit.Sensitive
 	}
+	// Throttle password guesses for password-protected magic tokens.
+	// The limit key for a magic token is its ID, so this applies per token regardless of where the attempts come from.
+	if method == adminv1.AdminService_UnlockMagicAuthToken_FullMethodName {
+		limit = ratelimit.Sensitive
+	}
 
 	if err := s.limiter.Limit(ctx, limitKey, limit); err != nil {
 		if errors.As(err, &ratelimit.QuotaExceededError{}) {

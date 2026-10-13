@@ -10,6 +10,7 @@
   import FiltersCell from "./cells/FiltersCell.svelte";
   import DateCell from "./cells/DateCell.svelte";
   import PublicURLsActionsRow from "./PublicURLsActionsRow.svelte";
+  import EditPublicURLDialog from "./EditPublicURLDialog.svelte";
   import { InMemoryRuneStore } from "@rilldata/web-common/lib/store-utils/types.svelte.ts";
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 
@@ -24,6 +25,11 @@
     $props();
 
   const searchTextStore = new InMemoryRuneStore<string>("");
+
+  // The edit dialog is rendered outside the table. Saving refreshes the list, which re-renders the
+  // rows and would unmount a dialog rendered in a row's actions cell before it has shown the new password.
+  let editingToken = $state<V1MagicAuthToken | null>(null);
+  let isEditOpen = $state(false);
 
   let filteredData = $derived(
     data.filter((row) => {
@@ -45,6 +51,7 @@
           displayName: row.original.displayName ?? "",
           dashboardTitle: row.original.dashboardTitle,
           url: row.original.url ?? "",
+          passwordProtected: !!row.original.passwordProtected,
         }),
     },
     {
@@ -87,6 +94,10 @@
         renderComponent(PublicURLsActionsRow, {
           id: row.original.id ?? "",
           url: row.original.url ?? "",
+          onEdit: () => {
+            editingToken = row.original;
+            isEditOpen = true;
+          },
           onDelete,
         }),
     },
@@ -119,3 +130,7 @@
     </div>
   </BasicTable>
 </div>
+
+{#if editingToken}
+  <EditPublicURLDialog bind:open={isEditOpen} token={editingToken} />
+{/if}

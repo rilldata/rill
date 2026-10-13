@@ -349,6 +349,38 @@ paths:
           in: path
           required: true
           type: string
+    patch:
+      summary: UpdateMagicAuthToken updates the display name or password of a magic auth token.
+      operationId: AdminService_UpdateMagicAuthToken
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1UpdateMagicAuthTokenResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: tokenId
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              displayName:
+                type: string
+                description: New display name. Unchanged if not set.
+              password:
+                type: string
+                description: New password (8 to 72 characters). Replaces the existing password and invalidates existing sessions. Unchanged if not set.
+              removePassword:
+                type: boolean
+                description: Removes the password. Can't be combined with password.
   /v1/magic-tokens/current:
     get:
       summary: GetCurrentMagicAuthToken returns information about the current magic auth token.
@@ -362,6 +394,28 @@ paths:
           description: An unexpected error response.
           schema:
             $ref: '#/definitions/rpcStatus'
+  /v1/magic-tokens/current/unlock:
+    post:
+      summary: |-
+        UnlockMagicAuthToken verifies the password of a password-protected magic auth token.
+        It must be called with the magic auth token as the bearer token.
+        On success, it returns a short-lived session token that grants the same access as the magic auth token.
+      operationId: AdminService_UnlockMagicAuthToken
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1UnlockMagicAuthTokenResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: body
+          in: body
+          required: true
+          schema:
+            $ref: '#/definitions/v1UnlockMagicAuthTokenRequest'
   /v1/organization-for-domain/{domain}:
     get:
       summary: |-
@@ -2605,6 +2659,11 @@ paths:
                   type: object
                   $ref: '#/definitions/v1ResourceName'
                 description: list of resources to grant access to.
+              password:
+                type: string
+                description: |-
+                  Optional password that recipients must enter before the token grants access.
+                  Must be between 8 and 72 characters. It is stored as a hash and can't be retrieved later, only replaced.
   /v1/orgs/{org}/projects/{project}/usergroups:
     get:
       summary: ListProjectMemberUsergroups lists the user groups assigned to a project
@@ -5585,6 +5644,11 @@ definitions:
     properties:
       token:
         $ref: '#/definitions/v1MagicAuthToken'
+      locked:
+        type: boolean
+        description: |-
+          True when the bearer is a password-protected token that has not been unlocked.
+          In that case, token only contains the ID and password_protected; call UnlockMagicAuthToken to get a session token.
   v1GetCurrentUserResponse:
     type: object
     properties:
@@ -6224,6 +6288,9 @@ definitions:
         type: string
       displayName:
         type: string
+      passwordProtected:
+        type: boolean
+        description: True if recipients must enter a password before the token grants access.
   v1MemberUsergroup:
     type: object
     properties:
@@ -7226,6 +7293,20 @@ definitions:
     type: object
   v1TriggerReportResponse:
     type: object
+  v1UnlockMagicAuthTokenRequest:
+    type: object
+    properties:
+      password:
+        type: string
+  v1UnlockMagicAuthTokenResponse:
+    type: object
+    properties:
+      sessionToken:
+        type: string
+        description: Session token to use as the bearer token instead of the magic auth token.
+      expiresOn:
+        type: string
+        format: date-time
   v1UnsubscribeAlertResponse:
     type: object
   v1UnsubscribeReportResponse:
@@ -7254,6 +7335,11 @@ definitions:
         type: boolean
   v1UpdateBookmarkResponse:
     type: object
+  v1UpdateMagicAuthTokenResponse:
+    type: object
+    properties:
+      token:
+        $ref: '#/definitions/v1MagicAuthToken'
   v1UpdateOrganizationMemberUserAttributesResponse:
     type: object
   v1UpdateOrganizationResponse:

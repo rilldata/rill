@@ -467,6 +467,7 @@ func toMagicAuthTokenRow(t *adminv1.MagicAuthToken) *magicAuthToken {
 	row := &magicAuthToken{
 		ID:                 t.Id,
 		MetricsViewFilters: filters,
+		PasswordProtected:  t.PasswordProtected,
 		CreatedBy:          t.CreatedByUserEmail,
 		CreatedOn:          t.CreatedOn.AsTime().Local().Format(time.DateTime),
 		UsedOn:             t.UsedOn.AsTime().Local().Format(time.DateTime),
@@ -481,6 +482,7 @@ type magicAuthToken struct {
 	ID                 string `header:"id" json:"id"`
 	Resource           string `header:"resource" json:"resource"`
 	MetricsViewFilters string `header:"metrics view filters" json:"metrics_view_filters"`
+	PasswordProtected  bool   `header:"password" json:"password_protected"`
 	CreatedBy          string `header:"created by" json:"created_by"`
 	CreatedOn          string `header:"created on" json:"created_on"`
 	UsedOn             string `header:"last used on" json:"used_on"`

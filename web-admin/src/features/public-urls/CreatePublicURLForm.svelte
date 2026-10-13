@@ -38,6 +38,7 @@
     ExploreDashboardConfigProvider,
   } from "@rilldata/web-common/features/dashboards/providers/DashboardConfigProvider.svelte.ts";
   import { onDestroy } from "svelte";
+  import GeneratePasswordButton from "./GeneratePasswordButton.svelte";
 
   let {
     dashboardResource,
@@ -53,6 +54,10 @@
   let apiError: string = $state("");
   let popoverOpen = $state(false);
   let copied = $state(false);
+  let requirePassword = $state(false);
+  // Shown once after creation: the password is stored as a hash and can't be retrieved later.
+  let createdPassword = $state<string | null>(null);
+  let passwordCopied = $state(false);
 
   // svelte-ignore state_referenced_locally
   const { kind: dashboardKind, name: dashboardName } = dashboardResource;
@@ -90,11 +95,19 @@
   const initialValues = {
     expiresAt: null,
     title: "",
+    password: "",
   };
 
   const validationSchema = object({
     expiresAt: string().nullable(),
     title: string().required(m.public_url_title_required()),
+    password: string().test(
+      "password-length",
+      m.public_url_password_length(),
+      (value) =>
+        !requirePassword ||
+        (!!value && value.length >= 8 && value.length <= 72),
+    ),
   });
 
   const issueMagicAuthToken = createAdminServiceIssueMagicAuthToken();
@@ -121,10 +134,13 @@
                 ? convertDateToMinutes(values.expiresAt).toString()
                 : undefined,
               displayName: values.title,
+              password: requirePassword ? values.password : undefined,
             },
           });
 
           url = _url;
+          createdPassword =
+            requirePassword && values.password ? values.password : null;
 
           void queryClient.invalidateQueries({
             queryKey: getAdminServiceListMagicAuthTokensQueryKey(
@@ -154,6 +170,13 @@
     }
   });
 
+  $effect(() => {
+    if (!requirePassword) $form.password = "";
+  });
+
+  // The password starts empty: the user either types one or generates one with the button below the field.
+  let isPasswordMissing = $derived(requirePassword && $form.password === "");
+
   let { length: allErrorsLength } = $derived($allErrors);
   let maxExpirationDate = $derived(
     DateTime.now().plus({ years: 1 }).startOf("day"),
@@ -165,6 +188,16 @@
 
     setTimeout(() => {
       copied = false;
+    }, 2_000);
+  }
+
+  function onCopyPassword() {
+    if (!createdPassword) return;
+    copyToClipboard(createdPassword, "Password copied to clipboard", false);
+    passwordCopied = true;
+
+    setTimeout(() => {
+      passwordCopied = false;
     }, 2_000);
   }
 
@@ -194,7 +227,7 @@
       />
     </div>
 
-    <div class="mt-4" class:mb-4={!hasSomeFilter}>
+    <div class="mt-4">
       <div class="flex items-center gap-x-2">
         <Switch small id="has-expiration" bind:checked={setExpiration} />
         <Label class="text-xs" for="has-expiration"
@@ -231,6 +264,30 @@
               />
             </PopoverContent>
           </Popover>
+        </div>
+      {/if}
+    </div>
+
+    <div class="mt-4" class:mb-4={!hasSomeFilter}>
+      <div class="flex items-center gap-x-2">
+        <Switch small id="require-password" bind:checked={requirePassword} />
+        <Label class="text-xs" for="require-password"
+          >{m.public_url_require_password()}</Label
+        >
+      </div>
+      {#if requirePassword}
+        <div class="flex flex-col items-start gap-y-1 pl-[30px] mt-2">
+          <Input
+            id="password-input"
+            bind:value={$form.password}
+            secret
+            placeholder={m.public_url_password_placeholder()}
+          />
+          <GeneratePasswordButton
+            onGenerate={(password) => {
+              $form.password = password;
+            }}
+          />
         </div>
       {/if}
     </div>
@@ -278,7 +335,7 @@
 
     <Button
       type="primary"
-      disabled={$submitting || isTitleEmpty}
+      disabled={$submitting || isTitleEmpty || isPasswordMissing}
       form={formId}
       submitForm
     >
@@ -308,6 +365,29 @@
         {m.public_url_copy_button()}
       {/if}
     </Button>
+    {#if createdPassword}
+      <div class="flex flex-col gap-y-2">
+        <p class="text-xs text-fg-secondary">
+          {m.public_url_password_save_notice()}
+        </p>
+        <div
+          class="flex items-center justify-between gap-x-2 rounded border bg-surface-secondary px-2 py-1"
+        >
+          <code
+            class="truncate font-mono text-xs"
+            data-public-url-password={createdPassword}>{createdPassword}</code
+          >
+          <Button type="text" compact onClick={onCopyPassword}>
+            {#if passwordCopied}
+              <Check size="14px" />
+              {m.public_url_copied_password_button()}
+            {:else}
+              {m.public_url_copy_password_button()}
+            {/if}
+          </Button>
+        </div>
+      </div>
+    {/if}
   </div>
 {/if}
 

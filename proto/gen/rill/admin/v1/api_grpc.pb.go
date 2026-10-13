@@ -146,6 +146,8 @@ const (
 	AdminService_ListMagicAuthTokens_FullMethodName                      = "/rill.admin.v1.AdminService/ListMagicAuthTokens"
 	AdminService_GetCurrentMagicAuthToken_FullMethodName                 = "/rill.admin.v1.AdminService/GetCurrentMagicAuthToken"
 	AdminService_RevokeMagicAuthToken_FullMethodName                     = "/rill.admin.v1.AdminService/RevokeMagicAuthToken"
+	AdminService_UpdateMagicAuthToken_FullMethodName                     = "/rill.admin.v1.AdminService/UpdateMagicAuthToken"
+	AdminService_UnlockMagicAuthToken_FullMethodName                     = "/rill.admin.v1.AdminService/UnlockMagicAuthToken"
 	AdminService_UpdateUserPreferences_FullMethodName                    = "/rill.admin.v1.AdminService/UpdateUserPreferences"
 	AdminService_ListBookmarks_FullMethodName                            = "/rill.admin.v1.AdminService/ListBookmarks"
 	AdminService_GetBookmark_FullMethodName                              = "/rill.admin.v1.AdminService/GetBookmark"
@@ -472,6 +474,12 @@ type AdminServiceClient interface {
 	GetCurrentMagicAuthToken(ctx context.Context, in *GetCurrentMagicAuthTokenRequest, opts ...grpc.CallOption) (*GetCurrentMagicAuthTokenResponse, error)
 	// RevokeMagicAuthToken revokes a magic auth token.
 	RevokeMagicAuthToken(ctx context.Context, in *RevokeMagicAuthTokenRequest, opts ...grpc.CallOption) (*RevokeMagicAuthTokenResponse, error)
+	// UpdateMagicAuthToken updates the display name or password of a magic auth token.
+	UpdateMagicAuthToken(ctx context.Context, in *UpdateMagicAuthTokenRequest, opts ...grpc.CallOption) (*UpdateMagicAuthTokenResponse, error)
+	// UnlockMagicAuthToken verifies the password of a password-protected magic auth token.
+	// It must be called with the magic auth token as the bearer token.
+	// On success, it returns a short-lived session token that grants the same access as the magic auth token.
+	UnlockMagicAuthToken(ctx context.Context, in *UnlockMagicAuthTokenRequest, opts ...grpc.CallOption) (*UnlockMagicAuthTokenResponse, error)
 	// UpdateUserPreferences updates the preferences for the user
 	UpdateUserPreferences(ctx context.Context, in *UpdateUserPreferencesRequest, opts ...grpc.CallOption) (*UpdateUserPreferencesResponse, error)
 	// ListBookmarks lists all the bookmarks for the user and global ones for dashboard
@@ -1832,6 +1840,26 @@ func (c *adminServiceClient) RevokeMagicAuthToken(ctx context.Context, in *Revok
 	return out, nil
 }
 
+func (c *adminServiceClient) UpdateMagicAuthToken(ctx context.Context, in *UpdateMagicAuthTokenRequest, opts ...grpc.CallOption) (*UpdateMagicAuthTokenResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(UpdateMagicAuthTokenResponse)
+	err := c.cc.Invoke(ctx, AdminService_UpdateMagicAuthToken_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminServiceClient) UnlockMagicAuthToken(ctx context.Context, in *UnlockMagicAuthTokenRequest, opts ...grpc.CallOption) (*UnlockMagicAuthTokenResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(UnlockMagicAuthTokenResponse)
+	err := c.cc.Invoke(ctx, AdminService_UnlockMagicAuthToken_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *adminServiceClient) UpdateUserPreferences(ctx context.Context, in *UpdateUserPreferencesRequest, opts ...grpc.CallOption) (*UpdateUserPreferencesResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(UpdateUserPreferencesResponse)
@@ -2534,6 +2562,12 @@ type AdminServiceServer interface {
 	GetCurrentMagicAuthToken(context.Context, *GetCurrentMagicAuthTokenRequest) (*GetCurrentMagicAuthTokenResponse, error)
 	// RevokeMagicAuthToken revokes a magic auth token.
 	RevokeMagicAuthToken(context.Context, *RevokeMagicAuthTokenRequest) (*RevokeMagicAuthTokenResponse, error)
+	// UpdateMagicAuthToken updates the display name or password of a magic auth token.
+	UpdateMagicAuthToken(context.Context, *UpdateMagicAuthTokenRequest) (*UpdateMagicAuthTokenResponse, error)
+	// UnlockMagicAuthToken verifies the password of a password-protected magic auth token.
+	// It must be called with the magic auth token as the bearer token.
+	// On success, it returns a short-lived session token that grants the same access as the magic auth token.
+	UnlockMagicAuthToken(context.Context, *UnlockMagicAuthTokenRequest) (*UnlockMagicAuthTokenResponse, error)
 	// UpdateUserPreferences updates the preferences for the user
 	UpdateUserPreferences(context.Context, *UpdateUserPreferencesRequest) (*UpdateUserPreferencesResponse, error)
 	// ListBookmarks lists all the bookmarks for the user and global ones for dashboard
@@ -3004,6 +3038,12 @@ func (UnimplementedAdminServiceServer) GetCurrentMagicAuthToken(context.Context,
 }
 func (UnimplementedAdminServiceServer) RevokeMagicAuthToken(context.Context, *RevokeMagicAuthTokenRequest) (*RevokeMagicAuthTokenResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method RevokeMagicAuthToken not implemented")
+}
+func (UnimplementedAdminServiceServer) UpdateMagicAuthToken(context.Context, *UpdateMagicAuthTokenRequest) (*UpdateMagicAuthTokenResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UpdateMagicAuthToken not implemented")
+}
+func (UnimplementedAdminServiceServer) UnlockMagicAuthToken(context.Context, *UnlockMagicAuthTokenRequest) (*UnlockMagicAuthTokenResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UnlockMagicAuthToken not implemented")
 }
 func (UnimplementedAdminServiceServer) UpdateUserPreferences(context.Context, *UpdateUserPreferencesRequest) (*UpdateUserPreferencesResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UpdateUserPreferences not implemented")
@@ -5438,6 +5478,42 @@ func _AdminService_RevokeMagicAuthToken_Handler(srv interface{}, ctx context.Con
 	return interceptor(ctx, in, info, handler)
 }
 
+func _AdminService_UpdateMagicAuthToken_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateMagicAuthTokenRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).UpdateMagicAuthToken(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_UpdateMagicAuthToken_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).UpdateMagicAuthToken(ctx, req.(*UpdateMagicAuthTokenRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminService_UnlockMagicAuthToken_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UnlockMagicAuthTokenRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).UnlockMagicAuthToken(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_UnlockMagicAuthToken_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).UnlockMagicAuthToken(ctx, req.(*UnlockMagicAuthTokenRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _AdminService_UpdateUserPreferences_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(UpdateUserPreferencesRequest)
 	if err := dec(in); err != nil {
@@ -6708,6 +6784,14 @@ var AdminService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "RevokeMagicAuthToken",
 			Handler:    _AdminService_RevokeMagicAuthToken_Handler,
+		},
+		{
+			MethodName: "UpdateMagicAuthToken",
+			Handler:    _AdminService_UpdateMagicAuthToken_Handler,
+		},
+		{
+			MethodName: "UnlockMagicAuthToken",
+			Handler:    _AdminService_UnlockMagicAuthToken_Handler,
 		},
 		{
 			MethodName: "UpdateUserPreferences",

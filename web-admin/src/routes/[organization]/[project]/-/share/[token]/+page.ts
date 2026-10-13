@@ -1,19 +1,20 @@
-import { fetchMagicAuthToken } from "@rilldata/web-admin/features/projects/selectors";
 import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors.js";
 import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 import { error, redirect } from "@sveltejs/kit";
+import type { PageLoad } from "./$types";
 
-export const load = async ({
+export const load: PageLoad = async ({
   params: { organization, project, token },
   url,
+  parent,
 }) => {
-  // Public URLs specify the resource in the token's metadata
-  const tokenResp = await fetchMagicAuthToken(token).catch((e) => {
-    console.error(e);
-    throw error(404, m.route_error_token_not_found());
-  });
+  // The root layout fetches the token's metadata and resolves the bearer token.
+  const { publicURLLocked, tokenMetadata } = await parent();
 
-  const { token: tokenMetadata } = tokenResp;
+  // While the token is locked, the share layout renders a password prompt instead of this page.
+  if (publicURLLocked) return;
+
+  // Public URLs specify the resource in the token's metadata
   if (!tokenMetadata?.resources) {
     console.error("Token does not have any associated resources");
     throw error(404, m.route_error_token_resource_not_found());
@@ -44,14 +45,14 @@ export const load = async ({
   );
 
   // Get the initial state from the token
-  if (tokenResp?.token?.state) {
+  if (tokenMetadata.state) {
     if (canvasResource) {
       // For canvas, state is already URL params, use them directly
-      redirectUrl.search = tokenResp.token.state;
+      redirectUrl.search = tokenMetadata.state;
     } else {
       // For explore, state is proto-serialized, wrap in state param
       redirectUrl.search = new URLSearchParams({
-        state: tokenResp.token.state,
+        state: tokenMetadata.state,
       }).toString();
     }
   }

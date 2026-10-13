@@ -10,7 +10,7 @@
     5. Navigation chrome: full header + tabs when running, slim header otherwise
 -->
 <script lang="ts">
-  import { beforeNavigate, goto } from "$app/navigation";
+  import { beforeNavigate, goto, invalidateAll } from "$app/navigation";
   import { page } from "$app/state";
   import { onDestroy, untrack } from "svelte";
   import type { Snippet } from "svelte";
@@ -49,6 +49,7 @@
   import RedeployProjectCta from "@rilldata/web-admin/features/projects/RedeployProjectCTA.svelte";
   import SlimProjectHeader from "@rilldata/web-admin/features/projects/SlimProjectHeader.svelte";
   import { createAdminServiceGetProjectWithBearerToken } from "@rilldata/web-admin/features/public-urls/get-project-with-bearer-token";
+  import { clearPublicURLSession } from "@rilldata/web-admin/features/public-urls/password-session";
   import { cloudVersion } from "@rilldata/web-admin/features/telemetry/initCloudMetrics";
   import { getThemedLogoUrl } from "@rilldata/web-admin/features/themes/organization-logo";
   import { viewAsUserStore } from "@rilldata/web-admin/features/view-as-user/viewAsUserStore";
@@ -81,7 +82,9 @@
     handleBranchNavigation(nav, activeBranch, organization, project, goto),
   );
 
-  // Token: from route params, or from search params on report/alert/AI conversation pages
+  // Token: from route params, or from search params on report/alert/AI conversation pages.
+  // Under a public URL, the root layout resolves the bearer: a password-protected token is
+  // replaced by the session token obtained by unlocking it.
   let token = $derived.by(() => {
     if (
       isPublicReportPage(page) ||
@@ -90,13 +93,18 @@
     ) {
       return page.url.searchParams.get("token") ?? page.params.token;
     }
-    return page.params.token;
+    return page.data?.token ?? page.params.token;
   });
 
   let onProjectPage = $derived(isProjectPage(page));
   let onEditPage = $derived(isEditPage(page));
   let onInvitePage = $derived(isProjectInvitePage(page));
   let onPublicURLPage = $derived(isPublicURLPage(page));
+  // A password-protected public URL that hasn't been unlocked yet. The share layout renders the
+  // password prompt, which doesn't need the runtime (or the project, which a locked token can't read).
+  let onLockedPublicURLPage = $derived(
+    onPublicURLPage && page.data?.publicURLLocked === true,
+  );
   let onWelcomePage = $derived(isProjectWelcomePage(page));
 
   // From root layout; passed through to header components
@@ -152,7 +160,7 @@
     createAdminServiceGetProjectWithBearerToken(
       organization,
       project,
-      token,
+      onLockedPublicURLPage ? "" : token,
       undefined,
       { query: baseGetProjectQueryOptions },
     ),
@@ -221,6 +229,17 @@
   );
 
   // --- Side effects (cache invalidation and telemetry) ---
+
+  // A public URL session that expired or was invalidated (e.g. the password changed) is rejected
+  // with a 401. Drop it and re-run the root layout's loader so the password prompt shows again.
+  $effect(() => {
+    if (!onPublicURLPage || !page.params.token || token === page.params.token)
+      return;
+    if (error?.response?.status === 401) {
+      clearPublicURLSession(page.params.token);
+      void invalidateAll();
+    }
+  });
 
   // Track previous status so we invalidate only on *transitions*, not on every
   // render where the status happens to be RUNNING.
@@ -301,7 +320,16 @@
   onDestroy(() => pageViewThrottler.cancel());
 </script>
 
-{#if error}
+{#if onLockedPublicURLPage}
+  <SlimProjectHeader
+    {organization}
+    {project}
+    readProjects={organizationPermissions?.readProjects}
+    {planDisplayName}
+    {organizationLogoUrl}
+  />
+  {@render children()}
+{:else if error}
   <SlimProjectHeader
     {organization}
     {project}

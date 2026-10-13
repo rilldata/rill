@@ -198,12 +198,20 @@ type DB interface {
 
 	FindMagicAuthTokensWithUser(ctx context.Context, projectID string, createdByUserID *string, afterID string, limit int) ([]*MagicAuthTokenWithUser, error)
 	FindMagicAuthToken(ctx context.Context, id string, withSecret bool) (*MagicAuthToken, error)
+	FindMagicAuthTokenForUpdate(ctx context.Context, id string) (*MagicAuthToken, error)
 	FindMagicAuthTokenWithUser(ctx context.Context, id string) (*MagicAuthTokenWithUser, error)
 	InsertMagicAuthToken(ctx context.Context, opts *InsertMagicAuthTokenOptions) (*MagicAuthToken, error)
+	UpdateMagicAuthToken(ctx context.Context, id string, opts *UpdateMagicAuthTokenOptions) (*MagicAuthToken, error)
 	UpdateMagicAuthTokenUsedOn(ctx context.Context, ids []string) error
 	DeleteMagicAuthToken(ctx context.Context, id string) error
 	DeleteMagicAuthTokens(ctx context.Context, ids []string) error
 	DeleteExpiredMagicAuthTokens(ctx context.Context, retention time.Duration) error
+
+	FindMagicAuthTokenSession(ctx context.Context, id string) (*MagicAuthTokenSession, error)
+	InsertMagicAuthTokenSession(ctx context.Context, opts *InsertMagicAuthTokenSessionOptions) (*MagicAuthTokenSession, error)
+	DeleteMagicAuthTokenSession(ctx context.Context, id string) error
+	DeleteMagicAuthTokenSessionsForToken(ctx context.Context, magicAuthTokenID string) error
+	DeleteExpiredMagicAuthTokenSessions(ctx context.Context, retention time.Duration) error
 
 	FindNotificationTokens(ctx context.Context, resourceKind, resourceName string) ([]*NotificationToken, error)
 	FindNotificationTokensWithSecret(ctx context.Context, resourceKind, resourceName string) ([]*NotificationTokenWithSecret, error)
@@ -838,6 +846,7 @@ type MagicAuthToken struct {
 	SecretHash             []byte            `db:"secret_hash"`
 	Secret                 []byte            `db:"secret"`
 	SecretEncryptionKeyID  string            `db:"secret_encryption_key_id"`
+	PasswordHash           []byte            `db:"password_hash"` // nil if the token is not password-protected
 	ProjectID              string            `db:"project_id"`
 	CreatedOn              time.Time         `db:"created_on"`
 	ExpiresOn              *time.Time        `db:"expires_on"`
@@ -868,6 +877,7 @@ type InsertMagicAuthTokenOptions struct {
 	ID                     string
 	SecretHash             []byte
 	Secret                 []byte
+	PasswordHash           []byte
 	ProjectID              string `validate:"required"`
 	ExpiresOn              *time.Time
 	CreatedByUserID        *string
@@ -878,6 +888,31 @@ type InsertMagicAuthTokenOptions struct {
 	State                  string
 	DisplayName            string
 	Internal               bool
+}
+
+// UpdateMagicAuthTokenOptions defines options for updating a MagicAuthToken.
+// It replaces all the fields it contains, so callers should populate unchanged fields from the current token.
+type UpdateMagicAuthTokenOptions struct {
+	DisplayName  string
+	PasswordHash []byte
+}
+
+// MagicAuthTokenSession is a short-lived token issued after a password-protected MagicAuthToken has been unlocked with its password.
+// It grants the same access as the MagicAuthToken it belongs to.
+type MagicAuthTokenSession struct {
+	ID               string
+	SecretHash       []byte    `db:"secret_hash"`
+	MagicAuthTokenID string    `db:"magic_auth_token_id"`
+	CreatedOn        time.Time `db:"created_on"`
+	ExpiresOn        time.Time `db:"expires_on"`
+}
+
+// InsertMagicAuthTokenSessionOptions defines options for creating a MagicAuthTokenSession.
+type InsertMagicAuthTokenSessionOptions struct {
+	ID               string
+	SecretHash       []byte
+	MagicAuthTokenID string `validate:"required"`
+	ExpiresOn        time.Time
 }
 
 type NotificationToken struct {
