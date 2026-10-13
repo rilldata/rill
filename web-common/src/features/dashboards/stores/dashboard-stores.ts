@@ -608,10 +608,22 @@ const metricsViewReducers = {
 
   setTimeGrain(name: string, timeGrain: V1TimeGrain) {
     updateMetricsExplorerByName(name, (exploreState) => {
+      exploreState.adaptiveTimeGrain = false;
       exploreState.selectedTimeRange = {
         ...(exploreState.selectedTimeRange as DashboardTimeControls),
         interval: timeGrain,
       };
+    });
+  },
+
+  /**
+   * Switches the time grain to adaptive mode: the grain follows the selected time range
+   * until the user fixes one again with `setTimeGrain`.
+   */
+  setAdaptiveTimeGrain(name: string, metricsViewSpec: V1MetricsViewSpec) {
+    updateMetricsExplorerByName(name, (exploreState) => {
+      exploreState.adaptiveTimeGrain = true;
+      correctExploreState(metricsViewSpec, exploreState);
     });
   },
 

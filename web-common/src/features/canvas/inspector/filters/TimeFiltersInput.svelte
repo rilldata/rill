@@ -179,7 +179,7 @@
         {activeTimeGrain}
         options={grainOptions}
         onSelect={set.grain}
-        inheritOption={{
+        defaultOption={{
           label: hasLocalTimeRange
             ? m.time_default()
             : m.canvas_inherit_from_canvas(),

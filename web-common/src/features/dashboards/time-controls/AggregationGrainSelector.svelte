@@ -11,13 +11,20 @@
     activeTimeGrain,
     options,
     onSelect,
-    inheritOption = undefined,
+    defaultOption = undefined,
   }: {
     activeTimeGrain: V1TimeGrain;
     options: V1TimeGrain[];
     onSelect: (timeGrain: V1TimeGrain) => void;
-    // Offered by the widget inspector so a widget can drop its own grain again.
-    inheritOption?: { label: string; selected: boolean; onSelect: () => void };
+    // Listed above the grains: "Adaptive" in explore and the canvas filter bar,
+    // "Inherit from canvas" in the widget inspector. `hint` shows next to the trigger while selected.
+    defaultOption?: {
+      label: string;
+      description?: string;
+      hint?: string;
+      selected: boolean;
+      onSelect: () => void;
+    };
   } = $props();
 
   let open = $state(false);
@@ -35,6 +42,9 @@
         <b>
           {translateV1TimeGrain(activeTimeGrain)}
         </b>
+        {#if defaultOption?.selected && defaultOption.hint}
+          <i>{defaultOption.hint}</i>
+        {/if}
         <span class={["transition-transform", { "-rotate-90": open }]}>
           <CaretDownIcon />
         </span>
@@ -43,21 +53,26 @@
   </DropdownMenu.Trigger>
 
   <DropdownMenu.Content align="start" class="w-48">
-    {#if inheritOption}
+    {#if defaultOption}
       <DropdownMenu.CheckboxItem
         checkRight
-        checked={inheritOption.selected}
+        checked={defaultOption.selected}
         class="text-xs cursor-pointer"
-        onclick={inheritOption.onSelect}
+        onclick={defaultOption.onSelect}
       >
-        {inheritOption.label}
+        <div class="flex flex-col">
+          <span>{defaultOption.label}</span>
+          {#if defaultOption.description}
+            <span class="text-fg-muted">{defaultOption.description}</span>
+          {/if}
+        </div>
       </DropdownMenu.CheckboxItem>
       <DropdownMenu.Separator />
     {/if}
     {#each options as option (option)}
       <DropdownMenu.CheckboxItem
         checkRight
-        checked={!inheritOption?.selected && option === activeTimeGrain}
+        checked={!defaultOption?.selected && option === activeTimeGrain}
         class="text-xs cursor-pointer"
         onclick={() => onSelect(option)}
       >

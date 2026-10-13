@@ -137,7 +137,7 @@ describe("DashboardStateManager", () => {
       dashboardSortType: DashboardState_LeaderboardSortType.PERCENT,
     };
     const PageURLForRillDefaultState =
-      "tr=P7D&tz=Asia%2FKathmandu&grain=day&measures=impressions&dims=publisher&sort_type=percent&sort_dir=ASC";
+      "tr=P7D&tz=Asia%2FKathmandu&measures=impressions&dims=publisher&sort_type=percent&sort_dir=ASC";
     const BookmarkSourceQueryResult = readable({
       data: {
         selectedTimeRange: {
@@ -194,7 +194,7 @@ describe("DashboardStateManager", () => {
         } as DashboardTimeControls,
       });
       const initUrlSearch =
-        "tr=PT24H&tz=Asia%2FKathmandu&compare_tr=rill-PP&grain=hour&measures=impressions&dims=publisher&sort_type=percent&sort_dir=ASC";
+        "tr=PT24H&tz=Asia%2FKathmandu&compare_tr=rill-PP&measures=impressions&dims=publisher&sort_type=percent&sort_dir=ASC";
       pageMock.assertSearchParams(initUrlSearch);
 
       pageMock.popState("");
@@ -244,7 +244,7 @@ describe("DashboardStateManager", () => {
         } as DashboardTimeControls,
       });
       const initUrlSearch =
-        "tr=PT24H&tz=Asia%2FKathmandu&compare_tr=rill-PP&grain=hour&measures=bid_price&dims=domain&sort_by=bid_price&sort_dir=ASC&leaderboard_measures=bid_price";
+        "tr=PT24H&tz=Asia%2FKathmandu&compare_tr=rill-PP&measures=bid_price&dims=domain&sort_by=bid_price&sort_dir=ASC&leaderboard_measures=bid_price";
       pageMock.assertSearchParams(initUrlSearch);
 
       pageMock.popState("");

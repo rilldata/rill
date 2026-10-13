@@ -109,6 +109,7 @@
   } = $derived($timeControlsStore);
 
   let { selectedTimezone } = $derived($dashboardStore);
+  let adaptiveTimeGrain = $derived(!!$dashboardStore?.adaptiveTimeGrain);
 
   // Use the full selected time range for chart data fetching (not modified by scrub)
   let chartInterval = $derived(
@@ -352,6 +353,17 @@
           options={aggregationOptions ?? []}
           onSelect={(timeGrain) =>
             metricsExplorerStore.setTimeGrain(exploreName, timeGrain)}
+          defaultOption={{
+            label: m.time_grain_adaptive(),
+            description: m.time_grain_adaptive_description(),
+            hint: m.time_grain_adaptive_hint(),
+            selected: adaptiveTimeGrain,
+            onSelect: () =>
+              metricsExplorerStore.setAdaptiveTimeGrain(
+                exploreName,
+                $exploreValidSpec.data?.metricsView ?? {},
+              ),
+          }}
         />
       {/if}
 
