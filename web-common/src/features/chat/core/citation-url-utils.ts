@@ -10,6 +10,10 @@ import {
   MessageType,
   ToolName,
 } from "@rilldata/web-common/features/chat/core/types.ts";
+import {
+  type CreateChartArgs,
+  mapChartSpecToMetricsResolverQuery,
+} from "@rilldata/web-common/features/explore-mappers/map-chart-spec-to-metrics-resolver-query.ts";
 import { error } from "@sveltejs/kit";
 
 interface RuntimeInfo {
@@ -51,15 +55,23 @@ export async function fetchMessage(
   }
 }
 
-export function maybeGetMetricsResolverQueryFromMessage(message: V1Message) {
-  if (
-    message.tool !== ToolName.QUERY_METRICS_VIEW ||
-    message.type !== MessageType.CALL
-  ) {
+/**
+ * Returns the metrics resolver query a tool call message stands for: the arguments of a
+ * `query_metrics_view` call as is, or the spec of a `create_chart` call mapped onto a query.
+ * Both open as an explore through `openQuery`.
+ */
+export function maybeGetMetricsResolverQueryFromMessage(
+  message: V1Message,
+): MetricsResolverQuery {
+  const isOpenableCall =
+    message.type === MessageType.CALL &&
+    (message.tool === ToolName.QUERY_METRICS_VIEW ||
+      message.tool === ToolName.CREATE_CHART);
+  if (!isOpenableCall) {
     throw error(
       400,
       new Error(
-        "Failed to get metrics resolver query, is not a metrics view query tool call.",
+        "Failed to get metrics resolver query, is not a metrics view query or create chart tool call.",
       ),
     );
   }
@@ -72,6 +84,19 @@ export function maybeGetMetricsResolverQueryFromMessage(message: V1Message) {
         "Failed to get metrics resolver query, message has no content.",
       ),
     );
+  }
+
+  if (message.tool === ToolName.CREATE_CHART) {
+    const spec = (rawJson as Partial<CreateChartArgs>).spec;
+    if (!spec || typeof spec !== "object") {
+      throw error(
+        400,
+        new Error(
+          "Failed to get metrics resolver query, create chart call has no spec.",
+        ),
+      );
+    }
+    return mapChartSpecToMetricsResolverQuery(spec);
   }
 
   return rawJson as MetricsResolverQuery;

@@ -51,11 +51,14 @@ var (
 )
 
 type Options struct {
-	HTTPPort               int
-	GRPCPort               int
-	AllowedOrigins         []string
-	SessionKeyPairs        [][]byte
-	ServePrometheus        bool
+	HTTPPort        int
+	GRPCPort        int
+	AllowedOrigins  []string
+	SessionKeyPairs [][]byte
+	ServePrometheus bool
+	// MCPAppsEnabled serves the MCP Apps chart widget on the unified MCP server, so that hosts such as Claude and ChatGPT
+	// render create_chart results as interactive charts. The widget bundle must be embedded in the binary.
+	MCPAppsEnabled         bool
 	AuthDomain             string
 	AuthClientID           string
 	AuthClientSecret       string

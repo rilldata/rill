@@ -1,0 +1,59 @@
+{
+  "name": "Result without data",
+  "description": "The host did not forward the data section (e.g. Claude wrote a large result to a file). The widget shows an error with Open in Rill.",
+  "expect": "error",
+  "arguments": {
+    "chart_type": "bar_chart",
+    "spec": {
+      "metrics_view": "bids_metrics",
+      "time_range": {
+        "start": "2023-09-09T00:00:00Z",
+        "end": "2023-09-16T00:00:00Z"
+      },
+      "x": {
+        "field": "advertiser_name",
+        "type": "nominal",
+        "limit": 10,
+        "sort": "-y"
+      },
+      "y": {
+        "field": "total_bids",
+        "type": "quantitative"
+      },
+      "color": "primary"
+    }
+  },
+  "result": {
+    "content": [
+      {
+        "type": "text",
+        "text": "**Bar: Total Bids per Advertiser Name**"
+      }
+    ],
+    "structuredContent": {
+      "widget": "chart",
+      "chart_type": "bar_chart",
+      "spec": {
+        "metrics_view": "bids_metrics",
+        "time_range": {
+          "start": "2023-09-09T00:00:00Z",
+          "end": "2023-09-16T00:00:00Z"
+        },
+        "x": {
+          "field": "advertiser_name",
+          "type": "nominal",
+          "limit": 10,
+          "sort": "-y"
+        },
+        "y": {
+          "field": "total_bids",
+          "type": "quantitative"
+        },
+        "color": "primary"
+      },
+      "message": "Chart created successfully: bar_chart",
+      "title": "Total Bids per Advertiser Name",
+      "open_url": "https://ui.rilldata.com/demo/bids/-/ai/session-0b1c/message/call-4f2a/-/open"
+    }
+  }
+}

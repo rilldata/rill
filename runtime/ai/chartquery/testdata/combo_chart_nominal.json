@@ -1,0 +1,130 @@
+{
+  "row_limit": 5,
+  "top_n": [
+    {
+      "channel": "x",
+      "field": "country",
+      "limit": 5,
+      "query": {
+        "metrics_view": "mv",
+        "dimensions": [
+          {
+            "name": "country"
+          }
+        ],
+        "measures": [
+          {
+            "name": "qps"
+          }
+        ],
+        "pivot_on": null,
+        "spine": null,
+        "sort": [
+          {
+            "name": "qps",
+            "desc": true
+          }
+        ],
+        "time_range": {
+          "start": "2024-01-01T00:00:00Z",
+          "end": "2024-02-01T00:00:00Z"
+        },
+        "comparison_time_range": null,
+        "where": {
+          "cond": {
+            "op": "nin",
+            "exprs": [
+              {
+                "name": "country"
+              },
+              {
+                "val": [
+                  null
+                ]
+              }
+            ]
+          }
+        },
+        "having": null,
+        "limit": 6,
+        "offset": null,
+        "time_zone": "",
+        "use_display_names": false,
+        "rows": false
+      }
+    }
+  ],
+  "main": {
+    "metrics_view": "mv",
+    "dimensions": [
+      {
+        "name": "country"
+      }
+    ],
+    "measures": [
+      {
+        "name": "qps"
+      },
+      {
+        "name": "requests"
+      }
+    ],
+    "pivot_on": null,
+    "spine": null,
+    "sort": [
+      {
+        "name": "qps",
+        "desc": true
+      }
+    ],
+    "time_range": {
+      "start": "2024-01-01T00:00:00Z",
+      "end": "2024-02-01T00:00:00Z"
+    },
+    "comparison_time_range": null,
+    "where": {
+      "cond": {
+        "op": "and",
+        "exprs": [
+          {
+            "cond": {
+              "op": "nin",
+              "exprs": [
+                {
+                  "name": "country"
+                },
+                {
+                  "val": [
+                    null
+                  ]
+                }
+              ]
+            }
+          },
+          {
+            "cond": {
+              "op": "in",
+              "exprs": [
+                {
+                  "name": "country"
+                },
+                {
+                  "val": [
+                    "US",
+                    "CA"
+                  ]
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    "having": null,
+    "limit": 6,
+    "offset": null,
+    "time_zone": "",
+    "use_display_names": false,
+    "rows": false
+  }
+}

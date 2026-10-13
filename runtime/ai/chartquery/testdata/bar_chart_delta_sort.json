@@ -1,0 +1,149 @@
+{
+  "row_limit": 1500,
+  "top_n": [
+    {
+      "channel": "x",
+      "field": "advertiser",
+      "limit": 5,
+      "query": {
+        "metrics_view": "mv",
+        "dimensions": [
+          {
+            "name": "advertiser"
+          }
+        ],
+        "measures": [
+          {
+            "name": "bids"
+          },
+          {
+            "name": "bids_delta",
+            "compute": {
+              "comparison_delta": {
+                "measure": "bids"
+              }
+            }
+          }
+        ],
+        "pivot_on": null,
+        "spine": null,
+        "sort": [
+          {
+            "name": "bids_delta",
+            "desc": true
+          }
+        ],
+        "time_range": {
+          "start": "2024-01-01T00:00:00Z",
+          "end": "2024-02-01T00:00:00Z"
+        },
+        "comparison_time_range": {
+          "start": "2023-12-01T00:00:00Z",
+          "end": "2024-01-01T00:00:00Z"
+        },
+        "where": {
+          "cond": {
+            "op": "nin",
+            "exprs": [
+              {
+                "name": "advertiser"
+              },
+              {
+                "val": [
+                  null
+                ]
+              }
+            ]
+          }
+        },
+        "having": null,
+        "limit": 6,
+        "offset": null,
+        "time_zone": "",
+        "use_display_names": false,
+        "rows": false
+      }
+    }
+  ],
+  "main": {
+    "metrics_view": "mv",
+    "dimensions": [
+      {
+        "name": "advertiser"
+      }
+    ],
+    "measures": [
+      {
+        "name": "bids"
+      },
+      {
+        "name": "bids_prev",
+        "compute": {
+          "comparison_value": {
+            "measure": "bids"
+          }
+        }
+      }
+    ],
+    "pivot_on": null,
+    "spine": null,
+    "sort": [
+      {
+        "name": "bids",
+        "desc": true
+      }
+    ],
+    "time_range": {
+      "start": "2024-01-01T00:00:00Z",
+      "end": "2024-02-01T00:00:00Z"
+    },
+    "comparison_time_range": {
+      "start": "2023-12-01T00:00:00Z",
+      "end": "2024-01-01T00:00:00Z"
+    },
+    "where": {
+      "cond": {
+        "op": "and",
+        "exprs": [
+          {
+            "cond": {
+              "op": "nin",
+              "exprs": [
+                {
+                  "name": "advertiser"
+                },
+                {
+                  "val": [
+                    null
+                  ]
+                }
+              ]
+            }
+          },
+          {
+            "cond": {
+              "op": "in",
+              "exprs": [
+                {
+                  "name": "advertiser"
+                },
+                {
+                  "val": [
+                    "A",
+                    "B"
+                  ]
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    "having": null,
+    "limit": 1501,
+    "offset": null,
+    "time_zone": "",
+    "use_display_names": false,
+    "rows": false
+  }
+}

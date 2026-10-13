@@ -1,0 +1,209 @@
+{
+  "name": "Stacked area chart",
+  "description": "Daily spend split by device, with two missing buckets.",
+  "expect": "canvas",
+  "arguments": {
+    "chart_type": "area_chart",
+    "spec": {
+      "metrics_view": "bids_metrics",
+      "time_range": {
+        "start": "2023-09-09T00:00:00Z",
+        "end": "2023-09-16T00:00:00Z"
+      },
+      "time_grain": "TIME_GRAIN_DAY",
+      "x": {
+        "field": "__time",
+        "type": "temporal"
+      },
+      "y": {
+        "field": "total_spend",
+        "type": "quantitative"
+      },
+      "color": {
+        "field": "device",
+        "type": "nominal",
+        "limit": 3
+      }
+    }
+  },
+  "result": {
+    "content": [
+      {
+        "type": "text",
+        "text": "**Stacked area: Total Spend over Time split by Device** (2023-09-09 to 2023-09-16)\n\n| Time | Device | Total Spend |\n| - | - | - |\n| 2023-09-09T00:00:00Z | Mobile | 2377.8 |\n| 2023-09-09T00:00:00Z | Desktop | 3175.31 |\n| 2023-09-09T00:00:00Z | Tablet | 3536.82 |\n| 2023-09-10T00:00:00Z | Mobile | 1881.68 |\n| 2023-09-10T00:00:00Z | Desktop | 2526.19 |\n| 2023-09-10T00:00:00Z | Tablet | 3855.08 |\n| 2023-09-11T00:00:00Z | Mobile | 2632.1 |\n| 2023-09-11T00:00:00Z | Desktop | 3200.52 |\n| 2023-09-11T00:00:00Z | Tablet | 3495.46 |\n| 2023-09-12T00:00:00Z | Desktop | 2562.46 |\n| 2023-09-12T00:00:00Z | Tablet | 3495.08 |\n| 2023-09-13T00:00:00Z | Mobile | 2033.07 |\n| 2023-09-13T00:00:00Z | Desktop | 3248.81 |\n| 2023-09-13T00:00:00Z | Tablet | 3739.35 |\n| 2023-09-14T00:00:00Z | Mobile | 1939.76 |\n| 2023-09-14T00:00:00Z | Desktop | 3146.46 |\n| 2023-09-15T00:00:00Z | Mobile | 2220.23 |\n| 2023-09-15T00:00:00Z | Desktop | 2454.63 |\n| 2023-09-15T00:00:00Z | Tablet | 3020.21 |\n\n_19 of 19 rows shown_\n\nOpen the interactive chart in Rill: https://ui.rilldata.com/demo/bids/-/ai/session-0b1c/message/call-4f2a/-/open"
+      }
+    ],
+    "structuredContent": {
+      "widget": "chart",
+      "chart_type": "area_chart",
+      "spec": {
+        "metrics_view": "bids_metrics",
+        "time_range": {
+          "start": "2023-09-09T00:00:00Z",
+          "end": "2023-09-16T00:00:00Z"
+        },
+        "time_grain": "TIME_GRAIN_DAY",
+        "x": {
+          "field": "__time",
+          "type": "temporal"
+        },
+        "y": {
+          "field": "total_spend",
+          "type": "quantitative"
+        },
+        "color": {
+          "field": "device",
+          "type": "nominal",
+          "limit": 3
+        }
+      },
+      "message": "Chart created successfully: area_chart",
+      "metrics_view": {
+        "name": "bids_metrics",
+        "display_name": "Bids",
+        "time_dimension": "__time",
+        "smallest_time_grain": "TIME_GRAIN_HOUR"
+      },
+      "resolved_time_range": {
+        "start": "2023-09-09T00:00:00Z",
+        "end": "2023-09-16T00:00:00Z"
+      },
+      "theme": {
+        "primaryColorRaw": "#4f46e5",
+        "light": {
+          "primary": "#4f46e5",
+          "secondary": "#f97316"
+        },
+        "dark": {
+          "primary": "#818cf8",
+          "secondary": "#fb923c"
+        }
+      },
+      "open_url": "https://ui.rilldata.com/demo/bids/-/ai/session-0b1c/message/call-4f2a/-/open",
+      "truncated": false,
+      "title": "Total Spend over Time split by Device",
+      "time_grain": "TIME_GRAIN_DAY",
+      "data": [
+        {
+          "__time": "2023-09-09T00:00:00Z",
+          "device": "Mobile",
+          "total_spend": 2377.8
+        },
+        {
+          "__time": "2023-09-09T00:00:00Z",
+          "device": "Desktop",
+          "total_spend": 3175.31
+        },
+        {
+          "__time": "2023-09-09T00:00:00Z",
+          "device": "Tablet",
+          "total_spend": 3536.82
+        },
+        {
+          "__time": "2023-09-10T00:00:00Z",
+          "device": "Mobile",
+          "total_spend": 1881.68
+        },
+        {
+          "__time": "2023-09-10T00:00:00Z",
+          "device": "Desktop",
+          "total_spend": 2526.19
+        },
+        {
+          "__time": "2023-09-10T00:00:00Z",
+          "device": "Tablet",
+          "total_spend": 3855.08
+        },
+        {
+          "__time": "2023-09-11T00:00:00Z",
+          "device": "Mobile",
+          "total_spend": 2632.1
+        },
+        {
+          "__time": "2023-09-11T00:00:00Z",
+          "device": "Desktop",
+          "total_spend": 3200.52
+        },
+        {
+          "__time": "2023-09-11T00:00:00Z",
+          "device": "Tablet",
+          "total_spend": 3495.46
+        },
+        {
+          "__time": "2023-09-12T00:00:00Z",
+          "device": "Desktop",
+          "total_spend": 2562.46
+        },
+        {
+          "__time": "2023-09-12T00:00:00Z",
+          "device": "Tablet",
+          "total_spend": 3495.08
+        },
+        {
+          "__time": "2023-09-13T00:00:00Z",
+          "device": "Mobile",
+          "total_spend": 2033.07
+        },
+        {
+          "__time": "2023-09-13T00:00:00Z",
+          "device": "Desktop",
+          "total_spend": 3248.81
+        },
+        {
+          "__time": "2023-09-13T00:00:00Z",
+          "device": "Tablet",
+          "total_spend": 3739.35
+        },
+        {
+          "__time": "2023-09-14T00:00:00Z",
+          "device": "Mobile",
+          "total_spend": 1939.76
+        },
+        {
+          "__time": "2023-09-14T00:00:00Z",
+          "device": "Desktop",
+          "total_spend": 3146.46
+        },
+        {
+          "__time": "2023-09-15T00:00:00Z",
+          "device": "Mobile",
+          "total_spend": 2220.23
+        },
+        {
+          "__time": "2023-09-15T00:00:00Z",
+          "device": "Desktop",
+          "total_spend": 2454.63
+        },
+        {
+          "__time": "2023-09-15T00:00:00Z",
+          "device": "Tablet",
+          "total_spend": 3020.21
+        }
+      ],
+      "fields": {
+        "__time": {
+          "name": "__time",
+          "kind": "time",
+          "display_name": "Time",
+          "type": "TIMESTAMP"
+        },
+        "device": {
+          "name": "device",
+          "kind": "dimension",
+          "display_name": "Device",
+          "type": "STRING"
+        },
+        "total_spend": {
+          "name": "total_spend",
+          "kind": "measure",
+          "display_name": "Total Spend",
+          "type": "FLOAT64",
+          "format_preset": "currency_usd"
+        }
+      },
+      "domain_values": {
+        "device": ["Mobile", "Desktop", "Tablet"]
+      }
+    }
+  }
+}

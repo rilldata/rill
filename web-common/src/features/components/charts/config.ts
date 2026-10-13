@@ -10,35 +10,14 @@ import StackedBar from "@rilldata/web-common/components/icons/StackedBar.svelte"
 import StackedBarFull from "@rilldata/web-common/components/icons/StackedBarFull.svelte";
 import type { ComponentType, SvelteComponent } from "svelte";
 import type { Readable } from "svelte/store";
-import type { VisualizationSpec } from "svelte-vega";
-import { generateVLAreaChartSpec } from "./cartesian/area/spec";
-import { generateVLBarChartSpec } from "./cartesian/bar-chart/spec";
-import {
-  CartesianChartProvider,
-  type CartesianChartSpec,
-} from "./cartesian/CartesianChartProvider";
-import { generateVLLineChartSpec } from "./cartesian/line-chart/spec";
-import { generateVLMultiMetricChartSpec } from "./cartesian/multi-metric-chart";
-import { measureChannel } from "./cartesian/orientation";
-import { generateVLStackedBarChartSpec } from "./cartesian/stacked-bar/default";
-import { generateVLStackedBarNormalizedSpec } from "./cartesian/stacked-bar/normalized";
+import { CartesianChartProvider } from "./cartesian/CartesianChartProvider";
 import { CircularChartProvider } from "./circular/CircularChartProvider";
-import { generateVLPieChartSpec } from "./circular/pie";
 import { ComboChartProvider } from "./combo/ComboChartProvider";
-import { generateVLComboChartSpec } from "./combo/spec";
 import { FunnelChartProvider } from "./funnel/FunnelChartProvider";
-import { generateVLFunnelChartSpec } from "./funnel/spec";
 import { HeatmapChartProvider } from "./heatmap/HeatmapChartProvider";
-import { generateVLHeatmapSpec } from "./heatmap/spec";
 import { ScatterPlotChartProvider } from "./scatter/ScatterPlotChartProvider";
-import { generateVLScatterPlotSpec } from "./scatter/spec";
-import type {
-  ChartDataResult,
-  ChartProvider,
-  ChartSpec,
-  ChartType,
-} from "./types";
-import { isMultiFieldConfig } from "./util.ts";
+import { SPEC_GENERATORS, type SpecGenerator } from "./spec-generators";
+import type { ChartProvider, ChartSpec, ChartType } from "./types";
 
 export interface ChartMetadataConfig {
   title: string;
@@ -47,7 +26,9 @@ export interface ChartMetadataConfig {
     spec: Readable<ChartSpec>,
     defaultOptions?: Record<string, unknown>,
   ) => ChartProvider;
-  generateSpec: (config: ChartSpec, data: ChartDataResult) => VisualizationSpec;
+  // The spec builders live in `spec-generators.ts` so that renderers can import them
+  // without this module, which also pulls in the icons and the query providers.
+  generateSpec: SpecGenerator;
   hideFromSelector?: boolean;
 }
 
@@ -56,113 +37,68 @@ export const CHART_CONFIG: Record<ChartType, ChartMetadataConfig> = {
     title: "Bar",
     icon: BarChart,
     provider: CartesianChartProvider,
-    generateSpec: (config: ChartSpec, data: ChartDataResult) => {
-      const cartesianConfig = config as CartesianChartSpec;
-      // The measure may sit on either axis (horizontal bars), so read it by role.
-      const isMultiMeasure = isMultiFieldConfig(
-        cartesianConfig[measureChannel(cartesianConfig)],
-      );
-      return isMultiMeasure
-        ? generateVLMultiMetricChartSpec(cartesianConfig, data, "grouped_bar")
-        : generateVLBarChartSpec(cartesianConfig, data);
-    },
+    generateSpec: SPEC_GENERATORS.bar_chart,
   },
   line_chart: {
     title: "Line",
     icon: LineChart,
     provider: CartesianChartProvider,
-    generateSpec: (config: ChartSpec, data: ChartDataResult) => {
-      const cartesianConfig = config as CartesianChartSpec;
-      const isMultiMeasure = isMultiFieldConfig(
-        cartesianConfig[measureChannel(cartesianConfig)],
-      );
-      return isMultiMeasure
-        ? generateVLMultiMetricChartSpec(cartesianConfig, data, "line")
-        : generateVLLineChartSpec(cartesianConfig, data);
-    },
+    generateSpec: SPEC_GENERATORS.line_chart,
   },
   area_chart: {
     title: "Stacked Area",
     icon: StackedArea,
     provider: CartesianChartProvider,
-    generateSpec: (config: ChartSpec, data: ChartDataResult) => {
-      const cartesianConfig = config as CartesianChartSpec;
-      const isMultiMeasure = isMultiFieldConfig(
-        cartesianConfig[measureChannel(cartesianConfig)],
-      );
-      return isMultiMeasure
-        ? generateVLMultiMetricChartSpec(cartesianConfig, data, "stacked_area")
-        : generateVLAreaChartSpec(cartesianConfig, data);
-    },
+    generateSpec: SPEC_GENERATORS.area_chart,
   },
   stacked_bar: {
     title: "Stacked Bar",
     icon: StackedBar,
     provider: CartesianChartProvider,
-    generateSpec: (config: ChartSpec, data: ChartDataResult) => {
-      const cartesianConfig = config as CartesianChartSpec;
-      const isMultiMeasure = isMultiFieldConfig(
-        cartesianConfig[measureChannel(cartesianConfig)],
-      );
-      return isMultiMeasure
-        ? generateVLMultiMetricChartSpec(cartesianConfig, data, "stacked_bar")
-        : generateVLStackedBarChartSpec(cartesianConfig, data);
-    },
+    generateSpec: SPEC_GENERATORS.stacked_bar,
   },
   stacked_bar_normalized: {
     title: "Stacked Bar Normalized",
     icon: StackedBarFull,
     provider: CartesianChartProvider,
-    generateSpec: (config: ChartSpec, data: ChartDataResult) => {
-      const cartesianConfig = config as CartesianChartSpec;
-      const isMultiMeasure = isMultiFieldConfig(
-        cartesianConfig[measureChannel(cartesianConfig)],
-      );
-      return isMultiMeasure
-        ? generateVLMultiMetricChartSpec(
-            cartesianConfig,
-            data,
-            "stacked_bar_normalized",
-          )
-        : generateVLStackedBarNormalizedSpec(cartesianConfig, data);
-    },
+    generateSpec: SPEC_GENERATORS.stacked_bar_normalized,
   },
   donut_chart: {
     title: "Donut",
     icon: Donut,
     provider: CircularChartProvider,
-    generateSpec: generateVLPieChartSpec,
+    generateSpec: SPEC_GENERATORS.donut_chart,
   },
   pie_chart: {
     title: "Pie",
     icon: Donut,
     provider: CircularChartProvider,
-    generateSpec: generateVLPieChartSpec,
+    generateSpec: SPEC_GENERATORS.pie_chart,
     hideFromSelector: true,
   },
   funnel_chart: {
     title: "Funnel",
     icon: Funnel,
     provider: FunnelChartProvider,
-    generateSpec: generateVLFunnelChartSpec,
+    generateSpec: SPEC_GENERATORS.funnel_chart,
   },
   heatmap: {
     title: "Heatmap",
     icon: Heatmap,
     provider: HeatmapChartProvider,
-    generateSpec: generateVLHeatmapSpec,
+    generateSpec: SPEC_GENERATORS.heatmap,
   },
   combo_chart: {
     title: "Combo",
     icon: MultiChart,
     provider: ComboChartProvider,
-    generateSpec: generateVLComboChartSpec,
+    generateSpec: SPEC_GENERATORS.combo_chart,
   },
   scatter_plot: {
     title: "Scatter",
     icon: ScatterChart,
     provider: ScatterPlotChartProvider,
-    generateSpec: generateVLScatterPlotSpec,
+    generateSpec: SPEC_GENERATORS.scatter_plot,
   },
 };
 

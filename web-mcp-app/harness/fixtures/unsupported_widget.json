@@ -1,0 +1,24 @@
+{
+  "name": "Unsupported widget mode",
+  "description": "A newer server sent a widget mode this bundle does not implement.",
+  "expect": "error",
+  "arguments": {
+    "type": "canvas",
+    "name": "overview"
+  },
+  "result": {
+    "content": [
+      {
+        "type": "text",
+        "text": "Dashboard: Overview"
+      }
+    ],
+    "structuredContent": {
+      "widget": "dashboard",
+      "type": "canvas",
+      "name": "overview",
+      "title": "Overview",
+      "open_url": "https://ui.rilldata.com/demo/bids/canvas/overview"
+    }
+  }
+}

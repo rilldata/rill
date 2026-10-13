@@ -19,6 +19,7 @@ import (
 	"github.com/rilldata/rill/admin/database"
 	"github.com/rilldata/rill/admin/server/auth"
 	"github.com/rilldata/rill/runtime/ai"
+	"github.com/rilldata/rill/runtime/ai/mcpapp"
 	"github.com/rilldata/rill/runtime/pkg/httputil"
 	"github.com/rilldata/rill/runtime/pkg/middleware"
 	"github.com/rilldata/rill/runtime/pkg/observability"
@@ -48,11 +49,15 @@ const (
 // mcpForwardedTools are the runtime tools exposed on the MCP server.
 // The runtime exposes more tools than these, but the rest require runtime.EditRepo,
 // which is only granted for editable deployments, and a project's primary deployment is never editable.
+// create_chart is always exposed: clients that do not get the MCP Apps widget receive its markdown fallback.
+// chart_data may only be called by the widget, so it is only exposed when this server serves the widget (see mcpForwardedToolSpecs).
 var mcpForwardedTools = []string{
 	ai.ListMetricsViewsName,
 	ai.GetMetricsViewName,
 	ai.QueryMetricsViewSummaryName,
 	ai.QueryMetricsViewName,
+	ai.CreateChartName,
+	ai.ChartDataName,
 	ai.ListSkillsName,
 	ai.LoadSkillName,
 }
@@ -66,8 +71,18 @@ var mcpSessionNamespace = uuid.MustParse("6f4a1c94-3d1e-4f6b-9a02-1c0f6b7d5e8a")
 // Unlike the per-project runtime proxy, it serves a single endpoint for all the projects a caller has access to:
 // it answers the MCP protocol methods itself and forwards tool calls to the runtime of the project named in the tool arguments.
 func (s *Server) mcpHandler() (http.Handler, error) {
+	// The MCP Apps widget is served when enabled and the binary carries the widget bundle (see runtime/ai/mcpapp).
+	var widget *mcpapp.Asset
+	if s.opts.MCPAppsEnabled {
+		var ok bool
+		widget, ok = mcpapp.Widget()
+		if !ok {
+			s.logger.Warn("mcp: MCP Apps are enabled but the widget bundle is not embedded in this binary; serving tools without the widget")
+		}
+	}
+
 	adminTools := s.mcpAdminTools()
-	forwardedTools, err := mcpForwardedToolSpecs()
+	forwardedTools, err := mcpForwardedToolSpecs(widget)
 	if err != nil {
 		return nil, err
 	}
@@ -77,6 +92,11 @@ func (s *Server) mcpHandler() (http.Handler, error) {
 				return nil, fmt.Errorf("mcp: tool %q is both served by the admin service and forwarded to the runtime", ft.Name)
 			}
 		}
+	}
+
+	var capabilities *mcp.ServerCapabilities
+	if widget != nil {
+		capabilities = mcpapp.ServerCapabilities()
 	}
 
 	return middleware.MCPSessionIDMiddleware(mcp.NewStreamableHTTPHandler(func(r *http.Request) *mcp.Server {
@@ -89,6 +109,7 @@ func (s *Server) mcpHandler() (http.Handler, error) {
 			&mcp.ServerOptions{
 				Instructions: mcpInstructions,
 				HasTools:     true,
+				Capabilities: capabilities,
 			},
 		)
 
@@ -110,6 +131,9 @@ func (s *Server) mcpHandler() (http.Handler, error) {
 		}
 		for _, t := range forwardedTools {
 			srv.AddTool(t, s.mcpForwardToolCall(t.Name, client))
+		}
+		if widget != nil {
+			mcpapp.Register(srv, widget)
 		}
 
 		return srv
@@ -162,7 +186,9 @@ type mcpAdminTool struct {
 
 // mcpForwardedToolSpecs returns the specs of the tools forwarded to a project's runtime, using the tool definitions in runtime/ai as the source of truth.
 // It injects the "project" argument into the input schema of each tool, which we intercept to route calls to the correct runtime.
-func mcpForwardedToolSpecs() ([]*mcp.Tool, error) {
+// The tools that take part in the MCP Apps widget get the matching _meta.ui: create_chart links to the widget when it is served,
+// and app-only tools, which only the widget may call, declare their visibility and are left out when it is not served.
+func mcpForwardedToolSpecs(widget *mcpapp.Asset) ([]*mcp.Tool, error) {
 	specs := ai.MCPToolSpecs()
 
 	res := make([]*mcp.Tool, 0, len(mcpForwardedTools))
@@ -171,6 +197,11 @@ func mcpForwardedToolSpecs() ([]*mcp.Tool, error) {
 		if !ok {
 			return nil, fmt.Errorf("mcp: no spec for tool %q", name)
 		}
+
+		if widget == nil && ai.IsMCPAppOnlyTool(name) {
+			continue
+		}
+		spec = mcpapp.ToolWithMeta(spec, ai.MCPAppToolMeta(name, widget))
 
 		// Inject the "project" argument into the input schema.
 		schema, ok := spec.InputSchema.(*jsonschema.Schema)
