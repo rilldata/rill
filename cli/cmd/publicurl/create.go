@@ -89,7 +89,7 @@ func CreateCmd(ch *cmdutil.Helper) *cobra.Command {
 	createCmd.Flags().IntVar(&ttlMinutes, "ttl-minutes", 0, "Duration until the token expires (use 0 for no expiry)")
 	createCmd.Flags().StringVar(&filter, "filter", "", "Limit access to the provided filter (json)")
 	createCmd.Flags().StringSliceVar(&fields, "fields", nil, "Limit access to the provided fields")
-	createCmd.Flags().StringVar(&password, "password", "", "Require recipients to enter this password (8 to 72 characters)")
+	createCmd.Flags().StringVar(&password, "password", "", "Require recipients to enter this password (at least 8 characters, at most 72 UTF-8 bytes)")
 
 	return createCmd
 }

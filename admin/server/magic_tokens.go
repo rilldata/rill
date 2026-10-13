@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"time"
-	"unicode/utf8"
 
 	"github.com/google/uuid"
 	"github.com/rilldata/rill/admin"
@@ -480,8 +479,8 @@ func (s *Server) magicAuthTokenToPB(tkn *database.MagicAuthTokenWithUser, org *d
 
 // validateMagicAuthTokenPassword checks the length constraints of a password for a magic auth token.
 func validateMagicAuthTokenPassword(password string) error {
-	if utf8.RuneCountInString(password) < admin.MagicAuthTokenPasswordMinLength || len(password) > admin.MagicAuthTokenPasswordMaxLength {
-		return status.Errorf(codes.InvalidArgument, "password must be between %d and %d characters", admin.MagicAuthTokenPasswordMinLength, admin.MagicAuthTokenPasswordMaxLength)
+	if err := admin.ValidateMagicAuthTokenPassword(password); err != nil {
+		return status.Error(codes.InvalidArgument, err.Error())
 	}
 	return nil
 }

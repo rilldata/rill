@@ -1818,7 +1818,7 @@
   "public_url_page_title": "Public URLs",
   "public_url_password_change_notice": "Changing or removing the password signs out everyone who has already opened this URL.",
   "public_url_password_is_set": "A password is set. Recipients must enter it to open this URL.",
-  "public_url_password_length": "Password must be between 8 and 72 characters",
+  "public_url_password_length": "Password must contain at least 8 characters and at most 72 UTF-8 bytes",
   "public_url_password_placeholder": "Password",
   "public_url_password_protected": "Password protected",
   "public_url_password_save_notice": "Save this password now. It won't be shown again, but you can set a new one from the Public URLs settings page.",

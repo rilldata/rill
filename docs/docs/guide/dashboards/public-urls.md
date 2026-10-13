@@ -23,7 +23,7 @@ If you want to set an expiration, please select the toggle and set the expiratio
 
 A public URL can optionally require a password. Anyone who opens the URL must enter the password before the dashboard loads, so a link that gets forwarded or leaked is not enough on its own.
 
-To add a password, turn on `Require password` when creating the URL, then either type a password (8 to 72 characters) or click `Generate and copy secure password`, which fills in a random password and copies it to your clipboard. After the URL is created, the password is shown once next to the URL: copy it and share it with the recipients separately from the link.
+To add a password, turn on `Require password` when creating the URL, then either type a password or click `Generate and copy secure password`, which fills in a random password and copies it to your clipboard. Passwords require at least 8 characters and can contain up to 72 UTF-8 bytes; some characters use more than one byte. After the URL is created, the password is shown once next to the URL: copy it and share it with the recipients separately from the link.
 
 Rill stores only a hash of the password, so it cannot be shown again later. If you lose it, set a new one from the public URLs settings page (see [Changing or removing the password](#changing-or-removing-the-password)).
 

@@ -1827,7 +1827,7 @@
   "public_url_page_title": "URLs públicas",
   "public_url_password_change_notice": "Cambiar o quitar la contraseña cierra la sesión de todos los que ya hayan abierto esta URL.",
   "public_url_password_is_set": "Hay una contraseña establecida. Los destinatarios deben introducirla para abrir esta URL.",
-  "public_url_password_length": "La contraseña debe tener entre 8 y 72 caracteres",
+  "public_url_password_length": "La contraseña debe contener al menos 8 caracteres y como máximo 72 bytes UTF-8",
   "public_url_password_placeholder": "Contraseña",
   "public_url_password_protected": "Protegida con contraseña",
   "public_url_password_save_notice": "Guarde esta contraseña ahora. No se volverá a mostrar, pero puede establecer una nueva desde la página de configuración de URLs públicas.",

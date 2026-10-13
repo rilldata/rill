@@ -15,7 +15,7 @@
     PopoverContent,
     PopoverTrigger,
   } from "@rilldata/web-common/components/popover";
-  import { copyToClipboard } from "@rilldata/web-common/lib/actions/copy-to-clipboard";
+  import { tryCopyToClipboard } from "@rilldata/web-common/lib/actions/copy-to-clipboard";
   import type { HTTPError } from "@rilldata/web-common/lib/errors";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { Pencil } from "lucide-svelte";
@@ -38,7 +38,9 @@
     ExploreDashboardConfigProvider,
   } from "@rilldata/web-common/features/dashboards/providers/DashboardConfigProvider.svelte.ts";
   import { onDestroy } from "svelte";
-  import GeneratePasswordButton from "./GeneratePasswordButton.svelte";
+  import PasswordInput from "./PasswordInput.svelte";
+  import SavedPassword from "./SavedPassword.svelte";
+  import { isValidPublicURLPassword } from "./password-policy";
 
   let {
     dashboardResource,
@@ -57,7 +59,6 @@
   let requirePassword = $state(false);
   // Shown once after creation: the password is stored as a hash and can't be retrieved later.
   let createdPassword = $state<string | null>(null);
-  let passwordCopied = $state(false);
 
   // svelte-ignore state_referenced_locally
   const { kind: dashboardKind, name: dashboardName } = dashboardResource;
@@ -104,9 +105,7 @@
     password: string().test(
       "password-length",
       m.public_url_password_length(),
-      (value) =>
-        !requirePassword ||
-        (!!value && value.length >= 8 && value.length <= 72),
+      (value) => !requirePassword || isValidPublicURLPassword(value ?? ""),
     ),
   });
 
@@ -130,15 +129,16 @@
               metricsViewFilters: exprByMetricsView,
               fields,
               state: sanitizedState,
-              ttlMinutes: setExpiration
-                ? convertDateToMinutes(values.expiresAt).toString()
-                : undefined,
+              ttlMinutes:
+                setExpiration && values.expiresAt
+                  ? convertDateToMinutes(values.expiresAt).toString()
+                  : undefined,
               displayName: values.title,
               password: requirePassword ? values.password : undefined,
             },
           });
 
-          url = _url;
+          url = _url ?? null;
           createdPassword =
             requirePassword && values.password ? values.password : null;
 
@@ -182,22 +182,12 @@
     DateTime.now().plus({ years: 1 }).startOf("day"),
   );
 
-  function onCopy() {
-    copyToClipboard(url, "URL copied to clipboard", false);
-    copied = true;
+  async function onCopy() {
+    if (!url) return;
+    copied = await tryCopyToClipboard(url);
 
     setTimeout(() => {
       copied = false;
-    }, 2_000);
-  }
-
-  function onCopyPassword() {
-    if (!createdPassword) return;
-    copyToClipboard(createdPassword, "Password copied to clipboard", false);
-    passwordCopied = true;
-
-    setTimeout(() => {
-      passwordCopied = false;
     }, 2_000);
   }
 
@@ -234,7 +224,7 @@
           >{m.public_url_set_expiration()}</Label
         >
       </div>
-      {#if setExpiration}
+      {#if setExpiration && $form.expiresAt}
         <div class="flex items-center gap-x-1 pl-[30px]">
           <label for="expires-at" class="text-fg-secondary font-medium">
             {m.public_url_access_expires({
@@ -277,16 +267,14 @@
       </div>
       {#if requirePassword}
         <div class="flex flex-col items-start gap-y-1 pl-[30px] mt-2">
-          <Input
+          <PasswordInput
             id="password-input"
-            bind:value={$form.password}
-            secret
-            placeholder={m.public_url_password_placeholder()}
-          />
-          <GeneratePasswordButton
-            onGenerate={(password) => {
-              $form.password = password;
-            }}
+            bind:value={
+              () => $form.password ?? "",
+              (password) => {
+                $form.password = password;
+              }
+            }
           />
         </div>
       {/if}
@@ -366,27 +354,7 @@
       {/if}
     </Button>
     {#if createdPassword}
-      <div class="flex flex-col gap-y-2">
-        <p class="text-xs text-fg-secondary">
-          {m.public_url_password_save_notice()}
-        </p>
-        <div
-          class="flex items-center justify-between gap-x-2 rounded border bg-surface-secondary px-2 py-1"
-        >
-          <code
-            class="truncate font-mono text-xs"
-            data-public-url-password={createdPassword}>{createdPassword}</code
-          >
-          <Button type="text" compact onClick={onCopyPassword}>
-            {#if passwordCopied}
-              <Check size="14px" />
-              {m.public_url_copied_password_button()}
-            {:else}
-              {m.public_url_copy_password_button()}
-            {/if}
-          </Button>
-        </div>
-      </div>
+      <SavedPassword password={createdPassword} />
     {/if}
   </div>
 {/if}

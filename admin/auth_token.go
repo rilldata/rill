@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"time"
+	"unicode/utf8"
 
 	"github.com/rilldata/rill/admin/database"
 	"github.com/rilldata/rill/admin/pkg/authtoken"
@@ -248,10 +249,18 @@ const (
 	MagicAuthTokenPasswordMaxLength = 72
 )
 
-// HashMagicAuthTokenPassword hashes a password for storage in a magic auth token.
+// ValidateMagicAuthTokenPassword checks the character minimum and bcrypt's byte limit.
+func ValidateMagicAuthTokenPassword(password string) error {
+	if utf8.RuneCountInString(password) < MagicAuthTokenPasswordMinLength || len(password) > MagicAuthTokenPasswordMaxLength {
+		return fmt.Errorf("password must contain at least %d characters and at most %d UTF-8 bytes", MagicAuthTokenPasswordMinLength, MagicAuthTokenPasswordMaxLength)
+	}
+	return nil
+}
+
+// HashMagicAuthTokenPassword validates and hashes a password for storage in a magic auth token.
 func HashMagicAuthTokenPassword(password string) ([]byte, error) {
-	if len(password) > MagicAuthTokenPasswordMaxLength {
-		return nil, fmt.Errorf("password exceeds %d bytes", MagicAuthTokenPasswordMaxLength)
+	if err := ValidateMagicAuthTokenPassword(password); err != nil {
+		return nil, err
 	}
 	return bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 }

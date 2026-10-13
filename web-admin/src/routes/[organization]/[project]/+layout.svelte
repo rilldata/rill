@@ -34,9 +34,6 @@
     isEditPage,
     isProjectInvitePage,
     isProjectPage,
-    isPublicAlertPage,
-    isPublicReportPage,
-    isPublicAIPage,
     isPublicURLPage,
     isProjectWelcomePage,
   } from "@rilldata/web-admin/features/navigation/nav-utils";
@@ -82,19 +79,8 @@
     handleBranchNavigation(nav, activeBranch, organization, project, goto),
   );
 
-  // Token: from route params, or from search params on report/alert/AI conversation pages.
-  // Under a public URL, the root layout resolves the bearer: a password-protected token is
-  // replaced by the session token obtained by unlocking it.
-  let token = $derived.by(() => {
-    if (
-      isPublicReportPage(page) ||
-      isPublicAlertPage(page) ||
-      isPublicAIPage(page)
-    ) {
-      return page.url.searchParams.get("token") ?? page.params.token;
-    }
-    return page.data?.token ?? page.params.token;
-  });
+  // The root loader resolves authentication for share, report, alert, and AI pages.
+  let token = $derived(page.data?.token);
 
   let onProjectPage = $derived(isProjectPage(page));
   let onEditPage = $derived(isEditPage(page));

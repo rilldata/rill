@@ -7,7 +7,6 @@
     type V1MagicAuthToken,
   } from "@rilldata/web-admin/client";
   import { Button } from "@rilldata/web-common/components/button";
-  import Check from "@rilldata/web-common/components/icons/Check.svelte";
   import {
     Dialog,
     DialogContent,
@@ -19,13 +18,14 @@
   import Input from "@rilldata/web-common/components/forms/Input.svelte";
   import Label from "@rilldata/web-common/components/forms/Label.svelte";
   import Switch from "@rilldata/web-common/components/forms/Switch.svelte";
-  import { copyToClipboard } from "@rilldata/web-common/lib/actions/copy-to-clipboard";
   import type { HTTPError } from "@rilldata/web-common/lib/errors";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { LockIcon } from "lucide-svelte";
-  import GeneratePasswordButton from "./GeneratePasswordButton.svelte";
+  import PasswordInput from "./PasswordInput.svelte";
+  import SavedPassword from "./SavedPassword.svelte";
+  import { isValidPublicURLPassword } from "./password-policy";
 
   let {
     open = $bindable(false),
@@ -37,62 +37,50 @@
   const updateMagicAuthToken = createAdminServiceUpdateMagicAuthToken();
 
   let displayName = $state("");
-  // For a URL without a password, toggles adding one.
-  let requirePassword = $state(false);
-  // Empty keeps the current password.
+  let passwordAction = $state<"keep" | "set" | "remove">("keep");
   let newPassword = $state("");
-  let removePassword = $state(false);
   let apiError = $state("");
   // Shown once after saving: the password is stored as a hash and can't be retrieved later.
   let savedPassword = $state<string | null>(null);
-  let passwordCopied = $state(false);
 
   // Start from the token's current values each time the dialog opens.
   $effect(() => {
     if (!open) return;
     displayName = token.displayName ?? "";
-    requirePassword = !!token.passwordProtected;
+    passwordAction = "keep";
     newPassword = "";
-    removePassword = false;
     apiError = "";
     savedPassword = null;
   });
 
-  // The new password starts empty: the user either types one or generates one with the button below the field.
-  $effect(() => {
-    if (removePassword || !requirePassword) newPassword = "";
-  });
+  function setNewPassword(password: string) {
+    newPassword = password;
+    if (token.passwordProtected) passwordAction = password ? "set" : "keep";
+  }
 
-  let passwordInvalid = $derived(
-    newPassword !== "" && (newPassword.length < 8 || newPassword.length > 72),
-  );
-  let passwordChanged = $derived(
-    token.passwordProtected
-      ? removePassword || newPassword !== ""
-      : requirePassword && newPassword !== "",
-  );
+  function setPasswordAction(action: "keep" | "set" | "remove") {
+    passwordAction = action;
+    newPassword = "";
+  }
+
   let hasChanges = $derived(
-    displayName !== (token.displayName ?? "") || passwordChanged,
+    displayName !== (token.displayName ?? "") || passwordAction !== "keep",
   );
   let canSave = $derived(
     !$updateMagicAuthToken.isPending &&
       hasChanges &&
       displayName.trim() !== "" &&
-      !passwordInvalid &&
-      (token.passwordProtected || !requirePassword || newPassword !== ""),
+      (passwordAction !== "set" || isValidPublicURLPassword(newPassword)),
   );
 
   async function save() {
+    if (!canSave) return;
     const data: AdminServiceUpdateMagicAuthTokenBody = {};
     if (displayName !== (token.displayName ?? "")) {
       data.displayName = displayName;
     }
-    if (token.passwordProtected) {
-      if (removePassword) data.removePassword = true;
-      else if (newPassword) data.password = newPassword;
-    } else if (requirePassword && newPassword) {
-      data.password = newPassword;
-    }
+    if (passwordAction === "set") data.password = newPassword;
+    if (passwordAction === "remove") data.removePassword = true;
 
     try {
       await $updateMagicAuthToken.mutateAsync({
@@ -118,16 +106,6 @@
       apiError = typedError.response?.data?.message ?? typedError.message;
     }
   }
-
-  function onCopyPassword() {
-    if (!savedPassword) return;
-    copyToClipboard(savedPassword, "Password copied to clipboard", false);
-    passwordCopied = true;
-
-    setTimeout(() => {
-      passwordCopied = false;
-    }, 2_000);
-  }
 </script>
 
 <Dialog bind:open>
@@ -145,25 +123,7 @@
         <p class="text-sm font-semibold text-fg-primary">
           {m.public_url_new_password_heading()}
         </p>
-        <p class="text-xs text-fg-secondary">
-          {m.public_url_password_save_notice()}
-        </p>
-        <div
-          class="flex items-center justify-between gap-x-2 rounded border bg-surface-secondary px-2 py-1"
-        >
-          <code
-            class="truncate font-mono text-xs"
-            data-public-url-password={savedPassword}>{savedPassword}</code
-          >
-          <Button type="text" compact onClick={onCopyPassword}>
-            {#if passwordCopied}
-              <Check size="14px" />
-              {m.public_url_copied_password_button()}
-            {:else}
-              {m.public_url_copy_password_button()}
-            {/if}
-          </Button>
-        </div>
+        <SavedPassword password={savedPassword} />
       </div>
       <DialogFooter>
         <Button
@@ -197,28 +157,19 @@
               <LockIcon size={12} class="shrink-0" />
               {m.public_url_password_is_set()}
             </p>
-            <div class="flex flex-col items-start gap-y-1">
-              <Input
-                id="edit-public-url-password"
-                bind:value={newPassword}
-                secret
-                placeholder={m.public_url_set_new_password()}
-                disabled={removePassword}
-                errors={passwordInvalid ? m.public_url_password_length() : null}
-                alwaysShowError
-              />
-              <GeneratePasswordButton
-                disabled={removePassword}
-                onGenerate={(password) => {
-                  newPassword = password;
-                }}
-              />
-            </div>
+            <PasswordInput
+              id="edit-public-url-password"
+              bind:value={() => newPassword, setNewPassword}
+              placeholder={m.public_url_set_new_password()}
+              disabled={passwordAction === "remove"}
+            />
             <div class="flex items-center gap-x-2">
               <Switch
                 small
                 id="remove-password"
-                bind:checked={removePassword}
+                checked={passwordAction === "remove"}
+                onCheckedChange={(checked) =>
+                  setPasswordAction(checked ? "remove" : "keep")}
               />
               <Label class="text-xs" for="remove-password"
                 >{m.public_url_remove_password()}</Label
@@ -234,30 +185,19 @@
               <Switch
                 small
                 id="require-password"
-                bind:checked={requirePassword}
+                checked={passwordAction === "set"}
+                onCheckedChange={(checked) =>
+                  setPasswordAction(checked ? "set" : "keep")}
               />
               <Label class="text-xs" for="require-password"
                 >{m.public_url_require_password()}</Label
               >
             </div>
-            {#if requirePassword}
-              <div class="flex flex-col items-start gap-y-1">
-                <Input
-                  id="edit-public-url-password"
-                  bind:value={newPassword}
-                  secret
-                  placeholder={m.public_url_password_placeholder()}
-                  errors={passwordInvalid
-                    ? m.public_url_password_length()
-                    : null}
-                  alwaysShowError
-                />
-                <GeneratePasswordButton
-                  onGenerate={(password) => {
-                    newPassword = password;
-                  }}
-                />
-              </div>
+            {#if passwordAction === "set"}
+              <PasswordInput
+                id="edit-public-url-password"
+                bind:value={() => newPassword, setNewPassword}
+              />
             {/if}
           </div>
         {/if}
