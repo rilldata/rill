@@ -4,6 +4,7 @@ import {
 } from "@rilldata/web-common/features/canvas/components/validators";
 import { isTimeDimension } from "@rilldata/web-common/features/dashboards/pivot/pivot-utils";
 import type { PivotSpec, TableSpec } from "./";
+import { fieldNames } from "./field-config";
 import type { V1MetricsViewSpec } from "@rilldata/web-common/runtime-client";
 
 export function validateTableSchema(
@@ -49,7 +50,7 @@ function validateFlat(tableSpec: TableSpec, metricsView: V1MetricsViewSpec) {
   ];
   const allDimensions =
     metricsView?.dimensions?.map((d) => d.name || (d.column as string)) || [];
-  const columns = tableSpec?.columns || [];
+  const columns = fieldNames(tableSpec?.columns);
 
   const measures = columns.filter((c) => allMeasures.includes(c));
   const dimensions = columns.filter((c) => allDimensions.includes(c));
@@ -94,9 +95,9 @@ function validatePivot(tableSpec: PivotSpec, metricsView: V1MetricsViewSpec) {
   const ephemeralMeasureNames = new Set(
     tableSpec.adhoc_measures?.map((c) => c.name) ?? [],
   );
-  const measures = tableSpec.measures || [];
-  const rowDimensions = tableSpec.row_dimensions || [];
-  const colDimensions = tableSpec.col_dimensions || [];
+  const measures = fieldNames(tableSpec.measures);
+  const rowDimensions = fieldNames(tableSpec.row_dimensions);
+  const colDimensions = fieldNames(tableSpec.col_dimensions);
 
   if (!measures.length && !rowDimensions.length && !colDimensions.length) {
     return {

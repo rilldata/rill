@@ -3,8 +3,13 @@ package databricks_test
 import (
 	"testing"
 
+	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/pkg/activity"
+	"github.com/rilldata/rill/runtime/storage"
+	"github.com/rilldata/rill/runtime/testruntime"
 	"github.com/rilldata/rill/runtime/testruntime/testmode"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/zap"
 )
 
 func TestListDatabaseSchemas(t *testing.T) {
@@ -27,6 +32,26 @@ func TestListDatabaseSchemas(t *testing.T) {
 		require.NotEmpty(t, s.DatabaseSchema)
 	}
 	require.True(t, found, "expected integration_test schema to be present")
+}
+
+func TestListDatabaseSchemasWhitelist(t *testing.T) {
+	t.Skip("skipping due to inactive Databricks account")
+	testmode.Expensive(t)
+
+	cfg := testruntime.AcquireConnector(t, "databricks")
+	cfg["catalog_whitelist"] = "SAMPLES, "
+	conn, err := drivers.Open(t.Context(), "databricks", "", "default", cfg, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
+	require.NoError(t, err)
+	t.Cleanup(func() { require.NoError(t, conn.Close()) })
+	is, ok := conn.AsInformationSchema()
+	require.True(t, ok)
+
+	schemas, _, err := is.ListDatabaseSchemas(t.Context(), 0, "")
+	require.NoError(t, err)
+	require.NotEmpty(t, schemas)
+	for _, s := range schemas {
+		require.Equal(t, "samples", s.Database)
+	}
 }
 
 func TestListTables(t *testing.T) {

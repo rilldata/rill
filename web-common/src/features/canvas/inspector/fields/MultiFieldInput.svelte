@@ -4,6 +4,7 @@
   import InputLabel from "@rilldata/web-common/components/forms/InputLabel.svelte";
   import type { BaseCanvasComponent } from "@rilldata/web-common/features/canvas/components/BaseCanvasComponent";
   import { getCanvasStore } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
+  import type { ColumnSettings } from "@rilldata/web-common/features/canvas/components/pivot/field-config";
   import type { PivotMeasureFormatting } from "@rilldata/web-common/features/dashboards/pivot/types";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { PlusIcon } from "lucide-svelte";
@@ -32,6 +33,9 @@
   export let setMeasureFormatting:
     | ((measureName: string, fmt: PivotMeasureFormatting | null) => void)
     | undefined = undefined;
+  // When provided, every chip exposes per-column settings (label, width,
+  // wrap, alignment, number format) in a dropdown on the chip.
+  export let columnSettings: ColumnSettings | undefined = undefined;
 
   const client = useRuntimeClient();
 
@@ -117,5 +121,6 @@
     {measureFormatting}
     {setMeasureFormatting}
     {lowerIsBetterMap}
+    {columnSettings}
   />
 </div>

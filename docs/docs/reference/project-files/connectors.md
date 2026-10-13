@@ -363,6 +363,10 @@ _[string]_ - Default catalog name. Optional.
 
 _[string]_ - Default schema name. Optional.
 
+### `catalog_whitelist`
+
+_[string]_ - Comma-separated list of catalogs to show
+
 ### `dsn`
 
 _[string]_ - DSN (Data Source Name) for the Databricks connection.

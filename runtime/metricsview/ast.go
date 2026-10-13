@@ -266,7 +266,7 @@ func NewAST(mv *runtimev1.MetricsViewSpec, sec MetricsViewSecurity, qry *Query, 
 			} else {
 				ast.unnests = append(ast.unnests, tblWithAlias)
 				if tupleStyle {
-					f.Expr = ast.Dialect.EscapeMember(unnestAlias, f.Name)
+					f.Expr = ast.Dialect.UnnestedColumn(unnestAlias, f.Name)
 				} else {
 					f.Expr = ast.Dialect.EscapeMember("", f.Name)
 				}

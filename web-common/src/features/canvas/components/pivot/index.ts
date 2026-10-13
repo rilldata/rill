@@ -7,7 +7,15 @@ import {
   getCommonOptions,
   getFilterOptions,
 } from "@rilldata/web-common/features/canvas/components/util";
-import type { InputParams } from "@rilldata/web-common/features/canvas/inspector/types";
+import type {
+  AllKeys,
+  ComponentInputParam,
+  InputParams,
+} from "@rilldata/web-common/features/canvas/inspector/types";
+import {
+  clampColumnWidth,
+  type ColumnWidthRole,
+} from "@rilldata/web-common/features/dashboards/pivot/pivot-column-width-utils";
 import { PIVOT_ROW_LIMIT_OPTIONS } from "@rilldata/web-common/features/dashboards/pivot/pivot-constants";
 import type {
   PivotDataStoreConfig,
@@ -31,6 +39,27 @@ import type {
   ComponentFilterProperties,
 } from "../types";
 import CanvasPivotDisplay from "./CanvasPivotDisplay.svelte";
+import {
+  defaultSortDir,
+  fieldConfigs,
+  fieldName,
+  fieldNames,
+  normalizeRowDimensionEntries,
+  setFieldConfig as setFieldConfigInList,
+  sortableFieldNames,
+  stripColumnDimensionKeys,
+  WRAP_LINES_DEFAULT,
+  WRAP_LINES_MAX,
+  WRAP_LINES_MIN,
+  type PivotFieldConfigPatch,
+  type PivotFieldEntry,
+  type PivotComparison,
+  type PivotFieldListKey,
+  type PivotSortDir,
+  PIVOT_COMPARISONS,
+  comparisonWidthPatch,
+  splitComparisonColumnId,
+} from "./field-config";
 import {
   createPivotConfig,
   ROW_LIMIT_ALL_VALUE,
@@ -100,15 +129,38 @@ export function measureFormattingToConditionalFormatSpec(
   );
 }
 
+/**
+ * Presentation properties shared by tables and pivots. Per-column overrides
+ * (width, wrap, align, label, number format) live on the entries of the field
+ * lists themselves; see field-config.ts.
+ */
+export interface TablePresentationProperties {
+  // Shrink the columns so the table fits its container instead of scrolling.
+  fit_to_width?: boolean;
+  // Wrap dimension cells over `wrap_lines` lines instead of truncating them.
+  wrap?: boolean;
+  // Wrap header labels over `wrap_lines` lines instead of truncating them.
+  wrap_headers?: boolean;
+  wrap_lines?: number;
+  // Initial sort: any column of a table; a measure (by its row total) or a row
+  // dimension of a pivot.
+  sort_by?: string;
+  sort_dir?: PivotSortDir;
+  // Sort on the measure's delta or percent-change column instead of its
+  // value; only takes effect while the component shows a time comparison.
+  sort_comparison?: PivotComparison;
+}
+
 export interface PivotSpec
   extends ComponentCommonProperties,
-    ComponentFilterProperties {
+    ComponentFilterProperties,
+    TablePresentationProperties {
   metrics_view: string;
-  measures: string[];
+  measures: PivotFieldEntry[];
   // Ad-hoc measures derived from existing measures via an arithmetic expression.
   adhoc_measures?: EphemeralMeasureSpec[];
-  row_dimensions?: string[];
-  col_dimensions?: string[];
+  row_dimensions?: PivotFieldEntry[];
+  col_dimensions?: PivotFieldEntry[];
   hide_totals_row?: boolean;
   hide_totals_col?: boolean;
   totals_row_position?: PivotTotalsRowPosition;
@@ -118,9 +170,10 @@ export interface PivotSpec
 
 export interface TableSpec
   extends ComponentCommonProperties,
-    ComponentFilterProperties {
+    ComponentFilterProperties,
+    TablePresentationProperties {
   metrics_view: string;
-  columns: string[];
+  columns: PivotFieldEntry[];
   // Ad-hoc measures derived from existing measures via an arithmetic expression.
   adhoc_measures?: EphemeralMeasureSpec[];
   hide_totals_row?: boolean;
@@ -154,6 +207,9 @@ export class PivotCanvasComponent extends BaseCanvasComponent<
     "col_dimensions",
     "conditional_format",
     "adhoc_measures",
+    "sort_by",
+    "sort_dir",
+    "sort_comparison",
   ];
   type: CanvasComponentType;
   component = CanvasPivotDisplay;
@@ -246,6 +302,62 @@ export class PivotCanvasComponent extends BaseCanvasComponent<
     };
   }
 
+  /**
+   * Keeps dependent properties consistent on every write: column dimensions
+   * never carry width/wrap/align, row dimensions never carry align and only
+   * the first one carries width/wrap, `wrap_lines` stays in range, and the
+   * sort only names a field that is still in the component (its direction
+   * only exists together with a field). Writing a value the runtime would
+   * reject must be avoided here, because the component's spec would then
+   * silently revert to the last valid one while the editor shows the new YAML.
+   */
+  updateProperties(patch: Partial<PivotSpec | TableSpec>) {
+    const current = get(this.specStore);
+    const next = { ...current, ...patch } as PivotSpec | TableSpec;
+    const normalized = { ...patch } as Partial<PivotSpec> & Partial<TableSpec>;
+
+    if (Array.isArray(normalized.col_dimensions)) {
+      normalized.col_dimensions = normalized.col_dimensions.map(
+        stripColumnDimensionKeys,
+      );
+    }
+    if (Array.isArray(normalized.row_dimensions)) {
+      normalized.row_dimensions = normalizeRowDimensionEntries(
+        normalized.row_dimensions,
+      );
+    }
+
+    if (typeof normalized.wrap_lines === "number") {
+      normalized.wrap_lines = Math.min(
+        WRAP_LINES_MAX,
+        Math.max(WRAP_LINES_MIN, Math.round(normalized.wrap_lines)),
+      );
+    }
+
+    const sortBy =
+      typeof next.sort_by === "string" && next.sort_by !== ""
+        ? next.sort_by
+        : undefined;
+    if (sortBy && !sortableFieldNames(next).includes(sortBy)) {
+      normalized.sort_by = undefined;
+      normalized.sort_dir = undefined;
+      normalized.sort_comparison = undefined;
+    } else if (!sortBy) {
+      if (next.sort_dir !== undefined) normalized.sort_dir = undefined;
+      if (next.sort_comparison !== undefined) {
+        normalized.sort_comparison = undefined;
+      }
+    } else if (
+      next.sort_comparison !== undefined &&
+      !this.isMetricsViewMeasure(sortBy)
+    ) {
+      // Comparison columns exist only for the metrics view's own measures.
+      normalized.sort_comparison = undefined;
+    }
+
+    super.updateProperties(normalized);
+  }
+
   /** Update a single measure's conditional formatting in the YAML; pass null to clear it. */
   setMeasureFormatting(
     measureName: string,
@@ -264,15 +376,233 @@ export class PivotCanvasComponent extends BaseCanvasComponent<
       measureFormattingToConditionalFormatSpec(measureFormatting),
     );
   }
+
+  /**
+   * Patch one field's presentation overrides on its entry in the given list
+   * (null removes a key). Widths are clamped to the resizer bounds of the
+   * field's role, which is also what the runtime validates.
+   */
+  setFieldConfig(
+    listKey: PivotFieldListKey,
+    name: string,
+    patch: PivotFieldConfigPatch,
+  ) {
+    const spec = get(this.specStore) as Partial<PivotSpec> & Partial<TableSpec>;
+    const list = spec[listKey];
+    const normalized: PivotFieldConfigPatch = { ...patch };
+    if (typeof patch.width === "number") {
+      normalized.width = clampColumnWidth(
+        this.fieldRole(listKey, name),
+        patch.width,
+      );
+    }
+    for (const comparison of PIVOT_COMPARISONS) {
+      const nested = patch[comparison];
+      if (nested && typeof nested.width === "number") {
+        normalized[comparison] = {
+          ...nested,
+          width: clampColumnWidth("measure", nested.width),
+        };
+      }
+    }
+    this.updateProperty(listKey, setFieldConfigInList(list, name, normalized));
+  }
+
+  /**
+   * Persist a width the user set by dragging a column edge (null: a reset to
+   * the automatic width). The column id is the field name in a table, the
+   * measure name or the first row dimension in a pivot; a measure's delta or
+   * percent-change column carries a suffix and is stored on the measure.
+   */
+  setColumnWidth(columnId: string, width: number | null) {
+    const spec = get(this.specStore);
+    const split = splitComparisonColumnId(columnId);
+    const name = split?.measure ?? columnId;
+    let listKey: PivotFieldListKey | undefined;
+    if ("columns" in spec) {
+      if (fieldNames(spec.columns).includes(name)) listKey = "columns";
+    } else if (fieldNames(spec.measures).includes(name)) {
+      listKey = "measures";
+    } else if (!split && fieldNames(spec.row_dimensions)[0] === name) {
+      listKey = "row_dimensions";
+    }
+    if (!listKey) return;
+    if (!split) {
+      this.setFieldConfig(listKey, name, { width });
+    } else if (this.isMetricsViewMeasure(name)) {
+      this.setFieldConfig(
+        listKey,
+        name,
+        comparisonWidthPatch(split.comparison, width),
+      );
+    }
+  }
+
+  /** Persist the initial sort; every key is cleared when `sortBy` is undefined. */
+  setSort(
+    sortBy: string | undefined,
+    sortDir: PivotSortDir | undefined,
+    sortComparison: PivotComparison | undefined,
+  ) {
+    this.updateProperties({
+      sort_by: sortBy,
+      sort_dir: sortDir,
+      sort_comparison: sortComparison,
+    });
+  }
+
+  private fieldRole(listKey: PivotFieldListKey, name: string): ColumnWidthRole {
+    if (listKey === "measures") return "measure";
+    if (listKey === "columns" && this.isMeasureName(name)) return "measure";
+    return "dimension";
+  }
+
+  /** A measure of the metrics view or an adhoc measure of this component. */
+  private isMeasureName(name: string): boolean {
+    const spec = get(this.specStore);
+    if (spec.adhoc_measures?.some((measure) => measure.name === name)) {
+      return true;
+    }
+    return this.isMetricsViewMeasure(name);
+  }
+
+  /** Only the metrics view's own measures get comparison columns in the pivot. */
+  private isMetricsViewMeasure(name: string): boolean {
+    const spec = get(this.specStore);
+    const metricsViewSpec = get(
+      this.parent.metricsView.getMetricsViewFromName(spec.metrics_view),
+    ).metricsView;
+    return metricsViewSpec?.measures?.some((m) => m.name === name) ?? false;
+  }
+
+  /**
+   * The sidebar options for the presentation properties: the display group
+   * (fit, wrapping) and the sort group. The wrap line count is only shown
+   * while something wraps; the sort direction only while a sort field is set.
+   */
+  private presentationOptions(
+    spec: PivotSpec | TableSpec,
+    metricsViewSpec: V1MetricsViewSpec | undefined,
+  ): Partial<Record<AllKeys<PivotSpec | TableSpec>, ComponentInputParam>> {
+    const measureNames = new Set<string>([
+      ...(metricsViewSpec?.measures?.map((measure) => measure.name as string) ??
+        []),
+      ...(spec.adhoc_measures?.map((measure) => measure.name) ?? []),
+    ]);
+    const isMeasure = (name: string) => measureNames.has(name);
+    const fieldLabel = (name: string) =>
+      metricsViewSpec?.measures?.find((measure) => measure.name === name)
+        ?.displayName ||
+      metricsViewSpec?.dimensions?.find(
+        (dimension) => dimension.name === name || dimension.column === name,
+      )?.displayName ||
+      spec.adhoc_measures?.find((measure) => measure.name === name)
+        ?.display_name ||
+      name;
+
+    const anyFieldWraps = Object.values(fieldConfigs(spec)).some(
+      (config) => config.wrap === true,
+    );
+    const sortable = sortableFieldNames(spec);
+    const sortBy =
+      typeof spec.sort_by === "string" && sortable.includes(spec.sort_by)
+        ? spec.sort_by
+        : "";
+    const comparableMeasureNames = new Set(
+      metricsViewSpec?.measures?.map((measure) => measure.name as string) ?? [],
+    );
+
+    return {
+      fit_to_width: {
+        type: "boolean",
+        label: m.canvas_fit_to_width_label(),
+        meta: { defaultValue: false },
+      },
+      wrap: {
+        type: "boolean",
+        label: m.canvas_wrap_text_label(),
+        meta: { defaultValue: false },
+      },
+      wrap_headers: {
+        type: "boolean",
+        label: m.canvas_wrap_headers_label(),
+        meta: { defaultValue: false },
+      },
+      wrap_lines: {
+        type: "select",
+        label: m.canvas_wrap_lines_label(),
+        meta: {
+          default: String(WRAP_LINES_DEFAULT),
+          numeric: true,
+          options: Array.from(
+            { length: WRAP_LINES_MAX - WRAP_LINES_MIN + 1 },
+            (_, i) => String(WRAP_LINES_MIN + i),
+          ).map((value) => ({ value, label: value })),
+        },
+        showInUI:
+          spec.wrap === true || spec.wrap_headers === true || anyFieldWraps,
+      },
+      sort_by: {
+        type: "select",
+        label: m.canvas_sort_by_label(),
+        meta: {
+          default: "",
+          placeholder: m.canvas_sort_default_option(),
+          options: [
+            { value: "", label: m.canvas_sort_default_option() },
+            ...sortable.map((name) => ({
+              value: name,
+              label: fieldLabel(name),
+            })),
+          ],
+        },
+      },
+      sort_comparison: {
+        type: "select",
+        label: m.canvas_sort_on_label(),
+        meta: {
+          default: "",
+          placeholder: m.canvas_sort_on_value(),
+          options: [
+            { value: "", label: m.canvas_sort_on_value() },
+            { value: "delta", label: m.canvas_sort_on_delta() },
+            {
+              value: "percent_change",
+              label: m.canvas_sort_on_percent_change(),
+            },
+          ],
+        },
+        // Comparison columns exist only for the metrics view's own measures.
+        showInUI: sortBy !== "" && comparableMeasureNames.has(sortBy),
+      },
+      sort_dir: {
+        type: "select",
+        label: m.canvas_sort_direction_label(),
+        meta: {
+          default: sortBy ? defaultSortDir(sortBy, isMeasure) : "desc",
+          options: [
+            { value: "asc", label: m.canvas_sort_ascending() },
+            { value: "desc", label: m.canvas_sort_descending() },
+          ],
+        },
+        showInUI: sortBy !== "",
+      },
+    };
+  }
+
   inputParams(type: "pivot" | "table"): InputParams<PivotSpec | TableSpec> {
     const spec = get(this.specStore);
+    const metricsViewSpec = get(
+      this.parent.metricsView.getMetricsViewFromName(spec.metrics_view),
+    ).metricsView;
 
     if (type === "pivot") {
-      const measureCount = ("measures" in spec && spec.measures?.length) || 0;
+      const measureCount =
+        "measures" in spec ? fieldNames(spec.measures).length : 0;
       const rowDimensionCount =
-        ("row_dimensions" in spec && spec.row_dimensions?.length) || 0;
+        "row_dimensions" in spec ? fieldNames(spec.row_dimensions).length : 0;
       const colDimensionCount =
-        ("col_dimensions" in spec && spec.col_dimensions?.length) || 0;
+        "col_dimensions" in spec ? fieldNames(spec.col_dimensions).length : 0;
 
       // Mirror PivotToolbar: totals only apply when their constituent fields exist.
       const canShowTotalRow = rowDimensionCount > 0 && measureCount > 0;
@@ -298,12 +628,12 @@ export class PivotCanvasComponent extends BaseCanvasComponent<
             showInUI: false,
           },
           col_dimensions: {
-            type: "multi_fields",
+            type: "multi_fields_format",
             meta: { allowedTypes: ["time", "dimension"] },
             label: m.canvas_column_dimensions_label(),
           },
           row_dimensions: {
-            type: "multi_fields",
+            type: "multi_fields_format",
             meta: { allowedTypes: ["time", "dimension"] },
             label: m.canvas_row_dimensions_label(),
           },
@@ -342,15 +672,13 @@ export class PivotCanvasComponent extends BaseCanvasComponent<
               ],
             },
           },
+          ...this.presentationOptions(spec, metricsViewSpec),
           ...getCommonOptions(),
         },
         filter: getFilterOptions(true, false),
       };
     } else {
-      const columns = ("columns" in spec && spec.columns) || [];
-      const metricsViewSpec = get(
-        this.parent.metricsView.getMetricsViewFromName(spec.metrics_view),
-      ).metricsView;
+      const columns = "columns" in spec ? fieldNames(spec.columns) : [];
       const measureNames = new Set(
         metricsViewSpec?.measures?.map((m) => m.name as string) || [],
       );
@@ -391,6 +719,7 @@ export class PivotCanvasComponent extends BaseCanvasComponent<
             },
             showInUI: canShowTotalRow && spec.hide_totals_row !== true,
           },
+          ...this.presentationOptions(spec, metricsViewSpec),
           ...getCommonOptions(),
         },
         filter: getFilterOptions(true, false),
@@ -450,8 +779,11 @@ export class PivotCanvasComponent extends BaseCanvasComponent<
 
     let newSpec: PivotSpec | TableSpec;
 
+    // Field entries keep their objects (and so their per-column overrides)
+    // across the switch.
     const commonProperties: ComponentCommonProperties &
       ComponentFilterProperties &
+      TablePresentationProperties &
       Pick<
         PivotSpec,
         | "hide_totals_row"
@@ -467,13 +799,24 @@ export class PivotCanvasComponent extends BaseCanvasComponent<
       hide_totals_col: currentSpec.hide_totals_col,
       totals_row_position: currentSpec.totals_row_position,
       conditional_format: currentSpec.conditional_format,
+      fit_to_width: currentSpec.fit_to_width,
+      wrap: currentSpec.wrap,
+      wrap_headers: currentSpec.wrap_headers,
+      wrap_lines: currentSpec.wrap_lines,
+      sort_by: currentSpec.sort_by,
+      sort_dir: currentSpec.sort_dir,
+      sort_comparison: currentSpec.sort_comparison,
     };
 
     if ("columns" in currentSpec) {
-      const row_dimensions =
-        currentSpec?.columns?.filter((c) => allDimensions.includes(c)) || [];
-      const measures =
-        currentSpec?.columns?.filter((c) => allMeasures.includes(c)) || [];
+      const entries = currentSpec.columns ?? [];
+      // Table columns may carry `align`, which row dimensions do not take.
+      const row_dimensions = normalizeRowDimensionEntries(
+        entries.filter((entry) => allDimensions.includes(fieldName(entry))),
+      );
+      const measures = entries.filter((entry) =>
+        allMeasures.includes(fieldName(entry)),
+      );
 
       newSpec = {
         ...commonProperties,
@@ -486,11 +829,27 @@ export class PivotCanvasComponent extends BaseCanvasComponent<
         ...commonProperties,
         metrics_view: currentSpec.metrics_view,
         columns: [
-          ...(currentSpec?.row_dimensions ?? []),
-          ...(currentSpec?.col_dimensions ?? []),
-          ...(currentSpec?.measures ?? []),
+          ...(currentSpec.row_dimensions ?? []),
+          ...(currentSpec.col_dimensions ?? []).map(stripColumnDimensionKeys),
+          ...(currentSpec.measures ?? []),
         ],
       };
+    }
+
+    // The sorted field may not have survived the switch.
+    if (
+      newSpec.sort_by &&
+      !sortableFieldNames(newSpec).includes(newSpec.sort_by)
+    ) {
+      delete newSpec.sort_by;
+      delete newSpec.sort_dir;
+      delete newSpec.sort_comparison;
+    }
+    if (
+      newSpec.sort_comparison !== undefined &&
+      !(newSpec.sort_by && allMeasures.includes(newSpec.sort_by))
+    ) {
+      delete newSpec.sort_comparison;
     }
 
     const width = parsedDocument.getIn([...parentPath, "width"]);

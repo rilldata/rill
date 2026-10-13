@@ -65,6 +65,7 @@ export const ToolName = {
 
   // Common tools
   NAVIGATE: "navigate",
+  CLICK_UI: "click_ui",
   LIST_SKILLS: "list_skills",
   LOAD_SKILL: "load_skill",
 } as const;

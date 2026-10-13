@@ -404,6 +404,7 @@
         <div class="grow"></div>
         <Button
           type="toolbar"
+          dataAttributes={{ "data-ai-action": "dashboard.start-pivot" }}
           onClick={() => {
             startPivotForTimeseries();
           }}

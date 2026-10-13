@@ -30,6 +30,7 @@ import {
   type MemoryUpdateBlock,
 } from "@rilldata/web-common/features/chat/memory/memory-update-block";
 import { invalidateAIMemories } from "@rilldata/web-common/features/chat/memory/memory-store";
+import { clickUIAction } from "../../ui-actions";
 
 // =============================================================================
 // RENDER MODES
@@ -121,6 +122,11 @@ const TOOL_CONFIGS: Partial<Record<string, ToolConfig>> = {
     createBlock: createSimpleTooCall,
     onCall: handleNavigateToolCall,
   },
+  [ToolName.CLICK_UI]: {
+    renderMode: "block",
+    createBlock: createSimpleTooCall,
+    onResult: handleClickUIToolResult,
+  },
 
   // Memory: render as a "Memory updated" notice and refresh the memory list when the call completes
   [ToolName.UPDATE_MEMORY]: {
@@ -160,6 +166,30 @@ function handleNavigateToolCall(callMessage: V1Message) {
     switch (content.kind) {
       case "file":
         void navigateToFile(addLeadingSlash(content.name));
+    }
+  } catch (err) {
+    console.error(err);
+  }
+}
+
+function handleClickUIToolResult(
+  callMessage: V1Message | undefined,
+  resultMessage: V1Message,
+) {
+  if (
+    !callMessage?.contentData ||
+    resultMessage.contentType === MessageContentType.ERROR
+  )
+    return;
+  try {
+    const content = JSON.parse(callMessage.contentData) as {
+      action_id?: string;
+    };
+    if (!content.action_id) return;
+    if (!clickUIAction(content.action_id)) {
+      console.warn(
+        `[AI UI action] Action is no longer uniquely available: ${content.action_id}`,
+      );
     }
   } catch (err) {
     console.error(err);

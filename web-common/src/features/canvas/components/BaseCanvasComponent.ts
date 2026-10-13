@@ -21,6 +21,7 @@ import type { Interval } from "luxon";
 import type { Component, ComponentType, SvelteComponent } from "svelte";
 import type { Readable, Unsubscriber } from "svelte/store";
 import { derived, get, writable, type Writable } from "svelte/store";
+import { isMap } from "yaml";
 import { mergeFilters } from "../../dashboards/pivot/pivot-merge-filters";
 import {
   createAndExpression,
@@ -415,16 +416,25 @@ export abstract class BaseCanvasComponent<T = ComponentSpec> {
   }
 
   updateProperty(key: AllKeys<T>, value: T[AllKeys<T>]) {
-    const currentSpec = get(this.specStore);
+    this.updateProperties({ [key]: value } as unknown as Partial<T>);
+  }
 
-    const newSpec = { ...currentSpec, [key]: value };
+  // Writes several properties in one YAML update, so dependent keys (such as
+  // a sort field and its direction) never reach the reconciler half-applied.
+  // A key whose value is undefined or empty is removed from the spec.
+  updateProperties(patch: Partial<T>) {
+    const currentSpec = this.specInYAML() ?? get(this.specStore);
 
-    if (value === undefined || value == "") {
-      delete newSpec[key];
+    const newSpec = { ...currentSpec, ...patch };
+
+    for (const [key, value] of Object.entries(patch)) {
+      if (value === undefined || value == "") {
+        delete newSpec[key];
+      }
     }
 
     // If the metrics_view is changed, clear the time_filters and dimension_filters
-    if (key === "metrics_view") {
+    if ("metrics_view" in patch) {
       if ("time_filters" in newSpec) {
         delete newSpec.time_filters;
       }
@@ -442,6 +452,19 @@ export abstract class BaseCanvasComponent<T = ComponentSpec> {
       this.updateYAML(newSpec);
     }
     this.specStore.set(newSpec);
+  }
+
+  // The component's properties as currently written in the file. While
+  // editing, the spec store trails the file by a reconcile: a write built on
+  // the store would drop a previous write the runtime has not echoed back yet,
+  // and would come back with the runtime's alphabetical key order.
+  private specInYAML(): T | undefined {
+    if (!this.parent.fileArtifact || !this.parent.parsedContent) return;
+    const document = get(this.parent.parsedContent);
+    const node: unknown = document.getIn(this.pathInYAML);
+    if (!isMap(node)) return;
+    const spec: unknown = node.toJS(document);
+    return spec as T;
   }
 
   // Sets how this component compares against a previous period:

@@ -1,6 +1,7 @@
 import { createQuery, type CreateQueryResult } from "@tanstack/svelte-query";
 import { derived } from "svelte/store";
 import {
+  type V1DatabaseSchemaInfo,
   type V1TableInfo,
   type V1GetResourceResponse,
   createRuntimeServiceAnalyzeConnectors,
@@ -13,7 +14,8 @@ import {
   createRuntimeServiceGetInstance,
   getRuntimeServiceGetResourceQueryKey,
   runtimeServiceGetResource,
-  createConnectorServiceListDatabaseSchemas,
+  connectorServiceListDatabaseSchemas,
+  getConnectorServiceListDatabaseSchemasQueryKey,
   createConnectorServiceGetTable,
   createConnectorServiceListTablesInfinite,
 } from "@rilldata/web-common/runtime-client";
@@ -99,8 +101,59 @@ export function useIsModelingSupportedForDefaultOlapDriverOLAP(
 }
 
 /**
- * List databases (when `database` is undefined) or schemas for a given database (when provided).
- * The backend returns all schemas across databases; filtering is applied client-side.
+ * Fetches all pages of `ListDatabaseSchemas`.
+ * Pages are flat (database, schema) pairs, so a database's schemas can span pages.
+ */
+export async function fetchAllDatabaseSchemas(
+  client: RuntimeClient,
+  connector: string,
+  signal?: AbortSignal,
+) {
+  const schemas: V1DatabaseSchemaInfo[] = [];
+  let pageToken: string | undefined;
+  do {
+    const res = await connectorServiceListDatabaseSchemas(
+      client,
+      { connector, pageSize: 100, pageToken },
+      { signal },
+    );
+    schemas.push(...(res.databaseSchemas ?? []));
+    pageToken = res.nextPageToken;
+  } while (pageToken);
+  return schemas;
+}
+
+/**
+ * Derives databases (when `database` is undefined) or schemas for a given database (when provided)
+ * from the flat (database, schema) pairs returned by `ListDatabaseSchemas`.
+ */
+export function groupDatabaseSchemas(
+  allSchemas: V1DatabaseSchemaInfo[],
+  database?: string,
+) {
+  const hasEmptyDatabases = allSchemas.every((s) => !s.database);
+  if (database !== undefined) {
+    return hasEmptyDatabases
+      ? [database]
+      : Array.from(
+          new Set(
+            allSchemas
+              .filter((s) => s.database === database)
+              .map((s) => s.databaseSchema ?? ""),
+          ),
+        );
+  }
+
+  return hasEmptyDatabases
+    ? Array.from(new Set(allSchemas.map((s) => s.databaseSchema ?? "")))
+    : Array.from(new Set(allSchemas.map((s) => s.database ?? ""))).filter(
+        Boolean,
+      );
+}
+
+/**
+ * List databases or schemas; see `groupDatabaseSchemas`.
+ * All pages are fetched once and shared across callers via the query key.
  */
 export function useListDatabaseSchemas(
   client: RuntimeClient,
@@ -108,43 +161,16 @@ export function useListDatabaseSchemas(
   database?: string,
   enabled: boolean = true,
 ) {
-  return createConnectorServiceListDatabaseSchemas(
-    client,
-    {
-      connector,
-    },
-    {
-      query: {
-        enabled: !!client.instanceId && !!connector && enabled,
-        select: (data) => {
-          const allSchemas = data.databaseSchemas ?? [];
-
-          if (database !== undefined) {
-            const hasEmptyDatabases = allSchemas.every((s) => !s.database);
-            return hasEmptyDatabases
-              ? [database]
-              : allSchemas
-                  .filter((s) => s.database === database)
-                  .map((s) => s.databaseSchema ?? "");
-          }
-
-          // Derive databases (top-level)
-          const hasEmptyDatabases = allSchemas.every(
-            (schema) => !schema.database,
-          );
-          return hasEmptyDatabases
-            ? Array.from(
-                new Set(
-                  allSchemas.map((schema) => schema.databaseSchema ?? ""),
-                ),
-              )
-            : Array.from(
-                new Set(allSchemas.map((schema) => schema.database ?? "")),
-              ).filter(Boolean);
-        },
-      },
-    },
-  );
+  return createQuery({
+    queryKey: getConnectorServiceListDatabaseSchemasQueryKey(
+      client.instanceId,
+      { connector },
+    ),
+    queryFn: ({ signal }) => fetchAllDatabaseSchemas(client, connector, signal),
+    enabled: !!client.instanceId && !!connector && enabled,
+    select: (allSchemas: V1DatabaseSchemaInfo[]) =>
+      groupDatabaseSchemas(allSchemas, database),
+  });
 }
 
 /**

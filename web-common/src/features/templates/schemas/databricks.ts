@@ -62,6 +62,13 @@ export const databricksSchema: MultiStepFormSchema = {
         "Schema within the catalog (optional; defaults to the workspace default).",
       "x-placeholder": "default",
     },
+    catalog_whitelist: {
+      type: "string",
+      title: "Catalog whitelist",
+      description: "Comma-separated list of catalogs to show",
+      "x-placeholder": "catalog1,catalog2",
+      "x-advanced": true,
+    },
   },
   required: [],
   allOf: [

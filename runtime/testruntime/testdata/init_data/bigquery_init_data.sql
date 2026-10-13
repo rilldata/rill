@@ -299,3 +299,16 @@ UNION ALL
 SELECT 1.0, 3, TIMESTAMP '2019-01-06 00:00:00 UTC', DATE '2019-01-06',
     'iphone', NULL, 'msn.com', NULL, NULL;
 
+-- Views used by information schema tests.
+CREATE OR REPLACE VIEW `rilldata.integration_test.ad_bids_view` AS
+SELECT id, publisher FROM `rilldata.integration_test.ad_bids`;
+
+-- Refresh is disabled to avoid ongoing refresh costs.
+CREATE OR REPLACE MATERIALIZED VIEW `rilldata.integration_test.ad_bids_mv`
+OPTIONS (enable_refresh = false) AS
+SELECT publisher, COUNT(*) AS bids FROM `rilldata.integration_test.ad_bids` GROUP BY publisher;
+
+-- Second dataset used by ListDatabaseSchemas pagination tests.
+CREATE SCHEMA IF NOT EXISTS `rilldata.integration_test_2`;
+GRANT `roles/bigquery.dataViewer` ON SCHEMA `rilldata.integration_test_2`
+TO "serviceAccount:integration-test@rilldata.iam.gserviceaccount.com";

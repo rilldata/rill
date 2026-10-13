@@ -259,13 +259,20 @@
             id={key}
             label={config.label ?? key}
             options={config.meta?.options ?? []}
-            value={$specStore[key] ?? config.meta?.default}
+            value={config.meta?.numeric
+              ? String($specStore[key] ?? config.meta?.default ?? "")
+              : ($specStore[key] ?? config.meta?.default)}
+            placeholder={config.meta?.placeholder ?? ""}
             full={true}
             size="sm"
             sameWidth
             fontSize={12}
             onChange={(newValue) => {
-              component.updateProperty(key, newValue);
+              // Numeric selects store a number in the YAML, not the option string.
+              component.updateProperty(
+                key,
+                config.meta?.numeric ? Number(newValue) : newValue,
+              );
             }}
           />
 
