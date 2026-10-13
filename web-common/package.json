@@ -112,6 +112,7 @@
   "dependencies": {
     "@internationalized/date": "^3.10.1",
     "@tiptap/suggestion": "^3.31.3",
+    "flint-chart": "0.4.1",
     "picomatch": "^4.0.3",
     "vega-embed": "^7.1.0"
   }
