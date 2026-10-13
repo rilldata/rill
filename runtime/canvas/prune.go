@@ -1,15 +1,11 @@
 package canvas
 
 import (
-	"fmt"
 	"regexp"
-	"sort"
 	"strings"
 
-	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/metricsview"
 	"github.com/rilldata/rill/runtime/pkg/pathutil"
-	"google.golang.org/protobuf/proto"
 )
 
 // PruneRendererProperties removes references to fields the viewer can't query from a component's renderer properties.
@@ -21,9 +17,8 @@ import (
 // and true for changed when any property was removed.
 func PruneRendererProperties(renderer string, props map[string]any, timeDimension string, canAccess func(field string) bool) (keep, changed bool) {
 	p := &fieldPruner{
-		props:         props,
-		timeDimension: timeDimension,
-		canAccess:     canAccess,
+		fieldRestrictions: fieldRestrictions{timeDimension: timeDimension, canAccess: canAccess},
+		props:             props,
 	}
 	p.resolveAdhocMeasures()
 
@@ -38,9 +33,9 @@ func PruneRendererProperties(renderer string, props map[string]any, timeDimensio
 		if !p.allowedAt("x.field") || !p.allowedAt("y.field") {
 			return false, true
 		}
-		p.pruneStringList("x.fields")
+		p.pruneFieldList("x.fields")
 		// A multi-measure chart falls back to y.field when y.fields is empty, so it can't render if neither is left.
-		if before, after := p.pruneStringList("y.fields"); before > 0 && after == 0 {
+		if before, after := p.pruneFieldList("y.fields"); before > 0 && after == 0 {
 			if _, ok := pathutil.GetPath(props, "y.field"); !ok {
 				return false, true
 			}
@@ -61,7 +56,7 @@ func PruneRendererProperties(renderer string, props map[string]any, timeDimensio
 		if !p.allowedAt("stage.field") || !p.allowedAt("measure.field") {
 			return false, true
 		}
-		if before, after := p.pruneStringList("measure.fields"); before > 0 && after == 0 {
+		if before, after := p.pruneFieldList("measure.fields"); before > 0 && after == 0 {
 			if _, ok := pathutil.GetPath(props, "measure.field"); !ok {
 				return false, true
 			}
@@ -80,12 +75,12 @@ func PruneRendererProperties(renderer string, props map[string]any, timeDimensio
 			return false, true
 		}
 	case "kpi_grid":
-		if before, after := p.pruneStringList("measures"); before > 0 && after == 0 {
+		if before, after := p.pruneFieldList("measures"); before > 0 && after == 0 {
 			return false, true
 		}
 	case "leaderboard":
-		mBefore, mAfter := p.pruneStringList("measures")
-		dBefore, dAfter := p.pruneStringList("dimensions")
+		mBefore, mAfter := p.pruneFieldList("measures")
+		dBefore, dAfter := p.pruneFieldList("dimensions")
 		if (mBefore > 0 && mAfter == 0) || (dBefore > 0 && dAfter == 0) {
 			return false, true
 		}
@@ -173,8 +168,13 @@ type fieldRestrictions struct {
 	canAccess     func(field string) bool
 }
 
+// restricted reports whether canAccess rejects the field.
+// The primary time dimension and its time grains (e.g. "order_date_rill_TIME_GRAIN_MONTH") are always allowed, since queries never check access to them.
 func (r fieldRestrictions) restricted(field string) bool {
-	return field != "" && field != r.timeDimension && !r.canAccess(field)
+	if field == "" || r.timeDimension != "" && (field == r.timeDimension || strings.HasPrefix(field, r.timeDimension+"_rill_")) {
+		return false
+	}
+	return !r.canAccess(field)
 }
 
 func (r fieldRestrictions) dimensionRestricted(d metricsview.Dimension) bool {
@@ -224,195 +224,10 @@ func (r fieldRestrictions) expressionRestricted(e *metricsview.Expression) bool 
 	return false
 }
 
-// Keep decides which canvas elements PruneRows keeps. A nil function keeps every element of its kind.
-type Keep struct {
-	// Row is called for plain rows and for tab-group rows.
-	Row  func(row *runtimev1.CanvasRow) bool
-	Tab  func(tab *runtimev1.CanvasTab) bool
-	Item func(item *runtimev1.CanvasItem) bool
-}
-
-// PruneRows returns the rows without the elements that keep rejects,
-// and the YAML paths of the rejected elements, such as "rows.1", "rows.0.items.1" or "rows.3.tabs.0.rows.0.items.0".
-// The remaining items in a row keep their relative widths, rescaled to the row's original total.
-// Rows, tabs and tab groups that lose all of their content are removed too; ones that were authored empty are kept.
-// The input rows are not modified; if nothing is rejected, they are returned as is.
-func PruneRows(rows []*runtimev1.CanvasRow, keep Keep) ([]*runtimev1.CanvasRow, []string) {
-	var paths []string
-	res := pruneRows(rows, keep, "rows", &paths)
-	return res, paths
-}
-
-// pruneRows implements PruneRows for rows at the given YAML path prefix, appending the paths of rejected elements to paths.
-func pruneRows(rows []*runtimev1.CanvasRow, keep Keep, prefix string, paths *[]string) []*runtimev1.CanvasRow {
-	initial := len(*paths)
-	var out []*runtimev1.CanvasRow
-	for i, row := range rows {
-		rowPath := fmt.Sprintf("%s.%d", prefix, i)
-		if keep.Row != nil && !keep.Row(row) {
-			*paths = append(*paths, rowPath)
-			continue
-		}
-
-		if tg := row.GetTabGroup(); tg != nil {
-			groupInitial := len(*paths)
-			var tabs []*runtimev1.CanvasTab
-			for t, tab := range tg.Tabs {
-				tabPath := fmt.Sprintf("%s.tabs.%d", rowPath, t)
-				if keep.Tab != nil && !keep.Tab(tab) {
-					*paths = append(*paths, tabPath)
-					continue
-				}
-				tabInitial := len(*paths)
-				tabRows := pruneRows(tab.Rows, keep, tabPath+".rows", paths)
-				if len(*paths) == tabInitial {
-					tabs = append(tabs, tab)
-					continue
-				}
-				if len(tabRows) == 0 {
-					continue
-				}
-				tab = proto.Clone(tab).(*runtimev1.CanvasTab)
-				tab.Rows = tabRows
-				tabs = append(tabs, tab)
-			}
-			if len(*paths) == groupInitial {
-				out = append(out, row)
-				continue
-			}
-			if len(tabs) == 0 {
-				continue
-			}
-			row = proto.Clone(row).(*runtimev1.CanvasRow)
-			row.TabGroup.Tabs = tabs
-			out = append(out, row)
-			continue
-		}
-
-		var items []*runtimev1.CanvasItem
-		for j, item := range row.Items {
-			if keep.Item != nil && !keep.Item(item) {
-				*paths = append(*paths, fmt.Sprintf("%s.items.%d", rowPath, j))
-				continue
-			}
-			items = append(items, item)
-		}
-		if len(items) == len(row.Items) {
-			out = append(out, row)
-			continue
-		}
-		if len(items) == 0 {
-			continue
-		}
-		newRow := proto.Clone(row).(*runtimev1.CanvasRow)
-		newRow.Items = rescaleItemWidths(row.Items, items)
-		out = append(out, newRow)
-	}
-	if len(*paths) == initial {
-		return rows
-	}
-	return out
-}
-
-// StripConditions clears the `if` conditions of the rows, tabs and items, so they aren't sent to viewers.
-// It modifies the rows in place.
-func StripConditions(rows []*runtimev1.CanvasRow) {
-	for _, row := range rows {
-		row.ConditionExpression = ""
-		for _, item := range row.Items {
-			item.ConditionExpression = ""
-		}
-		if tg := row.GetTabGroup(); tg != nil {
-			for _, tab := range tg.Tabs {
-				tab.ConditionExpression = ""
-				StripConditions(tab.Rows)
-			}
-		}
-	}
-}
-
-// Conditions returns the distinct `if` conditions of the rows, tabs and items.
-func Conditions(rows []*runtimev1.CanvasRow) []string {
-	seen := make(map[string]bool)
-	var res []string
-	add := func(condition string) {
-		if condition != "" && !seen[condition] {
-			seen[condition] = true
-			res = append(res, condition)
-		}
-	}
-	var walk func(rows []*runtimev1.CanvasRow)
-	walk = func(rows []*runtimev1.CanvasRow) {
-		for _, row := range rows {
-			add(row.ConditionExpression)
-			for _, item := range row.Items {
-				add(item.ConditionExpression)
-			}
-			if tg := row.GetTabGroup(); tg != nil {
-				for _, tab := range tg.Tabs {
-					add(tab.ConditionExpression)
-					walk(tab.Rows)
-				}
-			}
-		}
-	}
-	walk(rows)
-	return res
-}
-
-// rescaleItemWidths rescales the widths of the kept items so they add up to the total width of all the row's items, preserving their proportions.
-// It uses the largest remainder method so the widths stay whole numbers.
-// If any item has no width (the frontend then splits the row equally), the kept items are returned unchanged.
-func rescaleItemWidths(all, kept []*runtimev1.CanvasItem) []*runtimev1.CanvasItem {
-	var total, keptTotal uint32
-	for _, item := range all {
-		if item.Width == nil || *item.Width == 0 || item.WidthUnit != "" {
-			return kept
-		}
-		total += *item.Width
-	}
-	for _, item := range kept {
-		keptTotal += *item.Width
-	}
-	if keptTotal == 0 || keptTotal == total {
-		return kept
-	}
-
-	type share struct {
-		idx       int
-		width     uint32
-		remainder uint32
-	}
-	shares := make([]share, len(kept))
-	var assigned uint32
-	for i, item := range kept {
-		n := *item.Width * total
-		shares[i] = share{idx: i, width: n / keptTotal, remainder: n % keptTotal}
-		assigned += shares[i].width
-	}
-	byRemainder := make([]share, len(shares))
-	copy(byRemainder, shares)
-	sort.SliceStable(byRemainder, func(i, j int) bool { return byRemainder[i].remainder > byRemainder[j].remainder })
-	for i := 0; assigned < total; i++ {
-		shares[byRemainder[i%len(byRemainder)].idx].width++
-		assigned++
-	}
-
-	res := make([]*runtimev1.CanvasItem, len(kept))
-	for i, item := range kept {
-		item = proto.Clone(item).(*runtimev1.CanvasItem)
-		w := shares[i].width
-		item.Width = &w
-		res[i] = item
-	}
-	return res
-}
-
 // fieldPruner removes restricted field references from a component's renderer properties.
 type fieldPruner struct {
-	props         map[string]any
-	timeDimension string
-	canAccess     func(field string) bool
+	fieldRestrictions
+	props map[string]any
 	// adhoc maps the component's adhoc (ephemeral) measure names to whether all the measures they reference are accessible.
 	adhoc   map[string]bool
 	changed bool
@@ -423,10 +238,7 @@ func (p *fieldPruner) allowed(field string) bool {
 	if allowed, ok := p.adhoc[field]; ok {
 		return allowed
 	}
-	if p.timeDimension != "" && (field == p.timeDimension || strings.HasPrefix(field, p.timeDimension+"_rill_")) {
-		return true
-	}
-	return p.canAccess(field)
+	return !p.restricted(field)
 }
 
 // allowedAt reports whether the field at the path is allowed. An absent or non-string value is allowed.
@@ -438,32 +250,7 @@ func (p *fieldPruner) allowedAt(path string) bool {
 	return p.allowed(field)
 }
 
-// pruneStringList removes restricted fields from the array of field names at the path.
-// It returns the number of entries before and after pruning.
-func (p *fieldPruner) pruneStringList(path string) (before, after int) {
-	raw, ok := pathutil.GetPath(p.props, path)
-	if !ok {
-		return 0, 0
-	}
-	arr, ok := raw.([]any)
-	if !ok {
-		return 0, 0
-	}
-	kept := make([]any, 0, len(arr))
-	for _, v := range arr {
-		if s, ok := v.(string); ok && !p.allowed(s) {
-			continue
-		}
-		kept = append(kept, v)
-	}
-	if len(kept) != len(arr) {
-		setPath(p.props, path, kept)
-		p.changed = true
-	}
-	return len(arr), len(kept)
-}
-
-// pruneFieldList removes restricted fields from a table or pivot field list, whose entries are field names or objects with a "name".
+// pruneFieldList removes restricted fields from the list at the path, whose entries are field names or objects with a "name".
 // It returns the number of entries before and after pruning.
 func (p *fieldPruner) pruneFieldList(path string) (before, after int) {
 	raw, ok := pathutil.GetPath(p.props, path)
@@ -507,14 +294,7 @@ func (p *fieldPruner) dropKeyIfRestricted(path, key string) {
 // dropColorIfRestricted removes a color encoding that references a restricted dimension.
 // Color literals (plain strings) and virtual multi-measure colors ({type: value}) don't reference fields.
 func (p *fieldPruner) dropColorIfRestricted() {
-	raw, ok := p.props["color"]
-	if !ok {
-		return
-	}
-	if _, isString := raw.(string); isString {
-		return
-	}
-	if colorType, ok := pathutil.GetPathString(p.props, "color.type"); ok && colorType == "value" {
+	if colorType, _ := pathutil.GetPathString(p.props, "color.type"); colorType == "value" {
 		return
 	}
 	p.dropKeyIfRestricted("color.field", "color")
@@ -551,7 +331,7 @@ func (p *fieldPruner) resolveAdhocMeasures() {
 		}
 		allowed := true
 		for _, ref := range parsed.Refs() {
-			if !p.canAccess(ref) {
+			if p.restricted(ref) {
 				allowed = false
 				break
 			}

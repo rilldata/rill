@@ -599,11 +599,11 @@ rows:
 	}
 
 	// A token without an 'admin' attribute (e.g. an embed) can't evaluate the costs policy.
-	// The cost table is removed instead of the whole canvas failing, and the margin chart widens to fill the row.
+	// The cost table is removed instead of the whole canvas failing, and the margin chart keeps its width (the frontend widens it to fill the row).
 	res = resolve(map[string]any{"groups": []any{"finance"}}, false)
 	rows = res.Canvas.GetCanvas().State.ValidSpec.Rows
 	require.Len(t, rows[0].Items, 1)
-	require.Equal(t, uint32(12), rows[0].Items[0].GetWidth())
+	require.Equal(t, uint32(8), rows[0].Items[0].GetWidth())
 	require.NotContains(t, res.ReferencedMetricsViews, "costs")
 
 	// The visual editor gets the full canvas, because it maps components back to their YAML positions.
@@ -986,9 +986,9 @@ rows:
 		return res
 	}
 
-	// Priya (finance) doesn't see the admin-only cost table, so the margin KPI fills its row.
+	// Priya (finance) doesn't see the admin-only cost table; the margin KPI keeps its width, and the frontend widens it to fill the row.
 	res := resolve(viewerCtx(priya))
-	require.Equal(t, []string{"0-0(0)", "1-0(12)", "2-0(6) 2-1(6)"}, layout(res.Canvas.GetCanvas().State.ValidSpec.Rows))
+	require.Equal(t, []string{"0-0(0)", "1-0(8)", "2-0(6) 2-1(6)"}, layout(res.Canvas.GetCanvas().State.ValidSpec.Rows))
 	require.Len(t, res.ResolvedComponents, 4)
 	require.NotContains(t, res.ReferencedMetricsViews, "costs")
 
@@ -998,7 +998,7 @@ rows:
 
 	// The embed tenant has no domain or groups; built-in attributes default, so their conditions are false rather than errors.
 	res = resolve(viewerCtx(tenant))
-	require.Equal(t, []string{"0-0(0)", "2-0(12)", "tabs: cohorts"}, layout(res.Canvas.GetCanvas().State.ValidSpec.Rows))
+	require.Equal(t, []string{"0-0(0)", "2-0(6)", "tabs: cohorts"}, layout(res.Canvas.GetCanvas().State.ValidSpec.Rows))
 
 	// A finance admin sees the cost table, but has no plan, so the strict custom attribute hides Cohorts.
 	res = resolve(viewerCtx(financeAdmin))
