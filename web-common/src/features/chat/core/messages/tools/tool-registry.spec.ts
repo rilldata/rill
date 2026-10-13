@@ -26,14 +26,18 @@ describe("click_ui tool", () => {
     const config = getToolConfig(ToolName.CLICK_UI);
 
     expect(config.onCall).toBeUndefined();
-    config.onResult?.(callMessage, {
-      contentType: MessageContentType.ERROR,
-    });
+    config.onResult?.(
+      callMessage,
+      { contentType: MessageContentType.ERROR },
+      "default",
+    );
     expect(onClick).not.toHaveBeenCalled();
 
-    config.onResult?.(callMessage, {
-      contentType: MessageContentType.JSON,
-    });
+    config.onResult?.(
+      callMessage,
+      { contentType: MessageContentType.JSON },
+      "default",
+    );
     expect(onClick).toHaveBeenCalledOnce();
   });
 });

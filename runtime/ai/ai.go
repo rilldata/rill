@@ -55,6 +55,7 @@ func NewRunner(rt *runtime.Runtime, activity *activity.Client) *Runner {
 	RegisterTool(r, &AnalystAgent{Runtime: rt})
 	RegisterTool(r, &DeveloperAgent{Runtime: rt})
 	RegisterTool(r, &FeedbackAgent{Runtime: rt})
+	RegisterTool(r, &UpdateMemory{Runtime: rt})
 
 	RegisterTool(r, &ListMetricsViews{Runtime: rt})
 	RegisterTool(r, &GetMetricsView{Runtime: rt})
@@ -179,6 +180,17 @@ func (r *Runner) Session(ctx context.Context, opts *SessionOptions) (res *Sessio
 		}
 	}
 
+	// Load the owner's memories. They are only loaded for the owner's own sessions, never for shared sessions viewed by others.
+	// Failures are logged and leave memory disabled for the session: memory must never break a chat.
+	var memories []*drivers.AIMemory
+	var memEnabled bool
+	if session.OwnerID == opts.Claims.UserID {
+		memories, memEnabled, err = loadUserMemories(ctx, r.Runtime, catalog, opts.InstanceID, session.UserAgent, opts.Claims)
+		if err != nil {
+			r.Runtime.Logger.Warn("ai: failed to load user memories", zap.String("instance_id", opts.InstanceID), zap.Error(err))
+		}
+	}
+
 	// Setup logger
 	logger := r.Runtime.Logger.Named("ai").With(
 		zap.String("instance_id", opts.InstanceID),
@@ -207,6 +219,8 @@ func (r *Runner) Session(ctx context.Context, opts *SessionOptions) (res *Sessio
 		logger:              logger,
 		activity:            activityClient,
 		projectInstructions: instance.AIInstructions,
+		memoryEnabled:       memEnabled,
+		userMemories:        memories,
 		managedAI:           instance.ResolveAIConnector() == instance.AdminConnector,
 		acquireLLM: func(ctx context.Context) (drivers.AIService, func(), error) {
 			return r.Runtime.AI(ctx, opts.InstanceID)
@@ -533,7 +547,9 @@ type BaseSession struct {
 	logger              *zap.Logger
 	activity            *activity.Client
 	projectInstructions string
-	managedAI           bool // true if completions use the Rill-managed AI connector (billable tokens); false for bring-your-own-model
+	memoryEnabled       bool                // true if memory applies to this session: it is available to the owner (see memoryEnabled) and the owner has it turned on
+	userMemories        []*drivers.AIMemory // the owner's memories, loaded at session creation and refreshed on writes
+	managedAI           bool                // true if completions use the Rill-managed AI connector (billable tokens); false for bring-your-own-model
 	acquireLLM          func(ctx context.Context) (drivers.AIService, func(), error)
 	acquireCatalog      func(ctx context.Context) (drivers.CatalogStore, func(), error)
 
@@ -694,6 +710,27 @@ func (s *BaseSession) WithParent(messageID string) *Session {
 
 func (s *BaseSession) ProjectInstructions() string {
 	return s.projectInstructions
+}
+
+// MemoryEnabled reports whether memory applies to this session: its memories are injected into prompts and new ones may be written.
+// It is false when memory is not available to the owner and when the owner has turned memory off (see loadUserMemories).
+func (s *BaseSession) MemoryEnabled() bool {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	return s.memoryEnabled
+}
+
+// UserMemories returns the owner's memories. It is empty when memory is not enabled.
+func (s *BaseSession) UserMemories() []*drivers.AIMemory {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	return s.userMemories
+}
+
+func (s *BaseSession) setUserMemories(memories []*drivers.AIMemory) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.userMemories = memories
 }
 
 func (s *BaseSession) SetLLM(acquireLLM func(ctx context.Context) (drivers.AIService, func(), error)) {
@@ -1095,6 +1132,7 @@ var nonBillableToolCalls = map[string]bool{
 	AnalystAgentName:   true,
 	DeveloperAgentName: true,
 	FeedbackAgentName:  true,
+	UpdateMemoryName:   true, // bookkeeping about the user, not work on their data
 }
 
 // CallToolWithOptions runs a tool call in the current session and adds it, its result, and all messages from nested calls to the session.
@@ -1687,4 +1725,23 @@ func maybeTruncateMessages(messages []*aiv1.CompletionMessage) []*aiv1.Completio
 // completionMessageID turns a UUID into a truncated ID suitable for use in completion messages (which don't require IDs to be globally unique).
 func completionMessageID(id string) string {
 	return strings.ReplaceAll(id, "-", "")[0:16]
+}
+
+// agentName returns the name of the agent whose call the current call is nested in, or an empty string if there is none.
+func (s *Session) agentName() string {
+	id := s.ParentID
+	for range 100 { // Fail-safe, not expected to reach the limit
+		if id == "" {
+			return ""
+		}
+		msg, ok := s.Message(FilterByID(id))
+		if !ok {
+			return ""
+		}
+		if msg.Type == MessageTypeCall && (msg.Tool == AnalystAgentName || msg.Tool == DeveloperAgentName) {
+			return msg.Tool
+		}
+		id = msg.ParentID
+	}
+	return ""
 }
