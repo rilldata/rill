@@ -1,4 +1,7 @@
-import { maybeGetMetricsResolverQueryFromMessage } from "@rilldata/web-common/features/chat/core/citation-url-utils.ts";
+import {
+  getFieldKindsFromMessage,
+  maybeGetMetricsResolverQueryFromMessage,
+} from "@rilldata/web-common/features/chat/core/citation-url-utils.ts";
 import {
   MessageType,
   ToolName,
@@ -64,6 +67,56 @@ describe("maybeGetMetricsResolverQueryFromMessage", () => {
       where: {
         cond: { op: "eq", exprs: [{ name: "device" }, { val: "mobile" }] },
       },
+    });
+  });
+
+  it("maps a Flint-shaped create_chart call with the kinds from its result", () => {
+    const message = toolCallMessage(ToolName.CREATE_CHART, {
+      chart_spec: {
+        chartType: "Line Chart",
+        encodings: {
+          x: "__time",
+          y: "total_bids",
+          color: { field: "advertiser_name", limit: 5 },
+        },
+      },
+      data: {
+        metrics_view: "bids_metrics",
+        time_range: query.time_range,
+        time_grain: "TIME_GRAIN_WEEK",
+      },
+    });
+    const result: V1Message = {
+      id: "msg-2",
+      role: "assistant",
+      type: MessageType.RESULT,
+      tool: ToolName.CREATE_CHART,
+      contentType: "json",
+      contentData: JSON.stringify({
+        widget: "chart",
+        fields: {
+          __time: { name: "__time", kind: "time" },
+          total_bids: { name: "total_bids", kind: "measure" },
+          advertiser_name: { name: "advertiser_name", kind: "dimension" },
+        },
+      }),
+    };
+    expect(getFieldKindsFromMessage(result)).toEqual({
+      __time: "time",
+      total_bids: "measure",
+      advertiser_name: "dimension",
+    });
+    expect(maybeGetMetricsResolverQueryFromMessage(message, result)).toEqual({
+      metrics_view: "bids_metrics",
+      dimensions: [
+        {
+          name: "__time",
+          compute: { time_floor: { dimension: "__time", grain: "week" } },
+        },
+        { name: "advertiser_name" },
+      ],
+      measures: [{ name: "total_bids" }],
+      time_range: query.time_range,
     });
   });
 

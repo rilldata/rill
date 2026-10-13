@@ -148,6 +148,123 @@ describe("compileFlintSpec", () => {
     expect(Number(compiled.width) * 12).toBeLessThanOrEqual(1200);
   });
 
+  it("defers typography, colors and the color scheme to Rill's theme", () => {
+    const { spec } = compileFlintSpec({
+      spec: {
+        chartType: "Bar Chart",
+        encodings: {
+          x: { field: "publisher" },
+          y: { field: "bid_price_sum" },
+          color: { field: "publisher" },
+        },
+      },
+      rows,
+      fields: deriveFlintFields(["publisher", "bid_price_sum"], metricsView),
+      size: { width: 600, height: 400 },
+      measureFields: ["bid_price_sum"],
+    });
+    const compiled = spec as unknown as {
+      config: Record<string, Record<string, unknown> | undefined>;
+      encoding: { color: { scale?: Record<string, unknown> } };
+    };
+
+    // Flint's font sizes and grey titles would override the theme's, which the renderer passes
+    // as the embed config; so would its tableau10 scheme override the project palette.
+    for (const group of ["axisX", "axisY", "legend"]) {
+      expect(compiled.config[group]?.labelFontSize).toBeUndefined();
+      expect(compiled.config[group]?.titleFontSize).toBeUndefined();
+      expect(compiled.config[group]?.titleColor).toBeUndefined();
+    }
+    expect(compiled.encoding.color.scale?.scheme).toBeUndefined();
+  });
+
+  it("keeps a color scheme the author chose", () => {
+    const { spec } = compileFlintSpec({
+      spec: {
+        chartType: "Bar Chart",
+        encodings: {
+          x: { field: "publisher" },
+          y: { field: "bid_price_sum" },
+          color: { field: "publisher", scheme: "category20" },
+        },
+      },
+      rows,
+      fields: deriveFlintFields(["publisher", "bid_price_sum"], metricsView),
+      size: { width: 600, height: 400 },
+    });
+    const color = (
+      spec as unknown as { encoding: { color: { scale: { scheme: string } } } }
+    ).encoding.color;
+    expect(color.scale.scheme).toBe("category20");
+  });
+
+  it("labels the series of a multi-measure fold with the measures' display names", () => {
+    const { spec, error } = compileFlintSpec({
+      spec: {
+        chartType: "Bar Chart",
+        encodings: {
+          x: { field: "publisher" },
+          y: [{ field: "bid_price_sum" }, { field: "total_records" }],
+        },
+      },
+      rows,
+      fields: deriveFlintFields(
+        ["publisher", "bid_price_sum", "total_records"],
+        metricsView,
+      ),
+      size: { width: 600, height: 400 },
+      measureFields: ["bid_price_sum", "total_records"],
+    });
+
+    expect(error).toBeNull();
+    const values = (
+      spec as unknown as { data: { values: Record<string, unknown>[] } }
+    ).data.values;
+    expect(new Set(values.map((row) => row.__flint_series_key))).toEqual(
+      new Set(["Sum of Bid Price", "Total records"]),
+    );
+  });
+
+  it("spans the box with the panels of a row-faceted chart", () => {
+    const days = ["2024-01-01", "2024-01-02", "2024-01-03"];
+    const { spec, error } = compileFlintSpec({
+      spec: {
+        chartType: "Line Chart",
+        encodings: {
+          x: { field: "timestamp" },
+          y: { field: "bid_price_sum" },
+          row: { field: "publisher" },
+        },
+      },
+      rows: rows.flatMap((row) =>
+        days.map((day, i) => ({
+          ...row,
+          timestamp: `${day}T00:00:00Z`,
+          bid_price_sum: row.bid_price_sum + i * 10,
+        })),
+      ),
+      fields: deriveFlintFields(
+        ["timestamp", "publisher", "bid_price_sum"],
+        metricsView,
+        V1TimeGrain.TIME_GRAIN_DAY,
+      ),
+      size: { width: 1200, height: 600 },
+      measureFields: ["bid_price_sum"],
+    });
+
+    expect(error).toBeNull();
+    const compiled = spec as unknown as {
+      config: {
+        view: { continuousWidth: number };
+        headerRow: { labelAngle: number; labelLimit: number };
+      };
+    };
+    // Each row spans the width, less the room for the y-axis labels and the upright row labels.
+    expect(compiled.config.view.continuousWidth).toBe(980);
+    expect(compiled.config.headerRow.labelAngle).toBe(0);
+    expect(compiled.config.headerRow.labelLimit).toBe(110);
+  });
+
   it("strips Flint's non-standard bookkeeping keys", () => {
     const { spec } = compileBar();
     const keys = Object.keys(spec as unknown as Record<string, unknown>);
@@ -241,6 +358,156 @@ describe("compileFlintSpec", () => {
     const x = (spec as unknown as { encoding: { x: { type: string } } })
       .encoding.x;
     expect(x.type).toBe("temporal");
+  });
+
+  it("labels and formats a waterfall's derived encodings like the measure they sum", () => {
+    const { spec, error } = compileFlintSpec({
+      spec: {
+        chartType: "Waterfall Chart",
+        encodings: { x: { field: "timestamp" }, y: { field: "bid_price_sum" } },
+      },
+      rows: [
+        { timestamp: "2024-01-01T00:00:00Z", bid_price_sum: 1200 },
+        { timestamp: "2024-01-08T00:00:00Z", bid_price_sum: 1450 },
+        { timestamp: "2024-01-15T00:00:00Z", bid_price_sum: 980 },
+      ],
+      fields: deriveFlintFields(
+        ["timestamp", "bid_price_sum"],
+        metricsView,
+        V1TimeGrain.TIME_GRAIN_WEEK,
+      ),
+      size: { width: 600, height: 400 },
+      measureFields: ["bid_price_sum"],
+    });
+
+    expect(error).toBeNull();
+    const layers = (
+      spec as unknown as {
+        layer: {
+          encoding: Record<
+            string,
+            {
+              field?: string;
+              type?: string;
+              title?: string;
+              formatType?: string;
+              axis?: Record<string, unknown>;
+            }
+          >;
+        }[];
+      }
+    ).layer;
+    const sums = layers
+      .map((layer) => layer.encoding.y)
+      .filter((y) => y?.type === "quantitative");
+    expect(sums.length).toBeGreaterThan(1);
+    // Flint sums the measure under its own field names and titles them with the raw measure name;
+    // every encoding on the shared y channel takes the measure's formatter and the display name.
+    for (const y of sums) {
+      expect(y.formatType).toBe("rill_bid_price_sum");
+      expect(y.axis?.format).toBeUndefined();
+      expect(y.title).not.toBe("bid_price_sum");
+    }
+    expect(sums.some((y) => y.title === "Sum of Bid Price")).toBe(true);
+    // The step axis gets the time field's label instead of "timestamp, __wf_lead", and its
+    // category labels are the weeks rather than raw timestamps.
+    const x = layers.map((layer) => layer.encoding.x).find(Boolean);
+    expect(x?.title).toBe("Time");
+    expect(x?.axis?.labelExpr).toContain("timeFormat");
+  });
+
+  it("formats a time field drawn on a discrete axis at its grain", () => {
+    const { spec, error } = compileFlintSpec({
+      spec: {
+        chartType: "Slope Chart",
+        encodings: {
+          x: { field: "timestamp" },
+          y: { field: "bid_price_sum" },
+          color: { field: "publisher" },
+        },
+      },
+      rows: [
+        {
+          timestamp: "2024-01-01T00:00:00Z",
+          publisher: "Yahoo",
+          bid_price_sum: 10,
+        },
+        {
+          timestamp: "2024-02-01T00:00:00Z",
+          publisher: "Yahoo",
+          bid_price_sum: 20,
+        },
+        {
+          timestamp: "2024-01-01T00:00:00Z",
+          publisher: "Google",
+          bid_price_sum: 15,
+        },
+        {
+          timestamp: "2024-02-01T00:00:00Z",
+          publisher: "Google",
+          bid_price_sum: 12,
+        },
+      ],
+      fields: deriveFlintFields(
+        ["timestamp", "publisher", "bid_price_sum"],
+        metricsView,
+        V1TimeGrain.TIME_GRAIN_MONTH,
+      ),
+      size: { width: 600, height: 400 },
+      measureFields: ["bid_price_sum"],
+    });
+
+    expect(error).toBeNull();
+    const encoding = (
+      spec as unknown as {
+        encoding: { x: { type: string; axis?: { labelExpr?: string } } };
+      }
+    ).encoding;
+    expect(encoding.x.type).toBe("ordinal");
+    expect(encoding.x.axis?.labelExpr).toBe(
+      "timeFormat(toDate(datum.value), '%b %Y')",
+    );
+  });
+
+  it("reaches the category axis inside a concatenated chart", () => {
+    // A bar table is a concatenation of panels; each one draws the time field on a nominal y axis.
+    const { spec, error } = compileFlintSpec({
+      spec: {
+        chartType: "Bar Table",
+        encodings: { y: { field: "timestamp" }, x: { field: "bid_price_sum" } },
+      },
+      rows: [
+        { timestamp: "2024-01-01T00:00:00Z", bid_price_sum: 1200 },
+        { timestamp: "2024-02-01T00:00:00Z", bid_price_sum: 1450 },
+        { timestamp: "2024-03-01T00:00:00Z", bid_price_sum: 980 },
+      ],
+      fields: deriveFlintFields(
+        ["timestamp", "bid_price_sum"],
+        metricsView,
+        V1TimeGrain.TIME_GRAIN_MONTH,
+      ),
+      size: { width: 600, height: 400 },
+      measureFields: ["bid_price_sum"],
+    });
+
+    expect(error).toBeNull();
+    const panels = (
+      spec as unknown as {
+        hconcat?: {
+          encoding?: {
+            y?: { field?: string; axis?: { labelExpr?: string } | null };
+          };
+        }[];
+      }
+    ).hconcat;
+    const timeAxes = (panels ?? [])
+      .map((panel) => panel.encoding?.y)
+      .filter((y) => y?.field === "timestamp");
+    expect(timeAxes.length).toBeGreaterThan(0);
+    for (const y of timeAxes) {
+      if (y?.axis === null) continue; // a hidden axis has no labels to format
+      expect(y?.axis?.labelExpr).toContain("timeFormat");
+    }
   });
 
   it("reports an unknown chart type instead of throwing", () => {

@@ -7,13 +7,16 @@
   import ErrorState from "./components/ErrorState.svelte";
   import FullscreenView from "./components/FullscreenView.svelte";
   import Skeleton from "./components/Skeleton.svelte";
-  import { adaptChartResult, type AdaptedChart } from "./lib/adapt";
+  import { adaptResult, type AdaptedChart } from "./lib/adapt";
   import {
+    isFlintResult,
     textContent,
     withChartData,
     type ChartDataPayload,
     type ChartResult,
     type WireChartSpec,
+    type WireFlintChartSpec,
+    type WireFlintInput,
   } from "./lib/contract";
   import {
     controlOptions,
@@ -22,6 +25,13 @@
     topNTarget,
     type ControlState,
   } from "./lib/controls";
+  import {
+    describeFlintView,
+    flintControlOptions,
+    flintTopNTarget,
+    patchFlintInput,
+  } from "./lib/flint-controls";
+  import { buildFlintPanel } from "./lib/flint-options";
   import { HostSession } from "./lib/host.svelte";
   import { setLocaleFromHost } from "./lib/i18n";
   import { inlineChartHeight } from "./lib/sizing";
@@ -51,8 +61,11 @@
   // Raw: these objects feed the chart spec and must not be proxied (see HostSession).
   let controls = $state.raw<ControlState>({});
   let dataOverride = $state.raw<
-    { spec: WireChartSpec; payload: ChartDataPayload } | undefined
+    | { patched: WireChartSpec | WireFlintInput; payload: ChartDataPayload }
+    | undefined
   >(undefined);
+  // Flint charts: the presentation controls' edit of the chart spec, compiled client-side.
+  let presentationSpec = $state.raw<WireFlintChartSpec | undefined>(undefined);
   let refreshing = $state(false);
   let refreshError = $state<string | undefined>(undefined);
   let requestSeq = 0;
@@ -73,6 +86,16 @@
   $effect(() => {
     locale = setLocaleFromHost(session.hostContext?.locale);
   });
+  // A new tool result starts over: the edits belonged to the previous one.
+  $effect(() => {
+    void session.toolResult;
+    untrack(() => {
+      controls = {};
+      dataOverride = undefined;
+      presentationSpec = undefined;
+      refreshError = undefined;
+    });
+  });
 
   onMount(() => {
     void session.connect();
@@ -88,8 +111,28 @@
   const effectiveResult = $derived.by((): ChartResult | undefined => {
     if (!baseResult) return undefined;
     if (!dataOverride) return baseResult;
-    return withChartData(baseResult, dataOverride.spec, dataOverride.payload);
+    return withChartData(
+      baseResult,
+      dataOverride.patched,
+      dataOverride.payload,
+    );
   });
+  const timeDimension = $derived(baseResult?.metrics_view?.time_dimension);
+  const timeRange = $derived(
+    baseResult
+      ? (baseResult.resolved_time_range ??
+          (isFlintResult(baseResult)
+            ? baseResult.input.data.time_range
+            : baseResult.spec.time_range))
+      : undefined,
+  );
+  /** The Flint chart spec in effect: the presentation edit, else the (refreshed) result's. */
+  const currentFlintSpec = $derived(
+    presentationSpec ??
+      (effectiveResult && isFlintResult(effectiveResult)
+        ? effectiveResult.input.chart_spec
+        : undefined),
+  );
 
   const view = $derived.by((): ViewState => {
     switch (session.status) {
@@ -118,9 +161,10 @@
         : { kind: "loading" };
     }
     try {
-      const chart = adaptChartResult(effectiveResult, {
+      const chart = adaptResult(effectiveResult, {
         isDark: applied.isDark,
         locale,
+        chartSpec: presentationSpec,
       });
       if (chart.rowCount === 0)
         return { kind: "empty", openUrl: chart.openUrl };
@@ -143,11 +187,22 @@
 
   const availableControls = $derived.by(() => {
     if (!baseResult || !session.canCallServerTools) return undefined;
+    const smallestGrain = baseResult.metrics_view?.smallest_time_grain;
+    if (isFlintResult(baseResult)) {
+      if (!currentFlintSpec) return undefined;
+      return flintControlOptions(
+        currentFlintSpec,
+        baseResult.fields,
+        timeDimension,
+        timeRange,
+        smallestGrain,
+      );
+    }
     return controlOptions(
       baseResult.chart_type,
       baseResult.spec,
-      baseResult.resolved_time_range ?? baseResult.spec.time_range,
-      baseResult.metrics_view?.smallest_time_grain,
+      timeRange,
+      smallestGrain,
     );
   });
 
@@ -155,50 +210,100 @@
   // The result's spec holds the top-N limit the backend applied, defaults and caps included.
   const currentControls = $derived.by((): ControlState => {
     if (!baseResult) return {};
+    const topN = isFlintResult(baseResult)
+      ? currentFlintSpec &&
+        flintTopNTarget(currentFlintSpec, baseResult.fields, timeDimension)
+          ?.limit
+      : topNTarget(baseResult.chart_type, baseResult.spec)?.limit;
     return {
       grain: controls.grain ?? effectiveResult?.time_grain,
-      topN:
-        controls.topN ??
-        topNTarget(baseResult.chart_type, baseResult.spec)?.limit,
+      topN: controls.topN ?? topN,
       comparison:
         controls.comparison ??
         (view.kind === "ready" ? view.chart.hasComparison : false),
     };
   });
 
+  // The presentation controls are built only when they are shown: Flint ranks and test-compiles
+  // the candidate chart types, which is cheap but not free.
+  const panel = $derived.by(() => {
+    if (view.kind !== "ready" || view.chart.engine !== "flint")
+      return undefined;
+    if (!session.isFullscreen) return undefined;
+    // Chart-type choices come from the result's own spec so they stay put across switches.
+    const base =
+      effectiveResult && isFlintResult(effectiveResult)
+        ? effectiveResult.input.chart_spec
+        : view.chart.chartSpec;
+    return buildFlintPanel(
+      view.chart.chartSpec,
+      view.chart.flint,
+      view.chart.rows,
+      base,
+    );
+  });
+
+  function currentDescription(): string | undefined {
+    if (view.kind !== "ready") return undefined;
+    const chart = view.chart;
+    return chart.engine === "flint"
+      ? describeFlintView(
+          chart.title,
+          chart.chartSpec,
+          currentControls,
+          chart.timeRangeLabel,
+        )
+      : describeView(chart.title, currentControls, chart.timeRangeLabel);
+  }
+
   async function applyControls(next: ControlState) {
-    if (!baseResult) return;
+    if (!baseResult || !effectiveResult) return;
     controls = next;
-    const range = baseResult.resolved_time_range ?? baseResult.spec.time_range;
-    const spec = patchSpec(baseResult.spec, baseResult.chart_type, next, range);
+    // Rill Cloud's unified MCP server routes every call by a `project` argument, which it
+    // strips before forwarding; the argument is echoed from the original `create_chart` input.
+    const project = session.toolInput?.project;
+    let args: Record<string, unknown>;
+    let patched: WireChartSpec | WireFlintInput;
+    if (isFlintResult(baseResult) && isFlintResult(effectiveResult)) {
+      const input = patchFlintInput(
+        effectiveResult.input,
+        currentFlintSpec ?? effectiveResult.input.chart_spec,
+        next,
+        timeRange,
+        baseResult.fields,
+        timeDimension,
+      );
+      patched = input;
+      args = { chart_spec: input.chart_spec, data: input.data };
+    } else {
+      const spec = patchSpec(
+        baseResult.spec as WireChartSpec,
+        baseResult.chart_type as never,
+        next,
+        timeRange,
+      );
+      patched = spec;
+      args = { chart_type: baseResult.chart_type, spec };
+    }
     const seq = ++requestSeq;
     refreshing = true;
     refreshError = undefined;
     try {
-      // Rill Cloud's unified MCP server routes every call by a `project` argument, which it
-      // strips before forwarding; the argument is echoed from the original `create_chart` input.
-      const project = session.toolInput?.project;
       const response = await session.callServerTool("chart_data", {
         ...(typeof project === "string" && { project }),
-        chart_type: baseResult.chart_type,
-        spec,
+        ...args,
       });
       if (seq !== requestSeq) return;
       if (response.isError) {
         throw new Error(textContent(response) || "chart_data failed");
       }
       const payload = (response.structuredContent ?? {}) as ChartDataPayload;
-      dataOverride = { spec, payload };
+      dataOverride = { patched, payload };
+      // The refreshed input carries the presentation edits the request was built from.
+      presentationSpec = undefined;
       // `view` has already been derived from the override at this point.
-      if (view.kind === "ready") {
-        session.updateModelContext(
-          describeView(
-            view.chart.title,
-            currentControls,
-            view.chart.timeRangeLabel,
-          ),
-        );
-      }
+      const description = currentDescription();
+      if (description) session.updateModelContext(description);
     } catch (error) {
       if (seq !== requestSeq) return;
       console.warn("rill chart widget: chart_data call failed", error);
@@ -206,6 +311,12 @@
     } finally {
       if (seq === requestSeq) refreshing = false;
     }
+  }
+
+  function applyPresentation(next: WireFlintChartSpec) {
+    presentationSpec = next;
+    const description = currentDescription();
+    if (description) session.updateModelContext(description);
   }
 
   function openLink(url: string | undefined) {
@@ -221,6 +332,7 @@
     safeAreaInsets={session.hostContext?.safeAreaInsets}
     controls={availableControls}
     controlState={currentControls}
+    {panel}
     {refreshing}
     {refreshError}
     openUrl={session.canOpenLinks ? view.chart.openUrl : undefined}
@@ -228,6 +340,7 @@
       openLink(view.kind === "ready" ? view.chart.openUrl : undefined)}
     onExit={() => void session.requestDisplayMode("inline")}
     onControlsChange={(next) => void applyControls(next)}
+    onPresentationChange={applyPresentation}
   />
 {:else}
   <div class="widget">

@@ -52,7 +52,8 @@ export function fakeHostPage(options: FakeHostOptions): string {
         locale: options.locale || "en-US",
         width: options.width || 640,
       };
-      const DATA_KEYS = ["time_grain", "data", "fields", "domain_values", "totals",
+      const DATA_KEYS = ["time_grain", "data", "fields", "semantic_types", "field_display_names",
+        "domain_values", "totals",
         "resolved_time_range", "resolved_comparison_time_range", "truncated", "rows_truncated",
         "truncation_warning"];
       window.__messages = [];

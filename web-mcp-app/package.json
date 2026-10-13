@@ -8,6 +8,7 @@
     "build": "vite build && node scripts/check-size.mjs",
     "dev": "vite build --watch --mode development",
     "harness": "vite --open /harness/index.html",
+    "generate:catalog": "node scripts/generate-flint-catalog.mjs",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:e2e": "playwright test",

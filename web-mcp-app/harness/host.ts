@@ -58,6 +58,8 @@ const DATA_KEYS = [
   "time_grain",
   "data",
   "fields",
+  "semantic_types",
+  "field_display_names",
   "domain_values",
   "totals",
   "resolved_time_range",

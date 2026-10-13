@@ -12,10 +12,10 @@ import {
   topNChoices,
   topNTarget,
 } from "./controls";
-import type { ChartResult } from "./contract";
+import type { RillChartResult } from "./contract";
 
 const result = (fixture: { result: { structuredContent?: unknown } }) =>
-  fixture.result.structuredContent as ChartResult;
+  fixture.result.structuredContent as RillChartResult;
 
 const week = { start: "2023-09-09T00:00:00Z", end: "2023-09-16T00:00:00Z" };
 

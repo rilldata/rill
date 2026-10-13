@@ -429,3 +429,157 @@ func mapKeys(m map[string]any) []string {
 	}
 	return keys
 }
+
+// flintBarChartArgs are create_chart arguments in the Flint shape external clients use (see CreateChart.MCPSpec).
+func flintBarChartArgs() ai.CreateChartArgs {
+	return ai.CreateChartArgs{
+		"chart_spec": map[string]any{
+			"chartType": "Bar Chart",
+			"encodings": map[string]any{
+				"x": map[string]any{"field": "advertiser_name", "limit": 2, "sortBy": "y", "sortOrder": "descending"},
+				"y": "total_bids",
+			},
+		},
+		"data": map[string]any{
+			"metrics_view": "bids_metrics",
+			"time_range":   map[string]any{"start": "2024-01-01T00:00:00Z", "end": "2024-01-08T00:00:00Z"},
+		},
+	}
+}
+
+// TestCreateChartFlint checks the Flint shape of the arguments: the result echoes the effective input (chart spec with the applied
+// limits, data block with the resolved grain), carries the chart compiler's semantic types and display names next to the rows,
+// titles the chart from the bound fields, and reports bad chart types with the valid names.
+func TestCreateChartFlint(t *testing.T) {
+	rt, instanceID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
+		Files:       createChartTestFiles("theme: brand\n"),
+		FrontendURL: "https://ui.rilldata.com/demo/bids",
+	})
+	testruntime.RequireReconcileState(t, rt, instanceID, 4, 0, 0)
+
+	s := newChartSession(t, rt, instanceID, "claude-ai/1.0")
+
+	var res *ai.CreateChartResult
+	toolRes, err := s.CallTool(t.Context(), ai.RoleUser, ai.CreateChartName, &res, flintBarChartArgs())
+	require.NoError(t, err)
+
+	require.Equal(t, "chart", res.Widget)
+	require.Equal(t, "Bar Chart", res.ChartType)
+	require.Nil(t, res.Spec, "the in-app spec is not part of a Flint result")
+	require.Equal(t, "Chart created successfully: Bar Chart", res.Message)
+	require.Equal(t, "Total Bids by Advertiser Name", res.Title)
+
+	// The effective input: the chart spec with the applied limit, the rest of the encodings as given
+	require.NotNil(t, res.Input)
+	require.Equal(t, "Bar Chart", res.Input.ChartSpec["chartType"])
+	encodings := res.Input.ChartSpec["encodings"].(map[string]any)
+	require.EqualValues(t, 2, encodings["x"].(map[string]any)["limit"])
+	require.Equal(t, "y", encodings["x"].(map[string]any)["sortBy"])
+	require.Equal(t, "total_bids", encodings["y"], "a plain field without a top-N is echoed as is")
+	require.Equal(t, "bids_metrics", res.Input.Data["metrics_view"])
+	require.NotContains(t, res.Input.Data, "time_grain", "no time field is bound")
+
+	// Top 2 advertisers by total bids, nulls excluded, in the top-N order
+	require.Equal(t, []any{"Acme", "Beta"}, res.DomainValues["advertiser_name"])
+	require.Len(t, res.Data, 2)
+	require.Equal(t, "Acme", res.Data[0]["advertiser_name"])
+	require.EqualValues(t, 15, res.Data[0]["total_bids"])
+	require.True(t, res.Truncated)
+	require.Equal(t, "dimension", res.Fields["advertiser_name"].Kind)
+	require.Equal(t, "measure", res.Fields["total_bids"].Kind)
+
+	// The chart compiler's inputs: an integer measure is a Count, a dimension a Category
+	require.Equal(t, map[string]string{"advertiser_name": "Category", "total_bids": "Count"}, res.SemanticTypes)
+	require.Equal(t, map[string]string{"advertiser_name": "Advertiser Name", "total_bids": "Total Bids"}, res.FieldDisplayNames)
+
+	require.Equal(t, "#4f46e5", res.Theme["primaryColorRaw"])
+	require.Equal(t, fmt.Sprintf("https://ui.rilldata.com/demo/bids/-/ai/%s/message/%s/-/open", s.ID(), toolRes.Call.ID), res.OpenURL)
+	requireValidChartResult(t, res)
+
+	data, err := json.MarshalIndent(res, "", "  ")
+	require.NoError(t, err)
+	t.Logf("create_chart result for a Flint call:\n%s", data)
+	var keys map[string]any
+	require.NoError(t, json.Unmarshal(data, &keys))
+	for _, k := range []string{"widget", "chart_type", "input", "message", "title", "metrics_view", "data", "fields", "semantic_types", "field_display_names", "domain_values", "resolved_time_range", "theme", "open_url", "truncated"} {
+		require.Contains(t, keys, k)
+	}
+	require.NotContains(t, keys, "spec")
+
+	// A time series with a comparison and a headline: the time field is floored at the grain, its semantic type follows the grain,
+	// the comparison values take the measure's type (here the caller's override) and a "(previous period)" display name.
+	var line *ai.CreateChartResult
+	_, err = s.CallTool(t.Context(), ai.RoleUser, ai.CreateChartName, &line, ai.CreateChartArgs{
+		"chart_spec": map[string]any{
+			"chartType": "Line Chart",
+			"title":     "  Bids per day  ",
+			"encodings": map[string]any{"x": "event_time", "y": "total_bids", "color": "device_os"},
+		},
+		"data": map[string]any{
+			"metrics_view":          "bids_metrics",
+			"time_range":            map[string]any{"start": "2024-01-02T00:00:00Z", "end": "2024-01-04T00:00:00Z"},
+			"comparison_time_range": map[string]any{"start": "2023-12-31T00:00:00Z", "end": "2024-01-02T00:00:00Z"},
+		},
+		"semantic_types": map[string]any{"total_bids": "Quantity"},
+	})
+	require.NoError(t, err)
+	require.Equal(t, "Bids per day", line.Title, "the headline wins")
+	require.Equal(t, "TIME_GRAIN_DAY", line.TimeGrain, "the grain defaults to day")
+	require.Equal(t, "TIME_GRAIN_DAY", line.Input.Data["time_grain"])
+	require.EqualValues(t, 10, line.Input.ChartSpec["encodings"].(map[string]any)["color"].(map[string]any)["limit"], "a series channel defaults to 10")
+	require.Equal(t, "Date", line.SemanticTypes["event_time"])
+	require.Equal(t, "Quantity", line.SemanticTypes["total_bids"], "the caller's override wins")
+	require.Equal(t, "Quantity", line.SemanticTypes["total_bids_prev"])
+	require.Equal(t, "Category", line.SemanticTypes["device_os"])
+	require.Equal(t, "Time", line.FieldDisplayNames["event_time"])
+	require.Equal(t, "Total Bids (previous period)", line.FieldDisplayNames["total_bids_prev"])
+	require.Equal(t, "time", line.Fields["event_time"].Kind)
+	require.Contains(t, line.Data[0], "total_bids_prev")
+	require.Equal(t, "2024-01-02T00:00:00Z", line.Data[0]["event_time"])
+	require.NotNil(t, line.ResolvedComparisonTimeRange)
+
+	// Without a headline, a time field on x reads "over Time" and a series dimension "split by"
+	var area *ai.CreateChartResult
+	_, err = s.CallTool(t.Context(), ai.RoleUser, ai.CreateChartName, &area, ai.CreateChartArgs{
+		"chart_spec": map[string]any{"chartType": "Area Chart", "encodings": map[string]any{"x": "event_time", "y": "total_bids", "color": "device_os"}},
+		"data":       map[string]any{"metrics_view": "bids_metrics", "time_range": map[string]any{"start": "2024-01-01T00:00:00Z", "end": "2024-01-08T00:00:00Z"}, "time_grain": "TIME_GRAIN_MONTH"},
+	})
+	require.NoError(t, err)
+	require.Equal(t, "Total Bids over Time split by Device Os", area.Title)
+	require.Equal(t, "YearMonth", area.SemanticTypes["event_time"])
+
+	// Errors name the valid chart types and channels so the model can repair the call
+	_, err = s.CallTool(t.Context(), ai.RoleUser, ai.CreateChartName, &res, ai.CreateChartArgs{
+		"chart_spec": map[string]any{"chartType": "Sankey", "encodings": map[string]any{"x": "advertiser_name", "y": "total_bids"}},
+		"data":       flintBarChartArgs()["data"],
+	})
+	require.ErrorContains(t, err, `unknown chart type "Sankey"`)
+	require.ErrorContains(t, err, "Waterfall Chart")
+	_, err = s.CallTool(t.Context(), ai.RoleUser, ai.CreateChartName, &res, ai.CreateChartArgs{
+		"chart_spec": map[string]any{"chartType": "Bar Chart", "encodings": map[string]any{"x": "advertiser_name", "y": "total_bids", "goal": "bid_count"}},
+		"data":       flintBarChartArgs()["data"],
+	})
+	require.ErrorContains(t, err, `does not accept channel "goal"`)
+	_, err = s.CallTool(t.Context(), ai.RoleUser, ai.CreateChartName, &res, ai.CreateChartArgs{
+		"chart_spec": map[string]any{"chartType": "Bar Chart", "encodings": map[string]any{"x": "publisher", "y": "total_bids"}},
+		"data":       flintBarChartArgs()["data"],
+	})
+	require.ErrorContains(t, err, `field "publisher" on channel "x" not found`)
+
+	// chart_data takes the Flint shape too and returns the data section with the compiler inputs
+	var dataRes *ai.ChartDataResult
+	_, err = s.CallTool(t.Context(), ai.RoleUser, ai.ChartDataName, &dataRes, ai.ChartDataArgs(flintBarChartArgs()))
+	require.NoError(t, err)
+	require.Len(t, dataRes.Data, 2)
+	require.Equal(t, "Category", dataRes.SemanticTypes["advertiser_name"])
+	require.Equal(t, "Total Bids", dataRes.FieldDisplayNames["total_bids"])
+
+	// The in-app client is not offered the Flint shape, but a call in that shape still echoes the input without data
+	rill := newChartSession(t, rt, instanceID, "rill/1.0")
+	var inApp *ai.CreateChartResult
+	_, err = rill.CallTool(t.Context(), ai.RoleUser, ai.CreateChartName, &inApp, flintBarChartArgs())
+	require.NoError(t, err)
+	require.Nil(t, inApp.ChartDataResult)
+	require.Nil(t, inApp.Spec)
+	require.Equal(t, "Bar Chart", inApp.Input.ChartSpec["chartType"])
+}

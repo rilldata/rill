@@ -384,6 +384,130 @@ test("localizes the actions from the host locale", async ({ page }) => {
   ).toBeVisible();
 });
 
+const flintBar = loadFixture("flint_bar_chart");
+
+test("re-queries a Flint chart through chart_data with the Flint arguments", async ({
+  page,
+}) => {
+  const { frame, errors } = await mountWidget(page, { fixture: flintBar });
+  await expect(frame.locator("canvas").first()).toBeVisible({
+    timeout: 15_000,
+  });
+  await frame.getByRole("button", { name: "Fullscreen" }).click();
+
+  const topValues = frame.getByRole("radiogroup", { name: "Top values" });
+  await expect(topValues).toBeVisible();
+  // The limit the server put in effect (10) is selected.
+  await expect(
+    topValues.getByRole("radio", { name: "10", exact: true }),
+  ).toHaveAttribute("aria-checked", "true");
+  await topValues.getByRole("radio", { name: "5", exact: true }).click();
+  await expect
+    .poll(() => sentMessages(page, "tools/call"))
+    .toEqual([
+      expect.objectContaining({
+        params: expect.objectContaining({
+          name: "chart_data",
+          arguments: {
+            chart_spec: expect.objectContaining({
+              chartType: "Bar Chart",
+              encodings: expect.objectContaining({
+                x: expect.objectContaining({
+                  field: "advertiser_name",
+                  limit: 5,
+                }),
+              }),
+            }),
+            data: expect.objectContaining({ metrics_view: "bids_metrics" }),
+          },
+        }),
+      }),
+    ]);
+  await expect
+    .poll(() => sentMessages(page, "ui/update-model-context"), {
+      timeout: 5_000,
+    })
+    .toEqual([
+      expect.objectContaining({
+        params: expect.objectContaining({
+          content: [
+            {
+              type: "text",
+              text: "Chart now shows Total Bids by Advertiser Name: Bar Chart with x = advertiser_name, y = total_bids; time grain n/a, top 5 values, comparison off, Sep 9 – Sep 15, 2023.",
+            },
+          ],
+        }),
+      }),
+    ]);
+  await expect(frame.locator("canvas").first()).toBeVisible();
+  expect(errors).toEqual([]);
+});
+
+test("recompiles a Flint chart client-side when a presentation control changes", async ({
+  page,
+}) => {
+  const { frame, errors } = await mountWidget(page, { fixture: flintBar });
+  await expect(frame.locator("canvas").first()).toBeVisible({
+    timeout: 15_000,
+  });
+  await frame.getByRole("button", { name: "Fullscreen" }).click();
+
+  const chartTypes = frame.getByRole("radiogroup", { name: "Chart type" });
+  await expect(chartTypes).toBeVisible();
+  await expect(
+    chartTypes.getByRole("radio", { name: "Bar Chart", exact: true }),
+  ).toHaveAttribute("aria-checked", "true");
+  const alternativeName =
+    (await chartTypes.getByRole("radio").nth(1).textContent())?.trim() ?? "";
+  expect(alternativeName).not.toBe("");
+  await chartTypes
+    .getByRole("radio", { name: alternativeName, exact: true })
+    .click();
+  // The list stays put: the result's type first, the chosen alternative selected.
+  await expect(
+    chartTypes.getByRole("radio", { name: alternativeName, exact: true }),
+  ).toHaveAttribute("aria-checked", "true");
+  await expect(chartTypes.getByRole("radio").first()).toHaveText("Bar Chart");
+
+  // No server round trip: the chart is recompiled locally and the model is told.
+  await expect
+    .poll(() => sentMessages(page, "ui/update-model-context"), {
+      timeout: 5_000,
+    })
+    .toEqual([
+      expect.objectContaining({
+        params: expect.objectContaining({
+          content: [
+            {
+              type: "text",
+              text: expect.stringContaining(
+                `Chart now shows Total Bids by Advertiser Name: ${alternativeName} with`,
+              ),
+            },
+          ],
+        }),
+      }),
+    ]);
+  expect(await sentMessages(page, "tools/call")).toEqual([]);
+  await expect(frame.locator("canvas").first()).toBeVisible({
+    timeout: 15_000,
+  });
+  expect(errors).toEqual([]);
+});
+
+test("renders the Flint comparison fold with its caption", async ({ page }) => {
+  const { frame, errors } = await mountWidget(page, {
+    fixture: loadFixture("flint_line_comparison"),
+  });
+  await expect(frame.locator("canvas").first()).toBeVisible({
+    timeout: 15_000,
+  });
+  await expect(
+    frame.getByText("vs. previous period", { exact: false }),
+  ).toBeVisible();
+  expect(errors).toEqual([]);
+});
+
 const renderable = readdirSync(fixturesDir)
   .filter((file) => file.endsWith(".json"))
   .map((file) => file.replace(".json", ""))
@@ -396,8 +520,9 @@ for (const name of renderable) {
     });
     const canvas = frame.locator("canvas").first();
     await expect(canvas).toBeVisible({ timeout: 15_000 });
-    const box = await canvas.boundingBox();
-    expect(box?.width ?? 0).toBeGreaterThan(0);
+    await expect
+      .poll(async () => (await canvas.boundingBox())?.width ?? 0)
+      .toBeGreaterThan(0);
     expect(errors).toEqual([]);
   });
 }

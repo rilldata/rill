@@ -56,10 +56,12 @@ type CreateChartArgs map[string]any
 // Those fields are omitted when empty, so the in-app result keeps its old shape plus widget.
 type CreateChartResult struct {
 	// Widget selects the mode of the MCP Apps widget bundle.
-	Widget    string         `json:"widget"`
-	ChartType string         `json:"chart_type"`
-	Spec      map[string]any `json:"spec"`
-	Message   string         `json:"message"`
+	Widget    string `json:"widget"`
+	ChartType string `json:"chart_type"`
+	// Spec is the chart spec of the in-app shape; Input is the effective input of the Flint shape (see ChartInput). One of the two is set.
+	Spec    map[string]any `json:"spec,omitempty"`
+	Input   *ChartInput    `json:"input,omitempty"`
+	Message string         `json:"message"`
 
 	Title       string            `json:"title,omitempty"`
 	MetricsView *ChartMetricsView `json:"metrics_view,omitempty"`
@@ -84,13 +86,17 @@ type ChartMetricsView struct {
 // is omitted while an empty one is kept, and the inferred output schema keeps it optional, which the MCP server's output validation
 // needs for in-app results, whose embedded ChartDataResult is nil.
 type ChartDataResult struct {
-	TimeGrain                   string                 `json:"time_grain,omitempty"`
-	Data                        []map[string]any       `json:"data,omitzero"`
-	Fields                      map[string]*ChartField `json:"fields,omitempty"`
-	DomainValues                map[string][]any       `json:"domain_values,omitempty"`
-	Totals                      map[string]any         `json:"totals,omitempty"`
-	ResolvedTimeRange           *chartquery.TimeRange  `json:"resolved_time_range,omitempty"`
-	ResolvedComparisonTimeRange *chartquery.TimeRange  `json:"resolved_comparison_time_range,omitempty"`
+	TimeGrain string                 `json:"time_grain,omitempty"`
+	Data      []map[string]any       `json:"data,omitzero"`
+	Fields    map[string]*ChartField `json:"fields,omitempty"`
+	// SemanticTypes and FieldDisplayNames are the per-field inputs of the Flint chart compiler (see chartSemantics),
+	// including the comparison values of the measures when a comparison is set.
+	SemanticTypes               map[string]string     `json:"semantic_types,omitempty"`
+	FieldDisplayNames           map[string]string     `json:"field_display_names,omitempty"`
+	DomainValues                map[string][]any      `json:"domain_values,omitempty"`
+	Totals                      map[string]any        `json:"totals,omitempty"`
+	ResolvedTimeRange           *chartquery.TimeRange `json:"resolved_time_range,omitempty"`
+	ResolvedComparisonTimeRange *chartquery.TimeRange `json:"resolved_comparison_time_range,omitempty"`
 	// Truncated reports any truncation (top-N or rows); RowsTruncated reports that rows were cut,
 	// in which case a temporal chart keeps its newest buckets (see chartquery.Output).
 	Truncated         bool   `json:"truncated,omitempty"`
@@ -112,6 +118,8 @@ type ChartField struct {
 	LowerIsBetter  bool           `json:"lower_is_better,omitempty"`
 }
 
+// Spec is the in-app definition of the tool: Rill's own chart types and spec vocabulary, which the in-app chat renders itself.
+// External MCP clients get the Flint shape instead (see MCPSpec).
 func (t *CreateChart) Spec() *mcp.Tool {
 	return &mcp.Tool{
 		Name:        CreateChartName,
@@ -129,6 +137,15 @@ func (t *CreateChart) Spec() *mcp.Tool {
 		},
 		InputSchema: chartsInputSchema(),
 	}
+}
+
+// MCPSpec is the definition advertised on the MCP server: the Flint shape of the arguments (a chart spec of chart type and
+// channel bindings plus a data block naming the metrics view), described from the embedded chart catalog. See chart_flint.go.
+func (t *CreateChart) MCPSpec() *mcp.Tool {
+	spec := t.Spec()
+	spec.Description = flintCreateChartDescription()
+	spec.InputSchema = flintChartsInputSchema()
+	return spec
 }
 
 func (t *CreateChart) CheckAccess(ctx context.Context) (bool, error) {
@@ -158,6 +175,7 @@ func (t *CreateChart) Handler(ctx context.Context, args CreateChartArgs) (*Creat
 		Widget:    chartWidget,
 		ChartType: req.chartType,
 		Spec:      req.spec,
+		Input:     req.input,
 		Message:   fmt.Sprintf("Chart created successfully: %s", req.chartType),
 	}
 
@@ -175,10 +193,15 @@ func (t *CreateChart) Handler(ctx context.Context, args CreateChartArgs) (*Creat
 	if err != nil {
 		return nil, err
 	}
-	res.Spec = specWithLimits(req.spec, limits)
-	res.Title = chartTitle(req.parsed, res.Fields)
+	if req.flint != nil {
+		res.Input = flintInputWithLimits(req.input, limits, res.TimeGrain)
+		res.Title = flintTitle(req.flint, req.input.ChartSpec, res.Fields)
+	} else {
+		res.Spec = specWithLimits(req.spec, limits)
+		res.Title = chartTitle(req.parsed, res.Fields)
+	}
 	res.MetricsView = &ChartMetricsView{
-		Name:          req.parsed.MetricsView,
+		Name:          req.metricsView(),
 		DisplayName:   req.mv.DisplayName,
 		TimeDimension: req.mv.TimeDimension,
 	}
@@ -212,12 +235,42 @@ func (t *CreateChart) DecorateMCPResult(ctx context.Context, out *CreateChartRes
 	res.Content = []mcp.Content{&mcp.TextContent{Text: text}}
 }
 
-// chartRequest is a validated create_chart or chart_data call.
+// chartRequest is a validated create_chart or chart_data call, in the in-app shape (spec and parsed) or the Flint shape (input and flint).
 type chartRequest struct {
 	chartType string
 	spec      map[string]any
 	parsed    *chartquery.Spec
-	mv        *runtimev1.MetricsViewSpec
+	input     *ChartInput
+	flint     *chartquery.FlintSpec
+	// semanticTypes are the caller's overrides of the derived semantic types (Flint shape only).
+	semanticTypes map[string]any
+	mv            *runtimev1.MetricsViewSpec
+}
+
+func (r *chartRequest) metricsView() string {
+	if r.flint != nil {
+		return r.flint.MetricsView
+	}
+	return r.parsed.MetricsView
+}
+
+// fields returns the metrics view fields the chart binds and which of them are temporal.
+func (r *chartRequest) fields() (names []string, temporal map[string]bool) {
+	temporal = make(map[string]bool)
+	if r.flint != nil {
+		for _, e := range r.flint.Encodings {
+			if e.Kind == chartquery.FieldKindTime {
+				temporal[e.Field] = true
+			}
+		}
+		return r.flint.Fields(), temporal
+	}
+	for _, f := range []*chartquery.Field{r.parsed.X, r.parsed.Y, r.parsed.Dimension} {
+		if f != nil && f.Type == chartquery.TypeTemporal {
+			temporal[f.Field] = true
+		}
+	}
+	return r.parsed.Fields(), temporal
 }
 
 // chartsInputSchema returns the JSON schema of the chart arguments shared by create_chart and chart_data.
@@ -231,10 +284,15 @@ func chartsInputSchema() *jsonschema.Schema {
 }
 
 // parseChartRequest validates the chart arguments against the metrics view the caller has access to.
+// The Flint shape (chart_spec and data) is recognized by its chart_spec; anything else is the in-app shape (chart_type and spec).
 func parseChartRequest(ctx context.Context, rt *runtime.Runtime, s *Session, args map[string]any) (*chartRequest, error) {
+	if _, ok := args["chart_spec"]; ok {
+		return parseFlintChartRequest(ctx, rt, s, args)
+	}
+
 	chartType, ok := args["chart_type"].(string)
 	if !ok || chartType == "" {
-		return nil, fmt.Errorf("chart_type is required and must be a string")
+		return nil, fmt.Errorf("chart_spec and data are required: the chart type and encodings, and the metrics view and time range to query (the deprecated chart_type and spec shape is also accepted)")
 	}
 
 	spec, ok := args["spec"].(map[string]any)
@@ -307,29 +365,13 @@ func parseChartRequest(ctx context.Context, rt *runtime.Runtime, s *Session, arg
 		}
 	}
 
-	// Validate that the metrics view exists
-	ctrl, err := rt.Controller(ctx, s.InstanceID())
+	mv, err := loadMetricsView(ctx, rt, s, metricsView)
 	if err != nil {
 		return nil, err
-	}
-	r, err := ctrl.Get(ctx, &runtimev1.ResourceName{Kind: runtime.ResourceKindMetricsView, Name: metricsView}, false)
-	if err != nil {
-		return nil, fmt.Errorf("metrics view %q not found: %w", metricsView, err)
-	}
-	r, access, err := rt.ApplySecurityPolicy(ctx, s.InstanceID(), s.Claims(), r)
-	if err != nil {
-		return nil, err
-	}
-	if !access {
-		return nil, fmt.Errorf("resource not found")
-	}
-	mvState := r.GetMetricsView().State
-	if mvState.ValidSpec == nil {
-		return nil, fmt.Errorf("metrics view %q is invalid", metricsView)
 	}
 
 	// Validate that all field references in the chart spec exist in the metrics view
-	if err := validateChartFields(chartType, spec, mvState.ValidSpec); err != nil {
+	if err := validateChartFields(chartType, spec, mv); err != nil {
 		return nil, fmt.Errorf("field validation failed: %w", err)
 	}
 
@@ -342,8 +384,32 @@ func parseChartRequest(ctx context.Context, rt *runtime.Runtime, s *Session, arg
 		chartType: chartType,
 		spec:      spec,
 		parsed:    parsed,
-		mv:        mvState.ValidSpec,
+		mv:        mv,
 	}, nil
+}
+
+// loadMetricsView returns the valid spec of a metrics view the caller has access to, as the caller may see it.
+func loadMetricsView(ctx context.Context, rt *runtime.Runtime, s *Session, name string) (*runtimev1.MetricsViewSpec, error) {
+	ctrl, err := rt.Controller(ctx, s.InstanceID())
+	if err != nil {
+		return nil, err
+	}
+	r, err := ctrl.Get(ctx, &runtimev1.ResourceName{Kind: runtime.ResourceKindMetricsView, Name: name}, false)
+	if err != nil {
+		return nil, fmt.Errorf("metrics view %q not found: %w", name, err)
+	}
+	r, access, err := rt.ApplySecurityPolicy(ctx, s.InstanceID(), s.Claims(), r)
+	if err != nil {
+		return nil, err
+	}
+	if !access {
+		return nil, fmt.Errorf("resource not found")
+	}
+	mvState := r.GetMetricsView().State
+	if mvState.ValidSpec == nil {
+		return nil, fmt.Errorf("metrics view %q is invalid", name)
+	}
+	return mvState.ValidSpec, nil
 }
 
 // queryChartData runs the chart's queries with the session's claims and the instance's AI query limits.
@@ -356,7 +422,12 @@ func queryChartData(ctx context.Context, rt *runtime.Runtime, s *Session, instan
 		return nil, nil, fmt.Errorf("failed to get instance config: %w", err)
 	}
 
-	plan, err := chartquery.Build(req.parsed)
+	var plan *chartquery.Plan
+	if req.flint != nil {
+		plan, err = chartquery.BuildFlint(req.flint)
+	} else {
+		plan, err = chartquery.Build(req.parsed)
+	}
 	if err != nil {
 		return nil, nil, err
 	}
@@ -378,10 +449,15 @@ func queryChartData(ctx context.Context, rt *runtime.Runtime, s *Session, instan
 		return nil, nil, err
 	}
 
+	names, temporal := req.fields()
+	fields := chartFields(names, temporal, req.mv, out.Types)
+	semanticTypes, displayNames := chartSemantics(fields, out.TimeGrain, out.ResolvedComparisonTimeRange != nil, req.semanticTypes)
 	return &ChartDataResult{
 		TimeGrain:                   out.TimeGrain,
 		Data:                        out.Data,
-		Fields:                      chartFields(req.parsed, req.mv, out.Types),
+		Fields:                      fields,
+		SemanticTypes:               semanticTypes,
+		FieldDisplayNames:           displayNames,
 		DomainValues:                out.DomainValues,
 		Totals:                      out.Totals,
 		ResolvedTimeRange:           out.ResolvedTimeRange,
@@ -466,17 +542,11 @@ func chartTimeRange(tr *metricsview.TimeRange) *chartquery.TimeRange {
 	return &chartquery.TimeRange{Start: tr.Start, End: tr.End}
 }
 
-// chartFields describes the metrics view fields the chart references, with the types of the result columns.
-func chartFields(parsed *chartquery.Spec, mv *runtimev1.MetricsViewSpec, types map[string]string) map[string]*ChartField {
-	temporal := make(map[string]bool)
-	for _, f := range []*chartquery.Field{parsed.X, parsed.Y, parsed.Dimension} {
-		if f != nil && f.Type == chartquery.TypeTemporal {
-			temporal[f.Field] = true
-		}
-	}
-
+// chartFields describes the metrics view fields a chart references (temporal marks the ones used as time fields),
+// with the types of the result columns.
+func chartFields(names []string, temporal map[string]bool, mv *runtimev1.MetricsViewSpec, types map[string]string) map[string]*ChartField {
 	fields := make(map[string]*ChartField)
-	for _, name := range parsed.Fields() {
+	for _, name := range names {
 		field := &ChartField{Name: name, Type: types[name]}
 		if i := slices.IndexFunc(mv.Measures, func(m *runtimev1.MetricsViewSpec_Measure) bool { return m.Name == name }); i >= 0 {
 			m := mv.Measures[i]

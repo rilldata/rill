@@ -1,0 +1,168 @@
+{
+  "name": "Flint slope chart",
+  "description": "Two months of bids per advertiser at month grain (YearMonth semantics).",
+  "expect": "canvas",
+  "arguments": {
+    "chart_spec": {
+      "chartType": "Slope Chart",
+      "encodings": {
+        "x": "__time",
+        "y": "total_bids",
+        "color": {
+          "field": "advertiser_name",
+          "limit": 10
+        }
+      }
+    },
+    "data": {
+      "metrics_view": "bids_metrics",
+      "time_range": {
+        "start": "2023-07-01T00:00:00Z",
+        "end": "2023-09-01T00:00:00Z"
+      },
+      "time_grain": "TIME_GRAIN_MONTH"
+    }
+  },
+  "result": {
+    "content": [
+      {
+        "type": "text",
+        "text": "**Slope Chart: Total Bids over Time by Advertiser Name** (2023-07-01 to 2023-09-01)\n\n| Time | Advertiser Name | Total Bids |\n| - | - | - |\n| 2023-07-01T00:00:00Z | Acme Media | 128430 |\n| 2023-08-01T00:00:00Z | Acme Media | 126496 |\n| 2023-07-01T00:00:00Z | Beta Brands | 99210 |\n| 2023-08-01T00:00:00Z | Beta Brands | 112476 |\n| 2023-07-01T00:00:00Z | Cobalt Retail | 87650 |\n| 2023-08-01T00:00:00Z | Cobalt Retail | 59706 |\n| 2023-07-01T00:00:00Z | Delta Travel | 64320 |\n| 2023-08-01T00:00:00Z | Delta Travel | 78205 |\n\n_8 of 8 rows shown_\n\nOpen the interactive chart in Rill: https://ui.rilldata.com/demo/bids/-/ai/session-0b1c/message/call-4f2a/-/open"
+      }
+    ],
+    "structuredContent": {
+      "widget": "chart",
+      "chart_type": "Slope Chart",
+      "input": {
+        "chart_spec": {
+          "chartType": "Slope Chart",
+          "encodings": {
+            "x": "__time",
+            "y": "total_bids",
+            "color": {
+              "field": "advertiser_name",
+              "limit": 10
+            }
+          }
+        },
+        "data": {
+          "metrics_view": "bids_metrics",
+          "time_range": {
+            "start": "2023-07-01T00:00:00Z",
+            "end": "2023-09-01T00:00:00Z"
+          },
+          "time_grain": "TIME_GRAIN_MONTH"
+        }
+      },
+      "message": "Chart created successfully: Slope Chart",
+      "metrics_view": {
+        "name": "bids_metrics",
+        "display_name": "Bids",
+        "time_dimension": "__time",
+        "smallest_time_grain": "TIME_GRAIN_HOUR"
+      },
+      "resolved_time_range": {
+        "start": "2023-07-01T00:00:00Z",
+        "end": "2023-09-01T00:00:00Z"
+      },
+      "theme": {
+        "primaryColorRaw": "#4f46e5",
+        "light": {
+          "primary": "#4f46e5",
+          "secondary": "#f97316"
+        },
+        "dark": {
+          "primary": "#818cf8",
+          "secondary": "#fb923c"
+        }
+      },
+      "open_url": "https://ui.rilldata.com/demo/bids/-/ai/session-0b1c/message/call-4f2a/-/open",
+      "truncated": false,
+      "title": "Total Bids over Time by Advertiser Name",
+      "time_grain": "TIME_GRAIN_MONTH",
+      "data": [
+        {
+          "__time": "2023-07-01T00:00:00Z",
+          "advertiser_name": "Acme Media",
+          "total_bids": 128430
+        },
+        {
+          "__time": "2023-08-01T00:00:00Z",
+          "advertiser_name": "Acme Media",
+          "total_bids": 126496
+        },
+        {
+          "__time": "2023-07-01T00:00:00Z",
+          "advertiser_name": "Beta Brands",
+          "total_bids": 99210
+        },
+        {
+          "__time": "2023-08-01T00:00:00Z",
+          "advertiser_name": "Beta Brands",
+          "total_bids": 112476
+        },
+        {
+          "__time": "2023-07-01T00:00:00Z",
+          "advertiser_name": "Cobalt Retail",
+          "total_bids": 87650
+        },
+        {
+          "__time": "2023-08-01T00:00:00Z",
+          "advertiser_name": "Cobalt Retail",
+          "total_bids": 59706
+        },
+        {
+          "__time": "2023-07-01T00:00:00Z",
+          "advertiser_name": "Delta Travel",
+          "total_bids": 64320
+        },
+        {
+          "__time": "2023-08-01T00:00:00Z",
+          "advertiser_name": "Delta Travel",
+          "total_bids": 78205
+        }
+      ],
+      "fields": {
+        "__time": {
+          "name": "__time",
+          "kind": "time",
+          "display_name": "Time",
+          "type": "TIMESTAMP"
+        },
+        "advertiser_name": {
+          "name": "advertiser_name",
+          "kind": "dimension",
+          "display_name": "Advertiser Name",
+          "description": "Name of the advertiser bidding on the impression.",
+          "type": "STRING"
+        },
+        "total_bids": {
+          "name": "total_bids",
+          "kind": "measure",
+          "display_name": "Total Bids",
+          "description": "Count of bid requests.",
+          "type": "INT64",
+          "format_preset": "humanize"
+        }
+      },
+      "domain_values": {
+        "advertiser_name": [
+          "Acme Media",
+          "Beta Brands",
+          "Cobalt Retail",
+          "Delta Travel"
+        ]
+      },
+      "semantic_types": {
+        "__time": "YearMonth",
+        "advertiser_name": "Category",
+        "total_bids": "Count"
+      },
+      "field_display_names": {
+        "__time": "Time",
+        "advertiser_name": "Advertiser Name",
+        "total_bids": "Total Bids"
+      }
+    }
+  }
+}

@@ -35,6 +35,23 @@ func TestMCPToolSpecs(t *testing.T) {
 	require.NotContains(t, again.Meta, "ui")
 	require.Contains(t, again.Meta, "openai/toolInvocation/invoking", "the tool's own meta is kept")
 
+	// Tools may advertise a different definition on MCP servers than in-app (see ai.MCPSpecProvider):
+	// create_chart takes the Flint shape externally and keeps Rill's own chart spec for the in-app chat.
+	external := specs[ai.CreateChartName].InputSchema.(*jsonschema.Schema)
+	require.Contains(t, external.Properties, "chart_spec")
+	require.Contains(t, external.Properties, "data")
+	require.Contains(t, external.Properties, "chart_type", "the previous shape stays valid for clients with a cached tool list")
+	require.Empty(t, external.Required)
+	require.Contains(t, external.Defs, "Expression", "the data block reuses the filter expression schema")
+	require.Contains(t, specs[ai.CreateChartName].Description, "Waterfall Chart")
+	require.NotNil(t, specs[ai.CreateChartName].OutputSchema, "the MCP spec inherits the inferred output schema")
+	require.Contains(t, specs[ai.ChartDataName].InputSchema.(*jsonschema.Schema).Properties, "chart_spec")
+	inApp, err := ai.NewRunner(nil, nil).Tools[ai.CreateChartName].AsProto()
+	require.NoError(t, err)
+	require.Contains(t, inApp.InputSchema, `"chart_type"`)
+	require.NotContains(t, inApp.InputSchema, `"chart_spec"`)
+	require.NotContains(t, inApp.Description, "Waterfall Chart")
+
 	// The tools that take part in the MCP Apps widget are known without a runtime too.
 	require.False(t, ai.IsMCPAppOnlyTool(ai.CreateChartName), "create_chart is called by the model")
 	require.True(t, ai.IsMCPAppOnlyTool(ai.ChartDataName))

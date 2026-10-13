@@ -3,6 +3,8 @@
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import { onMount, type ComponentProps } from "svelte";
   import type { AdaptedChart } from "../lib/adapt";
+  import type { CompileNotices } from "../lib/notices";
+  import FlintSurface from "./FlintSurface.svelte";
   import Skeleton from "./Skeleton.svelte";
 
   /** Vega draws text on a canvas, so the first paint waits for the host font (briefly). */
@@ -15,6 +17,7 @@
     height,
     fill = false,
     dimmed = false,
+    onCompiled,
   }: {
     chart: AdaptedChart;
     isDark: boolean;
@@ -25,6 +28,8 @@
     fill?: boolean;
     /** Fades the current chart under a skeleton while new data loads. */
     dimmed?: boolean;
+    /** Flint charts report their compile outcome (warnings, error) here. */
+    onCompiled?: (notices: CompileNotices) => void;
   } = $props();
 
   let fontsReady = $state(false);
@@ -46,33 +51,45 @@
   type ChartSpecProp = ComponentProps<typeof Chart>["chartSpec"];
 </script>
 
-<div
-  class="surface"
-  class:fill
-  class:dimmed
-  style:height={fill ? undefined : `${height ?? 300}px`}
-  aria-busy={dimmed}
->
-  {#if fontsReady}
-    <div class="chart">
-      <Chart
-        chartType={chart.chartType}
-        chartSpec={chart.spec as ChartSpecProp}
-        chartData={chart.chartData}
-        measures={chart.measures}
-        themeMode={isDark ? "dark" : "light"}
-        theme={chart.theme}
-        isCanvas={false}
-        {fontFamily}
-      />
-    </div>
-  {/if}
-  {#if dimmed}
-    <div class="overlay">
-      <Skeleton compact label={m.mcp_chart_updating()} />
-    </div>
-  {/if}
-</div>
+{#if chart.engine === "flint"}
+  <FlintSurface
+    {chart}
+    {isDark}
+    {fontFamily}
+    {height}
+    {fill}
+    {dimmed}
+    {onCompiled}
+  />
+{:else}
+  <div
+    class="surface"
+    class:fill
+    class:dimmed
+    style:height={fill ? undefined : `${height ?? 300}px`}
+    aria-busy={dimmed}
+  >
+    {#if fontsReady}
+      <div class="chart">
+        <Chart
+          chartType={chart.chartType}
+          chartSpec={chart.spec as ChartSpecProp}
+          chartData={chart.chartData}
+          measures={chart.measures}
+          themeMode={isDark ? "dark" : "light"}
+          theme={chart.theme}
+          isCanvas={false}
+          {fontFamily}
+        />
+      </div>
+    {/if}
+    {#if dimmed}
+      <div class="overlay">
+        <Skeleton compact label={m.mcp_chart_updating()} />
+      </div>
+    {/if}
+  </div>
+{/if}
 
 <style lang="postcss">
   .surface {

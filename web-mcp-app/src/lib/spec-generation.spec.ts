@@ -10,12 +10,12 @@ import { expressionFunction, parse, View } from "vega";
 import { expressionInterpreter } from "vega-interpreter";
 import { compile, type TopLevelSpec } from "vega-lite";
 import { describe, expect, it } from "vitest";
-import { adaptChartResult, type AdaptedChart } from "./adapt";
-import type { ChartResult } from "./contract";
+import { adaptChartResult, type AdaptedRillChart } from "./adapt";
+import type { RillChartResult } from "./contract";
 
 // The widget registers one Vega expression function per measure (axis and tooltip
 // formatting) plus `humanize`; mirror that so the compiled specs resolve them.
-function registerFormatters(chart: AdaptedChart) {
+function registerFormatters(chart: AdaptedRillChart) {
   expressionFunction("humanize", (value: number) =>
     humanizeDataType(value, FormatPreset.HUMANIZE, "table"),
   );
@@ -29,7 +29,7 @@ function registerFormatters(chart: AdaptedChart) {
 }
 
 /** Compiles the Vega-Lite spec and evaluates it with the CSP-safe interpreter, no renderer. */
-async function runHeadless(chart: AdaptedChart, isDark: boolean) {
+async function runHeadless(chart: AdaptedRillChart, isDark: boolean) {
   registerFormatters(chart);
   const vlSpec = generateSpec(
     chart.chartType,
@@ -53,7 +53,7 @@ async function runHeadless(chart: AdaptedChart, isDark: boolean) {
 interface Fixture {
   name: string;
   expect: string;
-  result: { structuredContent?: ChartResult };
+  result: { structuredContent?: RillChartResult };
 }
 
 const fixtures = Object.entries(
@@ -63,7 +63,11 @@ const fixtures = Object.entries(
   }),
 )
   .map(([path, fixture]) => ({ file: path.split("/").pop()!, fixture }))
-  .filter(({ fixture }) => fixture.expect === "canvas");
+  // Flint results (`input`) take the Flint render path; see flint-compile.spec.ts.
+  .filter(
+    ({ fixture }) =>
+      fixture.expect === "canvas" && !fixture.result.structuredContent?.input,
+  );
 
 describe("Vega-Lite spec generation from fixtures", () => {
   it("covers every renderable fixture", () => {

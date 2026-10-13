@@ -55,7 +55,8 @@
     --fg-tertiary: var(--color-text-tertiary, light-dark(#737373, #a3a3a3));
     --fg-muted: var(--color-text-tertiary, light-dark(#737373, #a3a3a3));
     --fg-disabled: var(--color-text-disabled, light-dark(#a3a3a3, #6b6b6b));
-    --fg-inverse: var(--color-text-inverse, light-dark(#fafafa, #171717));
+    /* Text on the surfaces that stay dark in both modes: Vega tooltips and the error badge. */
+    --fg-inverse: #fafafa;
     --fg-accent: var(--color-primary-900);
 
     --accent-primary: var(--color-primary-500);
@@ -144,4 +145,20 @@ body {
 :focus-visible {
   outline: 2px solid var(--ring-focus);
   outline-offset: 2px;
+}
+
+/*
+ * Vega tooltips (web-common's vega.css) assume Rill's Inter font and keep a dark surface in both
+ * modes. The widget bundles no font, so they take the host's, and in dark mode a hairline sets the
+ * tooltip off from the host's dark background.
+ */
+:root #vg-tooltip-element,
+:root #rill-vg-tooltip {
+  font-family: var(--font-sans, var(--font-sans-fallback));
+}
+:root.dark #vg-tooltip-element,
+:root.dark #rill-vg-tooltip {
+  box-shadow:
+    0 0 0 1px rgb(255 255 255 / 0.14),
+    0 4px 12px rgb(0 0 0 / 0.45);
 }

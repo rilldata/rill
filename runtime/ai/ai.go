@@ -328,6 +328,13 @@ type MCPResultDecorator[Out any] interface {
 	DecorateMCPResult(ctx context.Context, out Out, res *mcp.CallToolResult)
 }
 
+// MCPSpecProvider is an optional interface for tools whose definition on the MCP server differs from their in-app definition.
+// The MCP server (and the admin service's unified MCP server, see MCPToolSpecs) advertises and validates against the spec it returns,
+// while Spec stays what the in-app LLM sees (see AsProto). The returned spec inherits the in-app input and output schemas where it sets none.
+type MCPSpecProvider interface {
+	MCPSpec() *mcp.Tool
+}
+
 // MCPAppTool is an optional interface for tools that take part in the MCP Apps widget (see package mcpapp).
 // The returned UI drives the _meta.ui the tool is registered with on the MCP server.
 // App-only tools (see mcpapp.ToolUI.AppOnly) are called by the widget rather than the model, so their calls are plumbing:
@@ -347,8 +354,18 @@ type CompiledTool struct {
 	// RegisterWithMCPServer registers the tool on an MCP server.
 	// A non-nil meta is merged into the _meta of a shallow copy of the spec, so Spec itself (and AsProto) never carries it.
 	RegisterWithMCPServer func(srv *mcp.Server, meta map[string]any)
+	// MCPSpec is set for tools that implement MCPSpecProvider; see mcpSpec.
+	MCPSpec *mcp.Tool
 	// AppUI is set for tools that implement MCPAppTool.
 	AppUI *mcpapp.ToolUI
+}
+
+// mcpSpec returns the definition the tool is registered with on MCP servers: its MCP spec when it has one, else its in-app spec.
+func (t *CompiledTool) mcpSpec() *mcp.Tool {
+	if t.MCPSpec != nil {
+		return t.MCPSpec
+	}
+	return t.Spec
 }
 
 // AsProto converts the CompiledTool to a protocol buffer representation.
@@ -425,9 +442,26 @@ func RegisterTool[In, Out any](s *Runner, t Tool[In, Out]) {
 	}
 	decorator, _ := any(t).(MCPResultDecorator[Out])
 
+	// The definition advertised on MCP servers; the same as the in-app one unless the tool provides its own.
+	var mcpSpec *mcp.Tool
+	if p, ok := any(t).(MCPSpecProvider); ok {
+		mcpSpec = p.MCPSpec()
+		if mcpSpec.InputSchema == nil {
+			mcpSpec.InputSchema = spec.InputSchema
+		}
+		if mcpSpec.OutputSchema == nil {
+			mcpSpec.OutputSchema = spec.OutputSchema
+		}
+	}
+	registered := spec
+	if mcpSpec != nil {
+		registered = mcpSpec
+	}
+
 	s.Tools[spec.Name] = &CompiledTool{
 		Name:        spec.Name,
 		Spec:        spec,
+		MCPSpec:     mcpSpec,
 		CheckAccess: t.CheckAccess,
 		AppUI:       appUI,
 		UnmarshalArgs: func(content string) (any, error) {
@@ -460,7 +494,7 @@ func RegisterTool[In, Out any](s *Runner, t Tool[In, Out]) {
 			return data, nil
 		},
 		RegisterWithMCPServer: func(srv *mcp.Server, meta map[string]any) {
-			mcp.AddTool(srv, mcpapp.ToolWithMeta(spec, meta), func(ctx context.Context, req *mcp.CallToolRequest, args In) (*mcp.CallToolResult, Out, error) {
+			mcp.AddTool(srv, mcpapp.ToolWithMeta(registered, meta), func(ctx context.Context, req *mcp.CallToolRequest, args In) (*mcp.CallToolResult, Out, error) {
 				s := GetSession(ctx)
 				var out Out
 				_, err := s.CallToolWithOptions(ctx, &CallToolOptions{

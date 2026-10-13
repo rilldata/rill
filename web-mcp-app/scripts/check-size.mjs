@@ -5,7 +5,7 @@
 import { readFileSync } from "node:fs";
 import { gzipSync } from "node:zlib";
 
-const BUDGET_BYTES = 600 * 1024;
+const BUDGET_BYTES = 650 * 1024;
 const file = new URL("../dist/widget.html", import.meta.url);
 
 const raw = readFileSync(file);
