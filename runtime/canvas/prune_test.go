@@ -116,6 +116,13 @@ row_dimensions: [order_date_rill_TIME_GRAIN_MONTH, region]
 			want:     `{metrics_view: mv, x: {field: order_date, type: temporal}, y: {field: total_revenue, fields: [total_revenue]}}`,
 		},
 		{
+			name:     "chart whose y.fields are all restricted and that has no y.field is removed",
+			renderer: "bar_chart",
+			props:    `{metrics_view: mv, x: {field: region, type: nominal}, y: {fields: [gross_margin]}}`,
+			keep:     false,
+			changed:  true,
+		},
+		{
 			name:     "chart with allowed fields and a filter on a restricted field is removed",
 			renderer: "bar_chart",
 			props:    `{metrics_view: mv, x: {field: region, type: nominal}, y: {field: total_revenue, type: quantitative}, dimension_filters: "customer_name EQ 'acme'"}`,

@@ -103,6 +103,58 @@ describe("generateNewAssets with a tab group present", () => {
   });
 });
 
+describe("generateNewAssets moving items between rows", () => {
+  const doc = parseDocument(`type: canvas
+rows:
+  - if: '{{ has "finance" .user.groups }}'
+    items:
+      - component: margin
+      - component: revenue
+        if: '{{ .user.admin }}'
+  - items:
+      - component: header
+`);
+  const yamlRows = mapGuard(rowsGuard(doc.getIn(["rows"])));
+  const specRows = [
+    { items: [{ component: "margin" }, { component: "revenue" }] },
+    { items: [{ component: "header" }] },
+  ];
+  const move = (col: number, insertRow: boolean) =>
+    generateNewAssets({
+      transaction: {
+        operations: [
+          {
+            type: "move",
+            insertRow,
+            source: { row: 0, col },
+            destination: { row: insertRow ? 2 : 1, col: 0 },
+          },
+        ],
+      },
+      yamlRows,
+      specRows,
+      resolvedComponents: {},
+      canvasName: "d1",
+      defaultMetrics: { metricsViewName: "foo", metricsViewSpec: undefined },
+    }).newYamlRows;
+
+  it("keeps the source row's condition on an item moved to another row", () => {
+    const rows = move(0, false);
+    expect(rows[1].items?.[0]).toMatchObject({
+      component: "margin",
+      if: '{{ has "finance" .user.groups }}',
+    });
+  });
+
+  it("combines the source row's condition with the item's own condition in a new row", () => {
+    const rows = move(1, true);
+    expect(rows[2].items?.[0]).toMatchObject({
+      component: "revenue",
+      if: '({{ has "finance" .user.groups }}) AND ({{ .user.admin }})',
+    });
+  });
+});
+
 describe("getItemPropertiesExcept", () => {
   it("returns the item's properties other than its component definition", () => {
     const doc = parseDocument(`type: canvas

@@ -118,13 +118,13 @@ func (r *Runtime) ResolveCanvas(ctx context.Context, instanceID, canvasName stri
 	// Track the components the claims can't see or query; viewers don't get them, and the editor gets their paths.
 	// An inline component keeps the `if` conditions of its item wherever it's referenced, including from another canvas.
 	// Only its conditions are checked, not the full security policy, since claims granted just this canvas (e.g. alert links) can't access components directly.
+	visibility, err := r.VisibilityConditions(ctx, instanceID, claims)
+	if err != nil {
+		return nil, err
+	}
 	forbiddenComponents := make(map[string]bool)
 	for componentName, cmp := range components {
-		met, err := r.ComponentConditionMet(ctx, instanceID, claims, cmp)
-		if err != nil {
-			return nil, err
-		}
-		if !met {
+		if !visibility.ComponentMet(cmp) {
 			forbiddenComponents[componentName] = true
 		}
 	}
@@ -155,8 +155,11 @@ func (r *Runtime) ResolveCanvas(ctx context.Context, instanceID, canvasName stri
 
 	// Extract metrics view names from components.
 	// Components with a metrics_sql query the claims can't run are added to forbiddenComponents.
+	// unknownReferences is set if a component the viewer gets has metrics views that can't be determined,
+	// because it has no spec to use or a metrics_sql query that fails to parse.
 	var msqlParser *metricssql.Compiler
 	metricsViews := make(map[string]bool)
+	var unknownReferences bool
 	for componentName, cmp := range components {
 		// Viewers don't get the metrics views of components hidden from them.
 		if forbiddenComponents[componentName] && !includeHidden {
@@ -167,7 +170,11 @@ func (r *Runtime) ResolveCanvas(ctx context.Context, instanceID, canvasName stri
 		if validSpec == nil && opts.Unsafe {
 			validSpec = cmp.GetComponent().Spec
 		}
-		if validSpec == nil || validSpec.RendererProperties == nil {
+		if validSpec == nil {
+			unknownReferences = true
+			continue
+		}
+		if validSpec.RendererProperties == nil {
 			continue
 		}
 
@@ -221,7 +228,11 @@ func (r *Runtime) ResolveCanvas(ctx context.Context, instanceID, canvasName stri
 						forbiddenComponents[componentName] = true
 						continue
 					}
-					if err != nil || q.MetricsView == "" {
+					if err != nil {
+						unknownReferences = true
+						continue
+					}
+					if q.MetricsView == "" {
 						continue
 					}
 					metricsViews[q.MetricsView] = true
@@ -273,8 +284,8 @@ func (r *Runtime) ResolveCanvas(ctx context.Context, instanceID, canvasName stri
 	// The visual editor gets the full canvas and the paths of the content hidden from the claims:
 	// the elements whose `if` conditions aren't met, and the components the claims can't query.
 	if includeHidden {
-		removed, _ := inaccessibleComponents(components, referencedMetricsViews, securities, forbiddenComponents)
-		keep := CanvasConditionsKeep(sec.canvasConditions)
+		removed, _ := inaccessibleComponents(components, referencedMetricsViews, securities, forbiddenComponents, opts.Unsafe)
+		keep := visibility.Keep()
 		itemMet := keep.Item
 		keep.Item = func(item *runtimev1.CanvasItem) bool {
 			return itemMet(item) && !removed[item.Component]
@@ -289,8 +300,20 @@ func (r *Runtime) ResolveCanvas(ctx context.Context, instanceID, canvasName stri
 	}
 
 	// Remove the fields and components the claims can't query, so viewers don't see errors for content they aren't allowed to see.
-	res, components = pruneInaccessibleContent(res, components, referencedMetricsViews, securities, forbiddenComponents)
-	res = pruneDefaultFilters(res, referencedMetricsViews)
+	res, components = pruneInaccessibleContent(res, components, referencedMetricsViews, securities, forbiddenComponents, opts.Unsafe)
+
+	// Remove the default filters for metrics views that are no longer on the canvas for the claims.
+	// If some component's metrics views are unknown, the filters for any metrics view the claims can access are kept, since that component may use them.
+	res = pruneDefaultFilters(res, func(name string) bool {
+		if _, ok := referencedMetricsViews[name]; ok {
+			return true
+		}
+		if !unknownReferences {
+			return false
+		}
+		rmv := resolveMetricsView(ctx, name)
+		return rmv.getErr == nil && rmv.secErr == nil && rmv.sec.CanAccess()
+	})
 
 	// Return the response
 	return &ResolveCanvasResult{
@@ -303,8 +326,8 @@ func (r *Runtime) ResolveCanvas(ctx context.Context, instanceID, canvasName stri
 // pruneInaccessibleContent removes the fields that the claims can't query from the components' renderer properties,
 // and removes the components that can't render without them, along with their items in the canvas rows (see inaccessibleComponents).
 // The provided resources are not modified; anything that changes is cloned.
-func pruneInaccessibleContent(canvasRes *runtimev1.Resource, components, metricsViews map[string]*runtimev1.Resource, securities map[string]*ResolvedSecurity, forbiddenComponents map[string]bool) (*runtimev1.Resource, map[string]*runtimev1.Resource) {
-	removed, pruned := inaccessibleComponents(components, metricsViews, securities, forbiddenComponents)
+func pruneInaccessibleContent(canvasRes *runtimev1.Resource, components, metricsViews map[string]*runtimev1.Resource, securities map[string]*ResolvedSecurity, forbiddenComponents map[string]bool, unsafe bool) (*runtimev1.Resource, map[string]*runtimev1.Resource) {
+	removed, pruned := inaccessibleComponents(components, metricsViews, securities, forbiddenComponents, unsafe)
 	for name, cmp := range pruned {
 		components[name] = cmp
 	}
@@ -342,7 +365,8 @@ func pruneInaccessibleContent(canvasRes *runtimev1.Resource, components, metrics
 // A component is removed when its metrics view is inaccessible (absent from metricsViews),
 // when a metrics_sql query targets a metrics view the claims can't access,
 // or when it can't render without its restricted fields (e.g. a chart whose x or y field is restricted).
-func inaccessibleComponents(components, metricsViews map[string]*runtimev1.Resource, securities map[string]*ResolvedSecurity, forbiddenComponents map[string]bool) (map[string]bool, map[string]*runtimev1.Resource) {
+// If unsafe is set, a component without a valid spec is checked against its unvalidated spec, as ResolveCanvasOptions.Unsafe does.
+func inaccessibleComponents(components, metricsViews map[string]*runtimev1.Resource, securities map[string]*ResolvedSecurity, forbiddenComponents map[string]bool, unsafe bool) (map[string]bool, map[string]*runtimev1.Resource) {
 	removed := make(map[string]bool)
 	pruned := make(map[string]*runtimev1.Resource)
 	for name, cmp := range components {
@@ -352,6 +376,9 @@ func inaccessibleComponents(components, metricsViews map[string]*runtimev1.Resou
 		}
 
 		validSpec := cmp.GetComponent().State.ValidSpec
+		if validSpec == nil && unsafe {
+			validSpec = cmp.GetComponent().Spec
+		}
 		if validSpec == nil || validSpec.RendererProperties == nil {
 			continue
 		}
@@ -385,9 +412,11 @@ func inaccessibleComponents(components, metricsViews map[string]*runtimev1.Resou
 			continue
 		}
 
-		// Viewers only use the valid spec, so the unvalidated spec gets the same pruned properties.
+		// Both specs get the same pruned properties, so neither leaks the restricted fields.
 		cmp = proto.Clone(cmp).(*runtimev1.Resource)
-		cmp.GetComponent().State.ValidSpec.RendererProperties = propsPB
+		if spec := cmp.GetComponent().State.ValidSpec; spec != nil {
+			spec.RendererProperties = propsPB
+		}
 		if spec := cmp.GetComponent().Spec; spec != nil {
 			spec.RendererProperties = propsPB
 		}
@@ -396,11 +425,11 @@ func inaccessibleComponents(components, metricsViews map[string]*runtimev1.Resou
 	return removed, pruned
 }
 
-// pruneDefaultFilters removes the default filters for metrics views that are no longer on the canvas for the claims.
-func pruneDefaultFilters(canvasRes *runtimev1.Resource, metricsViews map[string]*runtimev1.Resource) *runtimev1.Resource {
+// pruneDefaultFilters removes the default filters for the metrics views that keep doesn't keep.
+func pruneDefaultFilters(canvasRes *runtimev1.Resource, keep func(metricsView string) bool) *runtimev1.Resource {
 	stale := func(spec *runtimev1.CanvasSpec) bool {
 		for mv := range spec.GetDefaultPreset().GetFilterExpr() {
-			if _, ok := metricsViews[mv]; !ok {
+			if !keep(mv) {
 				return true
 			}
 		}
@@ -415,7 +444,7 @@ func pruneDefaultFilters(canvasRes *runtimev1.Resource, metricsViews map[string]
 	c = canvasRes.GetCanvas()
 	for _, spec := range []*runtimev1.CanvasSpec{c.GetSpec(), c.GetState().GetValidSpec()} {
 		for mv := range spec.GetDefaultPreset().GetFilterExpr() {
-			if _, ok := metricsViews[mv]; !ok {
+			if !keep(mv) {
 				delete(spec.DefaultPreset.FilterExpr, mv)
 			}
 		}

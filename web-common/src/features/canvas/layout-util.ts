@@ -11,6 +11,7 @@ import { YAMLMap, YAMLSeq, type Document } from "yaml";
 import { ResourceKind } from "../entity-management/resource-selectors";
 import type { CanvasComponentType, ComponentSpec } from "./components/types";
 import { COMPONENT_CLASS_MAP } from "./components/util";
+import { combineConditions } from "./stores/tab-edit";
 
 // TODO: Move this individual component class
 export const initialHeights: Record<CanvasComponentType, number> = {
@@ -226,6 +227,8 @@ export function generateArrayRearrangeFunction(transaction: Transaction) {
       operationIndex: number,
     ) => I,
     rowUpdater: (row: R, index: number, touched: boolean) => R,
+    // Called when an item is moved or copied to another row, to keep what it inherited from its source row.
+    itemCarrier?: (item: I, source: R, destination: R) => I,
   ) => {
     const newArray = structuredClone(array);
     const touchedRows: Array<boolean | null> = Array.from(
@@ -276,7 +279,13 @@ export function generateArrayRearrangeFunction(transaction: Transaction) {
               ? destination.col - 1
               : destination.col;
 
-          destinationRow.items?.splice(insertIndex, 0, item);
+          destinationRow.items?.splice(
+            insertIndex,
+            0,
+            sourceRow === destinationRow || !itemCarrier
+              ? item
+              : itemCarrier(item, sourceRow, destinationRow),
+          );
 
           touchedRows[source.row] = true;
           touchedRows[rowIndex] = true;
@@ -305,7 +314,10 @@ export function generateArrayRearrangeFunction(transaction: Transaction) {
           const item = sourceRow.items?.[source.col];
           if (item === undefined) break;
 
-          const copy = structuredClone(item);
+          let copy = structuredClone(item);
+          if (sourceRow !== destinationRow && itemCarrier) {
+            copy = itemCarrier(copy, sourceRow, destinationRow);
+          }
           destinationRow?.items?.splice(destination.col, 0, copy);
           touchedRows[rowIndex] = true;
           break;
@@ -440,6 +452,13 @@ export function generateNewAssets(params: {
         ...row,
         items: updatedItems,
       };
+    },
+    // An item moved out of a row with an `if` condition keeps that condition,
+    // so content hidden from some viewers doesn't become visible to them.
+    (item, source, destination) => {
+      if (source.if === undefined || source.if === destination.if) return item;
+      const condition = combineConditions(source.if, item.if);
+      return condition === undefined ? item : { ...item, if: condition };
     },
   );
 

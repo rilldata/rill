@@ -160,9 +160,9 @@ type ResolvedSecurity struct {
 	fieldAccess map[string]bool
 	rowFilter   string
 	queryFilter *runtimev1.Expression
-	// canvasConditions holds the results of a canvas's `if` conditions, keyed by condition.
-	// It's nil when security checks are skipped, in which case all of the canvas's content is visible.
-	canvasConditions map[string]bool
+	// visibility evaluates the `if` conditions that decide which content of a canvas the claims can see.
+	// It's only set for canvases, and is nil when security checks are skipped, in which case all of the canvas's content is visible.
+	visibility *VisibilityConditions
 }
 
 // CanAccess returns whether the resource can be accessed.
@@ -233,7 +233,10 @@ var allowAccessRule = &runtimev1.SecurityRule{
 
 // securityEngine is an engine for resolving security rules and caching the results.
 type securityEngine struct {
-	cache  *simplelru.LRU
+	cache *simplelru.LRU
+	// visibilityCache holds a *VisibilityConditions per instance, environment, variables and claims.
+	visibilityCache *simplelru.LRU
+	// lock guards the caches; it isn't held while evaluating rules, since that can call DuckDB.
 	lock   sync.Mutex
 	logger *zap.Logger
 	rt     *Runtime
@@ -245,7 +248,11 @@ func newSecurityEngine(cacheSize int, logger *zap.Logger, rt *Runtime) *security
 	if err != nil {
 		panic(err)
 	}
-	return &securityEngine{cache: cache, logger: logger, rt: rt}
+	visibilityCache, err := simplelru.NewLRU(cacheSize, nil)
+	if err != nil {
+		panic(err)
+	}
+	return &securityEngine{cache: cache, visibilityCache: visibilityCache, logger: logger, rt: rt}
 }
 
 // resolveSecurity resolves the security rules for a given resource and user context.
@@ -281,26 +288,13 @@ func (p *securityEngine) resolveSecurity(ctx context.Context, instanceID, enviro
 	}
 
 	p.lock.Lock()
-	defer p.lock.Unlock()
-
 	cached, ok := p.cache.Get(cacheKey)
+	p.lock.Unlock()
 	if ok {
 		return cached.(*ResolvedSecurity), nil
 	}
 
-	attrs := claims.UserAttributes
-	if attrs == nil {
-		attrs = make(map[string]any)
-	}
-	templateData := parser.TemplateData{
-		Environment: environment,
-		User:        attrs,
-		Variables:   vars,
-		Self:        parser.TemplateResource{Meta: r.Meta},
-		Resolve: func(ref parser.ResourceName) (string, error) {
-			return ref.Name, nil
-		},
-	}
+	templateData := securityTemplateData(environment, vars, claims, r)
 
 	// Apply rules
 	res := &ResolvedSecurity{}
@@ -340,22 +334,57 @@ func (p *securityEngine) resolveSecurity(ctx context.Context, instanceID, enviro
 		res.queryFilter = nil
 	}
 
-	// Evaluate the `if` conditions that decide which content of a canvas the claims can see.
+	// Apply the `if` conditions that decide which content of a canvas the claims can see.
+	// The canvas's conditions are evaluated lazily when its content is pruned.
 	// An inline canvas component inherits the conditions of its item, so a viewer who can't see the item can't access the component either.
-	if res.CanAccess() {
-		switch r.Meta.Name.Kind {
-		case ResourceKindCanvas:
-			res.canvasConditions = evaluateCanvasConditions(r, templateData)
-		case ResourceKindComponent:
-			if !componentConditionMet(r, templateData) {
-				res.access = new(bool)
-			}
+	if res.CanAccess() && (r.Meta.Name.Kind == ResourceKindCanvas || r.Meta.Name.Kind == ResourceKindComponent) {
+		visibility, err := p.visibilityConditions(instanceID, environment, vars, claims)
+		if err != nil {
+			return nil, err
+		}
+		if r.Meta.Name.Kind == ResourceKindCanvas {
+			res.visibility = visibility
+		} else if !visibility.ComponentMet(r) {
+			res.access = new(bool)
 		}
 	}
 
+	p.lock.Lock()
 	p.cache.Add(cacheKey, res)
+	p.lock.Unlock()
 
 	return res, nil
+}
+
+// visibilityConditions returns the evaluator of `if` conditions for the claims.
+// It's cached so its memoized results are shared by every canvas and component the claims access.
+func (p *securityEngine) visibilityConditions(instanceID, environment string, vars map[string]string, claims *SecurityClaims) (*VisibilityConditions, error) {
+	hash := md5.New()
+	for _, s := range []string{instanceID, environment} {
+		if _, err := hash.Write([]byte(s)); err != nil {
+			return nil, err
+		}
+	}
+	for _, v := range []any{vars, claims} {
+		data, err := json.Marshal(v)
+		if err != nil {
+			return nil, err
+		}
+		if _, err := hash.Write(data); err != nil {
+			return nil, err
+		}
+	}
+	cacheKey := hex.EncodeToString(hash.Sum(nil))
+
+	p.lock.Lock()
+	defer p.lock.Unlock()
+	if cached, ok := p.visibilityCache.Get(cacheKey); ok {
+		return cached.(*VisibilityConditions), nil
+	}
+	// Conditions don't depend on the resource that declares them, so the template data has no Self.
+	visibility := newVisibilityConditions(securityTemplateData(environment, vars, claims, nil))
+	p.visibilityCache.Add(cacheKey, visibility)
+	return visibility, nil
 }
 
 // resolveRules combines the provided rules with built-in rules and rules declared in the resource itself.
@@ -890,6 +919,27 @@ func (p *securityEngine) expandTransitiveAccessRules(ctx context.Context, instan
 	}
 
 	return rules, nil
+}
+
+// securityTemplateData returns the template data for evaluating security policies and `if` conditions for the claims.
+// The resource is exposed as Self; it may be nil.
+func securityTemplateData(environment string, vars map[string]string, claims *SecurityClaims, r *runtimev1.Resource) parser.TemplateData {
+	attrs := claims.UserAttributes
+	if attrs == nil {
+		attrs = make(map[string]any)
+	}
+	td := parser.TemplateData{
+		Environment: environment,
+		User:        attrs,
+		Variables:   vars,
+		Resolve: func(ref parser.ResourceName) (string, error) {
+			return ref.Name, nil
+		},
+	}
+	if r != nil {
+		td.Self = parser.TemplateResource{Meta: r.Meta}
+	}
+	return td
 }
 
 // computeCacheKey computes a cache key for a resolved security policy.

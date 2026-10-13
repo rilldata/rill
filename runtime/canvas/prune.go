@@ -38,7 +38,12 @@ func PruneRendererProperties(renderer string, props map[string]any, timeDimensio
 			return false, true
 		}
 		p.pruneStringList("x.fields")
-		p.pruneStringList("y.fields")
+		// A multi-measure chart falls back to y.field when y.fields is empty, so it can't render if neither is left.
+		if before, after := p.pruneStringList("y.fields"); before > 0 && after == 0 {
+			if _, ok := pathutil.GetPath(props, "y.field"); !ok {
+				return false, true
+			}
+		}
 		p.dropColorIfRestricted()
 	case "donut_chart", "pie_chart":
 		// The color field is the category dimension; the chart is meaningless without it.

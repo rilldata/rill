@@ -60,11 +60,16 @@ export function hasVisibilityConditions(rows: unknown): boolean {
   if (!Array.isArray(rows)) return false;
   return rows.some((row) => {
     if (!row || typeof row !== "object") return false;
-    if ("if" in row) return true;
+    if (isCondition((row as { if?: unknown }).if)) return true;
     const { items, tabs } = row as { items?: unknown; tabs?: unknown };
     if (
       Array.isArray(items) &&
-      items.some((item) => !!item && typeof item === "object" && "if" in item)
+      items.some(
+        (item) =>
+          !!item &&
+          typeof item === "object" &&
+          isCondition((item as { if?: unknown }).if),
+      )
     ) {
       return true;
     }
@@ -74,11 +79,21 @@ export function hasVisibilityConditions(rows: unknown): boolean {
         (tab) =>
           !!tab &&
           typeof tab === "object" &&
-          ("if" in tab ||
+          (isCondition((tab as { if?: unknown }).if) ||
             hasVisibilityConditions((tab as { rows?: unknown }).rows)),
       )
     );
   });
+}
+
+/**
+ * Whether an `if` value shows content to some users only.
+ * An empty condition is ignored, and a literal `true` or `false` shows or hides the content for everyone.
+ */
+function isCondition(value: unknown): boolean {
+  if (typeof value !== "string") return false;
+  const condition = value.trim();
+  return condition !== "" && condition !== "true" && condition !== "false";
 }
 
 export function useRillYamlPolicyCheck(client: RuntimeClient) {

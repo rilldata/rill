@@ -207,11 +207,12 @@ func canvasTransitiveConditionResources(ctx context.Context, c *runtime.Controll
 
 	// Only grant the content that the canvas's `if` conditions show to these claims.
 	// The conditions are evaluated directly, since going through the security engine would recurse into this function.
-	conditions, err := c.Runtime.EvaluateCanvasConditions(ctx, c.InstanceID, claims, res)
+	// The evaluator is cached per claims and memoizes its results, so expanding the transitive rule on every security check stays cheap.
+	visibility, err := c.Runtime.VisibilityConditions(ctx, c.InstanceID, claims)
 	if err != nil {
 		return nil, err
 	}
-	rows, _ := canvas.PruneRows(spec.Rows, runtime.CanvasConditionsKeep(conditions))
+	rows, _ := canvas.PruneRows(spec.Rows, visibility.Keep())
 
 	// Collect all component names referenced by the canvas (including those nested in tab groups)
 	componentNames := make(map[string]bool)
@@ -234,11 +235,7 @@ func canvasTransitiveConditionResources(ctx context.Context, c *runtime.Controll
 
 		// Skip a component whose own `if` conditions hide it from these claims,
 		// such as an inline component of another canvas referenced by name.
-		met, err := c.Runtime.ComponentConditionMet(ctx, c.InstanceID, claims, componentRes)
-		if err != nil {
-			return nil, err
-		}
-		if !met {
+		if !visibility.ComponentMet(componentRes) {
 			continue
 		}
 
