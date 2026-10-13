@@ -2,7 +2,10 @@
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import InputLabel from "@rilldata/web-common/components/forms/InputLabel.svelte";
   import { getCanvasStore } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
+  import AggregationGrainSelector from "@rilldata/web-common/features/dashboards/time-controls/AggregationGrainSelector.svelte";
   import SuperPill from "@rilldata/web-common/features/dashboards/time-controls/super-pill/SuperPill.svelte";
+  import { ExploreStateURLParams } from "@rilldata/web-common/features/dashboards/url-state/url-params";
+  import { allowedGrainsForInterval } from "@rilldata/web-common/lib/time/new-grains";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import CanvasComparisonPill from "@rilldata/web-common/features/canvas/filters/CanvasComparisonPill.svelte";
   import { TIME_COMPARISON } from "@rilldata/web-common/lib/time/config";
@@ -37,12 +40,12 @@
         defaultTimeRangeStore,
         timeRangeOptionsStore,
         minTimeGrainMap,
+        largestMinTimeGrain,
         availableTimeZonesStore,
         state: {
           rangeStore: globalRangeStore,
           minMaxTimeStamps,
           interval: globalIntervalStore,
-          grainStore: globalGrainStore,
           timeZoneStore: globalTimeZoneStore,
           showTimeComparisonStore: globalShowTimeComparisonStore,
           comparisonRangeStore: globalComparisonRangeStore,
@@ -55,7 +58,7 @@
     interval: localIntervalStore,
     rangeStore: localRangeStore,
     timeZoneStore: localTimeZoneStore,
-    grainStore: localGrainStore,
+    searchParamsStore: localSearchParamsStore,
     set,
   } = localTimeControls);
 
@@ -79,7 +82,9 @@
   $: selectedRangeAlias = hasLocalTimeRange
     ? $localRangeStore
     : $globalRangeStore;
-  $: activeTimeGrain = hasLocalTimeRange ? $localGrainStore : $globalGrainStore;
+  // The grain in effect, resolved like the widget's queries: its own grain when the range allows it.
+  $: activeTimeGrain = $timeAndFilterStore.timeGrain;
+  $: grainOptions = allowedGrainsForInterval(interval, $largestMinTimeGrain);
   $: activeTimeZone = hasLocalTimeRange
     ? $localTimeZoneStore
     : $globalTimeZoneStore;
@@ -101,6 +106,12 @@
         DateTime.fromJSDate(selectedComparison.end).setZone(activeTimeZone),
       )
     : undefined;
+
+  function clearGrain() {
+    void localSearchParamsStore.set(
+      new Map([[ExploreStateURLParams.TimeGrain, undefined]]),
+    );
+  }
 
   function onDisplayTimeComparison(show: boolean) {
     // Turning comparison on picks the previous period, like the canvas toggle;
@@ -128,13 +139,13 @@
     label={m.canvas_time_range_label()}
     {id}
   />
-  <div class="flex flex-row flex-wrap gap-y-1.5 items-center">
+  <div class="flex flex-row flex-wrap gap-x-2 gap-y-1.5 items-center">
     <SuperPill
       context="filters-input"
       {minDate}
       {maxDate}
       {selectedRangeAlias}
-      showPivot={!showGrain || !hasLocalTimeRange}
+      showPivot
       {minTimeGrain}
       {defaultTimeRange}
       {availableTimeZones}
@@ -163,6 +174,20 @@
       onSelectTimeZone={set.zone}
       onPan={() => {}}
     />
+    {#if showGrain && activeTimeGrain && grainOptions.length}
+      <AggregationGrainSelector
+        {activeTimeGrain}
+        options={grainOptions}
+        onSelect={set.grain}
+        inheritOption={{
+          label: hasLocalTimeRange
+            ? m.time_default()
+            : m.canvas_inherit_from_canvas(),
+          selected: resolved.grain === undefined,
+          onSelect: clearGrain,
+        }}
+      />
+    {/if}
   </div>
   <div class="text-fg-secondary">
     {#if hasLocalTimeRange}

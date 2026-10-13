@@ -3,7 +3,9 @@
   import * as Tooltip from "@rilldata/web-common/components/tooltip-v2";
   import { getCanvasStore } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
   import { getPanRangeForTimeRange } from "@rilldata/web-common/features/dashboards/state-managers/selectors/charts";
+  import AggregationGrainSelector from "@rilldata/web-common/features/dashboards/time-controls/AggregationGrainSelector.svelte";
   import SuperPill from "@rilldata/web-common/features/dashboards/time-controls/super-pill/SuperPill.svelte";
+  import { allowedGrainsForInterval } from "@rilldata/web-common/lib/time/new-grains";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import Metadata from "../../dashboards/time-controls/super-pill/components/Metadata.svelte";
   import CanvasComparisonPill from "./CanvasComparisonPill.svelte";
@@ -77,6 +79,8 @@
 
   let canPan = $derived($canPanStore);
 
+  let grainOptions = $derived(allowedGrainsForInterval(interval, minTimeGrain));
+
   function onPan(direction: "left" | "right") {
     if (!interval || !selectedRange) return;
     const getPanRange = getPanRangeForTimeRange(
@@ -128,7 +132,7 @@
             {minDate}
             {maxDate}
             selectedRangeAlias={selectedRange}
-            showPivot={false}
+            showPivot
             {minTimeGrain}
             {defaultTimeRange}
             {availableTimeZones}
@@ -176,6 +180,13 @@
               }
             }}
           />
+          {#if activeTimeGrain && grainOptions.length}
+            <AggregationGrainSelector
+              {activeTimeGrain}
+              options={grainOptions}
+              onSelect={set.grain}
+            />
+          {/if}
         </div>
       </div>
     </div>
