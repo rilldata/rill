@@ -13283,6 +13283,256 @@ var _ interface {
 	ErrorName() string
 } = GetAIMessageResponseValidationError{}
 
+// Validate checks the field values on CompleteUIActionRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *CompleteUIActionRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on CompleteUIActionRequest with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// CompleteUIActionRequestMultiError, or nil if none found.
+func (m *CompleteUIActionRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *CompleteUIActionRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if !_CompleteUIActionRequest_InstanceId_Pattern.MatchString(m.GetInstanceId()) {
+		err := CompleteUIActionRequestValidationError{
+			field:  "InstanceId",
+			reason: "value does not match regex pattern \"^[_\\\\-a-zA-Z0-9]+$\"",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if utf8.RuneCountInString(m.GetConversationId()) < 1 {
+		err := CompleteUIActionRequestValidationError{
+			field:  "ConversationId",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if utf8.RuneCountInString(m.GetCallMessageId()) < 1 {
+		err := CompleteUIActionRequestValidationError{
+			field:  "CallMessageId",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if utf8.RuneCountInString(m.GetError()) > 1024 {
+		err := CompleteUIActionRequestValidationError{
+			field:  "Error",
+			reason: "value length must be at most 1024 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if len(errors) > 0 {
+		return CompleteUIActionRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// CompleteUIActionRequestMultiError is an error wrapping multiple validation
+// errors returned by CompleteUIActionRequest.ValidateAll() if the designated
+// constraints aren't met.
+type CompleteUIActionRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m CompleteUIActionRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m CompleteUIActionRequestMultiError) AllErrors() []error { return m }
+
+// CompleteUIActionRequestValidationError is the validation error returned by
+// CompleteUIActionRequest.Validate if the designated constraints aren't met.
+type CompleteUIActionRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e CompleteUIActionRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e CompleteUIActionRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e CompleteUIActionRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e CompleteUIActionRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e CompleteUIActionRequestValidationError) ErrorName() string {
+	return "CompleteUIActionRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e CompleteUIActionRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sCompleteUIActionRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = CompleteUIActionRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = CompleteUIActionRequestValidationError{}
+
+var _CompleteUIActionRequest_InstanceId_Pattern = regexp.MustCompile("^[_\\-a-zA-Z0-9]+$")
+
+// Validate checks the field values on CompleteUIActionResponse with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *CompleteUIActionResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on CompleteUIActionResponse with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// CompleteUIActionResponseMultiError, or nil if none found.
+func (m *CompleteUIActionResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *CompleteUIActionResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if len(errors) > 0 {
+		return CompleteUIActionResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// CompleteUIActionResponseMultiError is an error wrapping multiple validation
+// errors returned by CompleteUIActionResponse.ValidateAll() if the designated
+// constraints aren't met.
+type CompleteUIActionResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m CompleteUIActionResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m CompleteUIActionResponseMultiError) AllErrors() []error { return m }
+
+// CompleteUIActionResponseValidationError is the validation error returned by
+// CompleteUIActionResponse.Validate if the designated constraints aren't met.
+type CompleteUIActionResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e CompleteUIActionResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e CompleteUIActionResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e CompleteUIActionResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e CompleteUIActionResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e CompleteUIActionResponseValidationError) ErrorName() string {
+	return "CompleteUIActionResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e CompleteUIActionResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sCompleteUIActionResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = CompleteUIActionResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = CompleteUIActionResponseValidationError{}
+
 // Validate checks the field values on IssueDevJWTRequest with the rules
 // defined in the proto definition for this message. If any rules are
 // violated, the first error encountered is returned, or nil if there are no violations.

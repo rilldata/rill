@@ -5524,6 +5524,100 @@ export class GetAIMessageResponse extends Message$1<GetAIMessageResponse> {
 }
 
 /**
+ * Request message for RuntimeService.CompleteUIAction
+ *
+ * @generated from message rill.runtime.v1.CompleteUIActionRequest
+ */
+export class CompleteUIActionRequest extends Message$1<CompleteUIActionRequest> {
+  /**
+   * @generated from field: string instance_id = 1;
+   */
+  instanceId = "";
+
+  /**
+   * @generated from field: string conversation_id = 2;
+   */
+  conversationId = "";
+
+  /**
+   * ID of the click_ui call message the action was run for.
+   *
+   * @generated from field: string call_message_id = 3;
+   */
+  callMessageId = "";
+
+  /**
+   * Error message if the action failed; empty on success.
+   *
+   * @generated from field: string error = 4;
+   */
+  error = "";
+
+  constructor(data?: PartialMessage<CompleteUIActionRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.CompleteUIActionRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "conversation_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "call_message_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "error", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CompleteUIActionRequest {
+    return new CompleteUIActionRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): CompleteUIActionRequest {
+    return new CompleteUIActionRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): CompleteUIActionRequest {
+    return new CompleteUIActionRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: CompleteUIActionRequest | PlainMessage<CompleteUIActionRequest> | undefined, b: CompleteUIActionRequest | PlainMessage<CompleteUIActionRequest> | undefined): boolean {
+    return proto3.util.equals(CompleteUIActionRequest, a, b);
+  }
+}
+
+/**
+ * Response message for RuntimeService.CompleteUIAction
+ *
+ * @generated from message rill.runtime.v1.CompleteUIActionResponse
+ */
+export class CompleteUIActionResponse extends Message$1<CompleteUIActionResponse> {
+  constructor(data?: PartialMessage<CompleteUIActionResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.CompleteUIActionResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CompleteUIActionResponse {
+    return new CompleteUIActionResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): CompleteUIActionResponse {
+    return new CompleteUIActionResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): CompleteUIActionResponse {
+    return new CompleteUIActionResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: CompleteUIActionResponse | PlainMessage<CompleteUIActionResponse> | undefined, b: CompleteUIActionResponse | PlainMessage<CompleteUIActionResponse> | undefined): boolean {
+    return proto3.util.equals(CompleteUIActionResponse, a, b);
+  }
+}
+
+/**
  * Request message for RuntimeService.IssueDevJWT
  *
  * @generated from message rill.runtime.v1.IssueDevJWTRequest

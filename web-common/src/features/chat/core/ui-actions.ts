@@ -60,19 +60,46 @@ export function getAvailableUIActions(
   });
 }
 
+const actionHandlers = new Map<string, () => Promise<void>>();
+
 /**
- * Clicks a visible, enabled, uniquely-addressable action. Returns false if the
- * page changed since discovery or the action is no longer safe to execute.
+ * Registers a handler that runs in place of a click when the AI triggers the action.
+ * Use it for actions that finish asynchronously, so the AI waits for the outcome:
+ * a rejected promise is reported back to the AI as the action's error.
+ * The element carrying the action ID still gates availability. Returns an unregister function.
  */
-export function clickUIAction(
+export function registerUIActionHandler(
+  actionId: string,
+  handler: () => Promise<void>,
+): () => void {
+  actionHandlers.set(actionId, handler);
+  return () => {
+    if (actionHandlers.get(actionId) === handler)
+      actionHandlers.delete(actionId);
+  };
+}
+
+/**
+ * Runs a visible, enabled, uniquely-addressable action: its registered handler if it has one,
+ * otherwise a click. Throws if the page changed since discovery or the action fails.
+ */
+export async function runUIAction(
   actionId: string,
   root: ParentNode = document,
-): boolean {
+): Promise<void> {
   const matches = availableActionElements(root).filter(
     (element) => element.getAttribute(AI_ACTION_ATTRIBUTE)?.trim() === actionId,
   );
-  if (matches.length !== 1) return false;
+  if (matches.length !== 1) {
+    throw new Error(
+      `Action is no longer uniquely available on the page: ${actionId}`,
+    );
+  }
 
-  matches[0].click();
-  return true;
+  const handler = actionHandlers.get(actionId);
+  if (handler) {
+    await handler();
+  } else {
+    matches[0].click();
+  }
 }

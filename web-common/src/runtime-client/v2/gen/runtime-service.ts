@@ -21,6 +21,8 @@ import {
   AnalyzeConnectorsRequest,
   AnalyzeVariablesRequest,
   CompleteRequest,
+  CompleteUIActionRequest,
+  CompleteUIActionResponse,
   CreateDirectoryRequest,
   CreateTriggerRequest,
   DeleteFileRequest,
@@ -3450,6 +3452,70 @@ export function createRuntimeServiceCompleteMutation(
   Omit<PartialMessage<CompleteRequest>, "instanceId">
 > {
   const mutationOptions = getRuntimeServiceCompleteMutationOptions(
+    client,
+    options,
+  );
+  return createMutation(mutationOptions, queryClient);
+}
+
+/**
+ * Raw RPC call: RuntimeService.CompleteUIAction
+ */
+export async function runtimeServiceCompleteUIAction(
+  client: RuntimeClient,
+  request: Omit<PartialMessage<CompleteUIActionRequest>, "instanceId">,
+  options?: { signal?: AbortSignal },
+): Promise<PartialMessage<CompleteUIActionResponse>> {
+  const r = await client.runtimeService.completeUIAction(
+    CompleteUIActionRequest.fromJson(
+      stripUndefined({
+        instanceId: client.instanceId,
+        ...request,
+      }) as unknown as JsonValue,
+    ),
+    { signal: options?.signal },
+  );
+  return r.toJson({
+    emitDefaultValues: true,
+  }) as unknown as PartialMessage<CompleteUIActionResponse>;
+}
+
+export function getRuntimeServiceCompleteUIActionMutationOptions(
+  client: RuntimeClient,
+  options?: Partial<
+    CreateMutationOptions<
+      PartialMessage<CompleteUIActionResponse>,
+      unknown,
+      Omit<PartialMessage<CompleteUIActionRequest>, "instanceId">
+    >
+  >,
+): CreateMutationOptions<
+  PartialMessage<CompleteUIActionResponse>,
+  unknown,
+  Omit<PartialMessage<CompleteUIActionRequest>, "instanceId">
+> {
+  return {
+    mutationFn: (request) => runtimeServiceCompleteUIAction(client, request),
+    ...options,
+  };
+}
+
+export function createRuntimeServiceCompleteUIActionMutation(
+  client: RuntimeClient,
+  options?: Partial<
+    CreateMutationOptions<
+      PartialMessage<CompleteUIActionResponse>,
+      unknown,
+      Omit<PartialMessage<CompleteUIActionRequest>, "instanceId">
+    >
+  >,
+  queryClient?: QueryClient,
+): CreateMutationResult<
+  PartialMessage<CompleteUIActionResponse>,
+  unknown,
+  Omit<PartialMessage<CompleteUIActionRequest>, "instanceId">
+> {
+  const mutationOptions = getRuntimeServiceCompleteUIActionMutationOptions(
     client,
     options,
   );

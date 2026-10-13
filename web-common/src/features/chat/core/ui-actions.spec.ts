@@ -1,5 +1,9 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { clickUIAction, getAvailableUIActions } from "./ui-actions";
+import {
+  getAvailableUIActions,
+  registerUIActionHandler,
+  runUIAction,
+} from "./ui-actions";
 
 function addAction(
   id: string,
@@ -47,13 +51,53 @@ describe("UI actions", () => {
     expect(getAvailableUIActions()).toEqual([]);
   });
 
-  it("clicks exactly one currently available action", () => {
+  it("clicks exactly one currently available action", async () => {
     const button = addAction("dashboard.search", "Search");
     const onClick = vi.fn();
     button.addEventListener("click", onClick);
 
-    expect(clickUIAction("dashboard.search")).toBe(true);
+    await runUIAction("dashboard.search");
     expect(onClick).toHaveBeenCalledOnce();
-    expect(clickUIAction("missing")).toBe(false);
+    await expect(runUIAction("missing")).rejects.toThrow(
+      "no longer uniquely available",
+    );
+  });
+
+  it("runs a registered handler instead of clicking", async () => {
+    const button = addAction("component.eject", "Eject");
+    const onClick = vi.fn();
+    button.addEventListener("click", onClick);
+    const handler = vi.fn().mockResolvedValue(undefined);
+    const unregister = registerUIActionHandler("component.eject", handler);
+
+    await runUIAction("component.eject");
+    expect(handler).toHaveBeenCalledOnce();
+    expect(onClick).not.toHaveBeenCalled();
+
+    unregister();
+    await runUIAction("component.eject");
+    expect(onClick).toHaveBeenCalledOnce();
+  });
+
+  it("propagates a registered handler's failure", async () => {
+    addAction("component.eject", "Eject");
+    const unregister = registerUIActionHandler("component.eject", () =>
+      Promise.reject(new Error("compile failed")),
+    );
+
+    await expect(runUIAction("component.eject")).rejects.toThrow(
+      "compile failed",
+    );
+    unregister();
+  });
+
+  it("does not run a handler whose element is unavailable", async () => {
+    addAction("component.eject", "Eject", { disabled: true });
+    const handler = vi.fn().mockResolvedValue(undefined);
+    const unregister = registerUIActionHandler("component.eject", handler);
+
+    await expect(runUIAction("component.eject")).rejects.toThrow();
+    expect(handler).not.toHaveBeenCalled();
+    unregister();
   });
 });

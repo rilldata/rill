@@ -297,6 +297,15 @@ service RuntimeService {
     };
   }
 
+  // CompleteUIAction reports the outcome of a UI action the browser ran for a click_ui tool call.
+  // The click_ui tool call blocks until the browser reports the outcome or times out.
+  rpc CompleteUIAction(CompleteUIActionRequest) returns (CompleteUIActionResponse) {
+    option (google.api.http) = {
+      post: "/v1/instances/{instance_id}/ai/conversations/{conversation_id}/messages/{call_message_id}/ui-action",
+      body: "*"
+    };
+  }
+
   // Access management
 
   // IssueDevJWT issues a JWT for mimicking a user in local development.
@@ -1272,6 +1281,19 @@ message GetAIMessageResponse {
   Message message = 1;
   Message result = 2;
 }
+
+// Request message for RuntimeService.CompleteUIAction
+message CompleteUIActionRequest {
+  string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
+  string conversation_id = 2 [(validate.rules).string.min_len = 1];
+  // ID of the click_ui call message the action was run for.
+  string call_message_id = 3 [(validate.rules).string.min_len = 1];
+  // Error message if the action failed; empty on success.
+  string error = 4 [(validate.rules).string.max_len = 1024];
+}
+
+// Response message for RuntimeService.CompleteUIAction
+message CompleteUIActionResponse {}
 
 // **********
 // Access management
