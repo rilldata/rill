@@ -57,7 +57,6 @@ type CatalogStore interface {
 	InsertAISession(ctx context.Context, s *AISession) error
 	UpdateAISession(ctx context.Context, s *AISession) error
 	FindAIMessages(ctx context.Context, sessionID string) ([]*AIMessage, error)
-	FindMaxAIMessageIndex(ctx context.Context, sessionID string) (int, error)
 	InsertAIMessage(ctx context.Context, m *AIMessage) error
 
 	FindAIMemories(ctx context.Context, ownerID string) ([]*AIMemory, error)

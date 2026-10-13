@@ -26,7 +26,7 @@ var _ Tool[*UpdateMemoryArgs, *MemoryUpdateResult] = (*UpdateMemory)(nil)
 
 type UpdateMemoryArgs struct {
 	Action   string `json:"action" jsonschema:"The operation to perform.,enum=add,enum=update,enum=delete"`
-	MemoryID string `json:"memory_id,omitempty" jsonschema:"ID of an existing memory. Required for update and delete."`
+	MemoryID string `json:"memory_id,omitempty" jsonschema:"ID of an existing memory as shown in the user_memory section. Required for update and delete."`
 	Content  string `json:"content,omitempty" jsonschema:"The memory as a short standalone statement about the user (max 300 characters). Required for add and update."`
 }
 
@@ -88,10 +88,6 @@ func (t *UpdateMemory) Handler(ctx context.Context, args *UpdateMemoryArgs) (*Me
 	if err != nil {
 		return nil, err
 	}
-	byID := make(map[string]*drivers.AIMemory, len(existing))
-	for _, m := range existing {
-		byID[m.ID] = m
-	}
 
 	content := SanitizeMemoryContent(args.Content)
 	res := &MemoryUpdateResult{Op: args.Action, MemoryID: args.MemoryID, Content: content}
@@ -108,7 +104,7 @@ func (t *UpdateMemory) Handler(ctx context.Context, args *UpdateMemoryArgs) (*Me
 			}
 		}
 		if len(existing) >= MaxMemories {
-			return rejectMemoryOp(res, fmt.Sprintf("memory limit of %d reached; ask the user to remove memories they no longer need", MaxMemories)), nil
+			return rejectMemoryOp(res, fmt.Sprintf("memory limit of %d reached; the user can remove memories they no longer need in Manage memory, or ask you to forget some", MaxMemories)), nil
 		}
 		now := time.Now()
 		m := &drivers.AIMemory{
@@ -127,10 +123,11 @@ func (t *UpdateMemory) Handler(ctx context.Context, args *UpdateMemoryArgs) (*Me
 		res.MemoryID = m.ID
 
 	case MemoryOpUpdate:
-		m, ok := byID[args.MemoryID]
+		m, ok := findMemoryByID(existing, args.MemoryID)
 		if !ok {
 			return rejectMemoryOp(res, "memory not found"), nil
 		}
+		res.MemoryID = m.ID
 		if reason := validateMemoryContent(content); reason != "" {
 			return rejectMemoryOp(res, reason), nil
 		}
@@ -144,10 +141,11 @@ func (t *UpdateMemory) Handler(ctx context.Context, args *UpdateMemoryArgs) (*Me
 		}
 
 	case MemoryOpDelete:
-		m, ok := byID[args.MemoryID]
+		m, ok := findMemoryByID(existing, args.MemoryID)
 		if !ok {
 			return rejectMemoryOp(res, "memory not found"), nil
 		}
+		res.MemoryID = m.ID
 		if err := catalog.DeleteAIMemory(ctx, m.ID); err != nil {
 			return nil, err
 		}
@@ -163,7 +161,7 @@ func (t *UpdateMemory) Handler(ctx context.Context, args *UpdateMemoryArgs) (*Me
 	if err != nil {
 		return nil, err
 	}
-	s.setUserMemories(memories, true)
+	s.setUserMemories(memories)
 
 	return res, nil
 }

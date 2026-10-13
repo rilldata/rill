@@ -593,20 +593,10 @@ func (s *BaseSession) Flush(ctx context.Context) error {
 
 	// Flush messages
 	if s.messagesDirty {
-		// Indexes are (re)assigned here rather than at append time because a session can be flushed more than once,
-		// and a background task (memory extraction) may flush it while a new request flushes its own messages.
-		// Deriving the base from the database keeps indexes unique and ordered whichever flush wins the race.
-		idx, err := catalog.FindMaxAIMessageIndex(ctx, s.id)
-		if err != nil {
-			return err
-		}
-
 		for _, msg := range s.messages {
 			if !msg.dirty {
 				continue
 			}
-			idx++
-			msg.Index = idx
 			err = catalog.InsertAIMessage(ctx, &drivers.AIMessage{
 				ID:          msg.ID,
 				ParentID:    msg.ParentID,
@@ -623,8 +613,6 @@ func (s *BaseSession) Flush(ctx context.Context) error {
 			if err != nil {
 				return err
 			}
-			msg.dirty = false
-
 			content := "<redacted>"
 			if msg.ContentType == MessageContentTypeError {
 				content = msg.Content
@@ -739,11 +727,10 @@ func (s *BaseSession) UserMemories() []*drivers.AIMemory {
 	return s.userMemories
 }
 
-func (s *BaseSession) setUserMemories(memories []*drivers.AIMemory, enabled bool) {
+func (s *BaseSession) setUserMemories(memories []*drivers.AIMemory) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.userMemories = memories
-	s.memoryEnabled = enabled
 }
 
 func (s *BaseSession) SetLLM(acquireLLM func(ctx context.Context) (drivers.AIService, func(), error)) {
@@ -985,25 +972,6 @@ func (s *Session) RootID() string {
 		root = msg.ParentID
 	}
 	return root
-}
-
-// agentName returns the name of the agent whose call the current call is nested in, or an empty string if there is none.
-func (s *Session) agentName() string {
-	id := s.ParentID
-	for range 100 { // Fail-safe, not expected to reach the limit
-		if id == "" {
-			return ""
-		}
-		msg, ok := s.Message(FilterByID(id))
-		if !ok {
-			return ""
-		}
-		if msg.Type == MessageTypeCall && (msg.Tool == AnalystAgentName || msg.Tool == DeveloperAgentName) {
-			return msg.Tool
-		}
-		id = msg.ParentID
-	}
-	return ""
 }
 
 func (s *Session) Tool(toolName string) (*CompiledTool, bool) {
@@ -1757,4 +1725,23 @@ func maybeTruncateMessages(messages []*aiv1.CompletionMessage) []*aiv1.Completio
 // completionMessageID turns a UUID into a truncated ID suitable for use in completion messages (which don't require IDs to be globally unique).
 func completionMessageID(id string) string {
 	return strings.ReplaceAll(id, "-", "")[0:16]
+}
+
+// agentName returns the name of the agent whose call the current call is nested in, or an empty string if there is none.
+func (s *Session) agentName() string {
+	id := s.ParentID
+	for range 100 { // Fail-safe, not expected to reach the limit
+		if id == "" {
+			return ""
+		}
+		msg, ok := s.Message(FilterByID(id))
+		if !ok {
+			return ""
+		}
+		if msg.Type == MessageTypeCall && (msg.Tool == AnalystAgentName || msg.Tool == DeveloperAgentName) {
+			return msg.Tool
+		}
+		id = msg.ParentID
+	}
+	return ""
 }

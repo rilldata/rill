@@ -47,14 +47,15 @@ func TestUpdateMemoryTool(t *testing.T) {
 	require.Equal(t, memoryID, res.MemoryID)
 	require.Len(t, s.UserMemories(), 1)
 
-	// Update
+	// Update by the short ID shown in the prompt; the result carries the full ID
 	_, err = s.CallTool(t.Context(), ai.RoleAssistant, ai.UpdateMemoryName, &res, &ai.UpdateMemoryArgs{
 		Action:   ai.MemoryOpUpdate,
-		MemoryID: memoryID,
+		MemoryID: memoryID[:8],
 		Content:  "Prefers tables over charts, except for time series.",
 	})
 	require.NoError(t, err)
 	require.Equal(t, ai.MemoryOpUpdate, res.Op)
+	require.Equal(t, memoryID, res.MemoryID)
 	require.Equal(t, "Prefers tables over charts, except for time series.", s.UserMemories()[0].Content)
 
 	// Unknown ID is a noop

@@ -548,19 +548,6 @@ func (c *catalogStore) FindAIMessages(ctx context.Context, sessionID string) ([]
 	return result, nil
 }
 
-// FindMaxAIMessageIndex returns the highest index currently persisted for the session, or -1 if it has no messages.
-func (c *catalogStore) FindMaxAIMessageIndex(ctx context.Context, sessionID string) (int, error) {
-	var idx sql.NullInt64
-	err := c.db.QueryRowxContext(ctx, `SELECT MAX("index") FROM ai_messages WHERE session_id = ?`, sessionID).Scan(&idx)
-	if err != nil {
-		return 0, err
-	}
-	if !idx.Valid {
-		return -1, nil
-	}
-	return int(idx.Int64), nil
-}
-
 func (c *catalogStore) InsertAIMessage(ctx context.Context, m *drivers.AIMessage) error {
 	_, err := c.db.ExecContext(ctx, `
 		INSERT INTO ai_messages (id, parent_id, session_id, created_on, updated_on, "index", role, type, tool, content_type, content)

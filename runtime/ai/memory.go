@@ -44,15 +44,15 @@ const (
 // reportUserAgent is the user agent of AI report sessions. Reports render for many recipients, so they never use memory.
 const reportUserAgent = "rill/report"
 
-// Patterns that disqualify a candidate memory.
-// They catch secrets and personal identifiers the model should never have proposed, and instruction-like text that could act as a prompt injection.
+// Patterns that disqualify a candidate memory: secrets and personal identifiers the model should never have proposed.
+// They are deliberately narrow; what is worth remembering is left to the prompt, since wider heuristics reject legitimate preferences.
 var (
 	// Note: "token" only counts as a secret in a credential-like phrase ("access token"), not on its own,
 	// because token counts and token spend are ordinary things to analyze in a BI tool.
-	memorySecretPattern      = regexp.MustCompile(`(?i)\b(password|passwd|secret|bearer|credential|(api|access|auth|refresh|session|id)[ _-]?(key|token))\b`)
-	memoryEmailPattern       = regexp.MustCompile(`[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}`)
-	memoryLongDigitsPattern  = regexp.MustCompile(`\d{12,}|\d{4}[ -]?\d{4}[ -]?\d{4}[ -]?\d{1,7}\b`)
-	memoryInstructionPattern = regexp.MustCompile(`(?i)(ignore|disregard|override)\b.{0,40}\b(instructions|rules|prompt|limit)|system prompt|\bmust (always|never) call\b`)
+	memorySecretPattern = regexp.MustCompile(`(?i)\b(password|passwd|secret|bearer|credential|(api|access|auth|refresh|session|id)[ _-]?(key|token))\b`)
+	// memoryTokenPattern matches the formats of well-known credentials: OpenAI, GitHub, AWS, Slack, GitLab and Google keys.
+	memoryTokenPattern = regexp.MustCompile(`\b(sk-[A-Za-z0-9_-]{8,}|ghp_[A-Za-z0-9]{8,}|github_pat_[A-Za-z0-9_]{8,}|AKIA[0-9A-Z]{16}|xox[abp]-[A-Za-z0-9-]{8,}|glpat-[A-Za-z0-9_-]{8,}|AIza[0-9A-Za-z_-]{20,})`)
+	memoryEmailPattern = regexp.MustCompile(`[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}`)
 	// memoryAngleBrackets are stripped on write so a memory can never close the <user_memory> block it is rendered in.
 	memoryAngleBrackets = strings.NewReplacer("<", "", ">", "")
 )
@@ -116,16 +116,51 @@ func loadUserMemories(ctx context.Context, rt *runtime.Runtime, catalog drivers.
 	return memories, true, nil
 }
 
+// memoryIDPrefixLen is the length of the memory ID prefix shown to the model.
+// A full UUID is long enough that a model occasionally mistypes one when it calls update_memory;
+// the first 8 hex characters are unique among a user's memories (at most MaxMemories) and easy to copy.
+const memoryIDPrefixLen = 8
+
+// shortMemoryID returns the prefix of a memory ID that is shown to the model.
+func shortMemoryID(id string) string {
+	if len(id) > memoryIDPrefixLen {
+		return id[:memoryIDPrefixLen]
+	}
+	return id
+}
+
+// findMemoryByID returns the memory with the given ID.
+// It accepts the full ID and the prefix shown to the model (see shortMemoryID),
+// and finds nothing when the ID is shorter than that prefix or matches more than one memory.
+func findMemoryByID(memories []*drivers.AIMemory, id string) (*drivers.AIMemory, bool) {
+	if len(id) < memoryIDPrefixLen {
+		return nil, false
+	}
+	var found *drivers.AIMemory
+	for _, m := range memories {
+		if m.ID == id {
+			return m, true
+		}
+		if strings.HasPrefix(m.ID, id) {
+			if found != nil {
+				return nil, false
+			}
+			found = m
+		}
+	}
+	return found, found != nil
+}
+
 // renderUserMemories renders the memories that apply to an agent as a list for inclusion in its prompt:
 // the memories scoped to it, plus the ones that apply to every agent.
-// Each line carries the memory's ID so the model can reference it in update and delete operations.
+// Each line carries the memory's short ID so the model can reference it in update and delete operations.
 func renderUserMemories(memories []*drivers.AIMemory, agent string) string {
 	var b strings.Builder
 	for _, m := range memories {
 		if m.Agent != "" && m.Agent != agent {
 			continue
 		}
-		line := fmt.Sprintf("- %s (id: %s)\n", m.Content, m.ID)
+		line := fmt.Sprintf("- %s (id: %s)\n", m.Content, shortMemoryID(m.ID))
 		if b.Len()+len(line) > maxMemoryPromptChars {
 			break
 		}
@@ -149,14 +184,11 @@ func validateMemoryContent(content string) string {
 	if utf8.RuneCountInString(content) > MaxMemoryContentChars {
 		return fmt.Sprintf("content exceeds %d characters", MaxMemoryContentChars)
 	}
-	if memorySecretPattern.MatchString(content) {
+	if memorySecretPattern.MatchString(content) || memoryTokenPattern.MatchString(content) {
 		return "content looks like a secret or credential"
 	}
-	if memoryEmailPattern.MatchString(content) || memoryLongDigitsPattern.MatchString(content) {
-		return "content looks like a personal identifier or account number"
-	}
-	if memoryInstructionPattern.MatchString(content) {
-		return "content looks like an instruction rather than a preference"
+	if memoryEmailPattern.MatchString(content) {
+		return "content looks like a personal identifier"
 	}
 	return ""
 }
