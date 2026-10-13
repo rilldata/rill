@@ -59,14 +59,14 @@ var toolRegistry = sync.OnceValue(func() map[string]*CompiledTool {
 	return NewRunner(nil, nil).Tools
 })
 
-// MCPToolSpecs returns the specs of all registered tools, keyed by name.
+// MCPToolSpecs returns the specs of all registered tools as advertised on MCP servers, keyed by name (see CompiledTool.mcpSpec).
 // The specs are copies owned by the caller, so they may be extended, for example with extra input properties or _meta.
 // It is used by the unified MCP server in the admin service, which advertises the tools without being able to run them.
 func MCPToolSpecs() map[string]*mcp.Tool {
 	tools := toolRegistry()
 	specs := make(map[string]*mcp.Tool, len(tools))
 	for name, t := range tools {
-		spec := *t.Spec
+		spec := *t.mcpSpec()
 		spec.Meta = maps.Clone(spec.Meta)
 		// CloneSchemas copies the nested schemas and their maps but shares the plain slices, so Required is cloned separately.
 		if s, ok := spec.InputSchema.(*jsonschema.Schema); ok {
@@ -276,7 +276,7 @@ func (s *Session) coerceMCPToolArgs(req mcp.Request) bool {
 	if !ok || t.Spec == nil {
 		return false
 	}
-	schema, ok := t.Spec.InputSchema.(*jsonschema.Schema)
+	schema, ok := t.mcpSpec().InputSchema.(*jsonschema.Schema)
 	if !ok || schema == nil {
 		return false
 	}

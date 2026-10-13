@@ -14,10 +14,10 @@ import multi from "../../harness/fixtures/multi_measure_bar.json";
 import truncated from "../../harness/fixtures/truncated.json";
 import truncatedRows from "../../harness/fixtures/truncated_rows.json";
 import { adaptChartResult, MAX_TABLE_ROWS } from "./adapt";
-import type { ChartResult } from "./contract";
+import type { RillChartResult } from "./contract";
 
 const result = (fixture: { result: { structuredContent?: unknown } }) =>
-  fixture.result.structuredContent as ChartResult;
+  fixture.result.structuredContent as RillChartResult;
 
 const light = { isDark: false, locale: "en" };
 

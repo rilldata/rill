@@ -45,17 +45,24 @@ import {
 } from "./caption";
 import {
   isCartesianChartType,
+  isFlintResult,
   normalizeRows,
   type ChartResult,
+  type FlintChartResult,
+  type RillChartResult,
   type WireField,
+  type WireFlintChartSpec,
   type WireRow,
   type WireTimeRange,
 } from "./contract";
 import { topNTarget } from "./controls";
+import { flintTemporalField, flintTopNTarget } from "./flint-controls";
+import { buildFlintCompileInput, type FlintCompileInput } from "./flint-input";
 
 /**
- * Turns a `create_chart` result into what web-common's `Chart.svelte` renders from,
- * plus the title, caption and data table the card shows around it.
+ * Turns a `create_chart` result into what the chart surface renders from, plus the title,
+ * caption and data table the card shows around it: web-common's `Chart.svelte` inputs for a
+ * Rill result, Flint's compile input for a Flint result.
  * Pure: no DOM, no network, no host session. Everything the in-app chart gets from
  * TanStack queries and dashboard stores is derived here from the wire payload.
  */
@@ -68,6 +75,11 @@ export interface AdaptOptions {
    */
   timeZone?: string;
   locale?: string;
+  /**
+   * Flint results only: the chart spec to compile instead of the one the result carries,
+   * i.e. the presentation controls' edits (chart type, properties, views) applied client-side.
+   */
+  chartSpec?: WireFlintChartSpec;
 }
 
 export type TableColumnKind = "time" | "dimension" | "measure";
@@ -85,12 +97,9 @@ export interface TableModel {
   totalRows: number;
 }
 
-export interface AdaptedChart {
-  chartType: ChartType;
-  spec: ChartSpec;
-  chartData: Readable<ChartDataResult>;
-  /** The same value the store holds; convenient for spec generation and tests. */
-  snapshot: ChartDataResult;
+/** What the card and the fullscreen view show around either kind of chart. */
+export interface AdaptedChartBase {
+  /** The measures the chart draws, in the shape Rill's value formatters take. */
   measures: MetricsViewSpecMeasure[];
   /** Project theme variables for the current mode, as `Chart.svelte` expects them. */
   theme: Record<string, string> | undefined;
@@ -116,6 +125,32 @@ export interface AdaptedChart {
   openUrl: string | undefined;
 }
 
+/** A Rill result, rendered by web-common's `Chart.svelte` from Rill's chart config. */
+export interface AdaptedRillChart extends AdaptedChartBase {
+  engine: "rill";
+  chartType: ChartType;
+  spec: ChartSpec;
+  chartData: Readable<ChartDataResult>;
+  /** The same value the store holds; convenient for spec generation and tests. */
+  snapshot: ChartDataResult;
+}
+
+/** A Flint result, compiled by `compileFlintSpec` and rendered with the Vega-Lite renderer. */
+export interface AdaptedFlintChart extends AdaptedChartBase {
+  engine: "flint";
+  chartType: string;
+  /** The chart spec in effect: the result's, or the presentation controls' edit of it. */
+  chartSpec: WireFlintChartSpec;
+  flint: FlintCompileInput;
+  /**
+   * The rows Flint compiles, with temporal values converted to the resolved time zone and the
+   * comparison folded into long form; the table shows the result's own rows.
+   */
+  rows: WireRow[];
+}
+
+export type AdaptedChart = AdaptedRillChart | AdaptedFlintChart;
+
 export const MAX_TABLE_ROWS = 500;
 /** Zero-filling stops when a range would need more buckets than this. */
 export const MAX_FILL_BUCKETS = 1500;
@@ -124,10 +159,20 @@ const DEFAULT_TIME_GRAIN = V1TimeGrain.TIME_GRAIN_DAY;
 /** Label the chart providers use for the time axis; titles key on it ("over Time"). */
 const TIME_AXIS_LABEL = "Time";
 
-export function adaptChartResult(
+/** Adapts either kind of result; see `adaptChartResult` and `adaptFlintResult`. */
+export function adaptResult(
   result: ChartResult,
   options: AdaptOptions,
 ): AdaptedChart {
+  return isFlintResult(result)
+    ? adaptFlintResult(result, options)
+    : adaptChartResult(result, options);
+}
+
+export function adaptChartResult(
+  result: RillChartResult,
+  options: AdaptOptions,
+): AdaptedRillChart {
   const chartType = result.chart_type;
   const spec = result.spec as unknown as ChartSpec;
   const timeZone =
@@ -143,7 +188,10 @@ export function adaptChartResult(
     timeDimensions,
   } = getFieldsByType(spec);
   const temporalField = timeDimensions[0];
-  const timeGrain = resolveTimeGrain(result, temporalField !== undefined);
+  const timeGrain = resolveTimeGrain(
+    result.time_grain ?? result.spec.time_grain,
+    temporalField !== undefined,
+  );
   const fields = buildFields(
     result.fields ?? {},
     measureNames,
@@ -221,6 +269,7 @@ export function adaptChartResult(
   });
 
   return {
+    engine: "rill",
     chartType,
     spec,
     chartData: readable(snapshot),
@@ -257,11 +306,144 @@ export function adaptChartResult(
   };
 }
 
+/**
+ * Adapts a Flint result: the rows are converted to the resolved time zone like Rill's charts do
+ * (Flint takes `Date` values), the measures get Rill's formatters, and `flint` holds the compile
+ * input for the surface. The title comes from the result, else from the spec's headline; the
+ * spec's subtitle leads the caption. No zero-filling: Flint lays out temporal axes itself.
+ */
+export function adaptFlintResult(
+  result: FlintChartResult,
+  options: AdaptOptions,
+): AdaptedFlintChart {
+  const chartSpec = options.chartSpec ?? result.input.chart_spec;
+  const timeZone =
+    result.resolved_time_range?.time_zone ||
+    result.input.data.time_range?.time_zone ||
+    options.timeZone ||
+    DEFAULT_TIME_ZONE;
+  const locale = options.locale ?? "en";
+  const wireFields = result.fields ?? {};
+  const timeDimension = result.metrics_view?.time_dimension;
+
+  const measureNames: string[] = [];
+  const dimensionNames: string[] = [];
+  const timeNames: string[] = [];
+  for (const [name, field] of Object.entries(wireFields)) {
+    if (field.kind === "measure") measureNames.push(name);
+    else if (field.kind === "time" || name === timeDimension)
+      timeNames.push(name);
+    else dimensionNames.push(name);
+  }
+  const temporalField = flintTemporalField(
+    chartSpec,
+    wireFields,
+    timeDimension,
+  );
+  const timeGrain = resolveTimeGrain(
+    result.time_grain ?? result.input.data.time_grain,
+    temporalField !== undefined,
+  );
+  const fields = buildFields(
+    wireFields,
+    measureNames,
+    dimensionNames,
+    timeNames,
+    timeGrain,
+  );
+
+  let rows = normalizeRows(result.data);
+  const measureKeys = measureKeysInRows(measureNames, rows);
+  rows = rows.map((row) => coerceMeasureValues(row, measureKeys));
+  if (timeNames.length > 0) {
+    rows = convertTimeFields(rows, timeNames, timeZone);
+  }
+
+  const flint = buildFlintCompileInput(chartSpec, result, rows, timeGrain);
+  const hasComparison =
+    flint.comparison !== undefined ||
+    measureNames.some((name) =>
+      measureKeys.includes(name + ComparisonDeltaPreviousSuffix),
+    );
+
+  // Each comparison column is formatted like its measure.
+  const measures: MetricsViewSpecMeasure[] = [];
+  for (const name of measureNames) {
+    const measure = fields[name] as MetricsViewSpecMeasure;
+    measures.push(measure);
+    const previous = name + ComparisonDeltaPreviousSuffix;
+    if (measureKeys.includes(previous)) {
+      measures.push({
+        ...measure,
+        name: previous,
+        displayName: flint.fields.field_display_names[previous],
+      });
+    }
+  }
+
+  const range = result.resolved_time_range ?? result.input.data.time_range;
+  const title =
+    result.title?.trim() || chartSpec.title?.trim() || chartSpec.chartType;
+  const timeRangeLabel = range
+    ? formatTimeRange(range, timeZone, locale, timeGrain)
+    : undefined;
+  const subtitle = chartSpec.subtitle?.trim();
+  const captionParts = [
+    ...(subtitle ? [subtitle] : []),
+    ...buildCaptionParts({
+      range,
+      grain: timeGrain,
+      showGrain: temporalField !== undefined,
+      hasComparison,
+      metricsViewLabel:
+        result.metrics_view?.display_name || result.metrics_view?.name,
+      timeZone,
+      locale,
+    }),
+  ];
+
+  return {
+    engine: "flint",
+    chartType: chartSpec.chartType,
+    chartSpec,
+    flint,
+    rows: flint.rows,
+    measures,
+    theme: themeManager.resolveThemeObject(result.theme, options.isDark),
+    title,
+    timeRangeLabel,
+    captionParts,
+    caption: captionParts.join(CAPTION_SEPARATOR),
+    table: buildTable(
+      rows,
+      fields,
+      timeNames,
+      dimensionNames,
+      measureNames,
+      hasComparison,
+      timeGrain,
+    ),
+    rowCount: rows.length,
+    timeZone,
+    timeGrain,
+    temporalField,
+    hasComparison,
+    truncated: result.truncated === true,
+    rowsTruncated: result.rows_truncated === true,
+    truncationNote: truncationNote(
+      result,
+      temporalField,
+      flintTopNTarget(chartSpec, wireFields, timeDimension)?.limit,
+    ),
+    truncationWarning: result.truncation_warning || undefined,
+    openUrl: result.open_url || undefined,
+  };
+}
+
 function resolveTimeGrain(
-  result: ChartResult,
+  grain: V1TimeGrain | undefined,
   hasTemporalField: boolean,
 ): V1TimeGrain | undefined {
-  const grain = result.time_grain ?? result.spec.time_grain;
   if (grain && grain !== V1TimeGrain.TIME_GRAIN_UNSPECIFIED) return grain;
   return hasTemporalField ? DEFAULT_TIME_GRAIN : undefined;
 }

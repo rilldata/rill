@@ -4,11 +4,18 @@
   import type { V1TimeGrain } from "@rilldata/web-common/runtime-client/gen/index.schemas";
   import type { McpUiHostContext } from "@modelcontextprotocol/ext-apps";
   import type { AdaptedChart } from "../lib/adapt";
+  import type { WireFlintChartSpec } from "../lib/contract";
   import {
     topNChoices,
     type ControlOptions,
     type ControlState,
   } from "../lib/controls";
+  import type { FlintPanel } from "../lib/flint-options";
+  import {
+    NO_NOTICES,
+    truncationBanner,
+    type CompileNotices,
+  } from "../lib/notices";
   import CardFooter from "./CardFooter.svelte";
   import CardHeader from "./CardHeader.svelte";
   import ChartSurface from "./ChartSurface.svelte";
@@ -25,12 +32,14 @@
     safeAreaInsets,
     controls,
     controlState,
+    panel,
     refreshing = false,
     refreshError,
     openUrl,
     onOpenLink,
     onExit,
     onControlsChange,
+    onPresentationChange,
   }: {
     chart: AdaptedChart;
     isDark: boolean;
@@ -39,15 +48,20 @@
     /** Undefined when the host cannot run server tools or the chart has nothing to control. */
     controls: ControlOptions | undefined;
     controlState: ControlState;
+    /** Flint charts only: the presentation controls, applied client-side. */
+    panel?: FlintPanel;
     refreshing?: boolean;
     refreshError?: string;
     openUrl: string | undefined;
     onOpenLink: () => void;
     onExit: () => void;
     onControlsChange: (next: ControlState) => void;
+    onPresentationChange?: (next: WireFlintChartSpec) => void;
   } = $props();
 
   let tab = $state<Tab>("chart");
+  let notices = $state.raw<CompileNotices>(NO_NOTICES);
+  const banner = $derived(truncationBanner(chart, notices));
 
   const tabOptions: { value: Tab; label: string }[] = [
     { value: "chart", label: m.mcp_chart_tab_chart() },
@@ -124,13 +138,52 @@
     {/if}
   </div>
 
+  {#if panel && tab === "chart"}
+    <!-- Presentation controls from Flint's option model: every change recompiles locally. -->
+    <div class="toolbar presentation">
+      {#if panel.chartType}
+        <SegmentedControl
+          label={m.mcp_chart_control_chart_type()}
+          options={panel.chartType.choices}
+          value={panel.chartType.current}
+          onchange={(type) =>
+            onPresentationChange?.(panel.apply.chartType(type))}
+        />
+      {/if}
+      {#if panel.layout}
+        <SegmentedControl
+          label={m.mcp_chart_control_layout()}
+          options={panel.layout.choices}
+          value={panel.layout.value}
+          onchange={(id) => onPresentationChange?.(panel.apply.layout(id))}
+        />
+      {/if}
+      {#each panel.properties as property (property.key)}
+        <SegmentedControl
+          label={property.label}
+          options={property.choices}
+          value={property.value}
+          onchange={(choice) =>
+            onPresentationChange?.(panel.apply.property(property.key, choice))}
+        />
+      {/each}
+    </div>
+  {/if}
+
   {#if refreshError}
     <p class="notice" role="status">{refreshError}</p>
   {/if}
 
   <div class="body">
     {#if tab === "chart"}
-      <ChartSurface {chart} {isDark} {fontFamily} fill dimmed={refreshing} />
+      <ChartSurface
+        {chart}
+        {isDark}
+        {fontFamily}
+        fill
+        dimmed={refreshing}
+        onCompiled={(next) => (notices = next)}
+      />
     {:else}
       <div class="table">
         <DataTable table={chart.table} />
@@ -138,11 +191,8 @@
     {/if}
   </div>
 
-  {#if chart.truncationNote}
-    <TruncatedBanner
-      note={chart.truncationNote}
-      detail={chart.truncationWarning}
-    />
+  {#if banner}
+    <TruncatedBanner note={banner.note} detail={banner.detail} />
   {/if}
 
   <CardFooter
@@ -160,6 +210,9 @@
   }
   .toolbar {
     @apply flex flex-wrap items-center gap-x-4 gap-y-2 px-4 py-2;
+  }
+  .toolbar.presentation {
+    @apply pt-0;
   }
   .body {
     @apply flex flex-1 min-h-0 flex-col px-2;

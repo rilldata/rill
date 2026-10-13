@@ -44,6 +44,18 @@ It takes the same arguments as create_chart and returns the chart-ready rows, fi
 	}
 }
 
+// MCPSpec is the definition advertised on the MCP server: the same Flint shape of the arguments as create_chart (see CreateChart.MCPSpec).
+func (t *ChartData) MCPSpec() *mcp.Tool {
+	spec := t.Spec()
+	spec.Description = `Return the data of a chart without creating a chart in the conversation.
+It is called by the chart widget to refetch a chart's data when the user changes its time grain, top-N limits or comparison,
+and is not meant to be called directly: use create_chart to show a chart.
+It takes the same arguments as create_chart (chart_spec and data) and returns the chart-ready rows, field metadata,
+semantic types and resolved time ranges.`
+	spec.InputSchema = flintChartsInputSchema()
+	return spec
+}
+
 func (t *ChartData) CheckAccess(ctx context.Context) (bool, error) {
 	// Like create_chart, it requires ReadMetrics and the chat_charts feature flag.
 	// Only external MCP clients get it: Rill's own clients fetch chart data themselves.

@@ -11,8 +11,11 @@ import {
   ToolName,
 } from "@rilldata/web-common/features/chat/core/types.ts";
 import {
-  type CreateChartArgs,
+  type ChartFieldKind,
+  isFlintCreateChartArgs,
   mapChartSpecToMetricsResolverQuery,
+  mapFlintChartArgsToMetricsResolverQuery,
+  type RillCreateChartArgs,
 } from "@rilldata/web-common/features/explore-mappers/map-chart-spec-to-metrics-resolver-query.ts";
 import { error } from "@sveltejs/kit";
 
@@ -58,10 +61,12 @@ export async function fetchMessage(
 /**
  * Returns the metrics resolver query a tool call message stands for: the arguments of a
  * `query_metrics_view` call as is, or the spec of a `create_chart` call mapped onto a query.
- * Both open as an explore through `openQuery`.
+ * Both open as an explore through `openQuery`. A Flint-shaped `create_chart` call only names
+ * its fields, so the call's result message tells which of them are measures and the time dimension.
  */
 export function maybeGetMetricsResolverQueryFromMessage(
   message: V1Message,
+  resultMessage?: V1Message,
 ): MetricsResolverQuery {
   const isOpenableCall =
     message.type === MessageType.CALL &&
@@ -87,7 +92,13 @@ export function maybeGetMetricsResolverQueryFromMessage(
   }
 
   if (message.tool === ToolName.CREATE_CHART) {
-    const spec = (rawJson as Partial<CreateChartArgs>).spec;
+    if (isFlintCreateChartArgs(rawJson)) {
+      return mapFlintChartArgsToMetricsResolverQuery(
+        rawJson,
+        getFieldKindsFromMessage(resultMessage),
+      );
+    }
+    const spec = (rawJson as Partial<RillCreateChartArgs>).spec;
     if (!spec || typeof spec !== "object") {
       throw error(
         400,
@@ -100,6 +111,25 @@ export function maybeGetMetricsResolverQueryFromMessage(
   }
 
   return rawJson as MetricsResolverQuery;
+}
+
+/** The kind of every field a `create_chart` result describes, keyed by name. */
+export function getFieldKindsFromMessage(
+  resultMessage: V1Message | undefined,
+): Record<string, ChartFieldKind> {
+  if (!resultMessage?.contentData) return {};
+  try {
+    const fields = JSON.parse(resultMessage.contentData)?.fields;
+    if (!fields || typeof fields !== "object") return {};
+    return Object.fromEntries(
+      Object.entries(fields as Record<string, { kind?: ChartFieldKind }>)
+        .filter(([, field]) => !!field?.kind)
+        .map(([name, field]) => [name, field.kind as ChartFieldKind]),
+    );
+  } catch (e) {
+    console.error("Failed to parse result message JSON", e);
+  }
+  return {};
 }
 
 export function getResolvedTimeRangesFromMessage(

@@ -13,12 +13,62 @@ import type {
 } from "@rilldata/web-common/runtime-client/gen/resolvers/metrics/schema.ts";
 
 /**
- * The arguments of a `create_chart` tool call (see `runtime/metricsview/charts_json_schema.go`).
+ * The arguments of a `create_chart` tool call. Rill's own clients send a chart type and Rill's
+ * chart spec (see `runtime/metricsview/charts_json_schema.go`); external MCP clients send Flint's
+ * `chart_spec` with Rill's data binding in the `data` slot (see `runtime/ai/chartquery`).
  */
-export type CreateChartArgs = {
+export type CreateChartArgs = RillCreateChartArgs | FlintCreateChartArgs;
+
+export type RillCreateChartArgs = {
   chart_type: string;
   spec: CreateChartSpec;
 };
+
+/** A Flint encoding: Flint's keys plus Rill's `limit`; only the sort keys matter to an explore. */
+export type FlintEncoding = {
+  field?: string;
+  sortOrder?: "ascending" | "descending";
+  sortBy?: string;
+  [key: string]: unknown;
+};
+
+export type FlintEncodingValue =
+  | string
+  | FlintEncoding
+  | (string | FlintEncoding)[];
+
+export type FlintCreateChartArgs = {
+  chart_spec: {
+    chartType: string;
+    encodings: Record<string, FlintEncodingValue>;
+    [key: string]: unknown;
+  };
+  data: {
+    metrics_view: string;
+    time_range?: TimeRange;
+    comparison_time_range?: TimeRange;
+    where?: Expression;
+    time_grain?: V1TimeGrain;
+  };
+};
+
+/** What a field is in the metrics view, as the `fields` of a `create_chart` result report it. */
+export type ChartFieldKind = "measure" | "dimension" | "time";
+
+export function isFlintCreateChartArgs(
+  args: unknown,
+): args is FlintCreateChartArgs {
+  if (typeof args !== "object" || args === null) return false;
+  const { chart_spec, data } = args as Partial<FlintCreateChartArgs>;
+  return (
+    typeof chart_spec === "object" &&
+    chart_spec !== null &&
+    typeof chart_spec.chartType === "string" &&
+    typeof data === "object" &&
+    data !== null &&
+    typeof data.metrics_view === "string"
+  );
+}
 
 /**
  * A chart spec as the AI builds it: the chart config of `web-common/src/features/components/charts`
@@ -190,4 +240,127 @@ function fieldConfigOf(value: unknown): FieldConfig | undefined {
 
 function measureNamesOf(field: FieldConfig): string[] {
   return [...(field.fields ?? []), field.field].filter(Boolean);
+}
+
+/**
+ * Channels in the order their fields are added to the query; channels a chart type adds beyond
+ * these follow in the order they were authored.
+ */
+const FLINT_CHANNELS = [
+  "x",
+  "y",
+  "color",
+  "group",
+  "column",
+  "row",
+  "detail",
+  "order",
+  "size",
+  "shape",
+  "strokeDash",
+  "opacity",
+  "x2",
+  "y2",
+  "open",
+  "high",
+  "low",
+  "close",
+  "goal",
+  "value",
+  "metric",
+];
+
+function flintEncodingEntries(
+  args: FlintCreateChartArgs,
+): [string, FlintEncoding[]][] {
+  const encodings = args.chart_spec.encodings ?? {};
+  const channels = [
+    ...FLINT_CHANNELS.filter((channel) => channel in encodings),
+    ...Object.keys(encodings).filter(
+      (channel) => !FLINT_CHANNELS.includes(channel),
+    ),
+  ];
+  return channels.map((channel) => {
+    const value = encodings[channel];
+    const values = Array.isArray(value) ? value : [value];
+    return [
+      channel,
+      values
+        .map((entry) => (typeof entry === "string" ? { field: entry } : entry))
+        .filter((entry): entry is FlintEncoding => !!entry?.field),
+    ];
+  });
+}
+
+/**
+ * Maps the arguments of a Flint-shaped `create_chart` call onto a metrics resolver query. The
+ * encodings only name fields, so `kinds` (from the result's `fields`) says which are measures and
+ * which is the time dimension, floored at the call's grain; a field the result does not describe
+ * is treated as a dimension. The time ranges and the filter come from the data binding.
+ */
+export function mapFlintChartArgsToMetricsResolverQuery(
+  args: FlintCreateChartArgs,
+  kinds: Record<string, ChartFieldKind>,
+): MetricsResolverQuery {
+  const { data } = args;
+  const grain =
+    (data.time_grain && V1TimeGrainToDateTimeUnit[data.time_grain]) || "day";
+  const dimensions = new Map<string, Dimension>();
+  const measures = new Map<string, Measure>();
+  const entries = flintEncodingEntries(args);
+
+  for (const [, encodings] of entries) {
+    for (const { field } of encodings) {
+      if (!field) continue;
+      switch (kinds[field]) {
+        case "measure":
+          measures.set(field, { name: field });
+          break;
+        case "time":
+          dimensions.set(field, {
+            name: field,
+            compute: { time_floor: { dimension: field, grain } },
+          });
+          break;
+        default:
+          dimensions.set(field, { name: field });
+      }
+    }
+  }
+
+  const query: MetricsResolverQuery = { metrics_view: data.metrics_view };
+  if (dimensions.size) query.dimensions = [...dimensions.values()];
+  if (measures.size) query.measures = [...measures.values()];
+  if (data.time_range) query.time_range = data.time_range;
+  if (data.comparison_time_range) {
+    query.comparison_time_range = data.comparison_time_range;
+  }
+  if (data.where) query.where = data.where;
+  const sort = mapFlintSort(entries);
+  if (sort) query.sort = [sort];
+  return query;
+}
+
+/**
+ * The first sort an encoding asks for. `sortBy` names a channel (`"y"`) or a field; without it
+ * the channel sorts by its own field. A `sortBy` alone means the usual top-values intent, so it
+ * is descending unless `sortOrder` says otherwise.
+ */
+function mapFlintSort(entries: [string, FlintEncoding[]][]): Sort | undefined {
+  const fieldOnChannel = (channel: string) =>
+    entries.find(([name]) => name === channel)?.[1][0]?.field;
+  for (const [channel, encodings] of entries) {
+    for (const encoding of encodings) {
+      if (!encoding.sortBy && !encoding.sortOrder) continue;
+      const name = encoding.sortBy
+        ? (fieldOnChannel(encoding.sortBy) ?? encoding.sortBy)
+        : fieldOnChannel(channel);
+      if (!name) continue;
+      const desc = encoding.sortOrder
+        ? encoding.sortOrder === "descending"
+        : true;
+      return { name, desc };
+    }
+  }
+  return undefined;
 }

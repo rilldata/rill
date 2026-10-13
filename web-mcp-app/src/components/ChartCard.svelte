@@ -1,5 +1,10 @@
 <script lang="ts">
   import type { AdaptedChart } from "../lib/adapt";
+  import {
+    NO_NOTICES,
+    truncationBanner,
+    type CompileNotices,
+  } from "../lib/notices";
   import CardFooter from "./CardFooter.svelte";
   import CardHeader from "./CardHeader.svelte";
   import ChartSurface from "./ChartSurface.svelte";
@@ -28,6 +33,9 @@
     onOpenLink: () => void;
     onFullscreen: () => void;
   } = $props();
+
+  let notices = $state.raw<CompileNotices>(NO_NOTICES);
+  const banner = $derived(truncationBanner(chart, notices));
 </script>
 
 <section class="card" aria-busy={refreshing}>
@@ -38,12 +46,10 @@
     {fontFamily}
     height={chartHeight}
     dimmed={refreshing}
+    onCompiled={(next) => (notices = next)}
   />
-  {#if chart.truncationNote}
-    <TruncatedBanner
-      note={chart.truncationNote}
-      detail={chart.truncationWarning}
-    />
+  {#if banner}
+    <TruncatedBanner note={banner.note} detail={banner.detail} />
   {/if}
   {#if refreshError}
     <p class="notice" role="status">{refreshError}</p>

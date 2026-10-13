@@ -84,6 +84,19 @@ export function bucketCount(range: WireTimeRange, grain: V1TimeGrain): number {
   return Math.ceil(end.diff(start, unit).as(unit));
 }
 
+/** The selectable grains for a range, no finer than the metrics view's smallest grain. */
+export function grainsForRange(
+  range: WireTimeRange,
+  smallestGrain?: V1TimeGrain,
+): V1TimeGrain[] {
+  const minimumOrder = smallestGrain ? GRAIN_ORDER.indexOf(smallestGrain) : -1;
+  return SELECTABLE_GRAINS.filter((grain) => {
+    if (GRAIN_ORDER.indexOf(grain) < minimumOrder) return false;
+    const count = bucketCount(range, grain);
+    return count >= MIN_GRAIN_BUCKETS && count <= MAX_GRAIN_BUCKETS;
+  });
+}
+
 export function availableGrains(
   chartType: ChartType,
   spec: WireChartSpec,
@@ -91,12 +104,7 @@ export function availableGrains(
   smallestGrain?: V1TimeGrain,
 ): V1TimeGrain[] {
   if (!range || !temporalXField(chartType, spec)) return [];
-  const minimumOrder = smallestGrain ? GRAIN_ORDER.indexOf(smallestGrain) : -1;
-  return SELECTABLE_GRAINS.filter((grain) => {
-    if (GRAIN_ORDER.indexOf(grain) < minimumOrder) return false;
-    const count = bucketCount(range, grain);
-    return count >= MIN_GRAIN_BUCKETS && count <= MAX_GRAIN_BUCKETS;
-  });
+  return grainsForRange(range, smallestGrain);
 }
 
 export interface TopNTarget {

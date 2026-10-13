@@ -30,7 +30,12 @@ const METRICS_VIEW = {
 };
 
 const FIELDS = {
-  __time: { name: "__time", kind: "time", display_name: "Time", type: "TIMESTAMP" },
+  __time: {
+    name: "__time",
+    kind: "time",
+    display_name: "Time",
+    type: "TIMESTAMP",
+  },
   advertiser_name: {
     name: "advertiser_name",
     kind: "dimension",
@@ -38,8 +43,18 @@ const FIELDS = {
     description: "Name of the advertiser bidding on the impression.",
     type: "STRING",
   },
-  publisher: { name: "publisher", kind: "dimension", display_name: "Publisher", type: "STRING" },
-  device: { name: "device", kind: "dimension", display_name: "Device", type: "STRING" },
+  publisher: {
+    name: "publisher",
+    kind: "dimension",
+    display_name: "Publisher",
+    type: "STRING",
+  },
+  device: {
+    name: "device",
+    kind: "dimension",
+    display_name: "Device",
+    type: "STRING",
+  },
   campaign_stage: {
     name: "campaign_stage",
     kind: "dimension",
@@ -82,6 +97,14 @@ const FIELDS = {
     display_name: "Avg Bid Price",
     type: "FLOAT64",
     format_d3: "$.2f",
+  },
+  spend_change: {
+    name: "spend_change",
+    kind: "measure",
+    display_name: "Spend Change",
+    description: "Week-over-week change in spend.",
+    type: "FLOAT64",
+    format_preset: "currency_usd",
   },
 };
 
@@ -137,8 +160,13 @@ const CHART_LABELS = {
 };
 
 function textFallback(chartType, structured) {
-  const { title, data = [], fields = {}, resolved_time_range: range } = structured;
-  const header = `**${CHART_LABELS[chartType]}: ${title}**${
+  const {
+    title,
+    data = [],
+    fields = {},
+    resolved_time_range: range,
+  } = structured;
+  const header = `**${CHART_LABELS[chartType] ?? chartType}: ${title}**${
     range ? ` (${range.start.slice(0, 10)} to ${range.end.slice(0, 10)})` : ""
   }`;
   if (!data.length) return `${header}\n\n_No rows._`;
@@ -146,16 +174,29 @@ function textFallback(chartType, structured) {
   const label = (column) =>
     column.endsWith("_prev")
       ? `${fields[column.slice(0, -5)]?.display_name ?? column.slice(0, -5)} (prev)`
-      : fields[column]?.display_name ?? column;
+      : (fields[column]?.display_name ?? column);
   const lines = [
     `| ${columns.map(label).join(" | ")} |`,
     `| ${columns.map(() => "-").join(" | ")} |`,
     ...data
       .slice(0, 20)
-      .map((row) => `| ${columns.map((column) => String(row[column] ?? "")).join(" | ")} |`),
+      .map(
+        (row) =>
+          `| ${columns.map((column) => String(row[column] ?? "")).join(" | ")} |`,
+      ),
   ];
-  const parts = [header, "", ...lines, "", `_${Math.min(20, data.length)} of ${data.length} rows shown_`];
-  if (structured.open_url) parts.push("", `Open the interactive chart in Rill: ${structured.open_url}`);
+  const parts = [
+    header,
+    "",
+    ...lines,
+    "",
+    `_${Math.min(20, data.length)} of ${data.length} rows shown_`,
+  ];
+  if (structured.open_url)
+    parts.push(
+      "",
+      `Open the interactive chart in Rill: ${structured.open_url}`,
+    );
   return parts.join("\n");
 }
 
@@ -173,7 +214,9 @@ function fixture({ name, description, expect, chartType, spec, structured }) {
     expect,
     arguments: { chart_type: chartType, spec },
     result: {
-      content: [{ type: "text", text: textFallback(chartType, structuredContent) }],
+      content: [
+        { type: "text", text: textFallback(chartType, structuredContent) },
+      ],
       structuredContent,
     },
   };
@@ -191,7 +234,10 @@ function common(extra = {}) {
 }
 
 function write(name, content) {
-  writeFileSync(`${outDir}${name}.json`, JSON.stringify(content, null, 2) + "\n");
+  writeFileSync(
+    `${outDir}${name}.json`,
+    JSON.stringify(content, null, 2) + "\n",
+  );
   console.log(`wrote harness/fixtures/${name}.json`);
 }
 
@@ -219,7 +265,8 @@ write(
   "bar_chart",
   fixture({
     name: "Bar chart",
-    description: "Canonical create_chart result: top advertisers by total bids.",
+    description:
+      "Canonical create_chart result: top advertisers by total bids.",
     expect: "canvas",
     chartType: "bar_chart",
     spec: barSpec,
@@ -249,7 +296,8 @@ write(
   "multi_measure_bar",
   fixture({
     name: "Multi-measure bar chart",
-    description: "Two measures side by side; the color channel is the synthetic rill_measures field.",
+    description:
+      "Two measures side by side; the color channel is the synthetic rill_measures field.",
     expect: "canvas",
     chartType: "bar_chart",
     spec: {
@@ -293,7 +341,8 @@ write(
   "line_chart",
   fixture({
     name: "Line chart",
-    description: "Daily total bids; Sep 12 is missing from the rows and gets zero-filled.",
+    description:
+      "Daily total bids; Sep 12 is missing from the rows and gets zero-filled.",
     expect: "canvas",
     chartType: "line_chart",
     spec: lineSpec,
@@ -313,13 +362,17 @@ write(
   "comparison",
   fixture({
     name: "Line chart with comparison",
-    description: "Daily total bids compared with the previous week (`_prev` columns).",
+    description:
+      "Daily total bids compared with the previous week (`_prev` columns).",
     expect: "canvas",
     chartType: "line_chart",
     spec: {
       metrics_view: "bids_metrics",
       time_range: timeRange,
-      comparison_time_range: { start: COMPARISON_RANGE.start, end: COMPARISON_RANGE.end },
+      comparison_time_range: {
+        start: COMPARISON_RANGE.start,
+        end: COMPARISON_RANGE.end,
+      },
       time_grain: "TIME_GRAIN_DAY",
       x: { field: "__time", type: "temporal" },
       y: { field: "total_bids", type: "quantitative" },
@@ -331,7 +384,9 @@ write(
       data: DAYS.map((__time, i) => ({
         __time,
         total_bids: dailyBids[i] || 43800,
-        total_bids_prev: Math.round((dailyBids[i] || 43800) * (0.8 + rand() * 0.3)),
+        total_bids_prev: Math.round(
+          (dailyBids[i] || 43800) * (0.8 + rand() * 0.3),
+        ),
       })),
       fields: pickFields("__time", "total_bids"),
       resolved_comparison_time_range: COMPARISON_RANGE,
@@ -343,7 +398,11 @@ const areaRows = [];
 DAYS.forEach((__time, dayIndex) => {
   DEVICES.forEach((device, deviceIndex) => {
     // Leave two holes to exercise per-series zero-filling.
-    if ((dayIndex === 3 && device === "Mobile") || (dayIndex === 5 && device === "Tablet")) return;
+    if (
+      (dayIndex === 3 && device === "Mobile") ||
+      (dayIndex === 5 && device === "Tablet")
+    )
+      return;
     areaRows.push({
       __time,
       device,
@@ -379,12 +438,20 @@ write(
 const stackedRows = [];
 PUBLISHERS.forEach((publisher, p) => {
   DEVICES.forEach((device, d) => {
-    stackedRows.push({ publisher, device, impressions: int(20000, 90000) - p * 2500 - d * 1500 });
+    stackedRows.push({
+      publisher,
+      device,
+      impressions: int(20000, 90000) - p * 2500 - d * 1500,
+    });
   });
 });
 for (const [name, chartType, label] of [
   ["stacked_bar", "stacked_bar", "Stacked bar chart"],
-  ["stacked_bar_normalized", "stacked_bar_normalized", "Normalized stacked bar chart"],
+  [
+    "stacked_bar_normalized",
+    "stacked_bar_normalized",
+    "Normalized stacked bar chart",
+  ],
 ]) {
   write(
     name,
@@ -427,7 +494,10 @@ write(
     },
     structured: common({
       title: "Total Spend split by Publisher",
-      data: PUBLISHERS.map((publisher, i) => ({ publisher, total_spend: spendByPublisher[i] })),
+      data: PUBLISHERS.map((publisher, i) => ({
+        publisher,
+        total_spend: spendByPublisher[i],
+      })),
       fields: pickFields("publisher", "total_spend"),
       domain_values: { publisher: PUBLISHERS },
       totals: { total_spend: 151220.9 },
@@ -450,7 +520,10 @@ write(
     },
     structured: common({
       title: "Total Bids split by Device",
-      data: DEVICES.map((device, i) => ({ device, total_bids: [312400, 201300, 48900][i] })),
+      data: DEVICES.map((device, i) => ({
+        device,
+        total_bids: [312400, 201300, 48900][i],
+      })),
       fields: pickFields("device", "total_bids"),
       domain_values: { device: DEVICES },
       totals: { total_bids: 562600 },
@@ -488,14 +561,19 @@ write(
 const heatmapRows = [];
 PUBLISHERS.forEach((publisher) => {
   DEVICES.forEach((device) => {
-    heatmapRows.push({ publisher, device, win_rate: round(0.08 + rand() * 0.3, 3) });
+    heatmapRows.push({
+      publisher,
+      device,
+      win_rate: round(0.08 + rand() * 0.3, 3),
+    });
   });
 });
 write(
   "heatmap",
   fixture({
     name: "Heatmap",
-    description: "Win rate per publisher and device. No domain_values: the widget falls back to first appearance.",
+    description:
+      "Win rate per publisher and device. No domain_values: the widget falls back to first appearance.",
     expect: "canvas",
     chartType: "heatmap",
     spec: {
@@ -559,7 +637,8 @@ write(
   "scatter_plot",
   fixture({
     name: "Scatter plot",
-    description: "Bids against win rate per advertiser and device, sized by impressions.",
+    description:
+      "Bids against win rate per advertiser and device, sized by impressions.",
     expect: "canvas",
     chartType: "scatter_plot",
     spec: {
@@ -572,9 +651,16 @@ write(
       size: { field: "impressions", type: "quantitative" },
     },
     structured: common({
-      title: "Total Bids vs Win Rate for Advertiser Name split by Device sized by Impressions",
+      title:
+        "Total Bids vs Win Rate for Advertiser Name split by Device sized by Impressions",
       data: scatterRows,
-      fields: pickFields("advertiser_name", "device", "total_bids", "win_rate", "impressions"),
+      fields: pickFields(
+        "advertiser_name",
+        "device",
+        "total_bids",
+        "win_rate",
+        "impressions",
+      ),
       domain_values: { device: DEVICES },
     }),
   }),
@@ -585,7 +671,8 @@ write(
   "truncated",
   fixture({
     name: "Truncated bar chart",
-    description: "The server capped the x values and tells the model how to narrow the chart.",
+    description:
+      "The server capped the x values and tells the model how to narrow the chart.",
     expect: "canvas",
     chartType: "bar_chart",
     spec: barSpec,
@@ -629,7 +716,8 @@ write(
   "empty",
   fixture({
     name: "Empty result",
-    description: "The query returned no rows: `data` is empty and the server omits `domain_values`.",
+    description:
+      "The query returned no rows: `data` is empty and the server omits `domain_values`.",
     expect: "empty",
     chartType: "bar_chart",
     spec: barSpec,
@@ -648,7 +736,9 @@ write("no_data", {
   expect: "error",
   arguments: { chart_type: "bar_chart", spec: barSpec },
   result: {
-    content: [{ type: "text", text: "**Bar: Total Bids per Advertiser Name**" }],
+    content: [
+      { type: "text", text: "**Bar: Total Bids per Advertiser Name**" },
+    ],
     structuredContent: {
       widget: "chart",
       chart_type: "bar_chart",
@@ -662,7 +752,8 @@ write("no_data", {
 
 write("unsupported_widget", {
   name: "Unsupported widget mode",
-  description: "A newer server sent a widget mode this bundle does not implement.",
+  description:
+    "A newer server sent a widget mode this bundle does not implement.",
   expect: "error",
   arguments: { type: "canvas", name: "overview" },
   result: {
@@ -681,9 +772,324 @@ write("tool_error", {
   name: "Tool error",
   description: "The tool call itself failed.",
   expect: "error",
-  arguments: { chart_type: "bar_chart", spec: { ...barSpec, metrics_view: "missing_metrics" } },
+  arguments: {
+    chart_type: "bar_chart",
+    spec: { ...barSpec, metrics_view: "missing_metrics" },
+  },
   result: {
     isError: true,
-    content: [{ type: "text", text: 'metrics view "missing_metrics" not found' }],
+    content: [
+      { type: "text", text: 'metrics view "missing_metrics" not found' },
+    ],
   },
 });
+
+// ---------------------------------------------------------------------------------------------
+// Flint results: `create_chart` called with Flint's `chart_spec` and Rill's data binding in the
+// `data` slot (see .claude/plans/flint-implementation-contract.md). The server echoes the
+// effective input (limits filled in) and derives the semantic types and display names.
+
+/** Mirrors the server's derivation: format preset first, then the data type. */
+function semanticTypeOf(field, grain) {
+  if (field.kind === "time") {
+    return (
+      {
+        TIME_GRAIN_YEAR: "Year",
+        TIME_GRAIN_QUARTER: "YearQuarter",
+        TIME_GRAIN_MONTH: "YearMonth",
+        TIME_GRAIN_WEEK: "YearWeek",
+        TIME_GRAIN_DAY: "Date",
+      }[grain] ?? "DateTime"
+    );
+  }
+  if (field.kind === "dimension") return "Category";
+  if (
+    field.format_preset === "currency_usd" ||
+    field.format_preset === "currency_eur"
+  )
+    return "Amount";
+  if (field.format_preset === "percentage") return "Percentage";
+  if (field.format_d3?.includes("$")) return "Amount";
+  if (field.format_d3?.includes("%")) return "Percentage";
+  if (["INT8", "INT16", "INT32", "INT64", "INT128"].includes(field.type))
+    return "Count";
+  return "Number";
+}
+
+function semanticsFor(fields, grain, rows) {
+  const semantic_types = {};
+  const field_display_names = {};
+  for (const [name, field] of Object.entries(fields)) {
+    semantic_types[name] = semanticTypeOf(field, grain);
+    field_display_names[name] =
+      field.kind === "time" ? "Time" : field.display_name;
+    const previous = `${name}_prev`;
+    if (field.kind === "measure" && rows.some((row) => previous in row)) {
+      semantic_types[previous] = semantic_types[name];
+      field_display_names[previous] = `${field.display_name} (previous period)`;
+    }
+  }
+  return { semantic_types, field_display_names };
+}
+
+const BINDING = { metrics_view: "bids_metrics", time_range: timeRange };
+
+function flintFixture({
+  name,
+  description,
+  expect,
+  chartSpec,
+  data = BINDING,
+  structured,
+}) {
+  const rows = structured.data ?? [];
+  const structuredContent = {
+    widget: "chart",
+    chart_type: chartSpec.chartType,
+    input: { chart_spec: chartSpec, data },
+    message: `Chart created successfully: ${chartSpec.chartType}`,
+    ...structured,
+    ...semanticsFor(structured.fields ?? {}, data.time_grain, rows),
+  };
+  return {
+    name,
+    description,
+    expect,
+    arguments: { chart_spec: chartSpec, data },
+    result: {
+      content: [
+        {
+          type: "text",
+          text: textFallback(chartSpec.chartType, structuredContent),
+        },
+      ],
+      structuredContent,
+    },
+  };
+}
+
+const flintBarSpec = {
+  chartType: "Bar Chart",
+  encodings: {
+    x: {
+      field: "advertiser_name",
+      sortBy: "y",
+      sortOrder: "descending",
+      limit: 10,
+    },
+    y: "total_bids",
+  },
+};
+const flintBarStructured = common({
+  title: "Total Bids by Advertiser Name",
+  data: ADVERTISERS.map((advertiser_name, i) => ({
+    advertiser_name,
+    total_bids: barBids[i],
+  })),
+  fields: pickFields("advertiser_name", "total_bids"),
+  domain_values: { advertiser_name: ADVERTISERS },
+});
+write(
+  "flint_bar_chart",
+  flintFixture({
+    name: "Flint bar chart",
+    description:
+      "Canonical Flint result: top advertisers by total bids, with the server's effective limit on x.",
+    expect: "canvas",
+    chartSpec: flintBarSpec,
+    structured: flintBarStructured,
+  }),
+);
+
+write(
+  "flint_line_comparison",
+  flintFixture({
+    name: "Flint line chart with comparison",
+    description:
+      "Daily total bids with the previous week as `_prev` columns; the widget folds them into a second series.",
+    expect: "canvas",
+    chartSpec: {
+      chartType: "Line Chart",
+      encodings: { x: "__time", y: "total_bids" },
+    },
+    data: {
+      ...BINDING,
+      comparison_time_range: {
+        start: COMPARISON_RANGE.start,
+        end: COMPARISON_RANGE.end,
+      },
+      time_grain: "TIME_GRAIN_DAY",
+    },
+    structured: common({
+      title: "Total Bids over Time",
+      time_grain: "TIME_GRAIN_DAY",
+      data: DAYS.map((__time, i) => ({
+        __time,
+        total_bids: dailyBids[i] || 43800,
+        total_bids_prev: Math.round(
+          (dailyBids[i] || 43800) * (0.8 + rand() * 0.3),
+        ),
+      })),
+      fields: pickFields("__time", "total_bids"),
+      resolved_comparison_time_range: COMPARISON_RANGE,
+    }),
+  }),
+);
+
+write(
+  "flint_waterfall",
+  flintFixture({
+    name: "Flint waterfall chart",
+    description:
+      "Spend change per publisher; Flint colors the bars by sign and adds the totals.",
+    expect: "canvas",
+    chartSpec: {
+      chartType: "Waterfall Chart",
+      subtitle: "Week over week, USD",
+      encodings: { x: { field: "publisher", limit: 10 }, y: "spend_change" },
+      chartProperties: { totals: "both" },
+    },
+    structured: common({
+      title: "Spend Change by Publisher",
+      data: PUBLISHERS.map((publisher, i) => ({
+        publisher,
+        spend_change: [1240.5, -410.25, 655.0, -980.75, 310.4][i],
+      })),
+      fields: pickFields("publisher", "spend_change"),
+      domain_values: { publisher: PUBLISHERS },
+    }),
+  }),
+);
+
+write(
+  "flint_pie",
+  flintFixture({
+    name: "Flint donut chart",
+    description: "Bid share per device as a Pie Chart with an inner radius.",
+    expect: "canvas",
+    chartSpec: {
+      chartType: "Pie Chart",
+      encodings: { size: "total_bids", color: { field: "device", limit: 10 } },
+      chartProperties: { innerRadius: 55 },
+    },
+    structured: common({
+      title: "Total Bids by Device",
+      data: DEVICES.map((device, i) => ({
+        device,
+        total_bids: [312400, 201300, 48900][i],
+      })),
+      fields: pickFields("device", "total_bids"),
+      domain_values: { device: DEVICES },
+    }),
+  }),
+);
+
+write(
+  "flint_heatmap",
+  flintFixture({
+    name: "Flint heatmap",
+    description: "Win rate per publisher and device.",
+    expect: "canvas",
+    chartSpec: {
+      chartType: "Heatmap",
+      encodings: {
+        x: { field: "publisher", limit: 40 },
+        y: { field: "device", limit: 40 },
+        color: "win_rate",
+      },
+    },
+    structured: common({
+      title: "Win Rate by Publisher and Device",
+      data: heatmapRows,
+      fields: pickFields("publisher", "device", "win_rate"),
+      domain_values: { publisher: PUBLISHERS, device: DEVICES },
+    }),
+  }),
+);
+
+const MONTHS = ["2023-07-01T00:00:00Z", "2023-08-01T00:00:00Z"];
+const slopeRows = [];
+ADVERTISERS.slice(0, 4).forEach((advertiser_name, i) => {
+  MONTHS.forEach((__time, month) => {
+    slopeRows.push({
+      __time,
+      advertiser_name,
+      total_bids: barBids[i] + month * int(-30000, 30000),
+    });
+  });
+});
+write(
+  "flint_slope",
+  flintFixture({
+    name: "Flint slope chart",
+    description:
+      "Two months of bids per advertiser at month grain (YearMonth semantics).",
+    expect: "canvas",
+    chartSpec: {
+      chartType: "Slope Chart",
+      encodings: {
+        x: "__time",
+        y: "total_bids",
+        color: { field: "advertiser_name", limit: 10 },
+      },
+    },
+    data: {
+      metrics_view: "bids_metrics",
+      time_range: {
+        start: "2023-07-01T00:00:00Z",
+        end: "2023-09-01T00:00:00Z",
+      },
+      time_grain: "TIME_GRAIN_MONTH",
+    },
+    structured: common({
+      title: "Total Bids over Time by Advertiser Name",
+      time_grain: "TIME_GRAIN_MONTH",
+      resolved_time_range: {
+        start: "2023-07-01T00:00:00Z",
+        end: "2023-09-01T00:00:00Z",
+      },
+      data: slopeRows,
+      fields: pickFields("__time", "advertiser_name", "total_bids"),
+      domain_values: { advertiser_name: ADVERTISERS.slice(0, 4) },
+    }),
+  }),
+);
+
+write(
+  "flint_grouped_bar",
+  flintFixture({
+    name: "Flint grouped bar chart",
+    description:
+      "Impressions per publisher with devices side by side (the `group` channel).",
+    expect: "canvas",
+    chartSpec: {
+      chartType: "Grouped Bar Chart",
+      encodings: {
+        x: { field: "publisher", limit: 10 },
+        y: "impressions",
+        group: { field: "device", limit: 10 },
+      },
+    },
+    structured: common({
+      title: "Impressions by Publisher and Device",
+      data: stackedRows,
+      fields: pickFields("publisher", "device", "impressions"),
+      domain_values: { publisher: PUBLISHERS, device: DEVICES },
+    }),
+  }),
+);
+
+write(
+  "flint_empty",
+  flintFixture({
+    name: "Flint empty result",
+    description: "A Flint result whose query returned no rows.",
+    expect: "empty",
+    chartSpec: flintBarSpec,
+    structured: common({
+      title: "Total Bids by Advertiser Name",
+      data: [],
+      fields: pickFields("advertiser_name", "total_bids"),
+    }),
+  }),
+);

@@ -33,13 +33,20 @@ that does not falls back to the tool's text result.
    (`WidgetToolMeta`). When the model calls it, the host reads the resource, renders it in a sandboxed
    iframe (a native WebView on mobile) and delivers the call's arguments and result to the iframe through
    the extension's `ui/notifications/tool-input` and `ui/notifications/tool-result` messages.
+   On MCP servers the tool takes the [Flint](https://github.com/microsoft/flint-chart) shape of a chart
+   (`ai.MCPSpecProvider`, `runtime/ai/chart_flint.go`): `chart_spec` with a `chartType` from the embedded
+   catalog (`runtime/ai/chartquery/flint_catalog.json`, generated from the installed `flint-chart`
+   package) and `encodings` binding channels to fields, plus a `data` block naming the metrics view, time
+   range, comparison, filter and grain. The in-app chat keeps Rill's own chart spec (`Spec`).
 4. **Data passing.** The tool result has two parts. `content` is a markdown rendering (title, a table of
    the first rows, the "Open in Rill" link) for the model and for hosts without MCP Apps.
-   `structuredContent` is the full chart payload the widget renders from: the validated chart spec with
-   effective limits, rows keyed by field, field metadata with formats, domain values, totals, resolved
-   time ranges, the project theme and the deep link. The contract is the JSON form of
-   `CreateChartResult` in `runtime/ai/create_chart.go`. The widget needs no network access: it never
-   talks to the runtime directly.
+   `structuredContent` is the full chart payload the widget renders from: the effective input (the chart
+   spec with the applied top-N limits and the data block with the resolved grain), rows keyed by field,
+   field metadata with formats, the Flint semantic types and display names derived from the metrics view
+   (`runtime/ai/chart_semantics.go`), domain values, resolved time ranges, the project theme and the deep
+   link. The contract is the JSON form of `CreateChartResult` in `runtime/ai/create_chart.go`. The
+   widget compiles the spec with Flint and renders the Vega-Lite it produces; it needs no network access
+   and never talks to the runtime directly.
 5. **App-only tools.** `chart_data` carries `_meta.ui.visibility: ["app"]` (`AppOnlyToolMeta`). Hosts
    hide it from the model and only let the widget call it, through the host's `tools/call` bridge, when
    the user changes the time grain, the top-N limit or the comparison inside the widget. Those calls are
@@ -51,10 +58,11 @@ that does not falls back to the tool's text result.
 Request flow for one chart:
 
 ```
-model -> tools/call create_chart ------------> runtime: validate spec, run chartquery through the metrics resolver,
-                                               return content (markdown) + structuredContent (chart payload)
+model -> tools/call create_chart ------------> runtime: validate the chart spec against the catalog and the metrics view,
+                                               plan the queries from the bound fields (chartquery.BuildFlint), run them
+                                               through the metrics resolver, return content (markdown) + structuredContent
 host  -> resources/read ui://rill/widget/.. -> runtime (or admin): widget HTML (cached by the host afterwards)
-host  -> iframe: tool-input, tool-result ----> widget renders with Rill's Vega-Lite chart components
+host  -> iframe: tool-input, tool-result ----> widget compiles the spec with Flint and renders the Vega-Lite with Rill's theme
 widget -> host -> tools/call chart_data -----> runtime: fresh rows for the changed spec (app-only, ephemeral)
 ```
 

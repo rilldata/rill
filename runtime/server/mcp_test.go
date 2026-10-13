@@ -411,24 +411,38 @@ func TestMCPApps(t *testing.T) {
 	require.Equal(t, "text/html;profile=mcp-app", read.Contents[0].MIMEType)
 	require.Equal(t, widget.HTML, read.Contents[0].Text)
 
-	// create_chart returns a markdown fallback as content and the chart data as structured content
+	// create_chart takes the Flint shape externally and returns a markdown fallback as content and the chart data as structured content.
+	// The previous shape is still accepted, since hosts cache a connector's tool list: it renders through the widget's legacy path.
+	legacy, err := conn.CallTool(t.Context(), &mcp.CallToolParams{Name: ai.CreateChartName, Arguments: mcpLegacyChartArgs()})
+	require.NoError(t, err)
+	require.False(t, legacy.IsError, "the previous shape is still accepted")
+	legacyOut := legacy.StructuredContent.(map[string]any)
+	require.Contains(t, legacyOut, "spec")
+	require.NotContains(t, legacyOut, "input")
 	res, err := conn.CallTool(t.Context(), &mcp.CallToolParams{Name: ai.CreateChartName, Arguments: mcpChartArgs()})
 	require.NoError(t, err)
 	require.False(t, res.IsError)
 	require.Len(t, res.Content, 1)
 	text := res.Content[0].(*mcp.TextContent).Text
-	require.True(t, strings.HasPrefix(text, "**Bar chart: Total Bids per Country** (2024-01-01 to 2024-02-01)"), text)
+	require.True(t, strings.HasPrefix(text, "**Bar Chart: Total Bids by Country** (2024-01-01 to 2024-02-01)"), text)
 	require.Contains(t, text, "| Country | Total Bids |")
 	require.Contains(t, text, "| US | 10 |")
 	require.Contains(t, text, "_2 of 2 rows shown_")
 	structured, ok := res.StructuredContent.(map[string]any)
 	require.True(t, ok, "structuredContent should be an object, got %T", res.StructuredContent)
 	require.Equal(t, "chart", structured["widget"])
+	require.Equal(t, "Bar Chart", structured["chart_type"])
 	require.NotContains(t, structured, "version")
+	require.NotContains(t, structured, "spec")
 	require.Len(t, structured["data"], 2)
 	require.Equal(t, []any{"US", "CA"}, structured["domain_values"].(map[string]any)["country"])
 	require.Contains(t, structured["fields"], "total_bids")
-	require.EqualValues(t, 10, structured["spec"].(map[string]any)["x"].(map[string]any)["limit"], "the spec carries the applied limit")
+	require.Equal(t, "Category", structured["semantic_types"].(map[string]any)["country"])
+	require.Equal(t, "Total Bids", structured["field_display_names"].(map[string]any)["total_bids"])
+	input := structured["input"].(map[string]any)
+	require.Equal(t, "Bar Chart", input["chart_spec"].(map[string]any)["chartType"])
+	require.EqualValues(t, 10, input["chart_spec"].(map[string]any)["encodings"].(map[string]any)["x"].(map[string]any)["limit"], "the input carries the applied limit")
+	require.Equal(t, "mv1", input["data"].(map[string]any)["metrics_view"])
 
 	// chart_data is callable by the widget and returns the data fields only
 	res, err = conn.CallTool(t.Context(), &mcp.CallToolParams{Name: ai.ChartDataName, Arguments: mcpChartArgs()})
@@ -438,6 +452,7 @@ func TestMCPApps(t *testing.T) {
 	require.True(t, ok)
 	require.Len(t, structured["data"], 2)
 	require.NotContains(t, structured, "spec")
+	require.NotContains(t, structured, "input")
 
 	// A protocol request without a session ID gets a transient session: the catalog is unchanged.
 	sessionsBefore := countSessions(t)
@@ -529,8 +544,25 @@ explore:
 	}
 }
 
-// mcpChartArgs are create_chart (and chart_data) arguments for the metrics view of mcpChartTestFiles.
+// mcpChartArgs are create_chart (and chart_data) arguments for the metrics view of mcpChartTestFiles, in the Flint shape external clients use.
 func mcpChartArgs() map[string]any {
+	return map[string]any{
+		"chart_spec": map[string]any{
+			"chartType": "Bar Chart",
+			"encodings": map[string]any{
+				"x": map[string]any{"field": "country", "limit": 10, "sortBy": "y", "sortOrder": "descending"},
+				"y": "total_bids",
+			},
+		},
+		"data": map[string]any{
+			"metrics_view": "mv1",
+			"time_range":   map[string]any{"start": "2024-01-01T00:00:00Z", "end": "2024-02-01T00:00:00Z"},
+		},
+	}
+}
+
+// mcpLegacyChartArgs are the same chart in the in-app shape, which the MCP server does not advertise.
+func mcpLegacyChartArgs() map[string]any {
 	return map[string]any{
 		"chart_type": "bar_chart",
 		"spec": map[string]any{

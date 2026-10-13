@@ -12,7 +12,10 @@ import {
 import { TDDChart } from "@rilldata/web-common/features/dashboards/time-dimension-details/types.ts";
 import {
   type CreateChartSpec,
+  type FlintCreateChartArgs,
+  isFlintCreateChartArgs,
   mapChartSpecToMetricsResolverQuery,
+  mapFlintChartArgsToMetricsResolverQuery,
 } from "@rilldata/web-common/features/explore-mappers/map-chart-spec-to-metrics-resolver-query.ts";
 import { mapMetricsResolverQueryToDashboard } from "@rilldata/web-common/features/explore-mappers/map-metrics-resolver-query-to-dashboard.ts";
 import { TimeRangePreset } from "@rilldata/web-common/lib/time/types.ts";
@@ -406,6 +409,106 @@ describe("mapChartSpecToMetricsResolverQuery opens an explore", () => {
         ],
         sorting: [{ id: AD_BIDS_IMPRESSIONS_MEASURE, desc: true }],
       },
+    });
+  });
+});
+
+describe("mapFlintChartArgsToMetricsResolverQuery", () => {
+  const kinds = {
+    advertiser_name: "dimension",
+    device: "dimension",
+    __time: "time",
+    total_bids: "measure",
+    impressions: "measure",
+  } as const;
+
+  it("recognizes the Flint call shape", () => {
+    expect(
+      isFlintCreateChartArgs({
+        chart_spec: { chartType: "Bar Chart", encodings: {} },
+        data: { metrics_view: "bids_metrics" },
+      }),
+    ).toBe(true);
+    expect(isFlintCreateChartArgs({ chart_type: "bar_chart", spec: {} })).toBe(
+      false,
+    );
+    expect(isFlintCreateChartArgs(undefined)).toBe(false);
+  });
+
+  it("maps a sorted bar chart with a filter", () => {
+    const args: FlintCreateChartArgs = {
+      chart_spec: {
+        chartType: "Bar Chart",
+        encodings: {
+          x: {
+            field: "advertiser_name",
+            sortBy: "y",
+            sortOrder: "descending",
+            limit: 10,
+          },
+          y: "total_bids",
+        },
+      },
+      data: { metrics_view: "bids_metrics", time_range: timeRange, where },
+    };
+    expect(mapFlintChartArgsToMetricsResolverQuery(args, kinds)).toEqual({
+      metrics_view: "bids_metrics",
+      dimensions: [{ name: "advertiser_name" }],
+      measures: [{ name: "total_bids" }],
+      time_range: timeRange,
+      where,
+      sort: [{ name: "total_bids", desc: true }],
+    });
+  });
+
+  it("floors the time field at the grain and keeps the comparison range", () => {
+    const args: FlintCreateChartArgs = {
+      chart_spec: {
+        chartType: "Line Chart",
+        encodings: {
+          x: "__time",
+          y: ["total_bids", "impressions"],
+          color: { field: "device" },
+        },
+      },
+      data: {
+        metrics_view: "bids_metrics",
+        time_range: timeRange,
+        comparison_time_range: comparisonTimeRange,
+        time_grain: V1TimeGrain.TIME_GRAIN_WEEK,
+      },
+    };
+    expect(mapFlintChartArgsToMetricsResolverQuery(args, kinds)).toEqual({
+      metrics_view: "bids_metrics",
+      dimensions: [
+        {
+          name: "__time",
+          compute: { time_floor: { dimension: "__time", grain: "week" } },
+        },
+        { name: "device" },
+      ],
+      measures: [{ name: "total_bids" }, { name: "impressions" }],
+      time_range: timeRange,
+      comparison_time_range: comparisonTimeRange,
+    });
+  });
+
+  it("treats fields the result does not describe as dimensions and sorts by the channel's own field", () => {
+    const args: FlintCreateChartArgs = {
+      chart_spec: {
+        chartType: "Bar Chart",
+        encodings: {
+          x: { field: "publisher", sortOrder: "ascending" },
+          y: "total_bids",
+        },
+      },
+      data: { metrics_view: "bids_metrics" },
+    };
+    expect(mapFlintChartArgsToMetricsResolverQuery(args, kinds)).toEqual({
+      metrics_view: "bids_metrics",
+      dimensions: [{ name: "publisher" }],
+      measures: [{ name: "total_bids" }],
+      sort: [{ name: "publisher", desc: false }],
     });
   });
 });
