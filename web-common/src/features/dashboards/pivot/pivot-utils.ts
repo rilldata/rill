@@ -27,7 +27,11 @@ import type { ConnectError } from "@connectrpc/connect";
 import type { QueryObserverResult } from "@tanstack/svelte-query";
 import type { Row } from "tanstack-table-8-svelte-5";
 import { getURIRequestMeasure } from "@rilldata/web-common/features/dashboards/dashboard-utils";
-import { PIVOT_TOTALS_ROW_ID, SHOW_MORE_BUTTON } from "./pivot-constants";
+import {
+  MAX_PIVOT_COMPARISON_MEASURES,
+  PIVOT_TOTALS_ROW_ID,
+  SHOW_MORE_BUTTON,
+} from "./pivot-constants";
 import { getColumnFiltersForPage } from "./pivot-infinite-scroll";
 import { mergeFilters } from "./pivot-merge-filters";
 import type { EphemeralMeasureDef } from "@rilldata/web-common/features/dashboards/ephemeral-measures/types";
@@ -564,10 +568,9 @@ export function canEnablePivotComparison(
   pivotState: PivotState,
   comparisonStart: string | Date | undefined,
 ) {
-  // Disable if more than 10 measures
-
+  // Disable if there are too many measures to compare
   const measures = splitPivotChips(pivotState.columns).measure;
-  if (measures.length > 10) {
+  if (measures.length > MAX_PIVOT_COMPARISON_MEASURES) {
     return false;
   }
   // Disable if time comparison is not present
