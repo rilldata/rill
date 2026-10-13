@@ -116,51 +116,27 @@ func loadUserMemories(ctx context.Context, rt *runtime.Runtime, catalog drivers.
 	return memories, true, nil
 }
 
-// memoryIDPrefixLen is the length of the memory ID prefix shown to the model.
-// A full UUID is long enough that a model occasionally mistypes one when it calls update_memory;
-// the first 8 hex characters are unique among a user's memories (at most MaxMemories) and easy to copy.
-const memoryIDPrefixLen = 8
-
-// shortMemoryID returns the prefix of a memory ID that is shown to the model.
-func shortMemoryID(id string) string {
-	if len(id) > memoryIDPrefixLen {
-		return id[:memoryIDPrefixLen]
-	}
-	return id
-}
-
 // findMemoryByID returns the memory with the given ID.
-// It accepts the full ID and the prefix shown to the model (see shortMemoryID),
-// and finds nothing when the ID is shorter than that prefix or matches more than one memory.
-func findMemoryByID(memories []*drivers.AIMemory, id string) (*drivers.AIMemory, bool) {
-	if len(id) < memoryIDPrefixLen {
-		return nil, false
-	}
-	var found *drivers.AIMemory
+func findMemoryByID(memories []*drivers.AIMemory, id int64) (*drivers.AIMemory, bool) {
 	for _, m := range memories {
 		if m.ID == id {
 			return m, true
 		}
-		if strings.HasPrefix(m.ID, id) {
-			if found != nil {
-				return nil, false
-			}
-			found = m
-		}
 	}
-	return found, found != nil
+	return nil, false
 }
 
-// renderUserMemories renders the memories that apply to an agent as a list for inclusion in its prompt:
+// renderUserMemories renders the memories that apply to an agent for inclusion in its prompt:
 // the memories scoped to it, plus the ones that apply to every agent.
-// Each line carries the memory's short ID so the model can reference it in update and delete operations.
+// Each memory is a <memory> element; its id attribute is what the model passes to update_memory to update or delete it.
+// Content never contains angle brackets (see SanitizeMemoryContent), so a memory cannot break out of its element.
 func renderUserMemories(memories []*drivers.AIMemory, agent string) string {
 	var b strings.Builder
 	for _, m := range memories {
 		if m.Agent != "" && m.Agent != agent {
 			continue
 		}
-		line := fmt.Sprintf("- %s (id: %s)\n", m.Content, shortMemoryID(m.ID))
+		line := fmt.Sprintf("<memory id=\"%d\">%s</memory>\n", m.ID, m.Content)
 		if b.Len()+len(line) > maxMemoryPromptChars {
 			break
 		}

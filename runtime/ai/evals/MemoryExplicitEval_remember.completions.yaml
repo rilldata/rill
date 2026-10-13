@@ -182,17 +182,17 @@
         Remember that when I say 'core markets' I mean the United States and Denmark.
     - role: assistant
       content_type: tool_call
-      id: d01bafab0f0f4777
+      id: 9290273360484f85
       tool_name: list_metrics_views
       content: '{}'
     - role: tool
       content_type: tool_response
-      id: d01bafab0f0f4777
+      id: 9290273360484f85
       content: '{"metrics_views":[{"description":"","display_name":"Orders","name":"orders"}]}'
   response:
     - role: assistant
       content_type: tool_call
-      id: call_EXQ4uVsY2ncPFkAz6ZTlsC6W
+      id: call_zSSKW9aT9H56MK66R1u9KSlK
       tool_name: update_memory
       content: '{"action":"add","content":"When the user says ''core markets'', they mean the United States and Denmark."}'
 - index: 3
@@ -356,22 +356,22 @@
         Remember that when I say 'core markets' I mean the United States and Denmark.
     - role: assistant
       content_type: tool_call
-      id: d01bafab0f0f4777
+      id: 9290273360484f85
       tool_name: list_metrics_views
       content: '{}'
     - role: tool
       content_type: tool_response
-      id: d01bafab0f0f4777
+      id: 9290273360484f85
       content: '{"metrics_views":[{"description":"","display_name":"Orders","name":"orders"}]}'
     - role: assistant
       content_type: tool_call
-      id: f4996f06a99d44b4
+      id: 1fc6d557c2cd4e85
       tool_name: update_memory
       content: '{"action":"add","content":"When the user says ''core markets'', they mean the United States and Denmark."}'
     - role: tool
       content_type: tool_response
-      id: f4996f06a99d44b4
-      content: '{"op":"add","memory_id":"4a8b6641-4bf8-4188-a25b-291768322447","content":"When the user says ''core markets'', they mean the United States and Denmark."}'
+      id: 1fc6d557c2cd4e85
+      content: '{"op":"add","memory_id":1,"content":"When the user says ''core markets'', they mean the United States and Denmark."}'
   response:
     - role: assistant
       content_type: text

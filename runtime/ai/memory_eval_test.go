@@ -52,7 +52,7 @@ func seedMemories(t *testing.T, rt *runtime.Runtime, instanceID, userID string, 
 	memories := make([]*drivers.AIMemory, 0, len(contents))
 	for _, content := range contents {
 		now := time.Now()
-		m := &drivers.AIMemory{ID: uuid.NewString(), InstanceID: instanceID, OwnerID: userID, Content: content, CreatedOn: now, UpdatedOn: now}
+		m := &drivers.AIMemory{InstanceID: instanceID, OwnerID: userID, Content: content, CreatedOn: now, UpdatedOn: now}
 		require.NoError(t, catalog.InsertAIMemory(t.Context(), m))
 		memories = append(memories, m)
 	}
@@ -170,7 +170,7 @@ func TestMemoryInjectionEval(t *testing.T) {
 
 	t.Run("preference is honored", func(t *testing.T) {
 		userID := uuid.NewString()
-		seedMemories(t, rt, instanceID, userID, "Always ends every answer with the exact phrase 'Ciao for now.'")
+		seedMemories(t, rt, instanceID, userID, "Likes every answer to end with the sign-off 'Ciao for now.'")
 		s := newEvalForUser(t, rt, instanceID, userID)
 
 		var res *ai.RouterAgentResult

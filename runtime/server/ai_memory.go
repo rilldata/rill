@@ -3,10 +3,10 @@ package server
 import (
 	"context"
 	"errors"
+	"strconv"
 	"time"
 	"unicode/utf8"
 
-	"github.com/google/uuid"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/ai"
@@ -71,7 +71,6 @@ func (s *Server) CreateAIMemory(ctx context.Context, req *runtimev1.CreateAIMemo
 
 	now := time.Now()
 	m := &drivers.AIMemory{
-		ID:         uuid.NewString(),
 		InstanceID: req.InstanceId,
 		OwnerID:    claims.UserID,
 		Agent:      req.Agent,
@@ -206,8 +205,13 @@ func (s *Server) checkAIMemoryAccess(ctx context.Context, instanceID string) (*r
 }
 
 // findOwnedAIMemory loads a memory and verifies it belongs to the caller.
+// The API carries memory IDs as opaque strings; the store assigns integers.
 func (s *Server) findOwnedAIMemory(ctx context.Context, catalog drivers.CatalogStore, claims *runtime.SecurityClaims, memoryID string) (*drivers.AIMemory, error) {
-	m, err := catalog.FindAIMemory(ctx, memoryID)
+	id, err := strconv.ParseInt(memoryID, 10, 64)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, "invalid memory ID")
+	}
+	m, err := catalog.FindAIMemory(ctx, id)
 	if err != nil {
 		if errors.Is(err, drivers.ErrNotFound) {
 			return nil, status.Error(codes.NotFound, "memory not found")
@@ -241,7 +245,7 @@ func validateAIMemoryInput(content, agent string) (string, error) {
 // aiMemoryToPB converts a drivers.AIMemory to a runtimev1.AIMemory.
 func aiMemoryToPB(m *drivers.AIMemory) *runtimev1.AIMemory {
 	return &runtimev1.AIMemory{
-		Id:                   m.ID,
+		Id:                   strconv.FormatInt(m.ID, 10),
 		Content:              m.Content,
 		Agent:                m.Agent,
 		SourceConversationId: m.SourceSessionID,

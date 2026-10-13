@@ -67,6 +67,10 @@ func TestAIMemories(t *testing.T) {
 	_, err = srv.DeleteAIMemory(barCtx, &runtimev1.DeleteAIMemoryRequest{InstanceId: instanceID, MemoryId: created.Memory.Id})
 	require.Equal(t, codes.NotFound, status.Code(err))
 
+	// A malformed ID is rejected
+	_, err = srv.DeleteAIMemory(fooCtx, &runtimev1.DeleteAIMemoryRequest{InstanceId: instanceID, MemoryId: "not-a-number"})
+	require.Equal(t, codes.InvalidArgument, status.Code(err))
+
 	// Update changes the content and the agent
 	updated, err := srv.UpdateAIMemory(fooCtx, &runtimev1.UpdateAIMemoryRequest{InstanceId: instanceID, MemoryId: created.Memory.Id, Content: "Prefers tables, except for time series", Agent: "analyst_agent"})
 	require.NoError(t, err)

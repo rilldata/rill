@@ -585,7 +585,7 @@ func (c *catalogStore) FindAIMemories(ctx context.Context, ownerID string) ([]*d
 	return result, nil
 }
 
-func (c *catalogStore) FindAIMemory(ctx context.Context, id string) (*drivers.AIMemory, error) {
+func (c *catalogStore) FindAIMemory(ctx context.Context, id int64) (*drivers.AIMemory, error) {
 	row := c.db.QueryRowxContext(ctx, `
 		SELECT id, instance_id, owner_id, agent, content, source_session_id, created_on, updated_on
 		FROM ai_memories
@@ -603,10 +603,14 @@ func (c *catalogStore) FindAIMemory(ctx context.Context, id string) (*drivers.AI
 }
 
 func (c *catalogStore) InsertAIMemory(ctx context.Context, m *drivers.AIMemory) error {
-	_, err := c.db.ExecContext(ctx, `
-		INSERT INTO ai_memories (id, instance_id, owner_id, agent, content, source_session_id, created_on, updated_on)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-	`, m.ID, m.InstanceID, m.OwnerID, m.Agent, m.Content, m.SourceSessionID, m.CreatedOn, m.UpdatedOn)
+	res, err := c.db.ExecContext(ctx, `
+		INSERT INTO ai_memories (instance_id, owner_id, agent, content, source_session_id, created_on, updated_on)
+		VALUES (?, ?, ?, ?, ?, ?, ?)
+	`, m.InstanceID, m.OwnerID, m.Agent, m.Content, m.SourceSessionID, m.CreatedOn, m.UpdatedOn)
+	if err != nil {
+		return err
+	}
+	m.ID, err = res.LastInsertId()
 	return err
 }
 
@@ -623,7 +627,7 @@ func (c *catalogStore) UpdateAIMemory(ctx context.Context, m *drivers.AIMemory) 
 	return nil
 }
 
-func (c *catalogStore) DeleteAIMemory(ctx context.Context, id string) error {
+func (c *catalogStore) DeleteAIMemory(ctx context.Context, id int64) error {
 	_, err := c.db.ExecContext(ctx, `DELETE FROM ai_memories WHERE instance_id = ? AND id = ?`, c.instanceID, id)
 	return err
 }

@@ -18,7 +18,7 @@ function msg(overrides: Partial<V1Message>): V1Message {
 
 const appliedResult = JSON.stringify({
   op: "add",
-  memory_id: "m1",
+  memory_id: 1,
   content: "Prefers tables over charts.",
 });
 
@@ -68,7 +68,7 @@ describe("createMemoryUpdateBlock", () => {
     expect(block).not.toBeNull();
     expect(block!.type).toBe("memory-update");
     expect(block!.result.op).toBe("add");
-    expect(block!.result.memory_id).toBe("m1");
+    expect(block!.result.memory_id).toBe(1);
     expect(block!.result.content).toBe("Prefers tables over charts.");
   });
 });

@@ -60,10 +60,11 @@ type CatalogStore interface {
 	InsertAIMessage(ctx context.Context, m *AIMessage) error
 
 	FindAIMemories(ctx context.Context, ownerID string) ([]*AIMemory, error)
-	FindAIMemory(ctx context.Context, id string) (*AIMemory, error)
+	FindAIMemory(ctx context.Context, id int64) (*AIMemory, error)
+	// InsertAIMemory stores a new memory and sets its ID.
 	InsertAIMemory(ctx context.Context, m *AIMemory) error
 	UpdateAIMemory(ctx context.Context, m *AIMemory) error
-	DeleteAIMemory(ctx context.Context, id string) error
+	DeleteAIMemory(ctx context.Context, id int64) error
 	// FindAIMemorySettings returns ErrNotFound when the owner has never changed their settings.
 	FindAIMemorySettings(ctx context.Context, ownerID string) (*AIMemorySettings, error)
 	UpsertAIMemorySettings(ctx context.Context, s *AIMemorySettings) error
@@ -151,7 +152,8 @@ type AIMessage struct {
 // AIMemory is a short fact or preference the AI has learned about a user in an instance.
 // It is scoped to (instance, owner) and is injected into the AI's prompts in later sessions.
 type AIMemory struct {
-	ID         string `db:"id"`
+	// ID is assigned by the store on insert. It is a small integer rather than a UUID because the AI copies it from its prompt into update_memory calls.
+	ID         int64  `db:"id"`
 	InstanceID string `db:"instance_id"`
 	OwnerID    string `db:"owner_id"`
 	// Agent is the name of the agent the memory applies to: the agent that learned it, or the one the user chose when adding it themselves.

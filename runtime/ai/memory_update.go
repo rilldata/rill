@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/google/uuid"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
@@ -26,7 +25,7 @@ var _ Tool[*UpdateMemoryArgs, *MemoryUpdateResult] = (*UpdateMemory)(nil)
 
 type UpdateMemoryArgs struct {
 	Action   string `json:"action" jsonschema:"The operation to perform.,enum=add,enum=update,enum=delete"`
-	MemoryID string `json:"memory_id,omitempty" jsonschema:"ID of an existing memory as shown in the user_memory section. Required for update and delete."`
+	MemoryID int64  `json:"memory_id,omitempty" jsonschema:"ID of an existing memory as shown in the user_memory section. Required for update and delete."`
 	Content  string `json:"content,omitempty" jsonschema:"The memory as a short standalone statement about the user (max 300 characters). Required for add and update."`
 }
 
@@ -34,7 +33,7 @@ type UpdateMemoryArgs struct {
 // The frontend renders applied operations as a "Memory updated" notice.
 type MemoryUpdateResult struct {
 	Op       string `json:"op" jsonschema:"The operation that was applied: add, update or delete; noop if nothing changed."`
-	MemoryID string `json:"memory_id,omitempty" jsonschema:"ID of the memory that was added, updated or deleted."`
+	MemoryID int64  `json:"memory_id,omitempty" jsonschema:"ID of the memory that was added, updated or deleted."`
 	Content  string `json:"content,omitempty" jsonschema:"The memory's content after the operation, or the content that was deleted."`
 	Reason   string `json:"reason,omitempty" jsonschema:"Why the operation was rejected."`
 }
@@ -46,7 +45,8 @@ func (t *UpdateMemory) Spec() *mcp.Tool {
 		Description: `Remember or forget something about the user for future conversations in this project.
 Use it when the user explicitly asks you to remember or forget something, or states a durable preference: how they like results formatted, what a business term means to them, which metrics views they care about, or a correction to your behavior.
 Do not use it for data values or query results, secrets or credentials, sensitive personal details, one-off requests that only apply to the current question, or anything the project instructions already say.
-To update or delete, use the memory ID shown in the "user_memory" section of your instructions.`,
+Check the "user_memory" section of your instructions first: if a memory already says the same, do not call this tool even when the user asks you to remember it again; just confirm that you already know it. If a memory covers the same topic with a different value, update it instead of adding another.
+To update or delete, use the memory ID shown in the "user_memory" section.`,
 		Annotations: &mcp.ToolAnnotations{
 			DestructiveHint: boolPtr(true),
 			IdempotentHint:  false,
@@ -108,7 +108,6 @@ func (t *UpdateMemory) Handler(ctx context.Context, args *UpdateMemoryArgs) (*Me
 		}
 		now := time.Now()
 		m := &drivers.AIMemory{
-			ID:              uuid.NewString(),
 			InstanceID:      s.InstanceID(),
 			OwnerID:         ownerID,
 			Agent:           s.agentName(),

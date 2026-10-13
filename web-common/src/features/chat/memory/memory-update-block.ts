@@ -8,7 +8,7 @@ import { MessageContentType } from "../core/types";
 /** The outcome of an update_memory call: the applied operation, or a noop with the reason it was rejected. */
 export interface MemoryUpdateResult {
   op: "add" | "update" | "delete" | "noop";
-  memory_id?: string;
+  memory_id?: number;
   content?: string;
   reason?: string;
 }

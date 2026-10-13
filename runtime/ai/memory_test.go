@@ -27,7 +27,7 @@ func TestUpdateMemoryTool(t *testing.T) {
 	})
 	require.NoError(t, err)
 	require.Equal(t, ai.MemoryOpAdd, res.Op)
-	require.NotEmpty(t, res.MemoryID)
+	require.NotZero(t, res.MemoryID)
 	memoryID := res.MemoryID
 
 	// The session sees the new memory immediately
@@ -47,10 +47,10 @@ func TestUpdateMemoryTool(t *testing.T) {
 	require.Equal(t, memoryID, res.MemoryID)
 	require.Len(t, s.UserMemories(), 1)
 
-	// Update by the short ID shown in the prompt; the result carries the full ID
+	// Update by ID
 	_, err = s.CallTool(t.Context(), ai.RoleAssistant, ai.UpdateMemoryName, &res, &ai.UpdateMemoryArgs{
 		Action:   ai.MemoryOpUpdate,
-		MemoryID: memoryID[:8],
+		MemoryID: memoryID,
 		Content:  "Prefers tables over charts, except for time series.",
 	})
 	require.NoError(t, err)
@@ -61,7 +61,7 @@ func TestUpdateMemoryTool(t *testing.T) {
 	// Unknown ID is a noop
 	_, err = s.CallTool(t.Context(), ai.RoleAssistant, ai.UpdateMemoryName, &res, &ai.UpdateMemoryArgs{
 		Action:   ai.MemoryOpDelete,
-		MemoryID: "does-not-exist",
+		MemoryID: memoryID + 1000,
 	})
 	require.NoError(t, err)
 	require.Equal(t, ai.MemoryOpNoop, res.Op)
@@ -169,7 +169,7 @@ func TestMemoryTurnedOff(t *testing.T) {
 	require.NoError(t, err)
 	defer release()
 	require.NoError(t, catalog.InsertAIMemory(t.Context(), &drivers.AIMemory{
-		ID: uuid.NewString(), InstanceID: instanceID, OwnerID: claims.UserID, Content: "Prefers tables",
+		InstanceID: instanceID, OwnerID: claims.UserID, Content: "Prefers tables",
 	}))
 
 	r := ai.NewRunner(rt, activity.NewNoopClient())
