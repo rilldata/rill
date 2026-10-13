@@ -3,7 +3,7 @@
 /* eslint-disable */
 // @ts-nocheck
 
-import { AnalyzeConnectorsRequest, AnalyzeConnectorsResponse, AnalyzeVariablesRequest, AnalyzeVariablesResponse, CompleteRequest, CompleteResponse, CompleteStreamingRequest, CompleteStreamingResponse, CompleteUIActionRequest, CompleteUIActionResponse, CreateDirectoryRequest, CreateDirectoryResponse, CreateInstanceRequest, CreateInstanceResponse, CreateTriggerRequest, CreateTriggerResponse, DeleteFileRequest, DeleteFileResponse, DeleteInstanceRequest, DeleteInstanceResponse, EditInstanceRequest, EditInstanceResponse, ForkConversationRequest, ForkConversationResponse, GenerateCanvasFileRequest, GenerateCanvasFileResponse, GenerateMetricsViewFileRequest, GenerateMetricsViewFileResponse, GetAIMessageRequest, GetAIMessageResponse, GetConversationRequest, GetConversationResponse, GetExploreRequest, GetExploreResponse, GetFileRequest, GetFileResponse, GetInstanceRequest, GetInstanceResponse, GetLogsRequest, GetLogsResponse, GetModelPartitionsRequest, GetModelPartitionsResponse, GetResourceRequest, GetResourceResponse, GitCommitRequest, GitCommitResponse, GitDiffRequest, GitDiffResponse, GitMergeToBranchRequest, GitMergeToBranchResponse, GitPullRequest, GitPullResponse, GitPushRequest, GitPushResponse, GitRevertRequest, GitRevertResponse, GitStatusRequest, GitStatusResponse, GitSwitchBranchRequest, GitSwitchBranchResponse, HealthRequest, HealthResponse, InstanceHealthRequest, InstanceHealthResponse, IssueDevJWTRequest, IssueDevJWTResponse, ListConnectorDriversRequest, ListConnectorDriversResponse, ListConversationsRequest, ListConversationsResponse, ListExamplesRequest, ListExamplesResponse, ListFilesRequest, ListFilesResponse, ListGitBranchesRequest, ListGitBranchesResponse, ListGitCommitsRequest, ListGitCommitsResponse, ListInstancesRequest, ListInstancesResponse, ListNotifierConnectorsRequest, ListNotifierConnectorsResponse, ListResourcesRequest, ListResourcesResponse, ListToolsRequest, ListToolsResponse, PingRequest, PingResponse, PushEnvRequest, PushEnvResponse, PutFileRequest, PutFileResponse, QueryResolverRequest, QueryResolverResponse, ReloadConfigRequest, ReloadConfigResponse, RenameFileRequest, RenameFileResponse, RestoreGitCommitRequest, RestoreGitCommitResponse, ShareConversationRequest, ShareConversationResponse, SkipModelPartitionsRequest, SkipModelPartitionsResponse, UnpackEmptyRequest, UnpackEmptyResponse, UnpackExampleRequest, UnpackExampleResponse, WatchFilesRequest, WatchFilesResponse, WatchLogsRequest, WatchLogsResponse, WatchResourcesRequest, WatchResourcesResponse } from "./api_pb.js";
+import { AnalyzeConnectorsRequest, AnalyzeConnectorsResponse, AnalyzeVariablesRequest, AnalyzeVariablesResponse, CompleteRequest, CompleteResponse, CompleteStreamingRequest, CompleteStreamingResponse, CompleteUIActionRequest, CompleteUIActionResponse, CreateAIMemoryRequest, CreateAIMemoryResponse, CreateDirectoryRequest, CreateDirectoryResponse, CreateInstanceRequest, CreateInstanceResponse, CreateTriggerRequest, CreateTriggerResponse, DeleteAIMemoryRequest, DeleteAIMemoryResponse, DeleteFileRequest, DeleteFileResponse, DeleteInstanceRequest, DeleteInstanceResponse, EditInstanceRequest, EditInstanceResponse, ForkConversationRequest, ForkConversationResponse, GenerateCanvasFileRequest, GenerateCanvasFileResponse, GenerateMetricsViewFileRequest, GenerateMetricsViewFileResponse, GetAIMemorySettingsRequest, GetAIMemorySettingsResponse, GetAIMessageRequest, GetAIMessageResponse, GetConversationRequest, GetConversationResponse, GetExploreRequest, GetExploreResponse, GetFileRequest, GetFileResponse, GetInstanceRequest, GetInstanceResponse, GetLogsRequest, GetLogsResponse, GetModelPartitionsRequest, GetModelPartitionsResponse, GetResourceRequest, GetResourceResponse, GitCommitRequest, GitCommitResponse, GitDiffRequest, GitDiffResponse, GitMergeToBranchRequest, GitMergeToBranchResponse, GitPullRequest, GitPullResponse, GitPushRequest, GitPushResponse, GitRevertRequest, GitRevertResponse, GitStatusRequest, GitStatusResponse, GitSwitchBranchRequest, GitSwitchBranchResponse, HealthRequest, HealthResponse, InstanceHealthRequest, InstanceHealthResponse, IssueDevJWTRequest, IssueDevJWTResponse, ListAIMemoriesRequest, ListAIMemoriesResponse, ListConnectorDriversRequest, ListConnectorDriversResponse, ListConversationsRequest, ListConversationsResponse, ListExamplesRequest, ListExamplesResponse, ListFilesRequest, ListFilesResponse, ListGitBranchesRequest, ListGitBranchesResponse, ListGitCommitsRequest, ListGitCommitsResponse, ListInstancesRequest, ListInstancesResponse, ListNotifierConnectorsRequest, ListNotifierConnectorsResponse, ListResourcesRequest, ListResourcesResponse, ListToolsRequest, ListToolsResponse, PingRequest, PingResponse, PushEnvRequest, PushEnvResponse, PutFileRequest, PutFileResponse, QueryResolverRequest, QueryResolverResponse, ReloadConfigRequest, ReloadConfigResponse, RenameFileRequest, RenameFileResponse, RestoreGitCommitRequest, RestoreGitCommitResponse, ShareConversationRequest, ShareConversationResponse, SkipModelPartitionsRequest, SkipModelPartitionsResponse, UnpackEmptyRequest, UnpackEmptyResponse, UnpackExampleRequest, UnpackExampleResponse, UpdateAIMemoryRequest, UpdateAIMemoryResponse, UpdateAIMemorySettingsRequest, UpdateAIMemorySettingsResponse, WatchFilesRequest, WatchFilesResponse, WatchLogsRequest, WatchLogsResponse, WatchResourcesRequest, WatchResourcesResponse } from "./api_pb.js";
 import { MethodKind } from "@bufbuild/protobuf";
 
 /**
@@ -495,6 +495,73 @@ export const RuntimeService = {
       name: "CompleteUIAction",
       I: CompleteUIActionRequest,
       O: CompleteUIActionResponse,
+      kind: MethodKind.Unary,
+    },
+    /**
+     * ListAIMemories lists the current user's AI memories for an instance.
+     * Memories are short preferences and facts the AI has learned about the user and uses in later conversations.
+     *
+     * @generated from rpc rill.runtime.v1.RuntimeService.ListAIMemories
+     */
+    listAIMemories: {
+      name: "ListAIMemories",
+      I: ListAIMemoriesRequest,
+      O: ListAIMemoriesResponse,
+      kind: MethodKind.Unary,
+    },
+    /**
+     * CreateAIMemory creates an AI memory for the current user.
+     *
+     * @generated from rpc rill.runtime.v1.RuntimeService.CreateAIMemory
+     */
+    createAIMemory: {
+      name: "CreateAIMemory",
+      I: CreateAIMemoryRequest,
+      O: CreateAIMemoryResponse,
+      kind: MethodKind.Unary,
+    },
+    /**
+     * UpdateAIMemory updates the content and agent of one of the current user's AI memories.
+     *
+     * @generated from rpc rill.runtime.v1.RuntimeService.UpdateAIMemory
+     */
+    updateAIMemory: {
+      name: "UpdateAIMemory",
+      I: UpdateAIMemoryRequest,
+      O: UpdateAIMemoryResponse,
+      kind: MethodKind.Unary,
+    },
+    /**
+     * DeleteAIMemory permanently deletes one of the current user's AI memories.
+     *
+     * @generated from rpc rill.runtime.v1.RuntimeService.DeleteAIMemory
+     */
+    deleteAIMemory: {
+      name: "DeleteAIMemory",
+      I: DeleteAIMemoryRequest,
+      O: DeleteAIMemoryResponse,
+      kind: MethodKind.Unary,
+    },
+    /**
+     * GetAIMemorySettings returns whether the current user has AI memory turned on in an instance.
+     *
+     * @generated from rpc rill.runtime.v1.RuntimeService.GetAIMemorySettings
+     */
+    getAIMemorySettings: {
+      name: "GetAIMemorySettings",
+      I: GetAIMemorySettingsRequest,
+      O: GetAIMemorySettingsResponse,
+      kind: MethodKind.Unary,
+    },
+    /**
+     * UpdateAIMemorySettings turns AI memory on or off for the current user in an instance.
+     *
+     * @generated from rpc rill.runtime.v1.RuntimeService.UpdateAIMemorySettings
+     */
+    updateAIMemorySettings: {
+      name: "UpdateAIMemorySettings",
+      I: UpdateAIMemorySettingsRequest,
+      O: UpdateAIMemorySettingsResponse,
       kind: MethodKind.Unary,
     },
     /**

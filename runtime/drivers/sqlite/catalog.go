@@ -558,3 +558,107 @@ func (c *catalogStore) InsertAIMessage(ctx context.Context, m *drivers.AIMessage
 	}
 	return nil
 }
+
+func (c *catalogStore) FindAIMemories(ctx context.Context, ownerID string) ([]*drivers.AIMemory, error) {
+	rows, err := c.db.QueryxContext(ctx, `
+		SELECT id, instance_id, owner_id, agent, content, source_session_id, created_on, updated_on
+		FROM ai_memories
+		WHERE instance_id = ? AND owner_id = ?
+		ORDER BY updated_on DESC, id ASC
+	`, c.instanceID, ownerID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var result []*drivers.AIMemory
+	for rows.Next() {
+		var m drivers.AIMemory
+		if err := rows.Scan(&m.ID, &m.InstanceID, &m.OwnerID, &m.Agent, &m.Content, &m.SourceSessionID, &m.CreatedOn, &m.UpdatedOn); err != nil {
+			return nil, err
+		}
+		result = append(result, &m)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return result, nil
+}
+
+func (c *catalogStore) FindAIMemory(ctx context.Context, id int64) (*drivers.AIMemory, error) {
+	row := c.db.QueryRowxContext(ctx, `
+		SELECT id, instance_id, owner_id, agent, content, source_session_id, created_on, updated_on
+		FROM ai_memories
+		WHERE instance_id = ? AND id = ?
+	`, c.instanceID, id)
+
+	var m drivers.AIMemory
+	if err := row.Scan(&m.ID, &m.InstanceID, &m.OwnerID, &m.Agent, &m.Content, &m.SourceSessionID, &m.CreatedOn, &m.UpdatedOn); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, drivers.ErrNotFound
+		}
+		return nil, err
+	}
+	return &m, nil
+}
+
+func (c *catalogStore) InsertAIMemory(ctx context.Context, m *drivers.AIMemory) error {
+	res, err := c.db.ExecContext(ctx, `
+		INSERT INTO ai_memories (instance_id, owner_id, agent, content, source_session_id, created_on, updated_on)
+		VALUES (?, ?, ?, ?, ?, ?, ?)
+	`, m.InstanceID, m.OwnerID, m.Agent, m.Content, m.SourceSessionID, m.CreatedOn, m.UpdatedOn)
+	if err != nil {
+		return err
+	}
+	m.ID, err = res.LastInsertId()
+	return err
+}
+
+func (c *catalogStore) UpdateAIMemory(ctx context.Context, m *drivers.AIMemory) error {
+	now := time.Now()
+	_, err := c.db.ExecContext(ctx, `
+		UPDATE ai_memories SET agent = ?, content = ?, source_session_id = ?, updated_on = ?
+		WHERE instance_id = ? AND id = ?
+	`, m.Agent, m.Content, m.SourceSessionID, now, c.instanceID, m.ID)
+	if err != nil {
+		return err
+	}
+	m.UpdatedOn = now
+	return nil
+}
+
+func (c *catalogStore) DeleteAIMemory(ctx context.Context, id int64) error {
+	_, err := c.db.ExecContext(ctx, `DELETE FROM ai_memories WHERE instance_id = ? AND id = ?`, c.instanceID, id)
+	return err
+}
+
+func (c *catalogStore) FindAIMemorySettings(ctx context.Context, ownerID string) (*drivers.AIMemorySettings, error) {
+	row := c.db.QueryRowxContext(ctx, `
+		SELECT instance_id, owner_id, enabled, updated_on
+		FROM ai_memory_settings
+		WHERE instance_id = ? AND owner_id = ?
+	`, c.instanceID, ownerID)
+
+	var s drivers.AIMemorySettings
+	if err := row.Scan(&s.InstanceID, &s.OwnerID, &s.Enabled, &s.UpdatedOn); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, drivers.ErrNotFound
+		}
+		return nil, err
+	}
+	return &s, nil
+}
+
+func (c *catalogStore) UpsertAIMemorySettings(ctx context.Context, s *drivers.AIMemorySettings) error {
+	now := time.Now()
+	_, err := c.db.ExecContext(ctx, `
+		INSERT INTO ai_memory_settings (instance_id, owner_id, enabled, updated_on) VALUES (?, ?, ?, ?)
+		ON CONFLICT(instance_id, owner_id) DO UPDATE SET enabled = excluded.enabled, updated_on = excluded.updated_on
+	`, c.instanceID, s.OwnerID, s.Enabled, now)
+	if err != nil {
+		return err
+	}
+	s.InstanceID = c.instanceID
+	s.UpdatedOn = now
+	return nil
+}

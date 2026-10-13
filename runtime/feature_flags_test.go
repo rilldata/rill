@@ -37,6 +37,7 @@ func Test_ResolveFeatureFlags(t *testing.T) {
 				"alerts":                          true,
 				"reports":                         true,
 				"chat":                            true,
+				"chatMemory":                      true,
 				"dashboardChat":                   false,
 				"developerChat":                   true,
 				"chatCharts":                      true,
@@ -66,6 +67,7 @@ func Test_ResolveFeatureFlags(t *testing.T) {
 				"alerts":                          false,
 				"reports":                         true,
 				"chat":                            true,
+				"chatMemory":                      true,
 				"dashboardChat":                   false,
 				"developerChat":                   true,
 				"chatCharts":                      true,
@@ -95,6 +97,7 @@ func Test_ResolveFeatureFlags(t *testing.T) {
 				"alerts":                          false,
 				"reports":                         false,
 				"chat":                            true,
+				"chatMemory":                      true,
 				"dashboardChat":                   false,
 				"developerChat":                   true,
 				"chatCharts":                      true,
@@ -124,6 +127,7 @@ func Test_ResolveFeatureFlags(t *testing.T) {
 				"alerts":                          false,
 				"reports":                         false,
 				"chat":                            false,
+				"chatMemory":                      false, // forced false because chat is false
 				"dashboardChat":                   false, // forced false because chat is false
 				"developerChat":                   true,
 				"chatCharts":                      true,

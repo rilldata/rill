@@ -25,6 +25,11 @@ import {
   type SimpleToolCall,
 } from "@rilldata/web-common/features/chat/core/messages/simple-tool-call/simple-tool-call.ts";
 import { isCurrentActivePage } from "@rilldata/web-common/features/file-explorer/utils.ts";
+import {
+  createMemoryUpdateBlock,
+  type MemoryUpdateBlock,
+} from "@rilldata/web-common/features/chat/memory/memory-update-block";
+import { invalidateAIMemories } from "@rilldata/web-common/features/chat/memory/memory-store";
 import { runUIAction } from "../../ui-actions";
 import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import { runtimeServiceCompleteUIAction } from "@rilldata/web-common/runtime-client/v2/gen/runtime-service";
@@ -46,7 +51,11 @@ export type ToolRenderMode = "inline" | "block" | "hidden";
 // =============================================================================
 
 /** Block types that can be created by tools */
-export type ToolBlockType = ChartBlock | FileDiffBlock | SimpleToolCall;
+export type ToolBlockType =
+  | ChartBlock
+  | FileDiffBlock
+  | SimpleToolCall
+  | MemoryUpdateBlock;
 
 /**
  * Configuration for a tool's rendering behavior.
@@ -71,6 +80,7 @@ export interface ToolConfig {
   onResult?: (
     callMessage: V1Message | undefined,
     resultMessage: V1Message,
+    instanceId: string,
   ) => void;
 }
 
@@ -122,6 +132,13 @@ const TOOL_CONFIGS: Partial<Record<string, ToolConfig>> = {
     renderMode: "block",
     createBlock: createSimpleTooCall,
     onCall: handleClickUIToolCall,
+  },
+
+  // Memory: render as a "Memory updated" notice and refresh the memory list when the call completes
+  [ToolName.UPDATE_MEMORY]: {
+    renderMode: "block",
+    createBlock: createMemoryUpdateBlock,
+    onResult: handleMemoryToolResult,
   },
 
   // All other tools default to "inline" (shown in thinking blocks)
@@ -219,4 +236,12 @@ function handleWriteFilesToolResult(
   } catch (err) {
     console.error(err);
   }
+}
+
+function handleMemoryToolResult(
+  _callMessage: V1Message | undefined,
+  _resultMessage: V1Message,
+  instanceId: string,
+) {
+  void invalidateAIMemories(instanceId);
 }

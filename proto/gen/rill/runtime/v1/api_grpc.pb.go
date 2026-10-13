@@ -62,6 +62,12 @@ const (
 	RuntimeService_CompleteStreaming_FullMethodName       = "/rill.runtime.v1.RuntimeService/CompleteStreaming"
 	RuntimeService_GetAIMessage_FullMethodName            = "/rill.runtime.v1.RuntimeService/GetAIMessage"
 	RuntimeService_CompleteUIAction_FullMethodName        = "/rill.runtime.v1.RuntimeService/CompleteUIAction"
+	RuntimeService_ListAIMemories_FullMethodName          = "/rill.runtime.v1.RuntimeService/ListAIMemories"
+	RuntimeService_CreateAIMemory_FullMethodName          = "/rill.runtime.v1.RuntimeService/CreateAIMemory"
+	RuntimeService_UpdateAIMemory_FullMethodName          = "/rill.runtime.v1.RuntimeService/UpdateAIMemory"
+	RuntimeService_DeleteAIMemory_FullMethodName          = "/rill.runtime.v1.RuntimeService/DeleteAIMemory"
+	RuntimeService_GetAIMemorySettings_FullMethodName     = "/rill.runtime.v1.RuntimeService/GetAIMemorySettings"
+	RuntimeService_UpdateAIMemorySettings_FullMethodName  = "/rill.runtime.v1.RuntimeService/UpdateAIMemorySettings"
 	RuntimeService_IssueDevJWT_FullMethodName             = "/rill.runtime.v1.RuntimeService/IssueDevJWT"
 	RuntimeService_AnalyzeVariables_FullMethodName        = "/rill.runtime.v1.RuntimeService/AnalyzeVariables"
 	RuntimeService_ListGitCommits_FullMethodName          = "/rill.runtime.v1.RuntimeService/ListGitCommits"
@@ -180,6 +186,19 @@ type RuntimeServiceClient interface {
 	// CompleteUIAction reports the outcome of a UI action the browser ran for a click_ui tool call.
 	// The click_ui tool call blocks until the browser reports the outcome or times out.
 	CompleteUIAction(ctx context.Context, in *CompleteUIActionRequest, opts ...grpc.CallOption) (*CompleteUIActionResponse, error)
+	// ListAIMemories lists the current user's AI memories for an instance.
+	// Memories are short preferences and facts the AI has learned about the user and uses in later conversations.
+	ListAIMemories(ctx context.Context, in *ListAIMemoriesRequest, opts ...grpc.CallOption) (*ListAIMemoriesResponse, error)
+	// CreateAIMemory creates an AI memory for the current user.
+	CreateAIMemory(ctx context.Context, in *CreateAIMemoryRequest, opts ...grpc.CallOption) (*CreateAIMemoryResponse, error)
+	// UpdateAIMemory updates the content and agent of one of the current user's AI memories.
+	UpdateAIMemory(ctx context.Context, in *UpdateAIMemoryRequest, opts ...grpc.CallOption) (*UpdateAIMemoryResponse, error)
+	// DeleteAIMemory permanently deletes one of the current user's AI memories.
+	DeleteAIMemory(ctx context.Context, in *DeleteAIMemoryRequest, opts ...grpc.CallOption) (*DeleteAIMemoryResponse, error)
+	// GetAIMemorySettings returns whether the current user has AI memory turned on in an instance.
+	GetAIMemorySettings(ctx context.Context, in *GetAIMemorySettingsRequest, opts ...grpc.CallOption) (*GetAIMemorySettingsResponse, error)
+	// UpdateAIMemorySettings turns AI memory on or off for the current user in an instance.
+	UpdateAIMemorySettings(ctx context.Context, in *UpdateAIMemorySettingsRequest, opts ...grpc.CallOption) (*UpdateAIMemorySettingsResponse, error)
 	// IssueDevJWT issues a JWT for mimicking a user in local development.
 	IssueDevJWT(ctx context.Context, in *IssueDevJWTRequest, opts ...grpc.CallOption) (*IssueDevJWTResponse, error)
 	// AnalyzeVariables scans `Source`, `Model` and `Connector` resources in the catalog for use of an environment variable
@@ -688,6 +707,66 @@ func (c *runtimeServiceClient) CompleteUIAction(ctx context.Context, in *Complet
 	return out, nil
 }
 
+func (c *runtimeServiceClient) ListAIMemories(ctx context.Context, in *ListAIMemoriesRequest, opts ...grpc.CallOption) (*ListAIMemoriesResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListAIMemoriesResponse)
+	err := c.cc.Invoke(ctx, RuntimeService_ListAIMemories_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *runtimeServiceClient) CreateAIMemory(ctx context.Context, in *CreateAIMemoryRequest, opts ...grpc.CallOption) (*CreateAIMemoryResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(CreateAIMemoryResponse)
+	err := c.cc.Invoke(ctx, RuntimeService_CreateAIMemory_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *runtimeServiceClient) UpdateAIMemory(ctx context.Context, in *UpdateAIMemoryRequest, opts ...grpc.CallOption) (*UpdateAIMemoryResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(UpdateAIMemoryResponse)
+	err := c.cc.Invoke(ctx, RuntimeService_UpdateAIMemory_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *runtimeServiceClient) DeleteAIMemory(ctx context.Context, in *DeleteAIMemoryRequest, opts ...grpc.CallOption) (*DeleteAIMemoryResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(DeleteAIMemoryResponse)
+	err := c.cc.Invoke(ctx, RuntimeService_DeleteAIMemory_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *runtimeServiceClient) GetAIMemorySettings(ctx context.Context, in *GetAIMemorySettingsRequest, opts ...grpc.CallOption) (*GetAIMemorySettingsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetAIMemorySettingsResponse)
+	err := c.cc.Invoke(ctx, RuntimeService_GetAIMemorySettings_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *runtimeServiceClient) UpdateAIMemorySettings(ctx context.Context, in *UpdateAIMemorySettingsRequest, opts ...grpc.CallOption) (*UpdateAIMemorySettingsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(UpdateAIMemorySettingsResponse)
+	err := c.cc.Invoke(ctx, RuntimeService_UpdateAIMemorySettings_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *runtimeServiceClient) IssueDevJWT(ctx context.Context, in *IssueDevJWTRequest, opts ...grpc.CallOption) (*IssueDevJWTResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(IssueDevJWTResponse)
@@ -930,6 +1009,19 @@ type RuntimeServiceServer interface {
 	// CompleteUIAction reports the outcome of a UI action the browser ran for a click_ui tool call.
 	// The click_ui tool call blocks until the browser reports the outcome or times out.
 	CompleteUIAction(context.Context, *CompleteUIActionRequest) (*CompleteUIActionResponse, error)
+	// ListAIMemories lists the current user's AI memories for an instance.
+	// Memories are short preferences and facts the AI has learned about the user and uses in later conversations.
+	ListAIMemories(context.Context, *ListAIMemoriesRequest) (*ListAIMemoriesResponse, error)
+	// CreateAIMemory creates an AI memory for the current user.
+	CreateAIMemory(context.Context, *CreateAIMemoryRequest) (*CreateAIMemoryResponse, error)
+	// UpdateAIMemory updates the content and agent of one of the current user's AI memories.
+	UpdateAIMemory(context.Context, *UpdateAIMemoryRequest) (*UpdateAIMemoryResponse, error)
+	// DeleteAIMemory permanently deletes one of the current user's AI memories.
+	DeleteAIMemory(context.Context, *DeleteAIMemoryRequest) (*DeleteAIMemoryResponse, error)
+	// GetAIMemorySettings returns whether the current user has AI memory turned on in an instance.
+	GetAIMemorySettings(context.Context, *GetAIMemorySettingsRequest) (*GetAIMemorySettingsResponse, error)
+	// UpdateAIMemorySettings turns AI memory on or off for the current user in an instance.
+	UpdateAIMemorySettings(context.Context, *UpdateAIMemorySettingsRequest) (*UpdateAIMemorySettingsResponse, error)
 	// IssueDevJWT issues a JWT for mimicking a user in local development.
 	IssueDevJWT(context.Context, *IssueDevJWTRequest) (*IssueDevJWTResponse, error)
 	// AnalyzeVariables scans `Source`, `Model` and `Connector` resources in the catalog for use of an environment variable
@@ -1100,6 +1192,24 @@ func (UnimplementedRuntimeServiceServer) GetAIMessage(context.Context, *GetAIMes
 }
 func (UnimplementedRuntimeServiceServer) CompleteUIAction(context.Context, *CompleteUIActionRequest) (*CompleteUIActionResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CompleteUIAction not implemented")
+}
+func (UnimplementedRuntimeServiceServer) ListAIMemories(context.Context, *ListAIMemoriesRequest) (*ListAIMemoriesResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListAIMemories not implemented")
+}
+func (UnimplementedRuntimeServiceServer) CreateAIMemory(context.Context, *CreateAIMemoryRequest) (*CreateAIMemoryResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CreateAIMemory not implemented")
+}
+func (UnimplementedRuntimeServiceServer) UpdateAIMemory(context.Context, *UpdateAIMemoryRequest) (*UpdateAIMemoryResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UpdateAIMemory not implemented")
+}
+func (UnimplementedRuntimeServiceServer) DeleteAIMemory(context.Context, *DeleteAIMemoryRequest) (*DeleteAIMemoryResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method DeleteAIMemory not implemented")
+}
+func (UnimplementedRuntimeServiceServer) GetAIMemorySettings(context.Context, *GetAIMemorySettingsRequest) (*GetAIMemorySettingsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetAIMemorySettings not implemented")
+}
+func (UnimplementedRuntimeServiceServer) UpdateAIMemorySettings(context.Context, *UpdateAIMemorySettingsRequest) (*UpdateAIMemorySettingsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UpdateAIMemorySettings not implemented")
 }
 func (UnimplementedRuntimeServiceServer) IssueDevJWT(context.Context, *IssueDevJWTRequest) (*IssueDevJWTResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method IssueDevJWT not implemented")
@@ -1910,6 +2020,114 @@ func _RuntimeService_CompleteUIAction_Handler(srv interface{}, ctx context.Conte
 	return interceptor(ctx, in, info, handler)
 }
 
+func _RuntimeService_ListAIMemories_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListAIMemoriesRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RuntimeServiceServer).ListAIMemories(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: RuntimeService_ListAIMemories_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RuntimeServiceServer).ListAIMemories(ctx, req.(*ListAIMemoriesRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _RuntimeService_CreateAIMemory_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateAIMemoryRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RuntimeServiceServer).CreateAIMemory(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: RuntimeService_CreateAIMemory_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RuntimeServiceServer).CreateAIMemory(ctx, req.(*CreateAIMemoryRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _RuntimeService_UpdateAIMemory_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateAIMemoryRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RuntimeServiceServer).UpdateAIMemory(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: RuntimeService_UpdateAIMemory_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RuntimeServiceServer).UpdateAIMemory(ctx, req.(*UpdateAIMemoryRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _RuntimeService_DeleteAIMemory_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeleteAIMemoryRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RuntimeServiceServer).DeleteAIMemory(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: RuntimeService_DeleteAIMemory_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RuntimeServiceServer).DeleteAIMemory(ctx, req.(*DeleteAIMemoryRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _RuntimeService_GetAIMemorySettings_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetAIMemorySettingsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RuntimeServiceServer).GetAIMemorySettings(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: RuntimeService_GetAIMemorySettings_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RuntimeServiceServer).GetAIMemorySettings(ctx, req.(*GetAIMemorySettingsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _RuntimeService_UpdateAIMemorySettings_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateAIMemorySettingsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RuntimeServiceServer).UpdateAIMemorySettings(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: RuntimeService_UpdateAIMemorySettings_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RuntimeServiceServer).UpdateAIMemorySettings(ctx, req.(*UpdateAIMemorySettingsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _RuntimeService_IssueDevJWT_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(IssueDevJWTRequest)
 	if err := dec(in); err != nil {
@@ -2324,6 +2542,30 @@ var RuntimeService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "CompleteUIAction",
 			Handler:    _RuntimeService_CompleteUIAction_Handler,
+		},
+		{
+			MethodName: "ListAIMemories",
+			Handler:    _RuntimeService_ListAIMemories_Handler,
+		},
+		{
+			MethodName: "CreateAIMemory",
+			Handler:    _RuntimeService_CreateAIMemory_Handler,
+		},
+		{
+			MethodName: "UpdateAIMemory",
+			Handler:    _RuntimeService_UpdateAIMemory_Handler,
+		},
+		{
+			MethodName: "DeleteAIMemory",
+			Handler:    _RuntimeService_DeleteAIMemory_Handler,
+		},
+		{
+			MethodName: "GetAIMemorySettings",
+			Handler:    _RuntimeService_GetAIMemorySettings_Handler,
+		},
+		{
+			MethodName: "UpdateAIMemorySettings",
+			Handler:    _RuntimeService_UpdateAIMemorySettings_Handler,
 		},
 		{
 			MethodName: "IssueDevJWT",
