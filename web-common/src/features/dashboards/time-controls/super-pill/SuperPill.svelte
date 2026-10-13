@@ -33,11 +33,6 @@
   /** Whether the grain follows the time range; see TimeGrainSelector. */
   export let adaptiveTimeGrain = false;
   export let allowAdaptiveTimeGrain = false;
-  /**
-   * Renders the grain selector even with the new range picker,
-   * for surfaces that have no other grain control (canvas).
-   */
-  export let showTimeGrain = false;
   export let interval: Interval<true> | undefined;
   export let hidePan = false;
   export let canPanLeft: boolean = !hidePan;
@@ -158,7 +153,7 @@
     />
   {/if}
 
-  {#if (!$newPicker || showTimeGrain) && !showPivot && minTimeGrain}
+  {#if !$newPicker && !showPivot && minTimeGrain}
     <TimeGrainSelector
       {activeTimeGrain}
       {adaptiveTimeGrain}

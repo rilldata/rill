@@ -436,6 +436,15 @@ paths:
                 description: |-
                   Optional context for prompts handled by the feedback_agent.
                   The field is ignored if another agent is selected.
+              uiPagePath:
+                type: string
+                description: Optional current browser path. The origin is intentionally omitted.
+              uiActions:
+                type: array
+                items:
+                  type: object
+                  $ref: '#/definitions/v1UIAction'
+                description: Optional visible, enabled, uniquely-addressable browser actions.
             title: Request message for RuntimeService.Complete
       tags:
         - RuntimeService
@@ -496,6 +505,15 @@ paths:
                 description: |-
                   Optional context for prompts handled by the feedback_agent.
                   The field is ignored if another agent is selected.
+              uiPagePath:
+                type: string
+                description: Optional current browser path. The origin is intentionally omitted.
+              uiActions:
+                type: array
+                items:
+                  type: object
+                  $ref: '#/definitions/v1UIAction'
+                description: Optional visible, enabled, uniquely-addressable browser actions.
             title: Request message for RuntimeService.CompleteStreaming
       tags:
         - RuntimeService
@@ -643,6 +661,166 @@ paths:
                   only valid conversation having last message of "result" type from "router" agent till until this message ID will be shared.npm
                   It supports a special value of "none" to unshare the conversation.
             title: Request message for RuntimeService.ShareConversation
+      tags:
+        - RuntimeService
+  /v1/instances/{instanceId}/ai/memories:
+    get:
+      summary: |-
+        ListAIMemories lists the current user's AI memories for an instance.
+        Memories are short preferences and facts the AI has learned about the user and uses in later conversations.
+      operationId: RuntimeService_ListAIMemories
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1ListAIMemoriesResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+      tags:
+        - RuntimeService
+    post:
+      summary: CreateAIMemory creates an AI memory for the current user.
+      operationId: RuntimeService_CreateAIMemory
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1CreateAIMemoryResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              content:
+                type: string
+              agent:
+                type: string
+                description: 'The agent the memory applies to: "analyst_agent" or "developer_agent". Empty for every agent.'
+            title: Request message for RuntimeService.CreateAIMemory
+      tags:
+        - RuntimeService
+  /v1/instances/{instanceId}/ai/memories/{memoryId}:
+    delete:
+      summary: DeleteAIMemory permanently deletes one of the current user's AI memories.
+      operationId: RuntimeService_DeleteAIMemory
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1DeleteAIMemoryResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: memoryId
+          in: path
+          required: true
+          type: string
+      tags:
+        - RuntimeService
+    put:
+      summary: UpdateAIMemory updates the content and agent of one of the current user's AI memories.
+      operationId: RuntimeService_UpdateAIMemory
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1UpdateAIMemoryResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: memoryId
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              content:
+                type: string
+              agent:
+                type: string
+                description: 'The agent the memory applies to: "analyst_agent" or "developer_agent". Empty for every agent.'
+            title: Request message for RuntimeService.UpdateAIMemory
+      tags:
+        - RuntimeService
+  /v1/instances/{instanceId}/ai/memory-settings:
+    get:
+      summary: GetAIMemorySettings returns whether the current user has AI memory turned on in an instance.
+      operationId: RuntimeService_GetAIMemorySettings
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1GetAIMemorySettingsResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+      tags:
+        - RuntimeService
+    put:
+      summary: UpdateAIMemorySettings turns AI memory on or off for the current user in an instance.
+      operationId: RuntimeService_UpdateAIMemorySettings
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1UpdateAIMemorySettingsResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              enabled:
+                type: boolean
+            title: Request message for RuntimeService.UpdateAIMemorySettings
       tags:
         - RuntimeService
   /v1/instances/{instanceId}/ai/tools:
@@ -4154,6 +4332,28 @@ definitions:
         type: string
         title: raw_type is the original database-specific type (e.g. "VARCHAR(255)")
     title: Type represents a data type in a schema
+  v1AIMemory:
+    type: object
+    properties:
+      id:
+        type: string
+      content:
+        type: string
+      agent:
+        type: string
+        description: |-
+          The agent the memory applies to: "analyst_agent" or "developer_agent". Empty when it applies to every agent.
+          The AI scopes what it learns to the agent that learned it; the user chooses the agent for memories they add themselves.
+      sourceConversationId:
+        type: string
+        description: The conversation the memory was learned from. Empty for memories the user added themselves.
+      createdOn:
+        type: string
+        format: date-time
+      updatedOn:
+        type: string
+        format: date-time
+    description: AIMemory is a short preference or fact the AI has learned about the current user in an instance.
   v1AIPrompt:
     type: object
     properties:
@@ -4465,6 +4665,11 @@ definitions:
       definedInCanvas:
         type: boolean
         description: Indicates if the component was defined inline as part of the canvas YAML.
+      params:
+        type: object
+        description: |-
+          Values bound to the referenced component's declared params.
+          Only set for items that reference an externally defined component.
       width:
         type: integer
         format: int64
@@ -4996,6 +5201,34 @@ definitions:
         $ref: '#/definitions/v1ComponentSpec'
       state:
         $ref: '#/definitions/v1ComponentState'
+  v1ComponentParam:
+    type: object
+    properties:
+      name:
+        type: string
+        description: Param name. Must be a valid identifier; referenced in templates as {{ .params.<name> }}.
+      type:
+        type: string
+        description: 'Param type. One of: "string", "number", "boolean", "metrics_view", "measure", "dimension", "time_dimension".'
+      description:
+        type: string
+        description: Human-facing description of the param.
+      required:
+        type: boolean
+        description: If true, a canvas item referencing this component must bind a value for the param.
+      default:
+        description: Default value used when the param is not bound. Mutually exclusive with required=true.
+      metricsViewParam:
+        type: string
+        description: |-
+          For "measure", "dimension" and "time_dimension" params:
+          the name of a sibling param of type "metrics_view" whose bound metrics view the field must belong to.
+          May be omitted when exactly one "metrics_view" param is declared, in which case the parser fills it in.
+      options:
+        type: array
+        items: {}
+        description: 'For scalar params: allowed values. Renders as a select input in visual editors.'
+    description: ComponentParam declares a typed, validated parameter of a component.
   v1ComponentSpec:
     type: object
     properties:
@@ -5007,6 +5240,14 @@ definitions:
         type: string
       rendererProperties:
         type: object
+      params:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1ComponentParam'
+        description: |-
+          Declared parameters that canvases can bind values to when referencing this component.
+          Bound values are available in the renderer properties' templating as {{ .params.<name> }}.
       input:
         type: array
         items:
@@ -5186,6 +5427,12 @@ definitions:
       sql:
         type: string
         description: The SQL filter string representation of the expression.
+  v1CreateAIMemoryResponse:
+    type: object
+    properties:
+      memory:
+        $ref: '#/definitions/v1AIMemory'
+    title: Response message for RuntimeService.CreateAIMemory
   v1CreateDirectoryResponse:
     type: object
     title: Response message for RuntimeService.CreateDirectory
@@ -5248,6 +5495,9 @@ definitions:
     properties:
       expression:
         $ref: '#/definitions/v1Expression'
+  v1DeleteAIMemoryResponse:
+    type: object
+    title: Response message for RuntimeService.DeleteAIMemory
   v1DeleteFileResponse:
     type: object
     title: Response message for RuntimeService.DeleteFile
@@ -5655,6 +5905,13 @@ definitions:
         type: boolean
         description: Indicates if AI-based generation succeeded. If it failed, it falls back to the simpler heuristic approach.
     title: Response message for RuntimeService.GenerateMetricsViewFile
+  v1GetAIMemorySettingsResponse:
+    type: object
+    properties:
+      enabled:
+        type: boolean
+        description: False if the user has turned memory off. Memories are then neither used nor updated, but can still be managed.
+    title: Response message for RuntimeService.GetAIMemorySettings
   v1GetAIMessageResponse:
     type: object
     properties:
@@ -5971,6 +6228,15 @@ definitions:
       jwt:
         type: string
     title: Response message for RuntimeService.IssueDevJWT
+  v1ListAIMemoriesResponse:
+    type: object
+    properties:
+      memories:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1AIMemory'
+    title: Response message for RuntimeService.ListAIMemories
   v1ListBucketsResponse:
     type: object
     properties:
@@ -7842,6 +8108,9 @@ definitions:
       rendererProperties:
         type: object
         title: Renderer properties with templating resolved for the provided args
+      resolvedArgs:
+        type: object
+        description: 'The effective args used for resolution: the component''s declared param defaults merged with the provided args.'
   v1ResolveTemplatedStringResponse:
     type: object
     properties:
@@ -8524,12 +8793,31 @@ definitions:
           type: object
           $ref: '#/definitions/v1Span'
     description: Trace contains trace spans captured during request execution. Used both in successful responses and as gRPC error details when trace=true and the request fails.
+  v1UIAction:
+    type: object
+    properties:
+      id:
+        type: string
+        description: Stable identifier from the element's data-ai-action attribute.
+      label:
+        type: string
+        description: Human-readable accessible label for the action.
+    description: A non-destructive UI action explicitly exposed to the AI by the browser.
   v1UnpackEmptyResponse:
     type: object
     title: Response message for RuntimeService.UnpackEmpty
   v1UnpackExampleResponse:
     type: object
     title: Response message for RuntimeService.UnpackExample
+  v1UpdateAIMemoryResponse:
+    type: object
+    properties:
+      memory:
+        $ref: '#/definitions/v1AIMemory'
+    title: Response message for RuntimeService.UpdateAIMemory
+  v1UpdateAIMemorySettingsResponse:
+    type: object
+    title: Response message for RuntimeService.UpdateAIMemorySettings
   v1WatchFilesResponse:
     type: object
     properties:

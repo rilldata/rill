@@ -1,6 +1,9 @@
 import { get, writable } from "svelte/store";
 import { Row } from "./row";
-import type { V1CanvasRow } from "@rilldata/web-common/runtime-client";
+import type {
+  V1CanvasItem,
+  V1CanvasRow,
+} from "@rilldata/web-common/runtime-client";
 import { COLUMN_COUNT } from "../layout-util";
 import type { CanvasEntity } from "./canvas-entity";
 
@@ -77,7 +80,17 @@ export class Grid {
     this._rows.update((r) => r.slice(start, end));
   }
 
-  updateFromCanvasRows(canvasRows: V1CanvasRow[]) {
+  // itemIdFn derives the client-side instance id for each item; the caller supplies it
+  // because only the caller knows the item's position in the full canvas spec (top-level
+  // grids receive only the plain rows, with tab groups filtered out).
+  updateFromCanvasRows(
+    canvasRows: V1CanvasRow[],
+    itemIdFn: (
+      item: V1CanvasItem,
+      rowIndex: number,
+      columnIndex: number,
+    ) => string = (item) => item.component ?? "",
+  ) {
     const currentRows = get(this._rows);
 
     let updatedRowCount = false;
@@ -97,8 +110,10 @@ export class Grid {
 
       if (Array.isArray(canvasRow.items)) {
         const existingItemIds = get(row.items);
-        const itemIds = canvasRow.items.map((item) => item.component ?? "");
-        row.items.set(canvasRow.items.map((item) => item.component ?? ""));
+        const itemIds = canvasRow.items.map((item, col) =>
+          itemIdFn(item, i, col),
+        );
+        row.items.set(itemIds);
         row.widths.set(canvasRow.items.map((item) => item.width ?? 25));
 
         if (

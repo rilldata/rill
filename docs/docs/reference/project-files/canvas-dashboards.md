@@ -67,6 +67,8 @@ _[array of object]_ - Refers to all of the rows displayed on the Canvas. Each en
         - **map** - Map of points or regions, colored and sized by measures
 
 
+    - **`params`** - _[object]_ - Values bound to the referenced component's declared params. Only valid together with `component`. Values must be scalars.
+
     - **`width`** - _[string, integer]_ - Width of the component (can be a number or string with unit)
 
   - **`name`** - _[string]_ - Stable identifier for a tab group, used as its deep-link URL key. Defaults to `group-<index>` if omitted. Only used for tab-group entries.
@@ -100,6 +102,10 @@ _[integer]_ - Vertical gap in pixels of the canvas
 _[object]_ - Indicates if filters should be enabled for the canvas.
 
   - **`enable`** - _[boolean]_ - Toggles filtering functionality for the canvas dashboard.
+
+  - **`pinned`** - _[array of string]_ - Dimension or measure names to pin in the filter bar. Pinned filters stay visible even when they have no value, and viewers cannot remove them.
+
+  - **`required`** - _[array of string]_ - Dimension or measure names that must have a value before the canvas renders. Required filters are implicitly pinned. Each name must be a dimension or measure on a metrics view referenced by the canvas.
 
 ### `allow_custom_time_range`
 

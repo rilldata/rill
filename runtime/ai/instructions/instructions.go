@@ -29,6 +29,9 @@ type Instruction struct {
 type Options struct {
 	// External indicates whether the instructions are being loaded for external use (e.g., Claude Skills or Cursor rules) or internal use (e.g., Rill's own agents).
 	External bool
+	// Memory indicates whether user memory is enabled for the session the instructions are rendered for.
+	// When false, the sections about the user_memory block and the update_memory tool are omitted.
+	Memory bool
 }
 
 // frontMatter represents the YAML front matter of an instruction file.
@@ -167,6 +170,7 @@ func executeTemplate(body string, opts Options) (string, error) {
 
 	data := map[string]any{
 		"external": opts.External,
+		"memory":   opts.Memory,
 	}
 
 	var buf bytes.Buffer
