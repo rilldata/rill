@@ -1,0 +1,65 @@
+# Explore YAML
+# Reference documentation: https://docs.rilldata.com/reference/project-files/canvas-dashboards
+
+type: canvas
+display_name: "Adbids Canvas Dashboard"
+defaults:
+  time_range: PT24H
+  comparison_mode: time
+rows:
+  - items:
+      - kpi_grid:
+          metrics_view: AdBids_metrics
+          measures:
+            - total_records
+            - bid_price_sum
+          comparison:
+            - delta
+            - percent_change
+        width: 12
+    height: 128px
+  - items:
+      - stacked_bar:
+          metrics_view: AdBids_metrics
+          x:
+            type: temporal
+            field: timestamp
+            sort: -y
+            limit: 20
+          y:
+            type: quantitative
+            field: total_records
+            zeroBasedOrigin: true
+          color: hsl(240,100%,67%)
+        width: 12
+    height: 320px
+  - items:
+      - stacked_bar:
+          metrics_view: AdBids_metrics
+          title: ""
+          description: ""
+          color:
+            field: domain
+            type: nominal
+          x:
+            field: publisher
+            limit: 20
+            sort: -y
+            type: nominal
+          y:
+            field: bid_price_sum
+            type: quantitative
+            zeroBasedOrigin: true
+        width: 12
+    height: 394px
+  - items:
+      - table:
+          metrics_view: AdBids_metrics
+          columns:
+            - publisher
+            - domain
+            - total_records
+            - bid_price_sum
+          title: Table component
+        width: 12
+    height: 300px

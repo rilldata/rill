@@ -1,0 +1,25 @@
+type: component
+display_name: Measure trend
+description: Line chart of any measure over a time dimension.
+
+params:
+  - name: metrics_view
+    type: metrics_view
+    required: true
+  - name: measure
+    type: measure
+    required: true
+  - name: time_dim
+    type: time_dimension
+    required: true
+
+custom_chart:
+  metrics_sql: |
+    SELECT {{ .params.time_dim }}, {{ .params.measure }}
+    FROM {{ .params.metrics_view }}
+    ORDER BY {{ .params.time_dim }}
+  spec:
+    chartType: Line Chart
+    encodings:
+      x: { field: "{{ .params.time_dim }}" }
+      y: { field: "{{ .params.measure }}" }

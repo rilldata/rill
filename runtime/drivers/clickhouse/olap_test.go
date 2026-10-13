@@ -1096,7 +1096,7 @@ func testQueryAttributesReadonlyUser(t *testing.T, olap drivers.OLAPStore, dsn s
 	u, err := url.Parse(dsn)
 	require.NoError(t, err)
 	u.User = url.UserPassword(username, password)
-	handle, err := drivers.Open("clickhouse", "", "readonly", map[string]any{"dsn": u.String()}, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
+	handle, err := drivers.Open(t.Context(), "clickhouse", "", "readonly", map[string]any{"dsn": u.String()}, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
 	defer handle.Close()
 	require.False(t, handle.(*Connection).supportSettings)
@@ -1117,7 +1117,7 @@ func testQueryAttributesReadonlyUser(t *testing.T, olap drivers.OLAPStore, dsn s
 	require.ErrorContains(t, err, "readonly")
 
 	// Connector query settings are not silently dropped
-	handle, err = drivers.Open("clickhouse", "", "readonly", map[string]any{"dsn": u.String(), "query_settings": "max_execution_time = 123"}, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
+	handle, err = drivers.Open(t.Context(), "clickhouse", "", "readonly", map[string]any{"dsn": u.String(), "query_settings": "max_execution_time = 123"}, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
 	defer handle.Close()
 	readonlyOLAP, ok = handle.AsOLAP("default")
