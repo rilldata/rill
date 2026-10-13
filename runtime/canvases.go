@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"slices"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/canvas"
@@ -328,7 +327,7 @@ func (r *Runtime) ResolveCanvas(ctx context.Context, instanceID, canvasName stri
 		keep := visibility.Keep()
 		itemMet := keep.Item
 		keep.Item = func(item *runtimev1.CanvasItem) bool {
-			return itemMet(item) && !removed[item.Component] && !inaccessibleItem(item, components, referencedMetricsViews, securities, opts.Unsafe)
+			return itemMet(item) && !removed[item.Component] && !inaccessibleItem(item, components, referencedMetricsViews, opts.Unsafe)
 		}
 		_, hiddenPaths := canvas.PruneRows(spec.Rows, keep)
 		return &ResolveCanvasResult{
@@ -373,7 +372,7 @@ func pruneInaccessibleContent(canvasRes *runtimev1.Resource, components, metrics
 		components[name] = cmp
 	}
 	keep := canvas.Keep{Item: func(item *runtimev1.CanvasItem) bool {
-		return !removed[item.Component] && !inaccessibleItem(item, components, metricsViews, securities, unsafe)
+		return !removed[item.Component] && !inaccessibleItem(item, components, metricsViews, unsafe)
 	}}
 	validRows, validPaths := canvas.PruneRows(canvasRes.GetCanvas().GetState().GetValidSpec().GetRows(), keep)
 	rows, paths := canvas.PruneRows(canvasRes.GetCanvas().GetSpec().GetRows(), keep)
@@ -441,6 +440,11 @@ func inaccessibleComponents(components, metricsViews map[string]*runtimev1.Resou
 			removed[name] = true
 			continue
 		}
+		// The renderer properties of a component with params may reference fields through templates (e.g. {{ .params.measure }}),
+		// which aren't field names, so its fields are checked per item instead.
+		if len(validSpec.Params) > 0 {
+			continue
+		}
 		sec := securities[mvName]
 		if sec == nil || sec.CanAccessAllFields() {
 			continue
@@ -478,8 +482,9 @@ func inaccessibleComponents(components, metricsViews map[string]*runtimev1.Resou
 // inaccessibleItem reports whether an item binds a param of its component to a metrics view or field that the claims can't query.
 // A parameterized component can be shared by items that bind different values,
 // so it's checked per item instead of having its renderer properties pruned like other components.
-// metricsViews must contain the metrics views the claims can access, and securities their resolved security.
-func inaccessibleItem(item *runtimev1.CanvasItem, components, metricsViews map[string]*runtimev1.Resource, securities map[string]*ResolvedSecurity, unsafe bool) bool {
+// metricsViews must contain the metrics views the claims can access, with their security applied;
+// the item is then inaccessible exactly when ResolveComponent would reject its bindings.
+func inaccessibleItem(item *runtimev1.CanvasItem, components, metricsViews map[string]*runtimev1.Resource, unsafe bool) bool {
 	spec := components[item.Component].GetComponent().GetState().GetValidSpec()
 	if spec == nil && unsafe {
 		spec = components[item.Component].GetComponent().GetSpec()
@@ -487,35 +492,17 @@ func inaccessibleItem(item *runtimev1.CanvasItem, components, metricsViews map[s
 	if len(spec.GetParams()) == 0 {
 		return false
 	}
+	mvSpecs := make(map[string]*runtimev1.MetricsViewSpec, len(metricsViews))
+	for name, mv := range metricsViews {
+		if mvSpec := mv.GetMetricsView().GetState().GetValidSpec(); mvSpec != nil {
+			mvSpecs[name] = mvSpec
+		}
+	}
 	var bound map[string]any
 	if item.Params != nil {
 		bound = item.Params.AsMap()
 	}
-	args := canvas.EffectiveArgs(spec, bound)
-	for _, p := range spec.Params {
-		value, _ := args[p.Name].(string)
-		if value == "" || canvas.IsTemplated(value) {
-			continue
-		}
-		switch {
-		case p.Type == "metrics_view":
-			if _, ok := metricsViews[value]; !ok {
-				return true
-			}
-		case slices.Contains(canvas.ParamFieldTypes, p.Type):
-			// The field's metrics view is checked by its own param; a templated one can't be checked.
-			mvName, _ := args[p.MetricsViewParam].(string)
-			mv, ok := metricsViews[mvName]
-			if !ok {
-				continue
-			}
-			sec := securities[mvName]
-			if sec != nil && value != mv.GetMetricsView().GetState().GetValidSpec().GetTimeDimension() && !sec.CanAccessField(value) {
-				return true
-			}
-		}
-	}
-	return false
+	return canvas.ValidateParamBindings(spec.Params, bound, mvSpecs) != nil
 }
 
 // pruneDefaultFilters removes the default filters for the metrics views that keep doesn't keep.

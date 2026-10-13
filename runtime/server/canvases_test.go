@@ -1680,6 +1680,21 @@ kpi:
   metrics_view: "{{ .params.metrics_view }}"
   measure: "{{ .params.measure }}"
 `,
+			// A literal metrics view with templated fields: the templates aren't field names, so they mustn't be pruned as restricted fields.
+			"litkpi.yaml": `
+type: component
+params:
+  - name: measure
+    type: string
+    required: true
+  - name: dim
+    type: string
+    required: true
+kpi:
+  metrics_view: mv1
+  measure: "{{ .params.measure }}"
+  dimension_filters: "{{ .params.dim }} IN ('US')"
+`,
 			"c1.yaml": `
 type: canvas
 rows:
@@ -1690,10 +1705,13 @@ rows:
     params: {metrics_view: mv1, measure: secret}
   - component: tplkpi
     params: {metrics_view: mv2, measure: count}
+- items:
+  - component: litkpi
+    params: {measure: count, dim: country}
 `,
 		},
 	})
-	testruntime.RequireReconcileState(t, rt, instanceID, 6, 0, 0)
+	testruntime.RequireReconcileState(t, rt, instanceID, 7, 0, 0)
 
 	srv, err := server.NewServer(context.Background(), &server.Options{}, rt, zap.NewNop(), ratelimit.NewNoop(), activity.NewNoopClient())
 	require.NoError(t, err)
@@ -1718,6 +1736,7 @@ rows:
 	// An admin sees every item.
 	res := resolve(true, []runtime.Permission{runtime.ReadAPI}, false)
 	require.Equal(t, []string{"mv1.count", "mv1.secret", "mv2.count"}, boundMeasures(res))
+	require.Len(t, res.Canvas.GetCanvas().State.ValidSpec.Rows, 2)
 
 	// A viewer doesn't get the items bound to a restricted measure or an inaccessible metrics view.
 	// The shared component isn't pruned or removed, since the other item still uses it.
@@ -1726,6 +1745,8 @@ rows:
 	require.Contains(t, res.ResolvedComponents, "tplkpi")
 	require.Equal(t, "{{ .params.measure }}", res.ResolvedComponents["tplkpi"].GetComponent().State.ValidSpec.RendererProperties.AsMap()["measure"])
 	require.NotContains(t, res.ReferencedMetricsViews, "mv2")
+	require.Len(t, res.Canvas.GetCanvas().State.ValidSpec.Rows, 2)
+	require.Equal(t, "{{ .params.measure }}", res.ResolvedComponents["litkpi"].GetComponent().State.ValidSpec.RendererProperties.AsMap()["measure"])
 
 	// The visual editor gets every item and the paths of the ones hidden from the viewer.
 	res = resolve(false, []runtime.Permission{runtime.ReadAPI, runtime.EditRepo}, true)
