@@ -288,14 +288,15 @@ func TestFilterReferencesRestrictedFields(t *testing.T) {
 	tests := []struct {
 		name       string
 		filter     string
-		fields     []string // the fields the query engine checks; none if the frontend can't parse the filter, since it then doesn't apply it
+		fields     []string // the fields checked against canAccess
 		restricted bool
 	}{
 		{name: "no filter", filter: ""},
 		{name: "dimension filters", filter: "region IN ('US','CA') AND region NEQ 'MX'", fields: []string{"region"}},
 		{name: "keywords in any case", filter: "region not in list ('US') and region nlike '%x%'", fields: []string{"region"}},
 		{name: "quoted field name", filter: `"country name" EQ 'Canada'`, fields: []string{"country name"}},
-		{name: "restricted quoted field name", filter: `"customer\"name" EQ 'acme'`, fields: []string{`customer"name`}, restricted: true},
+		// Escapes in quoted field names aren't decoded, so the name doesn't match its field and counts as restricted.
+		{name: "escaped quote in a quoted field name", filter: `"customer\"name" EQ 'acme'`, fields: []string{`customer\"name`}, restricted: true},
 		{name: "quoted string on the left of a comparison is a field", filter: "'customer_name' EQ 'acme'", fields: []string{"customer_name"}, restricted: true},
 		{name: "field named like a keyword", filter: "list EQ 'private'", fields: []string{"list"}, restricted: true},
 		{name: "field named like a comparison value", filter: "region_delta EQ 'private'", fields: []string{"region_delta"}, restricted: true},
@@ -306,10 +307,15 @@ func TestFilterReferencesRestrictedFields(t *testing.T) {
 		{name: "measure filter grouped by a restricted dimension", filter: "customer_name HAVING (revenue GT 100)", fields: []string{"customer_name", "revenue"}, restricted: true},
 		{name: "nested condition", filter: "(region EQ 'x' OR customer_name EQ 'y') AND region IN ([1, 2], {'k': 'v'})", fields: []string{"region", "customer_name"}, restricted: true},
 		{name: "one switch from AND to OR", filter: "region EQ 'x' AND region EQ 'y' OR customer_name EQ -1.5", fields: []string{"region", "customer_name"}, restricted: true},
+		{name: "NOT IN LIST and NOT LIKE are operators, not fields", filter: "region NOT IN LIST ('x') AND region NOT LIKE '%y%'", fields: []string{"region"}},
+		// Fields named like an operator are assumed not to exist, so they're missed.
+		{name: "field named like an operator", filter: "in IN ('x') AND not EQ 'y'"},
+		// The frontend can't parse these, so it doesn't apply them; the fields before an operator still count.
 		{name: "SQL operators", filter: "customer_name = 'acme'"},
-		{name: "two switches between AND and OR", filter: "region EQ 'x' AND region EQ 'y' OR customer_name EQ 'z' AND region EQ 'w'"},
-		{name: "double-quoted value", filter: `customer_name EQ "acme"`},
-		{name: "incomplete filter", filter: "customer_name EQ 'acme' AND"},
+		{name: "two switches between AND and OR", filter: "region EQ 'x' AND region EQ 'y' OR customer_name EQ 'z' AND region EQ 'w'", fields: []string{"region", "customer_name"}, restricted: true},
+		{name: "double-quoted value", filter: `customer_name EQ "acme"`, fields: []string{"customer_name"}, restricted: true},
+		{name: "incomplete filter", filter: "customer_name EQ 'acme' AND", fields: []string{"customer_name"}, restricted: true},
+		{name: "unterminated string", filter: "region EQ 'acme", fields: []string{"region"}},
 	}
 
 	for _, tt := range tests {

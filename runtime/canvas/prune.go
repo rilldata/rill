@@ -2,6 +2,7 @@ package canvas
 
 import (
 	"fmt"
+	"regexp"
 	"sort"
 	"strings"
 
@@ -131,17 +132,38 @@ func QueryReferencesRestrictedFields(q *metricsview.Query, timeDimension string,
 	return r.expressionRestricted(q.Where) || r.expressionRestricted(q.Having)
 }
 
+// filterTokens matches the words and quoted strings of a component filter; punctuation and whitespace are skipped.
+// Quoted strings are matched whole, including backslash escapes, so the words in a value aren't read as fields.
+var filterTokens = regexp.MustCompile(`'(?:\\.|[^'\\])*'|"(?:\\.|[^"\\])*"|\w+`)
+
+// filterOperators are the keywords that follow a field in a component filter, including the first word of NOT IN and NOT LIKE.
+var filterOperators = map[string]bool{
+	"IN": true, "NIN": true, "NOT": true, "HAVING": true, "LIKE": true, "NLIKE": true,
+	"EQ": true, "NEQ": true, "GT": true, "GTE": true, "LT": true, "LTE": true,
+}
+
 // FilterReferencesRestrictedFields reports whether a component's own filter (its dimension_filters) references a field that canAccess rejects.
 // The frontend adds the filter to each of the component's queries, so the query engine fails them if it does.
-// The frontend doesn't apply a filter that it can't parse, so such a filter doesn't reference any fields.
 // The primary time dimension is always allowed, matching the query engine.
+//
+// The filter uses the syntax of dashboard URL filters, such as "country IN ('US','CA') AND city HAVING (revenue GT 100)".
+// Instead of parsing that grammar (see web-common/src/features/dashboards/url-state/filters/expression.ne),
+// it relies on a field always coming right before an operator, while a value never does.
+// It assumes that no field is named like an operator, and that quoted field names have no escapes:
+// a field named like an operator is missed, and an escaped name doesn't match its field, so it counts as restricted.
+// A filter the frontend can't parse isn't applied, but the fields before its operators still count;
+// that only removes a component whose filter is broken anyway.
 func FilterReferencesRestrictedFields(filter, timeDimension string, canAccess func(field string) bool) bool {
-	expr, err := parseFilter(filter)
-	if err != nil {
-		return false
-	}
 	r := fieldRestrictions{timeDimension: timeDimension, canAccess: canAccess}
-	return r.expressionRestricted(expr)
+	tokens := filterTokens.FindAllString(filter, -1)
+	for i := 0; i+1 < len(tokens); i++ {
+		token := strings.ToUpper(tokens[i])
+		if filterOperators[strings.ToUpper(tokens[i+1])] && !filterOperators[token] && token != "AND" && token != "OR" &&
+			r.restricted(strings.Trim(tokens[i], `'"`)) {
+			return true
+		}
+	}
+	return false
 }
 
 // fieldRestrictions finds the fields of a metrics query that canAccess rejects, matching the query engine's access checks.
