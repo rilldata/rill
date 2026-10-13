@@ -52,6 +52,18 @@
    * If provided, the chart uses these directly. If not, colors resolve from CSS variables.
    */
   export let theme: Record<string, string> | undefined = undefined;
+  /**
+   * Notes when the query returned as many rows as its LIMIT allows, so some may have been cut.
+   * Only useful where the limit can be changed, i.e. the component editor.
+   */
+  export let showRowLimitNotice = false;
+  /**
+   * When set, query and chart errors offer a "Fix with AI" action. It receives the error and, for
+   * a query error, the resolved Metrics SQL that failed.
+   */
+  export let onFixError:
+    | ((error: string, metricsSQL?: string) => void)
+    | undefined = undefined;
 
   $: viewOptions = [m.canvas_chart(), m.component_preview_data()];
 
@@ -177,6 +189,18 @@
   $: overflowWarnings =
     compiled?.warnings.filter((warning) => warning.severity !== "info") ?? [];
 
+  // A result that fills the query's trailing LIMIT may be missing rows, which shows up as a chart
+  // that stops early or drops series rather than as an error.
+  $: rowLimit = Number(/\bLIMIT\s+(\d+)\s*;?\s*$/i.exec(metricsSQL ?? "")?.[1]);
+  $: rowLimitReached =
+    showRowLimitNotice && rowLimit > 0 && rows.length >= rowLimit;
+  $: chartNotices = [
+    ...overflowWarnings.map((warning) => warning.message),
+    ...(rowLimitReached
+      ? [m.component_rows_truncated({ limit: rowLimit })]
+      : []),
+  ];
+
   $: renderedSpec = ejected?.spec ?? compiled?.spec;
   $: specError = ejected?.error ?? compiled?.error;
 
@@ -255,19 +279,43 @@
         {:else if !metricsSQL}
           <ComponentError error={m.component_preview_no_metrics_sql()} />
         {:else if queryError}
-          <ComponentError
-            error={queryError.message || m.component_preview_query_error()}
-          />
+          {@const error =
+            queryError.message || m.component_preview_query_error()}
+          <div
+            class="size-full flex flex-col items-center justify-center gap-y-2"
+          >
+            <ComponentError {error} />
+            {#if onFixError}
+              <button
+                class="text-xs font-medium text-primary-600 hover:text-primary-700"
+                onclick={() => onFixError?.(error, metricsSQL)}
+              >
+                {m.component_fix_with_ai()}
+              </button>
+            {/if}
+          </div>
         {:else if isLoading}
           <ReconcilingSpinner />
         {:else if specError}
-          <ComponentError error={specError} />
+          <div
+            class="size-full flex flex-col items-center justify-center gap-y-2"
+          >
+            <ComponentError error={specError} />
+            {#if onFixError}
+              <button
+                class="text-xs font-medium text-primary-600 hover:text-primary-700"
+                onclick={() => onFixError?.(specError)}
+              >
+                {m.component_fix_with_ai()}
+              </button>
+            {/if}
+          </div>
         {:else if renderedSpec}
-          {#if overflowWarnings.length}
+          {#if chartNotices.length}
             <div
               class="px-2 py-1 text-[11px] text-yellow-800 bg-yellow-50 border-b border-yellow-200"
             >
-              {overflowWarnings.map((warning) => warning.message).join(" ")}
+              {chartNotices.join(" ")}
             </div>
           {/if}
           <div
@@ -281,6 +329,7 @@
               spec={renderedSpec}
               data={namedData}
               canvasDashboard
+              scrollX
               {themeMode}
               config={getRillTheme(themeMode === "dark", theme)}
               {expressionFunctions}

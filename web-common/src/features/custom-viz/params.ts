@@ -1,4 +1,5 @@
 import type { ComponentInputParam } from "@rilldata/web-common/features/canvas/inspector/types";
+import { DETAIL_PARAM } from "@rilldata/web-common/features/custom-viz/examples/example-spec";
 import {
   MetricsViewSpecDimensionType,
   type V1ComponentParam,
@@ -183,6 +184,27 @@ export function paramToInputParam(
   }
 }
 
+/**
+ * The chart channel each param is drawn on, read from the `{{ .params.<name> }}` references in a
+ * custom chart's spec encodings. Params not drawn on a channel are absent.
+ */
+export function paramChannels(
+  rendererProperties: Record<string, unknown> | undefined,
+): Record<string, string> {
+  const spec = rendererProperties?.spec as
+    | { encodings?: Record<string, unknown> }
+    | undefined;
+  const channels: Record<string, string> = {};
+  for (const [channel, encoding] of Object.entries(spec?.encodings ?? {})) {
+    for (const match of JSON.stringify(encoding).matchAll(
+      /\{\{\s*\.params\.(\w+)\s*\}\}/g,
+    )) {
+      channels[match[1]] ??= channel;
+    }
+  }
+  return channels;
+}
+
 /** Returns the first non-empty Metrics SQL query from the supported scalar/list shapes. */
 export function normalizeMetricsSQL(value: unknown): string | undefined {
   if (typeof value === "string") return value.trim() ? value : undefined;
@@ -195,27 +217,198 @@ export function normalizeMetricsSQL(value: unknown): string | undefined {
   return undefined;
 }
 
+/** Channels that split a chart into series or panels; each value becomes a color or a panel. */
+const SERIES_CHANNELS = new Set(["color", "group", "row", "column"]);
+
+/** Channels whose measure is read against the chart's primary measure, on the same scale. */
+const PAIRED_MEASURE_CHANNELS = new Set([
+  "x2",
+  "y2",
+  "goal",
+  "open",
+  "high",
+  "low",
+  "close",
+]);
+
+/** Channels holding the two ends or sides of each mark, by chart type. */
+const PAIR_CHANNELS: Record<string, Set<string>> = {
+  "Ranged Dot Plot": new Set(["color"]),
+  "Pyramid Chart": new Set(["color"]),
+  // The two periods a slope connects.
+  "Slope Chart": new Set(["x"]),
+};
+
+/** Number of rows a cardinality probe reads; a count at this cap means "at least this many". */
+export const VALUE_COUNT_PROBE_LIMIT = 51;
+
+/**
+ * What a dimension param is for, which decides how many distinct values suit it: a `series` splits
+ * the chart into a handful of colors or panels, a `pair` into exactly the two ends or sides of each
+ * mark (or the two periods of a slope chart), a `category` lays out an axis, and the `detail` dimension of a row-level chart sets the
+ * grain of its rows.
+ */
+export type DimensionRole = "detail" | "series" | "pair" | "category";
+
+export function dimensionRole(
+  paramName: string | undefined,
+  channels: Record<string, string>,
+  chartType: string | undefined,
+): DimensionRole {
+  if (paramName === DETAIL_PARAM) return "detail";
+  const channel = channels[paramName ?? ""] ?? "";
+  if (PAIR_CHANNELS[chartType ?? ""]?.has(channel)) return "pair";
+  return SERIES_CHANNELS.has(channel) ? "series" : "category";
+}
+
+/** Distinct values that suit each role, as an inclusive [min, max]. */
+const ROLE_VALUE_RANGE: Record<
+  Exclude<DimensionRole, "detail">,
+  [number, number]
+> = {
+  series: [2, 12],
+  pair: [2, 2],
+  category: [3, 50],
+};
+
+export interface DefaultArgsOptions {
+  /** The chart channel each param is drawn on, keyed by param name (see paramChannels). */
+  channels?: Record<string, string>;
+  /** The component's chart type, for channels whose needs depend on it. */
+  chartType?: string;
+  /** Distinct values per dimension, capped at VALUE_COUNT_PROBE_LIMIT. */
+  valueCounts?: Map<string, number>;
+}
+
 /**
  * Computes best-guess default bindings for a component's declared params against a
  * metrics view, mirroring the smart defaults used when adding built-in widgets:
  * metrics_view params get the given metrics view, time_dimension params its time
- * dimension, measure/dimension params the first unused field, and scalar params
- * their declared default.
+ * dimension, and scalar params their declared default.
+ *
+ * Measure and dimension params get the field that suits the channel they are drawn on.
+ * A series channel (color, group, a facet) needs a handful of values, or the chart drowns in
+ * series and its row limit fills up on the first category; a category axis wants a few dozen;
+ * the unencoded detail dimension of a row-level chart wants as many as possible, one row per
+ * observation. Without value counts, fields are taken in declaration order. A measure read
+ * against the primary measure (a range end, a target, OHLC) prefers one in the same format, and
+ * reuses a measure rather than leaving a required param unbound when the metrics view runs out.
  */
 export function buildDefaultArgs(
   params: V1ComponentParam[],
   metricsViewName: string | undefined,
   metricsViewSpec: V1MetricsViewSpec | undefined,
+  options: DefaultArgsOptions = {},
 ): Record<string, unknown> {
+  const { channels = {}, chartType, valueCounts } = options;
   const args: Record<string, unknown> = {};
   const usedFields = new Set<string>();
   const timeDimension = metricsViewSpec?.timeDimension;
-  const dimensions = metricsViewSpec?.dimensions ?? [];
-  const measures = metricsViewSpec?.measures ?? [];
+  const dimensions = (metricsViewSpec?.dimensions ?? []).filter(
+    (candidate) =>
+      candidate.name &&
+      candidate.name !== timeDimension &&
+      candidate.type !== MetricsViewSpecDimensionType.DIMENSION_TYPE_TIME,
+  );
+  const measures = (metricsViewSpec?.measures ?? []).filter(
+    (candidate) => candidate.name,
+  );
 
-  for (const param of params) {
+  const splitsIntoSeries = Object.values(channels).some((channel) =>
+    SERIES_CHANNELS.has(channel),
+  );
+
+  const pickDimension = (param: V1ComponentParam) => {
+    const candidates = dimensions.filter(
+      (candidate) => !usedFields.has(candidate.name!),
+    );
+    const countOf = (name: string) => valueCounts?.get(name) ?? 0;
+    if (!valueCounts) return candidates[0]?.name;
+
+    const role = dimensionRole(param.name, channels, chartType);
+    if (role === "detail") {
+      return candidates.reduce<string | undefined>(
+        (best, candidate) =>
+          !best || countOf(candidate.name!) > countOf(best)
+            ? candidate.name
+            : best,
+        undefined,
+      );
+    }
+
+    // An axis whose categories are each split into series has room for fewer of them.
+    const [min, max] =
+      role === "category" && splitsIntoSeries
+        ? [3, 12]
+        : ROLE_VALUE_RANGE[role];
+    const fit = candidates.find(
+      (candidate) =>
+        countOf(candidate.name!) >= min && countOf(candidate.name!) <= max,
+    );
+    if (fit) return fit.name;
+    // Nothing in range: take the nearest field that still varies.
+    const distance = (count: number) =>
+      count < min ? min - count : count - max;
+    return candidates
+      .filter((candidate) => countOf(candidate.name!) >= 2)
+      .sort((a, b) => distance(countOf(a.name!)) - distance(countOf(b.name!)))
+      .concat(candidates)[0]?.name;
+  };
+
+  const formatOf = (name: unknown) => {
+    const measure = measures.find((candidate) => candidate.name === name);
+    return `${measure?.formatPreset ?? ""}|${measure?.formatD3 ?? ""}`;
+  };
+  let primaryMeasure: string | undefined;
+
+  const pickMeasure = (param: V1ComponentParam) => {
+    const unused = measures.filter(
+      (candidate) => !usedFields.has(candidate.name!),
+    );
+    const paired =
+      !!primaryMeasure &&
+      PAIRED_MEASURE_CHANNELS.has(channels[param.name ?? ""] ?? "");
+    const choice =
+      (paired
+        ? unused.find(
+            (candidate) =>
+              formatOf(candidate.name) === formatOf(primaryMeasure),
+          )
+        : undefined) ?? unused[0];
+    const name = choice?.name ?? primaryMeasure ?? measures[0]?.name;
+    if (!paired && !primaryMeasure) primaryMeasure = name;
+    return name;
+  };
+
+  // The most constrained dimensions pick first, so an axis does not take the only field with few
+  // enough values to split series by.
+  const pickOrder: Record<DimensionRole, number> = {
+    pair: 0,
+    series: 1,
+    category: 2,
+    detail: 3,
+  };
+  const priority = (param: V1ComponentParam) =>
+    param.type === "dimension"
+      ? pickOrder[dimensionRole(param.name, channels, chartType)]
+      : pickOrder.category;
+  const ordered = [...params].sort((a, b) => priority(a) - priority(b));
+
+  const fieldNames = new Set([
+    ...dimensions.map((dimension) => dimension.name),
+    ...measures.map((measure) => measure.name),
+    timeDimension,
+  ]);
+
+  for (const param of ordered) {
     if (!param.name) continue;
-    if (param.default !== undefined && param.default !== null) {
+    // A field param's default names a field of whichever metrics view it was written against; it
+    // only applies when this metrics view has that field.
+    const usableDefault =
+      param.default !== undefined &&
+      param.default !== null &&
+      (!isFieldParam(param) || fieldNames.has(param.default as string));
+    if (usableDefault) {
       args[param.name] = param.default;
       continue;
     }
@@ -224,26 +417,18 @@ export function buildDefaultArgs(
         if (metricsViewName) args[param.name] = metricsViewName;
         break;
       case "measure": {
-        const measure = measures.find(
-          (candidate) => candidate.name && !usedFields.has(candidate.name),
-        );
-        if (measure?.name) {
-          args[param.name] = measure.name;
-          usedFields.add(measure.name);
+        const name = pickMeasure(param);
+        if (name) {
+          args[param.name] = name;
+          usedFields.add(name);
         }
         break;
       }
       case "dimension": {
-        const dimension = dimensions.find(
-          (candidate) =>
-            candidate.name &&
-            !usedFields.has(candidate.name) &&
-            candidate.name !== timeDimension &&
-            candidate.type !== MetricsViewSpecDimensionType.DIMENSION_TYPE_TIME,
-        );
-        if (dimension?.name) {
-          args[param.name] = dimension.name;
-          usedFields.add(dimension.name);
+        const name = pickDimension(param);
+        if (name) {
+          args[param.name] = name;
+          usedFields.add(name);
         }
         break;
       }

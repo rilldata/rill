@@ -5,15 +5,18 @@
   } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { useDefaultMetrics } from "@rilldata/web-common/features/canvas/selector";
   import {
-    buildDefaultArgs,
+    dimensionRole,
     getDeclaredParams,
     isOrderByParam,
     orderByOptions,
+    paramChannels,
     reconcileOrderByArg,
   } from "@rilldata/web-common/features/custom-viz/params";
+  import { pickTestArgs } from "@rilldata/web-common/features/custom-viz/test-args";
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import {
     type V1ComponentParam,
+    type V1MetricsViewSpec,
     type V1Resource,
   } from "@rilldata/web-common/runtime-client";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
@@ -38,22 +41,62 @@
   $: defaultMetricsQuery = useDefaultMetrics(client);
   $: defaultMetrics = $defaultMetricsQuery?.data;
 
-  // Seed default test bindings once per param-shape change, for params without a value.
-  $: seedDefaults(params, defaultMetrics);
+  $: rendererProperties = (
+    resource?.component?.state?.validSpec ?? resource?.component?.spec
+  )?.rendererProperties as Record<string, unknown> | undefined;
 
-  function seedDefaults(
+  $: channels = paramChannels(rendererProperties);
+  $: chartType = (
+    rendererProperties?.spec as { chartType?: string } | undefined
+  )?.chartType;
+
+  // How many distinct values suit each dimension param, shown so a rebinding keeps the chart
+  // readable. Derived reactively: a template function call would not track channels or chartType.
+  $: hints = Object.fromEntries(
+    params.map((param) => [
+      param.name ?? "",
+      dimensionHint(param, channels, chartType),
+    ]),
+  );
+
+  function dimensionHint(
+    param: V1ComponentParam,
+    channels: Record<string, string>,
+    chartType: string | undefined,
+  ): string | undefined {
+    if (param.type !== "dimension") return undefined;
+    switch (dimensionRole(param.name, channels, chartType)) {
+      case "series":
+        return m.component_hint_series();
+      case "pair":
+        return m.component_hint_pair();
+      case "detail":
+        return m.component_hint_detail();
+      default:
+        return undefined;
+    }
+  }
+
+  // Seed test bindings for params without a value, picking fields that suit the channel each param
+  // is drawn on. The pick reads the metrics view's data, so a newer seed supersedes a pending one.
+  let seedRun = 0;
+  $: void seedDefaults(params, rendererProperties, defaultMetrics);
+
+  async function seedDefaults(
     params: V1ComponentParam[],
+    rendererProperties: Record<string, unknown> | undefined,
     defaultMetrics:
-      | { metricsViewName: string; metricsViewSpec: any }
+      | { metricsViewName: string; metricsViewSpec?: V1MetricsViewSpec }
       | null
       | undefined,
   ) {
-    if (!params.length || !defaultMetrics) return;
-    const defaults = buildDefaultArgs(
-      params,
-      defaultMetrics.metricsViewName,
-      defaultMetrics.metricsViewSpec,
-    );
+    if (!params.length || !defaultMetrics?.metricsViewSpec) return;
+    const run = ++seedRun;
+    const defaults = await pickTestArgs(client, params, rendererProperties, {
+      name: defaultMetrics.metricsViewName,
+      spec: defaultMetrics.metricsViewSpec,
+    });
+    if (run !== seedRun) return;
     argsStore.update((args) => {
       const next = { ...args };
       for (const [key, value] of Object.entries(defaults)) {
@@ -129,6 +172,11 @@
         {#if param.description}
           <div class="pt-1 text-[11px] text-fg-secondary">
             {param.description}
+          </div>
+        {/if}
+        {#if hints[param.name ?? ""]}
+          <div class="pt-1 text-[11px] text-fg-secondary">
+            {hints[param.name ?? ""]}
           </div>
         {/if}
       </div>

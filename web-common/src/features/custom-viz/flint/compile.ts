@@ -103,7 +103,8 @@ export function compileFlintSpec({
   const warnings = (assembled._warnings as FlintWarning[] | undefined) ?? [];
   const vegaSpec = stripInternalKeys(assembled);
   applyMeasureFormatters(vegaSpec, measureFields);
-  fitSingleViewToContainer(vegaSpec);
+  scaleDonutHole(vegaSpec);
+  fitSingleViewToContainer(vegaSpec, size);
 
   return { spec: vegaSpec as VisualizationSpec, warnings, error: null };
 }
@@ -118,12 +119,24 @@ export function compileFlintSpec({
  * subtracts those guides from the plot; `contains: "padding"` makes the requested dimensions
  * include Vega's outer padding instead of adding it beyond the container.
  *
- * Vega-Lite does not support fit autosizing for composed views; Flint already owns their subplot
- * sizing, so leave those specs untouched.
+ * The view is pinned to the measured size rather than left unsized. A discrete axis without a
+ * width falls back to Vega-Lite's default 20px step, and Vega-Lite drops `fit` on that axis, so a
+ * ten-bar chart rendered 200px wide in any container. A numeric size keeps `fit` in effect; the
+ * renderer then sets the live size as the container resizes.
+ *
+ * Vega-Lite does not support fit autosizing for composed or faceted views; Flint already sizes
+ * their subplots to its canvas, so leave those specs untouched.
  */
-function fitSingleViewToContainer(spec: Record<string, unknown>): void {
+function fitSingleViewToContainer(
+  spec: Record<string, unknown>,
+  size: { width: number; height: number } | undefined,
+): void {
   const multiViewKeys = ["facet", "repeat", "concat", "hconcat", "vconcat"];
   if (multiViewKeys.some((key) => key in spec)) return;
+  const encoding = spec.encoding as Record<string, unknown> | undefined;
+  if (encoding && ["facet", "row", "column"].some((key) => key in encoding)) {
+    return;
+  }
 
   // Some Flint templates (notably pie/donut) put fixed dimensions directly on the spec, while
   // most use config.view defaults. Both take precedence over responsive container sizing.
@@ -137,7 +150,24 @@ function fitSingleViewToContainer(spec: Record<string, unknown>): void {
     if (Object.keys(view).length === 0) delete config?.view;
   }
 
+  if (size) {
+    spec.width = size.width;
+    spec.height = size.height;
+  }
   spec.autosize = { type: "fit", contains: "padding" };
+}
+
+/**
+ * Flint takes a donut's inner radius in pixels, on a 0–100 scale suited to its own small default
+ * canvas, so the hole all but vanishes in a chart filling a dashboard panel. Read that setting as
+ * a percentage of the outer radius instead, so the donut keeps its proportions at any size.
+ */
+function scaleDonutHole(spec: Record<string, unknown>): void {
+  const mark = spec.mark as Record<string, unknown> | undefined;
+  if (mark?.type !== "arc" || typeof mark.innerRadius !== "number") return;
+  mark.innerRadius = {
+    expr: `min(width, height) / 2 * ${mark.innerRadius / 100}`,
+  };
 }
 
 /**

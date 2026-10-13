@@ -7,6 +7,7 @@ import {
   buildDefaultArgs,
   getDeclaredParams,
   orderByOptions,
+  paramChannels,
   paramToInputParam,
   prettyParamLabel,
   reconcileOrderByArg,
@@ -178,6 +179,150 @@ describe("buildDefaultArgs", () => {
       metricsViewSpec,
     );
     expect(args.order_by).toBe("country");
+  });
+});
+
+describe("buildDefaultArgs with value counts", () => {
+  const spec: V1MetricsViewSpec = {
+    timeDimension: "ts",
+    dimensions: [
+      { name: "site", type: "DIMENSION_TYPE_CATEGORICAL" },
+      { name: "domain", type: "DIMENSION_TYPE_CATEGORICAL" },
+      { name: "os", type: "DIMENSION_TYPE_CATEGORICAL" },
+      { name: "device_type", type: "DIMENSION_TYPE_CATEGORICAL" },
+      { name: "placement", type: "DIMENSION_TYPE_CATEGORICAL" },
+    ],
+    measures: [
+      { name: "requests", formatPreset: "humanize" },
+      { name: "bid_floor", formatPreset: "currency_usd" },
+      { name: "max_bid", formatPreset: "currency_usd" },
+      { name: "impressions", formatPreset: "humanize" },
+    ],
+  };
+  // Capped at the probe limit (51), as the probe reports them.
+  const valueCounts = new Map([
+    ["site", 51],
+    ["domain", 51],
+    ["os", 28],
+    ["device_type", 5],
+    ["placement", 2],
+  ]);
+  const field = (name: string, type: string): V1ComponentParam => ({
+    name,
+    type,
+    required: true,
+  });
+
+  it("gives a series channel a field with a handful of values, picked before the axis", () => {
+    const args = buildDefaultArgs(
+      [field("x_axis", "dimension"), field("color", "dimension")],
+      "mv",
+      spec,
+      { channels: { x_axis: "x", color: "color" }, valueCounts },
+    );
+    // The series picks first. With series on top, the axis wants at most a dozen values; none is
+    // left in range, so it takes the nearest.
+    expect(args).toEqual({ x_axis: "placement", color: "device_type" });
+  });
+
+  it("gives the two-sided series of a pyramid a field with exactly two values", () => {
+    const args = buildDefaultArgs([field("color", "dimension")], "mv", spec, {
+      channels: { color: "color" },
+      chartType: "Pyramid Chart",
+      valueCounts,
+    });
+    expect(args).toEqual({ color: "placement" });
+  });
+
+  it("gives the x axis of a slope chart the two periods it connects", () => {
+    const args = buildDefaultArgs(
+      [field("x_axis", "dimension"), field("color", "dimension")],
+      "mv",
+      spec,
+      {
+        channels: { x_axis: "x", color: "color" },
+        chartType: "Slope Chart",
+        valueCounts,
+      },
+    );
+    expect(args).toEqual({ x_axis: "placement", color: "device_type" });
+  });
+
+  it("gives the detail dimension the field with the most values", () => {
+    const args = buildDefaultArgs(
+      [field("x_axis", "dimension"), field("detail", "dimension")],
+      "mv",
+      spec,
+      { channels: { x_axis: "x" }, valueCounts },
+    );
+    expect(args).toEqual({ x_axis: "os", detail: "site" });
+  });
+
+  it("falls back to the nearest varying field when nothing is in range", () => {
+    const args = buildDefaultArgs(
+      [field("color", "dimension")],
+      "mv",
+      {
+        ...spec,
+        dimensions: spec.dimensions!.slice(0, 3),
+      },
+      { channels: { color: "color" }, valueCounts },
+    );
+    expect(args).toEqual({ color: "os" });
+  });
+
+  it("pairs a range end with a measure in the primary measure's format", () => {
+    const args = buildDefaultArgs(
+      [field("y_axis", "measure"), field("y_axis_end", "measure")],
+      "mv",
+      spec,
+      { channels: { y_axis: "y", y_axis_end: "y2" } },
+    );
+    expect(args).toEqual({ y_axis: "requests", y_axis_end: "impressions" });
+  });
+
+  it("reuses a measure rather than leaving a required param unbound", () => {
+    const ohlc = ["open", "high", "low", "close", "volume"].map((name) =>
+      field(name, "measure"),
+    );
+    const args = buildDefaultArgs(ohlc, "mv", spec, {
+      channels: { open: "open", high: "high", low: "low", close: "close" },
+    });
+    expect(Object.keys(args).sort()).toEqual(
+      ["close", "high", "low", "open", "volume"].sort(),
+    );
+    expect(Object.values(args).every(Boolean)).toBe(true);
+  });
+});
+
+describe("buildDefaultArgs with field defaults", () => {
+  it("ignores a field default the metrics view does not have", () => {
+    const args = buildDefaultArgs(
+      [
+        { name: "m", type: "measure", default: "total_bids" },
+        { name: "d", type: "dimension", default: "device" },
+      ],
+      "mv1",
+      metricsViewSpec,
+    );
+    expect(args).toEqual({ m: "total", d: "device" });
+  });
+});
+
+describe("paramChannels", () => {
+  it("maps each param to the channel whose encoding references it", () => {
+    expect(
+      paramChannels({
+        spec: {
+          encodings: {
+            x: { field: "{{ .params.x_axis }}" },
+            color: "{{ .params.color }}",
+            y: [{ field: "{{ .params.low }}" }],
+          },
+        },
+      }),
+    ).toEqual({ x_axis: "x", color: "color", low: "y" });
+    expect(paramChannels(undefined)).toEqual({});
   });
 });
 

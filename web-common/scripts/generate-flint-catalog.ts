@@ -142,30 +142,34 @@ const CHANNEL_PARAM_NAMES: Record<string, string> = {
 };
 
 /**
- * Row-count default by how much space each mark needs. Flint drops rows that overflow the axis
- * budget and reports it as a warning, so these stay under it.
+ * Charts that plot individual observations (a distribution, or one point per entity) rather than
+ * one aggregate per category. A metrics view query returns one row per group of the selected
+ * dimensions, so binding only the encoded fields collapses these to a single row or one value per
+ * category. Their components select an extra `detail` dimension that is never encoded: it sets the
+ * grain of the rows, so each row is one observation.
  */
-const DENSE_CHARTS = new Set([
+const ROW_LEVEL_CHARTS = new Set([
   "Scatter Plot",
   "Regression",
-  "Connected Scatter Plot",
   "Strip Plot",
-  "Heatmap",
   "Histogram",
   "Density Plot",
   "ECDF Plot",
   "Boxplot",
   "Violin Plot",
 ]);
-const TIME_SERIES_CHARTS = new Set([
-  "Line Chart",
-  "Area Chart",
-  "Streamgraph",
-  "Sparkline",
-  "Range Area Chart",
-  "Bump Chart",
-  "Candlestick Chart",
-]);
+
+/** Row-level charts that draw every row as its own point, rather than summarizing them into a shape. */
+const POINT_CHARTS = new Set(["Scatter Plot", "Regression", "Strip Plot"]);
+
+/** Channels that split the rows into series or panels, multiplying the rows a chart needs. */
+const SERIES_CHANNELS = new Set(["color", "group", "row", "column"]);
+
+/** Inner radius for donut examples that omit one, as in Flint's own donut examples. */
+const DONUT_INNER_RADIUS = 50;
+
+/** Charts whose marks stop being readable past a handful of categories. */
+const FEW_CATEGORY_CHARTS = new Set(["Pie Chart", "Donut Chart", "Rose Chart"]);
 
 interface FlintExample {
   title: string;
@@ -192,6 +196,8 @@ interface GalleryExample {
   chartProperties?: Record<string, unknown>;
   /** The rendered SVG as a data URI, ready to drop into an img src. */
   thumbnail: string;
+  /** Whether the component selects a `detail` dimension to get one row per observation. */
+  rowLevel: boolean;
   defaultLimit: number;
 }
 
@@ -237,10 +243,34 @@ function categoryOf(chart: string): string {
   return "Other";
 }
 
-function defaultLimit(chartType: string): number {
-  if (TIME_SERIES_CHARTS.has(chartType)) return 2000;
-  if (DENSE_CHARTS.has(chartType)) return 100;
-  return 10;
+/**
+ * Default for the component's `limit` param, which caps the rows the query returns. A chart with a
+ * series channel needs a row per category per series, so the cap is sized for about a dozen of
+ * each; a smaller one would fill up on the first category or time bucket and leave the rest of the
+ * chart empty. Time series assume daily buckets over a few months. Row-level charts get one row
+ * per observation, capped where the chart stays readable and quick to query.
+ */
+function defaultLimit(
+  chartType: string,
+  bindings: GalleryExample["bindings"],
+  rowLevel: boolean,
+): number {
+  // A few hundred points keep a scatter legible and quick; a distribution summarizes its rows into
+  // a shape, so it can take more of them.
+  if (rowLevel) return POINT_CHARTS.has(chartType) ? 500 : 1000;
+  if (chartType === "Candlestick Chart") return 90;
+  if (chartType === "Heatmap") return 400;
+  // The color channel of an arc chart is its category, not a series.
+  if (FEW_CATEGORY_CHARTS.has(chartType)) return 10;
+
+  const hasTime = bindings.some((binding) => binding.role === "time_dimension");
+  const hasSeries = bindings.some(
+    (binding) =>
+      SERIES_CHANNELS.has(binding.channel) && binding.role !== "measure",
+  );
+  if (hasTime) return hasSeries ? 1000 : 500;
+  if (hasSeries) return 150;
+  return 25;
 }
 
 function slugify(value: string): string {
@@ -287,6 +317,9 @@ function pickExamples(
         declaredChannels.includes(channel),
       ),
     )
+    // A metrics view has a single time dimension, so an example that needs two (a Gantt chart
+    // spanning start and end dates) could never be bound.
+    .filter(({ example }) => timeFieldCount(example) <= 1)
     .sort(
       (a, b) =>
         starterRank(a.example, a.fromGalleryGenerator) -
@@ -298,6 +331,15 @@ function pickExamples(
       return true;
     })
     .slice(0, MAX_PER_CHART_TYPE);
+}
+
+/** Counts the encoded fields that map onto a time dimension. */
+function timeFieldCount(example: FlintExample): number {
+  return Object.values(example.encodingMap).filter((encoding) => {
+    if (Array.isArray(encoding)) return false;
+    const meta = example.metadata[encoding.fieldID];
+    return !!meta && roleFor(meta.semanticType, meta.type) === "time_dimension";
+  }).length;
 }
 
 /** Compiles an example to Vega-Lite and rasterizes it to a standalone SVG string. */
@@ -488,6 +530,18 @@ async function main() {
 
       if (!usable || bindings.length === 0) continue;
 
+      // Flint draws a donut only when given an inner radius; without one its "Donut Chart" is a
+      // pie. Some of its donut examples omit it, so give them the radius its other examples use.
+      if (
+        chartType === "Donut Chart" &&
+        example.chartProperties?.innerRadius === undefined
+      ) {
+        example.chartProperties = {
+          ...example.chartProperties,
+          innerRadius: DONUT_INNER_RADIUS,
+        };
+      }
+
       let svg: string;
       try {
         svg = await renderThumbnail(example, encodings);
@@ -525,7 +579,12 @@ async function main() {
           ? { chartProperties: example.chartProperties }
           : {}),
         thumbnail: svgDataURI(svg),
-        defaultLimit: defaultLimit(chartType),
+        rowLevel: ROW_LEVEL_CHARTS.has(chartType),
+        defaultLimit: defaultLimit(
+          chartType,
+          bindings,
+          ROW_LEVEL_CHARTS.has(chartType),
+        ),
       });
     }
   }

@@ -1,3 +1,5 @@
+import * as vega from "vega";
+import { compile } from "vega-lite";
 import { describe, expect, it } from "vitest";
 import {
   V1TimeGrain,
@@ -69,12 +71,81 @@ describe("compileFlintSpec", () => {
       type: "fit",
       contains: "padding",
     });
-    expect(compiled.width).toBeUndefined();
-    expect(compiled.height).toBeUndefined();
+    // Pinned to the measured box; Flint's own step and view sizes are dropped.
+    expect(compiled.width).toBe(600);
+    expect(compiled.height).toBe(400);
 
     const view = (compiled.config as { view?: Record<string, unknown> })?.view;
     expect(view?.continuousWidth).toBeUndefined();
     expect(view?.continuousHeight).toBeUndefined();
+  });
+
+  it("stretches a discrete axis across the container", async () => {
+    // Left unsized, a discrete axis falls back to a 20px step and Vega-Lite drops fit on it, so
+    // these three bars would render 60px wide.
+    const { spec } = compileBar();
+    const view = new vega.View(vega.parse(compile(spec as never).spec), {
+      renderer: "none",
+    });
+    await view.runAsync();
+    expect(view.width()).toBeGreaterThan(400);
+  });
+
+  it("scales a donut's hole with the chart rather than in fixed pixels", async () => {
+    const { spec } = compileFlintSpec({
+      spec: {
+        chartType: "Donut Chart",
+        encodings: {
+          color: { field: "publisher" },
+          size: { field: "bid_price_sum" },
+        },
+        chartProperties: { innerRadius: 50 },
+      },
+      rows,
+      fields: deriveFlintFields(["publisher", "bid_price_sum"], metricsView),
+      size: { width: 800, height: 800 },
+    });
+    const mark = (spec as unknown as { mark: Record<string, unknown> }).mark;
+    expect(mark.innerRadius).toEqual({ expr: "min(width, height) / 2 * 0.5" });
+
+    const view = new vega.View(vega.parse(compile(spec as never).spec), {
+      renderer: "none",
+    });
+    await view.runAsync();
+    // Half of the outer radius, which is roughly half the view.
+    type SceneGroup = {
+      items: { marktype?: string; items: { innerRadius?: number }[] }[];
+    };
+    const scene = view.scenegraph() as unknown as {
+      root: { items: SceneGroup[] };
+    };
+    const arcs = scene.root.items[0].items.find(
+      (item) => item.marktype === "arc",
+    );
+    expect(arcs?.items[0].innerRadius).toBeGreaterThan(150);
+  });
+
+  it("keeps Flint's sizing for faceted charts, which fit autosizing cannot lay out", () => {
+    const sites = Array.from({ length: 12 }, (_, i) => `site_${i}`);
+    const { spec } = compileFlintSpec({
+      spec: {
+        chartType: "Violin Plot",
+        encodings: { x: { field: "publisher" }, y: { field: "bid_price_sum" } },
+      },
+      rows: sites.flatMap((publisher, i) =>
+        Array.from({ length: 20 }, (_, j) => ({
+          publisher,
+          bid_price_sum: (i * 31 + j * 7) % 100,
+        })),
+      ),
+      fields: deriveFlintFields(["publisher", "bid_price_sum"], metricsView),
+      size: { width: 1200, height: 600 },
+    });
+    const compiled = spec as unknown as Record<string, unknown>;
+    expect(compiled.encoding).toHaveProperty("facet");
+    expect(compiled.autosize).toBeUndefined();
+    // Each cell takes its share of the canvas, rather than Vega-Lite's 200px default.
+    expect(Number(compiled.width) * 12).toBeLessThanOrEqual(1200);
   });
 
   it("strips Flint's non-standard bookkeeping keys", () => {

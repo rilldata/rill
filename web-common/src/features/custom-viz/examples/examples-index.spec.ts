@@ -53,8 +53,8 @@ describe("flint chart catalog", () => {
       counts.set(chart.chartType, (counts.get(chart.chartType) ?? 0) + 1);
     }
     for (const [chartType, count] of counts) {
-      // No chart type should be a single lonely card, nor flood the grid.
-      expect(count, chartType).toBeGreaterThan(1);
+      // No chart type should flood the grid. A single card is allowed: Flint's other examples
+      // for a type can need fields a metrics view never has (a Gantt chart's two time dimensions).
       expect(count, chartType).toBeLessThanOrEqual(3);
     }
   });
@@ -226,10 +226,13 @@ describe("exampleComponentYAML", () => {
   });
 
   it("orders time series chronologically and rankings by the measure", () => {
-    // A line chart is bound to a time dimension, so the LIMIT must keep rows in time order.
+    // A line chart is bound to a time dimension, so the LIMIT must keep rows in time order,
+    // largest series first within each bucket.
     expect(
       componentFor(chartNamed("Line Chart")).custom_chart.metrics_sql,
-    ).toMatch(/ORDER BY \{\{ \.params\.x_axis \}\} LIMIT/);
+    ).toMatch(
+      /ORDER BY \{\{ \.params\.x_axis \}\}, \{\{ \.params\.y_axis \}\} DESC LIMIT/,
+    );
 
     // A bar chart is a ranking, so the LIMIT must keep the largest rows.
     expect(
@@ -237,10 +240,67 @@ describe("exampleComponentYAML", () => {
     ).toMatch(/ORDER BY .* DESC LIMIT/);
   });
 
-  it("sizes the default row limit to the chart's visual density", () => {
-    expect(chartNamed("Line Chart").defaultLimit).toBe(2000);
-    expect(chartNamed("Scatter Plot").defaultLimit).toBe(100);
-    expect(chartNamed("Bar Chart").defaultLimit).toBe(10);
+  it("never emits SQL the metrics dialect rejects", () => {
+    for (const entry of charts) {
+      const sql = componentFor(entry).custom_chart.metrics_sql;
+      expect(sql, entry.chartType).not.toMatch(/\bCASE\b|\{\{-|-\}\}|\bAS\b/i);
+    }
+  });
+
+  it("selects an unencoded detail dimension for row-level charts", () => {
+    for (const entry of charts) {
+      const component = componentFor(entry);
+      const sql = component.custom_chart.metrics_sql;
+      const declaresDetail = component.params.some((p) => p.name === "detail");
+      expect(declaresDetail, entry.chartType).toBe(entry.rowLevel);
+      expect(sql.includes("{{ .params.detail }}"), entry.chartType).toBe(
+        entry.rowLevel,
+      );
+      expect(
+        JSON.stringify(component.custom_chart.spec),
+        entry.chartType,
+      ).not.toContain(".params.detail");
+    }
+    expect(chartNamed("Histogram").rowLevel).toBe(true);
+    expect(chartNamed("Bar Chart").rowLevel).toBe(false);
+  });
+
+  it("only lists examples a metrics view can bind, with one time dimension at most", () => {
+    for (const entry of charts) {
+      const timeBindings = entry.bindings.filter(
+        (binding) => binding.role === "time_dimension",
+      );
+      expect(timeBindings.length, entry.name).toBeLessThanOrEqual(1);
+    }
+  });
+
+  it("gives every donut an inner radius, without which Flint draws a pie", () => {
+    for (const entry of charts.filter(
+      (chart) => chart.chartType === "Donut Chart",
+    )) {
+      expect(entry.chartProperties?.innerRadius, entry.name).toBeTruthy();
+    }
+  });
+
+  it("sizes the default row limit to the chart's shape", () => {
+    const limitOf = (name: string) =>
+      charts.find((chart) => chart.name === name)?.defaultLimit;
+    // One mark per category.
+    expect(chartNamed("Bar Chart").defaultLimit).toBe(25);
+    expect(chartNamed("Pie Chart").defaultLimit).toBe(10);
+    // A row per category per series, so a dozen of each fit before the cut.
+    expect(
+      limitOf("stacked_bar_chart__electricity_generation_mix_by_country_2023"),
+    ).toBe(150);
+    // Daily buckets over a few months, with and without series.
+    expect(limitOf("line_chart__flint_line_over_survey_waves_by_region")).toBe(
+      1000,
+    );
+    expect(limitOf("line_chart__us_unemployment_rate_2000_2023")).toBe(500);
+    expect(chartNamed("Candlestick Chart").defaultLimit).toBe(90);
+    // One row per observation: fewer where each is drawn as a point.
+    expect(chartNamed("Scatter Plot").defaultLimit).toBe(500);
+    expect(chartNamed("Histogram").defaultLimit).toBe(1000);
   });
 
   it("never emits an encoding type, since Rill supplies the semantics", () => {

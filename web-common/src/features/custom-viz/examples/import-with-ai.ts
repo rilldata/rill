@@ -6,15 +6,31 @@ import { navigateToFile } from "@rilldata/web-common/layout/navigation/editor-ro
 import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
 import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 import { asyncWaitUntil, waitUntil } from "@rilldata/web-common/lib/waitUtils";
+import { V1TimeGrainToDateTimeUnit } from "@rilldata/web-common/lib/time/new-grains";
 import {
   runtimeServicePutFile,
   V1ReconcileStatus,
+  V1TimeGrain,
+  type V1ComponentParam,
 } from "@rilldata/web-common/runtime-client";
-import { runtimeServiceGetResource } from "@rilldata/web-common/runtime-client/v2/gen/runtime-service";
+import { queryServiceResolveComponent } from "@rilldata/web-common/runtime-client/v2/gen/query-service";
+import {
+  runtimeServiceGetResource,
+  runtimeServiceQueryResolver,
+} from "@rilldata/web-common/runtime-client/v2/gen/runtime-service";
 import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
+import type { PartialMessage, Struct } from "@bufbuild/protobuf";
 import { get, writable } from "svelte/store";
+import { isFieldParam, normalizeMetricsSQL } from "../params";
+import { fetchDefaultMetricsView, pickTestArgs } from "../test-args";
+import { getPreviewArgsStore } from "../workspace/preview-state";
 import { componentFilePathFor } from "./component-file";
-import type { GalleryEntry } from "./example-spec";
+import {
+  buildMetricsSQL,
+  DETAIL_PARAM,
+  exampleParamsYAML,
+  type GalleryEntry,
+} from "./example-spec";
 
 /**
  * AI-first gallery import: the chosen chart type and its channels go into the prompt and the agent
@@ -76,11 +92,9 @@ export async function importGalleryChartWithAgent(
     // few attempts. The user is already on the file and sees the workspace appear
     // once it reconciles cleanly.
     for (let attempt = 0; ; attempt++) {
-      const error = await waitForReconcileOutcome(
-        client,
-        componentName,
-        filePath,
-      );
+      const error =
+        (await waitForReconcileOutcome(client, componentName, filePath)) ??
+        (await previewQueryError(client, componentName, filePath));
       if (!error) break;
 
       if (attempt >= MAX_FIX_ATTEMPTS) {
@@ -93,7 +107,7 @@ export async function importGalleryChartWithAgent(
       }
 
       developerChatActions.startChat(
-        `The component at ${filePath} you just created has an error: "${error}". Fix it with develop_file (type "component") so it parses and reconciles cleanly, keeping its chart type and bound channels.`,
+        `The component at ${filePath} you just created has an error: "${error}". Fix it with develop_file (type "component") so it parses, reconciles and its metrics_sql runs, keeping its chart type and bound channels. Metrics SQL has no CASE, no AS aliases and no functions; keep the ORDER BY a plain list of selected fields. Params of type dimension, measure or time_dimension never have a default.`,
       );
       await waitUntil(() => get(conversation.isStreaming));
       await waitUntil(() => !get(conversation.isStreaming), -1);
@@ -104,27 +118,45 @@ export async function importGalleryChartWithAgent(
 }
 
 /**
- * Beyond the example's own spec, the prompt carries only what is specific to the chosen entry. The
- * general rules of authoring a component — the file's shape, the param types, the metrics_sql
- * dialect, the encoding vocabulary — reach the sub-agent through the component resource
- * instructions that develop_file loads for `type: component`, so restating them here would only be
- * a second copy to keep in sync.
+ * Beyond the example's own spec and query, the prompt carries only what is specific to the chosen
+ * entry. The general rules of authoring a component — the file's shape, the param types, the
+ * metrics_sql dialect, the encoding vocabulary — reach the sub-agent through the component
+ * resource instructions that develop_file loads for `type: component`, so restating them here
+ * would only be a second copy to keep in sync.
+ *
+ * The query is handed over verbatim because the binding roles fix its ordering: asked to order
+ * "by time for a time series, by the measure otherwise", the agent cannot tell which applies and
+ * writes a conditional ORDER BY, which the metrics SQL dialect rejects.
  */
-function buildImportPrompt(filePath: string, entry: GalleryEntry): string {
+export function buildImportPrompt(
+  filePath: string,
+  entry: GalleryEntry,
+): string {
   return [
     `Create a Rill component (custom viz) at ${filePath}, by calling develop_file with type "component" and passing every detail below in its prompt.`,
     "",
-    "Use this spec, which is the example's own, verbatim — the same chart type, the same channels and no others, and the same chart properties. Declare one param per channel, typed as annotated:",
+    "Use this spec, which is the example's own, verbatim — the same chart type, the same channels and no others, and the same chart properties:",
     "```yaml",
     exampleSpecYAML(entry),
+    "```",
+    "",
+    "Declare exactly these params. Keep each type as written, and give no default to the metrics_view, dimension, measure or time_dimension params; you may improve the descriptions:",
+    "```yaml",
+    exampleParamsYAML(entry).trimEnd(),
+    "```",
+    "",
+    "Use this metrics_sql verbatim. Do not add CASE, conditionals, aliases or whitespace-trim markers ({{- or -}}):",
+    "```sql",
+    buildMetricsSQL(entry),
     "```",
     "",
     `- Use "${entry.chartType}" as the display_name.`,
     entry.description
       ? `- The example it is based on: ${entry.description}`
       : "",
-    `- Give the limit param a default of ${entry.defaultLimit}, which suits this chart's density.`,
-    "- Order a time series by the time dimension ascending; order anything else by the main measure descending, without an order_by param.",
+    entry.rowLevel
+      ? `- The \`${DETAIL_PARAM}\` param is selected so each row is one data point, and never encoded.`
+      : "",
   ]
     .filter(Boolean)
     .join("\n");
@@ -204,6 +236,96 @@ async function waitForReconcileOutcome(
 
   if (!settled) return "the component did not reconcile in time";
   return error;
+}
+
+/**
+ * Runs the generated component's query the way its preview will: bound to the test values the
+ * preview picks, which are stored for the preview so the user sees what was checked. Reconciling
+ * never executes templated SQL, so this is what catches a query the metrics SQL dialect rejects, or
+ * one that collapses to a single row and draws an empty chart.
+ * Returns an error message to feed back to the agent, or null when the query returns rows.
+ */
+async function previewQueryError(
+  client: RuntimeClient,
+  componentName: string,
+  filePath: string,
+): Promise<string | null> {
+  let args: Record<string, unknown>;
+  let params: V1ComponentParam[];
+  try {
+    const metricsView = await fetchDefaultMetricsView(client);
+    const res = await runtimeServiceGetResource(client, {
+      name: { kind: ResourceKind.Component, name: componentName },
+    });
+    const validSpec = res.resource?.component?.state?.validSpec;
+    if (!metricsView || !validSpec) return null;
+    params = validSpec.params ?? [];
+    args = await pickTestArgs(
+      client,
+      params,
+      validSpec.rendererProperties as Record<string, unknown> | undefined,
+      metricsView,
+    );
+  } catch {
+    // Without test values there is nothing to run; the reconcile checks already passed.
+    return null;
+  }
+  getPreviewArgsStore(filePath).update((current) => ({ ...args, ...current }));
+
+  const unbound = unboundParamError(params, args);
+  if (unbound) return unbound;
+
+  let sql: string | undefined;
+  try {
+    const resolved = await queryServiceResolveComponent(client, {
+      component: componentName,
+      args: args as PartialMessage<Struct>,
+    });
+    sql = normalizeMetricsSQL(resolved.rendererProperties?.metrics_sql);
+    if (!sql) return "the custom_chart has no metrics_sql to run";
+
+    const data = await runtimeServiceQueryResolver(client, {
+      resolver: "metrics_sql",
+      resolverProperties: {
+        sql,
+        // The preview's grain, so time series are checked as they render.
+        additional_time_grain:
+          V1TimeGrainToDateTimeUnit[V1TimeGrain.TIME_GRAIN_DAY],
+      } as unknown as PartialMessage<Struct>,
+    });
+    return queryResultError(data.data?.length ?? 0, sql);
+  } catch (e) {
+    const message = e instanceof Error ? e.message : String(e);
+    return sql
+      ? `its metrics_sql fails to run (${message}); with test values bound it reads: ${sql}`
+      : `it fails to resolve with test values bound (${message})`;
+  }
+}
+
+/**
+ * Names a required param the preview could not bind, which would otherwise surface as the
+ * resolver's bare "missing value for required param", and says what makes it bindable.
+ */
+export function unboundParamError(
+  params: V1ComponentParam[],
+  args: Record<string, unknown>,
+): string | null {
+  const param = params.find(
+    (candidate) =>
+      candidate.required &&
+      candidate.name &&
+      args[candidate.name] === undefined,
+  );
+  if (!param) return null;
+  return isFieldParam(param)
+    ? `the required ${param.type} param "${param.name}" has no field left to bind in the metrics view, because other params of the same type already use them all; bind fewer channels to ${param.type} params`
+    : `the required param "${param.name}" is declared with type "${param.type || ""}", so no field can be bound to it; a param bound to a chart channel must be declared with type dimension, measure or time_dimension`;
+}
+
+/** Flags a query result too small to draw the chart. Returns null when there are enough rows. */
+export function queryResultError(rowCount: number, sql: string): string | null {
+  if (rowCount > 1) return null;
+  return `its metrics_sql returned ${rowCount} row${rowCount === 1 ? "" : "s"} with test values bound, so the chart has nothing to plot; select the dimensions that give one row per mark (with test values bound it reads: ${sql})`;
 }
 
 /**

@@ -38,8 +38,16 @@ export interface GalleryEntry {
   chartProperties?: Record<string, unknown>;
   /** The rendered SVG as a data URI, ready to drop into an img src. */
   thumbnail: string;
+  /**
+   * Whether the chart plots individual observations, so its component selects a `detail`
+   * dimension that sets the grain of the rows without being drawn.
+   */
+  rowLevel: boolean;
   defaultLimit: number;
 }
+
+/** The unencoded dimension a row-level chart selects to get one row per observation. */
+export const DETAIL_PARAM = "detail";
 
 export interface GalleryIndex {
   flintVersion: string;
@@ -60,33 +68,17 @@ export async function loadGallery(): Promise<GalleryIndex> {
  * should show rather than an arbitrary slice.
  */
 export function exampleComponentYAML(entry: GalleryEntry): string {
-  const params: Record<string, unknown>[] = [
-    { name: "metrics_view", type: "metrics_view", required: true },
-  ];
-
   const encodings: Record<string, unknown> = {};
-  const selected: string[] = [];
-
   for (const binding of entry.bindings) {
-    params.push({
-      name: binding.param,
-      type: binding.role,
-      required: true,
-      description: `Field shown on the ${binding.channel} channel.`,
-    });
     encodings[binding.channel] = { field: templateRef(binding.param) };
-    selected.push(templateRef(binding.param));
   }
-
-  params.push({ name: "limit", type: "number", default: entry.defaultLimit });
-
   const doc = new Document({
     type: "component",
     display_name: entry.chartType,
     ...(entry.description ? { description: entry.description } : {}),
-    params,
+    params: exampleParams(entry),
     custom_chart: {
-      metrics_sql: buildMetricsSQL(entry, selected),
+      metrics_sql: buildMetricsSQL(entry),
       spec: {
         chartType: entry.chartType,
         encodings,
@@ -101,11 +93,60 @@ export function exampleComponentYAML(entry: GalleryEntry): string {
   return doc.toString({ lineWidth: 0 });
 }
 
+/**
+ * The params a component built from the entry declares: a required metrics_view, one required
+ * field param per bound channel (typed by its role), the detail dimension of a row-level chart,
+ * and the row limit.
+ */
+export function exampleParams(entry: GalleryEntry): Record<string, unknown>[] {
+  return [
+    { name: "metrics_view", type: "metrics_view", required: true },
+    ...entry.bindings.map((binding) => ({
+      name: binding.param,
+      type: binding.role,
+      required: true,
+      description: `Field shown on the ${binding.channel} channel.`,
+    })),
+    ...(entry.rowLevel
+      ? [
+          {
+            name: DETAIL_PARAM,
+            type: "dimension",
+            required: true,
+            description:
+              "Field that splits the data into one row per observation; it is not drawn.",
+          },
+        ]
+      : []),
+    {
+      name: "limit",
+      type: "number",
+      default: entry.defaultLimit,
+      description: "Maximum rows returned.",
+    },
+  ];
+}
+
+/** The entry's params as the `params:` block of a component file. */
+export function exampleParamsYAML(entry: GalleryEntry): string {
+  return new Document({ params: exampleParams(entry) }).toString({
+    lineWidth: 0,
+  });
+}
+
 function templateRef(param: string): string {
   return `{{ .params.${param} }}`;
 }
 
-function buildMetricsSQL(entry: GalleryEntry, selected: string[]): string {
+/**
+ * The component's metrics_sql. The binding roles are known here, so the ordering is fixed rather
+ * than templated on the bound field's type: a conditional ORDER BY is easy to get wrong in the
+ * metrics SQL dialect, which has no CASE.
+ */
+export function buildMetricsSQL(entry: GalleryEntry): string {
+  const selected = entry.bindings.map((binding) => templateRef(binding.param));
+  if (entry.rowLevel) selected.push(templateRef(DETAIL_PARAM));
+
   const timeBinding = entry.bindings.find(
     (binding) => binding.role === "time_dimension",
   );
@@ -113,18 +154,18 @@ function buildMetricsSQL(entry: GalleryEntry, selected: string[]): string {
     (binding) => binding.role === "measure",
   );
 
-  // Time series read left to right, so keep them in chronological order. Everything else is a
-  // ranking, where the LIMIT should keep the largest rows.
-  const orderBy = timeBinding
-    ? `ORDER BY ${templateRef(timeBinding.param)}`
-    : measureBinding
-      ? `ORDER BY ${templateRef(measureBinding.param)} DESC`
-      : "";
+  // Time series read left to right, so keep them in chronological order, largest series first
+  // within each bucket so a LIMIT cut drops the smallest ones. Everything else is a ranking, where
+  // the LIMIT should keep the largest rows.
+  const orderBy = [
+    ...(timeBinding ? [templateRef(timeBinding.param)] : []),
+    ...(measureBinding ? [`${templateRef(measureBinding.param)} DESC`] : []),
+  ];
 
   return [
     `SELECT ${dedupe(selected).join(", ")}`,
     "FROM {{ .params.metrics_view }}",
-    orderBy,
+    orderBy.length ? `ORDER BY ${orderBy.join(", ")}` : "",
     "LIMIT {{ .params.limit }}",
   ]
     .filter(Boolean)

@@ -24,6 +24,9 @@
   export let expressionFunctions: ExpressionFunction = {};
   export let error: string | null = null;
   export let canvasDashboard = false;
+  // Lets content wider than the container scroll sideways instead of being clipped,
+  // e.g. a faceted chart whose cells keep their natural size.
+  export let scrollX = false;
   export let renderer: "canvas" | "svg" = "canvas";
   export let themeMode: "light" | "dark" = "light";
   export let config: Config | undefined = undefined;
@@ -140,7 +143,9 @@
   bind:contentRect
   role="presentation"
   class:px-2={canvasDashboard}
-  class="rill-vega-container overflow-y-auto overflow-x-hidden size-full flex flex-col items-center"
+  class:overflow-x-auto={scrollX}
+  class:overflow-x-hidden={!scrollX}
+  class="rill-vega-container overflow-y-auto size-full flex flex-col [align-items:safe_center]"
   onmouseleave={handleMouseLeave}
 >
   {#if error}

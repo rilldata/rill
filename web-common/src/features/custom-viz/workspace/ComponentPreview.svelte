@@ -22,12 +22,14 @@
 
   const { developerChat } = featureFlags;
 
-  function fixWithAI(error: string) {
+  function fixWithAI(error: string, metricsSQL?: string) {
     if (!filePath) return;
     sendComponentFilePrompt(
       client,
       filePath,
-      `It fails to render with this error: "${error}". Fix it so it renders cleanly, keeping the chart it draws, its bound channels, and whichever spec format it already uses.`,
+      metricsSQL
+        ? `Its metrics_sql fails to run with this error: "${error}". With the preview's test values bound it reads: ${metricsSQL}. Fix the metrics_sql so it runs, keeping the chart it draws and its bound channels. Metrics SQL has no CASE, no AS aliases and no functions; keep the ORDER BY a plain list of selected fields.`
+        : `It fails to render with this error: "${error}". Fix it so it renders cleanly, keeping the chart it draws, its bound channels, and whichever spec format it already uses.`,
     );
   }
 
@@ -58,7 +60,9 @@
       name={componentName}
       timeGrain={V1TimeGrain.TIME_GRAIN_DAY}
       showDataTable
+      showRowLimitNotice
       {themeMode}
+      onFixError={$developerChat && filePath ? fixWithAI : undefined}
     >
       <div
         slot="error"

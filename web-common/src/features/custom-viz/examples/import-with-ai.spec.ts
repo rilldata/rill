@@ -1,8 +1,13 @@
 import { describe, expect, it } from "vitest";
+import index from "./flint-charts-index.json";
+import { buildMetricsSQL, type GalleryEntry } from "./example-spec";
 import {
+  buildImportPrompt,
   invalidDimensionEncodingError,
   missingRendererError,
   missingSelectedParamsError,
+  queryResultError,
+  unboundParamError,
 } from "./import-with-ai";
 
 // The static consistency check the import loop runs on generated components:
@@ -152,6 +157,63 @@ describe("missingSelectedParamsError", () => {
         {
           metrics_sql: "SELECT a FROM {{ .params.metrics_view }}",
         },
+      ),
+    ).toBeNull();
+  });
+});
+
+describe("buildImportPrompt", () => {
+  const charts = index.examples as GalleryEntry[];
+
+  it("hands the agent the query verbatim instead of describing the ordering", () => {
+    for (const entry of charts) {
+      const prompt = buildImportPrompt("/viz_library/chart.yaml", entry);
+      expect(prompt, entry.name).toContain(buildMetricsSQL(entry));
+      expect(prompt, entry.name).not.toContain("Order a time series");
+      expect(prompt, entry.name).toContain(`default: ${entry.defaultLimit}`);
+      // The params are spelled out, so the agent does not infer their types.
+      for (const binding of entry.bindings) {
+        expect(prompt, entry.name).toContain(
+          `name: ${binding.param}\n    type: ${binding.role}`,
+        );
+      }
+    }
+  });
+
+  it("asks row-level charts for an unencoded detail dimension", () => {
+    const histogram = charts.find((chart) => chart.chartType === "Histogram")!;
+    const bar = charts.find((chart) => chart.chartType === "Bar Chart")!;
+    expect(buildImportPrompt("/a.yaml", histogram)).toContain("name: detail");
+    expect(buildImportPrompt("/a.yaml", bar)).not.toContain("name: detail");
+  });
+});
+
+describe("queryResultError", () => {
+  it("flags a query that returns too few rows to draw", () => {
+    expect(queryResultError(0, "SELECT x FROM mv")).toContain("0 rows");
+    expect(queryResultError(1, "SELECT x FROM mv")).toContain("1 row ");
+    expect(queryResultError(2, "SELECT x FROM mv")).toBeNull();
+  });
+});
+
+describe("unboundParamError", () => {
+  it("names a required param the preview could not bind, by kind", () => {
+    expect(
+      unboundParamError(
+        [{ name: "color", type: "string", required: true }],
+        {},
+      ),
+    ).toContain('declared with type "string"');
+    expect(
+      unboundParamError(
+        [{ name: "close", type: "measure", required: true }],
+        {},
+      ),
+    ).toContain("no field left to bind");
+    expect(
+      unboundParamError(
+        [{ name: "color", type: "dimension", required: true }],
+        { color: "device" },
       ),
     ).toBeNull();
   });

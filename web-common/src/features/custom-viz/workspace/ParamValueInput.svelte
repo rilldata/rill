@@ -164,7 +164,7 @@
     capitalizeLabel={false}
     textClass="text-sm"
     inputType={param.type === "number" ? "number" : "text"}
-    value={value === undefined || value === null ? "" : String(value)}
+    value={String((value ?? param.default ?? "") as string | number)}
     oninput={commitScalarInput}
   />
 {/if}
