@@ -108,9 +108,12 @@ explore:
 	require.Contains(t, mvsText, "mv1")
 	require.Contains(t, mvsText, "mv2")
 
-	// Test that it handles missing parameters
-	_, err = conn.CallTool(t.Context(), &mcp.CallToolParams{Name: ai.GetMetricsViewName})
-	require.ErrorContains(t, err, "missing properties")
+	// Test that it handles missing parameters.
+	// Since go-sdk v1.7, input validation failures are reported as tool errors rather than protocol errors.
+	missing, err := conn.CallTool(t.Context(), &mcp.CallToolParams{Name: ai.GetMetricsViewName})
+	require.NoError(t, err)
+	require.True(t, missing.IsError)
+	require.Contains(t, missing.Content[0].(*mcp.TextContent).Text, "missing properties")
 
 	// Test a query with object/array-typed arguments sent as JSON-encoded strings.
 	// Some MCP clients stringify nested arguments (see https://github.com/anthropics/claude-code/issues/25865);
@@ -156,7 +159,7 @@ explore:
 	require.Contains(t, resText, "row_count_prev")
 
 	// Test that a string that is not valid JSON still fails schema validation
-	_, err = conn.CallTool(t.Context(), &mcp.CallToolParams{
+	invalid, err := conn.CallTool(t.Context(), &mcp.CallToolParams{
 		Name: ai.QueryMetricsViewName,
 		Arguments: map[string]any{
 			"metrics_view": "mv1",
@@ -164,7 +167,9 @@ explore:
 			"time_range":   "last 7 days",
 		},
 	})
-	require.ErrorContains(t, err, `want "object"`)
+	require.NoError(t, err)
+	require.True(t, invalid.IsError)
+	require.Contains(t, invalid.Content[0].(*mcp.TextContent).Text, `want "object"`)
 }
 
 // TestMCPSkillTools asserts that the skill tools are advertised to callers that can use AI, and only to them.
