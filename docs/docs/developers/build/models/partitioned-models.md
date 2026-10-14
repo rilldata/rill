@@ -225,7 +225,7 @@ sql: SELECT *, '{{ .partition.y }}-{{ .partition.m }}-{{ .partition.d }}' AS day
 :::note `partition: hive` and `partition: directory`
 These modes group the matched files by folder, so their glob must match files (e.g. `gs://my-bucket/y=*/m=*/d=*/*.csv`). A glob that matches only folders returns an error.
 
-`**` matches across folders only as a whole path segment (`/**/` or a trailing `/**`). Inside a segment, as in `d=**`, it behaves like `*`.
+Use `**` only as a whole path segment (`/**/` or a trailing `/**`). Inside a segment, as in `d=**`, it does not match across folders and may return no partitions; use `d=*` instead.
 :::
 
 :::tip Using the glob partition in the YAML
