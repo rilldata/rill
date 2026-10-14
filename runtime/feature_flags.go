@@ -16,6 +16,11 @@ import (
 // disables the cloud editing UI regardless of the cloud_editing feature flag.
 const CloudEditingDisabledAnnotation = "cloud_editing_disabled"
 
+// MCPAppsEnabledAnnotation is an admin-managed project annotation that
+// enables the MCP Apps chart widget regardless of the mcp_apps feature flag,
+// so it can be turned on for a project without changing its rill.yaml.
+const MCPAppsEnabledAnnotation = "mcp_apps_enabled"
+
 // FeatureFlags finds and resolves the feature flags for the given instance ID and claims.
 // It's designed for use in the backend. Use runtime.ResolveFeatureFlags for resolving flags that will be exposed to the UI.
 func (r *Runtime) FeatureFlags(ctx context.Context, instanceID string, claims *SecurityClaims) (map[string]bool, error) {
@@ -61,6 +66,10 @@ var defaultFeatureFlags = map[string]string{
 	"chat_charts": "true",
 	// Controls whether the AI chat learns and uses per-user memories (preferences and clarifications remembered across conversations)
 	"chat_memory": "true",
+	// Controls whether the project's MCP server serves the MCP Apps widget, which renders create_chart results as interactive
+	// charts in hosts such as Claude and ChatGPT. The chart tools themselves are gated by chat_charts.
+	// Can also be forced on per project with the MCPAppsEnabledAnnotation.
+	"mcp_apps": "false",
 	// Controls whether to show/hide deploy related actions.
 	"deploy": "true",
 	// Controls if the developer agent tool is available.
@@ -134,6 +143,15 @@ func ResolveFeatureFlags(inst *drivers.Instance, userAttributes map[string]any, 
 	}
 	if disabled, _ := strconv.ParseBool(inst.Annotations[CloudEditingDisabledAnnotation]); disabled {
 		featureFlags[cloudEditingKey] = false
+	}
+
+	// Admin-managed enables for features that are rolled out per project without touching customer repos.
+	mcpAppsKey := "mcp_apps"
+	if camelCase {
+		mcpAppsKey = "mcpApps"
+	}
+	if enabled, _ := strconv.ParseBool(inst.Annotations[MCPAppsEnabledAnnotation]); enabled {
+		featureFlags[mcpAppsKey] = true
 	}
 
 	// Apply feature flag dependencies:

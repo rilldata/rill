@@ -1,0 +1,127 @@
+{
+  "row_limit": 15,
+  "top_n": [
+    {
+      "channel": "stage",
+      "field": "stage",
+      "limit": 15,
+      "query": {
+        "metrics_view": "mv",
+        "dimensions": [
+          {
+            "name": "stage"
+          }
+        ],
+        "measures": [
+          {
+            "name": "users"
+          }
+        ],
+        "pivot_on": null,
+        "spine": null,
+        "sort": [
+          {
+            "name": "users",
+            "desc": true
+          }
+        ],
+        "time_range": {
+          "start": "2024-01-01T00:00:00Z",
+          "end": "2024-02-01T00:00:00Z"
+        },
+        "comparison_time_range": null,
+        "where": {
+          "cond": {
+            "op": "nin",
+            "exprs": [
+              {
+                "name": "stage"
+              },
+              {
+                "val": [
+                  null
+                ]
+              }
+            ]
+          }
+        },
+        "having": null,
+        "limit": 16,
+        "offset": null,
+        "time_zone": "",
+        "use_display_names": false,
+        "rows": false
+      }
+    }
+  ],
+  "main": {
+    "metrics_view": "mv",
+    "dimensions": [
+      {
+        "name": "stage"
+      }
+    ],
+    "measures": [
+      {
+        "name": "users"
+      }
+    ],
+    "pivot_on": null,
+    "spine": null,
+    "sort": [
+      {
+        "name": "users",
+        "desc": true
+      }
+    ],
+    "time_range": {
+      "start": "2024-01-01T00:00:00Z",
+      "end": "2024-02-01T00:00:00Z"
+    },
+    "comparison_time_range": null,
+    "where": {
+      "cond": {
+        "op": "and",
+        "exprs": [
+          {
+            "cond": {
+              "op": "nin",
+              "exprs": [
+                {
+                  "name": "stage"
+                },
+                {
+                  "val": [
+                    null
+                  ]
+                }
+              ]
+            }
+          },
+          {
+            "cond": {
+              "op": "in",
+              "exprs": [
+                {
+                  "name": "stage"
+                },
+                {
+                  "val": [
+                    "visit",
+                    "signup"
+                  ]
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    "having": null,
+    "limit": 16,
+    "offset": null,
+    "time_zone": "",
+    "use_display_names": false,
+    "rows": false
+  }
+}

@@ -1,0 +1,240 @@
+{
+  "name": "server_line_chart",
+  "description": "Real create_chart output from rill start (line over time, comparison, color split)",
+  "expect": "canvas",
+  "arguments": {
+    "chart_type": "line_chart",
+    "spec": {
+      "color": {
+        "field": "device_os",
+        "limit": 3,
+        "type": "nominal"
+      },
+      "comparison_time_range": {
+        "end": "2024-01-08T00:00:00Z",
+        "start": "2024-01-01T00:00:00Z"
+      },
+      "metrics_view": "bids_metrics",
+      "time_grain": "TIME_GRAIN_DAY",
+      "time_range": {
+        "end": "2024-01-15T00:00:00Z",
+        "start": "2024-01-08T00:00:00Z"
+      },
+      "x": {
+        "field": "event_time",
+        "type": "temporal"
+      },
+      "y": {
+        "field": "total_spend",
+        "type": "quantitative"
+      }
+    }
+  },
+  "result": {
+    "content": [
+      {
+        "type": "text",
+        "text": "**Line chart: Total Spend over Time split by Device OS** (2024-01-08 to 2024-01-15, vs 2024-01-01 to 2024-01-08)\n\n| Event Time | Device OS | Total Spend | Total Spend (prev) |\n| - | - | - | - |\n| 2024-01-08T00:00:00Z | Android | 496.5 | 444 |\n| 2024-01-08T00:00:00Z | Web | 444 | 528 |\n| 2024-01-08T00:00:00Z | iOS | 549 | 496.5 |\n| 2024-01-09T00:00:00Z | Android | 465 | 549 |\n| 2024-01-09T00:00:00Z | Web | 549 | 496.5 |\n| 2024-01-09T00:00:00Z | iOS | 517.5 | 465 |\n| 2024-01-10T00:00:00Z | Android | 570 | 517.5 |\n| 2024-01-10T00:00:00Z | Web | 517.5 | 465 |\n| 2024-01-10T00:00:00Z | iOS | 486 | 570 |\n| 2024-01-11T00:00:00Z | Android | 538.5 | 486 |\n| 2024-01-11T00:00:00Z | Web | 486 | 570 |\n| 2024-01-11T00:00:00Z | iOS | 591 | 538.5 |\n| 2024-01-12T00:00:00Z | Android | 507 | 591 |\n| 2024-01-12T00:00:00Z | Web | 591 | 538.5 |\n| 2024-01-12T00:00:00Z | iOS | 559.5 | 507 |\n| 2024-01-13T00:00:00Z | Android | 612 | 559.5 |\n| 2024-01-13T00:00:00Z | Web | 559.5 | 507 |\n| 2024-01-13T00:00:00Z | iOS | 528 | 612 |\n| 2024-01-14T00:00:00Z | Android | 444 | 528 |\n| 2024-01-14T00:00:00Z | Web | 528 | 612 |\n\n_20 of 21 rows shown_\n\nOpen the interactive chart in Rill: http://localhost:3001/-/ai/18b73406-dec4-4cbc-b5dd-027ce3c2a133/message/5873200e-f789-48ab-b28b-4ebc89ce53dc/-/open"
+      }
+    ],
+    "structuredContent": {
+      "chart_type": "line_chart",
+      "data": [
+        {
+          "device_os": "Android",
+          "event_time": "2024-01-08T00:00:00Z",
+          "total_spend": 496.5,
+          "total_spend_prev": 444
+        },
+        {
+          "device_os": "Web",
+          "event_time": "2024-01-08T00:00:00Z",
+          "total_spend": 444,
+          "total_spend_prev": 528
+        },
+        {
+          "device_os": "iOS",
+          "event_time": "2024-01-08T00:00:00Z",
+          "total_spend": 549,
+          "total_spend_prev": 496.5
+        },
+        {
+          "device_os": "Android",
+          "event_time": "2024-01-09T00:00:00Z",
+          "total_spend": 465,
+          "total_spend_prev": 549
+        },
+        {
+          "device_os": "Web",
+          "event_time": "2024-01-09T00:00:00Z",
+          "total_spend": 549,
+          "total_spend_prev": 496.5
+        },
+        {
+          "device_os": "iOS",
+          "event_time": "2024-01-09T00:00:00Z",
+          "total_spend": 517.5,
+          "total_spend_prev": 465
+        },
+        {
+          "device_os": "Android",
+          "event_time": "2024-01-10T00:00:00Z",
+          "total_spend": 570,
+          "total_spend_prev": 517.5
+        },
+        {
+          "device_os": "Web",
+          "event_time": "2024-01-10T00:00:00Z",
+          "total_spend": 517.5,
+          "total_spend_prev": 465
+        },
+        {
+          "device_os": "iOS",
+          "event_time": "2024-01-10T00:00:00Z",
+          "total_spend": 486,
+          "total_spend_prev": 570
+        },
+        {
+          "device_os": "Android",
+          "event_time": "2024-01-11T00:00:00Z",
+          "total_spend": 538.5,
+          "total_spend_prev": 486
+        },
+        {
+          "device_os": "Web",
+          "event_time": "2024-01-11T00:00:00Z",
+          "total_spend": 486,
+          "total_spend_prev": 570
+        },
+        {
+          "device_os": "iOS",
+          "event_time": "2024-01-11T00:00:00Z",
+          "total_spend": 591,
+          "total_spend_prev": 538.5
+        },
+        {
+          "device_os": "Android",
+          "event_time": "2024-01-12T00:00:00Z",
+          "total_spend": 507,
+          "total_spend_prev": 591
+        },
+        {
+          "device_os": "Web",
+          "event_time": "2024-01-12T00:00:00Z",
+          "total_spend": 591,
+          "total_spend_prev": 538.5
+        },
+        {
+          "device_os": "iOS",
+          "event_time": "2024-01-12T00:00:00Z",
+          "total_spend": 559.5,
+          "total_spend_prev": 507
+        },
+        {
+          "device_os": "Android",
+          "event_time": "2024-01-13T00:00:00Z",
+          "total_spend": 612,
+          "total_spend_prev": 559.5
+        },
+        {
+          "device_os": "Web",
+          "event_time": "2024-01-13T00:00:00Z",
+          "total_spend": 559.5,
+          "total_spend_prev": 507
+        },
+        {
+          "device_os": "iOS",
+          "event_time": "2024-01-13T00:00:00Z",
+          "total_spend": 528,
+          "total_spend_prev": 612
+        },
+        {
+          "device_os": "Android",
+          "event_time": "2024-01-14T00:00:00Z",
+          "total_spend": 444,
+          "total_spend_prev": 528
+        },
+        {
+          "device_os": "Web",
+          "event_time": "2024-01-14T00:00:00Z",
+          "total_spend": 528,
+          "total_spend_prev": 612
+        },
+        {
+          "device_os": "iOS",
+          "event_time": "2024-01-14T00:00:00Z",
+          "total_spend": 496.5,
+          "total_spend_prev": 444
+        }
+      ],
+      "domain_values": {
+        "device_os": ["iOS", "Web", "Android"]
+      },
+      "fields": {
+        "device_os": {
+          "display_name": "Device OS",
+          "kind": "dimension",
+          "name": "device_os",
+          "type": "STRING"
+        },
+        "event_time": {
+          "display_name": "Event Time",
+          "kind": "time",
+          "name": "event_time",
+          "type": "TIMESTAMP"
+        },
+        "total_spend": {
+          "display_name": "Total Spend",
+          "format_preset": "currency_usd",
+          "kind": "measure",
+          "name": "total_spend",
+          "type": "DECIMAL"
+        }
+      },
+      "message": "Chart created successfully: line_chart",
+      "metrics_view": {
+        "display_name": "Bids",
+        "name": "bids_metrics",
+        "smallest_time_grain": "TIME_GRAIN_HOUR",
+        "time_dimension": "event_time"
+      },
+      "open_url": "http://localhost:3001/-/ai/18b73406-dec4-4cbc-b5dd-027ce3c2a133/message/5873200e-f789-48ab-b28b-4ebc89ce53dc/-/open",
+      "resolved_comparison_time_range": {
+        "end": "2024-01-08T00:00:00Z",
+        "start": "2024-01-01T00:00:00Z"
+      },
+      "resolved_time_range": {
+        "end": "2024-01-15T00:00:00Z",
+        "start": "2024-01-08T00:00:00Z"
+      },
+      "spec": {
+        "color": {
+          "field": "device_os",
+          "limit": 3,
+          "type": "nominal"
+        },
+        "comparison_time_range": {
+          "end": "2024-01-08T00:00:00Z",
+          "start": "2024-01-01T00:00:00Z"
+        },
+        "metrics_view": "bids_metrics",
+        "time_grain": "TIME_GRAIN_DAY",
+        "time_range": {
+          "end": "2024-01-15T00:00:00Z",
+          "start": "2024-01-08T00:00:00Z"
+        },
+        "x": {
+          "field": "event_time",
+          "type": "temporal"
+        },
+        "y": {
+          "field": "total_spend",
+          "type": "quantitative"
+        }
+      },
+      "time_grain": "TIME_GRAIN_DAY",
+      "title": "Total Spend over Time split by Device OS",
+      "widget": "chart"
+    }
+  }
+}

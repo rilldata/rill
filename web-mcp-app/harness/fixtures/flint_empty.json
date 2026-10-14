@@ -1,0 +1,110 @@
+{
+  "name": "Flint empty result",
+  "description": "A Flint result whose query returned no rows.",
+  "expect": "empty",
+  "arguments": {
+    "chart_spec": {
+      "chartType": "Bar Chart",
+      "encodings": {
+        "x": {
+          "field": "advertiser_name",
+          "sortBy": "y",
+          "sortOrder": "descending",
+          "limit": 10
+        },
+        "y": "total_bids"
+      }
+    },
+    "data": {
+      "metrics_view": "bids_metrics",
+      "time_range": {
+        "start": "2023-09-09T00:00:00Z",
+        "end": "2023-09-16T00:00:00Z"
+      }
+    }
+  },
+  "result": {
+    "content": [
+      {
+        "type": "text",
+        "text": "**Bar Chart: Total Bids by Advertiser Name** (2023-09-09 to 2023-09-16)\n\n_No rows._"
+      }
+    ],
+    "structuredContent": {
+      "widget": "chart",
+      "chart_type": "Bar Chart",
+      "input": {
+        "chart_spec": {
+          "chartType": "Bar Chart",
+          "encodings": {
+            "x": {
+              "field": "advertiser_name",
+              "sortBy": "y",
+              "sortOrder": "descending",
+              "limit": 10
+            },
+            "y": "total_bids"
+          }
+        },
+        "data": {
+          "metrics_view": "bids_metrics",
+          "time_range": {
+            "start": "2023-09-09T00:00:00Z",
+            "end": "2023-09-16T00:00:00Z"
+          }
+        }
+      },
+      "message": "Chart created successfully: Bar Chart",
+      "metrics_view": {
+        "name": "bids_metrics",
+        "display_name": "Bids",
+        "time_dimension": "__time",
+        "smallest_time_grain": "TIME_GRAIN_HOUR"
+      },
+      "resolved_time_range": {
+        "start": "2023-09-09T00:00:00Z",
+        "end": "2023-09-16T00:00:00Z"
+      },
+      "theme": {
+        "primaryColorRaw": "#4f46e5",
+        "light": {
+          "primary": "#4f46e5",
+          "secondary": "#f97316"
+        },
+        "dark": {
+          "primary": "#818cf8",
+          "secondary": "#fb923c"
+        }
+      },
+      "open_url": "https://ui.rilldata.com/demo/bids/-/ai/session-0b1c/message/call-4f2a/-/open",
+      "truncated": false,
+      "title": "Total Bids by Advertiser Name",
+      "data": [],
+      "fields": {
+        "advertiser_name": {
+          "name": "advertiser_name",
+          "kind": "dimension",
+          "display_name": "Advertiser Name",
+          "description": "Name of the advertiser bidding on the impression.",
+          "type": "STRING"
+        },
+        "total_bids": {
+          "name": "total_bids",
+          "kind": "measure",
+          "display_name": "Total Bids",
+          "description": "Count of bid requests.",
+          "type": "INT64",
+          "format_preset": "humanize"
+        }
+      },
+      "semantic_types": {
+        "advertiser_name": "Category",
+        "total_bids": "Count"
+      },
+      "field_display_names": {
+        "advertiser_name": "Advertiser Name",
+        "total_bids": "Total Bids"
+      }
+    }
+  }
+}

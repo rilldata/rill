@@ -18,7 +18,7 @@ import {
 import type { VisualizationSpec } from "svelte-vega";
 import type { Field } from "vega-lite/types_unstable/channeldef.js";
 import type { UnitSpec } from "vega-lite/types_unstable/spec/unit.js";
-import { type CartesianChartSpec } from "../CartesianChartProvider";
+import type { CartesianChartSpec } from "../CartesianChartProvider";
 import {
   isHorizontal,
   toVerticalSpec,

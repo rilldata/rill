@@ -1,0 +1,314 @@
+{
+  "name": "Scatter plot",
+  "description": "Bids against win rate per advertiser and device, sized by impressions.",
+  "expect": "canvas",
+  "arguments": {
+    "chart_type": "scatter_plot",
+    "spec": {
+      "metrics_view": "bids_metrics",
+      "time_range": {
+        "start": "2023-09-09T00:00:00Z",
+        "end": "2023-09-16T00:00:00Z"
+      },
+      "x": {
+        "field": "total_bids",
+        "type": "quantitative"
+      },
+      "y": {
+        "field": "win_rate",
+        "type": "quantitative"
+      },
+      "dimension": {
+        "field": "advertiser_name",
+        "type": "nominal",
+        "limit": 50
+      },
+      "color": {
+        "field": "device",
+        "type": "nominal",
+        "limit": 3
+      },
+      "size": {
+        "field": "impressions",
+        "type": "quantitative"
+      }
+    }
+  },
+  "result": {
+    "content": [
+      {
+        "type": "text",
+        "text": "**Scatter: Total Bids vs Win Rate for Advertiser Name split by Device sized by Impressions** (2023-09-09 to 2023-09-16)\n\n| Advertiser Name | Device | Total Bids | Win Rate | Impressions |\n| - | - | - | - | - |\n| Acme Media | Mobile | 53044 | 0.157 | 11522 |\n| Acme Media | Desktop | 45306 | 0.091 | 18394 |\n| Acme Media | Tablet | 48961 | 0.294 | 31987 |\n| Beta Brands | Mobile | 26083 | 0.13 | 43185 |\n| Beta Brands | Desktop | 46088 | 0.336 | 43344 |\n| Beta Brands | Tablet | 44827 | 0.191 | 13423 |\n| Cobalt Retail | Mobile | 20851 | 0.239 | 40841 |\n| Cobalt Retail | Desktop | 43505 | 0.199 | 46087 |\n| Cobalt Retail | Tablet | 28844 | 0.066 | 9248 |\n| Delta Travel | Mobile | 28797 | 0.393 | 48983 |\n| Delta Travel | Desktop | 16118 | 0.185 | 20574 |\n| Delta Travel | Tablet | 22317 | 0.344 | 55257 |\n| Echo Games | Mobile | 13275 | 0.161 | 34151 |\n| Echo Games | Desktop | 14297 | 0.191 | 5683 |\n| Echo Games | Tablet | 20193 | 0.178 | 31092 |\n| Foxtrot Foods | Mobile | 11301 | 0.258 | 43540 |\n| Foxtrot Foods | Desktop | 14955 | 0.261 | 17752 |\n| Foxtrot Foods | Tablet | 12834 | 0.196 | 56479 |\n| Gamma Motors | Mobile | 7605 | 0.372 | 57246 |\n| Gamma Motors | Desktop | 10437 | 0.374 | 6394 |\n\n_20 of 24 rows shown_\n\nOpen the interactive chart in Rill: https://ui.rilldata.com/demo/bids/-/ai/session-0b1c/message/call-4f2a/-/open"
+      }
+    ],
+    "structuredContent": {
+      "widget": "chart",
+      "chart_type": "scatter_plot",
+      "spec": {
+        "metrics_view": "bids_metrics",
+        "time_range": {
+          "start": "2023-09-09T00:00:00Z",
+          "end": "2023-09-16T00:00:00Z"
+        },
+        "x": {
+          "field": "total_bids",
+          "type": "quantitative"
+        },
+        "y": {
+          "field": "win_rate",
+          "type": "quantitative"
+        },
+        "dimension": {
+          "field": "advertiser_name",
+          "type": "nominal",
+          "limit": 50
+        },
+        "color": {
+          "field": "device",
+          "type": "nominal",
+          "limit": 3
+        },
+        "size": {
+          "field": "impressions",
+          "type": "quantitative"
+        }
+      },
+      "message": "Chart created successfully: scatter_plot",
+      "metrics_view": {
+        "name": "bids_metrics",
+        "display_name": "Bids",
+        "time_dimension": "__time",
+        "smallest_time_grain": "TIME_GRAIN_HOUR"
+      },
+      "resolved_time_range": {
+        "start": "2023-09-09T00:00:00Z",
+        "end": "2023-09-16T00:00:00Z"
+      },
+      "theme": {
+        "primaryColorRaw": "#4f46e5",
+        "light": {
+          "primary": "#4f46e5",
+          "secondary": "#f97316"
+        },
+        "dark": {
+          "primary": "#818cf8",
+          "secondary": "#fb923c"
+        }
+      },
+      "open_url": "https://ui.rilldata.com/demo/bids/-/ai/session-0b1c/message/call-4f2a/-/open",
+      "truncated": false,
+      "title": "Total Bids vs Win Rate for Advertiser Name split by Device sized by Impressions",
+      "data": [
+        {
+          "advertiser_name": "Acme Media",
+          "device": "Mobile",
+          "total_bids": 53044,
+          "win_rate": 0.157,
+          "impressions": 11522
+        },
+        {
+          "advertiser_name": "Acme Media",
+          "device": "Desktop",
+          "total_bids": 45306,
+          "win_rate": 0.091,
+          "impressions": 18394
+        },
+        {
+          "advertiser_name": "Acme Media",
+          "device": "Tablet",
+          "total_bids": 48961,
+          "win_rate": 0.294,
+          "impressions": 31987
+        },
+        {
+          "advertiser_name": "Beta Brands",
+          "device": "Mobile",
+          "total_bids": 26083,
+          "win_rate": 0.13,
+          "impressions": 43185
+        },
+        {
+          "advertiser_name": "Beta Brands",
+          "device": "Desktop",
+          "total_bids": 46088,
+          "win_rate": 0.336,
+          "impressions": 43344
+        },
+        {
+          "advertiser_name": "Beta Brands",
+          "device": "Tablet",
+          "total_bids": 44827,
+          "win_rate": 0.191,
+          "impressions": 13423
+        },
+        {
+          "advertiser_name": "Cobalt Retail",
+          "device": "Mobile",
+          "total_bids": 20851,
+          "win_rate": 0.239,
+          "impressions": 40841
+        },
+        {
+          "advertiser_name": "Cobalt Retail",
+          "device": "Desktop",
+          "total_bids": 43505,
+          "win_rate": 0.199,
+          "impressions": 46087
+        },
+        {
+          "advertiser_name": "Cobalt Retail",
+          "device": "Tablet",
+          "total_bids": 28844,
+          "win_rate": 0.066,
+          "impressions": 9248
+        },
+        {
+          "advertiser_name": "Delta Travel",
+          "device": "Mobile",
+          "total_bids": 28797,
+          "win_rate": 0.393,
+          "impressions": 48983
+        },
+        {
+          "advertiser_name": "Delta Travel",
+          "device": "Desktop",
+          "total_bids": 16118,
+          "win_rate": 0.185,
+          "impressions": 20574
+        },
+        {
+          "advertiser_name": "Delta Travel",
+          "device": "Tablet",
+          "total_bids": 22317,
+          "win_rate": 0.344,
+          "impressions": 55257
+        },
+        {
+          "advertiser_name": "Echo Games",
+          "device": "Mobile",
+          "total_bids": 13275,
+          "win_rate": 0.161,
+          "impressions": 34151
+        },
+        {
+          "advertiser_name": "Echo Games",
+          "device": "Desktop",
+          "total_bids": 14297,
+          "win_rate": 0.191,
+          "impressions": 5683
+        },
+        {
+          "advertiser_name": "Echo Games",
+          "device": "Tablet",
+          "total_bids": 20193,
+          "win_rate": 0.178,
+          "impressions": 31092
+        },
+        {
+          "advertiser_name": "Foxtrot Foods",
+          "device": "Mobile",
+          "total_bids": 11301,
+          "win_rate": 0.258,
+          "impressions": 43540
+        },
+        {
+          "advertiser_name": "Foxtrot Foods",
+          "device": "Desktop",
+          "total_bids": 14955,
+          "win_rate": 0.261,
+          "impressions": 17752
+        },
+        {
+          "advertiser_name": "Foxtrot Foods",
+          "device": "Tablet",
+          "total_bids": 12834,
+          "win_rate": 0.196,
+          "impressions": 56479
+        },
+        {
+          "advertiser_name": "Gamma Motors",
+          "device": "Mobile",
+          "total_bids": 7605,
+          "win_rate": 0.372,
+          "impressions": 57246
+        },
+        {
+          "advertiser_name": "Gamma Motors",
+          "device": "Desktop",
+          "total_bids": 10437,
+          "win_rate": 0.374,
+          "impressions": 6394
+        },
+        {
+          "advertiser_name": "Gamma Motors",
+          "device": "Tablet",
+          "total_bids": 7771,
+          "win_rate": 0.239,
+          "impressions": 32621
+        },
+        {
+          "advertiser_name": "Helix Health",
+          "device": "Mobile",
+          "total_bids": 9592,
+          "win_rate": 0.393,
+          "impressions": 43919
+        },
+        {
+          "advertiser_name": "Helix Health",
+          "device": "Desktop",
+          "total_bids": 8785,
+          "win_rate": 0.158,
+          "impressions": 36021
+        },
+        {
+          "advertiser_name": "Helix Health",
+          "device": "Tablet",
+          "total_bids": 8011,
+          "win_rate": 0.067,
+          "impressions": 23659
+        }
+      ],
+      "fields": {
+        "advertiser_name": {
+          "name": "advertiser_name",
+          "kind": "dimension",
+          "display_name": "Advertiser Name",
+          "description": "Name of the advertiser bidding on the impression.",
+          "type": "STRING"
+        },
+        "device": {
+          "name": "device",
+          "kind": "dimension",
+          "display_name": "Device",
+          "type": "STRING"
+        },
+        "total_bids": {
+          "name": "total_bids",
+          "kind": "measure",
+          "display_name": "Total Bids",
+          "description": "Count of bid requests.",
+          "type": "INT64",
+          "format_preset": "humanize"
+        },
+        "win_rate": {
+          "name": "win_rate",
+          "kind": "measure",
+          "display_name": "Win Rate",
+          "type": "FLOAT64",
+          "format_preset": "percentage",
+          "lower_is_better": false
+        },
+        "impressions": {
+          "name": "impressions",
+          "kind": "measure",
+          "display_name": "Impressions",
+          "type": "INT64",
+          "format_preset": "humanize"
+        }
+      },
+      "domain_values": {
+        "device": ["Mobile", "Desktop", "Tablet"]
+      }
+    }
+  }
+}

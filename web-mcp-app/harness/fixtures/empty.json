@@ -1,0 +1,99 @@
+{
+  "name": "Empty result",
+  "description": "The query returned no rows: `data` is empty and the server omits `domain_values`.",
+  "expect": "empty",
+  "arguments": {
+    "chart_type": "bar_chart",
+    "spec": {
+      "metrics_view": "bids_metrics",
+      "time_range": {
+        "start": "2023-09-09T00:00:00Z",
+        "end": "2023-09-16T00:00:00Z"
+      },
+      "x": {
+        "field": "advertiser_name",
+        "type": "nominal",
+        "limit": 10,
+        "sort": "-y"
+      },
+      "y": {
+        "field": "total_bids",
+        "type": "quantitative"
+      },
+      "color": "primary"
+    }
+  },
+  "result": {
+    "content": [
+      {
+        "type": "text",
+        "text": "**Bar: Total Bids per Advertiser Name** (2023-09-09 to 2023-09-16)\n\n_No rows._"
+      }
+    ],
+    "structuredContent": {
+      "widget": "chart",
+      "chart_type": "bar_chart",
+      "spec": {
+        "metrics_view": "bids_metrics",
+        "time_range": {
+          "start": "2023-09-09T00:00:00Z",
+          "end": "2023-09-16T00:00:00Z"
+        },
+        "x": {
+          "field": "advertiser_name",
+          "type": "nominal",
+          "limit": 10,
+          "sort": "-y"
+        },
+        "y": {
+          "field": "total_bids",
+          "type": "quantitative"
+        },
+        "color": "primary"
+      },
+      "message": "Chart created successfully: bar_chart",
+      "metrics_view": {
+        "name": "bids_metrics",
+        "display_name": "Bids",
+        "time_dimension": "__time",
+        "smallest_time_grain": "TIME_GRAIN_HOUR"
+      },
+      "resolved_time_range": {
+        "start": "2023-09-09T00:00:00Z",
+        "end": "2023-09-16T00:00:00Z"
+      },
+      "theme": {
+        "primaryColorRaw": "#4f46e5",
+        "light": {
+          "primary": "#4f46e5",
+          "secondary": "#f97316"
+        },
+        "dark": {
+          "primary": "#818cf8",
+          "secondary": "#fb923c"
+        }
+      },
+      "open_url": "https://ui.rilldata.com/demo/bids/-/ai/session-0b1c/message/call-4f2a/-/open",
+      "truncated": false,
+      "title": "Total Bids per Advertiser Name",
+      "data": [],
+      "fields": {
+        "advertiser_name": {
+          "name": "advertiser_name",
+          "kind": "dimension",
+          "display_name": "Advertiser Name",
+          "description": "Name of the advertiser bidding on the impression.",
+          "type": "STRING"
+        },
+        "total_bids": {
+          "name": "total_bids",
+          "kind": "measure",
+          "display_name": "Total Bids",
+          "description": "Count of bid requests.",
+          "type": "INT64",
+          "format_preset": "humanize"
+        }
+      }
+    }
+  }
+}

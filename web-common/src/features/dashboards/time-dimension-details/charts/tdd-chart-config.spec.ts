@@ -1,5 +1,5 @@
 import type { ChartDataResult } from "@rilldata/web-common/features/components/charts/types";
-import { generateSpec } from "@rilldata/web-common/features/components/charts/util";
+import { generateSpec } from "@rilldata/web-common/features/components/charts/spec-generators";
 import chroma from "chroma-js";
 import { compile } from "vega-lite";
 import { describe, expect, it } from "vitest";

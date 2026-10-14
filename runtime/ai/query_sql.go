@@ -48,7 +48,7 @@ func (t *QuerySQL) Spec() *mcp.Tool {
 }
 
 func (t *QuerySQL) CheckAccess(ctx context.Context) (bool, error) {
-	return checkDeveloperAccess(ctx, t.Runtime, false)
+	return checkDeveloperAccess(ctx, false)
 }
 
 func (t *QuerySQL) Handler(ctx context.Context, args *QuerySQLArgs) (*QuerySQLResult, error) {

@@ -8,7 +8,8 @@
     "web-admin",
     "web-common",
     "web-integration",
-    "web-local"
+    "web-local",
+    "web-mcp-app"
   ],
   "scripts": {
     "build:i18n": "paraglide-js compile --project web-common/src/lib/i18n/project.inlang --outdir web-common/src/lib/i18n/gen",

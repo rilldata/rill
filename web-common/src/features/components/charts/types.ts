@@ -14,16 +14,14 @@ import type {
 } from "@rilldata/web-common/features/components/charts";
 import type { EphemeralMeasureSpec } from "@rilldata/web-common/features/dashboards/ephemeral-measures/canvas";
 import type {
+  MetricsViewSpecDimension,
+  MetricsViewSpecMeasure,
   V1Expression,
   V1MetricsViewAggregationDimension,
   V1MetricsViewAggregationMeasure,
   V1MetricsViewAggregationResponse,
+  V1MetricsViewAggregationResponseDataItem,
   V1MetricsViewAggregationSort,
-} from "@rilldata/web-common/runtime-client";
-import {
-  type MetricsViewSpecDimension,
-  type MetricsViewSpecMeasure,
-  type V1MetricsViewAggregationResponseDataItem,
 } from "@rilldata/web-common/runtime-client";
 import type { CreateQueryResult } from "@tanstack/svelte-query";
 import type { Color } from "chroma-js";

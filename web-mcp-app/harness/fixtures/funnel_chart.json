@@ -1,0 +1,118 @@
+{
+  "name": "Funnel chart",
+  "description": "Bids by campaign stage.",
+  "expect": "canvas",
+  "arguments": {
+    "chart_type": "funnel_chart",
+    "spec": {
+      "metrics_view": "bids_metrics",
+      "time_range": {
+        "start": "2023-09-09T00:00:00Z",
+        "end": "2023-09-16T00:00:00Z"
+      },
+      "measure": {
+        "field": "total_bids",
+        "type": "quantitative"
+      },
+      "stage": {
+        "field": "campaign_stage",
+        "type": "nominal",
+        "limit": 15
+      },
+      "mode": "width",
+      "percentMode": "top"
+    }
+  },
+  "result": {
+    "content": [
+      {
+        "type": "text",
+        "text": "**Funnel: Total Bids funnel by Campaign Stage** (2023-09-09 to 2023-09-16)\n\n| Campaign Stage | Total Bids |\n| - | - |\n| Impression | 562600 |\n| Click | 148200 |\n| Add to cart | 61300 |\n| Purchase | 22400 |\n\n_4 of 4 rows shown_\n\nOpen the interactive chart in Rill: https://ui.rilldata.com/demo/bids/-/ai/session-0b1c/message/call-4f2a/-/open"
+      }
+    ],
+    "structuredContent": {
+      "widget": "chart",
+      "chart_type": "funnel_chart",
+      "spec": {
+        "metrics_view": "bids_metrics",
+        "time_range": {
+          "start": "2023-09-09T00:00:00Z",
+          "end": "2023-09-16T00:00:00Z"
+        },
+        "measure": {
+          "field": "total_bids",
+          "type": "quantitative"
+        },
+        "stage": {
+          "field": "campaign_stage",
+          "type": "nominal",
+          "limit": 15
+        },
+        "mode": "width",
+        "percentMode": "top"
+      },
+      "message": "Chart created successfully: funnel_chart",
+      "metrics_view": {
+        "name": "bids_metrics",
+        "display_name": "Bids",
+        "time_dimension": "__time",
+        "smallest_time_grain": "TIME_GRAIN_HOUR"
+      },
+      "resolved_time_range": {
+        "start": "2023-09-09T00:00:00Z",
+        "end": "2023-09-16T00:00:00Z"
+      },
+      "theme": {
+        "primaryColorRaw": "#4f46e5",
+        "light": {
+          "primary": "#4f46e5",
+          "secondary": "#f97316"
+        },
+        "dark": {
+          "primary": "#818cf8",
+          "secondary": "#fb923c"
+        }
+      },
+      "open_url": "https://ui.rilldata.com/demo/bids/-/ai/session-0b1c/message/call-4f2a/-/open",
+      "truncated": false,
+      "title": "Total Bids funnel by Campaign Stage",
+      "data": [
+        {
+          "campaign_stage": "Impression",
+          "total_bids": 562600
+        },
+        {
+          "campaign_stage": "Click",
+          "total_bids": 148200
+        },
+        {
+          "campaign_stage": "Add to cart",
+          "total_bids": 61300
+        },
+        {
+          "campaign_stage": "Purchase",
+          "total_bids": 22400
+        }
+      ],
+      "fields": {
+        "campaign_stage": {
+          "name": "campaign_stage",
+          "kind": "dimension",
+          "display_name": "Campaign Stage",
+          "type": "STRING"
+        },
+        "total_bids": {
+          "name": "total_bids",
+          "kind": "measure",
+          "display_name": "Total Bids",
+          "description": "Count of bid requests.",
+          "type": "INT64",
+          "format_preset": "humanize"
+        }
+      },
+      "domain_values": {
+        "campaign_stage": ["Impression", "Click", "Add to cart", "Purchase"]
+      }
+    }
+  }
+}

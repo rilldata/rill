@@ -1,0 +1,50 @@
+{
+  "time_grain": "TIME_GRAIN_WEEK",
+  "row_limit": 1500,
+  "main": {
+    "metrics_view": "mv",
+    "dimensions": [
+      {
+        "name": "__time",
+        "compute": {
+          "time_floor": {
+            "dimension": "__time",
+            "grain": "week"
+          }
+        }
+      }
+    ],
+    "measures": [
+      {
+        "name": "clicks"
+      },
+      {
+        "name": "impressions"
+      }
+    ],
+    "pivot_on": null,
+    "spine": null,
+    "sort": [
+      {
+        "name": "__time",
+        "desc": true
+      }
+    ],
+    "time_range": {
+      "start": "2024-01-01T00:00:00Z",
+      "end": "2024-02-01T00:00:00Z"
+    },
+    "comparison_time_range": null,
+    "where": null,
+    "having": null,
+    "limit": 1501,
+    "offset": null,
+    "time_zone": "",
+    "use_display_names": false,
+    "rows": false
+  },
+  "measure_domain": [
+    "clicks",
+    "impressions"
+  ]
+}

@@ -53,16 +53,18 @@ export function localStorageStore<T>(itemKey: string, defaultValue: T) {
 export function explicitLocalStorageStore<T>(itemKey: string, defaultValue: T) {
   let initValue: T = defaultValue;
   if (browser) {
-    const stored = localStorage.getItem(itemKey);
-    if (stored !== null) {
-      try {
+    try {
+      // Reading localStorage throws in a sandboxed iframe (e.g. an MCP app host),
+      // so the read sits inside the try and the store falls back to the default.
+      const stored = localStorage.getItem(itemKey);
+      if (stored !== null) {
         const parsed = JSON.parse(stored);
         if (parsed !== undefined) {
           initValue = parsed;
         }
-      } catch {
-        // ignore
       }
+    } catch {
+      // ignore: localStorage unavailable or unreadable
     }
   }
 

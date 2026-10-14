@@ -1,0 +1,35 @@
+{
+  "name": "Tool error",
+  "description": "The tool call itself failed.",
+  "expect": "error",
+  "arguments": {
+    "chart_type": "bar_chart",
+    "spec": {
+      "metrics_view": "missing_metrics",
+      "time_range": {
+        "start": "2023-09-09T00:00:00Z",
+        "end": "2023-09-16T00:00:00Z"
+      },
+      "x": {
+        "field": "advertiser_name",
+        "type": "nominal",
+        "limit": 10,
+        "sort": "-y"
+      },
+      "y": {
+        "field": "total_bids",
+        "type": "quantitative"
+      },
+      "color": "primary"
+    }
+  },
+  "result": {
+    "isError": true,
+    "content": [
+      {
+        "type": "text",
+        "text": "metrics view \"missing_metrics\" not found"
+      }
+    ]
+  }
+}
