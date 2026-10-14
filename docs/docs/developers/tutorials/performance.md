@@ -68,8 +68,7 @@ incremental: true
 
 partitions:
   glob:
-    path: gs://rilldata-public/github-analytics/Clickhouse/2024/*/*
-    partition: directory
+    path: gs://rilldata-public/github-analytics/Clickhouse/2024/*
   
 sql: |
   SELECT * 
