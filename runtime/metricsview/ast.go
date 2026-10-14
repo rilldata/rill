@@ -121,6 +121,7 @@ type ExprNode struct {
 
 // lookupMeta describes how a lookup dimension resolves its value: the value column of the lookup table for the row's key.
 // Keys that are absent from the lookup table resolve to NULL, or to defaultExpr if it is set.
+// The NULL case requires the value column to be nullable without a custom default in the lookup table.
 type lookupMeta struct {
 	table       string
 	keyExpr     string

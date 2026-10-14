@@ -336,8 +336,10 @@ func (b *sqlExprBuilder) writeBinaryCondition(exprs []*Expression, op Operator) 
 // This lets the database use an index on the key column instead of evaluating the lookup for every row.
 //
 // Keys that are absent from the lookup table are not covered by the rewrite.
-// Their value is NULL, or the lookup default expression if one is set (a NULL key resolves to NULL even then),
+// Their value is NULL, or the lookup default expression if one is set,
 // and a condition that matches that value must include those rows as well.
+// The NULL case assumes the lookup table's value column is nullable without a custom default;
+// otherwise absent keys resolve to that column's default value, which this rewrite does not account for.
 func (b *sqlExprBuilder) writeLookupCondition(left, right *Expression, leftExpr string, lookup *lookupMeta, op Operator) error {
 	// Rows whose value is NULL cannot be found through the lookup table, so a condition that matches NULL is applied to the dimension expression itself.
 	// Such conditions (selecting NULL, or excluding values) could not use an index on the key column anyway.
@@ -365,7 +367,7 @@ func (b *sqlExprBuilder) writeLookupCondition(left, right *Expression, leftExpr 
 
 	if lookup.defaultExpr != "" {
 		// Absent keys resolve to the default expression, so they match when the condition holds for it.
-		// The condition on the default expression is a constant, which the database folds: when it is false, only the indexed condition above remains.
+		// When the default expression is a constant, the database folds the condition on it: when it is false, only the indexed condition above remains.
 		b.writeString(" OR (")
 		err = b.writeBinaryConditionInner(nil, right, lookup.defaultExpr, op)
 		if err != nil {
