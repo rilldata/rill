@@ -12,9 +12,17 @@
   export let timeZone: string;
   export let currentExecution: V1AlertExecution | null;
   export let result: V1AssertionResult;
+  // Where the check's data opens, for a check that triggered the alert.
+  export let openHref: string | undefined = undefined;
 </script>
 
-<div class="flex gap-x-2 items-center px-4 py-[10px]">
+<svelte:element
+  this={openHref ? "a" : "div"}
+  href={openHref}
+  class="flex gap-x-2 items-center px-4 py-[10px] {openHref
+    ? 'hover:bg-surface-hover'
+    : ''}"
+>
   <div class="text-fg-primary text-sm flex-shrink-0">
     {currentExecution ? m.alert_status_checking() : m.alert_status_checked()}
     {formatRunDate(alertTime, timeZone)}
@@ -23,4 +31,4 @@
   {#if result.status === V1AssertionStatus.ASSERTION_STATUS_ERROR}
     <span class="text-red-600">{result.errorMessage}</span>
   {/if}
-</div>
+</svelte:element>
