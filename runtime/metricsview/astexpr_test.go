@@ -281,3 +281,128 @@ func TestArrayContainsCondition(t *testing.T) {
 		})
 	}
 }
+
+func TestLookupDimensionFilter(t *testing.T) {
+	mv := &runtimev1.MetricsViewSpec{
+		Table: "facts",
+		Dimensions: []*runtimev1.MetricsViewSpec_Dimension{
+			{Name: "app_id", Column: "app_id"},
+			{Name: "category", Column: "app_id", LookupTable: "app_dict", LookupKeyColumn: "app_id", LookupValueColumn: "category"},
+			{Name: "category_or_unknown", Column: "app_id", LookupTable: "app_dict", LookupKeyColumn: "app_id", LookupValueColumn: "category", LookupDefaultExpression: "'Unknown'"},
+		},
+		Measures: []*runtimev1.MetricsViewSpec_Measure{
+			{Name: "count", Expression: "count(*)", Type: runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE},
+		},
+	}
+	sec := skipMetricsViewSecurity{}
+
+	const lookupSQL = `dictGet('app_dict', 'category', "app_id")`
+	const lookupWithDefaultSQL = `dictGetOrDefault('app_dict', 'category', "app_id", 'Unknown')`
+
+	tests := []struct {
+		name     string
+		dims     []Dimension
+		where    *Expression
+		wantSQL  string
+		wantArgs []any
+	}{
+		{
+			name:     "in filters through the lookup table keys",
+			where:    &Expression{Condition: &Condition{Operator: OperatorIn, Expressions: []*Expression{{Name: "category"}, {Value: []any{"Games"}}}}},
+			wantSQL:  `"app_id" IN (SELECT "app_id" FROM "app_dict" WHERE ((category) IN (?)))`,
+			wantArgs: []any{"Games"},
+		},
+		{
+			name:     "ilike filters through the lookup table keys",
+			where:    &Expression{Condition: &Condition{Operator: OperatorIlike, Expressions: []*Expression{{Name: "category"}, {Value: "%game%"}}}},
+			wantSQL:  `"app_id" IN (SELECT "app_id" FROM "app_dict" WHERE ((category)::Nullable(TEXT) ILIKE ?::Nullable(TEXT)))`,
+			wantArgs: []any{"%game%"},
+		},
+		{
+			name:     "neq filters through the lookup table keys",
+			where:    &Expression{Condition: &Condition{Operator: OperatorNeq, Expressions: []*Expression{{Name: "category"}, {Value: "Games"}}}},
+			wantSQL:  `"app_id" IN (SELECT "app_id" FROM "app_dict" WHERE ((category) != ?))`,
+			wantArgs: []any{"Games"},
+		},
+		{
+			name:     "nin with null filters through the lookup table keys",
+			where:    &Expression{Condition: &Condition{Operator: OperatorNin, Expressions: []*Expression{{Name: "category"}, {Value: []any{"Games", nil}}}}},
+			wantSQL:  `"app_id" IN (SELECT "app_id" FROM "app_dict" WHERE ((category) NOT IN (?) AND (category) IS NOT NULL))`,
+			wantArgs: []any{"Games"},
+		},
+		{
+			name:     "in with null filters on the dimension expression",
+			where:    &Expression{Condition: &Condition{Operator: OperatorIn, Expressions: []*Expression{{Name: "category"}, {Value: []any{nil}}}}},
+			wantSQL:  `((` + lookupSQL + `) IS NULL)`,
+			wantArgs: nil,
+		},
+		{
+			name:     "in with null and values filters on the dimension expression",
+			where:    &Expression{Condition: &Condition{Operator: OperatorIn, Expressions: []*Expression{{Name: "category"}, {Value: []any{"Games", nil}}}}},
+			wantSQL:  `((` + lookupSQL + `) IN (?) OR (` + lookupSQL + `) IS NULL)`,
+			wantArgs: []any{"Games"},
+		},
+		{
+			name:     "eq null filters on the dimension expression",
+			where:    &Expression{Condition: &Condition{Operator: OperatorEq, Expressions: []*Expression{{Name: "category"}, {Value: nil}}}},
+			wantSQL:  `((` + lookupSQL + `) IS NULL)`,
+			wantArgs: nil,
+		},
+		{
+			name:     "nin filters on the dimension expression",
+			where:    &Expression{Condition: &Condition{Operator: OperatorNin, Expressions: []*Expression{{Name: "category"}, {Value: []any{"Games"}}}}},
+			wantSQL:  `((` + lookupSQL + `) NOT IN (?) OR (` + lookupSQL + `) IS NULL)`,
+			wantArgs: []any{"Games"},
+		},
+		{
+			name:     "nilike filters on the dimension expression",
+			where:    &Expression{Condition: &Condition{Operator: OperatorNilike, Expressions: []*Expression{{Name: "category"}, {Value: "%game%"}}}},
+			wantSQL:  `((` + lookupSQL + `)::Nullable(TEXT) NOT ILIKE ?::Nullable(TEXT) OR (` + lookupSQL + `) IS NULL)`,
+			wantArgs: []any{"%game%"},
+		},
+		{
+			name:     "nin on a selected dimension filters on the dimension expression",
+			dims:     []Dimension{{Name: "category"}},
+			where:    &Expression{Condition: &Condition{Operator: OperatorNin, Expressions: []*Expression{{Name: "category"}, {Value: []any{"Games"}}}}},
+			wantSQL:  `((` + lookupSQL + `) NOT IN (?) OR (` + lookupSQL + `) IS NULL)`,
+			wantArgs: []any{"Games"},
+		},
+		{
+			name:     "in with default expression also checks the default",
+			where:    &Expression{Condition: &Condition{Operator: OperatorIn, Expressions: []*Expression{{Name: "category_or_unknown"}, {Value: []any{"Games"}}}}},
+			wantSQL:  `("app_id" IN (SELECT "app_id" FROM "app_dict" WHERE ((category) IN (?))) OR ((('Unknown') IN (?)) AND "app_id" NOT IN (SELECT "app_id" FROM "app_dict")))`,
+			wantArgs: []any{"Games", "Games"},
+		},
+		{
+			name:     "nin with default expression filters on the dimension expression",
+			where:    &Expression{Condition: &Condition{Operator: OperatorNin, Expressions: []*Expression{{Name: "category_or_unknown"}, {Value: []any{"Games"}}}}},
+			wantSQL:  `((` + lookupWithDefaultSQL + `) NOT IN (?) OR (` + lookupWithDefaultSQL + `) IS NULL)`,
+			wantArgs: []any{"Games"},
+		},
+		{
+			name:     "eq null with default expression filters on the dimension expression",
+			where:    &Expression{Condition: &Condition{Operator: OperatorEq, Expressions: []*Expression{{Name: "category_or_unknown"}, {Value: nil}}}},
+			wantSQL:  `((` + lookupWithDefaultSQL + `) IS NULL)`,
+			wantArgs: nil,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			qry := &Query{
+				MetricsView: "test",
+				Dimensions:  tt.dims,
+				Measures:    []Measure{{Name: "count"}},
+				Where:       tt.where,
+			}
+
+			ast, err := NewAST(mv, sec, qry, clickhouse.DialectClickhouse)
+			require.NoError(t, err)
+
+			sql, args, err := ast.SQLForExpression(tt.where, nil, false, false)
+			require.NoError(t, err)
+			require.Equal(t, tt.wantSQL, sql)
+			require.Equal(t, tt.wantArgs, args)
+		})
+	}
+}
