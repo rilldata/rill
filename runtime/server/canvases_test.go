@@ -981,6 +981,10 @@ rows:
 		res, err := srv.ResolveCanvas(ctx, &runtimev1.ResolveCanvasRequest{InstanceId: instanceID, Canvas: "c1"})
 		require.NoError(t, err)
 		require.Empty(t, canvas.Conditions(res.Canvas.GetCanvas().State.ValidSpec.Rows), "conditions must not be sent to viewers")
+		for name, cmp := range res.ResolvedComponents {
+			require.Empty(t, cmp.GetComponent().Spec.ConditionExpression, "component %q must not carry its inherited condition", name)
+			require.Empty(t, cmp.GetComponent().State.ValidSpec.ConditionExpression, "component %q must not carry its inherited condition", name)
+		}
 		for _, ref := range res.Canvas.Meta.Refs {
 			if ref.Kind == runtime.ResourceKindComponent {
 				require.Contains(t, res.ResolvedComponents, ref.Name, "refs must not name hidden components")
@@ -994,6 +998,15 @@ rows:
 	require.Equal(t, []string{"0-0(0)", "1-0(8)", "2-0(6) 2-1(6)"}, layout(res.Canvas.GetCanvas().State.ValidSpec.Rows))
 	require.Len(t, res.ResolvedComponents, 4)
 	require.NotContains(t, res.ReferencedMetricsViews, "costs")
+
+	// Fetching the visible margin KPI directly doesn't return its inherited condition either.
+	cmp, err := srv.GetResource(viewerCtx(priya), &runtimev1.GetResourceRequest{
+		InstanceId: instanceID,
+		Name:       &runtimev1.ResourceName{Kind: runtime.ResourceKindComponent, Name: "c1--component-1-0"},
+	})
+	require.NoError(t, err)
+	require.Empty(t, cmp.Resource.GetComponent().Spec.ConditionExpression)
+	require.Empty(t, cmp.Resource.GetComponent().State.ValidSpec.ConditionExpression)
 
 	// Sam (sales) sees the Pipeline tab but not the finance row.
 	res = resolve(viewerCtx(sam))

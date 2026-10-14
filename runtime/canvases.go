@@ -330,6 +330,9 @@ func (r *Runtime) ResolveCanvas(ctx context.Context, instanceID, canvasName stri
 			return itemMet(item) && !removed[item.Component] && !inaccessibleItem(item, components, referencedMetricsViews, opts.Unsafe)
 		}
 		_, hiddenPaths := canvas.PruneRows(spec.Rows, keep)
+		for name, cmp := range components {
+			components[name] = stripComponentCondition(cmp)
+		}
 		return &ResolveCanvasResult{
 			Canvas:                 res,
 			ResolvedComponents:     components,
@@ -353,6 +356,11 @@ func (r *Runtime) ResolveCanvas(ctx context.Context, instanceID, canvasName stri
 		rmv := resolveMetricsView(ctx, name)
 		return rmv.getErr == nil && rmv.secErr == nil && rmv.sec.CanAccess()
 	})
+
+	// The components' inherited `if` conditions aren't sent to clients, like the canvas's own conditions.
+	for name, cmp := range components {
+		components[name] = stripComponentCondition(cmp)
+	}
 
 	// Return the response
 	return &ResolveCanvasResult{

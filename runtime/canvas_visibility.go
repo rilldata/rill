@@ -130,6 +130,24 @@ func (r *Runtime) applyCanvasSecurity(res *runtimev1.Resource, security *Resolve
 	return res
 }
 
+// stripComponentCondition clears the `if` conditions that an inline component inherits from its canvas item, so they aren't sent to clients.
+// Only the security engine needs them, and it reads components from the controller.
+// The resource is cloned if it has a condition.
+func stripComponentCondition(res *runtimev1.Resource) *runtimev1.Resource {
+	c := res.GetComponent()
+	if c.GetSpec().GetConditionExpression() == "" && c.GetState().GetValidSpec().GetConditionExpression() == "" {
+		return res
+	}
+	res = proto.Clone(res).(*runtimev1.Resource)
+	if spec := res.GetComponent().GetSpec(); spec != nil {
+		spec.ConditionExpression = ""
+	}
+	if spec := res.GetComponent().GetState().GetValidSpec(); spec != nil {
+		spec.ConditionExpression = ""
+	}
+	return res
+}
+
 // canIncludeHiddenCanvasContent reports whether the claims may get a canvas including the content hidden from them, as the visual editor needs.
 // That requires permission to edit the project, or owning the canvas if it's a personal (admin-managed) canvas.
 func canIncludeHiddenCanvasContent(claims *SecurityClaims, res *runtimev1.Resource) bool {
