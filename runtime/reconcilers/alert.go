@@ -283,8 +283,12 @@ func (r *AlertReconciler) ResolveTransitiveAccess(ctx context.Context, claims *r
 			Runtime:    r.C.Runtime,
 			InstanceID: r.C.InstanceID,
 			Properties: spec.ResolverProperties.AsMap(),
-			Claims:     claims,
-			ForExport:  false,
+			Claims: &runtime.SecurityClaims{
+				UserID:         claims.UserID,
+				UserAttributes: claims.UserAttributes,
+				SkipChecks:     true, // To avoid infinite recursion
+			},
+			ForExport: false,
 		})
 		if err != nil {
 			return nil, err

@@ -207,8 +207,12 @@ func (r *ReportReconciler) ResolveTransitiveAccess(ctx context.Context, claims *
 			Runtime:    r.C.Runtime,
 			InstanceID: r.C.InstanceID,
 			Properties: resolverProperties(spec),
-			Claims:     claims,
-			ForExport:  false,
+			Claims: &runtime.SecurityClaims{
+				UserID:         claims.UserID,
+				UserAttributes: claims.UserAttributes,
+				SkipChecks:     true, // To avoid infinite recursion
+			},
+			ForExport: false,
 		})
 		if err != nil {
 			return nil, err

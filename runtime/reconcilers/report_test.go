@@ -269,3 +269,75 @@ annotations:
 	require.NoError(t, err)
 	require.False(t, sec.CanAccess())
 }
+
+// TestReportMetricsSQLResolveTransitiveAccessTerminates pins the loop breaker for a report whose data comes from the
+// `data:` block (resolver "metrics_sql"), which upstream's own parser marks as preferred for new reports.
+//
+// Resolving such a report's transitive access initializes its resolver, and initializing a metrics_sql resolver asks
+// the security engine to resolve the metrics view, which expands the transitive rule again, which initializes the
+// resolver again. The recursion has no base case: it does not fail the request, it exhausts the goroutine stack and
+// takes the whole runtime process down with every project it serves. Reaching it is a single click on the magic link
+// in a scheduled report's email.
+//
+// Passing SkipChecks on the claims used to initialize the resolver breaks the cycle at the top of resolveSecurity.
+// It is the same guard upstream added to the canvas reconciler in rilldata/rill#9023 ("to avoid infinite recursion
+// through the security engine"); reports and alerts were left without it.
+//
+// Note the failure mode: without the guard this test does not report a failure, it kills the test binary with
+// "fatal error: stack overflow". A crashed run is the signal.
+func TestReportMetricsSQLResolveTransitiveAccessTerminates(t *testing.T) {
+	rt, id := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
+		Files: map[string]string{"rill.yaml": ""},
+	})
+
+	testruntime.PutFiles(t, rt, id, map[string]string{
+		"m1.sql": `SELECT 'foo' as foo, 1 as x`,
+		"mv1.yaml": `
+version: 1
+type: metrics_view
+model: m1
+dimensions:
+- column: foo
+measures:
+- name: x
+  expression: sum(x)
+`,
+		"r1.yaml": `
+type: report
+display_name: My Metrics SQL Report
+refresh:
+  cron: "0 8 * * 1"
+data:
+  metrics_sql: SELECT foo, x FROM mv1
+export:
+  format: csv
+notify:
+  email:
+    recipients:
+      - user_1@example.com
+`,
+	})
+	testruntime.ReconcileParserAndWait(t, rt, id)
+
+	claims := &runtime.SecurityClaims{
+		AdditionalRules: []*runtimev1.SecurityRule{
+			{
+				Rule: &runtimev1.SecurityRule_TransitiveAccess{
+					TransitiveAccess: &runtimev1.SecurityRuleTransitiveAccess{
+						Resource: &runtimev1.ResourceName{
+							Kind: runtime.ResourceKindReport,
+							Name: "r1",
+						},
+					},
+				},
+			},
+		},
+	}
+
+	// The metrics view the report reads from must be reachable through the report's transitive rule, and resolving it
+	// must terminate.
+	mv1 := testruntime.GetResource(t, rt, id, runtime.ResourceKindMetricsView, "mv1")
+	sec, err := rt.ResolveSecurity(t.Context(), id, claims, mv1)
+	require.NoError(t, err)
+	require.True(t, sec.CanAccess())
+}
