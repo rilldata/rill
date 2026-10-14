@@ -24,6 +24,10 @@ import (
 
 const magicAuthTokenFilterMaxSize = 1024
 
+// magicAuthTokenSessionTTL is the validity of a session issued by UnlockMagicAuthToken.
+// A session also expires when the magic auth token it belongs to expires.
+const magicAuthTokenSessionTTL = 24 * time.Hour
+
 func (s *Server) IssueMagicAuthToken(ctx context.Context, req *adminv1.IssueMagicAuthTokenRequest) (*adminv1.IssueMagicAuthTokenResponse, error) {
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.organization", req.Org),
@@ -83,6 +87,14 @@ func (s *Server) IssueMagicAuthToken(ctx context.Context, req *adminv1.IssueMagi
 		opts.TTL = &ttl
 	}
 
+	if req.Password != "" {
+		err := validateMagicAuthTokenPassword(req.Password)
+		if err != nil {
+			return nil, err
+		}
+		opts.Password = req.Password
+	}
+
 	if claims.OwnerType() == auth.OwnerTypeUser {
 		id := claims.OwnerID()
 		opts.CreatedByUserID = &id
@@ -133,7 +145,18 @@ func (s *Server) IssueMagicAuthToken(ctx context.Context, req *adminv1.IssueMagi
 
 func (s *Server) GetCurrentMagicAuthToken(ctx context.Context, req *adminv1.GetCurrentMagicAuthTokenRequest) (*adminv1.GetCurrentMagicAuthTokenResponse, error) {
 	claims := auth.GetClaims(ctx)
-	if claims.OwnerType() != auth.OwnerTypeMagicAuthToken {
+	switch claims.OwnerType() {
+	case auth.OwnerTypeMagicAuthToken:
+	case auth.OwnerTypeLockedMagicAuthToken:
+		// Until the token is unlocked with its password, reveal nothing but the fact that a password is required.
+		return &adminv1.GetCurrentMagicAuthTokenResponse{
+			Token: &adminv1.MagicAuthToken{
+				Id:                claims.OwnerID(),
+				PasswordProtected: true,
+			},
+			Locked: true,
+		}, nil
+	default:
 		return nil, status.Error(codes.PermissionDenied, "request was not made with a magic auth token")
 	}
 
@@ -257,6 +280,127 @@ func (s *Server) RevokeMagicAuthToken(ctx context.Context, req *adminv1.RevokeMa
 	return &adminv1.RevokeMagicAuthTokenResponse{}, nil
 }
 
+func (s *Server) UpdateMagicAuthToken(ctx context.Context, req *adminv1.UpdateMagicAuthTokenRequest) (*adminv1.UpdateMagicAuthTokenResponse, error) {
+	observability.AddRequestAttributes(ctx,
+		attribute.String("args.token_id", req.TokenId),
+	)
+
+	if req.Password != nil && req.RemovePassword {
+		return nil, status.Error(codes.InvalidArgument, "password and remove_password can't both be set")
+	}
+
+	tkn, err := s.admin.DB.FindMagicAuthToken(ctx, req.TokenId, false)
+	if err != nil {
+		return nil, err
+	}
+
+	proj, err := s.admin.DB.FindProject(ctx, tkn.ProjectID)
+	if err != nil {
+		return nil, err
+	}
+
+	org, err := s.admin.DB.FindOrganization(ctx, proj.OrganizationID)
+	if err != nil {
+		return nil, err
+	}
+
+	claims := auth.GetClaims(ctx)
+	projPerms := claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID)
+	if !projPerms.ManageMagicAuthTokens {
+		// If they don't have manage permissions, they can only update tokens they created themselves.
+		isCreator := tkn.CreatedByUserID != nil && *tkn.CreatedByUserID == claims.OwnerID()
+		if !projPerms.CreateMagicAuthTokens || !isCreator {
+			return nil, status.Error(codes.PermissionDenied, "not allowed to update this magic auth token")
+		}
+	}
+
+	opts := &database.UpdateMagicAuthTokenOptions{
+		DisplayName:  tkn.DisplayName,
+		PasswordHash: tkn.PasswordHash,
+	}
+	if req.DisplayName != nil {
+		opts.DisplayName = *req.DisplayName
+	}
+	passwordChanged := false
+	if req.Password != nil {
+		err := validateMagicAuthTokenPassword(*req.Password)
+		if err != nil {
+			return nil, err
+		}
+		opts.PasswordHash, err = admin.HashMagicAuthTokenPassword(*req.Password)
+		if err != nil {
+			return nil, err
+		}
+		passwordChanged = true
+	} else if req.RemovePassword {
+		opts.PasswordHash = nil
+		passwordChanged = len(tkn.PasswordHash) > 0
+	}
+
+	txCtx, tx, err := s.admin.DB.NewTx(ctx, false)
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = tx.Rollback() }()
+
+	_, err = s.admin.DB.UpdateMagicAuthToken(txCtx, tkn.ID, opts)
+	if err != nil {
+		return nil, err
+	}
+
+	// Recipients who unlocked the token with the old password must enter the new one.
+	if passwordChanged {
+		err = s.admin.DB.DeleteMagicAuthTokenSessionsForToken(txCtx, tkn.ID)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	err = tx.Commit()
+	if err != nil {
+		return nil, err
+	}
+
+	updated, err := s.admin.DB.FindMagicAuthTokenWithUser(ctx, tkn.ID)
+	if err != nil {
+		return nil, err
+	}
+
+	pb, err := s.magicAuthTokenToPB(updated, org, proj)
+	if err != nil {
+		return nil, err
+	}
+
+	return &adminv1.UpdateMagicAuthTokenResponse{
+		Token: pb,
+	}, nil
+}
+
+func (s *Server) UnlockMagicAuthToken(ctx context.Context, req *adminv1.UnlockMagicAuthTokenRequest) (*adminv1.UnlockMagicAuthTokenResponse, error) {
+	claims := auth.GetClaims(ctx)
+	if claims.OwnerType() != auth.OwnerTypeLockedMagicAuthToken {
+		return nil, status.Error(codes.PermissionDenied, "request was not made with a locked magic auth token")
+	}
+
+	// The claims are derived from a token model that may come from the auth cache, so the password is not checked against them:
+	// a password that was just changed must not unlock the token until the cache catches up.
+	sess, sessTkn, err := s.admin.UnlockMagicAuthToken(ctx, claims.OwnerID(), req.Password, magicAuthTokenSessionTTL)
+	if err != nil {
+		if errors.Is(err, admin.ErrMagicAuthTokenPasswordIncorrect) {
+			return nil, status.Error(codes.PermissionDenied, "incorrect password")
+		}
+		if errors.Is(err, admin.ErrMagicAuthTokenNotPasswordProtected) {
+			return nil, status.Error(codes.FailedPrecondition, "the public URL is no longer password protected")
+		}
+		return nil, err
+	}
+
+	return &adminv1.UnlockMagicAuthTokenResponse{
+		SessionToken: sessTkn.String(),
+		ExpiresOn:    timestamppb.New(sess.ExpiresOn),
+	}, nil
+}
+
 func (s *Server) magicAuthTokensToPB(tkns []*database.MagicAuthTokenWithUser, org *database.Organization, proj *database.Project) ([]*adminv1.MagicAuthToken, error) {
 	var pbs []*adminv1.MagicAuthToken
 	for _, tkn := range tkns {
@@ -325,9 +469,18 @@ func (s *Server) magicAuthTokenToPB(tkn *database.MagicAuthTokenWithUser, org *d
 		Fields:             tkn.Fields,
 		State:              tkn.State,
 		DisplayName:        tkn.DisplayName,
+		PasswordProtected:  len(tkn.PasswordHash) > 0,
 	}
 	if tkn.ExpiresOn != nil {
 		res.ExpiresOn = timestamppb.New(*tkn.ExpiresOn)
 	}
 	return res, nil
+}
+
+// validateMagicAuthTokenPassword checks the length constraints of a password for a magic auth token.
+func validateMagicAuthTokenPassword(password string) error {
+	if err := admin.ValidateMagicAuthTokenPassword(password); err != nil {
+		return status.Error(codes.InvalidArgument, err.Error())
+	}
+	return nil
 }

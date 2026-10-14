@@ -22,6 +22,9 @@ const (
 	OwnerTypeService        OwnerType = "service"
 	OwnerTypeDeployment     OwnerType = "deployment"
 	OwnerTypeMagicAuthToken OwnerType = "magic_auth_token" // nolint:gosec // It's not a credential
+	// OwnerTypeLockedMagicAuthToken is a password-protected magic auth token that has not been unlocked with its password.
+	// It has no permissions; only the RPCs for inspecting and unlocking the token accept it.
+	OwnerTypeLockedMagicAuthToken OwnerType = "locked_magic_auth_token" // nolint:gosec // It's not a credential
 )
 
 // Claims resolves permissions for a requester.
@@ -127,6 +130,12 @@ func (c *authTokenClaims) OwnerType() OwnerType {
 	case authtoken.TypeDeployment:
 		return OwnerTypeDeployment
 	case authtoken.TypeMagic:
+		if mdl, ok := c.token.TokenModel().(*database.MagicAuthToken); ok && len(mdl.PasswordHash) > 0 {
+			return OwnerTypeLockedMagicAuthToken
+		}
+		return OwnerTypeMagicAuthToken
+	case authtoken.TypeMagicSession:
+		// A session is only issued after the password has been verified, so it acts as the unlocked magic token.
 		return OwnerTypeMagicAuthToken
 	default:
 		panic(fmt.Errorf("unexpected token type %q", t))
@@ -163,7 +172,7 @@ func (c *authTokenClaims) Superuser(ctx context.Context) bool {
 	case authtoken.TypeDeployment:
 		// deployments can't be superusers
 		return false
-	case authtoken.TypeMagic:
+	case authtoken.TypeMagic, authtoken.TypeMagicSession:
 		// magic tokens can't be superusers
 		return false
 	default:
@@ -220,12 +229,14 @@ func (c *authTokenClaims) ProjectPermissions(ctx context.Context, orgID, project
 		perm, err = c.admin.ProjectPermissionsForService(ctx, projectID, c.token.OwnerID(), orgPerms)
 	case authtoken.TypeDeployment:
 		perm, err = c.admin.ProjectPermissionsForDeployment(ctx, projectID, c.token.OwnerID(), orgPerms)
-	case authtoken.TypeMagic:
+	case authtoken.TypeMagic, authtoken.TypeMagicSession:
 		mdl, ok := c.token.TokenModel().(*database.MagicAuthToken)
-		if ok {
-			perm, err = c.admin.ProjectPermissionsForMagicAuthToken(ctx, projectID, mdl)
-		} else {
+		if !ok {
 			err = fmt.Errorf("unexpected token model type %T", c.token.TokenModel())
+		} else if c.OwnerType() == OwnerTypeLockedMagicAuthToken {
+			perm = &adminv1.ProjectPermissions{}
+		} else {
+			perm, err = c.admin.ProjectPermissionsForMagicAuthToken(ctx, projectID, mdl)
 		}
 	default:
 		err = fmt.Errorf("unexpected token type %q", c.token.Token().Type)
@@ -257,12 +268,14 @@ func (c *authTokenClaims) organizationPermissionsUnsafe(ctx context.Context, org
 		perm, err = c.admin.OrganizationPermissionsForService(ctx, orgID, c.token.OwnerID())
 	case authtoken.TypeDeployment:
 		perm, err = c.admin.OrganizationPermissionsForDeployment(ctx, orgID, c.token.OwnerID())
-	case authtoken.TypeMagic:
+	case authtoken.TypeMagic, authtoken.TypeMagicSession:
 		mdl, ok := c.token.TokenModel().(*database.MagicAuthToken)
-		if ok {
-			perm, err = c.admin.OrganizationPermissionsForMagicAuthToken(ctx, orgID, mdl.ProjectID)
-		} else {
+		if !ok {
 			err = fmt.Errorf("unexpected token model type %T", c.token.TokenModel())
+		} else if c.OwnerType() == OwnerTypeLockedMagicAuthToken {
+			perm = &adminv1.OrganizationPermissions{}
+		} else {
+			perm, err = c.admin.OrganizationPermissionsForMagicAuthToken(ctx, orgID, mdl.ProjectID)
 		}
 	default:
 		err = fmt.Errorf("unexpected token type %q", c.token.Token().Type)

@@ -104,3 +104,113 @@ test.describe.serial("Public URLs", () => {
     ).toBeVisible();
   });
 });
+
+test.describe.serial("Password-protected public URLs", () => {
+  let publicUrl: string;
+  let password: string;
+
+  test("should be able to create a password-protected public URL", async ({
+    page,
+  }) => {
+    await page.goto("/e2e/openrtb/explore/auction_explore");
+
+    await page.getByRole("button", { name: "Share" }).click();
+    await page.getByRole("tab", { name: "Create public URL" }).click();
+    await page
+      .getByPlaceholder("Label this URL")
+      .fill("Test Public URL - Password");
+
+    // Turning on the switch shows an empty password field, which the button below it fills in
+    await page.getByLabel("Require password").click();
+    const passwordInput = page.getByPlaceholder("Password");
+    await expect(passwordInput).toHaveValue("");
+    const createButton = page.getByRole("button", {
+      name: "Create",
+      exact: true,
+    });
+    await expect(createButton).toBeDisabled();
+    await page
+      .getByRole("button", { name: "Generate and copy secure password" })
+      .click();
+    await expect(passwordInput).not.toHaveValue("");
+    await createButton.click();
+
+    // The URL and the password are both shown once after creation
+    const copyButton = page.getByRole("button", { name: /Copy Public URL/ });
+    await copyButton.waitFor();
+    const url = await copyButton.getAttribute("data-public-url");
+    const createdPassword = await page
+      .locator("[data-public-url-password]")
+      .getAttribute("data-public-url-password");
+    if (!url || !createdPassword) {
+      throw new Error("Could not find the public URL or its password");
+    }
+    expect(url).toContain("e2e/openrtb/-/share/rill_mgc_");
+    expect(createdPassword).toHaveLength(16);
+
+    publicUrl = url;
+    password = createdPassword;
+  });
+
+  test("anon must enter the password to view the public URL", async ({
+    anonPage,
+  }) => {
+    test.skip(!publicUrl, "Public URL not set");
+
+    await anonPage.goto(publicUrl);
+
+    // The dashboard is hidden behind a password prompt
+    await expect(
+      anonPage.getByText("This dashboard is password protected"),
+    ).toBeVisible();
+    await expect(
+      anonPage.getByRole("button", { name: /Requests/ }),
+    ).toBeHidden();
+
+    // A wrong password is rejected
+    await anonPage.getByPlaceholder("Password").fill("not the password");
+    await anonPage.getByRole("button", { name: "Continue" }).click();
+    await expect(anonPage.getByText("Incorrect password")).toBeVisible();
+
+    // The right password shows the dashboard
+    await anonPage.getByPlaceholder("Password").fill(password);
+    await anonPage.getByRole("button", { name: "Continue" }).click();
+    await expect(
+      anonPage.getByRole("button", { name: /Requests/ }),
+    ).toBeVisible();
+    await expect(
+      anonPage.getByText("This dashboard is password protected"),
+    ).toBeHidden();
+  });
+
+  test("admin can remove the password from the settings page", async ({
+    page,
+    anonPage,
+  }) => {
+    test.skip(!publicUrl, "Public URL not set");
+
+    await page.goto("/e2e/openrtb/-/settings/public-urls");
+    const row = page.locator(".row", { hasText: "Test Public URL - Password" });
+    await expect(row.getByLabel("Password protected")).toBeVisible();
+    await row.getByRole("button").click();
+    await page.getByRole("menuitem", { name: "Edit" }).click();
+
+    const dialog = page.getByRole("dialog");
+    await expect(
+      dialog.getByText("A password is set", { exact: false }),
+    ).toBeVisible();
+    await dialog.getByLabel("Remove password").click();
+    await dialog.getByRole("button", { name: "Save" }).click();
+    await expect(page.getByText("Public URL updated")).toBeVisible();
+    await expect(row.getByLabel("Password protected")).toBeHidden();
+
+    // The URL now opens without a password
+    await anonPage.goto(publicUrl);
+    await expect(
+      anonPage.getByRole("button", { name: /Requests/ }),
+    ).toBeVisible();
+    await expect(
+      anonPage.getByText("This dashboard is password protected"),
+    ).toBeHidden();
+  });
+});

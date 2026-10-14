@@ -591,6 +591,9 @@ export interface V1GetCloneCredentialsResponse {
 
 export interface V1GetCurrentMagicAuthTokenResponse {
   token?: V1MagicAuthToken;
+  /** True when the bearer is a password-protected token that has not been unlocked.
+In that case, token only contains the ID and password_protected; call UnlockMagicAuthToken to get a session token. */
+  locked?: boolean;
 }
 
 export interface V1GetCurrentUserResponse {
@@ -1005,6 +1008,8 @@ export interface V1MagicAuthToken {
   fields?: string[];
   state?: string;
   displayName?: string;
+  /** True if recipients must enter a password before the token grants access. */
+  passwordProtected?: boolean;
 }
 
 export interface V1MemberUsergroup {
@@ -1684,6 +1689,16 @@ export interface V1TriggerReportResponse {
   [key: string]: unknown;
 }
 
+export interface V1UnlockMagicAuthTokenRequest {
+  password?: string;
+}
+
+export interface V1UnlockMagicAuthTokenResponse {
+  /** Session token to use as the bearer token instead of the magic auth token. */
+  sessionToken?: string;
+  expiresOn?: string;
+}
+
 export interface V1UnsubscribeAlertResponse {
   [key: string]: unknown;
 }
@@ -1708,6 +1723,10 @@ export interface V1UpdateBookmarkRequest {
 
 export interface V1UpdateBookmarkResponse {
   [key: string]: unknown;
+}
+
+export interface V1UpdateMagicAuthTokenResponse {
+  token?: V1MagicAuthToken;
 }
 
 export interface V1UpdateOrganizationMemberUserAttributesResponse {
@@ -1891,6 +1910,15 @@ export type AdminServiceTriggerRefreshSourcesBody = {
 
 export type AdminServiceGetGithubRepoStatusParams = {
   remote?: string;
+};
+
+export type AdminServiceUpdateMagicAuthTokenBody = {
+  /** New display name. Unchanged if not set. */
+  displayName?: string;
+  /** New password (8 to 72 characters). Replaces the existing password and invalidates existing sessions. Unchanged if not set. */
+  password?: string;
+  /** Removes the password. Can't be combined with password. */
+  removePassword?: boolean;
 };
 
 export type AdminServiceListOrganizationsParams = {
@@ -2282,6 +2310,9 @@ This will be translated to a rill.runtime.v1.SecurityRuleFieldAccess, which curr
   displayName?: string;
   /** list of resources to grant access to. */
   resources?: V1ResourceName[];
+  /** Optional password that recipients must enter before the token grants access.
+Must be between 8 and 72 characters. It is stored as a hash and can't be retrieved later, only replaced. */
+  password?: string;
 };
 
 export type AdminServiceListProjectMemberUsergroupsParams = {

@@ -742,6 +742,11 @@ components:
             type: object
         v1GetCurrentMagicAuthTokenResponse:
             properties:
+                locked:
+                    description: |-
+                        True when the bearer is a password-protected token that has not been unlocked.
+                        In that case, token only contains the ID and password_protected; call UnlockMagicAuthToken to get a session token.
+                    type: boolean
                 token:
                     $ref: '#/components/schemas/v1MagicAuthToken'
             type: object
@@ -1330,6 +1335,9 @@ components:
                     additionalProperties:
                         $ref: '#/components/schemas/v1Expression'
                     type: object
+                passwordProtected:
+                    description: True if recipients must enter a password before the token grants access.
+                    type: boolean
                 projectId:
                     type: string
                 resourceName:
@@ -2346,6 +2354,20 @@ components:
             type: object
         v1TriggerReportResponse:
             type: object
+        v1UnlockMagicAuthTokenRequest:
+            properties:
+                password:
+                    type: string
+            type: object
+        v1UnlockMagicAuthTokenResponse:
+            properties:
+                expiresOn:
+                    format: date-time
+                    type: string
+                sessionToken:
+                    description: Session token to use as the bearer token instead of the magic auth token.
+                    type: string
+            type: object
         v1UnsubscribeAlertResponse:
             type: object
         v1UnsubscribeReportResponse:
@@ -2373,6 +2395,11 @@ components:
                     type: string
             type: object
         v1UpdateBookmarkResponse:
+            type: object
+        v1UpdateMagicAuthTokenResponse:
+            properties:
+                token:
+                    $ref: '#/components/schemas/v1MagicAuthToken'
             type: object
         v1UpdateOrganizationMemberUserAttributesResponse:
             type: object
@@ -2561,6 +2588,7 @@ paths:
     /v1/github/user/repositories: {}
     /v1/magic-tokens/{tokenId}: {}
     /v1/magic-tokens/current: {}
+    /v1/magic-tokens/current/unlock: {}
     /v1/organization-for-domain/{domain}: {}
     /v1/orgs:
         get:

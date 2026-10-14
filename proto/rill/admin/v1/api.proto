@@ -1123,6 +1123,24 @@ service AdminService {
     option (google.api.http) = {delete: "/v1/magic-tokens/{token_id}"};
   }
 
+  // UpdateMagicAuthToken updates the display name or password of a magic auth token.
+  rpc UpdateMagicAuthToken(UpdateMagicAuthTokenRequest) returns (UpdateMagicAuthTokenResponse) {
+    option (google.api.http) = {
+      patch: "/v1/magic-tokens/{token_id}",
+      body: "*"
+    };
+  }
+
+  // UnlockMagicAuthToken verifies the password of a password-protected magic auth token.
+  // It must be called with the magic auth token as the bearer token.
+  // On success, it returns a short-lived session token that grants the same access as the magic auth token.
+  rpc UnlockMagicAuthToken(UnlockMagicAuthTokenRequest) returns (UnlockMagicAuthTokenResponse) {
+    option (google.api.http) = {
+      post: "/v1/magic-tokens/current/unlock",
+      body: "*"
+    };
+  }
+
   // UpdateUserPreferences updates the preferences for the user
   rpc UpdateUserPreferences(UpdateUserPreferencesRequest) returns (UpdateUserPreferencesResponse) {
     option (google.api.http) = {
@@ -2795,6 +2813,9 @@ message IssueMagicAuthTokenRequest {
   string display_name = 10;
   // list of resources to grant access to.
   repeated ResourceName resources = 11;
+  // Optional password that recipients must enter before the token grants access.
+  // Must be between 8 and 72 characters. It is stored as a hash and can't be retrieved later, only replaced.
+  string password = 13;
   reserved 5;
 }
 
@@ -2824,6 +2845,9 @@ message GetCurrentMagicAuthTokenRequest {}
 
 message GetCurrentMagicAuthTokenResponse {
   MagicAuthToken token = 1;
+  // True when the bearer is a password-protected token that has not been unlocked.
+  // In that case, token only contains the ID and password_protected; call UnlockMagicAuthToken to get a session token.
+  bool locked = 2;
 }
 
 message RevokeMagicAuthTokenRequest {
@@ -2831,6 +2855,30 @@ message RevokeMagicAuthTokenRequest {
 }
 
 message RevokeMagicAuthTokenResponse {}
+
+message UpdateMagicAuthTokenRequest {
+  string token_id = 1;
+  // New display name. Unchanged if not set.
+  optional string display_name = 2;
+  // New password (8 to 72 characters). Replaces the existing password and invalidates existing sessions. Unchanged if not set.
+  optional string password = 3;
+  // Removes the password. Can't be combined with password.
+  bool remove_password = 4;
+}
+
+message UpdateMagicAuthTokenResponse {
+  MagicAuthToken token = 1;
+}
+
+message UnlockMagicAuthTokenRequest {
+  string password = 1;
+}
+
+message UnlockMagicAuthTokenResponse {
+  // Session token to use as the bearer token instead of the magic auth token.
+  string session_token = 1;
+  google.protobuf.Timestamp expires_on = 2;
+}
 
 message GetGithubRepoStatusRequest {
   string remote = 1;
@@ -3757,6 +3805,8 @@ message MagicAuthToken {
   repeated string fields = 11;
   string state = 12;
   string display_name = 16;
+  // True if recipients must enter a password before the token grants access.
+  bool password_protected = 19;
   reserved 10;
 }
 
