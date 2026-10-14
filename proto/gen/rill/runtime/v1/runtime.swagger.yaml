@@ -4050,6 +4050,11 @@ definitions:
         type: string
       lookupDefaultExpression:
         type: string
+      lookupGroupByKey:
+        type: boolean
+        description: |-
+          If true, queries that group by the dimension group by the lookup key first and resolve the lookup value once per key.
+          Only for ClickHouse dictionaries with few keys; see the metrics view docs.
       smallestTimeGrain:
         $ref: '#/definitions/v1TimeGrain'
         description: The smallest time grain for the dimension. Only populated for time dimensions.

@@ -7,6 +7,7 @@ import (
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/structpb"
 )
 
@@ -29,6 +30,7 @@ dimensions:
   lookup_table: default.m2 # Expect ref to m2 after stripping the schema prefix since it is a model in the same project
   lookup_key_column: id
   lookup_value_column: value
+  lookup_group_by_key: true
 - name: bar
   expression: id
   lookup_table: ext # Expect no ref since it is not a known model (assumed to be a pre-existing table)
@@ -83,6 +85,7 @@ measures:
 						LookupTable:       "default.m2",
 						LookupKeyColumn:   "id",
 						LookupValueColumn: "value",
+						LookupGroupByKey:  proto.Bool(true),
 					},
 					{
 						Name:              "bar",
@@ -110,6 +113,33 @@ measures:
 	p, err := Parse(ctx, repo, "", "", "duckdb", true)
 	require.NoError(t, err)
 	requireResourcesAndErrors(t, p, resources, nil)
+}
+
+func TestMetricsViewLookupGroupByKeyRequiresLookup(t *testing.T) {
+	files := map[string]string{
+		`rill.yaml`:     ``,
+		`models/m1.sql`: `SELECT 1 AS id`,
+		`metrics_views/mv1.yaml`: `
+type: metrics_view
+version: 1
+model: m1
+dimensions:
+- name: foo
+  column: id
+  lookup_group_by_key: true
+measures:
+- name: count
+  expression: COUNT(*)
+`,
+	}
+
+	ctx := context.Background()
+	repo := makeRepo(t, files)
+	p, err := Parse(ctx, repo, "", "", "duckdb", true)
+	require.NoError(t, err)
+	require.Len(t, p.Errors, 1)
+	require.Equal(t, "/metrics_views/mv1.yaml", p.Errors[0].FilePath)
+	require.Contains(t, p.Errors[0].Message, "lookup_group_by_key requires lookup_table, lookup_key_column and lookup_value_column")
 }
 
 func TestMetricsViewDimensionSmallestTimeGrain(t *testing.T) {

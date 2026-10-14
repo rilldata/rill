@@ -51,6 +51,7 @@ type MetricsViewYAML struct {
 		LookupKeyColumn         string `yaml:"lookup_key_column"`
 		LookupValueColumn       string `yaml:"lookup_value_column"`
 		LookupDefaultExpression string `yaml:"lookup_default_expression"`
+		LookupGroupByKey        *bool  `yaml:"lookup_group_by_key"`
 		SmallestTimeGrain       string `yaml:"smallest_time_grain"`
 		Tags                    []string
 	}
@@ -386,6 +387,9 @@ func (p *Parser) parseMetricsView(node *Node) error {
 				return fmt.Errorf("unnest cannot be used with lookup fields")
 			}
 		}
+		if dim.LookupGroupByKey != nil && dim.LookupTable == "" {
+			return fmt.Errorf("lookup_group_by_key requires lookup_table, lookup_key_column and lookup_value_column for dimension: %q", dim.Name)
+		}
 
 		// Validate the dimension name is unique
 		lower := strings.ToLower(dim.Name)
@@ -440,6 +444,7 @@ func (p *Parser) parseMetricsView(node *Node) error {
 			LookupKeyColumn:         dim.LookupKeyColumn,
 			LookupValueColumn:       dim.LookupValueColumn,
 			LookupDefaultExpression: dim.LookupDefaultExpression,
+			LookupGroupByKey:        dim.LookupGroupByKey,
 			SmallestTimeGrain:       smallestTimeGrain,
 			Tags:                    dim.Tags,
 		})

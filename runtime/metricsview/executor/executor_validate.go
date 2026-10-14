@@ -159,6 +159,9 @@ func (e *Executor) ValidateAndNormalizeMetricsView(ctx context.Context) (*Valida
 		e.validateIndividualDimensionsAndMeasures(ctx, t, mv, cols, res)
 	}
 
+	// Dimensions with lookup_group_by_key are also validated against the two-level query that the flag generates.
+	e.validateLookupGroupByKeyDimensions(ctx, t, mv, res)
+
 	// Check and rewrite annotations
 	err = e.validateAndNormalizeAnnotations(ctx, mv, res)
 	if err != nil {
@@ -778,6 +781,51 @@ func (e *Executor) validateDimension(ctx context.Context, t *drivers.OlapTable, 
 	})
 	if err != nil {
 		return fmt.Errorf("failed to validate expression for dimension %q: %w", d.Name, err)
+	}
+	return nil
+}
+
+// validateLookupGroupByKeyDimensions dry-runs, for each dimension with lookup_group_by_key, the two-level query that the flag generates:
+// the key grouped in a sub-select and the lookup resolved over it.
+// It catches a lookup_default_expression that references anything but constants and the key column, which no other validation sees.
+// Dimensions that already failed validation are skipped.
+func (e *Executor) validateLookupGroupByKeyDimensions(ctx context.Context, t *drivers.OlapTable, mv *runtimev1.MetricsViewSpec, res *ValidateMetricsViewResult) {
+	failed := make(map[int]bool, len(res.DimensionErrs))
+	for _, ie := range res.DimensionErrs {
+		failed[ie.Idx] = true
+	}
+	for idx, d := range mv.Dimensions {
+		if !d.GetLookupGroupByKey() || failed[idx] {
+			continue
+		}
+		err := e.validateLookupGroupByKey(ctx, t, d)
+		if err != nil {
+			res.DimensionErrs = append(res.DimensionErrs, IndexErr{Idx: idx, Err: err})
+		}
+	}
+	slices.SortFunc(res.DimensionErrs, func(a, b IndexErr) int { return a.Idx - b.Idx })
+}
+
+// validateLookupGroupByKey dry-runs the two-level query that lookup_group_by_key generates for one dimension.
+func (e *Executor) validateLookupGroupByKey(ctx context.Context, t *drivers.OlapTable, d *runtimev1.MetricsViewSpec_Dimension) error {
+	dialect := e.olap.Dialect()
+	const innerAlias = "t0"
+	keyAlias := lookupKeyAlias(d)
+	expr, err := lookupExprOverKey(dialect, d, dialect.EscapeMemberAlias(innerAlias, keyAlias))
+	if err != nil {
+		return fmt.Errorf("failed to validate dimension %q: %w", d.Name, err)
+	}
+
+	err = e.olap.Exec(ctx, &drivers.Statement{
+		Query: fmt.Sprintf(
+			"SELECT (%s) AS %s FROM (SELECT (%s) AS %s FROM %s GROUP BY 1) %s GROUP BY 1",
+			expr, dialect.EscapeAlias(d.Name), lookupKeyExpr(dialect, d), dialect.EscapeAlias(keyAlias), dialect.EscapeTable(t.Database, t.DatabaseSchema, t.Name), innerAlias,
+		),
+		DryRun:          true,
+		QueryAttributes: e.queryAttributes,
+	})
+	if err != nil {
+		return fmt.Errorf("failed to validate dimension %q with lookup_group_by_key (lookup_default_expression may only reference constants and the key column): %w", d.Name, err)
 	}
 	return nil
 }
