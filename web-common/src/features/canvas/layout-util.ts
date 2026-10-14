@@ -323,7 +323,7 @@ export function generateArrayRearrangeFunction(transaction: Transaction) {
           const item = sourceRow.items?.[source.col];
           if (item === undefined) break;
 
-          let copy = structuredClone(item);
+          let copy: I = structuredClone(item);
           if (sourceRow !== destinationRow && itemCarrier) {
             copy = itemCarrier(copy, sourceRow, destinationRow);
           }
