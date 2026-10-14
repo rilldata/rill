@@ -159,7 +159,7 @@ _[oneOf]_ - Refers to the explicitly defined state of your model, cannot be used
 
         - **`last`** - _[integer]_ - Limits the result to the last N partitions (the N highest paths in lexicographic order). This hard limit always applies, including on the first run when there is no existing data. Additionally, when previously processed partitions exist, it raises the lower bound to the Nth partition from the end of those successfully processed partitions, forming a rolling window that prevents full re-listings each time.
 
-        - **`partition`** - _[string]_ - Controls how matched files are grouped: - "file" (default) : Each matched path is returned as a row. Use the glob pattern to match files or directories at the level you want (for example, file-level or directory-level). - "directory": This mode is deprecated. Instead, use "file" with a glob that directly matches the directory level you want. - "hive": groups files by directory and extracts Hive-style partition values from the path as columns. The "directory" and "hive" modes group matched files, so the glob must match files (e.g. `s3://bucket/year=*/*.parquet`); a glob that matches only directories returns an error.
+        - **`partition`** - _[string]_ - Controls how matched files are grouped: - "file" (default) : Each matched path is returned as a row. Use the glob pattern to match files or directories at the level you want (for example, file-level or directory-level). - "directory": groups files by directory, returning one row per directory that directly contains matched files. - "hive": groups files by directory and extracts Hive-style partition values from the path as columns. The "directory" and "hive" modes group matched files, so the glob must match files (e.g. `s3://bucket/year=*/*.parquet`); a glob that matches only directories returns an error.
 
 
         - **`rollup_files`** - _[boolean]_ - If true, includes a "files" array listing all files in each partition. Only applicable when using "directory" or "hive" partitioning with a glob that matches files.
@@ -251,7 +251,7 @@ _[oneOf]_ - Refers to how your data is partitioned; cannot be used with state. (
 
         - **`last`** - _[integer]_ - Limits the result to the last N partitions (the N highest paths in lexicographic order). This hard limit always applies, including on the first run when there is no existing data. Additionally, when previously processed partitions exist, it raises the lower bound to the Nth partition from the end of those successfully processed partitions, forming a rolling window that prevents full re-listings each time.
 
-        - **`partition`** - _[string]_ - Controls how matched files are grouped: - "file" (default) : Each matched path is returned as a row. Use the glob pattern to match files or directories at the level you want (for example, file-level or directory-level). - "directory": This mode is deprecated. Instead, use "file" with a glob that directly matches the directory level you want. - "hive": groups files by directory and extracts Hive-style partition values from the path as columns. The "directory" and "hive" modes group matched files, so the glob must match files (e.g. `s3://bucket/year=*/*.parquet`); a glob that matches only directories returns an error.
+        - **`partition`** - _[string]_ - Controls how matched files are grouped: - "file" (default) : Each matched path is returned as a row. Use the glob pattern to match files or directories at the level you want (for example, file-level or directory-level). - "directory": groups files by directory, returning one row per directory that directly contains matched files. - "hive": groups files by directory and extracts Hive-style partition values from the path as columns. The "directory" and "hive" modes group matched files, so the glob must match files (e.g. `s3://bucket/year=*/*.parquet`); a glob that matches only directories returns an error.
 
 
         - **`rollup_files`** - _[boolean]_ - If true, includes a "files" array listing all files in each partition. Only applicable when using "directory" or "hive" partitioning with a glob that matches files.
@@ -758,7 +758,8 @@ refresh:
     cron: "0 8 * * *"
 partitions:
     glob:
-        path: gs://rilldata-public/github-analytics/Clickhouse/2025/*
+        path: gs://rilldata-public/github-analytics/Clickhouse/2025/*/*
+        partition: directory
 sql: "SELECT * \n  FROM read_parquet('gs://rilldata-public/{{ .partition.path }}/commits_*.parquet') \n  WHERE '{{ .partition.path }}' IS NOT NULL\n"
 output:
     connector: duckdb

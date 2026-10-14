@@ -136,7 +136,7 @@ Available template variables:
 - `{{ .partition.uri }}`: Full URI of the matched file or directory
 - `{{ .partition.path }}`: Path portion without the scheme/bucket prefix
 
-Each path matched by the glob becomes a partition. To partition by directory, write the glob so it matches directories (e.g. `s3://bucket/data/year=*/month=*/day=*`); the partition's URI will then not include an asterisk, so append the file pattern in the SQL query, e.g. `{{ .partition.uri }}/*.parquet`.
+By default, `glob:` matches files only, but you can pass `partition: directory` to have it emit leaf directory names instead. When you use `partition: directory`, the partition's URI will not include an asterisk, so you have to append that in the SQL query, e.g. `{{ .partition.uri }}/*.parquet`.
 
 Narrow which partitions are matched with `start`/`end` (inclusive/exclusive path bounds) or `last` (keep only the N highest paths; not allowed with `transform_sql`):
 
@@ -166,7 +166,8 @@ Example using `dev:` property:
 dev:
   partitions:
     glob:
-      path: s3://bucket/data/year=2025/month=12/day=*
+      path: s3://bucket/data/year=2025/month=12/day=01/*.parquet
+      partition: directory
 ```
 
 Example using the templating function:
@@ -496,7 +497,8 @@ incremental: true
 
 partitions:
   glob:
-    path: s3://my-bucket/events/year=*/month=*/day=*
+    path: s3://my-bucket/events/year=*/month=*/day=*/*.parquet
+    partition: directory
 
 sql: SELECT * FROM read_parquet('{{ .partition.uri }}/*.parquet')
 ```
@@ -562,7 +564,8 @@ incremental: true
 partitions:
   glob:
     connector: s3
-    path: s3://my-bucket/impressions/year=*/month=*/day=*
+    path: s3://my-bucket/impressions/year=*/month=*/day=*/*.parquet
+    partition: directory
 
 sql: |
   SELECT
@@ -635,12 +638,14 @@ incremental: true
 
 partitions:
   glob:
-    path: s3://my-bucket/data/year=*/month=*/day=*
+    path: s3://my-bucket/data/year=*/month=*/day=*/*.parquet
+    partition: directory
 
 dev:
   partitions:
     glob:
-      path: s3://my-bucket/data/year=2025/month=01/day=*
+      path: s3://my-bucket/data/year=2025/month=01/day=01/*.parquet
+      partition: directory
 
 sql: SELECT * FROM read_parquet('{{ .partition.uri }}/*.parquet')
 ```
@@ -654,7 +659,8 @@ incremental: true
 
 partitions:
   glob:
-    path: s3://my-bucket/reports/y=*/m=*/d=*/h=*
+    path: s3://my-bucket/reports/y=*/m=*/d=*/h=*/*.parquet
+    partition: directory
     transform_sql: |
       -- Only process partitions after a specific date
       SELECT uri, updated_on
@@ -679,7 +685,8 @@ timeout: 72h
 
 partitions:
   glob:
-    path: s3://my-bucket/historical/year=*
+    path: s3://my-bucket/historical/year=*/*.parquet
+    partition: directory
 
 sql: SELECT * FROM read_parquet('{{ .partition.uri }}/*.parquet')
 ```
@@ -753,7 +760,8 @@ change_mode: patch  # Switch to new logic without reprocessing historical data
 
 partitions:
   glob:
-    path: s3://my-bucket/transactions/year=*/month=*/day=*
+    path: s3://my-bucket/transactions/year=*/month=*/day=*/*.parquet
+    partition: directory
 
 sql: |
   SELECT

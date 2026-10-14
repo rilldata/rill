@@ -45,7 +45,6 @@ const (
 	globPartitionTypeFile globPartitionType = "file"
 
 	// globPartitionTypeDirectory treats each directory that directly contains files as a partition.
-	// Deprecated: use globPartitionTypeFile with a glob that matches directories.
 	globPartitionTypeDirectory globPartitionType = "directory"
 
 	// globPartitionTypeHive extracts partitions from the path using Hive-style partitioning.

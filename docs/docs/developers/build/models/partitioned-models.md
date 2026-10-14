@@ -206,12 +206,11 @@ dev:
      path: 'gs://my-bucket/y=2025/m=03/d=15/*.parquet'
 ```
 
-If you'd prefer to partition it by folder, write the glob so it matches the folders, and append the file pattern in the SQL query.
+If you'd prefer to partition it by folder, you can add the partition parameter and define it as `directory`.
 ```yaml
-partitions:
-  glob:
-    path: gs://my-bucket/y=*/m=*/d=*
-sql: SELECT * FROM read_csv('{{ .partition.uri }}/*data.csv')
+glob:
+  path: gs://rendo-test/**/*data.csv
+  partition: directory
 ```
 
 If your folders use Hive-style names (`key=value`), set `partition: hive` to also extract each value as a partition column, available as `{{ .partition.<key> }}`.
@@ -224,7 +223,7 @@ sql: SELECT *, '{{ .partition.y }}-{{ .partition.m }}-{{ .partition.d }}' AS day
 ```
 
 :::note `partition: hive` and `partition: directory`
-These modes group the matched files by folder, so their glob must match files (e.g. `gs://my-bucket/y=*/m=*/d=*/*.csv`). A glob that matches only folders returns an error. `partition: directory` is deprecated in favor of matching the folders directly, as above.
+These modes group the matched files by folder, so their glob must match files (e.g. `gs://my-bucket/y=*/m=*/d=*/*.csv`). A glob that matches only folders returns an error.
 
 `**` matches across folders only as a whole path segment (`/**/` or a trailing `/**`). Inside a segment, as in `d=**`, it behaves like `*`.
 :::
@@ -252,7 +251,8 @@ Use `start` and `end` to filter which partitions are processed based on their pa
 # Fixed window: only process a specific month
 partitions:
   glob:
-    path: s3://bucket/year=*/month=*/day=*
+    path: s3://bucket/year=*/month=*/day=*/*.parquet
+    partition: directory
     start: s3://bucket/year=2026/month=03
     end: s3://bucket/year=2026/month=04
 sql: SELECT * FROM read_parquet('{{ .partition.uri }}/*.parquet')
@@ -262,7 +262,8 @@ sql: SELECT * FROM read_parquet('{{ .partition.uri }}/*.parquet')
 # Rolling window: reprocess last 30 days
 partitions:
   glob:
-    path: s3://bucket/year=*/month=*/day=*
+    path: s3://bucket/year=*/month=*/day=*/*.parquet
+    partition: directory
     last: 30
 sql: SELECT * FROM read_parquet('{{ .partition.uri }}/*.parquet')
 ```
