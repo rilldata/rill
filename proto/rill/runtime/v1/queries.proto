@@ -180,6 +180,16 @@ service QueryService {
     };
   }
 
+  // ConvertMetricsSQLToQuery compiles metrics SQL into the metrics view query it runs as,
+  // in the format of the "metrics" resolver.
+  // It is used to open a dashboard that shows what an alert or report written in metrics SQL saw.
+  rpc ConvertMetricsSQLToQuery(ConvertMetricsSQLToQueryRequest) returns (ConvertMetricsSQLToQueryResponse) {
+    option (google.api.http) = {
+      post: "/v1/instances/{instance_id}/queries/metrics-sql/convert",
+      body: "*"
+    };
+  }
+
   // Canvas APIs
 
   // ResolveCanvas is a convenience API that returns a canvas and all its referenced components and metrics views.
@@ -1022,6 +1032,20 @@ message ConvertExpressionToMetricsSQLRequest {
 message ConvertExpressionToMetricsSQLResponse {
   // The SQL filter string representation of the expression.
   string sql = 1;
+}
+
+message ConvertMetricsSQLToQueryRequest {
+  string instance_id = 1;
+  // Metrics SQL to compile.
+  string sql = 2;
+  // Optional time to evaluate now() and rilltime expressions against, such as an alert's execution time.
+  // Defaults to the current time.
+  google.protobuf.Timestamp execution_time = 3;
+}
+
+message ConvertMetricsSQLToQueryResponse {
+  // The compiled query, in the format of the "metrics" resolver's properties.
+  google.protobuf.Struct query = 1;
 }
 
 // **********

@@ -34,7 +34,7 @@ func (q *query) parseTimeRangeStart(ctx context.Context, node *ast.FuncCallExpr,
 	}
 
 	watermark, _, _ := rillTime.Eval(rilltime.EvalOptions{
-		Now:        time.Now(),
+		Now:        q.now(),
 		MinTime:    ts.Min,
 		MaxTime:    ts.Max,
 		Watermark:  ts.Watermark,
@@ -68,7 +68,7 @@ func (q *query) parseTimeRangeEnd(ctx context.Context, node *ast.FuncCallExpr, t
 	}
 
 	_, watermark, _ := rillTime.Eval(rilltime.EvalOptions{
-		Now:        time.Now(),
+		Now:        q.now(),
 		MinTime:    ts.Min,
 		MaxTime:    ts.Max,
 		Watermark:  ts.Watermark,
@@ -103,4 +103,13 @@ func parseTimeRangeArgs(args []ast.ExprNode, mv *runtimev1.MetricsViewSpec) (*ri
 		return nil, fmt.Errorf("metrics sql: invalid ISO8601 duration %s", du)
 	}
 	return rt, nil
+}
+
+// now returns the time that now() and rilltime expressions are evaluated against.
+// It is safe to call on a nil query, which is what filter-only parsing passes.
+func (q *query) now() time.Time {
+	if q != nil && q.opts != nil && !q.opts.Now.IsZero() {
+		return q.opts.Now
+	}
+	return time.Now()
 }

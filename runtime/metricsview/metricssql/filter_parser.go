@@ -478,7 +478,7 @@ func parseFuncCallInFilter(ctx context.Context, node *ast.FuncCallExpr, context 
 		return q.parseTimeRangeEnd(ctx, node, timeDim)
 	case "now":
 		return &metricsview.Expression{
-			Value: time.Now().Format(time.RFC3339),
+			Value: q.now().Format(time.RFC3339),
 		}, nil
 	case "date_add", "date_sub": // ex : date_add(time, INTERVAL x UNIT)
 		val, err := parseFilter(ctx, node.Args[0], nil, q) // handling of time

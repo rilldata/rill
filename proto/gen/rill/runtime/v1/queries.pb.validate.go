@@ -10928,6 +10928,276 @@ var _ interface {
 	ErrorName() string
 } = ConvertExpressionToMetricsSQLResponseValidationError{}
 
+// Validate checks the field values on ConvertMetricsSQLToQueryRequest with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *ConvertMetricsSQLToQueryRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on ConvertMetricsSQLToQueryRequest with
+// the rules defined in the proto definition for this message. If any rules
+// are violated, the result is a list of violation errors wrapped in
+// ConvertMetricsSQLToQueryRequestMultiError, or nil if none found.
+func (m *ConvertMetricsSQLToQueryRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *ConvertMetricsSQLToQueryRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for InstanceId
+
+	// no validation rules for Sql
+
+	if all {
+		switch v := interface{}(m.GetExecutionTime()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, ConvertMetricsSQLToQueryRequestValidationError{
+					field:  "ExecutionTime",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, ConvertMetricsSQLToQueryRequestValidationError{
+					field:  "ExecutionTime",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetExecutionTime()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return ConvertMetricsSQLToQueryRequestValidationError{
+				field:  "ExecutionTime",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if len(errors) > 0 {
+		return ConvertMetricsSQLToQueryRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// ConvertMetricsSQLToQueryRequestMultiError is an error wrapping multiple
+// validation errors returned by ConvertMetricsSQLToQueryRequest.ValidateAll()
+// if the designated constraints aren't met.
+type ConvertMetricsSQLToQueryRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m ConvertMetricsSQLToQueryRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m ConvertMetricsSQLToQueryRequestMultiError) AllErrors() []error { return m }
+
+// ConvertMetricsSQLToQueryRequestValidationError is the validation error
+// returned by ConvertMetricsSQLToQueryRequest.Validate if the designated
+// constraints aren't met.
+type ConvertMetricsSQLToQueryRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e ConvertMetricsSQLToQueryRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e ConvertMetricsSQLToQueryRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e ConvertMetricsSQLToQueryRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e ConvertMetricsSQLToQueryRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e ConvertMetricsSQLToQueryRequestValidationError) ErrorName() string {
+	return "ConvertMetricsSQLToQueryRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e ConvertMetricsSQLToQueryRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sConvertMetricsSQLToQueryRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = ConvertMetricsSQLToQueryRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = ConvertMetricsSQLToQueryRequestValidationError{}
+
+// Validate checks the field values on ConvertMetricsSQLToQueryResponse with
+// the rules defined in the proto definition for this message. If any rules
+// are violated, the first error encountered is returned, or nil if there are
+// no violations.
+func (m *ConvertMetricsSQLToQueryResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on ConvertMetricsSQLToQueryResponse with
+// the rules defined in the proto definition for this message. If any rules
+// are violated, the result is a list of violation errors wrapped in
+// ConvertMetricsSQLToQueryResponseMultiError, or nil if none found.
+func (m *ConvertMetricsSQLToQueryResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *ConvertMetricsSQLToQueryResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if all {
+		switch v := interface{}(m.GetQuery()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, ConvertMetricsSQLToQueryResponseValidationError{
+					field:  "Query",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, ConvertMetricsSQLToQueryResponseValidationError{
+					field:  "Query",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetQuery()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return ConvertMetricsSQLToQueryResponseValidationError{
+				field:  "Query",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if len(errors) > 0 {
+		return ConvertMetricsSQLToQueryResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// ConvertMetricsSQLToQueryResponseMultiError is an error wrapping multiple
+// validation errors returned by
+// ConvertMetricsSQLToQueryResponse.ValidateAll() if the designated
+// constraints aren't met.
+type ConvertMetricsSQLToQueryResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m ConvertMetricsSQLToQueryResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m ConvertMetricsSQLToQueryResponseMultiError) AllErrors() []error { return m }
+
+// ConvertMetricsSQLToQueryResponseValidationError is the validation error
+// returned by ConvertMetricsSQLToQueryResponse.Validate if the designated
+// constraints aren't met.
+type ConvertMetricsSQLToQueryResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e ConvertMetricsSQLToQueryResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e ConvertMetricsSQLToQueryResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e ConvertMetricsSQLToQueryResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e ConvertMetricsSQLToQueryResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e ConvertMetricsSQLToQueryResponseValidationError) ErrorName() string {
+	return "ConvertMetricsSQLToQueryResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e ConvertMetricsSQLToQueryResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sConvertMetricsSQLToQueryResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = ConvertMetricsSQLToQueryResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = ConvertMetricsSQLToQueryResponseValidationError{}
+
 // Validate checks the field values on ResolveCanvasRequest with the rules
 // defined in the proto definition for this message. If any rules are
 // violated, the first error encountered is returned, or nil if there are no violations.

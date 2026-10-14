@@ -6,6 +6,7 @@ import {
 import { SortDirection } from "@rilldata/web-common/features/dashboards/proto-state/derived-types.ts";
 import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state.ts";
 import {
+  createAndExpression,
   filterIdentifiers,
   maybeConvertEqualityToInExpressions,
   flattenInExpressionValues,
@@ -41,6 +42,10 @@ import type { SortingState } from "tanstack-table-8-svelte-5";
 
 export type MetricsResolverQueryMapperArgs = {
   query: MetricsResolverQuery;
+  // Drops the query's WHERE conditions other than the time range, for when they are
+  // already enforced elsewhere, such as by the magic token of an alert or report link:
+  // applying them again would filter twice.
+  ignoreWhere?: boolean;
   resolvedTimeRange?: TimeRange;
   resolvedComparisonTimeRange?: TimeRange;
 };
@@ -95,6 +100,10 @@ export function mapMetricsResolverQueryToDashboard(
   }
 
   maybeGetTimeRangeFromFilter(partialExploreState, metricsViewSpec);
+
+  if (args.ignoreWhere) {
+    partialExploreState.whereFilter = createAndExpression([]);
+  }
 
   // Convert sort
   if (query.sort) {

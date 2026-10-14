@@ -17,10 +17,12 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/rilltime"
 	"github.com/rilldata/rill/runtime/pkg/timeutil"
 	"github.com/rilldata/rill/runtime/queries"
+	"github.com/rilldata/rill/runtime/resolvers"
 	"github.com/rilldata/rill/runtime/server/auth"
 	"go.opentelemetry.io/otel/attribute"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/types/known/structpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -746,6 +748,53 @@ func (s *Server) ConvertExpressionToMetricsSQL(ctx context.Context, req *runtime
 
 	return &runtimev1.ConvertExpressionToMetricsSQLResponse{
 		Sql: sql,
+	}, nil
+}
+
+// ConvertMetricsSQLToQuery implements QueryService.
+func (s *Server) ConvertMetricsSQLToQuery(ctx context.Context, req *runtimev1.ConvertMetricsSQLToQueryRequest) (*runtimev1.ConvertMetricsSQLToQueryResponse, error) {
+	observability.AddRequestAttributes(ctx,
+		attribute.String("args.instance_id", req.InstanceId),
+	)
+
+	s.addInstanceRequestAttributes(ctx, req.InstanceId)
+
+	claims := auth.GetClaims(ctx, req.InstanceId)
+	if !claims.Can(runtime.ReadMetrics) {
+		return nil, ErrForbidden
+	}
+
+	var args map[string]any
+	if req.ExecutionTime != nil {
+		args = map[string]any{"execution_time": req.ExecutionTime.AsTime()}
+	}
+
+	// Compiling checks the claims can access the queried metrics view,
+	// so the query is only disclosed to callers that could run it.
+	q, err := resolvers.CompileMetricsSQL(ctx, &runtime.ResolverOptions{
+		Runtime:    s.runtime,
+		InstanceID: req.InstanceId,
+		Args:       args,
+		Claims:     claims,
+	}, req.Sql)
+	if err != nil {
+		if errors.Is(err, runtime.ErrForbidden) {
+			return nil, ErrForbidden
+		}
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	m, err := q.AsMap()
+	if err != nil {
+		return nil, err
+	}
+	query, err := structpb.NewStruct(m)
+	if err != nil {
+		return nil, err
+	}
+
+	return &runtimev1.ConvertMetricsSQLToQueryResponse{
+		Query: query,
 	}, nil
 }
 

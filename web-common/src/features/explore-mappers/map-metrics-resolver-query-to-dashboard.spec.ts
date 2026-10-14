@@ -469,3 +469,61 @@ describe("mapResolverExpressionToV1Expression", () => {
     });
   }
 });
+
+describe("mapMetricsResolverQueryToDashboard with ignoreWhere", () => {
+  it("keeps the time range but drops the other WHERE conditions", () => {
+    const state = mapMetricsResolverQueryToDashboard(
+      AD_BIDS_METRICS_3_MEASURES_DIMENSIONS_WITH_TIME,
+      AD_BIDS_EXPLORE_WITH_3_MEASURES_DIMENSIONS_TIME_DIMENSION,
+      {
+        query: {
+          metrics_view: "AdBids",
+          dimensions: [{ name: AD_BIDS_PUBLISHER_DIMENSION }],
+          measures: [{ name: AD_BIDS_IMPRESSIONS_MEASURE }],
+          where: {
+            cond: {
+              op: "and",
+              exprs: [
+                {
+                  cond: {
+                    op: "eq",
+                    exprs: [
+                      { name: AD_BIDS_DOMAIN_DIMENSION },
+                      { val: "google.com" as any },
+                    ],
+                  },
+                },
+                {
+                  cond: {
+                    op: "gte",
+                    exprs: [
+                      { name: AD_BIDS_TIMESTAMP_DIMENSION },
+                      { val: "2022-01-01T00:00:00Z" as any },
+                    ],
+                  },
+                },
+                {
+                  cond: {
+                    op: "lt",
+                    exprs: [
+                      { name: AD_BIDS_TIMESTAMP_DIMENSION },
+                      { val: "2022-02-01T00:00:00Z" as any },
+                    ],
+                  },
+                },
+              ],
+            },
+          },
+        },
+        ignoreWhere: true,
+      },
+    );
+    expect(state.whereFilter).toEqual(createAndExpression([]));
+    expect(state.selectedTimeRange?.start).toEqual(
+      new Date("2022-01-01T00:00:00Z"),
+    );
+    expect(state.selectedTimeRange?.end).toEqual(
+      new Date("2022-02-01T00:00:00Z"),
+    );
+  });
+});
