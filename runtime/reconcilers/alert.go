@@ -271,6 +271,9 @@ func (r *AlertReconciler) ResolveTransitiveAccess(ctx context.Context, claims *r
 		refs := resolver.Refs()
 		for _, ref := range refs {
 			conditionResources = append(conditionResources, &runtimev1.ResourceName{Kind: ref.Kind, Name: ref.Name})
+			if ref.Kind == runtime.ResourceKindMetricsView {
+				mvName = ref.Name
+			}
 		}
 	}
 
@@ -304,11 +307,22 @@ func (r *AlertReconciler) ResolveTransitiveAccess(ctx context.Context, claims *r
 		refs := resolver.Refs()
 		for _, ref := range refs {
 			conditionResources = append(conditionResources, &runtimev1.ResourceName{Kind: ref.Kind, Name: ref.Name})
+			if ref.Kind == runtime.ResourceKindMetricsView {
+				mvName = ref.Name
+			}
 		}
 	}
 
-	// figure out explore or canvas for the alert
-	explore := exploreNameFromAnnotations(spec.Annotations, mvName)
+	// figure out explore or canvas for the alert:
+	// the one it names, or else the only explore on its metrics view, which is the one its open link maps to.
+	explore := exploreNameFromAnnotations(spec.Annotations, "")
+	if explore == "" {
+		var err error
+		explore, err = onlyExploreForMetricsView(ctx, r.C, mvName)
+		if err != nil {
+			return nil, err
+		}
+	}
 	var canvas string
 	if c, ok := spec.Annotations["canvas"]; ok {
 		canvas = c

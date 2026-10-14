@@ -9,7 +9,11 @@ import {
   generateExploreLink,
   getExploreSpecs,
 } from "@rilldata/web-common/features/explore-mappers/open-query.ts";
+import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors.js";
+import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import {
+  getRuntimeServiceListResourcesQueryKey,
+  runtimeServiceListResources,
   runtimeServiceQueryResolver,
   type V1Expression,
 } from "@rilldata/web-common/runtime-client";
@@ -21,8 +25,9 @@ export type OpenMetricsSQLArgs = {
   client: RuntimeClient;
   // The metrics SQL of the alert or report.
   sql: string;
-  // The explore the alert or report points at.
-  exploreName: string;
+  // The explore the alert or report names, if any. Without one, the only explore on the
+  // query's metrics view: the runtime grants an emailed link's token that same explore.
+  exploreName?: string;
   // The run the link was sent for: now() and rilltime expressions resolve against it.
   executionTime?: string | null;
   // The magic token of an emailed link. Its row filter already applies the query's WHERE.
@@ -62,6 +67,10 @@ export async function getExploreUrlForMetricsSQL({
     throw new Error("The metrics SQL did not compile to a metrics view query");
   }
 
+  exploreName ||= await findOnlyExploreForMetricsView(
+    client,
+    query.metrics_view,
+  );
   const { metricsViewSpec, exploreSpec } = await getExploreSpecs(
     client,
     exploreName,
@@ -106,6 +115,30 @@ export async function getExploreUrlForMetricsSQL({
     url.pathname = `/${organization}/${project}/-/share/${token}/explore/${encodeURIComponent(exploreName)}`;
   }
   return url.toString();
+}
+
+async function findOnlyExploreForMetricsView(
+  client: RuntimeClient,
+  metricsViewName: string,
+): Promise<string> {
+  const request = { kind: ResourceKind.Explore };
+  const { resources } = await queryClient.fetchQuery({
+    queryKey: getRuntimeServiceListResourcesQueryKey(
+      client.instanceId,
+      request,
+    ),
+    queryFn: ({ signal }) =>
+      runtimeServiceListResources(client, request, { signal }),
+  });
+  const explores = (resources ?? []).filter(
+    (r) => r.explore?.state?.validSpec?.metricsView === metricsViewName,
+  );
+  if (explores.length !== 1 || !explores[0].meta?.name?.name) {
+    throw new Error(
+      `Expected exactly one explore on metrics view "${metricsViewName}", found ${explores.length}`,
+    );
+  }
+  return explores[0].meta.name.name;
 }
 
 /**

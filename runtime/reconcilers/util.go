@@ -147,6 +147,30 @@ func nextRefreshTime(t time.Time, schedule *runtimev1.Schedule) (time.Time, erro
 // exploreNameFromAnnotations extracts the explore name from resource annotations.
 // It checks the "explore" annotation first, then falls back to parsing the "web_open_path" annotation.
 // If neither is found, it returns fallback.
+// onlyExploreForMetricsView returns the explore on the metrics view when there is exactly one,
+// so an alert or report that names no explore opens the one it can only mean.
+// With none or several, it returns an empty string: picking one would be a guess.
+func onlyExploreForMetricsView(ctx context.Context, c *runtime.Controller, metricsView string) (string, error) {
+	if metricsView == "" {
+		return "", nil
+	}
+	explores, err := c.List(ctx, runtime.ResourceKindExplore, "", false)
+	if err != nil {
+		return "", err
+	}
+	var found string
+	for _, e := range explores {
+		if e.GetExplore().GetState().GetValidSpec().GetMetricsView() != metricsView {
+			continue
+		}
+		if found != "" {
+			return "", nil
+		}
+		found = e.Meta.Name.Name
+	}
+	return found, nil
+}
+
 func exploreNameFromAnnotations(annotations map[string]string, fallback string) string {
 	if e, ok := annotations["explore"]; ok {
 		return e

@@ -235,8 +235,20 @@ func (r *ReportReconciler) ResolveTransitiveAccess(ctx context.Context, claims *
 		}
 	}
 
-	// figure out explore or canvas for the report
-	explore := exploreNameFromAnnotations(spec.Annotations, mvName)
+	// figure out explore or canvas for the report:
+	// the one it names, or else the only explore on its metrics view, which is the one its open link maps to,
+	// or else the explore named after the metrics view, as older reports assumed.
+	explore := exploreNameFromAnnotations(spec.Annotations, "")
+	if explore == "" {
+		var err error
+		explore, err = onlyExploreForMetricsView(ctx, r.C, mvName)
+		if err != nil {
+			return nil, err
+		}
+	}
+	if explore == "" {
+		explore = mvName
+	}
 	var canvas string
 	if c, ok := spec.Annotations["canvas"]; ok {
 		canvas = c

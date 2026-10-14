@@ -12,14 +12,17 @@ import {
 import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const { convert, generateExploreLink, queryResolver } = vi.hoisted(() => ({
-  convert: vi.fn(),
-  generateExploreLink: vi.fn(),
-  queryResolver: vi.fn(),
-}));
+const { convert, generateExploreLink, listResources, queryResolver } =
+  vi.hoisted(() => ({
+    convert: vi.fn(),
+    generateExploreLink: vi.fn(),
+    listResources: vi.fn(),
+    queryResolver: vi.fn(),
+  }));
 
 vi.mock("@rilldata/web-common/runtime-client", async (importOriginal) => ({
   ...(await importOriginal<object>()),
+  runtimeServiceListResources: listResources,
   runtimeServiceQueryResolver: queryResolver,
 }));
 
@@ -35,6 +38,7 @@ vi.mock("@rilldata/web-common/features/explore-mappers/open-query.ts", () => ({
   generateExploreLink,
 }));
 
+import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import { getExploreUrlForMetricsSQL } from "./open-metrics-sql";
 
 const metricsView =
@@ -55,6 +59,8 @@ const args = {
 };
 
 beforeEach(() => {
+  queryClient.clear();
+  listResources.mockReset();
   queryResolver.mockReset();
   queryResolver.mockResolvedValue({
     data: [{ [AD_BIDS_PUBLISHER_DIMENSION]: "Google", impressions: 12 }],
@@ -155,5 +161,38 @@ describe("getExploreUrlForMetricsSQL", () => {
       await expect(getExploreUrlForMetricsSQL(args)).rejects.toThrow("HAVING");
     }
     expect(queryResolver).not.toHaveBeenCalled();
+  });
+
+  describe("without an explore named", () => {
+    const explore = (name: string, mv = metricsView) => ({
+      meta: { name: { name } },
+      explore: { state: { validSpec: { metricsView: mv } } },
+    });
+    beforeEach(() => {
+      convert.mockResolvedValue({
+        query: {
+          metrics_view: metricsView,
+          dimensions: [{ name: AD_BIDS_PUBLISHER_DIMENSION }],
+          measures: [{ name: AD_BIDS_IMPRESSIONS_MEASURE }],
+        },
+      });
+    });
+
+    it("opens the only explore on the metrics view", async () => {
+      listResources.mockResolvedValue({
+        resources: [explore("other_explore", "other"), explore("the_one")],
+      });
+      await getExploreUrlForMetricsSQL({ ...args, exploreName: "" });
+      expect(generateExploreLink.mock.calls[0][4]).toBe("the_one");
+    });
+
+    it("doesn't guess among several", async () => {
+      listResources.mockResolvedValue({
+        resources: [explore("one"), explore("two")],
+      });
+      await expect(
+        getExploreUrlForMetricsSQL({ ...args, exploreName: "" }),
+      ).rejects.toThrow("found 2");
+    });
   });
 });
