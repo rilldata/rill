@@ -31,9 +31,3 @@ The **[Rill MCP Server](/guide/ai/mcp)** connects your Rill projects to external
 - Maintain security and access controls while using external AI tools
 - Leverage advanced AI capabilities for data analysis
 
-
-## External MCP Servers
-
-**[External MCP servers](/guide/ai/external-mcp)** give Rill's AI agents tools from outside Rill, such as an issue tracker or an internal service. This enables you to:
-- Answer questions that combine Rill data with data from other systems
-- Control which users and agents may use each server, and which of its tools
