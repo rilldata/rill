@@ -811,7 +811,7 @@ func (e *Executor) validateLookupGroupByKey(ctx context.Context, t *drivers.Olap
 	dialect := e.olap.Dialect()
 	const innerAlias = "t0"
 	keyAlias := lookupKeyAlias(d)
-	expr, err := lookupExprOverKey(dialect, d, dialect.EscapeMemberAlias(innerAlias, keyAlias))
+	expr, err := dialect.LookupExpr(d.LookupTable, d.LookupValueColumn, dialect.EscapeMemberAlias(innerAlias, keyAlias), d.LookupDefaultExpression)
 	if err != nil {
 		return fmt.Errorf("failed to validate dimension %q: %w", d.Name, err)
 	}
@@ -819,7 +819,7 @@ func (e *Executor) validateLookupGroupByKey(ctx context.Context, t *drivers.Olap
 	err = e.olap.Exec(ctx, &drivers.Statement{
 		Query: fmt.Sprintf(
 			"SELECT (%s) AS %s FROM (SELECT (%s) AS %s FROM %s GROUP BY 1) %s GROUP BY 1",
-			expr, dialect.EscapeAlias(d.Name), lookupKeyExpr(dialect, d), dialect.EscapeAlias(keyAlias), dialect.EscapeTable(t.Database, t.DatabaseSchema, t.Name), innerAlias,
+			expr, dialect.EscapeAlias(d.Name), metricsview.LookupKeyExpr(dialect, d), dialect.EscapeAlias(keyAlias), dialect.EscapeTable(t.Database, t.DatabaseSchema, t.Name), innerAlias,
 		),
 		DryRun:          true,
 		QueryAttributes: e.queryAttributes,

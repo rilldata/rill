@@ -4,7 +4,6 @@ import (
 	"context"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
-	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/metricsview"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
@@ -120,23 +119,22 @@ func rewriteLookupGroupByKeyNode(ast *metricsview.AST, n *metricsview.SelectNode
 	}
 
 	// The other dimensions pass through the inner select under their own names, which may collide with a partial aggregate alias like "m__1".
+	// keyFields maps a key expression to the inner field exposing it, so that a dimension on the raw key and several lookups on the same key share one field.
+	keyFields := make(map[string]string)
 	for i, f := range n.DimFields {
-		if _, ok := flagged[i]; !ok {
-			if taken[f.Name] {
-				return false, "alias_conflict:" + f.Name
-			}
-			taken[f.Name] = true
+		if _, ok := flagged[i]; ok {
+			continue
+		}
+		if taken[f.Name] {
+			return false, "alias_conflict:" + f.Name
+		}
+		taken[f.Name] = true
+		if !f.Unnest {
+			keyFields[f.Expr] = f.Name
 		}
 	}
 
 	// A flagged dimension becomes its key in the inner select and the lookup over that key in the outer select.
-	// keyFields maps a key expression to the inner field exposing it, so that a dimension on the raw key and several lookups on the same key share one field.
-	keyFields := make(map[string]string)
-	for i, f := range n.DimFields {
-		if _, ok := flagged[i]; !ok && !f.Unnest {
-			keyFields[f.Expr] = f.Name
-		}
-	}
 	innerDims := make([]metricsview.FieldNode, 0, len(n.DimFields))
 	outerDims := make([]metricsview.FieldNode, 0, len(n.DimFields))
 	for i, f := range n.DimFields {
@@ -151,7 +149,7 @@ func rewriteLookupGroupByKeyNode(ast *metricsview.AST, n *metricsview.SelectNode
 			continue
 		}
 
-		keyExpr := lookupKeyExpr(ast.Dialect, dim)
+		keyExpr := metricsview.LookupKeyExpr(ast.Dialect, dim)
 		keyAlias, found := keyFields[keyExpr]
 		// A default expression may reference the key column by name, which only resolves if the inner select exposes the key under that name.
 		if found && dim.LookupDefaultExpression != "" && keyAlias != dim.Column {
@@ -173,7 +171,7 @@ func rewriteLookupGroupByKeyNode(ast *metricsview.AST, n *metricsview.SelectNode
 			innerDims = append(innerDims, metricsview.FieldNode{Name: keyAlias, Expr: keyExpr})
 		}
 
-		expr, err := lookupExprOverKey(ast.Dialect, dim, ast.Dialect.EscapeMemberAlias(innerAlias, keyAlias))
+		expr, err := ast.Dialect.LookupExpr(dim.LookupTable, dim.LookupValueColumn, ast.Dialect.EscapeMemberAlias(innerAlias, keyAlias), dim.LookupDefaultExpression)
 		if err != nil {
 			return false, "lookup_expression:" + dim.Name
 		}
@@ -200,19 +198,10 @@ func rewriteLookupGroupByKeyNode(ast *metricsview.AST, n *metricsview.SelectNode
 	n.Unnests = nil
 	n.Where = nil
 	n.TimeWhere = nil
-	n.Group = true
 	n.DimFields = outerDims
 	n.MeasureFields = outerMeasures
 
 	return true, ""
-}
-
-// lookupKeyExpr returns the expression of a lookup dimension's key in the underlying table.
-func lookupKeyExpr(dialect drivers.Dialect, dim *runtimev1.MetricsViewSpec_Dimension) string {
-	if dim.Column != "" {
-		return dialect.EscapeIdentifier(dim.Column)
-	}
-	return dim.Expression
 }
 
 // lookupKeyAlias returns the name under which a sub-select exposes a lookup dimension's key.
@@ -222,16 +211,4 @@ func lookupKeyAlias(dim *runtimev1.MetricsViewSpec_Dimension) string {
 		return dim.Column
 	}
 	return dim.Name + "__key"
-}
-
-// lookupExprOverKey returns a lookup dimension's expression evaluated against keyRef instead of the key in the underlying table.
-func lookupExprOverKey(dialect drivers.Dialect, dim *runtimev1.MetricsViewSpec_Dimension, keyRef string) (string, error) {
-	return dialect.MetricsViewDimensionExpression(&runtimev1.MetricsViewSpec_Dimension{
-		Name:                    dim.Name,
-		Expression:              keyRef,
-		LookupTable:             dim.LookupTable,
-		LookupKeyColumn:         dim.LookupKeyColumn,
-		LookupValueColumn:       dim.LookupValueColumn,
-		LookupDefaultExpression: dim.LookupDefaultExpression,
-	})
 }

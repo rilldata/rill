@@ -247,11 +247,3 @@ var aggregateFunctionsCaseInsensitive = func() map[string]bool {
 	}
 	return res
 }()
-
-// isAggregateFunctionName reports whether name is a ClickHouse aggregate function as written, without combinator suffixes.
-func isAggregateFunctionName(name string) bool {
-	if _, ok := aggregateFunctions[name]; ok {
-		return true
-	}
-	return aggregateFunctionsCaseInsensitive[strings.ToLower(name)]
-}

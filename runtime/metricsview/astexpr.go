@@ -757,23 +757,8 @@ func (b *sqlExprBuilder) sqlForName(name string) (expr string, unnest bool, look
 			return "", false, nil, fmt.Errorf("invalid dimension reference %q: %w", name, err)
 		}
 
-		var lm *lookupMeta
-		if dim.LookupTable != "" {
-			var keyExpr string
-			if dim.Column != "" {
-				keyExpr = b.ast.Dialect.EscapeIdentifier(dim.Column)
-			} else {
-				keyExpr = dim.Expression
-			}
-			lm = &lookupMeta{
-				table:    dim.LookupTable,
-				keyExpr:  keyExpr,
-				keyCol:   dim.LookupKeyColumn,
-				valueCol: dim.LookupValueColumn,
-			}
-		}
 		// Note: If dim.Unnest is true, we need to unnest it inside of the generated expression (because it's not part of the dimFields and therefore not unnested with a LATERAL JOIN).
-		return ex, dim.Unnest, lm, nil
+		return ex, dim.Unnest, newLookupMeta(b.ast.Dialect, dim), nil
 	}
 
 	// Since node is not nil, we're in the context of a wrapped SELECT.

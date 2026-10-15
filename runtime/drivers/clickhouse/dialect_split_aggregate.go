@@ -56,7 +56,9 @@ func (d *dialect) SplitAggregateExpression(expr, measureName, innerAlias string)
 		}
 
 		// A type after AS or "::" is skipped as a whole, including an argument list like Decimal(10, 2) or Nullable(Float64).
-		if isTypeContext(expr, toks, i) {
+		afterAs := i >= 1 && toks[i-1].kind == sqlTokenIdent && strings.EqualFold(expr[toks[i-1].start:toks[i-1].end], "AS")
+		afterCast := i >= 2 && toks[i-1].kind == sqlTokenOther && toks[i-2].kind == sqlTokenOther && expr[toks[i-2].start:toks[i-1].end] == "::"
+		if afterAs || afterCast {
 			i++
 			if i < len(toks) && toks[i].kind == sqlTokenLParen {
 				end, ok := matchingParen(toks, i)
@@ -169,7 +171,7 @@ func (d *dialect) SplitAggregateExpression(expr, measureName, innerAlias string)
 func aggregateCombinators(name string) ([]string, bool) {
 	var combinators []string
 	for {
-		if isAggregateFunctionName(name) {
+		if _, ok := aggregateFunctions[name]; ok || aggregateFunctionsCaseInsensitive[strings.ToLower(name)] {
 			return combinators, true
 		}
 		stripped := false
@@ -185,14 +187,6 @@ func aggregateCombinators(name string) ([]string, bool) {
 			return nil, false
 		}
 	}
-}
-
-// isTypeContext reports whether the identifier token at index i follows AS or "::", i.e. it names a type.
-func isTypeContext(expr string, toks []sqlToken, i int) bool {
-	if i >= 1 && toks[i-1].kind == sqlTokenIdent && strings.EqualFold(expr[toks[i-1].start:toks[i-1].end], "AS") {
-		return true
-	}
-	return i >= 2 && toks[i-1].kind == sqlTokenOther && toks[i-2].kind == sqlTokenOther && expr[toks[i-2].start:toks[i-1].end] == "::"
 }
 
 // matchingParen returns the index of the parenthesis closing the one at index i.

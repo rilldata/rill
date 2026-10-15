@@ -81,6 +81,9 @@ type Dialect interface {
 	SelectTimeRangeBins(start, end time.Time, grain runtimev1.TimeGrain, alias string, tz *time.Location, firstDay, firstMonth int) (string, []any, error)
 	SelectInlineResults(result *Result) (string, []any, []any, error)
 	LookupSelectExpr(lookupTable, lookupKeyColumn string) (string, error)
+	// LookupExpr returns the expression that resolves the value of lookupKeyExpr in a lookup table,
+	// or lookupDefaultExpression if the key is not found and lookupDefaultExpression is not empty.
+	LookupExpr(lookupTable, lookupValueColumn, lookupKeyExpr, lookupDefaultExpression string) (string, error)
 	// SplitAggregateExpression splits a measure expression into partial aggregates to compute in a sub-select and a final expression that merges them.
 	// measureName seeds the aliases of the partial aggregates; innerAlias is the alias of the sub-select through which the final expression references them.
 	// It returns ok=false if the dialect cannot split the expression safely, in which case the caller must evaluate the expression against the underlying table as usual.
@@ -398,6 +401,10 @@ func (b *BaseDialect) SelectInlineResults(result *Result) (string, []any, []any,
 }
 
 func (b *BaseDialect) LookupSelectExpr(_, _ string) (string, error) {
+	return "", fmt.Errorf("lookup tables are not supported for %s dialect", b.String())
+}
+
+func (b *BaseDialect) LookupExpr(_, _, _, _ string) (string, error) {
 	return "", fmt.Errorf("lookup tables are not supported for %s dialect", b.String())
 }
 
