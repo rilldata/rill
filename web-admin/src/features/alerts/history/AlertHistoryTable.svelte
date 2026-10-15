@@ -3,6 +3,8 @@
   import NoAlertRunsYet from "@rilldata/web-admin/features/alerts/history/NoAlertRunsYet.svelte";
   import { useAlert } from "@rilldata/web-admin/features/alerts/selectors";
   import ResourceList from "@rilldata/web-common/features/resources/ResourceList.svelte";
+  import { page } from "$app/stores";
+  import { alertExecutionOpenHref } from "@rilldata/web-admin/features/alerts/history/open-href";
   import type { V1AlertExecution } from "@rilldata/web-common/runtime-client/gen/index.schemas";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import type { ColumnDef } from "tanstack-table-8-svelte-5";
@@ -31,6 +33,12 @@
           currentExecution:
             $alertQuery.data.resource.alert.state.currentExecution,
           result: info.row.original.result,
+          openHref: alertExecutionOpenHref(
+            $page.params.organization,
+            $page.params.project,
+            alert,
+            info.row.original,
+          ),
         }),
     },
   ];

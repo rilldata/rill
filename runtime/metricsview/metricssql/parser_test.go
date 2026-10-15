@@ -287,3 +287,32 @@ func parseTestTime(tst *testing.T, t string) time.Time {
 	require.NoError(tst, err)
 	return ts
 }
+
+func TestCompileNow(t *testing.T) {
+	rt, instanceID := testruntime.NewInstanceForProject(t, "ad_bids")
+	ctrl, err := rt.Controller(t.Context(), instanceID)
+	require.NoError(t, err)
+
+	now := parseTestTime(t, "2022-02-15T10:00:00Z")
+	compiler := metricssql.New(&metricssql.CompilerOptions{
+		GetMetricsView: func(ctx context.Context, name string) (*runtimev1.Resource, error) {
+			return ctrl.Get(ctx, &runtimev1.ResourceName{Kind: runtime.ResourceKindMetricsView, Name: name}, false)
+		},
+		GetTimestamps: func(ctx context.Context, mv *runtimev1.Resource, timeDim string) (metricsview.TimestampsResult, error) {
+			return metricsview.TimestampsResult{
+				Min:       parseTestTime(t, "2022-01-01T00:00:00Z"),
+				Max:       parseTestTime(t, "2022-03-31T00:00:00Z"),
+				Watermark: parseTestTime(t, "2022-03-31T00:00:00Z"),
+			}, nil
+		},
+		Now: now,
+	})
+
+	// now() and rilltime expressions anchored on now resolve against the given time, not the wall clock.
+	q, err := compiler.Parse(t.Context(), "select pub from ad_bids_metrics where timestamp < now() and timestamp >= time_range_start('7D as of now/D')")
+	require.NoError(t, err)
+	exprs := q.Where.Condition.Expressions
+	require.Len(t, exprs, 2)
+	require.Equal(t, "2022-02-15T10:00:00Z", exprs[0].Condition.Expressions[1].Value)
+	require.Equal(t, parseTestTime(t, "2022-02-08T00:00:00Z"), exprs[1].Condition.Expressions[1].Value)
+}

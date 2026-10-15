@@ -4,8 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
-	"github.com/mitchellh/mapstructure"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/metricsview"
@@ -38,6 +38,8 @@ type metricsSQLProps struct {
 
 type metricsSQLArgs struct {
 	Priority int `mapstructure:"priority"`
+	// ExecutionTime is the time to evaluate now() and rilltime expressions against, such as an alert's execution time.
+	ExecutionTime *time.Time `mapstructure:"execution_time"`
 	// NOTE: Not exhaustive. Any other args are passed to the "args" property of sqlResolverOpts.
 }
 
@@ -67,63 +69,7 @@ func newMetricsSQL(ctx context.Context, opts *runtime.ResolverOptions) (runtime.
 		)
 	}
 
-	instance, err := opts.Runtime.Instance(ctx, opts.InstanceID)
-	if err != nil {
-		return nil, err
-	}
-
-	props.SQL, _, err = resolveTemplate(props.SQL, opts.Args, instance, opts.Claims.UserAttributes, opts.ForExport)
-	if err != nil {
-		return nil, err
-	}
-
-	ctrl, err := opts.Runtime.Controller(ctx, opts.InstanceID)
-	if err != nil {
-		return nil, err
-	}
-
-	sqlArgs := &metricsSQLArgs{}
-	if err := mapstructure.Decode(opts.Args, sqlArgs); err != nil {
-		return nil, err
-	}
-
-	getMetricsView := func(ctx context.Context, name string) (*runtimev1.Resource, error) {
-		mv, err := ctrl.Get(ctx, &runtimev1.ResourceName{Kind: runtime.ResourceKindMetricsView, Name: name}, false)
-		if err != nil {
-			return nil, err
-		}
-		sec, err := opts.Runtime.ResolveSecurity(ctx, ctrl.InstanceID, opts.Claims, mv)
-		if err != nil {
-			return nil, err
-		}
-		if !sec.CanAccess() {
-			return nil, runtime.ErrForbidden
-		}
-		return mv, nil
-	}
-
-	// Create a metrics SQL parser
-	compiler := metricssql.New(&metricssql.CompilerOptions{
-		GetMetricsView: getMetricsView,
-		GetTimestamps: func(ctx context.Context, mv *runtimev1.Resource, timeDim string) (metricsview.TimestampsResult, error) {
-			sec, err := opts.Runtime.ResolveSecurity(ctx, ctrl.InstanceID, opts.Claims, mv)
-			if err != nil {
-				return metricsview.TimestampsResult{}, err
-			}
-			var userAttrs map[string]any
-			if opts.Claims != nil {
-				userAttrs = opts.Claims.UserAttributes
-			}
-			e, err := executor.New(ctx, opts.Runtime, opts.InstanceID, mv.GetMetricsView().State.ValidSpec, false, sec, sqlArgs.Priority, userAttrs)
-			if err != nil {
-				return metricsview.TimestampsResult{}, err
-			}
-			return e.Timestamps(ctx, timeDim)
-		},
-	})
-
-	// Parse the metrics SQL query
-	query, err := compiler.Parse(ctx, props.SQL)
+	query, err := CompileMetricsSQL(ctx, opts, props.SQL)
 	if err != nil {
 		return nil, err
 	}
@@ -139,7 +85,7 @@ func newMetricsSQL(ctx context.Context, opts *runtime.ResolverOptions) (runtime.
 
 	// Bucket the query's time dimensions if a grain was provided
 	if props.AdditionalTimeGrain != metricsview.TimeGrainUnspecified {
-		mv, err := getMetricsView(ctx, query.MetricsView)
+		mv, err := accessibleMetricsView(ctx, opts, query.MetricsView)
 		if err != nil {
 			return nil, err
 		}
@@ -165,6 +111,77 @@ func newMetricsSQL(ctx context.Context, opts *runtime.ResolverOptions) (runtime.
 		ForExport:  opts.ForExport,
 	}
 	return newMetrics(ctx, resolverOpts)
+}
+
+// CompileMetricsSQL compiles metrics SQL into the metrics view query that the metrics resolver runs.
+// It resolves templating, and checks the claims can access the queried metrics view.
+// If opts.Args carries an "execution_time", now() and rilltime expressions are evaluated against it instead of the current time,
+// so the query is compiled as an alert or report saw it.
+func CompileMetricsSQL(ctx context.Context, opts *runtime.ResolverOptions, sql string) (*metricsview.Query, error) {
+	instance, err := opts.Runtime.Instance(ctx, opts.InstanceID)
+	if err != nil {
+		return nil, err
+	}
+
+	sql, _, err = resolveTemplate(sql, opts.Args, instance, opts.Claims.UserAttributes, opts.ForExport)
+	if err != nil {
+		return nil, err
+	}
+
+	sqlArgs := &metricsSQLArgs{}
+	if err := mapstructureutil.WeakDecode(opts.Args, sqlArgs); err != nil {
+		return nil, err
+	}
+	var now time.Time
+	if sqlArgs.ExecutionTime != nil {
+		now = *sqlArgs.ExecutionTime
+	}
+
+	// Create a metrics SQL parser
+	compiler := metricssql.New(&metricssql.CompilerOptions{
+		GetMetricsView: func(ctx context.Context, name string) (*runtimev1.Resource, error) {
+			return accessibleMetricsView(ctx, opts, name)
+		},
+		GetTimestamps: func(ctx context.Context, mv *runtimev1.Resource, timeDim string) (metricsview.TimestampsResult, error) {
+			sec, err := opts.Runtime.ResolveSecurity(ctx, opts.InstanceID, opts.Claims, mv)
+			if err != nil {
+				return metricsview.TimestampsResult{}, err
+			}
+			var userAttrs map[string]any
+			if opts.Claims != nil {
+				userAttrs = opts.Claims.UserAttributes
+			}
+			e, err := executor.New(ctx, opts.Runtime, opts.InstanceID, mv.GetMetricsView().State.ValidSpec, false, sec, sqlArgs.Priority, userAttrs)
+			if err != nil {
+				return metricsview.TimestampsResult{}, err
+			}
+			return e.Timestamps(ctx, timeDim)
+		},
+		Now: now,
+	})
+
+	// Parse the metrics SQL query
+	return compiler.Parse(ctx, sql)
+}
+
+// accessibleMetricsView looks up a metrics view, failing with runtime.ErrForbidden if the claims can't access it.
+func accessibleMetricsView(ctx context.Context, opts *runtime.ResolverOptions, name string) (*runtimev1.Resource, error) {
+	ctrl, err := opts.Runtime.Controller(ctx, opts.InstanceID)
+	if err != nil {
+		return nil, err
+	}
+	mv, err := ctrl.Get(ctx, &runtimev1.ResourceName{Kind: runtime.ResourceKindMetricsView, Name: name}, false)
+	if err != nil {
+		return nil, err
+	}
+	sec, err := opts.Runtime.ResolveSecurity(ctx, opts.InstanceID, opts.Claims, mv)
+	if err != nil {
+		return nil, err
+	}
+	if !sec.CanAccess() {
+		return nil, runtime.ErrForbidden
+	}
+	return mv, nil
 }
 
 // applyAdditionalWhere combines the existing where clause with the additional where clause

@@ -2183,6 +2183,44 @@ paths:
                 $ref: '#/definitions/v1Expression'
       tags:
         - QueryService
+  /v1/instances/{instanceId}/queries/metrics-sql/convert:
+    post:
+      summary: |-
+        ConvertMetricsSQLToQuery compiles metrics SQL into the metrics view query it runs as,
+        in the format of the "metrics" resolver.
+        It is used to open a dashboard that shows what an alert or report written in metrics SQL saw.
+      operationId: QueryService_ConvertMetricsSQLToQuery
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1ConvertMetricsSQLToQueryResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              sql:
+                type: string
+                description: Metrics SQL to compile.
+              executionTime:
+                type: string
+                format: date-time
+                description: |-
+                  Optional time to evaluate now() and rilltime expressions against, such as an alert's execution time.
+                  Defaults to the current time.
+      tags:
+        - QueryService
   /v1/instances/{instanceId}/queries/metrics-views/{metricsView}/aggregation:
     post:
       summary: MetricsViewAggregation is a generic API for running group-by/pivot queries against a metrics view.
@@ -5427,6 +5465,12 @@ definitions:
       sql:
         type: string
         description: The SQL filter string representation of the expression.
+  v1ConvertMetricsSQLToQueryResponse:
+    type: object
+    properties:
+      query:
+        type: object
+        description: The compiled query, in the format of the "metrics" resolver's properties.
   v1CreateAIMemoryResponse:
     type: object
     properties:

@@ -82,7 +82,9 @@
 
     url.search = exploreStateParams.toString();
 
-    return goto(url.toString());
+    // This page only redirects: replacing it keeps the back button from landing on it and
+    // redirecting forward again.
+    return goto(url.toString(), { replaceState: true });
   }
 </script>
 

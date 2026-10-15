@@ -1,3 +1,5 @@
+import { getCloudRuntimeClient } from "@rilldata/web-admin/lib/runtime-client";
+import { getExploreUrlForMetricsSQL } from "@rilldata/web-common/features/explore-mappers/open-metrics-sql";
 import { getExploreName } from "@rilldata/web-common/features/explore-mappers/utils";
 import {
   isAIReportSpec,
@@ -6,7 +8,7 @@ import {
 import { redirect } from "@sveltejs/kit";
 
 export async function load({ parent, url, params }) {
-  const { report } = await parent();
+  const { report, runtime } = await parent();
   const organization = params.organization;
   const project = params.project;
   const reportId = params.report;
@@ -43,6 +45,27 @@ export async function load({ parent, url, params }) {
   const exploreName =
     report.report.spec.annotations["explore"] ??
     getExploreName(report.report.spec.annotations?.web_open_path); // backwards compatibility
+
+  // A report written in metrics SQL opens the explore its compiled query maps to.
+  // When it can't be shown faithfully, the report page is the honest fallback.
+  if (reportSpec?.resolver === "metrics_sql") {
+    let exploreURL: string;
+    try {
+      exploreURL = await getExploreUrlForMetricsSQL({
+        client: getCloudRuntimeClient(runtime),
+        sql: reportSpec.resolverProperties?.sql as string,
+        exploreName,
+        executionTime,
+        token,
+        organization,
+        project,
+      });
+    } catch (e) {
+      console.error("Failed to open the report's explore:", e);
+      exploreURL = `/${organization}/${project}/-/reports/${reportId}`;
+    }
+    redirect(307, exploreURL);
+  }
 
   return {
     organization,

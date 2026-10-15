@@ -4329,6 +4329,99 @@ export class ConvertExpressionToMetricsSQLResponse extends Message<ConvertExpres
 }
 
 /**
+ * @generated from message rill.runtime.v1.ConvertMetricsSQLToQueryRequest
+ */
+export class ConvertMetricsSQLToQueryRequest extends Message<ConvertMetricsSQLToQueryRequest> {
+  /**
+   * @generated from field: string instance_id = 1;
+   */
+  instanceId = "";
+
+  /**
+   * Metrics SQL to compile.
+   *
+   * @generated from field: string sql = 2;
+   */
+  sql = "";
+
+  /**
+   * Optional time to evaluate now() and rilltime expressions against, such as an alert's execution time.
+   * Defaults to the current time.
+   *
+   * @generated from field: google.protobuf.Timestamp execution_time = 3;
+   */
+  executionTime?: Timestamp;
+
+  constructor(data?: PartialMessage<ConvertMetricsSQLToQueryRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.ConvertMetricsSQLToQueryRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "sql", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "execution_time", kind: "message", T: Timestamp },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ConvertMetricsSQLToQueryRequest {
+    return new ConvertMetricsSQLToQueryRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ConvertMetricsSQLToQueryRequest {
+    return new ConvertMetricsSQLToQueryRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ConvertMetricsSQLToQueryRequest {
+    return new ConvertMetricsSQLToQueryRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: ConvertMetricsSQLToQueryRequest | PlainMessage<ConvertMetricsSQLToQueryRequest> | undefined, b: ConvertMetricsSQLToQueryRequest | PlainMessage<ConvertMetricsSQLToQueryRequest> | undefined): boolean {
+    return proto3.util.equals(ConvertMetricsSQLToQueryRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.runtime.v1.ConvertMetricsSQLToQueryResponse
+ */
+export class ConvertMetricsSQLToQueryResponse extends Message<ConvertMetricsSQLToQueryResponse> {
+  /**
+   * The compiled query, in the format of the "metrics" resolver's properties.
+   *
+   * @generated from field: google.protobuf.Struct query = 1;
+   */
+  query?: Struct;
+
+  constructor(data?: PartialMessage<ConvertMetricsSQLToQueryResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.ConvertMetricsSQLToQueryResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "query", kind: "message", T: Struct },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ConvertMetricsSQLToQueryResponse {
+    return new ConvertMetricsSQLToQueryResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ConvertMetricsSQLToQueryResponse {
+    return new ConvertMetricsSQLToQueryResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ConvertMetricsSQLToQueryResponse {
+    return new ConvertMetricsSQLToQueryResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: ConvertMetricsSQLToQueryResponse | PlainMessage<ConvertMetricsSQLToQueryResponse> | undefined, b: ConvertMetricsSQLToQueryResponse | PlainMessage<ConvertMetricsSQLToQueryResponse> | undefined): boolean {
+    return proto3.util.equals(ConvertMetricsSQLToQueryResponse, a, b);
+  }
+}
+
+/**
  * @generated from message rill.runtime.v1.ResolveCanvasRequest
  */
 export class ResolveCanvasRequest extends Message<ResolveCanvasRequest> {

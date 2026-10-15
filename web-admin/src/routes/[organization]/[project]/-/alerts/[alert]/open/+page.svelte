@@ -54,7 +54,9 @@
   );
 
   $: if (alertSpec && (!queryName || !queryArgsJson)) {
-    goto(`/${organization}/${project}/-/alerts/${alertId}`);
+    goto(`/${organization}/${project}/-/alerts/${alertId}`, {
+      replaceState: true,
+    });
   }
 
   $: if ($dashboardStateForAlert?.data) {
@@ -76,7 +78,9 @@
     }
 
     url.search = exploreStateParams.toString();
-    return goto(url.toString());
+    // This page only redirects: replacing it keeps the back button from landing on it and
+    // redirecting forward again.
+    return goto(url.toString(), { replaceState: true });
   }
 
   // When alert is loading we will have a "missing require field" error in dashboardStateForAlert so check loading for both queries.

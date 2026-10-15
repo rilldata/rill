@@ -25,6 +25,8 @@ import {
   ColumnTimeSeriesRequest,
   ColumnTopKRequest,
   ConvertExpressionToMetricsSQLRequest,
+  ConvertMetricsSQLToQueryRequest,
+  ConvertMetricsSQLToQueryResponse,
   ExportReportRequest,
   ExportRequest,
   MetricsViewAggregationRequest,
@@ -1225,6 +1227,103 @@ export function createQueryServiceConvertExpressionToMetricsSQL<
   queryClient?: QueryClient,
 ): CreateQueryResult<TData, ConnectError> {
   const queryOptions = getQueryServiceConvertExpressionToMetricsSQLQueryOptions(
+    client,
+    request,
+    options,
+  );
+  return createQuery(queryOptions, queryClient);
+}
+
+/**
+ * Raw RPC call: QueryService.ConvertMetricsSQLToQuery
+ */
+export async function queryServiceConvertMetricsSQLToQuery(
+  client: RuntimeClient,
+  request: Omit<PartialMessage<ConvertMetricsSQLToQueryRequest>, "instanceId">,
+  options?: { signal?: AbortSignal },
+): Promise<PartialMessage<ConvertMetricsSQLToQueryResponse>> {
+  const r = await client.queryService.convertMetricsSQLToQuery(
+    ConvertMetricsSQLToQueryRequest.fromJson(
+      stripUndefined({
+        instanceId: client.instanceId,
+        ...request,
+      }) as unknown as JsonValue,
+    ),
+    { signal: options?.signal },
+  );
+  return r.toJson({
+    emitDefaultValues: true,
+  }) as unknown as PartialMessage<ConvertMetricsSQLToQueryResponse>;
+}
+
+export function getQueryServiceConvertMetricsSQLToQueryQueryKey(
+  instanceId: string,
+  request?: Omit<PartialMessage<ConvertMetricsSQLToQueryRequest>, "instanceId">,
+): QueryKey {
+  return [
+    "QueryService",
+    "convertMetricsSQLToQuery",
+    instanceId,
+    request ?? {},
+  ] as const;
+}
+
+export function getQueryServiceConvertMetricsSQLToQueryQueryOptions<
+  TData = PartialMessage<ConvertMetricsSQLToQueryResponse>,
+>(
+  client: RuntimeClient,
+  request: Omit<PartialMessage<ConvertMetricsSQLToQueryRequest>, "instanceId">,
+  options?: {
+    query?: Partial<
+      CreateQueryOptions<
+        PartialMessage<ConvertMetricsSQLToQueryResponse>,
+        ConnectError,
+        TData
+      >
+    >;
+  },
+): CreateQueryOptions<
+  PartialMessage<ConvertMetricsSQLToQueryResponse>,
+  ConnectError,
+  TData
+> & { queryKey: QueryKey } {
+  const queryKey = getQueryServiceConvertMetricsSQLToQueryQueryKey(
+    client.instanceId,
+    request,
+  );
+  const queryFn: QueryFunction<
+    PartialMessage<ConvertMetricsSQLToQueryResponse>
+  > = ({ signal }) =>
+    queryServiceConvertMetricsSQLToQuery(client, request, { signal });
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!client.instanceId,
+    ...options?.query,
+  } as CreateQueryOptions<
+    PartialMessage<ConvertMetricsSQLToQueryResponse>,
+    ConnectError,
+    TData
+  > & { queryKey: QueryKey };
+}
+
+export function createQueryServiceConvertMetricsSQLToQuery<
+  TData = PartialMessage<ConvertMetricsSQLToQueryResponse>,
+>(
+  client: RuntimeClient,
+  request: Omit<PartialMessage<ConvertMetricsSQLToQueryRequest>, "instanceId">,
+  options?: {
+    query?: Partial<
+      CreateQueryOptions<
+        PartialMessage<ConvertMetricsSQLToQueryResponse>,
+        ConnectError,
+        TData
+      >
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateQueryResult<TData, ConnectError> {
+  const queryOptions = getQueryServiceConvertMetricsSQLToQueryQueryOptions(
     client,
     request,
     options,

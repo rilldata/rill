@@ -665,3 +665,63 @@ func must[T any](v T, err error) T {
 	}
 	return v
 }
+
+// TestAlertMetricsSQLResolveTransitiveAccessTerminates is the alert twin of
+// TestReportMetricsSQLResolveTransitiveAccessTerminates: the alert reconciler carries the same resolver
+// initialization, with the same claims and the same missing guard, so an alert written with the `data:` block
+// recurses through the security engine exactly as a report does and takes the runtime process down with it.
+//
+// Without the SkipChecks guard this test kills the test binary with "fatal error: stack overflow" rather than
+// reporting a failure.
+func TestAlertMetricsSQLResolveTransitiveAccessTerminates(t *testing.T) {
+	rt, id := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
+		Files: map[string]string{"rill.yaml": ""},
+	})
+
+	testruntime.PutFiles(t, rt, id, map[string]string{
+		"m1.sql": `SELECT 'foo' as foo, 1 as x`,
+		"mv1.yaml": `
+version: 1
+type: metrics_view
+model: m1
+dimensions:
+- column: foo
+measures:
+- name: x
+  expression: sum(x)
+`,
+		"a1.yaml": `
+type: alert
+display_name: My Metrics SQL Alert
+refresh:
+  cron: "0 8 * * *"
+data:
+  metrics_sql: SELECT foo, x FROM mv1
+notify:
+  email:
+    recipients:
+      - user_1@example.com
+`,
+	})
+	testruntime.ReconcileParserAndWait(t, rt, id)
+
+	claims := &runtime.SecurityClaims{
+		AdditionalRules: []*runtimev1.SecurityRule{
+			{
+				Rule: &runtimev1.SecurityRule_TransitiveAccess{
+					TransitiveAccess: &runtimev1.SecurityRuleTransitiveAccess{
+						Resource: &runtimev1.ResourceName{
+							Kind: runtime.ResourceKindAlert,
+							Name: "a1",
+						},
+					},
+				},
+			},
+		},
+	}
+
+	mv1 := testruntime.GetResource(t, rt, id, runtime.ResourceKindMetricsView, "mv1")
+	sec, err := rt.ResolveSecurity(t.Context(), id, claims, mv1)
+	require.NoError(t, err)
+	require.True(t, sec.CanAccess())
+}
