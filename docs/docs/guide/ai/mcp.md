@@ -281,7 +281,7 @@ Using all the above concepts, you can ask the Rill MCP server questions like:
 
 ## Interactive charts in Claude and ChatGPT
 
-When the AI calls `create_chart`, the Rill MCP server answers with the chart's data. Every client receives it as a markdown table of the first rows with an **Open in Rill** link, which opens an Explore dashboard with the chart's measures, dimensions, filters and time range applied. Charts require the `chat_charts` feature flag, which is on by default.
+The server ships a `rill-charts` skill that tells the AI which chart fits which question and what to check before charting; external clients receive it in the `ai_instructions` of `list_metrics_views` and can also fetch it with `load_skill`. When the AI calls `create_chart`, the Rill MCP server answers with the chart's data. Every client receives it as a markdown table of the first rows with an **Open in Rill** link, which opens an Explore dashboard with the chart's measures, dimensions, filters and time range applied. Charts require the `chat_charts` feature flag, which is on by default.
 
 The AI describes the chart the way [custom viz components](/developers/build/dashboards/canvas-widgets/custom-viz) do: a chart type and which field goes on which channel (`chart_spec`, with Flint's chart types such as `Bar Chart`, `Line Chart`, `Waterfall Chart`, `Slope Chart` or `Heatmap`) together with the metrics view, time range, filter and grain the data comes from (`data`). Rill derives the scales, axes, number formats, sorting and layout from the metrics view's semantics, so the AI never writes styling.
 

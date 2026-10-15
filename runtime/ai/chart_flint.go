@@ -137,7 +137,7 @@ var flintCreateChartDescription = sync.OnceValue(func() string {
 
 Create a chart from a metrics view. The chart is rendered interactively in clients that support it; other clients receive the chart's data as a table together with a link. Whenever the result includes an ` + "`open_url`" + `, surface it to the user so they can open the chart in Rill.
 
-Query the data with query_metrics_view first, then describe the chart: the chart type and which field goes on which channel. Rill runs the query, derives scales, axes, number formats, sorting, stacking, colors and layout, and returns the rows. Do not pass colors, formats or axis settings, and reference only measures, dimensions and the time dimension of the metrics view.
+Query the data with query_metrics_view first, then describe the chart: the chart type and which field goes on which channel. Rill runs the query, derives scales, axes, number formats, sorting, stacking, colors and layout, and returns the rows. Do not pass colors, formats or axis settings, and reference only measures, dimensions and the time dimension of the metrics view. The rill-charts skill (in the ai_instructions of list_metrics_views, or via load_skill) says which chart fits which question and what to check first.
 
 ## Arguments
 
