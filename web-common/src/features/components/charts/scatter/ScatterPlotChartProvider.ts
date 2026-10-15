@@ -27,6 +27,7 @@ import {
 } from "svelte/store";
 import {
   canQueryWithTimeRange,
+  combineChartDataQuery,
   getFilterWithNullHandling,
 } from "../query-util";
 import { withEphemeralMeasures } from "../ephemeral-measures";
@@ -223,7 +224,11 @@ export class ScatterPlotChartProvider {
       },
     );
 
-    return createQuery(queryOptionsStore);
+    return combineChartDataQuery(
+      createQuery(queryOptionsStore),
+      [topNColorQuery],
+      visibleStore,
+    );
   }
 
   getChartDomainValues(): ChartDomainValues {

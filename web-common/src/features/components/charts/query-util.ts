@@ -3,6 +3,7 @@ import type { ComboChartSpec } from "@rilldata/web-common/features/components/ch
 import type { HeatmapChartSpec } from "@rilldata/web-common/features/components/charts/heatmap/HeatmapChartProvider";
 import {
   ChartSortType,
+  type ChartDataQuery,
   type ChartSortDirection,
   type FieldConfig,
 } from "@rilldata/web-common/features/components/charts/types";
@@ -12,9 +13,12 @@ import { mergeFilters } from "@rilldata/web-common/features/dashboards/pivot/piv
 import { createInExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import type {
   V1Expression,
+  V1MetricsViewAggregationResponse,
   V1MetricsViewAggregationSort,
   V1TimeRange,
 } from "@rilldata/web-common/runtime-client";
+import type { CreateQueryResult } from "@tanstack/svelte-query";
+import { derived, type Readable } from "svelte/store";
 
 export function canQueryWithTimeRange(
   hasTimeSeries: boolean | undefined,
@@ -27,6 +31,37 @@ export function canQueryWithTimeRange(
   if (hasTimeSeries === true) return hasTimeRange;
   // hasTimeSeries === undefined: metrics view spec not yet resolved, block the query.
   return false;
+}
+
+/**
+ * Combines a chart's data query with the queries it waits on,
+ * such as the top-N queries that pick which x values or color series to fetch.
+ * The data query stays disabled while those run and while the component is off-screen,
+ * and a disabled query reports neither data nor `isFetching`,
+ * which the chart would otherwise show as "No Data to Display".
+ * A failed dependency keeps the data query disabled, so its error is reported instead.
+ */
+export function combineChartDataQuery(
+  query: CreateQueryResult<V1MetricsViewAggregationResponse, Error>,
+  dependencies: CreateQueryResult<V1MetricsViewAggregationResponse, Error>[],
+  visible: Readable<boolean>,
+): ChartDataQuery {
+  const dependencyState = derived(dependencies, ($dependencies) => ({
+    isFetching: $dependencies.some((d) => d.isFetching),
+    error: $dependencies.find((d) => d.error)?.error ?? null,
+  }));
+
+  return derived(
+    [query, dependencyState, visible],
+    ([$query, $dependencies, $visible]) => ({
+      data: $query.data,
+      isFetching:
+        $query.isFetching ||
+        $dependencies.isFetching ||
+        ($query.isPending && !$visible),
+      error: $query.error ?? $dependencies.error,
+    }),
+  );
 }
 
 export function getFilterWithNullHandling(
