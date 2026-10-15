@@ -103,6 +103,7 @@ func (e *localFileToSelfExecutor) Execute(ctx context.Context, opts *drivers.Mod
 	if len(localPaths) == 0 {
 		return nil, fmt.Errorf("no files to ingest")
 	}
+	defer fileutil.ForceRemoveFiles(localPaths)
 
 	if inputProps.Format == "" {
 		inputProps.Format = fileutil.FullExt(localPaths[0])
