@@ -5,6 +5,8 @@ import (
 	"crypto/md5"
 	"errors"
 	"fmt"
+	"regexp"
+	"slices"
 	"strings"
 	"time"
 
@@ -121,7 +123,9 @@ func (c *Connection) insertTableAsSelect(ctx context.Context, name, sql string, 
 			return nil, err
 		}
 		// create temp table with the same schema using a deterministic name
-		tempName := fmt.Sprintf("__rill_temp_%s_%x", name, md5.Sum([]byte(sql)))
+		tempName := fmt.Sprintf("%s%s_%x", tempTablePrefix, name, md5.Sum([]byte(sql)))
+		// mark the temp table as in use so that concurrent partition inserts do not sweep it as stale
+		c.tempTables.Store(tempName, struct{}{})
 		// clean up the temp table
 		defer func() {
 			// cleanup using a different ctx to prevent cleanups being impacted by the main ctx cancellation
@@ -135,6 +139,8 @@ func (c *Connection) insertTableAsSelect(ctx context.Context, name, sql string, 
 			if err != nil && !errors.Is(err, drivers.ErrNotFound) {
 				c.logger.Warn("clickhouse: failed to drop temp table", zap.String("name", tempName), zap.Error(err), observability.ZapCtx(ctx))
 			}
+			// if the drop failed, a later execution for the table sweeps it as stale
+			c.tempTables.Delete(tempName)
 		}()
 		// create temp table
 		if engine == "Distributed" {
@@ -235,9 +241,76 @@ func (c *Connection) insertTableAsSelect(ctx context.Context, name, sql string, 
 	return nil, fmt.Errorf("incremental insert strategy %q not supported", opts.Strategy)
 }
 
+// tempTablePrefix is the prefix of the temporary tables created while writing a model's table, e.g. for column inference and partition inserts.
+const tempTablePrefix = "__rill_temp_"
+
+// dropStaleTempTables drops the temporary tables that earlier executions writing to table left behind.
+// The execution that creates a temporary table also drops it, but that drop never runs if the runtime restarts in the meantime,
+// and it may fail, e.g. by timing out while a cancelled insert still holds a lock on the table.
+// Temporary tables that executions in this process are currently writing to are skipped.
+// The sweep is best effort: failures are logged so they do not fail the execution that triggered it.
+func (c *Connection) dropStaleTempTables(ctx context.Context, table string) {
+	names, err := c.listTempTables(ctx, table)
+	if err != nil {
+		c.logger.Warn("clickhouse: failed to list stale temp tables", zap.String("table", table), zap.Error(err), observability.ZapCtx(ctx))
+		return
+	}
+	for _, name := range names {
+		base := strings.TrimSuffix(name, "_local")
+		// a `_local` table is dropped along with its Distributed table
+		if base != name && slices.Contains(names, base) {
+			continue
+		}
+		if _, inUse := c.tempTables.Load(base); inUse {
+			continue
+		}
+		err := c.dropTable(ctx, name)
+		if err != nil && !errors.Is(err, drivers.ErrNotFound) {
+			c.logger.Warn("clickhouse: failed to drop stale temp table", zap.String("name", name), zap.Error(err), observability.ZapCtx(ctx))
+		}
+	}
+}
+
+// listTempTables returns the temporary tables that createTable and insertTableAsSelect create for table, also under its staging name.
+// In cluster mode, it includes the `_local` counterparts of the tables.
+func (c *Connection) listTempTables(ctx context.Context, table string) ([]string, error) {
+	pattern := regexp.MustCompile(fmt.Sprintf(`^%s(?:%s)?%s_[0-9a-f]{32}(?:_local)?$`, tempTablePrefix, stagingTablePrefix, regexp.QuoteMeta(table)))
+
+	args := []any{c.config.Database, tempTablePrefix}
+	if c.config.Database == "" {
+		args = []any{nil, tempTablePrefix}
+	}
+	res, err := c.Query(ctx, &drivers.Statement{
+		Query:    "SELECT name FROM system.tables WHERE database = coalesce(?, currentDatabase()) AND startsWith(name, ?)",
+		Args:     args,
+		Priority: 100,
+	})
+	if err != nil {
+		return nil, err
+	}
+	defer res.Close()
+
+	var names []string
+	for res.Next() {
+		var name string
+		if err := res.Scan(&name); err != nil {
+			return nil, err
+		}
+		if pattern.MatchString(name) {
+			names = append(names, name)
+		}
+	}
+	return names, res.Err()
+}
+
 func (c *Connection) dropTable(ctx context.Context, name string) error {
 	typ, err := c.entityType(ctx, c.config.Database, name)
 	if err != nil {
+		// In cluster mode, a table is created as a `_local` table first and a Distributed table over it second.
+		// If the second step never ran, e.g. because the execution was cancelled in between, the `_local` table is dropped on its own.
+		if errors.Is(err, drivers.ErrNotFound) && c.config.Cluster != "" && !strings.HasSuffix(name, "_local") {
+			return c.dropTable(ctx, localTableName(name))
+		}
 		return err
 	}
 
@@ -456,7 +529,7 @@ func (c *Connection) createTable(ctx context.Context, name, sql string, outputPr
 			return fmt.Errorf("clickhouse: no columns specified for table %q", name)
 		}
 		// infer columns
-		v := safeSQLName(fmt.Sprintf("__rill_temp_%s_%x", name, md5.Sum([]byte(sql))))
+		v := safeSQLName(fmt.Sprintf("%s%s_%x", tempTablePrefix, name, md5.Sum([]byte(sql))))
 		defer func() {
 			// cleanup using a different ctx to prevent cleanups being impacted by the main ctx cancellation
 			// this is a best effort cleanup and query can still timeout and we don't want to wait forever due to blocked calls

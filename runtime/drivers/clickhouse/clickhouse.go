@@ -8,6 +8,7 @@ import (
 	"math"
 	"net"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/ClickHouse/clickhouse-go/v2"
@@ -432,6 +433,10 @@ type Connection struct {
 	// This creates contention for the same connection in database/sql's pool, but its locks will handle that.
 	metaSem *semaphore.Weighted
 	olapSem *priorityqueue.Semaphore
+
+	// tempTables holds the names of the temporary tables that model executions in this process are currently writing to.
+	// Partitions of a model may be inserted concurrently, so dropStaleTempTables consults it to leave their temporary tables alone.
+	tempTables sync.Map
 
 	// options used to open clickhouse connections
 	opts *clickhouse.Options

@@ -265,6 +265,9 @@ func (c *Connection) Rename(ctx context.Context, res *drivers.ModelResult, newNa
 		return res, nil
 	}
 
+	// Later executions sweep temporary tables by the new name, so drop those left behind under the old name now.
+	c.dropStaleTempTables(ctx, resProps.Table)
+
 	err := c.forceRenameTable(ctx, resProps.Table, resProps.View, newName)
 	if err != nil {
 		return nil, fmt.Errorf("failed to rename model: %w", err)
@@ -307,6 +310,7 @@ func (c *Connection) Delete(ctx context.Context, res *drivers.ModelResult) error
 	}
 
 	_ = c.dropTable(ctx, stagingTableNameFor(res.Table))
+	c.dropStaleTempTables(ctx, res.Table)
 
 	table, err := olap.InformationSchema().Lookup(ctx, c.config.Database, "", res.Table)
 	if err != nil {
