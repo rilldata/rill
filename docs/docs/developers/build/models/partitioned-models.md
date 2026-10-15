@@ -210,8 +210,23 @@ If you'd prefer to partition it by folder, you can add the partition parameter a
 ```yaml
 glob:
   path: gs://rendo-test/**/*data.csv
-  partition: directory #hive
+  partition: directory
 ```
+
+If your folders use Hive-style names (`key=value`), set `partition: hive` to also extract each value as a partition column, available as `{{ .partition.<key> }}`.
+```yaml
+partitions:
+  glob:
+    path: gs://my-bucket/y=*/m=*/d=*/*.csv
+    partition: hive
+sql: SELECT *, '{{ .partition.y }}-{{ .partition.m }}-{{ .partition.d }}' AS day FROM read_csv('{{ .partition.uri }}/*.csv')
+```
+
+:::note `partition: hive` and `partition: directory`
+These modes group the matched files by folder, so their glob must match files (e.g. `gs://my-bucket/y=*/m=*/d=*/*.csv`). A glob that matches only folders returns an error.
+
+Use `**` only as a whole path segment (`/**/` or a trailing `/**`). Inside a segment, as in `d=**`, it does not match across folders and may return no partitions; use `d=*` instead.
+:::
 
 :::tip Using the glob partition in the YAML
 The glob partition has a predefined `{{ .partition.uri }}` reference to use in the model's SQL query.
@@ -236,7 +251,7 @@ Use `start` and `end` to filter which partitions are processed based on their pa
 # Fixed window: only process a specific month
 partitions:
   glob:
-    path: s3://bucket/year=*/month=*/day=*
+    path: s3://bucket/year=*/month=*/day=*/*.parquet
     partition: directory
     start: s3://bucket/year=2026/month=03
     end: s3://bucket/year=2026/month=04
@@ -247,7 +262,7 @@ sql: SELECT * FROM read_parquet('{{ .partition.uri }}/*.parquet')
 # Rolling window: reprocess last 30 days
 partitions:
   glob:
-    path: s3://bucket/year=*/month=*/day=*
+    path: s3://bucket/year=*/month=*/day=*/*.parquet
     partition: directory
     last: 30
 sql: SELECT * FROM read_parquet('{{ .partition.uri }}/*.parquet')
