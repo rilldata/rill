@@ -216,6 +216,11 @@ func (l *localAdminService) AsModelManager(instanceID string) (drivers.ModelMana
 	return nil, drivers.ErrNotImplemented
 }
 
+// AsMCP implements drivers.Handle.
+func (l *localAdminService) AsMCP() (drivers.MCPService, bool) {
+	return nil, false
+}
+
 // AsNotifier implements [drivers.Handle].
 func (l *localAdminService) AsNotifier(properties map[string]any) (drivers.Notifier, error) {
 	return nil, drivers.ErrNotImplemented

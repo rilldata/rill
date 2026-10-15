@@ -1146,6 +1146,117 @@ definitions:
           required:
             - driver
         - type: object
+          title: MCP Server
+          description: |
+            Connects an external MCP (Model Context Protocol) server so its tools become available to Rill's AI agents.
+            Credentials are project-scoped: `headers` with `{{ .env.* }}` templating, shared by every user of the server.
+          properties:
+            driver:
+              type: string
+              description: Refers to the driver type and must be driver `mcp`
+              const: mcp
+            url:
+              type: string
+              description: URL of the MCP server's streamable HTTP endpoint. Must use `https` in Rill Cloud
+            display_name:
+              type: string
+              description: Human-friendly name for the server, shown in the chat and to AI agents. Defaults to the connector name
+            ai_instructions:
+              type: string
+              description: Guidance for AI agents on when and how to use the server's tools
+            headers:
+              type: object
+              additionalProperties:
+                type: string
+              description: |
+                HTTP headers sent on every request to the server, such as an `Authorization` header.
+                Reference secrets from `.env` with `{{ .env.* }}` templating rather than committing them.
+            timeout:
+              type: string
+              description: Timeout per tool call, as a duration (default `60s`)
+            connect_timeout:
+              type: string
+              description: Timeout for connecting to the server and listing its tools, as a duration (default `10s`)
+            max_result_bytes:
+              type: integer
+              description: Maximum size of a tool result passed to the AI, in bytes. Larger results are truncated (default `131072`)
+            security:
+              type: object
+              description: |
+                Controls who may use the server and which of its tools. It uses the same syntax as [metrics view security policies](/developers/build/metrics-view/security),
+                with tool names in place of dimension and measure names, plus an `agents` field.
+                Omit the block to allow only admins, since every user acts with the connector's credentials; a block without `access` denies everyone.
+              properties:
+                access:
+                  oneOf:
+                    - type: string
+                      description: SQL expression that evaluates to a boolean to determine access
+                    - type: boolean
+                      description: Direct boolean value to allow or deny access
+                  description: Expression indicating whether the user may use the server. Can reference user attributes with `{{ .user.* }}`
+                agents:
+                  type: array
+                  items:
+                    type: string
+                    enum: [analyst, developer]
+                  description: AI agents that may use the server's tools. Defaults to all agents
+                include:
+                  type: array
+                  description: Tools each user may call. If any include rule is present, tools not matched by a passing rule are denied
+                  items:
+                    type: object
+                    properties:
+                      if:
+                        type: string
+                        description: Templated boolean condition over user attributes
+                      names:
+                        oneOf:
+                          - type: string
+                          - type: array
+                            items:
+                              type: string
+                        description: Tool names the rule applies to, or `'*'` for all tools
+                    required:
+                      - if
+                      - names
+                exclude:
+                  type: array
+                  description: Tools to deny. A matching exclude always wins over an include
+                  items:
+                    type: object
+                    properties:
+                      if:
+                        type: string
+                        description: Templated boolean condition over user attributes
+                      names:
+                        oneOf:
+                          - type: string
+                          - type: array
+                            items:
+                              type: string
+                        description: Tool names the rule applies to, or `'*'` for all tools
+                    required:
+                      - if
+                      - names
+          examples:
+            - # Example: MCP server with a project-scoped token
+              type: connector                                         # Must be `connector` (required)
+              driver: mcp                                             # Must be `mcp` _(required)_
+              url: "https://mcp.example.com/mcp"                      # Streamable HTTP endpoint of the MCP server
+              display_name: "Issues"                                  # Name shown in the chat and to AI agents
+              ai_instructions: "Use it to look up issues. Search before creating anything."
+              headers:
+                Authorization: "Bearer {{ .env.ISSUES_MCP_TOKEN }}"   # Secret from .env or Rill Cloud variables
+              security:
+                access: "'{{ .user.domain }}' == 'example.com'"       # Only users of this domain may use the server
+                agents: [analyst]                                     # Only the analyst agent may use it
+                exclude:
+                  - if: "NOT {{ .user.admin }}"
+                    names: [create_issue, update_issue, delete_issue]
+          required:
+            - driver
+            - url
+        - type: object
           title: Slack
           properties:
             driver:

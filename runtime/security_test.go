@@ -577,6 +577,130 @@ func TestResolveMetricsView(t *testing.T) {
 	}
 }
 
+func TestResolveConnectorSecurity(t *testing.T) {
+	adminAttrs := map[string]any{"email": "a@rilldata.com", "domain": "rilldata.com", "groups": []any{"eng"}, "admin": true}
+	userAttrs := map[string]any{"email": "b@example.com", "domain": "example.com", "groups": []any{"sales"}, "admin": false}
+
+	access := func(expr string) *runtimev1.SecurityRule {
+		return &runtimev1.SecurityRule{Rule: &runtimev1.SecurityRule_Access{Access: &runtimev1.SecurityRuleAccess{ConditionExpression: expr, Allow: true}}}
+	}
+	fieldRule := func(expr string, allow bool, names ...string) *runtimev1.SecurityRule {
+		return &runtimev1.SecurityRule{Rule: &runtimev1.SecurityRule_FieldAccess{FieldAccess: &runtimev1.SecurityRuleFieldAccess{ConditionExpression: expr, Allow: allow, Fields: names}}}
+	}
+	allFields := func(allow bool) *runtimev1.SecurityRule {
+		return &runtimev1.SecurityRule{Rule: &runtimev1.SecurityRule_FieldAccess{FieldAccess: &runtimev1.SecurityRuleFieldAccess{Allow: allow, AllFields: true}}}
+	}
+
+	tests := []struct {
+		name       string
+		rules      []*runtimev1.SecurityRule
+		attrs      map[string]any
+		tools      []string
+		wantAccess bool
+		wantTools  map[string]bool
+	}{
+		{
+			name:       "no rules denies non-admins",
+			attrs:      userAttrs,
+			tools:      []string{"search", "delete"},
+			wantAccess: false,
+			wantTools:  map[string]bool{"search": false, "delete": false},
+		},
+		{
+			name:       "no rules allows admins every tool",
+			attrs:      adminAttrs,
+			tools:      []string{"search", "delete"},
+			wantAccess: true,
+			wantTools:  map[string]bool{"search": true, "delete": true, "unknown": true},
+		},
+		{
+			name:       "access true opens to everyone",
+			rules:      []*runtimev1.SecurityRule{access("true")},
+			attrs:      userAttrs,
+			tools:      []string{"search", "delete"},
+			wantAccess: true,
+			wantTools:  map[string]bool{"search": true, "delete": true},
+		},
+		{
+			name:       "access denied for non-admin",
+			rules:      []*runtimev1.SecurityRule{access("{{ .user.admin }}")},
+			attrs:      userAttrs,
+			tools:      []string{"search"},
+			wantAccess: false,
+			wantTools:  map[string]bool{"search": false},
+		},
+		{
+			name:       "access allowed for admin",
+			rules:      []*runtimev1.SecurityRule{access("{{ .user.admin }}")},
+			attrs:      adminAttrs,
+			tools:      []string{"search"},
+			wantAccess: true,
+			wantTools:  map[string]bool{"search": true},
+		},
+		{
+			name:       "include implies deny for unlisted tools",
+			rules:      []*runtimev1.SecurityRule{access("true"), fieldRule("", true, "search")},
+			attrs:      userAttrs,
+			tools:      []string{"search", "delete"},
+			wantAccess: true,
+			wantTools:  map[string]bool{"search": true, "delete": false},
+		},
+		{
+			name:       "conditional include for admins only",
+			rules:      []*runtimev1.SecurityRule{access("true"), fieldRule("", true, "search"), fieldRule("{{ .user.admin }}", true, "create")},
+			attrs:      userAttrs,
+			tools:      []string{"search", "create"},
+			wantAccess: true,
+			wantTools:  map[string]bool{"search": true, "create": false},
+		},
+		{
+			name:       "exclude wins over allow all",
+			rules:      []*runtimev1.SecurityRule{access("true"), allFields(true), fieldRule("'{{ .user.domain }}' != 'rilldata.com'", false, "delete")},
+			attrs:      userAttrs,
+			tools:      []string{"search", "delete"},
+			wantAccess: true,
+			wantTools:  map[string]bool{"search": true, "delete": false},
+		},
+		{
+			name:       "exclude condition not met keeps the tool",
+			rules:      []*runtimev1.SecurityRule{access("true"), allFields(true), fieldRule("'{{ .user.domain }}' != 'rilldata.com'", false, "delete")},
+			attrs:      adminAttrs,
+			tools:      []string{"search", "delete"},
+			wantAccess: true,
+			wantTools:  map[string]bool{"search": true, "delete": true},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			r := &runtimev1.Resource{
+				Meta: &runtimev1.ResourceMeta{
+					Name:           &runtimev1.ResourceName{Kind: ResourceKindConnector, Name: "ext"},
+					StateUpdatedOn: timestamppb.Now(),
+				},
+				Resource: &runtimev1.Resource_Connector{
+					Connector: &runtimev1.ConnectorV2{
+						Spec:  &runtimev1.ConnectorSpec{Driver: "mcp", SecurityRules: tt.rules},
+						State: &runtimev1.ConnectorState{},
+					},
+				},
+			}
+			claims := &SecurityClaims{UserID: "u1", UserAttributes: tt.attrs}
+			p := newSecurityEngine(10, zap.NewNop(), nil)
+			got, err := p.resolveConnectorSecurity(t.Context(), "", "test", map[string]string{}, claims, r, tt.tools)
+			require.NoError(t, err)
+			require.Equal(t, tt.wantAccess, got.CanAccess())
+			for tool, want := range tt.wantTools {
+				require.Equal(t, want, got.CanAccessField(tool), "tool %q", tool)
+			}
+
+			// The regular resolution of connector resources stays admin-only (it guards the connector's configuration, not its tools)
+			regular, err := p.resolveSecurity(t.Context(), "", "test", map[string]string{}, claims, r)
+			require.NoError(t, err)
+			require.Equal(t, tt.attrs["admin"] == true, regular.CanAccess())
+		})
+	}
+}
+
 func TestResolveAPI(t *testing.T) {
 	tests := []struct {
 		name       string

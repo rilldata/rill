@@ -103,6 +103,11 @@ func (n *noopAdminService) AsModelManager(instanceID string) (drivers.ModelManag
 	return nil, drivers.ErrNotImplemented
 }
 
+// AsMCP implements drivers.Handle.
+func (n *noopAdminService) AsMCP() (drivers.MCPService, bool) {
+	return nil, false
+}
+
 // AsNotifier implements [drivers.Handle].
 func (n *noopAdminService) AsNotifier(properties map[string]any) (drivers.Notifier, error) {
 	return nil, drivers.ErrNotImplemented

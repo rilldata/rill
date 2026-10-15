@@ -1,8 +1,13 @@
 package parser
 
 import (
+	"bytes"
 	"fmt"
+	"net/url"
+	"slices"
+	"strings"
 
+	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"google.golang.org/protobuf/types/known/structpb"
 	"gopkg.in/yaml.v3"
 )
@@ -11,9 +16,26 @@ import (
 type ConnectorYAML struct {
 	commonYAML `yaml:",inline" mapstructure:",squash"` // Only to avoid loading common fields into Properties
 	// Driver name
-	Driver     string         `yaml:"driver"`
-	Managed    yaml.Node      `yaml:"managed"` // Boolean or map of properties
+	Driver  string    `yaml:"driver"`
+	Managed yaml.Node `yaml:"managed"` // Boolean or map of properties
+	// Security is an access policy for the connector. It is only supported by the "mcp" driver, where it controls
+	// which users may use the server and which of its tools; see mcpSecurityYAML.
+	Security   yaml.Node      `yaml:"security"`
 	Properties map[string]any `yaml:",inline" mapstructure:",remain"`
+}
+
+// mcpDriverName is the driver name of connectors for external MCP servers.
+const mcpDriverName = "mcp"
+
+// mcpAgentNames are the AI agents an MCP connector's security policy can be scoped to.
+var mcpAgentNames = []string{"analyst", "developer"}
+
+// mcpSecurityYAML is the "security" block of an MCP connector.
+// It reuses the metrics view security policy syntax, with tool names in place of field names in "include" and "exclude",
+// plus an "agents" field that scopes the server to specific AI agents. Row filters and custom rules are not supported.
+type mcpSecurityYAML struct {
+	SecurityPolicyYAML `yaml:",inline"`
+	Agents             []string `yaml:"agents"`
 }
 
 // parseConnector parses a connector definition and adds the resulting resource to p.Resources.
@@ -51,6 +73,18 @@ func (p *Parser) parseConnector(node *Node) error {
 		}
 	}
 
+	// Validate driver-specific properties and parse the security policy (MCP connectors only)
+	var securityRules []*runtimev1.SecurityRule
+	var agents []string
+	if tmp.Driver == mcpDriverName {
+		securityRules, agents, err = parseMCPConnector(tmp)
+		if err != nil {
+			return err
+		}
+	} else if !tmp.Security.IsZero() {
+		return fmt.Errorf("'security' is only supported for connectors with driver %q", mcpDriverName)
+	}
+
 	// Find out if any properties are templated
 	templatedProps, err := analyzeTemplatedProperties(tmp.Properties)
 	if err != nil {
@@ -76,8 +110,74 @@ func (p *Parser) parseConnector(node *Node) error {
 	r.ConnectorSpec.TemplatedProperties = templatedProps
 	r.ConnectorSpec.Provision = provision
 	r.ConnectorSpec.ProvisionArgs = provisionArgsPB
+	r.ConnectorSpec.SecurityRules = securityRules
+	r.ConnectorSpec.Agents = agents
 
 	return nil
+}
+
+// parseMCPConnector validates the properties of an MCP connector and parses its security policy.
+// It returns the security rules and the agents the server is scoped to (empty means all agents).
+func parseMCPConnector(tmp *ConnectorYAML) ([]*runtimev1.SecurityRule, []string, error) {
+	rawURL, _ := tmp.Properties["url"].(string)
+	if rawURL == "" {
+		return nil, nil, fmt.Errorf("missing required property 'url'")
+	}
+	if meta, err := AnalyzeTemplate(rawURL); err != nil {
+		return nil, nil, fmt.Errorf("invalid 'url': %w", err)
+	} else if !meta.UsesTemplating {
+		u, err := url.Parse(rawURL)
+		if err != nil || (u.Scheme != "http" && u.Scheme != "https") || u.Host == "" {
+			return nil, nil, fmt.Errorf("invalid 'url': expected an http(s) URL, got %q", rawURL)
+		}
+	}
+
+	if headers, ok := tmp.Properties["headers"]; ok {
+		headersMap, ok := headers.(map[string]any)
+		if !ok {
+			return nil, nil, fmt.Errorf("invalid 'headers': expected a map of header names to values")
+		}
+		for k, v := range headersMap {
+			if _, ok := v.(string); !ok {
+				return nil, nil, fmt.Errorf("invalid 'headers': value of %q must be a string", k)
+			}
+		}
+	}
+
+	if tmp.Security.IsZero() {
+		return nil, nil, nil
+	}
+
+	// Re-encode the node so it can be decoded strictly, which reports unknown keys such as typos.
+	secYAML, err := yaml.Marshal(&tmp.Security)
+	if err != nil {
+		return nil, nil, fmt.Errorf("invalid 'security': %w", err)
+	}
+	sec := &mcpSecurityYAML{}
+	dec := yaml.NewDecoder(bytes.NewReader(secYAML))
+	dec.KnownFields(true)
+	err = dec.Decode(sec)
+	if err != nil {
+		return nil, nil, fmt.Errorf("invalid 'security': %w", err)
+	}
+	if sec.RowFilter != "" {
+		return nil, nil, fmt.Errorf("invalid 'security': 'row_filter' is not supported for MCP connectors")
+	}
+	if len(sec.Rules) > 0 {
+		return nil, nil, fmt.Errorf("invalid 'security': 'rules' is not supported for MCP connectors")
+	}
+	for _, a := range sec.Agents {
+		if !slices.Contains(mcpAgentNames, a) {
+			return nil, nil, fmt.Errorf("invalid 'security': unknown agent %q in 'agents' (expected one of %s)", a, strings.Join(mcpAgentNames, ", "))
+		}
+	}
+
+	// Proto() applies the metrics view semantics: a security block without "access" denies everyone.
+	rules, err := sec.SecurityPolicyYAML.Proto()
+	if err != nil {
+		return nil, nil, err
+	}
+	return rules, sec.Agents, nil
 }
 
 // analyzeTemplatedProperties returns a slice of map keys that have a value which contains templating tags.

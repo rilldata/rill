@@ -5375,6 +5375,19 @@ definitions:
         type: boolean
       provisionArgs:
         type: object
+      securityRules:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1SecurityRule'
+        description: |-
+          Security rules that control which users may use the connector and, for MCP connectors, which of its tools.
+          Parsed from the connector's "security" YAML block; currently only the "mcp" driver supports it.
+      agents:
+        type: array
+        items:
+          type: string
+        description: AI agents that may use the connector's tools (MCP connectors only). Empty means all agents.
   v1ConnectorState:
     type: object
     properties:

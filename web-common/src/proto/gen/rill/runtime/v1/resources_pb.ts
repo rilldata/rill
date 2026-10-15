@@ -6410,6 +6410,21 @@ export class ConnectorSpec extends Message<ConnectorSpec> {
    */
   provisionArgs?: Struct;
 
+  /**
+   * Security rules that control which users may use the connector and, for MCP connectors, which of its tools.
+   * Parsed from the connector's "security" YAML block; currently only the "mcp" driver supports it.
+   *
+   * @generated from field: repeated rill.runtime.v1.SecurityRule security_rules = 8;
+   */
+  securityRules: SecurityRule[] = [];
+
+  /**
+   * AI agents that may use the connector's tools (MCP connectors only). Empty means all agents.
+   *
+   * @generated from field: repeated string agents = 9;
+   */
+  agents: string[] = [];
+
   constructor(data?: PartialMessage<ConnectorSpec>) {
     super();
     proto3.util.initPartial(data, this);
@@ -6423,6 +6438,8 @@ export class ConnectorSpec extends Message<ConnectorSpec> {
     { no: 4, name: "templated_properties", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 5, name: "provision", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 6, name: "provision_args", kind: "message", T: Struct },
+    { no: 8, name: "security_rules", kind: "message", T: SecurityRule, repeated: true },
+    { no: 9, name: "agents", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ConnectorSpec {
