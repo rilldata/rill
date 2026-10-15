@@ -32,6 +32,7 @@
   import CanvasProvider from "@rilldata/web-common/features/canvas/CanvasProvider.svelte";
   import CanvasFilters from "@rilldata/web-common/features/canvas/filters/CanvasFilters.svelte";
   import CanvasFilterParamsSync from "@rilldata/web-common/features/canvas/CanvasFilterParamsSync.svelte";
+  import { useVisibilityConditionsCheck } from "@rilldata/web-common/features/dashboards/granular-access-policies/useSecurityPolicyCheck";
   import { specHasTabGroups } from "@rilldata/web-common/features/canvas/stores/tab-group";
   import type { EphemeralMeasureDef } from "@rilldata/web-common/features/dashboards/ephemeral-measures/types.ts";
   import type { V1Resource } from "@rilldata/web-common/runtime-client";
@@ -89,6 +90,17 @@
   $: canvasFiltersEnabled =
     $canvasQuery.data?.canvas?.state?.validSpec?.filtersEnabled ?? true;
 
+  // Reports render a canvas as the creator or as each recipient sees it, so point out content that only some viewers see.
+  $: conditionsCheck = useVisibilityConditionsCheck(
+    runtimeClient,
+    canvasName ? ($canvasQuery.data?.meta?.filePaths?.[0] ?? "") : "",
+  );
+  $: visibilityNote = $conditionsCheck.data
+    ? $data["webOpenMode"] === ReportRunAs.Recipient
+      ? m.canvas_visibility_report_recipient_note()
+      : m.canvas_visibility_report_creator_note()
+    : "";
+
   // Keyboard counterpart of the read-only filter bar's pointer-events guard:
   // its controls remain focusable, so kick focus back out to keep them inoperable.
   function blurFocusedDescendant(event: FocusEvent) {
@@ -125,6 +137,11 @@
     {#if selectedRunAsOption}
       <div>
         {selectedRunAsOption.description}
+      </div>
+    {/if}
+    {#if visibilityNote}
+      <div>
+        {visibilityNote}
       </div>
     {/if}
     <ScheduleForm {data} {availableTimeZones} />
