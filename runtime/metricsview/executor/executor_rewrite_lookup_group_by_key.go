@@ -18,7 +18,9 @@ import (
 // The outer select keeps the sort, limit and offset. They can never move into the inner select: a value's measures merge several keys,
 // so the top keys are not the top values. The rewrite must therefore run after every other AST rewrite, in particular the limit pushdowns,
 // which would otherwise consider the inner select eligible because the partial aggregates reuse the measure names.
-// A select with a measure the dialect cannot split is left untouched, so the results are identical either way.
+// A select with a measure the dialect cannot split is left untouched.
+// Exact aggregates return the same results either way; approximate ones (such as quantile or topK) may differ slightly after merging partial states,
+// and count(DISTINCT) is always evaluated with uniqExact regardless of the count_distinct_implementation setting.
 func (e *Executor) rewriteLookupGroupByKey(ctx context.Context, ast *metricsview.AST) {
 	if ast.Query.Rows {
 		return
@@ -117,9 +119,12 @@ func rewriteLookupGroupByKeyNode(ast *metricsview.AST, n *metricsview.SelectNode
 		})
 	}
 
-	// The other dimensions pass through the inner select under their own names.
+	// The other dimensions pass through the inner select under their own names, which may collide with a partial aggregate alias like "m__1".
 	for i, f := range n.DimFields {
 		if _, ok := flagged[i]; !ok {
+			if taken[f.Name] {
+				return false, "alias_conflict:" + f.Name
+			}
 			taken[f.Name] = true
 		}
 	}

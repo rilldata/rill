@@ -78,6 +78,9 @@ func TestSplitAggregateExpression(t *testing.T) {
 		// Identifiers outside aggregate calls are column references, including the arguments of an aggregate function that is not in the list.
 		{expr: "sum(x) * y"},
 		{expr: "fooAgg(x)"},
+		{expr: `sum(x) * "y"`},
+		{expr: `sum(x) + fooAgg("y")`},
+		{expr: "sum(x) + fooAgg(`y`)"},
 		{expr: "arraySum(x -> x, [sum(a)])"},
 		{expr: "sum(x) FILTER (WHERE c)"},
 		{expr: "(SELECT 1)"},

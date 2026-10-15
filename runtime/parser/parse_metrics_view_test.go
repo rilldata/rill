@@ -127,6 +127,9 @@ dimensions:
 - name: foo
   column: id
   lookup_group_by_key: true
+- name: bar
+  column: id
+  lookup_group_by_key: false
 measures:
 - name: count
   expression: COUNT(*)

@@ -387,7 +387,7 @@ func (p *Parser) parseMetricsView(node *Node) error {
 				return fmt.Errorf("unnest cannot be used with lookup fields")
 			}
 		}
-		if dim.LookupGroupByKey != nil && dim.LookupTable == "" {
+		if dim.LookupGroupByKey != nil && *dim.LookupGroupByKey && dim.LookupTable == "" {
 			return fmt.Errorf("lookup_group_by_key requires lookup_table, lookup_key_column and lookup_value_column for dimension: %q", dim.Name)
 		}
 

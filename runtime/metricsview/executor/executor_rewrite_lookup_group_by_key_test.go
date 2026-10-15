@@ -28,6 +28,7 @@ func lookupGroupByKeyTestMetricsView() *runtimev1.MetricsViewSpec {
 			{Name: "region", Column: "country_code", LookupTable: "dict_country", LookupKeyColumn: "code", LookupValueColumn: "region", LookupDefaultExpression: "'Unknown'", LookupGroupByKey: proto.Bool(true)},
 			{Name: "country_code", Expression: "upper(country_code)"},
 			{Name: "device", Column: "device"},
+			{Name: "ctr__1", Column: "device"},
 		},
 		Measures: []*runtimev1.MetricsViewSpec_Measure{
 			{Name: "impressions", Expression: "sum(impressions)", Type: runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE},
@@ -224,6 +225,26 @@ func TestRewriteLookupGroupByKeySkipsWhenTheKeyAliasIsTakenAndADefaultExpression
 	ok, reason := rewriteLookupGroupByKeyNode(ast, ast.Root)
 	require.False(t, ok)
 	require.Equal(t, "key_alias_conflict:region", reason)
+	after, _, err := ast.SQL()
+	require.NoError(t, err)
+	require.Equal(t, before, after)
+}
+
+func TestRewriteLookupGroupByKeySkipsWhenADimensionNameCollidesWithAPartialAlias(t *testing.T) {
+	// The "ctr" measure splits into the partials "ctr" and "ctr__1", and the "ctr__1" dimension passes through the inner select under the same name,
+	// so the select is left untouched.
+	qry := &metricsview.Query{
+		Dimensions: []metricsview.Dimension{{Name: "advertiser"}, {Name: "ctr__1"}},
+		Measures:   []metricsview.Measure{{Name: "ctr"}},
+	}
+	ast, err := metricsview.NewAST(lookupGroupByKeyTestMetricsView(), runtime.ResolvedSecurityOpen, qry, clickhouse.DialectClickhouse)
+	require.NoError(t, err)
+	before, _, err := ast.SQL()
+	require.NoError(t, err)
+
+	ok, reason := rewriteLookupGroupByKeyNode(ast, ast.Root)
+	require.False(t, ok)
+	require.Equal(t, "alias_conflict:ctr__1", reason)
 	after, _, err := ast.SQL()
 	require.NoError(t, err)
 	require.Equal(t, before, after)

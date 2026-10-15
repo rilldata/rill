@@ -46,6 +46,10 @@ func (d *dialect) SplitAggregateExpression(expr, measureName, innerAlias string)
 	pos := 0 // Offset in expr up to which the expression has been copied to final.
 	for i := 0; i < len(toks); {
 		t := toks[i]
+		if t.kind == sqlTokenQuotedIdent {
+			// A quoted identifier is always a reference to a column, which cannot be re-aggregated outside an aggregate call.
+			return nil, "", false
+		}
 		if t.kind != sqlTokenIdent {
 			i++
 			continue
