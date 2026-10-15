@@ -4,6 +4,7 @@ package rill.admin.v1;
 option go_package = "github.com/rilldata/rill/proto/gen/rill/admin/v1;adminv1";
 
 import "google/api/annotations.proto";
+import "google/protobuf/timestamp.proto";
 import "rill/ai/v1/ai.proto";
 
 service AIService {
@@ -11,6 +12,25 @@ service AIService {
   rpc Complete(CompleteRequest) returns (CompleteResponse) {
     option (google.api.http) = {
       post: "/v1/ai/complete",
+      body: "*"
+    };
+  }
+
+  // GetMCPOAuthToken returns a user's OAuth access token for an external MCP connector in the calling deployment's project,
+  // refreshing it first if it is about to expire. It returns NotFound if the user has not authorized the connector.
+  // It can only be called by deployments.
+  rpc GetMCPOAuthToken(GetMCPOAuthTokenRequest) returns (GetMCPOAuthTokenResponse) {
+    option (google.api.http) = {
+      post: "/v1/ai/mcp-oauth-token",
+      body: "*"
+    };
+  }
+
+  // DeleteMCPOAuthToken removes a user's OAuth authorization for an external MCP connector in the calling deployment's project.
+  // It can only be called by deployments.
+  rpc DeleteMCPOAuthToken(DeleteMCPOAuthTokenRequest) returns (DeleteMCPOAuthTokenResponse) {
+    option (google.api.http) = {
+      post: "/v1/ai/mcp-oauth-token/delete",
       body: "*"
     };
   }
@@ -37,3 +57,32 @@ message CompleteResponse {
   // The LLM provider that served the completion (e.g. "claude", "openai", "gemini").
   string provider = 5;
 }
+
+// Request message for AIService.GetMCPOAuthToken
+message GetMCPOAuthTokenRequest {
+  // Name of the MCP connector in the deployment's project.
+  string connector = 1;
+  // ID of the user whose token to return.
+  string user_id = 2;
+  // If true, the token is refreshed even if it has not expired yet (used after the server rejected the current token).
+  bool force_refresh = 3;
+  // URL of the MCP server the connector currently points to.
+  // A token is only returned if the user granted it for this server, so changing a connector's URL never sends an existing token to the new server.
+  string server_url = 4;
+}
+
+// Response message for AIService.GetMCPOAuthToken
+message GetMCPOAuthTokenResponse {
+  string access_token = 1;
+  // When the access token expires. Unset if the token does not expire.
+  google.protobuf.Timestamp expires_on = 2;
+}
+
+// Request message for AIService.DeleteMCPOAuthToken
+message DeleteMCPOAuthTokenRequest {
+  string connector = 1;
+  string user_id = 2;
+}
+
+// Response message for AIService.DeleteMCPOAuthToken
+message DeleteMCPOAuthTokenResponse {}

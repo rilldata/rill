@@ -341,3 +341,455 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = CompleteResponseValidationError{}
+
+// Validate checks the field values on GetMCPOAuthTokenRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *GetMCPOAuthTokenRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on GetMCPOAuthTokenRequest with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// GetMCPOAuthTokenRequestMultiError, or nil if none found.
+func (m *GetMCPOAuthTokenRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *GetMCPOAuthTokenRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for Connector
+
+	// no validation rules for UserId
+
+	// no validation rules for ForceRefresh
+
+	// no validation rules for ServerUrl
+
+	if len(errors) > 0 {
+		return GetMCPOAuthTokenRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// GetMCPOAuthTokenRequestMultiError is an error wrapping multiple validation
+// errors returned by GetMCPOAuthTokenRequest.ValidateAll() if the designated
+// constraints aren't met.
+type GetMCPOAuthTokenRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m GetMCPOAuthTokenRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m GetMCPOAuthTokenRequestMultiError) AllErrors() []error { return m }
+
+// GetMCPOAuthTokenRequestValidationError is the validation error returned by
+// GetMCPOAuthTokenRequest.Validate if the designated constraints aren't met.
+type GetMCPOAuthTokenRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e GetMCPOAuthTokenRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e GetMCPOAuthTokenRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e GetMCPOAuthTokenRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e GetMCPOAuthTokenRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e GetMCPOAuthTokenRequestValidationError) ErrorName() string {
+	return "GetMCPOAuthTokenRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e GetMCPOAuthTokenRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sGetMCPOAuthTokenRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = GetMCPOAuthTokenRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = GetMCPOAuthTokenRequestValidationError{}
+
+// Validate checks the field values on GetMCPOAuthTokenResponse with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *GetMCPOAuthTokenResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on GetMCPOAuthTokenResponse with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// GetMCPOAuthTokenResponseMultiError, or nil if none found.
+func (m *GetMCPOAuthTokenResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *GetMCPOAuthTokenResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for AccessToken
+
+	if all {
+		switch v := interface{}(m.GetExpiresOn()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, GetMCPOAuthTokenResponseValidationError{
+					field:  "ExpiresOn",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, GetMCPOAuthTokenResponseValidationError{
+					field:  "ExpiresOn",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetExpiresOn()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return GetMCPOAuthTokenResponseValidationError{
+				field:  "ExpiresOn",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if len(errors) > 0 {
+		return GetMCPOAuthTokenResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// GetMCPOAuthTokenResponseMultiError is an error wrapping multiple validation
+// errors returned by GetMCPOAuthTokenResponse.ValidateAll() if the designated
+// constraints aren't met.
+type GetMCPOAuthTokenResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m GetMCPOAuthTokenResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m GetMCPOAuthTokenResponseMultiError) AllErrors() []error { return m }
+
+// GetMCPOAuthTokenResponseValidationError is the validation error returned by
+// GetMCPOAuthTokenResponse.Validate if the designated constraints aren't met.
+type GetMCPOAuthTokenResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e GetMCPOAuthTokenResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e GetMCPOAuthTokenResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e GetMCPOAuthTokenResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e GetMCPOAuthTokenResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e GetMCPOAuthTokenResponseValidationError) ErrorName() string {
+	return "GetMCPOAuthTokenResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e GetMCPOAuthTokenResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sGetMCPOAuthTokenResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = GetMCPOAuthTokenResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = GetMCPOAuthTokenResponseValidationError{}
+
+// Validate checks the field values on DeleteMCPOAuthTokenRequest with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *DeleteMCPOAuthTokenRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on DeleteMCPOAuthTokenRequest with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// DeleteMCPOAuthTokenRequestMultiError, or nil if none found.
+func (m *DeleteMCPOAuthTokenRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *DeleteMCPOAuthTokenRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for Connector
+
+	// no validation rules for UserId
+
+	if len(errors) > 0 {
+		return DeleteMCPOAuthTokenRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// DeleteMCPOAuthTokenRequestMultiError is an error wrapping multiple
+// validation errors returned by DeleteMCPOAuthTokenRequest.ValidateAll() if
+// the designated constraints aren't met.
+type DeleteMCPOAuthTokenRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m DeleteMCPOAuthTokenRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m DeleteMCPOAuthTokenRequestMultiError) AllErrors() []error { return m }
+
+// DeleteMCPOAuthTokenRequestValidationError is the validation error returned
+// by DeleteMCPOAuthTokenRequest.Validate if the designated constraints aren't met.
+type DeleteMCPOAuthTokenRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e DeleteMCPOAuthTokenRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e DeleteMCPOAuthTokenRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e DeleteMCPOAuthTokenRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e DeleteMCPOAuthTokenRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e DeleteMCPOAuthTokenRequestValidationError) ErrorName() string {
+	return "DeleteMCPOAuthTokenRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e DeleteMCPOAuthTokenRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sDeleteMCPOAuthTokenRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = DeleteMCPOAuthTokenRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = DeleteMCPOAuthTokenRequestValidationError{}
+
+// Validate checks the field values on DeleteMCPOAuthTokenResponse with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *DeleteMCPOAuthTokenResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on DeleteMCPOAuthTokenResponse with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// DeleteMCPOAuthTokenResponseMultiError, or nil if none found.
+func (m *DeleteMCPOAuthTokenResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *DeleteMCPOAuthTokenResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if len(errors) > 0 {
+		return DeleteMCPOAuthTokenResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// DeleteMCPOAuthTokenResponseMultiError is an error wrapping multiple
+// validation errors returned by DeleteMCPOAuthTokenResponse.ValidateAll() if
+// the designated constraints aren't met.
+type DeleteMCPOAuthTokenResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m DeleteMCPOAuthTokenResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m DeleteMCPOAuthTokenResponseMultiError) AllErrors() []error { return m }
+
+// DeleteMCPOAuthTokenResponseValidationError is the validation error returned
+// by DeleteMCPOAuthTokenResponse.Validate if the designated constraints
+// aren't met.
+type DeleteMCPOAuthTokenResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e DeleteMCPOAuthTokenResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e DeleteMCPOAuthTokenResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e DeleteMCPOAuthTokenResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e DeleteMCPOAuthTokenResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e DeleteMCPOAuthTokenResponseValidationError) ErrorName() string {
+	return "DeleteMCPOAuthTokenResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e DeleteMCPOAuthTokenResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sDeleteMCPOAuthTokenResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = DeleteMCPOAuthTokenResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = DeleteMCPOAuthTokenResponseValidationError{}

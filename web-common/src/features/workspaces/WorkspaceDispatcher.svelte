@@ -24,6 +24,7 @@
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import { onMount } from "svelte";
   import { getReadonlyNotice } from "@rilldata/web-common/features/entity-management/actions/protected-files.ts";
+  import McpConnectorInspector from "@rilldata/web-common/features/connectors/mcp/McpConnectorInspector.svelte";
 
   const workspaces = new Map([
     [ResourceKind.Source, ModelWorkspace],
@@ -82,6 +83,12 @@
     $generatingComponentFilePath === path,
   );
 
+  // Connector files for external MCP servers get a side panel with the server's status and tools
+  let isMcpConnector = $derived(
+    resourceKind === ResourceKind.Connector &&
+      resource?.connector?.spec?.driver === "mcp",
+  );
+
   onMount(() => {
     expandDirectory(path);
   });
@@ -115,7 +122,7 @@
     {:else if WorkspaceComponent}
       <WorkspaceComponent {fileArtifact} />
     {:else}
-      <WorkspaceContainer inspector={false}>
+      <WorkspaceContainer inspector={isMcpConnector}>
         <FileWorkspaceHeader
           slot="header"
           {fileArtifact}
@@ -141,6 +148,14 @@
                 bind:autoSave={$autoSave}
               />
             </WorkspaceEditorContainer>
+          {/if}
+        </svelte:fragment>
+        <svelte:fragment slot="inspector">
+          {#if isMcpConnector && $resourceName?.name}
+            <McpConnectorInspector
+              {resource}
+              connectorName={$resourceName.name}
+            />
           {/if}
         </svelte:fragment>
       </WorkspaceContainer>

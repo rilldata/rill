@@ -159,6 +159,17 @@ func (l *localAdminService) UpdateProjectVariables(ctx context.Context, environm
 	return err
 }
 
+// GetMCPOAuthToken implements drivers.AdminService.
+// Rill Developer keeps OAuth tokens for MCP servers in the connector's local data dir, not in Rill Cloud, so the runtime never asks for them here.
+func (l *localAdminService) GetMCPOAuthToken(ctx context.Context, connector, serverURL, userID string, forceRefresh bool) (*drivers.MCPOAuthToken, error) {
+	return nil, drivers.ErrNotImplemented
+}
+
+// DeleteMCPOAuthToken implements drivers.AdminService.
+func (l *localAdminService) DeleteMCPOAuthToken(ctx context.Context, connector, userID string) error {
+	return drivers.ErrNotImplemented
+}
+
 // HasAnonymousSourceAccess implements [drivers.Driver].
 func (l *localAdminService) HasAnonymousSourceAccess(ctx context.Context, srcProps map[string]any, logger *zap.Logger) (bool, error) {
 	return true, nil
@@ -214,6 +225,11 @@ func (l *localAdminService) AsModelExecutor(instanceID string, opts *drivers.Mod
 // AsModelManager implements [drivers.Handle].
 func (l *localAdminService) AsModelManager(instanceID string) (drivers.ModelManager, error) {
 	return nil, drivers.ErrNotImplemented
+}
+
+// AsMCP implements drivers.Handle.
+func (l *localAdminService) AsMCP() (drivers.MCPService, bool) {
+	return nil, false
 }
 
 // AsNotifier implements [drivers.Handle].

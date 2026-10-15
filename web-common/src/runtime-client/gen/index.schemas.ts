@@ -796,10 +796,22 @@ export interface V1ConnectorSpec {
   templatedProperties?: string[];
   provision?: boolean;
   provisionArgs?: V1ConnectorSpecProvisionArgs;
+  /** Security rules that control which users may use the connector and, for MCP connectors, which of its tools. */
+  securityRules?: V1SecurityRule[];
+  /** AI agents that may use the connector's tools (MCP connectors only). Empty means all agents. */
+  agents?: string[];
 }
 
 export interface V1ConnectorState {
   specHash?: string;
+  /** Tools discovered on an external MCP server (MCP connectors only). */
+  mcpTools?: V1MCPTool[];
+}
+
+/** MCPTool describes a tool exposed by an external MCP server. */
+export interface V1MCPTool {
+  name?: string;
+  description?: string;
 }
 
 export interface V1ConnectorV2 {

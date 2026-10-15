@@ -264,6 +264,9 @@ func (s *Server) HTTPHandler(ctx context.Context) (http.Handler, error) {
 	// Add Github-related endpoints (not gRPC handlers, just regular endpoints on /github/*)
 	s.registerGithubEndpoints(mux)
 
+	// Add endpoints for authorizing external MCP servers on behalf of users (regular endpoints on /mcp/*)
+	s.registerMCPOAuthEndpoints(mux)
+
 	// Add project assets endpoint.
 	mux.Handle("/v1/assets/{asset_id}/download", observability.Middleware("assets", s.logger, s.authenticator.HTTPMiddleware(httputil.Handler(s.assetHandler))))
 

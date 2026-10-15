@@ -203,6 +203,7 @@ func (t *AnalystAgent) Handler(ctx context.Context, args *AnalystAgentArgs) (*An
 	}
 	// update_memory is dropped automatically by Complete when memory is not available (see UpdateMemory.CheckAccess).
 	tools = append(tools, UpdateMemoryName)
+	tools = append(tools, s.ExternalToolNames(ctx, "analyst")...)
 
 	// Build completion messages
 	systemPrompt, err := t.systemPrompt(ctx)
@@ -294,6 +295,7 @@ func (t *AnalystAgent) userPrompt(ctx context.Context, metricsViewNames []string
 		"is_report":        args.IsReport,
 		"now":              time.Now(),
 		"max_query_limit":  instanceCfg.AIMaxQueryLimit,
+		"external_servers": session.ExternalServerPromptData(ctx, "analyst"),
 	}
 
 	if !args.TimeStart.IsZero() && !args.TimeEnd.IsZero() {
@@ -372,6 +374,8 @@ This conversation has been transferred and the new owner may have different acce
 If you start seeing access errors like "action not allowed", "resource not found" (for resources earlier available) etc., consider repeating metadata listings and lookups.
 If you run into such issues, explicitly mention to the user that this may be due to conversation forking and that they may not have access to the data that the previous user had.
 {{ end }}
+
+`+externalServersPromptFragment+`
 
 {{ if and .is_report (not .is_prompt) }}
 {{ if (and .comparison_start .comparison_end) }}

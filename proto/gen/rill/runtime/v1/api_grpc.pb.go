@@ -67,6 +67,8 @@ const (
 	RuntimeService_DeleteAIMemory_FullMethodName          = "/rill.runtime.v1.RuntimeService/DeleteAIMemory"
 	RuntimeService_GetAIMemorySettings_FullMethodName     = "/rill.runtime.v1.RuntimeService/GetAIMemorySettings"
 	RuntimeService_UpdateAIMemorySettings_FullMethodName  = "/rill.runtime.v1.RuntimeService/UpdateAIMemorySettings"
+	RuntimeService_ListMCPServers_FullMethodName          = "/rill.runtime.v1.RuntimeService/ListMCPServers"
+	RuntimeService_DisconnectMCPServer_FullMethodName     = "/rill.runtime.v1.RuntimeService/DisconnectMCPServer"
 	RuntimeService_IssueDevJWT_FullMethodName             = "/rill.runtime.v1.RuntimeService/IssueDevJWT"
 	RuntimeService_AnalyzeVariables_FullMethodName        = "/rill.runtime.v1.RuntimeService/AnalyzeVariables"
 	RuntimeService_ListGitCommits_FullMethodName          = "/rill.runtime.v1.RuntimeService/ListGitCommits"
@@ -195,6 +197,11 @@ type RuntimeServiceClient interface {
 	GetAIMemorySettings(ctx context.Context, in *GetAIMemorySettingsRequest, opts ...grpc.CallOption) (*GetAIMemorySettingsResponse, error)
 	// UpdateAIMemorySettings turns AI memory on or off for the current user in an instance.
 	UpdateAIMemorySettings(ctx context.Context, in *UpdateAIMemorySettingsRequest, opts ...grpc.CallOption) (*UpdateAIMemorySettingsResponse, error)
+	// ListMCPServers lists the external MCP servers (connectors with driver "mcp") that the current user may use,
+	// including the tools each server exposes to the user and whether the user has authorized it.
+	ListMCPServers(ctx context.Context, in *ListMCPServersRequest, opts ...grpc.CallOption) (*ListMCPServersResponse, error)
+	// DisconnectMCPServer removes the current user's OAuth authorization for an external MCP server.
+	DisconnectMCPServer(ctx context.Context, in *DisconnectMCPServerRequest, opts ...grpc.CallOption) (*DisconnectMCPServerResponse, error)
 	// IssueDevJWT issues a JWT for mimicking a user in local development.
 	IssueDevJWT(ctx context.Context, in *IssueDevJWTRequest, opts ...grpc.CallOption) (*IssueDevJWTResponse, error)
 	// AnalyzeVariables scans `Source`, `Model` and `Connector` resources in the catalog for use of an environment variable
@@ -753,6 +760,26 @@ func (c *runtimeServiceClient) UpdateAIMemorySettings(ctx context.Context, in *U
 	return out, nil
 }
 
+func (c *runtimeServiceClient) ListMCPServers(ctx context.Context, in *ListMCPServersRequest, opts ...grpc.CallOption) (*ListMCPServersResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListMCPServersResponse)
+	err := c.cc.Invoke(ctx, RuntimeService_ListMCPServers_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *runtimeServiceClient) DisconnectMCPServer(ctx context.Context, in *DisconnectMCPServerRequest, opts ...grpc.CallOption) (*DisconnectMCPServerResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(DisconnectMCPServerResponse)
+	err := c.cc.Invoke(ctx, RuntimeService_DisconnectMCPServer_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *runtimeServiceClient) IssueDevJWT(ctx context.Context, in *IssueDevJWTRequest, opts ...grpc.CallOption) (*IssueDevJWTResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(IssueDevJWTResponse)
@@ -1005,6 +1032,11 @@ type RuntimeServiceServer interface {
 	GetAIMemorySettings(context.Context, *GetAIMemorySettingsRequest) (*GetAIMemorySettingsResponse, error)
 	// UpdateAIMemorySettings turns AI memory on or off for the current user in an instance.
 	UpdateAIMemorySettings(context.Context, *UpdateAIMemorySettingsRequest) (*UpdateAIMemorySettingsResponse, error)
+	// ListMCPServers lists the external MCP servers (connectors with driver "mcp") that the current user may use,
+	// including the tools each server exposes to the user and whether the user has authorized it.
+	ListMCPServers(context.Context, *ListMCPServersRequest) (*ListMCPServersResponse, error)
+	// DisconnectMCPServer removes the current user's OAuth authorization for an external MCP server.
+	DisconnectMCPServer(context.Context, *DisconnectMCPServerRequest) (*DisconnectMCPServerResponse, error)
 	// IssueDevJWT issues a JWT for mimicking a user in local development.
 	IssueDevJWT(context.Context, *IssueDevJWTRequest) (*IssueDevJWTResponse, error)
 	// AnalyzeVariables scans `Source`, `Model` and `Connector` resources in the catalog for use of an environment variable
@@ -1190,6 +1222,12 @@ func (UnimplementedRuntimeServiceServer) GetAIMemorySettings(context.Context, *G
 }
 func (UnimplementedRuntimeServiceServer) UpdateAIMemorySettings(context.Context, *UpdateAIMemorySettingsRequest) (*UpdateAIMemorySettingsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UpdateAIMemorySettings not implemented")
+}
+func (UnimplementedRuntimeServiceServer) ListMCPServers(context.Context, *ListMCPServersRequest) (*ListMCPServersResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListMCPServers not implemented")
+}
+func (UnimplementedRuntimeServiceServer) DisconnectMCPServer(context.Context, *DisconnectMCPServerRequest) (*DisconnectMCPServerResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method DisconnectMCPServer not implemented")
 }
 func (UnimplementedRuntimeServiceServer) IssueDevJWT(context.Context, *IssueDevJWTRequest) (*IssueDevJWTResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method IssueDevJWT not implemented")
@@ -2090,6 +2128,42 @@ func _RuntimeService_UpdateAIMemorySettings_Handler(srv interface{}, ctx context
 	return interceptor(ctx, in, info, handler)
 }
 
+func _RuntimeService_ListMCPServers_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListMCPServersRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RuntimeServiceServer).ListMCPServers(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: RuntimeService_ListMCPServers_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RuntimeServiceServer).ListMCPServers(ctx, req.(*ListMCPServersRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _RuntimeService_DisconnectMCPServer_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DisconnectMCPServerRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RuntimeServiceServer).DisconnectMCPServer(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: RuntimeService_DisconnectMCPServer_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RuntimeServiceServer).DisconnectMCPServer(ctx, req.(*DisconnectMCPServerRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _RuntimeService_IssueDevJWT_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(IssueDevJWTRequest)
 	if err := dec(in); err != nil {
@@ -2524,6 +2598,14 @@ var RuntimeService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "UpdateAIMemorySettings",
 			Handler:    _RuntimeService_UpdateAIMemorySettings_Handler,
+		},
+		{
+			MethodName: "ListMCPServers",
+			Handler:    _RuntimeService_ListMCPServers_Handler,
+		},
+		{
+			MethodName: "DisconnectMCPServer",
+			Handler:    _RuntimeService_DisconnectMCPServer_Handler,
 		},
 		{
 			MethodName: "IssueDevJWT",
