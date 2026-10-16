@@ -192,7 +192,7 @@ func (t *AnalystAgent) Handler(ctx context.Context, args *AnalystAgentArgs) (*An
 	// Determine tools that can be used
 	tools := []string{}
 	if args.Explore == "" {
-		tools = append(tools, ListMetricsViewsName, GetMetricsViewName, GetCanvasName)
+		tools = append(tools, ListMetricsViewsName, GetMetricsViewName, ListCanvasesName, GetCanvasName)
 	}
 	tools = append(tools, QueryMetricsViewSummaryName, QueryMetricsViewName, ClickUIName)
 	if !args.DisableCharts {

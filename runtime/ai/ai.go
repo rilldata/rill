@@ -59,6 +59,7 @@ func NewRunner(rt *runtime.Runtime, activity *activity.Client) *Runner {
 
 	RegisterTool(r, &ListMetricsViews{Runtime: rt})
 	RegisterTool(r, &GetMetricsView{Runtime: rt})
+	RegisterTool(r, &ListCanvases{Runtime: rt})
 	RegisterTool(r, &GetCanvas{Runtime: rt})
 	RegisterTool(r, &QueryMetricsViewSummary{Runtime: rt})
 	RegisterTool(r, &QueryMetricsView{Runtime: rt})

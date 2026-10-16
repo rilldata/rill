@@ -26,7 +26,7 @@ var _ Tool[*DevelopPersonalCanvasArgs, *DevelopPersonalCanvasResult] = (*Develop
 
 type DevelopPersonalCanvasArgs struct {
 	Prompt string `json:"prompt" jsonschema:"A detailed description of the dashboard to build or the changes to make. Include the metrics, breakdowns, time ranges and filters the user asked for, assuming no prior context. To start from an existing project dashboard, name it here."`
-	Name   string `json:"name,omitempty" jsonschema:"Optional name of one of the user's existing personal canvas dashboards to edit. Leave empty to create a new one."`
+	Name   string `json:"name,omitempty" jsonschema:"Optional name of one of the user's existing personal canvas dashboards to edit, as listed by list_canvases with personal: true. Leave empty to create a new one."`
 }
 
 type DevelopPersonalCanvasResult struct {
@@ -37,7 +37,7 @@ func (t *DevelopPersonalCanvas) Spec() *mcp.Tool {
 	return &mcp.Tool{
 		Name:        DevelopPersonalCanvasName,
 		Title:       "Develop personal dashboard",
-		Description: "Creates a canvas dashboard for the current user, or edits one of the user's own, and saves it as a personal dashboard that only they can see until they share it from the UI. Use it when the user asks to create, build, save or change a dashboard for themselves. It can't share or delete dashboards, nor change the project's dashboards. Give the user the dashboard's URL from the response.",
+		Description: "Creates a canvas dashboard for the current user, or edits one of the user's own, and saves it as a personal dashboard that only they can see until they share it from the UI. Use it when the user asks to create, build, save or change a dashboard for themselves. It can't share or delete dashboards, nor change the project's dashboards. To edit a dashboard, find its name with list_canvases; if the user asks to change a dashboard you can't find, ask them which one instead of creating a new one. Give the user the dashboard's URL from the response.",
 		Annotations: &mcp.ToolAnnotations{
 			DestructiveHint: boolPtr(false),
 			IdempotentHint:  false,
@@ -89,7 +89,7 @@ func (t *DevelopPersonalCanvas) Handler(ctx context.Context, args *DevelopPerson
 	}
 	tools := []string{WritePersonalCanvasName, GetMetricsViewName}
 	if canGetCanvas {
-		tools = append(tools, GetCanvasName)
+		tools = append(tools, ListCanvasesName, GetCanvasName)
 	}
 
 	userPrompt, err := executeTemplate(`
@@ -102,7 +102,7 @@ Here is some important context:
 - Save the dashboard with 'write_personal_canvas'. It is stored outside the project's files, so there is no file path. {{ if .name }}Pass name "{{ .name }}" to edit it.{{ else }}Leave name empty the first time, then pass the name it returns on every later call so you edit the same dashboard instead of creating another one.{{ end }}
 - Don't set annotations: they are ignored. The dashboard is owned by the user and private to them.
 - Only use the exact measure and dimension names of the metrics views listed below. If a metrics view is not listed, call 'get_metrics_view' BEFORE writing. Never guess field names based on display names or the task description.
-{{ if .get_canvas }}- To start from an existing project dashboard, call 'get_canvas' and reproduce its components in the new dashboard. The project dashboard itself is never changed.
+{{ if .get_canvas }}- To start from an existing project dashboard, find its name with 'list_canvases', call 'get_canvas' and reproduce its components in the new dashboard. The project dashboard itself is never changed.
 {{ end }}- When 'write_personal_canvas' returns a parse or reconcile error, fix the YAML and save it again.
 - Reply with the dashboard's display name and its URL.
 {{ if .current }}
@@ -269,7 +269,7 @@ func readPersonalCanvas(ctx context.Context, rt *runtime.Runtime, name string) (
 	data, err := repo.Get(ctx, personalCanvasPath(name))
 	if err != nil {
 		if errors.Is(err, os.ErrNotExist) {
-			return "", fmt.Errorf("personal canvas %q not found", name)
+			return "", fmt.Errorf("personal canvas %q not found: call list_canvases for the names of the user's personal canvases", name)
 		}
 		return "", err
 	}
@@ -281,7 +281,7 @@ func readPersonalCanvas(ctx context.Context, rt *runtime.Runtime, name string) (
 		return "", fmt.Errorf("failed to parse personal canvas %q: %w", name, err)
 	}
 	if doc.Annotations["admin_owner_user_id"] != s.Claims().UserID {
-		return "", fmt.Errorf("personal canvas %q not found", name)
+		return "", fmt.Errorf("personal canvas %q not found: call list_canvases for the names of the user's personal canvases", name)
 	}
 	return data, nil
 }

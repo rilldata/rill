@@ -57,6 +57,7 @@ var mcpForwardedTools = []string{
 	ai.QueryMetricsViewName,
 	ai.ListSkillsName,
 	ai.LoadSkillName,
+	ai.ListCanvasesName,
 	ai.DevelopPersonalCanvasName,
 }
 

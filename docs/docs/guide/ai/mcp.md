@@ -262,6 +262,7 @@ You can look at one of our [example projects](https://github.com/rilldata/rill-e
 - __*Query the metrics*__ – Use `query_metrics_view` to run queries to get aggregated results.
 - __*List skills*__ – Use `list_skills` to discover the [skills](/developers/build/ai-configuration#skills) defined in the project. It returns an empty list when the project defines no skills.
 - __*Load a skill*__ – Use `load_skill` to fetch a skill's full instructions before doing work its description covers.
+- __*List dashboards*__ – Use `list_canvases` to discover the canvas dashboards you can see in the project. Your own personal dashboards are included and marked with `personal: true`; pass one's `name` to `develop_personal_canvas` to change it.
 - __*Create a personal dashboard*__ – Use `develop_personal_canvas` to create a canvas dashboard for yourself, or change one of your own. It is saved as a personal dashboard that only you can see until you share it from Rill Cloud.
 
 The skill tools are available to every user who can use AI features in the project, whether or not the project defines skills. `list_skills` returns every skill in the project with its `description`, `metrics_views`, `agents` and `always_apply` fields, so the client can pick the ones that fit its task. If `load_skill` is called with a name that doesn't exist, the error lists the skills that do.
