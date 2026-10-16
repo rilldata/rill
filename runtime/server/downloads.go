@@ -240,15 +240,6 @@ func (s *Server) downloadHandler(w http.ResponseWriter, req *http.Request) {
 		}
 	case *runtimev1.Query_MetricsViewRowsRequest:
 		r := v.MetricsViewRowsRequest
-		mv, security, err := resolveMVAndSecurityFromAttributes(req.Context(), s.runtime, request.InstanceId, r.MetricsViewName, claims)
-		if err != nil {
-			if errors.Is(err, ErrForbidden) {
-				http.Error(w, "action not allowed", http.StatusUnauthorized)
-				return
-			}
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
 
 		var limitPtr *int64
 		limit := s.resolveExportLimit(request.Limit, int64(r.Limit))
@@ -257,17 +248,15 @@ func (s *Server) downloadHandler(w http.ResponseWriter, req *http.Request) {
 		}
 
 		q = &queries.MetricsViewRows{
-			MetricsViewName:    r.MetricsViewName,
-			TimeStart:          r.TimeStart,
-			TimeEnd:            r.TimeEnd,
-			Filter:             r.Filter,
-			Where:              r.Where,
-			Sort:               r.Sort,
-			Limit:              limitPtr,
-			TimeZone:           r.TimeZone,
-			MetricsView:        mv.ValidSpec,
-			ResolvedMVSecurity: security,
-			Streaming:          mv.Streaming,
+			MetricsViewName: r.MetricsViewName,
+			TimeStart:       r.TimeStart,
+			TimeEnd:         r.TimeEnd,
+			Filter:          r.Filter,
+			Where:           r.Where,
+			Sort:            r.Sort,
+			Limit:           limitPtr,
+			TimeZone:        r.TimeZone,
+			SecurityClaims:  claims,
 		}
 	case *runtimev1.Query_MetricsViewTimeSeriesRequest:
 		r := v.MetricsViewTimeSeriesRequest
@@ -354,6 +343,10 @@ func (s *Server) downloadHandler(w http.ResponseWriter, req *http.Request) {
 		OriginURL:       request.OriginUrl,
 	})
 	if err != nil {
+		if errors.Is(err, queries.ErrForbidden) {
+			http.Error(w, "action not allowed", http.StatusUnauthorized)
+			return
+		}
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}

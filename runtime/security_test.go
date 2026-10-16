@@ -1,6 +1,7 @@
 package runtime
 
 import (
+	"encoding/json"
 	"strings"
 	"testing"
 
@@ -638,4 +639,15 @@ func TestResolveAPI(t *testing.T) {
 			require.Equal(t, tt.wantAccess, got.CanAccess())
 		})
 	}
+}
+
+func TestResolvedSecurityMarshalJSON(t *testing.T) {
+	// ResolvedSecurity must not be serializable since it would serialize as an empty object.
+	_, err := json.Marshal(ResolvedSecurityOpen)
+	require.Error(t, err)
+
+	_, err = json.Marshal(struct {
+		Security *ResolvedSecurity `json:"security"`
+	}{Security: ResolvedSecurityOpen})
+	require.Error(t, err)
 }
