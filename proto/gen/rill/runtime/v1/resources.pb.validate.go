@@ -13908,6 +13908,10 @@ func (m *MetricsViewSpec_Dimension) validate(all bool) error {
 		}
 	}
 
+	if m.LookupGroupByKey != nil {
+		// no validation rules for LookupGroupByKey
+	}
+
 	if len(errors) > 0 {
 		return MetricsViewSpec_DimensionMultiError(errors)
 	}

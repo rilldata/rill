@@ -2154,6 +2154,9 @@ definitions:
                 lookup_default_expression:
                   type: string
                   description: an optional SQL expression used as a fallback value when no match is found in the dictionary (maps to `dictGetOrDefault`)
+                lookup_group_by_key:
+                  type: boolean
+                  description: If true, queries that group by this dimension group by the lookup key first, resolve the lookup value once per key, and then regroup by value. Enable it for dictionaries with few keys (up to the low hundreds of thousands); it uses more memory and loses its advantage for very high-cardinality keys. See [Query-Time Joins](/developers/build/metrics-view/dimensions/lookup) for details.
               anyOf:
                 - required:
                     - column
