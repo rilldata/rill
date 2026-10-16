@@ -3808,6 +3808,47 @@ paths:
                   type: string
               anonRecipients:
                 type: boolean
+  /v1/projects/{projectId}/personal-files/for-user:
+    post:
+      summary: |-
+        SavePersonalFileForUser creates or edits a personal file on behalf of a user.
+        It can only be called by the project's deployment. It's currently only called by AI tools in the runtime.
+        It triggers the parser but doesn't wait for the resource, so the caller can surface parse errors in the YAML.
+      operationId: AdminService_SavePersonalFileForUser
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1SavePersonalFileForUserResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              userId:
+                type: string
+                description: User who owns the personal file.
+              kind:
+                type: string
+              name:
+                type: string
+                description: Name of an existing personal file to edit. If empty, a new personal file is created.
+              displayName:
+                type: string
+                description: Display name for a new personal file. Required when name is empty.
+              yaml:
+                type: string
+                description: YAML body of the personal file. Annotations in it are ignored.
   /v1/projects/{projectId}/repo/meta:
     get:
       summary: GetRepoMeta returns credentials and other metadata for accessing a project's repo
@@ -6834,6 +6875,14 @@ definitions:
     type: object
   v1RevokeUserAuthTokenResponse:
     type: object
+  v1SavePersonalFileForUserResponse:
+    type: object
+    properties:
+      name:
+        type: string
+      url:
+        type: string
+        description: URL where the user can open the personal file.
   v1SearchProjectNamesResponse:
     type: object
     properties:

@@ -1320,6 +1320,16 @@ service AdminService {
     option (google.api.http) = {delete: "/v1/orgs/{org}/projects/{project}/personal-files/{name}"};
   }
 
+  // SavePersonalFileForUser creates or edits a personal file on behalf of a user.
+  // It can only be called by the project's deployment. It's currently only called by AI tools in the runtime.
+  // It triggers the parser but doesn't wait for the resource, so the caller can surface parse errors in the YAML.
+  rpc SavePersonalFileForUser(SavePersonalFileForUserRequest) returns (SavePersonalFileForUserResponse) {
+    option (google.api.http) = {
+      post: "/v1/projects/{project_id}/personal-files/for-user",
+      body: "*"
+    };
+  }
+
   // GetBillingSubscription lists the subscription for the organization
   rpc GetBillingSubscription(GetBillingSubscriptionRequest) returns (GetBillingSubscriptionResponse) {
     option (google.api.http) = {get: "/v1/orgs/{org}/billing/subscriptions"};
@@ -3301,6 +3311,25 @@ message DeletePersonalFileRequest {
 }
 
 message DeletePersonalFileResponse {
+}
+
+message SavePersonalFileForUserRequest {
+  string project_id = 1;
+  // User who owns the personal file.
+  string user_id = 2 [(validate.rules).string.min_len = 1];
+  string kind = 3;
+  // Name of an existing personal file to edit. If empty, a new personal file is created.
+  string name = 4;
+  // Display name for a new personal file. Required when name is empty.
+  string display_name = 5;
+  // YAML body of the personal file. Annotations in it are ignored.
+  string yaml = 6;
+}
+
+message SavePersonalFileForUserResponse {
+  string name = 1;
+  // URL where the user can open the personal file.
+  string url = 2;
 }
 
 message GetBillingSubscriptionRequest {

@@ -1956,6 +1956,14 @@ components:
             type: object
         v1RevokeUserAuthTokenResponse:
             type: object
+        v1SavePersonalFileForUserResponse:
+            properties:
+                name:
+                    type: string
+                url:
+                    description: URL where the user can open the personal file.
+                    type: string
+            type: object
         v1SearchProjectNamesResponse:
             properties:
                 names:
@@ -7177,6 +7185,54 @@ paths:
                                 $ref: '#/components/schemas/rpcStatus'
                     description: An unexpected error response.
             summary: GetAlertMeta returns metadata for checking an alert. It's currently only called by the alert reconciler in the runtime.
+    /v1/projects/{projectId}/personal-files/for-user:
+        post:
+            operationId: AdminService_SavePersonalFileForUser
+            parameters:
+                - in: path
+                  name: projectId
+                  required: true
+                  schema:
+                    type: string
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            properties:
+                                displayName:
+                                    description: Display name for a new personal file. Required when name is empty.
+                                    type: string
+                                kind:
+                                    type: string
+                                name:
+                                    description: Name of an existing personal file to edit. If empty, a new personal file is created.
+                                    type: string
+                                userId:
+                                    description: User who owns the personal file.
+                                    type: string
+                                yaml:
+                                    description: YAML body of the personal file. Annotations in it are ignored.
+                                    type: string
+                            type: object
+                required: true
+                x-originalParamName: body
+            responses:
+                "200":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/v1SavePersonalFileForUserResponse'
+                    description: A successful response.
+                default:
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/rpcStatus'
+                    description: An unexpected error response.
+            summary: |-
+                SavePersonalFileForUser creates or edits a personal file on behalf of a user.
+                It can only be called by the project's deployment. It's currently only called by AI tools in the runtime.
+                It triggers the parser but doesn't wait for the resource, so the caller can surface parse errors in the YAML.
     /v1/projects/{projectId}/repo/meta:
         get:
             operationId: AdminService_GetRepoMeta

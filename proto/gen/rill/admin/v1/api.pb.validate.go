@@ -40917,6 +40917,237 @@ var _ interface {
 	ErrorName() string
 } = DeletePersonalFileResponseValidationError{}
 
+// Validate checks the field values on SavePersonalFileForUserRequest with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *SavePersonalFileForUserRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on SavePersonalFileForUserRequest with
+// the rules defined in the proto definition for this message. If any rules
+// are violated, the result is a list of violation errors wrapped in
+// SavePersonalFileForUserRequestMultiError, or nil if none found.
+func (m *SavePersonalFileForUserRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *SavePersonalFileForUserRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for ProjectId
+
+	if utf8.RuneCountInString(m.GetUserId()) < 1 {
+		err := SavePersonalFileForUserRequestValidationError{
+			field:  "UserId",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	// no validation rules for Kind
+
+	// no validation rules for Name
+
+	// no validation rules for DisplayName
+
+	// no validation rules for Yaml
+
+	if len(errors) > 0 {
+		return SavePersonalFileForUserRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// SavePersonalFileForUserRequestMultiError is an error wrapping multiple
+// validation errors returned by SavePersonalFileForUserRequest.ValidateAll()
+// if the designated constraints aren't met.
+type SavePersonalFileForUserRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m SavePersonalFileForUserRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m SavePersonalFileForUserRequestMultiError) AllErrors() []error { return m }
+
+// SavePersonalFileForUserRequestValidationError is the validation error
+// returned by SavePersonalFileForUserRequest.Validate if the designated
+// constraints aren't met.
+type SavePersonalFileForUserRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e SavePersonalFileForUserRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e SavePersonalFileForUserRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e SavePersonalFileForUserRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e SavePersonalFileForUserRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e SavePersonalFileForUserRequestValidationError) ErrorName() string {
+	return "SavePersonalFileForUserRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e SavePersonalFileForUserRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sSavePersonalFileForUserRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = SavePersonalFileForUserRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = SavePersonalFileForUserRequestValidationError{}
+
+// Validate checks the field values on SavePersonalFileForUserResponse with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *SavePersonalFileForUserResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on SavePersonalFileForUserResponse with
+// the rules defined in the proto definition for this message. If any rules
+// are violated, the result is a list of violation errors wrapped in
+// SavePersonalFileForUserResponseMultiError, or nil if none found.
+func (m *SavePersonalFileForUserResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *SavePersonalFileForUserResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for Name
+
+	// no validation rules for Url
+
+	if len(errors) > 0 {
+		return SavePersonalFileForUserResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// SavePersonalFileForUserResponseMultiError is an error wrapping multiple
+// validation errors returned by SavePersonalFileForUserResponse.ValidateAll()
+// if the designated constraints aren't met.
+type SavePersonalFileForUserResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m SavePersonalFileForUserResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m SavePersonalFileForUserResponseMultiError) AllErrors() []error { return m }
+
+// SavePersonalFileForUserResponseValidationError is the validation error
+// returned by SavePersonalFileForUserResponse.Validate if the designated
+// constraints aren't met.
+type SavePersonalFileForUserResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e SavePersonalFileForUserResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e SavePersonalFileForUserResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e SavePersonalFileForUserResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e SavePersonalFileForUserResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e SavePersonalFileForUserResponseValidationError) ErrorName() string {
+	return "SavePersonalFileForUserResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e SavePersonalFileForUserResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sSavePersonalFileForUserResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = SavePersonalFileForUserResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = SavePersonalFileForUserResponseValidationError{}
+
 // Validate checks the field values on GetBillingSubscriptionRequest with the
 // rules defined in the proto definition for this message. If any rules are
 // violated, the first error encountered is returned, or nil if there are no violations.

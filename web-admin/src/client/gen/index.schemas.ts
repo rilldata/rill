@@ -1400,6 +1400,12 @@ export interface V1RevokeUserAuthTokenResponse {
   [key: string]: unknown;
 }
 
+export interface V1SavePersonalFileForUserResponse {
+  name?: string;
+  /** URL where the user can open the personal file. */
+  url?: string;
+}
+
 export interface V1SearchProjectNamesResponse {
   names?: string[];
   nextPageToken?: string;
@@ -2415,6 +2421,18 @@ export type AdminServiceGetAlertMetaBody = {
   ownerId?: string;
   emailRecipients?: string[];
   anonRecipients?: boolean;
+};
+
+export type AdminServiceSavePersonalFileForUserBody = {
+  /** User who owns the personal file. */
+  userId?: string;
+  kind?: string;
+  /** Name of an existing personal file to edit. If empty, a new personal file is created. */
+  name?: string;
+  /** Display name for a new personal file. Required when name is empty. */
+  displayName?: string;
+  /** YAML body of the personal file. Annotations in it are ignored. */
+  yaml?: string;
 };
 
 export type AdminServicePullVirtualRepoParams = {

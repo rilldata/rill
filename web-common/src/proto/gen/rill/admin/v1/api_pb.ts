@@ -15198,6 +15198,126 @@ export class DeletePersonalFileResponse extends Message<DeletePersonalFileRespon
 }
 
 /**
+ * @generated from message rill.admin.v1.SavePersonalFileForUserRequest
+ */
+export class SavePersonalFileForUserRequest extends Message<SavePersonalFileForUserRequest> {
+  /**
+   * @generated from field: string project_id = 1;
+   */
+  projectId = "";
+
+  /**
+   * User who owns the personal file.
+   *
+   * @generated from field: string user_id = 2;
+   */
+  userId = "";
+
+  /**
+   * @generated from field: string kind = 3;
+   */
+  kind = "";
+
+  /**
+   * Name of an existing personal file to edit. If empty, a new personal file is created.
+   *
+   * @generated from field: string name = 4;
+   */
+  name = "";
+
+  /**
+   * Display name for a new personal file. Required when name is empty.
+   *
+   * @generated from field: string display_name = 5;
+   */
+  displayName = "";
+
+  /**
+   * YAML body of the personal file. Annotations in it are ignored.
+   *
+   * @generated from field: string yaml = 6;
+   */
+  yaml = "";
+
+  constructor(data?: PartialMessage<SavePersonalFileForUserRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.SavePersonalFileForUserRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "project_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "user_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "kind", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 5, name: "display_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 6, name: "yaml", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): SavePersonalFileForUserRequest {
+    return new SavePersonalFileForUserRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): SavePersonalFileForUserRequest {
+    return new SavePersonalFileForUserRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): SavePersonalFileForUserRequest {
+    return new SavePersonalFileForUserRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: SavePersonalFileForUserRequest | PlainMessage<SavePersonalFileForUserRequest> | undefined, b: SavePersonalFileForUserRequest | PlainMessage<SavePersonalFileForUserRequest> | undefined): boolean {
+    return proto3.util.equals(SavePersonalFileForUserRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.SavePersonalFileForUserResponse
+ */
+export class SavePersonalFileForUserResponse extends Message<SavePersonalFileForUserResponse> {
+  /**
+   * @generated from field: string name = 1;
+   */
+  name = "";
+
+  /**
+   * URL where the user can open the personal file.
+   *
+   * @generated from field: string url = 2;
+   */
+  url = "";
+
+  constructor(data?: PartialMessage<SavePersonalFileForUserResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.SavePersonalFileForUserResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): SavePersonalFileForUserResponse {
+    return new SavePersonalFileForUserResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): SavePersonalFileForUserResponse {
+    return new SavePersonalFileForUserResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): SavePersonalFileForUserResponse {
+    return new SavePersonalFileForUserResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: SavePersonalFileForUserResponse | PlainMessage<SavePersonalFileForUserResponse> | undefined, b: SavePersonalFileForUserResponse | PlainMessage<SavePersonalFileForUserResponse> | undefined): boolean {
+    return proto3.util.equals(SavePersonalFileForUserResponse, a, b);
+  }
+}
+
+/**
  * @generated from message rill.admin.v1.GetBillingSubscriptionRequest
  */
 export class GetBillingSubscriptionRequest extends Message<GetBillingSubscriptionRequest> {

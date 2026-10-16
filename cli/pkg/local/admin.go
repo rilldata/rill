@@ -133,6 +133,12 @@ func (l *localAdminService) ListDeployments(ctx context.Context) ([]*drivers.Dep
 	return res, nil
 }
 
+// SavePersonalCanvas implements drivers.AdminService.
+// Personal canvases only exist in Rill Cloud.
+func (l *localAdminService) SavePersonalCanvas(ctx context.Context, userID, name, displayName, yaml string) (*drivers.PersonalCanvas, error) {
+	return nil, drivers.ErrNotImplemented
+}
+
 // UpdateProjectVariables implements drivers.AdminService.
 func (l *localAdminService) UpdateProjectVariables(ctx context.Context, environment string, variables map[string]string) error {
 	if l.ch.AdminToken() == "" {
