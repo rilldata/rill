@@ -119,11 +119,15 @@ type ExprNode struct {
 	Args []any
 }
 
+// lookupMeta describes how a lookup dimension resolves its value: the value column of the lookup table for the row's key.
+// Keys that are absent from the lookup table resolve to NULL, or to defaultExpr if it is set.
+// The NULL case requires the value column to be nullable without a custom default in the lookup table.
 type lookupMeta struct {
-	table    string
-	keyExpr  string
-	keyCol   string
-	valueCol string
+	table       string
+	keyExpr     string
+	keyCol      string
+	valueCol    string
+	defaultExpr string
 }
 
 // newLookupMeta returns the lookup metadata of a dimension, or nil if it is not a lookup dimension.
@@ -132,10 +136,11 @@ func newLookupMeta(dialect drivers.Dialect, dim *runtimev1.MetricsViewSpec_Dimen
 		return nil
 	}
 	return &lookupMeta{
-		table:    dim.LookupTable,
-		keyExpr:  LookupKeyExpr(dialect, dim),
-		keyCol:   dim.LookupKeyColumn,
-		valueCol: dim.LookupValueColumn,
+		table:       dim.LookupTable,
+		keyExpr:     LookupKeyExpr(dialect, dim),
+		keyCol:      dim.LookupKeyColumn,
+		valueCol:    dim.LookupValueColumn,
+		defaultExpr: dim.LookupDefaultExpression,
 	}
 }
 

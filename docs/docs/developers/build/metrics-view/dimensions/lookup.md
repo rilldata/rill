@@ -102,6 +102,28 @@ WHERE publisher_id IN (
 
 This allows ClickHouse to first resolve the small set of matching keys from the dictionary, then use the index on `publisher_id` to efficiently scan only the relevant rows in the fact table.
 
+#### Keys missing from the dictionary
+
+Keys in the fact table that are missing from the dictionary are not covered by the subquery. For filters to return correct results for these rows, Rill needs to know what value they resolve to. So when using the `lookup_*` properties, either:
+
+- **Make the `lookup_value_column` attribute `Nullable`** in the dictionary definition, without a `DEFAULT`. Missing keys then resolve to `NULL`.
+- **Set `lookup_default_expression`.** Missing keys then resolve to that expression, whatever the dictionary's own default is.
+
+```sql
+CREATE DICTIONARY country_dict (
+  code String,
+  name Nullable(String)
+)
+PRIMARY KEY code
+...
+```
+
+:::warning
+If the attribute is not `Nullable` and no `lookup_default_expression` is set, missing keys resolve to the attribute's default value, such as an empty string or `0`. Filters that select that value don't match rows with missing keys. Dictionaries that Rill creates from a model with `type: DICTIONARY` infer the attribute types from the model's query, which are not `Nullable` unless the query returns nullable columns (for example using `toNullable(name)`) or you specify `columns` yourself.
+:::
+
+Filters that match the value of missing keys, such as selecting the null value or excluding other values, are applied to the `dictGet` expression instead of the subquery and read the whole fact table. With a `lookup_default_expression`, other filters additionally check the default value, so the index optimization is kept whenever the filter does not match the default.
+
 #### Grouping by the key first with `lookup_group_by_key`
 
 When you group by a lookup dimension, the generated query calls `dictGet` on every row before grouping:

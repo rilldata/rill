@@ -10251,6 +10251,8 @@ func (m *ComponentSpec) validate(all bool) error {
 
 	// no validation rules for DefinedInCanvas
 
+	// no validation rules for ConditionExpression
+
 	if len(errors) > 0 {
 		return ComponentSpecMultiError(errors)
 	}
@@ -11540,6 +11542,8 @@ func (m *CanvasRow) validate(all bool) error {
 		}
 	}
 
+	// no validation rules for ConditionExpression
+
 	if m.Height != nil {
 		// no validation rules for Height
 	}
@@ -11817,6 +11821,8 @@ func (m *CanvasTab) validate(all bool) error {
 
 	}
 
+	// no validation rules for ConditionExpression
+
 	if len(errors) > 0 {
 		return CanvasTabMultiError(errors)
 	}
@@ -11950,6 +11956,8 @@ func (m *CanvasItem) validate(all bool) error {
 	}
 
 	// no validation rules for WidthUnit
+
+	// no validation rules for ConditionExpression
 
 	if m.Width != nil {
 		// no validation rules for Width

@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/google/jsonschema-go/jsonschema"
 	"github.com/modelcontextprotocol/go-sdk/jsonrpc"
@@ -115,11 +116,7 @@ func (s *Session) MCPServer(ctx context.Context) *mcp.Server {
 	srv.AddReceivingMiddleware(func(next mcp.MethodHandler) mcp.MethodHandler {
 		return func(ctx context.Context, method string, req mcp.Request) (mcp.Result, error) {
 			res, err := next(ctx, method, req)
-			if method != "tools/call" || err == nil {
-				return res, err
-			}
-			var jsonrpcErr *jsonrpc.Error
-			if !errors.As(err, &jsonrpcErr) || jsonrpcErr.Code != jsonrpc.CodeInvalidParams {
+			if method != "tools/call" || !isMCPInputValidationFailure(res, err) {
 				return res, err
 			}
 			if !s.coerceMCPToolArgs(req) {
@@ -149,6 +146,22 @@ func (s *Session) MCPServer(ctx context.Context) *mcp.Server {
 	}
 
 	return srv
+}
+
+// isMCPInputValidationFailure reports whether a tools/call outcome is the SDK rejecting the arguments against the tool's input schema.
+// Older SDK versions reported this as an "invalid params" protocol error; since go-sdk v1.7 it is a tool error result whose text
+// starts with the SDK's validation prefix. Genuine tool errors never carry that prefix, so they are not retried.
+func isMCPInputValidationFailure(res mcp.Result, err error) bool {
+	if err != nil {
+		var jsonrpcErr *jsonrpc.Error
+		return errors.As(err, &jsonrpcErr) && jsonrpcErr.Code == jsonrpc.CodeInvalidParams
+	}
+	ctr, ok := res.(*mcp.CallToolResult)
+	if !ok || !ctr.IsError || len(ctr.Content) == 0 {
+		return false
+	}
+	text, ok := ctr.Content[0].(*mcp.TextContent)
+	return ok && strings.HasPrefix(text.Text, `validating "arguments"`)
 }
 
 // coerceMCPToolArgs rewrites a tool call's raw arguments,

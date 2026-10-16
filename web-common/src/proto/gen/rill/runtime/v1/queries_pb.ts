@@ -4362,6 +4362,15 @@ export class ResolveCanvasRequest extends Message<ResolveCanvasRequest> {
    */
   unsafe = false;
 
+  /**
+   * If true, return the canvas without removing the content hidden from the caller, and list that content in hidden_paths.
+   * Used by the visual editor, which maps canvas elements to their position in the YAML.
+   * Requires permission to edit the canvas.
+   *
+   * @generated from field: bool include_hidden = 5;
+   */
+  includeHidden = false;
+
   constructor(data?: PartialMessage<ResolveCanvasRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -4374,6 +4383,7 @@ export class ResolveCanvasRequest extends Message<ResolveCanvasRequest> {
     { no: 2, name: "canvas", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "args", kind: "message", T: Struct },
     { no: 4, name: "unsafe", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 5, name: "include_hidden", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ResolveCanvasRequest {
@@ -4420,6 +4430,14 @@ export class ResolveCanvasResponse extends Message<ResolveCanvasResponse> {
    */
   referencedMetricsViews: { [key: string]: Resource } = {};
 
+  /**
+   * Paths of the canvas elements hidden from the caller, such as "rows.1", "rows.0.items.1" or "rows.3.tabs.0".
+   * The paths follow the canvas YAML. Only set when include_hidden is true.
+   *
+   * @generated from field: repeated string hidden_paths = 4;
+   */
+  hiddenPaths: string[] = [];
+
   constructor(data?: PartialMessage<ResolveCanvasResponse>) {
     super();
     proto3.util.initPartial(data, this);
@@ -4431,6 +4449,7 @@ export class ResolveCanvasResponse extends Message<ResolveCanvasResponse> {
     { no: 1, name: "canvas", kind: "message", T: Resource },
     { no: 2, name: "resolved_components", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "message", T: Resource} },
     { no: 3, name: "referenced_metrics_views", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "message", T: Resource} },
+    { no: 4, name: "hidden_paths", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ResolveCanvasResponse {
