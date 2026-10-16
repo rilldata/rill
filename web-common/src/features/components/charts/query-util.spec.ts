@@ -1,8 +1,18 @@
 import { combineChartDataQuery } from "@rilldata/web-common/features/components/charts/query-util";
 import type { V1MetricsViewAggregationResponse } from "@rilldata/web-common/runtime-client";
-import { createQuery, QueryClient } from "@tanstack/svelte-query";
+import {
+  createQuery,
+  keepPreviousData,
+  QueryClient,
+} from "@tanstack/svelte-query";
 import { derived, get, writable } from "svelte/store";
 import { describe, expect, it } from "vitest";
+
+function createTestQueryClient() {
+  return new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  });
+}
 
 function deferredResponse() {
   let resolve!: (value: V1MetricsViewAggregationResponse) => void;
@@ -24,9 +34,7 @@ async function flush() {
 // Mirrors a chart provider:
 // the data query waits for the component to be visible and for its top-N query.
 function createChartQueries() {
-  const queryClient = new QueryClient({
-    defaultOptions: { queries: { retry: false } },
-  });
+  const queryClient = createTestQueryClient();
   const visible = writable(false);
   const topN = deferredResponse();
   const data = deferredResponse();
@@ -52,6 +60,23 @@ function createChartQueries() {
   const unsubscribe = chartQuery.subscribe(() => {});
 
   return { visible, topN, data, dataQuery, chartQuery, unsubscribe };
+}
+
+// Another chart making the same top-N request, which runs once it scrolls into view.
+function createOtherChartTopNQuery(
+  queryClient: QueryClient,
+  queryFn: () => Promise<V1MetricsViewAggregationResponse>,
+) {
+  const visible = writable(false);
+  const topNQuery = createQuery(
+    derived(visible, ($visible) => ({
+      queryKey: ["top-n"],
+      queryFn,
+      enabled: $visible,
+    })),
+    queryClient,
+  );
+  return { visible, topNQuery };
 }
 
 describe("combineChartDataQuery", () => {
@@ -108,10 +133,117 @@ describe("combineChartDataQuery", () => {
     unsubscribe();
   });
 
+  it("ignores another chart fetching a dependency this chart does not run", async () => {
+    // For example, a chart with explicit color values skips its top-N query,
+    // but another chart's identical top-N request shares that query's cache entry.
+    const queryClient = createTestQueryClient();
+    const topN = deferredResponse();
+    const data = deferredResponse();
+    const topNQuery = createQuery(
+      { queryKey: ["top-n"], queryFn: () => topN.promise, enabled: false },
+      queryClient,
+    );
+    const dataQuery = createQuery(
+      { queryKey: ["data"], queryFn: () => data.promise },
+      queryClient,
+    );
+    const chartQuery = combineChartDataQuery(
+      dataQuery,
+      [topNQuery],
+      writable(true),
+    );
+    const otherChart = createOtherChartTopNQuery(
+      queryClient,
+      () => topN.promise,
+    );
+    const unsubscribers = [
+      chartQuery.subscribe(() => {}),
+      otherChart.topNQuery.subscribe(() => {}),
+    ];
+
+    data.resolve({ data: [] });
+    await flush();
+    otherChart.visible.set(true);
+    await flush();
+    expect(get(topNQuery).isFetching).toBe(true);
+    expect(get(chartQuery).isFetching).toBe(false);
+
+    topN.reject(new Error("top-N query failed"));
+    await flush();
+    expect(get(topNQuery).error?.message).toBe("top-N query failed");
+    expect(get(chartQuery)).toEqual({
+      data: { data: [] },
+      isFetching: false,
+      error: null,
+    });
+
+    unsubscribers.forEach((unsubscribe) => unsubscribe());
+  });
+
+  it("ignores another chart refetching a shared dependency", async () => {
+    // Two charts with the same top-N request share its cache entry,
+    // and the second refetches the stale entry when it scrolls into view.
+    const queryClient = createTestQueryClient();
+    const topNResponses = [deferredResponse(), deferredResponse()];
+    let topNFetches = 0;
+    const topNQueryFn = () => topNResponses[topNFetches++].promise;
+    const data = deferredResponse();
+    let dataFetches = 0;
+
+    const topNQuery = createQuery(
+      { queryKey: ["top-n"], queryFn: topNQueryFn },
+      queryClient,
+    );
+    const dataQuery = createQuery(
+      derived(topNQuery, ($topNQuery) => ({
+        queryKey: ["data", $topNQuery.data],
+        queryFn: () => {
+          dataFetches++;
+          return data.promise;
+        },
+        enabled: $topNQuery.data !== undefined,
+        placeholderData: keepPreviousData,
+      })),
+      queryClient,
+    );
+    const chartQuery = combineChartDataQuery(
+      dataQuery,
+      [topNQuery],
+      writable(true),
+    );
+    const otherChart = createOtherChartTopNQuery(queryClient, topNQueryFn);
+    const unsubscribers = [
+      chartQuery.subscribe(() => {}),
+      otherChart.topNQuery.subscribe(() => {}),
+    ];
+
+    topNResponses[0].resolve({ data: [{ country: "US" }] });
+    await flush();
+    data.resolve({ data: [] });
+    await flush();
+    expect(get(chartQuery).isFetching).toBe(false);
+
+    otherChart.visible.set(true);
+    await flush();
+    expect(topNFetches).toBe(2);
+    expect(get(chartQuery).isFetching).toBe(false);
+
+    topNResponses[1].resolve({ data: [{ country: "US" }] });
+    await flush();
+    expect(dataFetches).toBe(1);
+    expect(get(chartQuery)).toEqual({
+      data: { data: [] },
+      isFetching: false,
+      error: null,
+    });
+
+    unsubscribers.forEach((unsubscribe) => unsubscribe());
+  });
+
   it("does not report fetching when the data query cannot run", () => {
     // For example, a spec without a measure:
     // the provider never enables its data query, nor the top-N query it would wait on.
-    const queryClient = new QueryClient();
+    const queryClient = createTestQueryClient();
     const topNQuery = createQuery(
       {
         queryKey: ["top-n"],

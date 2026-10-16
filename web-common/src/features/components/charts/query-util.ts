@@ -40,6 +40,9 @@ export function canQueryWithTimeRange(
  * and a disabled query reports neither data nor `isFetching`,
  * which the chart would otherwise show as "No Data to Display".
  * A failed dependency keeps the data query disabled, so its error is reported instead.
+ * Dependencies only count while the data query has no data for its current inputs.
+ * Another chart making the same request shares a dependency's cache entry,
+ * and its refetch or error must not affect this chart once it has loaded.
  */
 export function combineChartDataQuery(
   query: CreateQueryResult<V1MetricsViewAggregationResponse, Error>,
@@ -53,14 +56,17 @@ export function combineChartDataQuery(
 
   return derived(
     [query, dependencyState, visible],
-    ([$query, $dependencies, $visible]) => ({
-      data: $query.data,
-      isFetching:
-        $query.isFetching ||
-        $dependencies.isFetching ||
-        ($query.isPending && !$visible),
-      error: $query.error ?? $dependencies.error,
-    }),
+    ([$query, $dependencies, $visible]) => {
+      const awaitingData = $query.isPending || $query.isPlaceholderData;
+      return {
+        data: $query.data,
+        isFetching:
+          $query.isFetching ||
+          ($query.isPending && !$visible) ||
+          (awaitingData && $dependencies.isFetching),
+        error: $query.error ?? (awaitingData ? $dependencies.error : null),
+      };
+    },
   );
 }
 
