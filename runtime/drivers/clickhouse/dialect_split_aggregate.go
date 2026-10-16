@@ -56,21 +56,17 @@ func (d *dialect) SplitAggregateExpression(expr, measureName, innerAlias string)
 		}
 
 		// A type after AS or "::" is skipped as a whole, including an argument list like Decimal(10, 2) or Nullable(Float64).
-		afterAs := i >= 1 && toks[i-1].kind == sqlTokenIdent && strings.EqualFold(expr[toks[i-1].start:toks[i-1].end], "AS")
+		afterAs := i >= 1 && toks[i-1].kind == sqlTokenIdent && strings.EqualFold(toks[i-1].text, "AS")
 		afterCast := i >= 2 && toks[i-1].kind == sqlTokenOther && toks[i-2].kind == sqlTokenOther && expr[toks[i-2].start:toks[i-1].end] == "::"
 		if afterAs || afterCast {
 			i++
 			if i < len(toks) && toks[i].kind == sqlTokenLParen {
-				end, ok := matchingParen(toks, i)
-				if !ok {
-					return nil, "", false
-				}
-				i = end + 1
+				i = matchingParen(toks, i) + 1
 			}
 			continue
 		}
 
-		name := expr[t.start:t.end]
+		name := t.text
 		if i+1 >= len(toks) || toks[i+1].kind != sqlTokenLParen {
 			// A bare identifier is either a keyword or a reference to a column outside an aggregate call, which cannot be re-aggregated.
 			if !splitKeywords[strings.ToLower(name)] {
@@ -93,39 +89,29 @@ func (d *dialect) SplitAggregateExpression(expr, measureName, innerAlias string)
 		}
 
 		// Parse the argument list, and the parameter list before it for parametric functions like quantile(0.5)(x).
-		paramsStart, paramsEnd := -1, -1
+		params := ""
 		argsStart := i + 1
-		argsEnd, ok := matchingParen(toks, argsStart)
-		if !ok {
-			return nil, "", false
-		}
+		argsEnd := matchingParen(toks, argsStart)
 		if argsEnd+1 < len(toks) && toks[argsEnd+1].kind == sqlTokenLParen {
-			paramsStart, paramsEnd = argsStart, argsEnd
+			params = expr[toks[argsStart].start:toks[argsEnd].end]
 			argsStart = argsEnd + 1
-			argsEnd, ok = matchingParen(toks, argsStart)
-			if !ok {
-				return nil, "", false
-			}
+			argsEnd = matchingParen(toks, argsStart)
 		}
 
 		// Nested aggregates are invalid SQL; leave the expression alone so the usual error surfaces.
 		for j := argsStart + 1; j < argsEnd; j++ {
 			if toks[j].kind == sqlTokenIdent && toks[j+1].kind == sqlTokenLParen {
-				if _, nested := aggregateCombinators(expr[toks[j].start:toks[j].end]); nested {
+				if _, nested := aggregateCombinators(toks[j].text); nested {
 					return nil, "", false
 				}
 			}
 		}
 
 		// Window functions aggregate over frames, not groups.
-		if argsEnd+1 < len(toks) && toks[argsEnd+1].kind == sqlTokenIdent && strings.EqualFold(expr[toks[argsEnd+1].start:toks[argsEnd+1].end], "OVER") {
+		if argsEnd+1 < len(toks) && toks[argsEnd+1].kind == sqlTokenIdent && strings.EqualFold(toks[argsEnd+1].text, "OVER") {
 			return nil, "", false
 		}
 
-		params := ""
-		if paramsStart >= 0 {
-			params = expr[toks[paramsStart].start:toks[paramsEnd].end]
-		}
 		args := expr[toks[argsStart].end:toks[argsEnd].start]
 
 		stateName := name + "State"
@@ -133,11 +119,11 @@ func (d *dialect) SplitAggregateExpression(expr, measureName, innerAlias string)
 		if len(combinators) > 0 && combinators[0] == "Merge" {
 			mergeName = name
 		}
-		if argsEnd > argsStart+1 && toks[argsStart+1].kind == sqlTokenIdent && strings.EqualFold(expr[toks[argsStart+1].start:toks[argsStart+1].end], "DISTINCT") {
+		if argsEnd > argsStart+1 && toks[argsStart+1].kind == sqlTokenIdent && strings.EqualFold(toks[argsStart+1].text, "DISTINCT") {
 			if len(combinators) > 0 {
 				return nil, "", false
 			}
-			args = strings.TrimLeft(expr[toks[argsStart+1].end:toks[argsEnd].start], " \t\n\r")
+			args = expr[toks[argsStart+2].start:toks[argsEnd].start]
 			if strings.EqualFold(name, "count") {
 				stateName, mergeName = "uniqExactState", "uniqExactMerge"
 			} else {
@@ -154,7 +140,7 @@ func (d *dialect) SplitAggregateExpression(expr, measureName, innerAlias string)
 			Expr:  fmt.Sprintf("%s%s(%s)", stateName, params, args),
 		})
 		final.WriteString(expr[pos:t.start])
-		final.WriteString(fmt.Sprintf("%s%s(%s)", mergeName, params, d.EscapeMemberAlias(innerAlias, alias)))
+		fmt.Fprintf(&final, "%s%s(%s)", mergeName, params, d.EscapeMemberAlias(innerAlias, alias))
 		pos = toks[argsEnd].end
 		i = argsEnd + 1
 	}
@@ -190,20 +176,20 @@ func aggregateCombinators(name string) ([]string, bool) {
 }
 
 // matchingParen returns the index of the parenthesis closing the one at index i.
-func matchingParen(toks []sqlToken, i int) (int, bool) {
+// lexSQLExpression rejects unbalanced parentheses, so the closing parenthesis always exists.
+func matchingParen(toks []sqlToken, i int) int {
 	depth := 0
-	for j := i; j < len(toks); j++ {
+	for j := i; ; j++ {
 		switch toks[j].kind {
 		case sqlTokenLParen:
 			depth++
 		case sqlTokenRParen:
 			depth--
 			if depth == 0 {
-				return j, true
+				return j
 			}
 		}
 	}
-	return 0, false
 }
 
 type sqlTokenKind int
@@ -215,13 +201,13 @@ const (
 	sqlTokenNumber
 	sqlTokenLParen
 	sqlTokenRParen
-	sqlTokenComma
-	sqlTokenOther // A single operator or punctuation character.
+	sqlTokenOther // A single character that is not a parenthesis, such as an operator or a comma.
 )
 
-// sqlToken is a token of a SQL expression, identified by its byte offsets in the expression.
+// sqlToken is a token of a SQL expression, with its text and byte offsets in the expression.
 type sqlToken struct {
 	kind       sqlTokenKind
+	text       string
 	start, end int
 }
 
@@ -245,7 +231,7 @@ func lexSQLExpression(expr string) ([]sqlToken, error) {
 			if c == '\'' {
 				kind = sqlTokenString
 			}
-			toks = append(toks, sqlToken{kind: kind, start: i, end: end})
+			toks = append(toks, sqlToken{kind: kind, text: expr[i:end], start: i, end: end})
 			i = end
 		case c == '#' || (c == '-' && i+1 < len(expr) && expr[i+1] == '-') || (c == '/' && i+1 < len(expr) && expr[i+1] == '*'):
 			return nil, errors.New("comments are not supported")
@@ -254,31 +240,28 @@ func lexSQLExpression(expr string) ([]sqlToken, error) {
 			for end < len(expr) && isIdentChar(expr[end]) {
 				end++
 			}
-			toks = append(toks, sqlToken{kind: sqlTokenIdent, start: i, end: end})
+			toks = append(toks, sqlToken{kind: sqlTokenIdent, text: expr[i:end], start: i, end: end})
 			i = end
 		case isDigit(c) || (c == '.' && i+1 < len(expr) && isDigit(expr[i+1])):
 			end := i + 1
 			for end < len(expr) && (isIdentChar(expr[end]) || expr[end] == '.') {
 				end++
 			}
-			toks = append(toks, sqlToken{kind: sqlTokenNumber, start: i, end: end})
+			toks = append(toks, sqlToken{kind: sqlTokenNumber, text: expr[i:end], start: i, end: end})
 			i = end
 		case c == '(':
-			toks = append(toks, sqlToken{kind: sqlTokenLParen, start: i, end: i + 1})
+			toks = append(toks, sqlToken{kind: sqlTokenLParen, text: expr[i : i+1], start: i, end: i + 1})
 			depth++
 			i++
 		case c == ')':
-			toks = append(toks, sqlToken{kind: sqlTokenRParen, start: i, end: i + 1})
+			toks = append(toks, sqlToken{kind: sqlTokenRParen, text: expr[i : i+1], start: i, end: i + 1})
 			depth--
 			if depth < 0 {
 				return nil, errors.New("unbalanced parentheses")
 			}
 			i++
-		case c == ',':
-			toks = append(toks, sqlToken{kind: sqlTokenComma, start: i, end: i + 1})
-			i++
 		default:
-			toks = append(toks, sqlToken{kind: sqlTokenOther, start: i, end: i + 1})
+			toks = append(toks, sqlToken{kind: sqlTokenOther, text: expr[i : i+1], start: i, end: i + 1})
 			i++
 		}
 	}
