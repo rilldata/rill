@@ -117,29 +117,31 @@ func New(ctx context.Context, dsn string, adm *admin.Service) (jobs.Client, erro
 	river.AddWorker(workers, &DeleteExpiredTokensWorker{admin: adm})
 	river.AddWorker(workers, &DeleteExpiredVirtualFilesWorker{admin: adm})
 	river.AddWorker(workers, &DeleteUnusedAssetsWorker{admin: adm})
+	river.AddWorker(workers, &DeleteUnusedConnectorOAuthClientsWorker{admin: adm, logger: adm.Logger})
 	river.AddWorker(workers, &DeploymentsHealthCheckWorker{admin: adm, logger: adm.Logger})
 	river.AddWorker(workers, &HibernateExpiredDeploymentsWorker{admin: adm, logger: adm.Logger})
 	river.AddWorker(workers, &RunAutoscalerWorker{admin: adm, logger: adm.Logger})
 
 	jobConfigs := []periodicJobConfig{
-		{&ValidateDeploymentsArgs{}, "*/30 * * * *", true},         // half-hourly
-		{&PaymentFailedGracePeriodCheckArgs{}, "0 1 * * *", true},  // daily at 1am UTC
-		{&TrialEndingSoonArgs{}, "5 1 * * *", true},                // daily at 1:05am UTC
-		{&TrialEndCheckArgs{}, "10 1 * * *", true},                 // daily at 1:10am UTC
-		{&TrialGracePeriodCheckArgs{}, "15 1 * * *", true},         // daily at 1:15am UTC
-		{&SubscriptionCancellationCheckArgs{}, "20 1 * * *", true}, // daily at 1:20am UTC
-		{&DeleteUnusedUserTokenArgs{}, "0 */12 * * *", true},       // every 12 hours
-		{&DeleteUnusedServiceTokenArgs{}, "0 */12 * * *", true},    // every 12 hours
-		{&deleteUnusedGithubReposArgs{}, "0 */6 * * *", true},      // every 6 hours
-		{&HibernateInactiveOrgsArgs{}, "0 7 * * 1", true},          // Monday at 7:00am UTC
-		{&CheckProvisionersArgs{}, "*/15 * * * *", true},           // every 15 minutes
-		{&DeleteExpiredAuthCodesArgs{}, "0 */6 * * *", true},       // every 6 hours
-		{&DeleteExpiredDeviceAuthCodesArgs{}, "0 */6 * * *", true}, // every 6 hours
-		{&DeleteExpiredTokensArgs{}, "0 */6 * * *", true},          // every 6 hours
-		{&DeleteExpiredVirtualFilesArgs{}, "0 */6 * * *", true},    // every 6 hours
-		{&DeleteUnusedAssetsArgs{}, "0 */6 * * *", true},           // every 6 hours
-		{&DeploymentsHealthCheckArgs{}, "*/10 * * * *", true},      // every 10 minutes
-		{&HibernateExpiredDeploymentsArgs{}, "*/15 * * * *", true}, // every 15 minutes
+		{&ValidateDeploymentsArgs{}, "*/30 * * * *", true},             // half-hourly
+		{&PaymentFailedGracePeriodCheckArgs{}, "0 1 * * *", true},      // daily at 1am UTC
+		{&TrialEndingSoonArgs{}, "5 1 * * *", true},                    // daily at 1:05am UTC
+		{&TrialEndCheckArgs{}, "10 1 * * *", true},                     // daily at 1:10am UTC
+		{&TrialGracePeriodCheckArgs{}, "15 1 * * *", true},             // daily at 1:15am UTC
+		{&SubscriptionCancellationCheckArgs{}, "20 1 * * *", true},     // daily at 1:20am UTC
+		{&DeleteUnusedUserTokenArgs{}, "0 */12 * * *", true},           // every 12 hours
+		{&DeleteUnusedServiceTokenArgs{}, "0 */12 * * *", true},        // every 12 hours
+		{&deleteUnusedGithubReposArgs{}, "0 */6 * * *", true},          // every 6 hours
+		{&HibernateInactiveOrgsArgs{}, "0 7 * * 1", true},              // Monday at 7:00am UTC
+		{&CheckProvisionersArgs{}, "*/15 * * * *", true},               // every 15 minutes
+		{&DeleteExpiredAuthCodesArgs{}, "0 */6 * * *", true},           // every 6 hours
+		{&DeleteExpiredDeviceAuthCodesArgs{}, "0 */6 * * *", true},     // every 6 hours
+		{&DeleteExpiredTokensArgs{}, "0 */6 * * *", true},              // every 6 hours
+		{&DeleteExpiredVirtualFilesArgs{}, "0 */6 * * *", true},        // every 6 hours
+		{&DeleteUnusedAssetsArgs{}, "0 */6 * * *", true},               // every 6 hours
+		{&DeleteUnusedConnectorOAuthClientsArgs{}, "30 2 * * *", true}, // daily at 2:30am UTC
+		{&DeploymentsHealthCheckArgs{}, "*/10 * * * *", true},          // every 10 minutes
+		{&HibernateExpiredDeploymentsArgs{}, "*/15 * * * *", true},     // every 15 minutes
 	}
 
 	var periodicJobs []*river.PeriodicJob
@@ -298,6 +300,8 @@ func (c *Client) EnqueueByKind(ctx context.Context, kind string) (*jobs.InsertRe
 		return c.DeleteExpiredVirtualFiles(ctx)
 	case "delete_unused_assets":
 		return c.DeleteUnusedAssets(ctx)
+	case "delete_unused_connector_oauth_clients":
+		return c.DeleteUnusedConnectorOAuthClients(ctx)
 	}
 
 	// Jobs that just need simple insertion with empty args
@@ -798,6 +802,26 @@ func (c *Client) DeleteUnusedAssets(ctx context.Context) (*jobs.InsertResult, er
 
 	if res.UniqueSkippedAsDuplicate {
 		c.logger.Debug("DeleteUnusedAssets job skipped as duplicate")
+	}
+
+	return &jobs.InsertResult{
+		ID:        res.Job.ID,
+		Duplicate: res.UniqueSkippedAsDuplicate,
+	}, nil
+}
+
+func (c *Client) DeleteUnusedConnectorOAuthClients(ctx context.Context) (*jobs.InsertResult, error) {
+	res, err := c.riverClient.Insert(ctx, DeleteUnusedConnectorOAuthClientsArgs{}, &river.InsertOpts{
+		UniqueOpts: river.UniqueOpts{
+			ByArgs: true,
+		},
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	if res.UniqueSkippedAsDuplicate {
+		c.logger.Debug("DeleteUnusedConnectorOAuthClients job skipped as duplicate")
 	}
 
 	return &jobs.InsertResult{

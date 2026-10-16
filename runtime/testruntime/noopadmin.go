@@ -46,11 +46,11 @@ func (n *noopAdminService) UpdateProjectVariables(ctx context.Context, environme
 	return drivers.ErrNotImplemented
 }
 
-func (n *noopAdminService) GetMCPOAuthToken(ctx context.Context, connector, serverURL, userID string, forceRefresh bool) (*drivers.MCPOAuthToken, error) {
+func (n *noopAdminService) GetConnectorOAuthToken(ctx context.Context, connector, configHash, userID string, forceRefresh bool) (*drivers.MCPOAuthToken, error) {
 	return nil, drivers.ErrNotImplemented
 }
 
-func (n *noopAdminService) DeleteMCPOAuthToken(ctx context.Context, connector, userID string) error {
+func (n *noopAdminService) DeleteConnectorOAuthToken(ctx context.Context, connector, configHash, userID string) error {
 	return drivers.ErrNotImplemented
 }
 

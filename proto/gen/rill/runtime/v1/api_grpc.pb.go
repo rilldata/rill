@@ -52,6 +52,7 @@ const (
 	RuntimeService_CreateTrigger_FullMethodName           = "/rill.runtime.v1.RuntimeService/CreateTrigger"
 	RuntimeService_ListConnectorDrivers_FullMethodName    = "/rill.runtime.v1.RuntimeService/ListConnectorDrivers"
 	RuntimeService_AnalyzeConnectors_FullMethodName       = "/rill.runtime.v1.RuntimeService/AnalyzeConnectors"
+	RuntimeService_GetConnectorOAuthConfig_FullMethodName = "/rill.runtime.v1.RuntimeService/GetConnectorOAuthConfig"
 	RuntimeService_ListNotifierConnectors_FullMethodName  = "/rill.runtime.v1.RuntimeService/ListNotifierConnectors"
 	RuntimeService_ListConversations_FullMethodName       = "/rill.runtime.v1.RuntimeService/ListConversations"
 	RuntimeService_GetConversation_FullMethodName         = "/rill.runtime.v1.RuntimeService/GetConversation"
@@ -163,6 +164,11 @@ type RuntimeServiceClient interface {
 	ListConnectorDrivers(ctx context.Context, in *ListConnectorDriversRequest, opts ...grpc.CallOption) (*ListConnectorDriversResponse, error)
 	// AnalyzeConnectors scans all the project files and returns information about all referenced connectors.
 	AnalyzeConnectors(ctx context.Context, in *AnalyzeConnectorsRequest, opts ...grpc.CallOption) (*AnalyzeConnectorsResponse, error)
+	// GetConnectorOAuthConfig returns the OAuth configuration of a connector that authorizes users with OAuth,
+	// after checking that the given user may use the connector.
+	// It is called by the admin service before it starts an authorization flow; it requires the ManageInstances permission
+	// because the response contains secrets.
+	GetConnectorOAuthConfig(ctx context.Context, in *GetConnectorOAuthConfigRequest, opts ...grpc.CallOption) (*GetConnectorOAuthConfigResponse, error)
 	// ListNotifierConnectors returns the names of all configured connectors that can be used as notifiers.
 	// This API is much faster than AnalyzeConnectors and can be called without admin-level permissions.
 	ListNotifierConnectors(ctx context.Context, in *ListNotifierConnectorsRequest, opts ...grpc.CallOption) (*ListNotifierConnectorsResponse, error)
@@ -601,6 +607,16 @@ func (c *runtimeServiceClient) AnalyzeConnectors(ctx context.Context, in *Analyz
 	return out, nil
 }
 
+func (c *runtimeServiceClient) GetConnectorOAuthConfig(ctx context.Context, in *GetConnectorOAuthConfigRequest, opts ...grpc.CallOption) (*GetConnectorOAuthConfigResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetConnectorOAuthConfigResponse)
+	err := c.cc.Invoke(ctx, RuntimeService_GetConnectorOAuthConfig_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *runtimeServiceClient) ListNotifierConnectors(ctx context.Context, in *ListNotifierConnectorsRequest, opts ...grpc.CallOption) (*ListNotifierConnectorsResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(ListNotifierConnectorsResponse)
@@ -998,6 +1014,11 @@ type RuntimeServiceServer interface {
 	ListConnectorDrivers(context.Context, *ListConnectorDriversRequest) (*ListConnectorDriversResponse, error)
 	// AnalyzeConnectors scans all the project files and returns information about all referenced connectors.
 	AnalyzeConnectors(context.Context, *AnalyzeConnectorsRequest) (*AnalyzeConnectorsResponse, error)
+	// GetConnectorOAuthConfig returns the OAuth configuration of a connector that authorizes users with OAuth,
+	// after checking that the given user may use the connector.
+	// It is called by the admin service before it starts an authorization flow; it requires the ManageInstances permission
+	// because the response contains secrets.
+	GetConnectorOAuthConfig(context.Context, *GetConnectorOAuthConfigRequest) (*GetConnectorOAuthConfigResponse, error)
 	// ListNotifierConnectors returns the names of all configured connectors that can be used as notifiers.
 	// This API is much faster than AnalyzeConnectors and can be called without admin-level permissions.
 	ListNotifierConnectors(context.Context, *ListNotifierConnectorsRequest) (*ListNotifierConnectorsResponse, error)
@@ -1177,6 +1198,9 @@ func (UnimplementedRuntimeServiceServer) ListConnectorDrivers(context.Context, *
 }
 func (UnimplementedRuntimeServiceServer) AnalyzeConnectors(context.Context, *AnalyzeConnectorsRequest) (*AnalyzeConnectorsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method AnalyzeConnectors not implemented")
+}
+func (UnimplementedRuntimeServiceServer) GetConnectorOAuthConfig(context.Context, *GetConnectorOAuthConfigRequest) (*GetConnectorOAuthConfigResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetConnectorOAuthConfig not implemented")
 }
 func (UnimplementedRuntimeServiceServer) ListNotifierConnectors(context.Context, *ListNotifierConnectorsRequest) (*ListNotifierConnectorsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListNotifierConnectors not implemented")
@@ -1865,6 +1889,24 @@ func _RuntimeService_AnalyzeConnectors_Handler(srv interface{}, ctx context.Cont
 	return interceptor(ctx, in, info, handler)
 }
 
+func _RuntimeService_GetConnectorOAuthConfig_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetConnectorOAuthConfigRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RuntimeServiceServer).GetConnectorOAuthConfig(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: RuntimeService_GetConnectorOAuthConfig_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RuntimeServiceServer).GetConnectorOAuthConfig(ctx, req.(*GetConnectorOAuthConfigRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _RuntimeService_ListNotifierConnectors_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(ListNotifierConnectorsRequest)
 	if err := dec(in); err != nil {
@@ -2542,6 +2584,10 @@ var RuntimeService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "AnalyzeConnectors",
 			Handler:    _RuntimeService_AnalyzeConnectors_Handler,
+		},
+		{
+			MethodName: "GetConnectorOAuthConfig",
+			Handler:    _RuntimeService_GetConnectorOAuthConfig_Handler,
 		},
 		{
 			MethodName: "ListNotifierConnectors",

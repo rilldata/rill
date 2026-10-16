@@ -11,6 +11,7 @@ import (
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers/mcp"
+	"github.com/rilldata/rill/runtime/pkg/oauthclient"
 	"go.uber.org/zap"
 )
 
@@ -23,11 +24,10 @@ const mcpOAuthFlowTTL = 15 * time.Minute
 
 // mcpOAuthFlow is a pending browser-based authorization flow, keyed by its OAuth state parameter.
 type mcpOAuthFlow struct {
-	connector   string
-	displayName string
-	verifier    string
-	redirect    string
-	expires     time.Time
+	connector string
+	verifier  string
+	redirect  string
+	expires   time.Time
 }
 
 // mcpOAuthFlows tracks pending flows.
@@ -88,7 +88,7 @@ func (s *Server) mcpOAuthConnectHandler() http.Handler {
 			return
 		}
 
-		state, err := mcp.GenerateOAuthState()
+		state, err := oauthclient.GenerateState()
 		if err != nil {
 			http.Error(w, fmt.Sprintf("failed to generate state: %s", err), http.StatusInternalServerError)
 			return
@@ -101,11 +101,10 @@ func (s *Server) mcpOAuthConnectHandler() http.Handler {
 		}
 
 		s.app.mcpOAuthFlows.add(state, &mcpOAuthFlow{
-			connector:   connector,
-			displayName: mcpDisplayName(handle.Config(), connector),
-			verifier:    verifier,
-			redirect:    redirect,
-			expires:     time.Now().Add(mcpOAuthFlowTTL),
+			connector: connector,
+			verifier:  verifier,
+			redirect:  redirect,
+			expires:   time.Now().Add(mcpOAuthFlowTTL),
 		})
 		http.Redirect(w, r, authURL, http.StatusFound)
 	})
@@ -125,7 +124,7 @@ func (s *Server) mcpOAuthCallbackHandler() http.Handler {
 
 		render := func(errMsg string) {
 			w.Header().Set("Content-Type", "text/html; charset=utf-8")
-			_, _ = w.Write([]byte(mcp.OAuthCallbackPage(flow.connector, flow.displayName, errMsg, flow.redirect)))
+			_, _ = w.Write([]byte(oauthclient.CallbackPage(flow.connector, errMsg, flow.redirect)))
 		}
 
 		if errCode := qry.Get("error"); errCode != "" {
@@ -153,7 +152,7 @@ func (s *Server) mcpOAuthCallbackHandler() http.Handler {
 			render(fmt.Sprintf("connector %q is no longer an MCP server", flow.connector))
 			return
 		}
-		err = manager.CompleteOAuth(ctx, code, flow.verifier)
+		err = manager.CompleteOAuth(ctx, code, flow.verifier, qry.Get("iss"))
 		if err != nil {
 			s.logger.Warn("failed to complete MCP OAuth flow", zap.String("connector", flow.connector), zap.Error(err))
 			render(err.Error())
@@ -213,12 +212,4 @@ func (s *Server) safeLocalRedirect(redirect, fallback string) string {
 		}
 	}
 	return fallback
-}
-
-// mcpDisplayName returns the display name configured on an MCP connector, falling back to its name.
-func mcpDisplayName(config map[string]any, connector string) string {
-	if name, ok := config["display_name"].(string); ok && name != "" {
-		return name
-	}
-	return connector
 }

@@ -132,9 +132,9 @@ import type {
   V1CreateUsergroupResponse,
   V1CreateWhitelistedDomainResponse,
   V1DeleteAlertResponse,
+  V1DeleteConnectorOAuthTokenRequest,
+  V1DeleteConnectorOAuthTokenResponse,
   V1DeleteDeploymentResponse,
-  V1DeleteMCPOAuthTokenRequest,
-  V1DeleteMCPOAuthTokenResponse,
   V1DeleteOrganizationResponse,
   V1DeletePersonalFileResponse,
   V1DeleteProjectResponse,
@@ -157,6 +157,8 @@ import type {
   V1GetBillingSubscriptionResponse,
   V1GetBookmarkResponse,
   V1GetCloneCredentialsResponse,
+  V1GetConnectorOAuthTokenRequest,
+  V1GetConnectorOAuthTokenResponse,
   V1GetCurrentMagicAuthTokenResponse,
   V1GetCurrentUserResponse,
   V1GetDeploymentConfigResponse,
@@ -166,8 +168,6 @@ import type {
   V1GetGithubRepoStatusResponse,
   V1GetGithubUserStatusResponse,
   V1GetIFrameResponse,
-  V1GetMCPOAuthTokenRequest,
-  V1GetMCPOAuthTokenResponse,
   V1GetOrganizationMemberUserResponse,
   V1GetOrganizationNameForDomainResponse,
   V1GetOrganizationResponse,
@@ -392,184 +392,6 @@ export const createAIServiceComplete = <TError = RpcStatus, TContext = unknown>(
   return createMutation(mutationOptions, queryClient);
 };
 /**
- * @summary GetMCPOAuthToken returns a user's OAuth access token for an external MCP connector in the calling deployment's project,
-refreshing it first if it is about to expire. It returns NotFound if the user has not authorized the connector.
-It can only be called by deployments.
- */
-export const aIServiceGetMCPOAuthToken = (
-  v1GetMCPOAuthTokenRequest: V1GetMCPOAuthTokenRequest,
-  signal?: AbortSignal,
-) => {
-  return httpClient<V1GetMCPOAuthTokenResponse>({
-    url: `/v1/ai/mcp-oauth-token`,
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    data: v1GetMCPOAuthTokenRequest,
-    signal,
-  });
-};
-
-export const getAIServiceGetMCPOAuthTokenMutationOptions = <
-  TError = RpcStatus,
-  TContext = unknown,
->(options?: {
-  mutation?: CreateMutationOptions<
-    Awaited<ReturnType<typeof aIServiceGetMCPOAuthToken>>,
-    TError,
-    { data: V1GetMCPOAuthTokenRequest },
-    TContext
-  >;
-}): CreateMutationOptions<
-  Awaited<ReturnType<typeof aIServiceGetMCPOAuthToken>>,
-  TError,
-  { data: V1GetMCPOAuthTokenRequest },
-  TContext
-> => {
-  const mutationKey = ["aIServiceGetMCPOAuthToken"];
-  const { mutation: mutationOptions } = options
-    ? options.mutation &&
-      "mutationKey" in options.mutation &&
-      options.mutation.mutationKey
-      ? options
-      : { ...options, mutation: { ...options.mutation, mutationKey } }
-    : { mutation: { mutationKey } };
-
-  const mutationFn: MutationFunction<
-    Awaited<ReturnType<typeof aIServiceGetMCPOAuthToken>>,
-    { data: V1GetMCPOAuthTokenRequest }
-  > = (props) => {
-    const { data } = props ?? {};
-
-    return aIServiceGetMCPOAuthToken(data);
-  };
-
-  return { mutationFn, ...mutationOptions };
-};
-
-export type AIServiceGetMCPOAuthTokenMutationResult = NonNullable<
-  Awaited<ReturnType<typeof aIServiceGetMCPOAuthToken>>
->;
-export type AIServiceGetMCPOAuthTokenMutationBody = V1GetMCPOAuthTokenRequest;
-export type AIServiceGetMCPOAuthTokenMutationError = RpcStatus;
-
-/**
- * @summary GetMCPOAuthToken returns a user's OAuth access token for an external MCP connector in the calling deployment's project,
-refreshing it first if it is about to expire. It returns NotFound if the user has not authorized the connector.
-It can only be called by deployments.
- */
-export const createAIServiceGetMCPOAuthToken = <
-  TError = RpcStatus,
-  TContext = unknown,
->(
-  options?: {
-    mutation?: CreateMutationOptions<
-      Awaited<ReturnType<typeof aIServiceGetMCPOAuthToken>>,
-      TError,
-      { data: V1GetMCPOAuthTokenRequest },
-      TContext
-    >;
-  },
-  queryClient?: QueryClient,
-): CreateMutationResult<
-  Awaited<ReturnType<typeof aIServiceGetMCPOAuthToken>>,
-  TError,
-  { data: V1GetMCPOAuthTokenRequest },
-  TContext
-> => {
-  const mutationOptions = getAIServiceGetMCPOAuthTokenMutationOptions(options);
-
-  return createMutation(mutationOptions, queryClient);
-};
-/**
- * @summary DeleteMCPOAuthToken removes a user's OAuth authorization for an external MCP connector in the calling deployment's project.
-It can only be called by deployments.
- */
-export const aIServiceDeleteMCPOAuthToken = (
-  v1DeleteMCPOAuthTokenRequest: V1DeleteMCPOAuthTokenRequest,
-  signal?: AbortSignal,
-) => {
-  return httpClient<V1DeleteMCPOAuthTokenResponse>({
-    url: `/v1/ai/mcp-oauth-token/delete`,
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    data: v1DeleteMCPOAuthTokenRequest,
-    signal,
-  });
-};
-
-export const getAIServiceDeleteMCPOAuthTokenMutationOptions = <
-  TError = RpcStatus,
-  TContext = unknown,
->(options?: {
-  mutation?: CreateMutationOptions<
-    Awaited<ReturnType<typeof aIServiceDeleteMCPOAuthToken>>,
-    TError,
-    { data: V1DeleteMCPOAuthTokenRequest },
-    TContext
-  >;
-}): CreateMutationOptions<
-  Awaited<ReturnType<typeof aIServiceDeleteMCPOAuthToken>>,
-  TError,
-  { data: V1DeleteMCPOAuthTokenRequest },
-  TContext
-> => {
-  const mutationKey = ["aIServiceDeleteMCPOAuthToken"];
-  const { mutation: mutationOptions } = options
-    ? options.mutation &&
-      "mutationKey" in options.mutation &&
-      options.mutation.mutationKey
-      ? options
-      : { ...options, mutation: { ...options.mutation, mutationKey } }
-    : { mutation: { mutationKey } };
-
-  const mutationFn: MutationFunction<
-    Awaited<ReturnType<typeof aIServiceDeleteMCPOAuthToken>>,
-    { data: V1DeleteMCPOAuthTokenRequest }
-  > = (props) => {
-    const { data } = props ?? {};
-
-    return aIServiceDeleteMCPOAuthToken(data);
-  };
-
-  return { mutationFn, ...mutationOptions };
-};
-
-export type AIServiceDeleteMCPOAuthTokenMutationResult = NonNullable<
-  Awaited<ReturnType<typeof aIServiceDeleteMCPOAuthToken>>
->;
-export type AIServiceDeleteMCPOAuthTokenMutationBody =
-  V1DeleteMCPOAuthTokenRequest;
-export type AIServiceDeleteMCPOAuthTokenMutationError = RpcStatus;
-
-/**
- * @summary DeleteMCPOAuthToken removes a user's OAuth authorization for an external MCP connector in the calling deployment's project.
-It can only be called by deployments.
- */
-export const createAIServiceDeleteMCPOAuthToken = <
-  TError = RpcStatus,
-  TContext = unknown,
->(
-  options?: {
-    mutation?: CreateMutationOptions<
-      Awaited<ReturnType<typeof aIServiceDeleteMCPOAuthToken>>,
-      TError,
-      { data: V1DeleteMCPOAuthTokenRequest },
-      TContext
-    >;
-  },
-  queryClient?: QueryClient,
-): CreateMutationResult<
-  Awaited<ReturnType<typeof aIServiceDeleteMCPOAuthToken>>,
-  TError,
-  { data: V1DeleteMCPOAuthTokenRequest },
-  TContext
-> => {
-  const mutationOptions =
-    getAIServiceDeleteMCPOAuthTokenMutationOptions(options);
-
-  return createMutation(mutationOptions, queryClient);
-};
-/**
  * @summary GetBillingProjectCredentials returns credentials for the configured cloud metrics project filtered by request organization
  */
 export const adminServiceGetBillingProjectCredentials = (
@@ -756,6 +578,188 @@ export function createAdminServiceListPublicBillingPlans<
   return query;
 }
 
+/**
+ * @summary GetConnectorOAuthToken returns a user's OAuth access token for a connector in the calling deployment's project,
+refreshing it first if it is about to expire.
+It returns NotFound if the user has not authorized the connector's current OAuth configuration.
+It can only be called by deployments.
+ */
+export const adminServiceGetConnectorOAuthToken = (
+  v1GetConnectorOAuthTokenRequest: V1GetConnectorOAuthTokenRequest,
+  signal?: AbortSignal,
+) => {
+  return httpClient<V1GetConnectorOAuthTokenResponse>({
+    url: `/v1/deployments/-/connector-oauth-token`,
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    data: v1GetConnectorOAuthTokenRequest,
+    signal,
+  });
+};
+
+export const getAdminServiceGetConnectorOAuthTokenMutationOptions = <
+  TError = RpcStatus,
+  TContext = unknown,
+>(options?: {
+  mutation?: CreateMutationOptions<
+    Awaited<ReturnType<typeof adminServiceGetConnectorOAuthToken>>,
+    TError,
+    { data: V1GetConnectorOAuthTokenRequest },
+    TContext
+  >;
+}): CreateMutationOptions<
+  Awaited<ReturnType<typeof adminServiceGetConnectorOAuthToken>>,
+  TError,
+  { data: V1GetConnectorOAuthTokenRequest },
+  TContext
+> => {
+  const mutationKey = ["adminServiceGetConnectorOAuthToken"];
+  const { mutation: mutationOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey } };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof adminServiceGetConnectorOAuthToken>>,
+    { data: V1GetConnectorOAuthTokenRequest }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return adminServiceGetConnectorOAuthToken(data);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type AdminServiceGetConnectorOAuthTokenMutationResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceGetConnectorOAuthToken>>
+>;
+export type AdminServiceGetConnectorOAuthTokenMutationBody =
+  V1GetConnectorOAuthTokenRequest;
+export type AdminServiceGetConnectorOAuthTokenMutationError = RpcStatus;
+
+/**
+ * @summary GetConnectorOAuthToken returns a user's OAuth access token for a connector in the calling deployment's project,
+refreshing it first if it is about to expire.
+It returns NotFound if the user has not authorized the connector's current OAuth configuration.
+It can only be called by deployments.
+ */
+export const createAdminServiceGetConnectorOAuthToken = <
+  TError = RpcStatus,
+  TContext = unknown,
+>(
+  options?: {
+    mutation?: CreateMutationOptions<
+      Awaited<ReturnType<typeof adminServiceGetConnectorOAuthToken>>,
+      TError,
+      { data: V1GetConnectorOAuthTokenRequest },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateMutationResult<
+  Awaited<ReturnType<typeof adminServiceGetConnectorOAuthToken>>,
+  TError,
+  { data: V1GetConnectorOAuthTokenRequest },
+  TContext
+> => {
+  const mutationOptions =
+    getAdminServiceGetConnectorOAuthTokenMutationOptions(options);
+
+  return createMutation(mutationOptions, queryClient);
+};
+/**
+ * @summary DeleteConnectorOAuthToken revokes and removes a user's OAuth authorization for a connector in the calling deployment's project.
+It can only be called by deployments.
+ */
+export const adminServiceDeleteConnectorOAuthToken = (
+  v1DeleteConnectorOAuthTokenRequest: V1DeleteConnectorOAuthTokenRequest,
+  signal?: AbortSignal,
+) => {
+  return httpClient<V1DeleteConnectorOAuthTokenResponse>({
+    url: `/v1/deployments/-/connector-oauth-token/delete`,
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    data: v1DeleteConnectorOAuthTokenRequest,
+    signal,
+  });
+};
+
+export const getAdminServiceDeleteConnectorOAuthTokenMutationOptions = <
+  TError = RpcStatus,
+  TContext = unknown,
+>(options?: {
+  mutation?: CreateMutationOptions<
+    Awaited<ReturnType<typeof adminServiceDeleteConnectorOAuthToken>>,
+    TError,
+    { data: V1DeleteConnectorOAuthTokenRequest },
+    TContext
+  >;
+}): CreateMutationOptions<
+  Awaited<ReturnType<typeof adminServiceDeleteConnectorOAuthToken>>,
+  TError,
+  { data: V1DeleteConnectorOAuthTokenRequest },
+  TContext
+> => {
+  const mutationKey = ["adminServiceDeleteConnectorOAuthToken"];
+  const { mutation: mutationOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey } };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof adminServiceDeleteConnectorOAuthToken>>,
+    { data: V1DeleteConnectorOAuthTokenRequest }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return adminServiceDeleteConnectorOAuthToken(data);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type AdminServiceDeleteConnectorOAuthTokenMutationResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceDeleteConnectorOAuthToken>>
+>;
+export type AdminServiceDeleteConnectorOAuthTokenMutationBody =
+  V1DeleteConnectorOAuthTokenRequest;
+export type AdminServiceDeleteConnectorOAuthTokenMutationError = RpcStatus;
+
+/**
+ * @summary DeleteConnectorOAuthToken revokes and removes a user's OAuth authorization for a connector in the calling deployment's project.
+It can only be called by deployments.
+ */
+export const createAdminServiceDeleteConnectorOAuthToken = <
+  TError = RpcStatus,
+  TContext = unknown,
+>(
+  options?: {
+    mutation?: CreateMutationOptions<
+      Awaited<ReturnType<typeof adminServiceDeleteConnectorOAuthToken>>,
+      TError,
+      { data: V1DeleteConnectorOAuthTokenRequest },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateMutationResult<
+  Awaited<ReturnType<typeof adminServiceDeleteConnectorOAuthToken>>,
+  TError,
+  { data: V1DeleteConnectorOAuthTokenRequest },
+  TContext
+> => {
+  const mutationOptions =
+    getAdminServiceDeleteConnectorOAuthTokenMutationOptions(options);
+
+  return createMutation(mutationOptions, queryClient);
+};
 /**
  * @summary DeleteDeployment deletes a deployment.
  */

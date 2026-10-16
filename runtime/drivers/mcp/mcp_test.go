@@ -6,7 +6,6 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"net"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -20,6 +19,8 @@ import (
 	gomcp "github.com/modelcontextprotocol/go-sdk/mcp"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/activity"
+	"github.com/rilldata/rill/runtime/pkg/oauthclient"
+	"github.com/rilldata/rill/runtime/pkg/safehttp"
 	"github.com/rilldata/rill/runtime/storage"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
@@ -335,7 +336,10 @@ func TestLocalOAuthFlow(t *testing.T) {
 	ctx := t.Context()
 	var manager OAuthManager = h
 	require.True(t, manager.OAuthEnabled())
-	require.Equal(t, ts.url(), h.ServerURL())
+	cfg := h.OAuthConfig()
+	require.Equal(t, ts.url(), cfg.ServerURL)
+	require.Equal(t, []string{"read"}, cfg.Scopes)
+	require.NotEmpty(t, cfg.Hash)
 
 	connected, _, err := manager.OAuthStatus(ctx)
 	require.NoError(t, err)
@@ -344,7 +348,7 @@ func TestLocalOAuthFlow(t *testing.T) {
 	require.NoError(t, err)
 	require.False(t, authorized)
 
-	// Begin: discovers the authorization server through the 401 challenge and registers a client
+	// Begin: discovers the authorization server through the well-known metadata and registers a client
 	authURL, verifier, err := manager.BeginOAuth(ctx, "http://localhost:9009/mcp/oauth/callback", "state-1")
 	require.NoError(t, err)
 	u, err := url.Parse(authURL)
@@ -368,7 +372,8 @@ func TestLocalOAuthFlow(t *testing.T) {
 	// Complete: exchanges the code with PKCE and the resource indicator
 	as.challenge = q.Get("code_challenge")
 	as.resource = ts.url()
-	require.NoError(t, manager.CompleteOAuth(ctx, "code123", verifier))
+	require.ErrorContains(t, manager.CompleteOAuth(ctx, "code123", verifier, "https://evil.example.com"), "not the expected authorization server")
+	require.NoError(t, manager.CompleteOAuth(ctx, "code123", verifier, ""))
 	ts.accept("at1", "at2", "at3")
 
 	connected, expiresOn, err := manager.OAuthStatus(ctx)
@@ -410,6 +415,15 @@ func TestLocalOAuthFlow(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, 1, as.registerCall)
 
+	// State persisted for another OAuth configuration is ignored
+	h.oauth.mu.Lock()
+	h.oauth.loaded = false
+	h.oauthConfigHash = "other"
+	h.oauth.mu.Unlock()
+	authorized, err = h.OAuthAuthorized(ctx)
+	require.NoError(t, err)
+	require.False(t, authorized)
+
 	// Disconnecting forgets the token
 	require.NoError(t, h.ResetOAuth(ctx))
 	_, err = os.Stat(statePath)
@@ -418,17 +432,42 @@ func TestLocalOAuthFlow(t *testing.T) {
 	require.ErrorIs(t, err, drivers.ErrMCPAuthorizationRequired)
 }
 
+func TestLocalTokenWithoutRefreshToken(t *testing.T) {
+	serverURL := "https://example.com/mcp"
+	h := openTestHandle(t, map[string]any{"url": serverURL, "auth": "oauth"})
+	ctx := t.Context()
+
+	// Within the refresh window, a token that can't be refreshed is still used until it expires
+	require.NoError(t, h.oauth.save(&OAuthState{
+		Client:          &oauthclient.Client{ServerURL: serverURL},
+		Token:           &oauth2.Token{AccessToken: "at1", Expiry: time.Now().Add(time.Minute)},
+		TokenObtainedOn: time.Now().Add(-time.Hour),
+	}))
+	tok, err := h.oauth.accessToken(ctx, false)
+	require.NoError(t, err)
+	require.Equal(t, "at1", tok)
+
+	// Once expired, the user must authorize again
+	require.NoError(t, h.oauth.save(&OAuthState{
+		Client:          &oauthclient.Client{ServerURL: serverURL},
+		Token:           &oauth2.Token{AccessToken: "at1", Expiry: time.Now().Add(-time.Minute)},
+		TokenObtainedOn: time.Now().Add(-time.Hour),
+	}))
+	_, err = h.oauth.accessToken(ctx, false)
+	require.ErrorIs(t, err, drivers.ErrMCPAuthorizationRequired)
+}
+
 func TestPreregisteredOAuthClient(t *testing.T) {
 	as := newTestAuthServer(t)
 	ts := newTestMCPServer(t)
 	ts.asURL = as.srv.URL
 
-	client, err := DiscoverOAuthClient(t.Context(), &DiscoverOAuthClientOptions{
+	client, err := oauthclient.Discover(t.Context(), &oauthclient.DiscoverOptions{
 		ServerURL:    ts.url(),
 		RedirectURL:  "http://localhost:9009/mcp/oauth/callback",
 		ClientID:     "pre-registered",
 		ClientSecret: "shh",
-		HTTPClient:   NewHTTPClient(true, 5*time.Second),
+		HTTPClient:   safehttp.NewHTTPClient(true, 5*time.Second),
 	})
 	require.NoError(t, err)
 	require.Equal(t, "pre-registered", client.ClientID)
@@ -436,14 +475,25 @@ func TestPreregisteredOAuthClient(t *testing.T) {
 	require.Equal(t, 0, as.registerCall)
 	require.Equal(t, []string{"read"}, client.Scopes) // defaults to the scopes the server advertises
 	require.Equal(t, as.srv.URL+"/revoke", client.RevocationEndpoint)
-	redirect := "http://localhost:9009/mcp/oauth/callback"
-	require.True(t, client.Matches(&DiscoverOAuthClientOptions{ServerURL: ts.url(), RedirectURL: redirect}))
-	require.True(t, client.Matches(&DiscoverOAuthClientOptions{ServerURL: ts.url(), RedirectURL: redirect, ClientID: client.ClientID, ClientSecret: client.ClientSecret}))
-	require.True(t, client.Matches(&DiscoverOAuthClientOptions{ServerURL: ts.url(), RedirectURL: redirect, Scopes: []string{"read"}}))
-	require.False(t, client.Matches(&DiscoverOAuthClientOptions{ServerURL: ts.url(), RedirectURL: redirect, ClientID: "someone-else"}), "another client ID")
-	require.False(t, client.Matches(&DiscoverOAuthClientOptions{ServerURL: ts.url(), RedirectURL: redirect, ClientID: client.ClientID, ClientSecret: "rotated"}), "a rotated secret")
-	require.False(t, client.Matches(&DiscoverOAuthClientOptions{ServerURL: ts.url(), RedirectURL: redirect, Scopes: []string{"read", "write"}}), "changed scopes")
-	require.False(t, client.Matches(&DiscoverOAuthClientOptions{ServerURL: ts.url(), RedirectURL: "http://other/cb"}), "another redirect")
+}
+
+func TestOAuthConfigHash(t *testing.T) {
+	base := &configProperties{URL: "https://mcp.example.com", OAuthClientID: "id", OAuthClientSecret: "secret", OAuthScopes: []string{"read"}}
+	hash := oauthConfigHash(base)
+	require.Equal(t, hash, oauthConfigHash(&configProperties{URL: "https://mcp.example.com", OAuthClientID: "id", OAuthClientSecret: "secret", OAuthScopes: []string{"read"}}))
+
+	changes := []*configProperties{
+		{URL: "https://other.example.com", OAuthClientID: "id", OAuthClientSecret: "secret", OAuthScopes: []string{"read"}},
+		{URL: "https://mcp.example.com", OAuthClientID: "id2", OAuthClientSecret: "secret", OAuthScopes: []string{"read"}},
+		{URL: "https://mcp.example.com", OAuthClientID: "id", OAuthClientSecret: "rotated", OAuthScopes: []string{"read"}},
+		{URL: "https://mcp.example.com", OAuthClientID: "id", OAuthClientSecret: "secret", OAuthScopes: []string{"read", "write"}},
+		{URL: "https://mcp.example.com", OAuthClientID: "id", OAuthClientSecret: "secret"},
+		// Shifting a value between fields must not collide
+		{URL: "https://mcp.example.com", OAuthClientID: "idsecret", OAuthScopes: []string{"read"}},
+	}
+	for _, c := range changes {
+		require.NotEqual(t, hash, oauthConfigHash(c))
+	}
 }
 
 func TestConfigValidation(t *testing.T) {
@@ -476,25 +526,6 @@ func TestConfigValidation(t *testing.T) {
 	}
 }
 
-func TestSafeDialRejectsPrivateAddresses(t *testing.T) {
-	ts := newTestMCPServer(t)
-	// The test server listens on 127.0.0.1, which hosted runtimes must never reach, even through a hostname.
-	hosted := newTransport(false, time.Second)
-	_, err := hosted.DialContext(t.Context(), "tcp", strings.TrimPrefix(ts.srv.URL, "http://"))
-	require.ErrorContains(t, err, "private address")
-
-	// Rill Developer may reach local servers
-	local := newTransport(true, time.Second)
-	conn, err := local.DialContext(t.Context(), "tcp", strings.TrimPrefix(ts.srv.URL, "http://"))
-	require.NoError(t, err)
-	require.NoError(t, conn.Close())
-
-	require.True(t, isPrivateIP(net.ParseIP("169.254.169.254")))
-	require.True(t, isPrivateIP(net.ParseIP("::1")))
-	require.True(t, isPrivateIP(net.ParseIP("fd00::1")))
-	require.False(t, isPrivateIP(net.ParseIP("93.184.216.34")))
-}
-
 func mustDataDir(t *testing.T, h *handle) string {
 	dir, err := h.storage.DataDir()
 	require.NoError(t, err)
@@ -516,27 +547,4 @@ func TestTruncateUTF8(t *testing.T) {
 	require.Equal(t, "hé", truncateUTF8("héllo", 3))
 	require.Equal(t, "", truncateUTF8("é", 1))
 	require.Equal(t, "日本", truncateUTF8("日本語", 7))
-}
-
-func TestIsLinkableRedirect(t *testing.T) {
-	require.True(t, isLinkableRedirect("/org/project"))
-	require.True(t, isLinkableRedirect("https://ui.rilldata.com/org/project"))
-	require.True(t, isLinkableRedirect("http://localhost:9009/"))
-	require.False(t, isLinkableRedirect(""))
-	require.False(t, isLinkableRedirect("javascript:alert(1)"))
-	require.False(t, isLinkableRedirect("data:text/html,hi"))
-	require.False(t, isLinkableRedirect("//evil.com/x"))
-	require.False(t, isLinkableRedirect("ftp://example.com/"))
-}
-
-func TestRevokeSendsClientAuth(t *testing.T) {
-	as := newTestAuthServer(t)
-	client := &OAuthClient{
-		RevocationEndpoint: as.srv.URL + "/revoke",
-		ClientID:           "client-123",
-	}
-	tok := &oauth2.Token{AccessToken: "at1", RefreshToken: "rt1"}
-	require.NoError(t, client.Revoke(t.Context(), tok, NewHTTPClient(true, 5*time.Second)))
-	require.Equal(t, []string{"rt1"}, as.revoked)
-	require.Equal(t, "client-123", as.revokedClientID)
 }

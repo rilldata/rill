@@ -124,6 +124,10 @@ func (n *noop) DeleteUnusedAssets(ctx context.Context) (*InsertResult, error) {
 	return nil, nil
 }
 
+func (n *noop) DeleteUnusedConnectorOAuthClients(ctx context.Context) (*InsertResult, error) {
+	return nil, nil
+}
+
 func (n *noop) DeploymentsHealthCheck(ctx context.Context) (*InsertResult, error) {
 	return nil, nil
 }

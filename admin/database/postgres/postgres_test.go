@@ -43,6 +43,7 @@ func TestPostgres(t *testing.T) {
 	t.Run("TestProjectsForUsersWithPagination", func(t *testing.T) { testProjectsForUserWithPagination(t, db) })
 	t.Run("TestMembersWithPagination", func(t *testing.T) { testOrgsMembersPagination(t, db) })
 	t.Run("TestUpsertProjectVariable", func(t *testing.T) { testUpsertProjectVariable(t, db) })
+	t.Run("TestConnectorOAuth", func(t *testing.T) { testConnectorOAuth(t, db) })
 	t.Run("TestManagedGitRepos", func(t *testing.T) { testManagedGitRepos(t, db) })
 	t.Run("TestOrganizationMemberUserAttributes", func(t *testing.T) { testOrganizationMemberUserAttributes(t, db) })
 	t.Run("TestOrganizationInviteAttributes", func(t *testing.T) { testOrganizationInviteAttributes(t, db) })
@@ -523,6 +524,79 @@ func testOrgsMembersPagination(t *testing.T, db database.DB) {
 
 	//cleanup
 	require.NoError(t, db.DeleteOrganization(ctx, "alpha"))
+}
+
+func testConnectorOAuth(t *testing.T, db database.DB) {
+	ctx := context.Background()
+	_, projectID, userID := seed(t, db)
+
+	// Clients are unique per connector and configuration hash; a duplicate insert returns the existing client
+	c1, err := db.FindOrInsertConnectorOAuthClient(ctx, &database.InsertConnectorOAuthClientOptions{
+		ProjectID:  projectID,
+		Connector:  "notion",
+		ConfigHash: "hash1",
+		Client:     []byte(`{"client_id":"a"}`),
+	})
+	require.NoError(t, err)
+	require.Equal(t, `{"client_id":"a"}`, string(c1.Client))
+	dup, err := db.FindOrInsertConnectorOAuthClient(ctx, &database.InsertConnectorOAuthClientOptions{
+		ProjectID:  projectID,
+		Connector:  "notion",
+		ConfigHash: "hash1",
+		Client:     []byte(`{"client_id":"b"}`),
+	})
+	require.NoError(t, err)
+	require.Equal(t, c1.ID, dup.ID)
+	require.Equal(t, `{"client_id":"a"}`, string(dup.Client))
+	c2, err := db.FindOrInsertConnectorOAuthClient(ctx, &database.InsertConnectorOAuthClientOptions{
+		ProjectID:  projectID,
+		Connector:  "notion",
+		ConfigHash: "hash2",
+		Client:     []byte(`{"client_id":"c"}`),
+	})
+	require.NoError(t, err)
+
+	found, err := db.FindConnectorOAuthClient(ctx, projectID, "notion", "hash1")
+	require.NoError(t, err)
+	require.Equal(t, c1.ID, found.ID)
+	require.Equal(t, `{"client_id":"a"}`, string(found.Client))
+	_, err = db.FindConnectorOAuthClient(ctx, projectID, "linear", "hash1")
+	require.ErrorIs(t, err, database.ErrNotFound)
+
+	// A recent use is not recorded again
+	require.NoError(t, db.UpdateConnectorOAuthClientUsedOn(ctx, c1.ID))
+	found, err = db.FindConnectorOAuthClientByID(ctx, c1.ID)
+	require.NoError(t, err)
+	require.Equal(t, c1.UsedOn, found.UsedOn)
+
+	// Tokens are unique per client and user, and are replaced on upsert
+	_, err = db.UpsertConnectorOAuthToken(ctx, &database.UpsertConnectorOAuthTokenOptions{OAuthClientID: c1.ID, UserID: userID, Token: []byte(`{"access_token":"t1"}`)})
+	require.NoError(t, err)
+	_, err = db.UpsertConnectorOAuthToken(ctx, &database.UpsertConnectorOAuthTokenOptions{OAuthClientID: c1.ID, UserID: userID, Token: []byte(`{"access_token":"t2"}`)})
+	require.NoError(t, err)
+	_, err = db.UpsertConnectorOAuthToken(ctx, &database.UpsertConnectorOAuthTokenOptions{OAuthClientID: c2.ID, UserID: userID, Token: []byte(`{"access_token":"t3"}`)})
+	require.NoError(t, err)
+	tok, err := db.FindConnectorOAuthToken(ctx, c1.ID, userID)
+	require.NoError(t, err)
+	require.Equal(t, `{"access_token":"t2"}`, string(tok.Token))
+
+	require.NoError(t, db.DeleteConnectorOAuthToken(ctx, c1.ID, userID))
+	_, err = db.FindConnectorOAuthToken(ctx, c1.ID, userID)
+	require.ErrorIs(t, err, database.ErrNotFound)
+	require.ErrorIs(t, db.DeleteConnectorOAuthToken(ctx, c1.ID, userID), database.ErrNotFound)
+
+	// Deleting a client deletes its tokens
+	require.NoError(t, db.DeleteConnectorOAuthClient(ctx, c2.ID))
+	_, err = db.FindConnectorOAuthToken(ctx, c2.ID, userID)
+	require.ErrorIs(t, err, database.ErrNotFound)
+
+	// Unused clients are cleaned up
+	require.NoError(t, db.DeleteUnusedConnectorOAuthClients(ctx, time.Now().Add(-time.Hour)))
+	_, err = db.FindConnectorOAuthClientByID(ctx, c1.ID)
+	require.NoError(t, err)
+	require.NoError(t, db.DeleteUnusedConnectorOAuthClients(ctx, time.Now().Add(time.Hour)))
+	_, err = db.FindConnectorOAuthClientByID(ctx, c1.ID)
+	require.ErrorIs(t, err, database.ErrNotFound)
 }
 
 func testUpsertProjectVariable(t *testing.T, db database.DB) {

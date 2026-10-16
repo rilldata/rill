@@ -333,6 +333,26 @@ service AdminService {
     option (google.api.http) = {get: "/v1/deployments/{deployment_id}/config"};
   }
 
+  // GetConnectorOAuthToken returns a user's OAuth access token for a connector in the calling deployment's project,
+  // refreshing it first if it is about to expire.
+  // It returns NotFound if the user has not authorized the connector's current OAuth configuration.
+  // It can only be called by deployments.
+  rpc GetConnectorOAuthToken(GetConnectorOAuthTokenRequest) returns (GetConnectorOAuthTokenResponse) {
+    option (google.api.http) = {
+      post: "/v1/deployments/-/connector-oauth-token",
+      body: "*"
+    };
+  }
+
+  // DeleteConnectorOAuthToken revokes and removes a user's OAuth authorization for a connector in the calling deployment's project.
+  // It can only be called by deployments.
+  rpc DeleteConnectorOAuthToken(DeleteConnectorOAuthTokenRequest) returns (DeleteConnectorOAuthTokenResponse) {
+    option (google.api.http) = {
+      post: "/v1/deployments/-/connector-oauth-token/delete",
+      body: "*"
+    };
+  }
+
   // ListRoles lists all the roles available for orgs and projects.
   rpc ListRoles(ListRolesRequest) returns (ListRolesResponse) {
     option (google.api.http) = {get: "/v1/roles"};
@@ -2051,6 +2071,32 @@ message GetDeploymentConfigResponse {
   // System variables set by the admin service that should not be overridden by user input.
   map<string, string> system_variables = 9;
 }
+
+message GetConnectorOAuthTokenRequest {
+  // Name of the connector in the deployment's project.
+  string connector = 1 [(validate.rules).string.min_len = 1];
+  // Hash of the connector's current OAuth configuration, as computed by the runtime.
+  // A token is only returned if the user authorized this configuration, so changing it never reuses an existing authorization.
+  string config_hash = 2 [(validate.rules).string.min_len = 1];
+  // ID of the user whose token to return.
+  string user_id = 3 [(validate.rules).string.min_len = 1];
+  // If true, the token is refreshed even if it has not expired yet (used after the server rejected the current token).
+  bool force_refresh = 4;
+}
+
+message GetConnectorOAuthTokenResponse {
+  string access_token = 1;
+  // When the access token expires. Unset if the token does not expire.
+  google.protobuf.Timestamp expires_on = 2;
+}
+
+message DeleteConnectorOAuthTokenRequest {
+  string connector = 1 [(validate.rules).string.min_len = 1];
+  string config_hash = 2 [(validate.rules).string.min_len = 1];
+  string user_id = 3 [(validate.rules).string.min_len = 1];
+}
+
+message DeleteConnectorOAuthTokenResponse {}
 
 message ListRolesRequest {}
 

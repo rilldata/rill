@@ -9885,6 +9885,418 @@ var _ interface {
 	ErrorName() string
 } = AnalyzeConnectorsResponseValidationError{}
 
+// Validate checks the field values on GetConnectorOAuthConfigRequest with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *GetConnectorOAuthConfigRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on GetConnectorOAuthConfigRequest with
+// the rules defined in the proto definition for this message. If any rules
+// are violated, the result is a list of violation errors wrapped in
+// GetConnectorOAuthConfigRequestMultiError, or nil if none found.
+func (m *GetConnectorOAuthConfigRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *GetConnectorOAuthConfigRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for InstanceId
+
+	// no validation rules for Connector
+
+	if all {
+		switch v := interface{}(m.GetUserAttributes()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, GetConnectorOAuthConfigRequestValidationError{
+					field:  "UserAttributes",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, GetConnectorOAuthConfigRequestValidationError{
+					field:  "UserAttributes",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetUserAttributes()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return GetConnectorOAuthConfigRequestValidationError{
+				field:  "UserAttributes",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	for idx, item := range m.GetUserRules() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, GetConnectorOAuthConfigRequestValidationError{
+						field:  fmt.Sprintf("UserRules[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, GetConnectorOAuthConfigRequestValidationError{
+						field:  fmt.Sprintf("UserRules[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return GetConnectorOAuthConfigRequestValidationError{
+					field:  fmt.Sprintf("UserRules[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
+
+	if len(errors) > 0 {
+		return GetConnectorOAuthConfigRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// GetConnectorOAuthConfigRequestMultiError is an error wrapping multiple
+// validation errors returned by GetConnectorOAuthConfigRequest.ValidateAll()
+// if the designated constraints aren't met.
+type GetConnectorOAuthConfigRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m GetConnectorOAuthConfigRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m GetConnectorOAuthConfigRequestMultiError) AllErrors() []error { return m }
+
+// GetConnectorOAuthConfigRequestValidationError is the validation error
+// returned by GetConnectorOAuthConfigRequest.Validate if the designated
+// constraints aren't met.
+type GetConnectorOAuthConfigRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e GetConnectorOAuthConfigRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e GetConnectorOAuthConfigRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e GetConnectorOAuthConfigRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e GetConnectorOAuthConfigRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e GetConnectorOAuthConfigRequestValidationError) ErrorName() string {
+	return "GetConnectorOAuthConfigRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e GetConnectorOAuthConfigRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sGetConnectorOAuthConfigRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = GetConnectorOAuthConfigRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = GetConnectorOAuthConfigRequestValidationError{}
+
+// Validate checks the field values on GetConnectorOAuthConfigResponse with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *GetConnectorOAuthConfigResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on GetConnectorOAuthConfigResponse with
+// the rules defined in the proto definition for this message. If any rules
+// are violated, the result is a list of violation errors wrapped in
+// GetConnectorOAuthConfigResponseMultiError, or nil if none found.
+func (m *GetConnectorOAuthConfigResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *GetConnectorOAuthConfigResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for ConfigHash
+
+	if all {
+		switch v := interface{}(m.GetConfig()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, GetConnectorOAuthConfigResponseValidationError{
+					field:  "Config",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, GetConnectorOAuthConfigResponseValidationError{
+					field:  "Config",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetConfig()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return GetConnectorOAuthConfigResponseValidationError{
+				field:  "Config",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if len(errors) > 0 {
+		return GetConnectorOAuthConfigResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// GetConnectorOAuthConfigResponseMultiError is an error wrapping multiple
+// validation errors returned by GetConnectorOAuthConfigResponse.ValidateAll()
+// if the designated constraints aren't met.
+type GetConnectorOAuthConfigResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m GetConnectorOAuthConfigResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m GetConnectorOAuthConfigResponseMultiError) AllErrors() []error { return m }
+
+// GetConnectorOAuthConfigResponseValidationError is the validation error
+// returned by GetConnectorOAuthConfigResponse.Validate if the designated
+// constraints aren't met.
+type GetConnectorOAuthConfigResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e GetConnectorOAuthConfigResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e GetConnectorOAuthConfigResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e GetConnectorOAuthConfigResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e GetConnectorOAuthConfigResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e GetConnectorOAuthConfigResponseValidationError) ErrorName() string {
+	return "GetConnectorOAuthConfigResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e GetConnectorOAuthConfigResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sGetConnectorOAuthConfigResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = GetConnectorOAuthConfigResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = GetConnectorOAuthConfigResponseValidationError{}
+
+// Validate checks the field values on ConnectorOAuthConfig with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *ConnectorOAuthConfig) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on ConnectorOAuthConfig with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// ConnectorOAuthConfigMultiError, or nil if none found.
+func (m *ConnectorOAuthConfig) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *ConnectorOAuthConfig) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for ResourceUrl
+
+	// no validation rules for ClientId
+
+	// no validation rules for ClientSecret
+
+	if len(errors) > 0 {
+		return ConnectorOAuthConfigMultiError(errors)
+	}
+
+	return nil
+}
+
+// ConnectorOAuthConfigMultiError is an error wrapping multiple validation
+// errors returned by ConnectorOAuthConfig.ValidateAll() if the designated
+// constraints aren't met.
+type ConnectorOAuthConfigMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m ConnectorOAuthConfigMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m ConnectorOAuthConfigMultiError) AllErrors() []error { return m }
+
+// ConnectorOAuthConfigValidationError is the validation error returned by
+// ConnectorOAuthConfig.Validate if the designated constraints aren't met.
+type ConnectorOAuthConfigValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e ConnectorOAuthConfigValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e ConnectorOAuthConfigValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e ConnectorOAuthConfigValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e ConnectorOAuthConfigValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e ConnectorOAuthConfigValidationError) ErrorName() string {
+	return "ConnectorOAuthConfigValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e ConnectorOAuthConfigValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sConnectorOAuthConfig.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = ConnectorOAuthConfigValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = ConnectorOAuthConfigValidationError{}
+
 // Validate checks the field values on ListNotifierConnectorsRequest with the
 // rules defined in the proto definition for this message. If any rules are
 // violated, the first error encountered is returned, or nil if there are no violations.

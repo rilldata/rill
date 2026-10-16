@@ -74,10 +74,14 @@ func (s *Server) DisconnectMCPServer(ctx context.Context, req *runtimev1.Disconn
 	if !ok {
 		return nil, status.Errorf(codes.InvalidArgument, "connector %q is not an MCP server", req.Connector)
 	}
+	cfg := svc.OAuthConfig()
+	if cfg == nil {
+		return nil, status.Errorf(codes.InvalidArgument, "connector %q does not use per-user OAuth", req.Connector)
+	}
 
-	// Rill Cloud: the admin service holds the user's token.
+	// Rill Cloud: the admin service holds the user's token for the connector's current OAuth configuration.
 	if admin, releaseAdmin, err := s.runtime.Admin(ctx, req.InstanceId); err == nil {
-		err = admin.DeleteMCPOAuthToken(ctx, req.Connector, claims.UserID)
+		err = admin.DeleteConnectorOAuthToken(ctx, req.Connector, cfg.Hash, claims.UserID)
 		releaseAdmin()
 		if err != nil && !errors.Is(err, drivers.ErrNotImplemented) {
 			return nil, err

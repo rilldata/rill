@@ -17,5 +17,5 @@ export function mcpConnectUrl(
     redirect: window.location.href,
   });
   if (branch) params.set("branch", branch);
-  return `${CANONICAL_ADMIN_URL}/mcp/oauth/connect?${params.toString()}`;
+  return `${CANONICAL_ADMIN_URL}/connectors/oauth/connect?${params.toString()}`;
 }

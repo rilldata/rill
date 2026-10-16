@@ -19,9 +19,7 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	AIService_Complete_FullMethodName            = "/rill.admin.v1.AIService/Complete"
-	AIService_GetMCPOAuthToken_FullMethodName    = "/rill.admin.v1.AIService/GetMCPOAuthToken"
-	AIService_DeleteMCPOAuthToken_FullMethodName = "/rill.admin.v1.AIService/DeleteMCPOAuthToken"
+	AIService_Complete_FullMethodName = "/rill.admin.v1.AIService/Complete"
 )
 
 // AIServiceClient is the client API for AIService service.
@@ -30,13 +28,6 @@ const (
 type AIServiceClient interface {
 	// Complete sends the messages of a chat to the AI and asks it to generate a new message.
 	Complete(ctx context.Context, in *CompleteRequest, opts ...grpc.CallOption) (*CompleteResponse, error)
-	// GetMCPOAuthToken returns a user's OAuth access token for an external MCP connector in the calling deployment's project,
-	// refreshing it first if it is about to expire. It returns NotFound if the user has not authorized the connector.
-	// It can only be called by deployments.
-	GetMCPOAuthToken(ctx context.Context, in *GetMCPOAuthTokenRequest, opts ...grpc.CallOption) (*GetMCPOAuthTokenResponse, error)
-	// DeleteMCPOAuthToken removes a user's OAuth authorization for an external MCP connector in the calling deployment's project.
-	// It can only be called by deployments.
-	DeleteMCPOAuthToken(ctx context.Context, in *DeleteMCPOAuthTokenRequest, opts ...grpc.CallOption) (*DeleteMCPOAuthTokenResponse, error)
 }
 
 type aIServiceClient struct {
@@ -57,39 +48,12 @@ func (c *aIServiceClient) Complete(ctx context.Context, in *CompleteRequest, opt
 	return out, nil
 }
 
-func (c *aIServiceClient) GetMCPOAuthToken(ctx context.Context, in *GetMCPOAuthTokenRequest, opts ...grpc.CallOption) (*GetMCPOAuthTokenResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(GetMCPOAuthTokenResponse)
-	err := c.cc.Invoke(ctx, AIService_GetMCPOAuthToken_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *aIServiceClient) DeleteMCPOAuthToken(ctx context.Context, in *DeleteMCPOAuthTokenRequest, opts ...grpc.CallOption) (*DeleteMCPOAuthTokenResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(DeleteMCPOAuthTokenResponse)
-	err := c.cc.Invoke(ctx, AIService_DeleteMCPOAuthToken_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
 // AIServiceServer is the server API for AIService service.
 // All implementations must embed UnimplementedAIServiceServer
 // for forward compatibility.
 type AIServiceServer interface {
 	// Complete sends the messages of a chat to the AI and asks it to generate a new message.
 	Complete(context.Context, *CompleteRequest) (*CompleteResponse, error)
-	// GetMCPOAuthToken returns a user's OAuth access token for an external MCP connector in the calling deployment's project,
-	// refreshing it first if it is about to expire. It returns NotFound if the user has not authorized the connector.
-	// It can only be called by deployments.
-	GetMCPOAuthToken(context.Context, *GetMCPOAuthTokenRequest) (*GetMCPOAuthTokenResponse, error)
-	// DeleteMCPOAuthToken removes a user's OAuth authorization for an external MCP connector in the calling deployment's project.
-	// It can only be called by deployments.
-	DeleteMCPOAuthToken(context.Context, *DeleteMCPOAuthTokenRequest) (*DeleteMCPOAuthTokenResponse, error)
 	mustEmbedUnimplementedAIServiceServer()
 }
 
@@ -102,12 +66,6 @@ type UnimplementedAIServiceServer struct{}
 
 func (UnimplementedAIServiceServer) Complete(context.Context, *CompleteRequest) (*CompleteResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Complete not implemented")
-}
-func (UnimplementedAIServiceServer) GetMCPOAuthToken(context.Context, *GetMCPOAuthTokenRequest) (*GetMCPOAuthTokenResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetMCPOAuthToken not implemented")
-}
-func (UnimplementedAIServiceServer) DeleteMCPOAuthToken(context.Context, *DeleteMCPOAuthTokenRequest) (*DeleteMCPOAuthTokenResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method DeleteMCPOAuthToken not implemented")
 }
 func (UnimplementedAIServiceServer) mustEmbedUnimplementedAIServiceServer() {}
 func (UnimplementedAIServiceServer) testEmbeddedByValue()                   {}
@@ -148,42 +106,6 @@ func _AIService_Complete_Handler(srv interface{}, ctx context.Context, dec func(
 	return interceptor(ctx, in, info, handler)
 }
 
-func _AIService_GetMCPOAuthToken_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GetMCPOAuthTokenRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(AIServiceServer).GetMCPOAuthToken(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: AIService_GetMCPOAuthToken_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(AIServiceServer).GetMCPOAuthToken(ctx, req.(*GetMCPOAuthTokenRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _AIService_DeleteMCPOAuthToken_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(DeleteMCPOAuthTokenRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(AIServiceServer).DeleteMCPOAuthToken(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: AIService_DeleteMCPOAuthToken_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(AIServiceServer).DeleteMCPOAuthToken(ctx, req.(*DeleteMCPOAuthTokenRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
 // AIService_ServiceDesc is the grpc.ServiceDesc for AIService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -194,14 +116,6 @@ var AIService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Complete",
 			Handler:    _AIService_Complete_Handler,
-		},
-		{
-			MethodName: "GetMCPOAuthToken",
-			Handler:    _AIService_GetMCPOAuthToken_Handler,
-		},
-		{
-			MethodName: "DeleteMCPOAuthToken",
-			Handler:    _AIService_DeleteMCPOAuthToken_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

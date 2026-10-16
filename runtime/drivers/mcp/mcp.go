@@ -32,6 +32,7 @@ import (
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/parser"
 	"github.com/rilldata/rill/runtime/pkg/activity"
+	"github.com/rilldata/rill/runtime/pkg/safehttp"
 	"github.com/rilldata/rill/runtime/storage"
 	"go.uber.org/zap"
 )
@@ -125,10 +126,13 @@ func (d driver) Open(_ context.Context, connectorName, instanceID string, config
 		rawConfig:   config,
 		storage:     st,
 		logger:      logger.With(zap.String("connector", connectorName)),
-		transport:   newTransport(cfg.AllowHostAccess, cfg.connectTimeout),
+		transport:   safehttp.NewTransport(cfg.AllowHostAccess, cfg.connectTimeout),
 		userHeaders: hasUserTemplating(cfg.Headers),
 		sessions:    make(map[string]*cachedSession),
 		tools:       make(map[string]*cachedTools),
+	}
+	if cfg.Auth == AuthOAuth {
+		h.oauthConfigHash = oauthConfigHash(cfg)
 	}
 	h.oauth = &localOAuth{h: h}
 	return h, nil
@@ -187,7 +191,7 @@ func newConfigProperties(config map[string]any) (*configProperties, error) {
 		if u.Scheme != "https" {
 			return nil, errors.New("invalid 'url': MCP servers must use https in hosted deployments")
 		}
-		if isPrivateHost(u.Hostname()) {
+		if safehttp.IsPrivateHost(u.Hostname()) {
 			return nil, errors.New("invalid 'url': MCP servers on private networks cannot be reached from hosted deployments")
 		}
 	}
@@ -232,6 +236,8 @@ type handle struct {
 	logger     *zap.Logger
 	transport  *http.Transport
 	oauth      *localOAuth
+	// oauthConfigHash identifies the connector's OAuth configuration (see oauthConfigHash). It is empty without auth "oauth".
+	oauthConfigHash string
 	// userHeaders is true if a header template references the requesting user ({{ .user.* }}),
 	// which makes the server's credentials per-user even without OAuth.
 	userHeaders bool
@@ -257,14 +263,27 @@ type cachedTools struct {
 	expires time.Time
 }
 
-// Ping checks that the server is reachable.
-// It does not authenticate: an HTTP error response (such as 401) still proves the server is up.
+// Ping checks that the server is reachable by connecting to it.
+// It does not authenticate: a server that rejects the unauthenticated handshake with 401 or 403 is up, it just requires credentials.
 // The connector reconciler separately lists the server's tools with the project's credentials.
 func (h *handle) Ping(ctx context.Context) error {
 	ctx, cancel := context.WithTimeout(ctx, h.config.connectTimeout)
 	defer cancel()
-	_, err := probeServer(ctx, h.config.URL, h.httpClient())
-	return err
+	rt := &authRoundTripper{base: h.transport}
+	client := gomcp.NewClient(&gomcp.Implementation{Name: clientName, Version: clientVersion}, nil)
+	sess, err := client.Connect(ctx, &gomcp.StreamableClientTransport{
+		Endpoint:             h.config.URL,
+		HTTPClient:           &http.Client{Transport: rt, CheckRedirect: safehttp.CheckSameOriginRedirect},
+		MaxRetries:           1,
+		DisableStandaloneSSE: true,
+	}, nil)
+	if err != nil {
+		if rt.unauthorized() {
+			return nil
+		}
+		return fmt.Errorf("failed to connect to MCP server: %w", err)
+	}
+	return sess.Close()
 }
 
 func (h *handle) Driver() string {
@@ -351,9 +370,18 @@ func (h *handle) AsMCP() (drivers.MCPService, bool) {
 	return h, true
 }
 
-// ServerURL implements drivers.MCPService.
-func (h *handle) ServerURL() string {
-	return h.config.URL
+// OAuthConfig implements drivers.MCPService.
+func (h *handle) OAuthConfig() *drivers.MCPOAuthConfig {
+	if h.config.Auth != AuthOAuth {
+		return nil
+	}
+	return &drivers.MCPOAuthConfig{
+		ServerURL:    h.config.URL,
+		ClientID:     h.config.OAuthClientID,
+		ClientSecret: h.config.OAuthClientSecret,
+		Scopes:       h.config.OAuthScopes,
+		Hash:         h.oauthConfigHash,
+	}
 }
 
 // ListTools implements drivers.MCPService.
@@ -580,7 +608,7 @@ func (h *handle) session(ctx context.Context, creds *credentials) (*cachedSessio
 	client := gomcp.NewClient(&gomcp.Implementation{Name: clientName, Version: clientVersion}, nil)
 	transport := &gomcp.StreamableClientTransport{
 		Endpoint:             h.config.URL,
-		HTTPClient:           &http.Client{Transport: rt, CheckRedirect: checkSameOriginRedirect},
+		HTTPClient:           &http.Client{Transport: rt, CheckRedirect: safehttp.CheckSameOriginRedirect},
 		MaxRetries:           1,
 		DisableStandaloneSSE: true,
 	}
@@ -640,7 +668,7 @@ func (h *handle) dropSessions() {
 
 // httpClient returns a client for metadata and OAuth requests (no per-user headers).
 func (h *handle) httpClient() *http.Client {
-	return newHTTPClient(h.transport, h.config.connectTimeout)
+	return &http.Client{Transport: h.transport, Timeout: h.config.connectTimeout, CheckRedirect: safehttp.CheckSameOriginRedirect}
 }
 
 // truncateUTF8 cuts s to at most limit bytes without splitting a multi-byte character.

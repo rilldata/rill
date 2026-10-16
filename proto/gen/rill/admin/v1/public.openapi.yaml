@@ -559,21 +559,21 @@ components:
             type: object
         v1DeleteAlertResponse:
             type: object
-        v1DeleteDeploymentResponse:
+        v1DeleteConnectorOAuthTokenRequest:
             properties:
-                deploymentId:
+                configHash:
                     type: string
-            type: object
-        v1DeleteMCPOAuthTokenRequest:
-            properties:
                 connector:
                     type: string
                 userId:
                     type: string
-            title: Request message for AIService.DeleteMCPOAuthToken
             type: object
-        v1DeleteMCPOAuthTokenResponse:
-            title: Response message for AIService.DeleteMCPOAuthToken
+        v1DeleteConnectorOAuthTokenResponse:
+            type: object
+        v1DeleteDeploymentResponse:
+            properties:
+                deploymentId:
+                    type: string
             type: object
         v1DeleteOrganizationResponse:
             type: object
@@ -751,6 +751,32 @@ components:
                 gitUsername:
                     type: string
             type: object
+        v1GetConnectorOAuthTokenRequest:
+            properties:
+                configHash:
+                    description: |-
+                        Hash of the connector's current OAuth configuration, as computed by the runtime.
+                        A token is only returned if the user authorized this configuration, so changing it never reuses an existing authorization.
+                    type: string
+                connector:
+                    description: Name of the connector in the deployment's project.
+                    type: string
+                forceRefresh:
+                    description: If true, the token is refreshed even if it has not expired yet (used after the server rejected the current token).
+                    type: boolean
+                userId:
+                    description: ID of the user whose token to return.
+                    type: string
+            type: object
+        v1GetConnectorOAuthTokenResponse:
+            properties:
+                accessToken:
+                    type: string
+                expiresOn:
+                    description: When the access token expires. Unset if the token does not expire.
+                    format: date-time
+                    type: string
+            type: object
         v1GetCurrentMagicAuthTokenResponse:
             properties:
                 token:
@@ -877,34 +903,6 @@ components:
                 ttlSeconds:
                     format: int64
                     type: integer
-            type: object
-        v1GetMCPOAuthTokenRequest:
-            properties:
-                connector:
-                    description: Name of the MCP connector in the deployment's project.
-                    type: string
-                forceRefresh:
-                    description: If true, the token is refreshed even if it has not expired yet (used after the server rejected the current token).
-                    type: boolean
-                serverUrl:
-                    description: |-
-                        URL of the MCP server the connector currently points to.
-                        A token is only returned if the user granted it for this server, so changing a connector's URL never sends an existing token to the new server.
-                    type: string
-                userId:
-                    description: ID of the user whose token to return.
-                    type: string
-            title: Request message for AIService.GetMCPOAuthToken
-            type: object
-        v1GetMCPOAuthTokenResponse:
-            properties:
-                accessToken:
-                    type: string
-                expiresOn:
-                    description: When the access token expires. Unset if the token does not expire.
-                    format: date-time
-                    type: string
-            title: Response message for AIService.GetMCPOAuthToken
             type: object
         v1GetOrganizationMemberUserResponse:
             properties:
@@ -2585,10 +2583,10 @@ info:
 openapi: 3.0.3
 paths:
     /v1/ai/complete: {}
-    /v1/ai/mcp-oauth-token: {}
-    /v1/ai/mcp-oauth-token/delete: {}
     /v1/billing/metrics-project-credentials: {}
     /v1/billing/plans: {}
+    /v1/deployments/-/connector-oauth-token: {}
+    /v1/deployments/-/connector-oauth-token/delete: {}
     /v1/deployments/{deploymentId}: {}
     /v1/deployments/{deploymentId}/config: {}
     /v1/deployments/{deploymentId}/credentials: {}

@@ -27,49 +27,6 @@ paths:
           required: true
           schema:
             $ref: '#/definitions/v1CompleteRequest'
-  /v1/ai/mcp-oauth-token:
-    post:
-      summary: |-
-        GetMCPOAuthToken returns a user's OAuth access token for an external MCP connector in the calling deployment's project,
-        refreshing it first if it is about to expire. It returns NotFound if the user has not authorized the connector.
-        It can only be called by deployments.
-      operationId: AIService_GetMCPOAuthToken
-      responses:
-        "200":
-          description: A successful response.
-          schema:
-            $ref: '#/definitions/v1GetMCPOAuthTokenResponse'
-        default:
-          description: An unexpected error response.
-          schema:
-            $ref: '#/definitions/rpcStatus'
-      parameters:
-        - name: body
-          in: body
-          required: true
-          schema:
-            $ref: '#/definitions/v1GetMCPOAuthTokenRequest'
-  /v1/ai/mcp-oauth-token/delete:
-    post:
-      summary: |-
-        DeleteMCPOAuthToken removes a user's OAuth authorization for an external MCP connector in the calling deployment's project.
-        It can only be called by deployments.
-      operationId: AIService_DeleteMCPOAuthToken
-      responses:
-        "200":
-          description: A successful response.
-          schema:
-            $ref: '#/definitions/v1DeleteMCPOAuthTokenResponse'
-        default:
-          description: An unexpected error response.
-          schema:
-            $ref: '#/definitions/rpcStatus'
-      parameters:
-        - name: body
-          in: body
-          required: true
-          schema:
-            $ref: '#/definitions/v1DeleteMCPOAuthTokenRequest'
   /v1/billing/metrics-project-credentials:
     post:
       summary: GetBillingProjectCredentials returns credentials for the configured cloud metrics project filtered by request organization
@@ -102,6 +59,50 @@ paths:
           description: An unexpected error response.
           schema:
             $ref: '#/definitions/rpcStatus'
+  /v1/deployments/-/connector-oauth-token:
+    post:
+      summary: |-
+        GetConnectorOAuthToken returns a user's OAuth access token for a connector in the calling deployment's project,
+        refreshing it first if it is about to expire.
+        It returns NotFound if the user has not authorized the connector's current OAuth configuration.
+        It can only be called by deployments.
+      operationId: AdminService_GetConnectorOAuthToken
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1GetConnectorOAuthTokenResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: body
+          in: body
+          required: true
+          schema:
+            $ref: '#/definitions/v1GetConnectorOAuthTokenRequest'
+  /v1/deployments/-/connector-oauth-token/delete:
+    post:
+      summary: |-
+        DeleteConnectorOAuthToken revokes and removes a user's OAuth authorization for a connector in the calling deployment's project.
+        It can only be called by deployments.
+      operationId: AdminService_DeleteConnectorOAuthToken
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1DeleteConnectorOAuthTokenResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: body
+          in: body
+          required: true
+          schema:
+            $ref: '#/definitions/v1DeleteConnectorOAuthTokenRequest'
   /v1/deployments/{deploymentId}:
     delete:
       summary: DeleteDeployment deletes a deployment.
@@ -5442,22 +5443,22 @@ definitions:
     type: object
   v1DeleteAlertResponse:
     type: object
+  v1DeleteConnectorOAuthTokenRequest:
+    type: object
+    properties:
+      connector:
+        type: string
+      configHash:
+        type: string
+      userId:
+        type: string
+  v1DeleteConnectorOAuthTokenResponse:
+    type: object
   v1DeleteDeploymentResponse:
     type: object
     properties:
       deploymentId:
         type: string
-  v1DeleteMCPOAuthTokenRequest:
-    type: object
-    properties:
-      connector:
-        type: string
-      userId:
-        type: string
-    title: Request message for AIService.DeleteMCPOAuthToken
-  v1DeleteMCPOAuthTokenResponse:
-    type: object
-    title: Response message for AIService.DeleteMCPOAuthToken
   v1DeleteOrganizationResponse:
     type: object
   v1DeletePersonalFileResponse:
@@ -5634,6 +5635,32 @@ definitions:
       archiveDownloadUrl:
         type: string
         title: either archive_download_url or git related details will be set
+  v1GetConnectorOAuthTokenRequest:
+    type: object
+    properties:
+      connector:
+        type: string
+        description: Name of the connector in the deployment's project.
+      configHash:
+        type: string
+        description: |-
+          Hash of the connector's current OAuth configuration, as computed by the runtime.
+          A token is only returned if the user authorized this configuration, so changing it never reuses an existing authorization.
+      userId:
+        type: string
+        description: ID of the user whose token to return.
+      forceRefresh:
+        type: boolean
+        description: If true, the token is refreshed even if it has not expired yet (used after the server rejected the current token).
+  v1GetConnectorOAuthTokenResponse:
+    type: object
+    properties:
+      accessToken:
+        type: string
+      expiresOn:
+        type: string
+        format: date-time
+        description: When the access token expires. Unset if the token does not expire.
   v1GetCurrentMagicAuthTokenResponse:
     type: object
     properties:
@@ -5762,34 +5789,6 @@ definitions:
       ttlSeconds:
         type: integer
         format: int64
-  v1GetMCPOAuthTokenRequest:
-    type: object
-    properties:
-      connector:
-        type: string
-        description: Name of the MCP connector in the deployment's project.
-      userId:
-        type: string
-        description: ID of the user whose token to return.
-      forceRefresh:
-        type: boolean
-        description: If true, the token is refreshed even if it has not expired yet (used after the server rejected the current token).
-      serverUrl:
-        type: string
-        description: |-
-          URL of the MCP server the connector currently points to.
-          A token is only returned if the user granted it for this server, so changing a connector's URL never sends an existing token to the new server.
-    title: Request message for AIService.GetMCPOAuthToken
-  v1GetMCPOAuthTokenResponse:
-    type: object
-    properties:
-      accessToken:
-        type: string
-      expiresOn:
-        type: string
-        format: date-time
-        description: When the access token expires. Unset if the token does not expire.
-    title: Response message for AIService.GetMCPOAuthToken
   v1GetOrganizationMemberUserResponse:
     type: object
     properties:

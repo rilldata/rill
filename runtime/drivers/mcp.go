@@ -3,19 +3,21 @@ package drivers
 import (
 	"context"
 	"encoding/json"
-	"errors"
+
+	"github.com/rilldata/rill/runtime/pkg/oauthclient"
 )
 
 // ErrMCPAuthorizationRequired is returned by an MCPService when the server requires a per-user OAuth authorization
 // that the caller has not granted, or that has expired and could not be refreshed.
-var ErrMCPAuthorizationRequired = errors.New("driver: MCP server authorization required")
+// It is the same error the OAuth client returns, so errors.Is matches either.
+var ErrMCPAuthorizationRequired = oauthclient.ErrAuthorizationRequired
 
 // MCPService enables AI agents to discover and call tools on an external MCP (Model Context Protocol) server.
 // Handles are shared by all users of an instance; anything specific to the calling user travels in MCPCallOptions.
 type MCPService interface {
-	// ServerURL returns the URL of the server the handle talks to, with templating resolved.
-	// Callers that hold an OAuth token obtained for a specific server must compare it before supplying the token.
-	ServerURL() string
+	// OAuthConfig returns the server's per-user OAuth configuration, with templating resolved, or nil if the server doesn't use per-user OAuth.
+	// Authorizations are bound to its Hash: callers that hold a token must compare the hash before supplying the token.
+	OAuthConfig() *MCPOAuthConfig
 	// ListTools lists the tools the server exposes to the caller described by opts.
 	// Implementations may cache the result for a short period.
 	ListTools(ctx context.Context, opts *MCPCallOptions) ([]*MCPTool, error)
@@ -28,6 +30,16 @@ type MCPService interface {
 	// ResetOAuth deletes any OAuth authorization state the driver has persisted locally (Rill Developer).
 	// It is a no-op when the driver holds no such state.
 	ResetOAuth(ctx context.Context) error
+}
+
+// MCPOAuthConfig is the per-user OAuth configuration of an MCP server.
+type MCPOAuthConfig struct {
+	ServerURL    string
+	ClientID     string
+	ClientSecret string
+	Scopes       []string
+	// Hash identifies the configuration. It changes when any other field changes, which invalidates existing authorizations.
+	Hash string
 }
 
 // MCPCallOptions describes the caller of an MCP request.

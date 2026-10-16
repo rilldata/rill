@@ -33,6 +33,8 @@ import {
   GenerateMetricsViewFileRequest,
   GetAIMemorySettingsRequest,
   GetAIMessageRequest,
+  GetConnectorOAuthConfigRequest,
+  GetConnectorOAuthConfigResponse,
   GetConversationRequest,
   GetExploreRequest,
   GetFileRequest,
@@ -1338,6 +1340,103 @@ export function createRuntimeServiceAnalyzeConnectors<
   queryClient?: QueryClient,
 ): CreateQueryResult<TData, ConnectError> {
   const queryOptions = getRuntimeServiceAnalyzeConnectorsQueryOptions(
+    client,
+    request,
+    options,
+  );
+  return createQuery(queryOptions, queryClient);
+}
+
+/**
+ * Raw RPC call: RuntimeService.GetConnectorOAuthConfig
+ */
+export async function runtimeServiceGetConnectorOAuthConfig(
+  client: RuntimeClient,
+  request: Omit<PartialMessage<GetConnectorOAuthConfigRequest>, "instanceId">,
+  options?: { signal?: AbortSignal },
+): Promise<PartialMessage<GetConnectorOAuthConfigResponse>> {
+  const r = await client.runtimeService.getConnectorOAuthConfig(
+    GetConnectorOAuthConfigRequest.fromJson(
+      stripUndefined({
+        instanceId: client.instanceId,
+        ...request,
+      }) as unknown as JsonValue,
+    ),
+    { signal: options?.signal },
+  );
+  return r.toJson({
+    emitDefaultValues: true,
+  }) as unknown as PartialMessage<GetConnectorOAuthConfigResponse>;
+}
+
+export function getRuntimeServiceGetConnectorOAuthConfigQueryKey(
+  instanceId: string,
+  request?: Omit<PartialMessage<GetConnectorOAuthConfigRequest>, "instanceId">,
+): QueryKey {
+  return [
+    "RuntimeService",
+    "getConnectorOAuthConfig",
+    instanceId,
+    request ?? {},
+  ] as const;
+}
+
+export function getRuntimeServiceGetConnectorOAuthConfigQueryOptions<
+  TData = PartialMessage<GetConnectorOAuthConfigResponse>,
+>(
+  client: RuntimeClient,
+  request: Omit<PartialMessage<GetConnectorOAuthConfigRequest>, "instanceId">,
+  options?: {
+    query?: Partial<
+      CreateQueryOptions<
+        PartialMessage<GetConnectorOAuthConfigResponse>,
+        ConnectError,
+        TData
+      >
+    >;
+  },
+): CreateQueryOptions<
+  PartialMessage<GetConnectorOAuthConfigResponse>,
+  ConnectError,
+  TData
+> & { queryKey: QueryKey } {
+  const queryKey = getRuntimeServiceGetConnectorOAuthConfigQueryKey(
+    client.instanceId,
+    request,
+  );
+  const queryFn: QueryFunction<
+    PartialMessage<GetConnectorOAuthConfigResponse>
+  > = ({ signal }) =>
+    runtimeServiceGetConnectorOAuthConfig(client, request, { signal });
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!client.instanceId,
+    ...options?.query,
+  } as CreateQueryOptions<
+    PartialMessage<GetConnectorOAuthConfigResponse>,
+    ConnectError,
+    TData
+  > & { queryKey: QueryKey };
+}
+
+export function createRuntimeServiceGetConnectorOAuthConfig<
+  TData = PartialMessage<GetConnectorOAuthConfigResponse>,
+>(
+  client: RuntimeClient,
+  request: Omit<PartialMessage<GetConnectorOAuthConfigRequest>, "instanceId">,
+  options?: {
+    query?: Partial<
+      CreateQueryOptions<
+        PartialMessage<GetConnectorOAuthConfigResponse>,
+        ConnectError,
+        TData
+      >
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateQueryResult<TData, ConnectError> {
+  const queryOptions = getRuntimeServiceGetConnectorOAuthConfigQueryOptions(
     client,
     request,
     options,

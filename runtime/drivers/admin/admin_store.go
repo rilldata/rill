@@ -187,11 +187,11 @@ func groupVariablesByEnv(variables []*adminv1.ProjectVariable) map[string]map[st
 	return perEnv
 }
 
-// GetMCPOAuthToken implements drivers.AdminService.
-func (h *Handle) GetMCPOAuthToken(ctx context.Context, connector, serverURL, userID string, forceRefresh bool) (*drivers.MCPOAuthToken, error) {
-	res, err := h.admin.GetMCPOAuthToken(ctx, &adminv1.GetMCPOAuthTokenRequest{
+// GetConnectorOAuthToken implements drivers.AdminService.
+func (h *Handle) GetConnectorOAuthToken(ctx context.Context, connector, configHash, userID string, forceRefresh bool) (*drivers.MCPOAuthToken, error) {
+	res, err := h.admin.GetConnectorOAuthToken(ctx, &adminv1.GetConnectorOAuthTokenRequest{
 		Connector:    connector,
-		ServerUrl:    serverURL,
+		ConfigHash:   configHash,
 		UserId:       userID,
 		ForceRefresh: forceRefresh,
 	})
@@ -208,11 +208,12 @@ func (h *Handle) GetMCPOAuthToken(ctx context.Context, connector, serverURL, use
 	return tok, nil
 }
 
-// DeleteMCPOAuthToken implements drivers.AdminService.
-func (h *Handle) DeleteMCPOAuthToken(ctx context.Context, connector, userID string) error {
-	_, err := h.admin.DeleteMCPOAuthToken(ctx, &adminv1.DeleteMCPOAuthTokenRequest{
-		Connector: connector,
-		UserId:    userID,
+// DeleteConnectorOAuthToken implements drivers.AdminService.
+func (h *Handle) DeleteConnectorOAuthToken(ctx context.Context, connector, configHash, userID string) error {
+	_, err := h.admin.DeleteConnectorOAuthToken(ctx, &adminv1.DeleteConnectorOAuthTokenRequest{
+		Connector:  connector,
+		ConfigHash: configHash,
+		UserId:     userID,
 	})
 	if err != nil && status.Code(err) != codes.NotFound {
 		return err

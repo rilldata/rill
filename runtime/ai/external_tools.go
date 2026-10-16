@@ -48,7 +48,6 @@ type ExternalServer struct {
 	Connector    string
 	DisplayName  string
 	Instructions string
-	URL          string
 	// Agents the server is scoped to. Empty means all agents.
 	Agents []string
 	// OAuth is true if the server requires a per-user OAuth authorization.
@@ -68,7 +67,9 @@ type ExternalServer struct {
 
 	res   *runtimev1.Resource
 	token string // the user's OAuth access token in hosted deployments
-	mu    sync.Mutex
+	// oauthConfigHash identifies the OAuth configuration the token was granted for.
+	oauthConfigHash string
+	mu              sync.Mutex
 }
 
 // AllowsAgent reports whether the server may be used by the named agent.
@@ -281,8 +282,8 @@ func (r *Runner) discoverExternalServer(ctx context.Context, instanceID, environ
 		return srv, nil
 	}
 
-	// Hosted tokens are bound to the server URL they were granted for, so the URL is taken from the handle that will use the token.
-	// The URL may be templated ({{ .env.MCP_URL }}); the handle holds it resolved.
+	// Hosted tokens are bound to the OAuth configuration they were granted for, so it is taken from the handle that will use the token.
+	// The configuration may be templated ({{ .env.MCP_URL }}); the handle holds it resolved.
 	handle, release, err := r.Runtime.AcquireHandle(ctx, instanceID, srv.Connector)
 	if err != nil {
 		if errors.Is(err, ctx.Err()) {
@@ -297,7 +298,9 @@ func (r *Runner) discoverExternalServer(ctx context.Context, instanceID, environ
 		srv.Err = fmt.Errorf("connector %q is not an MCP server", srv.Connector)
 		return srv, nil
 	}
-	srv.URL = svc.ServerURL()
+	if cfg := svc.OAuthConfig(); cfg != nil {
+		srv.oauthConfigHash = cfg.Hash
+	}
 
 	// Resolve the user's OAuth authorization: a token from the admin service in hosted deployments,
 	// or the state the driver keeps locally in Rill Developer.
@@ -397,7 +400,7 @@ func (r *Runner) listExternalTools(ctx context.Context, instanceID string, svc d
 }
 
 // externalOAuthToken fetches the user's OAuth token for a server from the admin service.
-// The token is bound to the server URL it was granted for, so a connector whose URL changed gets no token until the user connects again.
+// The token is bound to the OAuth configuration it was granted for, so a connector whose configuration changed gets no token until the user connects again.
 // hosted is false in Rill Developer, where tokens are persisted by the driver instead and the returned token is empty.
 func (r *Runner) externalOAuthToken(ctx context.Context, instanceID string, srv *ExternalServer, userID string, forceRefresh bool) (token string, hosted bool, err error) {
 	admin, release, err := r.Runtime.Admin(ctx, instanceID)
@@ -406,7 +409,7 @@ func (r *Runner) externalOAuthToken(ctx context.Context, instanceID string, srv 
 		return "", false, nil
 	}
 	defer release()
-	tok, err := admin.GetMCPOAuthToken(ctx, srv.Connector, srv.URL, userID, forceRefresh)
+	tok, err := admin.GetConnectorOAuthToken(ctx, srv.Connector, srv.oauthConfigHash, userID, forceRefresh)
 	if err != nil {
 		if errors.Is(err, drivers.ErrNotImplemented) {
 			return "", false, nil
@@ -519,9 +522,9 @@ func (r *Runner) compileExternalTool(instanceID, environment string, vars map[st
 			srv.mu.Lock()
 			token := srv.token
 			srv.mu.Unlock()
-			if token != "" && svc.ServerURL() != srv.URL {
-				// The connector was pointed at another server after discovery.
-				// The token was granted for the previous server and must never reach this one; the user has to connect the new one.
+			if token != "" && (svc.OAuthConfig() == nil || svc.OAuthConfig().Hash != srv.oauthConfigHash) {
+				// The connector's OAuth configuration changed after discovery (e.g. it was pointed at another server).
+				// The token was granted for the previous configuration and must never be used with this one; the user has to connect again.
 				return nil, &ExternalAuthorizationRequiredError{Connector: connector, DisplayName: srv.DisplayName}
 			}
 			opts := &drivers.MCPCallOptions{

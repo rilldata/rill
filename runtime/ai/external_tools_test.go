@@ -195,7 +195,6 @@ auth: oauth
 	require.True(t, servers[0].OAuth)
 	require.False(t, servers[0].Authorized)
 	require.False(t, servers[0].Connected)
-	require.Equal(t, ext.URL, servers[0].URL)
 	require.NoError(t, servers[0].Err)
 	require.Empty(t, servers[0].Tools)
 

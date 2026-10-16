@@ -4289,35 +4289,33 @@ func dedupeAndSortResourceNames(resources []database.ResourceName) []database.Re
 	return deduped
 }
 
-func (c *connection) FindMCPOAuthClients(ctx context.Context, projectID, connector, serverURL string) ([]*database.MCPOAuthClient, error) {
-	var res []*database.MCPOAuthClient
-	err := c.getDB(ctx).SelectContext(ctx, &res, "SELECT * FROM mcp_oauth_clients WHERE project_id=$1 AND connector=$2 AND server_url=$3 ORDER BY created_on DESC", projectID, connector, serverURL)
+func (c *connection) FindConnectorOAuthClient(ctx context.Context, projectID, connector, configHash string) (*database.ConnectorOAuthClient, error) {
+	res := &database.ConnectorOAuthClient{}
+	err := c.getDB(ctx).QueryRowxContext(ctx, "SELECT * FROM connector_oauth_clients WHERE project_id=$1 AND connector=$2 AND config_hash=$3", projectID, connector, configHash).StructScan(res)
 	if err != nil {
-		return nil, parseErr("mcp oauth clients", err)
+		return nil, parseErr("connector oauth client", err)
 	}
-	for _, row := range res {
-		err = c.decryptMCPOAuthClient(row)
-		if err != nil {
-			return nil, err
-		}
-	}
-	return res, nil
-}
-
-func (c *connection) FindMCPOAuthClientByID(ctx context.Context, id string) (*database.MCPOAuthClient, error) {
-	res := &database.MCPOAuthClient{}
-	err := c.getDB(ctx).QueryRowxContext(ctx, "SELECT * FROM mcp_oauth_clients WHERE id=$1", id).StructScan(res)
-	if err != nil {
-		return nil, parseErr("mcp oauth client", err)
-	}
-	err = c.decryptMCPOAuthClient(res)
+	err = c.decryptConnectorOAuthClient(res)
 	if err != nil {
 		return nil, err
 	}
 	return res, nil
 }
 
-func (c *connection) InsertMCPOAuthClient(ctx context.Context, opts *database.InsertMCPOAuthClientOptions) (*database.MCPOAuthClient, error) {
+func (c *connection) FindConnectorOAuthClientByID(ctx context.Context, id string) (*database.ConnectorOAuthClient, error) {
+	res := &database.ConnectorOAuthClient{}
+	err := c.getDB(ctx).QueryRowxContext(ctx, "SELECT * FROM connector_oauth_clients WHERE id=$1", id).StructScan(res)
+	if err != nil {
+		return nil, parseErr("connector oauth client", err)
+	}
+	err = c.decryptConnectorOAuthClient(res)
+	if err != nil {
+		return nil, err
+	}
+	return res, nil
+}
+
+func (c *connection) FindOrInsertConnectorOAuthClient(ctx context.Context, opts *database.InsertConnectorOAuthClientOptions) (*database.ConnectorOAuthClient, error) {
 	if err := database.Validate(opts); err != nil {
 		return nil, err
 	}
@@ -4325,36 +4323,46 @@ func (c *connection) InsertMCPOAuthClient(ctx context.Context, opts *database.In
 	if err != nil {
 		return nil, err
 	}
-	res := &database.MCPOAuthClient{}
+	res := &database.ConnectorOAuthClient{}
 	err = c.getDB(ctx).QueryRowxContext(ctx, `
-		INSERT INTO mcp_oauth_clients (project_id, connector, server_url, client, client_encryption_key_id)
+		INSERT INTO connector_oauth_clients (project_id, connector, config_hash, client, client_encryption_key_id)
 		VALUES ($1, $2, $3, $4, $5)
+		ON CONFLICT (project_id, connector, config_hash) DO UPDATE SET config_hash = EXCLUDED.config_hash
 		RETURNING *`,
-		opts.ProjectID, opts.Connector, opts.ServerURL, value, keyID,
+		opts.ProjectID, opts.Connector, opts.ConfigHash, value, keyID,
 	).StructScan(res)
 	if err != nil {
-		return nil, parseErr("mcp oauth client", err)
+		return nil, parseErr("connector oauth client", err)
 	}
-	err = c.decryptMCPOAuthClient(res)
+	err = c.decryptConnectorOAuthClient(res)
 	if err != nil {
 		return nil, err
 	}
 	return res, nil
 }
 
-func (c *connection) DeleteUnusedMCPOAuthClients(ctx context.Context, projectID, connector, serverURL string, createdBefore time.Time) error {
-	_, err := c.getDB(ctx).ExecContext(ctx, `
-		DELETE FROM mcp_oauth_clients c
-		WHERE c.project_id=$1 AND c.connector=$2 AND c.server_url=$3 AND c.created_on < $4
-			AND NOT EXISTS (SELECT 1 FROM mcp_oauth_tokens t WHERE t.oauth_client_id = c.id)`,
-		projectID, connector, serverURL, createdBefore)
+func (c *connection) DeleteConnectorOAuthClient(ctx context.Context, id string) error {
+	res, err := c.getDB(ctx).ExecContext(ctx, "DELETE FROM connector_oauth_clients WHERE id=$1", id)
+	return checkDeleteRow("connector oauth client", res, err)
+}
+
+func (c *connection) UpdateConnectorOAuthClientUsedOn(ctx context.Context, id string) error {
+	_, err := c.getDB(ctx).ExecContext(ctx, "UPDATE connector_oauth_clients SET used_on=now() WHERE id=$1 AND used_on < now() - INTERVAL '1 day'", id)
 	if err != nil {
-		return parseErr("mcp oauth clients", err)
+		return parseErr("connector oauth client", err)
 	}
 	return nil
 }
 
-func (c *connection) decryptMCPOAuthClient(res *database.MCPOAuthClient) error {
+func (c *connection) DeleteUnusedConnectorOAuthClients(ctx context.Context, usedBefore time.Time) error {
+	_, err := c.getDB(ctx).ExecContext(ctx, "DELETE FROM connector_oauth_clients WHERE used_on < $1", usedBefore)
+	if err != nil {
+		return parseErr("connector oauth clients", err)
+	}
+	return nil
+}
+
+func (c *connection) decryptConnectorOAuthClient(res *database.ConnectorOAuthClient) error {
 	client, err := c.decryptText(res.Client, res.ClientEncryptionKeyID)
 	if err != nil {
 		return err
@@ -4364,41 +4372,32 @@ func (c *connection) decryptMCPOAuthClient(res *database.MCPOAuthClient) error {
 	return nil
 }
 
-func (c *connection) AcquireMCPOAuthClientLock(ctx context.Context, projectID, connector, serverURL string) error {
-	return c.acquireMCPOAuthLock(ctx, "mcp_oauth_clients/"+projectID+"/"+connector+"/"+serverURL)
-}
-
-func (c *connection) AcquireMCPOAuthTokenLock(ctx context.Context, projectID, connector, userID string) error {
-	return c.acquireMCPOAuthLock(ctx, "mcp_oauth_tokens/"+projectID+"/"+connector+"/"+userID)
-}
-
-// acquireMCPOAuthLock takes a transaction-scoped advisory lock on key.
-// It is released automatically at commit or rollback, and is visible to every admin process sharing the database.
-func (c *connection) acquireMCPOAuthLock(ctx context.Context, key string) error {
+func (c *connection) AcquireConnectorOAuthTokenLock(ctx context.Context, oauthClientID, userID string) error {
 	if txFromContext(ctx) == nil {
-		return errors.New("postgres: MCP OAuth locks must be acquired within a transaction")
+		return errors.New("postgres: connector OAuth locks must be acquired within a transaction")
 	}
+	key := "connector_oauth_tokens/" + oauthClientID + "/" + userID
 	_, err := c.getDB(ctx).ExecContext(ctx, "SELECT pg_advisory_xact_lock(hashtext($1))", key)
 	if err != nil {
-		return parseErr("mcp oauth lock", err)
+		return parseErr("connector oauth lock", err)
 	}
 	return nil
 }
 
-func (c *connection) FindMCPOAuthToken(ctx context.Context, projectID, connector, userID string) (*database.MCPOAuthToken, error) {
-	res := &database.MCPOAuthToken{}
-	err := c.getDB(ctx).QueryRowxContext(ctx, "SELECT * FROM mcp_oauth_tokens WHERE project_id=$1 AND connector=$2 AND user_id=$3", projectID, connector, userID).StructScan(res)
+func (c *connection) FindConnectorOAuthToken(ctx context.Context, oauthClientID, userID string) (*database.ConnectorOAuthToken, error) {
+	res := &database.ConnectorOAuthToken{}
+	err := c.getDB(ctx).QueryRowxContext(ctx, "SELECT * FROM connector_oauth_tokens WHERE oauth_client_id=$1 AND user_id=$2", oauthClientID, userID).StructScan(res)
 	if err != nil {
-		return nil, parseErr("mcp oauth token", err)
+		return nil, parseErr("connector oauth token", err)
 	}
-	err = c.decryptMCPOAuthToken(res)
+	err = c.decryptConnectorOAuthToken(res)
 	if err != nil {
 		return nil, err
 	}
 	return res, nil
 }
 
-func (c *connection) UpsertMCPOAuthToken(ctx context.Context, opts *database.UpsertMCPOAuthTokenOptions) (*database.MCPOAuthToken, error) {
+func (c *connection) UpsertConnectorOAuthToken(ctx context.Context, opts *database.UpsertConnectorOAuthTokenOptions) (*database.ConnectorOAuthToken, error) {
 	if err := database.Validate(opts); err != nil {
 		return nil, err
 	}
@@ -4406,37 +4405,33 @@ func (c *connection) UpsertMCPOAuthToken(ctx context.Context, opts *database.Ups
 	if err != nil {
 		return nil, err
 	}
-	res := &database.MCPOAuthToken{}
+	res := &database.ConnectorOAuthToken{}
 	err = c.getDB(ctx).QueryRowxContext(ctx, `
-		INSERT INTO mcp_oauth_tokens (project_id, connector, user_id, oauth_client_id, token, token_encryption_key_id)
-		VALUES ($1, $2, $3, $4, $5, $6)
-		ON CONFLICT (project_id, connector, user_id) DO UPDATE SET
-			oauth_client_id = EXCLUDED.oauth_client_id,
+		INSERT INTO connector_oauth_tokens (oauth_client_id, user_id, token, token_encryption_key_id)
+		VALUES ($1, $2, $3, $4)
+		ON CONFLICT (oauth_client_id, user_id) DO UPDATE SET
 			token = EXCLUDED.token,
 			token_encryption_key_id = EXCLUDED.token_encryption_key_id,
 			updated_on = now()
 		RETURNING *`,
-		opts.ProjectID, opts.Connector, opts.UserID, opts.OAuthClientID, value, keyID,
+		opts.OAuthClientID, opts.UserID, value, keyID,
 	).StructScan(res)
 	if err != nil {
-		return nil, parseErr("mcp oauth token", err)
+		return nil, parseErr("connector oauth token", err)
 	}
-	err = c.decryptMCPOAuthToken(res)
+	err = c.decryptConnectorOAuthToken(res)
 	if err != nil {
 		return nil, err
 	}
 	return res, nil
 }
 
-func (c *connection) DeleteMCPOAuthToken(ctx context.Context, projectID, connector, userID string) error {
-	res, err := c.getDB(ctx).ExecContext(ctx, "DELETE FROM mcp_oauth_tokens WHERE project_id=$1 AND connector=$2 AND user_id=$3", projectID, connector, userID)
-	if err != nil {
-		return parseErr("mcp oauth token", err)
-	}
-	return checkDeleteRow("mcp oauth token", res, err)
+func (c *connection) DeleteConnectorOAuthToken(ctx context.Context, oauthClientID, userID string) error {
+	res, err := c.getDB(ctx).ExecContext(ctx, "DELETE FROM connector_oauth_tokens WHERE oauth_client_id=$1 AND user_id=$2", oauthClientID, userID)
+	return checkDeleteRow("connector oauth token", res, err)
 }
 
-func (c *connection) decryptMCPOAuthToken(res *database.MCPOAuthToken) error {
+func (c *connection) decryptConnectorOAuthToken(res *database.ConnectorOAuthToken) error {
 	token, err := c.decryptText(res.Token, res.TokenEncryptionKeyID)
 	if err != nil {
 		return err

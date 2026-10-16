@@ -233,6 +233,17 @@ service RuntimeService {
     option (google.api.http) = {get: "/v1/instances/{instance_id}/connectors/analyze"};
   }
 
+  // GetConnectorOAuthConfig returns the OAuth configuration of a connector that authorizes users with OAuth,
+  // after checking that the given user may use the connector.
+  // It is called by the admin service before it starts an authorization flow; it requires the ManageInstances permission
+  // because the response contains secrets.
+  rpc GetConnectorOAuthConfig(GetConnectorOAuthConfigRequest) returns (GetConnectorOAuthConfigResponse) {
+    option (google.api.http) = {
+      post: "/v1/instances/{instance_id}/connectors/{connector}/oauth-config",
+      body: "*"
+    };
+  }
+
   // ListNotifierConnectors returns the names of all configured connectors that can be used as notifiers.
   // This API is much faster than AnalyzeConnectors and can be called without admin-level permissions.
   rpc ListNotifierConnectors(ListNotifierConnectorsRequest) returns (ListNotifierConnectorsResponse) {
@@ -1101,6 +1112,34 @@ message AnalyzeConnectorsRequest {
 // Response message for RuntimeService.AnalyzeConnectors
 message AnalyzeConnectorsResponse {
   repeated AnalyzedConnector connectors = 1;
+}
+
+// Request message for RuntimeService.GetConnectorOAuthConfig
+message GetConnectorOAuthConfigRequest {
+  string instance_id = 1;
+  string connector = 2;
+  // Attributes of the user the authorization flow runs for; the connector's security policy is evaluated with them.
+  google.protobuf.Struct user_attributes = 3;
+  // Additional security rules that apply to the user, such as resource restrictions.
+  repeated SecurityRule user_rules = 4;
+}
+
+// Response message for RuntimeService.GetConnectorOAuthConfig
+message GetConnectorOAuthConfigResponse {
+  // Opaque hash of the OAuth configuration. Any change to the configuration changes the hash, which invalidates existing authorizations.
+  string config_hash = 1;
+  ConnectorOAuthConfig config = 2;
+}
+
+// ConnectorOAuthConfig describes how to reach a connector's authorization server and which client to use with it.
+message ConnectorOAuthConfig {
+  // URL of the protected resource. The authorization server is discovered from its protected resource metadata (RFC 9728).
+  string resource_url = 1;
+  // Pre-registered client credentials. If empty, a client is registered dynamically (RFC 7591).
+  string client_id = 2;
+  string client_secret = 3;
+  // Scopes to request. If empty, the scopes the resource advertises are requested.
+  repeated string scopes = 4;
 }
 
 // Request message for RuntimeService.ListNotifierConnectors

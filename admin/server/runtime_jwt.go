@@ -93,16 +93,12 @@ func (s *Server) issueRuntimeToken(ctx context.Context, opts *issueRuntimeTokenO
 		switch claims.OwnerType() {
 		case auth.OwnerTypeUser:
 			subject = claims.OwnerID()
-			a, err := s.jwtAttributesForUser(ctx, claims.OwnerID(), opts.project.OrganizationID, opts.projectPermissions)
+			a, r, err := s.jwtAttributesAndRulesForUser(ctx, opts.project, claims.OwnerID(), opts.projectPermissions)
 			if err != nil {
 				return "", err
 			}
 			attr = a
-			restrict, resources, err := s.getResourceRestrictionsForUser(ctx, opts.project.ID, claims.OwnerID())
-			if err != nil {
-				return "", err
-			}
-			rules = append(rules, securityRulesFromResources(restrict, resources)...)
+			rules = append(rules, r...)
 		case auth.OwnerTypeService:
 			subject = claims.OwnerID()
 			a, err := s.jwtAttributesForService(ctx, claims.OwnerID(), opts.projectPermissions)
@@ -249,6 +245,20 @@ func (s *Server) issueRuntimeToken(ctx context.Context, opts *issueRuntimeTokenO
 		return "", status.Errorf(codes.Internal, "could not issue jwt: %s", err.Error())
 	}
 	return jwt, nil
+}
+
+// jwtAttributesAndRulesForUser returns the attributes and security rules that a runtime evaluates a user's access with.
+// projectPermissions are the user's permissions on the project, which may include overrides (e.g. for public projects).
+func (s *Server) jwtAttributesAndRulesForUser(ctx context.Context, proj *database.Project, userID string, projectPermissions *adminv1.ProjectPermissions) (map[string]any, []*runtimev1.SecurityRule, error) {
+	attr, err := s.jwtAttributesForUser(ctx, userID, proj.OrganizationID, projectPermissions)
+	if err != nil {
+		return nil, nil, err
+	}
+	restrict, resources, err := s.getResourceRestrictionsForUser(ctx, proj.ID, userID)
+	if err != nil {
+		return nil, nil, err
+	}
+	return attr, securityRulesFromResources(restrict, resources), nil
 }
 
 // securityRulesFromMagicAuthToken builds the security rules encoded by a magic auth token:
