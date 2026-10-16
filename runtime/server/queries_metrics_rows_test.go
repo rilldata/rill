@@ -2,6 +2,7 @@ package server_test
 
 import (
 	"bytes"
+	"context"
 	"os"
 	"testing"
 	"time"
@@ -16,7 +17,11 @@ import (
 	"github.com/apache/arrow-go/v18/parquet/pqarrow"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
+	"github.com/rilldata/rill/runtime/pkg/activity"
+	"github.com/rilldata/rill/runtime/pkg/ratelimit"
 	"github.com/rilldata/rill/runtime/queries"
+	"github.com/rilldata/rill/runtime/server"
+	"github.com/rilldata/rill/runtime/server/auth"
 	"github.com/rilldata/rill/runtime/testruntime"
 	"github.com/stretchr/testify/require"
 
@@ -71,18 +76,67 @@ func TestServer_MetricsViewRows_Granularity_Kathmandu(t *testing.T) {
 	require.Equal(t, 1, len(tr.Data))
 }
 
+// TestServer_MetricsViewRows_RowFilterCache checks that cached results are not shared between callers with different row filters.
+func TestServer_MetricsViewRows_RowFilterCache(t *testing.T) {
+	rt, instanceID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
+		Files: map[string]string{
+			"rill.yaml":    "",
+			"models/m.sql": "SELECT * FROM (VALUES ('a', 1), ('a', 2), ('b', 3)) AS t(org_id, n)",
+			"metrics/mv.yaml": `
+type: metrics_view
+model: m
+dimensions:
+  - column: org_id
+measures:
+  - name: total
+    expression: sum(n)
+security:
+  access: true
+  row_filter: "org_id = '{{ .user.org_id }}'"
+`,
+		},
+	})
+	testruntime.RequireReconcileState(t, rt, instanceID, 4, 0, 0)
+
+	srv, err := server.NewServer(context.Background(), &server.Options{}, rt, nil, ratelimit.NewNoop(), activity.NewNoopClient())
+	require.NoError(t, err)
+
+	orgIDs := func(orgID string) []string {
+		ctx := auth.WithClaims(context.Background(), &runtime.SecurityClaims{
+			UserAttributes: map[string]any{"org_id": orgID},
+			Permissions:    []runtime.Permission{runtime.ReadMetrics},
+		})
+		res, err := srv.MetricsViewRows(ctx, &runtimev1.MetricsViewRowsRequest{
+			InstanceId:      instanceID,
+			MetricsViewName: "mv",
+			Limit:           10,
+		})
+		require.NoError(t, err)
+
+		var ids []string
+		for _, row := range res.Data {
+			ids = append(ids, row.Fields["org_id"].GetStringValue())
+		}
+		return ids
+	}
+
+	// Each caller sends the same request twice, so later calls are served from the cache.
+	require.Equal(t, []string{"a", "a"}, orgIDs("a"))
+	require.Equal(t, []string{"b"}, orgIDs("b"))
+	require.Equal(t, []string{"a", "a"}, orgIDs("a"))
+	require.Equal(t, []string{"b"}, orgIDs("b"))
+}
+
 func TestServer_MetricsViewRows_export_xlsx(t *testing.T) {
 	t.Parallel()
 	rt, instanceId := testruntime.NewInstanceForProject(t, "ad_bids_2rows")
 
 	ctx := testCtx()
 	mvName := "ad_bids_metrics"
-	mv, security := resolveMVAndSecurity(t, rt, instanceId, mvName)
 
 	q := &queries.MetricsViewRows{
-		MetricsViewName:    mvName,
-		MetricsView:        mv,
-		ResolvedMVSecurity: security,
+		MetricsViewName: mvName,
+		SecurityClaims:  testClaims(),
 	}
 
 	var buf bytes.Buffer
@@ -112,12 +166,10 @@ func TestServer_MetricsViewRows_parquet_export(t *testing.T) {
 
 	ctx := testCtx()
 	mvName := "ad_bids_metrics_parquet"
-	mv, security := resolveMVAndSecurity(t, rt, instanceId, mvName)
 
 	q := &queries.MetricsViewRows{
-		MetricsViewName:    mvName,
-		MetricsView:        mv,
-		ResolvedMVSecurity: security,
+		MetricsViewName: mvName,
+		SecurityClaims:  testClaims(),
 	}
 
 	var buf bytes.Buffer
@@ -327,12 +379,10 @@ func TestServer_MetricsViewRows_export_csv(t *testing.T) {
 
 	ctx := testCtx()
 	mvName := "ad_bids_metrics"
-	mv, security := resolveMVAndSecurity(t, rt, instanceId, mvName)
 
 	q := &queries.MetricsViewRows{
-		MetricsViewName:    mvName,
-		MetricsView:        mv,
-		ResolvedMVSecurity: security,
+		MetricsViewName: mvName,
+		SecurityClaims:  testClaims(),
 	}
 
 	var buf bytes.Buffer

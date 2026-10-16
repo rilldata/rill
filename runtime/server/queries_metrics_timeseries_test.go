@@ -10,7 +10,6 @@ import (
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/pkg/expressionpb"
 	"github.com/rilldata/rill/runtime/queries"
-	"github.com/rilldata/rill/runtime/server/auth"
 	"github.com/rilldata/rill/runtime/testruntime"
 	"github.com/stretchr/testify/require"
 	"github.com/xuri/excelize/v2"
@@ -991,25 +990,6 @@ func TestServer_MetricsViewTimeseries_export_csv(t *testing.T) {
 	require.NoError(t, err)
 
 	require.Equal(t, 3, strings.Count(buf.String(), "\n"))
-}
-
-func resolveMVAndSecurity(t *testing.T, rt *runtime.Runtime, instanceID, metricsViewName string) (*runtimev1.MetricsViewSpec, *runtime.ResolvedSecurity) {
-	ctx := testCtx()
-
-	ctrl, err := rt.Controller(ctx, instanceID)
-	require.NoError(t, err)
-
-	res, err := ctrl.Get(ctx, &runtimev1.ResourceName{Kind: runtime.ResourceKindMetricsView, Name: metricsViewName}, false)
-	require.NoError(t, err)
-
-	mvRes := res.GetMetricsView()
-	mv := mvRes.State.ValidSpec
-	require.NoError(t, err)
-
-	resolvedSecurity, err := rt.ResolveSecurity(ctx, instanceID, auth.GetClaims(ctx, instanceID), res)
-	require.NoError(t, err)
-
-	return mv, resolvedSecurity
 }
 
 func testClaims() *runtime.SecurityClaims {
