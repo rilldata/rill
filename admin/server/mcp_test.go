@@ -98,7 +98,13 @@ func TestCallRuntimeToolErrors(t *testing.T) {
 	require.NoError(t, err)
 	require.True(t, res.IsError)
 	require.Len(t, res.Content, 1)
-	require.Contains(t, res.Content[0].(*mcp.TextContent).Text, "unknown tool")
+	require.Contains(t, res.Content[0].(*mcp.TextContent).Text, "is not available in this project")
+
+	// For develop_personal_canvas, the error says the project doesn't enable personal canvases.
+	res, err = s.callRuntimeTool(t.Context(), depl, "jwt", client, ai.DevelopPersonalCanvasName, json.RawMessage(`{}`))
+	require.NoError(t, err)
+	require.True(t, res.IsError)
+	require.Contains(t, res.Content[0].(*mcp.TextContent).Text, "Personal canvases are not enabled in this project")
 
 	// Invalid arguments are also returned as a tool error.
 	res, err = s.callRuntimeTool(t.Context(), depl, "jwt", client, "echo", json.RawMessage(`{"name":123}`))
