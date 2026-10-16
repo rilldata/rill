@@ -158,6 +158,8 @@ GROUP BY publisher
 
 Enable it per dimension for keys with few distinct values compared to the number of rows, such as advertisers, campaigns or properties: the fewer keys, the larger the gain. Leave it off for keys with millions of values, such as users or households, where grouping by key first uses more memory and is no faster.
 
+Distinct counts, such as `count(DISTINCT user_id)` or `uniq(user_id)`, can sometimes get slower. For example, to count distinct users for 3 categories that cover 2,000 publishers, ClickHouse first builds a list of users per publisher and then merges the 2,000 lists into 3, so a user seen on 500 publishers is stored 500 times instead of once. Compare query times with and without `lookup_group_by_key` on your data before enabling it.
+
 Keep in mind:
 - A `lookup_default_expression` may only reference constants and the key column.
 - Any aggregate function works, including combinators (`sumIf`) and parametric functions (`quantile(0.5)(x)`). `count(DISTINCT x)` is evaluated as `uniqExact`, ClickHouse's default implementation of it, even on servers that override `count_distinct_implementation`. Measures with a `window`, and measures whose expression Rill cannot split into aggregate calls, fall back to the single-pass query for that request.
