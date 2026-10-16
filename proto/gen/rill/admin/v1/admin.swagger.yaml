@@ -261,6 +261,9 @@ paths:
           required: true
           schema:
             type: object
+            properties:
+              superuserForceAccess:
+                type: boolean
   /v1/deployments/{deploymentId}/stop:
     post:
       summary: StopDeployment stops a deployment.
@@ -284,6 +287,9 @@ paths:
           required: true
           schema:
             type: object
+            properties:
+              superuserForceAccess:
+                type: boolean
   /v1/github/repositories:
     get:
       summary: |-
@@ -1233,7 +1239,7 @@ paths:
                 type: string
                 description: |-
                   Provisioner to use for the project's deployments. Superuser-only; empty unsets it so the org's default provisioner (or the global default) is used.
-                  It only affects deployments provisioned after the change; existing deployments stay on their current provisioner.
+                  Running deployments keep their current provisioner; the change is applied to each deployment the next time it is started (stopped deployments are moved to the new provisioner, keeping their IDs).
               newName:
                 type: string
               prodTtlSeconds:
@@ -1582,6 +1588,10 @@ paths:
           in: query
           required: false
           type: string
+        - name: superuserForceAccess
+          in: query
+          required: false
+          type: boolean
     post:
       summary: CreateDeployment creates a new deployment for a project.
       operationId: AdminService_CreateDeployment
@@ -4154,7 +4164,7 @@ paths:
     patch:
       summary: |-
         SudoUpdateOrganizationDefaultProvisioner sets the provisioner used by default for an organization's deployments.
-        It only affects deployments provisioned after the change; existing deployments stay on their current provisioner.
+        Running deployments keep their current provisioner; the change is applied to each deployment the next time it is started (stopped deployments are moved to the new provisioner, keeping their IDs).
       operationId: AdminService_SudoUpdateOrganizationDefaultProvisioner
       responses:
         "200":

@@ -31,8 +31,9 @@ func (s *Service) Provision(ctx context.Context, opts *ProvisionOptions) (*datab
 	var provisionerName string
 	var p provisioner.Provisioner
 	if pr != nil {
+		// Changing the provisioner of an existing resource is only supported through StartDeploymentInner, which deprovisions the old resource first.
 		if opts.Provisioner != "" && opts.Provisioner != pr.Provisioner {
-			return nil, fmt.Errorf("provisioner: cannot change provisioner from %q to %q for deployment %q", provisionerName, opts.Provisioner, opts.DeploymentID)
+			return nil, fmt.Errorf("provisioner: cannot change provisioner from %q to %q for deployment %q", pr.Provisioner, opts.Provisioner, opts.DeploymentID)
 		}
 
 		var ok bool
@@ -114,6 +115,7 @@ func (s *Service) Provision(ctx context.Context, opts *ProvisionOptions) (*datab
 		_, _ = s.DB.UpdateProvisionerResource(ctx, pr.ID, &database.UpdateProvisionerResourceOptions{
 			Status:        database.ProvisionerResourceStatusError,
 			StatusMessage: fmt.Sprintf("Failed provisioning: %v", err),
+			Provisioner:   pr.Provisioner,
 			Args:          pr.Args,
 			State:         pr.State,
 			Config:        pr.Config,
@@ -125,6 +127,7 @@ func (s *Service) Provision(ctx context.Context, opts *ProvisionOptions) (*datab
 	pr, err = s.DB.UpdateProvisionerResource(ctx, pr.ID, &database.UpdateProvisionerResourceOptions{
 		Status:        database.ProvisionerResourceStatusOK,
 		StatusMessage: "",
+		Provisioner:   pr.Provisioner,
 		Args:          opts.Args,
 		State:         r.State,
 		Config:        r.Config,
