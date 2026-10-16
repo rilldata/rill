@@ -25,8 +25,8 @@ import {
   type MetricsViewSpecMeasure,
   type V1MetricsViewAggregationResponseDataItem,
 } from "@rilldata/web-common/runtime-client";
-import type { CreateQueryResult } from "@tanstack/svelte-query";
 import type { Color } from "chroma-js";
+import type { Readable } from "svelte/store";
 import type { ColorScheme } from "vega";
 import type { TimeUnit } from "vega-lite/types_unstable/timeunit.js";
 
@@ -86,10 +86,15 @@ export type ChartType =
   | "combo_chart"
   | "scatter_plot";
 
-export type ChartDataQuery = CreateQueryResult<
-  V1MetricsViewAggregationResponse,
-  Error
->;
+/**
+ * A chart's data query combined with the queries it waits on; see `combineChartDataQuery`.
+ * `isFetching` stays true until the data query has run, unless the spec keeps it from running.
+ */
+export type ChartDataQuery = Readable<{
+  data: V1MetricsViewAggregationResponse | undefined;
+  isFetching: boolean;
+  error: Error | null;
+}>;
 
 export type ChartFieldsMap = Record<
   string,
