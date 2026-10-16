@@ -139,6 +139,8 @@ export class CanvasEntity {
   firstTimeLoad = true;
 
   private subscribers = 0;
+  // Set by dispose.
+  disposed = false;
 
   constructor(
     public name: string,
@@ -501,9 +503,7 @@ export class CanvasEntity {
   // Acquires a reference to the entity. The cached entity is shared across
   // consumers (e.g. an unmounting editor and a mounting preview overlap during
   // navigation), so its spec subscription must survive as long as any consumer
-  // needs it. Subscribes on the first consumer; idempotent thereafter. The
-  // subscription's processSpec call recreates the components, ensuring a cached
-  // entity that was previously disposed is not left in an error state.
+  // needs it. Subscribes on the first consumer; idempotent thereafter.
   acquire = () => {
     this.subscribers++;
     if (this.unsubscriber) return; // already subscribed
@@ -529,16 +529,21 @@ export class CanvasEntity {
     this.dispose();
   };
 
-  // Unconditionally tears down the spec subscription and disposes every child
-  // component, regardless of the reference count. Used when the entity is
-  // evicted from the registry (mode switch or removeCanvasStore) and is being
-  // discarded; a subsequent release on the disposed entity is a safe no-op.
+  // Unconditionally tears down the spec subscription, every child component
+  // and the filter providers, regardless of the reference count. Runs once the
+  // last consumer releases the entity, and when the entity is evicted from the
+  // registry (mode switch or removeCanvasStore). A disposed entity is discarded,
+  // never acquired again (see getCanvasStoreUnguarded); a subsequent release on
+  // it is a safe no-op.
   dispose = () => {
+    if (this.disposed) return;
+    this.disposed = true;
     this.subscribers = 0;
     this.unsubscriber?.();
-    this.unsubscriber = undefined; // so a later acquire re-subscribes
+    this.unsubscriber = undefined;
     this.componentsStore.read().forEach((component) => component.destroy());
     this.componentsStore.reset();
+    this.dashboardProvider.cleanup?.();
   };
 
   handleCanvasRedirect = async ({
