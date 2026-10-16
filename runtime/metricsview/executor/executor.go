@@ -951,14 +951,18 @@ END) as __rill_time_grain`)
 	b.WriteString(" FROM ")
 	b.WriteString(dialect.EscapeTable(annotation.Database, annotation.DatabaseSchema, annotation.Table))
 
+	// Select the annotations that overlap the time range.
+	// A point annotation overlaps when its time falls in the range.
+	// A range annotation overlaps when it starts before the range ends and ends after the range starts.
+	// A null time_end denotes a point annotation.
 	b.WriteString(" WHERE ")
-
-	b.WriteString("time >= ? AND time < ?")
-	args := []any{start, end}
-
+	var args []any
 	if annotation.HasTimeEnd {
-		b.WriteString(" AND time_end >= ? AND time_end < ?")
-		args = append(args, start, end)
+		b.WriteString("time < ? AND (time >= ? OR time_end > ?)")
+		args = []any{end, start, start}
+	} else {
+		b.WriteString("time >= ? AND time < ?")
+		args = []any{start, end}
 	}
 
 	if annotation.HasDuration && qry.TimeGrain != metricsview.TimeGrainUnspecified {
