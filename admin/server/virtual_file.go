@@ -424,7 +424,13 @@ func (s *Server) editPersonalFileForUser(ctx context.Context, proj *database.Pro
 		return err
 	}
 
-	err = s.admin.DB.UpdateVirtualFileDataIfUnchanged(ctx, proj.ID, "prod", path, yaml, vf.UpdatedOn)
+	err = s.admin.DB.UpdateVirtualFileDataIfUnchanged(ctx, &database.UpdateVirtualFileDataOptions{
+		ProjectID:   proj.ID,
+		Environment: "prod",
+		Path:        path,
+		Data:        yaml,
+		UpdatedOn:   vf.UpdatedOn,
+	})
 	if err != nil {
 		if errors.Is(err, database.ErrNotFound) {
 			return status.Errorf(codes.Aborted, "personal file %q changed while it was being saved, try again", req.Name)

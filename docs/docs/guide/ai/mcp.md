@@ -266,7 +266,7 @@ You can look at one of our [example projects](https://github.com/rilldata/rill-e
 
 The skill tools are available to every user who can use AI features in the project, whether or not the project defines skills. `list_skills` returns every skill in the project with its `description`, `metrics_views`, `agents` and `always_apply` fields, so the client can pick the ones that fit its task. If `load_skill` is called with a name that doesn't exist, the error lists the skills that do.
 
-`develop_personal_canvas` is only available in projects that enable personal canvases with the `personal_canvases` [feature flag](/developers/build/project-configuration#feature-flags), and only to users (not service tokens). It can't share or delete dashboards: do that from the dashboard in Rill Cloud. If a project doesn't enable it, calling the tool returns an error that says so.
+`develop_personal_canvas` is only available in Rill Cloud, in projects that enable personal canvases with the `personal_canvases` [feature flag](/developers/build/project-configuration#feature-flags), and only to users (not service tokens). It can't share or delete dashboards: do that from the dashboard in Rill Cloud. If a project doesn't enable it, calling the tool returns an error that says so.
 
 The `/` skill picker is part of Rill's [AI Chat](/guide/ai/ai-chat#using-project-skills). In an external client, ask for a skill by name instead, for example: "Use the `revenue-rca` skill to explain last week's revenue drop."
 

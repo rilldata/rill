@@ -3057,12 +3057,16 @@ func (c *connection) UpdateVirtualFileDeleted(ctx context.Context, projectID, en
 	return checkUpdateRow("virtual file", res, err)
 }
 
-func (c *connection) UpdateVirtualFileDataIfUnchanged(ctx context.Context, projectID, environment, path string, data []byte, updatedOn time.Time) error {
+func (c *connection) UpdateVirtualFileDataIfUnchanged(ctx context.Context, opts *database.UpdateVirtualFileDataOptions) error {
+	if err := database.Validate(opts); err != nil {
+		return err
+	}
+
 	res, err := c.getDB(ctx).ExecContext(ctx, `
 		UPDATE virtual_files SET
 			data = $4,
 			updated_on = now()
-		WHERE project_id=$1 AND environment=$2 AND path=$3 AND NOT deleted AND updated_on=$5`, projectID, environment, path, data, updatedOn)
+		WHERE project_id=$1 AND environment=$2 AND path=$3 AND NOT deleted AND updated_on=$5`, opts.ProjectID, opts.Environment, opts.Path, opts.Data, opts.UpdatedOn)
 	return checkUpdateRow("virtual file", res, err)
 }
 

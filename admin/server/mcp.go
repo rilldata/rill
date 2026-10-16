@@ -448,7 +448,7 @@ func takeMCPProjectArg(args json.RawMessage) (org, project string, rest json.Raw
 // The tools are listed for every project, so the client only learns that a project lacks one when it calls it.
 func mcpUnavailableToolMessage(name string) string {
 	if name == ai.DevelopPersonalCanvasName {
-		return "Personal dashboards can't be created for you in this project: the project doesn't enable personal canvases (the personal_canvases feature flag), or your access doesn't include AI features or personal dashboards."
+		return "Personal dashboards can't be created for you in this project: the project doesn't enable personal canvases (the personal_canvases feature flag), or your access doesn't include AI features or personal dashboards (service tokens never do)."
 	}
 	return fmt.Sprintf("Tool %q is not available in this project: the project doesn't enable it, or you lack the permission it needs.", name)
 }

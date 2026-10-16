@@ -6,6 +6,7 @@ import (
 	"net"
 	"sync/atomic"
 	"testing"
+	"time"
 
 	"github.com/rilldata/rill/admin/client"
 	"github.com/rilldata/rill/admin/database"
@@ -214,23 +215,29 @@ func TestUpdateVirtualFileDataIfUnchanged(t *testing.T) {
 
 	// Updating the version that was read succeeds.
 	read := put("v1")
-	require.NoError(t, fix.Admin.DB.UpdateVirtualFileDataIfUnchanged(ctx, proj.Project.Id, "prod", path, []byte("v2"), read.UpdatedOn))
+	require.NoError(t, fix.Admin.DB.UpdateVirtualFileDataIfUnchanged(ctx, &database.UpdateVirtualFileDataOptions{ProjectID: proj.Project.Id, Environment: "prod", Path: path, Data: []byte("v2"), UpdatedOn: read.UpdatedOn}))
 
 	// Updating a version that changed since it was read fails, and keeps the concurrent change.
 	read = put("v3")
+	time.Sleep(time.Millisecond) // Ensures the concurrent change gets a different updated_on
 	put("shared concurrently")
-	err = fix.Admin.DB.UpdateVirtualFileDataIfUnchanged(ctx, proj.Project.Id, "prod", path, []byte("v4"), read.UpdatedOn)
+	err = fix.Admin.DB.UpdateVirtualFileDataIfUnchanged(ctx, &database.UpdateVirtualFileDataOptions{ProjectID: proj.Project.Id, Environment: "prod", Path: path, Data: []byte("v4"), UpdatedOn: read.UpdatedOn})
 	require.ErrorIs(t, err, database.ErrNotFound)
 	vf, err := fix.Admin.DB.FindVirtualFile(ctx, proj.Project.Id, "prod", path)
 	require.NoError(t, err)
 	require.Equal(t, "shared concurrently", string(vf.Data))
+
+	// Updating with data over the size limit for virtual files fails, as it does when creating them.
+	read = put("v5")
+	err = fix.Admin.DB.UpdateVirtualFileDataIfUnchanged(ctx, &database.UpdateVirtualFileDataOptions{ProjectID: proj.Project.Id, Environment: "prod", Path: path, Data: make([]byte, 131073), UpdatedOn: read.UpdatedOn})
+	require.ErrorIs(t, err, database.ErrValidation)
 
 	// Updating a deleted file fails instead of restoring it.
 	put("v5")
 	require.NoError(t, fix.Admin.DB.UpdateVirtualFileDeleted(ctx, proj.Project.Id, "prod", path))
 	deleted, err := fix.Admin.DB.FindVirtualFile(ctx, proj.Project.Id, "prod", path)
 	require.NoError(t, err)
-	err = fix.Admin.DB.UpdateVirtualFileDataIfUnchanged(ctx, proj.Project.Id, "prod", path, []byte("v6"), deleted.UpdatedOn)
+	err = fix.Admin.DB.UpdateVirtualFileDataIfUnchanged(ctx, &database.UpdateVirtualFileDataOptions{ProjectID: proj.Project.Id, Environment: "prod", Path: path, Data: []byte("v6"), UpdatedOn: deleted.UpdatedOn})
 	require.ErrorIs(t, err, database.ErrNotFound)
 }
 
