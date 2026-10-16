@@ -318,6 +318,9 @@ type DB interface {
 	FindVirtualFilesByOwner(ctx context.Context, projectID, environment, ownerID string) ([]*VirtualFile, error)
 	UpsertVirtualFile(ctx context.Context, opts *InsertVirtualFileOptions) error
 	UpdateVirtualFileDeleted(ctx context.Context, projectID, environment, path string) error
+	// UpdateVirtualFileDataIfUnchanged updates the data of a virtual file that is not deleted and was last updated at updatedOn.
+	// It returns ErrNotFound if the file doesn't exist, was deleted, or changed since, so callers don't overwrite a concurrent update.
+	UpdateVirtualFileDataIfUnchanged(ctx context.Context, projectID, environment, path string, data []byte, updatedOn time.Time) error
 	DeleteExpiredVirtualFiles(ctx context.Context, retention time.Duration) error
 
 	FindAsset(ctx context.Context, id string) (*Asset, error)

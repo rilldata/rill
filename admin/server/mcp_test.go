@@ -104,7 +104,7 @@ func TestCallRuntimeToolErrors(t *testing.T) {
 	res, err = s.callRuntimeTool(t.Context(), depl, "jwt", client, ai.DevelopPersonalCanvasName, json.RawMessage(`{}`))
 	require.NoError(t, err)
 	require.True(t, res.IsError)
-	require.Contains(t, res.Content[0].(*mcp.TextContent).Text, "Personal canvases are not enabled in this project")
+	require.Contains(t, res.Content[0].(*mcp.TextContent).Text, "Personal dashboards can't be created for you in this project")
 
 	// Invalid arguments are also returned as a tool error.
 	res, err = s.callRuntimeTool(t.Context(), depl, "jwt", client, "echo", json.RawMessage(`{"name":123}`))

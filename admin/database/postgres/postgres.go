@@ -3057,6 +3057,15 @@ func (c *connection) UpdateVirtualFileDeleted(ctx context.Context, projectID, en
 	return checkUpdateRow("virtual file", res, err)
 }
 
+func (c *connection) UpdateVirtualFileDataIfUnchanged(ctx context.Context, projectID, environment, path string, data []byte, updatedOn time.Time) error {
+	res, err := c.getDB(ctx).ExecContext(ctx, `
+		UPDATE virtual_files SET
+			data = $4,
+			updated_on = now()
+		WHERE project_id=$1 AND environment=$2 AND path=$3 AND NOT deleted AND updated_on=$5`, projectID, environment, path, data, updatedOn)
+	return checkUpdateRow("virtual file", res, err)
+}
+
 func (c *connection) DeleteExpiredVirtualFiles(ctx context.Context, retention time.Duration) error {
 	_, err := c.getDB(ctx).ExecContext(ctx, `DELETE FROM virtual_files WHERE deleted AND updated_on + $1 < now()`, retention)
 	return parseErr("virtual files", err)

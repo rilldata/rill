@@ -82,6 +82,16 @@ func (t *DevelopPersonalCanvas) Handler(ctx context.Context, args *DevelopPerson
 	if err != nil {
 		return nil, err
 	}
+	// get_canvas is not available to every client (e.g. MCP clients), so only mention it when the sub-agent can call it.
+	canGetCanvas, err := (&GetCanvas{Runtime: t.Runtime}).CheckAccess(ctx)
+	if err != nil {
+		return nil, err
+	}
+	tools := []string{WritePersonalCanvasName, GetMetricsViewName}
+	if canGetCanvas {
+		tools = append(tools, GetCanvasName)
+	}
+
 	userPrompt, err := executeTemplate(`
 You should develop a personal canvas dashboard based on the following task description:
 {{ if .name }}- Edit the user's existing personal canvas named: {{ .name }}{{ else }}- Create a new personal canvas{{ end }}
@@ -92,8 +102,8 @@ Here is some important context:
 - Save the dashboard with 'write_personal_canvas'. It is stored outside the project's files, so there is no file path. {{ if .name }}Pass name "{{ .name }}" to edit it.{{ else }}Leave name empty the first time, then pass the name it returns on every later call so you edit the same dashboard instead of creating another one.{{ end }}
 - Don't set annotations: they are ignored. The dashboard is owned by the user and private to them.
 - Only use the exact measure and dimension names of the metrics views listed below. If a metrics view is not listed, call 'get_metrics_view' BEFORE writing. Never guess field names based on display names or the task description.
-- To start from an existing project dashboard, call 'get_canvas' and reproduce its components in the new dashboard. The project dashboard itself is never changed.
-- When 'write_personal_canvas' returns a parse or reconcile error, fix the YAML and save it again.
+{{ if .get_canvas }}- To start from an existing project dashboard, call 'get_canvas' and reproduce its components in the new dashboard. The project dashboard itself is never changed.
+{{ end }}- When 'write_personal_canvas' returns a parse or reconcile error, fix the YAML and save it again.
 - Reply with the dashboard's display name and its URL.
 {{ if .current }}
 The current YAML of the dashboard is:
@@ -110,6 +120,7 @@ The current YAML of the dashboard is:
 		"current":            current,
 		"metrics_views_info": metricsViewsInfo,
 		"ai_instructions":    s.ProjectInstructions(),
+		"get_canvas":         canGetCanvas,
 	})
 	if err != nil {
 		return nil, err
@@ -124,7 +135,7 @@ The current YAML of the dashboard is:
 	var response string
 	err = s.Complete(ctx, "Personal canvas developer loop", &response, &CompleteOptions{
 		Messages:      messages,
-		Tools:         []string{WritePersonalCanvasName, GetMetricsViewName, GetCanvasName},
+		Tools:         tools,
 		MaxIterations: 10,
 		UnwrapCall:    true,
 	})
@@ -203,7 +214,7 @@ func (t *WritePersonalCanvas) Handler(ctx context.Context, args *WritePersonalCa
 		return nil, fmt.Errorf("failed to save personal canvas: %w", err)
 	}
 
-	resources, parseErr, parseWarnings, err := (&WriteFile{Runtime: t.Runtime}).reconcileAndGetStatus(ctx, personalCanvasPath(c.Name))
+	resources, parseErr, parseWarnings, err := (&WriteFile{Runtime: t.Runtime}).reconcileAndGetStatus(ctx, personalCanvasPath(c.Name), true)
 	if err != nil {
 		return nil, err
 	}
@@ -217,15 +228,29 @@ func (t *WritePersonalCanvas) Handler(ctx context.Context, args *WritePersonalCa
 	}, nil
 }
 
-// checkPersonalCanvasAccess checks that the session belongs to a user who may use AI in a project with personal canvases enabled.
-// The admin service additionally rejects owners that aren't users with access to the project, such as embed users and magic tokens.
+// checkPersonalCanvasAccess checks that the session belongs to a user who may use AI in a prod deployment with personal canvases enabled.
+// Personal canvases are stored in the prod environment, so other deployments (like editable branch deployments) can't save them.
+// Users are told apart from services by their email attribute, which only user JWTs carry.
+// The admin service additionally rejects owners that aren't users with access to the project, such as embed users with custom attributes.
 func checkPersonalCanvasAccess(ctx context.Context, rt *runtime.Runtime) (bool, error) {
 	s := GetSession(ctx)
-	if !s.Claims().Can(runtime.UseAI) || s.Claims().UserID == "" {
+	claims := s.Claims()
+	if !claims.Can(runtime.UseAI) || claims.UserID == "" {
+		return false, nil
+	}
+	if email, _ := claims.UserAttributes["email"].(string); email == "" {
 		return false, nil
 	}
 
-	ff, err := rt.FeatureFlags(ctx, s.InstanceID(), s.Claims())
+	inst, err := rt.Instance(ctx, s.InstanceID())
+	if err != nil {
+		return false, err
+	}
+	if inst.Environment != "prod" {
+		return false, nil
+	}
+
+	ff, err := rt.FeatureFlags(ctx, s.InstanceID(), claims)
 	if err != nil {
 		return false, err
 	}
@@ -264,23 +289,4 @@ func readPersonalCanvas(ctx context.Context, rt *runtime.Runtime, name string) (
 // personalCanvasPath returns the path where the runtime's repo presents a personal canvas stored by the admin service.
 func personalCanvasPath(name string) string {
 	return path.Join("/__virtual__", "personal", name+".yaml")
-}
-
-// ancestorCall returns the closest call to the given tool that the current call is nested in, or nil if there is none.
-func (s *Session) ancestorCall(toolName string) *Message {
-	id := s.ParentID
-	for range 100 { // Fail-safe, not expected to reach the limit
-		if id == "" {
-			return nil
-		}
-		msg, ok := s.Message(FilterByID(id))
-		if !ok {
-			return nil
-		}
-		if msg.Type == MessageTypeCall && msg.Tool == toolName {
-			return msg
-		}
-		id = msg.ParentID
-	}
-	return nil
 }

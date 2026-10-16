@@ -307,6 +307,7 @@ func (s *Server) callRuntimeTool(ctx context.Context, depl *database.Deployment,
 			// The runtime rejects calls with invalid arguments, and calls to a tool it does not serve (e.g. because the caller lacks a permission), as invalid params.
 			// The caller can act on both, so they are returned as tool errors; any other error is unexpected and stays a protocol error.
 			if rpc.Error.Code == jsonrpc.CodeInvalidParams {
+				// The go-sdk reports a call to a tool the server doesn't serve as `unknown tool "<name>"`; TestCallRuntimeToolErrors pins that wording.
 				if strings.HasPrefix(rpc.Error.Message, "unknown tool") {
 					return mcpToolErrorf("%s", mcpUnavailableToolMessage(name)), nil
 				}
@@ -447,7 +448,7 @@ func takeMCPProjectArg(args json.RawMessage) (org, project string, rest json.Raw
 // The tools are listed for every project, so the client only learns that a project lacks one when it calls it.
 func mcpUnavailableToolMessage(name string) string {
 	if name == ai.DevelopPersonalCanvasName {
-		return "Personal canvases are not enabled in this project, so dashboards can't be created for the user here. A project admin can enable them with the personal_canvases feature flag."
+		return "Personal dashboards can't be created for you in this project: the project doesn't enable personal canvases (the personal_canvases feature flag), or your access doesn't include AI features or personal dashboards."
 	}
 	return fmt.Sprintf("Tool %q is not available in this project: the project doesn't enable it, or you lack the permission it needs.", name)
 }

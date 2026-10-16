@@ -284,20 +284,28 @@ func (s *Server) SavePersonalFileForUser(ctx context.Context, req *adminv1.SaveP
 	if req.Name == "" && req.DisplayName == "" {
 		return nil, status.Error(codes.InvalidArgument, "display_name is required when creating a personal file")
 	}
+	// The name comes from an AI tool call, so only accept the alphabet generateVirtualFileName produces.
+	if req.Name != "" && !personalFileNameRegexp.MatchString(req.Name) {
+		return nil, status.Errorf(codes.InvalidArgument, "invalid personal file name %q", req.Name)
+	}
 
 	proj, err := s.admin.DB.FindProject(ctx, req.ProjectId)
 	if err != nil {
 		return nil, err
 	}
 
-	// Only the project's own deployment may act on behalf of a user.
+	// Only the project's primary deployment may act on behalf of a user.
 	// It is trusted to pass the user of its session, as for GetReportMeta and GetAlertMeta.
+	// Other deployments are rejected because personal files live in the prod environment, which only the primary deployment reads.
 	claims := auth.GetClaims(ctx)
 	if claims.OwnerType() != auth.OwnerTypeDeployment {
 		return nil, status.Error(codes.PermissionDenied, "only a deployment can save personal files for a user")
 	}
 	if !claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID).ReadProject {
 		return nil, status.Error(codes.PermissionDenied, "does not have permission to read project")
+	}
+	if proj.PrimaryDeploymentID == nil || *proj.PrimaryDeploymentID != claims.OwnerID() {
+		return nil, status.Error(codes.PermissionDenied, "only the project's primary deployment can save personal files for a user")
 	}
 
 	// The owner must be a user (not a service, magic token or external embed user) with access to the project.
@@ -323,60 +331,19 @@ func (s *Server) SavePersonalFileForUser(ctx context.Context, req *adminv1.SaveP
 		return nil, status.Error(codes.PermissionDenied, "user does not have permission to read project")
 	}
 
-	if proj.PrimaryDeploymentID == nil {
-		return nil, status.Error(codes.FailedPrecondition, "project does not have a deployment")
-	}
 	depl, err := s.admin.DB.FindDeployment(ctx, *proj.PrimaryDeploymentID)
 	if err != nil {
 		return nil, err
 	}
 
-	// Resolve the file to write. Editing keeps the file's sharing state: sharing is the user's decision, not the caller's.
 	name := req.Name
-	var shared bool
 	if name == "" {
-		name, err = s.generateVirtualFileName(ctx, req.DisplayName, func(ctx context.Context, name string) error {
-			_, err := s.admin.LookupCanvas(ctx, depl, name)
-			return err
-		})
-		if err != nil {
-			return nil, err
-		}
+		name, err = s.createPersonalFileForUser(ctx, proj, depl, user.ID, req)
 	} else {
-		vf, err := s.admin.DB.FindVirtualFile(ctx, proj.ID, "prod", virtualFilePathForPersonalFile(name))
-		if err != nil {
-			if errors.Is(err, database.ErrNotFound) {
-				return nil, status.Errorf(codes.NotFound, "personal file %q not found", name)
-			}
-			return nil, fmt.Errorf("failed to get personal file: %w", err)
-		}
-		if vf.Deleted {
-			return nil, status.Errorf(codes.NotFound, "personal file %q not found", name)
-		}
-		if vf.OwnerID == nil || *vf.OwnerID != user.ID {
-			return nil, status.Error(codes.PermissionDenied, "does not have permission to update file")
-		}
-		shared = personalFileShared(vf.Data)
+		err = s.editPersonalFileForUser(ctx, proj, user.ID, req)
 	}
-
-	data, err := yamlForPersonalFileOnBehalf(req.Yaml, shared)
 	if err != nil {
 		return nil, err
-	}
-	yaml, err := yamlForPersonalFile(req.DisplayName, user.ID, req.Kind, string(data))
-	if err != nil {
-		return nil, err
-	}
-
-	err = s.admin.DB.UpsertVirtualFile(ctx, &database.InsertVirtualFileOptions{
-		ProjectID:   proj.ID,
-		Environment: "prod",
-		Path:        virtualFilePathForPersonalFile(name),
-		OwnerID:     &user.ID,
-		Data:        yaml,
-	})
-	if err != nil {
-		return nil, fmt.Errorf("failed to save personal file: %w", err)
 	}
 
 	// Don't wait for the resource: the caller polls the runtime itself, which also surfaces parse errors in the YAML.
@@ -394,6 +361,77 @@ func (s *Server) SavePersonalFileForUser(ctx context.Context, req *adminv1.SaveP
 		Name: name,
 		Url:  urlutil.MustJoinURL(s.admin.URLs.WithCustomDomain(org.CustomDomain).Project(org.Name, proj.Name), "canvas", name),
 	}, nil
+}
+
+// createPersonalFileForUser creates a personal file owned by userID with a new name, and returns the name.
+func (s *Server) createPersonalFileForUser(ctx context.Context, proj *database.Project, depl *database.Deployment, userID string, req *adminv1.SavePersonalFileForUserRequest) (string, error) {
+	name, err := s.generateVirtualFileName(ctx, req.DisplayName, func(ctx context.Context, name string) error {
+		_, err := s.admin.LookupCanvas(ctx, depl, name)
+		return err
+	})
+	if err != nil {
+		return "", err
+	}
+
+	data, err := yamlForPersonalFileOnBehalf(req.Yaml, false)
+	if err != nil {
+		return "", err
+	}
+	yaml, err := yamlForPersonalFile(req.DisplayName, userID, req.Kind, string(data))
+	if err != nil {
+		return "", err
+	}
+
+	err = s.admin.DB.UpsertVirtualFile(ctx, &database.InsertVirtualFileOptions{
+		ProjectID:   proj.ID,
+		Environment: "prod",
+		Path:        virtualFilePathForPersonalFile(name),
+		OwnerID:     &userID,
+		Data:        yaml,
+	})
+	if err != nil {
+		return "", fmt.Errorf("failed to save personal file: %w", err)
+	}
+	return name, nil
+}
+
+// editPersonalFileForUser overwrites a personal file owned by userID.
+// It keeps the file's sharing state, since sharing is the user's decision and not the caller's,
+// and it fails instead of overwriting if the user shared, unshared or deleted the file concurrently.
+// The display name comes from the YAML, as in EditPersonalFile.
+func (s *Server) editPersonalFileForUser(ctx context.Context, proj *database.Project, userID string, req *adminv1.SavePersonalFileForUserRequest) error {
+	path := virtualFilePathForPersonalFile(req.Name)
+	vf, err := s.admin.DB.FindVirtualFile(ctx, proj.ID, "prod", path)
+	if err != nil {
+		if errors.Is(err, database.ErrNotFound) {
+			return status.Errorf(codes.NotFound, "personal file %q not found", req.Name)
+		}
+		return fmt.Errorf("failed to get personal file: %w", err)
+	}
+	if vf.Deleted {
+		return status.Errorf(codes.NotFound, "personal file %q not found", req.Name)
+	}
+	if vf.OwnerID == nil || *vf.OwnerID != userID {
+		return status.Error(codes.PermissionDenied, "does not have permission to update file")
+	}
+
+	data, err := yamlForPersonalFileOnBehalf(req.Yaml, personalFileShared(vf.Data))
+	if err != nil {
+		return err
+	}
+	yaml, err := yamlForPersonalFile("", userID, req.Kind, string(data))
+	if err != nil {
+		return err
+	}
+
+	err = s.admin.DB.UpdateVirtualFileDataIfUnchanged(ctx, proj.ID, "prod", path, yaml, vf.UpdatedOn)
+	if err != nil {
+		if errors.Is(err, database.ErrNotFound) {
+			return status.Errorf(codes.Aborted, "personal file %q changed while it was being saved, try again", req.Name)
+		}
+		return fmt.Errorf("failed to save personal file: %w", err)
+	}
+	return nil
 }
 
 // yamlForPersonalFileOnBehalf drops the annotations of a personal file written on behalf of a user,
@@ -512,6 +550,9 @@ func (s *Server) generateVirtualFileName(ctx context.Context, displayName string
 	// Fail-safe in case all names we tried were taken
 	return uuid.New().String(), nil
 }
+
+// personalFileNameRegexp matches the names generateVirtualFileName produces.
+var personalFileNameRegexp = regexp.MustCompile(`^[a-z0-9-]+$`)
 
 var virtualFileNameToDashCharsRegexp = regexp.MustCompile(`[ _]+`)
 

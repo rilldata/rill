@@ -3314,7 +3314,7 @@ message DeletePersonalFileResponse {
 }
 
 message SavePersonalFileForUserRequest {
-  string project_id = 1;
+  string project_id = 1 [(validate.rules).string.min_len = 1];
   // User who owns the personal file.
   string user_id = 2 [(validate.rules).string.min_len = 1];
   string kind = 3;
@@ -3323,7 +3323,7 @@ message SavePersonalFileForUserRequest {
   // Display name for a new personal file. Required when name is empty.
   string display_name = 5;
   // YAML body of the personal file. Annotations in it are ignored.
-  string yaml = 6;
+  string yaml = 6 [(validate.rules).string.min_len = 1];
 }
 
 message SavePersonalFileForUserResponse {
