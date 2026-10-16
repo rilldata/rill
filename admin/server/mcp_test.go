@@ -34,6 +34,20 @@ func TestMCPForwardedToolSpecs(t *testing.T) {
 	}
 }
 
+func TestMCPForwardsPersonalCanvasDeveloper(t *testing.T) {
+	tools, err := mcpForwardedToolSpecs()
+	require.NoError(t, err)
+
+	var names []string
+	for _, tool := range tools {
+		names = append(names, tool.Name)
+	}
+
+	// Clients can create personal canvases, but only through the sub-agent that knows how to author them.
+	require.Contains(t, names, ai.DevelopPersonalCanvasName)
+	require.NotContains(t, names, ai.WritePersonalCanvasName)
+}
+
 func TestTakeMCPProjectArg(t *testing.T) {
 	org, project, rest, err := takeMCPProjectArg(json.RawMessage(`{"project":"org/proj","metrics_view":"mv"}`))
 	require.NoError(t, err)

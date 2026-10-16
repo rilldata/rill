@@ -48,6 +48,8 @@ const (
 // mcpForwardedTools are the runtime tools exposed on the MCP server.
 // The runtime exposes more tools than these, but the rest require runtime.EditRepo,
 // which is only granted for editable deployments, and a project's primary deployment is never editable.
+// develop_personal_canvas is the exception: personal canvases are owned by the user, not stored in the repo.
+// It is listed for every project, and the runtime rejects calls for projects without the personal_canvases feature flag.
 var mcpForwardedTools = []string{
 	ai.ListMetricsViewsName,
 	ai.GetMetricsViewName,
@@ -55,6 +57,7 @@ var mcpForwardedTools = []string{
 	ai.QueryMetricsViewName,
 	ai.ListSkillsName,
 	ai.LoadSkillName,
+	ai.DevelopPersonalCanvasName,
 }
 
 // mcpSessionNamespace is a UUIDv5 namespace for the per-project session IDs derived in callRuntimeTool.
