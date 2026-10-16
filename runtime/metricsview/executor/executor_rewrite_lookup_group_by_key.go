@@ -2,6 +2,7 @@ package executor
 
 import (
 	"context"
+	"slices"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/metricsview"
@@ -21,7 +22,8 @@ import (
 // Exact aggregates return the same results either way; approximate ones (such as quantile or topK) may differ slightly after merging partial states,
 // and count(DISTINCT) is always evaluated with uniqExact regardless of the count_distinct_implementation setting.
 func (e *Executor) rewriteLookupGroupByKey(ctx context.Context, ast *metricsview.AST) {
-	if ast.Query.Rows {
+	// Skip the walk for metrics views without a lookup_group_by_key dimension.
+	if ast.Query.Rows || !slices.ContainsFunc(ast.MetricsView.Dimensions, (*runtimev1.MetricsViewSpec_Dimension).GetLookupGroupByKey) {
 		return
 	}
 
