@@ -12,11 +12,12 @@ Canvas dashboards are built using various components that can display data, crea
 
 ## Available Components
 
-Canvas dashboards support four main types of components:
+Canvas dashboards support five main types of components:
 
 - **[Data components](/developers/build/dashboards/canvas-widgets/data)** - Display structured data and key metrics (KPIs, leaderboards, tables)
 - **[Chart components](/developers/build/dashboards/canvas-widgets/chart)** - Create rich visualizations (bar charts, line charts, heat maps, etc.)
 - **[Map components](/developers/build/dashboards/canvas-widgets/map)** - Plot measures by location as points or shaded regions
+- **[Custom viz components](/developers/build/dashboards/canvas-widgets/custom-viz)** - Reusable charts with params, built from 32 chart types or a Vega-Lite spec
 - **[Miscellaneous components](/developers/build/dashboards/canvas-widgets/misc)** - Add text, images, and other content
 
 Each component page shows both the visual result and the corresponding YAML code, making it easy to understand how to implement them in your own dashboards.
