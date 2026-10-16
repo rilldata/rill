@@ -31,6 +31,7 @@ import {
 import { withEphemeralMeasures } from "../ephemeral-measures";
 import {
   canQueryWithTimeRange,
+  combineChartDataQuery,
   getFilterWithNullHandling,
 } from "../query-util";
 import {
@@ -330,7 +331,7 @@ export class CircularChartProvider {
     );
 
     const query = createQuery(queryOptionsStore);
-    return query;
+    return combineChartDataQuery(query, [topNColorQuery], visibleStore);
   }
 
   private getColorSort(
