@@ -8,6 +8,7 @@ import (
 	"math"
 	"net"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/ClickHouse/clickhouse-go/v2"
@@ -437,6 +438,10 @@ type Connection struct {
 	metaSem *semaphore.Weighted
 	olapSem *priorityqueue.Semaphore
 
+	// tempTableMu serializes the creation of temporary tables (read lock) with the sweep of stale ones (write lock).
+	// Temporary tables have deterministic names, so without it an execution could recreate a stale table after the sweep listed it and before it dropped it.
+	tempTableMu sync.RWMutex
+
 	// options used to open clickhouse connections
 	opts *clickhouse.Options
 	// embed is embedded clickhouse server for local run
@@ -704,14 +709,17 @@ func (c *Connection) periodicallyEmitStats() {
 }
 
 // periodicallyDropStaleTempTables drops the temporary tables that model executions left behind, e.g. because the runtime restarted while they ran.
-// It runs once immediately and then hourly until the connection is closed.
+// It sweeps once immediately and then at most hourly until the connection is closed.
 func (c *Connection) periodicallyDropStaleTempTables() {
-	ticker := time.NewTicker(time.Hour)
+	// The ticker is more frequent than the sweeps, so that a sweep that is due runs as soon as a database that can scale to zero is in use again.
+	ticker := time.NewTicker(time.Minute)
 	defer ticker.Stop()
 
+	var lastSweep time.Time
 	for {
-		// Skip if the database hasn't been used recently and may be scaled to zero, so that the sweep does not wake it up.
-		if !c.config.CanScaleToZero || time.Since(c.lastUsedOn()) < 2*time.Minute {
+		// Skip while the database hasn't been used recently and may be scaled to zero, so that the sweep does not wake it up.
+		if time.Since(lastSweep) >= time.Hour && (!c.config.CanScaleToZero || time.Since(c.lastUsedOn()) < 2*time.Minute) {
+			lastSweep = time.Now()
 			err := c.dropStaleTempTables(c.ctx, tempTableTTL)
 			if err != nil && !errors.Is(err, c.ctx.Err()) {
 				c.logger.Warn("clickhouse: failed to drop stale temp tables", zap.Error(err))

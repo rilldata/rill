@@ -137,28 +137,27 @@ func (c *Connection) insertTableAsSelect(ctx context.Context, name, sql string, 
 			}
 		}()
 		// create temp table
+		// Hold the read lock while creating it, so that a sweep of stale temp tables that listed an older table of the same name cannot drop it.
+		c.tempTableMu.RLock()
 		if engine == "Distributed" {
 			// create a local table first
 			err = c.Exec(ctx, &drivers.Statement{
 				Query:    fmt.Sprintf("CREATE OR REPLACE TABLE %s %s AS %s", safeSQLName(localTableName(tempName)), onClusterClause, safeSQLName(localTableName(name))),
 				Priority: 1,
 			})
-			if err != nil {
-				return nil, err
-			}
-			// then create the distributed table
-			err = c.createDistributedTable(ctx, tempName, outputProps)
-			if err != nil {
-				return nil, err
+			if err == nil {
+				// then create the distributed table
+				err = c.createDistributedTable(ctx, tempName, outputProps)
 			}
 		} else {
 			err = c.Exec(ctx, &drivers.Statement{
 				Query:    fmt.Sprintf("CREATE OR REPLACE TABLE %s %s AS %s", safeSQLName(tempName), onClusterClause, safeSQLName(name)),
 				Priority: 1,
 			})
-			if err != nil {
-				return nil, err
-			}
+		}
+		c.tempTableMu.RUnlock()
+		if err != nil {
+			return nil, err
 		}
 
 		// insert into temp table
@@ -247,13 +246,24 @@ const tempTableTTL = 24 * time.Hour
 // and it may fail, e.g. by timing out while a cancelled insert still holds a lock on the table.
 // Failures to drop individual tables are logged, so that the remaining tables are still dropped.
 func (c *Connection) dropStaleTempTables(ctx context.Context, olderThan time.Duration) error {
+	// Hold the lock until the drops are done: a temporary table created before the listing is not stale, and one created after it waits.
+	c.tempTableMu.Lock()
+	defer c.tempTableMu.Unlock()
+
 	names, err := c.listStaleTempTables(ctx, olderThan)
 	if err != nil {
 		return err
 	}
 	for _, name := range names {
 		err := c.dropTable(ctx, name)
-		if err != nil && !errors.Is(err, drivers.ErrNotFound) {
+		if errors.Is(err, drivers.ErrNotFound) {
+			// already dropped, e.g. a `_local` table along with its Distributed table
+			continue
+		}
+		if err != nil {
+			if ctx.Err() != nil {
+				return ctx.Err()
+			}
 			c.logger.Warn("clickhouse: failed to drop stale temp table", zap.String("name", name), zap.Error(err), observability.ZapCtx(ctx))
 			continue
 		}
@@ -527,7 +537,10 @@ func (c *Connection) createTable(ctx context.Context, name, sql string, outputPr
 			defer cancel()
 			_ = c.Exec(ctx, &drivers.Statement{Query: fmt.Sprintf("DROP VIEW IF EXISTS %s %s", v, onClusterClause)})
 		}()
+		// Hold the read lock while creating the view, so that a sweep of stale temp tables that listed an older view of the same name cannot drop it.
+		c.tempTableMu.RLock()
 		err := c.Exec(ctx, &drivers.Statement{Query: fmt.Sprintf("CREATE OR REPLACE VIEW %s %s AS %s", v, onClusterClause, sql)})
+		c.tempTableMu.RUnlock()
 		if err != nil {
 			return err
 		}
