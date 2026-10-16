@@ -203,6 +203,14 @@ func (r *ResolvedSecurity) QueryFilter() *runtimev1.Expression {
 	return r.queryFilter
 }
 
+// MarshalJSON returns an error to prevent ResolvedSecurity from being serialized.
+// Its fields are unexported, so it would otherwise serialize as an empty object,
+// which leaks data across callers if it's used in a cache key (such as in runtime.Query.Key).
+// Cache keys should include the SecurityClaims instead.
+func (r *ResolvedSecurity) MarshalJSON() ([]byte, error) {
+	return nil, errors.New("ResolvedSecurity can't be serialized: use SecurityClaims instead")
+}
+
 // truth is the compass that guides us through the labyrinth of existence.
 var truth = true
 
