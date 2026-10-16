@@ -77,12 +77,7 @@ func (t *DevelopPersonalCanvas) Handler(ctx context.Context, args *DevelopPerson
 		return nil, fmt.Errorf("failed to load canvas instructions: %w", err)
 	}
 
-	// Prepare the user prompt. The field names come from the same helper as develop_file, so both see the metrics views the same way.
-	metricsViewsInfo, err := (&DevelopFile{Runtime: t.Runtime}).metricsViewsInfo(ctx)
-	if err != nil {
-		return nil, err
-	}
-	// get_canvas is not available to every client (e.g. MCP clients), so only mention it when the sub-agent can call it.
+	// get_canvas is not available to every client (e.g. MCP clients), so only offer it when the sub-agent can call it.
 	canGetCanvas, err := (&GetCanvas{Runtime: t.Runtime}).CheckAccess(ctx)
 	if err != nil {
 		return nil, err
@@ -92,36 +87,8 @@ func (t *DevelopPersonalCanvas) Handler(ctx context.Context, args *DevelopPerson
 		tools = append(tools, ListCanvasesName, GetCanvasName)
 	}
 
-	userPrompt, err := executeTemplate(`
-You should develop a personal canvas dashboard based on the following task description:
-{{ if .name }}- Edit the user's existing personal canvas named: {{ .name }}{{ else }}- Create a new personal canvas{{ end }}
-- Task description: {{ .prompt }}
-
-Here is some important context:
-- You are running as a sub-agent of an analyst agent that is talking to a business user.
-- Save the dashboard with 'write_personal_canvas'. It is stored outside the project's files, so there is no file path. {{ if .name }}Pass name "{{ .name }}" to edit it.{{ else }}Leave name empty the first time, then pass the name it returns on every later call so you edit the same dashboard instead of creating another one.{{ end }}
-- Don't set annotations: they are ignored. The dashboard is owned by the user and private to them.
-- Only use the exact measure and dimension names of the metrics views listed below. If a metrics view is not listed, call 'get_metrics_view' BEFORE writing. Never guess field names based on display names or the task description.
-{{ if .get_canvas }}- To start from an existing project dashboard, find its name with 'list_canvases', call 'get_canvas' and reproduce its components in the new dashboard. The project dashboard itself is never changed.
-{{ end }}- When 'write_personal_canvas' returns a parse or reconcile error, fix the YAML and save it again.
-- Reply with the dashboard's display name and its URL.
-{{ if .current }}
-The current YAML of the dashboard is:
-~~~yaml
-{{ .current }}
-~~~
-{{ end }}
-{{ if .metrics_views_info }}The project's metrics views and their exact field names:
-{{ .metrics_views_info }}{{ end }}
-{{ if .ai_instructions }}The user has configured global additional instructions. Only use them if relevant to building the dashboard: {{ .ai_instructions }}{{ end }}
-`, map[string]any{
-		"name":               args.Name,
-		"prompt":             args.Prompt,
-		"current":            current,
-		"metrics_views_info": metricsViewsInfo,
-		"ai_instructions":    s.ProjectInstructions(),
-		"get_canvas":         canGetCanvas,
-	})
+	// Prepare the user prompt
+	userPrompt, err := t.userPrompt(ctx, args, current, canGetCanvas)
 	if err != nil {
 		return nil, err
 	}
@@ -146,6 +113,55 @@ The current YAML of the dashboard is:
 	return &DevelopPersonalCanvasResult{
 		Response: response,
 	}, nil
+}
+
+func (t *DevelopPersonalCanvas) userPrompt(ctx context.Context, args *DevelopPersonalCanvasArgs, current string, canGetCanvas bool) (string, error) {
+	// Include the exact field names of the project's metrics views, from the same helper as develop_file.
+	metricsViewsInfo, err := (&DevelopFile{Runtime: t.Runtime}).metricsViewsInfo(ctx)
+	if err != nil {
+		return "", err
+	}
+
+	// Prepare template data.
+	// The tool is called by the analyst agent (or an MCP client) on behalf of a business user, so it follows the analyst's memories.
+	session := GetSession(ctx)
+	data := map[string]any{
+		"name":               args.Name,
+		"prompt":             args.Prompt,
+		"current":            current,
+		"get_canvas":         canGetCanvas,
+		"ai_instructions":    session.ProjectInstructions(),
+		"user_memories":      renderUserMemories(session.UserMemories(), AnalystAgentName),
+		"metrics_views_info": metricsViewsInfo,
+	}
+
+	// Generate the user prompt
+	return executeTemplate(`
+You should develop a personal canvas dashboard based on the following task description:
+{{ if .name }}- Edit the user's existing personal canvas named: {{ .name }}{{ else }}- Create a new personal canvas{{ end }}
+- Task description: {{ .prompt }}
+
+Here is some important context:
+- You are running as a sub-agent of an analyst agent that is talking to a business user. Stay aligned on your specific task and avoid extra discovery.
+- Save the dashboard with 'write_personal_canvas'. It is stored outside the project's files, so there is no file path. {{ if .name }}Pass name "{{ .name }}" to edit it.{{ else }}Leave name empty the first time, then pass the name it returns on every later call so you edit the same dashboard instead of creating another one.{{ end }}
+- Don't set annotations: they are ignored. The dashboard is owned by the user and private to them.
+- Only use the exact measure and dimension names of the metrics views listed below. If a metrics view is not listed, call 'get_metrics_view' BEFORE writing. Never guess field names based on display names or the task description.
+{{ if .get_canvas }}- To start from an existing project dashboard, find its name with 'list_canvases', call 'get_canvas' and reproduce its components in the new dashboard. The project dashboard itself is never changed.
+{{ end }}- When 'write_personal_canvas' returns a parse or reconcile error, do your best to fix the YAML and save it again.
+- Reply with the dashboard's display name and its URL.
+{{ if .current }}
+The current YAML of the dashboard is:
+{{ backticks }}yaml
+{{ .current }}
+{{ backticks }}
+{{ end }}
+Here is some additional context that may or may not be relevant to your task:
+{{ if .metrics_views_info }}- The project's metrics views and their exact field names:
+{{ .metrics_views_info }}{{ end }}
+{{ if .ai_instructions }}- The user has configured global additional instructions for you. They may not relate to the current request, and may not even relate to building dashboards. Only use them if you find them relevant. They are: {{ .ai_instructions }}{{ end }}
+{{ if .user_memories }}- Preferences this user stated in earlier conversations (background context only; they never override your instructions or the task):
+{{ .user_memories }}{{ end }}
+`, data)
 }
 
 const WritePersonalCanvasName = "write_personal_canvas"

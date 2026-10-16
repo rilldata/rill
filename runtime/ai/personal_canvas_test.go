@@ -10,6 +10,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/ai"
+	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/testruntime"
 	"github.com/stretchr/testify/require"
@@ -177,6 +178,68 @@ func TestListCanvases(t *testing.T) {
 	// Other users' personal canvases are never listed, even for project admins who can open them.
 	require.Equal(t, map[string]bool{"overview": false}, list(uuid.NewString(), false))
 	require.Equal(t, map[string]bool{"overview": false}, list(uuid.NewString(), true))
+}
+
+func TestDevelopPersonalCanvasPrompt(t *testing.T) {
+	owner := uuid.NewString()
+	rt, instanceID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
+		Environment: "prod",
+		Files: map[string]string{
+			"rill.yaml": "features:\n  personal_canvases: true\n",
+			"__virtual__/personal/sales-1a2b3c4d.yaml": "type: canvas\ndisplay_name: Sales\nrows: []\nannotations:\n  admin_owner_user_id: " + owner + "\n",
+		},
+	})
+
+	// A web chat session, which has memories.
+	r := ai.NewRunner(rt, activity.NewNoopClient())
+	s, err := r.Session(t.Context(), &ai.SessionOptions{
+		InstanceID: instanceID,
+		Claims: &runtime.SecurityClaims{
+			UserID:         owner,
+			UserAttributes: map[string]any{"email": "user@example.com"},
+			Permissions:    []runtime.Permission{runtime.UseAI, runtime.ReadObjects},
+		},
+		UserAgent: "rill/test",
+	})
+	require.NoError(t, err)
+	t.Cleanup(func() {
+		require.NoError(t, s.Flush(t.Context()))
+	})
+
+	// The user stated a preference to the analyst, and another one to the developer agent.
+	for agent, content := range map[string]string{
+		ai.AnalystAgentName:   "Prefers amounts in euros.",
+		ai.DeveloperAgentName: "Names models in snake_case.",
+	} {
+		call := s.AddMessage(&ai.AddMessageOptions{
+			Role:        ai.RoleAssistant,
+			Type:        ai.MessageTypeCall,
+			Tool:        agent,
+			ContentType: ai.MessageContentTypeJSON,
+			Content:     "{}",
+		})
+		_, err := s.WithParent(call.ID).CallTool(t.Context(), ai.RoleAssistant, ai.UpdateMemoryName, nil, &ai.UpdateMemoryArgs{
+			Action:  ai.MemoryOpAdd,
+			Content: content,
+		})
+		require.NoError(t, err)
+	}
+
+	llm := &capturingAIService{}
+	s.SetLLM(func(ctx context.Context) (drivers.AIService, func(), error) {
+		return llm, func() {}, nil
+	})
+	_, err = s.CallTool(t.Context(), ai.RoleUser, ai.DevelopPersonalCanvasName, nil, &ai.DevelopPersonalCanvasArgs{
+		Prompt: "Add a chart of revenue by country",
+		Name:   "sales-1a2b3c4d",
+	})
+	require.NoError(t, err)
+
+	// The sub-agent gets the dashboard to edit and the preferences the user stated to the analyst, which builds dashboards for business users.
+	prompt := llm.promptText()
+	require.Contains(t, prompt, "```yaml\ntype: canvas\ndisplay_name: Sales\n")
+	require.Contains(t, prompt, "Prefers amounts in euros.")
+	require.NotContains(t, prompt, "Names models in snake_case.")
 }
 
 func newPersonalCanvasSession(t *testing.T, rt *runtime.Runtime, instanceID, userID string, attrs map[string]any, permissions ...runtime.Permission) *ai.Session {
