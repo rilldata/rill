@@ -344,7 +344,7 @@ service AdminService {
     };
   }
 
-  // DeleteConnectorOAuthToken revokes and removes a user's OAuth authorization for a connector in the calling deployment's project.
+  // DeleteConnectorOAuthToken removes a user's OAuth authorization for a connector in the calling deployment's project.
   // It can only be called by deployments.
   rpc DeleteConnectorOAuthToken(DeleteConnectorOAuthTokenRequest) returns (DeleteConnectorOAuthTokenResponse) {
     option (google.api.http) = {

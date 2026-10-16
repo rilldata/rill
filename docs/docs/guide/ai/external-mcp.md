@@ -35,6 +35,8 @@ Each server uses one of two credential scopes. The choice is visible in the YAML
 
 Set `auth: oauth` for servers that identify individual users, such as Linear, GitHub, Slack, Notion, or Atlassian. Each user authorizes the server from the chat's **External tools** popover: **Connect** opens the server's authorization page in a popup. If the assistant tries to use a server the user has not connected yet, it stops and shows a Connect card instead of failing; once connected, send your message again.
 
+Per-user OAuth is available in Rill Cloud only. Rill Developer lists such servers but cannot connect them, so test them after deploying. Servers with project-scoped credentials (below) work in both.
+
 Rill discovers the server's authorization server automatically and registers itself as an OAuth client when the server supports dynamic client registration. Servers that require a pre-registered client, such as Slack, take the client credentials from the connector:
 
 ```yaml
@@ -48,9 +50,9 @@ oauth_client_secret: "{{ .env.SLACK_MCP_CLIENT_SECRET }}"
 oauth_scopes: [search:read, channels:history]
 ```
 
-Register the redirect URL of your Rill deployment with the server when it asks for one: `https://admin.rilldata.com/connectors/oauth/callback` in Rill Cloud, and `http://localhost:9009/mcp/oauth/callback` in Rill Developer (adjust the port if you run Rill on another one).
+Register `https://admin.rilldata.com/connectors/oauth/callback` as the redirect URL when the server asks for one.
 
-Tokens are never shared between users. Rill Cloud stores each user's token encrypted in the control plane and refreshes it as needed; runtimes only receive short-lived access tokens. Rill Developer stores the local user's token in the project's `tmp` directory, which is not committed. Users can disconnect a server at any time from the chat, even while the server is unreachable, which deletes the token.
+Tokens are never shared between users. Rill Cloud stores each user's token encrypted in the control plane and refreshes it as needed; runtimes only receive short-lived access tokens. Users can disconnect a server at any time from the chat, even while the server is unreachable, which deletes the token.
 
 ### Project-scoped credentials
 

@@ -19,7 +19,6 @@
   import { isDeployPage } from "@rilldata/web-common/layout/navigation/route-utils";
   import { previewModeStore } from "@rilldata/web-common/layout/preview-mode-store";
   import { LOCAL_HOST, LOCAL_INSTANCE_ID } from "../lib/runtime-client";
-  import { setMcpConnectContext } from "@rilldata/web-common/features/chat/connect/mcp-connect-context";
   import RuntimeProvider from "@rilldata/web-common/runtime-client/v2/RuntimeProvider.svelte";
   import type { Query } from "@tanstack/query-core";
   import { QueryClientProvider } from "@tanstack/svelte-query";
@@ -85,12 +84,6 @@
 
   const host = LOCAL_HOST;
   const instanceId = LOCAL_INSTANCE_ID;
-
-  // External MCP servers are authorized through the local server, which persists the token for the project.
-  setMcpConnectContext({
-    connectUrl: (connector) =>
-      `${host || window.location.origin}/mcp/oauth/connect?connector=${encodeURIComponent(connector)}&redirect=${encodeURIComponent(window.location.href)}`,
-  });
 
   $: ({ route } = $page);
   $: onDeployPage = isDeployPage($page);

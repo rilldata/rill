@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"testing"
 	"time"
 
@@ -141,22 +142,6 @@ func TestTokenExpiring(t *testing.T) {
 	}
 }
 
-func TestRevokeSendsClientAuth(t *testing.T) {
-	var revoked, clientID string
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		require.NoError(t, r.ParseForm())
-		revoked = r.Form.Get("token")
-		clientID = r.Form.Get("client_id")
-	}))
-	defer srv.Close()
-
-	c := &Client{RevocationEndpoint: srv.URL, ClientID: "client-123"}
-	tok := &oauth2.Token{AccessToken: "at1", RefreshToken: "rt1"}
-	require.NoError(t, c.Revoke(t.Context(), tok, safehttp.NewHTTPClient(true, 5*time.Second)))
-	require.Equal(t, "rt1", revoked)
-	require.Equal(t, "client-123", clientID)
-}
-
 func TestIsLinkableRedirect(t *testing.T) {
 	require.True(t, isLinkableRedirect("/org/project"))
 	require.True(t, isLinkableRedirect("https://ui.rilldata.com/org/project"))
@@ -166,4 +151,26 @@ func TestIsLinkableRedirect(t *testing.T) {
 	require.False(t, isLinkableRedirect("data:text/html,hi"))
 	require.False(t, isLinkableRedirect("//evil.com/x"))
 	require.False(t, isLinkableRedirect("ftp://example.com/"))
+}
+
+func TestRefreshKeepsGrantedScopes(t *testing.T) {
+	var form url.Values
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		require.NoError(t, r.ParseForm())
+		form = r.Form
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(map[string]any{"access_token": "at2", "token_type": "bearer", "refresh_token": "rt2", "expires_in": 3600})
+	}))
+	t.Cleanup(srv.Close)
+
+	c := &Client{TokenEndpoint: srv.URL + "/token", ClientID: "client-123", Resource: "https://mcp.example.com/mcp", Scopes: []string{"read", "write"}}
+	tok, err := c.Refresh(t.Context(), &oauth2.Token{AccessToken: "at1", RefreshToken: "rt1"}, safehttp.NewHTTPClient(true, 5*time.Second))
+	require.NoError(t, err)
+	require.Equal(t, "at2", tok.AccessToken)
+	require.Equal(t, "rt2", tok.RefreshToken)
+	require.Equal(t, "refresh_token", form.Get("grant_type"))
+	require.Equal(t, "rt1", form.Get("refresh_token"))
+	require.Equal(t, c.Resource, form.Get("resource"))
+	// The scope is omitted so the new token keeps the scopes of the original grant, which may be fewer than configured.
+	require.Empty(t, form.Get("scope"))
 }

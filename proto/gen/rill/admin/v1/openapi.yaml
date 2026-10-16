@@ -2699,7 +2699,7 @@ paths:
                                 $ref: '#/components/schemas/rpcStatus'
                     description: An unexpected error response.
             summary: |-
-                DeleteConnectorOAuthToken revokes and removes a user's OAuth authorization for a connector in the calling deployment's project.
+                DeleteConnectorOAuthToken removes a user's OAuth authorization for a connector in the calling deployment's project.
                 It can only be called by deployments.
     /v1/deployments/{deploymentId}:
         delete:

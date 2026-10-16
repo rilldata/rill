@@ -126,6 +126,11 @@ func (s *Server) GetConnectorOAuthToken(ctx context.Context, req *adminv1.GetCon
 				expired = true
 				return s.admin.DB.DeleteConnectorOAuthToken(ctx, clientRow.ID, req.UserId)
 			}
+			if !req.ForceRefresh && tok.Valid() {
+				// The refresh was only early; the current token still works until it expires, and the next request retries.
+				s.logger.Warn("failed to refresh connector OAuth token early", zap.String("connector", req.Connector), zap.Error(err), observability.ZapCtx(ctx))
+				return nil
+			}
 			return fmt.Errorf("failed to refresh token: %w", err)
 		}
 		tokJSON, err := json.Marshal(newTok)
@@ -149,7 +154,6 @@ func (s *Server) GetConnectorOAuthToken(ctx context.Context, req *adminv1.GetCon
 	if expired {
 		return nil, status.Error(codes.NotFound, "the user's authorization has expired")
 	}
-	s.connectorOAuthMarkUsed(ctx, clientRow.ID)
 
 	res := &adminv1.GetConnectorOAuthTokenResponse{AccessToken: tok.AccessToken}
 	if !tok.Expiry.IsZero() {
@@ -179,20 +183,7 @@ func (s *Server) DeleteConnectorOAuthToken(ctx context.Context, req *adminv1.Del
 	}
 
 	err = s.connectorOAuthWithTokenLock(ctx, clientRow.ID, req.UserId, func(ctx context.Context) error {
-		row, err := s.admin.DB.FindConnectorOAuthToken(ctx, clientRow.ID, req.UserId)
-		if err != nil {
-			if errors.Is(err, database.ErrNotFound) {
-				return nil
-			}
-			return err
-		}
-
-		oauthClient := &oauthclient.Client{}
-		if json.Unmarshal(clientRow.Client, oauthClient) == nil {
-			s.connectorOAuthRevoke(ctx, oauthClient, row, req.Connector)
-		}
-
-		err = s.admin.DB.DeleteConnectorOAuthToken(ctx, clientRow.ID, req.UserId)
+		err := s.admin.DB.DeleteConnectorOAuthToken(ctx, clientRow.ID, req.UserId)
 		if err != nil && !errors.Is(err, database.ErrNotFound) {
 			return err
 		}
@@ -367,13 +358,7 @@ func (s *Server) connectorOAuthCallback(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 	err = s.connectorOAuthWithTokenLock(ctx, clientRow.ID, claims.OwnerID(), func(ctx context.Context) error {
-		// Revoke the token this one replaces, so it doesn't stay valid at the authorization server.
-		old, err := s.admin.DB.FindConnectorOAuthToken(ctx, clientRow.ID, claims.OwnerID())
-		if err != nil && !errors.Is(err, database.ErrNotFound) {
-			return err
-		}
-		s.connectorOAuthRevoke(ctx, oauthClient, old, flow.Connector)
-		_, err = s.admin.DB.UpsertConnectorOAuthToken(ctx, &database.UpsertConnectorOAuthTokenOptions{
+		_, err := s.admin.DB.UpsertConnectorOAuthToken(ctx, &database.UpsertConnectorOAuthTokenOptions{
 			OAuthClientID: clientRow.ID,
 			UserID:        claims.OwnerID(),
 			Token:         tokJSON,
@@ -384,14 +369,13 @@ func (s *Server) connectorOAuthCallback(w http.ResponseWriter, r *http.Request) 
 		render(fmt.Sprintf("failed to store token: %s", err))
 		return
 	}
-	s.connectorOAuthMarkUsed(ctx, clientRow.ID)
 
 	render("")
 }
 
 // connectorOAuthWithTokenLock runs fn in a transaction that holds the lock on a user's token for a client.
-// Every read-modify-write of a token (refresh, disconnect, a completed authorization) goes through it,
-// so a refresh can never resurrect a token that a disconnect deleted, and two refreshes never race on a rotating refresh token.
+// Every write of a token (refresh, disconnect, a completed authorization) goes through it,
+// so a refresh can never resurrect a token that a disconnect deleted or overwrite a fresh authorization, and two refreshes never race on a rotating refresh token.
 // The lock lives in the database, so it also covers multiple admin processes.
 func (s *Server) connectorOAuthWithTokenLock(ctx context.Context, oauthClientID, userID string, fn func(ctx context.Context) error) error {
 	ctx, tx, err := s.admin.DB.NewTx(ctx, false)
@@ -408,26 +392,6 @@ func (s *Server) connectorOAuthWithTokenLock(ctx context.Context, oauthClientID,
 		return err
 	}
 	return tx.Commit()
-}
-
-// connectorOAuthRevoke revokes a stored token at the authorization server. It is best-effort.
-func (s *Server) connectorOAuthRevoke(ctx context.Context, oauthClient *oauthclient.Client, row *database.ConnectorOAuthToken, connector string) {
-	tok := &oauth2.Token{}
-	if json.Unmarshal(row.Token, tok) != nil {
-		return
-	}
-	err := oauthClient.Revoke(ctx, tok, safehttp.NewHTTPClient(false, connectorOAuthHTTPTimeout))
-	if err != nil {
-		s.logger.Info("failed to revoke connector OAuth token", zap.String("connector", connector), zap.Error(err), observability.ZapCtx(ctx))
-	}
-}
-
-// connectorOAuthMarkUsed records that a client was used, which keeps it from being cleaned up. It is best-effort.
-func (s *Server) connectorOAuthMarkUsed(ctx context.Context, oauthClientID string) {
-	err := s.admin.DB.UpdateConnectorOAuthClientUsedOn(ctx, oauthClientID)
-	if err != nil {
-		s.logger.Warn("failed to record connector OAuth client use", zap.String("oauth_client_id", oauthClientID), zap.Error(err), observability.ZapCtx(ctx))
-	}
 }
 
 // connectorOAuthValidateRedirect checks that a return URL points back to Rill: a relative path, the admin or frontend hosts,

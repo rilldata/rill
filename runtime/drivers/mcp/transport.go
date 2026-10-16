@@ -30,8 +30,15 @@ func (t *authRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) 
 	return resp, err
 }
 
-// unauthorized returns true if the last response indicated an authorization failure.
+// unauthorized returns true if the last response rejected the credentials (401), which a new authorization or refreshed token can fix.
+// A 403 is not included: it means the credentials are valid but lack access (e.g. RFC 6750 "insufficient_scope"),
+// which a refresh cannot fix, and treating it as an authorization failure would make callers discard a working authorization.
 func (t *authRoundTripper) unauthorized() bool {
+	return t.lastStatus.Load() == http.StatusUnauthorized
+}
+
+// rejected returns true if the last response was 401 or 403, i.e. the server is up but refused the request's credentials.
+func (t *authRoundTripper) rejected() bool {
 	s := t.lastStatus.Load()
 	return s == http.StatusUnauthorized || s == http.StatusForbidden
 }

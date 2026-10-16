@@ -1,8 +1,7 @@
 // Package oauthclient implements the client side of OAuth 2.1 authorization code flows against protected resources:
 // discovery of the resource's authorization server (RFC 9728 and RFC 8414), dynamic client registration (RFC 7591)
 // with a pre-registered fallback, PKCE, resource indicators (RFC 8707), issuer validation (RFC 9207), and token refresh with rotation.
-// It is shared by the admin service and Rill Developer's local server, which run browser-based flows on behalf of users,
-// and by connector drivers, which consume the resulting tokens.
+// The admin service uses it to run browser-based flows on behalf of users and to refresh the resulting tokens.
 package oauthclient
 
 import (
@@ -46,7 +45,6 @@ type Client struct {
 	IssParameterSupported bool     `json:"iss_parameter_supported,omitempty"`
 	AuthorizationEndpoint string   `json:"authorization_endpoint"`
 	TokenEndpoint         string   `json:"token_endpoint"`
-	RevocationEndpoint    string   `json:"revocation_endpoint,omitempty"`
 	ClientID              string   `json:"client_id"`
 	ClientSecret          string   `json:"client_secret,omitempty"`
 	ClientAuthStyle       string   `json:"client_auth_style,omitempty"` // "basic", "post" or empty for auto-detect
@@ -130,7 +128,6 @@ func Discover(ctx context.Context, opts *DiscoverOptions) (*Client, error) {
 		IssParameterSupported: meta.AuthorizationResponseIssParameterSupported,
 		AuthorizationEndpoint: meta.AuthorizationEndpoint,
 		TokenEndpoint:         meta.TokenEndpoint,
-		RevocationEndpoint:    meta.RevocationEndpoint,
 		Scopes:                scopes,
 	}
 
@@ -232,9 +229,8 @@ func (c *Client) Refresh(ctx context.Context, tok *oauth2.Token, hc *http.Client
 		"refresh_token": {tok.RefreshToken},
 		"resource":      {c.Resource},
 	}
-	if len(c.Scopes) > 0 {
-		form.Set("scope", strings.Join(c.Scopes, " "))
-	}
+	// The scope is omitted, so the new token has the scopes of the original grant (RFC 6749 section 6),
+	// which may be fewer than the scopes requested.
 
 	styles := []string{c.ClientAuthStyle}
 	if c.ClientAuthStyle == "" && c.ClientSecret != "" {
@@ -268,35 +264,6 @@ func (c *Client) Refresh(ctx context.Context, tok *oauth2.Token, hc *http.Client
 		return nil, fmt.Errorf("%w: %w", ErrAuthorizationRequired, lastErr)
 	}
 	return nil, fmt.Errorf("failed to refresh token: %w", lastErr)
-}
-
-// Revoke revokes the token at the authorization server, if it supports revocation. It is best-effort.
-func (c *Client) Revoke(ctx context.Context, tok *oauth2.Token, hc *http.Client) error {
-	if c.RevocationEndpoint == "" {
-		return nil
-	}
-	token, hint := tok.RefreshToken, "refresh_token"
-	if token == "" {
-		token, hint = tok.AccessToken, "access_token"
-	}
-	form := url.Values{"token": {token}, "token_type_hint": {hint}}
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, c.RevocationEndpoint, http.NoBody)
-	if err != nil {
-		return err
-	}
-	// Client authentication may add form fields, so the body is set only after it is applied.
-	c.applyClientAuth(req, form, "")
-	setFormBody(req, form)
-	resp, err := hc.Do(req)
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-	_, _ = io.Copy(io.Discard, io.LimitReader(resp.Body, 4096))
-	if resp.StatusCode >= 300 {
-		return fmt.Errorf("revocation endpoint returned status %d", resp.StatusCode)
-	}
-	return nil
 }
 
 func (c *Client) oauth2Config() *oauth2.Config {
@@ -387,7 +354,7 @@ func (c *Client) postTokenEndpoint(ctx context.Context, hc *http.Client, form ur
 	return res, nil
 }
 
-// applyClientAuth adds client authentication to a token or revocation request.
+// applyClientAuth adds client authentication to a token request.
 func (c *Client) applyClientAuth(req *http.Request, form url.Values, style string) {
 	if style == "" {
 		style = c.ClientAuthStyle

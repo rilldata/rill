@@ -65,10 +65,6 @@ func (s *Server) RegisterHandlers(mux *http.ServeMux, httpPort int, secure, enab
 	mux.Handle("/auth/callback", s.authCallbackHandler())
 	mux.Handle("/auth/logout", s.logoutHandler())
 
-	// Browser-based authorization of external MCP servers (see mcp_oauth.go)
-	mux.Handle("/mcp/oauth/connect", s.mcpOAuthConnectHandler())
-	mux.Handle("/mcp/oauth/callback", s.mcpOAuthCallbackHandler())
-
 	// Register telemetry proxy endpoint
 	mux.Handle("/local/track", s.trackingHandler())
 

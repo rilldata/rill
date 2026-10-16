@@ -2,8 +2,7 @@ import { getContext, setContext } from "svelte";
 
 /**
  * Lets chat surfaces start the browser-based OAuth flow for an external MCP server.
- * The flow runs on whichever service owns the user's session: the local server in Rill Developer,
- * the admin service in Rill Cloud. Each app shell provides the matching URL builder.
+ * The flow runs on the admin service, which owns the user's session; only Rill Cloud provides the URL builder.
  */
 export interface McpConnectContext {
   /** Returns the URL that starts the authorization flow for the connector. Opened in a popup. */
@@ -18,7 +17,7 @@ export function setMcpConnectContext(context: McpConnectContext): void {
 
 /**
  * Returns the MCP connect context, or undefined if no provider is an ancestor.
- * Surfaces without a provider (such as embeds) can list servers but cannot start an authorization.
+ * Surfaces without a provider (Rill Developer, embeds) can list servers but cannot start an authorization.
  */
 export function getMcpConnectContext(): McpConnectContext | undefined {
   return getContext<McpConnectContext | undefined>(MCP_CONNECT_CONTEXT_KEY);

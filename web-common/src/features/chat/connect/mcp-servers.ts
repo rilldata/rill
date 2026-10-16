@@ -14,7 +14,6 @@ import {
   getRuntimeServiceDisconnectMCPServerMutationOptions,
   getRuntimeServiceListMCPServersQueryKey,
   getRuntimeServiceListMCPServersQueryOptions,
-  getRuntimeServiceListToolsQueryKey,
 } from "@rilldata/web-common/runtime-client/v2/gen/runtime-service";
 import { createMutation, createQuery } from "@tanstack/svelte-query";
 import { writable } from "svelte/store";
@@ -26,11 +25,6 @@ export const MCP_TOOL_PREFIX = "mcp__";
 
 /** Error code of the JSON error a tool call returns when the user must authorize the server (matches runtime/ai.ErrorCodeMCPAuthorizationRequired). */
 export const MCP_AUTHORIZATION_REQUIRED_CODE = "mcp_authorization_required";
-
-/** Meta keys the runtime sets on external tools (see runtime/ai/external_tools.go). */
-export const MCP_META_SERVER = "rill/mcpServer";
-export const MCP_META_SERVER_DISPLAY_NAME = "rill/mcpServerDisplayName";
-export const MCP_META_TOOL_NAME = "rill/mcpToolName";
 
 /**
  * Whether the external servers popover (the one place where servers are connected and disconnected) is open.
@@ -48,7 +42,7 @@ export function isMcpToolName(toolName: string | undefined): boolean {
 
 /**
  * Splits a prefixed external tool name into its connector and tool parts.
- * Both parts are sanitized by the runtime, so prefer the tool's meta when it is available.
+ * Both parts are sanitized by the runtime (lowercase, underscores), so they are labels rather than exact names.
  */
 export function parseMcpToolName(toolName: string): {
   connector: string;
@@ -111,16 +105,11 @@ export function createMcpServersQuery(client: RuntimeClient) {
   );
 }
 
-/** Invalidates the queries that change when a user connects or disconnects a server. */
+/** Invalidates the servers query after a user connects or disconnects a server. */
 export async function invalidateMcpServers(client: RuntimeClient) {
-  await Promise.all([
-    queryClient.invalidateQueries({
-      queryKey: getRuntimeServiceListMCPServersQueryKey(client.instanceId),
-    }),
-    queryClient.invalidateQueries({
-      queryKey: getRuntimeServiceListToolsQueryKey(client.instanceId),
-    }),
-  ]);
+  await queryClient.invalidateQueries({
+    queryKey: getRuntimeServiceListMCPServersQueryKey(client.instanceId),
+  });
 }
 
 export function createDisconnectMcpServerMutation(client: RuntimeClient) {

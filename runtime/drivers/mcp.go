@@ -3,14 +3,12 @@ package drivers
 import (
 	"context"
 	"encoding/json"
-
-	"github.com/rilldata/rill/runtime/pkg/oauthclient"
+	"errors"
 )
 
 // ErrMCPAuthorizationRequired is returned by an MCPService when the server requires a per-user OAuth authorization
-// that the caller has not granted, or that has expired and could not be refreshed.
-// It is the same error the OAuth client returns, so errors.Is matches either.
-var ErrMCPAuthorizationRequired = oauthclient.ErrAuthorizationRequired
+// that the caller has not supplied, or that the server rejected.
+var ErrMCPAuthorizationRequired = errors.New("authorization required")
 
 // MCPService enables AI agents to discover and call tools on an external MCP (Model Context Protocol) server.
 // Handles are shared by all users of an instance; anything specific to the calling user travels in MCPCallOptions.
@@ -24,12 +22,6 @@ type MCPService interface {
 	// CallTool invokes a tool on the server on behalf of the caller described by opts.
 	// A failure reported by the tool itself is returned as a result with IsError set, not as an error.
 	CallTool(ctx context.Context, name string, args map[string]any, opts *MCPCallOptions) (*MCPToolResult, error)
-	// OAuthAuthorized reports whether the driver holds a locally persisted OAuth authorization (Rill Developer).
-	// It is always false when the driver holds no such state.
-	OAuthAuthorized(ctx context.Context) (bool, error)
-	// ResetOAuth deletes any OAuth authorization state the driver has persisted locally (Rill Developer).
-	// It is a no-op when the driver holds no such state.
-	ResetOAuth(ctx context.Context) error
 }
 
 // MCPOAuthConfig is the per-user OAuth configuration of an MCP server.
@@ -51,7 +43,7 @@ type MCPCallOptions struct {
 	// They are exposed to header templates as {{ .user }}.
 	UserAttributes map[string]any
 	// OAuthToken is the user's OAuth access token for servers that require per-user OAuth.
-	// When empty, the driver falls back to OAuth state it has persisted locally (Rill Developer only).
+	// The driver holds no OAuth state of its own: without a token, such servers report ErrMCPAuthorizationRequired.
 	OAuthToken string
 }
 

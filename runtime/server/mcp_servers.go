@@ -52,8 +52,7 @@ func (s *Server) ListMCPServers(ctx context.Context, req *runtimev1.ListMCPServe
 }
 
 // DisconnectMCPServer implements RuntimeService.
-// It removes the current user's OAuth authorization for an external MCP server:
-// from the admin service's token vault in Rill Cloud, or from the connector's local state in Rill Developer.
+// It removes the current user's OAuth authorization for an external MCP server from the admin service.
 func (s *Server) DisconnectMCPServer(ctx context.Context, req *runtimev1.DisconnectMCPServerRequest) (*runtimev1.DisconnectMCPServerResponse, error) {
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.instance_id", req.InstanceId),
@@ -79,21 +78,17 @@ func (s *Server) DisconnectMCPServer(ctx context.Context, req *runtimev1.Disconn
 		return nil, status.Errorf(codes.InvalidArgument, "connector %q does not use per-user OAuth", req.Connector)
 	}
 
-	// Rill Cloud: the admin service holds the user's token for the connector's current OAuth configuration.
-	if admin, releaseAdmin, err := s.runtime.Admin(ctx, req.InstanceId); err == nil {
-		err = admin.DeleteConnectorOAuthToken(ctx, req.Connector, cfg.Hash, claims.UserID)
-		releaseAdmin()
-		if err != nil && !errors.Is(err, drivers.ErrNotImplemented) {
-			return nil, err
-		}
-		if err == nil {
-			return &runtimev1.DisconnectMCPServerResponse{}, nil
-		}
-	}
-
-	// Rill Developer: the driver holds the state.
-	err = svc.ResetOAuth(ctx)
+	// The admin service holds the user's token for the connector's current OAuth configuration.
+	admin, releaseAdmin, err := s.runtime.Admin(ctx, req.InstanceId)
 	if err != nil {
+		return nil, fmt.Errorf("failed to open the admin service: %w", err)
+	}
+	defer releaseAdmin()
+	err = admin.DeleteConnectorOAuthToken(ctx, req.Connector, cfg.Hash, claims.UserID)
+	if err != nil {
+		if errors.Is(err, drivers.ErrNotImplemented) {
+			return nil, status.Errorf(codes.FailedPrecondition, "connector %q can only be connected in Rill Cloud", req.Connector)
+		}
 		return nil, err
 	}
 	return &runtimev1.DisconnectMCPServerResponse{}, nil

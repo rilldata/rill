@@ -278,7 +278,7 @@ type AdminServiceClient interface {
 	// It returns NotFound if the user has not authorized the connector's current OAuth configuration.
 	// It can only be called by deployments.
 	GetConnectorOAuthToken(ctx context.Context, in *GetConnectorOAuthTokenRequest, opts ...grpc.CallOption) (*GetConnectorOAuthTokenResponse, error)
-	// DeleteConnectorOAuthToken revokes and removes a user's OAuth authorization for a connector in the calling deployment's project.
+	// DeleteConnectorOAuthToken removes a user's OAuth authorization for a connector in the calling deployment's project.
 	// It can only be called by deployments.
 	DeleteConnectorOAuthToken(ctx context.Context, in *DeleteConnectorOAuthTokenRequest, opts ...grpc.CallOption) (*DeleteConnectorOAuthTokenResponse, error)
 	// ListRoles lists all the roles available for orgs and projects.
@@ -2368,7 +2368,7 @@ type AdminServiceServer interface {
 	// It returns NotFound if the user has not authorized the connector's current OAuth configuration.
 	// It can only be called by deployments.
 	GetConnectorOAuthToken(context.Context, *GetConnectorOAuthTokenRequest) (*GetConnectorOAuthTokenResponse, error)
-	// DeleteConnectorOAuthToken revokes and removes a user's OAuth authorization for a connector in the calling deployment's project.
+	// DeleteConnectorOAuthToken removes a user's OAuth authorization for a connector in the calling deployment's project.
 	// It can only be called by deployments.
 	DeleteConnectorOAuthToken(context.Context, *DeleteConnectorOAuthTokenRequest) (*DeleteConnectorOAuthTokenResponse, error)
 	// ListRoles lists all the roles available for orgs and projects.

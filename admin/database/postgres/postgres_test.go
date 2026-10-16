@@ -563,12 +563,6 @@ func testConnectorOAuth(t *testing.T, db database.DB) {
 	_, err = db.FindConnectorOAuthClient(ctx, projectID, "linear", "hash1")
 	require.ErrorIs(t, err, database.ErrNotFound)
 
-	// A recent use is not recorded again
-	require.NoError(t, db.UpdateConnectorOAuthClientUsedOn(ctx, c1.ID))
-	found, err = db.FindConnectorOAuthClientByID(ctx, c1.ID)
-	require.NoError(t, err)
-	require.Equal(t, c1.UsedOn, found.UsedOn)
-
 	// Tokens are unique per client and user, and are replaced on upsert
 	_, err = db.UpsertConnectorOAuthToken(ctx, &database.UpsertConnectorOAuthTokenOptions{OAuthClientID: c1.ID, UserID: userID, Token: []byte(`{"access_token":"t1"}`)})
 	require.NoError(t, err)
@@ -588,14 +582,6 @@ func testConnectorOAuth(t *testing.T, db database.DB) {
 	// Deleting a client deletes its tokens
 	require.NoError(t, db.DeleteConnectorOAuthClient(ctx, c2.ID))
 	_, err = db.FindConnectorOAuthToken(ctx, c2.ID, userID)
-	require.ErrorIs(t, err, database.ErrNotFound)
-
-	// Unused clients are cleaned up
-	require.NoError(t, db.DeleteUnusedConnectorOAuthClients(ctx, time.Now().Add(-time.Hour)))
-	_, err = db.FindConnectorOAuthClientByID(ctx, c1.ID)
-	require.NoError(t, err)
-	require.NoError(t, db.DeleteUnusedConnectorOAuthClients(ctx, time.Now().Add(time.Hour)))
-	_, err = db.FindConnectorOAuthClientByID(ctx, c1.ID)
 	require.ErrorIs(t, err, database.ErrNotFound)
 }
 

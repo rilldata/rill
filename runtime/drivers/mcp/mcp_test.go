@@ -2,36 +2,25 @@ package mcp
 
 import (
 	"context"
-	"crypto/sha256"
-	"encoding/base64"
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
-	"net/url"
-	"os"
-	"path/filepath"
 	"strings"
 	"sync"
 	"testing"
-	"time"
 
 	gomcp "github.com/modelcontextprotocol/go-sdk/mcp"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/activity"
-	"github.com/rilldata/rill/runtime/pkg/oauthclient"
-	"github.com/rilldata/rill/runtime/pkg/safehttp"
 	"github.com/rilldata/rill/runtime/storage"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
-	"golang.org/x/oauth2"
 )
 
 // testMCPServer is an in-process MCP server with a few tools.
-// If bearer tokens are configured, requests without an accepted token get a 401 with protected resource metadata.
+// If bearer tokens are configured, requests without an accepted token get a 401.
 type testMCPServer struct {
 	srv      *httptest.Server
-	asURL    string
 	mu       sync.Mutex
 	accepted map[string]bool
 	requests int
@@ -81,6 +70,12 @@ func newTestMCPServer(t *testing.T) *testMCPServer {
 		ts.mu.Unlock()
 		if accepted != nil {
 			token := strings.TrimPrefix(r.Header.Get("Authorization"), "Bearer ")
+			if token == "forbidden" {
+				// A valid token that lacks access
+				w.Header().Set("WWW-Authenticate", `Bearer error="insufficient_scope"`)
+				w.WriteHeader(http.StatusForbidden)
+				return
+			}
 			if !accepted[token] {
 				w.Header().Set("WWW-Authenticate", fmt.Sprintf(`Bearer resource_metadata="%s/.well-known/oauth-protected-resource/mcp"`, ts.srv.URL))
 				w.WriteHeader(http.StatusUnauthorized)
@@ -89,117 +84,9 @@ func newTestMCPServer(t *testing.T) *testMCPServer {
 		}
 		handler.ServeHTTP(w, r)
 	})
-	mux.HandleFunc("/.well-known/oauth-protected-resource/mcp", func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		_ = json.NewEncoder(w).Encode(map[string]any{
-			"resource":              ts.srv.URL + "/mcp",
-			"authorization_servers": []string{ts.asURL},
-			"scopes_supported":      []string{"read"},
-		})
-	})
 	ts.srv = httptest.NewServer(mux)
 	t.Cleanup(ts.srv.Close)
 	return ts
-}
-
-// testAuthServer is a fake OAuth 2.1 authorization server with dynamic client registration, PKCE and refresh token rotation.
-type testAuthServer struct {
-	srv             *httptest.Server
-	mu              sync.Mutex
-	challenge       string // expected S256 code challenge, taken from the authorization URL by the test
-	resource        string // expected resource indicator
-	issued          int
-	refreshes       int
-	lastRefresh     string
-	revoked         []string
-	revokedClientID string
-	registerCall    int
-}
-
-func newTestAuthServer(t *testing.T) *testAuthServer {
-	t.Helper()
-	as := &testAuthServer{}
-	mux := http.NewServeMux()
-	mux.HandleFunc("/.well-known/oauth-authorization-server", func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		_ = json.NewEncoder(w).Encode(map[string]any{
-			"issuer":                                as.srv.URL,
-			"authorization_endpoint":                as.srv.URL + "/authorize",
-			"token_endpoint":                        as.srv.URL + "/token",
-			"registration_endpoint":                 as.srv.URL + "/register",
-			"revocation_endpoint":                   as.srv.URL + "/revoke",
-			"response_types_supported":              []string{"code"},
-			"grant_types_supported":                 []string{"authorization_code", "refresh_token"},
-			"code_challenge_methods_supported":      []string{"S256"},
-			"token_endpoint_auth_methods_supported": []string{"none", "client_secret_post"},
-		})
-	})
-	mux.HandleFunc("/register", func(w http.ResponseWriter, r *http.Request) {
-		as.mu.Lock()
-		as.registerCall++
-		as.mu.Unlock()
-		var req map[string]any
-		_ = json.NewDecoder(r.Body).Decode(&req)
-		req["client_id"] = "client-123"
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusCreated)
-		_ = json.NewEncoder(w).Encode(req)
-	})
-	mux.HandleFunc("/token", func(w http.ResponseWriter, r *http.Request) {
-		require.NoError(t, r.ParseForm())
-		as.mu.Lock()
-		defer as.mu.Unlock()
-		w.Header().Set("Content-Type", "application/json")
-		if r.Form.Get("resource") != as.resource {
-			w.WriteHeader(http.StatusBadRequest)
-			_ = json.NewEncoder(w).Encode(map[string]any{"error": "invalid_target", "error_description": "unexpected resource " + r.Form.Get("resource")})
-			return
-		}
-		if r.Form.Get("client_id") != "client-123" {
-			w.WriteHeader(http.StatusUnauthorized)
-			_ = json.NewEncoder(w).Encode(map[string]any{"error": "invalid_client"})
-			return
-		}
-		switch r.Form.Get("grant_type") {
-		case "authorization_code":
-			sum := sha256.Sum256([]byte(r.Form.Get("code_verifier")))
-			if r.Form.Get("code") != "code123" || base64.RawURLEncoding.EncodeToString(sum[:]) != as.challenge {
-				w.WriteHeader(http.StatusBadRequest)
-				_ = json.NewEncoder(w).Encode(map[string]any{"error": "invalid_grant"})
-				return
-			}
-		case "refresh_token":
-			as.refreshes++
-			as.lastRefresh = r.Form.Get("refresh_token")
-			if as.lastRefresh != fmt.Sprintf("rt%d", as.issued) {
-				w.WriteHeader(http.StatusBadRequest)
-				_ = json.NewEncoder(w).Encode(map[string]any{"error": "invalid_grant"})
-				return
-			}
-		default:
-			w.WriteHeader(http.StatusBadRequest)
-			_ = json.NewEncoder(w).Encode(map[string]any{"error": "unsupported_grant_type"})
-			return
-		}
-		as.issued++
-		_ = json.NewEncoder(w).Encode(map[string]any{
-			"access_token":  fmt.Sprintf("at%d", as.issued),
-			"token_type":    "bearer",
-			"refresh_token": fmt.Sprintf("rt%d", as.issued),
-			"expires_in":    3600,
-		})
-	})
-	mux.HandleFunc("/revoke", func(w http.ResponseWriter, r *http.Request) {
-		require.NoError(t, r.ParseForm())
-		as.mu.Lock()
-		as.revoked = append(as.revoked, r.Form.Get("token"))
-		as.revokedClientID = r.Form.Get("client_id")
-		as.mu.Unlock()
-		w.WriteHeader(http.StatusOK)
-	})
-	as.srv = httptest.NewServer(mux)
-	t.Cleanup(as.srv.Close)
-	return as
 }
 
 func openTestHandle(t *testing.T, config map[string]any) *handle {
@@ -313,7 +200,7 @@ func TestHostedOAuthToken(t *testing.T) {
 	h := openTestHandle(t, map[string]any{"url": ts.url(), "auth": "oauth"})
 	ctx := t.Context()
 
-	// Without a token (and no local state), authorization is required
+	// Without a token, authorization is required
 	_, err := h.ListTools(ctx, nil)
 	require.ErrorIs(t, err, drivers.ErrMCPAuthorizationRequired)
 
@@ -324,157 +211,11 @@ func TestHostedOAuthToken(t *testing.T) {
 
 	_, err = h.CallTool(ctx, "echo", map[string]any{"text": "x"}, &drivers.MCPCallOptions{OAuthToken: "revoked"})
 	require.ErrorIs(t, err, drivers.ErrMCPAuthorizationRequired)
-}
 
-func TestLocalOAuthFlow(t *testing.T) {
-	as := newTestAuthServer(t)
-	ts := newTestMCPServer(t)
-	ts.asURL = as.srv.URL
-	ts.accept() // nothing accepted until tokens are issued
-
-	h := openTestHandle(t, map[string]any{"url": ts.url(), "auth": "oauth", "oauth_scopes": []any{"read"}})
-	ctx := t.Context()
-	var manager OAuthManager = h
-	require.True(t, manager.OAuthEnabled())
-	cfg := h.OAuthConfig()
-	require.Equal(t, ts.url(), cfg.ServerURL)
-	require.Equal(t, []string{"read"}, cfg.Scopes)
-	require.NotEmpty(t, cfg.Hash)
-
-	connected, _, err := manager.OAuthStatus(ctx)
-	require.NoError(t, err)
-	require.False(t, connected)
-	authorized, err := h.OAuthAuthorized(ctx)
-	require.NoError(t, err)
-	require.False(t, authorized)
-
-	// Begin: discovers the authorization server through the well-known metadata and registers a client
-	authURL, verifier, err := manager.BeginOAuth(ctx, "http://localhost:9009/mcp/oauth/callback", "state-1")
-	require.NoError(t, err)
-	u, err := url.Parse(authURL)
-	require.NoError(t, err)
-	require.Equal(t, as.srv.URL+"/authorize", u.Scheme+"://"+u.Host+u.Path)
-	q := u.Query()
-	require.Equal(t, "state-1", q.Get("state"))
-	require.Equal(t, "client-123", q.Get("client_id"))
-	require.Equal(t, "S256", q.Get("code_challenge_method"))
-	require.Equal(t, ts.url(), q.Get("resource"))
-	require.Equal(t, "read", q.Get("scope"))
-	require.Equal(t, "http://localhost:9009/mcp/oauth/callback", q.Get("redirect_uri"))
-	require.Equal(t, 1, as.registerCall)
-
-	// The client is persisted before the token so the callback can use it
-	statePath := filepath.Join(mustDataDir(t, h), oauthStateFilename)
-	info, err := os.Stat(statePath)
-	require.NoError(t, err)
-	require.Equal(t, os.FileMode(0o600), info.Mode().Perm())
-
-	// Complete: exchanges the code with PKCE and the resource indicator
-	as.challenge = q.Get("code_challenge")
-	as.resource = ts.url()
-	require.ErrorContains(t, manager.CompleteOAuth(ctx, "code123", verifier, "https://evil.example.com"), "not the expected authorization server")
-	require.NoError(t, manager.CompleteOAuth(ctx, "code123", verifier, ""))
-	ts.accept("at1", "at2", "at3")
-
-	connected, expiresOn, err := manager.OAuthStatus(ctx)
-	require.NoError(t, err)
-	require.True(t, connected)
-	require.WithinDuration(t, time.Now().Add(time.Hour), expiresOn, time.Minute)
-	authorized, err = h.OAuthAuthorized(ctx)
-	require.NoError(t, err)
-	require.True(t, authorized)
-
-	// Calls use the persisted token
-	res, err := h.CallTool(ctx, "echo", map[string]any{"text": "hi"}, nil)
-	require.NoError(t, err)
-	require.Equal(t, "hi", res.Content)
-
-	// An expiring token is refreshed and the rotated refresh token is persisted
-	h.oauth.mu.Lock()
-	h.oauth.state.Token.Expiry = time.Now().Add(-time.Minute)
-	h.oauth.mu.Unlock()
-	res, err = h.CallTool(ctx, "echo", map[string]any{"text": "again"}, nil)
-	require.NoError(t, err)
-	require.Equal(t, "again", res.Content)
-	require.Equal(t, 1, as.refreshes)
-	require.Equal(t, "rt1", as.lastRefresh)
-	persisted := readOAuthState(t, statePath)
-	require.Equal(t, "at2", persisted.Token.AccessToken)
-	require.Equal(t, "rt2", persisted.Token.RefreshToken)
-
-	// A token the server rejects is refreshed once and the call retried
-	ts.accept("at3")
-	res, err = h.CallTool(ctx, "echo", map[string]any{"text": "third"}, nil)
-	require.NoError(t, err)
-	require.Equal(t, "third", res.Content)
-	require.Equal(t, 2, as.refreshes)
-	require.Equal(t, "at3", readOAuthState(t, statePath).Token.AccessToken)
-
-	// Beginning a new flow reuses the registered client
-	_, _, err = manager.BeginOAuth(ctx, "http://localhost:9009/mcp/oauth/callback", "state-2")
-	require.NoError(t, err)
-	require.Equal(t, 1, as.registerCall)
-
-	// State persisted for another OAuth configuration is ignored
-	h.oauth.mu.Lock()
-	h.oauth.loaded = false
-	h.oauthConfigHash = "other"
-	h.oauth.mu.Unlock()
-	authorized, err = h.OAuthAuthorized(ctx)
-	require.NoError(t, err)
-	require.False(t, authorized)
-
-	// Disconnecting forgets the token
-	require.NoError(t, h.ResetOAuth(ctx))
-	_, err = os.Stat(statePath)
-	require.True(t, os.IsNotExist(err))
-	_, err = h.ListTools(ctx, nil)
-	require.ErrorIs(t, err, drivers.ErrMCPAuthorizationRequired)
-}
-
-func TestLocalTokenWithoutRefreshToken(t *testing.T) {
-	serverURL := "https://example.com/mcp"
-	h := openTestHandle(t, map[string]any{"url": serverURL, "auth": "oauth"})
-	ctx := t.Context()
-
-	// Within the refresh window, a token that can't be refreshed is still used until it expires
-	require.NoError(t, h.oauth.save(&OAuthState{
-		Client:          &oauthclient.Client{ServerURL: serverURL},
-		Token:           &oauth2.Token{AccessToken: "at1", Expiry: time.Now().Add(time.Minute)},
-		TokenObtainedOn: time.Now().Add(-time.Hour),
-	}))
-	tok, err := h.oauth.accessToken(ctx, false)
-	require.NoError(t, err)
-	require.Equal(t, "at1", tok)
-
-	// Once expired, the user must authorize again
-	require.NoError(t, h.oauth.save(&OAuthState{
-		Client:          &oauthclient.Client{ServerURL: serverURL},
-		Token:           &oauth2.Token{AccessToken: "at1", Expiry: time.Now().Add(-time.Minute)},
-		TokenObtainedOn: time.Now().Add(-time.Hour),
-	}))
-	_, err = h.oauth.accessToken(ctx, false)
-	require.ErrorIs(t, err, drivers.ErrMCPAuthorizationRequired)
-}
-
-func TestPreregisteredOAuthClient(t *testing.T) {
-	as := newTestAuthServer(t)
-	ts := newTestMCPServer(t)
-	ts.asURL = as.srv.URL
-
-	client, err := oauthclient.Discover(t.Context(), &oauthclient.DiscoverOptions{
-		ServerURL:    ts.url(),
-		RedirectURL:  "http://localhost:9009/mcp/oauth/callback",
-		ClientID:     "pre-registered",
-		ClientSecret: "shh",
-		HTTPClient:   safehttp.NewHTTPClient(true, 5*time.Second),
-	})
-	require.NoError(t, err)
-	require.Equal(t, "pre-registered", client.ClientID)
-	require.Equal(t, "shh", client.ClientSecret)
-	require.Equal(t, 0, as.registerCall)
-	require.Equal(t, []string{"read"}, client.Scopes) // defaults to the scopes the server advertises
-	require.Equal(t, as.srv.URL+"/revoke", client.RevocationEndpoint)
+	// A 403 means the token lacks access, which a new authorization can't fix, so it is not reported as authorization required
+	_, err = h.CallTool(ctx, "echo", map[string]any{"text": "x"}, &drivers.MCPCallOptions{OAuthToken: "forbidden"})
+	require.Error(t, err)
+	require.NotErrorIs(t, err, drivers.ErrMCPAuthorizationRequired)
 }
 
 func TestOAuthConfigHash(t *testing.T) {
@@ -524,20 +265,6 @@ func TestConfigValidation(t *testing.T) {
 			require.ErrorContains(t, err, tc.err)
 		})
 	}
-}
-
-func mustDataDir(t *testing.T, h *handle) string {
-	dir, err := h.storage.DataDir()
-	require.NoError(t, err)
-	return dir
-}
-
-func readOAuthState(t *testing.T, path string) *OAuthState {
-	data, err := os.ReadFile(path)
-	require.NoError(t, err)
-	state := &OAuthState{}
-	require.NoError(t, json.Unmarshal(data, state))
-	return state
 }
 
 func TestTruncateUTF8(t *testing.T) {

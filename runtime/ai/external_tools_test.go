@@ -130,7 +130,6 @@ security:
 	require.Equal(t, "mcp__tracker__search_issues", toolName)
 	require.Contains(t, srv.Compiled, toolName)
 	require.Equal(t, "Tracker: search_issues", srv.Compiled[toolName].Spec.Title)
-	require.Equal(t, "tracker", srv.Compiled[toolName].Spec.Meta["rill/mcpServer"])
 
 	// An admin sees all three servers and both tools of the restricted server
 	servers, err = runner.DiscoverExternalServers(ctx, instanceID, newTestClaims("a@rilldata.com", "rilldata.com", true))

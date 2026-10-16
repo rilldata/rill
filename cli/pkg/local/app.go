@@ -57,7 +57,6 @@ type App struct {
 	observabilityShutdown observability.ShutdownFunc
 	loggerCleanUp         func()
 	pkceAuthenticators    map[string]*pkce.Authenticator // map of state to pkce authenticators
-	mcpOAuthFlows         mcpOAuthFlows                  // pending authorization flows for external MCP servers
 	localURL              string
 	allowedOrigins        []string
 }

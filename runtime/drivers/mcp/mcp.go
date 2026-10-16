@@ -7,8 +7,9 @@
 // which the parser turns into security rules on the connector spec and the AI layer evaluates per user.
 //
 // Credentials are either project-scoped (static headers that may use {{ .env.* }} templating)
-// or user-scoped (auth: oauth, where each user authorizes the server in their browser).
-// Per-user data always travels in drivers.MCPCallOptions; the handle itself is shared by all users of an instance.
+// or user-scoped (auth: oauth, where each user authorizes the server in their browser through Rill Cloud,
+// which then supplies the user's access token on every request).
+// Per-user data always travels in drivers.MCPCallOptions; the handle itself is shared by all users of an instance and holds no OAuth state.
 package mcp
 
 import (
@@ -72,7 +73,7 @@ var spec = drivers.Spec{
 			Key:         "auth",
 			Type:        drivers.StringPropertyType,
 			DisplayName: "Authentication",
-			Description: "Set to \"oauth\" for servers that require each user to authorize access in their browser.",
+			Description: "Set to \"oauth\" for servers that require each user to authorize access in their browser (Rill Cloud only).",
 		},
 		{
 			Key:         "oauth_client_id",
@@ -124,7 +125,6 @@ func (d driver) Open(_ context.Context, connectorName, instanceID string, config
 		instanceID:  instanceID,
 		config:      cfg,
 		rawConfig:   config,
-		storage:     st,
 		logger:      logger.With(zap.String("connector", connectorName)),
 		transport:   safehttp.NewTransport(cfg.AllowHostAccess, cfg.connectTimeout),
 		userHeaders: hasUserTemplating(cfg.Headers),
@@ -134,7 +134,6 @@ func (d driver) Open(_ context.Context, connectorName, instanceID string, config
 	if cfg.Auth == AuthOAuth {
 		h.oauthConfigHash = oauthConfigHash(cfg)
 	}
-	h.oauth = &localOAuth{h: h}
 	return h, nil
 }
 
@@ -232,10 +231,8 @@ type handle struct {
 	instanceID string
 	config     *configProperties
 	rawConfig  map[string]any
-	storage    *storage.Client
 	logger     *zap.Logger
 	transport  *http.Transport
-	oauth      *localOAuth
 	// oauthConfigHash identifies the connector's OAuth configuration (see oauthConfigHash). It is empty without auth "oauth".
 	oauthConfigHash string
 	// userHeaders is true if a header template references the requesting user ({{ .user.* }}),
@@ -278,7 +275,7 @@ func (h *handle) Ping(ctx context.Context) error {
 		DisableStandaloneSSE: true,
 	}, nil)
 	if err != nil {
-		if rt.unauthorized() {
+		if rt.rejected() {
 			return nil
 		}
 		return fmt.Errorf("failed to connect to MCP server: %w", err)
@@ -463,37 +460,12 @@ func (h *handle) CallTool(ctx context.Context, name string, args map[string]any,
 	return res, nil
 }
 
-// OAuthAuthorized implements drivers.MCPService.
-func (h *handle) OAuthAuthorized(ctx context.Context) (bool, error) {
-	if !h.OAuthEnabled() {
-		return false, nil
-	}
-	ok, _, err := h.OAuthStatus(ctx)
-	return ok, err
-}
-
-// ResetOAuth implements drivers.MCPService.
-func (h *handle) ResetOAuth(ctx context.Context) error {
-	h.dropSessions()
-	return h.oauth.clear()
-}
-
 // do resolves the caller's credentials and runs fn with them.
-// If the server rejects a locally persisted OAuth token, it refreshes the token once and retries.
 func (h *handle) do(ctx context.Context, opts *drivers.MCPCallOptions, fn func(ctx context.Context, creds *credentials) error) error {
 	if opts == nil {
 		opts = &drivers.MCPCallOptions{}
 	}
-	creds, err := h.resolveCredentials(ctx, opts, false)
-	if err != nil {
-		return err
-	}
-	err = fn(ctx, creds)
-	if err == nil || !errors.Is(err, drivers.ErrMCPAuthorizationRequired) || !creds.localToken {
-		return err
-	}
-	// The locally persisted token was rejected: refresh it and try once more.
-	creds, err = h.resolveCredentials(ctx, opts, true)
+	creds, err := h.resolveCredentials(opts)
 	if err != nil {
 		return err
 	}
@@ -502,14 +474,13 @@ func (h *handle) do(ctx context.Context, opts *drivers.MCPCallOptions, fn func(c
 
 // credentials are the resolved per-caller request credentials.
 type credentials struct {
-	headers    map[string]string
-	token      string
-	localToken bool // true if the token came from locally persisted OAuth state
-	key        string
+	headers map[string]string
+	token   string
+	key     string
 }
 
 // resolveCredentials resolves the connector's header templates for the caller and determines the bearer token to use.
-func (h *handle) resolveCredentials(ctx context.Context, opts *drivers.MCPCallOptions, forceRefresh bool) (*credentials, error) {
+func (h *handle) resolveCredentials(opts *drivers.MCPCallOptions) (*credentials, error) {
 	creds := &credentials{headers: make(map[string]string, len(h.config.Headers))}
 
 	// Callers without a user (such as the connector reconciler) cannot use a server whose headers identify the user.
@@ -534,16 +505,10 @@ func (h *handle) resolveCredentials(ctx context.Context, opts *drivers.MCPCallOp
 	}
 
 	if h.config.Auth == AuthOAuth {
-		if opts.OAuthToken != "" {
-			creds.token = opts.OAuthToken
-		} else {
-			token, err := h.oauth.accessToken(ctx, forceRefresh)
-			if err != nil {
-				return nil, err
-			}
-			creds.token = token
-			creds.localToken = true
+		if opts.OAuthToken == "" {
+			return nil, drivers.ErrMCPAuthorizationRequired
 		}
+		creds.token = opts.OAuthToken
 	}
 
 	// Key the session and tool caches by the resolved credentials, so users with different credentials never share a session.
@@ -654,21 +619,15 @@ func (h *handle) dropSession(key string) {
 	delete(h.tools, key)
 }
 
-func (h *handle) dropSessions() {
-	h.mu.Lock()
-	defer h.mu.Unlock()
-	for key, cs := range h.sessions {
-		_ = cs.session.Close()
-		delete(h.sessions, key)
+// oauthConfigHash identifies a connector's OAuth configuration: the server URL, the pre-registered client and the scopes.
+// Authorizations are bound to it, so changing any of them requires the user to authorize again.
+// Each field is length-prefixed so that different configurations can never produce the same input.
+func oauthConfigHash(cfg *configProperties) string {
+	h := sha256.New()
+	for _, s := range append([]string{cfg.URL, cfg.OAuthClientID, cfg.OAuthClientSecret}, cfg.OAuthScopes...) {
+		_, _ = fmt.Fprintf(h, "%d:%s;", len(s), s)
 	}
-	for key := range h.tools {
-		delete(h.tools, key)
-	}
-}
-
-// httpClient returns a client for metadata and OAuth requests (no per-user headers).
-func (h *handle) httpClient() *http.Client {
-	return &http.Client{Transport: h.transport, Timeout: h.config.connectTimeout, CheckRedirect: safehttp.CheckSameOriginRedirect}
+	return hex.EncodeToString(h.Sum(nil))
 }
 
 // truncateUTF8 cuts s to at most limit bytes without splitting a multi-byte character.

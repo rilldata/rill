@@ -4346,22 +4346,6 @@ func (c *connection) DeleteConnectorOAuthClient(ctx context.Context, id string) 
 	return checkDeleteRow("connector oauth client", res, err)
 }
 
-func (c *connection) UpdateConnectorOAuthClientUsedOn(ctx context.Context, id string) error {
-	_, err := c.getDB(ctx).ExecContext(ctx, "UPDATE connector_oauth_clients SET used_on=now() WHERE id=$1 AND used_on < now() - INTERVAL '1 day'", id)
-	if err != nil {
-		return parseErr("connector oauth client", err)
-	}
-	return nil
-}
-
-func (c *connection) DeleteUnusedConnectorOAuthClients(ctx context.Context, usedBefore time.Time) error {
-	_, err := c.getDB(ctx).ExecContext(ctx, "DELETE FROM connector_oauth_clients WHERE used_on < $1", usedBefore)
-	if err != nil {
-		return parseErr("connector oauth clients", err)
-	}
-	return nil
-}
-
 func (c *connection) decryptConnectorOAuthClient(res *database.ConnectorOAuthClient) error {
 	client, err := c.decryptText(res.Client, res.ClientEncryptionKeyID)
 	if err != nil {

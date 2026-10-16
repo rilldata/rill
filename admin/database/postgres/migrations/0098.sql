@@ -4,7 +4,7 @@
 -- shared by the users of a project's connector.
 -- A client is bound to a hash of the connector's OAuth configuration (as computed by the runtime),
 -- so changing the configuration (URL, pre-registered client, scopes) leads to a new client and never reuses authorizations granted for the old one.
--- Clients are immutable; clients that have not been used for a while are deleted by a background job, together with their tokens.
+-- Clients are immutable.
 CREATE TABLE connector_oauth_clients (
     id UUID NOT NULL DEFAULT uuid_generate_v4() PRIMARY KEY,
     project_id UUID NOT NULL REFERENCES projects (id) ON DELETE CASCADE,
@@ -13,16 +13,13 @@ CREATE TABLE connector_oauth_clients (
     -- JSON of the client (see runtime/pkg/oauthclient.Client), encrypted when a key ID is set
     client TEXT NOT NULL,
     client_encryption_key_id TEXT NOT NULL DEFAULT '',
-    created_on TIMESTAMPTZ NOT NULL DEFAULT now(),
-    -- Bumped at most daily when one of the client's tokens is served
-    used_on TIMESTAMPTZ NOT NULL DEFAULT now()
+    created_on TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
 CREATE UNIQUE INDEX connector_oauth_clients_project_id_connector_config_hash_idx ON connector_oauth_clients (project_id, connector, config_hash);
-CREATE INDEX connector_oauth_clients_used_on_idx ON connector_oauth_clients (used_on);
 
 -- A user's OAuth token, obtained through a client. Tokens are never shared between users.
--- A token is only used (and refreshed or revoked) through the client that obtained it.
+-- A token is only used (and refreshed) through the client that obtained it.
 CREATE TABLE connector_oauth_tokens (
     id UUID NOT NULL DEFAULT uuid_generate_v4() PRIMARY KEY,
     oauth_client_id UUID NOT NULL REFERENCES connector_oauth_clients (id) ON DELETE CASCADE,

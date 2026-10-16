@@ -198,21 +198,6 @@ func (s *Server) ListTools(ctx context.Context, req *runtimev1.ListToolsRequest)
 		pbs = append(pbs, pb)
 	}
 
-	// Add the tools of external MCP servers available to the user, so the UI can label their calls
-	servers, err := s.ai.DiscoverExternalServers(ctx, req.InstanceId, claims)
-	if err != nil {
-		return nil, err
-	}
-	for _, srv := range servers {
-		for _, tool := range srv.Compiled {
-			pb, err := tool.AsProto()
-			if err != nil {
-				return nil, fmt.Errorf("failed to convert tool %q to proto: %w", tool.Name, err)
-			}
-			pbs = append(pbs, pb)
-		}
-	}
-
 	return &runtimev1.ListToolsResponse{
 		Tools: pbs,
 	}, nil

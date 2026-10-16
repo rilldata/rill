@@ -353,10 +353,6 @@ type DB interface {
 	FindOrInsertConnectorOAuthClient(ctx context.Context, opts *InsertConnectorOAuthClientOptions) (*ConnectorOAuthClient, error)
 	// DeleteConnectorOAuthClient deletes a client and the tokens obtained through it.
 	DeleteConnectorOAuthClient(ctx context.Context, id string) error
-	// UpdateConnectorOAuthClientUsedOn records that a client was used. It only writes if the last recorded use is more than a day old.
-	UpdateConnectorOAuthClientUsedOn(ctx context.Context, id string) error
-	// DeleteUnusedConnectorOAuthClients deletes the clients last used before usedBefore, together with the tokens obtained through them.
-	DeleteUnusedConnectorOAuthClients(ctx context.Context, usedBefore time.Time) error
 	// AcquireConnectorOAuthTokenLock takes an exclusive lock on a user's token for a client until the current transaction ends.
 	// It must be called within a transaction started with NewTx. Reads and writes of the token (refresh, disconnect, a completed authorization)
 	// take it first, so they are serialized across all admin processes.
@@ -1303,7 +1299,6 @@ type ConnectorOAuthClient struct {
 	Client                []byte    `db:"client"`
 	ClientEncryptionKeyID string    `db:"client_encryption_key_id"`
 	CreatedOn             time.Time `db:"created_on"`
-	UsedOn                time.Time `db:"used_on"`
 }
 
 // InsertConnectorOAuthClientOptions defines options for creating a ConnectorOAuthClient.
@@ -1315,7 +1310,7 @@ type InsertConnectorOAuthClientOptions struct {
 }
 
 // ConnectorOAuthToken is a user's OAuth token obtained through a ConnectorOAuthClient. Tokens are never shared between users.
-// The token is only used, refreshed and revoked through the client that obtained it.
+// The token is only used and refreshed through the client that obtained it.
 // Token is the JSON encoding of golang.org/x/oauth2.Token; it is decrypted when read.
 type ConnectorOAuthToken struct {
 	ID                   string    `db:"id"`

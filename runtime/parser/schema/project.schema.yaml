@@ -1169,7 +1169,7 @@ definitions:
               enum: [oauth]
               description: |
                 Set to `oauth` for servers that require each user to authorize access in their browser (OAuth 2.1 with PKCE).
-                Users connect from the chat; Rill Cloud stores each user's token encrypted, Rill Developer stores it in the project's `tmp` directory.
+                Only available in Rill Cloud, where users connect from the chat and each user's token is stored encrypted. Rill Developer lists such servers but cannot connect them.
                 Cannot be combined with an `Authorization` header.
             oauth_client_id:
               type: string

@@ -85,7 +85,7 @@ paths:
   /v1/deployments/-/connector-oauth-token/delete:
     post:
       summary: |-
-        DeleteConnectorOAuthToken revokes and removes a user's OAuth authorization for a connector in the calling deployment's project.
+        DeleteConnectorOAuthToken removes a user's OAuth authorization for a connector in the calling deployment's project.
         It can only be called by deployments.
       operationId: AdminService_DeleteConnectorOAuthToken
       responses:

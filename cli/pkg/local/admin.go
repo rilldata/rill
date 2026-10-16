@@ -160,7 +160,7 @@ func (l *localAdminService) UpdateProjectVariables(ctx context.Context, environm
 }
 
 // GetConnectorOAuthToken implements drivers.AdminService.
-// Rill Developer keeps OAuth tokens in the connector's local data dir, not in Rill Cloud, so the runtime never asks for them here.
+// Per-user OAuth for connectors is only available in Rill Cloud; ErrNotImplemented makes the runtime report such connectors as unavailable.
 func (l *localAdminService) GetConnectorOAuthToken(ctx context.Context, connector, configHash, userID string, forceRefresh bool) (*drivers.MCPOAuthToken, error) {
 	return nil, drivers.ErrNotImplemented
 }

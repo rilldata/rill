@@ -2774,7 +2774,7 @@
   "chat_mcp_connect_failed": "No se pudo conectar {name}: {error}",
   "chat_mcp_auth_required_title": "Conecta {name} para continuar",
   "chat_mcp_auth_required_body": "El asistente necesita acceso a {name} con tu cuenta. Conéctalo en Herramientas externas y vuelve a enviar tu mensaje.",
-  "chat_mcp_auth_required_no_provider": "El asistente necesita acceso a {name} con tu cuenta. Abre este proyecto en Rill para conectarlo.",
+  "chat_mcp_auth_required_no_provider": "El asistente necesita acceso a {name} con tu cuenta. Abre este proyecto en Rill Cloud para conectarlo.",
   "chat_mcp_auth_connected_body": "{name} está conectado. Vuelve a enviar tu mensaje para continuar.",
   "mcp_connector_panel_title": "Servidor MCP",
   "mcp_connector_panel_status": "Estado",

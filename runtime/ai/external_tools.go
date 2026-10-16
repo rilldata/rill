@@ -173,7 +173,8 @@ func (s *BaseSession) ExternalServerPromptData(ctx context.Context, agent string
 		}
 		if srv.Connected && len(srv.Compiled) > 0 {
 			connected = append(connected, entry)
-		} else if srv.OAuth && !srv.Connected {
+		} else if srv.OAuth && !srv.Connected && srv.Err == nil {
+			// Servers with an error are left out: the user cannot fix them by connecting.
 			unconnected = append(unconnected, entry)
 		}
 	}
@@ -302,10 +303,9 @@ func (r *Runner) discoverExternalServer(ctx context.Context, instanceID, environ
 		srv.oauthConfigHash = cfg.Hash
 	}
 
-	// Resolve the user's OAuth authorization: a token from the admin service in hosted deployments,
-	// or the state the driver keeps locally in Rill Developer.
+	// Resolve the user's OAuth authorization, which the admin service holds.
 	if srv.OAuth {
-		token, hosted, err := r.externalOAuthToken(ctx, instanceID, srv, claims.UserID, false)
+		token, err := r.externalOAuthToken(ctx, instanceID, srv, claims.UserID, false)
 		if err != nil {
 			if errors.Is(err, ctx.Err()) {
 				return nil, err
@@ -313,16 +313,8 @@ func (r *Runner) discoverExternalServer(ctx context.Context, instanceID, environ
 			srv.Err = err
 			return srv, nil
 		}
-		if hosted {
-			srv.Authorized = token != ""
-			srv.token = token
-		} else {
-			srv.Authorized, err = svc.OAuthAuthorized(ctx)
-			if err != nil {
-				srv.Err = fmt.Errorf("failed to read the connector's authorization state: %w", err)
-				return srv, nil
-			}
-		}
+		srv.Authorized = token != ""
+		srv.token = token
 		if !srv.Authorized {
 			// The user has not authorized the server yet.
 			return srv, nil
@@ -399,33 +391,34 @@ func (r *Runner) listExternalTools(ctx context.Context, instanceID string, svc d
 	return tools, err
 }
 
-// externalOAuthToken fetches the user's OAuth token for a server from the admin service.
+// errOAuthRequiresCloud is reported for OAuth servers when the admin service holds no tokens, as in Rill Developer.
+var errOAuthRequiresCloud = errors.New("servers with 'auth: oauth' can only be connected in Rill Cloud")
+
+// externalOAuthToken fetches the user's OAuth token for a server from the admin service. It returns an empty token if the user has not authorized the server.
 // The token is bound to the OAuth configuration it was granted for, so a connector whose configuration changed gets no token until the user connects again.
-// hosted is false in Rill Developer, where tokens are persisted by the driver instead and the returned token is empty.
-func (r *Runner) externalOAuthToken(ctx context.Context, instanceID string, srv *ExternalServer, userID string, forceRefresh bool) (token string, hosted bool, err error) {
+func (r *Runner) externalOAuthToken(ctx context.Context, instanceID string, srv *ExternalServer, userID string, forceRefresh bool) (string, error) {
 	admin, release, err := r.Runtime.Admin(ctx, instanceID)
 	if err != nil {
-		// No admin connector: Rill Developer.
-		return "", false, nil
+		return "", fmt.Errorf("failed to open the admin service: %w", err)
 	}
 	defer release()
 	tok, err := admin.GetConnectorOAuthToken(ctx, srv.Connector, srv.oauthConfigHash, userID, forceRefresh)
 	if err != nil {
 		if errors.Is(err, drivers.ErrNotImplemented) {
-			return "", false, nil
+			return "", errOAuthRequiresCloud
 		}
 		if errors.Is(err, drivers.ErrNotFound) {
-			return "", true, nil
+			return "", nil
 		}
-		return "", true, fmt.Errorf("failed to get the user's authorization for %q: %w", srv.Connector, err)
+		return "", fmt.Errorf("failed to get the user's authorization for %q: %w", srv.Connector, err)
 	}
-	return tok.AccessToken, true, nil
+	return tok.AccessToken, nil
 }
 
-// refreshExternalOAuthToken force-refreshes the user's hosted token after the server rejected it.
+// refreshExternalOAuthToken force-refreshes the user's token after the server rejected it.
 func (r *Runner) refreshExternalOAuthToken(ctx context.Context, instanceID string, srv *ExternalServer, userID string) (string, error) {
-	token, hosted, err := r.externalOAuthToken(ctx, instanceID, srv, userID, true)
-	if err != nil || !hosted {
+	token, err := r.externalOAuthToken(ctx, instanceID, srv, userID, true)
+	if err != nil {
 		return "", err
 	}
 	srv.mu.Lock()
@@ -446,11 +439,6 @@ func (r *Runner) compileExternalTool(instanceID, environment string, vars map[st
 		Title:       fmt.Sprintf("%s: %s", srv.DisplayName, title),
 		Description: sanitizeExternalDescription(t.Description),
 		InputSchema: normalizeInputSchema(t.InputSchema),
-		Meta: map[string]any{
-			"rill/mcpServer":            srv.Connector,
-			"rill/mcpServerDisplayName": srv.DisplayName,
-			"rill/mcpToolName":          t.Name,
-		},
 	}
 	toolName := t.Name
 	connector := srv.Connector
