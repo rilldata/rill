@@ -124,8 +124,49 @@ If the attribute is not `Nullable` and no `lookup_default_expression` is set, mi
 
 Filters that match the value of missing keys, such as selecting the null value or excluding other values, are applied to the `dictGet` expression instead of the subquery and read the whole fact table. With a `lookup_default_expression`, other filters additionally check the default value, so the index optimization is kept whenever the filter does not match the default.
 
+#### Grouping by the key first with `lookup_group_by_key`
+
+When you group by a lookup dimension, the generated query calls `dictGet` on every row before grouping:
+
+```sql
+SELECT dictGet('dict', 'name', publisher_id) AS publisher, sum(impressions)
+FROM fact_table
+GROUP BY publisher
+```
+
+With `lookup_group_by_key: true`, Rill groups by the key first, resolves the name once per key, and regroups by name. The measures are re-aggregated with ClickHouse's `-State` and `-Merge` combinators, so the results are identical, including when several keys share the same name:
+
+```yaml
+dimensions:
+  - name: publisher
+    column: publisher_id
+    lookup_table: dict
+    lookup_key_column: id
+    lookup_value_column: name
+    lookup_group_by_key: true
+```
+
+```sql
+SELECT dictGet('dict', 'name', t.publisher_id) AS publisher, sumMerge(t.impressions) AS impressions
+FROM (
+  SELECT publisher_id, sumState(impressions) AS impressions
+  FROM fact_table
+  GROUP BY publisher_id
+) t
+GROUP BY publisher
+```
+
+Enable it per dimension for keys with few distinct values compared to the number of rows, such as advertisers, campaigns or properties: the fewer keys, the larger the gain. Leave it off for keys with millions of values, such as users or households, where grouping by key first uses more memory and is no faster.
+
+Distinct counts, such as `count(DISTINCT user_id)` or `uniq(user_id)`, can sometimes get slower. For example, to count distinct users for 3 categories that cover 2,000 publishers, ClickHouse first builds a list of users per publisher and then merges the 2,000 lists into 3, so a user seen on 500 publishers is stored 500 times instead of once. Compare query times with and without `lookup_group_by_key` on your data before enabling it.
+
+Keep in mind:
+- A `lookup_default_expression` may only reference constants and the key column.
+- Any aggregate function works, including combinators (`sumIf`) and parametric functions (`quantile(0.5)(x)`). `count(DISTINCT x)` is evaluated as `uniqExact`, ClickHouse's default implementation of it, even on servers that override `count_distinct_implementation`. Measures with a `window`, and measures whose expression Rill cannot split into aggregate calls, fall back to the single-pass query for that request.
+- Approximate aggregates such as `uniq` or `quantileTDigest` can return slightly different values, as they already do between runs.
+
 :::tip Optimizing GROUP BY with INJECTIVE
-If the key-to-value mapping in your dictionary is 1:1 (e.g. every `code` maps to exactly one `name`), you can additionally mark the attribute columns as `INJECTIVE` in the ClickHouse dictionary definition. This tells ClickHouse that the mapping preserves uniqueness, allowing it to optimize `GROUP BY` queries by grouping on the key column instead of evaluating `dictGet` for every group. Combined with `lookup_*` properties, this gives you optimized performance for both filtering (via Rill's subquery rewrite) and grouping (via ClickHouse's INJECTIVE optimization).
+If the key-to-value mapping in your dictionary is 1:1 (e.g. every `code` maps to exactly one `name`), you can alternatively mark the attribute columns as `INJECTIVE` in the ClickHouse dictionary definition. This tells ClickHouse that the mapping preserves uniqueness, allowing it to optimize `GROUP BY` queries by grouping on the key column instead of evaluating `dictGet` for every group. Unlike `lookup_group_by_key`, it does not merge keys that share a value, so only use it for dictionaries that are truly 1:1.
 :::
 
 ## Druid Lookups

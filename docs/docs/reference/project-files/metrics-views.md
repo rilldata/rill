@@ -110,6 +110,8 @@ _[array of object]_ - Relates to exploring segments or dimensions of your data a
 
   - **`lookup_default_expression`** - _[string]_ - an optional SQL expression used as a fallback value when no match is found in the dictionary (maps to `dictGetOrDefault`)
 
+  - **`lookup_group_by_key`** - _[boolean]_ - If true, queries that group by this dimension group by the lookup key first, resolve the lookup value once per key, and then regroup by value. Enable it for dictionaries with few keys (up to the low hundreds of thousands); it uses more memory and loses its advantage for very high-cardinality keys. See [Query-Time Joins](/developers/build/metrics-view/dimensions/lookup) for details.
+
 ### `measures`
 
 _[array of object]_ - Used to define the numeric aggregates of columns from your data model

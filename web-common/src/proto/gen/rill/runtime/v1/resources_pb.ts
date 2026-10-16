@@ -1786,6 +1786,14 @@ export class MetricsViewSpec_Dimension extends Message<MetricsViewSpec_Dimension
   lookupDefaultExpression = "";
 
   /**
+   * If true, queries that group by the dimension group by the lookup key first and resolve the lookup value once per key.
+   * Only for ClickHouse dictionaries with few keys; see the metrics view docs.
+   *
+   * @generated from field: optional bool lookup_group_by_key = 15;
+   */
+  lookupGroupByKey?: boolean;
+
+  /**
    * The smallest time grain for the dimension. Only populated for time dimensions.
    *
    * @generated from field: rill.runtime.v1.TimeGrain smallest_time_grain = 13;
@@ -1820,6 +1828,7 @@ export class MetricsViewSpec_Dimension extends Message<MetricsViewSpec_Dimension
     { no: 9, name: "lookup_key_column", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 10, name: "lookup_value_column", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 11, name: "lookup_default_expression", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 15, name: "lookup_group_by_key", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
     { no: 13, name: "smallest_time_grain", kind: "enum", T: proto3.getEnumType(TimeGrain) },
     { no: 12, name: "data_type", kind: "message", T: Type },
   ]);
