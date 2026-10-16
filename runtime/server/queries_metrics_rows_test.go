@@ -101,18 +101,19 @@ security:
 	srv, err := server.NewServer(context.Background(), &server.Options{}, rt, nil, ratelimit.NewNoop(), activity.NewNoopClient())
 	require.NoError(t, err)
 
-	orgIDs := func(orgID string) []string {
+	query := func(orgID string) (*runtimev1.MetricsViewRowsResponse, error) {
 		ctx := auth.WithClaims(context.Background(), &runtime.SecurityClaims{
 			UserAttributes: map[string]any{"org_id": orgID},
 			Permissions:    []runtime.Permission{runtime.ReadMetrics},
 		})
-		res, err := srv.MetricsViewRows(ctx, &runtimev1.MetricsViewRowsRequest{
+		return srv.MetricsViewRows(ctx, &runtimev1.MetricsViewRowsRequest{
 			InstanceId:      instanceID,
 			MetricsViewName: "mv",
 			Limit:           10,
 		})
-		require.NoError(t, err)
+	}
 
+	orgIDs := func(res *runtimev1.MetricsViewRowsResponse) []string {
 		var ids []string
 		for _, row := range res.Data {
 			ids = append(ids, row.Fields["org_id"].GetStringValue())
@@ -120,11 +121,30 @@ security:
 		return ids
 	}
 
-	// Each caller sends the same request twice, so later calls are served from the cache.
-	require.Equal(t, []string{"a", "a"}, orgIDs("a"))
-	require.Equal(t, []string{"b"}, orgIDs("b"))
-	require.Equal(t, []string{"a", "a"}, orgIDs("a"))
-	require.Equal(t, []string{"b"}, orgIDs("b"))
+	// Cache writes are asynchronous, so poll until the caller's result is served from the cache.
+	// A cache hit returns the cached response object itself, so pointer equality confirms the hit.
+	requireCached := func(orgID string, res *runtimev1.MetricsViewRowsResponse) {
+		require.Eventually(t, func() bool {
+			cached, err := query(orgID)
+			return err == nil && cached == res
+		}, 5*time.Second, 10*time.Millisecond)
+	}
+
+	a, err := query("a")
+	require.NoError(t, err)
+	require.Equal(t, []string{"a", "a"}, orgIDs(a))
+	requireCached("a", a)
+
+	// The same request with a different row filter must not be served a's cached result.
+	b, err := query("b")
+	require.NoError(t, err)
+	require.Equal(t, []string{"b"}, orgIDs(b))
+	requireCached("b", b)
+
+	// Both callers keep getting their own cached results.
+	a, err = query("a")
+	require.NoError(t, err)
+	require.Equal(t, []string{"a", "a"}, orgIDs(a))
 }
 
 func TestServer_MetricsViewRows_export_xlsx(t *testing.T) {
