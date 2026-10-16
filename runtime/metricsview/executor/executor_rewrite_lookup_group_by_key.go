@@ -156,15 +156,10 @@ func rewriteLookupGroupByKeyNode(ast *metricsview.AST, n *metricsview.SelectNode
 			found = false
 		}
 		if !found {
+			// The name is only taken when the query also groups by another dimension named like the key column, which is rare enough to skip the rewrite.
 			keyAlias = lookupKeyAlias(dim)
 			if taken[keyAlias] {
-				if dim.LookupDefaultExpression != "" {
-					return false, "key_alias_conflict:" + dim.Name
-				}
-				keyAlias = dim.Name + "__key"
-				for taken[keyAlias] {
-					keyAlias += "_"
-				}
+				return false, "key_alias_conflict:" + dim.Name
 			}
 			taken[keyAlias] = true
 			keyFields[keyExpr] = keyAlias

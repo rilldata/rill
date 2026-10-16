@@ -61,12 +61,11 @@ func TestSplitAggregateExpression(t *testing.T) {
 		{expr: "sum(arrayMax(x -> x + 1, [a, b]))", partials: []string{"sumState(arrayMax(x -> x + 1, [a, b]))"}, final: `sumMerge("t0"."m")`},
 		{expr: `sum("quoted col") + sum(` + "`other`" + `)`, partials: []string{`sumState("quoted col")`, "sumState(`other`)"}, final: `sumMerge("t0"."m") + sumMerge("t0"."m__1")`},
 		{expr: "sum(x) IS NOT NULL", partials: []string{"sumState(x)"}, final: `sumMerge("t0"."m") IS NOT NULL`},
-		// Windows, comments, nested aggregates, states and expressions without an aggregate can't be split.
+		// Windows, comments, states and expressions without an aggregate can't be split.
 		{expr: "sum(x) OVER ()"},
 		{expr: "sum(x) OVER (PARTITION BY y)"},
 		{expr: "sum(x) -- comment"},
 		{expr: "sum(x) /* comment */"},
-		{expr: "sum(max(x))"},
 		{expr: "sumState(x)"},
 		{expr: "sumSimpleState(x)"},
 		{expr: "uniqMergeIf(s, c)"},

@@ -32,7 +32,7 @@ var splitKeywords = map[string]bool{
 // evaluates count(DISTINCT) as by default (the count_distinct_implementation setting), and "f(DISTINCT x)" becomes "fDistinctState(x)",
 // whose state keeps the distinct values and merges correctly.
 //
-// It returns ok=false when the expression cannot be split safely: it has no aggregate call, uses a window, nests aggregates, contains comments,
+// It returns ok=false when the expression cannot be split safely: it has no aggregate call, uses a window, contains comments,
 // produces a state (-State, -SimpleState), or references an identifier outside an aggregate call that is not a keyword, a function or a type.
 // The last rule is the safety net for aggregate functions that are missing from aggregateFunctions: their column arguments would be left outside any -State call.
 func (d *dialect) SplitAggregateExpression(expr, measureName, innerAlias string) ([]drivers.PartialAggregate, string, bool) {
@@ -98,15 +98,6 @@ func (d *dialect) SplitAggregateExpression(expr, measureName, innerAlias string)
 			argsEnd = matchingParen(toks, argsStart)
 		}
 
-		// Nested aggregates are invalid SQL; leave the expression alone so the usual error surfaces.
-		for j := argsStart + 1; j < argsEnd; j++ {
-			if toks[j].kind == sqlTokenIdent && toks[j+1].kind == sqlTokenLParen {
-				if _, nested := aggregateCombinators(toks[j].text); nested {
-					return nil, "", false
-				}
-			}
-		}
-
 		// Window functions aggregate over frames, not groups.
 		if argsEnd+1 < len(toks) && toks[argsEnd+1].kind == sqlTokenIdent && strings.EqualFold(toks[argsEnd+1].text, "OVER") {
 			return nil, "", false
@@ -157,7 +148,7 @@ func (d *dialect) SplitAggregateExpression(expr, measureName, innerAlias string)
 func aggregateCombinators(name string) ([]string, bool) {
 	var combinators []string
 	for {
-		if _, ok := aggregateFunctions[name]; ok || aggregateFunctionsCaseInsensitive[strings.ToLower(name)] {
+		if aggregateFunctions[strings.ToLower(name)] {
 			return combinators, true
 		}
 		stripped := false

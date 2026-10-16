@@ -788,14 +788,15 @@ func (e *Executor) validateDimension(ctx context.Context, t *drivers.OlapTable, 
 // validateLookupGroupByKeyDimensions dry-runs, for each dimension with lookup_group_by_key, the two-level query that the flag generates:
 // the key grouped in a sub-select and the lookup resolved over it.
 // It catches a lookup_default_expression that references anything but constants and the key column, which no other validation sees.
-// Dimensions that already failed validation are skipped.
+// Without a lookup_default_expression, the query only resolves the key with the lookup expression that the dimension validation already checks, so it is skipped,
+// as are dimensions that already failed validation.
 func (e *Executor) validateLookupGroupByKeyDimensions(ctx context.Context, t *drivers.OlapTable, mv *runtimev1.MetricsViewSpec, res *ValidateMetricsViewResult) {
 	failed := make(map[int]bool, len(res.DimensionErrs))
 	for _, ie := range res.DimensionErrs {
 		failed[ie.Idx] = true
 	}
 	for idx, d := range mv.Dimensions {
-		if !d.GetLookupGroupByKey() || failed[idx] {
+		if !d.GetLookupGroupByKey() || d.LookupDefaultExpression == "" || failed[idx] {
 			continue
 		}
 		err := e.validateLookupGroupByKey(ctx, t, d)

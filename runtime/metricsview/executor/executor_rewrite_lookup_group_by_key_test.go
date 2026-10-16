@@ -210,9 +210,9 @@ func TestRewriteLookupGroupByKey(t *testing.T) {
 	}
 }
 
-func TestRewriteLookupGroupByKeySkipsWhenTheKeyAliasIsTakenAndADefaultExpressionNeedsIt(t *testing.T) {
+func TestRewriteLookupGroupByKeySkipsWhenTheKeyAliasIsTaken(t *testing.T) {
 	// The "country_code" dimension occupies the name the "region" lookup needs for its key, with a different expression,
-	// so the default expression could not reference the key column; the select is left untouched.
+	// so the select is left untouched.
 	qry := &metricsview.Query{
 		Dimensions: []metricsview.Dimension{{Name: "region"}, {Name: "country_code"}},
 		Measures:   []metricsview.Measure{{Name: "impressions"}},
