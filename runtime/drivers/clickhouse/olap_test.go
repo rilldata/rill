@@ -6,6 +6,7 @@ import (
 	"net/url"
 	"strings"
 	"testing"
+	"time"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
@@ -135,51 +136,38 @@ func testDropTable(t *testing.T, c *Connection, olap drivers.OLAPStore) {
 func testDropStaleTempTables(t *testing.T, c *Connection, olap drivers.OLAPStore) {
 	ctx := context.Background()
 	props := &ModelOutputProperties{Columns: "(id Int32)", Engine: "MergeTree"}
-	hash := func(digit string) string { return strings.Repeat(digit, 32) }
 
-	// Left behind for the table and for its staging name, as a partition insert and a column inference view would.
-	staleTable := tempTablePrefix + "stale_tbl_" + hash("0")
-	staleStaged := tempTablePrefix + stagingTableNameFor("stale_tbl") + "_" + hash("0")
-	staleView := tempTablePrefix + "stale_tbl_" + hash("1")
+	// A partition insert's table and a column inference view, as an interrupted execution leaves them behind.
+	staleTable := tempTablePrefix + "stale_tbl_" + strings.Repeat("0", 32)
+	staleView := tempTablePrefix + stagingTableNameFor("stale_tbl") + "_" + strings.Repeat("1", 32)
 	require.NoError(t, c.createTable(ctx, staleTable, "", props))
-	require.NoError(t, c.createTable(ctx, staleStaged, "", props))
 	_, err := c.createTableAsSelect(ctx, staleView, "SELECT 1 AS id", &ModelOutputProperties{Typ: "VIEW"}, "", "")
 	require.NoError(t, err)
-
-	// Still being written to by an execution in this process.
-	inUse := tempTablePrefix + "stale_tbl_" + hash("2")
-	require.NoError(t, c.createTable(ctx, inUse, "", props))
-	c.tempTables.Store(inUse, struct{}{})
-
-	// Belongs to another table whose name starts with the swept table's name.
-	other := tempTablePrefix + "stale_tbl_other_" + hash("0")
-	require.NoError(t, c.createTable(ctx, other, "", props))
-
-	c.dropStaleTempTables(ctx, "stale_tbl")
-	for _, name := range []string{staleTable, staleStaged, staleView} {
-		notExists(t, olap, name)
-		if c.config.Cluster != "" {
-			notExists(t, olap, localTableName(name))
-		}
-	}
-	require.True(t, tableExists(t, olap, inUse))
-	require.True(t, tableExists(t, olap, other))
-
-	// Swept once the execution has released it.
-	c.tempTables.Delete(inUse)
-	c.dropStaleTempTables(ctx, "stale_tbl")
-	notExists(t, olap, inUse)
-	require.True(t, tableExists(t, olap, other))
-	require.NoError(t, c.dropTable(ctx, other))
-
+	// The model's own table must be left alone.
+	require.NoError(t, c.createTable(ctx, "stale_tbl", "", props))
+	// Only the `_local` table exists if the execution was cancelled before it created the Distributed table over it.
+	localOnly := localTableName(tempTablePrefix + "stale_tbl_" + strings.Repeat("2", 32))
 	if c.config.Cluster != "" {
-		// Only the `_local` table exists if the execution was cancelled before it created the Distributed table over it.
-		localOnly := localTableName(tempTablePrefix + "stale_tbl_" + hash("3"))
 		err = olap.Exec(ctx, &drivers.Statement{Query: fmt.Sprintf("CREATE TABLE %s %s (id Int32) ENGINE = MergeTree ORDER BY tuple()", safeSQLName(localOnly), c.onClusterClause())})
 		require.NoError(t, err)
-		c.dropStaleTempTables(ctx, "stale_tbl")
+	}
+
+	// Tables younger than the TTL may still be written to by a running execution.
+	require.NoError(t, c.dropStaleTempTables(ctx, tempTableTTL))
+	require.True(t, tableExists(t, olap, staleTable))
+	require.True(t, tableExists(t, olap, staleView))
+
+	// metadata_modification_time has second resolution, so let the tables age past a zero TTL.
+	time.Sleep(time.Second)
+	require.NoError(t, c.dropStaleTempTables(ctx, 0))
+	notExists(t, olap, staleTable)
+	notExists(t, olap, staleView)
+	if c.config.Cluster != "" {
+		notExists(t, olap, localTableName(staleTable))
 		notExists(t, olap, localOnly)
 	}
+	require.True(t, tableExists(t, olap, "stale_tbl"))
+	require.NoError(t, c.dropTable(ctx, "stale_tbl"))
 }
 
 func testRenameView(t *testing.T, c *Connection, olap drivers.OLAPStore) {

@@ -81,9 +81,6 @@ func (e *selfToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExe
 	asView := outputProps.Typ == "VIEW"
 	tableName := outputProps.Table
 
-	// Drop temporary tables that earlier executions for the table left behind, e.g. because the runtime restarted while they ran.
-	e.c.dropStaleTempTables(ctx, tableName)
-
 	var metrics *tableWriteMetrics
 	if !opts.IncrementalRun {
 		stagingTableName := tableName

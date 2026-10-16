@@ -29,7 +29,6 @@ func TestClickhouseModels(t *testing.T) {
 	t.Run("StagedPostExecRunsAgainstFinalTable", func(t *testing.T) { testStagedPostExecRunsAgainstFinalTable(t, dsn) })
 	t.Run("StagedDictionaryRefresh", func(t *testing.T) { testStagedDictionaryRefresh(t, dsn) })
 	t.Run("DictionaryModelRename", func(t *testing.T) { testDictionaryModelRename(t, dsn) })
-	t.Run("StaleTempTablesSwept", func(t *testing.T) { testStaleTempTablesSwept(t, dsn) })
 }
 
 // newInstance creates a runtime instance on the shared ClickHouse instance started by TestClickhouseModels.
@@ -287,61 +286,6 @@ output:
 			WHERE database = currentDatabase() AND position(name, '_dict_temp_') > 0`},
 		Result: []map[string]any{{"c": 1}},
 	})
-}
-
-// testStaleTempTablesSwept verifies that running or deleting a model drops the temporary tables a previous run left behind,
-// e.g. because the runtime restarted while a partition was being inserted.
-func testStaleTempTablesSwept(t *testing.T, dsn string) {
-	rt, id := newInstance(t, dsn, testruntime.InstanceOptions{Files: map[string]string{
-		"rill.yaml": "olap_connector: clickhouse",
-		"stale_tmp.yaml": `
-type: model
-incremental: true
-partitions:
-  sql: SELECT number AS id, now() AS watermark FROM numbers(0, 3)
-partitions_watermark: watermark
-sql: SELECT {{.partition.id}} AS partition_id, number AS num FROM numbers(10)
-output:
-  incremental_strategy: partition_overwrite
-  partition_by: partition_id
-`,
-	}})
-	testruntime.ReconcileParserAndWait(t, rt, id)
-	testruntime.RequireReconcileState(t, rt, id, 2, 0, 0)
-
-	olap, release, err := rt.OLAP(t.Context(), id, "clickhouse")
-	require.NoError(t, err)
-	defer release()
-	stale := "__rill_temp_stale_tmp_" + strings.Repeat("0", 32)
-	plantStale := func() {
-		require.NoError(t, olap.Exec(t.Context(), &drivers.Statement{Query: fmt.Sprintf("CREATE TABLE %s AS stale_tmp", stale)}))
-	}
-	requireTempTables := func(want int) {
-		testruntime.RequireResolve(t, rt, id, &testruntime.RequireResolveOptions{
-			Resolver:   "sql",
-			Properties: map[string]any{"sql": `SELECT count() AS c FROM system.tables WHERE database = currentDatabase() AND startsWith(name, '__rill_temp_')`},
-			Result:     []map[string]any{{"c": want}},
-		})
-	}
-
-	// Wait for the watermark to advance so that the refresh re-runs the partitions.
-	plantStale()
-	requireTempTables(1)
-	time.Sleep(time.Second)
-	testruntime.RefreshAndWait(t, rt, id, &runtimev1.ResourceName{Kind: runtime.ResourceKindModel, Name: "stale_tmp"})
-	testruntime.RequireReconcileState(t, rt, id, 2, 0, 0)
-	requireTempTables(0)
-	testruntime.RequireResolve(t, rt, id, &testruntime.RequireResolveOptions{
-		Resolver:   "sql",
-		Properties: map[string]any{"sql": `SELECT count() AS c FROM stale_tmp`},
-		Result:     []map[string]any{{"c": 30}},
-	})
-
-	plantStale()
-	testruntime.DeleteFiles(t, rt, id, "stale_tmp.yaml")
-	testruntime.ReconcileParserAndWait(t, rt, id)
-	testruntime.RequireReconcileState(t, rt, id, 1, 0, 0)
-	requireTempTables(0)
 }
 
 // requireDictionary asserts the contents of the campaign_name_dict dictionary, and that it is backed by exactly one

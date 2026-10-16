@@ -8,7 +8,6 @@ import (
 	"math"
 	"net"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/ClickHouse/clickhouse-go/v2"
@@ -390,6 +389,10 @@ func (d driver) Open(ctx context.Context, connectorName, instanceID string, conf
 
 	c.used()
 	go c.periodicallyEmitStats()
+	if conf.Mode == modeReadWrite {
+		// Only readwrite connections create temporary tables, and dropping them needs DDL privileges.
+		go c.periodicallyDropStaleTempTables()
+	}
 
 	return c, nil
 }
@@ -433,10 +436,6 @@ type Connection struct {
 	// This creates contention for the same connection in database/sql's pool, but its locks will handle that.
 	metaSem *semaphore.Weighted
 	olapSem *priorityqueue.Semaphore
-
-	// tempTables holds the names of the temporary tables that model executions in this process are currently writing to.
-	// Partitions of a model may be inserted concurrently, so dropStaleTempTables consults it to leave their temporary tables alone.
-	tempTables sync.Map
 
 	// options used to open clickhouse connections
 	opts *clickhouse.Options
@@ -698,6 +697,29 @@ func (c *Connection) periodicallyEmitStats() {
 			} else if !errors.Is(err, c.ctx.Err()) {
 				c.logger.Warn("failed to fetch latest RCU per service", zap.Error(err))
 			}
+		case <-c.ctx.Done():
+			return
+		}
+	}
+}
+
+// periodicallyDropStaleTempTables drops the temporary tables that model executions left behind, e.g. because the runtime restarted while they ran.
+// It runs once immediately and then hourly until the connection is closed.
+func (c *Connection) periodicallyDropStaleTempTables() {
+	ticker := time.NewTicker(time.Hour)
+	defer ticker.Stop()
+
+	for {
+		// Skip if the database hasn't been used recently and may be scaled to zero, so that the sweep does not wake it up.
+		if !c.config.CanScaleToZero || time.Since(c.lastUsedOn()) < 2*time.Minute {
+			err := c.dropStaleTempTables(c.ctx, tempTableTTL)
+			if err != nil && !errors.Is(err, c.ctx.Err()) {
+				c.logger.Warn("clickhouse: failed to drop stale temp tables", zap.Error(err))
+			}
+		}
+
+		select {
+		case <-ticker.C:
 		case <-c.ctx.Done():
 			return
 		}

@@ -5,8 +5,6 @@ import (
 	"crypto/md5"
 	"errors"
 	"fmt"
-	"regexp"
-	"slices"
 	"strings"
 	"time"
 
@@ -124,8 +122,6 @@ func (c *Connection) insertTableAsSelect(ctx context.Context, name, sql string, 
 		}
 		// create temp table with the same schema using a deterministic name
 		tempName := fmt.Sprintf("%s%s_%x", tempTablePrefix, name, md5.Sum([]byte(sql)))
-		// mark the temp table as in use so that concurrent partition inserts do not sweep it as stale
-		c.tempTables.Store(tempName, struct{}{})
 		// clean up the temp table
 		defer func() {
 			// cleanup using a different ctx to prevent cleanups being impacted by the main ctx cancellation
@@ -139,8 +135,6 @@ func (c *Connection) insertTableAsSelect(ctx context.Context, name, sql string, 
 			if err != nil && !errors.Is(err, drivers.ErrNotFound) {
 				c.logger.Warn("clickhouse: failed to drop temp table", zap.String("name", tempName), zap.Error(err), observability.ZapCtx(ctx))
 			}
-			// if the drop failed, a later execution for the table sweeps it as stale
-			c.tempTables.Delete(tempName)
 		}()
 		// create temp table
 		if engine == "Distributed" {
@@ -244,44 +238,40 @@ func (c *Connection) insertTableAsSelect(ctx context.Context, name, sql string, 
 // tempTablePrefix is the prefix of the temporary tables created while writing a model's table, e.g. for column inference and partition inserts.
 const tempTablePrefix = "__rill_temp_"
 
-// dropStaleTempTables drops the temporary tables that earlier executions writing to table left behind.
-// The execution that creates a temporary table also drops it, but that drop never runs if the runtime restarts in the meantime,
+// tempTableTTL is the age after which a temporary table is assumed to be left behind by an execution that never dropped it.
+// The default model timeout is 3 hours, so this leaves a wide margin for executions that are still running.
+const tempTableTTL = 24 * time.Hour
+
+// dropStaleTempTables drops the temporary tables in the configured database that were created, or last altered, more than olderThan ago.
+// The execution that creates a temporary table also drops it, but that never happens if the runtime restarts in the meantime,
 // and it may fail, e.g. by timing out while a cancelled insert still holds a lock on the table.
-// Temporary tables that executions in this process are currently writing to are skipped.
-// The sweep is best effort: failures are logged so they do not fail the execution that triggered it.
-func (c *Connection) dropStaleTempTables(ctx context.Context, table string) {
-	names, err := c.listTempTables(ctx, table)
+// Failures to drop individual tables are logged, so that the remaining tables are still dropped.
+func (c *Connection) dropStaleTempTables(ctx context.Context, olderThan time.Duration) error {
+	names, err := c.listStaleTempTables(ctx, olderThan)
 	if err != nil {
-		c.logger.Warn("clickhouse: failed to list stale temp tables", zap.String("table", table), zap.Error(err), observability.ZapCtx(ctx))
-		return
+		return err
 	}
 	for _, name := range names {
-		base := strings.TrimSuffix(name, "_local")
-		// a `_local` table is dropped along with its Distributed table
-		if base != name && slices.Contains(names, base) {
-			continue
-		}
-		if _, inUse := c.tempTables.Load(base); inUse {
-			continue
-		}
 		err := c.dropTable(ctx, name)
 		if err != nil && !errors.Is(err, drivers.ErrNotFound) {
 			c.logger.Warn("clickhouse: failed to drop stale temp table", zap.String("name", name), zap.Error(err), observability.ZapCtx(ctx))
+			continue
 		}
+		c.logger.Info("clickhouse: dropped stale temp table", zap.String("name", name), observability.ZapCtx(ctx))
 	}
+	return nil
 }
 
-// listTempTables returns the temporary tables that createTable and insertTableAsSelect create for table, also under its staging name.
-// In cluster mode, it includes the `_local` counterparts of the tables.
-func (c *Connection) listTempTables(ctx context.Context, table string) ([]string, error) {
-	pattern := regexp.MustCompile(fmt.Sprintf(`^%s(?:%s)?%s_[0-9a-f]{32}(?:_local)?$`, tempTablePrefix, stagingTablePrefix, regexp.QuoteMeta(table)))
-
-	args := []any{c.config.Database, tempTablePrefix}
+// listStaleTempTables returns the names of the temporary tables in the configured database that were created, or last altered, more than olderThan ago.
+// In cluster mode, it includes the `_local` counterparts of the tables, since their names share the prefix.
+func (c *Connection) listStaleTempTables(ctx context.Context, olderThan time.Duration) ([]string, error) {
+	args := []any{c.config.Database, tempTablePrefix, int64(olderThan.Seconds())}
 	if c.config.Database == "" {
-		args = []any{nil, tempTablePrefix}
+		args[0] = nil
 	}
 	res, err := c.Query(ctx, &drivers.Statement{
-		Query:    "SELECT name FROM system.tables WHERE database = coalesce(?, currentDatabase()) AND startsWith(name, ?)",
+		Query: `SELECT name FROM system.tables
+			WHERE database = coalesce(?, currentDatabase()) AND startsWith(name, ?) AND metadata_modification_time < now() - toIntervalSecond(?)`,
 		Args:     args,
 		Priority: 100,
 	})
@@ -296,9 +286,7 @@ func (c *Connection) listTempTables(ctx context.Context, table string) ([]string
 		if err := res.Scan(&name); err != nil {
 			return nil, err
 		}
-		if pattern.MatchString(name) {
-			names = append(names, name)
-		}
+		names = append(names, name)
 	}
 	return names, res.Err()
 }
