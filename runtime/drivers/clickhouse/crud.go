@@ -138,7 +138,10 @@ func (c *Connection) insertTableAsSelect(ctx context.Context, name, sql string, 
 		}()
 		// create temp table
 		// Hold the read lock while creating it, so that a sweep of stale temp tables that listed an older table of the same name cannot drop it.
-		c.tempTableMu.RLock()
+		err = c.tempTableMu.RLock(ctx)
+		if err != nil {
+			return nil, err
+		}
 		if engine == "Distributed" {
 			// create a local table first
 			err = c.Exec(ctx, &drivers.Statement{
@@ -247,7 +250,9 @@ const tempTableTTL = 24 * time.Hour
 // Failures to drop individual tables are logged, so that the remaining tables are still dropped.
 func (c *Connection) dropStaleTempTables(ctx context.Context, olderThan time.Duration) error {
 	// Hold the lock until the drops are done: a temporary table created before the listing is not stale, and one created after it waits.
-	c.tempTableMu.Lock()
+	if err := c.tempTableMu.Lock(ctx); err != nil {
+		return err
+	}
 	defer c.tempTableMu.Unlock()
 
 	names, err := c.listStaleTempTables(ctx, olderThan)
@@ -538,8 +543,11 @@ func (c *Connection) createTable(ctx context.Context, name, sql string, outputPr
 			_ = c.Exec(ctx, &drivers.Statement{Query: fmt.Sprintf("DROP VIEW IF EXISTS %s %s", v, onClusterClause)})
 		}()
 		// Hold the read lock while creating the view, so that a sweep of stale temp tables that listed an older view of the same name cannot drop it.
-		c.tempTableMu.RLock()
-		err := c.Exec(ctx, &drivers.Statement{Query: fmt.Sprintf("CREATE OR REPLACE VIEW %s %s AS %s", v, onClusterClause, sql)})
+		err := c.tempTableMu.RLock(ctx)
+		if err != nil {
+			return err
+		}
+		err = c.Exec(ctx, &drivers.Statement{Query: fmt.Sprintf("CREATE OR REPLACE VIEW %s %s AS %s", v, onClusterClause, sql)})
 		c.tempTableMu.RUnlock()
 		if err != nil {
 			return err
