@@ -84,6 +84,14 @@ Follow these simple steps to schedule an email report:
 
 ![Scheduled](/img/explore/exports/scheduled.png)
 
+### Attaching the File to Emails
+
+Reports that run as the **Creator** can attach the exported CSV, Excel, or Parquet file to the report email, so recipients don't have to download it. Select **Attach file to emails** when you create or edit the report.
+
+- Files larger than 10 MB are not attached. The email says so and still includes the download link.
+- Only emails include the attachment. Slack notifications include the download link.
+- Attachments are not available for reports that run as the recipient, or for canvas dashboard (PDF) reports.
+
 ## Managing Scheduled Reports
 
 Reports are managed from your home screen. To navigate to the report admin page, select the Home button on the top left and the Reports tab from your homepage.

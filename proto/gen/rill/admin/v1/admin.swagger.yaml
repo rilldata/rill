@@ -6777,6 +6777,9 @@ definitions:
         $ref: '#/definitions/v1ExportFormat'
       exportIncludeHeader:
         type: boolean
+      exportAttach:
+        type: boolean
+        description: If true, the export is attached to email notifications (only supported for explore reports run as the creator).
       emailRecipients:
         type: array
         items:

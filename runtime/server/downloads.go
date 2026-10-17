@@ -11,7 +11,6 @@ import (
 	"io"
 	"net/http"
 	"net/url"
-	"reflect"
 	"strings"
 	"time"
 
@@ -178,135 +177,13 @@ func (s *Server) downloadHandler(w http.ResponseWriter, req *http.Request) {
 		execTime = &t
 	}
 
-	var q runtime.Query
-	switch v := request.Query.Query.(type) {
-	case *runtimev1.Query_MetricsViewAggregationRequest:
-		r := v.MetricsViewAggregationRequest
-
-		var limitPtr *int64
-		limit := s.resolveExportLimit(request.Limit, r.Limit)
-		if limit != 0 {
-			limitPtr = &limit
-		}
-
-		tr := r.TimeRange
-		if r.TimeStart != nil || r.TimeEnd != nil {
-			tr = &runtimev1.TimeRange{
-				Start: r.TimeStart,
-				End:   r.TimeEnd,
-			}
-		}
-
-		q = &queries.MetricsViewAggregation{
-			MetricsViewName:     r.MetricsView,
-			Dimensions:          r.Dimensions,
-			Measures:            r.Measures,
-			Sort:                r.Sort,
-			TimeRange:           tr,
-			ComparisonTimeRange: r.ComparisonTimeRange,
-			Where:               r.Where,
-			Having:              r.Having,
-			Filter:              r.Filter,
-			Limit:               limitPtr,
-			Offset:              r.Offset,
-			PivotOn:             r.PivotOn,
-			SecurityClaims:      claims,
-			Aliases:             r.Aliases,
-			Exact:               r.Exact,
-			Rows:                r.Rows,
-			ExecutionTime:       execTime,
-		}
-	case *runtimev1.Query_MetricsViewToplistRequest:
-		r := v.MetricsViewToplistRequest
-
-		var limitPtr *int64
-		limit := s.resolveExportLimit(request.Limit, r.Limit)
-		if limit != 0 {
-			limitPtr = &limit
-		}
-
-		q = &queries.MetricsViewToplist{
-			MetricsViewName: r.MetricsViewName,
-			DimensionName:   r.DimensionName,
-			MeasureNames:    r.MeasureNames,
-			TimeStart:       r.TimeStart,
-			TimeEnd:         r.TimeEnd,
-			Limit:           limitPtr,
-			Sort:            r.Sort,
-			Where:           r.Where,
-			Filter:          r.Filter,
-			Having:          r.Having,
-			SecurityClaims:  claims,
-		}
-	case *runtimev1.Query_MetricsViewRowsRequest:
-		r := v.MetricsViewRowsRequest
-
-		var limitPtr *int64
-		limit := s.resolveExportLimit(request.Limit, int64(r.Limit))
-		if limit != 0 {
-			limitPtr = &limit
-		}
-
-		q = &queries.MetricsViewRows{
-			MetricsViewName: r.MetricsViewName,
-			TimeStart:       r.TimeStart,
-			TimeEnd:         r.TimeEnd,
-			Filter:          r.Filter,
-			Where:           r.Where,
-			Sort:            r.Sort,
-			Limit:           limitPtr,
-			TimeZone:        r.TimeZone,
-			SecurityClaims:  claims,
-		}
-	case *runtimev1.Query_MetricsViewTimeSeriesRequest:
-		r := v.MetricsViewTimeSeriesRequest
-
-		q = &queries.MetricsViewTimeSeries{
-			MetricsViewName:   r.MetricsViewName,
-			MeasureNames:      r.MeasureNames,
-			EphemeralMeasures: r.EphemeralMeasures,
-			TimeStart:         r.TimeStart,
-			TimeEnd:           r.TimeEnd,
-			Where:             r.Where,
-			Having:            r.Having,
-			TimeGranularity:   r.TimeGranularity,
-			TimeZone:          r.TimeZone,
-			SecurityClaims:    claims,
-		}
-	case *runtimev1.Query_MetricsViewComparisonRequest:
-		r := v.MetricsViewComparisonRequest
-		q = &queries.MetricsViewComparison{
-			MetricsViewName:     r.MetricsViewName,
-			DimensionName:       r.Dimension.Name,
-			Measures:            r.Measures,
-			ComparisonMeasures:  r.ComparisonMeasures,
-			TimeRange:           r.TimeRange,
-			ComparisonTimeRange: r.ComparisonTimeRange,
-			Limit:               s.resolveExportLimit(request.Limit, r.Limit),
-			Offset:              r.Offset,
-			Sort:                r.Sort,
-			Filter:              r.Filter,
-			Where:               r.Where,
-			Having:              r.Having,
-			SecurityClaims:      claims,
-			ExecutionTime:       execTime,
-		}
-	case *runtimev1.Query_TableRowsRequest:
-		r := v.TableRowsRequest
-		if !claims.Can(runtime.ReadOLAP) {
+	q, err := queries.ProtoToExportQuery(request.Query, claims, request.Limit, execTime)
+	if err != nil {
+		if errors.Is(err, queries.ErrForbidden) {
 			http.Error(w, "action not allowed", http.StatusUnauthorized)
 			return
 		}
-
-		q = &queries.TableHead{
-			Connector:      r.Connector,
-			Database:       r.Database,
-			DatabaseSchema: r.DatabaseSchema,
-			TableName:      r.TableName,
-			Limit:          int(r.Limit),
-		}
-	default:
-		http.Error(w, fmt.Sprintf("unsupported request type: %s", reflect.TypeOf(v).Name()), http.StatusBadRequest)
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
@@ -350,14 +227,6 @@ func (s *Server) downloadHandler(w http.ResponseWriter, req *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-}
-
-func (s *Server) resolveExportLimit(base, override int64) int64 {
-	res := base
-	if override > 0 && override < res {
-		res = override
-	}
-	return res
 }
 
 // downloadTokenTTL determines how long a download token is valid.
