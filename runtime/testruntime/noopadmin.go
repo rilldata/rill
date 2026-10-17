@@ -2,6 +2,8 @@ package testruntime
 
 import (
 	"context"
+	"fmt"
+	"sync"
 	"time"
 
 	"github.com/rilldata/rill/runtime/drivers"
@@ -21,6 +23,10 @@ var (
 func init() {
 	drivers.Register("noop_admin", &noopAdminService{})
 }
+
+// customAdminServices contains the admin services passed in InstanceOptions.AdminService.
+// They are keyed by an ID that is set in the config of the instance's admin connector.
+var customAdminServices sync.Map
 
 func (n *noopAdminService) GetAlertMetadata(ctx context.Context, alertName, ownerID string, emailRecipients []string, anonRecipients bool, annotations map[string]string, queryForUserID, queryForUserEmail string) (*drivers.AlertMetadata, error) {
 	return nil, drivers.ErrNotImplemented
@@ -53,6 +59,13 @@ func (n *noopAdminService) HasAnonymousSourceAccess(ctx context.Context, srcProp
 
 // Open implements [drivers.Driver].
 func (n *noopAdminService) Open(_ context.Context, connectorName, instanceID string, config map[string]any, st *storage.Client, ac *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
+	if id, ok := config["admin_service_id"].(string); ok {
+		admin, ok := customAdminServices.Load(id)
+		if !ok {
+			return nil, fmt.Errorf("admin service %q not found", id)
+		}
+		return &customAdminHandle{noopAdminService: n, admin: admin.(drivers.AdminService)}, nil
+	}
 	return n, nil
 }
 
@@ -161,4 +174,15 @@ func (n *noopAdminService) MigrationStatus(ctx context.Context) (current, desire
 // Ping implements [drivers.Handle].
 func (n *noopAdminService) Ping(ctx context.Context) error {
 	return nil
+}
+
+// customAdminHandle is a handle that serves an admin service passed in InstanceOptions.AdminService.
+type customAdminHandle struct {
+	*noopAdminService
+	admin drivers.AdminService
+}
+
+// AsAdmin implements [drivers.Handle].
+func (h *customAdminHandle) AsAdmin(instanceID string) (drivers.AdminService, bool) {
+	return h.admin, true
 }

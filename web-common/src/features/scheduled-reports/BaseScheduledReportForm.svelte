@@ -70,6 +70,9 @@
     (o) => o.value === $data["webOpenMode"],
   );
 
+  // Attachments are only supported when running as the creator, since every recipient then gets the same file.
+  $: canAttach = $data["webOpenMode"] === ReportRunAs.Creator;
+
   $: hasSlackNotifier = getHasSlackConnection(runtimeClient);
 
   // Pull the time zone options from the dashboard's spec
@@ -261,6 +264,17 @@
           </TooltipContent>
         </Tooltip>
       </div>
+      <Checkbox
+        checked={$data["exportAttach"] && canAttach}
+        id="exportAttach"
+        onCheckedChange={(checked) => {
+          $data["exportAttach"] = Boolean(checked);
+        }}
+        inverse
+        disabled={!canAttach}
+        label={m.report_form_attach_file()}
+        hint={m.report_form_attach_file_hint()}
+      />
 
       {#if filters && timeControls}
         <div class="flex flex-col gap-y-3">
