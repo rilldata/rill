@@ -11,6 +11,7 @@
   } from "@rilldata/web-common/runtime-client/local-service";
   import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
   import ThemeToggle from "@rilldata/web-common/features/themes/ThemeToggle.svelte";
+  import { usePageOriginForLocalhost } from "@rilldata/web-common/lib/url-utils";
 
   $: user = createLocalServiceGetCurrentUser({
     query: {
@@ -22,7 +23,9 @@
 
   let loginUrl: string;
   $: if ($metadata.data?.loginUrl) {
-    const u = new URL($metadata.data.loginUrl);
+    const u = new URL(
+      usePageOriginForLocalhost($metadata.data.loginUrl, window.location.href),
+    );
     u.searchParams.set(
       "redirect",
       `${window.location.origin}${window.location.pathname}`,
@@ -32,7 +35,12 @@
 
   let logoutUrl: string;
   $: if ($metadata.data?.loginUrl) {
-    const u = new URL($metadata.data.loginUrl + "/logout");
+    const u = new URL(
+      usePageOriginForLocalhost(
+        $metadata.data.loginUrl + "/logout",
+        window.location.href,
+      ),
+    );
     u.searchParams.set("redirect", $page.url.href);
     logoutUrl = u.toString();
   }

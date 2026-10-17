@@ -33,6 +33,7 @@
   } from "@rilldata/web-common/runtime-client";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import type { ConnectError } from "@connectrpc/connect";
+  import { usePageOriginForLocalhost } from "@rilldata/web-common/lib/url-utils";
 
   export let hasValidDashboard: boolean;
 
@@ -95,7 +96,11 @@
         return;
       }
       // Login url is on a separate domain, so use window.open instead of goto.
-      window.location.href = `${$metadata.data!.loginUrl}?redirect=${redirectPageUrl}`;
+      const loginUrl = usePageOriginForLocalhost(
+        $metadata.data!.loginUrl,
+        window.location.href,
+      );
+      window.location.href = `${loginUrl}?redirect=${redirectPageUrl}`;
       return;
     }
 
