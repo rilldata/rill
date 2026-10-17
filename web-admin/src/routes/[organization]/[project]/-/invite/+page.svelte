@@ -66,7 +66,9 @@
   }
 </script>
 
-<div class="flex flex-col gap-5 w-[600px] my-16 sm:my-32 md:my-64 mx-auto">
+<div
+  class="flex flex-col gap-5 w-full sm:w-[600px] my-16 sm:my-32 md:my-64 mx-auto"
+>
   <div class="text-xl text-center w-full">{m.auth_invite_teammates()}</div>
   <div class="flex flex-col gap-y-1">
     <div class="flex flex-row items-center">

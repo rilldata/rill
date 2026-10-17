@@ -46,11 +46,9 @@
       crossorigin
     />
     <meta charset="utf-8" />
-    <!-- Set the mobile viewport width -->
-    <meta
-      name="viewport"
-      content="width=1024, initial-scale=1.0, user-scalable=yes"
-    />
+    <!-- Use the device's real width. The zoom is not capped; the chat composer
+         stays at 16px on phones so iOS doesn't auto-zoom into it. -->
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
     <!-- Set the og image for thumbnail previews -->
     <meta
       property="og:image"
