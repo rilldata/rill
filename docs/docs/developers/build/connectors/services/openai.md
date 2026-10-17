@@ -48,6 +48,29 @@ For details on managing credentials across environments, see [Configure Local Cr
 
 For additional configuration options (model, base URL, API type, etc.), see the [OpenAI connector reference](/reference/project-files/connectors#openai).
 
+### OpenAI-compatible APIs
+
+The connector can also target APIs that implement the OpenAI chat completions protocol. Configure the provider's URL and model on the connector. If the provider supports JSON mode but not OpenAI's JSON Schema response format, set `structured_output_mode` to `json_object`:
+
+```yaml
+type: connector
+driver: openai
+api_key: "{{ .env.PROVIDER_API_KEY }}"
+base_url: https://llm.example.com/v1
+model: example-model
+structured_output_mode: json_object
+```
+
+For provider-specific request extensions, use the advanced `extra_body` map. Its values must be JSON-serializable, and it cannot override core request fields such as `model`, `messages`, `tools`, `response_format`, or streaming controls. For example, an OpenAI-compatible endpoint can receive a chat-template option as follows:
+
+```yaml
+extra_body:
+  chat_template_kwargs:
+    enable_thinking: false
+```
+
+These options belong to the connector, so different connectors in the same Rill process can use different provider behavior.
+
 ## Deploy to Rill Cloud
 
 Rill requires you to explicitly provide an OpenAI API key to use the OpenAI connector. See the [connector reference](/reference/project-files/connectors#openai) for details.
