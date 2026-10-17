@@ -139,7 +139,7 @@ export class CartesianChartComponent extends BaseChart<CartesianCanvasChartSpec>
   constructor(resource: V1Resource, parent: CanvasEntity, path: ComponentPath) {
     super(resource, parent, path);
 
-    this.provider = new CartesianChartProvider(this.specStore, {
+    this.provider = new CartesianChartProvider(this.querySpecStore, {
       nominalLimit: DEFAULT_NOMINAL_LIMIT,
       splitLimit: DEFAULT_SPLIT_LIMIT,
       sort: DEFAULT_SORT,

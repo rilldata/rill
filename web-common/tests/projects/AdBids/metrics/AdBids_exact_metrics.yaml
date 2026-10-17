@@ -1,0 +1,35 @@
+# Metrics view YAML
+# Reference documentation: https://docs.rilldata.com/reference/project-files/metrics-views
+
+version: 1
+type: metrics_view
+
+display_name: Adbids exact
+table: AdBids_model
+timeseries: timestamp
+
+dimensions:
+  - name: publisher
+    display_name: Publisher
+    column: publisher
+  - name: domain
+    display_name: Domain
+    column: domain
+
+measures:
+  - name: total_records
+    display_name: Total records
+    expression: COUNT(*)
+    format_preset: humanize
+  # A fast approximate default with an exact variant. The two expressions
+  # differ on purpose so tests can tell which one answered.
+  - name: publishers
+    display_name: Publishers
+    expression: approx_count_distinct(publisher) + 1000
+    exact_expression: count(DISTINCT publisher)
+    format_preset: none
+  - name: records_per_publisher
+    display_name: Records per publisher
+    requires: [total_records, publishers]
+    expression: total_records / publishers
+    format_d3: ",.1f"

@@ -22,6 +22,12 @@
     type PivotClickToFilterResult,
   } from "./pivot-click-to-filter";
 
+  import { ephemeralSpecsToDefs } from "@rilldata/web-common/features/dashboards/ephemeral-measures/canvas";
+  import type { PrecisionChipProps } from "@rilldata/web-common/features/dashboards/exact-measures/exact-measures";
+  import {
+    canvasExactMeasureContext,
+    canvasPrecisionChip,
+  } from "../exact-measures";
   import { onDestroy } from "svelte";
   import { derived, get, type Readable, type Writable } from "svelte/store";
 
@@ -58,6 +64,7 @@
   // FilterManager and metrics view for filter application
   $: canvasEntity = component.parent;
   $: filterManager = canvasEntity.expressionFilterManager;
+
   $: spec = component.specStore;
   $: metricsViewName = $spec?.metrics_view;
   $: selfFilteredDimensions = component.selfFilteredDimensions;
@@ -106,6 +113,26 @@
   $: rowSelectionState = rowSelectionStateStore
     ? $rowSelectionStateStore
     : undefined;
+
+  // Precision chips from the exact selection of this component. Declared
+  // after the stores they read (`spec`, `pivotConfig`, `pivotDataStore`): a
+  // `$:` block must not read a store above its declaration.
+  $: exactContextStore = canvasExactMeasureContext(
+    canvasEntity,
+    component.id,
+    $spec?.metrics_view ?? "",
+    ephemeralSpecsToDefs($spec?.adhoc_measures),
+  );
+  $: precisionFor = (measureName: string): PrecisionChipProps | undefined =>
+    canvasPrecisionChip(
+      measureName,
+      $pivotConfig?.allMeasures.find((m) => m.name === measureName)
+        ?.displayName || measureName,
+      $exactContextStore,
+      !!$pivotDataStore?.isFetching,
+      undefined,
+      () => canvasEntity.toggleExactMeasure(component.id, measureName),
+    );
 </script>
 
 <div
@@ -134,6 +161,7 @@
         {pivotDataStore}
         config={pivotConfig}
         {pivotState}
+        {precisionFor}
         {rowSelectionState}
         {clickSelection}
         fillWidth

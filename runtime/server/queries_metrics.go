@@ -247,6 +247,7 @@ func (s *Server) MetricsViewTimeSeries(ctx context.Context, req *runtimev1.Metri
 		MetricsViewName:   req.MetricsViewName,
 		MeasureNames:      req.MeasureNames,
 		EphemeralMeasures: req.EphemeralMeasures,
+		ExactMeasureNames: req.ExactMeasureNames,
 		TimeStart:         req.TimeStart,
 		TimeEnd:           req.TimeEnd,
 		TimeGranularity:   req.TimeGranularity,

@@ -40,6 +40,7 @@ func ProtoToQuery(q *runtimev1.Query, claims *runtime.SecurityClaims, executionT
 			Filter:              req.Filter,
 			Offset:              req.Offset,
 			PivotOn:             req.PivotOn,
+			Exact:               req.Exact,
 			SecurityClaims:      claims,
 			ExecutionTime:       executionTime,
 		}, nil

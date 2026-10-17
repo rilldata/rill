@@ -118,6 +118,14 @@ measures:
     expression: COUNT(DISTINCT user_id)
     format_preset: humanize
 
+  # Expensive aggregates can define a fast approximate default plus an exact variant.
+  # Dashboards show the approximate value and let viewers switch to the exact one on demand.
+  - name: unique_devices
+    display_name: Unique Devices
+    expression: approx_count_distinct(device_id)
+    exact_expression: COUNT(DISTINCT device_id)
+    format_preset: humanize
+
   - name: conversion_rate
     display_name: Conversion Rate
     expression: SUM(conversions) / NULLIF(SUM(visits), 0)

@@ -1,4 +1,10 @@
-import { mapEphemeralMeasuresForRequest } from "@rilldata/web-common/features/dashboards/ephemeral-measures/measure-mapping";
+import {
+  applyExactMeasures,
+  mapEphemeralMeasuresForRequest,
+} from "@rilldata/web-common/features/dashboards/ephemeral-measures/measure-mapping";
+import { requestExactNames } from "@rilldata/web-common/features/dashboards/exact-measures/exact-measures";
+import { exploreExactSurface } from "@rilldata/web-common/features/dashboards/exact-measures/explore-surfaces";
+import { exactMeasureContextFor } from "@rilldata/web-common/features/dashboards/state-managers/selectors/exact-measures";
 import {
   getURIRequestMeasure,
   URI_DIMENSION_SUFFIX,
@@ -73,6 +79,14 @@ interface DimensionTopList {
  * and further filter using search text if present
  */
 
+// The exact selection a comparison-dimension query follows: the time series
+// charts' for the chart variant, the Time Dimension Detail's for the table.
+function exactSurfaceFor(surface: "chart" | "table"): string {
+  return surface === "table"
+    ? exploreExactSurface.tdd
+    : exploreExactSurface.measures;
+}
+
 export function getDimensionValuesForComparison(
   ctx: StateManagers,
   measures: string[],
@@ -138,9 +152,21 @@ export function getDimensionValuesForComparison(
           (d) => d.name === dimensionName,
         )?.uri;
         const tddMeasures: V1MetricsViewAggregationMeasure[] =
-          mapEphemeralMeasuresForRequest(
-            measures.map((measure) => ({ name: measure })),
-            dashboardStore.ephemeralMeasures,
+          applyExactMeasures(
+            mapEphemeralMeasuresForRequest(
+              measures.map((measure) => ({ name: measure })),
+              dashboardStore.ephemeralMeasures,
+            ),
+            requestExactNames(
+              measures,
+              exactMeasureContextFor(
+                {
+                  dashboard: dashboardStore,
+                  validMetricsView: validSpec?.data?.metricsView,
+                },
+                exactSurfaceFor(surface),
+              ),
+            ),
           );
         if (hasUri) {
           tddMeasures.push(getURIRequestMeasure(dimensionName));
@@ -220,14 +246,20 @@ function batchAggregationQueries(
   ctx: StateManagers,
   measures: string[],
   dimensionValues: DimensionTopList,
+  exactSurface: string,
   includeTimeComparisonForDimension: boolean,
 ) {
   const batches = createBatches(dimensionValues.values, BATCH_SIZE);
   let queries = batches.map((batch) =>
-    getAggregationQueryForTopList(ctx, measures, {
-      values: batch,
-      filter: dimensionValues.filter,
-    }),
+    getAggregationQueryForTopList(
+      ctx,
+      measures,
+      {
+        values: batch,
+        filter: dimensionValues.filter,
+      },
+      exactSurface,
+    ),
   );
 
   if (includeTimeComparisonForDimension) {
@@ -240,6 +272,7 @@ function batchAggregationQueries(
             values: batch,
             filter: dimensionValues.filter,
           },
+          exactSurface,
           true,
         ),
       ),
@@ -253,11 +286,17 @@ function getAggregationQueryForTopList(
   ctx: StateManagers,
   measures: string[],
   dimensionValues: DimensionTopList,
+  exactSurface: string,
   isTimeComparison: boolean = false,
 ): CreateQueryResult<V1MetricsViewAggregationResponse, Error> {
   return derived(
-    [ctx.metricsViewName, ctx.dashboardStore, useTimeControlStore(ctx)],
-    ([metricsViewName, dashboardStore, timeStore], set) => {
+    [
+      ctx.metricsViewName,
+      ctx.dashboardStore,
+      useTimeControlStore(ctx),
+      ctx.selectors.exactMeasures.exactMeasureContext,
+    ],
+    ([metricsViewName, dashboardStore, timeStore, exactContext], set) => {
       const dimensionName = dashboardStore?.selectedComparisonDimension;
       const timeGrain =
         timeStore?.selectedTimeRange?.interval || V1TimeGrain.TIME_GRAIN_DAY;
@@ -291,9 +330,12 @@ function getAggregationQueryForTopList(
         ctx.runtimeClient,
         {
           metricsView: metricsViewName,
-          measures: mapEphemeralMeasuresForRequest(
-            measures.map((measure) => ({ name: measure })),
-            dashboardStore.ephemeralMeasures,
+          measures: applyExactMeasures(
+            mapEphemeralMeasuresForRequest(
+              measures.map((measure) => ({ name: measure })),
+              dashboardStore.ephemeralMeasures,
+            ),
+            requestExactNames(measures, exactContext(exactSurface)),
           ),
           dimensions: [
             { name: dimensionName },
@@ -336,8 +378,18 @@ export function getDimensionValueTimeSeries(
     [
       ctx.dashboardStore,
       useTimeControlStore(ctx),
-      createMetricsViewTimeSeries(ctx, measures, false),
-      createMetricsViewTimeSeries(ctx, measures, true),
+      createMetricsViewTimeSeries(
+        ctx,
+        measures,
+        false,
+        exactSurfaceFor(surface),
+      ),
+      createMetricsViewTimeSeries(
+        ctx,
+        measures,
+        true,
+        exactSurfaceFor(surface),
+      ),
       getDimensionValuesForComparison(ctx, measures, surface),
     ],
     (
@@ -377,6 +429,7 @@ export function getDimensionValueTimeSeries(
         ctx,
         measures,
         dimensionValues,
+        exactSurfaceFor(surface),
         includeTimeComparisonForDimension,
       );
 

@@ -265,6 +265,7 @@ func (s *Server) downloadHandler(w http.ResponseWriter, req *http.Request) {
 			MetricsViewName:   r.MetricsViewName,
 			MeasureNames:      r.MeasureNames,
 			EphemeralMeasures: r.EphemeralMeasures,
+			ExactMeasureNames: r.ExactMeasureNames,
 			TimeStart:         r.TimeStart,
 			TimeEnd:           r.TimeEnd,
 			Where:             r.Where,
@@ -288,6 +289,7 @@ func (s *Server) downloadHandler(w http.ResponseWriter, req *http.Request) {
 			Filter:              r.Filter,
 			Where:               r.Where,
 			Having:              r.Having,
+			Exact:               r.Exact,
 			SecurityClaims:      claims,
 			ExecutionTime:       execTime,
 		}

@@ -6,6 +6,8 @@
   import { resolveTimeFilters } from "@rilldata/web-common/features/canvas/components/time-filters";
   import type { ComponentFilterProperties } from "@rilldata/web-common/features/canvas/components/types";
   import LocalFiltersHeader from "@rilldata/web-common/features/canvas/LocalFiltersHeader.svelte";
+  import type { PrecisionChipProps } from "@rilldata/web-common/features/dashboards/exact-measures/exact-measures";
+  import PrecisionChip from "@rilldata/web-common/features/dashboards/exact-measures/PrecisionChip.svelte";
   import { onDestroy, onMount } from "svelte";
 
   export let title: string | undefined = undefined;
@@ -14,6 +16,9 @@
   export let filters: ComponentFilterProperties | undefined = undefined;
   export let faint: boolean = false;
   export let component: BaseCanvasComponent<any>;
+  // The chip of a component with one precision control for all its measures
+  // (charts), shown right of the title.
+  export let precisionChip: PrecisionChipProps | undefined = undefined;
 
   const WIDTH_THRESHOLD = 480;
 
@@ -59,19 +64,24 @@
   >
     {#if title}
       <div class="header-row">
-        {#if showDescriptionAsTooltip && description}
-          <Tooltip location="bottom" alignment="start">
-            <div class="title-with-icon">
-              <h1 class:faint class="title">{title}</h1>
-              <InfoCircle className="text-fg-secondary" size="16px" />
-            </div>
-            <TooltipContent slot="tooltip-content">
-              {description}
-            </TooltipContent>
-          </Tooltip>
-        {:else}
-          <h1 class:faint class="title">{title}</h1>
-        {/if}
+        <div class="title-group">
+          {#if showDescriptionAsTooltip && description}
+            <Tooltip location="bottom" alignment="start">
+              <div class="title-with-icon">
+                <h1 class:faint class="title">{title}</h1>
+                <InfoCircle className="text-fg-secondary" size="16px" />
+              </div>
+              <TooltipContent slot="tooltip-content">
+                {description}
+              </TooltipContent>
+            </Tooltip>
+          {:else}
+            <h1 class:faint class="title">{title}</h1>
+          {/if}
+          {#if precisionChip}
+            <PrecisionChip {...precisionChip} />
+          {/if}
+        </div>
         {#if atleastOneFilter}
           <LocalFiltersHeader {component} />
         {/if}
@@ -111,6 +121,10 @@
 
   .component-header-container.wide .header-row {
     @apply flex-row items-center;
+  }
+
+  .title-group {
+    @apply flex items-center gap-x-1.5 flex-shrink-0;
   }
 
   .title-with-icon {

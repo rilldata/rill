@@ -173,6 +173,9 @@ allOf:
           rill.metrics.approximate_comparisons_two_phase_limit:
             type: integer
             description: "Row-limit threshold under which metrics comparison queries use a two-phase strategy (base values first, comparison values second). Default: 250."
+          rill.metrics.exact_measures:
+            type: boolean
+            description: "Allow queries to compute measures with their `exact_expression` when requested (per measure, with `exact: true`). When false, any query that would compute a measure exactly fails with an error; a flag on a measure without an `exact_expression` stays a no-op. Acts as a kill switch for expensive exact aggregations. Default: true."
           rill.metrics.exactify_druid_topn:
             type: boolean
             description: "Split Druid TopN queries into two queries to improve measure accuracy, at the cost of performance. Default: false."

@@ -1,0 +1,10 @@
+# Explore YAML
+# Reference documentation: https://docs.rilldata.com/reference/project-files/explore-dashboards
+
+type: explore
+
+title: "Adbids exact dashboard"
+metrics_view: AdBids_exact_metrics
+
+dimensions: '*'
+measures: '*'

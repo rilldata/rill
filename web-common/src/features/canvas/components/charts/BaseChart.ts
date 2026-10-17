@@ -25,7 +25,14 @@ import type {
   V1Resource,
 } from "@rilldata/web-common/runtime-client";
 import { ephemeralSpecsToDefs } from "@rilldata/web-common/features/dashboards/ephemeral-measures/canvas";
-import { get, writable, type Readable, type Writable } from "svelte/store";
+import {
+  derived,
+  get,
+  writable,
+  type Readable,
+  type Writable,
+} from "svelte/store";
+import { canvasExactRequestNames, chartMeasureNames } from "../exact-measures";
 import type {
   ChartDataQuery,
   ChartDomainValues,
@@ -63,6 +70,11 @@ export abstract class BaseChart<
   type: ChartType;
   chartType: Writable<ChartType>;
   component = Chart;
+  // The spec the chart's queries are built from: the YAML spec plus
+  // `exact_measures`, the measures to request exactly given the chart's own
+  // exact selection (the chart is its own surface). Chart providers are
+  // constructed with this store instead of `specStore`.
+  querySpecStore: Readable<TConfig>;
 
   constructor(resource: V1Resource, parent: CanvasEntity, path: ComponentPath) {
     const baseSpec: BaseChartConfig = {
@@ -77,6 +89,25 @@ export abstract class BaseChart<
         ? resource.component?.spec?.renderer
         : undefined)) as ChartType;
     this.chartType = writable(this.type);
+    this.querySpecStore = derived(
+      [this.specStore, parent.exactMeasures, parent.specStore],
+      ([spec]) => this.withExactMeasures(spec),
+    );
+  }
+
+  private withExactMeasures(spec: TConfig): TConfig {
+    const exactMeasures = canvasExactRequestNames(
+      chartMeasureNames(
+        CANVAS_CHART_CONFIG[this.type]?.component.chartInputParams,
+        spec,
+      ),
+      this.parent.currentExactMeasures(this.id),
+      get(this.parent.metricsView.getMeasuresForMetricView(spec.metrics_view)),
+      ephemeralSpecsToDefs(spec.adhoc_measures),
+    );
+    return exactMeasures.length
+      ? { ...spec, exact_measures: exactMeasures }
+      : spec;
   }
 
   isValid(spec: TConfig): boolean {

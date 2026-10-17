@@ -52,4 +52,51 @@ describe("LeaderboardHeader", () => {
       container.querySelectorAll("th[data-percent-change-header]").length,
     ).toBe(2);
   });
+
+  it("renders a precision chip only for measures with an exact variant", async () => {
+    const toggled: string[] = [];
+    const { container } = render(LeaderboardHeader, {
+      props: {
+        ...baseProps,
+        measuresWithContext: new Set<string>(),
+        precisionFor: (measureName: string) =>
+          measureName === "impressions"
+            ? {
+                state: "approx" as const,
+                measureLabel: "impressions",
+                onToggle: () => toggled.push(measureName),
+              }
+            : undefined,
+      },
+    });
+
+    const chips = container.querySelectorAll("button.precision-chip");
+    expect(chips.length).toBe(1);
+    expect(chips[0].textContent?.trim()).toBe("≈");
+    expect(chips[0].getAttribute("aria-pressed")).toBe("false");
+
+    (chips[0] as HTMLButtonElement).click();
+    expect(toggled).toEqual(["impressions"]);
+  });
+
+  it("renders the chip beside the # header of a single-measure leaderboard", () => {
+    const { container } = render(LeaderboardHeader, {
+      props: {
+        ...baseProps,
+        leaderboardMeasureNames: ["impressions"],
+        measuresWithContext: new Set<string>(),
+        precisionFor: () => ({
+          state: "exact" as const,
+          measureLabel: "impressions",
+          onToggle: () => {},
+        }),
+      },
+    });
+
+    const header = container.querySelector("th[data-measure-header]");
+    expect(header?.textContent).toContain("#");
+    const chip = header?.querySelector("button.precision-chip");
+    expect(chip?.textContent?.trim()).toBe("=");
+    expect(chip?.getAttribute("aria-pressed")).toBe("true");
+  });
 });

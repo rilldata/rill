@@ -5,6 +5,11 @@
   import CreateEphemeralMeasureButton from "@rilldata/web-common/features/dashboards/ephemeral-measures/CreateEphemeralMeasureButton.svelte";
   import { ephemeralMeasureDialog } from "@rilldata/web-common/features/dashboards/ephemeral-measures/dialog-store";
   import { ephemeralMeasureNameSet } from "@rilldata/web-common/features/dashboards/ephemeral-measures/measure-mapping";
+  import {
+    precisionStateFor,
+    requestExactNames,
+  } from "@rilldata/web-common/features/dashboards/exact-measures/exact-measures";
+  import { exploreExactSurface } from "@rilldata/web-common/features/dashboards/exact-measures/explore-surfaces";
   import ReplacePivotDialog from "@rilldata/web-common/features/dashboards/pivot/ReplacePivotDialog.svelte";
   import { splitPivotChips } from "@rilldata/web-common/features/dashboards/pivot/pivot-utils";
   import {
@@ -82,12 +87,28 @@
       measures: { allMeasures, visibleMeasures, getMeasureByName },
       charts: { canPanLeft, canPanRight, getNewPanRange },
       tags: { measureTagIndex },
+      exactMeasures: { exactMeasureContext },
     },
     actions: {
       measures: { setMeasureVisibility },
+      exactMeasures: { toggleExactMeasure },
     },
     expressionFilterManager,
   } = StateManagers;
+
+  // The big numbers and their charts are one surface: a click applies to this
+  // row only.
+  const measuresSurface = exploreExactSurface.measures;
+
+  // Measures that are requested with `exact: true`: the selection of the
+  // big-number row plus the measures that reference a selected measure.
+  const exactContext = $derived($exactMeasureContext(measuresSurface));
+  const exactRequestNames = $derived(
+    requestExactNames(
+      $visibleMeasures.map((measure) => measure.name ?? ""),
+      exactContext,
+    ),
+  );
 
   const timeControlsStore = useTimeControlStore(StateManagers);
 
@@ -422,9 +443,14 @@
       {/if}
 
       {#each renderedMeasures as measure (measure.name)}
+        {@const measureName = measure.name ?? ""}
+        {@const exact = exactRequestNames.has(measureName)}
         <MeasureBigNumber
           {measure}
           ephemeralMeasures={$dashboardStore.ephemeralMeasures}
+          {exact}
+          precision={precisionStateFor(measureName, exactContext)}
+          onToggleExact={() => toggleExactMeasure(measuresSurface, measureName)}
           isMeasureExpanded={showTimeDimensionDetail}
           {showComparison}
           metricsViewName={chartMetricsViewName}
@@ -445,6 +471,7 @@
             <MeasureChart
               {measure}
               ephemeralMeasures={$dashboardStore.ephemeralMeasures}
+              {exact}
               {scrubController}
               {connectNulls}
               tddChartType={tddChartType ?? TDDChart.DEFAULT}

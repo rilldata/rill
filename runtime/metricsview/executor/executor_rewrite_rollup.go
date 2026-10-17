@@ -41,6 +41,7 @@ const (
 const (
 	skipRawRows                 = "raw_rows"
 	skipNonPrimaryTimeDimension = "non_primary_time_dimension"
+	skipExactMeasures           = "exact_measures"
 )
 
 // Rollup routing decides whether a metrics query can be served from a
@@ -48,7 +49,7 @@ const (
 //
 // Routing decision:
 //
-//  1. Quick disqualification: raw-row queries and queries referencing a non-primary time dimension are skipped.
+//  1. Quick disqualification: raw-row queries, queries referencing a non-primary time dimension, and queries that compute measures exactly are skipped.
 //
 //  2. Eligibility (per rollup): a rollup is eligible only if all of these hold:
 //     a. Query time grain is derivable from the rollup grain (e.g. month from day).
@@ -89,7 +90,7 @@ type rollupCandidate struct {
 
 // rewriteQueryForRollup checks if a rollup table can satisfy the query.
 // It returns a synthetic MetricsViewSpec pointing to the rollup table, or nil if no rollup matches.
-func (e *Executor) rewriteQueryForRollup(ctx context.Context, qry *metricsview.Query) (*runtimev1.MetricsViewSpec, error) {
+func (e *Executor) rewriteQueryForRollup(ctx context.Context, qry *metricsview.Query, exactMeasures map[string]bool) (*runtimev1.MetricsViewSpec, error) {
 	e.latestQueryTable = e.metricsView.Table
 
 	if len(e.metricsView.Rollups) == 0 {
@@ -116,6 +117,20 @@ func (e *Executor) rewriteQueryForRollup(ctx context.Context, qry *metricsview.Q
 			attribute.Int("rollup.candidate_count", len(e.metricsView.Rollups)),
 			attribute.String("rollup.result", "skipped"),
 			attribute.String("rollup.skip_reason", skipNonPrimaryTimeDimension),
+		)
+		span.End()
+		return nil, nil
+	}
+
+	// Disqualify: queries that compute measures with their exact_expression.
+	// Exact aggregates (e.g. exact distinct counts) cannot be computed from pre-aggregated rows.
+	// This is keyed on the resolved exact measures, so an `exact` flag on a measure without an exact_expression keeps the rollup eligible.
+	if len(exactMeasures) > 0 {
+		_, span := tracer.Start(ctx, "rollup.selection")
+		span.SetAttributes(
+			attribute.Int("rollup.candidate_count", len(e.metricsView.Rollups)),
+			attribute.String("rollup.result", "skipped"),
+			attribute.String("rollup.skip_reason", skipExactMeasures),
 		)
 		span.End()
 		return nil, nil

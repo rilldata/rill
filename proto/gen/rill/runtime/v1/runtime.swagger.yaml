@@ -2785,6 +2785,13 @@ paths:
                 description: |-
                   Optional ephemeral measures, i.e. measures defined by the query rather than the metrics view.
                   Only the `expression` compute is supported for time series.
+              exactMeasureNames:
+                type: array
+                items:
+                  type: string
+                description: |-
+                  Optional. Names of measures (from measure_names or ephemeral_measures) to compute with their `exact_expression`.
+                  No-op for measures without an `exact_expression`.
               timeStart:
                 type: string
                 format: date-time
@@ -4137,6 +4144,9 @@ definitions:
       lowerIsBetter:
         type: boolean
         description: When true, decreases in this measure are favorable (e.g. bounce rate, latency, error count). UI surfaces that render comparison deltas (KPIs, big numbers, leaderboards, pivot tables, time-series tooltips) swap their positive/negative coloring accordingly.
+      exactExpression:
+        type: string
+        description: Optional exact variant of `expression`. When set, `expression` is treated as the approximate default and `exact_expression` is only used when a query explicitly requests exact values for the measure.
     title: Measures are aggregated computed values
   MetricsViewSpecMeasureType:
     type: string
@@ -6523,6 +6533,11 @@ definitions:
         $ref: '#/definitions/v1MetricsViewAggregationMeasureComputeComparisonTime'
       expression:
         $ref: '#/definitions/v1MetricsViewAggregationMeasureComputeExpression'
+      exact:
+        type: boolean
+        description: |-
+          Optional. Compute the measure with its `exact_expression` instead of its (approximate) `expression`.
+          Measures referenced by this measure are also computed exactly. No-op for measures without an `exact_expression`.
   v1MetricsViewAggregationMeasureComputeComparisonDelta:
     type: object
     properties:
@@ -7239,6 +7254,13 @@ definitions:
         description: |-
           Optional ephemeral measures, i.e. measures defined by the query rather than the metrics view.
           Only the `expression` compute is supported for time series.
+      exactMeasureNames:
+        type: array
+        items:
+          type: string
+        description: |-
+          Optional. Names of measures (from measure_names or ephemeral_measures) to compute with their `exact_expression`.
+          No-op for measures without an `exact_expression`.
       timeStart:
         type: string
         format: date-time
