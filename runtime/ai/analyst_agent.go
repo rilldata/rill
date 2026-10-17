@@ -192,12 +192,14 @@ func (t *AnalystAgent) Handler(ctx context.Context, args *AnalystAgentArgs) (*An
 	// Determine tools that can be used
 	tools := []string{}
 	if args.Explore == "" {
-		tools = append(tools, ListMetricsViewsName, GetMetricsViewName, GetCanvasName)
+		tools = append(tools, ListMetricsViewsName, GetMetricsViewName, ListCanvasesName, GetCanvasName)
 	}
 	tools = append(tools, QueryMetricsViewSummaryName, QueryMetricsViewName, ClickUIName)
 	if !args.DisableCharts {
 		tools = append(tools, CreateChartName)
 	}
+	// develop_personal_canvas is dropped automatically by Complete when the user can't have personal canvases (see DevelopPersonalCanvas.CheckAccess).
+	tools = append(tools, DevelopPersonalCanvasName)
 	if len(skills) > 0 {
 		tools = append(tools, ListSkillsName, LoadSkillName)
 	}

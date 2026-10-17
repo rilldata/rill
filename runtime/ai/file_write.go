@@ -89,7 +89,7 @@ func (t *WriteFile) Handler(ctx context.Context, args *WriteFileArgs) (*WriteFil
 			return nil, err
 		}
 
-		resources, parseErr, parseWarnings, err = t.reconcileAndGetStatus(ctx, args.Path)
+		resources, parseErr, parseWarnings, err = t.reconcileAndGetStatus(ctx, args.Path, false)
 		if err != nil {
 			return nil, err
 		}
@@ -116,7 +116,9 @@ func (t *WriteFile) Handler(ctx context.Context, args *WriteFileArgs) (*WriteFil
 }
 
 // reconcileAndGetStatus waits until reconciliation is done, then returns the status of resources declared in the file at the given path.
-func (t *WriteFile) reconcileAndGetStatus(ctx context.Context, path string) (resources []map[string]any, parseError string, parseWarnings []string, err error) {
+// Set awaitPull when the file reaches the repo asynchronously, as personal files pulled from the admin service do:
+// parse errors are then read only after the parser has pulled and parsed it, instead of after a short delay.
+func (t *WriteFile) reconcileAndGetStatus(ctx context.Context, path string, awaitPull bool) (resources []map[string]any, parseError string, parseWarnings []string, err error) {
 	s := GetSession(ctx)
 	ctrl, err := t.Runtime.Controller(ctx, s.InstanceID())
 	if err != nil {
@@ -127,10 +129,18 @@ func (t *WriteFile) reconcileAndGetStatus(ctx context.Context, path string) (res
 		return nil, "", nil, err
 	}
 
-	select {
-	case <-time.After(time.Millisecond * 500):
-	case <-ctx.Done():
-		return nil, "", nil, ctx.Err()
+	if awaitPull {
+		// Don't ignore hidden resources: the project parser is one, and it is the one pulling and parsing the file.
+		err = ctrl.WaitUntilIdle(ctx, false)
+		if err != nil {
+			return nil, "", nil, err
+		}
+	} else {
+		select {
+		case <-time.After(time.Millisecond * 500):
+		case <-ctx.Done():
+			return nil, "", nil, ctx.Err()
+		}
 	}
 
 	p, err := ctrl.Get(ctx, runtime.GlobalProjectParserName, false)

@@ -108,6 +108,7 @@ type InstanceOptions struct {
 	AIConnector       string // Options: "" (none), "openai", "claude"
 	TestConnectors    []string
 	FrontendURL       string
+	Environment       string // Defaults to "test"
 }
 
 // NewInstanceWithOptions creates a runtime and an instance for use in tests.
@@ -161,9 +162,14 @@ func NewInstanceWithOptions(t TestingT, opts InstanceOptions) (*runtime.Runtime,
 		}
 	}
 
+	environment := opts.Environment
+	if environment == "" {
+		environment = "test"
+	}
+
 	tmpDir := t.TempDir()
 	inst := &drivers.Instance{
-		Environment:      "test",
+		Environment:      environment,
 		OLAPConnector:    olapDriver,
 		RepoConnector:    "repo",
 		AIConnector:      aiConnector,

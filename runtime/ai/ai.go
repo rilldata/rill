@@ -59,10 +59,13 @@ func NewRunner(rt *runtime.Runtime, activity *activity.Client) *Runner {
 
 	RegisterTool(r, &ListMetricsViews{Runtime: rt})
 	RegisterTool(r, &GetMetricsView{Runtime: rt})
+	RegisterTool(r, &ListCanvases{Runtime: rt})
 	RegisterTool(r, &GetCanvas{Runtime: rt})
 	RegisterTool(r, &QueryMetricsViewSummary{Runtime: rt})
 	RegisterTool(r, &QueryMetricsView{Runtime: rt})
 	RegisterTool(r, &CreateChart{Runtime: rt})
+	RegisterTool(r, &DevelopPersonalCanvas{Runtime: rt})
+	RegisterTool(r, &WritePersonalCanvas{Runtime: rt})
 	RegisterTool(r, &ListSkills{Runtime: rt})
 	RegisterTool(r, &LoadSkill{Runtime: rt})
 
@@ -1729,19 +1732,28 @@ func completionMessageID(id string) string {
 
 // agentName returns the name of the agent whose call the current call is nested in, or an empty string if there is none.
 func (s *Session) agentName() string {
+	msg := s.ancestorCall(AnalystAgentName, DeveloperAgentName)
+	if msg == nil {
+		return ""
+	}
+	return msg.Tool
+}
+
+// ancestorCall returns the closest call to one of the given tools that the current call is nested in, or nil if there is none.
+func (s *Session) ancestorCall(toolNames ...string) *Message {
 	id := s.ParentID
 	for range 100 { // Fail-safe, not expected to reach the limit
 		if id == "" {
-			return ""
+			return nil
 		}
 		msg, ok := s.Message(FilterByID(id))
 		if !ok {
-			return ""
+			return nil
 		}
-		if msg.Type == MessageTypeCall && (msg.Tool == AnalystAgentName || msg.Tool == DeveloperAgentName) {
-			return msg.Tool
+		if msg.Type == MessageTypeCall && slices.Contains(toolNames, msg.Tool) {
+			return msg
 		}
 		id = msg.ParentID
 	}
-	return ""
+	return nil
 }
