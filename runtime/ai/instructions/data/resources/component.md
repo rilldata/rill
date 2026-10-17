@@ -277,8 +277,10 @@ custom_chart:
 ```
 
 The component editor also has an **Eject to Vega-Lite** action, which compiles the current chart spec
-and writes the equivalent parameterized Vega-Lite for the user. It is a good starting point for
-someone editing by hand, but it is not available to you: write the `vega_spec` directly.
+and writes the equivalent parameterized Vega-Lite. The parent agent may run it before delegating to
+you; when you are told the component was just ejected, edit the `vega_spec` already in the file
+rather than rewriting it, since it preserves the chart the spec described. Otherwise, write the
+`vega_spec` directly.
 
 ## metrics_sql rules
 

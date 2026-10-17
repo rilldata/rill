@@ -61,6 +61,7 @@ const (
 	RuntimeService_Complete_FullMethodName                = "/rill.runtime.v1.RuntimeService/Complete"
 	RuntimeService_CompleteStreaming_FullMethodName       = "/rill.runtime.v1.RuntimeService/CompleteStreaming"
 	RuntimeService_GetAIMessage_FullMethodName            = "/rill.runtime.v1.RuntimeService/GetAIMessage"
+	RuntimeService_CompleteUIAction_FullMethodName        = "/rill.runtime.v1.RuntimeService/CompleteUIAction"
 	RuntimeService_ListAIMemories_FullMethodName          = "/rill.runtime.v1.RuntimeService/ListAIMemories"
 	RuntimeService_CreateAIMemory_FullMethodName          = "/rill.runtime.v1.RuntimeService/CreateAIMemory"
 	RuntimeService_UpdateAIMemory_FullMethodName          = "/rill.runtime.v1.RuntimeService/UpdateAIMemory"
@@ -182,6 +183,9 @@ type RuntimeServiceClient interface {
 	CompleteStreaming(ctx context.Context, in *CompleteStreamingRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[CompleteStreamingResponse], error)
 	// GetAIMessage returns a message in a conversaion.
 	GetAIMessage(ctx context.Context, in *GetAIMessageRequest, opts ...grpc.CallOption) (*GetAIMessageResponse, error)
+	// CompleteUIAction reports the outcome of a UI action the browser ran for a click_ui tool call.
+	// The click_ui tool call blocks until the browser reports the outcome or times out.
+	CompleteUIAction(ctx context.Context, in *CompleteUIActionRequest, opts ...grpc.CallOption) (*CompleteUIActionResponse, error)
 	// ListAIMemories lists the current user's AI memories for an instance.
 	// Memories are short preferences and facts the AI has learned about the user and uses in later conversations.
 	ListAIMemories(ctx context.Context, in *ListAIMemoriesRequest, opts ...grpc.CallOption) (*ListAIMemoriesResponse, error)
@@ -693,6 +697,16 @@ func (c *runtimeServiceClient) GetAIMessage(ctx context.Context, in *GetAIMessag
 	return out, nil
 }
 
+func (c *runtimeServiceClient) CompleteUIAction(ctx context.Context, in *CompleteUIActionRequest, opts ...grpc.CallOption) (*CompleteUIActionResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(CompleteUIActionResponse)
+	err := c.cc.Invoke(ctx, RuntimeService_CompleteUIAction_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *runtimeServiceClient) ListAIMemories(ctx context.Context, in *ListAIMemoriesRequest, opts ...grpc.CallOption) (*ListAIMemoriesResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(ListAIMemoriesResponse)
@@ -992,6 +1006,9 @@ type RuntimeServiceServer interface {
 	CompleteStreaming(*CompleteStreamingRequest, grpc.ServerStreamingServer[CompleteStreamingResponse]) error
 	// GetAIMessage returns a message in a conversaion.
 	GetAIMessage(context.Context, *GetAIMessageRequest) (*GetAIMessageResponse, error)
+	// CompleteUIAction reports the outcome of a UI action the browser ran for a click_ui tool call.
+	// The click_ui tool call blocks until the browser reports the outcome or times out.
+	CompleteUIAction(context.Context, *CompleteUIActionRequest) (*CompleteUIActionResponse, error)
 	// ListAIMemories lists the current user's AI memories for an instance.
 	// Memories are short preferences and facts the AI has learned about the user and uses in later conversations.
 	ListAIMemories(context.Context, *ListAIMemoriesRequest) (*ListAIMemoriesResponse, error)
@@ -1172,6 +1189,9 @@ func (UnimplementedRuntimeServiceServer) CompleteStreaming(*CompleteStreamingReq
 }
 func (UnimplementedRuntimeServiceServer) GetAIMessage(context.Context, *GetAIMessageRequest) (*GetAIMessageResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetAIMessage not implemented")
+}
+func (UnimplementedRuntimeServiceServer) CompleteUIAction(context.Context, *CompleteUIActionRequest) (*CompleteUIActionResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CompleteUIAction not implemented")
 }
 func (UnimplementedRuntimeServiceServer) ListAIMemories(context.Context, *ListAIMemoriesRequest) (*ListAIMemoriesResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListAIMemories not implemented")
@@ -1982,6 +2002,24 @@ func _RuntimeService_GetAIMessage_Handler(srv interface{}, ctx context.Context, 
 	return interceptor(ctx, in, info, handler)
 }
 
+func _RuntimeService_CompleteUIAction_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CompleteUIActionRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RuntimeServiceServer).CompleteUIAction(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: RuntimeService_CompleteUIAction_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RuntimeServiceServer).CompleteUIAction(ctx, req.(*CompleteUIActionRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _RuntimeService_ListAIMemories_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(ListAIMemoriesRequest)
 	if err := dec(in); err != nil {
@@ -2500,6 +2538,10 @@ var RuntimeService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetAIMessage",
 			Handler:    _RuntimeService_GetAIMessage_Handler,
+		},
+		{
+			MethodName: "CompleteUIAction",
+			Handler:    _RuntimeService_CompleteUIAction_Handler,
 		},
 		{
 			MethodName: "ListAIMemories",

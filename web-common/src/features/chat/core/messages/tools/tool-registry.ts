@@ -30,7 +30,9 @@ import {
   type MemoryUpdateBlock,
 } from "@rilldata/web-common/features/chat/memory/memory-update-block";
 import { invalidateAIMemories } from "@rilldata/web-common/features/chat/memory/memory-store";
-import { clickUIAction } from "../../ui-actions";
+import { runUIAction } from "../../ui-actions";
+import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
+import { runtimeServiceCompleteUIAction } from "@rilldata/web-common/runtime-client/v2/gen/runtime-service";
 
 // =============================================================================
 // RENDER MODES
@@ -70,7 +72,11 @@ export interface ToolConfig {
   ) => ToolBlockType | null;
 
   /** Used to process any UI action or side effects from tool calls. */
-  onCall?: (callMessage: V1Message) => void;
+  onCall?: (
+    callMessage: V1Message,
+    client: RuntimeClient,
+    conversationId: string,
+  ) => void;
   onResult?: (
     callMessage: V1Message | undefined,
     resultMessage: V1Message,
@@ -125,7 +131,7 @@ const TOOL_CONFIGS: Partial<Record<string, ToolConfig>> = {
   [ToolName.CLICK_UI]: {
     renderMode: "block",
     createBlock: createSimpleTooCall,
-    onResult: handleClickUIToolResult,
+    onCall: handleClickUIToolCall,
   },
 
   // Memory: render as a "Memory updated" notice and refresh the memory list when the call completes
@@ -172,28 +178,38 @@ function handleNavigateToolCall(callMessage: V1Message) {
   }
 }
 
-function handleClickUIToolResult(
-  callMessage: V1Message | undefined,
-  resultMessage: V1Message,
+/**
+ * Runs the requested UI action and reports its outcome to the runtime,
+ * where the click_ui tool call is waiting for it.
+ */
+function handleClickUIToolCall(
+  callMessage: V1Message,
+  client: RuntimeClient,
+  conversationId: string,
 ) {
-  if (
-    !callMessage?.contentData ||
-    resultMessage.contentType === MessageContentType.ERROR
-  )
-    return;
-  try {
-    const content = JSON.parse(callMessage.contentData) as {
-      action_id?: string;
-    };
-    if (!content.action_id) return;
-    if (!clickUIAction(content.action_id)) {
-      console.warn(
-        `[AI UI action] Action is no longer uniquely available: ${content.action_id}`,
-      );
+  if (!callMessage.id || !callMessage.contentData) return;
+  const callMessageId = callMessage.id;
+  void (async () => {
+    let error = "";
+    try {
+      const content = JSON.parse(callMessage.contentData!) as {
+        action_id?: string;
+      };
+      await runUIAction(content.action_id ?? "");
+    } catch (err) {
+      error = err instanceof Error ? err.message : String(err);
     }
-  } catch (err) {
-    console.error(err);
-  }
+    try {
+      await runtimeServiceCompleteUIAction(client, {
+        conversationId,
+        callMessageId,
+        // The runtime caps the reported error's length.
+        error: error.slice(0, 1024),
+      });
+    } catch (err) {
+      console.error("[AI UI action] Failed to report outcome", err);
+    }
+  })();
 }
 
 /**
