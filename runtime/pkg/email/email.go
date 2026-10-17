@@ -34,40 +34,46 @@ func New(sender Sender) *Client {
 }
 
 type ScheduledReport struct {
-	ToEmail         string
-	ToName          string
-	DisplayName     string
-	ReportTime      time.Time
-	DownloadFormat  string
-	OpenLink        string
-	DownloadLink    string
-	EditLink        string
-	UnsubscribeLink string
-	Summary         string // For AI reports
+	ToEmail            string
+	ToName             string
+	DisplayName        string
+	ReportTime         time.Time
+	DownloadFormat     string
+	OpenLink           string
+	DownloadLink       string
+	EditLink           string
+	UnsubscribeLink    string
+	Summary            string      // For AI reports
+	Attachment         *Attachment // The exported file, if it is attached to the email
+	AttachmentTooLarge bool        // If true, the email explains that the exported file was too large to attach
 }
 
 type scheduledReportData struct {
-	DisplayName      string
-	ReportTimeString string // Will be inferred from ReportTime
-	DownloadFormat   string
-	OpenLink         template.URL
-	DownloadLink     template.URL
-	EditLink         template.URL
-	UnsubscribeLink  template.URL
-	Summary          string // For AI reports
+	DisplayName        string
+	ReportTimeString   string // Will be inferred from ReportTime
+	DownloadFormat     string
+	OpenLink           template.URL
+	DownloadLink       template.URL
+	EditLink           template.URL
+	UnsubscribeLink    template.URL
+	Summary            string // For AI reports
+	Attached           bool
+	AttachmentTooLarge bool
 }
 
 func (c *Client) SendScheduledReport(opts *ScheduledReport) error {
 	// Build template data
 	data := &scheduledReportData{
-		DisplayName:      opts.DisplayName,
-		ReportTimeString: opts.ReportTime.Format(time.RFC1123),
-		DownloadFormat:   opts.DownloadFormat,
-		OpenLink:         template.URL(opts.OpenLink),
-		DownloadLink:     template.URL(opts.DownloadLink),
-		EditLink:         template.URL(opts.EditLink),
-		UnsubscribeLink:  template.URL(opts.UnsubscribeLink),
-		Summary:          opts.Summary,
+		DisplayName:        opts.DisplayName,
+		ReportTimeString:   opts.ReportTime.Format(time.RFC1123),
+		DownloadFormat:     opts.DownloadFormat,
+		OpenLink:           template.URL(opts.OpenLink),
+		DownloadLink:       template.URL(opts.DownloadLink),
+		EditLink:           template.URL(opts.EditLink),
+		UnsubscribeLink:    template.URL(opts.UnsubscribeLink),
+		Summary:            opts.Summary,
+		Attached:           opts.Attachment != nil,
+		AttachmentTooLarge: opts.AttachmentTooLarge,
 	}
 
 	// Build subject
@@ -82,6 +88,9 @@ func (c *Client) SendScheduledReport(opts *ScheduledReport) error {
 	}
 	html := buf.String()
 
+	if opts.Attachment != nil {
+		return c.Sender.Send(opts.ToEmail, opts.ToName, subject, html, *opts.Attachment)
+	}
 	return c.Sender.Send(opts.ToEmail, opts.ToName, subject, html)
 }
 

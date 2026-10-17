@@ -167,6 +167,8 @@ _[object]_ - Export configuration for query-based reports
 
   - **`limit`** - _[integer]_ - Maximum number of rows to export
 
+  - **`attach`** - _[boolean]_ - If true, attaches the exported file to email notifications. Only supported for query-based reports run as the creator (`web_open_mode` set to `creator`, which is the default). Files larger than 10 MB are not attached; the email links to the download instead.
+
 ### `notify`
 
 _[object]_ - Notification configuration for email and Slack delivery
