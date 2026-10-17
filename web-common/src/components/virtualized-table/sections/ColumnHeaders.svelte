@@ -47,6 +47,7 @@
         {header}
         {noPin}
         {showDataIcon}
+        precision={columns[header.index].precision}
         onPin={() => {
           onPin(columns[header.index]);
         }}

@@ -1285,3 +1285,54 @@ explore:
 	require.Nil(t, e3.DimensionsSelector)
 	require.Equal(t, &runtimev1.FieldSelector{Selector: &runtimev1.FieldSelector_Regex{Regex: "count.*"}}, e3.MeasuresSelector)
 }
+
+func TestMetricsViewExactExpression(t *testing.T) {
+	ctx := context.Background()
+
+	t.Run("parsed into the spec", func(t *testing.T) {
+		repo := makeRepo(t, map[string]string{
+			`rill.yaml`:     ``,
+			`models/m1.sql`: `SELECT 1 AS user_id`,
+			`metrics_views/mv1.yaml`: `
+type: metrics_view
+version: 1
+model: m1
+measures:
+- name: users
+  expression: approx_count_distinct(user_id)
+  exact_expression: count(DISTINCT user_id)
+- name: records
+  expression: count(*)
+`,
+		})
+		p, err := Parse(ctx, repo, "", "", "duckdb", true)
+		require.NoError(t, err)
+		require.Empty(t, p.Errors)
+
+		mv := p.Resources[ResourceName{Kind: ResourceKindMetricsView, Name: "mv1"}]
+		require.NotNil(t, mv)
+		require.Len(t, mv.MetricsViewSpec.Measures, 2)
+		require.Equal(t, "approx_count_distinct(user_id)", mv.MetricsViewSpec.Measures[0].Expression)
+		require.Equal(t, "count(DISTINCT user_id)", mv.MetricsViewSpec.Measures[0].ExactExpression)
+		require.Empty(t, mv.MetricsViewSpec.Measures[1].ExactExpression)
+	})
+
+	t.Run("requires expression", func(t *testing.T) {
+		repo := makeRepo(t, map[string]string{
+			`rill.yaml`:     ``,
+			`models/m1.sql`: `SELECT 1 AS user_id`,
+			`metrics_views/mv1.yaml`: `
+type: metrics_view
+version: 1
+model: m1
+measures:
+- name: users
+  exact_expression: count(DISTINCT user_id)
+`,
+		})
+		p, err := Parse(ctx, repo, "", "", "duckdb", true)
+		require.NoError(t, err)
+		require.NotEmpty(t, p.Errors)
+		require.Contains(t, p.Errors[0].Message, `"exact_expression" can only be set if "expression" is set`)
+	})
+}

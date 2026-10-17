@@ -42,6 +42,8 @@ type AST struct {
 	comparisonDimFields []FieldNode
 	unnests             []string
 	nextIdentifier      int
+	// Names of metrics view measures that must be computed with their exact_expression (see ExactMeasureSet).
+	exactMeasures map[string]bool
 }
 
 // SelectNode represents a query that computes measures by dimensions.
@@ -195,6 +197,18 @@ const (
 //
 // The qry's PivotOn must be empty. Pivot queries must be rewritten/handled upstream of NewAST.
 func NewAST(mv *runtimev1.MetricsViewSpec, sec MetricsViewSecurity, qry *Query, dialect drivers.Dialect) (*AST, error) {
+	return newAST(mv, sec, qry, dialect, nil)
+}
+
+// NewASTWithExactMeasures is like NewAST, but computes the given measures with their exact_expression instead of resolving them from the query's flags.
+// It is for queries derived from another query, which must use the exact set resolved for that query (see ExactMeasureSet).
+func NewASTWithExactMeasures(mv *runtimev1.MetricsViewSpec, sec MetricsViewSecurity, qry *Query, dialect drivers.Dialect, exactMeasures map[string]bool) (*AST, error) {
+	return newAST(mv, sec, qry, dialect, exactMeasures)
+}
+
+// newAST implements NewAST and NewASTWithExactMeasures.
+// If exactMeasures is nil, it is resolved from the query with ExactMeasureSet.
+func newAST(mv *runtimev1.MetricsViewSpec, sec MetricsViewSecurity, qry *Query, dialect drivers.Dialect, exactMeasures map[string]bool) (*AST, error) {
 	// Validation
 	if len(qry.PivotOn) > 0 {
 		return nil, errors.New("cannot build AST for pivot queries")
@@ -216,6 +230,13 @@ func NewAST(mv *runtimev1.MetricsViewSpec, sec MetricsViewSecurity, qry *Query, 
 		Query:       qry,
 		Dialect:     dialect,
 	}
+
+	// Determine up front which measures must use their exact_expression.
+	// This must happen before any measure is resolved (including measures in WHERE subqueries), because a measure name has exactly one value per query.
+	if exactMeasures == nil {
+		exactMeasures = ExactMeasureSet(mv, qry)
+	}
+	ast.exactMeasures = exactMeasures
 
 	// Determine the minimum time grain for the time dimension in the query.
 	minGrain := TimeGrainUnspecified
@@ -1510,15 +1531,22 @@ func (a *AST) sqlForTimeRange(timeDimExpr string, typeCode runtimev1.Type_Code, 
 
 // sqlForMeasure builds a SQL expression for a measure, including its window if present.
 // It uses the provided n to resolve dimensions expressions for window partitions.
+// It uses the measure's exact_expression if the query requests the measure exactly (see ExactMeasureSet).
 func (a *AST) sqlForMeasure(m *runtimev1.MetricsViewSpec_Measure, n *SelectNode) (string, error) {
+	// NOTE: m may be the metrics view's own spec measure, which is shared across queries, so it must never be mutated here.
+	expr := m.Expression
+	if m.ExactExpression != "" && a.exactMeasures[m.Name] {
+		expr = m.ExactExpression
+	}
+
 	// If not applying a window, just return the measure expression.
 	if m.Window == nil {
-		return m.Expression, nil
+		return expr, nil
 	}
 
 	// If partitioning is not enabled, ordering and framing doesn't matter
 	if !m.Window.Partition {
-		return fmt.Sprintf("%s OVER ()", m.Expression), nil
+		return fmt.Sprintf("%s OVER ()", expr), nil
 	}
 
 	// If partitioning is enabled, we partition by all dimensions that we don't order by.
@@ -1553,7 +1581,7 @@ func (a *AST) sqlForMeasure(m *runtimev1.MetricsViewSpec_Measure, n *SelectNode)
 
 	// Build the window expression
 	b := &strings.Builder{}
-	b.WriteString(m.Expression)
+	b.WriteString(expr)
 	b.WriteString(" OVER (")
 	if len(partitionFields) > 0 {
 		b.WriteString("PARTITION BY ")

@@ -261,7 +261,8 @@ func (q *MetricsViewComparison) rewriteToMetricsViewQuery(export bool) (*metrics
 	var measureFilter *runtimev1.Expression
 
 	for _, m := range q.Measures {
-		res := metricsview.Measure{Name: m.Name}
+		// The request-level Exact flag computes every measure exactly; the measure-level flag targets a single measure.
+		res := metricsview.Measure{Name: m.Name, Exact: m.Exact || q.Exact}
 		switch m.BuiltinMeasure {
 		case runtimev1.BuiltinMeasure_BUILTIN_MEASURE_COUNT:
 			res.Compute = &metricsview.MeasureCompute{Count: true}

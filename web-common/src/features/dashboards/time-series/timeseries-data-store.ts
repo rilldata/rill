@@ -1,7 +1,11 @@
 import {
+  applyExactMeasures,
   ephemeralMeasureNameSet,
+  exactTimeSeriesMeasureNames,
   splitTimeSeriesMeasures,
 } from "@rilldata/web-common/features/dashboards/ephemeral-measures/measure-mapping";
+import { requestExactNames } from "@rilldata/web-common/features/dashboards/exact-measures/exact-measures";
+import { exploreExactSurface } from "@rilldata/web-common/features/dashboards/exact-measures/explore-surfaces";
 import { filterOutSomeAdvancedMeasures } from "@rilldata/web-common/features/dashboards/state-managers/selectors/measures";
 import type { StateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
 import { sanitiseExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
@@ -57,23 +61,40 @@ export function createMetricsViewTimeSeries(
   ctx: StateManagers,
   measures: string[],
   isComparison = false,
+  // The surface whose exact selection the request follows; see `exploreExactSurface`.
+  exactSurface: string = exploreExactSurface.measures,
 ): CreateQueryResult<V1MetricsViewTimeSeriesResponse, Error> {
   return derived(
-    [ctx.metricsViewName, ctx.dashboardStore, useTimeControlStore(ctx)],
-    ([metricsViewName, dashboardStore, timeControls], set) => {
+    [
+      ctx.metricsViewName,
+      ctx.dashboardStore,
+      useTimeControlStore(ctx),
+      ctx.selectors.exactMeasures.exactMeasureContext,
+    ],
+    ([metricsViewName, dashboardStore, timeControls, exactContext], set) => {
       const timeGrain = timeControls.selectedTimeRange?.interval;
 
       // Ephemeral measures travel in `measures` with their expression;
       // regular measures stay in `measureNames`.
       const { measureNames, ephemeralMeasures: ephemeralRequestMeasures } =
         splitTimeSeriesMeasures(measures, dashboardStore.ephemeralMeasures);
+      const exactNames = requestExactNames(
+        measures,
+        exactContext(exactSurface),
+      );
 
       return createQueryServiceMetricsViewTimeSeries(
         ctx.runtimeClient,
         {
           metricsViewName,
           measureNames,
-          ephemeralMeasures: ephemeralRequestMeasures,
+          ephemeralMeasures:
+            ephemeralRequestMeasures &&
+            applyExactMeasures(ephemeralRequestMeasures, exactNames),
+          exactMeasureNames: exactTimeSeriesMeasureNames(
+            measureNames,
+            exactNames,
+          ),
           where: sanitiseExpression(dashboardStore.whereFilter, undefined),
           timeStart: isComparison
             ? timeControls.comparisonAdjustedStart

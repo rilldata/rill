@@ -104,12 +104,13 @@ func (b *sqlExprBuilder) writeSubquery(sub *Subquery) error {
 		UnusedFields:        nil,
 	} //exhaustruct:enforce
 
-	// Generate SQL for the subquery
+	// Generate SQL for the subquery.
+	// The subquery uses the exact measures resolved for the outer query, which already account for the subquery's own flags (see ExactMeasureSet).
 	innerSecurity := b.ast.Security
 	if !b.visible {
 		innerSecurity = skipMetricsViewSecurity{}
 	}
-	innerAST, err := NewAST(b.ast.MetricsView, innerSecurity, inner, b.ast.Dialect)
+	innerAST, err := newAST(b.ast.MetricsView, innerSecurity, inner, b.ast.Dialect, b.ast.exactMeasures)
 	if err != nil {
 		return fmt.Errorf("failed to create AST for subquery: %w", err)
 	}

@@ -50,6 +50,10 @@ type DimensionComputeTimeFloor struct {
 type Measure struct {
 	Name    string          `json:"name,omitempty" mapstructure:"name"`
 	Compute *MeasureCompute `json:"compute,omitempty" mapstructure:"compute"`
+	// Exact computes the measure with its exact_expression instead of its (approximate) expression.
+	// Measures referenced by this measure are also computed exactly, and a measure flagged anywhere in a query (including in a filter subquery) is computed exactly everywhere in it.
+	// It is a no-op for measures without an exact_expression. See ExactMeasureSet.
+	Exact bool `json:"exact,omitempty" mapstructure:"exact"`
 }
 
 type MeasureCompute struct {
@@ -644,6 +648,10 @@ const QueryJSONSchema = `
         "compute": {
           "$ref": "#/$defs/MeasureCompute",
           "description": "Optionally configure a derived measure, such as a comparison."
+        },
+        "exact": {
+          "type": "boolean",
+          "description": "Compute the measure with its exact_expression when the metrics view defines one (slower). Measures it references are also computed exactly. Defaults to false (approximate)."
         }
       },
       "required": ["name"]

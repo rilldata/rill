@@ -21,7 +21,7 @@ func TestRewriteQueryForRollup_NoRollups(t *testing.T) {
 		Measures: []metricsview.Measure{{Name: "count"}},
 	}
 
-	result, err := e.rewriteQueryForRollup(context.Background(), qry)
+	result, err := e.rewriteQueryForRollup(context.Background(), qry, nil)
 	require.NoError(t, err)
 	require.Nil(t, result)
 }
@@ -37,7 +37,7 @@ func TestRewriteQueryForRollup_RawRows(t *testing.T) {
 	}
 
 	qry := &metricsview.Query{Rows: true}
-	result, err := e.rewriteQueryForRollup(context.Background(), qry)
+	result, err := e.rewriteQueryForRollup(context.Background(), qry, nil)
 	require.NoError(t, err)
 	require.Nil(t, result)
 }
@@ -75,7 +75,7 @@ func TestRewriteQueryForRollup_MissingDimension(t *testing.T) {
 	}
 
 	// Rejected at eligibility (missing dimension); no watermark fetch needed
-	result, err := e.rewriteQueryForRollup(context.Background(), qry)
+	result, err := e.rewriteQueryForRollup(context.Background(), qry, nil)
 	require.NoError(t, err)
 	require.Nil(t, result)
 }
@@ -106,7 +106,7 @@ func TestRewriteQueryForRollup_MissingMeasure(t *testing.T) {
 		},
 	}
 
-	result, err := e.rewriteQueryForRollup(context.Background(), qry)
+	result, err := e.rewriteQueryForRollup(context.Background(), qry, nil)
 	require.NoError(t, err)
 	require.Nil(t, result)
 }
@@ -140,7 +140,7 @@ func TestRewriteQueryForRollup_GrainNotDerivable(t *testing.T) {
 	}
 
 	// Rejected at eligibility (grain not derivable); no watermark fetch needed
-	result, err := e.rewriteQueryForRollup(context.Background(), qry)
+	result, err := e.rewriteQueryForRollup(context.Background(), qry, nil)
 	require.NoError(t, err)
 	require.Nil(t, result)
 }
@@ -174,7 +174,7 @@ func TestRewriteQueryForRollup_StartNotAligned(t *testing.T) {
 	}
 
 	// Rejected at eligibility (start not aligned to rollup grain); no watermark fetch needed
-	result, err := e.rewriteQueryForRollup(context.Background(), qry)
+	result, err := e.rewriteQueryForRollup(context.Background(), qry, nil)
 	require.NoError(t, err)
 	require.Nil(t, result)
 }
@@ -217,7 +217,7 @@ func TestRewriteQueryForRollup_WhereDimensionMissing(t *testing.T) {
 		},
 	}
 
-	result, err := e.rewriteQueryForRollup(context.Background(), qry)
+	result, err := e.rewriteQueryForRollup(context.Background(), qry, nil)
 	require.NoError(t, err)
 	require.Nil(t, result)
 }
@@ -458,7 +458,7 @@ func TestRewriteQueryForRollup_ComparisonTimeRange_NonPrimaryTimeDim(t *testing.
 			TimeDimension: "other_ts",
 		},
 	}
-	result, err := e.rewriteQueryForRollup(context.Background(), qry)
+	result, err := e.rewriteQueryForRollup(context.Background(), qry, nil)
 	require.NoError(t, err)
 	require.Nil(t, result)
 }
@@ -489,7 +489,7 @@ func TestRewriteQueryForRollup_DerivedMeasure(t *testing.T) {
 		},
 	}
 
-	result, err := e.rewriteQueryForRollup(context.Background(), qry)
+	result, err := e.rewriteQueryForRollup(context.Background(), qry, nil)
 	require.NoError(t, err)
 	require.Nil(t, result)
 }
@@ -528,7 +528,7 @@ func TestRewriteQueryForRollup_ComputedMeasureRejected(t *testing.T) {
 		},
 	}
 
-	result, err := e.rewriteQueryForRollup(context.Background(), qry)
+	result, err := e.rewriteQueryForRollup(context.Background(), qry, nil)
 	require.NoError(t, err)
 	require.Nil(t, result)
 }
@@ -564,7 +564,7 @@ func TestRewriteQueryForRollup_TimezoneRejection(t *testing.T) {
 		},
 	}
 
-	result, err := e.rewriteQueryForRollup(context.Background(), qry)
+	result, err := e.rewriteQueryForRollup(context.Background(), qry, nil)
 	require.NoError(t, err)
 	require.Nil(t, result)
 }
@@ -622,4 +622,43 @@ func TestNormalizeTimezone(t *testing.T) {
 	assertTZ("America/New_York", "America/New_York")
 	_, err := normalizeTimezone("Not/A_Timezone")
 	require.Error(t, err)
+}
+
+func TestRewriteQueryForRollup_ExactMeasureSkipped(t *testing.T) {
+	// Exact aggregates cannot be computed from pre-aggregated rows, so a query whose exact set is non-empty skips rollups.
+	e := &Executor{
+		metricsView: &runtimev1.MetricsViewSpec{
+			Table:         "base_table",
+			TimeDimension: "timestamp",
+			Dimensions: []*runtimev1.MetricsViewSpec_Dimension{
+				{Name: "publisher", Column: "publisher"},
+			},
+			Measures: []*runtimev1.MetricsViewSpec_Measure{
+				{Name: "users", Expression: `approx_count_distinct("user_id")`, ExactExpression: `count(DISTINCT "user_id")`},
+				{Name: "users_per_publisher", Expression: "users / 2", Type: runtimev1.MetricsViewSpec_MEASURE_TYPE_DERIVED, ReferencedMeasures: []string{"users"}},
+			},
+			Rollups: []*runtimev1.MetricsViewSpec_Rollup{
+				{
+					Table:      "daily_rollup",
+					TimeGrain:  runtimev1.TimeGrain_TIME_GRAIN_DAY,
+					Dimensions: []string{"publisher"},
+					Measures:   []string{"users", "users_per_publisher"},
+				},
+			},
+		},
+	}
+
+	for _, measures := range [][]metricsview.Measure{
+		{{Name: "users", Exact: true}},
+		{{Name: "users_per_publisher", Exact: true}},
+	} {
+		qry := &metricsview.Query{
+			Dimensions: []metricsview.Dimension{{Name: "publisher"}},
+			Measures:   measures,
+		}
+		result, err := e.rewriteQueryForRollup(context.Background(), qry, metricsview.ExactMeasureSet(e.metricsView, qry))
+		require.NoError(t, err)
+		require.Nil(t, result)
+		require.Equal(t, "base_table", e.LatestQueryTable())
+	}
 }

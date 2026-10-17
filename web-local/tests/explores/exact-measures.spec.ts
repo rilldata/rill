@@ -1,0 +1,197 @@
+import { expect } from "@playwright/test";
+import { test } from "../setup/base";
+import { waitForReconciliation } from "../utils/wait-for-reconciliation.ts";
+
+// The AdBids_exact_metrics metrics view defines `publishers` with an
+// approximate default (`approx_count_distinct(publisher) + 1000`) and an exact
+// variant (`count(DISTINCT publisher)`). The two deliberately differ so the
+// test can tell which one answered: the approximate value is 1,004, the exact
+// value 4 (Facebook, Google, Yahoo, Microsoft; nulls are not counted).
+test.describe("exact measures", () => {
+  test.use({ project: "AdBids" });
+
+  test("switches a measure to exact on click and back on a context change", async ({
+    page,
+  }) => {
+    const currentUrl = new URL(page.url());
+    const baseUrl = `${currentUrl.protocol}//${currentUrl.host}`;
+
+    await waitForReconciliation(page);
+    await page.goto(
+      `${baseUrl}/explore/AdBids_exact_metrics_explore?measures=publishers,total_records`,
+    );
+
+    const card = page.locator(".big-number").filter({ hasText: "Publishers" });
+    const chip = card.getByRole("button", {
+      name: "Toggle exact value for Publishers",
+    });
+
+    // Approximate by default.
+    await expect(chip).toHaveText("≈");
+    await expect(chip).toHaveAttribute("aria-pressed", "false");
+    await expect(card.getByText("1,004")).toBeVisible();
+
+    // One click requests the exact value for the measure, and only for it.
+    const exactRequest = page.waitForRequest((request) => {
+      const body = request.postData() ?? "";
+      return (
+        request.url().includes("/metrics-views/AdBids_exact_metrics/") &&
+        body.includes('"name":"publishers","exact":true')
+      );
+    });
+    await chip.click();
+    const request = await exactRequest;
+    expect(request.postData()).not.toContain(
+      '"name":"total_records","exact":true',
+    );
+
+    await expect(chip).toHaveText("=");
+    await expect(chip).toHaveAttribute("aria-pressed", "true");
+    await expect(card.getByText("4", { exact: true })).toBeVisible();
+    await expect(card.getByText("1,004")).toBeHidden();
+
+    // The exact selection is tab memory: it is not written to the URL.
+    expect(new URL(page.url()).searchParams.get("exact")).toBeNull();
+
+    // A query context change (opening the dimension table) resets the measure
+    // to approximate; the chip in the dimension table header shows it.
+    const approximateRequest = page.waitForRequest((request) => {
+      const body = request.postData() ?? "";
+      return (
+        request.url().includes("/metrics-views/AdBids_exact_metrics/") &&
+        body.includes('"name":"publishers"') &&
+        !body.includes('"exact":true')
+      );
+    });
+    await page
+      .getByRole("button", { name: "Open dimension details" })
+      .first()
+      .click();
+    await approximateRequest;
+
+    const tableChip = page
+      .getByRole("button", { name: "Toggle exact value for Publishers" })
+      .first();
+    await expect(tableChip).toHaveText("≈");
+    await expect(tableChip).toHaveAttribute("aria-pressed", "false");
+  });
+
+  // `records_per_publisher` is calculated from `publishers`. Switching the
+  // ratio to exact computes `publishers` exactly as well, everywhere: its own
+  // card shows the exact value with the inherited (dashed, not pressed) chip.
+  test("switching a derived measure to exact makes the measures it is calculated from exact", async ({
+    page,
+  }) => {
+    const currentUrl = new URL(page.url());
+    const baseUrl = `${currentUrl.protocol}//${currentUrl.host}`;
+
+    await waitForReconciliation(page);
+    await page.goto(
+      `${baseUrl}/explore/AdBids_exact_metrics_explore?measures=publishers,total_records,records_per_publisher`,
+    );
+
+    const publishersCard = page
+      .locator(".big-number")
+      .filter({ hasText: "Publishers" })
+      .first();
+    const publishersChip = publishersCard.getByRole("button", {
+      name: "Toggle exact value for Publishers",
+    });
+    const ratioChip = page
+      .locator(".big-number")
+      .filter({ hasText: "Records per publisher" })
+      .getByRole("button", {
+        name: "Toggle exact value for Records per publisher",
+      });
+
+    await expect(publishersChip).toHaveText("≈");
+    await expect(ratioChip).toHaveText("≈");
+    await expect(publishersCard.getByText("1,004")).toBeVisible();
+
+    // The request for the publishers card itself carries the flag, although
+    // only the ratio was clicked.
+    const exactRequest = page.waitForRequest((request) => {
+      const body = request.postData() ?? "";
+      return (
+        request.url().includes("/metrics-views/AdBids_exact_metrics/") &&
+        body.includes('"name":"publishers","exact":true')
+      );
+    });
+    await ratioChip.click();
+    const request = await exactRequest;
+    expect(request.postData()).not.toContain(
+      '"name":"total_records","exact":true',
+    );
+
+    await expect(ratioChip).toHaveText("=");
+    await expect(ratioChip).toHaveAttribute("aria-pressed", "true");
+    await expect(publishersChip).toHaveText("=");
+    await expect(publishersChip).toHaveAttribute("aria-pressed", "false");
+    await expect(publishersCard.getByText("4", { exact: true })).toBeVisible();
+    await expect(publishersCard.getByText("1,004")).toBeHidden();
+
+    // The selection is tab memory, not URL or storage state: a reload starts
+    // approximate again.
+    expect(new URL(page.url()).searchParams.get("exact")).toBeNull();
+    await page.reload();
+    await expect(
+      page
+        .locator(".big-number")
+        .filter({ hasText: "Publishers" })
+        .first()
+        .getByRole("button", { name: "Toggle exact value for Publishers" }),
+    ).toHaveText("≈");
+    await expect(
+      page.locator(".big-number").filter({ hasText: "Publishers" }).first(),
+    ).toContainText("1,004");
+  });
+
+  // Every leaderboard, the big numbers, the dimension table and the pivot are
+  // separate surfaces: a chip only switches the surface it sits in.
+  test("a leaderboard chip switches only that leaderboard", async ({
+    page,
+  }) => {
+    const currentUrl = new URL(page.url());
+    const baseUrl = `${currentUrl.protocol}//${currentUrl.host}`;
+
+    await waitForReconciliation(page);
+    await page.goto(
+      `${baseUrl}/explore/AdBids_exact_metrics_explore?measures=publishers,total_records&leaderboard_measures=publishers&sort_by=publishers`,
+    );
+
+    const leaderboard = (dimension: string) =>
+      page.locator("table", {
+        has: page.locator("[data-dimension-header]", { hasText: dimension }),
+      });
+    const publisherChip = leaderboard("Publisher").getByRole("button", {
+      name: "Toggle exact value for Publishers",
+    });
+    const domainChip = leaderboard("Domain").getByRole("button", {
+      name: "Toggle exact value for Publishers",
+    });
+    const cardChip = page
+      .locator(".big-number")
+      .filter({ hasText: "Publishers" })
+      .first()
+      .getByRole("button", { name: "Toggle exact value for Publishers" });
+
+    await expect(publisherChip).toHaveText("≈");
+
+    const exactRequest = page.waitForRequest((request) => {
+      const body = request.postData() ?? "";
+      return (
+        request.url().includes("/metrics-views/AdBids_exact_metrics/") &&
+        body.includes('"name":"publishers","exact":true') &&
+        body.includes('"dimensions":[{"name":"publisher"}]')
+      );
+    });
+    await publisherChip.click();
+    await exactRequest;
+
+    await expect(publisherChip).toHaveText("=");
+    await expect(publisherChip).toHaveAttribute("aria-pressed", "true");
+    await expect(domainChip).toHaveText("≈");
+    await expect(cardChip).toHaveText("≈");
+    await expect(cardChip).toHaveAttribute("aria-pressed", "false");
+  });
+});

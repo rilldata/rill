@@ -519,6 +519,9 @@ message MetricsViewAggregationMeasure {
     MetricsViewAggregationMeasureComputeComparisonTime comparison_time = 12;
     MetricsViewAggregationMeasureComputeExpression expression = 13;
   }
+  // Optional. Compute the measure with its `exact_expression` instead of its (approximate) `expression`.
+  // Measures referenced by this measure are also computed exactly. No-op for measures without an `exact_expression`.
+  bool exact = 14;
 }
 
 message MetricsViewAggregationMeasureComputeCount {}
@@ -734,6 +737,9 @@ message MetricsViewTimeSeriesRequest {
   // Optional ephemeral measures, i.e. measures defined by the query rather than the metrics view.
   // Only the `expression` compute is supported for time series.
   repeated MetricsViewAggregationMeasure ephemeral_measures = 17;
+  // Optional. Names of measures (from measure_names or ephemeral_measures) to compute with their `exact_expression`.
+  // No-op for measures without an `exact_expression`.
+  repeated string exact_measure_names = 18;
   // Optional. Defaults to min
   google.protobuf.Timestamp time_start = 4;
   // Optional. Defaults to max

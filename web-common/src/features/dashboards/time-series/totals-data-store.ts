@@ -1,4 +1,9 @@
-import { mapEphemeralMeasuresForRequest } from "@rilldata/web-common/features/dashboards/ephemeral-measures/measure-mapping";
+import {
+  applyExactMeasures,
+  mapEphemeralMeasuresForRequest,
+} from "@rilldata/web-common/features/dashboards/ephemeral-measures/measure-mapping";
+import { requestExactNames } from "@rilldata/web-common/features/dashboards/exact-measures/exact-measures";
+import { exploreExactSurface } from "@rilldata/web-common/features/dashboards/exact-measures/explore-surfaces";
 import type { StateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
 import { sanitiseExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
@@ -14,15 +19,26 @@ export function createTotalsForMeasure(
   isComparison = false,
 ): CreateQueryResult<V1MetricsViewAggregationResponse, Error> {
   return derived(
-    [ctx.metricsViewName, useTimeControlStore(ctx), ctx.dashboardStore],
-    ([metricsViewName, timeControls, dashboard], set) =>
+    [
+      ctx.metricsViewName,
+      useTimeControlStore(ctx),
+      ctx.dashboardStore,
+      ctx.selectors.exactMeasures.exactMeasureContext,
+    ],
+    ([metricsViewName, timeControls, dashboard, exactContext], set) =>
       createQueryServiceMetricsViewAggregation(
         ctx.runtimeClient,
         {
           metricsView: metricsViewName,
-          measures: mapEphemeralMeasuresForRequest(
-            measures.map((measure) => ({ name: measure })),
-            dashboard.ephemeralMeasures,
+          measures: applyExactMeasures(
+            mapEphemeralMeasuresForRequest(
+              measures.map((measure) => ({ name: measure })),
+              dashboard.ephemeralMeasures,
+            ),
+            requestExactNames(
+              measures,
+              exactContext(exploreExactSurface.measures),
+            ),
           ),
           where: sanitiseExpression(dashboard.whereFilter, undefined),
           timeRange: {
@@ -52,8 +68,13 @@ export function createUnfilteredTotalsForMeasure(
   dimensionName: string,
 ): CreateQueryResult<V1MetricsViewAggregationResponse, Error> {
   return derived(
-    [ctx.metricsViewName, useTimeControlStore(ctx), ctx.dashboardStore],
-    ([metricsViewName, timeControls, dashboard], set) => {
+    [
+      ctx.metricsViewName,
+      useTimeControlStore(ctx),
+      ctx.dashboardStore,
+      ctx.selectors.exactMeasures.exactMeasureContext,
+    ],
+    ([metricsViewName, timeControls, dashboard, exactContext], set) => {
       const filter = sanitiseExpression(dashboard.whereFilter, undefined);
 
       const updatedFilter = getFiltersForOtherDimensions(filter, dimensionName);
@@ -62,9 +83,15 @@ export function createUnfilteredTotalsForMeasure(
         ctx.runtimeClient,
         {
           metricsView: metricsViewName,
-          measures: mapEphemeralMeasuresForRequest(
-            measures.map((measure) => ({ name: measure })),
-            dashboard.ephemeralMeasures,
+          measures: applyExactMeasures(
+            mapEphemeralMeasuresForRequest(
+              measures.map((measure) => ({ name: measure })),
+              dashboard.ephemeralMeasures,
+            ),
+            requestExactNames(
+              measures,
+              exactContext(exploreExactSurface.measures),
+            ),
           ),
           where: updatedFilter,
           timeRange: {

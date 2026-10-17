@@ -9,7 +9,9 @@ import (
 	"github.com/rilldata/rill/runtime/metricsview"
 )
 
-func (e *Executor) rewritePercentOfTotals(ctx context.Context, qry *metricsview.Query) error {
+// rewritePercentOfTotals runs a totals query for the base measures of the query's percent-of-total measures and stores the totals on them.
+// The totals query is built with the exact measures resolved for the outer query, so every total has the same precision as the values it divides.
+func (e *Executor) rewritePercentOfTotals(ctx context.Context, qry *metricsview.Query, exactMeasures map[string]bool) error {
 	var measures []metricsview.Measure
 	var measureIndices []int
 	for i, measure := range qry.Measures {
@@ -50,14 +52,14 @@ func (e *Executor) rewritePercentOfTotals(ctx context.Context, qry *metricsview.
 	} //exhaustruct:enforce
 
 	// Build an AST for the totals query.
-	ast, err := metricsview.NewAST(e.metricsView, e.security, totalsQry, e.olap.Dialect())
+	ast, err := metricsview.NewASTWithExactMeasures(e.metricsView, e.security, totalsQry, e.olap.Dialect(), exactMeasures)
 	if err != nil {
 		return fmt.Errorf("percent of totals: failed to build the totals query AST: %w", err)
 	}
 
 	// Apply a limited subset of rewrites to the inner query.
 	e.rewriteApproxComparisons(ast, false)
-	_, err = e.rewriteQueryDruidExactify(ctx, totalsQry)
+	_, err = e.rewriteQueryDruidExactify(ctx, totalsQry, exactMeasures)
 	if err != nil {
 		return err
 	}

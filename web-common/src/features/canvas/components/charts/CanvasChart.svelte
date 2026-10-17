@@ -7,9 +7,20 @@
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import { themeControl } from "@rilldata/web-common/features/themes/theme-control";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
+  import { ephemeralSpecsToDefs } from "@rilldata/web-common/features/dashboards/ephemeral-measures/canvas";
+  import {
+    requestExactNames,
+    withExactVariant,
+  } from "@rilldata/web-common/features/dashboards/exact-measures/exact-measures";
   import type { View } from "svelte-vega";
   import { derived } from "svelte/store";
   import type { CanvasChartSpec } from ".";
+  import { CANVAS_CHART_CONFIG } from ".";
+  import {
+    canvasChartPrecisionChip,
+    canvasExactMeasureContext,
+    chartMeasureNames,
+  } from "../exact-measures";
   import type { BaseChart } from "./BaseChart";
   import { getChartDataForCanvas } from "./selector";
   import { validateChartSchema } from "./validate";
@@ -65,16 +76,54 @@
   $: currentTheme =
     $theme?.resolvedThemeObject?.[$isThemeModeDark ? "dark" : "light"];
 
+  // Exact measures: the chart's own selection (the chart is its own surface).
+  // The query itself reads the set from the component's query spec store;
+  // passing the same spec here makes the data re-derive when the selection
+  // changes.
+  $: measureNames = chartMeasureNames(
+    CANVAS_CHART_CONFIG[chartType]?.component.chartInputParams,
+    chartSpec,
+  );
+  $: exactContextStore = canvasExactMeasureContext(
+    store.canvasEntity,
+    component.id,
+    metrics_view,
+    ephemeralSpecsToDefs(chartSpec.adhoc_measures),
+  );
+  $: exactRequestNames = [
+    ...requestExactNames(measureNames, $exactContextStore),
+  ];
+  $: chartSpecForData = exactRequestNames.length
+    ? { ...chartSpec, exact_measures: exactRequestNames }
+    : chartSpec;
+
   $: chartData = getChartDataForCanvas(
     store,
     component,
-    chartSpec,
+    chartSpecForData,
     timeAndFilterStore,
     isThemeModeDark,
     visible,
   );
 
   $: ({ isFetching, error } = $chartData);
+
+  $: chartTitle = title || component.chartTitle($chartData.fields);
+
+  // One chip for the whole chart, right of the title: it switches every
+  // measure with an exact variant at once.
+  $: precisionChip = canvasChartPrecisionChip(
+    measureNames,
+    chartTitle,
+    $exactContextStore,
+    isFetching,
+    error?.message,
+    () =>
+      store.canvasEntity.toggleExactSurface(
+        component.id,
+        withExactVariant(measureNames, $exactContextStore),
+      ),
+  );
 
   $: filters = {
     time_filters,
@@ -88,27 +137,32 @@
       <div class="flex items-center justify-center h-full w-full">
         <Spinner status={EntityStatus.Running} size="20px" />
       </div>
-    {:else if error}
-      <ComponentError error={error.message} />
     {:else}
+      <!-- The header stays when the query fails, so that a failed exact
+           query can be switched back from its chip. -->
       <ComponentHeader
         faint={!title}
-        title={title || component.chartTitle($chartData?.fields)}
+        title={chartTitle}
         {description}
         showDescriptionAsTooltip={show_description_as_tooltip}
         {filters}
         {component}
+        {precisionChip}
       />
-      <Chart
-        {chartType}
-        {chartSpec}
-        {chartData}
-        measures={$measures}
-        isCanvas
-        bind:view={viewVL}
-        themeMode={$isThemeModeDark ? "dark" : "light"}
-        theme={currentTheme}
-      />
+      {#if error}
+        <ComponentError error={error.message} />
+      {:else}
+        <Chart
+          {chartType}
+          {chartSpec}
+          {chartData}
+          measures={$measures}
+          isCanvas
+          bind:view={viewVL}
+          themeMode={$isThemeModeDark ? "dark" : "light"}
+          theme={currentTheme}
+        />
+      {/if}
     {/if}
   {:else}
     <ComponentError error={schema.error} />

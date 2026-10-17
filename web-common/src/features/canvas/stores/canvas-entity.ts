@@ -1,4 +1,10 @@
 import { goto } from "$app/navigation";
+import {
+  selectedInSurface,
+  toggleInSelection,
+  toggleSurfaceInSelection,
+  type ExactSelection,
+} from "@rilldata/web-common/features/dashboards/exact-measures/exact-measures";
 import { page } from "$app/stores";
 import {
   useCanvas,
@@ -86,6 +92,9 @@ export type SearchParamsStore = {
   clearAll: () => void;
 };
 
+// An exact selection with nothing selected; see `CanvasEntity.exactMeasures`.
+const NO_EXACT_SELECTION: ExactSelection = { contextKey: "", surfaces: {} };
+
 export class CanvasEntity {
   componentsStore = createCustomMapStore<BaseCanvasComponent>();
   _rows: Grid = new Grid(this);
@@ -120,6 +129,13 @@ export class CanvasEntity {
   theme: Readable<Theme | undefined>;
   unsubscriber: Unsubscriber | undefined;
   private searchParams = writable<URLSearchParams>(new URLSearchParams());
+  // Measures the viewer switched to their `exact_expression`, per surface (a
+  // component, or one leaderboard of a leaderboard component; see
+  // `canvasExactSurface`), tied to the URL params (time, comparison, grain,
+  // timezone, filters, tabs) they were selected in. The selection resets as
+  // soon as those params change (see onUrlChange), so exact values are only
+  // fetched after an explicit click. Tab memory only: never serialized.
+  exactMeasures = writable<ExactSelection>(NO_EXACT_SELECTION);
   // This may sometimes be false due to discrepancy between two different ways
   // of storing the same state in the URL namely dimension IN (['value']) vs  dimension IN ('value')
   defaultUrlParamsStore = writable<URLSearchParams>(new URLSearchParams());
@@ -513,6 +529,12 @@ export class CanvasEntity {
     }
 
     this.searchParams.set(searchParams);
+    // The query context changed: new queries are approximate again.
+    this.exactMeasures.update((selection) =>
+      selection.contextKey === searchParams.toString()
+        ? selection
+        : NO_EXACT_SELECTION,
+    );
     if (!isolated) {
       this.saveSnapshot(searchParams.toString());
     }
@@ -520,6 +542,61 @@ export class CanvasEntity {
     this.timeManager.state.onUrlChange(searchParams);
     this.applyTabsFromURL(searchParams);
   };
+
+  /**
+   * Switches a measure of one surface between its approximate default and its
+   * exact variant for the current query context. Only that surface follows:
+   * a click re-runs the queries of one component (or one leaderboard).
+   */
+  toggleExactMeasure = (surface: string, measureName: string) => {
+    const contextKey = get(this.searchParams).toString();
+    this.exactMeasures.update(
+      (selection) =>
+        toggleInSelection(selection, contextKey, surface, measureName) ??
+        NO_EXACT_SELECTION,
+    );
+  };
+
+  /**
+   * Switches a whole surface between approximate and exact: every given
+   * measure becomes exact, or the surface returns to approximate when all of
+   * them are exact already. For components with one chip for all their
+   * measures (charts).
+   */
+  toggleExactSurface = (surface: string, measureNames: readonly string[]) => {
+    const contextKey = get(this.searchParams).toString();
+    this.exactMeasures.update(
+      (selection) =>
+        toggleSurfaceInSelection(
+          selection,
+          contextKey,
+          surface,
+          measureNames,
+        ) ?? NO_EXACT_SELECTION,
+    );
+  };
+
+  /**
+   * The measures the viewer selected as exact in a surface, for the current
+   * query context.
+   */
+  selectedExactMeasures = (surface: string): Readable<ReadonlySet<string>> =>
+    derived(
+      [this.exactMeasures, this.searchParams],
+      ([selection, searchParams]) =>
+        selectedInSurface(selection, searchParams.toString(), surface),
+    );
+
+  /**
+   * Non-reactive variant of `selectedExactMeasures`, for derivations that
+   * already subscribe to `exactMeasures`.
+   */
+  currentExactMeasures = (surface: string): ReadonlySet<string> =>
+    selectedInSurface(
+      get(this.exactMeasures),
+      get(this.searchParams).toString(),
+      surface,
+    );
 
   // Acquires a reference to the entity. The cached entity is shared across
   // consumers (e.g. an unmounting editor and a mounting preview overlap during
