@@ -218,6 +218,37 @@ auth: oauth
 	require.Equal(t, "tracker", envelope["connector"])
 }
 
+func TestExternalToolsLimit(t *testing.T) {
+	server := mcp.NewServer(&mcp.Implementation{Name: "big", Version: "1.0.0"}, nil)
+	for i := range 130 {
+		mcp.AddTool(server, &mcp.Tool{Name: fmt.Sprintf("tool_%d", i)}, func(ctx context.Context, req *mcp.CallToolRequest, args struct{}) (*mcp.CallToolResult, any, error) {
+			return &mcp.CallToolResult{}, nil, nil
+		})
+	}
+	ext := httptest.NewServer(mcp.NewStreamableHTTPHandler(func(*http.Request) *mcp.Server { return server }, nil))
+	t.Cleanup(ext.Close)
+	rt, instanceID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
+		Files: map[string]string{
+			"rill.yaml": "",
+			"connectors/big.yaml": fmt.Sprintf(`
+type: connector
+driver: mcp
+url: %s
+`, ext.URL),
+		},
+	})
+	testruntime.RequireReconcileState(t, rt, instanceID, 2, 0, 0)
+
+	runner := ai.NewRunner(rt, activity.NewNoopClient())
+	session, err := runner.Session(t.Context(), &ai.SessionOptions{InstanceID: instanceID, Claims: newTestClaims("u@x.com", "x.com", false), UserAgent: "rill/test"})
+	require.NoError(t, err)
+	require.Len(t, session.ExternalToolNames(t.Context(), "analyst"), 130)
+
+	// The request fails before reaching the LLM, whose provider would reject it
+	_, err = session.CallTool(t.Context(), ai.RoleUser, ai.AnalystAgentName, nil, ai.AnalystAgentArgs{Prompt: "hi"})
+	require.ErrorContains(t, err, "too many tools")
+}
+
 func TestExternalToolName(t *testing.T) {
 	require.Equal(t, "mcp__linear__search_issues", ai.ExternalToolName("linear", "search_issues"))
 	require.Equal(t, "mcp__linear__", ai.ExternalToolName("linear", ""))

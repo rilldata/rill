@@ -1250,6 +1250,9 @@ func (s *Session) Complete(ctx context.Context, name string, out any, opts *Comp
 		tools = append(tools, toolPB)
 		offered[toolName] = true
 	}
+	if len(tools) > maxTools {
+		return fmt.Errorf("too many tools: the connected external MCP servers bring the total to %d, but at most %d are supported; disconnect a server, or limit a server's tools with 'security.include' in its connector file", len(tools), maxTools)
+	}
 
 	// Prepare output schema.
 	var outputText bool

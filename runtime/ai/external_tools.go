@@ -39,6 +39,8 @@ const (
 	maxExternalDescriptionLen = 2000
 	// maxToolNameLen is the longest tool name accepted by the LLM providers.
 	maxToolNameLen = 64
+	// maxTools is the most tools accepted in one request by the LLM providers (OpenAI's limit).
+	maxTools = 128
 	// mcpDriverName is the driver name of connectors for external MCP servers.
 	mcpDriverName = "mcp"
 )
@@ -85,7 +87,7 @@ type ExternalAuthorizationRequiredError struct {
 }
 
 func (e *ExternalAuthorizationRequiredError) Error() string {
-	data, _ := json.Marshal(map[string]any{
+	data, _ := json.Marshal(map[string]string{ // nolint:errchkjson // Marshaling a map of strings cannot fail
 		"code":         ErrorCodeMCPAuthorizationRequired,
 		"connector":    e.Connector,
 		"display_name": e.DisplayName,
