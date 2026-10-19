@@ -6,6 +6,7 @@ import (
 	"net/url"
 	"strings"
 	"testing"
+	"time"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
@@ -32,6 +33,7 @@ func TestClickhouseSingle(t *testing.T) {
 
 	t.Run("WithConnection", func(t *testing.T) { testWithConnection(t, olap) })
 	t.Run("DropTable", func(t *testing.T) { testDropTable(t, c, olap) })
+	t.Run("DropStaleTempTables", func(t *testing.T) { testDropStaleTempTables(t, c, olap) })
 	t.Run("RenameView", func(t *testing.T) { testRenameView(t, c, olap) })
 	t.Run("RenameTable", func(t *testing.T) { testRenameTable(t, c, olap) })
 	t.Run("CreateTableAsSelect", func(t *testing.T) { testCreateTableAsSelect(t, c) })
@@ -64,6 +66,7 @@ func TestClickhouseCluster(t *testing.T) {
 
 	t.Run("WithConnection", func(t *testing.T) { testWithConnection(t, olap) })
 	t.Run("DropTable", func(t *testing.T) { testDropTable(t, c, olap) })
+	t.Run("DropStaleTempTables", func(t *testing.T) { testDropStaleTempTables(t, c, olap) })
 	t.Run("RenameView", func(t *testing.T) { testRenameView(t, c, olap) })
 	t.Run("RenameTable", func(t *testing.T) { testRenameTable(t, c, olap) })
 	t.Run("CreateTableAsSelect", func(t *testing.T) { testCreateTableAsSelect(t, c) })
@@ -120,6 +123,51 @@ func testDropTable(t *testing.T, c *Connection, olap drivers.OLAPStore) {
 	require.NoError(t, err)
 	require.NoError(t, c.dropTable(ctx, "drop_view"))
 	notExists(t, olap, "drop_view")
+
+	if c.config.Cluster != "" {
+		// Only the `_local` table exists if the execution was cancelled before it created the Distributed table over it.
+		err = olap.Exec(ctx, &drivers.Statement{Query: fmt.Sprintf("CREATE TABLE drop_local_only_local %s (id Int32) ENGINE = MergeTree ORDER BY tuple()", c.onClusterClause())})
+		require.NoError(t, err)
+		require.NoError(t, c.dropTable(ctx, "drop_local_only"))
+		notExists(t, olap, "drop_local_only_local")
+	}
+}
+
+func testDropStaleTempTables(t *testing.T, c *Connection, olap drivers.OLAPStore) {
+	ctx := context.Background()
+	props := &ModelOutputProperties{Columns: "(id Int32)", Engine: "MergeTree"}
+
+	// A partition insert's table and a column inference view, as an interrupted execution leaves them behind.
+	staleTable := tempTablePrefix + "stale_tbl_" + strings.Repeat("0", 32)
+	staleView := tempTablePrefix + stagingTableNameFor("stale_tbl") + "_" + strings.Repeat("1", 32)
+	require.NoError(t, c.createTable(ctx, staleTable, "", props))
+	_, err := c.createTableAsSelect(ctx, staleView, "SELECT 1 AS id", &ModelOutputProperties{Typ: "VIEW"}, "", "")
+	require.NoError(t, err)
+	// The model's own table must be left alone.
+	require.NoError(t, c.createTable(ctx, "stale_tbl", "", props))
+	// Only the `_local` table exists if the execution was cancelled before it created the Distributed table over it.
+	localOnly := localTableName(tempTablePrefix + "stale_tbl_" + strings.Repeat("2", 32))
+	if c.config.Cluster != "" {
+		err = olap.Exec(ctx, &drivers.Statement{Query: fmt.Sprintf("CREATE TABLE %s %s (id Int32) ENGINE = MergeTree ORDER BY tuple()", safeSQLName(localOnly), c.onClusterClause())})
+		require.NoError(t, err)
+	}
+
+	// Tables younger than the TTL may still be written to by a running execution.
+	require.NoError(t, c.dropStaleTempTables(ctx, tempTableTTL))
+	require.True(t, tableExists(t, olap, staleTable))
+	require.True(t, tableExists(t, olap, staleView))
+
+	// metadata_modification_time has second resolution, so let the tables age past a zero TTL.
+	time.Sleep(time.Second)
+	require.NoError(t, c.dropStaleTempTables(ctx, 0))
+	notExists(t, olap, staleTable)
+	notExists(t, olap, staleView)
+	if c.config.Cluster != "" {
+		notExists(t, olap, localTableName(staleTable))
+		notExists(t, olap, localOnly)
+	}
+	require.True(t, tableExists(t, olap, "stale_tbl"))
+	require.NoError(t, c.dropTable(ctx, "stale_tbl"))
 }
 
 func testRenameView(t *testing.T, c *Connection, olap drivers.OLAPStore) {
@@ -165,6 +213,10 @@ func testRenameTable(t *testing.T, c *Connection, olap drivers.OLAPStore) {
 }
 
 func notExists(t *testing.T, olap drivers.OLAPStore, tbl string) {
+	require.False(t, tableExists(t, olap, tbl), "table %q should not exist", tbl)
+}
+
+func tableExists(t *testing.T, olap drivers.OLAPStore, tbl string) bool {
 	result, err := olap.Query(context.Background(), &drivers.Statement{
 		Query: "EXISTS " + tbl,
 	})
@@ -172,8 +224,8 @@ func notExists(t *testing.T, olap drivers.OLAPStore, tbl string) {
 	require.True(t, result.Next())
 	var exist bool
 	require.NoError(t, result.Scan(&exist))
-	require.False(t, exist)
 	require.NoError(t, result.Close())
+	return exist
 }
 
 func testCreateTableAsSelect(t *testing.T, c *Connection) {
