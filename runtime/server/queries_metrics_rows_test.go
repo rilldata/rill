@@ -122,24 +122,27 @@ security:
 	}
 
 	// Cache writes are asynchronous, so poll until the caller's result is served from the cache.
-	// A cache hit returns the cached response object itself, so pointer equality confirms the hit.
-	requireCached := func(orgID string, res *runtimev1.MetricsViewRowsResponse) {
+	// A cache hit returns the cached response object itself,
+	// so two consecutive queries returning the same object confirm the hit.
+	// Comparing against the first response is racy: a miss while polling can overwrite the cached object.
+	requireCached := func(orgID string) {
 		require.Eventually(t, func() bool {
-			cached, err := query(orgID)
-			return err == nil && cached == res
+			r1, err1 := query(orgID)
+			r2, err2 := query(orgID)
+			return err1 == nil && err2 == nil && r1 == r2
 		}, 5*time.Second, 10*time.Millisecond)
 	}
 
 	a, err := query("a")
 	require.NoError(t, err)
 	require.Equal(t, []string{"a", "a"}, orgIDs(a))
-	requireCached("a", a)
+	requireCached("a")
 
 	// The same request with a different row filter must not be served a's cached result.
 	b, err := query("b")
 	require.NoError(t, err)
 	require.Equal(t, []string{"b"}, orgIDs(b))
-	requireCached("b", b)
+	requireCached("b")
 
 	// Both callers keep getting their own cached results.
 	a, err = query("a")
