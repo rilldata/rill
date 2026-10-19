@@ -218,6 +218,39 @@ auth: oauth
 	require.Equal(t, "tracker", envelope["connector"])
 }
 
+func TestExternalToolsPolicyChange(t *testing.T) {
+	ext := newExternalMCPServer(t, "")
+	connector := fmt.Sprintf(`
+type: connector
+driver: mcp
+url: %s
+`, ext.URL)
+	rt, instanceID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
+		Files: map[string]string{"rill.yaml": "", "connectors/tracker.yaml": connector},
+	})
+	testruntime.RequireReconcileState(t, rt, instanceID, 2, 0, 0)
+
+	runner := ai.NewRunner(rt, activity.NewNoopClient())
+	claims := newTestClaims("u@x.com", "x.com", false)
+	servers, err := runner.DiscoverExternalServers(t.Context(), instanceID, claims)
+	require.NoError(t, err)
+	require.Len(t, servers[0].Tools, 2)
+
+	// Adding a policy to an existing connector takes effect without the connector's state changing
+	testruntime.PutFiles(t, rt, instanceID, map[string]string{"connectors/tracker.yaml": connector + `
+security:
+  access: true
+  include:
+    - if: true
+      names: [search_issues]
+`})
+	testruntime.ReconcileParserAndWait(t, rt, instanceID)
+	servers, err = runner.DiscoverExternalServers(t.Context(), instanceID, claims)
+	require.NoError(t, err)
+	require.Len(t, servers[0].Tools, 1)
+	require.Equal(t, "search_issues", servers[0].Tools[0].Name)
+}
+
 func TestExternalToolsLimit(t *testing.T) {
 	server := mcp.NewServer(&mcp.Implementation{Name: "big", Version: "1.0.0"}, nil)
 	for i := range 130 {

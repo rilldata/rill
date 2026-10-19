@@ -937,6 +937,11 @@ func computeCacheKey(instanceID, environment string, claims *SecurityClaims, r *
 	if err != nil {
 		return "", err
 	}
+	// Some resources (APIs, connectors) read security rules from the spec without updating state, so the spec time must be part of the key.
+	_, err = hash.Write([]byte(r.Meta.SpecUpdatedOn.AsTime().String()))
+	if err != nil {
+		return "", err
+	}
 	claimsJSON, err := json.Marshal(claims)
 	if err != nil {
 		return "", err
