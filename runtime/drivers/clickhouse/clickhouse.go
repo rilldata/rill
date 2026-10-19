@@ -16,7 +16,6 @@ import (
 	"github.com/mitchellh/mapstructure"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/activity"
-	"github.com/rilldata/rill/runtime/pkg/ctxsync"
 	"github.com/rilldata/rill/runtime/pkg/priorityqueue"
 	"github.com/rilldata/rill/runtime/storage"
 	"go.opentelemetry.io/otel/attribute"
@@ -384,7 +383,6 @@ func (d driver) Open(ctx context.Context, connectorName, instanceID string, conf
 		cancel:          cancel,
 		metaSem:         semaphore.NewWeighted(1),
 		olapSem:         priorityqueue.NewSemaphore(olapSemSize),
-		tempTableMu:     ctxsync.NewRWMutex(),
 		opts:            opts,
 		embed:           embed,
 	}
@@ -438,10 +436,6 @@ type Connection struct {
 	// This creates contention for the same connection in database/sql's pool, but its locks will handle that.
 	metaSem *semaphore.Weighted
 	olapSem *priorityqueue.Semaphore
-
-	// tempTableMu serializes the creation of temporary tables (read lock) with the sweep of stale ones (write lock).
-	// Temporary tables have deterministic names, so without it an execution could recreate a stale table after the sweep listed it and before it dropped it.
-	tempTableMu ctxsync.RWMutex
 
 	// options used to open clickhouse connections
 	opts *clickhouse.Options

@@ -2,7 +2,6 @@ package clickhouse
 
 import (
 	"context"
-	"crypto/md5"
 	"errors"
 	"fmt"
 	"strings"
@@ -120,8 +119,8 @@ func (c *Connection) insertTableAsSelect(ctx context.Context, name, sql string, 
 		if err != nil {
 			return nil, err
 		}
-		// create temp table with the same schema using a deterministic name
-		tempName := fmt.Sprintf("%s%s_%x", tempTablePrefix, name, md5.Sum([]byte(sql)))
+		// create temp table with the same schema
+		tempName := tempTableName(name)
 		// clean up the temp table
 		defer func() {
 			// cleanup using a different ctx to prevent cleanups being impacted by the main ctx cancellation
@@ -137,30 +136,28 @@ func (c *Connection) insertTableAsSelect(ctx context.Context, name, sql string, 
 			}
 		}()
 		// create temp table
-		// Hold the read lock while creating it, so that a sweep of stale temp tables that listed an older table of the same name cannot drop it.
-		err = c.tempTableMu.RLock(ctx)
-		if err != nil {
-			return nil, err
-		}
 		if engine == "Distributed" {
 			// create a local table first
 			err = c.Exec(ctx, &drivers.Statement{
 				Query:    fmt.Sprintf("CREATE OR REPLACE TABLE %s %s AS %s", safeSQLName(localTableName(tempName)), onClusterClause, safeSQLName(localTableName(name))),
 				Priority: 1,
 			})
-			if err == nil {
-				// then create the distributed table
-				err = c.createDistributedTable(ctx, tempName, outputProps)
+			if err != nil {
+				return nil, err
+			}
+			// then create the distributed table
+			err = c.createDistributedTable(ctx, tempName, outputProps)
+			if err != nil {
+				return nil, err
 			}
 		} else {
 			err = c.Exec(ctx, &drivers.Statement{
 				Query:    fmt.Sprintf("CREATE OR REPLACE TABLE %s %s AS %s", safeSQLName(tempName), onClusterClause, safeSQLName(name)),
 				Priority: 1,
 			})
-		}
-		c.tempTableMu.RUnlock()
-		if err != nil {
-			return nil, err
+			if err != nil {
+				return nil, err
+			}
 		}
 
 		// insert into temp table
@@ -240,6 +237,12 @@ func (c *Connection) insertTableAsSelect(ctx context.Context, name, sql string, 
 // tempTablePrefix is the prefix of the temporary tables created while writing a model's table, e.g. for column inference and partition inserts.
 const tempTablePrefix = "__rill_temp_"
 
+// tempTableName returns a unique name for a temporary table used while writing table `name`.
+// Unique names prevent concurrent executions (e.g. partitions of the same model) and the stale table sweep from operating on the same table.
+func tempTableName(name string) string {
+	return fmt.Sprintf("%s%s_%d_%s", tempTablePrefix, name, time.Now().UnixMilli(), uuid.New().String()[0:8])
+}
+
 // tempTableTTL is the age after which a temporary table is assumed to be left behind by an execution that never dropped it.
 // The default model timeout is 3 hours, so this leaves a wide margin for executions that are still running.
 const tempTableTTL = 24 * time.Hour
@@ -249,12 +252,6 @@ const tempTableTTL = 24 * time.Hour
 // and it may fail, e.g. by timing out while a cancelled insert still holds a lock on the table.
 // Failures to drop individual tables are logged, so that the remaining tables are still dropped.
 func (c *Connection) dropStaleTempTables(ctx context.Context, olderThan time.Duration) error {
-	// Hold the lock until the drops are done: a temporary table created before the listing is not stale, and one created after it waits.
-	if err := c.tempTableMu.Lock(ctx); err != nil {
-		return err
-	}
-	defer c.tempTableMu.Unlock()
-
 	names, err := c.listStaleTempTables(ctx, olderThan)
 	if err != nil {
 		return err
@@ -532,7 +529,7 @@ func (c *Connection) createTable(ctx context.Context, name, sql string, outputPr
 			return fmt.Errorf("clickhouse: no columns specified for table %q", name)
 		}
 		// infer columns
-		v := safeSQLName(fmt.Sprintf("%s%s_%x", tempTablePrefix, name, md5.Sum([]byte(sql))))
+		v := safeSQLName(tempTableName(name))
 		defer func() {
 			// cleanup using a different ctx to prevent cleanups being impacted by the main ctx cancellation
 			// this is a best effort cleanup and query can still timeout and we don't want to wait forever due to blocked calls
@@ -542,13 +539,7 @@ func (c *Connection) createTable(ctx context.Context, name, sql string, outputPr
 			defer cancel()
 			_ = c.Exec(ctx, &drivers.Statement{Query: fmt.Sprintf("DROP VIEW IF EXISTS %s %s", v, onClusterClause)})
 		}()
-		// Hold the read lock while creating the view, so that a sweep of stale temp tables that listed an older view of the same name cannot drop it.
-		err := c.tempTableMu.RLock(ctx)
-		if err != nil {
-			return err
-		}
-		err = c.Exec(ctx, &drivers.Statement{Query: fmt.Sprintf("CREATE OR REPLACE VIEW %s %s AS %s", v, onClusterClause, sql)})
-		c.tempTableMu.RUnlock()
+		err := c.Exec(ctx, &drivers.Statement{Query: fmt.Sprintf("CREATE OR REPLACE VIEW %s %s AS %s", v, onClusterClause, sql)})
 		if err != nil {
 			return err
 		}
