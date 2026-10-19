@@ -413,6 +413,8 @@ func (e *Executor) Query(ctx context.Context, qry *metricsview.Query, executionT
 		return nil, err
 	}
 
+	e.rewriteLookupGroupByKey(ctx, ast)
+
 	var res *drivers.Result
 	if !pivoting {
 		sql, args, err := ast.SQL()
@@ -553,6 +555,8 @@ func (e *Executor) Export(ctx context.Context, qry *metricsview.Query, execution
 		return "", err
 	}
 
+	e.rewriteLookupGroupByKey(ctx, ast)
+
 	if pivoting {
 		return e.executePivotExport(ctx, ast, pivotAST, format, headers)
 	}
@@ -639,6 +643,8 @@ func (e *Executor) Search(ctx context.Context, qry *metricsview.SearchQuery, exe
 		}
 
 		e.rewriteDruidMVDFilteredGroupBy(ast, nil)
+
+		e.rewriteLookupGroupByKey(ctx, ast)
 
 		sql, args, err := ast.SQL()
 		if err != nil {

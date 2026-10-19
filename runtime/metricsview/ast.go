@@ -130,6 +130,28 @@ type lookupMeta struct {
 	defaultExpr string
 }
 
+// newLookupMeta returns the lookup metadata of a dimension, or nil if it is not a lookup dimension.
+func newLookupMeta(dialect drivers.Dialect, dim *runtimev1.MetricsViewSpec_Dimension) *lookupMeta {
+	if dim.LookupTable == "" {
+		return nil
+	}
+	return &lookupMeta{
+		table:       dim.LookupTable,
+		keyExpr:     LookupKeyExpr(dialect, dim),
+		keyCol:      dim.LookupKeyColumn,
+		valueCol:    dim.LookupValueColumn,
+		defaultExpr: dim.LookupDefaultExpression,
+	}
+}
+
+// LookupKeyExpr returns the expression of a lookup dimension's key in the underlying table.
+func LookupKeyExpr(dialect drivers.Dialect, dim *runtimev1.MetricsViewSpec_Dimension) string {
+	if dim.Column != "" {
+		return dialect.EscapeIdentifier(dim.Column)
+	}
+	return dim.Expression
+}
+
 // And returns a new node that is the AND of the current node and the given expression.
 func (n *ExprNode) And(expr string, args []any) *ExprNode {
 	if expr == "" {
@@ -232,29 +254,12 @@ func NewAST(mv *runtimev1.MetricsViewSpec, sec MetricsViewSecurity, qry *Query, 
 			return nil, fmt.Errorf("failed to compile dimension %q expression: %w", dim.Name, err)
 		}
 
-		var lkMeta *lookupMeta
-		if dim.LookupTable != "" {
-			var keyExpr string
-			if dim.Column != "" {
-				keyExpr = ast.Dialect.EscapeIdentifier(dim.Column)
-			} else {
-				keyExpr = dim.Expression
-			}
-			lkMeta = &lookupMeta{
-				table:       dim.LookupTable,
-				keyExpr:     keyExpr,
-				keyCol:      dim.LookupKeyColumn,
-				valueCol:    dim.LookupValueColumn,
-				defaultExpr: dim.LookupDefaultExpression,
-			}
-		}
-
 		f := FieldNode{
 			Name:        dim.Name,
 			DisplayName: dim.DisplayName,
 			Expr:        expr,
 			Unnest:      dim.Unnest,
-			LookupMeta:  lkMeta,
+			LookupMeta:  newLookupMeta(ast.Dialect, dim),
 		}
 
 		if dim.Unnest {
