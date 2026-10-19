@@ -858,6 +858,239 @@ table:
 `})
 	testruntime.ReconcileParserAndWait(t, rt, id)
 	testruntime.RequireReconcileState(t, rt, id, 4, 0, 0)
+
+	// Valid: object entries with per-column overrides and the presentation properties.
+	testruntime.PutFiles(t, rt, id, map[string]string{
+		"c1.yaml": `
+type: component
+table:
+  metrics_view: mv1
+  fit_to_width: true
+  wrap: true
+  wrap_headers: true
+  wrap_lines: 3
+  sort_by: y
+  sort_dir: asc
+  sort_comparison: delta
+  columns:
+  - name: foo
+    width: 240
+    wrap: true
+    label: Foo label
+    align: center
+  - name: ts_rill_TIME_GRAIN_MONTH
+    width: 120
+  - name: y
+    width: 90
+    format_d3: ".3s"
+    align: left
+    delta:
+      width: 80
+    percent_change:
+      width: 70
+  - bar
+`})
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireReconcileState(t, rt, id, 4, 0, 0)
+
+	// Invalid overrides and presentation properties.
+	invalid := []struct {
+		name        string
+		yaml        string
+		errContains string
+	}{
+		{"fit_to_width not a boolean", `
+type: component
+table:
+  metrics_view: mv1
+  fit_to_width: "yes"
+  columns: [foo, y]
+`, "fit_to_width"},
+		{"width as a string", `
+type: component
+table:
+  metrics_view: mv1
+  columns:
+  - name: foo
+    width: "140"
+`, "'width' must be an integer"},
+		{"fractional width", `
+type: component
+table:
+  metrics_view: mv1
+  columns:
+  - name: foo
+    width: 140.5
+`, "'width' must be an integer"},
+		{"measure width below the minimum", `
+type: component
+table:
+  metrics_view: mv1
+  columns:
+  - name: y
+    width: 59
+`, "between 60 and 300"},
+		{"dimension width above the maximum", `
+type: component
+table:
+  metrics_view: mv1
+  columns:
+  - name: foo
+    width: 601
+`, "between 100 and 600"},
+		{"wrap on a measure", `
+type: component
+table:
+  metrics_view: mv1
+  columns:
+  - name: y
+    wrap: true
+`, "'wrap' only applies to dimension columns"},
+		{"number format on a dimension", `
+type: component
+table:
+  metrics_view: mv1
+  columns:
+  - name: foo
+    format_d3: ".2f"
+`, "number formats only apply to measures"},
+		{"both number formats", `
+type: component
+table:
+  metrics_view: mv1
+  columns:
+  - name: y
+    format_preset: humanize
+    format_d3: ".2f"
+`, "cannot set both"},
+		{"unknown format preset", `
+type: component
+table:
+  metrics_view: mv1
+  columns:
+  - name: y
+    format_preset: money
+`, "'format_preset' must be one of"},
+		{"object without a name", `
+type: component
+table:
+  metrics_view: mv1
+  columns:
+  - width: 100
+`, "non-empty 'name'"},
+		{"duplicate field", `
+type: component
+table:
+  metrics_view: mv1
+  columns:
+  - foo
+  - name: foo
+    width: 120
+`, "more than once"},
+		{"wrap_lines out of range", `
+type: component
+table:
+  metrics_view: mv1
+  wrap_lines: 9
+  columns: [foo, y]
+`, "wrap_lines"},
+		{"sort_by not in the component", `
+type: component
+table:
+  metrics_view: mv1
+  sort_by: bar
+  columns: [foo, y]
+`, "sort_by"},
+		{"unknown sort_dir", `
+type: component
+table:
+  metrics_view: mv1
+  sort_by: y
+  sort_dir: down
+  columns: [foo, y]
+`, "sort_dir"},
+		{"sort_dir without sort_by", `
+type: component
+table:
+  metrics_view: mv1
+  sort_dir: asc
+  columns: [foo, y]
+`, "requires"},
+		{"unknown sort_comparison", `
+type: component
+table:
+  metrics_view: mv1
+  sort_by: y
+  sort_comparison: previous
+  columns: [foo, y]
+`, "sort_comparison"},
+		{"sort_comparison on a dimension", `
+type: component
+table:
+  metrics_view: mv1
+  sort_by: foo
+  sort_comparison: delta
+  columns: [foo, y]
+`, "name a measure"},
+		{"sort_comparison without sort_by", `
+type: component
+table:
+  metrics_view: mv1
+  sort_comparison: percent_change
+  columns: [foo, y]
+`, "requires"},
+		{"delta on a dimension", `
+type: component
+table:
+  metrics_view: mv1
+  columns:
+  - name: foo
+    delta:
+      width: 80
+  - y
+`, "only applies to measures"},
+		{"delta width out of bounds", `
+type: component
+table:
+  metrics_view: mv1
+  columns:
+  - foo
+  - name: y
+    delta:
+      width: 20
+`, "'delta.width' must be between"},
+		{"percent_change not an object", `
+type: component
+table:
+  metrics_view: mv1
+  columns:
+  - foo
+  - name: y
+    percent_change: 80
+`, "must be an object"},
+		{"delta on an adhoc measure", `
+type: component
+table:
+  metrics_view: mv1
+  adhoc_measures:
+  - name: profit
+    display_name: Profit
+    expression: y - z
+  columns:
+  - foo
+  - name: profit
+    delta:
+      width: 80
+`, "adhoc measures have no comparison columns"},
+	}
+	for _, tc := range invalid {
+		t.Run(tc.name, func(t *testing.T) {
+			testruntime.PutFiles(t, rt, id, map[string]string{"c1.yaml": tc.yaml})
+			testruntime.ReconcileParserAndWait(t, rt, id)
+			testruntime.RequireReconcileState(t, rt, id, 4, 1, 0)
+			testruntime.RequireReconcileErrorContains(t, rt, id, runtime.ResourceKindComponent, "c1", tc.errContains)
+		})
+	}
 }
 
 func TestValidatePivot(t *testing.T) {
@@ -971,6 +1204,120 @@ pivot:
 	testruntime.ReconcileParserAndWait(t, rt, id)
 	testruntime.RequireReconcileState(t, rt, id, 4, 1, 0)
 	testruntime.RequireReconcileErrorContains(t, rt, id, runtime.ResourceKindComponent, "c1", "is not a dimension")
+
+	// Valid: object entries with per-column overrides; the column dimension only carries a label.
+	testruntime.PutFiles(t, rt, id, map[string]string{
+		"c1.yaml": `
+type: component
+pivot:
+  metrics_view: mv1
+  fit_to_width: true
+  sort_by: y
+  sort_comparison: percent_change
+  measures:
+  - name: y
+    width: 120
+    format_preset: percentage
+    delta:
+      width: 80
+    align: center
+  - z
+  row_dimensions:
+  - name: foo
+    width: 260
+    wrap: true
+    label: Foo
+  col_dimensions:
+  - name: bar
+    label: Bar group
+`})
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireReconcileState(t, rt, id, 4, 0, 0)
+
+	// Valid: sorting by a row dimension.
+	testruntime.PutFiles(t, rt, id, map[string]string{
+		"c1.yaml": `
+type: component
+pivot:
+  metrics_view: mv1
+  sort_by: foo
+  sort_dir: desc
+  measures: [y]
+  row_dimensions: [foo]
+`})
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireReconcileState(t, rt, id, 4, 0, 0)
+
+	// Invalid overrides on pivoted dimensions and sorts by them.
+	invalid := []struct {
+		name        string
+		yaml        string
+		errContains string
+	}{
+		{"width on a column dimension", `
+type: component
+pivot:
+  metrics_view: mv1
+  measures: [y]
+  row_dimensions: [foo]
+  col_dimensions:
+  - name: bar
+    width: 120
+`, "take no 'width'"},
+		{"align on a column dimension", `
+type: component
+pivot:
+  metrics_view: mv1
+  measures: [y]
+  col_dimensions:
+  - name: bar
+    align: center
+`, "take no 'align'"},
+		{"sort by a column dimension", `
+type: component
+pivot:
+  metrics_view: mv1
+  sort_by: bar
+  measures: [y]
+  row_dimensions: [foo]
+  col_dimensions: [bar]
+`, "sort_by"},
+		{"measure width above the maximum", `
+type: component
+pivot:
+  metrics_view: mv1
+  measures:
+  - name: y
+    width: 301
+`, "between 60 and 300"},
+		{"align on the first row dimension", `
+type: component
+pivot:
+  metrics_view: mv1
+  measures: [y]
+  row_dimensions:
+  - name: foo
+    align: center
+`, "'align' is not supported on row dimensions"},
+		{"width on a later row dimension", `
+type: component
+pivot:
+  metrics_view: mv1
+  measures: [y]
+  row_dimensions:
+  - foo
+  - name: bar
+    width: 200
+`, "only the first row dimension renders a column"},
+	}
+	for _, tc := range invalid {
+		t.Run(tc.name, func(t *testing.T) {
+			testruntime.PutFiles(t, rt, id, map[string]string{"c1.yaml": tc.yaml})
+			testruntime.ReconcileParserAndWait(t, rt, id)
+			testruntime.RequireReconcileState(t, rt, id, 4, 1, 0)
+			testruntime.RequireReconcileErrorContains(t, rt, id, runtime.ResourceKindComponent, "c1", tc.errContains)
+		})
+	}
 }
 
 func TestValidateLeaderboard(t *testing.T) {
@@ -1040,6 +1387,300 @@ leaderboard:
 	testruntime.ReconcileParserAndWait(t, rt, id)
 	testruntime.RequireReconcileState(t, rt, id, 4, 1, 0)
 	testruntime.RequireReconcileErrorContains(t, rt, id, runtime.ResourceKindComponent, "c1", "is not a dimension")
+}
+
+func TestValidateCustomChart(t *testing.T) {
+	rt, id := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
+		Files: metricsViewFiles(),
+	})
+
+	// Valid: static metrics_sql string and a Flint spec.
+	testruntime.PutFiles(t, rt, id, map[string]string{
+		"c1.yaml": `
+type: component
+custom_chart:
+  metrics_sql: SELECT foo, y FROM mv1
+  spec:
+    chartType: Bar Chart
+    encodings:
+      x: {field: foo}
+      y: {field: y}
+`})
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireReconcileState(t, rt, id, 4, 0, 0)
+
+	// Valid: channels may bind a bare field name instead of an encoding mapping.
+	testruntime.PutFiles(t, rt, id, map[string]string{
+		"c1.yaml": `
+type: component
+custom_chart:
+  metrics_sql: SELECT foo, y FROM mv1
+  spec:
+    chartType: Bar Chart
+    encodings:
+      x: foo
+      y: [y]
+`})
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireReconcileState(t, rt, id, 4, 0, 0)
+
+	// Valid: incomplete drafts are allowed; the visual editor persists custom charts with
+	// missing or empty properties while the user is still building them.
+	testruntime.PutFiles(t, rt, id, map[string]string{
+		"c1.yaml": `
+type: component
+custom_chart:
+  metrics_sql: SELECT foo, y FROM mv1
+`})
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireReconcileState(t, rt, id, 4, 0, 0)
+
+	// Invalid: metrics_sql of the wrong type.
+	testruntime.PutFiles(t, rt, id, map[string]string{
+		"c1.yaml": `
+type: component
+custom_chart:
+  metrics_sql: 42
+  spec:
+    chartType: Bar Chart
+`})
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireReconcileState(t, rt, id, 4, 1, 0)
+	testruntime.RequireReconcileErrorContains(t, rt, id, runtime.ResourceKindComponent, "c1", "must be a string or an array of strings")
+
+	// Valid: an ejected component draws a Vega-Lite spec instead of a chart spec.
+	testruntime.PutFiles(t, rt, id, map[string]string{
+		"c1.yaml": `
+type: component
+custom_chart:
+  metrics_sql: SELECT foo, y FROM mv1
+  vega_spec: '{"mark": "bar"}'
+`})
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireReconcileState(t, rt, id, 4, 0, 0)
+
+	// Invalid: a component draws one or the other, not both.
+	testruntime.PutFiles(t, rt, id, map[string]string{
+		"c1.yaml": `
+type: component
+custom_chart:
+  metrics_sql: SELECT foo, y FROM mv1
+  vega_spec: '{"mark": "bar"}'
+  spec:
+    chartType: Bar Chart
+`})
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireReconcileState(t, rt, id, 3, 1, 1)
+	testruntime.RequireParseErrors(t, rt, id, map[string]string{
+		"/c1.yaml": `"spec" and "vega_spec" are mutually exclusive`,
+	})
+
+	// Invalid: vega_spec is a JSON string, not a mapping.
+	testruntime.PutFiles(t, rt, id, map[string]string{
+		"c1.yaml": `
+type: component
+custom_chart:
+  metrics_sql: SELECT foo, y FROM mv1
+  vega_spec:
+    mark: bar
+`})
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireReconcileState(t, rt, id, 3, 1, 1)
+	testruntime.RequireParseErrors(t, rt, id, map[string]string{
+		"/c1.yaml": `"vega_spec" must be a string`,
+	})
+
+	// Invalid: spec must be a mapping, not a JSON string.
+	testruntime.PutFiles(t, rt, id, map[string]string{
+		"c1.yaml": `
+type: component
+custom_chart:
+  metrics_sql: SELECT foo, y FROM mv1
+  spec: '{"chartType": "Bar Chart"}'
+`})
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireReconcileState(t, rt, id, 3, 1, 1)
+	testruntime.RequireParseErrors(t, rt, id, map[string]string{
+		"/c1.yaml": `"spec" must be a mapping`,
+	})
+
+	// Invalid: empty chartType.
+	testruntime.PutFiles(t, rt, id, map[string]string{
+		"c1.yaml": `
+type: component
+custom_chart:
+  metrics_sql: SELECT foo, y FROM mv1
+  spec:
+    chartType: ""
+`})
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireReconcileState(t, rt, id, 4, 1, 0)
+	testruntime.RequireReconcileErrorContains(t, rt, id, runtime.ResourceKindComponent, "c1", "'spec.chartType' must not be empty")
+
+	// Invalid: an encoding channel that is neither a field name nor an encoding mapping.
+	testruntime.PutFiles(t, rt, id, map[string]string{
+		"c1.yaml": `
+type: component
+custom_chart:
+  metrics_sql: SELECT foo, y FROM mv1
+  spec:
+    chartType: Bar Chart
+    encodings:
+      x: 42
+`})
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireReconcileState(t, rt, id, 4, 1, 0)
+	testruntime.RequireReconcileErrorContains(t, rt, id, runtime.ResourceKindComponent, "c1", "must be a field name or an encoding mapping")
+
+	// Valid: a parameterized component with templated properties reconciles.
+	testruntime.PutFiles(t, rt, id, map[string]string{
+		"c1.yaml": `
+type: component
+params:
+  - name: metrics_view
+    type: metrics_view
+    required: true
+  - name: measure
+    type: measure
+    required: true
+custom_chart:
+  metrics_sql: SELECT foo, {{ .params.measure }} AS value FROM {{ .params.metrics_view }}
+  spec:
+    chartType: Bar Chart
+    encodings:
+      x: {field: foo}
+      y: {field: "{{ .params.measure }}"}
+`})
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireReconcileState(t, rt, id, 4, 0, 0)
+
+	// Invalid: a parameterized component still gets structural checks despite templated properties.
+	testruntime.PutFiles(t, rt, id, map[string]string{
+		"c1.yaml": `
+type: component
+params:
+  - name: metrics_view
+    type: metrics_view
+    required: true
+custom_chart:
+  metrics_sql: 42
+  spec:
+    chartType: Bar Chart
+    encodings:
+      x: {field: "{{ .params.metrics_view }}"}
+`})
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireReconcileState(t, rt, id, 4, 1, 0)
+	testruntime.RequireReconcileErrorContains(t, rt, id, runtime.ResourceKindComponent, "c1", "must be a string or an array of strings")
+}
+
+func TestValidateParameterizedRenderer(t *testing.T) {
+	rt, id := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
+		Files: metricsViewFiles(),
+	})
+
+	// Valid: all fields templated; membership checks are deferred to param binding.
+	testruntime.PutFiles(t, rt, id, map[string]string{
+		"c1.yaml": `
+type: component
+params:
+  - name: metrics_view
+    type: metrics_view
+    required: true
+  - name: measure
+    type: measure
+    required: true
+kpi:
+  metrics_view: "{{ .params.metrics_view }}"
+  measure: "{{ .params.measure }}"
+`})
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireReconcileState(t, rt, id, 4, 0, 0)
+
+	// Invalid: templated properties do not exempt the component from structural checks;
+	// the required 'measure' property is missing.
+	testruntime.PutFiles(t, rt, id, map[string]string{
+		"c1.yaml": `
+type: component
+params:
+  - name: metrics_view
+    type: metrics_view
+    required: true
+kpi:
+  metrics_view: "{{ .params.metrics_view }}"
+`})
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireReconcileState(t, rt, id, 4, 1, 0)
+	testruntime.RequireReconcileErrorContains(t, rt, id, runtime.ResourceKindComponent, "c1", "'measure' property")
+
+	// Valid: static metrics view with a templated field; the static x.field is still validated.
+	testruntime.PutFiles(t, rt, id, map[string]string{
+		"c1.yaml": `
+type: component
+params:
+  - name: measure
+    type: measure
+    required: true
+    metrics_view: metrics_view
+  - name: metrics_view
+    type: metrics_view
+    default: mv1
+line_chart:
+  metrics_view: mv1
+  x:
+    field: foo
+  y:
+    field: "{{ .params.measure }}"
+`})
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireReconcileState(t, rt, id, 4, 0, 0)
+
+	// Invalid: static x.field is a measure, caught even though other fields are templated.
+	testruntime.PutFiles(t, rt, id, map[string]string{
+		"c1.yaml": `
+type: component
+params:
+  - name: measure
+    type: measure
+    required: true
+    metrics_view: metrics_view
+  - name: metrics_view
+    type: metrics_view
+    default: mv1
+line_chart:
+  metrics_view: mv1
+  x:
+    field: y
+  y:
+    field: "{{ .params.measure }}"
+`})
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireReconcileState(t, rt, id, 4, 1, 0)
+	testruntime.RequireReconcileErrorContains(t, rt, id, runtime.ResourceKindComponent, "c1", "is not a dimension")
+}
+
+func TestValidateUnknownRendererWithParams(t *testing.T) {
+	rt, id := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
+		Files: metricsViewFiles(),
+	})
+
+	// A parameterized component skips field validation, but an unknown renderer
+	// (e.g. an erroneous `renderer:` wrapper around the real block) must still fail.
+	testruntime.PutFiles(t, rt, id, map[string]string{
+		"c1.yaml": `
+type: component
+params:
+  - name: metrics_view
+    type: metrics_view
+    required: true
+renderer:
+  custom_chart:
+    metrics_sql: SELECT foo, y FROM {{ .params.metrics_view }}
+    vega_spec: '{"mark": "bar"}'
+`})
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireReconcileState(t, rt, id, 4, 1, 0)
+	testruntime.RequireReconcileErrorContains(t, rt, id, runtime.ResourceKindComponent, "c1", `unsupported renderer "renderer"`)
 }
 
 func TestValidateEphemeralMeasures(t *testing.T) {

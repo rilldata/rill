@@ -16,6 +16,8 @@
   // Flat tables reuse this component only to render the value (and optional
   // link); they must not show the expand chevron or nesting indentation.
   export let expandable = true;
+  // Wrap the value over `--wrap-lines` lines instead of truncating it.
+  export let wrap = false;
 
   $: canExpand = expandable && row.getCanExpand();
   $: expanded = row.getIsExpanded();
@@ -54,7 +56,7 @@
     <span class="shrink-0"><Spacer size="16px" /></span>
   {/if}
 
-  <span class="truncate min-w-0">
+  <span class="min-w-0" class:truncate={!wrap} class:wrap-text={wrap}>
     {#if value === LOADING_CELL}
       {""}
     {:else if value === ""}
@@ -85,6 +87,15 @@
 
   .dimension-cell {
     @apply flex items-center gap-x-1;
+  }
+
+  .wrap-text {
+    @apply whitespace-normal overflow-hidden;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: var(--wrap-lines, 2);
+    overflow-wrap: anywhere;
+    line-height: 1rem;
   }
 
   .external-link {

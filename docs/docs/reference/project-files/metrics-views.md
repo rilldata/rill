@@ -62,7 +62,7 @@ _[string]_ - A SQL expression that tells us the max timestamp that the measures 
 
 ### `data_time_range`
 
-_[string]_ - Optional [rilltime](https://docs.rilldata.com/reference/time-syntax) expression describing the base table's time coverage (e.g. `-5Y to now`). When set, Rill skips the `min`/`max` OLAP probe for the base table and uses the declared bounds for coverage checks. The start must be bounded; `inf` and `earliest` are rejected. To declare full history, use a concrete early bound such as `-100Y to now` or omit this field to probe the table.
+_[string]_ - Optional [time range syntax](/reference/time-syntax) expression describing the base table's time coverage (e.g. `-5Y to now`). When set, Rill skips the `min`/`max` OLAP probe for the base table and uses the declared bounds for coverage checks. The start must be bounded; `inf` and `earliest` are rejected. To declare full history, use a concrete early bound such as `-100Y to now` or omit this field to probe the table.
 
 ### `smallest_time_grain`
 
@@ -109,6 +109,8 @@ _[array of object]_ - Relates to exploring segments or dimensions of your data a
   - **`lookup_value_column`** - _[string]_ - the attribute column in the lookup dictionary whose values will be displayed for this dimension
 
   - **`lookup_default_expression`** - _[string]_ - an optional SQL expression used as a fallback value when no match is found in the dictionary (maps to `dictGetOrDefault`)
+
+  - **`lookup_group_by_key`** - _[boolean]_ - If true, queries that group by this dimension group by the lookup key first, resolve the lookup value once per key, and then regroup by value. Enable it for dictionaries with few keys (up to the low hundreds of thousands); it uses more memory and loses its advantage for very high-cardinality keys. See [Query-Time Joins](/developers/build/metrics-view/dimensions/lookup) for details.
 
 ### `measures`
 
@@ -316,7 +318,7 @@ _[array of object]_ - Pre-aggregated rollup tables that can be used to accelerat
 
       - **`exclude`** - _[object]_ - Select all fields except those listed here
 
-  - **`data_time_range`** - _[string]_ - Optional [rilltime](https://docs.rilldata.com/reference/time-syntax) expression describing the rollup's time coverage (e.g. `-1Y to now`, `-5Y to -1Y`). When set, Rill skips the `min`/`max` OLAP probe for this rollup and uses the declared bounds for coverage checks. The start must be bounded; `inf` and `earliest` are rejected. To declare full history, use a concrete early bound such as `-100Y to now` or omit this field to probe the table.
+  - **`data_time_range`** - _[string]_ - Optional [time range syntax](/reference/time-syntax) expression describing the rollup's time coverage (e.g. `-1Y to now`, `-5Y to -1Y`). When set, Rill skips the `min`/`max` OLAP probe for this rollup and uses the declared bounds for coverage checks. The start must be bounded; `inf` and `earliest` are rejected. To declare full history, use a concrete early bound such as `-100Y to now` or omit this field to probe the table.
 
 ### `security`
 
@@ -378,6 +380,18 @@ Example: a `key_sql` of `SELECT MAX(updated_at) FROM orders` with `key_ttl: 5m` 
   - **`key_ttl`** - _[string]_ - How often `key_sql` is re-evaluated, as a Go duration string (e.g. `30s`, `5m`, `1h`). The previous result is reused between evaluations. Defaults to `60s`.
 
   - **`timestamps_ttl`** - _[string]_ - TTL for caching the min/max timestamp queries used to populate a metrics view's rollups. Only takes effect when the metrics view has rollups defined and query result caching (`enabled`) is off — otherwise rollup timestamps are cached alongside other query results under `key_ttl`. Go duration string (e.g. `5m`). Defaults to `5m`.
+
+### `query_attributes`
+
+_[object]_ - Key-value pairs that Rill attaches to every query the metrics view sends to the OLAP engine, for example to attribute warehouse cost or audit queries by user. Values support templating with user attributes and environment variables, such as `'{{ .user.email }}'` or `'{{ .env.team }}'`, and are resolved for each query. Keys may contain only letters, digits, underscores, hyphens, and dots.
+How the attributes are delivered depends on the OLAP engine: ClickHouse receives them as query settings, Druid as query context parameters, and Databricks as query tags. Other engines ignore them. See [Query attributes](/developers/build/metrics-view/query-attributes) for details.
+
+
+```yaml
+query_attributes:
+    rill_user: '{{ .user.email }}'
+    department: '{{ .user.department | default "unknown" }}'
+```
 
 ### `explore`
 

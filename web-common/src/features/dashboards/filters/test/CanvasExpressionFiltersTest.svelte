@@ -1,4 +1,5 @@
 <script lang="ts">
+  import * as Tooltip from "@rilldata/web-common/components/tooltip-v2";
   import CanvasDashboardWrapper from "@rilldata/web-common/features/canvas/CanvasDashboardWrapper.svelte";
   import CanvasProvider from "@rilldata/web-common/features/canvas/CanvasProvider.svelte";
   import { DEFAULT_DASHBOARD_WIDTH } from "@rilldata/web-common/features/canvas/layout-util";
@@ -15,13 +16,16 @@
   const runtimeClient = useRuntimeClient();
 </script>
 
-<CanvasProvider {canvasName} instanceId={runtimeClient.instanceId}>
-  <!-- `CanvasDashboardEmbed` reads both of these off the spec; they are fixed here. -->
-  <CanvasDashboardWrapper
-    {canvasName}
-    maxWidth={DEFAULT_DASHBOARD_WIDTH}
-    filtersEnabled
-  >
-    <div>Dashboard loaded!</div>
-  </CanvasDashboardWrapper>
-</CanvasProvider>
+<!-- The app layout supplies the tooltip provider, which the advanced filter pill needs. -->
+<Tooltip.Provider>
+  <CanvasProvider {canvasName} instanceId={runtimeClient.instanceId}>
+    <!-- `CanvasDashboardEmbed` reads both of these off the spec; they are fixed here. -->
+    <CanvasDashboardWrapper
+      {canvasName}
+      maxWidth={DEFAULT_DASHBOARD_WIDTH}
+      filtersEnabled
+    >
+      <div>Dashboard loaded!</div>
+    </CanvasDashboardWrapper>
+  </CanvasProvider>
+</Tooltip.Provider>

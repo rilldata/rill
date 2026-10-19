@@ -1512,6 +1512,7 @@ type InsertProvisionerResourceOptions struct {
 type UpdateProvisionerResourceOptions struct {
 	Status        ProvisionerResourceStatus
 	StatusMessage string
+	Provisioner   string
 	Args          map[string]any
 	State         map[string]any
 	Config        map[string]any

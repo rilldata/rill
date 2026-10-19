@@ -43,6 +43,42 @@ func (d *dialect) OrderByAliasExpression(name string, desc bool) string {
 	return res
 }
 
+func (d *dialect) DimensionSelect(_ string, dim *runtimev1.MetricsViewSpec_Dimension) (dimSelect, unnestClause string, err error) {
+	expr, err := d.MetricsViewDimensionExpression(dim)
+	if err != nil {
+		return "", "", fmt.Errorf("failed to get dimension expression: %w", err)
+	}
+	alias := d.EscapeAlias(dim.Name)
+	if !dim.Unnest {
+		return fmt.Sprintf(`(%s) AS %s`, expr, alias), "", nil
+	}
+	unnestCol := drivers.TempName(fmt.Sprintf("unnested_%s_", dim.Name))
+	tableAlias := drivers.TempName("tbl")
+	tbl, _, _, err := d.LateralUnnest(expr, tableAlias, unnestCol)
+	if err != nil {
+		return "", "", err
+	}
+	return fmt.Sprintf(`%s AS %s`, d.UnnestedColumn(tableAlias, unnestCol), alias), ", " + tbl, nil
+}
+
+// LateralUnnest aliases every FLATTEN output column so the element is addressable as tableAlias.colName.
+// FLATTEN cannot be wrapped in an inline view because Snowflake does not resolve the outer array column inside it.
+func (d *dialect) LateralUnnest(expr, tableAlias, colName string) (tbl string, tupleStyle, auto bool, err error) {
+	return fmt.Sprintf(`LATERAL FLATTEN(INPUT => %s) %s (seq, key, path, index, %s, this)`, expr, tableAlias, d.EscapeIdentifier(colName)), true, false, nil
+}
+
+// UnnestedColumn casts the element to VARCHAR. FLATTEN yields VARIANT elements for semi-structured arrays, which the driver returns as JSON-encoded text.
+func (d *dialect) UnnestedColumn(tableAlias, colName string) string {
+	return d.EscapeMember(tableAlias, colName) + "::VARCHAR"
+}
+
+// ArrayAnyExpression uses FILTER because Snowflake rejects correlated FLATTEN inside EXISTS subqueries.
+// It also serves IN filters: ARRAYS_OVERLAP does not accept structured arrays and compares raw VARIANT elements, which would not match the VARCHAR values shown by UnnestedColumn.
+// FILTER(NULL, ...) is NULL, so the result is coalesced to FALSE to keep rows with a NULL array under negated filters.
+func (d *dialect) ArrayAnyExpression(arrExpr, elemAlias string) (open, elem, closing string, ok bool) {
+	return fmt.Sprintf("COALESCE(ARRAY_SIZE(FILTER(%s, %s -> ", arrExpr, elemAlias), elemAlias + "::VARCHAR", ")) > 0, FALSE)", true
+}
+
 func (d *dialect) DateTruncExpr(dim *runtimev1.MetricsViewSpec_Dimension, grain runtimev1.TimeGrain, tz string, firstDayOfWeek, firstMonthOfYear int) (string, error) {
 	if tz == "UTC" || tz == "Etc/UTC" {
 		tz = ""

@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"os"
 	"strings"
 	"time"
@@ -81,10 +82,6 @@ func ValidateCmd(ch *cmdutil.Helper) *cobra.Command {
 				return fmt.Errorf("only human and json output format is supported for validate command")
 			}
 
-			if cmdutil.IsLocalRillRunning(cmd.Context()) {
-				return fmt.Errorf("`rill start` appears to be running on http://localhost:9009; stop it and rerun validate")
-			}
-
 			var projectPath string
 			if len(args) > 0 {
 				var err error
@@ -98,6 +95,10 @@ func ValidateCmd(ch *cmdutil.Helper) *cobra.Command {
 
 			if !local.IsProjectInit(projectPath) {
 				return fmt.Errorf("no Rill project found at %q (missing rill.yaml)", projectPath)
+			}
+
+			if isLocalProjectRunning(cmd.Context(), projectPath, "http://localhost:9009") {
+				return fmt.Errorf("`rill start` is running for this project on http://localhost:9009; stop it and rerun validate")
 			}
 
 			envVarsMap, err := start.ParseVariables(envVars)
@@ -146,6 +147,50 @@ func ValidateCmd(ch *cmdutil.Helper) *cobra.Command {
 	validateCmd.Flags().StringVarP(&outputFile, "output-file", "o", "", "Output file for validation results (JSON format)")
 
 	return validateCmd
+}
+
+// isLocalProjectRunning is a best-effort check for the same project at baseURL.
+// It does not detect instances on other ports or prevent concurrent startups.
+func isLocalProjectRunning(ctx context.Context, projectPath, baseURL string) bool {
+	ctx, cancel := context.WithTimeout(ctx, time.Second)
+	defer cancel()
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, baseURL+"/local/config", http.NoBody)
+	if err != nil {
+		return false
+	}
+	client := &http.Client{
+		CheckRedirect: func(_ *http.Request, _ []*http.Request) error {
+			return http.ErrUseLastResponse
+		},
+	}
+	resp, err := client.Do(req)
+	if err != nil {
+		return false
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return false
+	}
+
+	var config struct {
+		InstanceID  string `json:"instance_id"`
+		ProjectPath string `json:"project_path"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&config); err != nil || config.InstanceID == "" {
+		return false
+	}
+
+	projectInfo, err := os.Stat(projectPath)
+	if err != nil {
+		return false
+	}
+	runningProjectInfo, err := os.Stat(config.ProjectPath)
+	if err != nil {
+		return false
+	}
+	// Compare filesystem identity so relative paths, symlinks, and case aliases work.
+	return os.SameFile(projectInfo, runningProjectInfo)
 }
 
 func reconcileAndReport(ctx context.Context, ch *cmdutil.Helper, app *local.App, outputFormat printer.Format, outputFile string) error {

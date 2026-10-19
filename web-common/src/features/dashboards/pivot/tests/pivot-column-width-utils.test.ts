@@ -1,7 +1,11 @@
 import {
+  calculateColumnWidth,
+  clampColumnWidth,
   distributeColumnWidthsToFillContainer,
   fitColumnWidthsToContainer,
   getNestedRowDimensionWidthKey,
+  layoutColumnWidths,
+  roleWidthBounds,
 } from "@rilldata/web-common/features/dashboards/pivot/pivot-column-width-utils";
 import { describe, expect, it } from "vitest";
 
@@ -151,5 +155,129 @@ describe("fitColumnWidthsToContainer", () => {
       250,
     );
     expect(widths.reduce((sum, w) => sum + w, 0)).toBeLessThanOrEqual(250);
+  });
+});
+
+describe("pinned columns", () => {
+  it("gives pinned columns no extra width when filling", () => {
+    const widths = distributeColumnWidthsToFillContainer(
+      [
+        { width: 160, role: "dimension", pinned: true },
+        { width: 100, role: "measure" },
+        { width: 100, role: "measure" },
+      ],
+      560,
+    );
+    expect(widths[0]).toBe(160);
+    expect(widths[1]).toBe(200);
+    expect(widths[2]).toBe(200);
+  });
+
+  it("returns the base widths when every column is pinned", () => {
+    expect(
+      distributeColumnWidthsToFillContainer(
+        [
+          { width: 160, role: "dimension", pinned: true },
+          { width: 100, role: "measure", pinned: true },
+        ],
+        800,
+      ),
+    ).toEqual([160, 100]);
+  });
+});
+
+describe("layoutColumnWidths", () => {
+  it("shrinks only the unpinned columns when fitting an overflow", () => {
+    const widths = layoutColumnWidths(
+      [
+        { width: 200, role: "dimension", pinned: true },
+        { width: 200, role: "measure" },
+        { width: 200, role: "measure" },
+      ],
+      400,
+      { fill: true, fit: true },
+    );
+    expect(widths[0]).toBe(200);
+    expect(widths[1]).toBe(100);
+    expect(widths[2]).toBe(100);
+  });
+
+  it("never shrinks below the role minimums", () => {
+    const widths = layoutColumnWidths(
+      [
+        { width: 100, role: "dimension" },
+        { width: 60, role: "measure" },
+      ],
+      100,
+      { fill: true, fit: true },
+    );
+    expect(widths).toEqual([100, 60]);
+  });
+
+  it("stretches on underflow when filling, even with fit on", () => {
+    const widths = layoutColumnWidths(
+      [
+        { width: 100, role: "measure" },
+        { width: 100, role: "measure" },
+      ],
+      400,
+      { fill: true, fit: true },
+    );
+    expect(widths).toEqual([200, 200]);
+  });
+
+  it("returns the base widths without fill or fit", () => {
+    expect(
+      layoutColumnWidths(
+        [
+          { width: 300, role: "measure" },
+          { width: 300, role: "measure" },
+        ],
+        200,
+        { fill: false, fit: false },
+      ),
+    ).toEqual([300, 300]);
+  });
+});
+
+describe("roleWidthBounds / clampColumnWidth", () => {
+  it("clamps configured widths into the resizer bounds of the role", () => {
+    expect(roleWidthBounds("measure")).toEqual({ min: 60, max: 300 });
+    expect(roleWidthBounds("dimension")).toEqual({ min: 100, max: 600 });
+    expect(clampColumnWidth("measure", 1000)).toBe(300);
+    expect(clampColumnWidth("dimension", 10)).toBe(100);
+    expect(clampColumnWidth("dimension", 240.6)).toBe(241);
+  });
+});
+
+describe("calculateColumnWidth", () => {
+  const rows = [
+    { flight_start: "2026-01-15T00:00:00Z", impressions: 10 },
+    { flight_start: "2026-02-01T00:00:00Z", impressions: 20 },
+  ];
+
+  it("samples the data by column id, not by the display label", () => {
+    const labelled = calculateColumnWidth("flight_start", "Start", "ts", rows);
+    const unlabelled = calculateColumnWidth(
+      "flight_start",
+      "flight_start",
+      "ts",
+      rows,
+    );
+    // "2026-01-15T00:00:00Z" is 20 characters: 20 * 7 + 16.
+    expect(labelled).toBe(156);
+    expect(unlabelled).toBe(156);
+  });
+
+  it("falls back to the label when there is no data for the column", () => {
+    expect(
+      calculateColumnWidth("missing", "A long header label", "ts", rows),
+    ).toBe(19 * 7 + 16);
+  });
+
+  it("keeps the short default for the time dimension", () => {
+    expect(
+      calculateColumnWidth("ts_rill_TIME_GRAIN_DAY", "Time (Day)", "ts", rows),
+    ).toBe(100);
   });
 });

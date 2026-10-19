@@ -70,6 +70,7 @@ export interface MetricsViewSpecDimension {
   lookupKeyColumn?: string;
   lookupValueColumn?: string;
   lookupDefaultExpression?: string;
+  lookupGroupByKey?: boolean;
   smallestTimeGrain?: V1TimeGrain;
   dataType?: Runtimev1Type;
 }
@@ -414,15 +415,23 @@ export interface V1Canvas {
   state?: V1CanvasState;
 }
 
+export type V1CanvasItemParams = { [key: string]: unknown };
+
 export interface V1CanvasItem {
   /** Name of the component to render. */
   component?: string;
   /** Indicates if the component was defined inline as part of the canvas YAML. */
   definedInCanvas?: boolean;
+  /** Values bound to the referenced component's declared params.
+Only set for items that reference an externally defined component. */
+  params?: V1CanvasItemParams;
   /** Width of the item. The unit is given in width_unit. */
   width?: number;
   /** Unit of the width. Current possible values: empty string. */
   widthUnit?: string;
+  /** Templated boolean expression from the item's `if` property.
+The item is only shown to viewers for whom it evaluates to true. */
+  conditionExpression?: string;
 }
 
 export type V1CanvasPresetFilterExpr = {
@@ -448,6 +457,9 @@ export interface V1CanvasTab {
   /** Rows to render when the tab is active. These are always plain rows;
 a tab's rows never contain a nested tab_group. */
   rows?: V1CanvasRow[];
+  /** Templated boolean expression from the tab's `if` property.
+The tab is only shown to viewers for whom it evaluates to true. */
+  conditionExpression?: string;
 }
 
 export interface V1CanvasTabGroup {
@@ -466,6 +478,9 @@ export interface V1CanvasRow {
   /** Items to render in the row. Empty when the row is a tab group. */
   items?: V1CanvasItem[];
   tabGroup?: V1CanvasTabGroup;
+  /** Templated boolean expression from the row's `if` property.
+The row (or tab group) is only shown to viewers for whom it evaluates to true. */
+  conditionExpression?: string;
 }
 
 export interface V1CanvasSpec {
@@ -701,9 +716,32 @@ export interface V1ComponentSpec {
   description?: string;
   renderer?: string;
   rendererProperties?: V1ComponentSpecRendererProperties;
+  /** Declared parameters that canvases can bind values to when referencing this component. */
+  params?: V1ComponentParam[];
   input?: V1ComponentVariable[];
   output?: V1ComponentVariable;
   definedInCanvas?: boolean;
+  /** For components defined inline in a canvas, the `if` conditions of the item and its ancestors (rows, tabs), ANDed together.
+Only viewers for whom it evaluates to true can access the component. */
+  conditionExpression?: string;
+}
+
+/** ComponentParam declares a typed, validated parameter of a component. */
+export interface V1ComponentParam {
+  /** Param name. Must be a valid identifier; referenced in templates as {{ .params.<name> }}. */
+  name?: string;
+  /** Param type. One of: "string", "number", "boolean", "metrics_view", "measure", "dimension", "time_dimension". */
+  type?: string;
+  /** Human-facing description of the param. */
+  description?: string;
+  /** If true, a canvas item referencing this component must bind a value. */
+  required?: boolean;
+  /** Default value used when the param is not bound. Mutually exclusive with required=true. */
+  default?: unknown;
+  /** For field-typed params: the name of a sibling param of type "metrics_view" whose bound metrics view the field must belong to. */
+  metricsViewParam?: string;
+  /** For scalar params: allowed values. Renders as a select input in visual editors. */
+  options?: unknown[];
 }
 
 export interface V1ComponentState {
@@ -864,6 +902,14 @@ This should only be used when the project directory contains an empty project (e
   /** Optional path to the file that the user is currently viewing/editing.
 This helps the agent understand which file the user is referring to in their request. */
   currentFilePath?: string;
+}
+
+/** A non-destructive UI action explicitly exposed to the AI by the browser. */
+export interface V1UIAction {
+  /** Stable identifier from the element's data-ai-action attribute. */
+  id?: string;
+  /** Human-readable accessible label for the action. */
+  label?: string;
 }
 
 export interface V1DirEntry {
@@ -1144,6 +1190,60 @@ export interface V1GenerateResolverResponse {
 export interface V1GetAIMessageResponse {
   message?: V1Message;
   result?: V1Message;
+}
+
+/** AIMemory is a short preference or fact the AI has learned about the current user in an instance. */
+export interface V1AIMemory {
+  id?: string;
+  content?: string;
+  /** The agent the memory applies to: "analyst_agent" or "developer_agent". Empty when it applies to every agent.
+The AI scopes what it learns to the agent that learned it; the user chooses the agent for memories they add themselves. */
+  agent?: string;
+  /** The conversation the memory was learned from. Empty for memories the user added themselves. */
+  sourceConversationId?: string;
+  createdOn?: string;
+  updatedOn?: string;
+}
+
+export interface V1ListAIMemoriesResponse {
+  memories?: V1AIMemory[];
+}
+
+export type RuntimeServiceCreateAIMemoryBody = {
+  content?: string;
+  /** The agent the memory applies to: "analyst_agent" or "developer_agent". Empty for every agent. */
+  agent?: string;
+};
+
+export interface V1CreateAIMemoryResponse {
+  memory?: V1AIMemory;
+}
+
+export type RuntimeServiceUpdateAIMemoryBody = {
+  content?: string;
+  /** The agent the memory applies to: "analyst_agent" or "developer_agent". Empty for every agent. */
+  agent?: string;
+};
+
+export interface V1UpdateAIMemoryResponse {
+  memory?: V1AIMemory;
+}
+
+export interface V1DeleteAIMemoryResponse {
+  [key: string]: unknown;
+}
+
+export interface V1GetAIMemorySettingsResponse {
+  /** False if the user has turned memory off. Memories are then neither used nor updated, but can still be managed. */
+  enabled?: boolean;
+}
+
+export type RuntimeServiceUpdateAIMemorySettingsBody = {
+  enabled?: boolean;
+};
+
+export interface V1UpdateAIMemorySettingsResponse {
+  [key: string]: unknown;
 }
 
 export interface V1GetConversationResponse {
@@ -2335,14 +2435,23 @@ The resources state.valid_spec.renderer_properties will have templating resolved
   resolvedComponents?: V1ResolveCanvasResponseResolvedComponents;
   /** All the metrics view resources referenced in the components' renderer_properties.metrics_view field. */
   referencedMetricsViews?: V1ResolveCanvasResponseReferencedMetricsViews;
+  /** Paths of the canvas elements hidden from the caller, such as "rows.1", "rows.0.items.1" or "rows.3.tabs.0".
+The paths follow the canvas YAML. Only set when include_hidden is true. */
+  hiddenPaths?: string[];
 }
 
 export type V1ResolveComponentResponseRendererProperties = {
   [key: string]: unknown;
 };
 
+export type V1ResolveComponentResponseResolvedArgs = {
+  [key: string]: unknown;
+};
+
 export interface V1ResolveComponentResponse {
   rendererProperties?: V1ResolveComponentResponseRendererProperties;
+  /** The effective args used for resolution: the component's declared param defaults merged with the provided args. */
+  resolvedArgs?: V1ResolveComponentResponseResolvedArgs;
 }
 
 export interface V1ResolveTemplatedStringResponse {
@@ -2837,6 +2946,10 @@ If not set, it will infer an agent based on the prompt and conversation history.
   analystAgentContext?: V1AnalystAgentContext;
   developerAgentContext?: V1DeveloperAgentContext;
   feedbackAgentContext?: V1FeedbackAgentContext;
+  /** Optional current browser path. The origin is intentionally omitted. */
+  uiPagePath?: string;
+  /** Optional visible, enabled, uniquely-addressable browser actions. */
+  uiActions?: V1UIAction[];
 };
 
 export type RuntimeServiceCompleteStreamingBody = {
@@ -2850,6 +2963,10 @@ If not set, it will infer an agent based on the prompt and conversation history.
   analystAgentContext?: V1AnalystAgentContext;
   developerAgentContext?: V1DeveloperAgentContext;
   feedbackAgentContext?: V1FeedbackAgentContext;
+  /** Optional current browser path. The origin is intentionally omitted. */
+  uiPagePath?: string;
+  /** Optional visible, enabled, uniquely-addressable browser actions. */
+  uiActions?: V1UIAction[];
 };
 
 export type RuntimeServiceCompleteStreaming200 = {

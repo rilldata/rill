@@ -66,7 +66,7 @@ func (t *GetCanvas) CheckAccess(ctx context.Context) (bool, error) {
 func (t *GetCanvas) Handler(ctx context.Context, args *GetCanvasArgs) (*GetCanvasResult, error) {
 	session := GetSession(ctx)
 
-	resolvedCanvas, err := t.Runtime.ResolveCanvas(ctx, session.InstanceID(), args.Canvas, session.Claims(), false)
+	resolvedCanvas, err := t.Runtime.ResolveCanvas(ctx, session.InstanceID(), args.Canvas, session.Claims(), &runtime.ResolveCanvasOptions{})
 	if err != nil {
 		return nil, err
 	}

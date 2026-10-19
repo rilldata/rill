@@ -191,7 +191,10 @@ function toTimeRangesUrl(
     );
   }
 
+  // Only a fixed grain goes in the URL. In adaptive mode, the default, the grain is derived
+  // from the time range on load, so a partial state without the flag also writes no grain.
   if (
+    partialExploreState.adaptiveTimeGrain === false &&
     timeControlsState.selectedTimeRange &&
     "interval" in timeControlsState.selectedTimeRange
   ) {

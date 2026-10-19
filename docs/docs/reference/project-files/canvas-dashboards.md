@@ -20,10 +20,6 @@ _[string]_ - Refers to the display name for the canvas
 
 _[string]_ - Deprecated: use display_name instead. Refers to the display name for the canvas
 
-### `description`
-
-_[string]_ - Description for the canvas dashboard
-
 ### `banner`
 
 _[string]_ - Refers to the custom banner displayed in the header of a Canvas dashboard.
@@ -52,6 +48,10 @@ _[array of object]_ - Refers to all of the rows displayed on the Canvas. Each en
 
   - **`height`** - _[string]_ - Height of the row in px
 
+  - **`if`** - _[string, boolean]_ - Condition that decides who sees this element, for example `'{{ has "finance" .user.groups }}'`. It uses the same templating and expression syntax as a security policy's `access`.
+  The element is only shown to viewers for whom it evaluates to true. Built-in attributes (`name`, `email`, `domain`, `groups`, `admin`, `embed`) always resolve; a condition that references a custom attribute the viewer doesn't have is false.
+
+
   - **`items`** - _[array of object]_ - List of components to display in the row
 
     - **`component`** - _[string]_ - Name of the component to display. Each component type has its own set of properties.
@@ -68,9 +68,16 @@ _[array of object]_ - Refers to all of the rows displayed on the Canvas. Each en
         - **table** - Similar to Pivot table, add dimensions and measures to visualize your data
         - **heatmap** - Heat Map chart to visualize distribution of data
         - **donut_chart** - Donut or Pie chart to display sums of total
+        - **map** - Map of points or regions, colored and sized by measures
 
+
+    - **`params`** - _[object]_ - Values bound to the referenced component's declared params. Only valid together with `component`. Values must be scalars.
 
     - **`width`** - _[string, integer]_ - Width of the component (can be a number or string with unit)
+
+    - **`if`** - _[string, boolean]_ - Condition that decides who sees this element, for example `'{{ has "finance" .user.groups }}'`. It uses the same templating and expression syntax as a security policy's `access`.
+    The element is only shown to viewers for whom it evaluates to true. Built-in attributes (`name`, `email`, `domain`, `groups`, `admin`, `embed`) always resolve; a condition that references a custom attribute the viewer doesn't have is false.
+
 
   - **`name`** - _[string]_ - Stable identifier for a tab group, used as its deep-link URL key. Defaults to `group-<index>` if omitted. Only used for tab-group entries.
 
@@ -80,9 +87,17 @@ _[array of object]_ - Refers to all of the rows displayed on the Canvas. Each en
 
     - **`name`** - _[string]_ - Stable identifier used as the tab's deep-link URL key. Defaults to a slug of the label if omitted.
 
+    - **`if`** - _[string, boolean]_ - Condition that decides who sees this element, for example `'{{ has "finance" .user.groups }}'`. It uses the same templating and expression syntax as a security policy's `access`.
+    The element is only shown to viewers for whom it evaluates to true. Built-in attributes (`name`, `email`, `domain`, `groups`, `admin`, `embed`) always resolve; a condition that references a custom attribute the viewer doesn't have is false.
+
+
     - **`rows`** - _[array of object]_ - Plain rows (with `items`) shown when this tab is active. Tab rows cannot themselves contain `tabs`.
 
       - **`height`** - _[string]_ - Height of the row in px
+
+      - **`if`** - _[string, boolean]_ - Condition that decides who sees this element, for example `'{{ has "finance" .user.groups }}'`. It uses the same templating and expression syntax as a security policy's `access`.
+      The element is only shown to viewers for whom it evaluates to true. Built-in attributes (`name`, `email`, `domain`, `groups`, `admin`, `embed`) always resolve; a condition that references a custom attribute the viewer doesn't have is false.
+
 
       - **`items`** - _[array]_ - List of components to display in the row
 
@@ -103,6 +118,10 @@ _[integer]_ - Vertical gap in pixels of the canvas
 _[object]_ - Indicates if filters should be enabled for the canvas.
 
   - **`enable`** - _[boolean]_ - Toggles filtering functionality for the canvas dashboard.
+
+  - **`pinned`** - _[array of string]_ - Dimension or measure names to pin in the filter bar. Pinned filters stay visible even when they have no value, and viewers cannot remove them.
+
+  - **`required`** - _[array of string]_ - Dimension or measure names that must have a value before the canvas renders. Required filters are implicitly pinned. Each name must be a dimension or measure on a metrics view referenced by the canvas.
 
 ### `allow_custom_time_range`
 
@@ -161,7 +180,7 @@ _[object]_ - Defines the defaults YAML struct.
   ```
 
 
-  - **`time_range`** - _[string]_ - Refers to the default time range shown when a user initially loads the dashboard. The value must be either an [ISO 8601 duration](https://en.wikipedia.org/wiki/ISO_8601#Durations) (for example, PT12H for 12 hours, P1M for 1 month, or P26W for 26 weeks) or one of the [Rill ISO 8601 extensions](https://docs.rilldata.com/reference/rill-iso-extensions#extensions).
+  - **`time_range`** - _[string]_ - Refers to the default time range shown when a user initially loads the dashboard. Any [time range syntax](/reference/time-syntax) expression, including legacy ISO 8601 durations and `rill-` keywords.
 
   - **`comparison_mode`** - _[string]_ - Controls how to compare current data with historical or categorical baselines. Options: `none` (no comparison), `time` (compares with past based on default_time_range), `dimension` (compares based on comparison_dimension values)
 

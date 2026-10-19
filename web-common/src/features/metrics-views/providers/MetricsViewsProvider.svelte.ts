@@ -13,10 +13,17 @@ import { Duration } from "luxon";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.ts";
 import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors.ts";
 import { arrayUnorderedEquals } from "@rilldata/web-common/lib/arrayUtils.ts";
+import { EventEmitter } from "@rilldata/web-common/lib/event-emitter.ts";
 
 export type MetricsViewName = string;
 export type DimensionName = string;
 export type MeasureName = string;
+
+type MetricsViewsProviderEvents = {
+  "update-metrics-views": string[];
+  "specs-loaded": void;
+  "time-specs-loaded": void;
+};
 
 /**
  * Reactive view over a set of metrics views.
@@ -61,19 +68,24 @@ export class MetricsViewsProvider {
   /** Smallest restriction across the metrics views, since it has to hold for all of them. */
   public maxQueryTimeRange: Duration | undefined;
   /** True once every metrics view has a spec and every time series metrics view has a summary. */
+  public specsReady = $state(false);
   public ready: boolean;
   public metricsViewNames = $state<string[]>([]);
 
   public cleanup: () => void;
 
+  private events = new EventEmitter<MetricsViewsProviderEvents>();
+  public readonly on = this.events.on.bind(this.events);
+
   private resources: V1Resource[] = [];
   private readonly timeRangeUnsubs = new Map<string, () => void>();
+  private pendingSpecs = new Set<string>();
 
   public constructor(
     public readonly runtimeClient: RuntimeClient,
     initMetricsViewNames: string[],
   ) {
-    this.metricsViewNames = initMetricsViewNames.filter(Boolean);
+    this.setMetricsViewNames(initMetricsViewNames);
 
     const allResourcesQuery = createRuntimeServiceListResources(
       runtimeClient,
@@ -167,6 +179,11 @@ export class MetricsViewsProvider {
     });
 
     this.metricsViewNames = metricsViewNames;
+    // The specs for the new set have to load before dependents can use them.
+    // `processResources` below marks them ready again if they are already available.
+    this.specsReady = false;
+    this.pendingSpecs = new Set(metricsViewNames);
+    this.events.emit("update-metrics-views", this.metricsViewNames);
     this.processResources();
   }
 
@@ -234,6 +251,10 @@ export class MetricsViewsProvider {
     this.simpleMeasures = simpleMeasures;
     this.dimensionSpecs = dimensionSpecs;
     this.dimensions = dimensions;
+
+    Object.keys(specs).forEach((metricsViewName) =>
+      this.specLoaded(metricsViewName),
+    );
   }
 
   /**
@@ -264,5 +285,14 @@ export class MetricsViewsProvider {
         );
       }),
     );
+  }
+
+  private specLoaded(name: string) {
+    if (!this.pendingSpecs.has(name)) return;
+    this.pendingSpecs.delete(name);
+
+    if (this.pendingSpecs.size > 0) return;
+    this.events.emit("specs-loaded");
+    this.specsReady = true;
   }
 }

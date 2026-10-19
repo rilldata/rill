@@ -947,7 +947,7 @@ service AdminService {
   }
 
   // SudoUpdateOrganizationDefaultProvisioner sets the provisioner used by default for an organization's deployments.
-  // It only affects deployments provisioned after the change; existing deployments stay on their current provisioner.
+  // Running deployments keep their current provisioner; the change is applied to each deployment the next time it is started (stopped deployments are moved to the new provisioner, keeping their IDs).
   rpc SudoUpdateOrganizationDefaultProvisioner(SudoUpdateOrganizationDefaultProvisionerRequest) returns (SudoUpdateOrganizationDefaultProvisionerResponse) {
     option (google.api.http) = {
       patch: "/v1/superuser/organization/default-provisioner",
@@ -1484,6 +1484,7 @@ message ListDeploymentsRequest {
   string environment = 3;
   string branch = 5;
   string user_id = 4;
+  bool superuser_force_access = 6;
 }
 
 message ListDeploymentsResponse {
@@ -1537,6 +1538,7 @@ message GetDeploymentResponse {
 
 message StartDeploymentRequest {
   string deployment_id = 1;
+  bool superuser_force_access = 2;
 }
 
 message StartDeploymentResponse {
@@ -1545,6 +1547,7 @@ message StartDeploymentResponse {
 
 message StopDeploymentRequest {
   string deployment_id = 1;
+  bool superuser_force_access = 2;
 }
 
 message StopDeploymentResponse {
@@ -1941,7 +1944,7 @@ message UpdateProjectRequest {
   optional string archive_asset_id = 12;
   optional int64 prod_slots = 7;
   // Provisioner to use for the project's deployments. Superuser-only; empty unsets it so the org's default provisioner (or the global default) is used.
-  // It only affects deployments provisioned after the change; existing deployments stay on their current provisioner.
+  // Running deployments keep their current provisioner; the change is applied to each deployment the next time it is started (stopped deployments are moved to the new provisioner, keeping their IDs).
   optional string provisioner = 8;
   optional string new_name = 9;
   optional int64 prod_ttl_seconds = 10;

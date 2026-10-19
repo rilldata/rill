@@ -11,8 +11,10 @@ import { getFiltersFromText } from "@rilldata/web-common/features/dashboards/fil
 import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
 import { ExploreStateURLParams } from "@rilldata/web-common/features/dashboards/url-state/url-params";
 import { getComparisonInterval } from "@rilldata/web-common/lib/time/comparisons";
+import { allowedGrainsForInterval } from "@rilldata/web-common/lib/time/new-grains";
 import { TimeRangePreset } from "@rilldata/web-common/lib/time/types";
 import type {
+  V1CanvasItem,
   V1Expression,
   V1Resource,
   V1TimeRange,
@@ -21,6 +23,7 @@ import type { Interval } from "luxon";
 import type { Component, ComponentType, SvelteComponent } from "svelte";
 import type { Readable, Unsubscriber } from "svelte/store";
 import { derived, get, writable, type Writable } from "svelte/store";
+import { isMap } from "yaml";
 import { mergeFilters } from "../../dashboards/pivot/pivot-merge-filters";
 import {
   createAndExpression,
@@ -199,7 +202,10 @@ export abstract class BaseCanvasComponent<T = ComponentSpec> {
     this.localExpressionFilters.yamlConfigProvider.cleanup?.();
   }
 
-  update(resource: V1Resource, path: ComponentPath) {
+  // item is the canvas item this instance renders; only used by components whose
+  // editable state lives on the item rather than the resource (see ComponentRefComponent).
+  update(resource: V1Resource, path: ComponentPath, item?: V1CanvasItem) {
+    void item;
     const yamlSpec = (resource.component?.state?.validSpec
       ?.rendererProperties ??
       (this.parent.allowUnvalidatedSpec
@@ -223,7 +229,9 @@ export abstract class BaseCanvasComponent<T = ComponentSpec> {
         this.parent.timeManager.state.rangeStore,
         this.localTimeControls.interval,
         this.localTimeControls.grainStore,
+        this.localTimeControls.urlGrainStore,
         this.localTimeControls.rangeStore,
+        this.parent.timeManager.largestMinTimeGrain,
         this.parent.expressionFilterManager.getExprStoreForMetricsView(
           this.metricsViewName,
         ),
@@ -240,14 +248,34 @@ export abstract class BaseCanvasComponent<T = ComponentSpec> {
         globalRange,
         localInterval,
         localGrainStore,
+        localRequestedGrain,
         localRange,
+        minTimeGrain,
         metricsViewFilters,
         hasTimeSeriesMap,
         componentSpec,
       ]) => {
         const hasTimeSeries = hasTimeSeriesMap.get(this.metricsViewName);
 
+        const {
+          hasLocalTimeRange: usesLocalTimeRange,
+          comparison: resolvedComparison,
+        } = resolveTimeFilters(componentSpec?.["time_filters"] as string);
+
+        // The grain in effect: the widget's own grain when it has a local range
+        // (already validated against that range by its time state),
+        // its own grain on the canvas range when that range allows it, else the canvas grain.
         let timeGrain = globalGrainStore;
+        if (usesLocalTimeRange) {
+          timeGrain = localGrainStore ?? globalGrainStore;
+        } else if (
+          localRequestedGrain &&
+          allowedGrainsForInterval(globalInterval, minTimeGrain).includes(
+            localRequestedGrain,
+          )
+        ) {
+          timeGrain = localRequestedGrain;
+        }
 
         // Timestamps sent to the runtime must be UTC:
         // the protobuf JSON codec rejects ISO strings with both milliseconds and a timezone offset,
@@ -264,17 +292,12 @@ export abstract class BaseCanvasComponent<T = ComponentSpec> {
                 name: globalRange ?? TimeRangePreset.CUSTOM,
                 start: globalInterval.start.toJSDate(),
                 end: globalInterval.end.toJSDate(),
-                interval: globalGrainStore,
+                interval: timeGrain,
               }
             : undefined,
           timeStart: globalInterval?.start.toUTC().toISO(),
           timeEnd: globalInterval?.end.toUTC().toISO(),
         };
-
-        const {
-          hasLocalTimeRange: usesLocalTimeRange,
-          comparison: resolvedComparison,
-        } = resolveTimeFilters(componentSpec?.["time_filters"] as string);
 
         if (usesLocalTimeRange) {
           timeRange = {
@@ -283,15 +306,13 @@ export abstract class BaseCanvasComponent<T = ComponentSpec> {
             timeZone,
           };
 
-          timeGrain = localGrainStore ?? globalGrainStore;
-
           timeRangeState = {
             selectedTimeRange: localInterval
               ? {
                   name: localRange ?? TimeRangePreset.CUSTOM,
                   start: localInterval.start.toJSDate(),
                   end: localInterval.end.toJSDate(),
-                  interval: localGrainStore ?? globalGrainStore,
+                  interval: timeGrain,
                 }
               : undefined,
             timeStart: localInterval?.start.toUTC().toISO(),
@@ -415,16 +436,25 @@ export abstract class BaseCanvasComponent<T = ComponentSpec> {
   }
 
   updateProperty(key: AllKeys<T>, value: T[AllKeys<T>]) {
-    const currentSpec = get(this.specStore);
+    this.updateProperties({ [key]: value } as unknown as Partial<T>);
+  }
 
-    const newSpec = { ...currentSpec, [key]: value };
+  // Writes several properties in one YAML update, so dependent keys (such as
+  // a sort field and its direction) never reach the reconciler half-applied.
+  // A key whose value is undefined or empty is removed from the spec.
+  updateProperties(patch: Partial<T>) {
+    const currentSpec = this.specInYAML() ?? get(this.specStore);
 
-    if (value === undefined || value == "") {
-      delete newSpec[key];
+    const newSpec = { ...currentSpec, ...patch };
+
+    for (const [key, value] of Object.entries(patch)) {
+      if (value === undefined || value == "") {
+        delete newSpec[key];
+      }
     }
 
     // If the metrics_view is changed, clear the time_filters and dimension_filters
-    if (key === "metrics_view") {
+    if ("metrics_view" in patch) {
       if ("time_filters" in newSpec) {
         delete newSpec.time_filters;
       }
@@ -442,6 +472,19 @@ export abstract class BaseCanvasComponent<T = ComponentSpec> {
       this.updateYAML(newSpec);
     }
     this.specStore.set(newSpec);
+  }
+
+  // The component's properties as currently written in the file. While
+  // editing, the spec store trails the file by a reconcile: a write built on
+  // the store would drop a previous write the runtime has not echoed back yet,
+  // and would come back with the runtime's alphabetical key order.
+  private specInYAML(): T | undefined {
+    if (!this.parent.fileArtifact || !this.parent.parsedContent) return;
+    const document = get(this.parent.parsedContent);
+    const node: unknown = document.getIn(this.pathInYAML);
+    if (!isMap(node)) return;
+    const spec: unknown = node.toJS(document);
+    return spec as T;
   }
 
   // Sets how this component compares against a previous period:

@@ -27,7 +27,7 @@
   import { createLocalServiceGetMetadata } from "@rilldata/web-common/runtime-client/local-service";
   import { ChevronsDownUp, ChevronsUpDown } from "lucide-svelte";
   import NavDirectory from "./NavDirectory.svelte";
-  import { directoryState } from "./directory-store";
+  import { directoryState, isDirectoryExpanded } from "./directory-store";
   import {
     collectDirectoryPaths,
     findDirectory,
@@ -99,7 +99,7 @@
   $: directoryPaths = fileTree ? collectDirectoryPaths(fileTree) : [];
   $: allDirectoriesCollapsed =
     directoryPaths.length > 0 &&
-    directoryPaths.every((path) => $directoryState[path] === false);
+    directoryPaths.every((path) => !isDirectoryExpanded($directoryState, path));
   $: toggleAllDirectoriesLabel = allDirectoriesCollapsed
     ? "Expand all folders"
     : "Collapse all folders";

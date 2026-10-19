@@ -35,6 +35,7 @@ import type { CanvasComponentType, ComponentSpec } from "../components/types";
 import {
   COMPONENT_CLASS_MAP,
   createComponent,
+  getComponentInstanceType,
   isChartComponentType,
   isTableComponentType,
 } from "../components/util";
@@ -45,7 +46,11 @@ import { TimeManager } from "./time-manager";
 import { Theme } from "../../themes/theme";
 import { createResolvedThemeStore } from "../../themes/selectors";
 import { ExploreStateURLParams } from "../../dashboards/url-state/url-params";
-import { DEFAULT_DASHBOARD_WIDTH, namePrefixFromPath } from "../layout-util";
+import {
+  canvasItemInstanceId,
+  DEFAULT_DASHBOARD_WIDTH,
+  namePrefixFromPath,
+} from "../layout-util";
 import { createCustomMapStore } from "@rilldata/web-common/lib/custom-map-store";
 import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import { queryServiceConvertExpressionToMetricsSQL } from "@rilldata/web-common/runtime-client";
@@ -122,6 +127,9 @@ export class CanvasEntity {
   _embeddedTheme = writable<V1ThemeSpec | undefined>(undefined);
   _metricsViews = writable<Record<string, V1MetricsView | undefined>>({});
   bannerStore = writable<string | undefined>(undefined);
+  // YAML paths of the canvas elements hidden from the current user by `if` conditions or data access,
+  // such as "rows.0.items.1". Only the editor receives them; viewers get a canvas without that content.
+  hiddenPaths = writable<Set<string>>(new Set());
   _maxWidth = writable<number>(DEFAULT_DASHBOARD_WIDTH);
   titleStore = writable<string>("");
   // True only while this canvas is capturing a PDF export. Gates the off-screen
@@ -139,6 +147,8 @@ export class CanvasEntity {
   firstTimeLoad = true;
 
   private subscribers = 0;
+  // Set by dispose.
+  disposed = false;
 
   constructor(
     public name: string,
@@ -213,6 +223,7 @@ export class CanvasEntity {
     this.dashboardProvider = new CanvasDashboardConfigProvider(
       this.client,
       name,
+      allowUnvalidatedSpec,
     );
 
     this.expressionFilterManager = new ExpressionFilterManager(
@@ -228,6 +239,7 @@ export class CanvasEntity {
       if (source && source === get(this.activeComponent)) return;
       this.clearActiveComponent();
     });
+    this.expressionFilterManager.storeSync.syncToUrl("clear=true");
 
     this.processSpec(this.spec);
   }
@@ -273,6 +285,17 @@ export class CanvasEntity {
     }
   };
 
+  checkAndSetHiddenPaths = (paths: string[] | undefined) => {
+    const next = new Set(paths ?? []);
+    const current = get(this.hiddenPaths);
+    if (
+      next.size !== current.size ||
+      [...next].some((path) => !current.has(path))
+    ) {
+      this.hiddenPaths.set(next);
+    }
+  };
+
   checkAndSetFileArtifact = (filePath: string | undefined) => {
     if (!filePath) return;
     if (!this.fileArtifact) {
@@ -313,6 +336,7 @@ export class CanvasEntity {
     this.timeManager.onSpecChange(response);
 
     this.titleStore.set(validSpec.displayName ?? "");
+    this.checkAndSetHiddenPaths(response.hiddenPaths);
 
     this.processRows({ canvas, components, metricsViews, filePath });
   };
@@ -492,11 +516,7 @@ export class CanvasEntity {
     if (!isolated) {
       this.saveSnapshot(searchParams.toString());
     }
-    // Only sync when metricsViewsProvider has loaded. Once loaded sync is handled by syncStoreWithSource
-    // TODO: find a good common method of sync between explore and canvas once time filters is also unified
-    if (this.dashboardProvider.metricsViewsProvider.ready) {
-      this.expressionFilterManager.setUrlParams(searchParams);
-    }
+    this.expressionFilterManager.storeSync.setUrlParams(searchParams);
     this.timeManager.state.onUrlChange(searchParams);
     this.applyTabsFromURL(searchParams);
   };
@@ -504,9 +524,7 @@ export class CanvasEntity {
   // Acquires a reference to the entity. The cached entity is shared across
   // consumers (e.g. an unmounting editor and a mounting preview overlap during
   // navigation), so its spec subscription must survive as long as any consumer
-  // needs it. Subscribes on the first consumer; idempotent thereafter. The
-  // subscription's processSpec call recreates the components, ensuring a cached
-  // entity that was previously disposed is not left in an error state.
+  // needs it. Subscribes on the first consumer; idempotent thereafter.
   acquire = () => {
     this.subscribers++;
     if (this.unsubscriber) return; // already subscribed
@@ -532,16 +550,21 @@ export class CanvasEntity {
     this.dispose();
   };
 
-  // Unconditionally tears down the spec subscription and disposes every child
-  // component, regardless of the reference count. Used when the entity is
-  // evicted from the registry (mode switch or removeCanvasStore) and is being
-  // discarded; a subsequent release on the disposed entity is a safe no-op.
+  // Unconditionally tears down the spec subscription, every child component
+  // and the filter providers, regardless of the reference count. Runs once the
+  // last consumer releases the entity, and when the entity is evicted from the
+  // registry (mode switch or removeCanvasStore). A disposed entity is discarded,
+  // never acquired again (see getCanvasStoreUnguarded); a subsequent release on
+  // it is a safe no-op.
   dispose = () => {
+    if (this.disposed) return;
+    this.disposed = true;
     this.subscribers = 0;
     this.unsubscriber?.();
-    this.unsubscriber = undefined; // so a later acquire re-subscribes
+    this.unsubscriber = undefined;
     this.componentsStore.read().forEach((component) => component.destroy());
     this.componentsStore.reset();
+    this.dashboardProvider.cleanup?.();
   };
 
   handleCanvasRedirect = async ({
@@ -701,23 +724,32 @@ export class CanvasEntity {
           const componentName = item.component;
           if (!componentName) return;
 
-          set.add(componentName);
+          // Items referencing an externally defined component get a positional
+          // instance id, so multiple references to the same component (with
+          // different params) each have their own instance and state.
+          const instanceId = canvasItemInstanceId(
+            item,
+            rowIndex,
+            columnIndex,
+            namePrefixFromPath(prefix),
+          );
+          set.add(instanceId);
 
           const newResource = newComponents?.[componentName];
           if (!newResource) {
             throw new Error("No component found: " + componentName);
           }
 
-          const newType = (newResource.component?.state?.validSpec?.renderer ??
-            (this.allowUnvalidatedSpec
-              ? newResource.component?.spec?.renderer
-              : undefined)) as CanvasComponentType;
-          const existingClass =
-            this.componentsStore.getNonReactive(componentName);
+          const newType = getComponentInstanceType(
+            newResource,
+            item,
+            this.allowUnvalidatedSpec,
+          );
+          const existingClass = this.componentsStore.getNonReactive(instanceId);
           const path = constructPath(rowIndex, columnIndex, newType, prefix);
 
           if (existingClass && areSameType(newType, existingClass.type)) {
-            existingClass.update(newResource, path);
+            existingClass.update(newResource, path, item);
           } else {
             createdNewComponent = true;
             // Tear down the replaced instance's spec subscription before
@@ -725,8 +757,8 @@ export class CanvasEntity {
             // filter/time state.
             existingClass?.destroy();
             this.componentsStore.set(
-              componentName,
-              createComponent(newResource, this, path),
+              instanceId,
+              createComponent(newResource, this, path, item, instanceId),
             );
           }
         });
@@ -760,6 +792,9 @@ export class CanvasEntity {
   // while each tab group owns a grid per tab.
   private processLayout = (rows: V1CanvasRow[]): boolean => {
     const freeRows: V1CanvasRow[] = [];
+    // The spec row index of each free row, so instance ids match the ones computed
+    // in processRows (which walks the full spec, including tab groups).
+    const freeRowSpecIndices: number[] = [];
     const blocks: LayoutBlock[] = [];
     const seenGroupNames = new Set<string>();
 
@@ -776,6 +811,7 @@ export class CanvasEntity {
         blocks.push({ kind: "tab-group", rowIndex, group });
       } else {
         blocks.push({ kind: "row", rowIndex, freeRowIndex: freeRows.length });
+        freeRowSpecIndices.push(rowIndex);
         freeRows.push(row);
       }
     });
@@ -785,7 +821,15 @@ export class CanvasEntity {
       if (!seenGroupNames.has(name)) this.tabGroups.delete(name);
     }
 
-    const didUpdateRowCount = this._rows.updateFromCanvasRows(freeRows);
+    const didUpdateRowCount = this._rows.updateFromCanvasRows(
+      freeRows,
+      (item, rowIndex, columnIndex) =>
+        canvasItemInstanceId(
+          item,
+          freeRowSpecIndices[rowIndex] ?? rowIndex,
+          columnIndex,
+        ),
+    );
     this.layout.set(blocks);
 
     // In view mode, spec updates follow the URL. In the editor, URL changes are
@@ -822,11 +866,13 @@ export class CanvasEntity {
 
     this.tabGroups.forEach((group, name) => {
       const tabName = active.get(name);
-      if (tabName) group.setActiveByName(tabName);
       // In view mode, a group absent from the param is reset to its first tab so back/forward
-      // restores state symmetrically. In edit mode the active tab is editor-local (driven by
-      // clicks), so don't reset it here — doing so on every URL change fought direct selection.
-      else if (!this.allowUnvalidatedSpec) group.activeTabIndex.set(0);
+      // restores state symmetrically. So is a group whose tab in the param isn't on the canvas,
+      // e.g. a shared link to a tab that's hidden from this viewer.
+      // In edit mode the active tab is editor-local (driven by clicks), so don't reset it here;
+      // doing so on every URL change fought direct selection.
+      const applied = !!tabName && group.setActiveByName(tabName);
+      if (!applied && !this.allowUnvalidatedSpec) group.activeTabIndex.set(0);
     });
   };
 

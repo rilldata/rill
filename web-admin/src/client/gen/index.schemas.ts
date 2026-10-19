@@ -1819,6 +1819,10 @@ export type AdminServiceUpdateBillingSubscriptionBodyBody = {
 
 export type AdminServiceTriggerReconcileBodyBody = { [key: string]: unknown };
 
+export type AdminServiceStartDeploymentBodyBody = {
+  superuserForceAccess?: boolean;
+};
+
 export type AdminServiceRequestProjectAccessBodyBody = {
   role?: string;
 };
@@ -2073,7 +2077,7 @@ export type AdminServiceUpdateProjectBody = {
   archiveAssetId?: string;
   prodSlots?: string;
   /** Provisioner to use for the project's deployments. Superuser-only; empty unsets it so the org's default provisioner (or the global default) is used.
-It only affects deployments provisioned after the change; existing deployments stay on their current provisioner. */
+Running deployments keep their current provisioner; the change is applied to each deployment the next time it is started (stopped deployments are moved to the new provisioner, keeping their IDs). */
   provisioner?: string;
   newName?: string;
   prodTtlSeconds?: string;
@@ -2121,6 +2125,7 @@ export type AdminServiceListDeploymentsParams = {
   environment?: string;
   branch?: string;
   userId?: string;
+  superuserForceAccess?: boolean;
 };
 
 export type AdminServiceCreateDeploymentBody = {

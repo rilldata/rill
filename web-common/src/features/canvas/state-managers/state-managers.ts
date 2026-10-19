@@ -26,6 +26,16 @@ export function getCanvasStoreUnguarded(
   const id = makeCanvasId(canvasName, instanceId);
   const store = canvasRegistry.get(id);
 
+  // Never reuse an entity disposed when its last consumer left. Resubscribing
+  // its spec query store after the query cache dropped the query (5 minutes
+  // without subscribers) never refetches, so the canvas would render its rows
+  // without components. Its runtime client may also have been disposed along
+  // with the project's RuntimeProvider.
+  if (store?.canvasEntity.disposed) {
+    canvasRegistry.delete(id);
+    return undefined;
+  }
+
   if (
     store &&
     allowUnvalidatedSpec !== undefined &&
@@ -80,14 +90,12 @@ export function setCanvasStore(
 ): CanvasStore {
   const id = makeCanvasId(canvasName, instanceId);
 
-  const existingStore = canvasRegistry.get(id);
-  if (
-    existingStore &&
-    existingStore.canvasEntity.allowUnvalidatedSpec !== allowUnvalidatedSpec
-  ) {
-    existingStore.canvasEntity.dispose();
-    canvasRegistry.delete(id);
-  } else if (existingStore) {
+  const existingStore = getCanvasStoreUnguarded(
+    canvasName,
+    instanceId,
+    allowUnvalidatedSpec,
+  );
+  if (existingStore) {
     console.warn(
       `Canvas store for ID ${id} already exists. Returning existing store.`,
     );
