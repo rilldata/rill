@@ -32,7 +32,8 @@ func TestConnectorOAuthToken(t *testing.T) {
 	deplClient := adm.NewClient(t, deplToken.Token().String())
 
 	// Store a client for one configuration of the connector, and a user's token obtained through it
-	clientJSON, err := json.Marshal(&oauthclient.Client{ServerURL: "https://mcp.example.com", ClientID: "client-1"})
+	// The revocation endpoint is unreachable (private addresses are refused), so revocation on disconnect fails.
+	clientJSON, err := json.Marshal(&oauthclient.Client{ServerURL: "https://mcp.example.com", ClientID: "client-1", RevocationEndpoint: "http://127.0.0.1:1/revoke"})
 	require.NoError(t, err)
 	clientRow, err := db.FindOrInsertConnectorOAuthClient(ctx, &database.InsertConnectorOAuthClientOptions{
 		ProjectID:  proj.ID,
@@ -86,7 +87,7 @@ func TestConnectorOAuthToken(t *testing.T) {
 		require.ErrorIs(t, err, database.ErrNotFound)
 	})
 
-	t.Run("delete removes the token", func(t *testing.T) {
+	t.Run("delete removes the token even if revocation fails", func(t *testing.T) {
 		_, err := deplClient.DeleteConnectorOAuthToken(ctx, &adminv1.DeleteConnectorOAuthTokenRequest{Connector: "notion", ConfigHash: "hash1", UserId: user.ID})
 		require.NoError(t, err)
 		_, err = deplClient.GetConnectorOAuthToken(ctx, &adminv1.GetConnectorOAuthTokenRequest{Connector: "notion", ConfigHash: "hash1", UserId: user.ID})

@@ -182,15 +182,32 @@ func (s *Server) DeleteConnectorOAuthToken(ctx context.Context, req *adminv1.Del
 		return nil, err
 	}
 
+	var row *database.ConnectorOAuthToken
 	err = s.connectorOAuthWithTokenLock(ctx, clientRow.ID, req.UserId, func(ctx context.Context) error {
-		err := s.admin.DB.DeleteConnectorOAuthToken(ctx, clientRow.ID, req.UserId)
-		if err != nil && !errors.Is(err, database.ErrNotFound) {
+		var err error
+		row, err = s.admin.DB.FindConnectorOAuthToken(ctx, clientRow.ID, req.UserId)
+		if err != nil {
+			if errors.Is(err, database.ErrNotFound) {
+				return nil
+			}
 			return err
 		}
-		return nil
+		return s.admin.DB.DeleteConnectorOAuthToken(ctx, clientRow.ID, req.UserId)
 	})
 	if err != nil {
 		return nil, err
+	}
+
+	// Revoke the deleted token, so the user's grant ends at the authorization server too. It is best-effort and runs after the commit.
+	if row != nil {
+		oauthClient := &oauthclient.Client{}
+		tok := &oauth2.Token{}
+		if json.Unmarshal(clientRow.Client, oauthClient) == nil && json.Unmarshal(row.Token, tok) == nil {
+			err = oauthClient.Revoke(ctx, tok, safehttp.NewHTTPClient(false, connectorOAuthHTTPTimeout))
+			if err != nil {
+				s.logger.Info("failed to revoke connector OAuth token", zap.String("connector", req.Connector), zap.Error(err), observability.ZapCtx(ctx))
+			}
+		}
 	}
 	return &adminv1.DeleteConnectorOAuthTokenResponse{}, nil
 }

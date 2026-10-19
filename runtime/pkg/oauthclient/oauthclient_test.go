@@ -142,6 +142,27 @@ func TestTokenExpiring(t *testing.T) {
 	}
 }
 
+func TestRevokeSendsClientAuth(t *testing.T) {
+	var revoked, hint, clientID string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		require.NoError(t, r.ParseForm())
+		revoked = r.Form.Get("token")
+		hint = r.Form.Get("token_type_hint")
+		clientID = r.Form.Get("client_id")
+	}))
+	t.Cleanup(srv.Close)
+
+	c := &Client{RevocationEndpoint: srv.URL, ClientID: "client-123"}
+	tok := &oauth2.Token{AccessToken: "at1", RefreshToken: "rt1"}
+	require.NoError(t, c.Revoke(t.Context(), tok, safehttp.NewHTTPClient(true, 5*time.Second)))
+	require.Equal(t, "rt1", revoked)
+	require.Equal(t, "refresh_token", hint)
+	require.Equal(t, "client-123", clientID)
+
+	// Servers without a revocation endpoint are skipped
+	require.NoError(t, (&Client{}).Revoke(t.Context(), tok, safehttp.NewHTTPClient(true, 5*time.Second)))
+}
+
 func TestIsLinkableRedirect(t *testing.T) {
 	require.True(t, isLinkableRedirect("/org/project"))
 	require.True(t, isLinkableRedirect("https://ui.rilldata.com/org/project"))
