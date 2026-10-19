@@ -1,5 +1,5 @@
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
-import { writable } from "svelte/store";
+import { derived, writable } from "svelte/store";
 import {
   createRuntimeServiceGetInstance,
   runtimeServiceGetInstance,
@@ -38,7 +38,19 @@ class FeatureFlags {
   ready: Promise<void>;
   private _resolveReady!: () => void;
 
+  // Flags with "rill" scope describe the capabilities of the environment the frontend is running in,
+  // as opposed to "user" scope flags which are project settings from rill.yaml.
+  // They are not reset by project feature flags and must be set by the app
+  // synchronously at the top of its root layout's script (not in onMount or after an await),
+  // because some children read them once on mount (e.g. ExportMenu decides whether to import the admin client).
+
+  // True when the frontend has a user session with the admin server (i.e. Rill Cloud).
   adminServer = new FeatureFlag("rill", false);
+  // True in embeds that were given an admin token and user email.
+  // Embeds have no user session with the admin server, but can call the subset of admin APIs
+  // that embed admin tokens are permitted to call (see ProjectPermissionsForEmbedAuthToken in admin/permissions.go).
+  // Only use it to gate features that embed admin tokens support.
+  embedAdminActions = new FeatureFlag("rill", false);
   readOnly = new FeatureFlag("rill", false);
   // Until we figure out a good way to test managed github we need to use the legacy archive method.
   // Right now this is true only in an E2E environment.
@@ -57,6 +69,8 @@ class FeatureFlags {
   rillTime = new FeatureFlag("user", true);
   hidePublicUrl = new FeatureFlag("user", false);
   exportHeader = new FeatureFlag("user", false);
+  // Do not check alerts and reports directly to gate UI; use alertsEnabled and reportsEnabled instead,
+  // which also check that the environment can reach the admin APIs for them.
   alerts = new FeatureFlag("user", true);
   reports = new FeatureFlag("user", true);
   chat = new FeatureFlag("user", true);
@@ -135,6 +149,28 @@ class FeatureFlags {
 }
 
 export const featureFlags = new FeatureFlags();
+
+// Alerts and reports are managed through the admin server,
+// so they need either a Rill Cloud session or an embed with an admin token.
+// They are never available in Rill Developer.
+export const alertsEnabled = derived(
+  [
+    featureFlags.alerts,
+    featureFlags.adminServer,
+    featureFlags.embedAdminActions,
+  ],
+  ([alerts, adminServer, embedAdminActions]) =>
+    alerts && (adminServer || embedAdminActions),
+);
+export const reportsEnabled = derived(
+  [
+    featureFlags.reports,
+    featureFlags.adminServer,
+    featureFlags.embedAdminActions,
+  ],
+  ([reports, adminServer, embedAdminActions]) =>
+    reports && (adminServer || embedAdminActions),
+);
 
 export async function getFeatureFlags(
   client: RuntimeClient,

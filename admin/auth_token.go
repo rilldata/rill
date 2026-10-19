@@ -447,9 +447,9 @@ func (s *Service) validateAuthTokenUncached(ctx context.Context, token string) (
 			return nil, fmt.Errorf("invalid auth token")
 		}
 
-		// TODO: used
+		s.Used.EmbedAuthToken(eat.ID)
 
-		return &embedAuthToken{model: eat, token: parsed}, err
+		return &embedAuthToken{model: eat, token: parsed}, nil
 	default:
 		return nil, fmt.Errorf("unknown auth token type %q", parsed.Type)
 	}

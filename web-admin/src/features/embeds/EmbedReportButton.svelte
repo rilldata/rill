@@ -1,6 +1,5 @@
 <script lang="ts">
-  import { featureFlags } from "@rilldata/web-common/features/feature-flags.ts";
-  import { EmbedStore } from "@rilldata/web-common/features/embeds/embed-store.ts";
+  import { reportsEnabled } from "@rilldata/web-common/features/feature-flags.ts";
   import Button from "@rilldata/web-common/components/button/Button.svelte";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import ReportIcon from "@rilldata/web-common/components/icons/ReportIcon.svelte";
@@ -13,15 +12,10 @@
     getDashboardFromEmbedRoute(page.route.id, page.params),
   );
 
-  const { reports } = featureFlags;
-  let enableReports = $derived(
-    $reports && !!EmbedStore.getInstance()?.userEmail,
-  );
-
   let open = $state(false);
 </script>
 
-{#if enableReports}
+{#if $reportsEnabled}
   <DropdownMenu.Root>
     <DropdownMenu.Trigger>
       {#snippet child({ props })}

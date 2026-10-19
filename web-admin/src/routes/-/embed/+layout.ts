@@ -33,6 +33,8 @@ export const load = async ({ url }) => {
     navigationEnabled,
     navigationBarEnabled,
     visibleExplores,
+    adminToken,
+    userEmail,
   } = embedStore;
 
   return {
@@ -43,5 +45,6 @@ export const load = async ({ url }) => {
     navigationEnabled,
     navigationBarEnabled,
     visibleExplores,
+    embedAdminActions: !!adminToken && !!userEmail,
   };
 };

@@ -681,18 +681,6 @@ func (s *Server) GetIFrame(ctx context.Context, req *adminv1.GetIFrameRequest) (
 		opts.forUserEmail = forVal.UserEmail
 		email = forVal.UserEmail
 
-		// TODO: is this the best solution? this will make old tabs start throwing
-		oldTokens, err := s.admin.DB.FindEmbedAuthTokens(ctx, proj.ID, opts.forUserEmail)
-		if err != nil {
-			return nil, err
-		}
-		for _, token := range oldTokens {
-			err := s.admin.DB.DeleteEmbedAuthToken(ctx, token.ID)
-			if err != nil {
-				return nil, err
-			}
-		}
-
 		tkn, err := s.admin.IssueEmbedAuthToken(ctx, proj.ID, opts.forUserEmail, &ttlDuration)
 		if err != nil {
 			return nil, err

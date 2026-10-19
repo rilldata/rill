@@ -27,7 +27,6 @@
   import PivotSidebar from "./PivotSidebar.svelte";
   import PivotTable from "./PivotTable.svelte";
   import PivotToolbar from "./PivotToolbar.svelte";
-  import { EmbedStore } from "@rilldata/web-common/features/embeds/embed-store.ts";
 
   export let isEmbedded: boolean = false;
 
@@ -43,10 +42,7 @@
     timeRangeSummaryStore,
   } = stateManagers;
 
-  const { reports, exports } = featureFlags;
-  $: enableReports =
-    $reports &&
-    (!EmbedStore.getInstance() || !!EmbedStore.getInstance()?.userEmail);
+  const { exports } = featureFlags;
 
   const timeControlsStore = useTimeControlStore(stateManagers);
   $: timeControlsForPillActions = {
@@ -233,7 +229,7 @@
           {#if $exports}
             <ExportMenu
               label={m.dashboard_export_pivot_data()}
-              includeScheduledReport={enableReports && exploreHasTimeDimension}
+              includeScheduledReport={exploreHasTimeDimension}
               getQuery={(isScheduled) =>
                 getPivotExportQuery(stateManagers, isScheduled)}
               exploreName={$exploreName}

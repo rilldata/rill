@@ -1,7 +1,6 @@
 <script lang="ts">
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
-  import { featureFlags } from "@rilldata/web-common/features/feature-flags.ts";
-  import { EmbedStore } from "@rilldata/web-common/features/embeds/embed-store.ts";
+  import { alertsEnabled } from "@rilldata/web-common/features/feature-flags.ts";
   import Button from "@rilldata/web-common/components/button/Button.svelte";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import { BellIcon } from "lucide-svelte";
@@ -16,13 +15,10 @@
     getDashboardFromEmbedRoute(page.route.id, page.params),
   );
 
-  const { alerts } = featureFlags;
-  let enableAlerts = $derived($alerts && !!EmbedStore.getInstance()?.userEmail);
-
   let open = $state(false);
 </script>
 
-{#if enableAlerts}
+{#if $alertsEnabled}
   <DropdownMenu.Root>
     <DropdownMenu.Trigger>
       {#snippet child({ props })}
