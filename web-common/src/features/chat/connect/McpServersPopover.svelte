@@ -131,6 +131,11 @@
                     {server.error}
                   </span>
                 {/if}
+                {#if server.oauth && !server.connected && !server.error && !connectContext}
+                  <span class="mcp-server-hint">
+                    {m.chat_mcp_connect_in_cloud()}
+                  </span>
+                {/if}
               </div>
               {#if server.oauth && connectContext}
                 <div class="mcp-server-actions">
@@ -207,5 +212,9 @@
 
   .mcp-server-error {
     @apply truncate text-xs text-fg-muted;
+  }
+
+  .mcp-server-hint {
+    @apply text-xs text-fg-muted;
   }
 </style>

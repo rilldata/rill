@@ -87,11 +87,30 @@ func TestConnectorOAuthToken(t *testing.T) {
 		require.ErrorIs(t, err, database.ErrNotFound)
 	})
 
-	t.Run("delete removes the token even if revocation fails", func(t *testing.T) {
-		_, err := deplClient.DeleteConnectorOAuthToken(ctx, &adminv1.DeleteConnectorOAuthTokenRequest{Connector: "notion", ConfigHash: "hash1", UserId: user.ID})
+	t.Run("delete removes the tokens of all configurations even if revocation fails", func(t *testing.T) {
+		// The user also holds a token from an earlier configuration, and another user holds one from a third configuration
+		other, _ := adm.NewUser(t)
+		oldClient, err := db.FindOrInsertConnectorOAuthClient(ctx, &database.InsertConnectorOAuthClientOptions{ProjectID: proj.ID, Connector: "notion", ConfigHash: "hash0", Client: clientJSON})
+		require.NoError(t, err)
+		_, err = db.UpsertConnectorOAuthToken(ctx, &database.UpsertConnectorOAuthTokenOptions{OAuthClientID: oldClient.ID, UserID: user.ID, Token: tokJSON})
+		require.NoError(t, err)
+		otherClient, err := db.FindOrInsertConnectorOAuthClient(ctx, &database.InsertConnectorOAuthClientOptions{ProjectID: proj.ID, Connector: "notion", ConfigHash: "hash3", Client: clientJSON})
+		require.NoError(t, err)
+		_, err = db.UpsertConnectorOAuthToken(ctx, &database.UpsertConnectorOAuthTokenOptions{OAuthClientID: otherClient.ID, UserID: other.ID, Token: tokJSON})
+		require.NoError(t, err)
+
+		_, err = deplClient.DeleteConnectorOAuthToken(ctx, &adminv1.DeleteConnectorOAuthTokenRequest{Connector: "notion", ConfigHash: "hash1", UserId: user.ID})
 		require.NoError(t, err)
 		_, err = deplClient.GetConnectorOAuthToken(ctx, &adminv1.GetConnectorOAuthTokenRequest{Connector: "notion", ConfigHash: "hash1", UserId: user.ID})
 		require.Equal(t, codes.NotFound, status.Code(err))
+
+		// The earlier configuration's client held only the user's token, so it is gone; the current client and the other user's client stay
+		_, err = db.FindConnectorOAuthClientByID(ctx, oldClient.ID)
+		require.ErrorIs(t, err, database.ErrNotFound)
+		_, err = db.FindConnectorOAuthClientByID(ctx, clientRow.ID)
+		require.NoError(t, err)
+		_, err = db.FindConnectorOAuthToken(ctx, otherClient.ID, other.ID)
+		require.NoError(t, err)
 
 		// Deleting again is a no-op
 		_, err = deplClient.DeleteConnectorOAuthToken(ctx, &adminv1.DeleteConnectorOAuthTokenRequest{Connector: "notion", ConfigHash: "hash1", UserId: user.ID})

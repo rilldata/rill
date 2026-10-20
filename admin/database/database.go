@@ -348,11 +348,15 @@ type DB interface {
 	// FindConnectorOAuthClient returns the client for a connector's OAuth configuration, identified by its hash.
 	FindConnectorOAuthClient(ctx context.Context, projectID, connector, configHash string) (*ConnectorOAuthClient, error)
 	FindConnectorOAuthClientByID(ctx context.Context, id string) (*ConnectorOAuthClient, error)
+	// FindConnectorOAuthClients returns the clients for all OAuth configurations a connector has had, such as before a scope change or on other branches.
+	FindConnectorOAuthClients(ctx context.Context, projectID, connector string) ([]*ConnectorOAuthClient, error)
 	// FindOrInsertConnectorOAuthClient inserts a client, unless a client for the same connector and configuration hash already exists
 	// (for example, because another request inserted one concurrently), in which case it returns the existing client instead.
 	FindOrInsertConnectorOAuthClient(ctx context.Context, opts *InsertConnectorOAuthClientOptions) (*ConnectorOAuthClient, error)
 	// DeleteConnectorOAuthClient deletes a client and the tokens obtained through it.
 	DeleteConnectorOAuthClient(ctx context.Context, id string) error
+	// DeleteConnectorOAuthClientsWithoutTokens deletes a connector's clients that hold no tokens, except the client for keepConfigHash.
+	DeleteConnectorOAuthClientsWithoutTokens(ctx context.Context, projectID, connector, keepConfigHash string) error
 	// AcquireConnectorOAuthTokenLock takes an exclusive lock on a user's token for a client until the current transaction ends.
 	// It must be called within a transaction started with NewTx. Reads and writes of the token (refresh, disconnect, a completed authorization)
 	// take it first, so they are serialized across all admin processes.

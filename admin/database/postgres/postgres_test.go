@@ -579,6 +579,20 @@ func testConnectorOAuth(t *testing.T, db database.DB) {
 	require.ErrorIs(t, err, database.ErrNotFound)
 	require.ErrorIs(t, db.DeleteConnectorOAuthToken(ctx, c1.ID, userID), database.ErrNotFound)
 
+	// A connector has a client per configuration; clients without tokens are deleted, except the current one
+	clients, err := db.FindConnectorOAuthClients(ctx, projectID, "notion")
+	require.NoError(t, err)
+	require.Len(t, clients, 2)
+	require.NoError(t, db.DeleteConnectorOAuthClientsWithoutTokens(ctx, projectID, "notion", "hash1"))
+	clients, err = db.FindConnectorOAuthClients(ctx, projectID, "notion")
+	require.NoError(t, err)
+	require.Len(t, clients, 2, "c1 is current and c2 holds a token")
+	require.NoError(t, db.DeleteConnectorOAuthClientsWithoutTokens(ctx, projectID, "notion", "hash2"))
+	_, err = db.FindConnectorOAuthClientByID(ctx, c1.ID)
+	require.ErrorIs(t, err, database.ErrNotFound)
+	_, err = db.FindConnectorOAuthClientByID(ctx, c2.ID)
+	require.NoError(t, err)
+
 	// Deleting a client deletes its tokens
 	require.NoError(t, db.DeleteConnectorOAuthClient(ctx, c2.ID))
 	_, err = db.FindConnectorOAuthToken(ctx, c2.ID, userID)

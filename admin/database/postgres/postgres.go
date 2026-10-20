@@ -4341,6 +4341,33 @@ func (c *connection) FindOrInsertConnectorOAuthClient(ctx context.Context, opts 
 	return res, nil
 }
 
+func (c *connection) FindConnectorOAuthClients(ctx context.Context, projectID, connector string) ([]*database.ConnectorOAuthClient, error) {
+	var res []*database.ConnectorOAuthClient
+	err := c.getDB(ctx).SelectContext(ctx, &res, "SELECT * FROM connector_oauth_clients WHERE project_id=$1 AND connector=$2", projectID, connector)
+	if err != nil {
+		return nil, parseErr("connector oauth clients", err)
+	}
+	for _, r := range res {
+		err = c.decryptConnectorOAuthClient(r)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return res, nil
+}
+
+func (c *connection) DeleteConnectorOAuthClientsWithoutTokens(ctx context.Context, projectID, connector, keepConfigHash string) error {
+	_, err := c.getDB(ctx).ExecContext(ctx, `
+		DELETE FROM connector_oauth_clients c
+		WHERE c.project_id=$1 AND c.connector=$2 AND c.config_hash<>$3
+		AND NOT EXISTS (SELECT 1 FROM connector_oauth_tokens t WHERE t.oauth_client_id=c.id)
+	`, projectID, connector, keepConfigHash)
+	if err != nil {
+		return parseErr("connector oauth clients", err)
+	}
+	return nil
+}
+
 func (c *connection) DeleteConnectorOAuthClient(ctx context.Context, id string) error {
 	res, err := c.getDB(ctx).ExecContext(ctx, "DELETE FROM connector_oauth_clients WHERE id=$1", id)
 	return checkDeleteRow("connector oauth client", res, err)

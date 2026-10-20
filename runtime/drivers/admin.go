@@ -19,7 +19,8 @@ type AdminService interface {
 	// configHash identifies the connector's current OAuth configuration; a token granted for another configuration is reported as not found.
 	// It returns ErrNotFound if the user has not authorized the connector.
 	GetConnectorOAuthToken(ctx context.Context, connector, configHash, userID string, forceRefresh bool) (*MCPOAuthToken, error)
-	// DeleteConnectorOAuthToken removes a user's OAuth authorization for a connector's OAuth configuration.
+	// DeleteConnectorOAuthToken removes a user's OAuth authorizations for a connector, including those granted for its earlier OAuth configurations.
+	// configHash identifies the current configuration.
 	DeleteConnectorOAuthToken(ctx context.Context, connector, configHash, userID string) error
 }
 

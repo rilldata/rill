@@ -2772,6 +2772,7 @@
   "chat_mcp_disconnect": "Disconnect",
   "chat_mcp_connect_server": "Connect {name}",
   "chat_mcp_connect_failed": "Could not connect {name}: {error}",
+  "chat_mcp_connect_in_cloud": "Open this project in Rill Cloud to connect it.",
   "chat_mcp_auth_required_title": "Connect {name} to continue",
   "chat_mcp_auth_required_body": "The assistant needs access to {name} with your account. Connect it under External tools, then send your message again.",
   "chat_mcp_auth_required_no_provider": "The assistant needs access to {name} with your account. Open this project in Rill Cloud to connect it.",

@@ -393,10 +393,8 @@ func (r *Runner) listExternalTools(ctx context.Context, instanceID string, svc d
 	return tools, err
 }
 
-// errOAuthRequiresCloud is reported for OAuth servers when the admin service holds no tokens, as in Rill Developer.
-var errOAuthRequiresCloud = errors.New("servers with 'auth: oauth' can only be connected in Rill Cloud")
-
-// externalOAuthToken fetches the user's OAuth token for a server from the admin service. It returns an empty token if the user has not authorized the server.
+// externalOAuthToken fetches the user's OAuth token for a server from the admin service. It returns an empty token if the user has not authorized the server,
+// or if the admin service holds no tokens, as in Rill Developer, where such servers are listed but cannot be connected.
 // The token is bound to the OAuth configuration it was granted for, so a connector whose configuration changed gets no token until the user connects again.
 func (r *Runner) externalOAuthToken(ctx context.Context, instanceID string, srv *ExternalServer, userID string, forceRefresh bool) (string, error) {
 	admin, release, err := r.Runtime.Admin(ctx, instanceID)
@@ -406,10 +404,7 @@ func (r *Runner) externalOAuthToken(ctx context.Context, instanceID string, srv 
 	defer release()
 	tok, err := admin.GetConnectorOAuthToken(ctx, srv.Connector, srv.oauthConfigHash, userID, forceRefresh)
 	if err != nil {
-		if errors.Is(err, drivers.ErrNotImplemented) {
-			return "", errOAuthRequiresCloud
-		}
-		if errors.Is(err, drivers.ErrNotFound) {
+		if errors.Is(err, drivers.ErrNotFound) || errors.Is(err, drivers.ErrNotImplemented) {
 			return "", nil
 		}
 		return "", fmt.Errorf("failed to get the user's authorization for %q: %w", srv.Connector, err)
