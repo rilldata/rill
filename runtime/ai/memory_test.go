@@ -213,8 +213,9 @@ func TestMemoryGates(t *testing.T) {
 		{"no ai permission", "rill/0.1", &runtime.SecurityClaims{UserID: uuid.NewString()}, false},
 		{"report", "rill/report", &runtime.SecurityClaims{UserID: uuid.NewString(), SkipChecks: true}, false},
 		{"mcp client", "claude-desktop/1.0", &runtime.SecurityClaims{UserID: uuid.NewString(), SkipChecks: true}, false},
-		// An embed without an external_user_id puts the issuer's identity (here a service ID) on every viewer's token; with one, each viewer has their own subject.
-		{"service token embed", "rill/0.1", &runtime.SecurityClaims{UserID: uuid.NewString(), UserAttributes: map[string]any{"name": "my-service", "admin": true, "embed": true}, Permissions: []runtime.Permission{runtime.UseAI}}, false},
+		// A service token puts the service ID on every caller, and an embed without an external_user_id puts the issuer's identity on every viewer; with one, each viewer has their own subject.
+		{"service token", "rill/0.1", &runtime.SecurityClaims{UserID: uuid.NewString(), UserAttributes: map[string]any{"name": "my-service", "admin": true, "service": true}, Permissions: []runtime.Permission{runtime.UseAI}}, false},
+		{"service token embed", "rill/0.1", &runtime.SecurityClaims{UserID: uuid.NewString(), UserAttributes: map[string]any{"name": "my-service", "admin": true, "service": true, "embed": true}, Permissions: []runtime.Permission{runtime.UseAI}}, false},
 		{"external user embed", "rill/0.1", &runtime.SecurityClaims{UserID: "ext_" + uuid.NewString(), UserAttributes: map[string]any{"embed": true, "external_user": true}, Permissions: []runtime.Permission{runtime.UseAI}}, true},
 		// A public URL token carries the magic auth token ID as subject and the creator's attributes, shared by everyone with the link.
 		{"public URL", "rill/0.1", &runtime.SecurityClaims{UserID: uuid.NewString(), UserAttributes: map[string]any{"email": "creator@example.com", "domain": "example.com", "admin": true, "public_url": true}, Permissions: []runtime.Permission{runtime.UseAI}}, false},

@@ -172,7 +172,7 @@ Open **Manage memory** from the chat sidebar (or **Settings > AI memory** in Ril
 
 Turn **Use memory** off to keep your memories but stop the AI from using or updating them until you turn it back on.
 
-Memory is per user. It is available in Rill Cloud for logged-in users and in Rill Developer, where it is stored locally and never committed to git. In [embedded dashboards](/developers/embed/iframe) it is only available when the embed identifies the viewer with `external_user_id`; otherwise every viewer would share one memory, so it is off. It is never available through [public URLs](/guide/dashboards/public-urls), and it is not used by AI reports, shared conversations viewed by other users, or external AI clients connected through MCP. Project administrators can turn memory off for a project with the `chat_memory` feature flag; see [AI Configuration](/developers/build/ai-configuration#user-memory).
+Memory is per user. It is available in Rill Cloud for logged-in users and in Rill Developer, where it is stored locally and never committed to git. In [embedded dashboards](/developers/embed/iframe) and with [service tokens](/guide/administration/access-tokens/service-tokens) it is only available when the viewer is identified with `external_user_id`; otherwise everyone using the token would share one memory, so it is off. It is never available through [public URLs](/guide/dashboards/public-urls), and it is not used by AI reports, shared conversations viewed by other users, or external AI clients connected through MCP. Project administrators can turn memory off for a project with the `chat_memory` feature flag; see [AI Configuration](/developers/build/ai-configuration#user-memory).
 
 ## Use in Your Favorite AI Client
 

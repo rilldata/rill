@@ -60,8 +60,8 @@ var (
 // MemoryAvailable reports whether memory is available to the given claims in an instance.
 // Memory is keyed on the user ID, so it is only available when that ID identifies one viewer:
 // it is false for users without the AI permission, for anonymous users, and when the chat_memory feature flag is off.
-// The flag is also resolved to false for tokens whose subject is shared by several viewers (see runtime.ResolveFeatureFlags):
-// public URLs, and embeds without an external_user_id.
+// The flag is also resolved to false for tokens whose subject does not identify one viewer (see runtime.ResolveFeatureFlags):
+// public URLs, and service tokens or embeds without an external_user_id.
 func MemoryAvailable(ctx context.Context, rt *runtime.Runtime, instanceID string, claims *runtime.SecurityClaims) (bool, error) {
 	if claims == nil || !claims.Can(runtime.UseAI) {
 		return false, nil

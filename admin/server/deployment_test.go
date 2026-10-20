@@ -57,6 +57,8 @@ func TestDeploymentJWTs(t *testing.T) {
 		require.Equal(t, u1.ID, c.Subject)
 		require.Equal(t, u1.Email, c.Attrs["email"])
 		require.Equal(t, true, c.Attrs["admin"])
+		require.NotContains(t, c.Attrs, "service")
+		require.NotContains(t, c.Attrs, "public_url")
 
 		perms := c.Instances[depl.RuntimeInstanceID]
 		requireHasPerms(t, perms, runtime.ReadObjects, runtime.ReadMetrics, runtime.ReadAPI, runtime.UseAI)
@@ -133,7 +135,7 @@ func TestDeploymentJWTs(t *testing.T) {
 		require.Equal(t, c.Subject, decodeJWT(t, resp2.AccessToken).Subject)
 	})
 
-	t.Run("GetIFrame for service token without external user ID", func(t *testing.T) {
+	t.Run("Service token", func(t *testing.T) {
 		svc, err := u1Client.CreateService(t.Context(), &adminv1.CreateServiceRequest{
 			Org:             "jwt-test",
 			Name:            "embed-service",
@@ -147,23 +149,38 @@ func TestDeploymentJWTs(t *testing.T) {
 		})
 		require.NoError(t, err)
 
-		resp, err := adm.NewClient(t, tok.Token).GetIFrame(t.Context(), &adminv1.GetIFrameRequest{
+		svcClient := adm.NewClient(t, tok.Token)
+
+		// The service's own token has the service ID as subject, shared by every caller, and is marked as a service.
+		proj, err := svcClient.GetProject(t.Context(), &adminv1.GetProjectRequest{
+			Org:     "jwt-test",
+			Project: "jwt-project",
+		})
+		require.NoError(t, err)
+		c := decodeJWT(t, proj.Jwt)
+		require.Equal(t, svc.Service.Id, c.Subject)
+		require.Equal(t, true, c.Attrs["service"])
+		require.NotContains(t, c.Attrs, "embed")
+		require.NotContains(t, c.Attrs, "external_user")
+		requireHasPerms(t, c.Instances[depl.RuntimeInstanceID], runtime.UseAI)
+
+		// An embed without an external user ID keeps the service ID as subject for every viewer, and nothing marks the token as identifying one viewer.
+		resp, err := svcClient.GetIFrame(t.Context(), &adminv1.GetIFrameRequest{
 			Org:      "jwt-test",
 			Project:  "jwt-project",
 			Resource: "foo",
 		})
 		require.NoError(t, err)
-
-		// Every viewer of the embed shares the service ID as subject, and nothing marks the token as identifying one viewer.
-		c := decodeJWT(t, resp.AccessToken)
+		c = decodeJWT(t, resp.AccessToken)
 		require.Equal(t, svc.Service.Id, c.Subject)
 		require.Equal(t, true, c.Attrs["embed"])
+		require.Equal(t, true, c.Attrs["service"])
 		require.NotContains(t, c.Attrs, "external_user")
 		require.NotContains(t, c.Attrs, "public_url")
 		requireHasPerms(t, c.Instances[depl.RuntimeInstanceID], runtime.UseAI)
 
-		// With an external user ID, each viewer gets their own subject and the token says so.
-		resp, err = adm.NewClient(t, tok.Token).GetIFrame(t.Context(), &adminv1.GetIFrameRequest{
+		// With an external user ID, each viewer gets their own subject and the token says so. The service itself is no longer the principal.
+		resp, err = svcClient.GetIFrame(t.Context(), &adminv1.GetIFrameRequest{
 			Org:            "jwt-test",
 			Project:        "jwt-project",
 			Resource:       "foo",
@@ -174,6 +191,30 @@ func TestDeploymentJWTs(t *testing.T) {
 		require.True(t, strings.HasPrefix(c.Subject, "ext_"))
 		require.Equal(t, true, c.Attrs["embed"])
 		require.Equal(t, true, c.Attrs["external_user"])
+		require.NotContains(t, c.Attrs, "service")
+
+		// The markers are derived by the server: custom attributes cannot claim a per-viewer subject or hide the shared one.
+		spoofed, err := structpb.NewStruct(map[string]any{
+			"external_user": true,
+			"service":       false,
+			"public_url":    false,
+			"tenant_id":     "foo",
+		})
+		require.NoError(t, err)
+		resp, err = svcClient.GetIFrame(t.Context(), &adminv1.GetIFrameRequest{
+			Org:      "jwt-test",
+			Project:  "jwt-project",
+			Resource: "foo",
+			For:      &adminv1.GetIFrameRequest_Attributes{Attributes: spoofed},
+		})
+		require.NoError(t, err)
+		c = decodeJWT(t, resp.AccessToken)
+		require.Empty(t, c.Subject)
+		require.Equal(t, "foo", c.Attrs["tenant_id"])
+		require.Equal(t, true, c.Attrs["embed"])
+		require.NotContains(t, c.Attrs, "external_user")
+		require.NotContains(t, c.Attrs, "service")
+		require.NotContains(t, c.Attrs, "public_url")
 	})
 
 	t.Run("GetProject for public URL", func(t *testing.T) {

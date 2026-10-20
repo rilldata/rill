@@ -86,6 +86,7 @@ func (s *Server) issueRuntimeToken(ctx context.Context, opts *issueRuntimeTokenO
 	var subject string
 	var attr map[string]any
 	var rules []*runtimev1.SecurityRule
+	var isService, isPublicURL bool
 	switch {
 	case opts.forOwner:
 		if opts.externalUserID != "" {
@@ -106,6 +107,7 @@ func (s *Server) issueRuntimeToken(ctx context.Context, opts *issueRuntimeTokenO
 			rules = append(rules, securityRulesFromResources(restrict, resources)...)
 		case auth.OwnerTypeService:
 			subject = claims.OwnerID()
+			isService = true
 			a, err := s.jwtAttributesForService(ctx, claims.OwnerID(), opts.projectPermissions)
 			if err != nil {
 				return "", err
@@ -117,11 +119,8 @@ func (s *Server) issueRuntimeToken(ctx context.Context, opts *issueRuntimeTokenO
 			if !ok {
 				return "", status.Errorf(codes.Internal, "unexpected type %T for magic auth token model", claims.AuthTokenModel())
 			}
-			// A public URL token carries the creator's attributes, so the runtime cannot tell it from the creator's own token by subject or attributes alone.
-			// Mark it with public_url: everyone with the link shares this subject, so per-user features such as AI memory must stay off (see runtime.ResolveFeatureFlags).
-			attr = make(map[string]any, len(mdl.Attributes)+1)
-			maps.Copy(attr, mdl.Attributes)
-			attr["public_url"] = true
+			isPublicURL = true
+			attr = mdl.Attributes
 			magicRules, err := securityRulesFromMagicAuthToken(mdl)
 			if err != nil {
 				return "", err
@@ -157,13 +156,31 @@ func (s *Server) issueRuntimeToken(ctx context.Context, opts *issueRuntimeTokenO
 	}
 
 	// Apply externalUserID after principal resolution so it overrides whatever subject was set.
-	// The external_user attribute tells the runtime that the subject identifies one viewer, so per-user features such as AI memory stay on in an embed (see runtime.ResolveFeatureFlags).
 	if opts.externalUserID != "" {
 		subject = subjectForExternalUser(opts.externalUserID, opts.project.ID)
+	}
+
+	// Mark tokens whose subject does not identify one viewer, so the runtime can keep per-user features such as AI memory off for them (see runtime.ResolveFeatureFlags):
+	// a service is not a person, a public URL puts the magic token ID on everyone with the link, and an embed (marked by extraAttributes) serves many viewers.
+	// An external_user_id gives each viewer their own subject, which external_user records.
+	// The markers are derived here only: a value in stored or caller-supplied attributes is dropped, so attributes such as external_user: true cannot turn memory on for a shared subject.
+	attr = maps.Clone(attr)
+	delete(attr, "service")
+	delete(attr, "public_url")
+	delete(attr, "external_user")
+	if isService || isPublicURL || opts.externalUserID != "" {
 		if attr == nil {
 			attr = make(map[string]any, 1)
 		}
-		attr["external_user"] = true
+		if isService {
+			attr["service"] = true
+		}
+		if isPublicURL {
+			attr["public_url"] = true
+		}
+		if opts.externalUserID != "" {
+			attr["external_user"] = true
+		}
 	}
 
 	// overrideResources replaces any principal-derived resource rules with a fresh allow-list.

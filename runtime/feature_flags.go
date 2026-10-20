@@ -60,7 +60,7 @@ var defaultFeatureFlags = map[string]string{
 	// Controls whether charts are rendered in AI chats
 	"chat_charts": "true",
 	// Controls whether the AI chat learns and uses per-user memories (preferences and clarifications remembered across conversations).
-	// Always resolved to false for public URLs and for embeds without an external_user_id, whose subject is shared by every viewer.
+	// Always resolved to false when the token's subject does not identify one viewer: public URLs, and service tokens or embeds without an external_user_id.
 	"chat_memory": "true",
 	// Controls whether to show/hide deploy related actions.
 	"deploy": "true",
@@ -151,15 +151,17 @@ func ResolveFeatureFlags(inst *drivers.Instance, userAttributes map[string]any, 
 		featureFlags[chatMemoryKey] = false
 	}
 
-	// Memory is keyed on the token's subject, so it is off whenever the subject is shared by several viewers, whatever the project configures:
-	// an embed without an external_user_id puts the issuer's identity (a service or user ID) on every viewer's token,
-	// and a public URL puts the magic token ID on everyone with the link. An embed with an external_user_id has a per-viewer subject and keeps memory.
+	// Memory is keyed on the token's subject, so it is off whenever the subject does not identify one viewer, whatever the project configures:
+	// a public URL puts the magic token ID on everyone with the link, a service token puts the service ID on every caller,
+	// and an embed without an external_user_id puts the issuer's identity on every viewer's token.
+	// An external_user_id gives each viewer their own subject, so a service token or embed with one keeps memory.
 	// The admin server sets these attributes when it issues the token.
 	// The runtime enforces this flag (see ai.MemoryAvailable), and the UI hides the memory controls when it is off.
 	embed, _ := userAttributes["embed"].(bool)
+	service, _ := userAttributes["service"].(bool)
 	externalUser, _ := userAttributes["external_user"].(bool)
 	publicURL, _ := userAttributes["public_url"].(bool)
-	if (embed && !externalUser) || publicURL {
+	if publicURL || ((embed || service) && !externalUser) {
 		featureFlags[chatMemoryKey] = false
 	}
 

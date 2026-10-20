@@ -195,8 +195,8 @@ func Test_ResolveFeatureFlags_CloudEditingDisabledAnnotation(t *testing.T) {
 	}
 }
 
-// Test_ResolveFeatureFlags_ChatMemoryPrincipals checks that chat_memory is off for tokens whose subject is shared by several viewers, whatever the project configures:
-// public URLs and embeds without an external_user_id.
+// Test_ResolveFeatureFlags_ChatMemoryPrincipals checks that chat_memory is off for tokens whose subject does not identify one viewer, whatever the project configures:
+// public URLs, and service tokens or embeds without an external_user_id.
 func Test_ResolveFeatureFlags_ChatMemoryPrincipals(t *testing.T) {
 	inst := &drivers.Instance{
 		FeatureFlags: map[string]string{
@@ -216,6 +216,8 @@ func Test_ResolveFeatureFlags_ChatMemoryPrincipals(t *testing.T) {
 		{"embed without external user", map[string]any{"embed": true, "tenant_id": "foo"}, false},
 		{"embed with external user", map[string]any{"embed": true, "external_user": true, "tenant_id": "foo"}, true},
 		{"ephemeral token with external user", map[string]any{"external_user": true}, true},
+		{"service token", map[string]any{"name": "my-service", "admin": true, "service": true}, false},
+		{"service token embed with external user", map[string]any{"name": "my-service", "admin": true, "service": true, "embed": true, "external_user": true}, true},
 		{"public URL", map[string]any{"email": "creator@example.com", "public_url": true}, false},
 	}
 	for _, test := range tests {

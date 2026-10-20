@@ -194,7 +194,7 @@ In addition to the project-wide `ai_instructions` you write, [AI Chat](/guide/ai
 
 If several users keep teaching the AI the same thing, add it to `ai_instructions` so everyone benefits. Memory never stores data values, secrets, or anything `ai_instructions` already say.
 
-Memory is on by default for logged-in users and for embed viewers identified with `external_user_id`. It is never on for public URL viewers or for embeds without `external_user_id`, whatever the flag says, because every viewer would share one memory. To turn it off for a project, disable the `chat_memory` feature flag in `rill.yaml`:
+Memory is on by default for logged-in users and for embed or service token viewers identified with `external_user_id`. It is never on for public URL viewers, or for service tokens and embeds without `external_user_id`, whatever the flag says, because everyone using the token would share one memory. To turn it off for a project, disable the `chat_memory` feature flag in `rill.yaml`:
 
 ```yaml
 features:
