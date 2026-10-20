@@ -8,14 +8,14 @@ Custom viz components are reusable visualizations defined as standalone `type: c
 
 Charts are described declaratively: you state the chart type and which field goes on which channel, and Rill derives the scales, axes, number formats, sorting, stacking, colors, and layout. Rill supplies the semantics of each field from your metrics view — a currency measure formats as currency, the time dimension is treated as temporal at the dashboard's grain — so the spec stays short and the same component adapts when it is bound to a different metrics view.
 
-Unlike an inline `custom_chart` widget, a custom viz lives in its own file (conventionally under `viz_library/`), has a declared parameter contract that Rill validates, and can be developed in a dedicated editor with a live preview.
+Unlike an inline `custom_chart` widget, a custom viz lives in its own file (conventionally under `viz/`), has a declared parameter contract that Rill validates, and can be developed in a dedicated editor with a live preview.
 
 ## Creating a custom viz
 
-In Rill Developer, click **Add → Custom viz → Blank** (or create a file under `viz_library/` by hand):
+In Rill Developer, click **Add → Custom viz → Blank** (or create a file under `viz/` by hand):
 
 ```yaml
-# viz_library/measure_trend.yaml
+# viz/measure_trend.yaml
 type: component
 display_name: Measure trend
 
@@ -95,13 +95,13 @@ A time dimension selected by the `metrics_sql` is bucketed at the dashboard's ti
 
 When the AI assistant is enabled, the chart type is handed to it instead, and it authors the same component against your project's own metrics views so the params come pre-bound to real fields. You're taken to the component immediately and watch an "Importing chart using AI…" screen while it generates; the editor appears once the component reconciles.
 
-## Ejecting to Vega-Lite
+## Converting to Vega-Lite
 
-When a chart needs something the chart spec cannot express, **Eject to Vega-Lite** in the component
+When a chart needs something the chart spec cannot express, **Convert to Vega-Lite** in the component
 editor's header replaces `spec` with the Vega-Lite it currently compiles to, under `vega_spec`. From
 there the spec is yours to edit: marks, layers, transforms, interactions, anything Vega-Lite can do.
 
-Ejecting keeps the component parameterized. The compiled spec has the bound values resolved into it,
+Converting keeps the component parameterized. The compiled spec has the bound values resolved into it,
 so before writing the file Rill turns them back into template references:
 
 | Resolved value | Written as |
@@ -115,7 +115,7 @@ dashboard that references it keep working, and re-binding a param in a dashboard
 axes and re-formats the numbers.
 
 ```yaml
-# viz_library/measure_trend.yaml, after ejecting
+# viz/measure_trend.yaml, after converting
 custom_chart:
   metrics_sql: |
     SELECT {{ .params.time_dim }}, {{ .params.measure }}
@@ -154,9 +154,9 @@ Alongside `display_name` and `format_type`, a field-typed param also exposes `na
 as `{{ .params.<param> }}`), `format_d3` and `format_preset`, which are useful when you would rather
 format with Vega-Lite's own `format` than route through Rill's formatter.
 
-Ejecting is one-way, and it is a snapshot: the Vega-Lite it writes reflects the data the chart was
+Converting is one-way, and it is a snapshot: the Vega-Lite it writes reflects the data the chart was
 compiled against, and Rill stops deriving scales, axes, formats, sorting, stacking and layout, so
-the chart no longer adapts when the data changes shape. Eject when you need control that the chart
+the chart no longer adapts when the data changes shape. Convert when you need control that the chart
 spec does not offer, not as a matter of course. To get back, undo the edit or revert the file.
 
 ## Limits
@@ -165,7 +165,7 @@ A component issues exactly one Metrics SQL query, so charts that layer several d
 
 Rows that overflow what an axis can legibly fit are dropped and reported above the chart, so a row limit set far above a chart's density silently truncates rather than crowds.
 
-Inline `custom_chart` widgets inside a canvas are a separate, Vega-Lite-based widget and continue to use `vega_spec`. A component file authors a chart spec under `spec`, and only carries a `vega_spec` once it has been ejected.
+Inline `custom_chart` widgets inside a canvas are a separate, Vega-Lite-based widget and continue to use `vega_spec`. A component file authors a chart spec under `spec`, and only carries a `vega_spec` once it has been converted.
 
 :::note Feature flag
 Custom viz is currently gated behind the `customComponents` feature flag. Enable it in `rill.yaml`:
