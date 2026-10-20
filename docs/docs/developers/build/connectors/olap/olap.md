@@ -85,7 +85,7 @@ Rill supports the use of several different OLAP engines to power your dashboards
     content="Open lakehouse format built on DuckDB — catalog in SQL, data in Parquet."
     link="/developers/build/connectors/olap/ducklake"
     linkLabel="Learn more"
-    referenceLink="ducklake"
+    referenceLink="duckdb"
   />
 
   <ConnectorIcon

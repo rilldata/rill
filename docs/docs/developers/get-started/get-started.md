@@ -53,8 +53,8 @@ Rill Developer is great for building and testing locally, but once you're ready 
 Rill is designed to fit into your existing stack. Embed interactive dashboards directly into your web applications using iframes, programmatically control them with the Embed API, or build custom API endpoints to pull Rill data into external tools and workflows. 
 
 <FeatureList items={[
-  { name: "Embed Dashboards", description: "Embed Rill dashboards into your applications using iframes", link: "/developers/embed/embedding" },
-  { name: "Embed API", description: "Programmatically control embedded dashboards", link: "/developers/embed/embed-api" },
+  { name: "Embed Dashboards", description: "Embed Rill dashboards into your applications using iframes", link: "/developers/embed/iframe" },
+  { name: "Embed API", description: "Programmatically control embedded dashboards", link: "/developers/embed/postmessage" },
   { name: "Custom APIs", description: "Integrate custom APIs in external applications", link: "/developers/build/custom-apis" },
 ]} />
 

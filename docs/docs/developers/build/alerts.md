@@ -1,5 +1,5 @@
 ---
-title: Alerts
+title: Alerts as Code
 description: Define alerts as code for automated monitoring and notifications
 sidebar_label: Alerts
 sidebar_position: 45
@@ -24,7 +24,7 @@ An alert YAML file has the following core components:
 ```yaml
 type: alert
 display_name: My Alert Name
-description: A brief description of what this alert monitors
+# A brief description of what this alert monitors
 
 # When to check the alert
 refresh:
@@ -200,7 +200,7 @@ This example demonstrates a data freshness check that queries the maximum timest
 # alerts/data_freshness.yaml
 type: alert
 display_name: Data Freshness Check
-description: Alert when event data is stale
+# Alert when event data is stale
 
 refresh:
   cron: "0 * * * *"  # Check every hour
@@ -235,7 +235,7 @@ This example monitors the overall health of your Rill project by checking for an
 # alerts/project_health.yaml
 type: alert
 display_name: Project Health Monitor
-description: Alert when any resource has a reconciliation error
+# Alert when any resource has a reconciliation error
 
 refresh:
   cron: "*/10 * * * *"  # Every 10 minutes
@@ -263,7 +263,7 @@ This example shows how to use interval-based monitoring to validate metrics acro
 # alerts/hourly_metrics.yaml
 type: alert
 display_name: Hourly Metrics Check
-description: Validate metrics for each hour
+# Validate metrics for each hour
 
 refresh:
   cron: "5 * * * *"  # 5 minutes past each hour

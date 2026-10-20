@@ -3,8 +3,10 @@ package clickhouse
 import (
 	"context"
 	"fmt"
+	"net/url"
 	"strings"
 	"testing"
+	"time"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
@@ -20,7 +22,7 @@ import (
 func TestClickhouseSingle(t *testing.T) {
 	dsn := testclickhouse.Start(t)
 
-	conn, err := driver{}.Open("", "default", map[string]any{"dsn": dsn, "mode": "readwrite"}, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
+	conn, err := driver{}.Open(t.Context(), "", "default", map[string]any{"dsn": dsn, "mode": "readwrite"}, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
 	defer conn.Close()
 	prepareConn(t, conn)
@@ -31,6 +33,7 @@ func TestClickhouseSingle(t *testing.T) {
 
 	t.Run("WithConnection", func(t *testing.T) { testWithConnection(t, olap) })
 	t.Run("DropTable", func(t *testing.T) { testDropTable(t, c, olap) })
+	t.Run("DropStaleTempTables", func(t *testing.T) { testDropStaleTempTables(t, c, olap) })
 	t.Run("RenameView", func(t *testing.T) { testRenameView(t, c, olap) })
 	t.Run("RenameTable", func(t *testing.T) { testRenameTable(t, c, olap) })
 	t.Run("CreateTableAsSelect", func(t *testing.T) { testCreateTableAsSelect(t, c) })
@@ -41,6 +44,7 @@ func TestClickhouseSingle(t *testing.T) {
 	t.Run("TestDictionary", func(t *testing.T) { testDictionary(t, c, olap) })
 	t.Run("TestIntervalType", func(t *testing.T) { testIntervalType(t, olap) })
 	t.Run("QueryAttributesAsSettings", func(t *testing.T) { testQueryAttributesAsSettings(t, olap) })
+	t.Run("QueryAttributesReadonlyUser", func(t *testing.T) { testQueryAttributesReadonlyUser(t, olap, dsn) })
 	t.Run("CreateTableAsSelect_WithPrePostExec", func(t *testing.T) { testCreateTableAsSelect_WithPrePostExec(t, c, olap) })
 	t.Run("InsertTableAsSelect_WithPrePostExec", func(t *testing.T) { testInsertTableAsSelect_WithPrePostExec(t, c, olap) })
 }
@@ -50,7 +54,7 @@ func TestClickhouseCluster(t *testing.T) {
 
 	dsn, cluster := testclickhouse.StartCluster(t)
 
-	conn, err := drivers.Open("clickhouse", "", "default", map[string]any{"dsn": dsn, "cluster": cluster, "mode": "readwrite"}, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
+	conn, err := drivers.Open(t.Context(), "clickhouse", "", "default", map[string]any{"dsn": dsn, "cluster": cluster, "mode": "readwrite"}, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
 	defer conn.Close()
 
@@ -62,6 +66,7 @@ func TestClickhouseCluster(t *testing.T) {
 
 	t.Run("WithConnection", func(t *testing.T) { testWithConnection(t, olap) })
 	t.Run("DropTable", func(t *testing.T) { testDropTable(t, c, olap) })
+	t.Run("DropStaleTempTables", func(t *testing.T) { testDropStaleTempTables(t, c, olap) })
 	t.Run("RenameView", func(t *testing.T) { testRenameView(t, c, olap) })
 	t.Run("RenameTable", func(t *testing.T) { testRenameTable(t, c, olap) })
 	t.Run("CreateTableAsSelect", func(t *testing.T) { testCreateTableAsSelect(t, c) })
@@ -118,6 +123,51 @@ func testDropTable(t *testing.T, c *Connection, olap drivers.OLAPStore) {
 	require.NoError(t, err)
 	require.NoError(t, c.dropTable(ctx, "drop_view"))
 	notExists(t, olap, "drop_view")
+
+	if c.config.Cluster != "" {
+		// Only the `_local` table exists if the execution was cancelled before it created the Distributed table over it.
+		err = olap.Exec(ctx, &drivers.Statement{Query: fmt.Sprintf("CREATE TABLE drop_local_only_local %s (id Int32) ENGINE = MergeTree ORDER BY tuple()", c.onClusterClause())})
+		require.NoError(t, err)
+		require.NoError(t, c.dropTable(ctx, "drop_local_only"))
+		notExists(t, olap, "drop_local_only_local")
+	}
+}
+
+func testDropStaleTempTables(t *testing.T, c *Connection, olap drivers.OLAPStore) {
+	ctx := context.Background()
+	props := &ModelOutputProperties{Columns: "(id Int32)", Engine: "MergeTree"}
+
+	// A partition insert's table and a column inference view, as an interrupted execution leaves them behind.
+	staleTable := tempTablePrefix + "stale_tbl_" + strings.Repeat("0", 32)
+	staleView := tempTablePrefix + stagingTableNameFor("stale_tbl") + "_" + strings.Repeat("1", 32)
+	require.NoError(t, c.createTable(ctx, staleTable, "", props))
+	_, err := c.createTableAsSelect(ctx, staleView, "SELECT 1 AS id", &ModelOutputProperties{Typ: "VIEW"}, "", "")
+	require.NoError(t, err)
+	// The model's own table must be left alone.
+	require.NoError(t, c.createTable(ctx, "stale_tbl", "", props))
+	// Only the `_local` table exists if the execution was cancelled before it created the Distributed table over it.
+	localOnly := localTableName(tempTablePrefix + "stale_tbl_" + strings.Repeat("2", 32))
+	if c.config.Cluster != "" {
+		err = olap.Exec(ctx, &drivers.Statement{Query: fmt.Sprintf("CREATE TABLE %s %s (id Int32) ENGINE = MergeTree ORDER BY tuple()", safeSQLName(localOnly), c.onClusterClause())})
+		require.NoError(t, err)
+	}
+
+	// Tables younger than the TTL may still be written to by a running execution.
+	require.NoError(t, c.dropStaleTempTables(ctx, tempTableTTL))
+	require.True(t, tableExists(t, olap, staleTable))
+	require.True(t, tableExists(t, olap, staleView))
+
+	// metadata_modification_time has second resolution, so let the tables age past a zero TTL.
+	time.Sleep(time.Second)
+	require.NoError(t, c.dropStaleTempTables(ctx, 0))
+	notExists(t, olap, staleTable)
+	notExists(t, olap, staleView)
+	if c.config.Cluster != "" {
+		notExists(t, olap, localTableName(staleTable))
+		notExists(t, olap, localOnly)
+	}
+	require.True(t, tableExists(t, olap, "stale_tbl"))
+	require.NoError(t, c.dropTable(ctx, "stale_tbl"))
 }
 
 func testRenameView(t *testing.T, c *Connection, olap drivers.OLAPStore) {
@@ -163,6 +213,10 @@ func testRenameTable(t *testing.T, c *Connection, olap drivers.OLAPStore) {
 }
 
 func notExists(t *testing.T, olap drivers.OLAPStore, tbl string) {
+	require.False(t, tableExists(t, olap, tbl), "table %q should not exist", tbl)
+}
+
+func tableExists(t *testing.T, olap drivers.OLAPStore, tbl string) bool {
 	result, err := olap.Query(context.Background(), &drivers.Statement{
 		Query: "EXISTS " + tbl,
 	})
@@ -170,8 +224,8 @@ func notExists(t *testing.T, olap drivers.OLAPStore, tbl string) {
 	require.True(t, result.Next())
 	var exist bool
 	require.NoError(t, result.Scan(&exist))
-	require.False(t, exist)
 	require.NoError(t, result.Close())
+	return exist
 }
 
 func testCreateTableAsSelect(t *testing.T, c *Connection) {
@@ -422,7 +476,7 @@ func testSyncReplicaNonDefaultDatabase(t *testing.T, olap drivers.OLAPStore, dsn
 	})
 
 	// open a connection scoped to the non-default database (the database is taken from the DSN path)
-	conn, err := drivers.Open("clickhouse", "", "default", map[string]any{"dsn": dsn + "/sync_repl_db", "cluster": cluster, "mode": "readwrite"}, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
+	conn, err := drivers.Open(t.Context(), "clickhouse", "", "default", map[string]any{"dsn": dsn + "/sync_repl_db", "cluster": cluster, "mode": "readwrite"}, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
 	defer conn.Close()
 	c := conn.(*Connection)
@@ -661,7 +715,7 @@ func TestClickhouseReadWriteMode(t *testing.T) {
 
 	t.Run("ReadOnlyMode_DisablesModelExecution", func(t *testing.T) {
 		// Test default mode (read-only) with BYODB
-		conn, err := driver{}.Open("", "default", map[string]any{"dsn": dsn}, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
+		conn, err := driver{}.Open(t.Context(), "", "default", map[string]any{"dsn": dsn}, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
 		require.NoError(t, err)
 		defer conn.Close()
 
@@ -684,7 +738,7 @@ func TestClickhouseReadWriteMode(t *testing.T) {
 
 	t.Run("ExplicitReadOnlyMode_DisablesModelExecution", func(t *testing.T) {
 		// Test explicit read-only mode
-		conn, err := driver{}.Open("", "default", map[string]any{
+		conn, err := driver{}.Open(t.Context(), "", "default", map[string]any{
 			"dsn":  dsn,
 			"mode": "read",
 		}, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
@@ -710,7 +764,7 @@ func TestClickhouseReadWriteMode(t *testing.T) {
 
 	t.Run("ReadWriteMode_EnablesModelExecution", func(t *testing.T) {
 		// Test readwrite mode for BYODB
-		conn, err := driver{}.Open("", "default", map[string]any{
+		conn, err := driver{}.Open(t.Context(), "", "default", map[string]any{
 			"dsn":  dsn,
 			"mode": "readwrite",
 		}, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
@@ -740,7 +794,7 @@ func TestClickhouseDualDSN(t *testing.T) {
 
 	t.Run("SeparateReadWriteDSNs", func(t *testing.T) {
 		// Test with both dsn and write_dsn specified
-		conn, err := driver{}.Open("", "default", map[string]any{
+		conn, err := driver{}.Open(t.Context(), "", "default", map[string]any{
 			"dsn":       dsn,
 			"write_dsn": dsn,
 			"mode":      "readwrite",
@@ -777,7 +831,7 @@ func TestClickhouseDualDSN(t *testing.T) {
 
 	t.Run("OnlyWriteDSN_ShouldFail", func(t *testing.T) {
 		// Test that providing only write_dsn fails
-		_, err := driver{}.Open("", "default", map[string]any{
+		_, err := driver{}.Open(t.Context(), "", "default", map[string]any{
 			"write_dsn": dsn,
 			"mode":      "readwrite",
 		}, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
@@ -787,7 +841,7 @@ func TestClickhouseDualDSN(t *testing.T) {
 
 	t.Run("DualDSNWithRegularDSN_UsesDualDSN", func(t *testing.T) {
 		// Test that dsn and write_dsn configuration works correctly
-		conn, err := driver{}.Open("", "default", map[string]any{
+		conn, err := driver{}.Open(t.Context(), "", "default", map[string]any{
 			"dsn":       dsn,
 			"write_dsn": dsn,
 			"mode":      "readwrite",
@@ -809,7 +863,7 @@ func TestClickhouseDualDSN(t *testing.T) {
 
 	t.Run("InvalidDSN_ShouldFail", func(t *testing.T) {
 		// Test that invalid dsn causes failure
-		_, err := driver{}.Open("", "default", map[string]any{
+		_, err := driver{}.Open(t.Context(), "", "default", map[string]any{
 			"dsn":       "invalid-dsn",
 			"write_dsn": dsn,
 			"mode":      "readwrite",
@@ -820,7 +874,7 @@ func TestClickhouseDualDSN(t *testing.T) {
 
 	t.Run("InvalidWriteDSN_ShouldFail", func(t *testing.T) {
 		// Test that invalid write_dsn causes failure
-		_, err := driver{}.Open("", "default", map[string]any{
+		_, err := driver{}.Open(t.Context(), "", "default", map[string]any{
 			"dsn":       dsn,
 			"write_dsn": "invalid-dsn",
 			"mode":      "readwrite",
@@ -831,7 +885,7 @@ func TestClickhouseDualDSN(t *testing.T) {
 
 	t.Run("SingleDSN_SharedConnection", func(t *testing.T) {
 		// Test that single DSN still uses shared connection (backward compatibility)
-		conn, err := driver{}.Open("", "default", map[string]any{
+		conn, err := driver{}.Open(t.Context(), "", "default", map[string]any{
 			"dsn":  dsn,
 			"mode": "readwrite",
 		}, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
@@ -848,7 +902,7 @@ func TestClickhouseDualDSN(t *testing.T) {
 
 	t.Run("NoConfiguration_ShouldFail", func(t *testing.T) {
 		// Test that providing no valid configuration fails with appropriate error
-		_, err := driver{}.Open("", "default", map[string]any{
+		_, err := driver{}.Open(t.Context(), "", "default", map[string]any{
 			"mode": "readwrite",
 		}, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
 		require.Error(t, err)
@@ -861,7 +915,7 @@ func TestClickhouseDualDSNFunctionality(t *testing.T) {
 
 	t.Run("ReadWriteOperationsWithDualDSN", func(t *testing.T) {
 		// Test that both read and write operations work with dual DSN setup
-		conn, err := driver{}.Open("", "default", map[string]any{
+		conn, err := driver{}.Open(t.Context(), "", "default", map[string]any{
 			"dsn":       dsn,
 			"write_dsn": dsn,
 			"mode":      "readwrite",
@@ -1074,6 +1128,56 @@ func testQueryAttributesAsSettings(t *testing.T, olap drivers.OLAPStore) {
 	})
 }
 
+func testQueryAttributesReadonlyUser(t *testing.T, olap drivers.OLAPStore, dsn string) {
+	ctx := context.Background()
+	const (
+		username = "rill_readonly"
+		password = "test_password"
+	)
+
+	require.NoError(t, olap.Exec(ctx, &drivers.Statement{
+		Query: fmt.Sprintf("CREATE USER %s IDENTIFIED WITH sha256_password BY %s SETTINGS readonly = 1", safeSQLName(username), safeSQLString(password)),
+	}))
+	t.Cleanup(func() {
+		_ = olap.Exec(context.Background(), &drivers.Statement{Query: fmt.Sprintf("DROP USER IF EXISTS %s", safeSQLName(username))})
+	})
+	require.NoError(t, olap.Exec(ctx, &drivers.Statement{
+		Query: fmt.Sprintf("GRANT SELECT ON *.* TO %s", safeSQLName(username)),
+	}))
+
+	u, err := url.Parse(dsn)
+	require.NoError(t, err)
+	u.User = url.UserPassword(username, password)
+	handle, err := drivers.Open(t.Context(), "clickhouse", "", "readonly", map[string]any{"dsn": u.String()}, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
+	require.NoError(t, err)
+	defer handle.Close()
+	require.False(t, handle.(*Connection).supportSettings)
+
+	readonlyOLAP, ok := handle.AsOLAP("default")
+	require.True(t, ok)
+
+	// Queries without attributes still work
+	res, err := readonlyOLAP.Query(ctx, &drivers.Statement{Query: "SELECT 1"})
+	require.NoError(t, err)
+	require.NoError(t, res.Close())
+
+	// Attributes are not silently dropped
+	_, err = readonlyOLAP.Query(ctx, &drivers.Statement{
+		Query:           "SELECT getSetting('custom_test')",
+		QueryAttributes: map[string]string{"custom_test": "value"},
+	})
+	require.ErrorContains(t, err, "readonly")
+
+	// Connector query settings are not silently dropped
+	handle, err = drivers.Open(t.Context(), "clickhouse", "", "readonly", map[string]any{"dsn": u.String(), "query_settings": "max_execution_time = 123"}, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
+	require.NoError(t, err)
+	defer handle.Close()
+	readonlyOLAP, ok = handle.AsOLAP("default")
+	require.True(t, ok)
+	_, err = readonlyOLAP.Query(ctx, &drivers.Statement{Query: "SELECT 1"})
+	require.ErrorContains(t, err, "readonly")
+}
+
 func testEntityTypeRestrictedUser(t *testing.T, olap drivers.OLAPStore, dsn, cluster string) {
 	ctx := context.Background()
 	const (
@@ -1103,7 +1207,7 @@ func testEntityTypeRestrictedUser(t *testing.T, olap drivers.OLAPStore, dsn, clu
 	})
 
 	restrictedDSN := strings.Replace(dsn, "clickhouse://default@", fmt.Sprintf("clickhouse://%s:%s@", username, password), 1)
-	handle, err := drivers.Open("clickhouse", "", "restricted", map[string]any{"dsn": restrictedDSN, "cluster": cluster}, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
+	handle, err := drivers.Open(t.Context(), "clickhouse", "", "restricted", map[string]any{"dsn": restrictedDSN, "cluster": cluster}, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
 	defer handle.Close()
 

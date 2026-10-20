@@ -1,5 +1,6 @@
 import { useCanvasFiltersVariant } from "@rilldata/web-common/features/dashboards/filters/test/canvas-filters-variant";
 import {
+  testAdvancedFilters,
   testDimensionFilters,
   testMeasureFilters,
 } from "@rilldata/web-common/features/dashboards/filters/test/expression-filters-suite";
@@ -71,6 +72,7 @@ describe("CanvasExpressionFilters", () => {
 
   testDimensionFilters(variant);
   testMeasureFilters(variant);
+  testAdvancedFilters(variant);
   // We need to fix canvas navigation before enabling this.
   // Check CanvasInitialization.svelte for more details.
   // testURLNavigationFlows(variant);

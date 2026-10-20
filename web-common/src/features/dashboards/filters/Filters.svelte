@@ -54,6 +54,8 @@
         dimensionsWithInlistFilter: tempFilterManger.inList,
       };
 
+      tempFilterManger.cleanup();
+
       const url = dashboardStateSync.getUrlForExploreState(exploreState);
       return isUrlTooLong(url);
     });

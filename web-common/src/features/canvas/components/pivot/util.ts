@@ -41,6 +41,11 @@ import type { CanvasEntity } from "../../stores/canvas-entity";
 import type { PivotSpec, TableSpec } from "./";
 import type { TimeControlState } from "@rilldata/web-common/features/dashboards/time-controls/TimeFilterManager.svelte.ts";
 import type { ExpressionState } from "@rilldata/web-common/features/dashboards/filters/ExpressionFilterManager.svelte.ts";
+import {
+  applyFieldConfigToMetricsView,
+  fieldNames,
+  splitComparisonColumnId,
+} from "./field-config";
 
 /**
  * Strips filters for the pivot's own dimensions from the where filter.
@@ -211,13 +216,22 @@ export function processPivot(
   const enableComparison =
     canEnablePivotComparison($pivotState, comparisonTimeRange?.start) &&
     !!$timeControlState.apiComparisonTimeRange;
+  const pivot = withoutStaleComparisonSort($pivotState, enableComparison);
 
   const ephemeralMeasures = ephemeralSpecsToDefs($tableSpec?.adhoc_measures);
   const ephemeralMeasureNames = ephemeralMeasureNameSet(ephemeralMeasures);
 
+  // Per-field label and format overrides are applied to the metrics view
+  // fields here, so the shared column definitions need no knowledge of them.
+  const fields = applyFieldConfigToMetricsView(
+    appendEphemeralSpecMeasures(metricsView?.measures || [], ephemeralMeasures),
+    metricsView?.dimensions || [],
+    $tableSpec,
+  );
+
   const config: PivotDataStoreConfig = {
     ready,
-    measureNames: ($tableSpec?.measures || []).flatMap((name) => {
+    measureNames: fieldNames($tableSpec?.measures).flatMap((name) => {
       const group = [name];
       // Comparison columns are not supported for ephemeral measures.
       if (enableComparison && !ephemeralMeasureNames.has(name)) {
@@ -228,18 +242,15 @@ export function processPivot(
       }
       return group;
     }),
-    rowDimensionNames: $tableSpec?.row_dimensions || [],
-    colDimensionNames: $tableSpec?.col_dimensions || [],
-    allMeasures: appendEphemeralSpecMeasures(
-      metricsView?.measures || [],
-      ephemeralMeasures,
-    ),
+    rowDimensionNames: fieldNames($tableSpec?.row_dimensions),
+    colDimensionNames: fieldNames($tableSpec?.col_dimensions),
+    allMeasures: fields.measures,
     ephemeralMeasures,
-    allDimensions: metricsView?.dimensions || [],
+    allDimensions: fields.dimensions,
     whereFilter: where ?? createAndExpression([]),
     searchText: "",
     isFlat: false,
-    pivot: $pivotState,
+    pivot,
     enableComparison,
     comparisonTime: {
       start: comparisonTimeRange?.start,
@@ -299,7 +310,7 @@ export function processFlat(
     };
   }
 
-  const columns = $tableSpec?.columns || [];
+  const columns = fieldNames($tableSpec?.columns);
   const ephemeralMeasures = ephemeralSpecsToDefs($tableSpec?.adhoc_measures);
   const ephemeralMeasureNames = ephemeralMeasureNameSet(ephemeralMeasures);
   const allMeasureNames = [
@@ -313,6 +324,15 @@ export function processFlat(
   const enableComparison =
     canEnablePivotComparison($pivotState, comparisonTimeRange?.start) &&
     !!$timeControlState.apiComparisonTimeRange;
+  const pivot = withoutStaleComparisonSort($pivotState, enableComparison);
+
+  // Per-field label and format overrides are applied to the metrics view
+  // fields here, so the shared column definitions need no knowledge of them.
+  const fields = applyFieldConfigToMetricsView(
+    appendEphemeralSpecMeasures(metricsView?.measures || [], ephemeralMeasures),
+    metricsView?.dimensions || [],
+    $tableSpec,
+  );
 
   const config: PivotDataStoreConfig = {
     ready,
@@ -329,16 +349,13 @@ export function processFlat(
     }),
     rowDimensionNames: dimensions || [],
     colDimensionNames: [],
-    allMeasures: appendEphemeralSpecMeasures(
-      metricsView?.measures || [],
-      ephemeralMeasures,
-    ),
+    allMeasures: fields.measures,
     ephemeralMeasures,
-    allDimensions: metricsView?.dimensions || [],
+    allDimensions: fields.dimensions,
     whereFilter: where ?? createAndExpression([]),
     searchText: "",
     isFlat: true,
-    pivot: $pivotState,
+    pivot,
     enableComparison,
     comparisonTime: {
       start: comparisonTimeRange?.start,
@@ -367,6 +384,22 @@ export function processFlat(
   }
 
   return config;
+}
+
+/**
+ * A sort on a measure's delta or percent-change column cannot outlive the
+ * comparison columns (the comparison may be switched off after the sort was
+ * seeded or clicked), so it falls back to the measure's own value.
+ */
+function withoutStaleComparisonSort(
+  state: PivotState,
+  enableComparison: boolean,
+): PivotState {
+  const first = state.sorting[0];
+  if (enableComparison || !first) return state;
+  const split = splitComparisonColumnId(first.id);
+  if (!split) return state;
+  return { ...state, sorting: [{ ...first, id: split.measure }] };
 }
 
 export const usePivotForCanvas = (

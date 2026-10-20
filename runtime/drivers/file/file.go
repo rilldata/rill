@@ -70,7 +70,7 @@ type rillYAML struct {
 	IgnorePaths []string `yaml:"ignore_paths"`
 }
 
-func (d driver) Open(_, instanceID string, config map[string]any, st *storage.Client, ac *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
+func (d driver) Open(ctx context.Context, _, instanceID string, config map[string]any, st *storage.Client, ac *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
 	if instanceID == "" {
 		return nil, errors.New("file driver can't be shared")
 	}
@@ -103,7 +103,7 @@ func (d driver) Open(_, instanceID string, config map[string]any, st *storage.Cl
 	}
 
 	// Read rill.yaml and fill in `ignore_paths`
-	rawYaml, err := c.Get(context.Background(), "/rill.yaml")
+	rawYaml, err := c.Get(ctx, "/rill.yaml")
 	if err == nil {
 		yml := &rillYAML{}
 		err = yaml.Unmarshal([]byte(rawYaml), yml)

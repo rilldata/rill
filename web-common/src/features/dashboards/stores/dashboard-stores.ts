@@ -252,14 +252,16 @@ const metricsViewReducers = {
         exploreState[key] = partialExploreState[key];
       }
 
-      const mvName =
-        expressionFilterManager.metricsViewsProvider.metricsViewNames[0];
-      if (mvName) {
-        exploreState.whereFilter =
-          expressionFilterManager.topLevelJoiner.expr[mvName] ??
-          createAndExpression([]);
-        exploreState.dimensionsWithInlistFilter =
-          expressionFilterManager.inList;
+      if (expressionFilterManager) {
+        const mvName =
+          expressionFilterManager.metricsViewsProvider.metricsViewNames[0];
+        if (mvName) {
+          exploreState.whereFilter =
+            expressionFilterManager.topLevelJoiner.expr[mvName] ??
+            createAndExpression([]);
+          exploreState.dimensionsWithInlistFilter =
+            expressionFilterManager.inList;
+        }
       }
 
       if (timeFilterManager)
@@ -594,6 +596,27 @@ const metricsViewReducers = {
 
       exploreState.selectedComparisonTimeRange = comparisonTimeRange;
 
+      correctExploreState(metricsViewSpec, exploreState);
+    });
+  },
+
+  setTimeGrain(name: string, timeGrain: V1TimeGrain) {
+    updateMetricsExplorerByName(name, (exploreState) => {
+      exploreState.adaptiveTimeGrain = false;
+      exploreState.selectedTimeRange = {
+        ...(exploreState.selectedTimeRange as DashboardTimeControls),
+        interval: timeGrain,
+      };
+    });
+  },
+
+  /**
+   * Switches the time grain to adaptive mode: the grain follows the selected time range
+   * until the user fixes one again with `setTimeGrain`.
+   */
+  setAdaptiveTimeGrain(name: string, metricsViewSpec: V1MetricsViewSpec) {
+    updateMetricsExplorerByName(name, (exploreState) => {
+      exploreState.adaptiveTimeGrain = true;
       correctExploreState(metricsViewSpec, exploreState);
     });
   },

@@ -63,6 +63,10 @@
     <ReadonlyTimeFilters {timeFilterManager} {hasBoldTimeRange} />
   {/if}
 
+  <!--{#if displayTimeGrain}-->
+  <!--  <TimeGrainReadOnly timeGrain={displayTimeGrain} />-->
+  <!--{/if}-->
+
   {#each nonEmptyDimensionManagers as dimensionManager (dimensionManager.name)}
     <div animate:flip={{ duration: 200 }}>
       <ReadonlyDimensionFilter

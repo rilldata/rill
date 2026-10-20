@@ -64,7 +64,7 @@ func textTurn(text string) turnFunc {
 	}
 }
 
-// newSkillReferencesSession creates a session on a project with analyst, developer and always-apply skills, backed by the given simulated model.
+// newSkillReferencesSession creates a session on a project with analyst and developer skills, one always-apply skill for each, backed by the given simulated model.
 func newSkillReferencesSession(t *testing.T, script *scriptedAIService) *ai.Session {
 	s, _, _ := newSkillReferencesSessionWithRuntime(t, script)
 	return s
@@ -94,6 +94,7 @@ ARPU excludes trial users.`,
 			// Without agents, a skill only applies to the developer agent.
 			"skills/dev-conventions/SKILL.md": `---
 description: Development conventions.
+always_apply: true
 ---
 Name models in snake_case.`,
 		},
@@ -244,4 +245,55 @@ func TestAnalystLoadsReferencedSkillsOnEveryTurn(t *testing.T) {
 	// The body was in the model's input on the second turn's first completion.
 	require.Len(t, script.inputs, 2)
 	require.Contains(t, loadSkillResults(script.inputs[1])["monthly-close"], "Compare revenue month over month.")
+}
+
+// TestDeveloperLoadsReferencedSkills verifies that the developer loads the skills referenced with a chat-reference tag in the prompt before the model's first turn,
+// once per distinct developer skill, and ignores references to skills that don't exist or don't apply to the developer.
+func TestDeveloperLoadsReferencedSkills(t *testing.T) {
+	script := &scriptedAIService{turns: []turnFunc{textTurn("done")}}
+	s := newSkillReferencesSession(t, script)
+
+	prompt := `<chat-reference>type="skill" skill="churn-review"</chat-reference> as a model, then ` +
+		`<chat-reference>skill="churn-review" type="skill"</chat-reference> again. ` +
+		`<chat-reference>type="skill" skill="does-not-exist"</chat-reference> ` +
+		`<chat-reference>type="skill" skill="monthly-close"</chat-reference> ` +
+		`<chat-reference>type="skill" skill="dev-conventions"</chat-reference>`
+	res, err := s.CallTool(t.Context(), ai.RoleUser, ai.DeveloperAgentName, nil, &ai.DeveloperAgentArgs{Prompt: prompt})
+	require.NoError(t, err)
+
+	// The always-apply dev-conventions is pre-loaded once and not again for its reference; the referenced developer skill is loaded once.
+	require.Equal(t, []string{"dev-conventions", "churn-review"}, loadedSkillNames(s, res.Call.ID))
+
+	// The referenced skill's body was in the model's input on its first turn.
+	require.NotEmpty(t, script.inputs)
+	results := loadSkillResults(script.inputs[0])
+	require.Contains(t, results["churn-review"], "List the countries with the most churned customers.")
+	require.NotContains(t, results, "monthly-close")
+	require.NotContains(t, results, "does-not-exist")
+}
+
+// TestDeveloperLoadsReferencedSkillsOnEveryTurn verifies that a skill referenced in a later turn is loaded in that turn,
+// even if an earlier turn loaded it: the developer's model only sees the tool calls of the current turn.
+func TestDeveloperLoadsReferencedSkillsOnEveryTurn(t *testing.T) {
+	script := &scriptedAIService{turns: []turnFunc{textTurn("first"), textTurn("second"), textTurn("third")}}
+	s := newSkillReferencesSession(t, script)
+
+	res1, err := s.CallTool(t.Context(), ai.RoleUser, ai.DeveloperAgentName, nil, &ai.DeveloperAgentArgs{Prompt: "Hello"})
+	require.NoError(t, err)
+	require.Equal(t, []string{"dev-conventions"}, loadedSkillNames(s, res1.Call.ID))
+
+	prompt := `<chat-reference>type="skill" skill="churn-review"</chat-reference> as a model`
+	res2, err := s.CallTool(t.Context(), ai.RoleUser, ai.DeveloperAgentName, nil, &ai.DeveloperAgentArgs{Prompt: prompt})
+	require.NoError(t, err)
+	require.Equal(t, []string{"dev-conventions", "churn-review"}, loadedSkillNames(s, res2.Call.ID))
+
+	res3, err := s.CallTool(t.Context(), ai.RoleUser, ai.DeveloperAgentName, nil, &ai.DeveloperAgentArgs{Prompt: prompt + " with a metrics view"})
+	require.NoError(t, err)
+	require.Equal(t, []string{"dev-conventions", "churn-review"}, loadedSkillNames(s, res3.Call.ID))
+
+	// The body was in the model's input on each of the later turns' first completion.
+	require.Len(t, script.inputs, 3)
+	require.NotContains(t, loadSkillResults(script.inputs[0]), "churn-review")
+	require.Contains(t, loadSkillResults(script.inputs[1])["churn-review"], "List the countries with the most churned customers.")
+	require.Contains(t, loadSkillResults(script.inputs[2])["churn-review"], "List the countries with the most churned customers.")
 }

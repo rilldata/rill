@@ -23,7 +23,7 @@ Metrics SQL transforms your query by replacing dimension and measure names with 
 ```yaml
 # metrics/ad_bids_metrics.yaml
 type: metrics_view
-title: Ad Bids
+display_name: Ad Bids
 model: ad_bids
 timeseries: timestamp
 dimensions:

@@ -288,11 +288,14 @@ func (r *globResolver) ResolveInteractive(ctx context.Context) (runtime.Resolver
 	case globPartitionTypeUnspecified, globPartitionTypeFile:
 		rows = r.buildFilesResult(entries)
 	case globPartitionTypeDirectory:
-		rows = r.buildPartitionedResult(entries, false)
+		rows, err = r.buildPartitionedResult(entries, false)
 	case globPartitionTypeHive:
-		rows = r.buildPartitionedResult(entries, true)
+		rows, err = r.buildPartitionedResult(entries, true)
 	default:
 		return nil, fmt.Errorf("unknown glob partition type %q", r.props.Partition)
+	}
+	if err != nil {
+		return nil, err
 	}
 
 	// If `last` is set, return only the last N rows (the N highest paths).
@@ -353,11 +356,14 @@ var hivePartitionRegex = regexp.MustCompile(`/([^/\?]+)=([^/\n\?]*)`)
 // buildPartitioned builds a result consisting of one row per partition.
 // It groups the files by directory.
 // Each row is a map with the keys "uri", "path", "updated_on", "files" if RollupFiles is true, and the Hive partition columns if requested.
-func (r *globResolver) buildPartitionedResult(entries []drivers.ObjectStoreEntry, parseHivePartitions bool) []map[string]any {
+// It errors if the glob matched only directories, since they would otherwise be silently dropped.
+func (r *globResolver) buildPartitionedResult(entries []drivers.ObjectStoreEntry, parseHivePartitions bool) ([]map[string]any, error) {
 	// Group the entries by directory
 	rows := make(map[string]map[string]any)
+	var skippedDirs bool
 	for _, entry := range entries {
 		if entry.IsDir {
+			skippedDirs = true
 			continue
 		}
 
@@ -402,13 +408,17 @@ func (r *globResolver) buildPartitionedResult(entries []drivers.ObjectStoreEntry
 		}
 	}
 
+	if skippedDirs && len(rows) == 0 {
+		return nil, fmt.Errorf("glob %q matched only directories, but partition %q groups files: remove `partition` to list the directories, or extend the glob to match files (e.g. %q)", r.props.Path, r.props.Partition, r.props.Path+"/*")
+	}
+
 	// Convert the map to a slice and sort ascending by path
 	result := maps.Values(rows)
 	slices.SortFunc(result, func(a, b map[string]any) int {
 		return strings.Compare(a["path"].(string), b["path"].(string))
 	})
 
-	return result
+	return result, nil
 }
 
 func (r *globResolver) makeResultSchema(rows []map[string]any) *runtimev1.StructType {

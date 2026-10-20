@@ -938,6 +938,11 @@ export class ListDeploymentsRequest extends Message<ListDeploymentsRequest> {
    */
   userId = "";
 
+  /**
+   * @generated from field: bool superuser_force_access = 6;
+   */
+  superuserForceAccess = false;
+
   constructor(data?: PartialMessage<ListDeploymentsRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -951,6 +956,7 @@ export class ListDeploymentsRequest extends Message<ListDeploymentsRequest> {
     { no: 3, name: "environment", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 5, name: "branch", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "user_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 6, name: "superuser_force_access", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListDeploymentsRequest {
@@ -1274,6 +1280,11 @@ export class StartDeploymentRequest extends Message<StartDeploymentRequest> {
    */
   deploymentId = "";
 
+  /**
+   * @generated from field: bool superuser_force_access = 2;
+   */
+  superuserForceAccess = false;
+
   constructor(data?: PartialMessage<StartDeploymentRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -1283,6 +1294,7 @@ export class StartDeploymentRequest extends Message<StartDeploymentRequest> {
   static readonly typeName = "rill.admin.v1.StartDeploymentRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "deployment_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "superuser_force_access", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): StartDeploymentRequest {
@@ -1348,6 +1360,11 @@ export class StopDeploymentRequest extends Message<StopDeploymentRequest> {
    */
   deploymentId = "";
 
+  /**
+   * @generated from field: bool superuser_force_access = 2;
+   */
+  superuserForceAccess = false;
+
   constructor(data?: PartialMessage<StopDeploymentRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -1357,6 +1374,7 @@ export class StopDeploymentRequest extends Message<StopDeploymentRequest> {
   static readonly typeName = "rill.admin.v1.StopDeploymentRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "deployment_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "superuser_force_access", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): StopDeploymentRequest {
@@ -4100,7 +4118,7 @@ export class UpdateProjectRequest extends Message<UpdateProjectRequest> {
 
   /**
    * Provisioner to use for the project's deployments. Superuser-only; empty unsets it so the org's default provisioner (or the global default) is used.
-   * It only affects deployments provisioned after the change; existing deployments stay on their current provisioner.
+   * Running deployments keep their current provisioner; the change is applied to each deployment the next time it is started (stopped deployments are moved to the new provisioner, keeping their IDs).
    *
    * @generated from field: optional string provisioner = 8;
    */

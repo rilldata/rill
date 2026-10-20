@@ -23,6 +23,7 @@
       componentsStore,
       selectedTabGroup,
       setSelectedTabGroup,
+      rekeyTabGroups,
       layout,
     },
   } = getCanvasStore(canvasName, instanceId));
@@ -97,7 +98,8 @@
       {fileArtifact}
       {autoSave}
       onClose={() => setSelectedTabGroup(null)}
-      onRename={(name) => setSelectedTabGroup(name)}
+      onSelectGroup={(name) => setSelectedTabGroup(name)}
+      {rekeyTabGroups}
     />
   {:else}
     <PageEditor {canvasName} {fileArtifact} {updateProperties} />

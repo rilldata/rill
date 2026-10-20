@@ -15,7 +15,7 @@ import (
 func TestObjectStore(t *testing.T) {
 	testmode.Expensive(t)
 	cfg := testruntime.AcquireConnector(t, "gcs")
-	conn, err := drivers.Open("gcs", "", "default", cfg, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
+	conn, err := drivers.Open(t.Context(), "gcs", "", "default", cfg, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
 	t.Cleanup(func() { conn.Close() })
 
@@ -54,7 +54,7 @@ func TestObjectStorePathPrefixes(t *testing.T) {
 	testmode.Expensive(t)
 	cfg := testruntime.AcquireConnector(t, "gcs")
 	cfg["path_prefixes"] = "gcs://integration-test.rilldata.com/glob_test/"
-	conn, err := drivers.Open("gcs", "", "default", cfg, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
+	conn, err := drivers.Open(t.Context(), "gcs", "", "default", cfg, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
 	t.Cleanup(func() { conn.Close() })
 
@@ -71,7 +71,7 @@ func TestObjectStorePathPrefixes(t *testing.T) {
 func TestObjectStoreHMAC(t *testing.T) {
 	testmode.Expensive(t)
 	cfg := testruntime.AcquireConnector(t, "gcs_s3_compat")
-	conn, err := drivers.Open("gcs", "", "default", cfg, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
+	conn, err := drivers.Open(t.Context(), "gcs", "", "default", cfg, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
 	t.Cleanup(func() { conn.Close() })
 
@@ -110,7 +110,7 @@ func TestObjectStoreHMACPathPrefixes(t *testing.T) {
 	testmode.Expensive(t)
 	cfg := testruntime.AcquireConnector(t, "gcs_s3_compat")
 	cfg["path_prefixes"] = "gcs://integration-test.rilldata.com/glob_test/"
-	conn, err := drivers.Open("gcs", "", "default", cfg, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
+	conn, err := drivers.Open(t.Context(), "gcs", "", "default", cfg, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
 	t.Cleanup(func() { conn.Close() })
 

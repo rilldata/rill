@@ -119,11 +119,37 @@ type ExprNode struct {
 	Args []any
 }
 
+// lookupMeta describes how a lookup dimension resolves its value: the value column of the lookup table for the row's key.
+// Keys that are absent from the lookup table resolve to NULL, or to defaultExpr if it is set.
+// The NULL case requires the value column to be nullable without a custom default in the lookup table.
 type lookupMeta struct {
-	table    string
-	keyExpr  string
-	keyCol   string
-	valueCol string
+	table       string
+	keyExpr     string
+	keyCol      string
+	valueCol    string
+	defaultExpr string
+}
+
+// newLookupMeta returns the lookup metadata of a dimension, or nil if it is not a lookup dimension.
+func newLookupMeta(dialect drivers.Dialect, dim *runtimev1.MetricsViewSpec_Dimension) *lookupMeta {
+	if dim.LookupTable == "" {
+		return nil
+	}
+	return &lookupMeta{
+		table:       dim.LookupTable,
+		keyExpr:     LookupKeyExpr(dialect, dim),
+		keyCol:      dim.LookupKeyColumn,
+		valueCol:    dim.LookupValueColumn,
+		defaultExpr: dim.LookupDefaultExpression,
+	}
+}
+
+// LookupKeyExpr returns the expression of a lookup dimension's key in the underlying table.
+func LookupKeyExpr(dialect drivers.Dialect, dim *runtimev1.MetricsViewSpec_Dimension) string {
+	if dim.Column != "" {
+		return dialect.EscapeIdentifier(dim.Column)
+	}
+	return dim.Expression
 }
 
 // And returns a new node that is the AND of the current node and the given expression.
@@ -228,28 +254,12 @@ func NewAST(mv *runtimev1.MetricsViewSpec, sec MetricsViewSecurity, qry *Query, 
 			return nil, fmt.Errorf("failed to compile dimension %q expression: %w", dim.Name, err)
 		}
 
-		var lkMeta *lookupMeta
-		if dim.LookupTable != "" {
-			var keyExpr string
-			if dim.Column != "" {
-				keyExpr = ast.Dialect.EscapeIdentifier(dim.Column)
-			} else {
-				keyExpr = dim.Expression
-			}
-			lkMeta = &lookupMeta{
-				table:    dim.LookupTable,
-				keyExpr:  keyExpr,
-				keyCol:   dim.LookupKeyColumn,
-				valueCol: dim.LookupValueColumn,
-			}
-		}
-
 		f := FieldNode{
 			Name:        dim.Name,
 			DisplayName: dim.DisplayName,
 			Expr:        expr,
 			Unnest:      dim.Unnest,
-			LookupMeta:  lkMeta,
+			LookupMeta:  newLookupMeta(ast.Dialect, dim),
 		}
 
 		if dim.Unnest {
@@ -266,7 +276,7 @@ func NewAST(mv *runtimev1.MetricsViewSpec, sec MetricsViewSecurity, qry *Query, 
 			} else {
 				ast.unnests = append(ast.unnests, tblWithAlias)
 				if tupleStyle {
-					f.Expr = ast.Dialect.EscapeMember(unnestAlias, f.Name)
+					f.Expr = ast.Dialect.UnnestedColumn(unnestAlias, f.Name)
 				} else {
 					f.Expr = ast.Dialect.EscapeMember("", f.Name)
 				}
@@ -1629,4 +1639,18 @@ func (a *AST) sqlForExpressionAdjustedByComparisonTimeRangeOffset(expr, timeDim 
 	}
 
 	return a.Dialect.IntervalSubtract(expr, dateDiff, g.ToProto())
+}
+
+// IsTimeDimension reports whether name is the metrics view's primary time dimension or a declared dimension of the time type.
+// The primary time dimension is not necessarily declared in the dimensions list, so it is checked separately.
+func IsTimeDimension(mv *runtimev1.MetricsViewSpec, name string) bool {
+	if mv.TimeDimension == name {
+		return true
+	}
+	for _, d := range mv.Dimensions {
+		if d.Name == name {
+			return d.Type == runtimev1.MetricsViewSpec_DIMENSION_TYPE_TIME
+		}
+	}
+	return false
 }

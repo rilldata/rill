@@ -26,6 +26,7 @@ import {
 } from "svelte/store";
 import {
   canQueryWithTimeRange,
+  combineChartDataQuery,
   getFilterWithNullHandling,
 } from "../query-util";
 import type { ExpressionState } from "@rilldata/web-common/features/dashboards/filters/ExpressionFilterManager.svelte.ts";
@@ -226,7 +227,11 @@ export class ScatterPlotChartProvider {
       },
     );
 
-    return createQuery(queryOptionsStore);
+    return combineChartDataQuery(
+      createQuery(queryOptionsStore),
+      [topNColorQuery],
+      visibleStore,
+    );
   }
 
   getChartDomainValues(): ChartDomainValues {

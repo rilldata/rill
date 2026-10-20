@@ -211,6 +211,30 @@ rows:
                 bar_chart: # ...
 ```
 
+### Conditional content (`if`)
+
+Rows, tab-group rows, tabs and items accept an optional `if` condition that shows the element only to viewers for whom it's true. It uses the same templating as security policies (`.user` attributes, Sprig functions) and renders to a boolean expression. An element shows only when its own condition and those of its containers are true.
+
+```yaml
+rows:
+  - if: '{{ has "finance" .user.groups }}' # row: finance group only
+    items:
+      - width: 8
+        line_chart: # ...
+      - width: 4
+        if: '{{ .user.admin }}' # item: admins only
+        table: # ...
+  - name: deep_dives
+    tabs:
+      - label: Premium
+        if: '{{ eq .user.plan "premium" }}' # tab: custom attribute, e.g. from an embed
+        rows: # ...
+```
+
+- Prefer comparisons inside the template (`{{ eq .user.plan "premium" }}`, `{{ has "finance" .user.groups }}`) over SQL comparisons of quoted values.
+- Built-in attributes (`name`, `email`, `domain`, `groups`, `admin`, `embed`) always resolve; referencing a missing custom attribute makes the condition false. Use `get .user "plan"` to treat a missing attribute as an empty string.
+- `if` controls what the dashboard shows, not data access. Use the metrics view's `security` to restrict data.
+
 ## Dashboard Composition Best Practices
 
 When building a new canvas dashboard, follow this recommended structure:
@@ -854,6 +878,34 @@ pivot:
   hide_totals_col: false
 ```
 
+**With column widths, wrapping, and an initial sort:**
+
+Any entry of `measures`, `row_dimensions`, or `col_dimensions` can be an object with the field `name` plus overrides. In a pivot only measures and the first row dimension render a column of their own: a measure's `width` applies under every column-dimension value (as do `delta: { width }` and `percent_change: { width }` for its comparison columns), and `col_dimensions` entries accept only `name` and `label` (set widths on the measures instead).
+
+```yaml
+pivot:
+  metrics_view: sales_metrics
+  fit_to_width: true          # shrink unconfigured columns to fit instead of scrolling
+  wrap_headers: true          # wrap header labels over `wrap_lines` lines (default 2)
+  sort_by: total_revenue      # a measure (by row total) or a row dimension
+  sort_dir: desc
+  row_dimensions:
+    - name: region
+      width: 220
+      wrap: true
+    - product_category
+  col_dimensions:
+    - name: quarter
+      label: Quarter
+  measures:
+    - name: total_revenue
+      width: 120
+      format_preset: currency_usd
+    - name: order_count
+      format_d3: ".3s"
+      align: center
+```
+
 **Simple pivot (rows only):**
 
 ```yaml
@@ -886,6 +938,32 @@ table:
   hide_totals_row: false
 ```
 
+**With column widths, wrapping, and an initial sort:**
+
+Any entry of `columns` can be an object with the field `name` plus overrides: `width` (pixels; measures 60–300, dimensions 100–600), `wrap` (dimension columns), `align` (`left`, `center`, `right`), `label`, and for measures `format_preset` or `format_d3`, plus `delta: { width }` or `percent_change: { width }` for the comparison columns a metrics view measure gets while a time comparison is shown. Component-level `fit_to_width`, `wrap`, `wrap_headers`, `wrap_lines`, `sort_by`, and `sort_dir` apply to the whole table; `sort_comparison: delta` or `percent_change` sorts on a measure's comparison column while a time comparison is shown.
+
+```yaml
+table:
+  metrics_view: sales_metrics
+  title: "Product Performance"
+  fit_to_width: true
+  wrap: true
+  wrap_lines: 2
+  sort_by: total_revenue
+  sort_dir: desc
+  columns:
+    - name: product_name
+      width: 260
+      label: Product
+    - product_category
+    - name: total_revenue
+      width: 120
+      format_preset: currency_usd
+    - name: order_count
+      format_d3: ".3s"
+      align: center
+```
+
 **With dimension filters:**
 
 ```yaml
@@ -915,6 +993,19 @@ image:
 ### Custom Chart
 
 Build fully custom visualizations using Metrics SQL queries and Vega-Lite specifications. Use this when the built-in chart types are insufficient and you need complete control over the visualization.
+
+**Prefer a standalone component over an inline block.** Instead of embedding the `custom_chart` block in the canvas, create a `type: component` file under `viz_library/` that declares typed params, and reference it from the canvas item with `component: <name>` plus a `params:` map. This keeps canvas files small and makes the visualization reusable across dashboards. Note that component files describe charts with a chart spec under `spec` rather than with `vega_spec`, switching to `vega_spec` only when the chart spec cannot express the chart: the format below applies to inline blocks, and to an ejected component with the addition of param templating. See the component resource instructions for the file format, param types, and templating conventions. Use an inline `custom_chart` block only for trivial one-off charts. Example reference:
+
+```yaml
+rows:
+  - items:
+      - component: measure_trend
+        params:
+          metrics_view: bids_metrics
+          measure: total_bids
+          time_dim: __time
+        width: 8
+```
 
 Custom charts use `metrics_sql` to query data from metrics views and `vega_spec` to define the Vega-Lite visualization. The data from each query is available in the Vega-Lite spec as named datasets: `query1`, `query2`, etc.
 

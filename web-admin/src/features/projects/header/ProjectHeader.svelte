@@ -54,6 +54,8 @@
   import { useReports } from "../../scheduled-reports/selectors";
   import SharePersonalFile from "web-admin/src/features/personal-files/SharePersonalFile.svelte";
   import VisualizationsBreadcrumbDropdown from "./VisualizationsBreadcrumbDropdown.svelte";
+  import { resourceKey } from "@rilldata/web-common/features/resources/overview-utils.ts";
+  import { migrateLegacyDashboardStores } from "../../dashboards/listing/dashboard-favourites.ts";
   import EditSessionViewAs from "@rilldata/web-admin/features/edit-session/EditSessionViewAs.svelte";
 
   export let organization: string;
@@ -110,6 +112,11 @@
   $: reportsQuery = useReports(runtimeClient, onReportPage);
 
   $: visualizations = $visualizationsQuery.data ?? [];
+
+  // The header is mounted on every project page, so migrate the per-project
+  // favourites and recently-used stores here rather than in each consumer.
+  $: if ($visualizationsQuery.isSuccess)
+    migrateLegacyDashboardStores(organization, project, visualizations);
   $: alerts = $alertsQuery.data?.resources ?? [];
   $: reports = $reportsQuery.data?.resources ?? [];
 
@@ -124,19 +131,28 @@
         return aName.localeCompare(bName);
       })
       .reduce((map, resource) => {
-        const name = resource.meta.name.name;
+        const name = resource.meta?.name?.name ?? "";
         const isMetricsExplorer = !!resource?.explore;
-        return map.set(name.toLowerCase(), {
+        const resourceKind = isMetricsExplorer
+          ? ResourceKind.Explore
+          : ResourceKind.Canvas;
+        // Keyed by kind as well as name: an explore and a canvas may share a name.
+        return map.set(resourceKey(resourceKind, name), {
           label:
             (isMetricsExplorer
               ? resource?.explore?.spec?.displayName
               : resource?.canvas?.spec?.displayName) || name,
           section: isMetricsExplorer ? "explore" : "canvas",
-          resourceKind: isMetricsExplorer
-            ? ResourceKind.Explore
-            : ResourceKind.Canvas,
+          resourceKind,
+          param: name.toLowerCase(),
         });
       }, new Map<string, PathOption>()),
+    currentId: dashboard
+      ? resourceKey(
+          onCanvasDashboardPage ? ResourceKind.Canvas : ResourceKind.Explore,
+          dashboard,
+        )
+      : undefined,
     carryOverSearchParams: $stickyDashboardState,
     content: visualizationsDropdown,
   };

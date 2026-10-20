@@ -41,6 +41,7 @@ import {
 } from "svelte/store";
 import {
   canQueryWithTimeRange,
+  combineChartDataQuery,
   getFilterWithNullHandling,
   isSortByDelta,
   vegaSortToAggregationSort,
@@ -513,7 +514,11 @@ export class CartesianChartProvider {
     );
 
     const query = createQuery(queryOptionsStore);
-    return query;
+    return combineChartDataQuery(
+      query,
+      [topNXQuery, topNColorQuery],
+      visibleStore,
+    );
   }
 
   getChartDomainValues(measures: MetricsViewSpecMeasure[]): ChartDomainValues {

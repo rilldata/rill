@@ -12,6 +12,7 @@ import {
   createBinaryExpression,
   createInExpression,
   createSubQueryExpression,
+  flattenExpression,
   getAllIdentifiers,
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils.ts";
 import {
@@ -25,6 +26,7 @@ import {
   AD_BIDS_PUBLISHER_DIMENSION,
 } from "@rilldata/web-common/features/dashboards/stores/test-data/data";
 import { compressUrlParams } from "@rilldata/web-common/features/dashboards/url-state/compression.ts";
+import { convertExpressionToFilterParam } from "@rilldata/web-common/features/dashboards/url-state/filters/converters.ts";
 import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus.ts";
 import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 import { ExploreStateURLParams } from "@rilldata/web-common/features/dashboards/url-state/url-params.ts";
@@ -367,6 +369,36 @@ describe("setUrlParams", () => {
     ]);
   });
 
+  it("lets the per metrics view params override the singular one", () => {
+    const filterManager = createFilterManager();
+
+    // An embed host passes the legacy singular param, and the dashboard has since written its own
+    // per metrics view params. The latter are the newer state, so the singular param must not be
+    // ANDed in as a second condition on the same dimension: the chips cannot show that, and the
+    // two value sets together match nothing.
+    const searchParams = sharedParam(
+      `${AD_BIDS_PUBLISHER_DIMENSION} IN ('Google')`,
+    );
+    const ownParams = perMetricsViewParams({
+      [AD_BIDS_METRICS_NAME]: `${AD_BIDS_PUBLISHER_DIMENSION} IN ('Facebook')`,
+      [AD_BIDS_MIRROR_METRICS_NAME]: `${AD_BIDS_PUBLISHER_DIMENSION} IN ('Facebook')`,
+    });
+    ownParams.forEach((value, key) => searchParams.set(key, value));
+    filterManager.storeSync.setUrlParams(searchParams);
+
+    expect(filterManager.isComplexFilter).toBe(false);
+    expect(names(filterManager.sortedFilterManagers.dimensions)).toEqual([
+      AD_BIDS_PUBLISHER_DIMENSION,
+    ]);
+    expect(
+      filterManager.sortedFilterManagers.dimensions[0].selectedValues,
+    ).toEqual(["Facebook"]);
+    expect(filterManager.topLevelJoiner.param).toEqual({
+      [AD_BIDS_METRICS_NAME]: `${AD_BIDS_PUBLISHER_DIMENSION} IN ('Facebook')`,
+      [AD_BIDS_MIRROR_METRICS_NAME]: `${AD_BIDS_PUBLISHER_DIMENSION} IN ('Facebook')`,
+    });
+  });
+
   it("drops filters on identifiers the metrics view does not define", () => {
     const filterManager = createFilterManager();
 
@@ -516,6 +548,201 @@ describe("setUrlParams", () => {
   });
 });
 
+describe("single param form", () => {
+  function createSingleParamFilterManager() {
+    const { value, destroy } = createInEffectRoot(
+      () =>
+        new ExpressionFilterManager(
+          metricsViewsProvider,
+          new YAMLConfigProvider(),
+          true,
+        ),
+    );
+    cleanups.push(destroy);
+    return value;
+  }
+
+  it("ignores per metrics view params", () => {
+    const filterManager = createSingleParamFilterManager();
+
+    // Explore only reads the singular param, so the chips must not pick up anything else.
+    filterManager.storeSync.setUrlParams(
+      perMetricsViewParams({
+        [AD_BIDS_METRICS_NAME]: `${AD_BIDS_PUBLISHER_DIMENSION} IN ('Google')`,
+      }),
+    );
+
+    expect(filterManager.sortedFilterManagers.dimensions).toEqual([]);
+  });
+
+  it("reads and writes back the singular param", () => {
+    const filterManager = createSingleParamFilterManager();
+    const filter = `${AD_BIDS_PUBLISHER_DIMENSION} IN ('Google')`;
+
+    filterManager.storeSync.setUrlParams(sharedParam(filter));
+    expect(names(filterManager.sortedFilterManagers.dimensions)).toEqual([
+      AD_BIDS_PUBLISHER_DIMENSION,
+    ]);
+
+    const searchParams = new URLSearchParams();
+    filterManager.applyFilterToParams(searchParams);
+    expect(searchParams.toString()).toEqual(sharedParam(filter).toString());
+  });
+});
+
+describe("metrics view names change", () => {
+  // These tests change the metrics views, so each gets its own provider.
+  async function createFilterManagerWithOwnProvider(
+    metricsViewNames: string[],
+  ) {
+    const provider = await createTestMetricsViewsProvider(metricsViewNames);
+    const { value, destroy } = createInEffectRoot(
+      () =>
+        new ExpressionFilterManager(provider.value, new YAMLConfigProvider()),
+    );
+    cleanups.push(() => {
+      destroy();
+      provider.value.cleanup();
+      provider.destroy();
+    });
+    return { provider: provider.value, filterManager: value };
+  }
+
+  it("queues params until the specs of the new metrics views load", async () => {
+    const { provider, filterManager } =
+      await createFilterManagerWithOwnProvider([AD_BIDS_METRICS_NAME]);
+    expect(filterManager.ready).toBe(true);
+
+    // A metrics view that is never mocked stays loading.
+    provider.setMetricsViewNames([AD_BIDS_METRICS_NAME, "missing_metrics"]);
+    expect(provider.specsReady).toBe(false);
+    expect(filterManager.ready).toBe(false);
+
+    filterManager.storeSync.setUrlParams(
+      sharedParam(`${AD_BIDS_DOMAIN_DIMENSION} IN ('google.com')`),
+    );
+    expect(filterManager.sortedFilterManagers.dimensions).toEqual([]);
+
+    provider.setMetricsViewNames([AD_BIDS_METRICS_NAME]);
+    expect(filterManager.ready).toBe(true);
+    expect(names(filterManager.sortedFilterManagers.dimensions)).toEqual([
+      AD_BIDS_DOMAIN_DIMENSION,
+    ]);
+  });
+
+  it("drops filters the new metrics views do not define", async () => {
+    const { provider, filterManager } =
+      await createFilterManagerWithOwnProvider([
+        AD_BIDS_METRICS_NAME,
+        AD_BIDS_MIRROR_METRICS_NAME,
+      ]);
+    filterManager.storeSync.setUrlParams(
+      sharedParam(
+        `${AD_BIDS_PUBLISHER_DIMENSION} IN ('Google') AND ${AD_BIDS_COUNTRY_DIMENSION} IN ('US')`,
+      ),
+    );
+    expect(names(filterManager.sortedFilterManagers.dimensions)).toEqual([
+      AD_BIDS_COUNTRY_DIMENSION,
+      AD_BIDS_PUBLISHER_DIMENSION,
+    ]);
+
+    const internalChanges: string[] = [];
+    cleanups.push(
+      filterManager.storeSync.on("internal-change", (params) =>
+        internalChanges.push(params.toString()),
+      ),
+    );
+
+    // Only the mirror defines country.
+    provider.setMetricsViewNames([AD_BIDS_METRICS_NAME]);
+    await new Promise<void>((resolve) => queueMicrotask(resolve));
+
+    expect(names(filterManager.sortedFilterManagers.dimensions)).toEqual([
+      AD_BIDS_PUBLISHER_DIMENSION,
+    ]);
+    expect(internalChanges).toEqual([
+      perMetricsViewParams({
+        [AD_BIDS_METRICS_NAME]: `${AD_BIDS_PUBLISHER_DIMENSION} IN ('Google')`,
+      }).toString(),
+    ]);
+  });
+});
+
+describe("yaml config change", () => {
+  // A canvas applies its metrics views and then its config, both from the same ResolveCanvas
+  // response. When the metrics view specs are already loaded, applying the names parses the
+  // queued params right away, before the config is known.
+  it("adds required and pinned chips when the config lands after the params", async () => {
+    const provider = await createTestMetricsViewsProvider([
+      AD_BIDS_METRICS_NAME,
+    ]);
+    provider.value.setMetricsViewNames([]);
+    const yamlConfigProvider = new YAMLConfigProvider();
+    const { value: filterManager, destroy } = createInEffectRoot(
+      () => new ExpressionFilterManager(provider.value, yamlConfigProvider),
+    );
+    cleanups.push(() => {
+      destroy();
+      provider.value.cleanup();
+      provider.destroy();
+    });
+    expect(filterManager.ready).toBe(false);
+
+    // Queued until the specs are ready, which they are as soon as the names are applied.
+    filterManager.storeSync.setUrlParams(new URLSearchParams());
+    provider.value.setMetricsViewNames([AD_BIDS_METRICS_NAME]);
+    expect(filterManager.ready).toBe(true);
+    expect(filterManager.sortedFilterManagers.dimensions).toEqual([]);
+
+    yamlConfigProvider.update(
+      {},
+      [AD_BIDS_PUBLISHER_DIMENSION, AD_BIDS_IMPRESSIONS_MEASURE],
+      [AD_BIDS_DOMAIN_DIMENSION],
+    );
+
+    expect(names(filterManager.sortedFilterManagers.dimensions)).toEqual([
+      AD_BIDS_DOMAIN_DIMENSION,
+      AD_BIDS_PUBLISHER_DIMENSION,
+    ]);
+    expect(names(filterManager.sortedFilterManagers.measures)).toEqual([
+      AD_BIDS_IMPRESSIONS_MEASURE,
+    ]);
+    expect(exprOf(filterManager, AD_BIDS_METRICS_NAME)).toBeUndefined();
+  });
+
+  it("keeps the chips it has when the config is applied again", () => {
+    const yamlConfigProvider = new YAMLConfigProvider();
+    yamlConfigProvider.update({}, [AD_BIDS_PUBLISHER_DIMENSION], []);
+    const filterManager = createFilterManager(yamlConfigProvider);
+    filterManager.storeSync.setUrlParams(
+      perMetricsViewParams({
+        [AD_BIDS_METRICS_NAME]: `${AD_BIDS_DOMAIN_DIMENSION} IN ('google.com')`,
+      }),
+    );
+    const chipsBefore = filterManager.sortedFilterManagers.dimensions;
+    expect(names(chipsBefore)).toEqual([
+      AD_BIDS_PUBLISHER_DIMENSION,
+      AD_BIDS_DOMAIN_DIMENSION,
+    ]);
+
+    yamlConfigProvider.update({}, [AD_BIDS_PUBLISHER_DIMENSION], []);
+
+    const chipsAfter = filterManager.sortedFilterManagers.dimensions;
+    expect(chipsAfter.length).toBe(chipsBefore.length);
+    chipsAfter.forEach((chip, i) => expect(chip).toBe(chipsBefore[i]));
+  });
+
+  it("skips pinned filters the metrics views do not define", () => {
+    const yamlConfigProvider = new YAMLConfigProvider();
+    const filterManager = createFilterManager(yamlConfigProvider);
+
+    yamlConfigProvider.update({}, ["not_a_field"], []);
+
+    expect(filterManager.sortedFilterManagers.dimensions).toEqual([]);
+    expect(filterManager.sortedFilterManagers.measures).toEqual([]);
+  });
+});
+
 describe("applyFilterToParams", () => {
   it("writes a param per metrics view and drops the legacy singular one", () => {
     const filterManager = createFilterManager();
@@ -590,6 +817,165 @@ describe("applyFilterToParams", () => {
         [AD_BIDS_MIRROR_METRICS_NAME]: `${AD_BIDS_COUNTRY_DIMENSION} having (${AD_BIDS_PUBLISHER_COUNT_MEASURE} LT 5)`,
       }).toString(),
     );
+  });
+});
+
+describe("dimension params with a binary operator", () => {
+  /** The param the filter is written back as. */
+  function roundTrip(filterManager: ExpressionFilterManager) {
+    const searchParams = new URLSearchParams();
+    filterManager.applyFilterToParams(searchParams);
+    return searchParams.toString();
+  }
+
+  it("reads EQ as a single value selection and writes it back as IN", () => {
+    const filterManager = createFilterManager();
+
+    filterManager.storeSync.setUrlParams(
+      perMetricsViewParams({
+        [AD_BIDS_METRICS_NAME]: `${AD_BIDS_DOMAIN_DIMENSION} EQ 'google.com'`,
+      }),
+    );
+
+    const [chip] = filterManager.sortedFilterManagers.dimensions;
+    expect(chip.name).toBe(AD_BIDS_DOMAIN_DIMENSION);
+    expect(chip.mode).toBe(DimensionFilterMode.Select);
+    expect(chip.selectedValues).toEqual(["google.com"]);
+    expect(chip.exclude).toBe(false);
+    expect(filterManager.isComplexFilter).toBe(false);
+    expect(exprOf(filterManager, AD_BIDS_METRICS_NAME)).toEqual(
+      createAndExpression([
+        createInExpression(AD_BIDS_DOMAIN_DIMENSION, ["google.com"]),
+      ]),
+    );
+    expect(roundTrip(filterManager)).toEqual(
+      perMetricsViewParams({
+        [AD_BIDS_METRICS_NAME]: `${AD_BIDS_DOMAIN_DIMENSION} IN ('google.com')`,
+      }).toString(),
+    );
+  });
+
+  it("reads NEQ as an excluded single value selection and writes it back as NIN", () => {
+    const filterManager = createFilterManager();
+
+    filterManager.storeSync.setUrlParams(
+      perMetricsViewParams({
+        [AD_BIDS_METRICS_NAME]: `${AD_BIDS_DOMAIN_DIMENSION} NEQ 'google.com'`,
+      }),
+    );
+
+    const [chip] = filterManager.sortedFilterManagers.dimensions;
+    expect(chip.mode).toBe(DimensionFilterMode.Select);
+    expect(chip.selectedValues).toEqual(["google.com"]);
+    expect(chip.exclude).toBe(true);
+    expect(filterManager.isComplexFilter).toBe(false);
+    expect(exprOf(filterManager, AD_BIDS_METRICS_NAME)).toEqual(
+      createAndExpression([
+        createInExpression(AD_BIDS_DOMAIN_DIMENSION, ["google.com"], true),
+      ]),
+    );
+    expect(roundTrip(filterManager)).toEqual(
+      perMetricsViewParams({
+        [AD_BIDS_METRICS_NAME]: `${AD_BIDS_DOMAIN_DIMENSION} NIN ('google.com')`,
+      }).toString(),
+    );
+  });
+
+  it("applies a canvas default written with an equality", () => {
+    const filterManager = createFilterManager();
+
+    // A canvas `defaults.filters` of `domain = 'google.com' AND publisher IN ('Google')` reaches the
+    // filter bar as the backend expression, flattened and converted to a param.
+    const param = convertExpressionToFilterParam(
+      flattenExpression(
+        createAndExpression([
+          createBinaryExpression(
+            AD_BIDS_DOMAIN_DIMENSION,
+            V1Operation.OPERATION_EQ,
+            "google.com",
+          ),
+          createInExpression(AD_BIDS_PUBLISHER_DIMENSION, ["Google"]),
+        ]),
+      ),
+      [],
+    );
+    expect(param).toEqual(
+      `${AD_BIDS_DOMAIN_DIMENSION} EQ 'google.com' AND ${AD_BIDS_PUBLISHER_DIMENSION} IN ('Google')`,
+    );
+
+    filterManager.storeSync.setUrlParams(
+      perMetricsViewParams({ [AD_BIDS_METRICS_NAME]: param }),
+    );
+
+    expect(names(filterManager.sortedFilterManagers.dimensions)).toEqual([
+      AD_BIDS_DOMAIN_DIMENSION,
+      AD_BIDS_PUBLISHER_DIMENSION,
+    ]);
+    expect(filterManager.isComplexFilter).toBe(false);
+    expect(exprOf(filterManager, AD_BIDS_METRICS_NAME)).toEqual(
+      createAndExpression([
+        createInExpression(AD_BIDS_DOMAIN_DIMENSION, ["google.com"]),
+        createInExpression(AD_BIDS_PUBLISHER_DIMENSION, ["Google"]),
+      ]),
+    );
+  });
+
+  it("keeps an operator the chips cannot show and flags the filter as complex", () => {
+    const filterManager = createFilterManager();
+
+    filterManager.storeSync.setUrlParams(
+      perMetricsViewParams({
+        [AD_BIDS_METRICS_NAME]: `${AD_BIDS_DOMAIN_DIMENSION} GT 'g' AND ${AD_BIDS_PUBLISHER_DIMENSION} IN ('Google')`,
+      }),
+    );
+
+    expect(filterManager.isComplexFilter).toBe(true);
+    expect(exprOf(filterManager, AD_BIDS_METRICS_NAME)).toEqual(
+      createAndExpression([
+        createBinaryExpression(
+          AD_BIDS_DOMAIN_DIMENSION,
+          V1Operation.OPERATION_GT,
+          "g",
+        ),
+        createInExpression(AD_BIDS_PUBLISHER_DIMENSION, ["Google"]),
+      ]),
+    );
+    // `publisher` is defined by both metrics views, so the mirror carries it too.
+    expect(roundTrip(filterManager)).toEqual(
+      perMetricsViewParams({
+        [AD_BIDS_METRICS_NAME]: `${AD_BIDS_DOMAIN_DIMENSION} GT 'g' AND ${AD_BIDS_PUBLISHER_DIMENSION} IN ('Google')`,
+        [AD_BIDS_MIRROR_METRICS_NAME]: `${AD_BIDS_PUBLISHER_DIMENSION} IN ('Google')`,
+      }).toString(),
+    );
+  });
+
+  it("keeps the operator through the dropdown clone and drops it once the chip is edited", () => {
+    const filterManager = createFilterManager();
+    filterManager.storeSync.setUrlParams(
+      perMetricsViewParams({
+        [AD_BIDS_METRICS_NAME]: `${AD_BIDS_DOMAIN_DIMENSION} LTE 'g'`,
+      }),
+    );
+    const [chip] = filterManager.sortedFilterManagers.dimensions;
+
+    // Opening and applying the dropdown without a change is a no-op.
+    chip.apply(chip.clone());
+    expect(roundTrip(filterManager)).toEqual(
+      perMetricsViewParams({
+        [AD_BIDS_METRICS_NAME]: `${AD_BIDS_DOMAIN_DIMENSION} LTE 'g'`,
+      }).toString(),
+    );
+
+    // A selection replaces the condition.
+    chip.toggleValue("google.com", false);
+    expect(exprOf(filterManager, AD_BIDS_METRICS_NAME)).toEqual(
+      createAndExpression([
+        createInExpression(AD_BIDS_DOMAIN_DIMENSION, ["google.com"]),
+      ]),
+    );
+
+    chip.clear();
+    expect(roundTrip(filterManager)).toEqual("");
   });
 });
 
@@ -940,12 +1326,7 @@ describe("dimensionFilterAction", () => {
       AD_BIDS_PUBLISHER_DIMENSION,
       (manager) => manager.toggleValue("Google", false),
     );
-    expect(
-      filterManager.sortedFilterManagers.dimensions[0],
-    ).not.toBeUndefined();
-    expect(
-      filterManager.sortedFilterManagers.dimensions[0].selectedValues,
-    ).toEqual([]);
+    expect(filterManager.sortedFilterManagers.dimensions[0]).toBeUndefined();
 
     filterManager.dimensionFilterAction(
       AD_BIDS_PUBLISHER_DIMENSION,
@@ -1078,6 +1459,26 @@ describe("clear", () => {
     expect(filterManager.sortedFilterManagers.measures).toEqual([]);
   });
 
+  it("resets the complex flag", () => {
+    const filterManager = createFilterManager();
+
+    // A top level OR has no chip, so the bar shows the read only advanced filter.
+    filterManager.storeSync.setUrlParams(
+      perMetricsViewParams({
+        [AD_BIDS_METRICS_NAME]: `${AD_BIDS_PUBLISHER_DIMENSION} IN ('Google') OR ${AD_BIDS_DOMAIN_DIMENSION} IN ('google.com')`,
+      }),
+    );
+    expect(filterManager.isComplexFilter).toBe(true);
+
+    filterManager.clear();
+
+    // The navigation after a clear does not parse the params again, so `clear` resets the flag itself.
+    expect(filterManager.isComplexFilter).toBe(false);
+    expect(filterManager.topLevelJoiner.expr).toEqual({});
+    expect(filterManager.sortedFilterManagers.dimensions).toEqual([]);
+    expect(filterManager.sortedFilterManagers.measures).toEqual([]);
+  });
+
   it("keeps the required and pinned chips", () => {
     const yamlConfigProvider = new YAMLConfigProvider();
     yamlConfigProvider.requiredFilters = { [AD_BIDS_DOMAIN_DIMENSION]: true };
@@ -1197,10 +1598,12 @@ describe("createLocalFilterStore", () => {
     expect(local.yamlConfigProvider).toBe(yamlConfigProvider);
 
     // The mirror-only dimension is out of scope for the local store.
-    local.setUrlParams(sharedParam(`${AD_BIDS_COUNTRY_DIMENSION} IN ('US')`));
+    local.storeSync.setUrlParams(
+      sharedParam(`${AD_BIDS_COUNTRY_DIMENSION} IN ('US')`),
+    );
     expect(local.sortedFilterManagers.dimensions).toEqual([]);
 
-    local.setUrlParams(
+    local.storeSync.setUrlParams(
       sharedParam(`${AD_BIDS_PUBLISHER_DIMENSION} IN ('Google')`),
     );
     expect(names(local.sortedFilterManagers.dimensions)).toEqual([

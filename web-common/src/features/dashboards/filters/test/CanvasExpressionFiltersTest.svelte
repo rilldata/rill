@@ -16,7 +16,7 @@
   const runtimeClient = useRuntimeClient();
 </script>
 
-<!-- The app layout normally supplies the tooltip provider the time controls need. -->
+<!-- The app layout supplies the tooltip provider, which the time controls and the advanced filter pill needs. -->
 <Tooltip.Provider>
   <CanvasProvider {canvasName} instanceId={runtimeClient.instanceId}>
     <!-- `CanvasDashboardEmbed` reads both of these off the spec; they are fixed here. -->

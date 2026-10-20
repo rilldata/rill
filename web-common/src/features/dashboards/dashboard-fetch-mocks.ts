@@ -1,6 +1,7 @@
 import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
 import type {
   V1CanvasSpec,
+  V1ComponentSpec,
   V1ExploreSpec,
   V1GetExploreResponse,
   V1GetResourceResponse,
@@ -62,13 +63,15 @@ export class DashboardFetchMocks {
     name: string,
     metricsView: V1MetricsViewSpec,
     explore: V1ExploreSpec,
+    // The resource name of the metrics view, which can differ in casing from `explore.metricsView`.
+    metricsViewName = explore.metricsView ?? name,
   ) {
     this.responses.set(`resources__explore__${name}`, {
       metricsView: {
         meta: {
           name: {
             kind: ResourceKind.MetricsView,
-            name,
+            name: metricsViewName,
           },
         },
         metricsView: {
@@ -96,12 +99,13 @@ export class DashboardFetchMocks {
   /**
    * Mocks the ResolveCanvas response, which is the single request a canvas dashboard loads from.
    * `metricsViews` are the metrics views the canvas references, which reach the canvas as
-   * resources rather than through GetResource.
+   * resources rather than through GetResource. `components` are the components its rows render.
    */
   public mockCanvas(
     name: string,
     canvas: V1CanvasSpec,
     metricsViews: Record<string, V1MetricsViewSpec>,
+    components: Record<string, V1ComponentSpec> = {},
   ) {
     this.responses.set(`canvas__${name}`, {
       canvas: {
@@ -117,6 +121,24 @@ export class DashboardFetchMocks {
           },
         },
       },
+      resolvedComponents: Object.fromEntries(
+        Object.entries(components).map(([componentName, spec]) => [
+          componentName,
+          {
+            meta: {
+              name: {
+                kind: ResourceKind.Component,
+                name: componentName,
+              },
+            },
+            component: {
+              state: {
+                validSpec: spec,
+              },
+            },
+          },
+        ]),
+      ),
       referencedMetricsViews: Object.fromEntries(
         Object.entries(metricsViews).map(([metricsViewName, spec]) => [
           metricsViewName,

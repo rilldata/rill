@@ -1,11 +1,17 @@
-import {
-  type V1ExploreTimeRange,
-  type V1Expression,
+import type {
+  V1ExploreTimeRange,
+  V1Expression,
 } from "@rilldata/web-common/runtime-client";
 import {
   DEFAULT_TIMEZONE,
   DEFAULT_TIMEZONES,
 } from "@rilldata/web-common/lib/time/config.ts";
+import { EventEmitter } from "@rilldata/web-common/lib/event-emitter.ts";
+
+type YAMLConfigProviderEvents = {
+  /** Fired after `update` has applied the config from a spec. */
+  update: void;
+};
 
 /**
  * A provider for YAML only configuration. These are only mutable during yaml editing.
@@ -30,6 +36,11 @@ export class YAMLConfigProvider {
   public editable = $state<boolean>(false);
 
   public cleanup: (() => void) | undefined = undefined;
+
+  private events = new EventEmitter<YAMLConfigProviderEvents>();
+  public readonly on = this.events.on.bind(
+    this.events,
+  ) as typeof this.events.on;
 
   public update({
     defaultFilters,
@@ -83,6 +94,8 @@ export class YAMLConfigProvider {
     this.allowCustomTimeRange = allowCustomTimeRange ?? false;
     this.defaultTimeZone = defaultTimeZone ?? DEFAULT_TIMEZONE;
     this.timeZones = timeZones ?? [];
+
+    this.events.emit("update");
   }
 
   public setEditable(newEditable: boolean) {

@@ -92,6 +92,7 @@ import type {
   AdminServiceSearchUsersParams,
   AdminServiceSetOrganizationMemberUserRoleBody,
   AdminServiceSetProjectMemberUserRoleBodyBody,
+  AdminServiceStartDeploymentBodyBody,
   AdminServiceSudoGetResourceParams,
   AdminServiceSudoUpdateOrganizationBillingMessageBody,
   AdminServiceTriggerReconcileBodyBody,
@@ -1115,14 +1116,14 @@ export const createAdminServiceTriggerRefreshSources = <
  */
 export const adminServiceStartDeployment = (
   deploymentId: string,
-  adminServiceTriggerReconcileBodyBody: AdminServiceTriggerReconcileBodyBody,
+  adminServiceStartDeploymentBodyBody: AdminServiceStartDeploymentBodyBody,
   signal?: AbortSignal,
 ) => {
   return httpClient<V1StartDeploymentResponse>({
     url: `/v1/deployments/${deploymentId}/start`,
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    data: adminServiceTriggerReconcileBodyBody,
+    data: adminServiceStartDeploymentBodyBody,
     signal,
   });
 };
@@ -1134,13 +1135,13 @@ export const getAdminServiceStartDeploymentMutationOptions = <
   mutation?: CreateMutationOptions<
     Awaited<ReturnType<typeof adminServiceStartDeployment>>,
     TError,
-    { deploymentId: string; data: AdminServiceTriggerReconcileBodyBody },
+    { deploymentId: string; data: AdminServiceStartDeploymentBodyBody },
     TContext
   >;
 }): CreateMutationOptions<
   Awaited<ReturnType<typeof adminServiceStartDeployment>>,
   TError,
-  { deploymentId: string; data: AdminServiceTriggerReconcileBodyBody },
+  { deploymentId: string; data: AdminServiceStartDeploymentBodyBody },
   TContext
 > => {
   const mutationKey = ["adminServiceStartDeployment"];
@@ -1154,7 +1155,7 @@ export const getAdminServiceStartDeploymentMutationOptions = <
 
   const mutationFn: MutationFunction<
     Awaited<ReturnType<typeof adminServiceStartDeployment>>,
-    { deploymentId: string; data: AdminServiceTriggerReconcileBodyBody }
+    { deploymentId: string; data: AdminServiceStartDeploymentBodyBody }
   > = (props) => {
     const { deploymentId, data } = props ?? {};
 
@@ -1168,7 +1169,7 @@ export type AdminServiceStartDeploymentMutationResult = NonNullable<
   Awaited<ReturnType<typeof adminServiceStartDeployment>>
 >;
 export type AdminServiceStartDeploymentMutationBody =
-  AdminServiceTriggerReconcileBodyBody;
+  AdminServiceStartDeploymentBodyBody;
 export type AdminServiceStartDeploymentMutationError = RpcStatus;
 
 /**
@@ -1182,7 +1183,7 @@ export const createAdminServiceStartDeployment = <
     mutation?: CreateMutationOptions<
       Awaited<ReturnType<typeof adminServiceStartDeployment>>,
       TError,
-      { deploymentId: string; data: AdminServiceTriggerReconcileBodyBody },
+      { deploymentId: string; data: AdminServiceStartDeploymentBodyBody },
       TContext
     >;
   },
@@ -1190,7 +1191,7 @@ export const createAdminServiceStartDeployment = <
 ): CreateMutationResult<
   Awaited<ReturnType<typeof adminServiceStartDeployment>>,
   TError,
-  { deploymentId: string; data: AdminServiceTriggerReconcileBodyBody },
+  { deploymentId: string; data: AdminServiceStartDeploymentBodyBody },
   TContext
 > => {
   const mutationOptions =
@@ -1203,14 +1204,14 @@ export const createAdminServiceStartDeployment = <
  */
 export const adminServiceStopDeployment = (
   deploymentId: string,
-  adminServiceTriggerReconcileBodyBody: AdminServiceTriggerReconcileBodyBody,
+  adminServiceStartDeploymentBodyBody: AdminServiceStartDeploymentBodyBody,
   signal?: AbortSignal,
 ) => {
   return httpClient<V1StopDeploymentResponse>({
     url: `/v1/deployments/${deploymentId}/stop`,
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    data: adminServiceTriggerReconcileBodyBody,
+    data: adminServiceStartDeploymentBodyBody,
     signal,
   });
 };
@@ -1222,13 +1223,13 @@ export const getAdminServiceStopDeploymentMutationOptions = <
   mutation?: CreateMutationOptions<
     Awaited<ReturnType<typeof adminServiceStopDeployment>>,
     TError,
-    { deploymentId: string; data: AdminServiceTriggerReconcileBodyBody },
+    { deploymentId: string; data: AdminServiceStartDeploymentBodyBody },
     TContext
   >;
 }): CreateMutationOptions<
   Awaited<ReturnType<typeof adminServiceStopDeployment>>,
   TError,
-  { deploymentId: string; data: AdminServiceTriggerReconcileBodyBody },
+  { deploymentId: string; data: AdminServiceStartDeploymentBodyBody },
   TContext
 > => {
   const mutationKey = ["adminServiceStopDeployment"];
@@ -1242,7 +1243,7 @@ export const getAdminServiceStopDeploymentMutationOptions = <
 
   const mutationFn: MutationFunction<
     Awaited<ReturnType<typeof adminServiceStopDeployment>>,
-    { deploymentId: string; data: AdminServiceTriggerReconcileBodyBody }
+    { deploymentId: string; data: AdminServiceStartDeploymentBodyBody }
   > = (props) => {
     const { deploymentId, data } = props ?? {};
 
@@ -1256,7 +1257,7 @@ export type AdminServiceStopDeploymentMutationResult = NonNullable<
   Awaited<ReturnType<typeof adminServiceStopDeployment>>
 >;
 export type AdminServiceStopDeploymentMutationBody =
-  AdminServiceTriggerReconcileBodyBody;
+  AdminServiceStartDeploymentBodyBody;
 export type AdminServiceStopDeploymentMutationError = RpcStatus;
 
 /**
@@ -1270,7 +1271,7 @@ export const createAdminServiceStopDeployment = <
     mutation?: CreateMutationOptions<
       Awaited<ReturnType<typeof adminServiceStopDeployment>>,
       TError,
-      { deploymentId: string; data: AdminServiceTriggerReconcileBodyBody },
+      { deploymentId: string; data: AdminServiceStartDeploymentBodyBody },
       TContext
     >;
   },
@@ -1278,7 +1279,7 @@ export const createAdminServiceStopDeployment = <
 ): CreateMutationResult<
   Awaited<ReturnType<typeof adminServiceStopDeployment>>,
   TError,
-  { deploymentId: string; data: AdminServiceTriggerReconcileBodyBody },
+  { deploymentId: string; data: AdminServiceStartDeploymentBodyBody },
   TContext
 > => {
   const mutationOptions = getAdminServiceStopDeploymentMutationOptions(options);
@@ -14623,7 +14624,7 @@ export const createAdminServiceSudoUpdateOrganizationCustomDomain = <
 };
 /**
  * @summary SudoUpdateOrganizationDefaultProvisioner sets the provisioner used by default for an organization's deployments.
-It only affects deployments provisioned after the change; existing deployments stay on their current provisioner.
+Running deployments keep their current provisioner; the change is applied to each deployment the next time it is started (stopped deployments are moved to the new provisioner, keeping their IDs).
  */
 export const adminServiceSudoUpdateOrganizationDefaultProvisioner = (
   v1SudoUpdateOrganizationDefaultProvisionerRequest: V1SudoUpdateOrganizationDefaultProvisionerRequest,
@@ -14692,7 +14693,7 @@ export type AdminServiceSudoUpdateOrganizationDefaultProvisionerMutationError =
 
 /**
  * @summary SudoUpdateOrganizationDefaultProvisioner sets the provisioner used by default for an organization's deployments.
-It only affects deployments provisioned after the change; existing deployments stay on their current provisioner.
+Running deployments keep their current provisioner; the change is applied to each deployment the next time it is started (stopped deployments are moved to the new provisioner, keeping their IDs).
  */
 export const createAdminServiceSudoUpdateOrganizationDefaultProvisioner = <
   TError = RpcStatus,

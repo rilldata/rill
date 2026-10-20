@@ -221,6 +221,11 @@ func (s *Server) Complete(ctx context.Context, req *runtimev1.CompleteRequest) (
 	// Tag as chat so the agent's queries are attributed to the "chat" source (overrides the "ui" tag the gRPC
 	// interceptor sets, and covers the SSE HTTP handler which bypasses that interceptor).
 	ctx = runtime.WithRequestSource(ctx, runtime.RequestSourceChat)
+	uiContext, err := uiContextFromPB(req.UiPagePath, req.UiActions)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "invalid UI context: %v", err)
+	}
+	ctx = ai.WithUIContext(ctx, uiContext)
 
 	// Validate request - either prompt or feedback context must be provided
 	if req.Prompt == "" && req.FeedbackAgentContext == nil {
@@ -340,6 +345,11 @@ func (s *Server) CompleteStreaming(req *runtimev1.CompleteStreamingRequest, stre
 	// Tag as chat so the agent's queries are attributed to the "chat" source (overrides the "ui" tag the gRPC
 	// interceptor sets, and covers the SSE HTTP handler which bypasses that interceptor).
 	ctx = runtime.WithRequestSource(ctx, runtime.RequestSourceChat)
+	uiContext, err := uiContextFromPB(req.UiPagePath, req.UiActions)
+	if err != nil {
+		return status.Errorf(codes.InvalidArgument, "invalid UI context: %v", err)
+	}
+	ctx = ai.WithUIContext(ctx, uiContext)
 
 	// Validate request - either prompt or feedback context must be provided
 	if req.Prompt == "" && req.FeedbackAgentContext == nil {
@@ -457,6 +467,39 @@ func (s *Server) CompleteStreaming(req *runtimev1.CompleteStreamingRequest, stre
 		return err
 	}
 	return nil
+}
+
+func uiContextFromPB(pagePath string, pbActions []*runtimev1.UIAction) (*ai.UIContext, error) {
+	if pagePath == "" && len(pbActions) == 0 {
+		return nil, nil
+	}
+
+	// Keep browser-supplied display metadata small and predictable before it is
+	// included in an LLM system message. Reject malformed context instead of
+	// silently changing the set of actions the browser submitted.
+	if len(pagePath) > 2048 {
+		return nil, errors.New("ui_page_path exceeds 2048 bytes")
+	}
+	if len(pbActions) > 100 {
+		return nil, errors.New("ui_actions exceeds 100 entries")
+	}
+
+	actions := make([]ai.UIAction, len(pbActions))
+	for i, action := range pbActions {
+		switch {
+		case action == nil:
+			return nil, fmt.Errorf("ui_actions[%d] is missing", i)
+		case action.Id == "":
+			return nil, fmt.Errorf("ui_actions[%d].id is required", i)
+		case len(action.Id) > 128:
+			return nil, fmt.Errorf("ui_actions[%d].id exceeds 128 bytes", i)
+		case len(action.Label) > 256:
+			return nil, fmt.Errorf("ui_actions[%d].label exceeds 256 bytes", i)
+		}
+		actions[i] = ai.UIAction{ID: action.Id, Label: action.Label}
+	}
+
+	return &ai.UIContext{PagePath: pagePath, Actions: actions}, nil
 }
 
 // CompleteStreamingHandler is a HTTP handler that wraps CompleteStreaming and maps it to SSE.

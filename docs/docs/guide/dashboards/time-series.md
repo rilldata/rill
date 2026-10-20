@@ -1,5 +1,6 @@
 ---
 title: "Time Series Filter"
+description: Filter an explore dashboard by time range, comparison period and time grain
 sidebar_label: "Time Series Filter"
 hide_table_of_contents: false
 sidebar_position: 20

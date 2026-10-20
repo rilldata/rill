@@ -108,6 +108,7 @@ export const getRillTheme: (
       // with the bucket width.
       binSpacing: 0,
     },
+    text: { fill: axisLabelColor },
     line: { stroke: lineColor, strokeWidth: 1.5, strokeOpacity: 1 },
     path: { stroke: lineColor },
     rect: { fill: lineColor },

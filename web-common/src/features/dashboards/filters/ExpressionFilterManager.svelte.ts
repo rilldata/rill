@@ -69,6 +69,9 @@ export class ExpressionFilterManager implements UrlParamsStore {
   public paramKeys = new Set<string>([ExploreStateURLParams.Filters]);
   public readonly storeSync: UrlParamsChangeTracker;
 
+  // Unsubscribes from the providers, which can outlive this manager. See `cleanup`.
+  private readonly unsubscribers: (() => void)[];
+
   public constructor(
     public readonly metricsViewsProvider: MetricsViewsProvider,
     public readonly yamlConfigProvider: YAMLConfigProvider,
@@ -82,14 +85,30 @@ export class ExpressionFilterManager implements UrlParamsStore {
         ...names.map((mvName) => getParamKeyForMv(mvName, singleParamFormMv)),
       ]);
     };
-    metricsViewsProvider.on("update-metrics-views", syncParamKeys);
+
+    const unsubUpdate = metricsViewsProvider.on(
+      "update-metrics-views",
+      (names) => {
+        syncParamKeys(names);
+        // Specs for the new metrics views are loading, so params are queued until `specs-loaded`.
+        this.ready = metricsViewsProvider.specsReady;
+      },
+    );
+    // Call sync immediately for already loaded metricsViewsProvider
     syncParamKeys(metricsViewsProvider.metricsViewNames);
 
-    this.ready = metricsViewsProvider.ready;
-    metricsViewsProvider.on("specs-loaded", () => {
+    this.ready = metricsViewsProvider.specsReady;
+    // Emit ready immediately for already loaded metricsViewsProvider
+    if (metricsViewsProvider.specsReady) this.events.emit("ready");
+    const unsubSpecsLoaded = metricsViewsProvider.on("specs-loaded", () => {
       this.ready = true;
       this.events.emit("ready");
     });
+    // The config can land after the params were parsed. See `addRequiredAndPinnedFilters`.
+    const unsubYamlConfig = yamlConfigProvider.on("update", () =>
+      this.topLevelJoiner.addRequiredAndPinnedFilters(),
+    );
+    this.unsubscribers = [unsubUpdate, unsubSpecsLoaded, unsubYamlConfig];
 
     this.topLevelJoiner = $state(
       JoinerFilterManager.parse(
@@ -100,7 +119,7 @@ export class ExpressionFilterManager implements UrlParamsStore {
         this.events,
       ) as JoinerFilterManager,
     );
-    this.events.on("filter-changed", () => {
+    this.on("filter-changed", () => {
       this.topLevelJoiner?.removeEmptyManagers();
       this.storeSync.stateChanged();
     });
@@ -140,22 +159,36 @@ export class ExpressionFilterManager implements UrlParamsStore {
 
     const newUrlSearch = new URLSearchParams();
     this.applyFilterToParams(newUrlSearch);
-    cloned.setUrlParams(newUrlSearch);
+    cloned.storeSync.setUrlParams(newUrlSearch);
 
     return cloned;
   }
 
+  /**
+   * Removes the listeners on `metricsViewsProvider` and `yamlConfigProvider`.
+   * Call this when the manager is discarded before the providers, e.g. a temporary `clone`.
+   */
+  public cleanup() {
+    this.unsubscribers.forEach((unsub) => unsub());
+  }
+
+  /**
+   * Folds the legacy singular `f` param into a param per metrics view.
+   *
+   * A metrics view that already has a param of its own keeps it, since that is the newer state:
+   * an embed host passes the singular param, and the dashboard then writes per metrics view params
+   * as the filter is edited. Merging the two instead would AND the host's condition with the edited
+   * one on the same dimension, which no chip can show and which usually matches nothing.
+   */
   public normalizeParams(urlParams: URLSearchParams): URLSearchParams {
     const singularParam = urlParams.get(ExploreStateURLParams.Filters);
     if (!singularParam || this.singleParamFormMv) return urlParams;
 
     const newUrlParams = new URLSearchParams();
-    this.metricsViewsProvider.metricsViewNames.forEach((mvName) =>
-      newUrlParams.set(
-        getParamKeyForMv(mvName, this.singleParamFormMv),
-        singularParam,
-      ),
-    );
+    this.metricsViewsProvider.metricsViewNames.forEach((mvName) => {
+      const paramKey = getParamKeyForMv(mvName, this.singleParamFormMv);
+      newUrlParams.set(paramKey, urlParams.get(paramKey) ?? singularParam);
+    });
     return newUrlParams;
   }
 
@@ -206,7 +239,7 @@ export class ExpressionFilterManager implements UrlParamsStore {
 
     // A singular `f=...` is a legacy canvas filter. `setUrlParams` folds it into every metrics view,
     // so the per metrics view params written above already carry it and it can be dropped.
-    if (!this.singleParamFormMv && this.metricsViewsProvider.ready) {
+    if (!this.singleParamFormMv && this.metricsViewsProvider.specsReady) {
       searchParams.delete(ExploreStateURLParams.Filters);
     }
   }
@@ -290,6 +323,9 @@ export class ExpressionFilterManager implements UrlParamsStore {
 
   public clear() {
     this.temporaryFilterName = undefined;
+    // `setUrlParams` is the only other writer of this flag,
+    // and the navigation after a clear skips it because the params already match the cleared state.
+    this.isComplexFilter = false;
     this.topLevelJoiner.clear();
     // Clearing goes through the param rather than the managers, so it has to report itself.
     this.events.emit("filter-changed", { source: undefined });

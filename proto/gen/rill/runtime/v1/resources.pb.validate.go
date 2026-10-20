@@ -4963,6 +4963,40 @@ func (m *ExploreSpec) validate(all bool) error {
 
 	// no validation rules for DefinedInMetricsView
 
+	for idx, item := range m.GetAiPrompts() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, ExploreSpecValidationError{
+						field:  fmt.Sprintf("AiPrompts[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, ExploreSpecValidationError{
+						field:  fmt.Sprintf("AiPrompts[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return ExploreSpecValidationError{
+					field:  fmt.Sprintf("AiPrompts[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
+
 	if len(errors) > 0 {
 		return ExploreSpecMultiError(errors)
 	}
@@ -5196,6 +5230,109 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = ExploreStateValidationError{}
+
+// Validate checks the field values on AIPrompt with the rules defined in the
+// proto definition for this message. If any rules are violated, the first
+// error encountered is returned, or nil if there are no violations.
+func (m *AIPrompt) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on AIPrompt with the rules defined in
+// the proto definition for this message. If any rules are violated, the
+// result is a list of violation errors wrapped in AIPromptMultiError, or nil
+// if none found.
+func (m *AIPrompt) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *AIPrompt) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for Label
+
+	// no validation rules for Prompt
+
+	if len(errors) > 0 {
+		return AIPromptMultiError(errors)
+	}
+
+	return nil
+}
+
+// AIPromptMultiError is an error wrapping multiple validation errors returned
+// by AIPrompt.ValidateAll() if the designated constraints aren't met.
+type AIPromptMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m AIPromptMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m AIPromptMultiError) AllErrors() []error { return m }
+
+// AIPromptValidationError is the validation error returned by
+// AIPrompt.Validate if the designated constraints aren't met.
+type AIPromptValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e AIPromptValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e AIPromptValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e AIPromptValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e AIPromptValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e AIPromptValidationError) ErrorName() string { return "AIPromptValidationError" }
+
+// Error satisfies the builtin error interface
+func (e AIPromptValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sAIPrompt.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = AIPromptValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = AIPromptValidationError{}
 
 // Validate checks the field values on ExploreTimeRange with the rules defined
 // in the proto definition for this message. If any rules are violated, the
@@ -10015,6 +10152,40 @@ func (m *ComponentSpec) validate(all bool) error {
 		}
 	}
 
+	for idx, item := range m.GetParams() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, ComponentSpecValidationError{
+						field:  fmt.Sprintf("Params[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, ComponentSpecValidationError{
+						field:  fmt.Sprintf("Params[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return ComponentSpecValidationError{
+					field:  fmt.Sprintf("Params[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
+
 	for idx, item := range m.GetInput() {
 		_, _ = idx, item
 
@@ -10079,6 +10250,8 @@ func (m *ComponentSpec) validate(all bool) error {
 	}
 
 	// no validation rules for DefinedInCanvas
+
+	// no validation rules for ConditionExpression
 
 	if len(errors) > 0 {
 		return ComponentSpecMultiError(errors)
@@ -10450,6 +10623,179 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = ComponentVariableValidationError{}
+
+// Validate checks the field values on ComponentParam with the rules defined in
+// the proto definition for this message. If any rules are violated, the first
+// error encountered is returned, or nil if there are no violations.
+func (m *ComponentParam) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on ComponentParam with the rules defined
+// in the proto definition for this message. If any rules are violated, the
+// result is a list of violation errors wrapped in ComponentParamMultiError,
+// or nil if none found.
+func (m *ComponentParam) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *ComponentParam) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for Name
+
+	// no validation rules for Type
+
+	// no validation rules for Description
+
+	// no validation rules for Required
+
+	if all {
+		switch v := interface{}(m.GetDefault()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, ComponentParamValidationError{
+					field:  "Default",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, ComponentParamValidationError{
+					field:  "Default",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetDefault()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return ComponentParamValidationError{
+				field:  "Default",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	// no validation rules for MetricsViewParam
+
+	for idx, item := range m.GetOptions() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, ComponentParamValidationError{
+						field:  fmt.Sprintf("Options[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, ComponentParamValidationError{
+						field:  fmt.Sprintf("Options[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return ComponentParamValidationError{
+					field:  fmt.Sprintf("Options[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
+
+	if len(errors) > 0 {
+		return ComponentParamMultiError(errors)
+	}
+
+	return nil
+}
+
+// ComponentParamMultiError is an error wrapping multiple validation errors
+// returned by ComponentParam.ValidateAll() if the designated constraints
+// aren't met.
+type ComponentParamMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m ComponentParamMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m ComponentParamMultiError) AllErrors() []error { return m }
+
+// ComponentParamValidationError is the validation error returned by
+// ComponentParam.Validate if the designated constraints aren't met.
+type ComponentParamValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e ComponentParamValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e ComponentParamValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e ComponentParamValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e ComponentParamValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e ComponentParamValidationError) ErrorName() string { return "ComponentParamValidationError" }
+
+// Error satisfies the builtin error interface
+func (e ComponentParamValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sComponentParam.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = ComponentParamValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = ComponentParamValidationError{}
 
 // Validate checks the field values on Canvas with the rules defined in the
 // proto definition for this message. If any rules are violated, the first
@@ -10841,6 +11187,40 @@ func (m *CanvasSpec) validate(all bool) error {
 
 	// no validation rules for Annotations
 
+	for idx, item := range m.GetAiPrompts() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, CanvasSpecValidationError{
+						field:  fmt.Sprintf("AiPrompts[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, CanvasSpecValidationError{
+						field:  fmt.Sprintf("AiPrompts[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return CanvasSpecValidationError{
+					field:  fmt.Sprintf("AiPrompts[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
+
 	if len(errors) > 0 {
 		return CanvasSpecMultiError(errors)
 	}
@@ -11162,6 +11542,8 @@ func (m *CanvasRow) validate(all bool) error {
 		}
 	}
 
+	// no validation rules for ConditionExpression
+
 	if m.Height != nil {
 		// no validation rules for Height
 	}
@@ -11439,6 +11821,8 @@ func (m *CanvasTab) validate(all bool) error {
 
 	}
 
+	// no validation rules for ConditionExpression
+
 	if len(errors) > 0 {
 		return CanvasTabMultiError(errors)
 	}
@@ -11542,7 +11926,38 @@ func (m *CanvasItem) validate(all bool) error {
 
 	// no validation rules for DefinedInCanvas
 
+	if all {
+		switch v := interface{}(m.GetParams()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, CanvasItemValidationError{
+					field:  "Params",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, CanvasItemValidationError{
+					field:  "Params",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetParams()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return CanvasItemValidationError{
+				field:  "Params",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
 	// no validation rules for WidthUnit
+
+	// no validation rules for ConditionExpression
 
 	if m.Width != nil {
 		// no validation rules for Width
@@ -13491,6 +13906,10 @@ func (m *MetricsViewSpec_Dimension) validate(all bool) error {
 				cause:  err,
 			}
 		}
+	}
+
+	if m.LookupGroupByKey != nil {
+		// no validation rules for LookupGroupByKey
 	}
 
 	if len(errors) > 0 {

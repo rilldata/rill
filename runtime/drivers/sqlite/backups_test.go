@@ -34,7 +34,7 @@ func TestBackup(t *testing.T) {
 		"id":             "test-backup",
 		"backups_enable": true,
 	}
-	h, err := driver{}.Open("", "", cfg, storage.MustNew(storageDir, nil), activity.NewNoopClient(), zap.NewNop())
+	h, err := driver{}.Open(t.Context(), "", "", cfg, storage.MustNew(storageDir, nil), activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
 	defer h.Close()
 	err = h.Migrate(t.Context())
@@ -141,7 +141,7 @@ func TestDBFilePath(t *testing.T) {
 	for idx, tc := range cases {
 		t.Run(fmt.Sprintf("case-%d", idx), func(t *testing.T) {
 			cfg := map[string]any{"dsn": tc.dsn}
-			h, err := driver{}.Open("", "", cfg, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
+			h, err := driver{}.Open(t.Context(), "", "", cfg, storage.MustNew(t.TempDir(), nil), activity.NewNoopClient(), zap.NewNop())
 			require.NoError(t, err)
 			defer h.Close()
 

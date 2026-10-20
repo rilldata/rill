@@ -178,9 +178,11 @@ export function createStateManagers({
     exploreName,
   );
 
+  // Explore urls only carry the singular `f` param, so per metrics view params are ignored here.
   const expressionFilterManager = new ExpressionFilterManager(
     dashboardConfigProvider.metricsViewsProvider,
     dashboardConfigProvider.yamlConfigProvider,
+    true,
   );
   expressionFilterManager.storeSync.on("internal-change", () => {
     metricsExplorerStore.syncExpressionFilter(

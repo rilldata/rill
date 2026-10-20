@@ -27,6 +27,7 @@ import {
 } from "svelte/store";
 import {
   canQueryWithTimeRange,
+  combineChartDataQuery,
   getFilterWithNullHandling,
   vegaSortToAggregationSort,
 } from "../query-util";
@@ -297,7 +298,11 @@ export class HeatmapChartProvider {
       },
     );
 
-    return createQuery(queryOptionsStore);
+    return combineChartDataQuery(
+      createQuery(queryOptionsStore),
+      [xAxisQuery, yAxisQuery],
+      visibleStore,
+    );
   }
 
   getChartDomainValues(): ChartDomainValues {

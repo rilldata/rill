@@ -1,6 +1,5 @@
 <script lang="ts">
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
-  import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import DashboardMetricsDraggableList from "@rilldata/web-common/components/menu/DashboardMetricsDraggableList.svelte";
   import CreateEphemeralMeasureButton from "@rilldata/web-common/features/dashboards/ephemeral-measures/CreateEphemeralMeasureButton.svelte";
@@ -17,6 +16,7 @@
     metricsExplorerStore,
     useExploreState,
   } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
+  import AggregationGrainSelector from "@rilldata/web-common/features/dashboards/time-controls/AggregationGrainSelector.svelte";
   import ChartTypeSelector from "@rilldata/web-common/features/dashboards/time-dimension-details/charts/ChartTypeSelector.svelte";
   import { TDDChart } from "@rilldata/web-common/features/dashboards/time-dimension-details/types";
   import BackToExplore from "@rilldata/web-common/features/dashboards/time-series/BackToExplore.svelte";
@@ -24,7 +24,6 @@
   import { measureSelection } from "@rilldata/web-common/features/dashboards/time-series/measure-selection/measure-selection.ts";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors";
-  import { translateV1TimeGrain } from "@rilldata/web-common/lib/time/new-grains";
   import { type AvailableTimeGrain } from "@rilldata/web-common/lib/time/types";
   import { type MetricsViewSpecMeasure } from "@rilldata/web-common/runtime-client/gen/index.schemas";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
@@ -103,12 +102,12 @@
         ?.timeDimension,
   );
 
-  let grainDropdownOpen = $state(false);
   let connectNulls = $state(true);
 
   const client = useRuntimeClient();
 
   let { selectedTimezone } = $derived($dashboardStore);
+  let adaptiveTimeGrain = $derived(!!$dashboardStore?.adaptiveTimeGrain);
 
   let exploreState = $derived(useExploreState(exploreName));
 
@@ -278,42 +277,24 @@
         </div>
       </DashboardMetricsDraggableList>
 
-      {#if $rillTime && timeGrain}
-        <DropdownMenu.Root bind:open={grainDropdownOpen}>
-          <DropdownMenu.Trigger>
-            {#snippet child({ props })}
-              <button
-                {...props}
-                aria-label={m.dashboard_select_aggregation_grain_aria()}
-                class="flex gap-x-1 items-center text-fg-muted hover:text-fg-accent"
-              >
-                {m.explore_by_grain_prefix()}
-                <b>
-                  {translateV1TimeGrain(timeGrain)}
-                </b>
-                <span
-                  class:-rotate-90={grainDropdownOpen}
-                  class="transition-transform"
-                >
-                  <CaretDownIcon />
-                </span>
-              </button>
-            {/snippet}
-          </DropdownMenu.Trigger>
-
-          <DropdownMenu.Content align="start" class="w-48">
-            {#each aggregationOptions ?? [] as option (option)}
-              <DropdownMenu.CheckboxItem
-                checkRight
-                checked={option === timeGrain}
-                class="text-xs cursor-pointer"
-                onclick={() => timeFilterManager.onSelectGrain(option)}
-              >
-                {translateV1TimeGrain(option)}
-              </DropdownMenu.CheckboxItem>
-            {/each}
-          </DropdownMenu.Content>
-        </DropdownMenu.Root>
+      {#if $rillTime && activeTimeGrain}
+        <AggregationGrainSelector
+          {activeTimeGrain}
+          options={aggregationOptions ?? []}
+          onSelect={(timeGrain) =>
+            metricsExplorerStore.setTimeGrain(exploreName, timeGrain)}
+          defaultOption={{
+            label: m.time_grain_adaptive(),
+            description: m.time_grain_adaptive_description(),
+            hint: m.time_grain_adaptive_hint(),
+            selected: adaptiveTimeGrain,
+            onSelect: () =>
+              metricsExplorerStore.setAdaptiveTimeGrain(
+                exploreName,
+                $exploreValidSpec.data?.metricsView ?? {},
+              ),
+          }}
+        />
       {/if}
 
       <ChartSettingsMenu
@@ -332,6 +313,7 @@
         <div class="grow"></div>
         <Button
           type="toolbar"
+          dataAttributes={{ "data-ai-action": "dashboard.start-pivot" }}
           onClick={() => {
             startPivotForTimeseries();
           }}

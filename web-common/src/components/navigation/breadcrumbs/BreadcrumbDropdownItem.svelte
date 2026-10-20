@@ -20,7 +20,7 @@
     option: PathOption;
   } & Omit<BreadcrumbItemDropdownProps, "options"> = $props();
 
-  let isSelected = $derived(id === current.toLowerCase());
+  let isSelected = $derived(id === current);
   let Icon = $derived(
     option.resourceKind ? resourceIconMapping[option.resourceKind] : undefined,
   );

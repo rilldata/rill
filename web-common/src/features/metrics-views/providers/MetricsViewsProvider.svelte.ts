@@ -105,6 +105,7 @@ export class MetricsViewsProvider {
   /**
    * True once every metrics view has a spec and every time series metrics view has a summary.
    */
+  public specsReady = $state(false);
   public ready: boolean;
   public metricsViewNames = $state<string[]>([]);
 
@@ -224,6 +225,9 @@ export class MetricsViewsProvider {
     });
 
     this.metricsViewNames = metricsViewNames;
+    // The specs for the new set have to load before dependents can use them.
+    // `processResources` below marks them ready again if they are already available.
+    this.specsReady = false;
     this.pendingSpecs = new Set(metricsViewNames);
     this.pendingTimestamps = new Set(metricsViewNames);
     this.events.emit("update-metrics-views", this.metricsViewNames);
@@ -250,9 +254,13 @@ export class MetricsViewsProvider {
     let largestMinGrainOrder: number | undefined = Infinity;
 
     for (const metricsViewName of this.metricsViewNames) {
+      // Resource names are case-insensitive in the runtime, so an explore or canvas can reference
+      // a metrics view with different casing than the resource itself. Keep the maps keyed by the
+      // requested name, since that is what the callers use to look them up.
+      const lowerName = metricsViewName.toLowerCase();
       const res = this.resources.find(
         (resource) =>
-          resource.meta?.name?.name === metricsViewName &&
+          resource.meta?.name?.name?.toLowerCase() === lowerName &&
           resource.meta?.name?.kind === ResourceKind.MetricsView,
       );
       const spec = res?.metricsView?.state?.validSpec;
@@ -313,6 +321,10 @@ export class MetricsViewsProvider {
 
     // Set legacy stores
     this.largestMinTimeGrainStore.set(largestMinTimeGrain);
+
+    Object.keys(specs).forEach((metricsViewName) =>
+      this.specLoaded(metricsViewName),
+    );
   }
 
   /**
@@ -364,5 +376,6 @@ export class MetricsViewsProvider {
 
     if (this.pendingTimestamps.size > 0) return;
     this.events.emit("time-specs-loaded");
+    this.specsReady = true;
   }
 }

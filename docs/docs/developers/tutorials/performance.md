@@ -1,6 +1,6 @@
 ---
 title: Troubleshooting Performance in Rill
-description: Dev/Prod Setup
+description: Find and fix slow models, queries and dashboards in Rill
 sidebar_label: Optimize Performance in Rill
 sidebar_position: 10
 ---

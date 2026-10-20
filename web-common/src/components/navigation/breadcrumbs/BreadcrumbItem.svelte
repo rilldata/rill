@@ -29,7 +29,8 @@
   let options = $derived(pathOptions.options);
   let carryOverSearchParams = $derived(pathOptions.carryOverSearchParams);
   let content = $derived(pathOptions.content);
-  let selected = $derived(options.get(current.toLowerCase()));
+  let currentId = $derived(pathOptions.currentId ?? current.toLowerCase());
+  let selected = $derived(options.get(currentId));
 
   function linkMaker(
     current: (string | undefined)[],
@@ -64,7 +65,7 @@
 
     if (option?.section) newPath.push(option.section);
 
-    newPath.push(id);
+    newPath.push(option?.param ?? id);
     const path = `/${newPath.join("/")}`;
     return path + getCarryOverSubRoute(route, path);
   }
@@ -82,7 +83,7 @@
         }}
         href={isCurrentPage
           ? "#top"
-          : linkMaker(currentPath, depth, current, selected, "")}
+          : linkMaker(currentPath, depth, currentId, selected, "")}
         class={[
           "text-fg-muted hover:text-fg-secondary flex flex-row items-center gap-x-2",
           { current: isCurrentPage },
@@ -109,7 +110,7 @@
         {#if content}
           {@render content({
             options,
-            current,
+            current: currentId,
             currentPath,
             depth,
             onSelect,
@@ -124,7 +125,7 @@
               <BreadcrumbDropdownItem
                 {id}
                 {option}
-                {current}
+                current={currentId}
                 {currentPath}
                 {depth}
                 {onSelect}

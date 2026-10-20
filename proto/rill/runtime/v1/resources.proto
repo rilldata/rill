@@ -225,6 +225,9 @@ message MetricsViewSpec {
     string lookup_key_column = 9;
     string lookup_value_column = 10;
     string lookup_default_expression = 11;
+    // If true, queries that group by the dimension group by the lookup key first and resolve the lookup value once per key.
+    // Only for ClickHouse dictionaries with few keys; see the metrics view docs.
+    optional bool lookup_group_by_key = 15;
     // The smallest time grain for the dimension. Only populated for time dimensions.
     TimeGrain smallest_time_grain = 13;
     // The data type of the dimension. Only populated in ValidSpec.
@@ -505,6 +508,8 @@ message ExploreSpec {
   bool allow_custom_time_range = 20;
   // When true, it indicates that the explore was defined in a metrics view either explicitly or emitted because version was not set.
   bool defined_in_metrics_view = 21;
+  // Suggested prompts configured by the project author, shown as starters in the AI chat.
+  repeated AIPrompt ai_prompts = 22;
 }
 
 message ExploreState {
@@ -514,6 +519,14 @@ message ExploreState {
   // The last time the underlying metrics view's data was refreshed.
   // This may be empty if the data refresh time is not known, e.g. if the metrics view is based on an externally managed table.
   google.protobuf.Timestamp data_refreshed_on = 2;
+}
+
+// AIPrompt is a starter prompt shown in the AI chat.
+message AIPrompt {
+  // Short label displayed on the prompt's button.
+  string label = 1;
+  // Full prompt sent to the AI when the user picks it.
+  string prompt = 2;
 }
 
 message ExploreTimeRange {
@@ -858,9 +871,15 @@ message ComponentSpec {
   string description = 7;
   string renderer = 4;
   google.protobuf.Struct renderer_properties = 5;
+  // Declared parameters that canvases can bind values to when referencing this component.
+  // Bound values are available in the renderer properties' templating as {{ .params.<name> }}.
+  repeated ComponentParam params = 10;
   repeated ComponentVariable input = 8;
   ComponentVariable output = 9;
   bool defined_in_canvas = 6;
+  // For components defined inline in a canvas, the `if` conditions of the item and its ancestors (rows, tabs), ANDed together.
+  // Only viewers for whom it evaluates to true can access the component.
+  string condition_expression = 11;
 }
 
 message ComponentState {
@@ -875,6 +894,26 @@ message ComponentVariable {
   string name = 1;
   string type = 2;
   google.protobuf.Value default_value = 3;
+}
+
+// ComponentParam declares a typed, validated parameter of a component.
+message ComponentParam {
+  // Param name. Must be a valid identifier; referenced in templates as {{ .params.<name> }}.
+  string name = 1;
+  // Param type. One of: "string", "number", "boolean", "metrics_view", "measure", "dimension", "time_dimension".
+  string type = 2;
+  // Human-facing description of the param.
+  string description = 3;
+  // If true, a canvas item referencing this component must bind a value for the param.
+  bool required = 4;
+  // Default value used when the param is not bound. Mutually exclusive with required=true.
+  google.protobuf.Value default = 5;
+  // For "measure", "dimension" and "time_dimension" params:
+  // the name of a sibling param of type "metrics_view" whose bound metrics view the field must belong to.
+  // May be omitted when exactly one "metrics_view" param is declared, in which case the parser fills it in.
+  string metrics_view_param = 6;
+  // For scalar params: allowed values. Renders as a select input in visual editors.
+  repeated google.protobuf.Value options = 7;
 }
 
 message Canvas {
@@ -924,6 +963,8 @@ message CanvasSpec {
   repeated string required_filters = 19;
   // Annotations are arbitrary key-value pairs that can be used to attach metadata to the canvas (e.g. used to mark personal canvases created by the admin server).
   map<string, string> annotations = 20;
+  // Suggested prompts configured by the project author, shown as starters in the AI chat.
+  repeated AIPrompt ai_prompts = 21;
 }
 
 message CanvasState {
@@ -944,6 +985,9 @@ message CanvasRow {
   // If set, this row renders a tab group instead of items.
   // A row has either items or a tab_group, never both.
   CanvasTabGroup tab_group = 4;
+  // Templated boolean expression from the row's `if` property.
+  // The row (or tab group) is only shown to viewers for whom it evaluates to true.
+  string condition_expression = 5;
 }
 
 message CanvasTabGroup {
@@ -962,6 +1006,9 @@ message CanvasTab {
   // Rows to render when the tab is active. These are always plain rows;
   // a tab's rows never contain a nested tab_group.
   repeated CanvasRow rows = 3;
+  // Templated boolean expression from the tab's `if` property.
+  // The tab is only shown to viewers for whom it evaluates to true.
+  string condition_expression = 4;
 }
 
 message CanvasItem {
@@ -969,10 +1016,16 @@ message CanvasItem {
   string component = 1;
   // Indicates if the component was defined inline as part of the canvas YAML.
   bool defined_in_canvas = 8;
+  // Values bound to the referenced component's declared params.
+  // Only set for items that reference an externally defined component.
+  google.protobuf.Struct params = 11;
   // Width of the item. The unit is given in width_unit.
   optional uint32 width = 9;
   // Unit of the width. Current possible values: empty string.
   string width_unit = 10;
+  // Templated boolean expression from the item's `if` property.
+  // The item is only shown to viewers for whom it evaluates to true.
+  string condition_expression = 12;
 }
 
 message CanvasPreset {

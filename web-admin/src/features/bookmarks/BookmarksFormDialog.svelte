@@ -79,8 +79,8 @@
 
   // Always load from current url state. This is the only route to overwrite bookmark state.
   // A future PR will improve this by adding `Replace` action, in that case this should only have bookmark's state.
-  expressionFilterManager.setUrlParams(page.url.searchParams);
-  timeFilterManager.setUrlParams(page.url.searchParams);
+  expressionFilterManager.storeSync.setUrlParams(page.url.searchParams);
+  timeFilterManager.storeSync.setUrlParams(page.url.searchParams);
 
   let timeFilterState = $state<
     | {

@@ -44,5 +44,11 @@ export function transformTimeAndFiltersToExploreState(
     }
   }
 
+  // The link carries the grain the source is showing, so the explore opens with it fixed.
+  // Without this the explore would default to adaptive and drop it from the URL.
+  if (exploreState.selectedTimeRange?.interval) {
+    exploreState.adaptiveTimeGrain = false;
+  }
+
   return exploreState;
 }

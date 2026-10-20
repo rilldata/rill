@@ -14,6 +14,7 @@
   export let exploreName: string;
 </script>
 
+<!-- The app layout supplies the tooltip provider, which the advanced filter pill needs. -->
 <Tooltip.Provider>
   <StateManagersProvider metricsViewName={AD_BIDS_METRICS_NAME} {exploreName}>
     <DashboardStateManager {exploreName}>

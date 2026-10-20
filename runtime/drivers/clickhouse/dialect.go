@@ -55,7 +55,7 @@ func (d *dialect) MetricsViewDimensionExpression(dimension *runtimev1.MetricsVie
 		} else {
 			return "", fmt.Errorf("dimension %q has a lookup table but no column or expression defined", dimension.Name)
 		}
-		return lookupExpr(dimension.LookupTable, dimension.LookupValueColumn, keyExpr, dimension.LookupDefaultExpression)
+		return d.LookupExpr(dimension.LookupTable, dimension.LookupValueColumn, keyExpr, dimension.LookupDefaultExpression)
 	}
 	if dimension.Expression != "" {
 		return dimension.Expression, nil
@@ -80,9 +80,9 @@ func (d *dialect) AutoUnnest(expr string) string {
 	return fmt.Sprintf("arrayJoin(%s)", expr)
 }
 
-func (d *dialect) RequiresArrayContainsForInOperator() bool { return true }
-
-func (d *dialect) GetArrayContainsFunction() (string, error) { return "hasAny", nil }
+func (d *dialect) ArrayContainsAnyExpression(arrExpr, valuesExpr string) (expr string, ok bool) {
+	return fmt.Sprintf("hasAny(%s, [%s])", arrExpr, valuesExpr), true
+}
 
 func (d *dialect) CastToDataType(typ runtimev1.Type_Code) (string, error) {
 	switch typ {
@@ -254,6 +254,13 @@ func (d *dialect) LookupSelectExpr(lookupTable, lookupKeyColumn string) (string,
 	return fmt.Sprintf("SELECT %s FROM %s", d.EscapeIdentifier(lookupKeyColumn), d.EscapeQualifiedIdentifier(lookupTable)), nil
 }
 
+func (d *dialect) LookupExpr(lookupTable, lookupValueColumn, lookupKeyExpr, lookupDefaultExpression string) (string, error) {
+	if lookupDefaultExpression != "" {
+		return fmt.Sprintf("dictGetOrDefault('%s', '%s', %s, %s)", lookupTable, lookupValueColumn, lookupKeyExpr, lookupDefaultExpression), nil
+	}
+	return fmt.Sprintf("dictGet('%s', '%s', %s)", lookupTable, lookupValueColumn, lookupKeyExpr), nil
+}
+
 func (d *dialect) SanitizeQueryForLogging(sql string) string {
 	// replace inline "PASSWORD 'pwd'" for dict source with "PASSWORD '***'"
 	return dictPwdRegex.ReplaceAllString(sql, "PASSWORD '***'")
@@ -305,11 +312,4 @@ func getArgExpr(val any, typ runtimev1.Type_Code) (string, any, error) {
 		return "toDate(?)", t.Format(time.DateOnly), nil
 	}
 	return "?", val, nil
-}
-
-func lookupExpr(lookupTable, lookupValueColumn, lookupKeyExpr, lookupDefaultExpression string) (string, error) {
-	if lookupDefaultExpression != "" {
-		return fmt.Sprintf("dictGetOrDefault('%s', '%s', %s, %s)", lookupTable, lookupValueColumn, lookupKeyExpr, lookupDefaultExpression), nil
-	}
-	return fmt.Sprintf("dictGet('%s', '%s', %s)", lookupTable, lookupValueColumn, lookupKeyExpr), nil
 }

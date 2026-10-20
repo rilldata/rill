@@ -28,6 +28,7 @@ import {
 } from "svelte/store";
 import {
   canQueryWithTimeRange,
+  combineChartDataQuery,
   getFilterWithNullHandling,
   vegaSortToAggregationSort,
 } from "../query-util";
@@ -251,7 +252,7 @@ export class ComboChartProvider {
     );
 
     const query = createQuery(queryOptionsStore);
-    return query;
+    return combineChartDataQuery(query, [xAxisQuery], visibleStore);
   }
 
   getChartDomainValues(measures: MetricsViewSpecMeasure[]): ChartDomainValues {

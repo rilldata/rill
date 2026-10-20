@@ -255,7 +255,7 @@ func (c *ConfigProperties) ResolveDSN() string {
 	return strings.Join(parts, " ")
 }
 
-func (d driver) Open(_, instanceID string, config map[string]any, st *storage.Client, ac *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
+func (d driver) Open(_ context.Context, _, instanceID string, config map[string]any, st *storage.Client, ac *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
 	if instanceID == "" {
 		return nil, errors.New("postgres driver can't be shared")
 	}
@@ -422,7 +422,7 @@ func (c *connection) getDB(ctx context.Context) (*sqlx.DB, error) {
 		return nil, c.dbErr
 	}
 
-	c.db, c.dbErr = sqlx.Connect("pgx", c.config.ResolveDSN())
+	c.db, c.dbErr = sqlx.Open("pgx", c.config.ResolveDSN())
 	if c.dbErr != nil {
 		return nil, c.dbErr
 	}

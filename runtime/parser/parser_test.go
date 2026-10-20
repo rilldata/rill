@@ -2107,6 +2107,325 @@ input:
 	requireResourcesAndErrors(t, p, resources, nil)
 }
 
+func TestComponentParams(t *testing.T) {
+	ctx := context.Background()
+	repo := makeRepo(t, map[string]string{
+		`rill.yaml`: ``,
+		`components/trend.yaml`: `
+type: component
+params:
+  - name: metrics_view
+    type: metrics_view
+    required: true
+  - name: measure
+    type: measure
+    required: true
+  - name: time_dim
+    type: time_dimension
+    required: true
+  - name: limit
+    type: number
+    default: 500
+  - name: shape
+    type: string
+    default: line
+    options: [line, area]
+custom_chart:
+  metrics_sql: "SELECT {{ .params.time_dim }} AS ts, {{ .params.measure }} AS value FROM {{ .params.metrics_view }} LIMIT {{ .params.limit }}"
+  spec:
+    chartType: Line Chart
+    encodings:
+      x: {field: "{{ .params.time_dim }}"}
+      y: {field: "{{ .params.measure }}"}
+`,
+		// Component with a templated metrics_view renderer property: it must not produce a ref.
+		`components/tpl.yaml`: `
+type: component
+params:
+  - name: metrics_view
+    type: metrics_view
+    required: true
+kpi:
+  metrics_view: "{{ .params.metrics_view }}"
+`,
+		// Component with a defaulted metrics_view param: the default must produce a ref,
+		// since the component depends on it even when no canvas binds the param.
+		`components/defaulted.yaml`: `
+type: component
+params:
+  - name: metrics_view
+    type: metrics_view
+    default: mv_default
+kpi:
+  metrics_view: "{{ .params.metrics_view }}"
+`,
+		`canvases/d1.yaml`: `
+type: canvas
+rows:
+- items:
+  - component: trend
+    params:
+      metrics_view: mv1
+      measure: total
+      time_dim: __time
+      limit: 100
+    width: 6
+`,
+	})
+
+	resources := []*Resource{
+		{
+			Name:  ResourceName{Kind: ResourceKindComponent, Name: "trend"},
+			Paths: []string{"/components/trend.yaml"},
+			ComponentSpec: &runtimev1.ComponentSpec{
+				DisplayName: "Trend",
+				Renderer:    "custom_chart",
+				RendererProperties: must(structpb.NewStruct(map[string]any{
+					"metrics_sql": "SELECT {{ .params.time_dim }} AS ts, {{ .params.measure }} AS value FROM {{ .params.metrics_view }} LIMIT {{ .params.limit }}",
+					"spec": map[string]any{
+						"chartType": "Line Chart",
+						"encodings": map[string]any{
+							"x": map[string]any{"field": "{{ .params.time_dim }}"},
+							"y": map[string]any{"field": "{{ .params.measure }}"},
+						},
+					},
+				})),
+				Params: []*runtimev1.ComponentParam{
+					{Name: "metrics_view", Type: "metrics_view", Required: true},
+					{Name: "measure", Type: "measure", Required: true, MetricsViewParam: "metrics_view"},
+					{Name: "time_dim", Type: "time_dimension", Required: true, MetricsViewParam: "metrics_view"},
+					{Name: "limit", Type: "number", Default: structpb.NewNumberValue(500)},
+					{Name: "shape", Type: "string", Default: structpb.NewStringValue("line"), Options: []*structpb.Value{structpb.NewStringValue("line"), structpb.NewStringValue("area")}},
+				},
+			},
+		},
+		{
+			Name:  ResourceName{Kind: ResourceKindComponent, Name: "tpl"},
+			Paths: []string{"/components/tpl.yaml"},
+			ComponentSpec: &runtimev1.ComponentSpec{
+				DisplayName:        "Tpl",
+				Renderer:           "kpi",
+				RendererProperties: must(structpb.NewStruct(map[string]any{"metrics_view": "{{ .params.metrics_view }}"})),
+				Params: []*runtimev1.ComponentParam{
+					{Name: "metrics_view", Type: "metrics_view", Required: true},
+				},
+			},
+		},
+		{
+			Name:  ResourceName{Kind: ResourceKindComponent, Name: "defaulted"},
+			Paths: []string{"/components/defaulted.yaml"},
+			Refs:  []ResourceName{{Kind: ResourceKindMetricsView, Name: "mv_default"}},
+			ComponentSpec: &runtimev1.ComponentSpec{
+				DisplayName:        "Defaulted",
+				Renderer:           "kpi",
+				RendererProperties: must(structpb.NewStruct(map[string]any{"metrics_view": "{{ .params.metrics_view }}"})),
+				Params: []*runtimev1.ComponentParam{
+					{Name: "metrics_view", Type: "metrics_view", Default: structpb.NewStringValue("mv_default")},
+				},
+			},
+		},
+		{
+			Name:  ResourceName{Kind: ResourceKindCanvas, Name: "d1"},
+			Paths: []string{"/canvases/d1.yaml"},
+			Refs: []ResourceName{
+				{Kind: ResourceKindComponent, Name: "trend"},
+				{Kind: ResourceKindMetricsView, Name: "mv1"},
+			},
+			CanvasSpec: &runtimev1.CanvasSpec{
+				DisplayName:          "D1",
+				AllowCustomTimeRange: true,
+				FiltersEnabled:       true,
+				Rows: []*runtimev1.CanvasRow{
+					{
+						Items: []*runtimev1.CanvasItem{
+							{
+								Component: "trend",
+								Params: must(structpb.NewStruct(map[string]any{
+									"metrics_view": "mv1",
+									"measure":      "total",
+									"time_dim":     "__time",
+									"limit":        100,
+								})),
+								Width: asPtr(uint32(6)),
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	p, err := Parse(ctx, repo, "", "", "duckdb", true)
+	require.NoError(t, err)
+	requireResourcesAndErrors(t, p, resources, nil)
+}
+
+func TestComponentParamErrors(t *testing.T) {
+	ctx := context.Background()
+
+	component := func(params string) string {
+		return fmt.Sprintf("type: component\nparams:\n%s\nkpi:\n  metrics_view: foo\n", params)
+	}
+
+	cases := []struct {
+		name    string
+		files   map[string]string
+		wantErr string
+	}{
+		{
+			name:    "duplicate param name",
+			files:   map[string]string{`components/c.yaml`: component("  - name: a\n    type: string\n  - name: a\n    type: number")},
+			wantErr: `duplicate param name "a"`,
+		},
+		{
+			name:    "invalid type",
+			files:   map[string]string{`components/c.yaml`: component("  - name: a\n    type: widget")},
+			wantErr: `invalid type "widget"`,
+		},
+		{
+			name:    "invalid name",
+			files:   map[string]string{`components/c.yaml`: component("  - name: 1a\n    type: string")},
+			wantErr: `invalid param name "1a"`,
+		},
+		{
+			name:    "reserved name",
+			files:   map[string]string{`components/c.yaml`: component("  - name: datum\n    type: string")},
+			wantErr: `param name "datum" is reserved`,
+		},
+		{
+			name:    "required with default",
+			files:   map[string]string{`components/c.yaml`: component("  - name: a\n    type: string\n    required: true\n    default: x")},
+			wantErr: "cannot both be required and have a default",
+		},
+		{
+			name:    "default type mismatch",
+			files:   map[string]string{`components/c.yaml`: component("  - name: a\n    type: number\n    default: x")},
+			wantErr: "expected a number",
+		},
+		{
+			name:    "field param without metrics_view param",
+			files:   map[string]string{`components/c.yaml`: component("  - name: a\n    type: measure")},
+			wantErr: `requires a param of type "metrics_view"`,
+		},
+		{
+			name:    "metrics_view param naming convention",
+			files:   map[string]string{`components/c.yaml`: component("  - name: mv\n    type: metrics_view")},
+			wantErr: `must be named "metrics_view" or end with "_metrics_view"`,
+		},
+		{
+			name:    "metrics_view name reserved for its type",
+			files:   map[string]string{`components/c.yaml`: component("  - name: metrics_view\n    type: string")},
+			wantErr: `must have type "metrics_view"`,
+		},
+		{
+			name:    "back-reference to non-metrics_view param",
+			files:   map[string]string{`components/c.yaml`: component("  - name: metrics_view\n    type: metrics_view\n  - name: a\n    type: string\n  - name: b\n    type: measure\n    metrics_view: a")},
+			wantErr: `not a declared param of type "metrics_view"`,
+		},
+		{
+			name:    "options on field param",
+			files:   map[string]string{`components/c.yaml`: component("  - name: metrics_view\n    type: metrics_view\n  - name: a\n    type: measure\n    options: [x, y]")},
+			wantErr: "options are only supported for scalar types",
+		},
+		{
+			name:    "default not in options",
+			files:   map[string]string{`components/c.yaml`: component("  - name: a\n    type: string\n    default: z\n    options: [x, y]")},
+			wantErr: "not one of its options",
+		},
+		{
+			name: "undeclared param reference in renderer properties",
+			files: map[string]string{`components/c.yaml`: `
+type: component
+params:
+  - name: a
+    type: string
+kpi:
+  metrics_view: foo
+  measure: "{{ .params.b }}"
+`},
+			wantErr: `reference undeclared param "b"`,
+		},
+		{
+			name: "undeclared param reference in a .fields reference",
+			files: map[string]string{`components/c.yaml`: `
+type: component
+params:
+  - name: metrics_view
+    type: metrics_view
+  - name: a
+    type: measure
+custom_chart:
+  vega_spec: '{"title": "{{ .fields.b.display_name }}"}'
+`},
+			wantErr: `reference undeclared param "b"`,
+		},
+		{
+			name: "field metadata reference to a scalar param",
+			files: map[string]string{`components/c.yaml`: `
+type: component
+params:
+  - name: a
+    type: string
+custom_chart:
+  vega_spec: '{"title": "{{ .fields.a.display_name }}"}'
+`},
+			wantErr: `param "a" is not of type measure, dimension, time_dimension`,
+		},
+		{
+			name: "unknown field metadata property",
+			files: map[string]string{`components/c.yaml`: `
+type: component
+params:
+  - name: metrics_view
+    type: metrics_view
+  - name: a
+    type: measure
+custom_chart:
+  vega_spec: '{"title": "{{ .fields.a.displayName }}"}'
+`},
+			wantErr: `".fields.a.displayName", which is not a field property`,
+		},
+		{
+			name: "params on inline component",
+			files: map[string]string{`canvases/d.yaml`: `
+type: canvas
+rows:
+- items:
+  - markdown:
+      content: Foo
+    params:
+      a: 1
+`},
+			wantErr: "cannot pass 'params' to an inline component",
+		},
+		{
+			name: "non-scalar param binding",
+			files: map[string]string{`canvases/d.yaml`: `
+type: canvas
+rows:
+- items:
+  - component: c
+    params:
+      a: [1, 2]
+`},
+			wantErr: "only scalar values are supported",
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			files := map[string]string{`rill.yaml`: ``}
+			for k, v := range tc.files {
+				files[k] = v
+			}
+			p, err := Parse(ctx, makeRepo(t, files), "", "", "duckdb", true)
+			require.NoError(t, err)
+			require.Len(t, p.Errors, 1)
+			require.Contains(t, p.Errors[0].Message, tc.wantErr)
+		})
+	}
+}
+
 func TestCanvasTabGroups(t *testing.T) {
 	ctx := context.Background()
 	repo := makeRepo(t, map[string]string{
@@ -2361,6 +2680,126 @@ rows:
 	// Name defaults from the label.
 	require.Equal(t, "deep-dive", tabs[1].Name)
 	require.Equal(t, "Deep Dive", tabs[1].DisplayName)
+}
+
+func TestCanvasConditions(t *testing.T) {
+	ctx := context.Background()
+	repo := makeRepo(t, map[string]string{
+		`rill.yaml`: ``,
+		`components/c1.yaml`: `
+type: component
+kpi:
+  metrics_view: foo
+`,
+		`canvases/d1.yaml`: `
+type: canvas
+rows:
+- if: '{{ has "finance" .user.groups }}'
+  items:
+  - if: '{{ .user.admin }}'
+    markdown:
+      content: "Admins in finance"
+  - component: c1
+    if: false
+- name: deep_dive
+  if: "'{{ .user.domain }}' = 'acme.com'"
+  tabs:
+  - label: Premium
+    if: '{{ eq .user.plan "premium" }}'
+    rows:
+    - items:
+      - markdown:
+          content: "Premium"
+  - label: Region
+    rows:
+    - if: '{{ .user.is_emea }}'
+      items:
+      - markdown:
+          content: "EMEA"
+`,
+	})
+
+	p, err := Parse(ctx, repo, "", "", "duckdb", true)
+	require.NoError(t, err)
+	require.Len(t, p.Errors, 0)
+
+	canvas := p.Resources[ResourceName{Kind: ResourceKindCanvas, Name: "d1"}].CanvasSpec
+	require.Equal(t, `{{ has "finance" .user.groups }}`, canvas.Rows[0].ConditionExpression)
+	require.Equal(t, `{{ .user.admin }}`, canvas.Rows[0].Items[0].ConditionExpression)
+	require.Equal(t, "false", canvas.Rows[0].Items[1].ConditionExpression)
+	require.Equal(t, `'{{ .user.domain }}' = 'acme.com'`, canvas.Rows[1].ConditionExpression)
+	tabs := canvas.Rows[1].TabGroup.Tabs
+	require.Equal(t, `{{ eq .user.plan "premium" }}`, tabs[0].ConditionExpression)
+	require.Equal(t, "", tabs[1].ConditionExpression)
+	// A condition on a custom attribute can't be evaluated at parse time, but its template is valid.
+	require.Equal(t, `{{ .user.is_emea }}`, tabs[1].Rows[0].ConditionExpression)
+
+	// Inline components inherit the conditions of their item and its ancestors.
+	component := func(name string) *runtimev1.ComponentSpec {
+		return p.Resources[ResourceName{Kind: ResourceKindComponent, Name: name}].ComponentSpec
+	}
+	require.Equal(t, `({{ has "finance" .user.groups }}) AND ({{ .user.admin }})`, component("d1--component-0-0").ConditionExpression)
+	require.Equal(t, `('{{ .user.domain }}' = 'acme.com') AND ({{ eq .user.plan "premium" }})`, component("d1--component-g1-t0-0-0").ConditionExpression)
+	require.Equal(t, `('{{ .user.domain }}' = 'acme.com') AND ({{ .user.is_emea }})`, component("d1--component-g1-t1-0-0").ConditionExpression)
+	// Components defined in their own file can be shared by canvases, so they don't inherit a canvas item's condition.
+	require.Equal(t, "", component("c1").ConditionExpression)
+}
+
+func TestCanvasConditionErrors(t *testing.T) {
+	ctx := context.Background()
+
+	cases := []struct {
+		name string
+		yaml string
+	}{
+		{
+			name: "invalid template on a row",
+			yaml: `
+type: canvas
+rows:
+- if: '{{ has "finance" .user.groups'
+  items:
+  - markdown:
+      content: "x"
+`,
+		},
+		{
+			name: "invalid expression on an item",
+			yaml: `
+type: canvas
+rows:
+- items:
+  - if: "'{{ .user.domain }}' = "
+    markdown:
+      content: "x"
+`,
+		},
+		{
+			name: "invalid template on a tab",
+			yaml: `
+type: canvas
+rows:
+- tabs:
+  - label: A
+    if: '{{ .user.plan'
+    rows: []
+`,
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			repo := makeRepo(t, map[string]string{
+				`rill.yaml`:        ``,
+				`canvases/d1.yaml`: tc.yaml,
+			})
+			p, err := Parse(ctx, repo, "", "", "duckdb", true)
+			require.NoError(t, err)
+			require.Len(t, p.Resources, 0)
+			require.Len(t, p.Errors, 1)
+			require.Contains(t, p.Errors[0].Message, "invalid 'if'")
+		})
+	}
 }
 
 func TestKindBackwardsCompatibility(t *testing.T) {
@@ -3167,7 +3606,7 @@ func requireResourcesAndErrors(t testing.TB, p *Parser, wantResources []*Resourc
 
 func makeRepo(t testing.TB, files map[string]string) drivers.RepoStore {
 	root := t.TempDir()
-	handle, err := drivers.Open("file", "", "default", map[string]any{"dsn": root}, storage.MustNew(root, nil), activity.NewNoopClient(), zap.NewNop())
+	handle, err := drivers.Open(t.Context(), "file", "", "default", map[string]any{"dsn": root}, storage.MustNew(root, nil), activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
 
 	repo, ok := handle.AsRepoStore("")

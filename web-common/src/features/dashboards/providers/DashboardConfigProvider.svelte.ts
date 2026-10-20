@@ -4,6 +4,7 @@ import {
   createQueryServiceResolveCanvas,
   createRuntimeServiceGetExplore,
 } from "@rilldata/web-common/runtime-client";
+import { getResolveCanvasRequest } from "@rilldata/web-common/features/canvas/selector";
 import { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 
 /**
@@ -35,8 +36,14 @@ export class ExploreDashboardConfigProvider extends DashboardConfigProvider {
       const exploreSpec =
         getExploreResp.data?.explore?.explore?.state?.validSpec ?? {};
 
+      // Prefer the resource's own name over the explore's reference to it. Resource names are
+      // case-insensitive in the runtime, so the two can differ in casing, and the rest of the
+      // explore identifies the metrics view by the resource name.
+      const metricsViewName =
+        getExploreResp.data?.metricsView?.meta?.name?.name ??
+        exploreSpec.metricsView;
       this.metricsViewsProvider.setMetricsViewNames(
-        exploreSpec.metricsView ? [exploreSpec.metricsView] : [],
+        metricsViewName ? [metricsViewName] : [],
       );
 
       this.yamlConfigProvider.update({
@@ -61,12 +68,19 @@ export class ExploreDashboardConfigProvider extends DashboardConfigProvider {
 }
 
 export class CanvasDashboardConfigProvider extends DashboardConfigProvider {
-  public constructor(runtimeClient: RuntimeClient, canvasName: string) {
+  public constructor(
+    runtimeClient: RuntimeClient,
+    canvasName: string,
+    allowUnvalidatedSpec = false,
+  ) {
     super(runtimeClient);
 
-    const resolveCanvasQuery = createQueryServiceResolveCanvas(runtimeClient, {
-      canvas: canvasName,
-    });
+    // The editor saves the default, pinned and required filters back to the YAML,
+    // so it must read them from the full canvas, including content hidden from the current user.
+    const resolveCanvasQuery = createQueryServiceResolveCanvas(
+      runtimeClient,
+      getResolveCanvasRequest(canvasName, allowUnvalidatedSpec),
+    );
     const resolveCanvasUnsub = resolveCanvasQuery.subscribe(
       (resolveCanvasResp) => {
         const canvasSpec =

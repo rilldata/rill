@@ -1786,6 +1786,14 @@ export class MetricsViewSpec_Dimension extends Message<MetricsViewSpec_Dimension
   lookupDefaultExpression = "";
 
   /**
+   * If true, queries that group by the dimension group by the lookup key first and resolve the lookup value once per key.
+   * Only for ClickHouse dictionaries with few keys; see the metrics view docs.
+   *
+   * @generated from field: optional bool lookup_group_by_key = 15;
+   */
+  lookupGroupByKey?: boolean;
+
+  /**
    * The smallest time grain for the dimension. Only populated for time dimensions.
    *
    * @generated from field: rill.runtime.v1.TimeGrain smallest_time_grain = 13;
@@ -1820,6 +1828,7 @@ export class MetricsViewSpec_Dimension extends Message<MetricsViewSpec_Dimension
     { no: 9, name: "lookup_key_column", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 10, name: "lookup_value_column", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 11, name: "lookup_default_expression", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 15, name: "lookup_group_by_key", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
     { no: 13, name: "smallest_time_grain", kind: "enum", T: proto3.getEnumType(TimeGrain) },
     { no: 12, name: "data_type", kind: "message", T: Type },
   ]);
@@ -2885,6 +2894,13 @@ export class ExploreSpec extends Message<ExploreSpec> {
    */
   definedInMetricsView = false;
 
+  /**
+   * Suggested prompts configured by the project author, shown as starters in the AI chat.
+   *
+   * @generated from field: repeated rill.runtime.v1.AIPrompt ai_prompts = 22;
+   */
+  aiPrompts: AIPrompt[] = [];
+
   constructor(data?: PartialMessage<ExploreSpec>) {
     super();
     proto3.util.initPartial(data, this);
@@ -2911,6 +2927,7 @@ export class ExploreSpec extends Message<ExploreSpec> {
     { no: 19, name: "lock_time_zone", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 20, name: "allow_custom_time_range", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 21, name: "defined_in_metrics_view", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 22, name: "ai_prompts", kind: "message", T: AIPrompt, repeated: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ExploreSpec {
@@ -2976,6 +2993,55 @@ export class ExploreState extends Message<ExploreState> {
 
   static equals(a: ExploreState | PlainMessage<ExploreState> | undefined, b: ExploreState | PlainMessage<ExploreState> | undefined): boolean {
     return proto3.util.equals(ExploreState, a, b);
+  }
+}
+
+/**
+ * AIPrompt is a starter prompt shown in the AI chat.
+ *
+ * @generated from message rill.runtime.v1.AIPrompt
+ */
+export class AIPrompt extends Message<AIPrompt> {
+  /**
+   * Short label displayed on the prompt's button.
+   *
+   * @generated from field: string label = 1;
+   */
+  label = "";
+
+  /**
+   * Full prompt sent to the AI when the user picks it.
+   *
+   * @generated from field: string prompt = 2;
+   */
+  prompt = "";
+
+  constructor(data?: PartialMessage<AIPrompt>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.AIPrompt";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "label", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "prompt", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): AIPrompt {
+    return new AIPrompt().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): AIPrompt {
+    return new AIPrompt().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): AIPrompt {
+    return new AIPrompt().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: AIPrompt | PlainMessage<AIPrompt> | undefined, b: AIPrompt | PlainMessage<AIPrompt> | undefined): boolean {
+    return proto3.util.equals(AIPrompt, a, b);
   }
 }
 
@@ -4969,6 +5035,14 @@ export class ComponentSpec extends Message<ComponentSpec> {
   rendererProperties?: Struct;
 
   /**
+   * Declared parameters that canvases can bind values to when referencing this component.
+   * Bound values are available in the renderer properties' templating as {{ .params.<name> }}.
+   *
+   * @generated from field: repeated rill.runtime.v1.ComponentParam params = 10;
+   */
+  params: ComponentParam[] = [];
+
+  /**
    * @generated from field: repeated rill.runtime.v1.ComponentVariable input = 8;
    */
   input: ComponentVariable[] = [];
@@ -4983,6 +5057,14 @@ export class ComponentSpec extends Message<ComponentSpec> {
    */
   definedInCanvas = false;
 
+  /**
+   * For components defined inline in a canvas, the `if` conditions of the item and its ancestors (rows, tabs), ANDed together.
+   * Only viewers for whom it evaluates to true can access the component.
+   *
+   * @generated from field: string condition_expression = 11;
+   */
+  conditionExpression = "";
+
   constructor(data?: PartialMessage<ComponentSpec>) {
     super();
     proto3.util.initPartial(data, this);
@@ -4995,9 +5077,11 @@ export class ComponentSpec extends Message<ComponentSpec> {
     { no: 7, name: "description", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "renderer", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 5, name: "renderer_properties", kind: "message", T: Struct },
+    { no: 10, name: "params", kind: "message", T: ComponentParam, repeated: true },
     { no: 8, name: "input", kind: "message", T: ComponentVariable, repeated: true },
     { no: 9, name: "output", kind: "message", T: ComponentVariable },
     { no: 6, name: "defined_in_canvas", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 11, name: "condition_expression", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ComponentSpec {
@@ -5111,6 +5195,97 @@ export class ComponentVariable extends Message<ComponentVariable> {
 
   static equals(a: ComponentVariable | PlainMessage<ComponentVariable> | undefined, b: ComponentVariable | PlainMessage<ComponentVariable> | undefined): boolean {
     return proto3.util.equals(ComponentVariable, a, b);
+  }
+}
+
+/**
+ * ComponentParam declares a typed, validated parameter of a component.
+ *
+ * @generated from message rill.runtime.v1.ComponentParam
+ */
+export class ComponentParam extends Message<ComponentParam> {
+  /**
+   * Param name. Must be a valid identifier; referenced in templates as {{ .params.<name> }}.
+   *
+   * @generated from field: string name = 1;
+   */
+  name = "";
+
+  /**
+   * Param type. One of: "string", "number", "boolean", "metrics_view", "measure", "dimension", "time_dimension".
+   *
+   * @generated from field: string type = 2;
+   */
+  type = "";
+
+  /**
+   * Human-facing description of the param.
+   *
+   * @generated from field: string description = 3;
+   */
+  description = "";
+
+  /**
+   * If true, a canvas item referencing this component must bind a value for the param.
+   *
+   * @generated from field: bool required = 4;
+   */
+  required = false;
+
+  /**
+   * Default value used when the param is not bound. Mutually exclusive with required=true.
+   *
+   * @generated from field: google.protobuf.Value default = 5;
+   */
+  default?: Value;
+
+  /**
+   * For "measure", "dimension" and "time_dimension" params:
+   * the name of a sibling param of type "metrics_view" whose bound metrics view the field must belong to.
+   * May be omitted when exactly one "metrics_view" param is declared, in which case the parser fills it in.
+   *
+   * @generated from field: string metrics_view_param = 6;
+   */
+  metricsViewParam = "";
+
+  /**
+   * For scalar params: allowed values. Renders as a select input in visual editors.
+   *
+   * @generated from field: repeated google.protobuf.Value options = 7;
+   */
+  options: Value[] = [];
+
+  constructor(data?: PartialMessage<ComponentParam>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.ComponentParam";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "type", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "description", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "required", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 5, name: "default", kind: "message", T: Value },
+    { no: 6, name: "metrics_view_param", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 7, name: "options", kind: "message", T: Value, repeated: true },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ComponentParam {
+    return new ComponentParam().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ComponentParam {
+    return new ComponentParam().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ComponentParam {
+    return new ComponentParam().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: ComponentParam | PlainMessage<ComponentParam> | undefined, b: ComponentParam | PlainMessage<ComponentParam> | undefined): boolean {
+    return proto3.util.equals(ComponentParam, a, b);
   }
 }
 
@@ -5292,6 +5467,13 @@ export class CanvasSpec extends Message<CanvasSpec> {
    */
   annotations: { [key: string]: string } = {};
 
+  /**
+   * Suggested prompts configured by the project author, shown as starters in the AI chat.
+   *
+   * @generated from field: repeated rill.runtime.v1.AIPrompt ai_prompts = 21;
+   */
+  aiPrompts: AIPrompt[] = [];
+
   constructor(data?: PartialMessage<CanvasSpec>) {
     super();
     proto3.util.initPartial(data, this);
@@ -5318,6 +5500,7 @@ export class CanvasSpec extends Message<CanvasSpec> {
     { no: 16, name: "pinned_filters", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 19, name: "required_filters", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 20, name: "annotations", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
+    { no: 21, name: "ai_prompts", kind: "message", T: AIPrompt, repeated: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CanvasSpec {
@@ -5418,6 +5601,14 @@ export class CanvasRow extends Message<CanvasRow> {
    */
   tabGroup?: CanvasTabGroup;
 
+  /**
+   * Templated boolean expression from the row's `if` property.
+   * The row (or tab group) is only shown to viewers for whom it evaluates to true.
+   *
+   * @generated from field: string condition_expression = 5;
+   */
+  conditionExpression = "";
+
   constructor(data?: PartialMessage<CanvasRow>) {
     super();
     proto3.util.initPartial(data, this);
@@ -5430,6 +5621,7 @@ export class CanvasRow extends Message<CanvasRow> {
     { no: 2, name: "height_unit", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "items", kind: "message", T: CanvasItem, repeated: true },
     { no: 4, name: "tab_group", kind: "message", T: CanvasTabGroup },
+    { no: 5, name: "condition_expression", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CanvasRow {
@@ -5523,6 +5715,14 @@ export class CanvasTab extends Message<CanvasTab> {
    */
   rows: CanvasRow[] = [];
 
+  /**
+   * Templated boolean expression from the tab's `if` property.
+   * The tab is only shown to viewers for whom it evaluates to true.
+   *
+   * @generated from field: string condition_expression = 4;
+   */
+  conditionExpression = "";
+
   constructor(data?: PartialMessage<CanvasTab>) {
     super();
     proto3.util.initPartial(data, this);
@@ -5534,6 +5734,7 @@ export class CanvasTab extends Message<CanvasTab> {
     { no: 1, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "display_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "rows", kind: "message", T: CanvasRow, repeated: true },
+    { no: 4, name: "condition_expression", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CanvasTab {
@@ -5572,6 +5773,14 @@ export class CanvasItem extends Message<CanvasItem> {
   definedInCanvas = false;
 
   /**
+   * Values bound to the referenced component's declared params.
+   * Only set for items that reference an externally defined component.
+   *
+   * @generated from field: google.protobuf.Struct params = 11;
+   */
+  params?: Struct;
+
+  /**
    * Width of the item. The unit is given in width_unit.
    *
    * @generated from field: optional uint32 width = 9;
@@ -5585,6 +5794,14 @@ export class CanvasItem extends Message<CanvasItem> {
    */
   widthUnit = "";
 
+  /**
+   * Templated boolean expression from the item's `if` property.
+   * The item is only shown to viewers for whom it evaluates to true.
+   *
+   * @generated from field: string condition_expression = 12;
+   */
+  conditionExpression = "";
+
   constructor(data?: PartialMessage<CanvasItem>) {
     super();
     proto3.util.initPartial(data, this);
@@ -5595,8 +5812,10 @@ export class CanvasItem extends Message<CanvasItem> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "component", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 8, name: "defined_in_canvas", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 11, name: "params", kind: "message", T: Struct },
     { no: 9, name: "width", kind: "scalar", T: 13 /* ScalarType.UINT32 */, opt: true },
     { no: 10, name: "width_unit", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 12, name: "condition_expression", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CanvasItem {

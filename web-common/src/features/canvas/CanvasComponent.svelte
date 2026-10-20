@@ -2,6 +2,7 @@
   import LoadingSpinner from "@rilldata/web-common/components/icons/LoadingSpinner.svelte";
   import { onMount } from "svelte";
   import Toolbar from "./Toolbar.svelte";
+  import CanvasComponentPngDialog from "./export/CanvasComponentPngDialog.svelte";
   import type { BaseCanvasComponent } from "./components/BaseCanvasComponent";
   import { hideBorder } from "./layout-util";
 </script>
@@ -65,6 +66,17 @@
   let open = false;
   let container: HTMLElement;
 
+  // Mounted only while open: the dialog renders the component a second time,
+  // which every card on the canvas must not pay for.
+  let pngDialogOpen = false;
+  let pngSize = { width: 0, height: 0 };
+
+  function openPngDialog() {
+    const { width, height } = container.getBoundingClientRect();
+    pngSize = { width, height };
+    pngDialogOpen = true;
+  }
+
   $: ({ id: componentName, type: renderer } = component);
 
   $: allowBorder = !hideBorder.has(renderer);
@@ -88,6 +100,7 @@
     {onDelete}
     {onDuplicate}
     {onConvertToTabGroup}
+    onDownloadPng={openPngDialog}
     {editable}
     bind:dropdownOpen={open}
     {navigationEnabled}
@@ -107,6 +120,15 @@
     {/if}
   </div>
 </article>
+
+{#if pngDialogOpen}
+  <CanvasComponentPngDialog
+    bind:open={pngDialogOpen}
+    {component}
+    width={pngSize.width}
+    height={pngSize.height}
+  />
+{/if}
 
 <style lang="postcss">
   .component-card.editable:hover {

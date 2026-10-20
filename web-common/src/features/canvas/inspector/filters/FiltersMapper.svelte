@@ -7,11 +7,7 @@
   import TimeFiltersInput from "@rilldata/web-common/features/canvas/inspector/filters/TimeFiltersInput.svelte";
   import type { BaseCanvasComponent } from "../../components/BaseCanvasComponent";
   import { resolveTimeFilters } from "../../components/time-filters";
-  import type {
-    ComponentFilterProperties,
-    ComponentSpec,
-  } from "../../components/types";
-  import type { AllKeys, FilterInputParam } from "../types";
+  import type { ComponentFilterProperties } from "../../components/types";
 
   let { component }: { component: BaseCanvasComponent } = $props();
 
@@ -29,9 +25,9 @@
   let inputParams = $derived(component.inputParams().filter);
 
   let metricsView = $derived(
-    "metrics_view" in localParamValues
+    ("metrics_view" in localParamValues
       ? (localParamValues.metrics_view ?? null)
-      : null,
+      : null) as string | null,
   );
 
   let excludedDimensions = $derived(
@@ -45,9 +41,7 @@
       : {},
   );
 
-  let entries = $derived(
-    Object.entries(inputParams) as [AllKeys<ComponentSpec>, FilterInputParam][],
-  );
+  let entries = $derived(Object.entries(inputParams));
 
   let { hasTimeSeries } = $derived(localTimeFilters);
 

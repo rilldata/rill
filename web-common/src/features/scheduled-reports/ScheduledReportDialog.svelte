@@ -357,7 +357,7 @@
       ],
     );
     updatedAggregationRequest.where =
-      expressionFilterManager?.topLevelJoiner[metricsViewName];
+      expressionFilterManager?.topLevelJoiner.expr[metricsViewName];
     return {
       ...commonOptions,
       explore: exploreName,

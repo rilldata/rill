@@ -54,6 +54,20 @@
       label={m.canvas_time_range_label()}
       {id}
     />
+    <!--{#if showGrain && activeTimeGrain && grainOptions.length}-->
+    <!--  <AggregationGrainSelector-->
+    <!--    {activeTimeGrain}-->
+    <!--    options={grainOptions}-->
+    <!--    onSelect={set.grain}-->
+    <!--    defaultOption={{-->
+    <!--      label: hasLocalTimeRange-->
+    <!--        ? m.time_default()-->
+    <!--        : m.canvas_inherit_from_canvas(),-->
+    <!--      selected: resolved.grain === undefined,-->
+    <!--      onSelect: clearGrain,-->
+    <!--    }}-->
+    <!--  />-->
+    <!--{/if}-->
   </div>
   <div class="text-fg-secondary">
     {#if hasLocalTimeRange}

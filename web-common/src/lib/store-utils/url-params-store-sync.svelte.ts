@@ -1,4 +1,4 @@
-import type { EventEmitter } from "@rilldata/web-common/lib/event-emitter.ts";
+import { EventEmitter } from "@rilldata/web-common/lib/event-emitter.ts";
 
 type UrlParamsStoreEvents = {
   ready: void;
@@ -12,7 +12,7 @@ export interface UrlParamsStore {
   on: EventEmitter<UrlParamsStoreEvents>["on"];
 
   /**
-   * Keys set by this class.
+   * Url param keys set by this class.
    */
   paramKeys: Set<string>;
   normalizeParams(urlParams: URLSearchParams): URLSearchParams;
