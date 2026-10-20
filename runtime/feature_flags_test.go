@@ -194,3 +194,38 @@ func Test_ResolveFeatureFlags_CloudEditingDisabledAnnotation(t *testing.T) {
 		})
 	}
 }
+
+// Test_ResolveFeatureFlags_ChatMemoryPrincipals checks that chat_memory is off for tokens whose subject is shared by several viewers, whatever the project configures:
+// public URLs and embeds without an external_user_id.
+func Test_ResolveFeatureFlags_ChatMemoryPrincipals(t *testing.T) {
+	inst := &drivers.Instance{
+		FeatureFlags: map[string]string{
+			"chat":           "true",
+			"dashboard_chat": "true",
+			"chat_memory":    "true",
+		},
+	}
+
+	tests := []struct {
+		name       string
+		userAttrs  map[string]any
+		chatMemory bool
+	}{
+		{"rill user", map[string]any{"email": "user@example.com"}, true},
+		{"anonymous", nil, true},
+		{"embed without external user", map[string]any{"embed": true, "tenant_id": "foo"}, false},
+		{"embed with external user", map[string]any{"embed": true, "external_user": true, "tenant_id": "foo"}, true},
+		{"ephemeral token with external user", map[string]any{"external_user": true}, true},
+		{"public URL", map[string]any{"email": "creator@example.com", "public_url": true}, false},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			featureFlags, err := ResolveFeatureFlags(inst, test.userAttrs, true)
+			require.NoError(t, err)
+			require.Equal(t, test.chatMemory, featureFlags["chatMemory"])
+			// Only memory is affected: chat itself stays as configured.
+			require.True(t, featureFlags["chat"])
+			require.True(t, featureFlags["dashboardChat"])
+		})
+	}
+}

@@ -203,3 +203,5 @@ Only one of `user_email` or `attributes` can be provided for a given token. The 
 - `user_email`: Looks up the user in Rill Cloud by email and populates their standard attributes. If no matching user is found, it generates limited attributes with only the fields `email`, `domain` and `admin` (set to `false`). Does not enable per-user state on its own; combine with `external_user_id` to enable per-user state.
 - `attributes`: Passes the provided attributes through directly. Make sure to include all attributes referenced in your security policies (e.g. `email`, `domain`, `admin`, or custom attributes like `tenant_id`). Does not enable per-user state on its own; combine with `external_user_id` to enable per-user state.
 - `external_user_id`: Any stable identifier for an external end user. This is usually the user's ID in your own database. Setting it enables per-user state such as AI chat history. Can be combined with `user_email` or `attributes`.
+
+[AI memory](/guide/ai/ai-chat#memory) is per-user state too: it is only available with `external_user_id`. Without it, everyone using the token would share one memory, so memory is off.

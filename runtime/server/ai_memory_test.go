@@ -26,12 +26,32 @@ func TestAIMemories(t *testing.T) {
 	barCtx := auth.WithClaims(t.Context(), &runtime.SecurityClaims{UserID: "bar", Permissions: []runtime.Permission{runtime.UseAI}})
 	anonCtx := auth.WithClaims(t.Context(), &runtime.SecurityClaims{Permissions: []runtime.Permission{runtime.UseAI}})
 	noAICtx := auth.WithClaims(t.Context(), &runtime.SecurityClaims{UserID: "foo"})
+	// An embed token without an external user ID has the service ID as subject (shared by every viewer); a public URL token has the magic token ID (shared by everyone with the link).
+	embedCtx := auth.WithClaims(t.Context(), &runtime.SecurityClaims{UserID: "service", UserAttributes: map[string]any{"embed": true}, Permissions: []runtime.Permission{runtime.UseAI}})
+	publicURLCtx := auth.WithClaims(t.Context(), &runtime.SecurityClaims{UserID: "magic", UserAttributes: map[string]any{"email": "creator@example.com", "public_url": true}, Permissions: []runtime.Permission{runtime.UseAI}})
+	// An embed token with an external user ID has a per-viewer subject.
+	externalUserCtx := auth.WithClaims(t.Context(), &runtime.SecurityClaims{UserID: "ext_abc", UserAttributes: map[string]any{"embed": true, "external_user": true}, Permissions: []runtime.Permission{runtime.UseAI}})
 
 	// Anonymous users on Rill Cloud get no memory
 	_, err = srv.ListAIMemories(anonCtx, &runtimev1.ListAIMemoriesRequest{InstanceId: instanceID})
 	require.Equal(t, codes.FailedPrecondition, status.Code(err))
 	_, err = srv.CreateAIMemory(anonCtx, &runtimev1.CreateAIMemoryRequest{InstanceId: instanceID, Content: "x"})
 	require.Equal(t, codes.FailedPrecondition, status.Code(err))
+
+	// Embed and public URL viewers get no memory either: their subject is shared, so a memory store would be shared too
+	for _, ctx := range []context.Context{embedCtx, publicURLCtx} {
+		_, err = srv.ListAIMemories(ctx, &runtimev1.ListAIMemoriesRequest{InstanceId: instanceID})
+		require.Equal(t, codes.FailedPrecondition, status.Code(err))
+		_, err = srv.CreateAIMemory(ctx, &runtimev1.CreateAIMemoryRequest{InstanceId: instanceID, Content: "x"})
+		require.Equal(t, codes.FailedPrecondition, status.Code(err))
+		_, err = srv.GetAIMemorySettings(ctx, &runtimev1.GetAIMemorySettingsRequest{InstanceId: instanceID})
+		require.Equal(t, codes.FailedPrecondition, status.Code(err))
+	}
+
+	// An embed viewer identified by an external user ID keeps their own memory
+	extList, err := srv.ListAIMemories(externalUserCtx, &runtimev1.ListAIMemoriesRequest{InstanceId: instanceID})
+	require.NoError(t, err)
+	require.Empty(t, extList.Memories)
 
 	// Users without the AI permission are forbidden
 	_, err = srv.ListAIMemories(noAICtx, &runtimev1.ListAIMemoriesRequest{InstanceId: instanceID})

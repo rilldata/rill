@@ -188,7 +188,7 @@ func (s *Server) UpdateAIMemorySettings(ctx context.Context, req *runtimev1.Upda
 }
 
 // checkAIMemoryAccess checks that the caller may use AI and that memory is available to them.
-// It returns a FailedPrecondition error when memory is not available: for anonymous users on Rill Cloud and when the chat_memory feature flag is off.
+// It returns a FailedPrecondition error when memory is not available: for anonymous users on Rill Cloud, for public URL viewers and embeds without an external_user_id, and when the chat_memory feature flag is off.
 func (s *Server) checkAIMemoryAccess(ctx context.Context, instanceID string) (*runtime.SecurityClaims, error) {
 	claims := auth.GetClaims(ctx, instanceID)
 	if !claims.Can(runtime.UseAI) {

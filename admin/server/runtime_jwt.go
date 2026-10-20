@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"maps"
 	"time"
 
 	"github.com/rilldata/rill/admin/database"
@@ -116,7 +117,11 @@ func (s *Server) issueRuntimeToken(ctx context.Context, opts *issueRuntimeTokenO
 			if !ok {
 				return "", status.Errorf(codes.Internal, "unexpected type %T for magic auth token model", claims.AuthTokenModel())
 			}
-			attr = mdl.Attributes
+			// A public URL token carries the creator's attributes, so the runtime cannot tell it from the creator's own token by subject or attributes alone.
+			// Mark it with public_url: everyone with the link shares this subject, so per-user features such as AI memory must stay off (see runtime.ResolveFeatureFlags).
+			attr = make(map[string]any, len(mdl.Attributes)+1)
+			maps.Copy(attr, mdl.Attributes)
+			attr["public_url"] = true
 			magicRules, err := securityRulesFromMagicAuthToken(mdl)
 			if err != nil {
 				return "", err
@@ -152,8 +157,13 @@ func (s *Server) issueRuntimeToken(ctx context.Context, opts *issueRuntimeTokenO
 	}
 
 	// Apply externalUserID after principal resolution so it overrides whatever subject was set.
+	// The external_user attribute tells the runtime that the subject identifies one viewer, so per-user features such as AI memory stay on in an embed (see runtime.ResolveFeatureFlags).
 	if opts.externalUserID != "" {
 		subject = subjectForExternalUser(opts.externalUserID, opts.project.ID)
+		if attr == nil {
+			attr = make(map[string]any, 1)
+		}
+		attr["external_user"] = true
 	}
 
 	// overrideResources replaces any principal-derived resource rules with a fresh allow-list.

@@ -328,6 +328,8 @@ Only one of `user_email` or `attributes` can be provided for a given iframe. The
 - `attributes`: Passes the provided attributes through directly. Make sure to include all attributes referenced in your security policies (e.g. `email`, `domain`, `admin`, or custom attributes like `tenant_id`). Does not enable per-user state on its own; combine with `external_user_id` to enable per-user state.
 - `external_user_id`: Any stable identifier for the end user. This is usually the user's ID in your own database. Setting it enables per-user state such as AI chat history.
 
+[AI memory](/guide/ai/ai-chat#memory) is per-user state too: it is only available in an embed with `external_user_id`. Without it, every viewer of the embed would share one memory, so memory is off.
+
 The same attributes decide what an embedded canvas shows. Canvas rows, tabs and components can have [`if` conditions](/developers/build/dashboards/canvas#show-content-to-some-viewers-only) on them, such as `'{{ eq .user.plan "premium" }}'` to show premium content only to tenants on that plan. Every embed also carries the attribute `embed: true`, so a condition like `'{{ not .user.embed }}'` keeps content out of embedded dashboards.
 
 ## Embedding the project vs embedding an individual dashboard

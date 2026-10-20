@@ -1,15 +1,19 @@
 <!--
   "Memory updated" notice rendered under an assistant turn when the AI wrote to the user's memory through update_memory.
   Shows what changed and links to the memory manager, where the change can be edited or deleted.
+  Hidden when memory is off for the viewer, so a notice in an older conversation never links to a manager the runtime refuses to serve.
 -->
 <script lang="ts">
   import Button from "@rilldata/web-common/components/button/Button.svelte";
+  import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import { Brain } from "lucide-svelte";
   import MemoryDialog from "./MemoryDialog.svelte";
   import type { MemoryUpdateBlock } from "./memory-update-block";
 
   export let block: MemoryUpdateBlock;
+
+  const { chatMemory } = featureFlags;
 
   let dialogOpen = false;
 
@@ -29,21 +33,23 @@
   }
 </script>
 
-<div class="memory-chip" data-testid="memory-update-chip">
-  <Brain size="14px" class="shrink-0" />
-  <span class="memory-chip-title">{m.chat_memory_updated()}</span>
-  <span class="memory-op-label" data-op={block.result.op}>{opLabel}</span>
-  <span class="memory-op-content" title={block.result.content}>
-    {block.result.content}
-  </span>
-  <div class="memory-chip-actions">
-    <Button type="text" compact onClick={() => (dialogOpen = true)}>
-      {m.chat_memory_open()}
-    </Button>
+{#if $chatMemory}
+  <div class="memory-chip" data-testid="memory-update-chip">
+    <Brain size="14px" class="shrink-0" />
+    <span class="memory-chip-title">{m.chat_memory_updated()}</span>
+    <span class="memory-op-label" data-op={block.result.op}>{opLabel}</span>
+    <span class="memory-op-content" title={block.result.content}>
+      {block.result.content}
+    </span>
+    <div class="memory-chip-actions">
+      <Button type="text" compact onClick={() => (dialogOpen = true)}>
+        {m.chat_memory_open()}
+      </Button>
+    </div>
   </div>
-</div>
 
-<MemoryDialog bind:open={dialogOpen} />
+  <MemoryDialog bind:open={dialogOpen} />
+{/if}
 
 <style lang="postcss">
   .memory-chip {

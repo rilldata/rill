@@ -120,6 +120,7 @@ func TestDeploymentJWTs(t *testing.T) {
 		require.NotEqual(t, u1.ID, c.Subject)
 		require.Equal(t, "embed@example.com", c.Attrs["email"])
 		require.Equal(t, "foo", c.Attrs["tenant_id"])
+		require.Equal(t, true, c.Attrs["external_user"])
 		require.NotContains(t, c.Attrs, "admin")
 
 		// Subject hash must be deterministic across calls with the same external id and project.
@@ -130,6 +131,73 @@ func TestDeploymentJWTs(t *testing.T) {
 		})
 		require.NoError(t, err)
 		require.Equal(t, c.Subject, decodeJWT(t, resp2.AccessToken).Subject)
+	})
+
+	t.Run("GetIFrame for service token without external user ID", func(t *testing.T) {
+		svc, err := u1Client.CreateService(t.Context(), &adminv1.CreateServiceRequest{
+			Org:             "jwt-test",
+			Name:            "embed-service",
+			Project:         "jwt-project",
+			ProjectRoleName: "admin",
+		})
+		require.NoError(t, err)
+		tok, err := u1Client.IssueServiceAuthToken(t.Context(), &adminv1.IssueServiceAuthTokenRequest{
+			Org:         "jwt-test",
+			ServiceName: "embed-service",
+		})
+		require.NoError(t, err)
+
+		resp, err := adm.NewClient(t, tok.Token).GetIFrame(t.Context(), &adminv1.GetIFrameRequest{
+			Org:      "jwt-test",
+			Project:  "jwt-project",
+			Resource: "foo",
+		})
+		require.NoError(t, err)
+
+		// Every viewer of the embed shares the service ID as subject, and nothing marks the token as identifying one viewer.
+		c := decodeJWT(t, resp.AccessToken)
+		require.Equal(t, svc.Service.Id, c.Subject)
+		require.Equal(t, true, c.Attrs["embed"])
+		require.NotContains(t, c.Attrs, "external_user")
+		require.NotContains(t, c.Attrs, "public_url")
+		requireHasPerms(t, c.Instances[depl.RuntimeInstanceID], runtime.UseAI)
+
+		// With an external user ID, each viewer gets their own subject and the token says so.
+		resp, err = adm.NewClient(t, tok.Token).GetIFrame(t.Context(), &adminv1.GetIFrameRequest{
+			Org:            "jwt-test",
+			Project:        "jwt-project",
+			Resource:       "foo",
+			ExternalUserId: "external-customer-42",
+		})
+		require.NoError(t, err)
+		c = decodeJWT(t, resp.AccessToken)
+		require.True(t, strings.HasPrefix(c.Subject, "ext_"))
+		require.Equal(t, true, c.Attrs["embed"])
+		require.Equal(t, true, c.Attrs["external_user"])
+	})
+
+	t.Run("GetProject for public URL", func(t *testing.T) {
+		tkn, err := u1Client.IssueMagicAuthToken(t.Context(), &adminv1.IssueMagicAuthTokenRequest{
+			Org:       "jwt-test",
+			Project:   "jwt-project",
+			Resources: []*adminv1.ResourceName{{Type: runtime.ResourceKindExplore, Name: "foo"}},
+		})
+		require.NoError(t, err)
+
+		resp, err := adm.NewClient(t, tkn.Token).GetProject(t.Context(), &adminv1.GetProjectRequest{
+			Org:     "jwt-test",
+			Project: "jwt-project",
+		})
+		require.NoError(t, err)
+
+		// Everyone with the link shares the magic token ID as subject and the creator's attributes, so the token is marked as a public URL.
+		c := decodeJWT(t, resp.Jwt)
+		require.NotEmpty(t, c.Subject)
+		require.NotEqual(t, u1.ID, c.Subject)
+		require.Equal(t, u1.Email, c.Attrs["email"])
+		require.Equal(t, true, c.Attrs["public_url"])
+		require.NotContains(t, c.Attrs, "embed")
+		requireHasPerms(t, c.Instances[depl.RuntimeInstanceID], runtime.UseAI)
 	})
 }
 

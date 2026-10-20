@@ -58,12 +58,15 @@ var (
 )
 
 // MemoryAvailable reports whether memory is available to the given claims in an instance.
-// It is false for users without the AI permission, for anonymous users, and when the chat_memory feature flag is off.
+// Memory is keyed on the user ID, so it is only available when that ID identifies one viewer:
+// it is false for users without the AI permission, for anonymous users, and when the chat_memory feature flag is off.
+// The flag is also resolved to false for tokens whose subject is shared by several viewers (see runtime.ResolveFeatureFlags):
+// public URLs, and embeds without an external_user_id.
 func MemoryAvailable(ctx context.Context, rt *runtime.Runtime, instanceID string, claims *runtime.SecurityClaims) (bool, error) {
 	if claims == nil || !claims.Can(runtime.UseAI) {
 		return false, nil
 	}
-	// Anonymous users on Rill Cloud (public projects, magic tokens) have no stable identity to key memory on.
+	// Anonymous users on Rill Cloud (public projects) have no identity to key memory on.
 	// In Rill Developer, auth is disabled so SkipChecks is true and the empty user ID acts as the single local user.
 	if claims.UserID == "" && !claims.SkipChecks {
 		return false, nil
