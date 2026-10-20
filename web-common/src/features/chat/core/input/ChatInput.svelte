@@ -65,7 +65,6 @@
       await currentConversation.sendMessage(
         {
           ...additionalContext,
-          uiPagePath: `${window.location.pathname}${window.location.search}${window.location.hash}`,
           uiActions: getAvailableUIActions(),
         },
         {

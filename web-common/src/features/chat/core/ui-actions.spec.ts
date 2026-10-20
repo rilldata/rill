@@ -37,6 +37,18 @@ describe("UI actions", () => {
     ]);
   });
 
+  it("limits labels to 256 characters, not bytes", () => {
+    // Matches the server, which truncates labels by character count (runtime/server/chat.go).
+    const nonASCII = "é".repeat(256);
+    addAction("canvas.share", nonASCII);
+    addAction("canvas.edit", "x".repeat(300));
+
+    expect(getAvailableUIActions()).toEqual([
+      { id: "canvas.share", label: nonASCII },
+      { id: "canvas.edit", label: "x".repeat(256) },
+    ]);
+  });
+
   it("ignores actions inside a data-ai-ignore subtree", () => {
     const ignored = document.createElement("div");
     ignored.dataset.aiIgnore = "";

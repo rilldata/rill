@@ -30,6 +30,7 @@ function actionLabel(element: HTMLElement, id: string): string {
     element.getAttribute("aria-label") ||
     element.textContent ||
     id;
+  // 256 UTF-16 code units, which never exceeds the server's 256-character limit (runtime/server/chat.go).
   return label.replace(/\s+/g, " ").trim().slice(0, 256) || id;
 }
 
