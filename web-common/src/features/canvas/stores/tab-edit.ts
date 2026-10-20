@@ -29,6 +29,10 @@ const MAX_ITEMS_PER_ROW = 4;
  *     room, the item joins that row at that column (e.g. dropping to the left of a widget);
  *   - otherwise it becomes a new row inserted at `dest.row` (or appended).
  *
+ * The item keeps the visibility it had at the source: the `if` conditions of the source
+ * group, tab and row that the destination doesn't apply too are folded into the item's own
+ * `if`, so content hidden from some viewers doesn't become visible to them (as in deleteTab).
+ *
  * Node references for both containers are resolved up front, so removing the source row
  * never invalidates the destination even when the source sits above a destination tab group.
  * Returns true if the move was applied.
@@ -60,6 +64,25 @@ export function moveItemAcrossContainers(
     isSeq(destRowItems) &&
     destRowItems.items.length < MAX_ITEMS_PER_ROW;
 
+  // Carry the source conditions the destination doesn't already apply.
+  const destConditions = new Set(
+    [
+      ...containerConditions(doc, dest.rowsPath),
+      joinExistingRow && isMap(destRowNode) ? destRowNode.get("if") : undefined,
+    ]
+      .map((c) => combineConditions(c))
+      .filter((c) => c !== undefined),
+  );
+  const carried = [
+    ...containerConditions(doc, source.rowsPath),
+    sourceRow.get("if"),
+  ]
+    .map((c) => combineConditions(c))
+    .filter((c) => c !== undefined && !destConditions.has(c));
+  if (carried.length > 0 && isMap(itemNode)) {
+    itemNode.set("if", combineConditions(...carried, itemNode.get("if")));
+  }
+
   // Remove from the source (and drop the row if it is now empty).
   sourceItems.items.splice(source.col, 1);
   if (sourceItems.items.length === 0) {
@@ -76,6 +99,22 @@ export function moveItemAcrossContainers(
   }
 
   return true;
+}
+
+/**
+ * The `if` conditions that apply to every row of a rows container: those of the enclosing
+ * tab group and tab for a tab's rows (`["rows", group, "tabs", tab, "rows"]`), none for the
+ * top-level rows (`["rows"]`).
+ */
+function containerConditions(
+  doc: Document,
+  rowsPath: (string | number)[],
+): unknown[] {
+  if (rowsPath.length < 5) return [];
+  return [
+    doc.getIn([...rowsPath.slice(0, 2), "if"]),
+    doc.getIn([...rowsPath.slice(0, 4), "if"]),
+  ];
 }
 
 /** Number of top-level entries in the rows sequence. */

@@ -470,6 +470,126 @@ rows:
     ]);
   });
 
+  // A tab group whose Finance tab, one of its rows and one of its items all carry an `if`.
+  const CONDITIONED_TABS = `type: canvas
+rows:
+  - items:
+      - component: outside
+  - if: '{{ has "staff" .user.groups }}'
+    tabs:
+      - label: Overview
+        rows:
+          - items:
+              - component: kpi_overview
+      - label: Finance
+        if: '{{ has "finance" .user.groups }}'
+        rows:
+          - if: "'{{ .user.domain }}' = 'acme.com'"
+            items:
+              - component: kpi_finance
+                if: '{{ .user.admin }}'
+`;
+
+  it("moveItemAcrossContainers keeps the visibility of an item moved to another tab", () => {
+    const doc = parseDocument(CONDITIONED_TABS);
+    // Finance's row 0 col 0 joins Overview's row 0, to the right of kpi_overview.
+    const ok = moveItemAcrossContainers(
+      doc,
+      { rowsPath: ["rows", 1, "tabs", 1, "rows"], row: 0, col: 0 },
+      { rowsPath: ["rows", 1, "tabs", 0, "rows"], row: 0, col: 1 },
+    );
+    expect(ok).toBe(true);
+
+    const tabs = doc.toJSON().rows[1].tabs;
+    expect(tabs[1].rows).toEqual([]);
+    // The group's condition still applies in Overview, so only the tab's, the row's and
+    // the item's own conditions travel with the item.
+    expect(tabs[0].rows[0].items).toEqual([
+      { component: "kpi_overview" },
+      {
+        component: "kpi_finance",
+        if: `({{ has "finance" .user.groups }}) AND ('{{ .user.domain }}' = 'acme.com') AND ({{ .user.admin }})`,
+      },
+    ]);
+  });
+
+  it("moveItemAcrossContainers keeps the visibility of an item moved out of a tab group", () => {
+    const doc = parseDocument(CONDITIONED_TABS);
+    // Finance's item becomes a new top-level row after the tab group.
+    const ok = moveItemAcrossContainers(
+      doc,
+      { rowsPath: ["rows", 1, "tabs", 1, "rows"], row: 0, col: 0 },
+      { rowsPath: ["rows"], col: null },
+    );
+    expect(ok).toBe(true);
+
+    const json = doc.toJSON();
+    expect(json.rows).toHaveLength(3);
+    // Nothing applies to a top-level row, so the group's condition travels too.
+    expect(json.rows[2]).toEqual({
+      items: [
+        {
+          component: "kpi_finance",
+          if: `({{ has "staff" .user.groups }}) AND ({{ has "finance" .user.groups }}) AND ('{{ .user.domain }}' = 'acme.com') AND ({{ .user.admin }})`,
+        },
+      ],
+    });
+  });
+
+  it("moveItemAcrossContainers lets an item moved into a tab inherit the tab's visibility", () => {
+    const doc = parseDocument(CONDITIONED_TABS);
+    // The unconditioned top-level item joins Finance's conditioned row.
+    const ok = moveItemAcrossContainers(
+      doc,
+      { rowsPath: ["rows"], row: 0, col: 0 },
+      { rowsPath: ["rows", 1, "tabs", 1, "rows"], row: 0, col: 0 },
+    );
+    expect(ok).toBe(true);
+
+    const json = doc.toJSON();
+    // The source row is gone, so the group is now the only top-level row.
+    expect(json.rows).toHaveLength(1);
+    const finance = json.rows[0].tabs[1];
+    expect(finance.if).toBe('{{ has "finance" .user.groups }}');
+    expect(finance.rows[0].if).toBe("'{{ .user.domain }}' = 'acme.com'");
+    // The item had no conditions of its own and gains none; the destination's apply to it.
+    expect(finance.rows[0].items[0]).toEqual({ component: "outside" });
+  });
+
+  it("moveItemAcrossContainers doesn't repeat a condition the destination already applies", () => {
+    const doc = parseDocument(`type: canvas
+rows:
+  - tabs:
+      - label: A
+        if: '{{ .user.admin }}'
+        rows:
+          - if: "'{{ .user.domain }}' = 'acme.com'"
+            items:
+              - component: a
+  - if: '{{ has "finance" .user.groups }}'
+    tabs:
+      - label: B
+        rows:
+          - if: "'{{ .user.domain }}' = 'acme.com'"
+            items:
+              - component: b
+`);
+    // Tab A's item joins tab B's row, which has the same row condition.
+    const ok = moveItemAcrossContainers(
+      doc,
+      { rowsPath: ["rows", 0, "tabs", 0, "rows"], row: 0, col: 0 },
+      { rowsPath: ["rows", 1, "tabs", 0, "rows"], row: 0, col: 1 },
+    );
+    expect(ok).toBe(true);
+
+    const json = doc.toJSON();
+    expect(json.rows[0].tabs[0].rows).toEqual([]);
+    expect(json.rows[1].tabs[0].rows[0].items).toEqual([
+      { component: "b" },
+      { component: "a", if: "{{ .user.admin }}" },
+    ]);
+  });
+
   it("tabHasContent reflects whether a tab has rows", () => {
     const doc = parseDocument(`type: canvas
 rows:
