@@ -1162,7 +1162,8 @@ func (a *AST) buildBaseSelect(alias string, comparison bool) (*SelectNode, error
 	// Time range spines are skipped in the comparison select.
 	// They are also skipped when the time range is empty: the base select then returns no rows, so there is nothing to fill,
 	// and dialects that inline the spine's bins (e.g. ClickHouse's VALUES(...)) cannot express a spine with zero rows.
-	if a.Query.Spine != nil && !(a.Query.Spine.TimeRange != nil && (comparison || !a.Query.Spine.TimeRange.Start.Before(a.Query.Spine.TimeRange.End))) {
+	skipTimeSpine := a.Query.Spine != nil && a.Query.Spine.TimeRange != nil && (comparison || !a.Query.Spine.TimeRange.Start.Before(a.Query.Spine.TimeRange.End))
+	if a.Query.Spine != nil && !skipTimeSpine {
 		sn, err := a.buildSpineSelect(a.GenerateIdentifier(), a.Query.Spine, tr)
 		if err != nil {
 			return nil, err
