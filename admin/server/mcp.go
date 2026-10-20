@@ -79,7 +79,9 @@ func (s *Server) mcpHandler() (http.Handler, error) {
 		}
 	}
 
-	return mcp.NewStreamableHTTPHandler(func(r *http.Request) *mcp.Server {
+	// The handler is stateless, so the session ID is issued and read by us, not the SDK.
+	// Clients pass it back on subsequent requests, enabling us to keep one AI session per project.
+	return middleware.MCPSessionIDMiddleware(mcp.NewStreamableHTTPHandler(func(r *http.Request) *mcp.Server {
 		srv := mcp.NewServer(
 			&mcp.Implementation{
 				Name:    "rill",
@@ -89,8 +91,6 @@ func (s *Server) mcpHandler() (http.Handler, error) {
 			&mcp.ServerOptions{
 				Instructions: mcpInstructions,
 				HasTools:     true,
-				// Issue a session ID so clients pass it back on subsequent requests, enabling us to keep one AI session per project.
-				GetSessionID: uuid.NewString,
 			},
 		)
 
@@ -102,7 +102,7 @@ func (s *Server) mcpHandler() (http.Handler, error) {
 		}))
 
 		client := &mcpClient{
-			sessionID:       r.Header.Get("Mcp-Session-Id"),
+			sessionID:       r.Header.Get("Mcp-Session-Id"), // Issued by MCPSessionIDMiddleware if the client did not send one
 			userAgent:       r.UserAgent(),
 			protocolVersion: r.Header.Get("Mcp-Protocol-Version"),
 		}
@@ -117,7 +117,7 @@ func (s *Server) mcpHandler() (http.Handler, error) {
 		return srv
 	}, &mcp.StreamableHTTPOptions{
 		Stateless: true, // Required since the server serves multiple users.
-	}), nil
+	})), nil
 }
 
 // mcpRequireAuth rejects unauthenticated requests to the MCP server.
