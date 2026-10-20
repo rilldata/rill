@@ -4,22 +4,22 @@ sidebar_label: "Vega-Lite"
 sidebar_position: 20
 ---
 
-A chart spec draws the [chart types](/developers/build/dashboards/canvas-widgets/custom-viz/chart-types) Flint knows, with the encodings and properties each one exposes. For anything beyond that, such as a reference line, an annotation, a second axis, a computed series, an interaction, or exact control over an axis, a legend or the colors, eject the component to [Vega-Lite](https://vega.github.io/vega-lite/) and edit the spec directly.
+A chart spec draws the [chart types](/developers/build/dashboards/canvas-widgets/custom-viz/chart-types) Flint knows, with the encodings and properties each one exposes. For anything beyond that, such as a reference line, an annotation, a second axis, a computed series, an interaction, or exact control over an axis, a legend or the colors, convert the component to [Vega-Lite](https://vega.github.io/vega-lite/) and edit the spec directly.
 
-Ejecting replaces the chart spec with the Vega-Lite it compiles to. It is a one-way change, and it gives up what makes a chart spec adapt: Rill no longer derives scales, axes, formats, sorting, stacking and layout from the data, and the Vega-Lite reflects the data it was compiled against. Check first whether a different chart type, `sortBy`, `scheme` or a chart property does what you need.
+Converting replaces the chart spec with the Vega-Lite it compiles to. It is a one-way change, and it gives up what makes a chart spec adapt: Rill no longer derives scales, axes, formats, sorting, stacking and layout from the data, and the Vega-Lite reflects the data it was compiled against. Check first whether a different chart type, `sortBy`, `scheme` or a chart property does what you need.
 
-## Eject a Component
+## Convert a Component
 
 1. Open the component in the component editor, and set **Test values** that represent how dashboards use it. **Use this dashboard's values** in the **Used by** panel loads a dashboard's bindings. Rill compiles the chart against these values, so their data shapes the Vega-Lite it writes.
-2. Click **Eject to Vega-Lite** and confirm.
+2. Click **Convert to Vega-Lite** and confirm.
 
-![The Eject to Vega-Lite confirmation in the component editor](/img/build/dashboard/canvas/custom-viz/eject-confirm.png)
+![The Convert to Vega-Lite confirmation in the component editor](/img/build/dashboard/canvas/custom-viz/convert-confirm.png)
 
 Rill replaces `spec` with `vega_spec`. The params and the query don't change, so every dashboard that uses the component keeps working, and the chart looks the same until you edit it. Once a component has a `vega_spec`, the button is no longer shown. To return to the chart spec, undo the edit or restore the file from version control.
 
-## What Ejecting Writes
+## What Converting Writes
 
-Ejecting a ranked bar chart, bound in the editor to `advertiser_name` and `overall_spend`:
+Converting a ranked bar chart, bound in the editor to `advertiser_name` and `overall_spend`:
 
 ```yaml
 custom_chart:
@@ -113,7 +113,7 @@ The `config` block holds the label sizes and spacing the chart was compiled with
 
 ## Rules for a Component's Vega-Lite
 
-These apply to every `vega_spec` in a component file, ejected or written by hand:
+These apply to every `vega_spec` in a component file, converted or written by hand:
 
 - **Data**: read the query result from `"data": { "name": "query1" }`. A component runs one query, so there is no other dataset; don't inline `values` or load a `url`.
 - **Size**: keep `"width": "container"`, `"height": "container"` and `"autosize": { "type": "fit", "contains": "padding" }` so the chart fills its widget. Without `autosize`, only the width is fitted, and axes and legends can run past the bottom of the widget. Vega-Lite can't size faceted or concatenated views to a container; give their panels fixed sizes.
@@ -145,11 +145,11 @@ Format values with `"formatType": "{{ .fields.<name>.format_type }}"` rather tha
 
 ## Examples
 
-The examples below are ejected components bound to the `bids_metrics` metrics view, each shown as its `vega_spec`. Each names the params its spec references, and its query selects those fields as described in [The Query](/developers/build/dashboards/canvas-widgets/custom-viz#the-query). The [Vega-Lite example gallery](https://vega.github.io/vega-lite/examples/) has many more patterns to adapt: replace the example's `data` with `{ "name": "query1" }`, its field names with param references, and its size settings with the container settings above.
+The examples below are converted components bound to the `bids_metrics` metrics view, each shown as its `vega_spec`. Each names the params its spec references, and its query selects those fields as described in [The Query](/developers/build/dashboards/canvas-widgets/custom-viz#the-query). The [Vega-Lite example gallery](https://vega.github.io/vega-lite/examples/) has many more patterns to adapt: replace the example's `data` with `{ "name": "query1" }`, its field names with param references, and its size settings with the container settings above.
 
 ### A Reference Line
 
-Bars ranked by a measure, with a dashed line at their average. This is the ejected bar chart above, with the same `dimension` and `measure` params and query. The second layer aggregates the rows to their mean and builds the label by calling the measure's formatter, so the average reads `$1.3k` for a currency measure and `12%` for a percentage.
+Bars ranked by a measure, with a dashed line at their average. This is the converted bar chart above, with the same `dimension` and `measure` params and query. The second layer aggregates the rows to their mean and builds the label by calling the measure's formatter, so the average reads `$1.3k` for a currency measure and `12%` for a percentage.
 
 ![A ranked bar chart with a dashed line and a label at the average](/img/build/dashboard/canvas/custom-viz/vl-average-line.png)
 
@@ -413,11 +413,11 @@ The running total is computed in the browser, over the rows within the query's `
 
 ### Use the Theme Palette
 
-An ejected chart that splits into series keeps the scheme Flint chose, written as `"scale": { "scheme": "tableau10" }` on the `color` encoding. Remove the `scale` and the series take the qualitative colors of the dashboard's [theme](/developers/build/dashboards/customization#changing-themes--colors) instead.
+A converted chart that splits into series keeps the scheme Flint chose, written as `"scale": { "scheme": "tableau10" }` on the `color` encoding. Remove the `scale` and the series take the qualitative colors of the dashboard's [theme](/developers/build/dashboards/customization#changing-themes--colors) instead.
 
 ### Highlight a Series from the Legend
 
-A point selection bound to the legend: clicking a legend entry highlights its series and fades the others. This is the gallery's multi-series line chart after ejecting, with the same `x_axis`, `y_axis` and `color` params. It has no `scale` on `color`, so it also uses the theme's palette, and its time axis is formatted as in [A Second Axis](#a-second-axis).
+A point selection bound to the legend: clicking a legend entry highlights its series and fades the others. This is the gallery's multi-series line chart after converting, with the same `x_axis`, `y_axis` and `color` params. It has no `scale` on `color`, so it also uses the theme's palette, and its time axis is formatted as in [A Second Axis](#a-second-axis).
 
 ![A line chart with one series highlighted from the legend](/img/build/dashboard/canvas/custom-viz/vl-legend-selection.png)
 

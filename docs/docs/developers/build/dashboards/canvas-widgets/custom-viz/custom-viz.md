@@ -4,7 +4,7 @@ sidebar_label: "Custom Viz"
 sidebar_position: 15
 ---
 
-A custom viz is a chart you define once and reuse across canvas dashboards. Each one is a `type: component` file, kept under `viz_library/` by convention, with three parts:
+A custom viz is a chart you define once and reuse across canvas dashboards. Each one is a `type: component` file, kept under `viz/` by convention, with three parts:
 
 - **Params**: the inputs a dashboard binds, such as a metrics view, a measure and a dimension.
 - **A query**: a [Metrics SQL](/developers/build/metrics-view/metrics-sql) query that selects the rows to draw.
@@ -16,7 +16,7 @@ Rill compiles the chart spec to Vega-Lite with [Flint](https://github.com/micros
 
 ![A canvas dashboard built from custom viz components](/img/build/dashboard/canvas/custom-viz/overview.png)
 
-When a chart needs something the chart spec does not offer, such as a reference line, an annotation or a second axis, you can [eject it to Vega-Lite](/developers/build/dashboards/canvas-widgets/custom-viz/vega-lite) and edit the spec directly.
+When a chart needs something the chart spec does not offer, such as a reference line, an annotation or a second axis, you can [convert it to Vega-Lite](/developers/build/dashboards/canvas-widgets/custom-viz/vega-lite) and edit the spec directly.
 
 :::note Feature flag
 Custom viz authoring is behind a feature flag. Enable it in `rill.yaml`:
@@ -39,7 +39,7 @@ The **Chart types** gallery shows every chart type Rill can draw, grouped by fam
 
 ![The Chart types gallery](/img/build/dashboard/canvas/custom-viz/chart-types-gallery.png)
 
-Picking a chart type writes a component to `viz_library/` and opens it in the component editor. The editor draws a live preview against **Test values**, shown in the panel on the right. Rill picks them from your project, choosing for each param a field that suits the channel it is drawn on: a dimension that splits the chart into colored series, for example, gets one with 2 to 12 values. Change them to preview the chart with other fields. Test values belong to the editor; each dashboard binds its own.
+Picking a chart type writes a component to `viz/` and opens it in the component editor. The editor draws a live preview against **Test values**, shown in the panel on the right. Rill picks them from your project, choosing for each param a field that suits the channel it is drawn on: a dimension that splits the chart into colored series, for example, gets one with 2 to 12 values. Change them to preview the chart with other fields. Test values belong to the editor; each dashboard binds its own.
 
 ![The component editor with a live preview and test values](/img/build/dashboard/canvas/custom-viz/component-editor.png)
 
@@ -54,7 +54,7 @@ When the AI assistant is enabled, picking a chart type hands it to the developer
 This is the file the gallery writes for a multi-series **Line Chart**, with the query split over several lines and the `description` rewritten. The gallery sets `display_name` to the chart type and copies the caption of the example you picked into `description`; replace both with text that describes your chart. The canvas widget menu and inspector list the component by its display name.
 
 ```yaml
-# viz_library/line_chart.yaml
+# viz/line_chart.yaml
 type: component
 display_name: Line Chart
 description: A measure over time, one line per value of a dimension.
@@ -129,7 +129,7 @@ A param's value is substituted wherever `{{ .params.<name> }}` appears in the re
 
 A value that consists of a single placeholder keeps the param's type. With `inner_radius` declared as a `number`, `innerRadius: "{{ .params.inner_radius }}"` reaches the chart as the number `50`, not the string `"50"`. A placeholder inside a longer string, such as `LIMIT {{ .params.limit }}`, is substituted as text.
 
-Field params also expose the field's metadata from the metrics view, such as `{{ .fields.<name>.display_name }}`. A chart spec doesn't need it, because Rill supplies titles and formats; an [ejected Vega-Lite spec](/developers/build/dashboards/canvas-widgets/custom-viz/vega-lite#templating) uses it for axis titles and number formats.
+Field params also expose the field's metadata from the metrics view, such as `{{ .fields.<name>.display_name }}`. A chart spec doesn't need it, because Rill supplies titles and formats; a [converted Vega-Lite spec](/developers/build/dashboards/canvas-widgets/custom-viz/vega-lite#templating) uses it for axis titles and number formats.
 
 ### Change a Component That Dashboards Use
 
@@ -223,7 +223,7 @@ These decide zero baselines, tick spacing and the kind of color scale. Axis labe
 
 ### Colors
 
-Series colors come from the `tableau10` scheme, and a measure bound to `color` is drawn with a sequential scheme such as `blues`. Set `scheme` on the `color` encoding to choose another. Charts drawn in a single color use the dashboard theme's primary color. To color series with the [theme's palette](/developers/build/dashboards/customization#changing-themes--colors) instead, [eject the component](/developers/build/dashboards/canvas-widgets/custom-viz/vega-lite#use-the-theme-palette) and remove the scheme.
+Series colors come from the `tableau10` scheme, and a measure bound to `color` is drawn with a sequential scheme such as `blues`. Set `scheme` on the `color` encoding to choose another. Charts drawn in a single color use the dashboard theme's primary color. To color series with the [theme's palette](/developers/build/dashboards/customization#changing-themes--colors) instead, [convert the component](/developers/build/dashboards/canvas-widgets/custom-viz/vega-lite#use-the-theme-palette) and remove the scheme.
 
 ### Chart Properties
 
@@ -277,7 +277,7 @@ spec:
       - field: "{{ .params.second_measure }}"
 ```
 
-The measures share one axis, so pair measures of a similar scale and unit. The list can't be combined with a `color` encoding. Series are labeled with field names rather than display names, and values are not formatted with the measures' formats; for full control, eject the component and [give each measure its own axis](/developers/build/dashboards/canvas-widgets/custom-viz/vega-lite#a-second-axis).
+The measures share one axis, so pair measures of a similar scale and unit. The list can't be combined with a `color` encoding. Series are labeled with field names rather than display names, and values are not formatted with the measures' formats; for full control, convert the component and [give each measure its own axis](/developers/build/dashboards/canvas-widgets/custom-viz/vega-lite#a-second-axis).
 
 ### Small Multiples
 
@@ -335,4 +335,4 @@ Bound values must be literals: strings, numbers or booleans. Params that have a 
 - A component runs one query, so a chart can't combine two datasets.
 - When a category axis has more values than fit in the widget, the chart drops the extra rows and says so above the chart.
 - A custom viz doesn't draw time comparisons.
-- Custom viz components are separate from the inline `custom_chart` widget that a canvas can define in its own YAML. That widget always takes a Vega-Lite `vega_spec`. A component file takes a chart `spec`, and carries a `vega_spec` only after it has been ejected.
+- Custom viz components are separate from the inline `custom_chart` widget that a canvas can define in its own YAML. That widget always takes a Vega-Lite `vega_spec`. A component file takes a chart `spec`, and carries a `vega_spec` only after it has been converted.
