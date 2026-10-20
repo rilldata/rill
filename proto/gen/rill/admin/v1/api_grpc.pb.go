@@ -175,6 +175,7 @@ const (
 	AdminService_GetPersonalFile_FullMethodName                          = "/rill.admin.v1.AdminService/GetPersonalFile"
 	AdminService_EditPersonalFile_FullMethodName                         = "/rill.admin.v1.AdminService/EditPersonalFile"
 	AdminService_DeletePersonalFile_FullMethodName                       = "/rill.admin.v1.AdminService/DeletePersonalFile"
+	AdminService_SavePersonalFileForUser_FullMethodName                  = "/rill.admin.v1.AdminService/SavePersonalFileForUser"
 	AdminService_GetBillingSubscription_FullMethodName                   = "/rill.admin.v1.AdminService/GetBillingSubscription"
 	AdminService_UpdateBillingSubscription_FullMethodName                = "/rill.admin.v1.AdminService/UpdateBillingSubscription"
 	AdminService_CancelBillingSubscription_FullMethodName                = "/rill.admin.v1.AdminService/CancelBillingSubscription"
@@ -530,6 +531,10 @@ type AdminServiceClient interface {
 	EditPersonalFile(ctx context.Context, in *EditPersonalFileRequest, opts ...grpc.CallOption) (*EditPersonalFileResponse, error)
 	// DeletePersonalFile deletes a personal virtual file the caller owns.
 	DeletePersonalFile(ctx context.Context, in *DeletePersonalFileRequest, opts ...grpc.CallOption) (*DeletePersonalFileResponse, error)
+	// SavePersonalFileForUser creates or edits a personal file on behalf of a user.
+	// It can only be called by the project's deployment. It's currently only called by AI tools in the runtime.
+	// It triggers the parser but doesn't wait for the resource, so the caller can surface parse errors in the YAML.
+	SavePersonalFileForUser(ctx context.Context, in *SavePersonalFileForUserRequest, opts ...grpc.CallOption) (*SavePersonalFileForUserResponse, error)
 	// GetBillingSubscription lists the subscription for the organization
 	GetBillingSubscription(ctx context.Context, in *GetBillingSubscriptionRequest, opts ...grpc.CallOption) (*GetBillingSubscriptionResponse, error)
 	// UpdateBillingSubscription updates the billing plan for the organization
@@ -2122,6 +2127,16 @@ func (c *adminServiceClient) DeletePersonalFile(ctx context.Context, in *DeleteP
 	return out, nil
 }
 
+func (c *adminServiceClient) SavePersonalFileForUser(ctx context.Context, in *SavePersonalFileForUserRequest, opts ...grpc.CallOption) (*SavePersonalFileForUserResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(SavePersonalFileForUserResponse)
+	err := c.cc.Invoke(ctx, AdminService_SavePersonalFileForUser_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *adminServiceClient) GetBillingSubscription(ctx context.Context, in *GetBillingSubscriptionRequest, opts ...grpc.CallOption) (*GetBillingSubscriptionResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(GetBillingSubscriptionResponse)
@@ -2592,6 +2607,10 @@ type AdminServiceServer interface {
 	EditPersonalFile(context.Context, *EditPersonalFileRequest) (*EditPersonalFileResponse, error)
 	// DeletePersonalFile deletes a personal virtual file the caller owns.
 	DeletePersonalFile(context.Context, *DeletePersonalFileRequest) (*DeletePersonalFileResponse, error)
+	// SavePersonalFileForUser creates or edits a personal file on behalf of a user.
+	// It can only be called by the project's deployment. It's currently only called by AI tools in the runtime.
+	// It triggers the parser but doesn't wait for the resource, so the caller can surface parse errors in the YAML.
+	SavePersonalFileForUser(context.Context, *SavePersonalFileForUserRequest) (*SavePersonalFileForUserResponse, error)
 	// GetBillingSubscription lists the subscription for the organization
 	GetBillingSubscription(context.Context, *GetBillingSubscriptionRequest) (*GetBillingSubscriptionResponse, error)
 	// UpdateBillingSubscription updates the billing plan for the organization
@@ -3091,6 +3110,9 @@ func (UnimplementedAdminServiceServer) EditPersonalFile(context.Context, *EditPe
 }
 func (UnimplementedAdminServiceServer) DeletePersonalFile(context.Context, *DeletePersonalFileRequest) (*DeletePersonalFileResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method DeletePersonalFile not implemented")
+}
+func (UnimplementedAdminServiceServer) SavePersonalFileForUser(context.Context, *SavePersonalFileForUserRequest) (*SavePersonalFileForUserResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SavePersonalFileForUser not implemented")
 }
 func (UnimplementedAdminServiceServer) GetBillingSubscription(context.Context, *GetBillingSubscriptionRequest) (*GetBillingSubscriptionResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetBillingSubscription not implemented")
@@ -5960,6 +5982,24 @@ func _AdminService_DeletePersonalFile_Handler(srv interface{}, ctx context.Conte
 	return interceptor(ctx, in, info, handler)
 }
 
+func _AdminService_SavePersonalFileForUser_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SavePersonalFileForUserRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).SavePersonalFileForUser(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_SavePersonalFileForUser_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).SavePersonalFileForUser(ctx, req.(*SavePersonalFileForUserRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _AdminService_GetBillingSubscription_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(GetBillingSubscriptionRequest)
 	if err := dec(in); err != nil {
@@ -6824,6 +6864,10 @@ var AdminService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "DeletePersonalFile",
 			Handler:    _AdminService_DeletePersonalFile_Handler,
+		},
+		{
+			MethodName: "SavePersonalFileForUser",
+			Handler:    _AdminService_SavePersonalFileForUser_Handler,
 		},
 		{
 			MethodName: "GetBillingSubscription",

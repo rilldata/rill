@@ -15,6 +15,15 @@ type AdminService interface {
 	GetConfig(ctx context.Context) (*Config, error)
 	ListDeployments(ctx context.Context) ([]*Deployment, error)
 	UpdateProjectVariables(ctx context.Context, environment string, variables map[string]string) error
+	// SavePersonalCanvas creates a personal canvas owned by the given user, or edits it if name is not empty.
+	// Annotations in the YAML are ignored: the admin sets the owner and keeps the canvas' sharing state.
+	SavePersonalCanvas(ctx context.Context, userID, name, displayName, yaml string) (*PersonalCanvas, error)
+}
+
+// PersonalCanvas identifies a saved personal canvas.
+type PersonalCanvas struct {
+	Name string
+	URL  string
 }
 
 type ReportMetadata struct {

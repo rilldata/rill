@@ -87,6 +87,7 @@ import type {
   AdminServiceRequestProjectAccessBodyBody,
   AdminServiceRevokeAllUserAuthTokensParams,
   AdminServiceRevokeUserAuthTokenParams,
+  AdminServiceSavePersonalFileForUserBody,
   AdminServiceSearchProjectNamesParams,
   AdminServiceSearchProjectUsersParams,
   AdminServiceSearchUsersParams,
@@ -241,6 +242,7 @@ import type {
   V1RevokeRepresentativeAuthTokensResponse,
   V1RevokeServiceAuthTokenResponse,
   V1RevokeUserAuthTokenResponse,
+  V1SavePersonalFileForUserResponse,
   V1SearchProjectNamesResponse,
   V1SearchProjectUsersResponse,
   V1SearchUsersResponse,
@@ -13357,6 +13359,98 @@ export const createAdminServiceGetAlertMeta = <
   TContext
 > => {
   const mutationOptions = getAdminServiceGetAlertMetaMutationOptions(options);
+
+  return createMutation(mutationOptions, queryClient);
+};
+/**
+ * @summary SavePersonalFileForUser creates or edits a personal file on behalf of a user.
+It can only be called by the project's deployment. It's currently only called by AI tools in the runtime.
+It triggers the parser but doesn't wait for the resource, so the caller can surface parse errors in the YAML.
+ */
+export const adminServiceSavePersonalFileForUser = (
+  projectId: string,
+  adminServiceSavePersonalFileForUserBody: AdminServiceSavePersonalFileForUserBody,
+  signal?: AbortSignal,
+) => {
+  return httpClient<V1SavePersonalFileForUserResponse>({
+    url: `/v1/projects/${projectId}/personal-files/for-user`,
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    data: adminServiceSavePersonalFileForUserBody,
+    signal,
+  });
+};
+
+export const getAdminServiceSavePersonalFileForUserMutationOptions = <
+  TError = RpcStatus,
+  TContext = unknown,
+>(options?: {
+  mutation?: CreateMutationOptions<
+    Awaited<ReturnType<typeof adminServiceSavePersonalFileForUser>>,
+    TError,
+    { projectId: string; data: AdminServiceSavePersonalFileForUserBody },
+    TContext
+  >;
+}): CreateMutationOptions<
+  Awaited<ReturnType<typeof adminServiceSavePersonalFileForUser>>,
+  TError,
+  { projectId: string; data: AdminServiceSavePersonalFileForUserBody },
+  TContext
+> => {
+  const mutationKey = ["adminServiceSavePersonalFileForUser"];
+  const { mutation: mutationOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey } };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof adminServiceSavePersonalFileForUser>>,
+    { projectId: string; data: AdminServiceSavePersonalFileForUserBody }
+  > = (props) => {
+    const { projectId, data } = props ?? {};
+
+    return adminServiceSavePersonalFileForUser(projectId, data);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type AdminServiceSavePersonalFileForUserMutationResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceSavePersonalFileForUser>>
+>;
+export type AdminServiceSavePersonalFileForUserMutationBody =
+  AdminServiceSavePersonalFileForUserBody;
+export type AdminServiceSavePersonalFileForUserMutationError = RpcStatus;
+
+/**
+ * @summary SavePersonalFileForUser creates or edits a personal file on behalf of a user.
+It can only be called by the project's deployment. It's currently only called by AI tools in the runtime.
+It triggers the parser but doesn't wait for the resource, so the caller can surface parse errors in the YAML.
+ */
+export const createAdminServiceSavePersonalFileForUser = <
+  TError = RpcStatus,
+  TContext = unknown,
+>(
+  options?: {
+    mutation?: CreateMutationOptions<
+      Awaited<ReturnType<typeof adminServiceSavePersonalFileForUser>>,
+      TError,
+      { projectId: string; data: AdminServiceSavePersonalFileForUserBody },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateMutationResult<
+  Awaited<ReturnType<typeof adminServiceSavePersonalFileForUser>>,
+  TError,
+  { projectId: string; data: AdminServiceSavePersonalFileForUserBody },
+  TContext
+> => {
+  const mutationOptions =
+    getAdminServiceSavePersonalFileForUserMutationOptions(options);
 
   return createMutation(mutationOptions, queryClient);
 };
