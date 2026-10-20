@@ -112,15 +112,19 @@
   );
 
   // Reports render a canvas as the creator or as each recipient sees it, so point out content that only some viewers see.
-  $: conditionsCheck = useVisibilityConditionsCheck(
-    runtimeClient,
-    canvasName ? ($canvasQuery.data?.meta?.filePaths?.[0] ?? "") : "",
+  let conditionsCheck = $derived(
+    useVisibilityConditionsCheck(
+      runtimeClient,
+      canvasName ? ($canvasQuery.data?.meta?.filePaths?.[0] ?? "") : "",
+    ),
   );
-  $: visibilityNote = $conditionsCheck.data
-    ? $data["webOpenMode"] === ReportRunAs.Recipient
-      ? m.canvas_visibility_report_recipient_note()
-      : m.canvas_visibility_report_creator_note()
-    : "";
+  let visibilityNote = $derived(
+    $conditionsCheck.data
+      ? $data["webOpenMode"] === ReportRunAs.Recipient
+        ? m.canvas_visibility_report_recipient_note()
+        : m.canvas_visibility_report_creator_note()
+      : "",
+  );
 
   // Keyboard counterpart of the read-only filter bar's pointer-events guard:
   // its controls remain focusable, so kick focus back out to keep them inoperable.

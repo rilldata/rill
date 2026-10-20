@@ -39,7 +39,7 @@ export function useReportDashboardName(client: RuntimeClient, name: string) {
     {
       query: {
         select: (data) =>
-          getDashboardNameFromReport(data.resource?.report?.spec),
+          getDashboardNameFromReport(data.resource?.report?.spec ?? {}),
       },
     },
   );
@@ -60,7 +60,8 @@ export function useReportOwnerName(
     },
     {
       query: {
-        select: (data) => data.users.find((u) => u.id === ownerId)?.displayName,
+        select: (data) =>
+          data.users?.find((u) => u.id === ownerId)?.displayName,
         enabled: !!ownerId,
       },
     },
@@ -76,8 +77,8 @@ export function useIsReportCreatedByCode(client: RuntimeClient, name: string) {
     {
       query: {
         select: (data) =>
-          !data.resource.report.spec.annotations["admin_owner_user_id"] &&
-          !data.resource.report.spec.annotations["admin_owner_user_email"],
+          !data.resource?.report?.spec?.annotations?.["admin_owner_user_id"] &&
+          !data.resource?.report?.spec?.annotations?.["admin_owner_user_email"],
       },
     },
   );
