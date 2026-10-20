@@ -3,6 +3,7 @@ package middleware
 import (
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/google/uuid"
@@ -31,4 +32,16 @@ func TestMCPSessionIDMiddleware(t *testing.T) {
 	handler.ServeHTTP(rec, req)
 	require.Equal(t, "SESSION-123", seen)
 	require.Equal(t, "SESSION-123", rec.Header().Get("Mcp-Session-Id"))
+
+	// A malformed session ID is rejected before reaching the handler.
+	for _, invalid := range []string{"session with spaces", "s\u00e9ssion", "session\x7f", strings.Repeat("s", maxMCPSessionIDLength+1)} {
+		seen = ""
+		req = httptest.NewRequest(http.MethodPost, "/mcp", nil)
+		req.Header.Set("Mcp-Session-Id", invalid)
+		rec = httptest.NewRecorder()
+		handler.ServeHTTP(rec, req)
+		require.Equal(t, http.StatusBadRequest, rec.Code, invalid)
+		require.Empty(t, seen, invalid)
+		require.Empty(t, rec.Header().Get("Mcp-Session-Id"), invalid)
+	}
 }

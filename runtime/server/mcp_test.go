@@ -293,6 +293,17 @@ func TestMCPSessionContinuity(t *testing.T) {
 			_, err = conn2.CallTool(t.Context(), &mcp.CallToolParams{Name: ai.ListMetricsViewsName})
 			require.NoError(t, err)
 			require.Len(t, sessions(t), 2)
+
+			// Requests other than POST are rejected without creating a session.
+			for _, method := range []string{http.MethodGet, http.MethodDelete} {
+				req, err := http.NewRequestWithContext(t.Context(), method, httpSrv.URL, nil)
+				require.NoError(t, err)
+				res, err := http.DefaultClient.Do(req)
+				require.NoError(t, err)
+				res.Body.Close()
+				require.Equal(t, http.StatusMethodNotAllowed, res.StatusCode, method)
+			}
+			require.Len(t, sessions(t), 2)
 		})
 	}
 }

@@ -19,8 +19,13 @@ import (
 func (s *Server) mcpHandler() http.Handler {
 	runner := ai.NewRunner(s.runtime, s.activity)
 
-	// The handler is stateless, so the session ID that keys the AI session must be issued and read by us, not the SDK.
 	return middleware.MCPSessionIDMiddleware(mcp.NewStreamableHTTPHandler(func(r *http.Request) *mcp.Server {
+		// A stateless server only accepts POST, but the SDK calls this function for every request before rejecting other methods with 405.
+		// Returning early keeps probes and legacy GET/DELETE requests from creating AI sessions.
+		if r.Method != http.MethodPost {
+			return nil
+		}
+
 		// Extract instance ID from the request path
 		instanceID := r.PathValue("instance_id")
 		if instanceID == "" {
@@ -31,7 +36,7 @@ func (s *Server) mcpHandler() http.Handler {
 		}
 
 		// The session ID is issued by MCPSessionIDMiddleware if the client did not send one.
-		sessionID := r.Header.Get("Mcp-Session-Id")
+		sessionID := r.Header.Get(middleware.MCPSessionIDHeader)
 
 		// It's just preliminary: for direct connections, the MCP server updates it with the actual user agent after the initialization handshake.
 		// Requests proxied by the admin service's unified MCP server don't carry that handshake, so the forwarded user agent is the only signal of the real client.

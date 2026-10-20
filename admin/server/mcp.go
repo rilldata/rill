@@ -79,8 +79,6 @@ func (s *Server) mcpHandler() (http.Handler, error) {
 		}
 	}
 
-	// The handler is stateless, so the session ID is issued and read by us, not the SDK.
-	// Clients pass it back on subsequent requests, enabling us to keep one AI session per project.
 	return middleware.MCPSessionIDMiddleware(mcp.NewStreamableHTTPHandler(func(r *http.Request) *mcp.Server {
 		srv := mcp.NewServer(
 			&mcp.Implementation{
@@ -102,7 +100,7 @@ func (s *Server) mcpHandler() (http.Handler, error) {
 		}))
 
 		client := &mcpClient{
-			sessionID:       r.Header.Get("Mcp-Session-Id"), // Issued by MCPSessionIDMiddleware if the client did not send one
+			sessionID:       r.Header.Get(middleware.MCPSessionIDHeader), // Issued by MCPSessionIDMiddleware if the client did not send one
 			userAgent:       r.UserAgent(),
 			protocolVersion: r.Header.Get("Mcp-Protocol-Version"),
 		}
@@ -263,12 +261,10 @@ func (s *Server) callRuntimeTool(ctx context.Context, depl *database.Deployment,
 	if client.userAgent != "" {
 		req.Header.Set("User-Agent", client.userAgent)
 	}
-	if client.sessionID != "" {
-		// Derive a session ID per project instead of passing the client's through.
-		// A runtime may serve several projects from one catalog, where AI session IDs must be unique.
-		sessionID := uuid.NewSHA1(mcpSessionNamespace, []byte(depl.RuntimeInstanceID+"/"+client.sessionID))
-		req.Header.Set("Mcp-Session-Id", sessionID.String())
-	}
+	// Derive a session ID per project instead of passing the client's through.
+	// A runtime may serve several projects from one catalog, where AI session IDs must be unique.
+	sessionID := uuid.NewSHA1(mcpSessionNamespace, []byte(depl.RuntimeInstanceID+"/"+client.sessionID))
+	req.Header.Set(middleware.MCPSessionIDHeader, sessionID.String())
 
 	// Uses http.DefaultClient to get caching/pooling of TCP connections.
 	res, err := http.DefaultClient.Do(req)
