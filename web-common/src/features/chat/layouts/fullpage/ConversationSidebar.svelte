@@ -6,8 +6,12 @@
   import Spinner from "../../../entity-management/Spinner.svelte";
   import { EntityStatus } from "../../../entity-management/types";
   import type { ConversationManager } from "../../core/conversation-manager";
+  import type { V1Conversation } from "../../../../runtime-client";
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import MemoryButton from "../../memory/MemoryButton.svelte";
+  import { formatConversationTitle } from "@rilldata/web-common/features/chat/core/context/conversation-title.ts";
+  import { getInlineChatContextMetadata } from "@rilldata/web-common/features/chat/core/context/metadata.ts";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 
   export let conversationManager: ConversationManager;
   export let basePath: string;
@@ -21,6 +25,12 @@
   $: currentConversationDto = $getConversationQuery?.data?.conversation ?? null;
 
   $: listConversationsQuery = conversationManager.listConversationsQuery();
+
+  const contextMetadata = getInlineChatContextMetadata(useRuntimeClient());
+  // Reactive so that titles are re-rendered once the metadata used for reference labels loads.
+  $: getTitle = (conversation: V1Conversation) =>
+    formatConversationTitle(conversation.title ?? "", $contextMetadata) ||
+    m.chat_new_conversation();
 
   $: conversations = ($listConversationsQuery.data?.conversations ?? []).filter(
     (c) => c.userAgent !== "rill/report",
@@ -108,11 +118,11 @@
             class:active={conversation.id === currentConversationDto?.id}
             data-testid="conversation-item"
             data-conversation-id={conversation.id}
-            title={conversation.title || m.chat_new_conversation()}
+            title={getTitle(conversation)}
             onclick={handleConversationItemClick}
           >
             <div class="conversation-title" data-testid="conversation-title">
-              {conversation.title || m.chat_new_conversation()}
+              {getTitle(conversation)}
             </div>
           </a>
         {/each}
