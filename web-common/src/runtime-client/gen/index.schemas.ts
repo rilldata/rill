@@ -2946,7 +2946,10 @@ If not set, it will infer an agent based on the prompt and conversation history.
   analystAgentContext?: V1AnalystAgentContext;
   developerAgentContext?: V1DeveloperAgentContext;
   feedbackAgentContext?: V1FeedbackAgentContext;
-  /** Optional current browser path. The origin is intentionally omitted. */
+  /**
+   * Deprecated: no longer read by the server. The agents learn what the user is viewing from the analyst and developer contexts.
+   * @deprecated
+   */
   uiPagePath?: string;
   /** Optional visible, enabled, uniquely-addressable browser actions. */
   uiActions?: V1UIAction[];
@@ -2963,7 +2966,10 @@ If not set, it will infer an agent based on the prompt and conversation history.
   analystAgentContext?: V1AnalystAgentContext;
   developerAgentContext?: V1DeveloperAgentContext;
   feedbackAgentContext?: V1FeedbackAgentContext;
-  /** Optional current browser path. The origin is intentionally omitted. */
+  /**
+   * Deprecated: no longer read by the server. The agents learn what the user is viewing from the analyst and developer contexts.
+   * @deprecated
+   */
   uiPagePath?: string;
   /** Optional visible, enabled, uniquely-addressable browser actions. */
   uiActions?: V1UIAction[];

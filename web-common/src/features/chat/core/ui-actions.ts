@@ -30,8 +30,10 @@ function actionLabel(element: HTMLElement, id: string): string {
     element.getAttribute("aria-label") ||
     element.textContent ||
     id;
-  // 256 UTF-16 code units, which never exceeds the server's 256-character limit (runtime/server/chat.go).
-  return label.replace(/\s+/g, " ").trim().slice(0, 256) || id;
+  // Truncate by code point, not UTF-16 code unit: slicing a string can split an emoji into a lone surrogate,
+  // which protojson rejects and the whole chat request fails. Matches the server's 256-character limit (runtime/server/chat.go).
+  const normalized = label.replace(/\s+/g, " ").trim();
+  return Array.from(normalized).slice(0, 256).join("") || id;
 }
 
 function availableActionElements(root: ParentNode = document): HTMLElement[] {

@@ -37,16 +37,26 @@ describe("UI actions", () => {
     ]);
   });
 
-  it("limits labels to 256 characters, not bytes", () => {
+  it("limits labels to 256 code points without splitting an emoji", () => {
     // Matches the server, which truncates labels by character count (runtime/server/chat.go).
     const nonASCII = "é".repeat(256);
     addAction("canvas.share", nonASCII);
     addAction("canvas.edit", "x".repeat(300));
+    // 256 code points but 257 UTF-16 code units: the emoji at the end must survive whole.
+    addAction("canvas.emoji", "x".repeat(255) + "😀");
+    // The 257th code point is an emoji: it must be dropped whole, never cut into a lone surrogate.
+    addAction("canvas.emoji-cut", "x".repeat(255) + "😀😀");
 
-    expect(getAvailableUIActions()).toEqual([
+    const actions = getAvailableUIActions();
+    expect(actions).toEqual([
       { id: "canvas.share", label: nonASCII },
       { id: "canvas.edit", label: "x".repeat(256) },
+      { id: "canvas.emoji", label: "x".repeat(255) + "😀" },
+      { id: "canvas.emoji-cut", label: "x".repeat(255) + "😀" },
     ]);
+    for (const action of actions) {
+      expect(action.label.isWellFormed()).toBe(true);
+    }
   });
 
   it("ignores actions inside a data-ai-ignore subtree", () => {

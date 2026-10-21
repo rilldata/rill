@@ -438,7 +438,7 @@ paths:
                   The field is ignored if another agent is selected.
               uiPagePath:
                 type: string
-                description: Optional current browser path. The origin is intentionally omitted.
+                description: 'Deprecated: no longer read by the server. The agents learn what the user is viewing from the analyst and developer contexts.'
               uiActions:
                 type: array
                 items:
@@ -507,7 +507,7 @@ paths:
                   The field is ignored if another agent is selected.
               uiPagePath:
                 type: string
-                description: Optional current browser path. The origin is intentionally omitted.
+                description: 'Deprecated: no longer read by the server. The agents learn what the user is viewing from the analyst and developer contexts.'
               uiActions:
                 type: array
                 items:

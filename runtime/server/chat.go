@@ -221,8 +221,8 @@ func (s *Server) Complete(ctx context.Context, req *runtimev1.CompleteRequest) (
 	// Tag as chat so the agent's queries are attributed to the "chat" source (overrides the "ui" tag the gRPC
 	// interceptor sets, and covers the SSE HTTP handler which bypasses that interceptor).
 	ctx = runtime.WithRequestSource(ctx, runtime.RequestSourceChat)
-	// req.UiPagePath is ignored: the agents already know which dashboard or file the user is viewing from their own context.
-	ctx = ai.WithUIContext(ctx, uiContextFromPB(req.UiActions))
+	// req.UiPagePath is deprecated and intentionally not read: the agents learn what the user is viewing from the analyst and developer contexts.
+	ctx = ai.WithUIContext(ctx, s.uiContextFromPB(req.UiActions))
 
 	// Validate request - either prompt or feedback context must be provided
 	if req.Prompt == "" && req.FeedbackAgentContext == nil {
@@ -342,8 +342,8 @@ func (s *Server) CompleteStreaming(req *runtimev1.CompleteStreamingRequest, stre
 	// Tag as chat so the agent's queries are attributed to the "chat" source (overrides the "ui" tag the gRPC
 	// interceptor sets, and covers the SSE HTTP handler which bypasses that interceptor).
 	ctx = runtime.WithRequestSource(ctx, runtime.RequestSourceChat)
-	// req.UiPagePath is ignored: the agents already know which dashboard or file the user is viewing from their own context.
-	ctx = ai.WithUIContext(ctx, uiContextFromPB(req.UiActions))
+	// req.UiPagePath is deprecated and intentionally not read: the agents learn what the user is viewing from the analyst and developer contexts.
+	ctx = ai.WithUIContext(ctx, s.uiContextFromPB(req.UiActions))
 
 	// Validate request - either prompt or feedback context must be provided
 	if req.Prompt == "" && req.FeedbackAgentContext == nil {
@@ -474,14 +474,12 @@ const (
 
 // uiContextFromPB converts the browser-supplied UI actions of a chat request to the transient context the agents read.
 // The UI context is optional, best-effort metadata, so it must never cause the chat request to fail:
-// oversized labels are truncated and malformed actions are dropped.
+// oversized labels are truncated, malformed actions are dropped and the list is capped after validation.
 // Dropping an action only removes it from the set the agent may click, which click_ui validates against this same context.
-func uiContextFromPB(pbActions []*runtimev1.UIAction) *ai.UIContext {
+// Any dropped action is logged so a page that outgrows the cap is noticed instead of silently losing actions.
+func (s *Server) uiContextFromPB(pbActions []*runtimev1.UIAction) *ai.UIContext {
 	if len(pbActions) == 0 {
 		return nil
-	}
-	if len(pbActions) > maxUIActions {
-		pbActions = pbActions[:maxUIActions]
 	}
 
 	actions := make([]ai.UIAction, 0, len(pbActions))
@@ -494,6 +492,12 @@ func uiContextFromPB(pbActions []*runtimev1.UIAction) *ai.UIContext {
 			label = string(r[:maxUIActionLabelRunes])
 		}
 		actions = append(actions, ai.UIAction{ID: action.Id, Label: label})
+	}
+	if len(actions) > maxUIActions {
+		actions = actions[:maxUIActions]
+	}
+	if len(actions) != len(pbActions) {
+		s.logger.Warn("chat: some ui_actions were dropped from the UI context", zap.Int("received", len(pbActions)), zap.Int("kept", len(actions)), zap.Int("limit", maxUIActions))
 	}
 
 	return &ai.UIContext{Actions: actions}
