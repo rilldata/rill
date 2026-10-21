@@ -1,10 +1,15 @@
 # Metrics view YAML
 # Reference documentation: https://docs.rilldata.com/reference/project-files/metrics-views
 
+# Exercised by web-local/tests/explores/exact-measures.spec.ts.
+# The name must sort after `AdBids_metrics`: the canvas editor defaults a new
+# widget to the first metrics view with a time dimension, and
+# web-local/tests/canvas/setup.spec.ts expects that to be `AdBids_metrics`.
+
 version: 1
 type: metrics_view
 
-display_name: Adbids exact
+display_name: Adbids precision
 table: AdBids_model
 timeseries: timestamp
 
@@ -21,11 +26,13 @@ measures:
     display_name: Total records
     expression: COUNT(*)
     format_preset: humanize
-  # A fast approximate default with an exact variant. The two expressions
-  # differ on purpose so tests can tell which one answered.
+  # A default with an exact variant. The two expressions differ on purpose so
+  # tests can tell which one answered. The default is deterministic rather than
+  # a real approximation: `approx_count_distinct(publisher)` returned 3 for the
+  # four publishers, and its result may change with the DuckDB version.
   - name: publishers
     display_name: Publishers
-    expression: approx_count_distinct(publisher) + 1000
+    expression: count(DISTINCT publisher) + 1000
     exact_expression: count(DISTINCT publisher)
     format_preset: none
   - name: records_per_publisher

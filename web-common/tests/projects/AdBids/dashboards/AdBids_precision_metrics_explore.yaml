@@ -3,8 +3,8 @@
 
 type: explore
 
-title: "Adbids exact dashboard"
-metrics_view: AdBids_exact_metrics
+title: "Adbids precision dashboard"
+metrics_view: AdBids_precision_metrics
 
 dimensions: '*'
 measures: '*'

@@ -1,12 +1,29 @@
-import { expect } from "@playwright/test";
+import { expect, type Page } from "@playwright/test";
 import { test } from "../setup/base";
 import { waitForReconciliation } from "../utils/wait-for-reconciliation.ts";
 
-// The AdBids_exact_metrics metrics view defines `publishers` with an
-// approximate default (`approx_count_distinct(publisher) + 1000`) and an exact
-// variant (`count(DISTINCT publisher)`). The two deliberately differ so the
-// test can tell which one answered: the approximate value is 1,004, the exact
-// value 4 (Facebook, Google, Yahoo, Microsoft; nulls are not counted).
+const METRICS_VIEW = "AdBids_precision_metrics";
+
+// The AdBids_precision_metrics metrics view defines `publishers` with a default
+// expression (`count(DISTINCT publisher) + 1000`) and an exact variant
+// (`count(DISTINCT publisher)`). The two deliberately differ so the test can
+// tell which one answered: the default value is 1,004, the exact value 4
+// (Facebook, Google, Yahoo, Microsoft; nulls are not counted).
+
+// Waits for the next aggregation query against the metrics view whose JSON
+// body satisfies `matches`. The explore calls the runtime's Connect endpoint,
+// which carries the metrics view in the body, not in the URL.
+function waitForAggregation(page: Page, matches: (body: string) => boolean) {
+  return page.waitForRequest((request) => {
+    const body = request.postData() ?? "";
+    return (
+      request.url().includes("QueryService/MetricsViewAggregation") &&
+      body.includes(`"metricsView":"${METRICS_VIEW}"`) &&
+      matches(body)
+    );
+  });
+}
+
 test.describe("exact measures", () => {
   test.use({ project: "AdBids" });
 
@@ -18,7 +35,7 @@ test.describe("exact measures", () => {
 
     await waitForReconciliation(page);
     await page.goto(
-      `${baseUrl}/explore/AdBids_exact_metrics_explore?measures=publishers,total_records`,
+      `${baseUrl}/explore/AdBids_precision_metrics_explore?measures=publishers,total_records`,
     );
 
     const card = page.locator(".big-number").filter({ hasText: "Publishers" });
@@ -32,13 +49,9 @@ test.describe("exact measures", () => {
     await expect(card.getByText("1,004")).toBeVisible();
 
     // One click requests the exact value for the measure, and only for it.
-    const exactRequest = page.waitForRequest((request) => {
-      const body = request.postData() ?? "";
-      return (
-        request.url().includes("/metrics-views/AdBids_exact_metrics/") &&
-        body.includes('"name":"publishers","exact":true')
-      );
-    });
+    const exactRequest = waitForAggregation(page, (body) =>
+      body.includes('"name":"publishers","exact":true'),
+    );
     await chip.click();
     const request = await exactRequest;
     expect(request.postData()).not.toContain(
@@ -55,23 +68,25 @@ test.describe("exact measures", () => {
 
     // A query context change (opening the dimension table) resets the measure
     // to approximate; the chip in the dimension table header shows it.
-    const approximateRequest = page.waitForRequest((request) => {
-      const body = request.postData() ?? "";
-      return (
-        request.url().includes("/metrics-views/AdBids_exact_metrics/") &&
-        body.includes('"name":"publishers"') &&
-        !body.includes('"exact":true')
-      );
-    });
+    const approximateRequest = waitForAggregation(
+      page,
+      (body) =>
+        body.includes('"name":"publishers"') && !body.includes('"exact":true'),
+    );
     await page
       .getByRole("button", { name: "Open dimension details" })
       .first()
       .click();
     await approximateRequest;
 
+    // The chip's aria label is part of the accessible name of the card and of
+    // the column header button around it, hence the exact name match.
     const tableChip = page
-      .getByRole("button", { name: "Toggle exact value for Publishers" })
-      .first();
+      .getByRole("table", { name: "Dimension table" })
+      .getByRole("button", {
+        name: "Toggle exact value for Publishers",
+        exact: true,
+      });
     await expect(tableChip).toHaveText("≈");
     await expect(tableChip).toHaveAttribute("aria-pressed", "false");
   });
@@ -87,7 +102,7 @@ test.describe("exact measures", () => {
 
     await waitForReconciliation(page);
     await page.goto(
-      `${baseUrl}/explore/AdBids_exact_metrics_explore?measures=publishers,total_records,records_per_publisher`,
+      `${baseUrl}/explore/AdBids_precision_metrics_explore?measures=publishers,total_records,records_per_publisher`,
     );
 
     const publishersCard = page
@@ -110,13 +125,9 @@ test.describe("exact measures", () => {
 
     // The request for the publishers card itself carries the flag, although
     // only the ratio was clicked.
-    const exactRequest = page.waitForRequest((request) => {
-      const body = request.postData() ?? "";
-      return (
-        request.url().includes("/metrics-views/AdBids_exact_metrics/") &&
-        body.includes('"name":"publishers","exact":true')
-      );
-    });
+    const exactRequest = waitForAggregation(page, (body) =>
+      body.includes('"name":"publishers","exact":true'),
+    );
     await ratioChip.click();
     const request = await exactRequest;
     expect(request.postData()).not.toContain(
@@ -156,7 +167,7 @@ test.describe("exact measures", () => {
 
     await waitForReconciliation(page);
     await page.goto(
-      `${baseUrl}/explore/AdBids_exact_metrics_explore?measures=publishers,total_records&leaderboard_measures=publishers&sort_by=publishers`,
+      `${baseUrl}/explore/AdBids_precision_metrics_explore?measures=publishers,total_records&leaderboard_measures=publishers&sort_by=publishers`,
     );
 
     const leaderboard = (dimension: string) =>
@@ -177,14 +188,12 @@ test.describe("exact measures", () => {
 
     await expect(publisherChip).toHaveText("≈");
 
-    const exactRequest = page.waitForRequest((request) => {
-      const body = request.postData() ?? "";
-      return (
-        request.url().includes("/metrics-views/AdBids_exact_metrics/") &&
+    const exactRequest = waitForAggregation(
+      page,
+      (body) =>
         body.includes('"name":"publishers","exact":true') &&
-        body.includes('"dimensions":[{"name":"publisher"}]')
-      );
-    });
+        body.includes('"dimensions":[{"name":"publisher"}]'),
+    );
     await publisherChip.click();
     await exactRequest;
 
