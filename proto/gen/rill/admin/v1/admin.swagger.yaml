@@ -59,6 +59,50 @@ paths:
           description: An unexpected error response.
           schema:
             $ref: '#/definitions/rpcStatus'
+  /v1/deployments/-/connector-oauth-token:
+    post:
+      summary: |-
+        GetConnectorOAuthToken returns a user's OAuth access token for a connector in the calling deployment's project,
+        refreshing it first if it is about to expire.
+        It returns NotFound if the user has not authorized the connector's current OAuth configuration.
+        It can only be called by deployments.
+      operationId: AdminService_GetConnectorOAuthToken
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1GetConnectorOAuthTokenResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: body
+          in: body
+          required: true
+          schema:
+            $ref: '#/definitions/v1GetConnectorOAuthTokenRequest'
+  /v1/deployments/-/connector-oauth-token/delete:
+    post:
+      summary: |-
+        DeleteConnectorOAuthToken removes a user's OAuth authorization for a connector in the calling deployment's project.
+        It can only be called by deployments.
+      operationId: AdminService_DeleteConnectorOAuthToken
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1DeleteConnectorOAuthTokenResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: body
+          in: body
+          required: true
+          schema:
+            $ref: '#/definitions/v1DeleteConnectorOAuthTokenRequest'
   /v1/deployments/{deploymentId}:
     delete:
       summary: DeleteDeployment deletes a deployment.
@@ -5409,6 +5453,17 @@ definitions:
     type: object
   v1DeleteAlertResponse:
     type: object
+  v1DeleteConnectorOAuthTokenRequest:
+    type: object
+    properties:
+      connector:
+        type: string
+      configHash:
+        type: string
+      userId:
+        type: string
+  v1DeleteConnectorOAuthTokenResponse:
+    type: object
   v1DeleteDeploymentResponse:
     type: object
     properties:
@@ -5590,6 +5645,32 @@ definitions:
       archiveDownloadUrl:
         type: string
         title: either archive_download_url or git related details will be set
+  v1GetConnectorOAuthTokenRequest:
+    type: object
+    properties:
+      connector:
+        type: string
+        description: Name of the connector in the deployment's project.
+      configHash:
+        type: string
+        description: |-
+          Hash of the connector's current OAuth configuration, as computed by the runtime.
+          A token is only returned if the user authorized this configuration, so changing it never reuses an existing authorization.
+      userId:
+        type: string
+        description: ID of the user whose token to return.
+      forceRefresh:
+        type: boolean
+        description: If true, the token is refreshed even if it has not expired yet (used after the server rejected the current token).
+  v1GetConnectorOAuthTokenResponse:
+    type: object
+    properties:
+      accessToken:
+        type: string
+      expiresOn:
+        type: string
+        format: date-time
+        description: When the access token expires. Unset if the token does not expire.
   v1GetCurrentMagicAuthTokenResponse:
     type: object
     properties:

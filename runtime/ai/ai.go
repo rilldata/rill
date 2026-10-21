@@ -553,6 +553,9 @@ type BaseSession struct {
 	acquireLLM          func(ctx context.Context) (drivers.AIService, func(), error)
 	acquireCatalog      func(ctx context.Context) (drivers.CatalogStore, func(), error)
 
+	// external holds the tools contributed by external MCP servers, discovered lazily for the session's user (see external_tools.go).
+	external externalToolsState
+
 	mu            sync.RWMutex
 	dto           *drivers.AISession
 	dtoDirty      bool
@@ -974,9 +977,14 @@ func (s *Session) RootID() string {
 	return root
 }
 
+// Tool returns a tool by name. Built-in tools take precedence over tools contributed by external MCP servers,
+// which are only found after they have been discovered with ExternalServers.
 func (s *Session) Tool(toolName string) (*CompiledTool, bool) {
 	t, ok := s.runner.Tools[toolName]
-	return t, ok
+	if ok {
+		return t, true
+	}
+	return s.externalTool(toolName)
 }
 
 // CallResult contains the messages created during a tool call.
@@ -1219,9 +1227,12 @@ func (s *Session) Complete(ctx context.Context, name string, out any, opts *Comp
 	llmRequestTimeout := time.Duration(cfg.AILLMTimeoutSeconds) * time.Second
 
 	// Prepare tool definitions.
+	// offered tracks the tools actually presented to the LLM, so it cannot run tools it was not given
+	// (such as an external server's tools that are scoped to another agent).
 	tools := make([]*aiv1.Tool, 0, len(opts.Tools))
+	offered := make(map[string]bool, len(opts.Tools))
 	for _, toolName := range opts.Tools {
-		tool, ok := s.runner.Tools[toolName]
+		tool, ok := s.Tool(toolName)
 		if !ok {
 			return fmt.Errorf("unknown tool %q", toolName)
 		}
@@ -1237,6 +1248,10 @@ func (s *Session) Complete(ctx context.Context, name string, out any, opts *Comp
 			return fmt.Errorf("failed to convert tool to proto: %w", err)
 		}
 		tools = append(tools, toolPB)
+		offered[toolName] = true
+	}
+	if len(tools) > maxTools {
+		return fmt.Errorf("too many tools: the connected external MCP servers bring the total to %d, but at most %d are supported; disconnect a server, or limit a server's tools with 'security.include' in its connector file", len(tools), maxTools)
 	}
 
 	// Prepare output schema.
@@ -1427,12 +1442,27 @@ func (s *Session) Complete(ctx context.Context, name string, out any, opts *Comp
 					}
 					messages = append(messages, msgPB)
 				case *aiv1.ContentBlock_ToolCall:
-					toolResult, err := s.CallToolWithOptions(ctx, &CallToolOptions{
-						Role: RoleAssistant,
-						Tool: block.ToolCall.Name,
-						Out:  nil,
-						Args: block.ToolCall.Input.AsMap(),
-					})
+					var toolResult *CallResult
+					var err error
+					if offered[block.ToolCall.Name] {
+						toolResult, err = s.CallToolWithOptions(ctx, &CallToolOptions{
+							Role: RoleAssistant,
+							Tool: block.ToolCall.Name,
+							Out:  nil,
+							Args: block.ToolCall.Input.AsMap(),
+						})
+					} else {
+						// The LLM named a tool it was not offered. Record the refusal as a structured error instead of running it.
+						toolName := block.ToolCall.Name
+						toolResult, err = s.Call(ctx, &CallOptions{
+							Role: RoleAssistant,
+							Name: toolName,
+							Args: block.ToolCall.Input.AsMap(),
+							Handler: func(ctx context.Context) (any, error) {
+								return nil, fmt.Errorf("tool %q is not available in this context", toolName)
+							},
+						})
+					}
 					if err != nil {
 						if ctx.Err() != nil {
 							return nil, ctx.Err()

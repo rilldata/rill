@@ -127,6 +127,18 @@ func (r *Runtime) ResolveSecurity(ctx context.Context, instanceID string, claims
 	return r.securityEngine.resolveSecurity(ctx, instanceID, inst.Environment, vars, claims, res)
 }
 
+// ResolveConnectorSecurity resolves the security policy declared on an MCP connector for the given claims.
+// tools are the names of the tools the server exposes to the user; the policy's include/exclude rules gate them like fields of a metrics view.
+// Unlike ResolveSecurity, a connector without a security policy is open to every user who can use AI, not just admins.
+func (r *Runtime) ResolveConnectorSecurity(ctx context.Context, instanceID string, claims *SecurityClaims, res *runtimev1.Resource, tools []string) (*ResolvedSecurity, error) {
+	inst, err := r.Instance(ctx, instanceID)
+	if err != nil {
+		return nil, err
+	}
+	vars := inst.ResolveVariables(false)
+	return r.securityEngine.resolveConnectorSecurity(ctx, instanceID, inst.Environment, vars, claims, res, tools)
+}
+
 // GetInstanceAttributes fetches an instance and converts its annotations to attributes
 // nil is returned if an error occurred or instance was not found
 func (r *Runtime) GetInstanceAttributes(ctx context.Context, instanceID string) []attribute.KeyValue {

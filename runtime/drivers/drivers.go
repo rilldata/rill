@@ -144,4 +144,8 @@ type Handle interface {
 	// AsNotifier returns a Notifier (if the driver can serve as such) to send notifications: alerts, reports, etc.
 	// Examples: email notifier, slack notifier.
 	AsNotifier(properties map[string]any) (Notifier, error)
+
+	// AsMCP returns an MCPService if the handle can serve as such, otherwise returns false.
+	// An MCP service lets AI agents discover and call tools on an external MCP server.
+	AsMCP() (MCPService, bool)
 }
