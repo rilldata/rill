@@ -1,0 +1,118 @@
+{
+  "name": "gcs-clickhouse",
+  "display_name": "Google Cloud Storage",
+  "description": "Read GCS files into ClickHouse using table functions (HMAC keys)",
+  "docs_url": "https://docs.rilldata.com/developers/build/connectors/data-source/gcs",
+  "driver": "gcs",
+  "olap": "clickhouse",
+  "icon": "GoogleCloudStorage",
+  "small_icon": "GoogleCloudStorageIcon",
+  "tags": [
+    "gcs",
+    "google",
+    "object-storage",
+    "clickhouse",
+    "source"
+  ],
+  "json_schema": {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "type": "object",
+    "x-category": "sourceOnly",
+    "properties": {
+      "auth_method": {
+        "type": "string",
+        "title": "Authentication method",
+        "description": "Choose how to authenticate to GCS",
+        "enum": [
+          "hmac_key",
+          "public"
+        ],
+        "default": "hmac_key",
+        "x-display": "radio",
+        "x-enum-labels": [
+          "HMAC Key",
+          "Public"
+        ],
+        "x-enum-descriptions": [
+          "Provide GCS HMAC key credentials.",
+          "No credentials needed; the data is publicly accessible."
+        ],
+        "x-ui-only": true,
+        "x-grouped-fields": {
+          "hmac_key": [
+            "key_id",
+            "secret"
+          ],
+          "public": []
+        }
+      },
+      "key_id": {
+        "type": "string",
+        "title": "HMAC Access Key",
+        "description": "GCS HMAC access key ID",
+        "x-placeholder": "Enter HMAC access key",
+        "x-secret": true,
+        "x-env-var": "GCP_ACCESS_KEY_ID",
+        "x-visible-if": {
+          "auth_method": "hmac_key"
+        }
+      },
+      "secret": {
+        "type": "string",
+        "title": "HMAC Secret",
+        "description": "GCS HMAC secret key",
+        "x-placeholder": "Enter HMAC secret",
+        "x-secret": true,
+        "x-env-var": "GCP_SECRET_ACCESS_KEY",
+        "x-visible-if": {
+          "auth_method": "hmac_key"
+        }
+      },
+      "path": {
+        "type": "string",
+        "title": "GCS URI",
+        "description": "Path to your GCS bucket or prefix",
+        "pattern": "^(gs://|https?://).+",
+        "errorMessage": {
+          "pattern": "Must be a GCS URI (e.g. gs://bucket/path or https://storage.googleapis.com/bucket/path)"
+        },
+        "x-placeholder": "gs://bucket/path"
+      },
+      "name": {
+        "type": "string",
+        "title": "Model name",
+        "description": "Name for the source model",
+        "pattern": "^[a-zA-Z0-9_]+$",
+        "x-placeholder": "my_model"
+      }
+    },
+    "required": [
+      "path",
+      "name"
+    ],
+    "allOf": [
+      {
+        "if": {
+          "properties": {
+            "auth_method": {
+              "const": "hmac_key"
+            }
+          }
+        },
+        "then": {
+          "required": [
+            "key_id",
+            "secret"
+          ]
+        }
+      }
+    ]
+  },
+  "files": [
+    {
+      "name": "model",
+      "path_template": "models/[[ .model_name ]].yaml",
+      "code_template": "# Model YAML\n# Reference documentation: https://docs.rilldata.com/reference/project-files/models\ntype: model\nmaterialize: true\nconnector: clickhouse\nsql: |[[ if eq .auth_method \"hmac_key\" ]]\n  SELECT * FROM gcs(\n      '[[ gcsToHTTPS .path ]]',\n      '[[ propVal .props \"key_id\" ]]',\n      '[[ propVal .props \"secret\" ]]'\n  )[[ else ]]\n  SELECT * FROM gcs('[[ gcsToHTTPS .path ]]')[[ end ]]\n"
+    }
+  ]
+}
