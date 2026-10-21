@@ -1,0 +1,868 @@
+import { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
+import { MetricsViewsProvider } from "@rilldata/web-common/features/metrics-views/providers/MetricsViewsProvider.svelte.ts";
+import type { YAMLConfigProvider } from "@rilldata/web-common/features/dashboards/providers/YAMLConfigProvider.svelte.ts";
+import type { UrlParamsStore } from "@rilldata/web-common/lib/store-utils/url-params-store-sync.svelte.ts";
+import {
+  V1TimeGrain,
+  type V1TimeRange,
+} from "@rilldata/web-common/runtime-client";
+import { DEFAULT_TIMEZONE } from "@rilldata/web-common/lib/time/config.ts";
+import {
+  constructAsOfString,
+  constructNewString,
+  deriveInterval,
+  INHERIT_TIME_RANGE_ALIAS,
+} from "@rilldata/web-common/features/dashboards/time-controls/new-time-controls.ts";
+import {
+  allowedGrainsForInterval,
+  DateTimeUnitToV1TimeGrain,
+  getGrainOrder,
+  MinSupportedDateTimeUnit,
+  MinSupportedGrain,
+  V1TimeGrainToDateTimeUnit,
+  V1TimeGrainToOrder,
+} from "@rilldata/web-common/lib/time/new-grains.ts";
+import { getAdjustedInterval } from "@rilldata/web-common/lib/time/ranges";
+import {
+  overrideRillTimeRef,
+  parseRillTime,
+} from "@rilldata/web-common/features/dashboards/url-state/time-ranges/parser.ts";
+import {
+  RillIsoInterval,
+  RillPeriodToGrainInterval,
+  RillTime,
+  RillTimeLabel,
+} from "@rilldata/web-common/features/dashboards/url-state/time-ranges/RillTime.ts";
+import { DateTime, Interval } from "luxon";
+import { getTruncationGrain } from "@rilldata/web-common/lib/time/rill-time-grains.ts";
+import {
+  TimeComparisonOption,
+  TimeRangePreset,
+} from "@rilldata/web-common/lib/time/types.ts";
+import {
+  getAvailableComparisonsForTimeRange,
+  getComparisonInterval,
+} from "@rilldata/web-common/lib/time/comparisons";
+import { ExploreStateURLParams } from "@rilldata/web-common/features/dashboards/url-state/url-params.ts";
+import { getDefaultTimeRange } from "@rilldata/web-common/features/dashboards/stores/get-rill-default-explore-state.ts";
+import { measureSelection } from "@rilldata/web-common/features/dashboards/time-series/measure-selection/measure-selection.ts";
+import { getDurationObjectFromMS } from "@rilldata/web-common/lib/time/transforms";
+import { getOrderedStartEndDateTime } from "@rilldata/web-common/features/dashboards/time-series/utils.ts";
+import { toStore } from "svelte/store";
+import { UrlParamsChangeTracker } from "@rilldata/web-common/lib/store-utils/url-search-params-store.svelte.ts";
+import { EventEmitter } from "@rilldata/web-common/lib/event-emitter.ts";
+import type { TimeFiltersConfig } from "@rilldata/web-common/features/dashboards/time-controls/time-filters-config.ts";
+import { getValidatedTimeGrain } from "@rilldata/web-common/lib/time/grains";
+
+type ComparisonTimeRangeOption = {
+  name: TimeComparisonOption;
+  key: number;
+};
+
+const TimeFilterParams = new Set([
+  ExploreStateURLParams.TimeRange,
+  ExploreStateURLParams.TimeGrain,
+  ExploreStateURLParams.TimeZone,
+  ExploreStateURLParams.TimeDimension,
+  ExploreStateURLParams.ComparisonTimeRange,
+  ExploreStateURLParams.HighlightedTimeRange,
+]);
+
+export const DEFAULT_INHERIT_URL_PARAMS = [
+  [ExploreStateURLParams.TimeRange, INHERIT_TIME_RANGE_ALIAS],
+  [ExploreStateURLParams.ComparisonTimeRange, INHERIT_TIME_RANGE_ALIAS],
+];
+
+type ScrubRange = {
+  start: DateTime;
+  end: DateTime;
+  isScrubbing: boolean;
+};
+
+export type TimeControlState = {
+  timeRange: string | undefined;
+  timeGrain: V1TimeGrain | undefined;
+  timeZone: string;
+  interval: Interval<true> | undefined;
+  apiTimeRange: V1TimeRange;
+
+  comparisonTimeRange: string | undefined;
+  showComparison: boolean;
+  apiComparisonTimeRange: V1TimeRange | undefined;
+
+  // Undefined until the metrics view specs resolve. Consumers that gate queries on a time range
+  // need to tell "this dashboard has no time dimension" apart from "we do not know yet".
+  hasTimeSeries: boolean | undefined;
+  ready: boolean;
+};
+
+type TimeFilterManagerEvents = {
+  ready: void;
+};
+
+export class TimeFilterManager implements UrlParamsStore {
+  // State set directly from URL/controls.
+  /**
+   * Exact value of time range as set from setUrlParams. It can have values like `inherit`.
+   */
+  public urlTimeRange = $state<string | undefined>(undefined);
+  /**
+   * Resolved time range, taking into account the parent time range when `inherit` is set.
+   */
+  public timeRange = $state<string | undefined>(undefined);
+  /**
+   * Exact value of time grain as set from setUrlParams.
+   */
+  public urlTimeGrain = $state<V1TimeGrain | undefined>(undefined);
+  /**
+   * Resolved time grain. Always has a value, if url param is undefined, it is based on time range's interval.
+   */
+  public timeGrain = $state<V1TimeGrain>(MinSupportedGrain);
+  public timeZone = $state<string>(DEFAULT_TIMEZONE);
+  public timeDimension = $state<string | undefined>(undefined);
+  /**
+   * Exact value of comparison time range as set from setUrlParams. It can have values like `inherit`.
+   */
+  public urlComparisonTimeRange = $state<string | undefined>(undefined);
+  /**
+   * Resolved comparison time range, taking into account the parent time range when `inherit` is set.
+   */
+  public comparisonTimeRange = $state<string | undefined>(undefined);
+  public showComparison = $state<boolean>(false);
+  public lastDefinedScrubInterval = $state<Interval<true> | undefined>(
+    undefined,
+  );
+  public scrubInterval = $state<ScrubRange | undefined>(undefined);
+
+  // When set, relative time ranges are anchored at this time instead of now/latest.
+  // Used by scheduled report exports to render data as of the report's execution time.
+  private executionTime = $state<string | undefined>(undefined);
+
+  // Computed values
+  public minDate: DateTime<true> | undefined;
+  public maxDate: DateTime<true> | undefined;
+  public interval = $state<Interval<true> | undefined>(undefined);
+  public adjustedInterval = $state<Interval<true> | undefined>(undefined);
+  public comparisonInterval = $state<Interval<true> | undefined>(undefined);
+  public adjustedComparisonInterval = $state<Interval<true> | undefined>(
+    undefined,
+  );
+  public canPanLeft: boolean;
+  public canPanRight: boolean;
+  // For convenience
+  public timeStart: string | undefined;
+  public timeEnd: string | undefined;
+  public apiTimeRange: V1TimeRange;
+  public comparisonTimeStart: string | undefined;
+  public comparisonTimeEnd: string | undefined;
+  public apiComparisonTimeRange: V1TimeRange | undefined;
+
+  // RillTime related values
+  public parsedTime: RillTime | undefined;
+  public truncationGrain: V1TimeGrain | undefined;
+  public ref: RillTimeLabel | string | undefined;
+  public snapToEnd: boolean;
+  public parsedComparisonTime: RillTime | undefined;
+
+  // Options for controls
+  public aggregationOptions: V1TimeGrain[];
+  public comparisonTimeRangeOptions: ComparisonTimeRangeOption[];
+
+  public hasTimeSeries: boolean | undefined;
+  public ready = $state(false);
+
+  private events = new EventEmitter<TimeFilterManagerEvents>();
+  public readonly on = this.events.on.bind(
+    this.events,
+  ) as typeof this.events.on;
+
+  public paramKeys = TimeFilterParams;
+  public readonly storeSync: UrlParamsChangeTracker;
+
+  public constructor(
+    private readonly runtimeClient: RuntimeClient,
+    private readonly metricsViewsProvider: MetricsViewsProvider,
+    private readonly yamlConfigProvider: YAMLConfigProvider,
+    public readonly config: TimeFiltersConfig = {},
+    public readonly parent?: TimeFilterManager,
+  ) {
+    this.storeSync = new UrlParamsChangeTracker(this, config.log);
+
+    this.ready = metricsViewsProvider.ready;
+    metricsViewsProvider.on("time-specs-loaded", () => {
+      this.ready = true;
+      this.events.emit("ready");
+    });
+    // Replay `inherit` time range when parent changed.
+    parent?.storeSync.on("change", () => {
+      const timeRangeIsInherited =
+        this.urlTimeRange === INHERIT_TIME_RANGE_ALIAS;
+      const comparisonTimeRangeIsInherited =
+        this.urlComparisonTimeRange === INHERIT_TIME_RANGE_ALIAS;
+      if (timeRangeIsInherited) {
+        // If comparison is inherited it will be reapplied from applyTimeRange
+        void this.applyTimeRange(this.urlTimeRange!, this.timeZone, false);
+      } else if (comparisonTimeRangeIsInherited) {
+        this.applyComparisonRange(this.urlComparisonTimeRange!);
+      }
+    });
+
+    this.minDate = $derived.by(() => {
+      const minDate = this.metricsViewsProvider.timeRangeSummary?.min
+        ? DateTime.fromISO(this.metricsViewsProvider.timeRangeSummary.min)
+        : undefined;
+      if (!minDate?.isValid) return undefined;
+      return minDate;
+    });
+    this.maxDate = $derived.by(() => {
+      const maxDate = this.metricsViewsProvider.timeRangeSummary?.max
+        ? DateTime.fromISO(this.metricsViewsProvider.timeRangeSummary.max)
+        : undefined;
+      if (!maxDate?.isValid) return undefined;
+      return maxDate;
+    });
+
+    this.canPanLeft = $derived.by(() => {
+      if (!this.minDate || !this.interval) return false;
+      // Selected start - min > 0
+      const diff = this.interval.start.diff(this.minDate);
+      return diff.milliseconds > 0;
+    });
+    this.canPanRight = $derived.by(() => {
+      if (!this.maxDate || !this.interval) return false;
+      // max - selected end > 0
+      const diff = this.maxDate.diff(this.interval.end);
+      return diff.milliseconds > 0;
+    });
+
+    this.timeStart = $derived.by(() => {
+      const start =
+        this.lastDefinedScrubInterval?.start ?? this.interval?.start;
+      return start?.toJSDate()?.toISOString();
+    });
+    this.timeEnd = $derived.by(() => {
+      const end = this.lastDefinedScrubInterval?.end ?? this.interval?.end;
+      return end?.toJSDate()?.toISOString();
+    });
+    this.apiTimeRange = $derived(<V1TimeRange>{
+      start: this.timeStart,
+      end: this.timeEnd,
+      timeZone: this.timeZone,
+      timeDimension: this.timeDimension,
+    });
+
+    // TODO: calculate vs scrub
+    this.comparisonTimeStart = $derived(
+      this.comparisonInterval?.start.toJSDate().toISOString(),
+    );
+    this.comparisonTimeEnd = $derived(
+      this.comparisonInterval?.end.toJSDate().toISOString(),
+    );
+    this.apiComparisonTimeRange = $derived.by(() => {
+      if (!this.comparisonTimeStart || !this.comparisonTimeEnd)
+        return undefined;
+
+      return <V1TimeRange>{
+        start: this.comparisonTimeStart,
+        end: this.comparisonTimeEnd,
+        timeZone: this.timeZone,
+      };
+    });
+
+    this.parsedTime = $derived.by(() => {
+      if (!this.timeRange) return undefined;
+      try {
+        return parseRillTime(this.timeRange);
+      } catch {
+        return undefined;
+      }
+    });
+    this.truncationGrain = $derived(getTruncationGrain(this.parsedTime));
+    this.ref = $derived(
+      this.parsedTime?.isOldFormat
+        ? RillTimeLabel.Latest
+        : this.parsedTime?.asOfLabel?.label,
+    );
+    this.snapToEnd = $derived(
+      this.parsedTime?.isOldFormat
+        ? true
+        : !!this.parsedTime?.asOfLabel?.offset,
+    );
+
+    this.parsedComparisonTime = $derived.by(() => {
+      if (!this.comparisonTimeRange) return undefined;
+      try {
+        return parseRillTime(this.comparisonTimeRange);
+      } catch {
+        return undefined;
+      }
+    });
+
+    this.aggregationOptions = $derived(
+      allowedGrainsForInterval(
+        this.interval,
+        this.metricsViewsProvider.largestMinTimeGrain,
+      ),
+    );
+    this.comparisonTimeRangeOptions = $derived(
+      this.getComparisonTimeRangeOptions(),
+    );
+
+    this.hasTimeSeries = $derived.by(() => {
+      if (!metricsViewsProvider.ready) return undefined;
+
+      let hasTimeSeries = false;
+      for (const metricsView of metricsViewsProvider.metricsViewNames) {
+        const spec = metricsViewsProvider.specs[metricsView];
+        // Every spec comes from the same ListResources response,
+        // so a missing one means they have not resolved and the answer is not knowable yet.
+        if (!spec) return undefined;
+        if (spec.timeDimension) hasTimeSeries = true;
+      }
+      return hasTimeSeries;
+    });
+  }
+
+  public normalizeParams(urlParams: URLSearchParams): URLSearchParams {
+    return urlParams;
+  }
+
+  public setUrlParams(urlParams: URLSearchParams) {
+    if (this.config.log)
+      console.log("TimeFilterManager::setUrlParams", urlParams.toString());
+
+    if (!this.config.skipTimeGrain) {
+      const urlGrain = urlParams.get(ExploreStateURLParams.TimeGrain);
+      this.urlTimeGrain = urlGrain
+        ? DateTimeUnitToV1TimeGrain[urlGrain]
+        : undefined;
+    }
+
+    this.timeZone =
+      urlParams.get(ExploreStateURLParams.TimeZone) ??
+      this.yamlConfigProvider.defaultTimeZone;
+
+    this.timeDimension =
+      urlParams.get(ExploreStateURLParams.TimeDimension) ?? undefined;
+
+    this.showComparison = urlParams.has(
+      ExploreStateURLParams.ComparisonTimeRange,
+    );
+    this.applyComparisonRange(
+      urlParams.get(ExploreStateURLParams.ComparisonTimeRange) ?? "rill-PP",
+    );
+
+    // Apply time range last so that params are taken from url
+    if (urlParams.has(ExploreStateURLParams.TimeRange)) {
+      void this.applyTimeRange(
+        urlParams.get(ExploreStateURLParams.TimeRange)!,
+        this.timeZone,
+        false,
+      );
+    } else {
+      let defaultTimeRange = this.yamlConfigProvider.defaultTimeRange;
+      if (!defaultTimeRange) {
+        defaultTimeRange = getDefaultTimeRange(
+          this.metricsViewsProvider.largestMinTimeGrain,
+          this.metricsViewsProvider.timeRangeSummary,
+        );
+      }
+      if (defaultTimeRange && !this.config.skipDefaultTimeRange) {
+        void this.applyTimeRange(defaultTimeRange, this.timeZone, false);
+      } else {
+        this.urlTimeRange = undefined;
+        this.timeRange = undefined;
+        this.interval = undefined;
+      }
+    }
+
+    // Apply the highlighted range after the time range, since applying a time range clears it.
+    this.scrubInterval = undefined;
+    this.lastDefinedScrubInterval = undefined;
+    if (urlParams.has(ExploreStateURLParams.HighlightedTimeRange)) {
+      try {
+        const parsedHighlightRange = parseRillTime(
+          urlParams.get(ExploreStateURLParams.HighlightedTimeRange)!,
+        );
+        if (parsedHighlightRange.interval instanceof RillIsoInterval) {
+          const { start, end, interval } =
+            parsedHighlightRange.interval.toLuxonTimes();
+          this.scrubInterval =
+            start && end
+              ? {
+                  start,
+                  end,
+                  isScrubbing: false,
+                }
+              : undefined;
+          this.lastDefinedScrubInterval = interval;
+        }
+      } catch {
+        // no-op
+      }
+    }
+  }
+
+  public applyFilterToParams(urlParams: URLSearchParams) {
+    if (this.urlTimeRange) {
+      urlParams.set(ExploreStateURLParams.TimeRange, this.urlTimeRange);
+    } else {
+      urlParams.delete(ExploreStateURLParams.TimeRange);
+    }
+
+    if (!this.config.skipTimeGrain) {
+      const mappedGrain = this.urlTimeGrain
+        ? V1TimeGrainToDateTimeUnit[this.urlTimeGrain]
+        : undefined;
+      if (mappedGrain) {
+        urlParams.set(ExploreStateURLParams.TimeGrain, mappedGrain);
+      } else {
+        urlParams.delete(ExploreStateURLParams.TimeGrain);
+      }
+    }
+
+    if (this.timeZone !== DEFAULT_TIMEZONE) {
+      urlParams.set(ExploreStateURLParams.TimeZone, this.timeZone);
+    } else {
+      urlParams.delete(ExploreStateURLParams.TimeZone);
+    }
+
+    if (this.timeDimension) {
+      urlParams.set(ExploreStateURLParams.TimeDimension, this.timeDimension);
+    } else {
+      urlParams.delete(ExploreStateURLParams.TimeDimension);
+    }
+
+    if (this.showComparison && this.urlComparisonTimeRange) {
+      urlParams.set(
+        ExploreStateURLParams.ComparisonTimeRange,
+        this.urlComparisonTimeRange,
+      );
+    } else {
+      urlParams.delete(ExploreStateURLParams.ComparisonTimeRange);
+    }
+
+    if (this.lastDefinedScrubInterval) {
+      const scrubStart = this.lastDefinedScrubInterval.start
+        .toJSDate()
+        .toISOString();
+      const scrubEnd = this.lastDefinedScrubInterval.end
+        .toJSDate()
+        .toISOString();
+      urlParams.set(
+        ExploreStateURLParams.HighlightedTimeRange,
+        `${scrubStart},${scrubEnd}`,
+      );
+    } else {
+      urlParams.delete(ExploreStateURLParams.HighlightedTimeRange);
+    }
+  }
+
+  // Mutation methods used by different UI controls
+
+  public onSelectRange(range: string, ignoreSnap?: boolean) {
+    if (range === INHERIT_TIME_RANGE_ALIAS) {
+      return this.applyTimeRange(range, this.timeZone);
+    }
+
+    try {
+      const parsed = parseRillTime(range);
+
+      const isPeriodToDate =
+        parsed.interval instanceof RillPeriodToGrainInterval;
+
+      const rangeGrainOrder =
+        getGrainOrder(parsed.rangeGrain) - (isPeriodToDate ? 1 : 0);
+
+      const asOfGrainOrder = getGrainOrder(this.truncationGrain);
+
+      const shouldAppendAsOfString =
+        !parsed.asOfLabel && !(parsed.interval instanceof RillIsoInterval);
+
+      if (asOfGrainOrder > rangeGrainOrder && parsed.rangeGrain) {
+        this.truncationGrain = parsed.rangeGrain;
+      }
+
+      if (shouldAppendAsOfString) {
+        const hasAsOfClause = !!this.parsedTime?.asOfLabel;
+
+        const isTruncationGrainAllowed =
+          getGrainOrder(this.truncationGrain) >=
+          this.metricsViewsProvider.largestMinGrainOrder;
+        const newAsOfString = constructAsOfString(
+          this.ref ?? RillTimeLabel.Latest,
+          ignoreSnap
+            ? undefined
+            : this.truncationGrain
+              ? isTruncationGrainAllowed
+                ? this.truncationGrain
+                : parsed.rangeGrain
+              : (this.metricsViewsProvider.largestMinTimeGrain ??
+                V1TimeGrain.TIME_GRAIN_MINUTE),
+          hasAsOfClause || this.snapToEnd ? this.snapToEnd : true,
+        );
+
+        overrideRillTimeRef(parsed, newAsOfString);
+      }
+
+      return this.applyTimeRange(parsed.toString(), this.timeZone);
+    } catch {
+      // This function is called in a controlled manner and should not throw
+    }
+  }
+
+  public onPan(direction: "left" | "right") {
+    if (!this.interval) return;
+
+    const currentRangeWidth = this.interval.length("milliseconds");
+    const panAmount = getDurationObjectFromMS(currentRangeWidth);
+
+    const newStart = this.interval.start
+      .setZone(this.timeZone)
+      [direction === "left" ? "plus" : "minus"](panAmount)
+      .toISO();
+    const newEnd = this.interval.end
+      .setZone(this.timeZone)
+      [direction === "left" ? "plus" : "minus"](panAmount)
+      .toISO();
+
+    void this.applyTimeRange(`${newStart} to ${newEnd}`, this.timeZone);
+  }
+
+  public onSelectGrainEnding(grain: V1TimeGrain | undefined) {
+    if (!this.timeRange) return;
+
+    const newString = constructNewString({
+      currentString: this.timeRange,
+      truncationGrain: grain === this.truncationGrain ? undefined : grain,
+      snapToEnd: grain === this.truncationGrain ? false : this.snapToEnd,
+      ref: this.ref,
+    });
+
+    return this.applyTimeRange(newString, this.timeZone);
+  }
+
+  public onSelectGrain(grain: V1TimeGrain | undefined) {
+    this.urlTimeGrain = grain;
+    this.timeGrain =
+      getValidatedTimeGrain(
+        this.interval,
+        this.metricsViewsProvider.largestMinTimeGrain ?? MinSupportedGrain,
+        grain,
+        this.parsedTime,
+      ) ?? MinSupportedGrain;
+    this.storeSync.stateChanged();
+  }
+
+  public onSelectZone(tz: string) {
+    this.timeZone = tz;
+    if (!this.timeRange || !this.parsedTime) return;
+
+    if (this.parsedTime.interval instanceof RillIsoInterval) {
+      // TODO
+    } else {
+      void this.applyTimeRange(this.timeRange, tz);
+    }
+  }
+
+  public onSelectAsOfOption(
+    ref: RillTimeLabel | string | undefined,
+    inclusive: boolean,
+  ) {
+    if (!this.timeRange) return;
+    const newString = constructNewString({
+      currentString: this.timeRange,
+      truncationGrain: this.truncationGrain,
+      snapToEnd: ref === "watermark" ? false : inclusive,
+      ref,
+    });
+
+    return this.applyTimeRange(newString, this.timeZone);
+  }
+
+  public onSelectTimeDimension(timeDimension: string) {
+    this.timeDimension = timeDimension;
+    if (this.timeRange) void this.applyTimeRange(this.timeRange, this.timeZone);
+    else this.storeSync.stateChanged();
+  }
+
+  public onSelectComparisonRange(range: string) {
+    this.applyComparisonRange(range);
+    this.showComparison = true;
+    this.storeSync.stateChanged();
+  }
+
+  public setShowComparison(showComparison: boolean) {
+    this.showComparison = showComparison;
+    this.storeSync.stateChanged();
+  }
+  public onToggleShowComparison() {
+    this.showComparison = !this.showComparison;
+    this.storeSync.stateChanged();
+  }
+
+  public onScrubRange({ start, end, isScrubbing }: ScrubRange) {
+    this.scrubInterval = {
+      start,
+      end,
+      isScrubbing,
+    };
+    if (isScrubbing) return;
+
+    ({ start, end } = getOrderedStartEndDateTime(start, end));
+    const newInterval = Interval.fromDateTimes(start, end);
+    if (!newInterval.isValid) return;
+
+    this.lastDefinedScrubInterval = newInterval;
+    this.storeSync.stateChanged();
+  }
+
+  public resetScrubRange(notify = true) {
+    this.lastDefinedScrubInterval = undefined;
+    this.scrubInterval = undefined;
+    if (notify) this.storeSync.stateChanged();
+  }
+
+  public getTimeControlStore() {
+    return toStore<TimeControlState>(() => ({
+      timeRange: this.timeRange,
+      timeGrain: this.timeGrain,
+      timeZone: this.timeZone,
+      interval: this.interval,
+      apiTimeRange: this.apiTimeRange,
+
+      comparisonTimeRange: this.comparisonTimeRange,
+      showComparison: this.showComparison,
+      apiComparisonTimeRange: this.showComparison
+        ? this.apiComparisonTimeRange
+        : undefined,
+
+      hasTimeSeries: this.hasTimeSeries,
+      ready: this.ready,
+    }));
+  }
+
+  public setExecutionTime(executionTime: string | undefined) {
+    this.executionTime = executionTime;
+  }
+
+  private async applyTimeRange(
+    newTimeRange: string,
+    tz: string,
+    notifyChange = true,
+  ) {
+    this.urlTimeRange = newTimeRange;
+    if (newTimeRange === INHERIT_TIME_RANGE_ALIAS) {
+      if (!this.parent?.timeRange) return;
+      newTimeRange = this.parent.timeRange;
+    }
+
+    measureSelection.clear();
+    this.resetScrubRange(false);
+
+    // The runtime resolves the range against the metrics views, so their names are all this needs.
+    // The time range summary can still be loading at this point;
+    // waiting for it here would drop the range the dashboard loaded with.
+    if (!this.metricsViewsProvider.metricsViewNames.length) return;
+
+    // This should be returned by the API, but it is not yet implemented
+    const includesTimeZoneOffset = newTimeRange.includes("tz");
+
+    if (includesTimeZoneOffset) {
+      const timeZone = newTimeRange.match(/tz (.*)/)?.[1];
+
+      if (timeZone) this.timeZone = timeZone;
+    }
+
+    const promises = this.metricsViewsProvider.metricsViewNames.map(
+      (mvName) => {
+        return deriveInterval(
+          newTimeRange,
+          this.runtimeClient,
+          mvName,
+          tz ?? "UTC",
+          this.timeDimension,
+          this.executionTime,
+        );
+      },
+    );
+    const intervals = await Promise.all(promises);
+    let latestInterval: Interval<true> | undefined = undefined;
+    let smallestGrain: V1TimeGrain | undefined = undefined;
+    intervals.forEach(({ interval, grain }) => {
+      if (
+        interval?.isValid &&
+        interval.end &&
+        (!latestInterval || latestInterval.end < interval.end)
+      ) {
+        latestInterval = interval;
+      }
+
+      if (
+        grain &&
+        (!smallestGrain ||
+          V1TimeGrainToOrder[grain] < V1TimeGrainToOrder[smallestGrain])
+      ) {
+        smallestGrain = grain;
+      }
+    });
+    if (!latestInterval) {
+      return;
+    }
+
+    const allowedGrains = allowedGrainsForInterval(
+      latestInterval,
+      this.metricsViewsProvider.largestMinTimeGrain ?? MinSupportedGrain,
+    );
+
+    let finalGrain: V1TimeGrain = allowedGrains[0];
+    if (this.urlTimeGrain) {
+      // If url time grain is explicitly set, use it if it is still valid in new interval.
+      finalGrain = allowedGrains.includes(this.urlTimeGrain)
+        ? this.urlTimeGrain
+        : smallestGrain && allowedGrains.includes(smallestGrain)
+          ? smallestGrain
+          : finalGrain;
+    } else {
+      // Else get the valid time grain for the new interval.
+      finalGrain =
+        getValidatedTimeGrain(
+          latestInterval,
+          this.metricsViewsProvider.largestMinTimeGrain ?? MinSupportedGrain,
+          undefined,
+          parseRillTime(newTimeRange),
+        ) ?? MinSupportedGrain;
+    }
+
+    this.interval = latestInterval;
+    this.adjustedInterval = getAdjustedInterval(
+      latestInterval,
+      finalGrain,
+      this.timeZone,
+    );
+    this.timeRange = newTimeRange;
+    this.timeGrain = finalGrain;
+
+    // Recalc comparison time range internal.
+    if (this.urlComparisonTimeRange)
+      this.applyComparisonRange(this.urlComparisonTimeRange);
+
+    if (this.config.log)
+      console.log(
+        "TimeFilterManager::applyTimeRange::dataUpdated",
+        newTimeRange,
+      );
+    if (notifyChange) this.storeSync.stateChanged();
+  }
+
+  private applyComparisonRange(newComparisonTimeRange: string) {
+    this.urlComparisonTimeRange = newComparisonTimeRange;
+    if (newComparisonTimeRange === INHERIT_TIME_RANGE_ALIAS) {
+      if (!this.parent?.timeRange) return;
+      newComparisonTimeRange = this.parent.timeRange;
+    }
+    this.comparisonTimeRange = newComparisonTimeRange;
+    if (!this.timeRange) return;
+
+    try {
+      const parsed = parseRillTime(this.timeRange);
+      // An absolute primary time range has no relative comparison other than the contiguous one,
+      // so mark the comparison as contiguous. An absolute comparison window is left as-is:
+      // it already names the exact period to compare against.
+      if (
+        parsed.interval instanceof RillIsoInterval &&
+        !(this.parsedComparisonTime?.interval instanceof RillIsoInterval)
+      ) {
+        this.comparisonTimeRange = TimeComparisonOption.CONTIGUOUS;
+      }
+      if (this.timeRange === TimeRangePreset.ALL_TIME) {
+        this.showComparison = false;
+      }
+
+      this.comparisonInterval = getComparisonInterval(
+        this.interval,
+        newComparisonTimeRange,
+        this.timeZone,
+      );
+      this.adjustedComparisonInterval = this.comparisonInterval
+        ? getAdjustedInterval(
+            this.comparisonInterval,
+            this.timeGrain,
+            this.timeZone,
+          )
+        : undefined;
+    } catch {
+      // no-op
+    }
+  }
+
+  private getComparisonTimeRangeOptions() {
+    // Type-safety
+    if (
+      !this.minDate ||
+      !this.maxDate ||
+      !this.timeRange ||
+      !this.interval?.isValid ||
+      !this.interval.start ||
+      !this.interval.end
+    )
+      return [];
+
+    let allOptions: TimeComparisonOption[];
+
+    const timeRange = this.yamlConfigProvider.timeRanges?.find(
+      (tr) => tr.range === this.timeRange,
+    );
+    if (timeRange?.comparisonTimeRanges?.length) {
+      allOptions =
+        timeRange.comparisonTimeRanges?.map(
+          (co) => co.offset as TimeComparisonOption,
+        ) ?? [];
+      if (this.config.allowCustomTimeRange)
+        allOptions.push(TimeComparisonOption.CUSTOM);
+    } else {
+      allOptions = [...Object.values(TimeComparisonOption)];
+      if (!this.config.allowCustomTimeRange) {
+        allOptions = allOptions.filter(
+          (o) => o !== TimeComparisonOption.CUSTOM,
+        );
+      }
+    }
+
+    const timeComparisonOptions = getAvailableComparisonsForTimeRange(
+      this.minDate.toJSDate(),
+      this.maxDate.toJSDate(),
+      this.interval.start.toJSDate(),
+      this.interval.end.toJSDate(),
+      allOptions,
+      this.timeZone,
+    );
+
+    const filteredOptions = timeComparisonOptions
+      .map((co, i) => {
+        const comparisonTimeRange = getComparisonInterval(
+          this.interval,
+          co,
+          this.timeZone,
+        );
+
+        if (
+          !comparisonTimeRange ||
+          !comparisonTimeRange.length(MinSupportedDateTimeUnit)
+        )
+          return undefined;
+        return <ComparisonTimeRangeOption>{
+          name: co,
+          key: i,
+        };
+      })
+      .filter(Boolean) as ComparisonTimeRangeOption[];
+    if (this.config.allowCustomTimeRange) {
+      filteredOptions.push({
+        name: TimeComparisonOption.CUSTOM,
+        key: filteredOptions.length,
+      });
+    }
+    return filteredOptions;
+  }
+}

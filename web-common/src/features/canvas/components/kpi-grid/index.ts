@@ -81,9 +81,7 @@ export class KPIGridComponent extends BaseCanvasComponent<KPIGridSpec> {
   }
 
   inputParams(): InputParams<KPIGridSpec> {
-    const hasTimeSeries = get(this.parent.timeManager.hasTimeSeriesMap).get(
-      this.metricsViewName,
-    );
+    const hasTimeSeries = this.timeFilters.hasTimeSeries;
 
     const timeSeriesOptions: InputParams<KPIGridSpec>["options"] = {
       sparkline: {

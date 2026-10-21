@@ -3,9 +3,9 @@
   import { Search } from "@rilldata/web-common/components/search";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
-  import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
-  import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
-  import { getNoComparisonLabel } from "@rilldata/web-common/lib/time/config";
+  import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers.ts";
+  import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores.ts";
+  import { getNoComparisonLabel } from "@rilldata/web-common/lib/time/config.ts";
   import type { MetricsViewSpecDimension } from "@rilldata/web-common/runtime-client";
   import { matchSorter } from "match-sorter";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";

@@ -111,7 +111,8 @@ export class CustomChartComponent extends BaseCanvasComponent<CustomChart> {
 
   getExploreTransformerProperties(): Partial<ExploreState> {
     const fields = get(this.queryFieldsMeta);
-    const timeAndFilter = get(this.timeAndFilterStore);
+    const whereFilter =
+      this.expressionFilters.exprByMetricsView[this.metricsViewName];
 
     const columns: PivotChipData[] = [];
     const rows: PivotChipData[] = [];
@@ -147,7 +148,7 @@ export class CustomChartComponent extends BaseCanvasComponent<CustomChart> {
     };
 
     return {
-      whereFilter: timeAndFilter?.where,
+      whereFilter,
       showTimeComparison: false,
       activePage: DashboardState_ActivePage.PIVOT,
       pivot,

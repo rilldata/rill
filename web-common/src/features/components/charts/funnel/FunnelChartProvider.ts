@@ -8,7 +8,6 @@ import {
 } from "@rilldata/web-common/features/components/charts/types";
 import { mergeFilters } from "@rilldata/web-common/features/dashboards/pivot/pivot-merge-filters";
 import { createInExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
-import type { TimeAndFilterStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
 import type {
   V1Expression,
   V1MetricsViewAggregationDimension,
@@ -31,6 +30,8 @@ import {
   combineChartDataQuery,
   getFilterWithNullHandling,
 } from "../query-util";
+import type { ExpressionState } from "@rilldata/web-common/features/dashboards/filters/ExpressionFilterManager.svelte.ts";
+import type { TimeControlState } from "@rilldata/web-common/features/dashboards/time-controls/TimeFilterManager.svelte.ts";
 import { withEphemeralMeasures } from "../ephemeral-measures";
 
 export type FunnelMode = "width" | "order";
@@ -90,7 +91,8 @@ export class FunnelChartProvider {
 
   createChartDataQuery(
     client: RuntimeClient,
-    timeAndFilterStore: Readable<TimeAndFilterStore>,
+    filterStore: Readable<ExpressionState>,
+    timeControlStore: Readable<TimeControlState>,
     visible?: Readable<boolean>,
   ): ChartDataQuery {
     const visibleStore = visible ?? readable(true);
@@ -136,17 +138,18 @@ export class FunnelChartProvider {
 
     // Create topN query for stage dimension
     const topNStageQueryOptionsStore = derived(
-      [timeAndFilterStore, visibleStore],
-      ([$timeAndFilterStore, $visible]) => {
-        const { timeRange, where, hasTimeSeries } = $timeAndFilterStore;
+      [filterStore, timeControlStore, visibleStore],
+      ([$filterStore, $timeControlStore, $visible]) => {
+        const { expr } = $filterStore;
+        const { apiTimeRange, hasTimeSeries } = $timeControlStore;
         const enabled =
           $visible &&
-          canQueryWithTimeRange(hasTimeSeries, timeRange) &&
+          canQueryWithTimeRange(hasTimeSeries, apiTimeRange) &&
           !!stageDimensionName &&
           !isMultiMeasure &&
           !Array.isArray(config.stage?.sort);
 
-        const topNWhere = getFilterWithNullHandling(where, config.stage);
+        const topNWhere = getFilterWithNullHandling(expr, config.stage);
 
         return getQueryServiceMetricsViewAggregationQueryOptions(
           client,
@@ -156,7 +159,7 @@ export class FunnelChartProvider {
             dimensions: [{ name: stageDimensionName }],
             sort: stageSort ? [stageSort] : undefined,
             where: topNWhere,
-            timeRange,
+            timeRange: apiTimeRange,
             limit: limit?.toString(),
           },
           {
@@ -171,13 +174,14 @@ export class FunnelChartProvider {
     const topNStageQuery = createQuery(topNStageQueryOptionsStore);
 
     const queryOptionsStore = derived(
-      [timeAndFilterStore, topNStageQuery, visibleStore],
-      ([$timeAndFilterStore, $topNStageQuery, $visible]) => {
-        const { timeRange, where, hasTimeSeries } = $timeAndFilterStore;
+      [filterStore, timeControlStore, topNStageQuery, visibleStore],
+      ([$filterStore, $timeControlStore, $topNStageQuery, $visible]) => {
+        const { expr } = $filterStore;
+        const { apiTimeRange, hasTimeSeries } = $timeControlStore;
         const topNStageData = $topNStageQuery?.data?.data;
         const enabled =
           $visible &&
-          canQueryWithTimeRange(hasTimeSeries, timeRange) &&
+          canQueryWithTimeRange(hasTimeSeries, apiTimeRange) &&
           !!measures?.length &&
           (isMultiMeasure || !!dimensions?.length) &&
           (!isMultiMeasure &&
@@ -187,7 +191,7 @@ export class FunnelChartProvider {
             : true);
 
         let combinedWhere: V1Expression | undefined = getFilterWithNullHandling(
-          where,
+          expr,
           isMultiMeasure ? undefined : config.stage,
         );
 
@@ -227,7 +231,7 @@ export class FunnelChartProvider {
             dimensions,
             where: combinedWhere,
             sort: stageSort ? [stageSort] : undefined,
-            timeRange,
+            timeRange: apiTimeRange,
             limit: limit?.toString(),
           },
           {

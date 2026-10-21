@@ -8,20 +8,17 @@
   /**
    * Test component that renders the filter bar the way the explore dashboard does, so that tests
    * can drive filters through the UI and assert on the explore state and the url they produce.
+   *
+   * `Tooltip.Provider` stands in for the one the app layout provides, which the time filters need.
    */
   export let exploreName: string;
-  export let hasTimeSeries: boolean = false;
 </script>
 
 <!-- The app layout supplies the tooltip provider, which the advanced filter pill needs. -->
 <Tooltip.Provider>
   <StateManagersProvider metricsViewName={AD_BIDS_METRICS_NAME} {exploreName}>
     <DashboardStateManager {exploreName}>
-      <Filters
-        timeRanges={[]}
-        metricsViewName={AD_BIDS_METRICS_NAME}
-        {hasTimeSeries}
-      />
+      <Filters />
       <div>Dashboard loaded!</div>
     </DashboardStateManager>
   </StateManagersProvider>

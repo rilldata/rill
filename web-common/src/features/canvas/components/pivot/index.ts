@@ -261,7 +261,8 @@ export class PivotCanvasComponent extends BaseCanvasComponent<
       this.parent,
       this.specStore,
       this.pivotState,
-      this.timeAndFilterStore,
+      this.expressionFilters.getExprStoreForFirstMetricsView(),
+      this.timeFilters.getTimeControlStore(),
       this.selfFilteredDimensions,
     );
 

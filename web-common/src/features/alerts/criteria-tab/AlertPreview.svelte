@@ -6,21 +6,21 @@
   import { mapMeasureFilterToExpr } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
   import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
-  import type { TimeControls } from "@rilldata/web-common/features/dashboards/stores/TimeControls.ts";
   import PreviewEmpty from "../PreviewEmpty.svelte";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import type { DimensionTableRow } from "../../dashboards/dimension-table/dimension-table-types";
   import type { ExpressionFilterManager } from "../../dashboards/filters/ExpressionFilterManager.svelte.ts";
+  import type { TimeFilterManager } from "@rilldata/web-common/features/dashboards/time-controls/TimeFilterManager.svelte.ts";
 
   let {
     formValues,
-    filters,
-    timeControls,
+    expressionFilterManager,
+    timeFilterManager,
   }: {
     formValues: AlertFormValues;
-    filters: ExpressionFilterManager;
-    timeControls: TimeControls;
+    expressionFilterManager: ExpressionFilterManager;
+    timeFilterManager: TimeFilterManager;
   } = $props();
 
   const runtimeClient = useRuntimeClient();
@@ -30,8 +30,8 @@
       runtimeClient,
       queryClient,
       formValues,
-      filters.topLevelJoiner.expr[formValues.metricsViewName],
-      timeControls,
+      expressionFilterManager.topLevelJoiner.expr[formValues.metricsViewName],
+      timeFilterManager,
     ),
   );
 

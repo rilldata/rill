@@ -1,190 +1,69 @@
 <script lang="ts">
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import InputLabel from "@rilldata/web-common/components/forms/InputLabel.svelte";
-  import { getCanvasStore } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
+  import { INHERIT_TIME_RANGE_ALIAS } from "@rilldata/web-common/features/dashboards/time-controls/new-time-controls";
+  import type { TimeFilterManager } from "@rilldata/web-common/features/dashboards/time-controls/TimeFilterManager.svelte.ts";
+  import TimeFilters from "@rilldata/web-common/features/dashboards/time-controls/TimeFilters.svelte";
+  import type { MetricsViewsProvider } from "@rilldata/web-common/features/metrics-views/providers/MetricsViewsProvider.svelte.ts";
+  import type { YAMLConfigProvider } from "@rilldata/web-common/features/dashboards/providers/YAMLConfigProvider.svelte.ts";
+  import { onMount } from "svelte";
   import AggregationGrainSelector from "@rilldata/web-common/features/dashboards/time-controls/AggregationGrainSelector.svelte";
-  import SuperPill from "@rilldata/web-common/features/dashboards/time-controls/super-pill/SuperPill.svelte";
-  import { ExploreStateURLParams } from "@rilldata/web-common/features/dashboards/url-state/url-params";
-  import { allowedGrainsForInterval } from "@rilldata/web-common/lib/time/new-grains";
-  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
-  import CanvasComparisonPill from "@rilldata/web-common/features/canvas/filters/CanvasComparisonPill.svelte";
-  import { TIME_COMPARISON } from "@rilldata/web-common/lib/time/config";
-  import {
-    TimeComparisonOption,
-    type TimeRange,
-  } from "@rilldata/web-common/lib/time/types";
-  import { DateTime, Interval } from "luxon";
-  import type { BaseCanvasComponent } from "../../components/BaseCanvasComponent";
-  import type { ComponentFilterProperties } from "../../components/types";
-  import {
-    resolveTimeFilters,
-    TIME_FILTER_INHERIT,
-  } from "../../components/time-filters";
 
-  export let id: string;
-  export let component: BaseCanvasComponent;
-  export let showComparison: boolean;
-  export let showGrain: boolean;
-  export let canvasName: string;
-  export let metricsView: string | null;
+  let {
+    id,
+    localTimeFilters,
+    metricsViewsProvider,
+    yamlConfigProvider,
+    showComparison,
+    showGrain,
+    updateLocalTimeFilterString,
+  }: {
+    id: string;
+    localTimeFilters: TimeFilterManager;
+    metricsViewsProvider: MetricsViewsProvider;
+    yamlConfigProvider: YAMLConfigProvider;
+    showComparison: boolean;
+    showGrain: boolean;
+    updateLocalTimeFilterString: (newFilterString: string) => void;
+  } = $props();
 
-  const runtimeClient = useRuntimeClient();
+  let { urlTimeRange, urlComparisonTimeRange } = $derived(localTimeFilters);
 
-  $: ({ instanceId } = runtimeClient);
-
-  $: ({ localTimeControls, specStore, timeAndFilterStore } = component);
-
-  $: ({
-    canvasEntity: {
-      timeManager: {
-        defaultTimeRangeStore,
-        timeRangeOptionsStore,
-        minTimeGrainMap,
-        largestMinTimeGrain,
-        availableTimeZonesStore,
-        state: {
-          rangeStore: globalRangeStore,
-          minMaxTimeStamps,
-          interval: globalIntervalStore,
-          timeZoneStore: globalTimeZoneStore,
-          showTimeComparisonStore: globalShowTimeComparisonStore,
-          comparisonRangeStore: globalComparisonRangeStore,
-        },
-      },
-    },
-  } = getCanvasStore(canvasName, instanceId));
-
-  $: ({
-    interval: localIntervalStore,
-    rangeStore: localRangeStore,
-    timeZoneStore: localTimeZoneStore,
-    searchParamsStore: localSearchParamsStore,
-    set,
-  } = localTimeControls);
-
-  $: minMax = $minMaxTimeStamps;
-  $: minDate = minMax?.min;
-  $: maxDate = minMax?.max;
-
-  $: defaultTimeRange = $defaultTimeRangeStore;
-  $: timeRanges = $timeRangeOptionsStore;
-  $: availableTimeZones = $availableTimeZonesStore;
-  $: minTimeGrain = metricsView ? $minTimeGrainMap.get(metricsView) : undefined;
-
-  $: resolved = resolveTimeFilters(
-    ($specStore as ComponentFilterProperties).time_filters,
+  let hasLocalTimeRange = $derived(
+    (urlTimeRange && urlTimeRange !== INHERIT_TIME_RANGE_ALIAS) ||
+      (urlComparisonTimeRange &&
+        urlComparisonTimeRange !== INHERIT_TIME_RANGE_ALIAS),
   );
-  $: ({ hasLocalTimeRange } = resolved);
 
-  // The pill always shows the range in effect: the local one when set, the canvas one otherwise.
-  // Comparison options are computed against the same range.
-  $: interval = hasLocalTimeRange ? $localIntervalStore : $globalIntervalStore;
-  $: selectedRangeAlias = hasLocalTimeRange
-    ? $localRangeStore
-    : $globalRangeStore;
-  // The grain in effect, resolved like the widget's queries: its own grain when the range allows it.
-  $: activeTimeGrain = $timeAndFilterStore.timeGrain;
-  $: grainOptions = allowedGrainsForInterval(interval, $largestMinTimeGrain);
-  $: activeTimeZone = hasLocalTimeRange
-    ? $localTimeZoneStore
-    : $globalTimeZoneStore;
-
-  $: timeStart = interval?.start.toUTC().toISO();
-  $: timeEnd = interval?.end.toUTC().toISO();
-
-  $: inheritedComparisonLabel = $globalShowTimeComparisonStore
-    ? (TIME_COMPARISON[$globalComparisonRangeStore as TimeComparisonOption]
-        ?.label ?? m.time_custom_range())
-    : m.canvas_comparison_off();
-
-  // The comparison in effect for this widget, inherited or its own.
-  $: ({ showTimeComparison, comparisonTimeRangeState } = $timeAndFilterStore);
-  $: selectedComparison = comparisonTimeRangeState?.selectedComparisonTimeRange;
-  $: comparisonInterval = selectedComparison
-    ? Interval.fromDateTimes(
-        DateTime.fromJSDate(selectedComparison.start).setZone(activeTimeZone),
-        DateTime.fromJSDate(selectedComparison.end).setZone(activeTimeZone),
-      )
-    : undefined;
-
-  function clearGrain() {
-    void localSearchParamsStore.set(
-      new Map([[ExploreStateURLParams.TimeGrain, undefined]]),
-    );
-  }
-
-  function onDisplayTimeComparison(show: boolean) {
-    // Turning comparison on picks the previous period, like the canvas toggle;
-    // inheriting could leave it off when the canvas comparison is off.
-    component.setComparisonRange(
-      show ? TimeComparisonOption.CONTIGUOUS : "none",
-    );
-  }
-
-  function onSetSelectedComparisonRange(range: TimeRange) {
-    if (range.name === TimeComparisonOption.CUSTOM) {
-      component.setComparisonRange(
-        `${range.start.toISOString()},${range.end.toISOString()}`,
-      );
-    } else if (range.name) {
-      component.setComparisonRange(range.name);
-    }
-  }
+  onMount(() => {
+    return localTimeFilters.storeSync.on("internal-change", (newUrlParams) => {
+      if (
+        localTimeFilters.urlTimeRange === INHERIT_TIME_RANGE_ALIAS &&
+        localTimeFilters.urlComparisonTimeRange === INHERIT_TIME_RANGE_ALIAS
+      ) {
+        updateLocalTimeFilterString("");
+      } else {
+        updateLocalTimeFilterString(newUrlParams.toString());
+      }
+    });
+  });
 </script>
 
 <div class="flex flex-col gap-y-1 pt-1">
-  <InputLabel
-    capitalize={false}
-    small
-    label={m.canvas_time_range_label()}
-    {id}
-  />
-  <div class="flex flex-row flex-wrap gap-x-2 gap-y-1.5 items-center">
-    <SuperPill
-      context="filters-input"
-      {minDate}
-      {maxDate}
-      {selectedRangeAlias}
-      showPivot
-      {minTimeGrain}
-      {defaultTimeRange}
-      {availableTimeZones}
-      {timeRanges}
-      complete={false}
-      {interval}
-      {timeStart}
-      {timeEnd}
-      {activeTimeGrain}
-      {activeTimeZone}
-      hidePan
-      lockTimeZone={!hasLocalTimeRange}
-      showFullRange={false}
-      showDefaultItem={false}
-      inheritOption={{
-        label: m.canvas_inherit_from_canvas(),
-        selected: !hasLocalTimeRange,
-        onSelect: () => set.range(TIME_FILTER_INHERIT),
-      }}
-      applyRange={(timeRange) => {
-        const string = `${timeRange.start.toISOString()},${timeRange.end.toISOString()}`;
-        set.range(string);
-      }}
-      onSelectRange={set.range}
-      onTimeGrainSelect={set.grain}
-      onSelectTimeZone={set.zone}
-      onPan={() => {}}
+  <div class="flex justify-between">
+    <InputLabel
+      capitalize={false}
+      small
+      label={m.canvas_time_range_label()}
+      {id}
     />
-    {#if showGrain && activeTimeGrain && grainOptions.length}
+    {#if showGrain}
       <AggregationGrainSelector
-        {activeTimeGrain}
-        options={grainOptions}
-        onSelect={set.grain}
+        timeFilterManager={localTimeFilters}
         defaultOption={{
           label: hasLocalTimeRange
             ? m.time_default()
             : m.canvas_inherit_from_canvas(),
-          selected: resolved.grain === undefined,
-          onSelect: clearGrain,
         }}
       />
     {/if}
@@ -197,46 +76,16 @@
     {/if}
   </div>
 
-  {#if showComparison}
-    <div class="flex flex-col gap-y-1 pt-3">
-      <InputLabel
-        capitalize={false}
-        small
-        label={m.canvas_comparison_range_label()}
-        id="{id}-comparison"
-      />
-      <div class="flex flex-row flex-wrap gap-y-1.5 items-center">
-        <CanvasComparisonPill
-          {minTimeGrain}
-          {minDate}
-          {maxDate}
-          {interval}
-          selectedRange={selectedRangeAlias}
-          {activeTimeGrain}
-          showFullRange={false}
-          comparisonInterval={comparisonInterval?.isValid
-            ? comparisonInterval
-            : undefined}
-          comparisonRange={selectedComparison?.name}
-          {showTimeComparison}
-          {activeTimeZone}
-          inheritOption={{
-            label: m.canvas_inherit_from_canvas(),
-            description: inheritedComparisonLabel,
-            selected: resolved.comparison.mode === "inherit",
-            onSelect: () => component.setComparisonRange(TIME_FILTER_INHERIT),
-          }}
-          {onDisplayTimeComparison}
-          {onSetSelectedComparisonRange}
-        />
-      </div>
-      <div class="text-fg-secondary">
-        {#if resolved.comparison.mode === "inherit"}
-          {m.canvas_comparison_inherit_hint()}
-        {:else}
-          {m.canvas_comparison_override_hint()}
-        {/if}
-      </div>
-    </div>
-  {/if}
+  <TimeFilters
+    timeFilterManager={localTimeFilters}
+    {metricsViewsProvider}
+    {yamlConfigProvider}
+    context="filter-input"
+    config={{
+      showFullRange: false,
+      hidePan: true,
+      showComparisonSelector: showComparison,
+      showInheritRange: true,
+    }}
+  />
 </div>

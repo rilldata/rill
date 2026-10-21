@@ -7,11 +7,11 @@
   import type { ExpressionFilterManager } from "./ExpressionFilterManager.svelte.ts";
   import AddExpressionFilterButton from "@rilldata/web-common/features/dashboards/filters/AddExpressionFilterButton.svelte";
   import AdvancedFilter from "@rilldata/web-common/features/dashboards/filters/AdvancedFilter.svelte";
+  import type { DashboardConfigProvider } from "@rilldata/web-common/features/dashboards/providers/DashboardConfigProvider.svelte.ts";
 
   let {
     expressionFilterManager,
-    filteredMeasures,
-    filteredDimensions,
+    dashboardConfigProvider,
 
     timeEnd,
     timeStart,
@@ -21,10 +21,7 @@
     isUrlTooLongAfterInListFilter,
   }: {
     expressionFilterManager: ExpressionFilterManager;
-    // Explore spec can restrict the available dimension/measure vs metrics views.
-    // This is passed in explore context.
-    filteredDimensions?: string[];
-    filteredMeasures?: string[];
+    dashboardConfigProvider: DashboardConfigProvider;
 
     timeStart: string | undefined;
     timeEnd: string | undefined;
@@ -37,15 +34,17 @@
   /** the height of a row of chips */
   const ROW_HEIGHT = "26px";
 
-  let metricsViewsProvider = $derived(
-    expressionFilterManager.metricsViewsProvider,
+  let { metricsViewsProvider, yamlConfigProvider } = $derived(
+    dashboardConfigProvider,
   );
-  let yamlConfigProvider = $derived(expressionFilterManager.yamlConfigProvider);
+
+  let { restrictedMeasures, restrictedDimensions } =
+    $derived(yamlConfigProvider);
 
   let allDimensions = $derived(
-    filteredDimensions
+    restrictedDimensions
       ? metricsViewsProvider.dimensions.filter((d) =>
-          filteredDimensions.includes(d.name!),
+          restrictedDimensions.includes(d.name!),
         )
       : metricsViewsProvider.dimensions,
   );
@@ -60,23 +59,25 @@
   // so there is nothing to clear unless a chip actually holds a filter.
   let hasClearableFilters = $derived(
     sortedDimensionManagers.some((dfm) => !!dfm.expr) ||
-      sortedMeasureManagers.some((mfm) => !!mfm.expr),
+      sortedMeasureManagers.some((mfm) => !!mfm.expr) ||
+      // Advanced/complex filter wont have pills, but can be cleared.
+      expressionFilterManager.isComplexFilter,
   );
 
   let excludedDimensions = $derived(
     Object.fromEntries(
-      filteredDimensions
+      restrictedDimensions
         ? metricsViewsProvider.dimensions
-            .filter((d) => !filteredDimensions.includes(d.name!))
+            .filter((d) => !restrictedDimensions.includes(d.name!))
             .map((m) => [m.name!, true])
         : [],
     ),
   );
   let excludedMeasures = $derived(
     Object.fromEntries(
-      filteredMeasures
+      restrictedMeasures
         ? metricsViewsProvider.measures
-            .filter((m) => !filteredMeasures.includes(m.name!))
+            .filter((m) => !restrictedMeasures.includes(m.name!))
             .map((m) => [m.name!, true])
         : [],
     ),
@@ -141,10 +142,8 @@
     {/if}
 
     <!-- if filters are present, place a chip at the end of the flex container
-    that enables clearing all filters.
-    An advanced filter is gated on the flag rather than on its pill: a param the chips cannot
-    show may also parse to no pill at all, and it still has to be clearable. -->
-    {#if expressionFilterManager.isComplexFilter || hasClearableFilters}
+         that enables clearing all filters -->
+    {#if hasClearableFilters}
       <Button type="text" onClick={() => expressionFilterManager.clear()}>
         {m.dashboard_clear_filters()}
       </Button>

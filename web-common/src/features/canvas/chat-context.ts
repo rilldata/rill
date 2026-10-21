@@ -88,12 +88,12 @@ function getActiveCanvasContext(
     const canvasFiltersStore = derived(
       [
         canvasStore.canvasEntity.expressionFilterManager.exprByMetricsViewStore,
-        canvasStore.canvasEntity.timeManager.state.interval,
+        canvasStore.canvasEntity.timeFilterManager.getTimeControlStore(),
       ],
-      ([filtersMap, selectedInterval]) => {
+      ([filtersMap, timeStore]) => {
         return {
           filtersMap,
-          selectedInterval,
+          selectedInterval: timeStore.interval,
         };
       },
     );

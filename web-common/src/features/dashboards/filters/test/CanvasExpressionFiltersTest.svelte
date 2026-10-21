@@ -9,14 +9,14 @@
    * Test component that renders the filter bar the way a canvas dashboard does: `CanvasProvider`
    * resolves the canvas and builds the store, and `CanvasDashboardWrapper` holds the filter bar
    * and the url sync. The filter state lands on the canvas entity's `expressionFilterManager`,
-   * which is where the test reads it from.
+   * and the time filter state on its `timeFilterManager`, which is where the tests read them from.
    */
   let { canvasName }: { canvasName: string } = $props();
 
   const runtimeClient = useRuntimeClient();
 </script>
 
-<!-- The app layout supplies the tooltip provider, which the advanced filter pill needs. -->
+<!-- The app layout supplies the tooltip provider, which the time controls and the advanced filter pill needs. -->
 <Tooltip.Provider>
   <CanvasProvider {canvasName} instanceId={runtimeClient.instanceId}>
     <!-- `CanvasDashboardEmbed` reads both of these off the spec; they are fixed here. -->

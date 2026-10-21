@@ -42,6 +42,7 @@
       theme,
       exportMode,
       expressionFilterManager,
+      timeFilterManager,
       dashboardProvider,
     },
   } = $derived(getCanvasStore(canvasName, instanceId));

@@ -7,33 +7,30 @@
   import TimeFiltersInput from "@rilldata/web-common/features/canvas/inspector/filters/TimeFiltersInput.svelte";
   import type { BaseCanvasComponent } from "../../components/BaseCanvasComponent";
   import { resolveTimeFilters } from "../../components/time-filters";
-  import type {
-    ComponentFilterProperties,
-    ComponentSpec,
-  } from "../../components/types";
-  import type { AllKeys, FilterInputParam } from "../types";
+  import type { ComponentFilterProperties } from "../../components/types";
 
-  export let component: BaseCanvasComponent;
+  let { component }: { component: BaseCanvasComponent } = $props();
 
-  $: ({
+  let {
     specStore,
     type,
     localExpressionFilters,
-    parent: { name: canvasName },
-    timeAndFilterStore,
-  } = component);
+    localTimeFilters,
+    metricsViewsProvider,
+    yamlConfigProvider,
+  } = $derived(component);
 
-  $: localParamValues = $specStore;
+  let localParamValues = $derived($specStore);
 
-  $: inputParams = component.inputParams().filter;
+  let inputParams = $derived(component.inputParams().filter);
 
-  $: metricsView = (
-    "metrics_view" in localParamValues
+  let metricsView = $derived(
+    ("metrics_view" in localParamValues
       ? (localParamValues.metrics_view ?? null)
-      : null
-  ) as string | null;
+      : null) as string | null,
+  );
 
-  $: excludedDimensions =
+  let excludedDimensions = $derived(
     type === "leaderboard"
       ? Object.fromEntries(
           (localParamValues as LeaderboardSpec).dimensions.map((d) => [
@@ -41,27 +38,28 @@
             true,
           ]),
         )
-      : {};
+      : {},
+  );
 
-  $: entries = Object.entries(inputParams) as [
-    AllKeys<ComponentSpec>,
-    FilterInputParam,
-  ][];
+  let entries = $derived(Object.entries(inputParams));
 
-  $: ({ hasTimeSeries } = $timeAndFilterStore);
+  let { hasTimeSeries } = $derived(localTimeFilters);
 
   // Mirrors the chip visibility check in ComponentHeader so the switch only
   // appears when the component would actually show local filter chips.
-  $: filterProperties = localParamValues as ComponentFilterProperties;
-  $: ({ hasLocalTimeRange, comparison } = resolveTimeFilters(
-    filterProperties.time_filters,
-  ));
-  $: hasLocalFilter =
+  let filterProperties = $derived(
+    localParamValues as ComponentFilterProperties,
+  );
+  let { hasLocalTimeRange, comparison } = $derived(
+    resolveTimeFilters(filterProperties.time_filters),
+  );
+  let hasLocalFilter = $derived(
     Boolean(filterProperties.dimension_filters) ||
-    hasLocalTimeRange ||
-    comparison.mode === "local";
+      hasLocalTimeRange ||
+      comparison.mode === "local",
+  );
 
-  $: hideLocalFilters = Boolean(filterProperties.hide_local_filters);
+  let hideLocalFilters = $derived(Boolean(filterProperties.hide_local_filters));
 </script>
 
 <div>
@@ -70,12 +68,15 @@
       {#if config.type === "time_filters"}
         {#if hasTimeSeries}
           <TimeFiltersInput
-            {canvasName}
             id={key}
-            {metricsView}
-            {component}
+            {localTimeFilters}
+            {metricsViewsProvider}
+            {yamlConfigProvider}
             showComparison={config?.meta?.hasComparison}
             showGrain={config?.meta?.hasGrain}
+            updateLocalTimeFilterString={(newString) => {
+              component.updateProperty("time_filters", newString);
+            }}
           />
         {/if}
       {:else if config.type == "dimension_filters" && metricsView}

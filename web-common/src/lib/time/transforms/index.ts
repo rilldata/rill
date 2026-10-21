@@ -161,8 +161,10 @@ export function subtractFromPeriod(
   return duration.minus({ [period_duration]: 1 });
 }
 
+export function getDurationObjectFromMS(ms: number) {
+  return Duration.fromMillis(ms).shiftTo("days", "hours", "minutes", "seconds");
+}
+
 export function getDurationFromMS(ms: number): string {
-  return Duration.fromMillis(ms)
-    .shiftTo("days", "hours", "minutes", "seconds")
-    .toISO();
+  return getDurationObjectFromMS(ms).toISO();
 }

@@ -38,6 +38,7 @@
     ExploreDashboardConfigProvider,
   } from "@rilldata/web-common/features/dashboards/providers/DashboardConfigProvider.svelte.ts";
   import { onDestroy } from "svelte";
+  import { TimeFilterManager } from "@rilldata/web-common/features/dashboards/time-controls/TimeFilterManager.svelte.ts";
   import { useCanvas } from "@rilldata/web-common/features/canvas/selector";
   import { useVisibilityConditionsCheck } from "@rilldata/web-common/features/dashboards/granular-access-policies/useSecurityPolicyCheck";
 
@@ -63,7 +64,14 @@
   const dashboardConfigProvider = isExplore
     ? new ExploreDashboardConfigProvider(runtimeClient, dashboardName)
     : new CanvasDashboardConfigProvider(runtimeClient, dashboardName);
+
   const expressionFilterManager = new ExpressionFilterManager(
+    dashboardConfigProvider.metricsViewsProvider,
+    dashboardConfigProvider.yamlConfigProvider,
+  );
+
+  const timeFilterManager = new TimeFilterManager(
+    runtimeClient,
     dashboardConfigProvider.metricsViewsProvider,
     dashboardConfigProvider.yamlConfigProvider,
   );
@@ -71,6 +79,7 @@
   // Always load from current state. This is the only route to overwrite bookmark state.
   // A future PR will improve this by adding `Replace` action, in that case this should only have bookmark's state.
   expressionFilterManager.storeSync.setUrlParams(page.url.searchParams);
+  timeFilterManager.storeSync.setUrlParams(page.url.searchParams);
 
   // A public URL shows a canvas the way its creator sees it, so point out content that only some viewers see.
   const canvasQuery = useCanvas(runtimeClient, dashboardName, {
@@ -91,13 +100,9 @@
     dashboardKind,
     expressionFilterManager,
   );
-  let {
-    fields,
-    sanitizedState,
-    droppedEphemeralMeasures,
-    queryTimeStart,
-    queryTimeEnd,
-  } = $derived($sanitisedFilterState);
+  let { fields, sanitizedState, droppedEphemeralMeasures } = $derived(
+    $sanitisedFilterState,
+  );
 
   const formId = "create-public-url-form";
 
@@ -259,8 +264,8 @@
         <div class="flex flex-col gap-2 my-2">
           <ReadonlyExpressionFilters
             {expressionFilterManager}
-            {queryTimeStart}
-            {queryTimeEnd}
+            {timeFilterManager}
+            hideTimePills
           />
         </div>
       </div>

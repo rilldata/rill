@@ -9,7 +9,6 @@ import {
   ChartSortType,
   type ChartFieldsMap,
 } from "@rilldata/web-common/features/components/charts/types";
-import type { TimeAndFilterStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
 import {
   MetricsViewSpecDimensionType,
   type V1MetricsViewSpec,
@@ -24,6 +23,8 @@ import type {
 import { BaseChart, type BaseChartConfig } from "../BaseChart";
 
 import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
+import type { ExpressionState } from "@rilldata/web-common/features/dashboards/filters/ExpressionFilterManager.svelte.ts";
+import type { TimeControlState } from "@rilldata/web-common/features/dashboards/time-controls/TimeFilterManager.svelte.ts";
 
 const DEFAULT_COLOR_LIMIT = 20;
 const DEFAULT_SORT = ChartSortType.MEASURE_DESC;
@@ -122,12 +123,14 @@ export class CircularChartComponent extends BaseChart<CircularCanvasChartSpec> {
 
   createChartDataQuery(
     ctx: CanvasStore,
-    timeAndFilterStore: Readable<TimeAndFilterStore>,
+    filterStore: Readable<ExpressionState>,
+    timeControlStore: Readable<TimeControlState>,
     visible: Readable<boolean>,
   ): ChartDataQuery {
     return this.provider.createChartDataQuery(
       ctx.runtimeClient,
-      timeAndFilterStore,
+      filterStore,
+      timeControlStore,
       visible,
     );
   }

@@ -22,10 +22,13 @@ import type {
 } from "@rilldata/web-common/features/dashboards/filters/filter-events.ts";
 import { mergeFilterParams } from "@rilldata/web-common/features/dashboards/filters/expr-utils.ts";
 import { getSortFilterManagers } from "@rilldata/web-common/features/dashboards/filters/get-sort-filter-managers.ts";
-import {
-  UrlParamsChangeTracker,
-  type UrlParamsStore,
-} from "@rilldata/web-common/lib/store-utils/url-params-store-sync.svelte.ts";
+import type { UrlParamsStore } from "@rilldata/web-common/lib/store-utils/url-params-store-sync.svelte.ts";
+import { UrlParamsChangeTracker } from "@rilldata/web-common/lib/store-utils/url-search-params-store.svelte.ts";
+
+export type ExpressionState = {
+  expr: V1Expression | undefined;
+  dimensionOnlyExpr: V1Expression | undefined;
+};
 
 /**
  * Filter managers for the chips in a filter bar.
@@ -82,6 +85,7 @@ export class ExpressionFilterManager implements UrlParamsStore {
         ...names.map((mvName) => getParamKeyForMv(mvName, singleParamFormMv)),
       ]);
     };
+
     const unsubUpdate = metricsViewsProvider.on(
       "update-metrics-views",
       (names) => {
@@ -267,10 +271,9 @@ export class ExpressionFilterManager implements UrlParamsStore {
     }
   }
 
-  // TODO: add return type based on callback type?
-  public dimensionFilterAction(
+  public dimensionFilterAction<Ret>(
     name: string,
-    callback: (dimensionFilterManager: DimensionFilterManager) => any,
+    callback: (dimensionFilterManager: DimensionFilterManager) => Ret,
     // Anything other than the filter bar reaches the managers through here,
     // so this is where a caller names itself as the cause of the change.
     source?: FilterChangeSource,
@@ -294,9 +297,9 @@ export class ExpressionFilterManager implements UrlParamsStore {
     return ret;
   }
 
-  public measureFilterAction(
+  public measureFilterAction<Ret>(
     name: string,
-    callback: (measureFilterManager: MeasureFilterManager) => any,
+    callback: (measureFilterManager: MeasureFilterManager) => Ret,
     source?: FilterChangeSource,
   ) {
     const measureFilterManager =
@@ -356,7 +359,6 @@ export class ExpressionFilterManager implements UrlParamsStore {
   }
 
   public getExprStoreForFirstMetricsView() {
-    // The name is read inside the store, since the metrics views only arrive once the specs load.
     return toStore(() => {
       const mvName = this.metricsViewsProvider.metricsViewNames[0];
       return {
@@ -367,10 +369,13 @@ export class ExpressionFilterManager implements UrlParamsStore {
   }
 
   public getExprStoreForMetricsView(mvName: string) {
-    return toStore(() => ({
-      expr: this.topLevelJoiner.expr[mvName],
-      dimensionOnlyExpr: this.topLevelJoiner.dimensionOnlyExpr[mvName],
-    }));
+    return toStore(
+      () =>
+        <ExpressionState>{
+          expr: this.topLevelJoiner.expr[mvName],
+          dimensionOnlyExpr: this.topLevelJoiner.dimensionOnlyExpr[mvName],
+        },
+    );
   }
 }
 

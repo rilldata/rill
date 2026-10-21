@@ -4,7 +4,6 @@
   import type { ComponentWithMetricsView } from "@rilldata/web-common/features/canvas/components/types";
   import { useExploreAvailability } from "@rilldata/web-common/features/explore-mappers/explore-validation";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
-  import { derived } from "svelte/store";
   import { useTransformCanvasToExploreState } from "./canvas-explore-transformer";
   import ExploreLink from "@rilldata/web-common/features/explores/explore-link/ExploreLink.svelte";
 
@@ -22,22 +21,20 @@
   // Check if component can be linked to explore
   $: exploreAvailability = useExploreAvailability(client, metricsViewName);
 
-  $: context = derived(
-    [exploreAvailability, component.timeAndFilterStore],
-    ([exploreAvailResp, timeAndFilterStore]) => ({
-      organization,
-      project,
-      exploreName: exploreAvailResp.exploreName ?? metricsViewName,
-      timeAndFilterStore,
-    }),
-  );
+  const expressionStore =
+    component.expressionFilters.getExprStoreForFirstMetricsView();
+  const timeControlStore = component.timeFilters.getTimeControlStore();
 
-  $: exploreState = useTransformCanvasToExploreState(component, $context);
+  $: exploreState = useTransformCanvasToExploreState(
+    component,
+    $expressionStore,
+    $timeControlStore,
+  );
 </script>
 
 {#if $exploreAvailability.isAvailable}
   <ExploreLink
-    exploreName={$context.exploreName ?? metricsViewName}
+    exploreName={$exploreAvailability.exploreName ?? metricsViewName}
     displayName={$exploreAvailability.displayName}
     {organization}
     {project}
