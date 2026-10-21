@@ -4,7 +4,7 @@ import { deletePreviewArgsStore, getPreviewArgsStore } from "./preview-state";
 
 describe("preview state", () => {
   it("drops bindings when a file path is deleted or renamed", () => {
-    const path = "/viz_library/chart.yaml";
+    const path = "/viz/chart.yaml";
     const original = getPreviewArgsStore(path);
     original.set({ metrics_view: "mv1" });
 
