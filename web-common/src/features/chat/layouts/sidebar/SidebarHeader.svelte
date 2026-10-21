@@ -3,6 +3,9 @@
   import IconButton from "../../../../components/button/IconButton.svelte";
   import Close from "../../../../components/icons/Close.svelte";
   import PlusIcon from "../../../../components/icons/PlusIcon.svelte";
+  import { formatConversationTitle } from "@rilldata/web-common/features/chat/core/context/conversation-title.ts";
+  import { getInlineChatContextMetadata } from "@rilldata/web-common/features/chat/core/context/metadata.ts";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import { type V1Conversation } from "../../../../runtime-client";
@@ -17,6 +20,7 @@
   export let onClose: () => void;
 
   const { adminServer } = featureFlags;
+  const contextMetadata = getInlineChatContextMetadata(useRuntimeClient());
 
   $: organization = $page.params.organization;
   $: project = $page.params.project;
@@ -41,7 +45,12 @@
 </script>
 
 <div class="chatbot-header">
-  <span class="chatbot-title">{currentConversationDto?.title || ""}</span>
+  <span class="chatbot-title"
+    >{formatConversationTitle(
+      currentConversationDto?.title ?? "",
+      $contextMetadata,
+    )}</span
+  >
   <div class="chatbot-header-actions">
     <MemoryButton />
     <ConnectClientPopover />
@@ -68,6 +77,7 @@
 
     <ConversationHistoryMenu
       {conversations}
+      contextMetadata={$contextMetadata}
       currentConversationId={currentConversationDto?.id}
       onSelect={handleSelectConversation}
     />
