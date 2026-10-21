@@ -17,8 +17,6 @@ import (
 	"google.golang.org/protobuf/types/known/structpb"
 )
 
-const defaultTemperature = 0.1
-
 func init() {
 	drivers.Register("claude", driver{})
 	drivers.RegisterAsConnector("claude", driver{})
@@ -58,8 +56,7 @@ var spec = drivers.Spec{
 			Type:        drivers.NumberPropertyType,
 			Required:    false,
 			DisplayName: "Temperature",
-			Description: "Sampling temperature to use.",
-			Default:     "0.1",
+			Description: "Sampling temperature to use. Unset by default, since some models reject it.",
 		},
 		{
 			Key:         "base_url",
@@ -139,13 +136,6 @@ func (c *configProperties) getMaxTokens() int {
 		return c.MaxTokens
 	}
 	return 8192 // Default max tokens
-}
-
-func (c *configProperties) getTemperature() float64 {
-	if c.Temperature != nil {
-		return *c.Temperature
-	}
-	return defaultTemperature
 }
 
 type handle struct {
@@ -270,11 +260,14 @@ func (h *handle) Complete(ctx context.Context, opts *drivers.CompleteOptions) (*
 	}
 
 	params := anthropic.BetaMessageNewParams{
-		Model:       anthropic.Model(h.config.getModel()),
-		MaxTokens:   int64(h.config.getMaxTokens()),
-		Temperature: anthropic.Float(h.config.getTemperature()),
-		Messages:    msgs,
-		System:      system,
+		Model:     anthropic.Model(h.config.getModel()),
+		MaxTokens: int64(h.config.getMaxTokens()),
+		Messages:  msgs,
+		System:    system,
+	}
+	// Current models reject sampling parameters, so only send one when configured.
+	if h.config.Temperature != nil {
+		params.Temperature = anthropic.Float(*h.config.Temperature)
 	}
 
 	if len(betaTools) > 0 {
@@ -295,6 +288,25 @@ func (h *handle) Complete(ctx context.Context, opts *drivers.CompleteOptions) (*
 		}
 		params.Betas = []anthropic.AnthropicBeta{"structured-outputs-2025-11-13"}
 		params.OutputFormat = anthropic.BetaJSONSchemaOutputFormat(schemaMap)
+	}
+
+	// The tools, the system prompt and the history are resent on every step of a tool loop:
+	// mark the end of each so the next step reads them from the prompt cache.
+	if len(params.Tools) > 0 {
+		if cc := params.Tools[len(params.Tools)-1].GetCacheControl(); cc != nil {
+			*cc = anthropic.NewBetaCacheControlEphemeralParam()
+		}
+	}
+	if len(params.System) > 0 {
+		params.System[len(params.System)-1].CacheControl = anthropic.NewBetaCacheControlEphemeralParam()
+	}
+	if len(params.Messages) > 0 {
+		content := params.Messages[len(params.Messages)-1].Content
+		if len(content) > 0 {
+			if cc := content[len(content)-1].GetCacheControl(); cc != nil {
+				*cc = anthropic.NewBetaCacheControlEphemeralParam()
+			}
+		}
 	}
 
 	res, err := h.client.Beta.Messages.New(ctx, params)
@@ -431,9 +443,24 @@ func convertTool(tool *aiv1.Tool) (anthropic.BetaToolUnionParam, error) {
 		inputSchema.Type = "object"
 		inputSchema.Properties = map[string]any{}
 	} else {
-		if err := json.Unmarshal([]byte(tool.InputSchema), &inputSchema); err != nil {
+		// Decode into a map, not into the SDK struct: the struct only keeps properties, required and type,
+		// so it drops $defs and leaves every $ref dangling.
+		var schema map[string]any
+		if err := json.Unmarshal([]byte(tool.InputSchema), &schema); err != nil {
 			return anthropic.BetaToolUnionParam{}, fmt.Errorf("failed to parse schema for tool %q: %w", tool.Name, err)
 		}
+		inputSchema.Properties = schema["properties"]
+		if required, ok := schema["required"].([]any); ok {
+			for _, r := range required {
+				if name, ok := r.(string); ok {
+					inputSchema.Required = append(inputSchema.Required, name)
+				}
+			}
+		}
+		delete(schema, "type")
+		delete(schema, "properties")
+		delete(schema, "required")
+		inputSchema.ExtraFields = schema
 	}
 
 	result := anthropic.BetaToolUnionParamOfTool(inputSchema, tool.Name)
@@ -455,9 +482,8 @@ func convertResponseMessage(msg *anthropic.BetaMessage) (*aiv1.CompletionMessage
 				BlockType: &aiv1.ContentBlock_Text{Text: block.Text},
 			})
 		case "thinking":
-			blocks = append(blocks, &aiv1.ContentBlock{
-				BlockType: &aiv1.ContentBlock_Text{Text: block.Thinking},
-			})
+			// Dropped: current models return it empty by default, and an empty text block is rejected on replay.
+			// Replaying it as a thinking block needs its signature, which a CompletionMessage has nowhere to keep.
 		case "tool_use":
 			cb, err := convertResponseToolUse(block)
 			if err != nil {
