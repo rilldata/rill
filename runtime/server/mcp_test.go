@@ -376,7 +376,9 @@ func TestMCPApps(t *testing.T) {
 	clientOpts := &mcp.ClientOptions{Capabilities: &mcp.ClientCapabilities{}}
 	clientOpts.Capabilities.AddExtension(mcpapp.UIExtension, map[string]any{"mimeTypes": []any{mcpapp.MIMEType}})
 	mcpClient := mcp.NewClient(&mcp.Implementation{Name: "claude-ai", Version: "1.0.0"}, clientOpts)
-	conn, err := mcpClient.Connect(t.Context(), &mcp.StreamableClientTransport{Endpoint: httpSrv.URL}, nil)
+	// Claude and ChatGPT speak protocol 2025-06-18, whose handshake is an "initialize" request that starts a session.
+	// The SDK client defaults to a newer protocol that discovers the server without one.
+	conn, err := mcpClient.Connect(t.Context(), &mcp.StreamableClientTransport{Endpoint: httpSrv.URL}, &mcp.ClientSessionOptions{ProtocolVersion: "2025-06-18"})
 	require.NoError(t, err)
 	defer conn.Close()
 	require.Contains(t, conn.InitializeResult().Capabilities.Extensions, mcpapp.UIExtension)
