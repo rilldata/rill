@@ -143,7 +143,7 @@ Rill validates every use when a canvas reconciles: an unknown param, a missing r
 
 - Select every field the chart draws or the query orders by. Ordering by a field that isn't selected fails.
 - Don't wrap measures in aggregate functions such as `SUM()`; they arrive aggregated.
-- Don't rename fields with `AS`. The chart reads each column by its field name, and Metrics SQL rejects the alias.
+- Don't rename fields with `AS`. The chart reads each column by its field name, and Metrics SQL rejects the alias. The exception is an expression aliased back to its field's name, such as a [truncated time dimension](#time-dimensions).
 - `WITH`, joins, window functions and `CASE` are not supported, and subqueries only work inside an `IN` filter. The [Metrics SQL reference](/developers/build/metrics-view/metrics-sql) lists the full syntax.
 - Order a time series by its time dimension, and anything else by its main measure descending, so that the `LIMIT` keeps the rows the chart needs.
 

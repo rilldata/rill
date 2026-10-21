@@ -415,7 +415,19 @@ The running total is computed in the browser, over the rows within the query's `
 
 ### Use the Theme Palette
 
-A converted chart that splits into series keeps the scheme Flint chose, written as `"scale": { "scheme": "tableau10" }` on the `color` encoding. Remove the `scale` and the series take the qualitative colors of the dashboard's [theme](/developers/build/dashboards/customization#changing-themes--colors) instead.
+A converted chart that splits into series keeps the scheme Flint chose on its `color` encoding:
+
+```json
+"color": {
+  "field": "{{ .params.color }}",
+  "type": "nominal",
+  "sort": null,
+  "scale": { "scheme": "tableau10" },
+  "title": "{{ .fields.color.display_name }}"
+}
+```
+
+Remove the `scale` and the series take the qualitative colors of the dashboard's [theme](/developers/build/dashboards/customization#changing-themes--colors) instead.
 
 ### Highlight a Series from the Legend
 
