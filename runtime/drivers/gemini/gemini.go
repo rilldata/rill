@@ -504,6 +504,9 @@ func convertMessage(msg *aiv1.CompletionMessage, callIDToName map[string]string)
 			}
 			parts = append(parts, part)
 
+		case *aiv1.ContentBlock_Reasoning:
+			// Skipped: this driver does not keep Gemini's thought signatures yet (see the tool call case above).
+
 		default:
 			return nil, fmt.Errorf("unsupported message block type: %T", block.BlockType)
 		}

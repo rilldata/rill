@@ -1446,6 +1446,13 @@ func (s *Session) Complete(ctx context.Context, name string, out any, opts *Comp
 			// TODO: How to do durable execution here?
 			for _, block := range res.Message.Content {
 				switch block := block.BlockType.(type) {
+				case *aiv1.ContentBlock_Reasoning:
+					// Some providers require the reasoning passed back within a tool-use turn, so keep it for the next steps of this loop.
+					// It is not added to the session, so a loop rebuilt from the session would not have it (see the durable execution TODO above).
+					messages = append(messages, &aiv1.CompletionMessage{
+						Role:    string(RoleAssistant),
+						Content: []*aiv1.ContentBlock{{BlockType: block}},
+					})
 				case *aiv1.ContentBlock_Text:
 					msg := s.AddMessage(&AddMessageOptions{
 						Role:        RoleAssistant,
@@ -1517,6 +1524,8 @@ func (s *Session) Complete(ctx context.Context, name string, out any, opts *Comp
 				} else if outputSchema != nil {
 					outVal = json.RawMessage(block.Text)
 				}
+			case *aiv1.ContentBlock_Reasoning:
+				// Not kept: providers only require reasoning passed back within a tool-use turn, and this turn is over.
 			default:
 				return nil, fmt.Errorf("unexpected result block type: %T", block)
 			}

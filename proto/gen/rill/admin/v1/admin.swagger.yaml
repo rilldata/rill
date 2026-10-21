@@ -5343,6 +5343,8 @@ definitions:
         $ref: '#/definitions/v1ToolCall'
       toolResult:
         $ref: '#/definitions/v1ToolResult'
+      reasoning:
+        $ref: '#/definitions/v1Reasoning'
     title: Content block within a message
   v1CreateAlertResponse:
     type: object
@@ -6792,6 +6794,18 @@ definitions:
         type: string
       tokensPerSeat:
         type: string
+  v1Reasoning:
+    type: object
+    properties:
+      text:
+        type: string
+        description: Readable reasoning; often empty, since providers may return it summarized or not at all.
+      signature:
+        type: string
+        description: Opaque provider token that lets the provider verify and restore the full reasoning.
+    description: |-
+      The model's reasoning before its text or tool calls.
+      Some providers require it passed back unmodified within a tool-use turn.
   v1RecordEventsRequest:
     type: object
     properties:

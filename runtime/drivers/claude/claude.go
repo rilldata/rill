@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"slices"
 
 	"github.com/anthropics/anthropic-sdk-go"
 	"github.com/anthropics/anthropic-sdk-go/option"
@@ -290,6 +291,21 @@ func (h *handle) Complete(ctx context.Context, opts *drivers.CompleteOptions) (*
 		params.OutputFormat = anthropic.BetaJSONSchemaOutputFormat(schemaMap)
 	}
 
+	// A thinking block is bound to the conversation that produced it.
+	// If the history Rill sends differs from what the model saw (e.g. after truncation), drop the block instead of failing the request.
+	// Only set when replaying a thinking block, so requests to models that returned none are unchanged.
+	if slices.ContainsFunc(msgs, func(m anthropic.BetaMessageParam) bool {
+		return slices.ContainsFunc(m.Content, func(c anthropic.BetaContentBlockParamUnion) bool { return c.OfThinking != nil })
+	}) {
+		params.Betas = append(params.Betas, "thinking-binding-controls-2026-08-01")
+		params.SetExtraFields(map[string]any{
+			"thinking": map[string]any{
+				"type":          "adaptive",
+				"block_binding": map[string]any{"prefix_mismatch_behavior": "drop_block"},
+			},
+		})
+	}
+
 	// The tools, the system prompt and the history are resent on every step of a tool loop:
 	// mark the end of each so the next step reads them from the prompt cache.
 	if len(params.Tools) > 0 {
@@ -382,6 +398,16 @@ func convertMessage(msg *aiv1.CompletionMessage) ([]anthropic.BetaMessageParam, 
 				Role: anthropic.BetaMessageParamRoleAssistant, // NOTE: Hard-coded as assistant
 				Content: []anthropic.BetaContentBlockParamUnion{
 					convertToolCall(b.ToolCall),
+				},
+			})
+		case *aiv1.ContentBlock_Reasoning:
+			if b.Reasoning.Signature == "" {
+				continue
+			}
+			result = append(result, anthropic.BetaMessageParam{
+				Role: anthropic.BetaMessageParamRoleAssistant,
+				Content: []anthropic.BetaContentBlockParamUnion{
+					anthropic.NewBetaThinkingBlock(b.Reasoning.Signature, b.Reasoning.Text),
 				},
 			})
 		case *aiv1.ContentBlock_ToolResult:
@@ -482,8 +508,13 @@ func convertResponseMessage(msg *anthropic.BetaMessage) (*aiv1.CompletionMessage
 				BlockType: &aiv1.ContentBlock_Text{Text: block.Text},
 			})
 		case "thinking":
-			// Dropped: current models return it empty by default, and an empty text block is rejected on replay.
-			// Replaying it as a thinking block needs its signature, which a CompletionMessage has nowhere to keep.
+			// Kept with its signature: within a tool-use turn, thinking blocks must be passed back unmodified.
+			// The text is usually empty, since current models omit it by default.
+			blocks = append(blocks, &aiv1.ContentBlock{
+				BlockType: &aiv1.ContentBlock_Reasoning{
+					Reasoning: &aiv1.Reasoning{Text: block.Thinking, Signature: block.Signature},
+				},
+			})
 		case "tool_use":
 			cb, err := convertResponseToolUse(block)
 			if err != nil {

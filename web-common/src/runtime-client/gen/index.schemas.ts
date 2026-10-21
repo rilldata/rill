@@ -836,6 +836,7 @@ export interface V1ContentBlock {
   text?: string;
   toolCall?: V1ToolCall;
   toolResult?: V1ToolResult;
+  reasoning?: V1Reasoning;
 }
 
 export interface V1Conversation {
@@ -2326,6 +2327,17 @@ export type V1QueryResponseDataItem = { [key: string]: unknown };
 export interface V1QueryResponse {
   meta?: V1StructType;
   data?: V1QueryResponseDataItem[];
+}
+
+/**
+ * The model's reasoning before its text or tool calls.
+Some providers require it passed back unmodified within a tool-use turn.
+ */
+export interface V1Reasoning {
+  /** Readable reasoning; often empty, since providers may return it summarized or not at all. */
+  text?: string;
+  /** Opaque provider token that lets the provider verify and restore the full reasoning. */
+  signature?: string;
 }
 
 export type V1ReconcileStatus =

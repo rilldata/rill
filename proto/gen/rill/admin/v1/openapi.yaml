@@ -442,6 +442,8 @@ components:
             type: object
         v1ContentBlock:
             properties:
+                reasoning:
+                    $ref: '#/components/schemas/v1Reasoning'
                 text:
                     type: string
                 toolCall:
@@ -1858,6 +1860,18 @@ components:
                 storageLimitBytesPerDeployment:
                     type: string
                 tokensPerSeat:
+                    type: string
+            type: object
+        v1Reasoning:
+            description: |-
+                The model's reasoning before its text or tool calls.
+                Some providers require it passed back unmodified within a tool-use turn.
+            properties:
+                signature:
+                    description: Opaque provider token that lets the provider verify and restore the full reasoning.
+                    type: string
+                text:
+                    description: Readable reasoning; often empty, since providers may return it summarized or not at all.
                     type: string
             type: object
         v1RecordEventsRequest:
