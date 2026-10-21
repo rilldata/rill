@@ -34,40 +34,46 @@ func New(sender Sender) *Client {
 }
 
 type ScheduledReport struct {
-	ToEmail         string
-	ToName          string
-	DisplayName     string
-	ReportTime      time.Time
-	DownloadFormat  string
-	OpenLink        string
-	DownloadLink    string
-	EditLink        string
-	UnsubscribeLink string
-	Summary         string // For AI reports
+	ToEmail            string
+	ToName             string
+	DisplayName        string
+	ReportTime         time.Time
+	DownloadFormat     string
+	OpenLink           string
+	DownloadLink       string
+	EditLink           string
+	UnsubscribeLink    string
+	Summary            string      // For AI reports
+	Attachment         *Attachment // The exported file, if it is attached to the email
+	AttachmentTooLarge bool        // If true, the email explains that the exported file was too large to attach
 }
 
 type scheduledReportData struct {
-	DisplayName      string
-	ReportTimeString string // Will be inferred from ReportTime
-	DownloadFormat   string
-	OpenLink         template.URL
-	DownloadLink     template.URL
-	EditLink         template.URL
-	UnsubscribeLink  template.URL
-	Summary          string // For AI reports
+	DisplayName        string
+	ReportTimeString   string // Will be inferred from ReportTime
+	DownloadFormat     string
+	OpenLink           template.URL
+	DownloadLink       template.URL
+	EditLink           template.URL
+	UnsubscribeLink    template.URL
+	Summary            string // For AI reports
+	Attached           bool
+	AttachmentTooLarge bool
 }
 
 func (c *Client) SendScheduledReport(opts *ScheduledReport) error {
 	// Build template data
 	data := &scheduledReportData{
-		DisplayName:      opts.DisplayName,
-		ReportTimeString: opts.ReportTime.Format(time.RFC1123),
-		DownloadFormat:   opts.DownloadFormat,
-		OpenLink:         template.URL(opts.OpenLink),
-		DownloadLink:     template.URL(opts.DownloadLink),
-		EditLink:         template.URL(opts.EditLink),
-		UnsubscribeLink:  template.URL(opts.UnsubscribeLink),
-		Summary:          opts.Summary,
+		DisplayName:        opts.DisplayName,
+		ReportTimeString:   opts.ReportTime.Format(time.RFC1123),
+		DownloadFormat:     opts.DownloadFormat,
+		OpenLink:           template.URL(opts.OpenLink),
+		DownloadLink:       template.URL(opts.DownloadLink),
+		EditLink:           template.URL(opts.EditLink),
+		UnsubscribeLink:    template.URL(opts.UnsubscribeLink),
+		Summary:            opts.Summary,
+		Attached:           opts.Attachment != nil,
+		AttachmentTooLarge: opts.AttachmentTooLarge,
 	}
 
 	// Build subject
@@ -82,7 +88,11 @@ func (c *Client) SendScheduledReport(opts *ScheduledReport) error {
 	}
 	html := buf.String()
 
-	return c.Sender.Send(opts.ToEmail, opts.ToName, subject, html)
+	var attachments []Attachment
+	if opts.Attachment != nil {
+		attachments = []Attachment{*opts.Attachment}
+	}
+	return c.Sender.Send(opts.ToEmail, opts.ToName, subject, html, attachments)
 }
 
 func (c *Client) SendAlertStatus(opts *drivers.AlertStatus) error {
@@ -140,7 +150,7 @@ func (c *Client) sendAlertFail(opts *drivers.AlertStatus, data *alertFailData) e
 	}
 	html := buf.String()
 
-	return c.Sender.Send(opts.ToEmail, opts.ToName, subject, html)
+	return c.Sender.Send(opts.ToEmail, opts.ToName, subject, html, nil)
 }
 
 type alertStatusData struct {
@@ -168,7 +178,7 @@ func (c *Client) sendAlertStatus(opts *drivers.AlertStatus, data *alertStatusDat
 	}
 	html := buf.String()
 
-	return c.Sender.Send(opts.ToEmail, opts.ToName, subject, html)
+	return c.Sender.Send(opts.ToEmail, opts.ToName, subject, html, nil)
 }
 
 type CallToAction struct {
@@ -189,7 +199,7 @@ func (c *Client) SendCallToAction(opts *CallToAction) error {
 		return fmt.Errorf("email template error: %w", err)
 	}
 	html := buf.String()
-	return c.Sender.Send(opts.ToEmail, opts.ToName, opts.Subject, html)
+	return c.Sender.Send(opts.ToEmail, opts.ToName, opts.Subject, html, nil)
 }
 
 type Informational struct {
@@ -207,7 +217,7 @@ func (c *Client) SendInformational(opts *Informational) error {
 		return fmt.Errorf("email template error: %w", err)
 	}
 	html := buf.String()
-	return c.Sender.Send(opts.ToEmail, opts.ToName, opts.Subject, html)
+	return c.Sender.Send(opts.ToEmail, opts.ToName, opts.Subject, html, nil)
 }
 
 type Welcome struct {
@@ -225,7 +235,7 @@ func (c *Client) SendWelcomeToTrial(opts *Welcome) error {
 		return fmt.Errorf("email template error: %w", err)
 	}
 	html := buf.String()
-	return c.Sender.Send(opts.ToEmail, opts.ToName, opts.Subject, html)
+	return c.Sender.Send(opts.ToEmail, opts.ToName, opts.Subject, html, nil)
 }
 
 func (c *Client) SendWelcomeToTeam(opts *Welcome) error {
@@ -235,7 +245,7 @@ func (c *Client) SendWelcomeToTeam(opts *Welcome) error {
 		return fmt.Errorf("email template error: %w", err)
 	}
 	html := buf.String()
-	return c.Sender.Send(opts.ToEmail, opts.ToName, opts.Subject, html)
+	return c.Sender.Send(opts.ToEmail, opts.ToName, opts.Subject, html, nil)
 }
 
 type OrganizationInvite struct {
@@ -371,7 +381,7 @@ func (c *Client) SendProjectAccessRequest(opts *ProjectAccessRequest) error {
 		return fmt.Errorf("email template error: %w", err)
 	}
 	html := buf.String()
-	return c.Sender.Send(opts.ToEmail, opts.ToName, subject, html)
+	return c.Sender.Send(opts.ToEmail, opts.ToName, subject, html, nil)
 }
 
 type ProjectAccessGranted struct {

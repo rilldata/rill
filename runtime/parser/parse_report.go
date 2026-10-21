@@ -40,6 +40,7 @@ type ReportYAML struct {
 		Format           string         `yaml:"format"`
 		IncludeHeader    bool           `yaml:"include_header"`
 		Limit            uint           `yaml:"limit"`
+		Attach           bool           `yaml:"attach"`
 		OutputConnector  string         `yaml:"output_connector"`
 		OutputProperties map[string]any `yaml:"output_properties"`
 	} `yaml:"export"`
@@ -193,6 +194,17 @@ func (p *Parser) parseReport(node *Node) error {
 		return fmt.Errorf(`missing required property "data" or "query.name"`)
 	}
 
+	// Attaching the export to emails is only supported for reports run as the creator, since every recipient then gets the same data.
+	// Query-based reports always have a data export format (CSV, XLSX or Parquet).
+	if tmp.Export.Attach {
+		if resolver != "legacy_metrics" {
+			return errors.New(`"export.attach" requires the "query" property`)
+		}
+		if mode := tmp.Annotations["web_open_mode"]; mode != "" && mode != "creator" {
+			return fmt.Errorf(`"export.attach" is not supported for web_open_mode %q (must be "creator")`, mode)
+		}
+	}
+
 	if len(tmp.Email.Recipients) > 0 && len(tmp.Notify.Email.Recipients) > 0 {
 		return errors.New(`cannot set both "email.recipients" and "notify.email.recipients"`)
 	}
@@ -264,6 +276,7 @@ func (p *Parser) parseReport(node *Node) error {
 	r.ReportSpec.ExportLimit = uint64(tmp.Export.Limit)
 	r.ReportSpec.ExportFormat = exportFormat
 	r.ReportSpec.ExportIncludeHeader = tmp.Export.IncludeHeader
+	r.ReportSpec.ExportAttach = tmp.Export.Attach
 
 	if isLegacySyntax {
 		// Backwards compatibility

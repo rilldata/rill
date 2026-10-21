@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"os"
 
 	"github.com/mitchellh/mapstructure"
 	"github.com/rilldata/rill/runtime/drivers"
@@ -229,21 +230,26 @@ func (c *Connection) AsWarehouse() (drivers.Warehouse, bool) {
 	return nil, false
 }
 
+// AsMCP implements drivers.Handle.
+func (c *Connection) AsMCP() (drivers.MCPService, bool) {
+	return nil, false
+}
+
 // AsNotifier implements drivers.Connection.
 func (c *Connection) AsNotifier(properties map[string]any) (drivers.Notifier, error) {
 	return nil, drivers.ErrNotNotifier
 }
 
 // FilePaths implements drivers.FileStore
-func (c *Connection) FilePaths(ctx context.Context, src map[string]any) ([]string, error) {
+func (c *Connection) FilePaths(ctx context.Context, src map[string]any) ([]string, func(), error) {
 	modelProp := &ModelInputProperties{}
 	if err := modelProp.Decode(src); err != nil {
-		return nil, fmt.Errorf("failed to parse properties: %w", err)
+		return nil, nil, fmt.Errorf("failed to parse properties: %w", err)
 	}
 
 	path := modelProp.Path
 	if path == "" {
-		return nil, fmt.Errorf("missing required property: `path`")
+		return nil, nil, fmt.Errorf("missing required property: `path`")
 	}
 	var extension string
 	if modelProp.Format != "" {
@@ -252,13 +258,13 @@ func (c *Connection) FilePaths(ctx context.Context, src map[string]any) ([]strin
 		var err error
 		extension, err = urlExtension(path)
 		if err != nil {
-			return nil, fmt.Errorf("failed to parse extension from path %s, %w", path, err)
+			return nil, nil, fmt.Errorf("failed to parse extension from path %s, %w", path, err)
 		}
 	}
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, path, http.NoBody)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create request for path %s:  %w", path, err)
+		return nil, nil, fmt.Errorf("failed to create request for path %s:  %w", path, err)
 	}
 
 	for k, v := range modelProp.Headers {
@@ -267,19 +273,19 @@ func (c *Connection) FilePaths(ctx context.Context, src map[string]any) ([]strin
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("failed to fetch url %s:  %w", path, err)
+		return nil, nil, fmt.Errorf("failed to fetch url %s:  %w", path, err)
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return nil, fmt.Errorf("failed to fetch url %s: %s", path, resp.Status)
+		return nil, nil, fmt.Errorf("failed to fetch url %s: %s", path, resp.Status)
 	}
 
 	file, _, err := fileutil.CopyToTempFile(resp.Body, "", extension)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
-	return []string{file}, nil
+	return []string{file}, func() { _ = os.Remove(file) }, nil
 }
 
 func urlExtension(path string) (string, error) {

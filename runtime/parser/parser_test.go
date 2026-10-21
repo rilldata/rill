@@ -925,6 +925,32 @@ driver: duckdb
 	require.NotContains(t, m1Updated.Refs, ResourceName{Kind: ResourceKindConnector, Name: "duckdb"}, "model should not ref deleted connector")
 }
 
+func TestConnectorTemplatedPropertiesOrder(t *testing.T) {
+	// The project parser compares specs with proto.Equal to detect changes,
+	// so re-parsing an unchanged connector must return its templated properties in the same order.
+	ctx := context.Background()
+	repo := makeRepo(t, map[string]string{
+		`rill.yaml`: ``,
+		`connectors/clickhouse.yaml`: `
+type: connector
+driver: clickhouse
+mode: readwrite
+dsn: "{{ .env.dsn }}"
+write_dsn: "{{ .env.write_dsn }}"
+password: "{{ .env.password }}"
+`,
+	})
+
+	// Parse several times since an unstable order only shows up on some runs
+	for range 20 {
+		p, err := Parse(ctx, repo, "", "", "duckdb", true)
+		require.NoError(t, err)
+		r := p.Resources[ResourceName{Kind: ResourceKindConnector, Name: "clickhouse"}]
+		require.NotNil(t, r)
+		require.Equal(t, []string{"dsn", "password", "write_dsn"}, r.ConnectorSpec.TemplatedProperties)
+	}
+}
+
 func BenchmarkReparse(b *testing.B) {
 	ctx := context.Background()
 	files := map[string]string{
@@ -1678,6 +1704,143 @@ notify:
 		{
 			Message:  `missing required property "data" or "query.name"`,
 			FilePath: "/reports/r3.yaml",
+		},
+	})
+}
+
+func TestReportAttach(t *testing.T) {
+	ctx := context.Background()
+	repo := makeRepo(t, map[string]string{
+		`rill.yaml`: ``,
+		// Query-based report run as the creator
+		`reports/r1.yaml`: `
+type: report
+query:
+  name: MetricsViewAggregation
+  args:
+    metrics_view: mv1
+export:
+  format: xlsx
+  attach: true
+notify:
+  email:
+    recipients:
+      - user_1@example.com
+annotations:
+  web_open_mode: creator
+`,
+		// Reports without a web open mode are run as the creator
+		`reports/r2.yaml`: `
+type: report
+query:
+  name: MetricsViewAggregation
+  args:
+    metrics_view: mv1
+export:
+  format: csv
+  attach: true
+notify:
+  email:
+    recipients:
+      - user_1@example.com
+`,
+		// Attachments are not supported for reports run as the recipient
+		`reports/r3.yaml`: `
+type: report
+query:
+  name: MetricsViewAggregation
+  args:
+    metrics_view: mv1
+export:
+  format: csv
+  attach: true
+notify:
+  email:
+    recipients:
+      - user_1@example.com
+annotations:
+  web_open_mode: recipient
+`,
+		// Attachments are not supported for canvas PDF reports
+		`reports/r4.yaml`: `
+type: report
+export:
+  format: pdf
+  attach: true
+notify:
+  email:
+    recipients:
+      - user_1@example.com
+annotations:
+  canvas: c1
+`,
+		// Attachments are not supported for AI reports
+		`reports/r5.yaml`: `
+type: report
+data:
+  ai:
+    prompt: Analyze key metrics
+export:
+  attach: true
+notify:
+  email:
+    recipients:
+      - user_1@example.com
+`,
+	})
+
+	resolverProps := must(structpb.NewStruct(map[string]any{
+		"query_name":      "MetricsViewAggregation",
+		"query_args_json": "{\"metrics_view\":\"mv1\"}",
+	}))
+	notifiers := []*runtimev1.Notifier{{
+		Connector:  "email",
+		Properties: must(structpb.NewStruct(map[string]any{"recipients": []any{"user_1@example.com"}})),
+	}}
+	resources := []*Resource{
+		{
+			Name:  ResourceName{Kind: ResourceKindReport, Name: "r1"},
+			Paths: []string{"/reports/r1.yaml"},
+			ReportSpec: &runtimev1.ReportSpec{
+				DisplayName:        "R1",
+				RefreshSchedule:    &runtimev1.Schedule{RefUpdate: true},
+				Resolver:           "legacy_metrics",
+				ResolverProperties: resolverProps,
+				ExportFormat:       runtimev1.ExportFormat_EXPORT_FORMAT_XLSX,
+				ExportAttach:       true,
+				Notifiers:          notifiers,
+				Annotations:        map[string]string{"web_open_mode": "creator"},
+			},
+		},
+		{
+			Name:  ResourceName{Kind: ResourceKindReport, Name: "r2"},
+			Paths: []string{"/reports/r2.yaml"},
+			ReportSpec: &runtimev1.ReportSpec{
+				DisplayName:        "R2",
+				RefreshSchedule:    &runtimev1.Schedule{RefUpdate: true},
+				Resolver:           "legacy_metrics",
+				ResolverProperties: resolverProps,
+				ExportFormat:       runtimev1.ExportFormat_EXPORT_FORMAT_CSV,
+				ExportAttach:       true,
+				Notifiers:          notifiers,
+			},
+		},
+	}
+
+	p, err := Parse(ctx, repo, "", "", "duckdb", true)
+	require.NoError(t, err)
+	requireResourcesAndErrors(t, p, resources, []*runtimev1.ParseError{
+		{
+			Message:  `"export.attach" is not supported for web_open_mode "recipient" (must be "creator")`,
+			FilePath: "/reports/r3.yaml",
+		},
+		{
+			Message:  `"export.attach" requires the "query" property`,
+			FilePath: "/reports/r4.yaml",
+		},
+		{
+			Message:  `"export.attach" requires the "query" property`,
+			FilePath: "/reports/r5.yaml",
 		},
 	})
 }

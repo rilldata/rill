@@ -15,6 +15,20 @@ type AdminService interface {
 	GetConfig(ctx context.Context) (*Config, error)
 	ListDeployments(ctx context.Context) ([]*Deployment, error)
 	UpdateProjectVariables(ctx context.Context, environment string, variables map[string]string) error
+	// GetConnectorOAuthToken returns a user's OAuth access token for a connector, refreshing it first if it is about to expire.
+	// configHash identifies the connector's current OAuth configuration; a token granted for another configuration is reported as not found.
+	// It returns ErrNotFound if the user has not authorized the connector.
+	GetConnectorOAuthToken(ctx context.Context, connector, configHash, userID string, forceRefresh bool) (*MCPOAuthToken, error)
+	// DeleteConnectorOAuthToken removes a user's OAuth authorizations for a connector, including those granted for its earlier OAuth configurations.
+	// configHash identifies the current configuration.
+	DeleteConnectorOAuthToken(ctx context.Context, connector, configHash, userID string) error
+}
+
+// MCPOAuthToken is a user's OAuth access token for an external MCP connector.
+type MCPOAuthToken struct {
+	AccessToken string
+	// ExpiresOn is zero if the token does not expire.
+	ExpiresOn time.Time
 }
 
 type ReportMetadata struct {

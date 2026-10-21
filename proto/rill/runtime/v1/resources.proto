@@ -687,9 +687,9 @@ message ReportSpec {
   string resolver = 17;
   google.protobuf.Struct resolver_properties = 18;
   oneof query_for {
-    string query_for_user_id = 19;
-    string query_for_user_email = 20;
-    google.protobuf.Struct query_for_attributes = 21;
+    string query_for_user_id = 20;
+    string query_for_user_email = 21;
+    google.protobuf.Struct query_for_attributes = 22;
   }
   // Legacy query-based report fields (deprecated - use resolver/resolver_properties instead)
   string query_name = 5;
@@ -697,6 +697,7 @@ message ReportSpec {
   uint64 export_limit = 7;
   ExportFormat export_format = 8;
   bool export_include_header = 16;
+  bool export_attach = 19; // If true, the export is attached to email notifications (only supported for query-based reports run as the creator).
   repeated Notifier notifiers = 11;
   map<string, string> annotations = 10;
   bool watermark_inherit = 12; // If true, will use the lowest watermark of its refs instead of the trigger time.
@@ -1118,8 +1119,19 @@ message ConnectorSpec {
   repeated string templated_properties = 4;
   bool provision = 5;
   google.protobuf.Struct provision_args = 6;
+  // Security rules that control which users may use the connector and, for MCP connectors, which of its tools.
+  // Parsed from the connector's "security" YAML block; currently only the "mcp" driver supports it.
+  repeated SecurityRule security_rules = 8;
+  // AI agents that may use the connector's tools (MCP connectors only). Empty means all agents.
+  repeated string agents = 9;
 }
 
 message ConnectorState {
   string spec_hash = 1;
+}
+
+// MCPTool describes a tool exposed by an external MCP server.
+message MCPTool {
+  string name = 1;
+  string description = 2;
 }

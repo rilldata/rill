@@ -2,7 +2,6 @@ package clickhouse
 
 import (
 	"context"
-	"crypto/md5"
 	"errors"
 	"fmt"
 	"strings"
@@ -120,8 +119,8 @@ func (c *Connection) insertTableAsSelect(ctx context.Context, name, sql string, 
 		if err != nil {
 			return nil, err
 		}
-		// create temp table with the same schema using a deterministic name
-		tempName := fmt.Sprintf("__rill_temp_%s_%x", name, md5.Sum([]byte(sql)))
+		// create temp table with the same schema
+		tempName := tempTableName(name)
 		// clean up the temp table
 		defer func() {
 			// cleanup using a different ctx to prevent cleanups being impacted by the main ctx cancellation
@@ -235,9 +234,83 @@ func (c *Connection) insertTableAsSelect(ctx context.Context, name, sql string, 
 	return nil, fmt.Errorf("incremental insert strategy %q not supported", opts.Strategy)
 }
 
+// tempTablePrefix is the prefix of the temporary tables created while writing a model's table, e.g. for column inference and partition inserts.
+const tempTablePrefix = "__rill_temp_"
+
+// tempTableName returns a unique name for a temporary table used while writing table `name`.
+// Unique names prevent concurrent executions (e.g. partitions of the same model) and the stale table sweep from operating on the same table.
+func tempTableName(name string) string {
+	return fmt.Sprintf("%s%s_%d_%s", tempTablePrefix, name, time.Now().UnixMilli(), uuid.New().String()[0:8])
+}
+
+// tempTableTTL is the age after which a temporary table is assumed to be left behind by an execution that never dropped it.
+// The default model timeout is 3 hours, so this leaves a wide margin for executions that are still running.
+const tempTableTTL = 24 * time.Hour
+
+// dropStaleTempTables drops the temporary tables in the configured database that were created, or last altered, more than olderThan ago.
+// The execution that creates a temporary table also drops it, but that never happens if the runtime restarts in the meantime,
+// and it may fail, e.g. by timing out while a cancelled insert still holds a lock on the table.
+// Failures to drop individual tables are logged, so that the remaining tables are still dropped.
+func (c *Connection) dropStaleTempTables(ctx context.Context, olderThan time.Duration) error {
+	names, err := c.listStaleTempTables(ctx, olderThan)
+	if err != nil {
+		return err
+	}
+	for _, name := range names {
+		err := c.dropTable(ctx, name)
+		if errors.Is(err, drivers.ErrNotFound) {
+			// already dropped, e.g. a `_local` table along with its Distributed table
+			continue
+		}
+		if err != nil {
+			if ctx.Err() != nil {
+				return ctx.Err()
+			}
+			c.logger.Warn("clickhouse: failed to drop stale temp table", zap.String("name", name), zap.Error(err), observability.ZapCtx(ctx))
+			continue
+		}
+		c.logger.Info("clickhouse: dropped stale temp table", zap.String("name", name), observability.ZapCtx(ctx))
+	}
+	return nil
+}
+
+// listStaleTempTables returns the names of the temporary tables in the configured database that were created, or last altered, more than olderThan ago.
+// In cluster mode, it includes the `_local` counterparts of the tables, since their names share the prefix.
+func (c *Connection) listStaleTempTables(ctx context.Context, olderThan time.Duration) ([]string, error) {
+	args := []any{c.config.Database, tempTablePrefix, int64(olderThan.Seconds())}
+	if c.config.Database == "" {
+		args[0] = nil
+	}
+	res, err := c.Query(ctx, &drivers.Statement{
+		Query: `SELECT name FROM system.tables
+			WHERE database = coalesce(?, currentDatabase()) AND startsWith(name, ?) AND metadata_modification_time < now() - toIntervalSecond(?)`,
+		Args:     args,
+		Priority: 100,
+	})
+	if err != nil {
+		return nil, err
+	}
+	defer res.Close()
+
+	var names []string
+	for res.Next() {
+		var name string
+		if err := res.Scan(&name); err != nil {
+			return nil, err
+		}
+		names = append(names, name)
+	}
+	return names, res.Err()
+}
+
 func (c *Connection) dropTable(ctx context.Context, name string) error {
 	typ, err := c.entityType(ctx, c.config.Database, name)
 	if err != nil {
+		// In cluster mode, a table is created as a `_local` table first and a Distributed table over it second.
+		// If the second step never ran, e.g. because the execution was cancelled in between, the `_local` table is dropped on its own.
+		if errors.Is(err, drivers.ErrNotFound) && c.config.Cluster != "" && !strings.HasSuffix(name, "_local") {
+			return c.dropTable(ctx, localTableName(name))
+		}
 		return err
 	}
 
@@ -456,7 +529,7 @@ func (c *Connection) createTable(ctx context.Context, name, sql string, outputPr
 			return fmt.Errorf("clickhouse: no columns specified for table %q", name)
 		}
 		// infer columns
-		v := safeSQLName(fmt.Sprintf("__rill_temp_%s_%x", name, md5.Sum([]byte(sql))))
+		v := safeSQLName(tempTableName(name))
 		defer func() {
 			// cleanup using a different ctx to prevent cleanups being impacted by the main ctx cancellation
 			// this is a best effort cleanup and query can still timeout and we don't want to wait forever due to blocked calls

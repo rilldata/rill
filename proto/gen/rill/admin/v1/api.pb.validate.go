@@ -12272,6 +12272,521 @@ var _ interface {
 	ErrorName() string
 } = GetDeploymentConfigResponseValidationError{}
 
+// Validate checks the field values on GetConnectorOAuthTokenRequest with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *GetConnectorOAuthTokenRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on GetConnectorOAuthTokenRequest with
+// the rules defined in the proto definition for this message. If any rules
+// are violated, the result is a list of violation errors wrapped in
+// GetConnectorOAuthTokenRequestMultiError, or nil if none found.
+func (m *GetConnectorOAuthTokenRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *GetConnectorOAuthTokenRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if utf8.RuneCountInString(m.GetConnector()) < 1 {
+		err := GetConnectorOAuthTokenRequestValidationError{
+			field:  "Connector",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if utf8.RuneCountInString(m.GetConfigHash()) < 1 {
+		err := GetConnectorOAuthTokenRequestValidationError{
+			field:  "ConfigHash",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if utf8.RuneCountInString(m.GetUserId()) < 1 {
+		err := GetConnectorOAuthTokenRequestValidationError{
+			field:  "UserId",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	// no validation rules for ForceRefresh
+
+	if len(errors) > 0 {
+		return GetConnectorOAuthTokenRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// GetConnectorOAuthTokenRequestMultiError is an error wrapping multiple
+// validation errors returned by GetConnectorOAuthTokenRequest.ValidateAll()
+// if the designated constraints aren't met.
+type GetConnectorOAuthTokenRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m GetConnectorOAuthTokenRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m GetConnectorOAuthTokenRequestMultiError) AllErrors() []error { return m }
+
+// GetConnectorOAuthTokenRequestValidationError is the validation error
+// returned by GetConnectorOAuthTokenRequest.Validate if the designated
+// constraints aren't met.
+type GetConnectorOAuthTokenRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e GetConnectorOAuthTokenRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e GetConnectorOAuthTokenRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e GetConnectorOAuthTokenRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e GetConnectorOAuthTokenRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e GetConnectorOAuthTokenRequestValidationError) ErrorName() string {
+	return "GetConnectorOAuthTokenRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e GetConnectorOAuthTokenRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sGetConnectorOAuthTokenRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = GetConnectorOAuthTokenRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = GetConnectorOAuthTokenRequestValidationError{}
+
+// Validate checks the field values on GetConnectorOAuthTokenResponse with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *GetConnectorOAuthTokenResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on GetConnectorOAuthTokenResponse with
+// the rules defined in the proto definition for this message. If any rules
+// are violated, the result is a list of violation errors wrapped in
+// GetConnectorOAuthTokenResponseMultiError, or nil if none found.
+func (m *GetConnectorOAuthTokenResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *GetConnectorOAuthTokenResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for AccessToken
+
+	if all {
+		switch v := interface{}(m.GetExpiresOn()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, GetConnectorOAuthTokenResponseValidationError{
+					field:  "ExpiresOn",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, GetConnectorOAuthTokenResponseValidationError{
+					field:  "ExpiresOn",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetExpiresOn()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return GetConnectorOAuthTokenResponseValidationError{
+				field:  "ExpiresOn",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if len(errors) > 0 {
+		return GetConnectorOAuthTokenResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// GetConnectorOAuthTokenResponseMultiError is an error wrapping multiple
+// validation errors returned by GetConnectorOAuthTokenResponse.ValidateAll()
+// if the designated constraints aren't met.
+type GetConnectorOAuthTokenResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m GetConnectorOAuthTokenResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m GetConnectorOAuthTokenResponseMultiError) AllErrors() []error { return m }
+
+// GetConnectorOAuthTokenResponseValidationError is the validation error
+// returned by GetConnectorOAuthTokenResponse.Validate if the designated
+// constraints aren't met.
+type GetConnectorOAuthTokenResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e GetConnectorOAuthTokenResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e GetConnectorOAuthTokenResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e GetConnectorOAuthTokenResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e GetConnectorOAuthTokenResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e GetConnectorOAuthTokenResponseValidationError) ErrorName() string {
+	return "GetConnectorOAuthTokenResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e GetConnectorOAuthTokenResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sGetConnectorOAuthTokenResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = GetConnectorOAuthTokenResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = GetConnectorOAuthTokenResponseValidationError{}
+
+// Validate checks the field values on DeleteConnectorOAuthTokenRequest with
+// the rules defined in the proto definition for this message. If any rules
+// are violated, the first error encountered is returned, or nil if there are
+// no violations.
+func (m *DeleteConnectorOAuthTokenRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on DeleteConnectorOAuthTokenRequest with
+// the rules defined in the proto definition for this message. If any rules
+// are violated, the result is a list of violation errors wrapped in
+// DeleteConnectorOAuthTokenRequestMultiError, or nil if none found.
+func (m *DeleteConnectorOAuthTokenRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *DeleteConnectorOAuthTokenRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if utf8.RuneCountInString(m.GetConnector()) < 1 {
+		err := DeleteConnectorOAuthTokenRequestValidationError{
+			field:  "Connector",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if utf8.RuneCountInString(m.GetConfigHash()) < 1 {
+		err := DeleteConnectorOAuthTokenRequestValidationError{
+			field:  "ConfigHash",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if utf8.RuneCountInString(m.GetUserId()) < 1 {
+		err := DeleteConnectorOAuthTokenRequestValidationError{
+			field:  "UserId",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if len(errors) > 0 {
+		return DeleteConnectorOAuthTokenRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// DeleteConnectorOAuthTokenRequestMultiError is an error wrapping multiple
+// validation errors returned by
+// DeleteConnectorOAuthTokenRequest.ValidateAll() if the designated
+// constraints aren't met.
+type DeleteConnectorOAuthTokenRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m DeleteConnectorOAuthTokenRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m DeleteConnectorOAuthTokenRequestMultiError) AllErrors() []error { return m }
+
+// DeleteConnectorOAuthTokenRequestValidationError is the validation error
+// returned by DeleteConnectorOAuthTokenRequest.Validate if the designated
+// constraints aren't met.
+type DeleteConnectorOAuthTokenRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e DeleteConnectorOAuthTokenRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e DeleteConnectorOAuthTokenRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e DeleteConnectorOAuthTokenRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e DeleteConnectorOAuthTokenRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e DeleteConnectorOAuthTokenRequestValidationError) ErrorName() string {
+	return "DeleteConnectorOAuthTokenRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e DeleteConnectorOAuthTokenRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sDeleteConnectorOAuthTokenRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = DeleteConnectorOAuthTokenRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = DeleteConnectorOAuthTokenRequestValidationError{}
+
+// Validate checks the field values on DeleteConnectorOAuthTokenResponse with
+// the rules defined in the proto definition for this message. If any rules
+// are violated, the first error encountered is returned, or nil if there are
+// no violations.
+func (m *DeleteConnectorOAuthTokenResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on DeleteConnectorOAuthTokenResponse
+// with the rules defined in the proto definition for this message. If any
+// rules are violated, the result is a list of violation errors wrapped in
+// DeleteConnectorOAuthTokenResponseMultiError, or nil if none found.
+func (m *DeleteConnectorOAuthTokenResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *DeleteConnectorOAuthTokenResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if len(errors) > 0 {
+		return DeleteConnectorOAuthTokenResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// DeleteConnectorOAuthTokenResponseMultiError is an error wrapping multiple
+// validation errors returned by
+// DeleteConnectorOAuthTokenResponse.ValidateAll() if the designated
+// constraints aren't met.
+type DeleteConnectorOAuthTokenResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m DeleteConnectorOAuthTokenResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m DeleteConnectorOAuthTokenResponseMultiError) AllErrors() []error { return m }
+
+// DeleteConnectorOAuthTokenResponseValidationError is the validation error
+// returned by DeleteConnectorOAuthTokenResponse.Validate if the designated
+// constraints aren't met.
+type DeleteConnectorOAuthTokenResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e DeleteConnectorOAuthTokenResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e DeleteConnectorOAuthTokenResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e DeleteConnectorOAuthTokenResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e DeleteConnectorOAuthTokenResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e DeleteConnectorOAuthTokenResponseValidationError) ErrorName() string {
+	return "DeleteConnectorOAuthTokenResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e DeleteConnectorOAuthTokenResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sDeleteConnectorOAuthTokenResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = DeleteConnectorOAuthTokenResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = DeleteConnectorOAuthTokenResponseValidationError{}
+
 // Validate checks the field values on ListRolesRequest with the rules defined
 // in the proto definition for this message. If any rules are violated, the
 // first error encountered is returned, or nil if there are no violations.
@@ -48990,6 +49505,8 @@ func (m *ReportOptions) validate(all bool) error {
 	// no validation rules for ExportFormat
 
 	// no validation rules for ExportIncludeHeader
+
+	// no validation rules for ExportAttach
 
 	// no validation rules for WebOpenPath
 

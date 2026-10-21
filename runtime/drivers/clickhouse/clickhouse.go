@@ -389,6 +389,10 @@ func (d driver) Open(ctx context.Context, connectorName, instanceID string, conf
 
 	c.used()
 	go c.periodicallyEmitStats()
+	if conf.Mode == modeReadWrite {
+		// Only readwrite connections create temporary tables, and dropping them needs DDL privileges.
+		go c.periodicallyDropStaleTempTables()
+	}
 
 	return c, nil
 }
@@ -584,6 +588,11 @@ func (c *Connection) AsWarehouse() (drivers.Warehouse, bool) {
 	return nil, false
 }
 
+// AsMCP implements drivers.Handle.
+func (c *Connection) AsMCP() (drivers.MCPService, bool) {
+	return nil, false
+}
+
 // AsNotifier implements drivers.Handle.
 func (c *Connection) AsNotifier(properties map[string]any) (drivers.Notifier, error) {
 	return nil, drivers.ErrNotNotifier
@@ -693,6 +702,32 @@ func (c *Connection) periodicallyEmitStats() {
 			} else if !errors.Is(err, c.ctx.Err()) {
 				c.logger.Warn("failed to fetch latest RCU per service", zap.Error(err))
 			}
+		case <-c.ctx.Done():
+			return
+		}
+	}
+}
+
+// periodicallyDropStaleTempTables drops the temporary tables that model executions left behind, e.g. because the runtime restarted while they ran.
+// It sweeps once immediately and then at most hourly until the connection is closed.
+func (c *Connection) periodicallyDropStaleTempTables() {
+	// The ticker is more frequent than the sweeps, so that a sweep that is due runs as soon as a database that can scale to zero is in use again.
+	ticker := time.NewTicker(time.Minute)
+	defer ticker.Stop()
+
+	var lastSweep time.Time
+	for {
+		// Skip while the database hasn't been used recently and may be scaled to zero, so that the sweep does not wake it up.
+		if time.Since(lastSweep) >= time.Hour && (!c.config.CanScaleToZero || time.Since(c.lastUsedOn()) < 2*time.Minute) {
+			lastSweep = time.Now()
+			err := c.dropStaleTempTables(c.ctx, tempTableTTL)
+			if err != nil && !errors.Is(err, c.ctx.Err()) {
+				c.logger.Warn("clickhouse: failed to drop stale temp tables", zap.Error(err))
+			}
+		}
+
+		select {
+		case <-ticker.C:
 		case <-c.ctx.Done():
 			return
 		}

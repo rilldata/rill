@@ -96,10 +96,11 @@ func (e *localFileToSelfExecutor) Execute(ctx context.Context, opts *drivers.Mod
 	_ = e.c.dropTable(ctx, stagingTableName)
 
 	// get the local file path
-	localPaths, err := e.from.FilePaths(ctx, opts.InputProperties)
+	localPaths, release, err := e.from.FilePaths(ctx, opts.InputProperties)
 	if err != nil {
 		return nil, err
 	}
+	defer release()
 	if len(localPaths) == 0 {
 		return nil, fmt.Errorf("no files to ingest")
 	}

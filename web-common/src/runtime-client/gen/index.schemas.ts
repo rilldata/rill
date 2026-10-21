@@ -809,10 +809,22 @@ export interface V1ConnectorSpec {
   templatedProperties?: string[];
   provision?: boolean;
   provisionArgs?: V1ConnectorSpecProvisionArgs;
+  /** Security rules that control which users may use the connector and, for MCP connectors, which of its tools. */
+  securityRules?: V1SecurityRule[];
+  /** AI agents that may use the connector's tools (MCP connectors only). Empty means all agents. */
+  agents?: string[];
 }
 
 export interface V1ConnectorState {
   specHash?: string;
+  /** Tools discovered on an external MCP server (MCP connectors only). */
+  mcpTools?: V1MCPTool[];
+}
+
+/** MCPTool describes a tool exposed by an external MCP server. */
+export interface V1MCPTool {
+  name?: string;
+  description?: string;
 }
 
 export interface V1ConnectorV2 {
@@ -2395,6 +2407,8 @@ export interface V1ReportSpec {
   exportLimit?: string;
   exportFormat?: V1ExportFormat;
   exportIncludeHeader?: boolean;
+  /** If true, the export is attached to email notifications (only supported for query-based reports run as the creator). */
+  exportAttach?: boolean;
   notifiers?: V1Notifier[];
   annotations?: V1ReportSpecAnnotations;
   /** If true, will use the lowest watermark of its refs instead of the trigger time. */
@@ -2946,7 +2960,10 @@ If not set, it will infer an agent based on the prompt and conversation history.
   analystAgentContext?: V1AnalystAgentContext;
   developerAgentContext?: V1DeveloperAgentContext;
   feedbackAgentContext?: V1FeedbackAgentContext;
-  /** Optional current browser path. The origin is intentionally omitted. */
+  /**
+   * Deprecated: no longer read by the server. The agents learn what the user is viewing from the analyst and developer contexts.
+   * @deprecated
+   */
   uiPagePath?: string;
   /** Optional visible, enabled, uniquely-addressable browser actions. */
   uiActions?: V1UIAction[];
@@ -2963,7 +2980,10 @@ If not set, it will infer an agent based on the prompt and conversation history.
   analystAgentContext?: V1AnalystAgentContext;
   developerAgentContext?: V1DeveloperAgentContext;
   feedbackAgentContext?: V1FeedbackAgentContext;
-  /** Optional current browser path. The origin is intentionally omitted. */
+  /**
+   * Deprecated: no longer read by the server. The agents learn what the user is viewing from the analyst and developer contexts.
+   * @deprecated
+   */
   uiPagePath?: string;
   /** Optional visible, enabled, uniquely-addressable browser actions. */
   uiActions?: V1UIAction[];

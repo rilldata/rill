@@ -278,6 +278,40 @@ func (p *securityEngine) resolveSecurity(ctx context.Context, instanceID, enviro
 	// Combine rules with any contained in the resource itself
 	rules := p.resolveRules(claims, expandedRules, r)
 
+	return p.resolveRulesForResource(instanceID, environment, vars, claims, r, rules, nil, "")
+}
+
+// resolveConnectorSecurity resolves the security policy declared on an MCP connector (its "security" block) for the given claims.
+// Unlike resolveSecurity, it does not fall back to admin-only access for connector resources: a connector without rules is open to everyone,
+// mirroring metrics views. tools are the names of the tools the server exposes to the user; they play the role of fields in include/exclude rules.
+func (p *securityEngine) resolveConnectorSecurity(ctx context.Context, instanceID, environment string, vars map[string]string, claims *SecurityClaims, r *runtimev1.Resource, tools []string) (*ResolvedSecurity, error) {
+	if claims.SkipChecks {
+		return ResolvedSecurityOpen, nil
+	}
+	spec := r.GetConnector().GetSpec()
+	if spec == nil {
+		return nil, fmt.Errorf("resource %q is not a connector", r.Meta.Name.Name)
+	}
+
+	rules, err := p.expandTransitiveAccessRules(ctx, instanceID, claims)
+	if err != nil {
+		return nil, fmt.Errorf("failed to expand security rules: %w", err)
+	}
+	if len(spec.SecurityRules) == 0 {
+		rules = append(rules, allowAccessRule)
+	} else {
+		rules = append(rules, spec.SecurityRules...)
+	}
+
+	sortedTools := slices.Clone(tools)
+	slices.Sort(sortedTools)
+	cacheSalt := "connector:" + strings.Join(sortedTools, ",")
+	return p.resolveRulesForResource(instanceID, environment, vars, claims, r, rules, sortedTools, cacheSalt)
+}
+
+// resolveRulesForResource applies the given rules to the resource for the claims, using the cache.
+// fields optionally overrides the fields that field access rules apply to (used for connector tools); cacheSalt must distinguish such calls.
+func (p *securityEngine) resolveRulesForResource(instanceID, environment string, vars map[string]string, claims *SecurityClaims, r *runtimev1.Resource, rules []*runtimev1.SecurityRule, fields []string, cacheSalt string) (*ResolvedSecurity, error) {
 	// Exit early if all rules are nil
 	var validRule bool
 	for _, rule := range rules {
@@ -290,7 +324,7 @@ func (p *securityEngine) resolveSecurity(ctx context.Context, instanceID, enviro
 		return ResolvedSecurityClosed, nil
 	}
 
-	cacheKey, err := computeCacheKey(instanceID, environment, claims, r)
+	cacheKey, err := computeCacheKey(instanceID, environment, claims, r, cacheSalt)
 	if err != nil {
 		return nil, fmt.Errorf("failed to compute cache key: %w", err)
 	}
@@ -323,7 +357,7 @@ func (p *securityEngine) resolveSecurity(ctx context.Context, instanceID, enviro
 				return nil, fmt.Errorf("security policy: failed to resolve access: %w", err)
 			}
 		case *runtimev1.SecurityRule_FieldAccess:
-			err := p.applySecurityRuleFieldAccess(res, r, rule.FieldAccess, templateData)
+			err := p.applySecurityRuleFieldAccess(res, r, rule.FieldAccess, templateData, fields)
 			if err != nil {
 				return nil, fmt.Errorf("security policy: failed to resolve field access: %w", err)
 			}
@@ -728,11 +762,15 @@ func (p *securityEngine) applySecurityRuleAccess(res *ResolvedSecurity, r *runti
 }
 
 // applySecurityRuleFieldAccess applies a field access rule to the resolved security.
-func (p *securityEngine) applySecurityRuleFieldAccess(res *ResolvedSecurity, r *runtimev1.Resource, rule *runtimev1.SecurityRuleFieldAccess, td parser.TemplateData) error {
-	// This rule currently only applies to metrics views and explores.
+// fields overrides the fields the rule can apply to; it is used for MCP connectors, whose tools are listed per user.
+func (p *securityEngine) applySecurityRuleFieldAccess(res *ResolvedSecurity, r *runtimev1.Resource, rule *runtimev1.SecurityRuleFieldAccess, td parser.TemplateData, fields []string) error {
+	// This rule currently only applies to metrics views, explores and MCP connectors.
 	// Skip it for other resource types.
 	var availableFields []string
 	switch r.Meta.Name.Kind {
+	case ResourceKindConnector:
+		// For MCP connectors, the "fields" are the server's tools, which the caller lists per user.
+		availableFields = fields
 	case ResourceKindMetricsView:
 		mv := r.GetMetricsView().State.ValidSpec
 		if mv == nil {
@@ -959,9 +997,13 @@ func securityTemplateData(environment string, vars map[string]string, claims *Se
 }
 
 // computeCacheKey computes a cache key for a resolved security policy.
-func computeCacheKey(instanceID, environment string, claims *SecurityClaims, r *runtimev1.Resource) (string, error) {
+func computeCacheKey(instanceID, environment string, claims *SecurityClaims, r *runtimev1.Resource, salt string) (string, error) {
 	hash := md5.New()
 	_, err := hash.Write([]byte(instanceID))
+	if err != nil {
+		return "", err
+	}
+	_, err = hash.Write([]byte(salt))
 	if err != nil {
 		return "", err
 	}
@@ -974,6 +1016,11 @@ func computeCacheKey(instanceID, environment string, claims *SecurityClaims, r *
 		return "", err
 	}
 	_, err = hash.Write([]byte(r.Meta.StateUpdatedOn.AsTime().String()))
+	if err != nil {
+		return "", err
+	}
+	// Some resources (APIs, connectors) read security rules from the spec without updating state, so the spec time must be part of the key.
+	_, err = hash.Write([]byte(r.Meta.SpecUpdatedOn.AsTime().String()))
 	if err != nil {
 		return "", err
 	}

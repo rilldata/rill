@@ -3757,19 +3757,19 @@ export class ReportSpec extends Message<ReportSpec> {
    */
   queryFor: {
     /**
-     * @generated from field: string query_for_user_id = 19;
+     * @generated from field: string query_for_user_id = 20;
      */
     value: string;
     case: "queryForUserId";
   } | {
     /**
-     * @generated from field: string query_for_user_email = 20;
+     * @generated from field: string query_for_user_email = 21;
      */
     value: string;
     case: "queryForUserEmail";
   } | {
     /**
-     * @generated from field: google.protobuf.Struct query_for_attributes = 21;
+     * @generated from field: google.protobuf.Struct query_for_attributes = 22;
      */
     value: Struct;
     case: "queryForAttributes";
@@ -3801,6 +3801,13 @@ export class ReportSpec extends Message<ReportSpec> {
    * @generated from field: bool export_include_header = 16;
    */
   exportIncludeHeader = false;
+
+  /**
+   * If true, the export is attached to email notifications (only supported for query-based reports run as the creator).
+   *
+   * @generated from field: bool export_attach = 19;
+   */
+  exportAttach = false;
 
   /**
    * @generated from field: repeated rill.runtime.v1.Notifier notifiers = 11;
@@ -3848,14 +3855,15 @@ export class ReportSpec extends Message<ReportSpec> {
     { no: 4, name: "timeout_seconds", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
     { no: 17, name: "resolver", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 18, name: "resolver_properties", kind: "message", T: Struct },
-    { no: 19, name: "query_for_user_id", kind: "scalar", T: 9 /* ScalarType.STRING */, oneof: "query_for" },
-    { no: 20, name: "query_for_user_email", kind: "scalar", T: 9 /* ScalarType.STRING */, oneof: "query_for" },
-    { no: 21, name: "query_for_attributes", kind: "message", T: Struct, oneof: "query_for" },
+    { no: 20, name: "query_for_user_id", kind: "scalar", T: 9 /* ScalarType.STRING */, oneof: "query_for" },
+    { no: 21, name: "query_for_user_email", kind: "scalar", T: 9 /* ScalarType.STRING */, oneof: "query_for" },
+    { no: 22, name: "query_for_attributes", kind: "message", T: Struct, oneof: "query_for" },
     { no: 5, name: "query_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 6, name: "query_args_json", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 7, name: "export_limit", kind: "scalar", T: 4 /* ScalarType.UINT64 */ },
     { no: 8, name: "export_format", kind: "enum", T: proto3.getEnumType(ExportFormat) },
     { no: 16, name: "export_include_header", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 19, name: "export_attach", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 11, name: "notifiers", kind: "message", T: Notifier, repeated: true },
     { no: 10, name: "annotations", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
     { no: 12, name: "watermark_inherit", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
@@ -6481,6 +6489,21 @@ export class ConnectorSpec extends Message<ConnectorSpec> {
    */
   provisionArgs?: Struct;
 
+  /**
+   * Security rules that control which users may use the connector and, for MCP connectors, which of its tools.
+   * Parsed from the connector's "security" YAML block; currently only the "mcp" driver supports it.
+   *
+   * @generated from field: repeated rill.runtime.v1.SecurityRule security_rules = 8;
+   */
+  securityRules: SecurityRule[] = [];
+
+  /**
+   * AI agents that may use the connector's tools (MCP connectors only). Empty means all agents.
+   *
+   * @generated from field: repeated string agents = 9;
+   */
+  agents: string[] = [];
+
   constructor(data?: PartialMessage<ConnectorSpec>) {
     super();
     proto3.util.initPartial(data, this);
@@ -6494,6 +6517,8 @@ export class ConnectorSpec extends Message<ConnectorSpec> {
     { no: 4, name: "templated_properties", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 5, name: "provision", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 6, name: "provision_args", kind: "message", T: Struct },
+    { no: 8, name: "security_rules", kind: "message", T: SecurityRule, repeated: true },
+    { no: 9, name: "agents", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ConnectorSpec {
@@ -6547,6 +6572,51 @@ export class ConnectorState extends Message<ConnectorState> {
 
   static equals(a: ConnectorState | PlainMessage<ConnectorState> | undefined, b: ConnectorState | PlainMessage<ConnectorState> | undefined): boolean {
     return proto3.util.equals(ConnectorState, a, b);
+  }
+}
+
+/**
+ * MCPTool describes a tool exposed by an external MCP server.
+ *
+ * @generated from message rill.runtime.v1.MCPTool
+ */
+export class MCPTool extends Message<MCPTool> {
+  /**
+   * @generated from field: string name = 1;
+   */
+  name = "";
+
+  /**
+   * @generated from field: string description = 2;
+   */
+  description = "";
+
+  constructor(data?: PartialMessage<MCPTool>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.MCPTool";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "description", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MCPTool {
+    return new MCPTool().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): MCPTool {
+    return new MCPTool().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): MCPTool {
+    return new MCPTool().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: MCPTool | PlainMessage<MCPTool> | undefined, b: MCPTool | PlainMessage<MCPTool> | undefined): boolean {
+    return proto3.util.equals(MCPTool, a, b);
   }
 }
 

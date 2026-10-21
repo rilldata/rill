@@ -619,6 +619,7 @@ func (s *Server) yamlForManagedReport(opts *adminv1.ReportOptions, ownerUserID, 
 	res.Export.Format = exportFormatYAML(opts.ExportFormat)
 	res.Export.IncludeHeader = opts.ExportIncludeHeader
 	res.Export.Limit = uint(opts.ExportLimit)
+	res.Export.Attach = opts.ExportAttach
 
 	res.Notify.Email.Recipients = opts.EmailRecipients
 	res.Notify.Slack.Channels = opts.SlackChannels
@@ -649,6 +650,14 @@ func (s *Server) yamlForManagedReport(opts *adminv1.ReportOptions, ownerUserID, 
 		res.Annotations.AdminOwnerUserEmail = ownerEmail
 	} else {
 		res.Annotations.AdminOwnerUserID = ownerUserID
+	}
+	if opts.ExportAttach {
+		if opts.QueryName == "" { // nolint:staticcheck // backwards compatibility
+			return nil, fmt.Errorf("export attachments are only supported for query-based reports")
+		}
+		if res.Annotations.WebOpenMode != WebOpenModeCreator {
+			return nil, fmt.Errorf("export attachments are only supported for reports run as the creator")
+		}
 	}
 	if opts.Explore != "" && opts.Canvas != "" {
 		return nil, fmt.Errorf("cannot set both explore and canvas")
@@ -701,6 +710,7 @@ func (s *Server) yamlForCommittedReport(opts *adminv1.ReportOptions) ([]byte, er
 	res.Export.Format = exportFormatYAML(opts.ExportFormat)
 	res.Export.IncludeHeader = opts.ExportIncludeHeader
 	res.Export.Limit = uint(opts.ExportLimit)
+	res.Export.Attach = opts.ExportAttach
 	res.Notify.Email.Recipients = opts.EmailRecipients
 	res.Notify.Slack.Channels = opts.SlackChannels
 	res.Notify.Slack.Users = opts.SlackUsers
@@ -712,6 +722,14 @@ func (s *Server) yamlForCommittedReport(opts *adminv1.ReportOptions) ([]byte, er
 	}
 	if !res.Annotations.WebOpenMode.Valid() {
 		return nil, fmt.Errorf("invalid web open mode %q", opts.WebOpenMode)
+	}
+	if opts.ExportAttach {
+		if opts.QueryName == "" { // nolint:staticcheck // backwards compatibility
+			return nil, fmt.Errorf("export attachments are only supported for query-based reports")
+		}
+		if res.Annotations.WebOpenMode != WebOpenModeCreator {
+			return nil, fmt.Errorf("export attachments are only supported for reports run as the creator")
+		}
 	}
 	if opts.Explore != "" && opts.Canvas != "" {
 		return nil, fmt.Errorf("cannot set both explore and canvas")
@@ -955,6 +973,7 @@ type reportYAML struct {
 		Format        string `yaml:"format"`
 		IncludeHeader bool   `yaml:"include_header"`
 		Limit         uint   `yaml:"limit"`
+		Attach        bool   `yaml:"attach,omitempty"` // Omitted when false, so runtimes that predate it can parse the YAML
 	} `yaml:"export"`
 	Notify struct {
 		Email struct {

@@ -559,6 +559,17 @@ components:
             type: object
         v1DeleteAlertResponse:
             type: object
+        v1DeleteConnectorOAuthTokenRequest:
+            properties:
+                configHash:
+                    type: string
+                connector:
+                    type: string
+                userId:
+                    type: string
+            type: object
+        v1DeleteConnectorOAuthTokenResponse:
+            type: object
         v1DeleteDeploymentResponse:
             properties:
                 deploymentId:
@@ -738,6 +749,32 @@ components:
                 gitSubpath:
                     type: string
                 gitUsername:
+                    type: string
+            type: object
+        v1GetConnectorOAuthTokenRequest:
+            properties:
+                configHash:
+                    description: |-
+                        Hash of the connector's current OAuth configuration, as computed by the runtime.
+                        A token is only returned if the user authorized this configuration, so changing it never reuses an existing authorization.
+                    type: string
+                connector:
+                    description: Name of the connector in the deployment's project.
+                    type: string
+                forceRefresh:
+                    description: If true, the token is refreshed even if it has not expired yet (used after the server rejected the current token).
+                    type: boolean
+                userId:
+                    description: ID of the user whose token to return.
+                    type: string
+            type: object
+        v1GetConnectorOAuthTokenResponse:
+            properties:
+                accessToken:
+                    type: string
+                expiresOn:
+                    description: When the access token expires. Unset if the token does not expire.
+                    format: date-time
                     type: string
             type: object
         v1GetCurrentMagicAuthTokenResponse:
@@ -1874,6 +1911,9 @@ components:
                 explore:
                     title: either canvas or explore should be set
                     type: string
+                exportAttach:
+                    description: If true, the export is attached to email notifications (only supported for explore reports run as the creator).
+                    type: boolean
                 exportFormat:
                     $ref: '#/components/schemas/v1ExportFormat'
                 exportIncludeHeader:
@@ -2548,6 +2588,8 @@ paths:
     /v1/ai/complete: {}
     /v1/billing/metrics-project-credentials: {}
     /v1/billing/plans: {}
+    /v1/deployments/-/connector-oauth-token: {}
+    /v1/deployments/-/connector-oauth-token/delete: {}
     /v1/deployments/{deploymentId}: {}
     /v1/deployments/{deploymentId}/config: {}
     /v1/deployments/{deploymentId}/credentials: {}

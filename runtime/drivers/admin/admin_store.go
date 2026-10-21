@@ -7,6 +7,8 @@ import (
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/structpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
@@ -197,4 +199,38 @@ func groupVariablesByEnv(variables []*adminv1.ProjectVariable) map[string]map[st
 		vars[v.Name] = v.Value
 	}
 	return perEnv
+}
+
+// GetConnectorOAuthToken implements drivers.AdminService.
+func (h *Handle) GetConnectorOAuthToken(ctx context.Context, connector, configHash, userID string, forceRefresh bool) (*drivers.MCPOAuthToken, error) {
+	res, err := h.admin.GetConnectorOAuthToken(ctx, &adminv1.GetConnectorOAuthTokenRequest{
+		Connector:    connector,
+		ConfigHash:   configHash,
+		UserId:       userID,
+		ForceRefresh: forceRefresh,
+	})
+	if err != nil {
+		if status.Code(err) == codes.NotFound {
+			return nil, drivers.ErrNotFound
+		}
+		return nil, err
+	}
+	tok := &drivers.MCPOAuthToken{AccessToken: res.AccessToken}
+	if res.ExpiresOn != nil {
+		tok.ExpiresOn = res.ExpiresOn.AsTime()
+	}
+	return tok, nil
+}
+
+// DeleteConnectorOAuthToken implements drivers.AdminService.
+func (h *Handle) DeleteConnectorOAuthToken(ctx context.Context, connector, configHash, userID string) error {
+	_, err := h.admin.DeleteConnectorOAuthToken(ctx, &adminv1.DeleteConnectorOAuthTokenRequest{
+		Connector:  connector,
+		ConfigHash: configHash,
+		UserId:     userID,
+	})
+	if err != nil && status.Code(err) != codes.NotFound {
+		return err
+	}
+	return nil
 }

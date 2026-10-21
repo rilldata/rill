@@ -2,8 +2,11 @@
   import * as DropdownMenu from "../../../../components/dropdown-menu";
   import { getRelativeTime } from "../../../../lib/time/relative-time";
   import type { V1Conversation } from "../../../../runtime-client";
+  import { formatConversationTitle } from "../../core/context/conversation-title";
+  import type { InlineContextMetadata } from "../../core/context/metadata";
 
   export let conversation: V1Conversation;
+  export let contextMetadata: InlineContextMetadata;
   export let isCurrentChat: boolean = false;
   export let showRelativeTime: boolean = false;
   export let onSelect: (conversation: V1Conversation) => void;
@@ -23,7 +26,8 @@
 >
   <div class="min-w-0">
     <div class="text-xs text-fg-primary truncate">
-      {conversation.title || "New Conversation"}
+      {formatConversationTitle(conversation.title ?? "", contextMetadata) ||
+        "New Conversation"}
     </div>
   </div>
   <div class="flex items-center gap-2 flex-shrink-0">

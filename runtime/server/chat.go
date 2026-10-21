@@ -197,6 +197,7 @@ func (s *Server) ListTools(ctx context.Context, req *runtimev1.ListToolsRequest)
 		}
 		pbs = append(pbs, pb)
 	}
+
 	return &runtimev1.ListToolsResponse{
 		Tools: pbs,
 	}, nil
@@ -221,11 +222,8 @@ func (s *Server) Complete(ctx context.Context, req *runtimev1.CompleteRequest) (
 	// Tag as chat so the agent's queries are attributed to the "chat" source (overrides the "ui" tag the gRPC
 	// interceptor sets, and covers the SSE HTTP handler which bypasses that interceptor).
 	ctx = runtime.WithRequestSource(ctx, runtime.RequestSourceChat)
-	uiContext, err := uiContextFromPB(req.UiPagePath, req.UiActions)
-	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, "invalid UI context: %v", err)
-	}
-	ctx = ai.WithUIContext(ctx, uiContext)
+	// req.UiPagePath is deprecated and intentionally not read: the agents learn what the user is viewing from the analyst and developer contexts.
+	ctx = ai.WithUIContext(ctx, s.uiContextFromPB(req.UiActions))
 
 	// Validate request - either prompt or feedback context must be provided
 	if req.Prompt == "" && req.FeedbackAgentContext == nil {
@@ -345,11 +343,8 @@ func (s *Server) CompleteStreaming(req *runtimev1.CompleteStreamingRequest, stre
 	// Tag as chat so the agent's queries are attributed to the "chat" source (overrides the "ui" tag the gRPC
 	// interceptor sets, and covers the SSE HTTP handler which bypasses that interceptor).
 	ctx = runtime.WithRequestSource(ctx, runtime.RequestSourceChat)
-	uiContext, err := uiContextFromPB(req.UiPagePath, req.UiActions)
-	if err != nil {
-		return status.Errorf(codes.InvalidArgument, "invalid UI context: %v", err)
-	}
-	ctx = ai.WithUIContext(ctx, uiContext)
+	// req.UiPagePath is deprecated and intentionally not read: the agents learn what the user is viewing from the analyst and developer contexts.
+	ctx = ai.WithUIContext(ctx, s.uiContextFromPB(req.UiActions))
 
 	// Validate request - either prompt or feedback context must be provided
 	if req.Prompt == "" && req.FeedbackAgentContext == nil {
@@ -469,37 +464,44 @@ func (s *Server) CompleteStreaming(req *runtimev1.CompleteStreamingRequest, stre
 	return nil
 }
 
-func uiContextFromPB(pagePath string, pbActions []*runtimev1.UIAction) (*ai.UIContext, error) {
-	if pagePath == "" && len(pbActions) == 0 {
-		return nil, nil
+// Limits for browser-supplied UI actions.
+// They keep the display metadata that is included in an LLM system message small and predictable.
+// The label limit counts characters (runes), not bytes, matching the label truncation in ui-actions.ts on the browser side.
+const (
+	maxUIActions          = 100
+	maxUIActionIDBytes    = 128
+	maxUIActionLabelRunes = 256
+)
+
+// uiContextFromPB converts the browser-supplied UI actions of a chat request to the transient context the agents read.
+// The UI context is optional, best-effort metadata, so it must never cause the chat request to fail:
+// oversized labels are truncated, malformed actions are dropped and the list is capped after validation.
+// Dropping an action only removes it from the set the agent may click, which click_ui validates against this same context.
+// Any dropped action is logged so a page that outgrows the cap is noticed instead of silently losing actions.
+func (s *Server) uiContextFromPB(pbActions []*runtimev1.UIAction) *ai.UIContext {
+	if len(pbActions) == 0 {
+		return nil
 	}
 
-	// Keep browser-supplied display metadata small and predictable before it is
-	// included in an LLM system message. Reject malformed context instead of
-	// silently changing the set of actions the browser submitted.
-	if len(pagePath) > 2048 {
-		return nil, errors.New("ui_page_path exceeds 2048 bytes")
-	}
-	if len(pbActions) > 100 {
-		return nil, errors.New("ui_actions exceeds 100 entries")
-	}
-
-	actions := make([]ai.UIAction, len(pbActions))
-	for i, action := range pbActions {
-		switch {
-		case action == nil:
-			return nil, fmt.Errorf("ui_actions[%d] is missing", i)
-		case action.Id == "":
-			return nil, fmt.Errorf("ui_actions[%d].id is required", i)
-		case len(action.Id) > 128:
-			return nil, fmt.Errorf("ui_actions[%d].id exceeds 128 bytes", i)
-		case len(action.Label) > 256:
-			return nil, fmt.Errorf("ui_actions[%d].label exceeds 256 bytes", i)
+	actions := make([]ai.UIAction, 0, len(pbActions))
+	for _, action := range pbActions {
+		if action == nil || action.Id == "" || len(action.Id) > maxUIActionIDBytes {
+			continue
 		}
-		actions[i] = ai.UIAction{ID: action.Id, Label: action.Label}
+		label := action.Label
+		if r := []rune(label); len(r) > maxUIActionLabelRunes {
+			label = string(r[:maxUIActionLabelRunes])
+		}
+		actions = append(actions, ai.UIAction{ID: action.Id, Label: label})
+	}
+	if len(actions) > maxUIActions {
+		actions = actions[:maxUIActions]
+	}
+	if len(actions) != len(pbActions) {
+		s.logger.Warn("chat: some ui_actions were dropped from the UI context", zap.Int("received", len(pbActions)), zap.Int("kept", len(actions)), zap.Int("limit", maxUIActions))
 	}
 
-	return &ai.UIContext{PagePath: pagePath, Actions: actions}, nil
+	return &ai.UIContext{Actions: actions}
 }
 
 // CompleteStreamingHandler is a HTTP handler that wraps CompleteStreaming and maps it to SSE.

@@ -12,6 +12,7 @@ import (
 	"testing"
 
 	"github.com/c2h5oh/datasize"
+	"github.com/google/uuid"
 	"github.com/joho/godotenv"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
@@ -39,6 +40,7 @@ import (
 	_ "github.com/rilldata/rill/runtime/drivers/gcs"
 	_ "github.com/rilldata/rill/runtime/drivers/gemini"
 	_ "github.com/rilldata/rill/runtime/drivers/https"
+	_ "github.com/rilldata/rill/runtime/drivers/mcp"
 	_ "github.com/rilldata/rill/runtime/drivers/mock/ai"
 	_ "github.com/rilldata/rill/runtime/drivers/openai"
 	_ "github.com/rilldata/rill/runtime/drivers/postgres"
@@ -108,6 +110,9 @@ type InstanceOptions struct {
 	AIConnector       string // Options: "" (none), "openai", "claude"
 	TestConnectors    []string
 	FrontendURL       string
+	// AdminService overrides the instance's admin service.
+	// The default admin service does not support admin features, such as delivering reports.
+	AdminService drivers.AdminService
 }
 
 // NewInstanceWithOptions creates a runtime and an instance for use in tests.
@@ -190,6 +195,17 @@ func NewInstanceWithOptions(t TestingT, opts InstanceOptions) (*runtime.Runtime,
 		},
 		Variables:   vars,
 		FrontendURL: opts.FrontendURL,
+	}
+
+	if opts.AdminService != nil {
+		id := uuid.NewString()
+		customAdminServices.Store(id, opts.AdminService)
+		t.Cleanup(func() { customAdminServices.Delete(id) })
+		inst.Connectors = append(inst.Connectors, &runtimev1.Connector{
+			Type:   "noop_admin",
+			Name:   "noop_admin",
+			Config: Must(structpb.NewStruct(map[string]any{"admin_service_id": id})),
+		})
 	}
 
 	if opts.Files == nil {
