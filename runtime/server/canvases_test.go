@@ -1439,6 +1439,175 @@ custom_chart:
 	require.Empty(t, vegaSpec.Encoding.Y.Format)
 }
 
+// TestResolveEjectedComponentEscapesTemplateValues checks that values substituted into a vega_spec
+// are JSON-escaped: a display name or string param containing a quote or backslash must not break
+// the spec, either at the renderer (which parses it as JSON) or in InjectVegaParams.
+func TestResolveEjectedComponentEscapesTemplateValues(t *testing.T) {
+	rt, instanceID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
+		Files: map[string]string{
+			"rill.yaml": "",
+			"m1.sql":    `SELECT 'US' AS country, 1 AS amount`,
+			"mv1.yaml": `
+type: metrics_view
+version: 1
+model: m1
+dimensions:
+- column: country
+  display_name: 'Country "ISO"'
+measures:
+- name: revenue
+  display_name: 'Revenue "net"'
+  expression: SUM(amount)
+`,
+			"trend.yaml": `
+type: component
+params:
+  - name: metrics_view
+    type: metrics_view
+    required: true
+  - name: dim
+    type: dimension
+    required: true
+  - name: measure
+    type: measure
+    required: true
+  - name: subtitle
+    type: string
+    default: 'Quoted "subtitle" with a back\slash'
+  - name: limit
+    type: number
+    default: 10
+custom_chart:
+  metrics_sql: "SELECT {{ .params.dim }}, {{ .params.measure }} FROM {{ .params.metrics_view }}"
+  vega_spec: |
+    {
+      "title": {"text": "{{ .fields.measure.display_name }}", "subtitle": "{{ .params.subtitle }}"},
+      "mark": "bar",
+      "encoding": {
+        "x": {"field": "{{ .params.dim }}", "title": "{{ .fields.dim.display_name }}"},
+        "y": {"field": "{{ .params.measure }}", "title": "{{ .fields.measure.display_name }}"}
+      },
+      "data": {"name": "query1"}
+    }
+`,
+		},
+	})
+	testruntime.RequireReconcileState(t, rt, instanceID, 4, 0, 0)
+
+	server, err := server.NewServer(context.Background(), &server.Options{}, rt, zap.NewNop(), ratelimit.NewNoop(), activity.NewNoopClient())
+	require.NoError(t, err)
+
+	args, err := structpb.NewStruct(map[string]any{
+		"metrics_view": "mv1",
+		"dim":          "country",
+		"measure":      "revenue",
+	})
+	require.NoError(t, err)
+
+	res, err := server.ResolveComponent(testCtx(), &runtimev1.ResolveComponentRequest{
+		InstanceId: instanceID,
+		Component:  "trend",
+		Args:       args,
+	})
+	require.NoError(t, err)
+
+	props := res.RendererProperties.AsMap()
+	var vegaSpec struct {
+		Title struct {
+			Text     string `json:"text"`
+			Subtitle string `json:"subtitle"`
+		} `json:"title"`
+		Encoding struct {
+			X struct {
+				Field string `json:"field"`
+				Title string `json:"title"`
+			} `json:"x"`
+			Y struct {
+				Field string `json:"field"`
+				Title string `json:"title"`
+			} `json:"y"`
+		} `json:"encoding"`
+		Params []struct {
+			Name  string `json:"name"`
+			Value any    `json:"value"`
+		} `json:"params"`
+	}
+	require.NoError(t, json.Unmarshal([]byte(props["vega_spec"].(string)), &vegaSpec))
+
+	require.Equal(t, `Revenue "net"`, vegaSpec.Title.Text)
+	require.Equal(t, `Quoted "subtitle" with a back\slash`, vegaSpec.Title.Subtitle)
+	require.Equal(t, "country", vegaSpec.Encoding.X.Field)
+	require.Equal(t, `Country "ISO"`, vegaSpec.Encoding.X.Title)
+	require.Equal(t, "revenue", vegaSpec.Encoding.Y.Field)
+	require.Equal(t, `Revenue "net"`, vegaSpec.Encoding.Y.Title)
+
+	// The scalar params are still injected as native Vega-Lite params.
+	require.Len(t, vegaSpec.Params, 2)
+	require.Equal(t, "subtitle", vegaSpec.Params[0].Name)
+	require.Equal(t, `Quoted "subtitle" with a back\slash`, vegaSpec.Params[0].Value)
+	require.Equal(t, "limit", vegaSpec.Params[1].Name)
+	require.Equal(t, float64(10), vegaSpec.Params[1].Value)
+}
+
+// TestResolveComponentVegaSpecTemplateScope checks that a vega_spec is still resolved as a single
+// template, so a variable declared in one JSON string can be read in another and a control block can
+// span strings.
+func TestResolveComponentVegaSpecTemplateScope(t *testing.T) {
+	rt, instanceID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
+		Files: map[string]string{
+			"rill.yaml": "",
+			"m1.sql":    `SELECT 'US' AS country, 1 AS amount`,
+			"scoped.yaml": `
+type: component
+params:
+  - name: label
+    type: string
+    default: Sales
+  - name: detailed
+    type: boolean
+    default: true
+custom_chart:
+  metrics_sql: "SELECT country, amount FROM m1"
+  vega_spec: |
+    {
+      "title": "{{ $label := .params.label }}{{ $label }}",
+      "description": "{{ $label }}",
+      "mark": "{{ if .params.detailed }}point{{ else }}bar{{ end }}",
+      "params": [{"name": "detailed"}, {"name": "label"}]
+    }
+`,
+		},
+	})
+	testruntime.RequireReconcileState(t, rt, instanceID, 3, 0, 0)
+
+	server, err := server.NewServer(context.Background(), &server.Options{}, rt, zap.NewNop(), ratelimit.NewNoop(), activity.NewNoopClient())
+	require.NoError(t, err)
+
+	res, err := server.ResolveComponent(testCtx(), &runtimev1.ResolveComponentRequest{
+		InstanceId: instanceID,
+		Component:  "scoped",
+	})
+	require.NoError(t, err)
+
+	var vegaSpec struct {
+		Title       string `json:"title"`
+		Description string `json:"description"`
+		Mark        string `json:"mark"`
+		Params      []struct {
+			Name  string `json:"name"`
+			Value any    `json:"value"`
+		} `json:"params"`
+	}
+	props := res.RendererProperties.AsMap()
+	require.NoError(t, json.Unmarshal([]byte(props["vega_spec"].(string)), &vegaSpec))
+	require.Equal(t, "Sales", vegaSpec.Title)
+	require.Equal(t, "Sales", vegaSpec.Description)
+	require.Equal(t, "point", vegaSpec.Mark)
+	require.Len(t, vegaSpec.Params, 2)
+	require.Equal(t, true, vegaSpec.Params[0].Value)
+	require.Equal(t, "Sales", vegaSpec.Params[1].Value)
+}
+
 // TestResolveEjectedComponentFromAgentInstructions runs the exact spec shape that the component
 // authoring instructions tell the developer agent to write when it ejects a chart spec
 // (runtime/ai/instructions/data/resources/component.md), so the two cannot drift apart.
