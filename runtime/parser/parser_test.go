@@ -925,6 +925,32 @@ driver: duckdb
 	require.NotContains(t, m1Updated.Refs, ResourceName{Kind: ResourceKindConnector, Name: "duckdb"}, "model should not ref deleted connector")
 }
 
+func TestConnectorTemplatedPropertiesOrder(t *testing.T) {
+	// The project parser compares specs with proto.Equal to detect changes,
+	// so re-parsing an unchanged connector must return its templated properties in the same order.
+	ctx := context.Background()
+	repo := makeRepo(t, map[string]string{
+		`rill.yaml`: ``,
+		`connectors/clickhouse.yaml`: `
+type: connector
+driver: clickhouse
+mode: readwrite
+dsn: "{{ .env.dsn }}"
+write_dsn: "{{ .env.write_dsn }}"
+password: "{{ .env.password }}"
+`,
+	})
+
+	// Parse several times since an unstable order only shows up on some runs
+	for range 20 {
+		p, err := Parse(ctx, repo, "", "", "duckdb", true)
+		require.NoError(t, err)
+		r := p.Resources[ResourceName{Kind: ResourceKindConnector, Name: "clickhouse"}]
+		require.NotNil(t, r)
+		require.Equal(t, []string{"dsn", "password", "write_dsn"}, r.ConnectorSpec.TemplatedProperties)
+	}
+}
+
 func BenchmarkReparse(b *testing.B) {
 	ctx := context.Background()
 	files := map[string]string{

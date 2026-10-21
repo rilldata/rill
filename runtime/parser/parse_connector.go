@@ -193,7 +193,9 @@ func parseMCPConnector(tmp *ConnectorYAML) ([]*runtimev1.SecurityRule, []string,
 	return rules, sec.Agents, nil
 }
 
-// analyzeTemplatedProperties returns a slice of map keys that have a value which contains templating tags.
+// analyzeTemplatedProperties returns a sorted slice of map keys that have a value which contains templating tags.
+// The keys are sorted because map iteration order is random,
+// and the project parser treats a spec as changed (and re-reconciles everything downstream) if the order differs between parses.
 func analyzeTemplatedProperties(m map[string]any) ([]string, error) {
 	var res []string
 	for k, v := range m {
@@ -205,6 +207,7 @@ func analyzeTemplatedProperties(m map[string]any) ([]string, error) {
 			res = append(res, k)
 		}
 	}
+	slices.Sort(res)
 	return res, nil
 }
 
