@@ -624,7 +624,7 @@ func (s *Server) MetricsViewAnnotations(ctx context.Context, req *runtimev1.Metr
 
 	var offset *int64
 	if req.Offset != 0 {
-		limit = &req.Offset
+		offset = &req.Offset
 	}
 
 	qry := metricsview.AnnotationsQuery{

@@ -3788,6 +3788,13 @@ export class ReportSpec extends Message<ReportSpec> {
   exportIncludeHeader = false;
 
   /**
+   * If true, the export is attached to email notifications (only supported for query-based reports run as the creator).
+   *
+   * @generated from field: bool export_attach = 19;
+   */
+  exportAttach = false;
+
+  /**
    * @generated from field: repeated rill.runtime.v1.Notifier notifiers = 11;
    */
   notifiers: Notifier[] = [];
@@ -3838,6 +3845,7 @@ export class ReportSpec extends Message<ReportSpec> {
     { no: 7, name: "export_limit", kind: "scalar", T: 4 /* ScalarType.UINT64 */ },
     { no: 8, name: "export_format", kind: "enum", T: proto3.getEnumType(ExportFormat) },
     { no: 16, name: "export_include_header", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 19, name: "export_attach", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 11, name: "notifiers", kind: "message", T: Notifier, repeated: true },
     { no: 10, name: "annotations", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
     { no: 12, name: "watermark_inherit", kind: "scalar", T: 8 /* ScalarType.BOOL */ },

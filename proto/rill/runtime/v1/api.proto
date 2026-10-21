@@ -1351,8 +1351,8 @@ message CompleteRequest {
   // Optional context for prompts handled by the feedback_agent.
   // The field is ignored if another agent is selected.
   FeedbackAgentContext feedback_agent_context = 13;
-  // Optional current browser path. The origin is intentionally omitted.
-  string ui_page_path = 14;
+  // Deprecated: no longer read by the server. The agents learn what the user is viewing from the analyst and developer contexts.
+  string ui_page_path = 14 [deprecated = true];
   // Optional visible, enabled, uniquely-addressable browser actions.
   repeated UIAction ui_actions = 15;
 }
@@ -1383,8 +1383,8 @@ message CompleteStreamingRequest {
   // Optional context for prompts handled by the feedback_agent.
   // The field is ignored if another agent is selected.
   FeedbackAgentContext feedback_agent_context = 13;
-  // Optional current browser path. The origin is intentionally omitted.
-  string ui_page_path = 14;
+  // Deprecated: no longer read by the server. The agents learn what the user is viewing from the analyst and developer contexts.
+  string ui_page_path = 14 [deprecated = true];
   // Optional visible, enabled, uniquely-addressable browser actions.
   repeated UIAction ui_actions = 15;
 }
