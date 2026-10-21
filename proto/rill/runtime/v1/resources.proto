@@ -1115,8 +1115,19 @@ message ConnectorSpec {
   repeated string templated_properties = 4;
   bool provision = 5;
   google.protobuf.Struct provision_args = 6;
+  // Security rules that control which users may use the connector and, for MCP connectors, which of its tools.
+  // Parsed from the connector's "security" YAML block; currently only the "mcp" driver supports it.
+  repeated SecurityRule security_rules = 8;
+  // AI agents that may use the connector's tools (MCP connectors only). Empty means all agents.
+  repeated string agents = 9;
 }
 
 message ConnectorState {
   string spec_hash = 1;
+}
+
+// MCPTool describes a tool exposed by an external MCP server.
+message MCPTool {
+  string name = 1;
+  string description = 2;
 }

@@ -12,7 +12,7 @@
  */
 
 import type { V1Message } from "@rilldata/web-common/runtime-client";
-import { MessageType, ToolName } from "../types";
+import { MessageContentType, MessageType, ToolName } from "../types";
 import { type ChartBlock } from "./chart/chart-block";
 import { type FileDiffBlock } from "./file-diff/file-diff-block";
 import {
@@ -32,6 +32,14 @@ import {
 import { shouldShowWorking, type WorkingBlock } from "./working/working-block";
 import type { SimpleToolCall } from "@rilldata/web-common/features/chat/core/messages/simple-tool-call/simple-tool-call.ts";
 import type { MemoryUpdateBlock } from "@rilldata/web-common/features/chat/memory/memory-update-block";
+import {
+  createMcpAuthRequiredBlock,
+  type McpAuthRequiredBlock,
+} from "./mcp-auth-required/mcp-auth-required-block";
+import {
+  isMcpToolName,
+  parseMcpAuthorizationRequired,
+} from "../../connect/mcp-servers";
 
 // =============================================================================
 // TYPES
@@ -44,7 +52,8 @@ export type Block =
   | FileDiffBlock
   | WorkingBlock
   | SimpleToolCall
-  | MemoryUpdateBlock;
+  | MemoryUpdateBlock
+  | McpAuthRequiredBlock;
 
 export type {
   ChartBlock,
@@ -54,6 +63,7 @@ export type {
   WorkingBlock,
   SimpleToolCall,
   MemoryUpdateBlock,
+  McpAuthRequiredBlock,
 };
 
 // =============================================================================
@@ -96,7 +106,7 @@ export function transformToBlocks(
 
   // Process each message
   for (const msg of messages) {
-    const routing = getBlockRoute(msg);
+    const routing = getBlockRoute(msg, resultMap);
 
     switch (routing.route) {
       case "text": {
@@ -152,7 +162,10 @@ type BlockRoute =
 /**
  * Determines where a message should be routed for rendering.
  */
-function getBlockRoute(msg: V1Message): BlockRoute {
+function getBlockRoute(
+  msg: V1Message,
+  resultMap: Map<string | undefined, V1Message>,
+): BlockRoute {
   // Visibility check
   if (shouldHideMessage(msg)) {
     return { route: "skip" };
@@ -166,6 +179,26 @@ function getBlockRoute(msg: V1Message): BlockRoute {
   // Progress → thinking
   if (msg.type === MessageType.PROGRESS) {
     return { route: "thinking" };
+  }
+
+  // External MCP tool call that needs the user to authorize the server → standalone Connect card.
+  // Other external tool calls render inline like built-in tools.
+  if (msg.type === MessageType.CALL && isMcpToolName(msg.tool)) {
+    const result = resultMap.get(msg.id);
+    const auth =
+      result?.contentType === MessageContentType.ERROR
+        ? parseMcpAuthorizationRequired(result.contentData)
+        : null;
+    if (result && auth) {
+      return {
+        route: "block",
+        config: {
+          renderMode: "block",
+          createBlock: (callMessage) =>
+            createMcpAuthRequiredBlock(callMessage, result, auth),
+        },
+      };
+    }
   }
 
   // Tool calls → consult registry for block vs inline

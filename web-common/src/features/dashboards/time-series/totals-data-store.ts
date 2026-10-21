@@ -79,7 +79,7 @@ export function createUnfilteredTotalsForMeasure(
 
       const updatedFilter = getFiltersForOtherDimensions(filter, dimensionName);
 
-      createQueryServiceMetricsViewAggregation(
+      return createQueryServiceMetricsViewAggregation(
         ctx.runtimeClient,
         {
           metricsView: metricsViewName,

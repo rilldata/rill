@@ -19,7 +19,13 @@ import (
 func (s *Server) mcpHandler() http.Handler {
 	runner := ai.NewRunner(s.runtime, s.activity)
 
-	return mcp.NewStreamableHTTPHandler(func(r *http.Request) *mcp.Server {
+	return middleware.MCPSessionIDMiddleware(mcp.NewStreamableHTTPHandler(func(r *http.Request) *mcp.Server {
+		// A stateless server only accepts POST, but the SDK calls this function for every request before rejecting other methods with 405.
+		// Returning early keeps probes and legacy GET/DELETE requests from creating AI sessions.
+		if r.Method != http.MethodPost {
+			return nil
+		}
+
 		// Extract instance ID from the request path
 		instanceID := r.PathValue("instance_id")
 		if instanceID == "" {
@@ -29,8 +35,8 @@ func (s *Server) mcpHandler() http.Handler {
 			instanceID, _ = s.runtime.DefaultInstanceID()
 		}
 
-		// Get session ID (will be empty if it's the first request)
-		sessionID := r.Header.Get("Mcp-Session-Id")
+		// The session ID is issued by MCPSessionIDMiddleware if the client did not send one.
+		sessionID := r.Header.Get(middleware.MCPSessionIDHeader)
 
 		// It's just preliminary: for direct connections, the MCP server updates it with the actual user agent after the initialization handshake.
 		// Requests proxied by the admin service's unified MCP server don't carry that handshake, so the forwarded user agent is the only signal of the real client.
@@ -68,7 +74,7 @@ func (s *Server) mcpHandler() http.Handler {
 		// It only affects the response: as the spec requires, requests must still accept both content types.
 		// It lets the admin service's unified MCP server forward tool calls with a plain HTTP request instead of parsing an SSE stream.
 		JSONResponse: true,
-	})
+	}))
 }
 
 // mcpRequestSourceMiddleware tags MCP requests with the "mcp" source so billable queries they trigger

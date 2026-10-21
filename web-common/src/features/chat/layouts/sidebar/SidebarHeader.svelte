@@ -8,6 +8,7 @@
   import { type V1Conversation } from "../../../../runtime-client";
   import ConnectClientPopover from "../../connect/ConnectClientPopover.svelte";
   import MemoryButton from "../../memory/MemoryButton.svelte";
+  import McpServersPopover from "../../connect/McpServersPopover.svelte";
   import type { ConversationManager } from "../../core/conversation-manager";
   import ShareChatPopover from "../../share/ShareChatPopover.svelte";
   import ConversationHistoryMenu from "./ConversationHistoryMenu.svelte";
@@ -44,6 +45,7 @@
   <span class="chatbot-title">{currentConversationDto?.title || ""}</span>
   <div class="chatbot-header-actions">
     <MemoryButton />
+    <McpServersPopover />
     <ConnectClientPopover />
 
     <IconButton

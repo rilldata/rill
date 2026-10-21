@@ -110,55 +110,10 @@ func (r *Runner) Session(ctx context.Context, opts *SessionOptions) (res *Sessio
 	}
 	defer release()
 
-	// Create or load the session in the catalog
-	var session *drivers.AISession
-	var messages []*Message
-	if opts.SessionID != "" {
-		session, err = catalog.FindAISession(ctx, opts.SessionID)
-		if err != nil {
-			// If CreateIfNotExists is set, an unknown session ID is created below instead of erroring.
-			// This lets a caller that doesn't know Rill's session IDs address a stable session,
-			// which the unified MCP server in the admin service relies on to keep one session per project.
-			if !errors.Is(err, drivers.ErrNotFound) || !opts.CreateIfNotExists {
-				return nil, fmt.Errorf("failed to find session %q: %w", opts.SessionID, err)
-			}
-		}
-	}
-	if session != nil {
-		// Check access: you can access anonymous sessions, your own sessions, and shared sessions.
-		// For shared sessions, if you are not the owner, you can only see messages up to the SharedUntilMessageID (inclusive).
-		// For sessions without an owner (unauthenticated users using a public project), we don't check access and rely on security by obscurity (generally a decent trade-off, but specifically introduced to get citation links over MCP working for unauthenticated demos).
-		// It's important to respect SkipChecks to ensure access in Rill Developer (where auth is disabled, but SkipChecks is true).
-		var retrieveUntilMessageID string
-		if session.OwnerID != "" && session.OwnerID != opts.Claims.UserID && !opts.Claims.SkipChecks {
-			if session.SharedUntilMessageID == "" {
-				return nil, fmt.Errorf("%w: access denied to session %q", runtime.ErrForbidden, session.ID)
-			}
-			retrieveUntilMessageID = session.SharedUntilMessageID
-		}
-
-		ms, err := catalog.FindAIMessages(ctx, opts.SessionID)
-		if err != nil {
-			return nil, fmt.Errorf("failed to find messages for session %q: %w", opts.SessionID, err)
-		}
-		for _, m := range ms {
-			messages = append(messages, &Message{
-				ID:          m.ID,
-				ParentID:    m.ParentID,
-				SessionID:   m.SessionID,
-				Time:        m.CreatedOn,
-				Index:       m.Index,
-				Role:        Role(m.Role),
-				Type:        MessageType(m.Type),
-				Tool:        m.Tool,
-				ContentType: MessageContentType(m.ContentType),
-				Content:     m.Content,
-			})
-			// only load messages up to and including that retrieveUntilMessageID; messages are ordered by "Index" ascending.
-			if m.ID == retrieveUntilMessageID {
-				break
-			}
-		}
+	// Load the session from the catalog, or create it if it does not exist.
+	session, messages, err := findSession(ctx, catalog, opts)
+	if err != nil {
+		return nil, err
 	}
 	if session == nil {
 		id := opts.SessionID
@@ -176,7 +131,14 @@ func (r *Runner) Session(ctx context.Context, opts *SessionOptions) (res *Sessio
 		}
 		err = catalog.InsertAISession(ctx, session)
 		if err != nil {
-			return nil, fmt.Errorf("failed to create session: %w", err)
+			// Concurrent requests addressing the same new session ID race to create it,
+			// e.g. parallel tool calls forwarded by the unified MCP server for a project it has not called before.
+			// If another request won the race, continue with the session it created.
+			var retryErr error
+			session, messages, retryErr = findSession(ctx, catalog, opts)
+			if retryErr != nil || session == nil {
+				return nil, fmt.Errorf("failed to create session: %w", errors.Join(err, retryErr))
+			}
 		}
 	}
 
@@ -237,6 +199,61 @@ func (r *Runner) Session(ctx context.Context, opts *SessionOptions) (res *Sessio
 	return &Session{
 		BaseSession: base,
 	}, nil
+}
+
+// findSession loads the session identified by opts.SessionID from the catalog, along with the messages the caller may see.
+// It returns a nil session if opts.SessionID is empty, or if the session does not exist and opts.CreateIfNotExists is set.
+func findSession(ctx context.Context, catalog drivers.CatalogStore, opts *SessionOptions) (*drivers.AISession, []*Message, error) {
+	if opts.SessionID == "" {
+		return nil, nil, nil
+	}
+	session, err := catalog.FindAISession(ctx, opts.SessionID)
+	if err != nil {
+		// If CreateIfNotExists is set, an unknown session ID is created by the caller instead of erroring.
+		// This lets a caller that doesn't know Rill's session IDs address a stable session,
+		// which the unified MCP server in the admin service relies on to keep one session per project.
+		if errors.Is(err, drivers.ErrNotFound) && opts.CreateIfNotExists {
+			return nil, nil, nil
+		}
+		return nil, nil, fmt.Errorf("failed to find session %q: %w", opts.SessionID, err)
+	}
+
+	// Check access: you can access anonymous sessions, your own sessions, and shared sessions.
+	// For shared sessions, if you are not the owner, you can only see messages up to the SharedUntilMessageID (inclusive).
+	// For sessions without an owner (unauthenticated users using a public project), we don't check access and rely on security by obscurity (generally a decent trade-off, but specifically introduced to get citation links over MCP working for unauthenticated demos).
+	// It's important to respect SkipChecks to ensure access in Rill Developer (where auth is disabled, but SkipChecks is true).
+	var retrieveUntilMessageID string
+	if session.OwnerID != "" && session.OwnerID != opts.Claims.UserID && !opts.Claims.SkipChecks {
+		if session.SharedUntilMessageID == "" {
+			return nil, nil, fmt.Errorf("%w: access denied to session %q", runtime.ErrForbidden, session.ID)
+		}
+		retrieveUntilMessageID = session.SharedUntilMessageID
+	}
+
+	ms, err := catalog.FindAIMessages(ctx, opts.SessionID)
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to find messages for session %q: %w", opts.SessionID, err)
+	}
+	var messages []*Message
+	for _, m := range ms {
+		messages = append(messages, &Message{
+			ID:          m.ID,
+			ParentID:    m.ParentID,
+			SessionID:   m.SessionID,
+			Time:        m.CreatedOn,
+			Index:       m.Index,
+			Role:        Role(m.Role),
+			Type:        MessageType(m.Type),
+			Tool:        m.Tool,
+			ContentType: MessageContentType(m.ContentType),
+			Content:     m.Content,
+		})
+		// only load messages up to and including that retrieveUntilMessageID; messages are ordered by "Index" ascending.
+		if m.ID == retrieveUntilMessageID {
+			break
+		}
+	}
+	return session, messages, nil
 }
 
 // ForkSession creates a new session cloned from an existing session.
@@ -552,6 +569,9 @@ type BaseSession struct {
 	managedAI           bool                // true if completions use the Rill-managed AI connector (billable tokens); false for bring-your-own-model
 	acquireLLM          func(ctx context.Context) (drivers.AIService, func(), error)
 	acquireCatalog      func(ctx context.Context) (drivers.CatalogStore, func(), error)
+
+	// external holds the tools contributed by external MCP servers, discovered lazily for the session's user (see external_tools.go).
+	external externalToolsState
 
 	mu            sync.RWMutex
 	dto           *drivers.AISession
@@ -974,9 +994,14 @@ func (s *Session) RootID() string {
 	return root
 }
 
+// Tool returns a tool by name. Built-in tools take precedence over tools contributed by external MCP servers,
+// which are only found after they have been discovered with ExternalServers.
 func (s *Session) Tool(toolName string) (*CompiledTool, bool) {
 	t, ok := s.runner.Tools[toolName]
-	return t, ok
+	if ok {
+		return t, true
+	}
+	return s.externalTool(toolName)
 }
 
 // CallResult contains the messages created during a tool call.
@@ -1219,9 +1244,12 @@ func (s *Session) Complete(ctx context.Context, name string, out any, opts *Comp
 	llmRequestTimeout := time.Duration(cfg.AILLMTimeoutSeconds) * time.Second
 
 	// Prepare tool definitions.
+	// offered tracks the tools actually presented to the LLM, so it cannot run tools it was not given
+	// (such as an external server's tools that are scoped to another agent).
 	tools := make([]*aiv1.Tool, 0, len(opts.Tools))
+	offered := make(map[string]bool, len(opts.Tools))
 	for _, toolName := range opts.Tools {
-		tool, ok := s.runner.Tools[toolName]
+		tool, ok := s.Tool(toolName)
 		if !ok {
 			return fmt.Errorf("unknown tool %q", toolName)
 		}
@@ -1237,6 +1265,10 @@ func (s *Session) Complete(ctx context.Context, name string, out any, opts *Comp
 			return fmt.Errorf("failed to convert tool to proto: %w", err)
 		}
 		tools = append(tools, toolPB)
+		offered[toolName] = true
+	}
+	if len(tools) > maxTools {
+		return fmt.Errorf("too many tools: the connected external MCP servers bring the total to %d, but at most %d are supported; disconnect a server, or limit a server's tools with 'security.include' in its connector file", len(tools), maxTools)
 	}
 
 	// Prepare output schema.
@@ -1427,12 +1459,27 @@ func (s *Session) Complete(ctx context.Context, name string, out any, opts *Comp
 					}
 					messages = append(messages, msgPB)
 				case *aiv1.ContentBlock_ToolCall:
-					toolResult, err := s.CallToolWithOptions(ctx, &CallToolOptions{
-						Role: RoleAssistant,
-						Tool: block.ToolCall.Name,
-						Out:  nil,
-						Args: block.ToolCall.Input.AsMap(),
-					})
+					var toolResult *CallResult
+					var err error
+					if offered[block.ToolCall.Name] {
+						toolResult, err = s.CallToolWithOptions(ctx, &CallToolOptions{
+							Role: RoleAssistant,
+							Tool: block.ToolCall.Name,
+							Out:  nil,
+							Args: block.ToolCall.Input.AsMap(),
+						})
+					} else {
+						// The LLM named a tool it was not offered. Record the refusal as a structured error instead of running it.
+						toolName := block.ToolCall.Name
+						toolResult, err = s.Call(ctx, &CallOptions{
+							Role: RoleAssistant,
+							Name: toolName,
+							Args: block.ToolCall.Input.AsMap(),
+							Handler: func(ctx context.Context) (any, error) {
+								return nil, fmt.Errorf("tool %q is not available in this context", toolName)
+							},
+						})
+					}
 					if err != nil {
 						if ctx.Err() != nil {
 							return nil, ctx.Err()

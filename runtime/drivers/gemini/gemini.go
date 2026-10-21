@@ -215,6 +215,11 @@ func (h *handle) AsModelManager(instanceID string) (drivers.ModelManager, error)
 	return nil, drivers.ErrNotImplemented
 }
 
+// AsMCP implements drivers.Handle.
+func (h *handle) AsMCP() (drivers.MCPService, bool) {
+	return nil, false
+}
+
 // AsNotifier implements drivers.Handle.
 func (h *handle) AsNotifier(properties map[string]any) (drivers.Notifier, error) {
 	return nil, drivers.ErrNotNotifier

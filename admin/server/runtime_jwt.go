@@ -26,6 +26,10 @@ type issueRuntimeTokenOptions struct {
 	projectPermissions *adminv1.ProjectPermissions
 	// forOwner issues the token for the current claims owner (user/service/anon/etc).
 	forOwner bool
+	// omitServiceSubject leaves the subject empty when forOwner is set and the owner is a service.
+	// Some users use service accounts to issue tokens for end users without specifying who they are;
+	// a shared subject across those users could leak per-user state, such as AI chats.
+	omitServiceSubject bool
 	// forUserID issues the token for a specific Rill user. Mutually exclusive with the other for* fields.
 	forUserID string
 	// forUserEmail issues the token for a user by email.
@@ -93,18 +97,16 @@ func (s *Server) issueRuntimeToken(ctx context.Context, opts *issueRuntimeTokenO
 		switch claims.OwnerType() {
 		case auth.OwnerTypeUser:
 			subject = claims.OwnerID()
-			a, err := s.jwtAttributesForUser(ctx, claims.OwnerID(), opts.project.OrganizationID, opts.projectPermissions)
+			a, r, err := s.jwtAttributesAndRulesForUser(ctx, opts.project, claims.OwnerID(), opts.projectPermissions)
 			if err != nil {
 				return "", err
 			}
 			attr = a
-			restrict, resources, err := s.getResourceRestrictionsForUser(ctx, opts.project.ID, claims.OwnerID())
-			if err != nil {
-				return "", err
-			}
-			rules = append(rules, securityRulesFromResources(restrict, resources)...)
+			rules = append(rules, r...)
 		case auth.OwnerTypeService:
-			subject = claims.OwnerID()
+			if !opts.omitServiceSubject {
+				subject = claims.OwnerID()
+			}
 			a, err := s.jwtAttributesForService(ctx, claims.OwnerID(), opts.projectPermissions)
 			if err != nil {
 				return "", err
@@ -249,6 +251,20 @@ func (s *Server) issueRuntimeToken(ctx context.Context, opts *issueRuntimeTokenO
 		return "", status.Errorf(codes.Internal, "could not issue jwt: %s", err.Error())
 	}
 	return jwt, nil
+}
+
+// jwtAttributesAndRulesForUser returns the attributes and security rules that a runtime evaluates a user's access with.
+// projectPermissions are the user's permissions on the project, which may include overrides (e.g. for public projects).
+func (s *Server) jwtAttributesAndRulesForUser(ctx context.Context, proj *database.Project, userID string, projectPermissions *adminv1.ProjectPermissions) (map[string]any, []*runtimev1.SecurityRule, error) {
+	attr, err := s.jwtAttributesForUser(ctx, userID, proj.OrganizationID, projectPermissions)
+	if err != nil {
+		return nil, nil, err
+	}
+	restrict, resources, err := s.getResourceRestrictionsForUser(ctx, proj.ID, userID)
+	if err != nil {
+		return nil, nil, err
+	}
+	return attr, securityRulesFromResources(restrict, resources), nil
 }
 
 // securityRulesFromMagicAuthToken builds the security rules encoded by a magic auth token:
