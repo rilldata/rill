@@ -76,6 +76,21 @@ describe("formatConversationTitle", () => {
       expected: "hello",
     },
     {
+      title: "inherited object property as type is dropped",
+      input: `<chat-reference>type="toString"</chat-reference> <chat-reference>type="constructor"</chat-reference>hello`,
+      expected: "hello",
+    },
+    {
+      title: "dimension values without values",
+      input: `<chat-reference>type="dimensionValues" metricsView="orders" dimension="country"</chat-reference>`,
+      expected: "Customer Country:",
+    },
+    {
+      title: "dimension values with values attribute",
+      input: `<chat-reference>type="dimensionValues" metricsView="orders" dimension="country" values="US,IN"</chat-reference>`,
+      expected: "Customer Country:",
+    },
+    {
       title: "reference truncated by the backend",
       input: `<chat-reference>type="metricsView" metricsView="orders"</chat-reference>...`,
       expected: "Sales...",
@@ -84,6 +99,22 @@ describe("formatConversationTitle", () => {
       title: "partial reference in an older title is dropped",
       input: `Compare <chat-reference>type="metricsView" metricsVi...`,
       expected: "Compare...",
+    },
+    {
+      title: "older title cut within the opening tag name",
+      // The old backend truncated to `title[:47] + "..."`, so a reference starting at byte 41 was cut to `<chat-`.
+      input: `${"a".repeat(40)} <chat-...`,
+      expected: `${"a".repeat(40)}...`,
+    },
+    {
+      title: "older title cut right after the opening angle bracket",
+      input: `${"a".repeat(46)}<...`,
+      expected: `${"a".repeat(46)}...`,
+    },
+    {
+      title: "text resembling a tag name prefix without truncation is kept",
+      input: "Is x <ch y?",
+      expected: "Is x <ch y?",
     },
     {
       title: "title that is only a partial reference",

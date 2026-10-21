@@ -10,9 +10,13 @@ const CHAT_REFERENCE_REGEX = new RegExp(
   `<${INLINE_CHAT_CONTEXT_TAG}\\b([\\s\\S]*?)</${INLINE_CHAT_CONTEXT_TAG}>`,
   "g",
 );
-// Older titles were truncated without regard for references, so they can end in a partial reference.
+// Older titles were truncated to 47 bytes followed by "..." without regard for references,
+// so they can end in a partial reference, even one cut within its tag name (e.g. `<chat-...`).
+const TAG_NAME_PREFIXES = Array.from(INLINE_CHAT_CONTEXT_TAG, (_, i) =>
+  INLINE_CHAT_CONTEXT_TAG.slice(0, i),
+).join("|");
 const PARTIAL_CHAT_REFERENCE_REGEX = new RegExp(
-  `<${INLINE_CHAT_CONTEXT_TAG}\\b[\\s\\S]*$`,
+  `<(?:${INLINE_CHAT_CONTEXT_TAG}\\b[\\s\\S]*|(?:${TAG_NAME_PREFIXES})\\.\\.\\.)$`,
 );
 
 /**
@@ -25,9 +29,8 @@ export function formatConversationTitle(
 ) {
   const text = title.replace(CHAT_REFERENCE_REGEX, (_, attrs: string) => {
     const ctx = convertPromptValueToContext(attrs);
-    const config = ctx ? InlineContextConfig[ctx.type] : undefined;
-    if (!ctx || !config) return "";
-    const label = config.getLabel(ctx, meta);
+    if (!ctx) return "";
+    const label = InlineContextConfig[ctx.type].getLabel(ctx, meta);
     return ctx.type === InlineContextType.Skill ? `/${label}` : label;
   });
 
