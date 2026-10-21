@@ -425,6 +425,16 @@ export interface V1DeleteAlertResponse {
   [key: string]: unknown;
 }
 
+export interface V1DeleteConnectorOAuthTokenRequest {
+  connector?: string;
+  configHash?: string;
+  userId?: string;
+}
+
+export interface V1DeleteConnectorOAuthTokenResponse {
+  [key: string]: unknown;
+}
+
 export interface V1DeleteDeploymentResponse {
   deploymentId?: string;
 }
@@ -587,6 +597,24 @@ export interface V1GetCloneCredentialsResponse {
   gitPrimaryBranch?: string;
   gitManagedRepo?: boolean;
   archiveDownloadUrl?: string;
+}
+
+export interface V1GetConnectorOAuthTokenRequest {
+  /** Name of the connector in the deployment's project. */
+  connector?: string;
+  /** Hash of the connector's current OAuth configuration, as computed by the runtime.
+A token is only returned if the user authorized this configuration, so changing it never reuses an existing authorization. */
+  configHash?: string;
+  /** ID of the user whose token to return. */
+  userId?: string;
+  /** If true, the token is refreshed even if it has not expired yet (used after the server rejected the current token). */
+  forceRefresh?: boolean;
+}
+
+export interface V1GetConnectorOAuthTokenResponse {
+  accessToken?: string;
+  /** When the access token expires. Unset if the token does not expire. */
+  expiresOn?: string;
 }
 
 export interface V1GetCurrentMagicAuthTokenResponse {

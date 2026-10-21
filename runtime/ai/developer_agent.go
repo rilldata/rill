@@ -128,6 +128,7 @@ func (t *DeveloperAgent) Handler(ctx context.Context, args *DeveloperAgentArgs) 
 	if len(skills) > 0 {
 		tools = append(tools, ListSkillsName, LoadSkillName)
 	}
+	tools = append(tools, s.ExternalToolNames(ctx, "developer")...)
 
 	// Run an LLM tool call loop
 	var response string
@@ -171,6 +172,7 @@ func (t *DeveloperAgent) userPrompt(ctx context.Context, args *DeveloperAgentArg
 		"ai_instructions":   session.ProjectInstructions(),
 		"user_memories":     renderUserMemories(session.UserMemories(), DeveloperAgentName),
 		"default_olap_info": olapInfo,
+		"external_servers":  session.ExternalServerPromptData(ctx, "developer"),
 	}
 
 	// Generate the system prompt
@@ -200,6 +202,8 @@ If a memory conflicts with the user's current request, follow the current reques
 {{ .user_memories }}
 </user_memory>
 {{ end }}
+
+`+externalServersPromptFragment+`
 
 For context, here are some details about the project's default OLAP connector: {{ .default_olap_info }}.
 Note that you can only use it in model resources if it is not readonly.

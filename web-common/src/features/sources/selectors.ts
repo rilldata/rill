@@ -84,7 +84,7 @@ export function useAllSourceColumns(
       return;
     }
 
-    derived(
+    return derived(
       allSources.data.map((r) =>
         createTableColumnsWithName(
           queryClient,

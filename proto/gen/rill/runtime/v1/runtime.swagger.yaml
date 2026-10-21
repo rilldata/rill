@@ -663,6 +663,58 @@ paths:
             title: Request message for RuntimeService.ShareConversation
       tags:
         - RuntimeService
+  /v1/instances/{instanceId}/ai/mcp-servers:
+    get:
+      summary: |-
+        ListMCPServers lists the external MCP servers (connectors with driver "mcp") that the current user may use,
+        including the tools each server exposes to the user and whether the user has authorized it.
+      operationId: RuntimeService_ListMCPServers
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1ListMCPServersResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+      tags:
+        - RuntimeService
+  /v1/instances/{instanceId}/ai/mcp-servers/{connector}/disconnect:
+    post:
+      summary: DisconnectMCPServer removes the current user's OAuth authorization for an external MCP server.
+      operationId: RuntimeService_DisconnectMCPServer
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1DisconnectMCPServerResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: connector
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            title: Request message for RuntimeService.DisconnectMCPServer
+      tags:
+        - RuntimeService
   /v1/instances/{instanceId}/ai/memories:
     get:
       summary: |-
@@ -929,6 +981,50 @@ paths:
           type: string
       tags:
         - ConnectorService
+  /v1/instances/{instanceId}/connectors/{connector}/oauth-config:
+    post:
+      summary: |-
+        GetConnectorOAuthConfig returns the OAuth configuration of a connector that authorizes users with OAuth,
+        after checking that the given user may use the connector.
+        It is called by the admin service before it starts an authorization flow; it requires the ManageInstances permission
+        because the response contains secrets.
+      operationId: RuntimeService_GetConnectorOAuthConfig
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1GetConnectorOAuthConfigResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: connector
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              userAttributes:
+                type: object
+                description: Attributes of the user the authorization flow runs for; the connector's security policy is evaluated with them.
+              userRules:
+                type: array
+                items:
+                  type: object
+                  $ref: '#/definitions/v1SecurityRule'
+                description: Additional security rules that apply to the user, such as resource restrictions.
+            title: Request message for RuntimeService.GetConnectorOAuthConfig
+      tags:
+        - RuntimeService
   /v1/instances/{instanceId}/connectors/analyze:
     get:
       summary: AnalyzeConnectors scans all the project files and returns information about all referenced connectors.
@@ -5391,6 +5487,23 @@ definitions:
       implementsWarehouse:
         type: boolean
     description: ConnectorDriver represents a connector driver available in the runtime.
+  v1ConnectorOAuthConfig:
+    type: object
+    properties:
+      resourceUrl:
+        type: string
+        description: URL of the protected resource. The authorization server is discovered from its protected resource metadata (RFC 9728).
+      clientId:
+        type: string
+        description: Pre-registered client credentials. If empty, a client is registered dynamically (RFC 7591).
+      clientSecret:
+        type: string
+      scopes:
+        type: array
+        items:
+          type: string
+        description: Scopes to request. If empty, the scopes the resource advertises are requested.
+    description: ConnectorOAuthConfig describes how to reach a connector's authorization server and which client to use with it.
   v1ConnectorSpec:
     type: object
     properties:
@@ -5406,6 +5519,19 @@ definitions:
         type: boolean
       provisionArgs:
         type: object
+      securityRules:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1SecurityRule'
+        description: |-
+          Security rules that control which users may use the connector and, for MCP connectors, which of its tools.
+          Parsed from the connector's "security" YAML block; currently only the "mcp" driver supports it.
+      agents:
+        type: array
+        items:
+          type: string
+        description: AI agents that may use the connector's tools (MCP connectors only). Empty means all agents.
   v1ConnectorState:
     type: object
     properties:
@@ -5556,6 +5682,9 @@ definitions:
         type: string
       isDir:
         type: boolean
+  v1DisconnectMCPServerResponse:
+    type: object
+    title: Response message for RuntimeService.DisconnectMCPServer
   v1EditInstanceResponse:
     type: object
     properties:
@@ -5951,6 +6080,15 @@ definitions:
       result:
         $ref: '#/definitions/v1Message'
     title: Response message for RuntimeService.GetAIMessage
+  v1GetConnectorOAuthConfigResponse:
+    type: object
+    properties:
+      configHash:
+        type: string
+        description: Opaque hash of the OAuth configuration. Any change to the configuration changes the hash, which invalidates existing authorizations.
+      config:
+        $ref: '#/definitions/v1ConnectorOAuthConfig'
+    title: Response message for RuntimeService.GetConnectorOAuthConfig
   v1GetConversationResponse:
     type: object
     properties:
@@ -6354,6 +6492,15 @@ definitions:
       nextPageToken:
         type: string
     title: Response message for RuntimeService.ListInstances
+  v1ListMCPServersResponse:
+    type: object
+    properties:
+      servers:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1MCPServer'
+    title: Response message for RuntimeService.ListMCPServers
   v1ListNotifierConnectorsResponse:
     type: object
     properties:
@@ -6428,6 +6575,52 @@ definitions:
       - LOG_LEVEL_ERROR
       - LOG_LEVEL_FATAL
     default: LOG_LEVEL_UNSPECIFIED
+  v1MCPServer:
+    type: object
+    properties:
+      connector:
+        type: string
+        description: Name of the connector that defines the server.
+      displayName:
+        type: string
+        description: Human-friendly name of the server.
+      oauth:
+        type: boolean
+        description: True if the server requires a per-user OAuth authorization.
+      connected:
+        type: boolean
+        description: |-
+          True if the server can be used by the current user right now: it was reached and its tools were listed.
+          Always true for reachable servers that don't use OAuth.
+      authorized:
+        type: boolean
+        description: |-
+          True if the current user has granted the server an OAuth authorization that Rill still holds.
+          Unlike connected, it does not depend on the server being reachable, so an authorization can be removed during an outage.
+          Only set for servers that use OAuth.
+      agents:
+        type: array
+        items:
+          type: string
+        description: AI agents that may use the server. Empty means all agents.
+      tools:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1MCPTool'
+        description: Tools the server exposes to the current user. Empty if the server could not be reached or the user is not connected.
+      error:
+        type: string
+        description: Error encountered when connecting to the server or listing its tools, if any.
+    description: MCPServer describes an external MCP server from the perspective of the current user.
+  v1MCPTool:
+    type: object
+    properties:
+      name:
+        type: string
+      description:
+        type: string
+    description: MCPTool describes a tool exposed by an external MCP server.
   v1MapType:
     type: object
     properties:

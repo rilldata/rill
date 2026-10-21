@@ -16,7 +16,7 @@ test.describe("custom viz components", () => {
     await page.getByRole("button", { name: "Start blank" }).click();
 
     // Lands on the new component file in the component workspace.
-    await expect(page).toHaveURL(/viz_library\/component\.yaml/);
+    await expect(page).toHaveURL(/viz\/component\.yaml/);
 
     // The inspector shows the declared params as test bindings.
     await expect(page.getByText("Test values")).toBeVisible();
