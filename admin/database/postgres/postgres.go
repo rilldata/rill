@@ -4288,3 +4288,191 @@ func dedupeAndSortResourceNames(resources []database.ResourceName) []database.Re
 
 	return deduped
 }
+
+func (c *connection) FindConnectorOAuthClient(ctx context.Context, projectID, connector, configHash string) (*database.ConnectorOAuthClient, error) {
+	res := &database.ConnectorOAuthClient{}
+	err := c.getDB(ctx).QueryRowxContext(ctx, "SELECT * FROM connector_oauth_clients WHERE project_id=$1 AND connector=$2 AND config_hash=$3", projectID, connector, configHash).StructScan(res)
+	if err != nil {
+		return nil, parseErr("connector oauth client", err)
+	}
+	err = c.decryptConnectorOAuthClient(res)
+	if err != nil {
+		return nil, err
+	}
+	return res, nil
+}
+
+func (c *connection) FindConnectorOAuthClientByID(ctx context.Context, id string) (*database.ConnectorOAuthClient, error) {
+	res := &database.ConnectorOAuthClient{}
+	err := c.getDB(ctx).QueryRowxContext(ctx, "SELECT * FROM connector_oauth_clients WHERE id=$1", id).StructScan(res)
+	if err != nil {
+		return nil, parseErr("connector oauth client", err)
+	}
+	err = c.decryptConnectorOAuthClient(res)
+	if err != nil {
+		return nil, err
+	}
+	return res, nil
+}
+
+func (c *connection) FindOrInsertConnectorOAuthClient(ctx context.Context, opts *database.InsertConnectorOAuthClientOptions) (*database.ConnectorOAuthClient, error) {
+	if err := database.Validate(opts); err != nil {
+		return nil, err
+	}
+	value, keyID, err := c.encryptText(opts.Client)
+	if err != nil {
+		return nil, err
+	}
+	res := &database.ConnectorOAuthClient{}
+	err = c.getDB(ctx).QueryRowxContext(ctx, `
+		INSERT INTO connector_oauth_clients (project_id, connector, config_hash, client, client_encryption_key_id)
+		VALUES ($1, $2, $3, $4, $5)
+		ON CONFLICT (project_id, connector, config_hash) DO UPDATE SET config_hash = EXCLUDED.config_hash
+		RETURNING *`,
+		opts.ProjectID, opts.Connector, opts.ConfigHash, value, keyID,
+	).StructScan(res)
+	if err != nil {
+		return nil, parseErr("connector oauth client", err)
+	}
+	err = c.decryptConnectorOAuthClient(res)
+	if err != nil {
+		return nil, err
+	}
+	return res, nil
+}
+
+func (c *connection) FindConnectorOAuthClients(ctx context.Context, projectID, connector string) ([]*database.ConnectorOAuthClient, error) {
+	var res []*database.ConnectorOAuthClient
+	err := c.getDB(ctx).SelectContext(ctx, &res, "SELECT * FROM connector_oauth_clients WHERE project_id=$1 AND connector=$2", projectID, connector)
+	if err != nil {
+		return nil, parseErr("connector oauth clients", err)
+	}
+	for _, r := range res {
+		err = c.decryptConnectorOAuthClient(r)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return res, nil
+}
+
+func (c *connection) DeleteConnectorOAuthClientsWithoutTokens(ctx context.Context, projectID, connector, keepConfigHash string) error {
+	_, err := c.getDB(ctx).ExecContext(ctx, `
+		DELETE FROM connector_oauth_clients c
+		WHERE c.project_id=$1 AND c.connector=$2 AND c.config_hash<>$3
+		AND NOT EXISTS (SELECT 1 FROM connector_oauth_tokens t WHERE t.oauth_client_id=c.id)
+	`, projectID, connector, keepConfigHash)
+	if err != nil {
+		return parseErr("connector oauth clients", err)
+	}
+	return nil
+}
+
+func (c *connection) DeleteConnectorOAuthClient(ctx context.Context, id string) error {
+	res, err := c.getDB(ctx).ExecContext(ctx, "DELETE FROM connector_oauth_clients WHERE id=$1", id)
+	return checkDeleteRow("connector oauth client", res, err)
+}
+
+func (c *connection) decryptConnectorOAuthClient(res *database.ConnectorOAuthClient) error {
+	client, err := c.decryptText(res.Client, res.ClientEncryptionKeyID)
+	if err != nil {
+		return err
+	}
+	res.Client = client
+	res.ClientEncryptionKeyID = ""
+	return nil
+}
+
+func (c *connection) AcquireConnectorOAuthTokenLock(ctx context.Context, oauthClientID, userID string) error {
+	if txFromContext(ctx) == nil {
+		return errors.New("postgres: connector OAuth locks must be acquired within a transaction")
+	}
+	key := "connector_oauth_tokens/" + oauthClientID + "/" + userID
+	_, err := c.getDB(ctx).ExecContext(ctx, "SELECT pg_advisory_xact_lock(hashtext($1))", key)
+	if err != nil {
+		return parseErr("connector oauth lock", err)
+	}
+	return nil
+}
+
+func (c *connection) FindConnectorOAuthToken(ctx context.Context, oauthClientID, userID string) (*database.ConnectorOAuthToken, error) {
+	res := &database.ConnectorOAuthToken{}
+	err := c.getDB(ctx).QueryRowxContext(ctx, "SELECT * FROM connector_oauth_tokens WHERE oauth_client_id=$1 AND user_id=$2", oauthClientID, userID).StructScan(res)
+	if err != nil {
+		return nil, parseErr("connector oauth token", err)
+	}
+	err = c.decryptConnectorOAuthToken(res)
+	if err != nil {
+		return nil, err
+	}
+	return res, nil
+}
+
+func (c *connection) UpsertConnectorOAuthToken(ctx context.Context, opts *database.UpsertConnectorOAuthTokenOptions) (*database.ConnectorOAuthToken, error) {
+	if err := database.Validate(opts); err != nil {
+		return nil, err
+	}
+	value, keyID, err := c.encryptText(opts.Token)
+	if err != nil {
+		return nil, err
+	}
+	res := &database.ConnectorOAuthToken{}
+	err = c.getDB(ctx).QueryRowxContext(ctx, `
+		INSERT INTO connector_oauth_tokens (oauth_client_id, user_id, token, token_encryption_key_id)
+		VALUES ($1, $2, $3, $4)
+		ON CONFLICT (oauth_client_id, user_id) DO UPDATE SET
+			token = EXCLUDED.token,
+			token_encryption_key_id = EXCLUDED.token_encryption_key_id,
+			updated_on = now()
+		RETURNING *`,
+		opts.OAuthClientID, opts.UserID, value, keyID,
+	).StructScan(res)
+	if err != nil {
+		return nil, parseErr("connector oauth token", err)
+	}
+	err = c.decryptConnectorOAuthToken(res)
+	if err != nil {
+		return nil, err
+	}
+	return res, nil
+}
+
+func (c *connection) DeleteConnectorOAuthToken(ctx context.Context, oauthClientID, userID string) error {
+	res, err := c.getDB(ctx).ExecContext(ctx, "DELETE FROM connector_oauth_tokens WHERE oauth_client_id=$1 AND user_id=$2", oauthClientID, userID)
+	return checkDeleteRow("connector oauth token", res, err)
+}
+
+func (c *connection) decryptConnectorOAuthToken(res *database.ConnectorOAuthToken) error {
+	token, err := c.decryptText(res.Token, res.TokenEncryptionKeyID)
+	if err != nil {
+		return err
+	}
+	res.Token = token
+	res.TokenEncryptionKeyID = ""
+	return nil
+}
+
+// encryptText encrypts a value for storage in a TEXT column.
+// It returns the value to store (base64 of the ciphertext when encryption is configured, the plain text otherwise) and the key ID used.
+func (c *connection) encryptText(plain []byte) (string, string, error) {
+	encrypted, keyID, err := c.encrypt(plain)
+	if err != nil {
+		return "", "", err
+	}
+	if keyID == "" {
+		return string(plain), "", nil
+	}
+	return base64.StdEncoding.EncodeToString(encrypted), keyID, nil
+}
+
+// decryptText reverses encryptText.
+func (c *connection) decryptText(stored []byte, keyID string) ([]byte, error) {
+	if keyID == "" {
+		return stored, nil
+	}
+	decoded, err := base64.StdEncoding.DecodeString(string(stored))
+	if err != nil {
+		return nil, err
+	}
+	return c.decrypt(decoded, keyID)
+}

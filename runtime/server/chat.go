@@ -197,6 +197,7 @@ func (s *Server) ListTools(ctx context.Context, req *runtimev1.ListToolsRequest)
 		}
 		pbs = append(pbs, pb)
 	}
+
 	return &runtimev1.ListToolsResponse{
 		Tools: pbs,
 	}, nil

@@ -52,6 +52,7 @@ const (
 	RuntimeService_CreateTrigger_FullMethodName           = "/rill.runtime.v1.RuntimeService/CreateTrigger"
 	RuntimeService_ListConnectorDrivers_FullMethodName    = "/rill.runtime.v1.RuntimeService/ListConnectorDrivers"
 	RuntimeService_AnalyzeConnectors_FullMethodName       = "/rill.runtime.v1.RuntimeService/AnalyzeConnectors"
+	RuntimeService_GetConnectorOAuthConfig_FullMethodName = "/rill.runtime.v1.RuntimeService/GetConnectorOAuthConfig"
 	RuntimeService_ListNotifierConnectors_FullMethodName  = "/rill.runtime.v1.RuntimeService/ListNotifierConnectors"
 	RuntimeService_ListConversations_FullMethodName       = "/rill.runtime.v1.RuntimeService/ListConversations"
 	RuntimeService_GetConversation_FullMethodName         = "/rill.runtime.v1.RuntimeService/GetConversation"
@@ -67,6 +68,8 @@ const (
 	RuntimeService_DeleteAIMemory_FullMethodName          = "/rill.runtime.v1.RuntimeService/DeleteAIMemory"
 	RuntimeService_GetAIMemorySettings_FullMethodName     = "/rill.runtime.v1.RuntimeService/GetAIMemorySettings"
 	RuntimeService_UpdateAIMemorySettings_FullMethodName  = "/rill.runtime.v1.RuntimeService/UpdateAIMemorySettings"
+	RuntimeService_ListMCPServers_FullMethodName          = "/rill.runtime.v1.RuntimeService/ListMCPServers"
+	RuntimeService_DisconnectMCPServer_FullMethodName     = "/rill.runtime.v1.RuntimeService/DisconnectMCPServer"
 	RuntimeService_IssueDevJWT_FullMethodName             = "/rill.runtime.v1.RuntimeService/IssueDevJWT"
 	RuntimeService_AnalyzeVariables_FullMethodName        = "/rill.runtime.v1.RuntimeService/AnalyzeVariables"
 	RuntimeService_ListGitCommits_FullMethodName          = "/rill.runtime.v1.RuntimeService/ListGitCommits"
@@ -161,6 +164,11 @@ type RuntimeServiceClient interface {
 	ListConnectorDrivers(ctx context.Context, in *ListConnectorDriversRequest, opts ...grpc.CallOption) (*ListConnectorDriversResponse, error)
 	// AnalyzeConnectors scans all the project files and returns information about all referenced connectors.
 	AnalyzeConnectors(ctx context.Context, in *AnalyzeConnectorsRequest, opts ...grpc.CallOption) (*AnalyzeConnectorsResponse, error)
+	// GetConnectorOAuthConfig returns the OAuth configuration of a connector that authorizes users with OAuth,
+	// after checking that the given user may use the connector.
+	// It is called by the admin service before it starts an authorization flow; it requires the ManageInstances permission
+	// because the response contains secrets.
+	GetConnectorOAuthConfig(ctx context.Context, in *GetConnectorOAuthConfigRequest, opts ...grpc.CallOption) (*GetConnectorOAuthConfigResponse, error)
 	// ListNotifierConnectors returns the names of all configured connectors that can be used as notifiers.
 	// This API is much faster than AnalyzeConnectors and can be called without admin-level permissions.
 	ListNotifierConnectors(ctx context.Context, in *ListNotifierConnectorsRequest, opts ...grpc.CallOption) (*ListNotifierConnectorsResponse, error)
@@ -195,6 +203,11 @@ type RuntimeServiceClient interface {
 	GetAIMemorySettings(ctx context.Context, in *GetAIMemorySettingsRequest, opts ...grpc.CallOption) (*GetAIMemorySettingsResponse, error)
 	// UpdateAIMemorySettings turns AI memory on or off for the current user in an instance.
 	UpdateAIMemorySettings(ctx context.Context, in *UpdateAIMemorySettingsRequest, opts ...grpc.CallOption) (*UpdateAIMemorySettingsResponse, error)
+	// ListMCPServers lists the external MCP servers (connectors with driver "mcp") that the current user may use,
+	// including the tools each server exposes to the user and whether the user has authorized it.
+	ListMCPServers(ctx context.Context, in *ListMCPServersRequest, opts ...grpc.CallOption) (*ListMCPServersResponse, error)
+	// DisconnectMCPServer removes the current user's OAuth authorization for an external MCP server.
+	DisconnectMCPServer(ctx context.Context, in *DisconnectMCPServerRequest, opts ...grpc.CallOption) (*DisconnectMCPServerResponse, error)
 	// IssueDevJWT issues a JWT for mimicking a user in local development.
 	IssueDevJWT(ctx context.Context, in *IssueDevJWTRequest, opts ...grpc.CallOption) (*IssueDevJWTResponse, error)
 	// AnalyzeVariables scans `Source`, `Model` and `Connector` resources in the catalog for use of an environment variable
@@ -594,6 +607,16 @@ func (c *runtimeServiceClient) AnalyzeConnectors(ctx context.Context, in *Analyz
 	return out, nil
 }
 
+func (c *runtimeServiceClient) GetConnectorOAuthConfig(ctx context.Context, in *GetConnectorOAuthConfigRequest, opts ...grpc.CallOption) (*GetConnectorOAuthConfigResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetConnectorOAuthConfigResponse)
+	err := c.cc.Invoke(ctx, RuntimeService_GetConnectorOAuthConfig_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *runtimeServiceClient) ListNotifierConnectors(ctx context.Context, in *ListNotifierConnectorsRequest, opts ...grpc.CallOption) (*ListNotifierConnectorsResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(ListNotifierConnectorsResponse)
@@ -747,6 +770,26 @@ func (c *runtimeServiceClient) UpdateAIMemorySettings(ctx context.Context, in *U
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(UpdateAIMemorySettingsResponse)
 	err := c.cc.Invoke(ctx, RuntimeService_UpdateAIMemorySettings_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *runtimeServiceClient) ListMCPServers(ctx context.Context, in *ListMCPServersRequest, opts ...grpc.CallOption) (*ListMCPServersResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListMCPServersResponse)
+	err := c.cc.Invoke(ctx, RuntimeService_ListMCPServers_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *runtimeServiceClient) DisconnectMCPServer(ctx context.Context, in *DisconnectMCPServerRequest, opts ...grpc.CallOption) (*DisconnectMCPServerResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(DisconnectMCPServerResponse)
+	err := c.cc.Invoke(ctx, RuntimeService_DisconnectMCPServer_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -971,6 +1014,11 @@ type RuntimeServiceServer interface {
 	ListConnectorDrivers(context.Context, *ListConnectorDriversRequest) (*ListConnectorDriversResponse, error)
 	// AnalyzeConnectors scans all the project files and returns information about all referenced connectors.
 	AnalyzeConnectors(context.Context, *AnalyzeConnectorsRequest) (*AnalyzeConnectorsResponse, error)
+	// GetConnectorOAuthConfig returns the OAuth configuration of a connector that authorizes users with OAuth,
+	// after checking that the given user may use the connector.
+	// It is called by the admin service before it starts an authorization flow; it requires the ManageInstances permission
+	// because the response contains secrets.
+	GetConnectorOAuthConfig(context.Context, *GetConnectorOAuthConfigRequest) (*GetConnectorOAuthConfigResponse, error)
 	// ListNotifierConnectors returns the names of all configured connectors that can be used as notifiers.
 	// This API is much faster than AnalyzeConnectors and can be called without admin-level permissions.
 	ListNotifierConnectors(context.Context, *ListNotifierConnectorsRequest) (*ListNotifierConnectorsResponse, error)
@@ -1005,6 +1053,11 @@ type RuntimeServiceServer interface {
 	GetAIMemorySettings(context.Context, *GetAIMemorySettingsRequest) (*GetAIMemorySettingsResponse, error)
 	// UpdateAIMemorySettings turns AI memory on or off for the current user in an instance.
 	UpdateAIMemorySettings(context.Context, *UpdateAIMemorySettingsRequest) (*UpdateAIMemorySettingsResponse, error)
+	// ListMCPServers lists the external MCP servers (connectors with driver "mcp") that the current user may use,
+	// including the tools each server exposes to the user and whether the user has authorized it.
+	ListMCPServers(context.Context, *ListMCPServersRequest) (*ListMCPServersResponse, error)
+	// DisconnectMCPServer removes the current user's OAuth authorization for an external MCP server.
+	DisconnectMCPServer(context.Context, *DisconnectMCPServerRequest) (*DisconnectMCPServerResponse, error)
 	// IssueDevJWT issues a JWT for mimicking a user in local development.
 	IssueDevJWT(context.Context, *IssueDevJWTRequest) (*IssueDevJWTResponse, error)
 	// AnalyzeVariables scans `Source`, `Model` and `Connector` resources in the catalog for use of an environment variable
@@ -1146,6 +1199,9 @@ func (UnimplementedRuntimeServiceServer) ListConnectorDrivers(context.Context, *
 func (UnimplementedRuntimeServiceServer) AnalyzeConnectors(context.Context, *AnalyzeConnectorsRequest) (*AnalyzeConnectorsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method AnalyzeConnectors not implemented")
 }
+func (UnimplementedRuntimeServiceServer) GetConnectorOAuthConfig(context.Context, *GetConnectorOAuthConfigRequest) (*GetConnectorOAuthConfigResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetConnectorOAuthConfig not implemented")
+}
 func (UnimplementedRuntimeServiceServer) ListNotifierConnectors(context.Context, *ListNotifierConnectorsRequest) (*ListNotifierConnectorsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListNotifierConnectors not implemented")
 }
@@ -1190,6 +1246,12 @@ func (UnimplementedRuntimeServiceServer) GetAIMemorySettings(context.Context, *G
 }
 func (UnimplementedRuntimeServiceServer) UpdateAIMemorySettings(context.Context, *UpdateAIMemorySettingsRequest) (*UpdateAIMemorySettingsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UpdateAIMemorySettings not implemented")
+}
+func (UnimplementedRuntimeServiceServer) ListMCPServers(context.Context, *ListMCPServersRequest) (*ListMCPServersResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListMCPServers not implemented")
+}
+func (UnimplementedRuntimeServiceServer) DisconnectMCPServer(context.Context, *DisconnectMCPServerRequest) (*DisconnectMCPServerResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method DisconnectMCPServer not implemented")
 }
 func (UnimplementedRuntimeServiceServer) IssueDevJWT(context.Context, *IssueDevJWTRequest) (*IssueDevJWTResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method IssueDevJWT not implemented")
@@ -1827,6 +1889,24 @@ func _RuntimeService_AnalyzeConnectors_Handler(srv interface{}, ctx context.Cont
 	return interceptor(ctx, in, info, handler)
 }
 
+func _RuntimeService_GetConnectorOAuthConfig_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetConnectorOAuthConfigRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RuntimeServiceServer).GetConnectorOAuthConfig(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: RuntimeService_GetConnectorOAuthConfig_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RuntimeServiceServer).GetConnectorOAuthConfig(ctx, req.(*GetConnectorOAuthConfigRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _RuntimeService_ListNotifierConnectors_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(ListNotifierConnectorsRequest)
 	if err := dec(in); err != nil {
@@ -2086,6 +2166,42 @@ func _RuntimeService_UpdateAIMemorySettings_Handler(srv interface{}, ctx context
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(RuntimeServiceServer).UpdateAIMemorySettings(ctx, req.(*UpdateAIMemorySettingsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _RuntimeService_ListMCPServers_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListMCPServersRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RuntimeServiceServer).ListMCPServers(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: RuntimeService_ListMCPServers_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RuntimeServiceServer).ListMCPServers(ctx, req.(*ListMCPServersRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _RuntimeService_DisconnectMCPServer_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DisconnectMCPServerRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RuntimeServiceServer).DisconnectMCPServer(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: RuntimeService_DisconnectMCPServer_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RuntimeServiceServer).DisconnectMCPServer(ctx, req.(*DisconnectMCPServerRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -2470,6 +2586,10 @@ var RuntimeService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _RuntimeService_AnalyzeConnectors_Handler,
 		},
 		{
+			MethodName: "GetConnectorOAuthConfig",
+			Handler:    _RuntimeService_GetConnectorOAuthConfig_Handler,
+		},
+		{
 			MethodName: "ListNotifierConnectors",
 			Handler:    _RuntimeService_ListNotifierConnectors_Handler,
 		},
@@ -2524,6 +2644,14 @@ var RuntimeService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "UpdateAIMemorySettings",
 			Handler:    _RuntimeService_UpdateAIMemorySettings_Handler,
+		},
+		{
+			MethodName: "ListMCPServers",
+			Handler:    _RuntimeService_ListMCPServers_Handler,
+		},
+		{
+			MethodName: "DisconnectMCPServer",
+			Handler:    _RuntimeService_DisconnectMCPServer_Handler,
 		},
 		{
 			MethodName: "IssueDevJWT",
