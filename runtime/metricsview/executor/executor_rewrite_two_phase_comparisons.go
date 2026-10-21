@@ -7,25 +7,16 @@ import (
 
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/metricsview"
-	"go.uber.org/zap"
 )
 
 // rewriteTwoPhaseComparisons rewrites the query to query base time range first and then use the results to query the comparison time range.
-// It returns false without an error when the query is not eligible for the rewrite; the reason is logged at debug level.
 func (e *Executor) rewriteTwoPhaseComparisons(ctx context.Context, qry *metricsview.Query, ast *metricsview.AST, ogLimit *int64) (bool, error) {
-	// Not a comparison query, so there is nothing to rewrite.
-	if qry.ComparisonTimeRange == nil {
-		return false, nil
-	}
-
-	if qry.Limit == nil || *qry.Limit > e.instanceCfg.MetricsApproxComparisonTwoPhaseLimit {
-		e.logTwoPhaseComparisonsSkipped(ctx, "the query has no limit or its limit exceeds rill.metrics.approximate_comparisons_two_phase_limit")
+	if qry.Limit == nil || (*qry.Limit > e.instanceCfg.MetricsApproxComparisonTwoPhaseLimit) {
 		return false, nil
 	}
 
 	// Skip if the criteria for a two-phase comparison are not met.
-	if len(qry.Sort) != 1 || len(qry.Dimensions) != 1 || len(qry.PivotOn) > 0 {
-		e.logTwoPhaseComparisonsSkipped(ctx, "the query must have exactly one dimension, exactly one sort field and no pivot")
+	if qry.ComparisonTimeRange == nil || len(qry.Sort) != 1 || len(qry.Dimensions) == 0 || len(qry.Dimensions) > 1 || len(qry.PivotOn) > 0 {
 		return false, nil
 	}
 
@@ -49,7 +40,6 @@ func (e *Executor) rewriteTwoPhaseComparisons(ctx context.Context, qry *metricsv
 				continue
 			}
 			// only supports sorting on base or compare value and dims
-			e.logTwoPhaseComparisonsSkipped(ctx, "sorting by a computed measure other than a comparison value is not supported")
 			return false, nil
 		}
 	}
@@ -85,14 +75,12 @@ func (e *Executor) rewriteTwoPhaseComparisons(ctx context.Context, qry *metricsv
 	sel, args, dimVals, err := e.olap.Dialect().SelectInlineResults(baseRes)
 	if err != nil {
 		if errors.Is(err, drivers.ErrOptimizationFailure) {
-			e.logTwoPhaseComparisonsSkipped(ctx, err.Error())
 			return false, nil
 		}
 		return false, err
 	}
 
 	if len(dimVals) == 0 {
-		e.logTwoPhaseComparisonsSkipped(ctx, "the base query returned no rows")
 		return false, nil
 	}
 
@@ -104,7 +92,7 @@ func (e *Executor) rewriteTwoPhaseComparisons(ctx context.Context, qry *metricsv
 		}
 		n = n.FromSelect
 		if n == nil {
-			e.logTwoPhaseComparisonsSkipped(ctx, "the query has no comparison join")
+			// no join comparison select found
 			return false, nil
 		}
 	}
@@ -189,14 +177,4 @@ func (e *Executor) rewriteTwoPhaseComparisons(ctx context.Context, qry *metricsv
 	}
 
 	return true, nil
-}
-
-// logTwoPhaseComparisonsSkipped logs why a comparison query is not rewritten to two phases.
-// It logs at debug level because many comparison queries are legitimately not eligible, but the reason matters when investigating slow comparison queries.
-func (e *Executor) logTwoPhaseComparisonsSkipped(ctx context.Context, reason string) {
-	logger, err := e.rt.InstanceLogger(ctx, e.instanceID)
-	if err != nil {
-		return
-	}
-	logger.Debug("skipping two-phase comparison query", zap.String("table", e.metricsView.Table), zap.String("reason", reason))
 }
