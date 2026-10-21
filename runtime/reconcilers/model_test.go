@@ -1,7 +1,10 @@
 package reconcilers_test
 
 import (
+	"context"
+	"sync"
 	"testing"
+	"time"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
@@ -762,4 +765,91 @@ sql: SELECT '{{ .partition.v }}' AS v {{ if eq .partition.v "extra" }}, 42 AS ex
 			Result:     []map[string]any{{"v": "base"}},
 		})
 	})
+}
+
+// TestPartitionsKeptWhenFullRefreshCancelled verifies that cancelling a full refresh of a partitioned model
+// after some partitions have executed does not discard them when the model is reconciled again.
+// This happens in practice when a parent model is scheduled while a descendant is running.
+func TestPartitionsKeptWhenFullRefreshCancelled(t *testing.T) {
+	rt, instanceID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
+		StageChanges: true,
+		Files: map[string]string{
+			"rill.yaml": ``,
+			// Each partition takes a second or so, so the full refresh is still running when we cancel it.
+			"models/partitioned.yaml": `
+type: model
+incremental: true
+change_mode: manual
+partitions:
+  sql: SELECT v FROM (VALUES ('a'), ('b'), ('c'), ('d')) t(v)
+sql: SELECT '{{ .partition.v }}' AS v, (SELECT sum(range % 7) FROM range(300000000)) AS c
+`,
+		},
+	})
+	ctx := t.Context()
+	n := &runtimev1.ResourceName{Kind: runtime.ResourceKindModel, Name: "partitioned"}
+
+	ctrl, err := rt.Controller(ctx, instanceID)
+	require.NoError(t, err)
+
+	// Signal once the first partition has executed and its result has been saved to the model's state.
+	firstPartitionDone := make(chan struct{})
+	var once sync.Once
+	subCtx, cancelSub := context.WithCancel(ctx)
+	defer cancelSub()
+	go func() {
+		_ = ctrl.Subscribe(subCtx, func(e runtimev1.ResourceEvent, rn *runtimev1.ResourceName, r *runtimev1.Resource) {
+			if rn.Kind == n.Kind && rn.Name == n.Name && r.GetModel().GetState().GetRefreshedOn() != nil {
+				once.Do(func() { close(firstPartitionDone) })
+			}
+		})
+	}()
+
+	// Trigger a full refresh without waiting for it to complete.
+	err = ctrl.Create(ctx, &runtimev1.ResourceName{Kind: runtime.ResourceKindRefreshTrigger, Name: "full"}, nil, nil, nil, nil, nil, false, &runtimev1.Resource{
+		Resource: &runtimev1.Resource_RefreshTrigger{
+			RefreshTrigger: &runtimev1.RefreshTrigger{
+				Spec: &runtimev1.RefreshTriggerSpec{
+					Models: []*runtimev1.RefreshModelTrigger{{Model: n.Name, Full: true}},
+				},
+			},
+		},
+	})
+	require.NoError(t, err)
+
+	select {
+	case <-firstPartitionDone:
+	case <-time.After(time.Minute):
+		require.FailNow(t, "timed out waiting for the first partition to execute")
+	}
+
+	// Cancel the running reconcile and re-enqueue it, like the controller does when a parent is scheduled.
+	cancelledAt := time.Now()
+	require.NoError(t, ctrl.Reconcile(ctx, n))
+	require.NoError(t, ctrl.WaitUntilIdle(ctx, false))
+
+	// The re-enqueued reconcile should resume and execute the remaining partitions.
+	model := testruntime.GetResource(t, rt, instanceID, runtime.ResourceKindModel, n.Name).GetModel()
+	require.False(t, model.Spec.Trigger)
+	require.False(t, model.Spec.TriggerFull)
+	testruntime.RequireResolve(t, rt, instanceID, &testruntime.RequireResolveOptions{
+		Resolver:   "sql",
+		Properties: map[string]any{"sql": `SELECT COUNT(*) AS count FROM partitioned`},
+		Result:     []map[string]any{{"count": 4}},
+	})
+
+	// Partitions that executed before the cancellation should be kept, not cleared and re-executed.
+	catalog, release, err := rt.Catalog(ctx, instanceID)
+	require.NoError(t, err)
+	defer release()
+	partitions, err := catalog.FindModelPartitions(ctx, &drivers.FindModelPartitionsOptions{ModelID: model.State.PartitionsModelId})
+	require.NoError(t, err)
+	require.Len(t, partitions, 4)
+	var kept int
+	for _, p := range partitions {
+		if p.ExecutedOn != nil && p.ExecutedOn.Before(cancelledAt) {
+			kept++
+		}
+	}
+	require.Positive(t, kept, "partitions executed before the cancellation were discarded")
 }
