@@ -28,7 +28,7 @@ type mockSender struct {
 	attachments []Attachment
 }
 
-func (m *mockSender) Send(toEmail, toName, subject, body string, attachments ...Attachment) error {
+func (m *mockSender) Send(toEmail, toName, subject, body string, attachments []Attachment) error {
 	m.toEmail = toEmail
 	m.toName = toName
 	m.subject = subject

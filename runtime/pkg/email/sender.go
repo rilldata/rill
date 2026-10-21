@@ -16,7 +16,7 @@ import (
 )
 
 type Sender interface {
-	Send(toEmail, toName, subject, body string, attachments ...Attachment) error
+	Send(toEmail, toName, subject, body string, attachments []Attachment) error
 }
 
 // Attachment is a file attached to an email.
@@ -60,7 +60,7 @@ func NewSMTPSender(opts *SMTPOptions) (Sender, error) {
 	return &smtpSender{opts: opts}, nil
 }
 
-func (s *smtpSender) Send(toEmail, toName, subject, body string, attachments ...Attachment) error {
+func (s *smtpSender) Send(toEmail, toName, subject, body string, attachments []Attachment) error {
 	// Compose the email message
 	from := mail.Address{Name: s.opts.FromName, Address: s.opts.FromEmail}
 	to := mail.Address{Name: toName, Address: toEmail}
@@ -170,7 +170,7 @@ func NewConsoleSender(logger *zap.Logger, fromEmail, fromName string) (Sender, e
 	return &consoleSender{logger: logger, fromEmail: fromEmail, fromName: fromName}, nil
 }
 
-func (s *consoleSender) Send(toEmail, toName, subject, body string, attachments ...Attachment) error {
+func (s *consoleSender) Send(toEmail, toName, subject, body string, attachments []Attachment) error {
 	attachmentNames := make([]string, len(attachments))
 	for i, a := range attachments {
 		attachmentNames[i] = a.Filename
@@ -193,7 +193,7 @@ func NewNoopSender() Sender {
 	return &noopSender{}
 }
 
-func (s *noopSender) Send(toEmail, toName, subject, body string, attachments ...Attachment) error {
+func (s *noopSender) Send(toEmail, toName, subject, body string, attachments []Attachment) error {
 	return nil
 }
 
@@ -211,7 +211,7 @@ func NewTestSender() Sender {
 	return &TestSender{}
 }
 
-func (s *TestSender) Send(toEmail, toName, subject, body string, attachments ...Attachment) error {
+func (s *TestSender) Send(toEmail, toName, subject, body string, attachments []Attachment) error {
 	s.Emails = append(s.Emails, struct {
 		ToEmail     string
 		ToName      string

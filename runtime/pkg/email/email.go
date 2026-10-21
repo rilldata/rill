@@ -88,10 +88,11 @@ func (c *Client) SendScheduledReport(opts *ScheduledReport) error {
 	}
 	html := buf.String()
 
+	var attachments []Attachment
 	if opts.Attachment != nil {
-		return c.Sender.Send(opts.ToEmail, opts.ToName, subject, html, *opts.Attachment)
+		attachments = []Attachment{*opts.Attachment}
 	}
-	return c.Sender.Send(opts.ToEmail, opts.ToName, subject, html)
+	return c.Sender.Send(opts.ToEmail, opts.ToName, subject, html, attachments)
 }
 
 func (c *Client) SendAlertStatus(opts *drivers.AlertStatus) error {
@@ -149,7 +150,7 @@ func (c *Client) sendAlertFail(opts *drivers.AlertStatus, data *alertFailData) e
 	}
 	html := buf.String()
 
-	return c.Sender.Send(opts.ToEmail, opts.ToName, subject, html)
+	return c.Sender.Send(opts.ToEmail, opts.ToName, subject, html, nil)
 }
 
 type alertStatusData struct {
@@ -177,7 +178,7 @@ func (c *Client) sendAlertStatus(opts *drivers.AlertStatus, data *alertStatusDat
 	}
 	html := buf.String()
 
-	return c.Sender.Send(opts.ToEmail, opts.ToName, subject, html)
+	return c.Sender.Send(opts.ToEmail, opts.ToName, subject, html, nil)
 }
 
 type CallToAction struct {
@@ -198,7 +199,7 @@ func (c *Client) SendCallToAction(opts *CallToAction) error {
 		return fmt.Errorf("email template error: %w", err)
 	}
 	html := buf.String()
-	return c.Sender.Send(opts.ToEmail, opts.ToName, opts.Subject, html)
+	return c.Sender.Send(opts.ToEmail, opts.ToName, opts.Subject, html, nil)
 }
 
 type Informational struct {
@@ -216,7 +217,7 @@ func (c *Client) SendInformational(opts *Informational) error {
 		return fmt.Errorf("email template error: %w", err)
 	}
 	html := buf.String()
-	return c.Sender.Send(opts.ToEmail, opts.ToName, opts.Subject, html)
+	return c.Sender.Send(opts.ToEmail, opts.ToName, opts.Subject, html, nil)
 }
 
 type Welcome struct {
@@ -234,7 +235,7 @@ func (c *Client) SendWelcomeToTrial(opts *Welcome) error {
 		return fmt.Errorf("email template error: %w", err)
 	}
 	html := buf.String()
-	return c.Sender.Send(opts.ToEmail, opts.ToName, opts.Subject, html)
+	return c.Sender.Send(opts.ToEmail, opts.ToName, opts.Subject, html, nil)
 }
 
 func (c *Client) SendWelcomeToTeam(opts *Welcome) error {
@@ -244,7 +245,7 @@ func (c *Client) SendWelcomeToTeam(opts *Welcome) error {
 		return fmt.Errorf("email template error: %w", err)
 	}
 	html := buf.String()
-	return c.Sender.Send(opts.ToEmail, opts.ToName, opts.Subject, html)
+	return c.Sender.Send(opts.ToEmail, opts.ToName, opts.Subject, html, nil)
 }
 
 type OrganizationInvite struct {
@@ -380,7 +381,7 @@ func (c *Client) SendProjectAccessRequest(opts *ProjectAccessRequest) error {
 		return fmt.Errorf("email template error: %w", err)
 	}
 	html := buf.String()
-	return c.Sender.Send(opts.ToEmail, opts.ToName, subject, html)
+	return c.Sender.Send(opts.ToEmail, opts.ToName, subject, html, nil)
 }
 
 type ProjectAccessGranted struct {
