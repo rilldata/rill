@@ -235,9 +235,8 @@ func buildCircular(s *Spec) (*Plan, error) {
 	plan := &Plan{Spec: s, RowLimit: MaxRows, Extra: map[string]*metricsview.Query{}}
 
 	var sort []metricsview.Sort
-	limit := 1
 	if color != nil {
-		limit = capLimit(color.Limit, defaultSliceLimit, MaxNominalValues)
+		limit := capLimit(color.Limit, defaultSliceLimit, MaxNominalValues)
 		switch color.Sort {
 		case "color", "-color":
 			sort = []metricsview.Sort{{Name: color.Field, Desc: color.Sort == "-color"}}
@@ -425,11 +424,9 @@ func buildHeatmap(s *Spec) (*Plan, error) {
 			TimeZone:    s.TimeRange.TimeZone,
 			Limit:       limitPtr(plan.RowLimit + 1),
 		}
-		if s.X.isTemporal() {
-			q.Sort = []metricsview.Sort{{Name: s.X.Field, Desc: true}}
-		} else {
-			q.Sort = []metricsview.Sort{{Name: s.X.Field, Desc: true}}
-		}
+		// Sorting x descending keeps the newest buckets when a temporal heatmap is truncated;
+		// for a nominal x the widget orders the cells by the top-N domain, so the row order is irrelevant.
+		q.Sort = []metricsview.Sort{{Name: s.X.Field, Desc: true}}
 		return q
 	}
 

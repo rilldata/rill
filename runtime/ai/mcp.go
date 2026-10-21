@@ -104,15 +104,15 @@ func MCPAppToolMeta(toolName string, a *mcpapp.Asset) map[string]any {
 // Since it is scoped to the session, a new MCP server should be created for each client connection.
 // Using a separate MCP server for each client enables tailoring the server's instructions and available tools to the end user's claims.
 func (s *Session) MCPServer(ctx context.Context) *mcp.Server {
-	// Serve the MCP Apps widget (interactive charts) when the project enables it and the binary carries the widget bundle.
-	// The chart tools themselves are served regardless (see CreateChart.CheckAccess); without the widget, clients get their text fallback.
+	// Serve the MCP Apps widget (interactive charts) alongside the chart tools: when the chat_charts flag is on and the binary
+	// carries the widget bundle. Without the widget, clients get the text fallback of create_chart.
 	var widget *mcpapp.Asset
 	ff, err := s.FeatureFlags(ctx)
 	if err != nil {
 		if !errors.Is(err, ctx.Err()) {
 			s.logger.Error("failed to resolve feature flags", zap.Error(err))
 		}
-	} else if ff["mcp_apps"] {
+	} else if ff["chat_charts"] {
 		widget, _ = mcpapp.Widget()
 	}
 	var capabilities *mcp.ServerCapabilities
@@ -183,9 +183,13 @@ func (s *Session) MCPServer(ctx context.Context) *mcp.Server {
 	})
 
 	// Add only the tools that the user has access to, each with the _meta.ui of its part in the MCP Apps widget:
-	// create_chart links to the widget when it is served, and app-only tools declare their visibility whether or not it is.
+	// create_chart links to the widget when it is served, and app-only tools, which only the widget may call,
+	// declare their visibility and are left out when it is not served (the unified server does the same, see admin/server/mcp.go).
 	ctx = WithSession(ctx, s)
 	for _, t := range s.runner.Tools {
+		if widget == nil && t.AppUI.AppOnly() {
+			continue
+		}
 		ok, err := t.CheckAccess(ctx)
 		if err != nil {
 			if !errors.Is(err, ctx.Err()) {

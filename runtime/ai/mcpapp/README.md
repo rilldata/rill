@@ -78,13 +78,16 @@ widget -> host -> tools/call chart_data -----> runtime: fresh rows for the chang
 
 ## Gating and rollout
 
-- The chart tools are available to every MCP client behind the `chat_charts` feature flag (default on).
-  Clients without MCP Apps get the markdown table and the link.
-- Serving the widget is gated separately: the `mcp_apps` feature flag (default off; set `features:
-  {mcp_apps: true}` in `rill.yaml`, or force it with the `mcp_apps_enabled` instance annotation) for the
-  runtime's own endpoint, and `RILL_ADMIN_MCP_APPS_ENABLED` for the unified `/v1/mcp` endpoint of the
-  admin service, which cannot evaluate per-project flags. The unified endpoint forwards `create_chart`
-  always and `chart_data` only when it serves the widget.
+- The `chat_charts` feature flag (default on) is the single gate: it enables the chart tools and, on the
+  runtime's own endpoint, the widget. Clients without MCP Apps get the markdown table and the link.
+- The widget is served whenever the binary carries the bundle. The unified `/v1/mcp` endpoint of the admin
+  service cannot evaluate per-project flags, so it serves the widget unconditionally and leaves the
+  per-project check to the runtime, which rejects `create_chart` calls for projects with charts disabled.
+- `chart_data` may only be called by the widget, so both endpoints advertise it exactly when they serve the
+  widget (`Session.MCPServer` in runtime/ai/mcp.go and `mcpForwardedToolSpecs` in admin/server/mcp.go);
+  `create_chart` is advertised regardless.
+- `chart_data` calls count in the `tool_call` metric like every other data tool, since they run real
+  queries; they are not persisted in the session, since they are widget plumbing rather than conversation.
 - Both servers register the resource and the `_meta.ui` entries with the same helpers from this package
   (`Register`, `WidgetToolMeta`, `AppOnlyToolMeta`, `ToolWithMeta`, `ServerCapabilities`), so the two
   endpoints advertise identical metadata.

@@ -1,7 +1,6 @@
 package chartquery
 
 import (
-	_ "embed"
 	"encoding/json"
 	"fmt"
 	"maps"
@@ -11,6 +10,8 @@ import (
 
 	"github.com/rilldata/rill/runtime/metricsview"
 	"github.com/rilldata/rill/runtime/pkg/mapstructureutil"
+
+	_ "embed"
 )
 
 // Budgets for the facet channels of a Flint chart. Axes take the budget of a nominal x axis and series channels

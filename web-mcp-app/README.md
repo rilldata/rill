@@ -54,7 +54,8 @@ Everything is feature-detected from the host handshake (`availableDisplayModes`,
    (`ui/open-link` with the result's `open_url`) and "Fullscreen" (`ui/request-display-mode`).
    `FullscreenView.svelte` adds the Chart/Data tabs, a data table and the data controls for time grain,
    top-N and comparison. Each data control change calls the app-only `chart_data` tool through the host
-   (with the patched `chart_spec` and `data` on the Flint path) and sends `ui/update-model-context` with
+   (with the patched `chart_spec` and `data` on the Flint path; changes in quick succession are debounced
+   and a newer change drops the in-flight response) and sends `ui/update-model-context` with
    a one-line description of the current view, so the model can answer questions about what the chart
    shows. Flint charts get a second row of presentation controls derived from Flint's own option model
    (`src/lib/flint-options.ts`: chart types the bindings can move to, the alternative views of the pivot

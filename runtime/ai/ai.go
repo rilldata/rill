@@ -1262,8 +1262,9 @@ func (s *Session) CallToolWithOptions(ctx context.Context, opts *CallToolOptions
 	// Emit a billable tool_call metric. This is the shared point for all agent tool calls (chat, AI reports,
 	// and the MCP server), so counting here covers them uniformly. Tool calls are tracked separately from api_calls
 	// since they are agent actions rather than external API requests. High-level orchestration tools (the agents)
-	// are excluded since they don't do real work themselves, and so are app-only tools (widget plumbing, see MCPAppTool).
-	if t, ok := s.Tool(opts.Tool); !nonBillableToolCalls[opts.Tool] && !(ok && t.AppUI.AppOnly()) {
+	// are excluded since they don't do real work themselves. App-only tools (see MCPAppTool) count like any other tool:
+	// they run real queries on behalf of the widget, even though their calls are not persisted in the session.
+	if !nonBillableToolCalls[opts.Tool] {
 		s.activity.RecordMetric(ctx, "tool_call", 1, attribute.String("tool", opts.Tool))
 	}
 

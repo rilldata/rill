@@ -68,6 +68,11 @@
   let presentationSpec = $state.raw<WireFlintChartSpec | undefined>(undefined);
   let refreshing = $state(false);
   let refreshError = $state<string | undefined>(undefined);
+  // Every control change re-queries the data through `chart_data`. Changes in quick succession (stepping through
+  // the top-N values, say) are coalesced: the request goes out once the controls have been still for a moment,
+  // and each change invalidates the in-flight one, whose response is then dropped.
+  const refreshDebounceMs = 250;
+  let refreshTimer: ReturnType<typeof setTimeout> | undefined;
   let requestSeq = 0;
 
   $effect(() => {
@@ -86,13 +91,16 @@
   $effect(() => {
     locale = setLocaleFromHost(session.hostContext?.locale);
   });
-  // A new tool result starts over: the edits belonged to the previous one.
+  // A new tool result starts over: the edits belonged to the previous one, and so does any pending refresh.
   $effect(() => {
     void session.toolResult;
     untrack(() => {
+      clearTimeout(refreshTimer);
+      requestSeq++;
       controls = {};
       dataOverride = undefined;
       presentationSpec = undefined;
+      refreshing = false;
       refreshError = undefined;
     });
   });
@@ -100,7 +108,10 @@
   onMount(() => {
     void session.connect();
   });
-  onDestroy(() => session.destroy());
+  onDestroy(() => {
+    clearTimeout(refreshTimer);
+    session.destroy();
+  });
 
   const interpreted = $derived(
     session.toolResult ? interpretToolResult(session.toolResult) : undefined,
@@ -256,9 +267,24 @@
       : describeView(chart.title, currentControls, chart.timeRangeLabel);
   }
 
-  async function applyControls(next: ControlState) {
-    if (!baseResult || !effectiveResult) return;
+  function applyControls(next: ControlState) {
+    if (!baseResult) return;
     controls = next;
+    refreshing = true;
+    refreshError = undefined;
+    const seq = ++requestSeq;
+    clearTimeout(refreshTimer);
+    refreshTimer = setTimeout(
+      () => void fetchChartData(next, seq),
+      refreshDebounceMs,
+    );
+  }
+
+  async function fetchChartData(next: ControlState, seq: number) {
+    if (!baseResult || !effectiveResult) {
+      refreshing = false;
+      return;
+    }
     // Rill Cloud's unified MCP server routes every call by a `project` argument, which it
     // strips before forwarding; the argument is echoed from the original `create_chart` input.
     const project = session.toolInput?.project;
@@ -285,9 +311,6 @@
       patched = spec;
       args = { chart_type: baseResult.chart_type, spec };
     }
-    const seq = ++requestSeq;
-    refreshing = true;
-    refreshError = undefined;
     try {
       const response = await session.callServerTool("chart_data", {
         ...(typeof project === "string" && { project }),
@@ -339,7 +362,7 @@
     onOpenLink={() =>
       openLink(view.kind === "ready" ? view.chart.openUrl : undefined)}
     onExit={() => void session.requestDisplayMode("inline")}
-    onControlsChange={(next) => void applyControls(next)}
+    onControlsChange={applyControls}
     onPresentationChange={applyPresentation}
   />
 {:else}

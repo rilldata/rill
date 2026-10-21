@@ -71,14 +71,10 @@ var mcpSessionNamespace = uuid.MustParse("6f4a1c94-3d1e-4f6b-9a02-1c0f6b7d5e8a")
 // Unlike the per-project runtime proxy, it serves a single endpoint for all the projects a caller has access to:
 // it answers the MCP protocol methods itself and forwards tool calls to the runtime of the project named in the tool arguments.
 func (s *Server) mcpHandler() (http.Handler, error) {
-	// The MCP Apps widget is served when enabled and the binary carries the widget bundle (see runtime/ai/mcpapp).
-	var widget *mcpapp.Asset
-	if s.opts.MCPAppsEnabled {
-		var ok bool
-		widget, ok = mcpapp.Widget()
-		if !ok {
-			s.logger.Warn("mcp: MCP Apps are enabled but the widget bundle is not embedded in this binary; serving tools without the widget")
-		}
+	// The MCP Apps widget is served whenever the binary carries the widget bundle (see runtime/ai/mcpapp).
+	widget, ok := mcpapp.Widget()
+	if !ok {
+		s.logger.Warn("mcp: the MCP Apps widget bundle is not embedded in this binary; serving the chart tools without the widget")
 	}
 
 	adminTools := s.mcpAdminTools()

@@ -330,7 +330,8 @@ func TestCreateChartEmptyResult(t *testing.T) {
 }
 
 // TestCreateChartAccess covers the user agent and feature flag matrix of create_chart and chart_data.
-// The mcp_apps flag plays no part: it only decides whether the MCP server serves the widget (see TestMCPApps in runtime/server).
+// Whether the MCP server serves the widget plays no part here: servers without the widget leave chart_data out at registration time
+// (see TestMCPAppsWithoutWidget in runtime/server).
 func TestCreateChartAccess(t *testing.T) {
 	rt, instanceID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
 		Files: createChartTestFiles(""),

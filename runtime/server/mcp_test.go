@@ -343,7 +343,7 @@ func TestMCPRequestStartsSession(t *testing.T) {
 	check(t, http.MethodPost, "not json", true)
 }
 
-// TestMCPApps checks the MCP Apps surface when the mcp_apps flag is on and the widget bundle is available:
+// TestMCPApps checks the MCP Apps surface when the widget bundle is available:
 // the widget resource and capability are advertised, create_chart carries the _meta.ui link, chart_data is app-only,
 // create_chart returns markdown content plus structured chart data, and sessionless protocol requests do not persist sessions.
 func TestMCPApps(t *testing.T) {
@@ -354,7 +354,7 @@ func TestMCPApps(t *testing.T) {
 	require.True(t, ok)
 
 	rt, instanceID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
-		Files: mcpChartTestFiles("features:\n  mcp_apps: true\n"),
+		Files: mcpChartTestFiles(""),
 	})
 	testruntime.RequireReconcileState(t, rt, instanceID, 3, 0, 0)
 
@@ -471,13 +471,12 @@ func TestMCPApps(t *testing.T) {
 	require.Equal(t, sessionsBefore, countSessions(t), "sessionless resources/list must not persist a session")
 }
 
-// TestMCPAppsDisabled asserts that with the default flag the chart tools are still served and external clients get the chart
-// as markdown and data, while the widget surface stays hidden even when the bundle is available:
-// no capability, no resource and no resourceUri on create_chart.
-func TestMCPAppsDisabled(t *testing.T) {
-	dir := t.TempDir()
-	require.NoError(t, os.WriteFile(filepath.Join(dir, "widget.html"), []byte("<html></html>"), 0o644))
-	t.Setenv(mcpapp.DirEnv, dir)
+// TestMCPAppsWithoutWidget asserts that without the widget bundle create_chart is still served and external clients get the chart
+// as markdown and data, while the widget surface is absent: no capability, no resource, no resourceUri on create_chart,
+// and no chart_data, which only the widget may call.
+func TestMCPAppsWithoutWidget(t *testing.T) {
+	// An override directory without a bundle hides the copy embedded in the binary.
+	t.Setenv(mcpapp.DirEnv, t.TempDir())
 
 	rt, instanceID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
 		Files: mcpChartTestFiles(""),
@@ -497,20 +496,17 @@ func TestMCPAppsDisabled(t *testing.T) {
 	require.NotContains(t, conn.InitializeResult().Capabilities.Extensions, mcpapp.UIExtension)
 	require.Nil(t, conn.InitializeResult().Capabilities.Resources)
 
-	// Both chart tools are listed; chart_data declares its app-only visibility, nothing links to the widget
+	// create_chart is listed without a link to the widget; chart_data is not listed at all
 	tools, err := conn.ListTools(t.Context(), &mcp.ListToolsParams{})
 	require.NoError(t, err)
 	toolsByName := make(map[string]*mcp.Tool)
 	for _, tool := range tools.Tools {
 		toolsByName[tool.Name] = tool
-		if tool.Name != ai.ChartDataName {
-			require.Nil(t, tool.Meta["ui"], "tool %q", tool.Name)
-		}
+		require.Nil(t, tool.Meta["ui"], "tool %q", tool.Name)
 	}
 	require.Contains(t, toolsByName, ai.CreateChartName)
-	require.Contains(t, toolsByName, ai.ChartDataName)
+	require.NotContains(t, toolsByName, ai.ChartDataName)
 	require.Equal(t, "Creating chart...", toolsByName[ai.CreateChartName].Meta["openai/toolInvocation/invoking"])
-	require.Equal(t, []any{"app"}, toolsByName[ai.ChartDataName].Meta["ui"].(map[string]any)["visibility"])
 
 	// An external client gets the chart as markdown and data
 	res, err := conn.CallTool(t.Context(), &mcp.CallToolParams{Name: ai.CreateChartName, Arguments: mcpChartArgs()})

@@ -285,18 +285,7 @@ The server ships a `rill-charts` skill that tells the AI which chart fits which 
 
 The AI describes the chart the way [custom viz components](/developers/build/dashboards/canvas-widgets/custom-viz) do: a chart type and which field goes on which channel (`chart_spec`, with Flint's chart types such as `Bar Chart`, `Line Chart`, `Waterfall Chart`, `Slope Chart` or `Heatmap`) together with the metrics view, time range, filter and grain the data comes from (`data`). Rill derives the scales, axes, number formats, sorting and layout from the metrics view's semantics, so the AI never writes styling.
 
-Clients that support [MCP Apps](https://modelcontextprotocol.io/docs/extensions/apps), such as Claude (web, desktop and mobile), ChatGPT, Cursor and VS Code, can instead show the chart inline in the conversation as an interactive Rill chart, with the same rendering, formatting and theme as custom viz components in Rill. In fullscreen, the chart offers data controls (time grain, top values, comparison with the previous period, each re-queried from Rill) and presentation controls (chart type, layout and chart properties, applied instantly), and tells the AI what it currently shows. For that, the server must also serve the chart app, which is off by default:
-
-- **Project endpoint** (`.../projects/{project_name}/runtime/mcp`): enable the `mcp_apps` feature flag in `rill.yaml`, then deploy the change (or restart Rill Developer):
-
-  ```yaml
-  features:
-    mcp_apps: true
-  ```
-
-- **Unified endpoint** (`https://api.rilldata.com/v1/mcp`, which serves every project you have access to through a single connector): the chart app is enabled for the whole endpoint with the `RILL_ADMIN_MCP_APPS_ENABLED` setting of the Rill Cloud admin service. A single endpoint cannot apply per-project feature flags, so `mcp_apps` in `rill.yaml` has no effect on it.
-
-Reconnect the connector in your client after enabling the chart app so that it picks up the new tool list. Clients that don't support MCP Apps, such as Claude Code, keep receiving the table and the link.
+Clients that support [MCP Apps](https://modelcontextprotocol.io/docs/extensions/apps), such as Claude (web, desktop and mobile), ChatGPT, Cursor and VS Code, can instead show the chart inline in the conversation as an interactive Rill chart, with the same rendering, formatting and theme as custom viz components in Rill. In fullscreen, the chart offers data controls (time grain, top values, comparison with the previous period, each re-queried from Rill) and presentation controls (chart type, layout and chart properties, applied instantly), and tells the AI what it currently shows. Every Rill MCP endpoint serves the chart app whenever charts are enabled: project endpoints, the unified `https://api.rilldata.com/v1/mcp` endpoint and Rill Developer alike, with no configuration of its own. Clients that don't support MCP Apps, such as Claude Code, keep receiving the table and the link.
 
 :::tip Troubleshooting
 If charts show up as a table, check whether the server advertises the chart app with the MCP Inspector:
@@ -305,7 +294,7 @@ If charts show up as a table, check whether the server advertises the chart app 
 npx @modelcontextprotocol/inspector --cli <rill-mcp-url> --transport http --method resources/list
 ```
 
-The output should list a `ui://rill/widget/...` resource. If it is missing, the chart app is off for the endpoint (`mcp_apps` for a project endpoint, `RILL_ADMIN_MCP_APPS_ENABLED` for the unified endpoint) or the deployment hasn't picked up the change yet. If it is listed but your client still shows a table, the client doesn't support MCP Apps.
+The output should list a `ui://rill/widget/...` resource. If it is missing, charts are disabled for the project (`chat_charts: false` under `features` in `rill.yaml`) or the deployment hasn't picked up a release that ships the chart app yet. If it is listed but your client still shows a table, the client doesn't support MCP Apps.
 :::
 
 
