@@ -176,6 +176,139 @@ cache:
 	require.Equal(t, nil, res.Data[0][1])
 }
 
+func TestMetricsViewQueryNormalizesArgs(t *testing.T) {
+	rt, instanceID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
+		Files: map[string]string{
+			"test_data.sql": `
+SELECT 'US' AS country, 100 AS revenue, 4 AS orders
+UNION ALL
+SELECT 'CA' AS country, 50 AS revenue, 5 AS orders
+UNION ALL
+SELECT 'GB' AS country, 10 AS revenue, 1 AS orders
+`,
+			"test_metrics.yaml": `
+type: metrics_view
+model: test_data
+dimensions:
+- column: country
+measures:
+- name: total_revenue
+  expression: SUM(revenue)
+- name: total_orders
+  expression: SUM(orders)
+explore:
+  skip: true
+`,
+		},
+		Variables: map[string]string{
+			"rill.ai.require_time_range": "false",
+		},
+	})
+	testruntime.RequireReconcileState(t, rt, instanceID, 3, 0, 0)
+
+	s := newSession(t, rt, instanceID)
+
+	var res *ai.QueryMetricsViewResult
+	_, err := s.CallTool(t.Context(), ai.RoleUser, ai.QueryMetricsViewName, &res, ai.QueryMetricsViewArgs{
+		"metrics_view": "test_metrics",
+		"dimensions":   `[{"name": "country"}]`,
+		"measures": []map[string]any{
+			{"name": "revenue_per_order", "compute": map[string]any{"expression": "total_revenue / total_orders"}},
+		},
+		"where": map[string]any{"cond": map[string]any{"op": "and", "exprs": []any{
+			map[string]any{"cond": map[string]any{"op": "eq", "exprs": []any{
+				map[string]any{"name": "country"},
+				map[string]any{"val": []any{"US", "CA"}},
+			}}},
+		}}},
+		"sort": `[{"name": "country"}]`,
+	})
+	require.NoError(t, err)
+	require.Equal(t, [][]any{{"CA", 10.0}, {"US", 25.0}}, res.Data)
+}
+
+func TestMetricsViewQueryErrorHints(t *testing.T) {
+	rt, instanceID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
+		Files: map[string]string{
+			"test_data.sql": `SELECT 'US' AS country, 100 AS revenue, NOW() AS timestamp`,
+			"test_metrics.yaml": `
+type: metrics_view
+model: test_data
+timeseries: timestamp
+dimensions:
+- column: country
+measures:
+- name: total_revenue
+  expression: SUM(revenue)
+explore:
+  skip: true
+`,
+		},
+		Variables: map[string]string{
+			"rill.ai.require_time_range": "false",
+		},
+	})
+	testruntime.RequireReconcileState(t, rt, instanceID, 3, 0, 0)
+
+	s := newSession(t, rt, instanceID)
+
+	tests := []struct {
+		name    string
+		args    ai.QueryMetricsViewArgs
+		wantErr string
+	}{
+		{
+			name: "dimension used as measure",
+			args: ai.QueryMetricsViewArgs{
+				"measures": []map[string]any{{"name": "country"}},
+			},
+			wantErr: `"country" is a dimension`,
+		},
+		{
+			name: "comparison measure without comparison time range",
+			args: ai.QueryMetricsViewArgs{
+				"measures": []map[string]any{
+					{"name": "total_revenue"},
+					{"name": "total_revenue__delta_abs", "compute": map[string]any{"comparison_delta": map[string]any{"measure": "total_revenue"}}},
+				},
+			},
+			wantErr: "comparison measures require 'comparison_time_range'",
+		},
+		{
+			name: "flat and condition",
+			args: ai.QueryMetricsViewArgs{
+				"dimensions": []map[string]any{{"name": "country"}},
+				"measures":   []map[string]any{{"name": "total_revenue"}},
+				"where": map[string]any{"cond": map[string]any{"op": "and", "exprs": []any{
+					map[string]any{"name": "country"},
+					map[string]any{"val": []any{"US"}},
+				}}},
+			},
+			wantErr: `invalid operand for "and": expected a condition`,
+		},
+		{
+			name: "binary condition with one expression",
+			args: ai.QueryMetricsViewArgs{
+				"dimensions": []map[string]any{{"name": "country"}},
+				"measures":   []map[string]any{{"name": "total_revenue"}},
+				"where": map[string]any{"cond": map[string]any{"op": "in", "exprs": []any{
+					map[string]any{"name": "country"},
+				}}},
+			},
+			wantErr: `"in" condition has 1`,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tt.args["metrics_view"] = "test_metrics"
+			var res *ai.QueryMetricsViewResult
+			_, err := s.CallTool(t.Context(), ai.RoleUser, ai.QueryMetricsViewName, &res, tt.args)
+			require.ErrorContains(t, err, tt.wantErr)
+		})
+	}
+}
+
 func TestMetricsViewQueryResolvedTimeRanges(t *testing.T) {
 	// Setup a metrics view with a time dimension. The watermark defaults to the max event_time, i.e. 2025-05-13T00:00:00Z.
 	rt, instanceID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
