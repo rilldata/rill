@@ -335,6 +335,48 @@ func (e *Executor) Schema(ctx context.Context) (*runtimev1.StructType, error) {
 	return schema, nil
 }
 
+// QuerySchema describes a query without fetching its result rows.
+// It applies the semantic rewrites needed to produce the output columns, while
+// leaving execution optimizations such as two-phase comparisons out of preparation.
+func (e *Executor) QuerySchema(ctx context.Context, qry *metricsview.Query, executionTime *time.Time) (*runtimev1.StructType, error) {
+	if !e.security.CanAccess() {
+		return nil, runtime.ErrForbidden
+	}
+	if err := qry.Validate(); err != nil {
+		return nil, err
+	}
+	if len(qry.PivotOn) != 0 {
+		return nil, fmt.Errorf("describing pivot queries is not supported")
+	}
+	if err := e.RewriteQueryTimeRanges(ctx, qry, executionTime); err != nil {
+		return nil, err
+	}
+	if err := e.enforceQueryLimits(qry); err != nil {
+		return nil, err
+	}
+	if err := e.rewritePercentOfTotals(ctx, qry); err != nil {
+		return nil, err
+	}
+	zero := int64(0)
+	qry.Limit = &zero
+	ast, err := metricsview.NewAST(e.metricsView, e.security, qry, e.olap.Dialect())
+	if err != nil {
+		return nil, err
+	}
+	e.rewriteApproxComparisons(ast, false)
+	if err := e.rewriteDruidGroups(ast); err != nil {
+		return nil, err
+	}
+	if err := e.wrapClickhouseComputedTimeDim(ast); err != nil {
+		return nil, err
+	}
+	sql, args, err := ast.SQL()
+	if err != nil {
+		return nil, err
+	}
+	return e.olap.QuerySchema(ctx, sql, args)
+}
+
 // Query executes the provided query against the metrics view.
 func (e *Executor) Query(ctx context.Context, qry *metricsview.Query, executionTime *time.Time) (*drivers.Result, error) {
 	if !e.security.CanAccess() {

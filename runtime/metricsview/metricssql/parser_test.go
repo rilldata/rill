@@ -201,6 +201,13 @@ func TestCompile(t *testing.T) {
 			mv,
 			nil,
 		},
+		{
+			// Superset repeats time-grain expressions in the GROUP BY clause
+			"select date_trunc('DAY', timestamp) as timestamp, measure_0 from ad_bids_metrics group by date_trunc('DAY', timestamp)",
+			"SELECT (date_trunc('DAY', \"timestamp\"::TIMESTAMP)::TIMESTAMP) AS \"timestamp\", (count(*)) AS \"measure_0\" FROM \"ad_bids\" GROUP BY 1",
+			mv,
+			nil,
+		},
 	}
 
 	errTests := []struct {

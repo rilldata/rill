@@ -64,6 +64,10 @@ type Config struct {
 	TracesExporter            observability.Exporter `default:"" split_words:"true"`
 	HTTPPort                  int                    `default:"8080" split_words:"true"`
 	GRPCPort                  int                    `default:"8080" split_words:"true"`
+	PSQLPort                  int                    `default:"5432" split_words:"true"`
+	RuntimePSQLPort           int                    `default:"5432" split_words:"true"`
+	TLSCertPath               string                 `split_words:"true"`
+	TLSKeyPath                string                 `split_words:"true"`
 	DebugPort                 int                    `split_words:"true"`
 	ExternalURL               string                 `default:"http://localhost:8080" split_words:"true"`
 	ExternalGRPCURL           string                 `envconfig:"external_grpc_url"`
@@ -396,6 +400,8 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 				srv, err := server.New(logger, adm, issuer, limiter, activityClient, &server.Options{
 					HTTPPort:               conf.HTTPPort,
 					GRPCPort:               conf.GRPCPort,
+					PSQLPort:               conf.PSQLPort,
+					RuntimePSQLPort:        conf.RuntimePSQLPort,
 					AllowedOrigins:         conf.AllowedOrigins,
 					SessionKeyPairs:        keyPairs,
 					ServePrometheus:        conf.MetricsExporter == observability.PrometheusExporter,
@@ -407,6 +413,8 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 					GithubClientID:         conf.GithubClientID,
 					GithubClientSecret:     conf.GithubClientSecret,
 					GithubManagedAccount:   conf.GithubManagedAccount,
+					TLSCertPath:            conf.TLSCertPath,
+					TLSKeyPath:             conf.TLSKeyPath,
 					AssetsBucket:           conf.AssetsBucket,
 					PylonIdentitySecret:    pylonIdentitySecret,
 				})
@@ -414,6 +422,9 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 					logger.Fatal("error creating server", zap.Error(err))
 				}
 				group.Go(func() error { return srv.ServeHTTP(cctx) })
+				if conf.PSQLPort != 0 {
+					group.Go(func() error { return srv.ServePGWire(cctx) })
+				}
 				if conf.DebugPort != 0 {
 					group.Go(func() error { return debugserver.ServeHTTP(cctx, conf.DebugPort) })
 				}
