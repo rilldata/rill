@@ -3296,7 +3296,7 @@ definitions:
         type: string
         description: |
           A Vega-Lite spec, as an alternative to `spec` for a chart Rill cannot describe.
-          This is what ejecting a chart spec in the component editor produces: the Vega-Lite it
+          This is what converting a chart spec in the component editor produces: the Vega-Lite it
           compiled to, with the param bindings turned back into template references. Rill no longer
           derives scales, axes, formats, sorting or layout, so the chart stops adapting on its own.
           Read the query result from the `query1` dataset, i.e. `"data": {"name": "query1"}`,
