@@ -102,6 +102,14 @@ describe("groupAnnotations", () => {
     expect(groups[0].hasRange).toBe(true);
   });
 
+  it("drops a range that ends exactly where the data starts", () => {
+    const groups = group([
+      annotation("2024-01-30T00:00:00Z", "2024-02-01T00:00:00Z"),
+    ]);
+
+    expect(groups).toEqual([]);
+  });
+
   it("extends a range that ends after the data to the last data point", () => {
     const groups = group([
       annotation("2024-02-03T00:00:00Z", "2024-02-10T00:00:00Z"),

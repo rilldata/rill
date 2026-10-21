@@ -62,10 +62,14 @@ export function groupAnnotations(
 
     // A range annotation that starts before the visible data but ends inside it
     // is anchored to the first data point so the visible part of its range is shown.
+    // The end check mirrors the query's `time_end > start` filter.
+    // It is still needed here because the annotations and the time series are fetched
+    // independently and keep their previous data while refetching,
+    // so a stale range from the previous time range must not be anchored to the new data.
     if (
       a.endTime &&
       bucketStart.toMillis() < dataStartMs &&
-      a.endTime.toMillis() >= dataStartMs
+      a.endTime.toMillis() > dataStartMs
     ) {
       bucketStart = data[0].ts;
     }

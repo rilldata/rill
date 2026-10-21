@@ -953,13 +953,13 @@ END) as __rill_time_grain`)
 
 	// Select the annotations that overlap the time range.
 	// A point annotation overlaps when its time falls in the range.
-	// A range annotation overlaps when it starts before the range ends and ends after the range starts.
+	// A range annotation overlaps when it ends after the range starts and starts before the range ends.
 	// A null time_end denotes a point annotation.
 	b.WriteString(" WHERE ")
 	var args []any
 	if annotation.HasTimeEnd {
-		b.WriteString("time < ? AND (time >= ? OR time_end > ?)")
-		args = []any{end, start, start}
+		b.WriteString("(time >= ? OR time_end > ?) AND time < ?")
+		args = []any{start, start, end}
 	} else {
 		b.WriteString("time >= ? AND time < ?")
 		args = []any{start, end}
