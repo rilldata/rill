@@ -41,6 +41,8 @@ type Runner struct {
 	Runtime  *runtime.Runtime
 	Activity *activity.Client
 	Tools    map[string]*CompiledTool
+
+	uiActions uiActionWaiters
 }
 
 // NewRunner creates a new Runner.

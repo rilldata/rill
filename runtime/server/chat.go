@@ -502,6 +502,22 @@ func uiContextFromPB(pagePath string, pbActions []*runtimev1.UIAction) (*ai.UICo
 	return &ai.UIContext{PagePath: pagePath, Actions: actions}, nil
 }
 
+func (s *Server) CompleteUIAction(ctx context.Context, req *runtimev1.CompleteUIActionRequest) (*runtimev1.CompleteUIActionResponse, error) {
+	claims := auth.GetClaims(ctx, req.InstanceId)
+	if !claims.Can(runtime.UseAI) {
+		return nil, ErrForbidden
+	}
+
+	err := s.ai.CompleteUIAction(req.ConversationId, claims.UserID, req.CallMessageId, req.Error)
+	if err != nil {
+		if errors.Is(err, ai.ErrUIActionNotPending) {
+			return nil, status.Error(codes.NotFound, err.Error())
+		}
+		return nil, err
+	}
+	return &runtimev1.CompleteUIActionResponse{}, nil
+}
+
 // CompleteStreamingHandler is a HTTP handler that wraps CompleteStreaming and maps it to SSE.
 // This is required as vanguard doesn't currently map streaming RPCs to SSE, so we register this handler manually override the behavior
 func (s *Server) CompleteStreamingHandler(w http.ResponseWriter, req *http.Request) {
