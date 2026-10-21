@@ -345,6 +345,26 @@ type DB interface {
 	DeleteBillingIssue(ctx context.Context, id string) error
 	DeleteBillingIssueByTypeForOrg(ctx context.Context, orgID string, errorType BillingIssueType) error
 
+	// FindConnectorOAuthClient returns the client for a connector's OAuth configuration, identified by its hash.
+	FindConnectorOAuthClient(ctx context.Context, projectID, connector, configHash string) (*ConnectorOAuthClient, error)
+	FindConnectorOAuthClientByID(ctx context.Context, id string) (*ConnectorOAuthClient, error)
+	// FindConnectorOAuthClients returns the clients for all OAuth configurations a connector has had, such as before a scope change or on other branches.
+	FindConnectorOAuthClients(ctx context.Context, projectID, connector string) ([]*ConnectorOAuthClient, error)
+	// FindOrInsertConnectorOAuthClient inserts a client, unless a client for the same connector and configuration hash already exists
+	// (for example, because another request inserted one concurrently), in which case it returns the existing client instead.
+	FindOrInsertConnectorOAuthClient(ctx context.Context, opts *InsertConnectorOAuthClientOptions) (*ConnectorOAuthClient, error)
+	// DeleteConnectorOAuthClient deletes a client and the tokens obtained through it.
+	DeleteConnectorOAuthClient(ctx context.Context, id string) error
+	// DeleteConnectorOAuthClientsWithoutTokens deletes a connector's clients that hold no tokens, except the client for keepConfigHash.
+	DeleteConnectorOAuthClientsWithoutTokens(ctx context.Context, projectID, connector, keepConfigHash string) error
+	// AcquireConnectorOAuthTokenLock takes an exclusive lock on a user's token for a client until the current transaction ends.
+	// It must be called within a transaction started with NewTx. Reads and writes of the token (refresh, disconnect, a completed authorization)
+	// take it first, so they are serialized across all admin processes.
+	AcquireConnectorOAuthTokenLock(ctx context.Context, oauthClientID, userID string) error
+	FindConnectorOAuthToken(ctx context.Context, oauthClientID, userID string) (*ConnectorOAuthToken, error)
+	UpsertConnectorOAuthToken(ctx context.Context, opts *UpsertConnectorOAuthTokenOptions) (*ConnectorOAuthToken, error)
+	DeleteConnectorOAuthToken(ctx context.Context, oauthClientID, userID string) error
+
 	FindProjectVariables(ctx context.Context, projectID string, environment *string) ([]*ProjectVariable, error)
 	UpsertProjectVariable(ctx context.Context, projectID, environment string, vars map[string]string, userID string) ([]*ProjectVariable, error)
 	DeleteProjectVariables(ctx context.Context, projectID, environment string, vars []string) error
@@ -1269,6 +1289,48 @@ type Asset struct {
 	OwnerID        string    `db:"owner_id"`
 	Public         bool      `db:"public"`
 	CreatedOn      time.Time `db:"created_on"`
+}
+
+// ConnectorOAuthClient is an OAuth client Rill uses with a connector's authorization server, shared by the users of a project's connector.
+// ConfigHash identifies the connector's OAuth configuration it was created for; a configuration change leads to a new client.
+// Clients are never modified, because tokens and pending authorizations are bound to them.
+// Client is the JSON encoding of runtime/pkg/oauthclient.Client; it is decrypted when read.
+type ConnectorOAuthClient struct {
+	ID                    string    `db:"id"`
+	ProjectID             string    `db:"project_id"`
+	Connector             string    `db:"connector"`
+	ConfigHash            string    `db:"config_hash"`
+	Client                []byte    `db:"client"`
+	ClientEncryptionKeyID string    `db:"client_encryption_key_id"`
+	CreatedOn             time.Time `db:"created_on"`
+}
+
+// InsertConnectorOAuthClientOptions defines options for creating a ConnectorOAuthClient.
+type InsertConnectorOAuthClientOptions struct {
+	ProjectID  string `validate:"required"`
+	Connector  string `validate:"required"`
+	ConfigHash string `validate:"required"`
+	Client     []byte `validate:"required"`
+}
+
+// ConnectorOAuthToken is a user's OAuth token obtained through a ConnectorOAuthClient. Tokens are never shared between users.
+// The token is only used and refreshed through the client that obtained it.
+// Token is the JSON encoding of golang.org/x/oauth2.Token; it is decrypted when read.
+type ConnectorOAuthToken struct {
+	ID                   string    `db:"id"`
+	OAuthClientID        string    `db:"oauth_client_id"`
+	UserID               string    `db:"user_id"`
+	Token                []byte    `db:"token"`
+	TokenEncryptionKeyID string    `db:"token_encryption_key_id"`
+	CreatedOn            time.Time `db:"created_on"`
+	UpdatedOn            time.Time `db:"updated_on"`
+}
+
+// UpsertConnectorOAuthTokenOptions defines options for creating or replacing a ConnectorOAuthToken.
+type UpsertConnectorOAuthTokenOptions struct {
+	OAuthClientID string `validate:"required"`
+	UserID        string `validate:"required"`
+	Token         []byte `validate:"required"`
 }
 
 // ProjectVariable represents a key-value variable for a project, possible for a specific environment (e.g. production or development).

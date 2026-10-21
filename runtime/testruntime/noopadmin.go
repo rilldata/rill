@@ -46,6 +46,15 @@ func (n *noopAdminService) UpdateProjectVariables(ctx context.Context, environme
 	return drivers.ErrNotImplemented
 }
 
+// GetConnectorOAuthToken behaves like Rill Cloud for a user who has not authorized the connector.
+func (n *noopAdminService) GetConnectorOAuthToken(ctx context.Context, connector, configHash, userID string, forceRefresh bool) (*drivers.MCPOAuthToken, error) {
+	return nil, drivers.ErrNotFound
+}
+
+func (n *noopAdminService) DeleteConnectorOAuthToken(ctx context.Context, connector, configHash, userID string) error {
+	return nil
+}
+
 // HasAnonymousSourceAccess implements [drivers.Driver].
 func (n *noopAdminService) HasAnonymousSourceAccess(ctx context.Context, srcProps map[string]any, logger *zap.Logger) (bool, error) {
 	return true, nil
@@ -101,6 +110,11 @@ func (n *noopAdminService) AsModelExecutor(instanceID string, opts *drivers.Mode
 // AsModelManager implements [drivers.Handle].
 func (n *noopAdminService) AsModelManager(instanceID string) (drivers.ModelManager, error) {
 	return nil, drivers.ErrNotImplemented
+}
+
+// AsMCP implements drivers.Handle.
+func (n *noopAdminService) AsMCP() (drivers.MCPService, bool) {
+	return nil, false
 }
 
 // AsNotifier implements [drivers.Handle].

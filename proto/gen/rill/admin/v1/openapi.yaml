@@ -559,6 +559,17 @@ components:
             type: object
         v1DeleteAlertResponse:
             type: object
+        v1DeleteConnectorOAuthTokenRequest:
+            properties:
+                configHash:
+                    type: string
+                connector:
+                    type: string
+                userId:
+                    type: string
+            type: object
+        v1DeleteConnectorOAuthTokenResponse:
+            type: object
         v1DeleteDeploymentResponse:
             properties:
                 deploymentId:
@@ -738,6 +749,32 @@ components:
                 gitSubpath:
                     type: string
                 gitUsername:
+                    type: string
+            type: object
+        v1GetConnectorOAuthTokenRequest:
+            properties:
+                configHash:
+                    description: |-
+                        Hash of the connector's current OAuth configuration, as computed by the runtime.
+                        A token is only returned if the user authorized this configuration, so changing it never reuses an existing authorization.
+                    type: string
+                connector:
+                    description: Name of the connector in the deployment's project.
+                    type: string
+                forceRefresh:
+                    description: If true, the token is refreshed even if it has not expired yet (used after the server rejected the current token).
+                    type: boolean
+                userId:
+                    description: ID of the user whose token to return.
+                    type: string
+            type: object
+        v1GetConnectorOAuthTokenResponse:
+            properties:
+                accessToken:
+                    type: string
+                expiresOn:
+                    description: When the access token expires. Unset if the token does not expire.
+                    format: date-time
                     type: string
             type: object
         v1GetCurrentMagicAuthTokenResponse:
@@ -2610,6 +2647,60 @@ paths:
                                 $ref: '#/components/schemas/rpcStatus'
                     description: An unexpected error response.
             summary: ListPublicBillingPlans lists all public billing plans
+    /v1/deployments/-/connector-oauth-token:
+        post:
+            operationId: AdminService_GetConnectorOAuthToken
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/v1GetConnectorOAuthTokenRequest'
+                required: true
+                x-originalParamName: body
+            responses:
+                "200":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/v1GetConnectorOAuthTokenResponse'
+                    description: A successful response.
+                default:
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/rpcStatus'
+                    description: An unexpected error response.
+            summary: |-
+                GetConnectorOAuthToken returns a user's OAuth access token for a connector in the calling deployment's project,
+                refreshing it first if it is about to expire.
+                It returns NotFound if the user has not authorized the connector's current OAuth configuration.
+                It can only be called by deployments.
+    /v1/deployments/-/connector-oauth-token/delete:
+        post:
+            operationId: AdminService_DeleteConnectorOAuthToken
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/v1DeleteConnectorOAuthTokenRequest'
+                required: true
+                x-originalParamName: body
+            responses:
+                "200":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/v1DeleteConnectorOAuthTokenResponse'
+                    description: A successful response.
+                default:
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/rpcStatus'
+                    description: An unexpected error response.
+            summary: |-
+                DeleteConnectorOAuthToken removes a user's OAuth authorization for a connector in the calling deployment's project.
+                It can only be called by deployments.
     /v1/deployments/{deploymentId}:
         delete:
             operationId: AdminService_DeleteDeployment
