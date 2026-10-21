@@ -1,6 +1,7 @@
 package reconcilers
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -28,7 +29,10 @@ const (
 	reportCheckDefaultTimeout   = 5 * time.Minute
 	reportDefaultIntervalsLimit = 25
 	reportQueryPriority         = 1
+	reportAttachmentSizeLimit   = 10 * 1024 * 1024 // Exports larger than this are linked instead of attached to emails
 )
+
+var errAttachmentTooLarge = errors.New("export exceeds the attachment size limit")
 
 func init() {
 	runtime.RegisterReconcilerInitializer(runtime.ResourceKindReport, newReportReconciler)
@@ -600,17 +604,43 @@ func (r *ReportReconciler) sendReport(ctx context.Context, self *runtimev1.Resou
 			}
 		}
 	default: // add more resolvers here, for default just generate export links
+		// Export the data to attach to emails.
+		// Attachments are only supported in creator mode (enforced by the parser), where every recipient gets the same data.
+		// So the data is exported once with the report owner's attributes, which the admin service returns for every recipient in creator mode.
+		var attachment *email.Attachment
+		var attachmentTooLarge bool
+		if rep.Spec.ExportAttach && len(emailRecipients) > 0 {
+			if ownerID == "" {
+				allWarnings = append(allWarnings, "The export was not attached to emails because the report has no owner")
+			} else {
+				claims := &runtime.SecurityClaims{
+					UserID:         ownerID,
+					UserAttributes: meta.ReportDelivery[emailRecipients[0]].UserAttrs,
+					Permissions:    []runtime.Permission{runtime.ReadObjects, runtime.ReadMetrics},
+				}
+				attachment, err = r.exportAttachment(ctx, rep, t, claims)
+				if errors.Is(err, errAttachmentTooLarge) {
+					attachmentTooLarge = true
+					allWarnings = append(allWarnings, fmt.Sprintf("The export was not attached to emails because it is larger than %d MB", reportAttachmentSizeLimit/1024/1024))
+				} else if err != nil {
+					return false, nil, fmt.Errorf("failed to export attachment: %w", err)
+				}
+			}
+		}
+
 		for recipient, delivery := range meta.ReportDelivery {
 			downloadURL, err := createExportURL(delivery.ExportURL, t)
 			if err != nil {
 				return false, nil, err
 			}
 			notificationsContent[recipient] = &notificationData{
-				openLink:        delivery.OpenURL,
-				editLink:        delivery.EditURL,
-				unsubscribeLink: delivery.UnsubscribeURL,
-				downloadLink:    downloadURL.String(),
-				downloadFormat:  formatExportFormat(rep.Spec.ExportFormat),
+				openLink:           delivery.OpenURL,
+				editLink:           delivery.EditURL,
+				unsubscribeLink:    delivery.UnsubscribeURL,
+				downloadLink:       downloadURL.String(),
+				downloadFormat:     formatExportFormat(rep.Spec.ExportFormat),
+				attachment:         attachment,
+				attachmentTooLarge: attachmentTooLarge,
 			}
 		}
 	}
@@ -646,16 +676,18 @@ func (r *ReportReconciler) sendEmailNotification(ctx context.Context, self *runt
 		}
 
 		opts := &email.ScheduledReport{
-			ToEmail:         recipient,
-			ToName:          "",
-			DisplayName:     rep.Spec.DisplayName,
-			ReportTime:      t,
-			Summary:         content.summary,
-			OpenLink:        content.openLink,
-			EditLink:        content.editLink,
-			UnsubscribeLink: content.unsubscribeLink,
-			DownloadLink:    content.downloadLink,
-			DownloadFormat:  content.downloadFormat,
+			ToEmail:            recipient,
+			ToName:             "",
+			DisplayName:        rep.Spec.DisplayName,
+			ReportTime:         t,
+			Summary:            content.summary,
+			OpenLink:           content.openLink,
+			EditLink:           content.editLink,
+			UnsubscribeLink:    content.unsubscribeLink,
+			DownloadLink:       content.downloadLink,
+			DownloadFormat:     content.downloadFormat,
+			Attachment:         content.attachment,
+			AttachmentTooLarge: content.attachmentTooLarge,
 		}
 		if err := r.C.Runtime.Email.SendScheduledReport(opts); err != nil {
 			return true, fmt.Errorf("failed to send AI report email to %q: %w", recipient, err)
@@ -753,12 +785,14 @@ func canvasFilterSecurityRules(annotation string) ([]*runtimev1.SecurityRule, er
 
 // common notification data used for reports
 type notificationData struct {
-	openLink        string
-	editLink        string
-	downloadLink    string
-	downloadFormat  string
-	unsubscribeLink string
-	summary         string
+	openLink           string
+	editLink           string
+	downloadLink       string
+	downloadFormat     string
+	unsubscribeLink    string
+	summary            string
+	attachment         *email.Attachment // Only sent to email recipients
+	attachmentTooLarge bool
 } // add more fields as needed for new resolver types that reports will support
 
 type aiReport struct {
@@ -825,6 +859,71 @@ func (r *ReportReconciler) triggerAIReport(ctx context.Context, self *runtimev1.
 		sessionID: sessionID,
 		summary:   summary,
 	}, warnings, nil
+}
+
+// exportAttachment exports a query-based report's data for attaching it to emails.
+// It exports the same data as the report's download link (see ExportReport in runtime/server).
+// It returns errAttachmentTooLarge if the export is larger than reportAttachmentSizeLimit.
+func (r *ReportReconciler) exportAttachment(ctx context.Context, rep *runtimev1.Report, t time.Time, claims *runtime.SecurityClaims) (*email.Attachment, error) {
+	var ext, contentType string
+	switch rep.Spec.ExportFormat {
+	case runtimev1.ExportFormat_EXPORT_FORMAT_CSV:
+		ext, contentType = "csv", "text/csv"
+	case runtimev1.ExportFormat_EXPORT_FORMAT_XLSX:
+		ext, contentType = "xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+	case runtimev1.ExportFormat_EXPORT_FORMAT_PARQUET:
+		ext, contentType = "parquet", "application/octet-stream"
+	default:
+		return nil, fmt.Errorf("export format %q cannot be attached", rep.Spec.ExportFormat.String())
+	}
+
+	props := rep.Spec.ResolverProperties.AsMap()
+	queryName, _ := props["query_name"].(string)
+	queryArgsJSON, _ := props["query_args_json"].(string)
+	qpb, err := queries.ProtoFromJSON(queryName, queryArgsJSON, &t)
+	if err != nil {
+		return nil, err
+	}
+	q, err := queries.ProtoToExportQuery(qpb, claims, int64(rep.Spec.ExportLimit), &t)
+	if err != nil {
+		return nil, err
+	}
+
+	var originDashboard *runtimev1.ResourceName
+	if explore := rep.Spec.Annotations["explore"]; explore != "" {
+		originDashboard = &runtimev1.ResourceName{Kind: runtime.ResourceKindExplore, Name: explore}
+	}
+
+	// Exports execute the query directly via q.Export (bypassing runtime.Query/Resolve), so emit the billable query metric here.
+	if r.C.Activity != nil {
+		queryAttrs := append(r.C.Runtime.GetInstanceAttributes(ctx, r.C.InstanceID), attribute.String("source", string(runtime.RequestSourceFromContext(ctx))))
+		r.C.Activity.RecordMetric(ctx, "query", 1, queryAttrs...)
+	}
+
+	var filename string
+	w := &limitedBuffer{limit: reportAttachmentSizeLimit}
+	err = q.Export(ctx, r.C.Runtime, r.C.InstanceID, w, &runtime.ExportOptions{
+		Format:   rep.Spec.ExportFormat,
+		Priority: reportQueryPriority,
+		PreWriteHook: func(name string) error {
+			filename = name
+			return nil
+		},
+		IncludeHeader:   rep.Spec.ExportIncludeHeader,
+		OriginDashboard: originDashboard,
+	})
+	if w.exceeded {
+		return nil, errAttachmentTooLarge
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	return &email.Attachment{
+		Filename:    fmt.Sprintf("%s_%s.%s", filename, t.UTC().Format("20060102150405"), ext),
+		ContentType: contentType,
+		Data:        w.buf.Bytes(),
+	}, nil
 }
 
 func buildAISessionURL(baseOpenURL, sessionID string) (string, error) {
@@ -1010,4 +1109,21 @@ func latestReportWarnings(r *runtimev1.Report) []string {
 		return r.State.ExecutionHistory[len(r.State.ExecutionHistory)-1].Warnings
 	}
 	return nil
+}
+
+// limitedBuffer is an io.Writer that buffers data up to a size limit.
+// It records whether a write exceeded the limit, since writers wrapping it may not propagate the error it returns.
+// NOTE: It deliberately does not embed bytes.Buffer, which would let io.Copy bypass the limit through its io.ReaderFrom implementation.
+type limitedBuffer struct {
+	buf      bytes.Buffer
+	limit    int
+	exceeded bool
+}
+
+func (b *limitedBuffer) Write(p []byte) (int, error) {
+	if b.buf.Len()+len(p) > b.limit {
+		b.exceeded = true
+		return 0, errAttachmentTooLarge
+	}
+	return b.buf.Write(p)
 }

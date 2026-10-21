@@ -18885,6 +18885,13 @@ export class ReportOptions extends Message<ReportOptions> {
   exportIncludeHeader = false;
 
   /**
+   * If true, the export is attached to email notifications (only supported for explore reports run as the creator).
+   *
+   * @generated from field: bool export_attach = 24;
+   */
+  exportAttach = false;
+
+  /**
    * @generated from field: repeated string email_recipients = 8;
    */
   emailRecipients: string[] = [];
@@ -18967,6 +18974,7 @@ export class ReportOptions extends Message<ReportOptions> {
     { no: 5, name: "export_limit", kind: "scalar", T: 4 /* ScalarType.UINT64 */ },
     { no: 6, name: "export_format", kind: "enum", T: proto3.getEnumType(ExportFormat) },
     { no: 20, name: "export_include_header", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 24, name: "export_attach", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 8, name: "email_recipients", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 10, name: "slack_users", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 11, name: "slack_channels", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },

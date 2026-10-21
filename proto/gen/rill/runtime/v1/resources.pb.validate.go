@@ -6780,6 +6780,8 @@ func (m *ReportSpec) validate(all bool) error {
 
 	// no validation rules for ExportIncludeHeader
 
+	// no validation rules for ExportAttach
+
 	for idx, item := range m.GetNotifiers() {
 		_, _ = idx, item
 

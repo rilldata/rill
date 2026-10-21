@@ -3150,6 +3150,9 @@ definitions:
                 type: integer
                 description: Maximum number of rows to export
                 minimum: 0
+              attach:
+                type: boolean
+                description: If true, attaches the exported file to email notifications. Only supported for query-based reports run as the creator (`web_open_mode` set to `creator`, which is the default). Files larger than 10 MB are not attached; the email links to the download instead.
           notify:
             $ref: '#/definitions/notify_properties'
             description: Notification configuration for email and Slack delivery

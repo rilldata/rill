@@ -2407,6 +2407,8 @@ export interface V1ReportSpec {
   exportLimit?: string;
   exportFormat?: V1ExportFormat;
   exportIncludeHeader?: boolean;
+  /** If true, the export is attached to email notifications (only supported for query-based reports run as the creator). */
+  exportAttach?: boolean;
   notifiers?: V1Notifier[];
   annotations?: V1ReportSpecAnnotations;
   /** If true, will use the lowest watermark of its refs instead of the trigger time. */

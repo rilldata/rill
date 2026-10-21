@@ -1,11 +1,15 @@
 package reconcilers_test
 
 import (
+	"context"
+	"strings"
 	"testing"
 	"time"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
+	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/pkg/email"
 	"github.com/rilldata/rill/runtime/testruntime"
 	"github.com/stretchr/testify/require"
 )
@@ -268,4 +272,211 @@ annotations:
 	sec, err = rt.ResolveSecurity(ctx, id, claims, mv3)
 	require.NoError(t, err)
 	require.False(t, sec.CanAccess())
+}
+
+func TestReportExportAttach(t *testing.T) {
+	rt, id := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
+		AdminService: &creatorModeAdmin{ownerAttrs: map[string]any{"domain": "example.com"}},
+		Files: map[string]string{
+			"rill.yaml": "",
+			"models/bar.sql": `
+SELECT * FROM (VALUES
+	('2024-01-01T00:00:00Z'::TIMESTAMP, 'Denmark', 'example.com'),
+	('2024-01-01T00:00:00Z'::TIMESTAMP, 'Sweden', 'other.com')
+) AS t(__time, country, domain)
+`,
+			// The row filter checks that the export is run with the report owner's attributes
+			"metrics/mv1.yaml": `
+version: 1
+type: metrics_view
+model: bar
+timeseries: __time
+dimensions:
+- column: country
+- column: domain
+measures:
+- name: total
+  expression: count(*)
+security:
+  access: true
+  row_filter: domain = '{{ .user.domain }}'
+`,
+			"explores/e1.yaml": `
+type: explore
+metrics_view: mv1
+`,
+			"reports/r1.yaml": `
+type: report
+display_name: Report with owner
+query:
+  name: MetricsViewAggregation
+  args:
+    metrics_view: mv1
+    dimensions:
+    - name: country
+    measures:
+    - name: total
+export:
+  format: csv
+  attach: true
+notify:
+  email:
+    recipients:
+    - user_1@example.com
+    - user_2@example.com
+annotations:
+  admin_owner_user_id: owner
+  web_open_mode: creator
+  explore: e1
+`,
+			// Without an owner, there are no attributes to run the export with
+			"reports/r2.yaml": `
+type: report
+display_name: Report without owner
+query:
+  name: MetricsViewAggregation
+  args:
+    metrics_view: mv1
+    dimensions:
+    - name: country
+    measures:
+    - name: total
+export:
+  format: csv
+  attach: true
+notify:
+  email:
+    recipients:
+    - user_1@example.com
+annotations:
+  web_open_mode: creator
+`,
+		},
+	})
+	testruntime.RequireReconcileState(t, rt, id, 6, 0, 0)
+
+	testruntime.RefreshAndWait(t, rt, id, &runtimev1.ResourceName{Kind: runtime.ResourceKindReport, Name: "r1"})
+	testruntime.RefreshAndWait(t, rt, id, &runtimev1.ResourceName{Kind: runtime.ResourceKindReport, Name: "r2"})
+
+	r1 := testruntime.GetResource(t, rt, id, runtime.ResourceKindReport, "r1")
+	require.Len(t, r1.GetReport().State.ExecutionHistory, 1)
+	require.Empty(t, r1.GetReport().State.ExecutionHistory[0].ErrorMessage)
+	require.Empty(t, r1.GetReport().State.ExecutionHistory[0].Warnings)
+
+	r2 := testruntime.GetResource(t, rt, id, runtime.ResourceKindReport, "r2")
+	require.Len(t, r2.GetReport().State.ExecutionHistory, 1)
+	require.Empty(t, r2.GetReport().State.ExecutionHistory[0].ErrorMessage)
+	require.Equal(t, []string{"The export was not attached to emails because the report has no owner"}, r2.GetReport().State.ExecutionHistory[0].Warnings)
+
+	emails := rt.Email.Sender.(*email.TestSender).Emails
+	require.Len(t, emails, 3)
+	var recipients []string
+	for _, e := range emails {
+		switch {
+		case strings.HasPrefix(e.Subject, "Report with owner"):
+			recipients = append(recipients, e.ToEmail)
+			require.Contains(t, e.Body, "The CSV file is attached.")
+			require.Len(t, e.Attachments, 1)
+			require.Regexp(t, `^mv1_filtered_\d{14}\.csv$`, e.Attachments[0].Filename)
+			require.Equal(t, "text/csv", e.Attachments[0].ContentType)
+			require.Equal(t, "Country,Total\nDenmark,1\n", string(e.Attachments[0].Data))
+		case strings.HasPrefix(e.Subject, "Report without owner"):
+			require.Equal(t, "user_1@example.com", e.ToEmail)
+			require.NotContains(t, e.Body, "The CSV file is attached.")
+			require.Empty(t, e.Attachments)
+		default:
+			require.Fail(t, "unexpected email", e.Subject)
+		}
+	}
+	require.ElementsMatch(t, []string{"user_1@example.com", "user_2@example.com"}, recipients)
+}
+
+func TestReportExportAttachTooLarge(t *testing.T) {
+	rt, id := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
+		AdminService: &creatorModeAdmin{},
+		Files: map[string]string{
+			"rill.yaml": "",
+			// Exports to a CSV file of more than 10 MB
+			"models/bar.sql": `
+SELECT '2024-01-01T00:00:00Z'::TIMESTAMP AS __time, range AS id, repeat('x', 100) AS padding FROM range(120000)
+`,
+			"metrics/mv1.yaml": `
+version: 1
+type: metrics_view
+model: bar
+timeseries: __time
+dimensions:
+- column: id
+- column: padding
+measures:
+- name: total
+  expression: count(*)
+`,
+			"reports/r1.yaml": `
+type: report
+display_name: Large report
+query:
+  name: MetricsViewAggregation
+  args:
+    metrics_view: mv1
+    dimensions:
+    - name: id
+    - name: padding
+    measures:
+    - name: total
+export:
+  format: csv
+  attach: true
+notify:
+  email:
+    recipients:
+    - user_1@example.com
+annotations:
+  admin_owner_user_id: owner
+`,
+		},
+	})
+	testruntime.RequireReconcileState(t, rt, id, 4, 0, 0)
+
+	testruntime.RefreshAndWait(t, rt, id, &runtimev1.ResourceName{Kind: runtime.ResourceKindReport, Name: "r1"})
+
+	// The report is still sent, but without the attachment
+	r1 := testruntime.GetResource(t, rt, id, runtime.ResourceKindReport, "r1")
+	require.Len(t, r1.GetReport().State.ExecutionHistory, 1)
+	require.Empty(t, r1.GetReport().State.ExecutionHistory[0].ErrorMessage)
+	require.Equal(t, []string{"The export was not attached to emails because it is larger than 10 MB"}, r1.GetReport().State.ExecutionHistory[0].Warnings)
+
+	emails := rt.Email.Sender.(*email.TestSender).Emails
+	require.Len(t, emails, 1)
+	require.Contains(t, emails[0].Body, "The CSV file is too large to attach to this email")
+	require.Contains(t, emails[0].Body, "https://example.com/export")
+	require.Empty(t, emails[0].Attachments)
+}
+
+// creatorModeAdmin is an admin service that returns report metadata the way the admin service does for reports run as the creator:
+// every recipient's delivery has the report owner's user ID and attributes.
+type creatorModeAdmin struct {
+	drivers.AdminService // Not implemented; calls to methods that are not overridden panic
+	ownerAttrs           map[string]any
+}
+
+func (a *creatorModeAdmin) GetConfig(ctx context.Context) (*drivers.Config, error) {
+	return &drivers.Config{}, nil
+}
+
+func (a *creatorModeAdmin) GetReportMetadata(ctx context.Context, reportName, ownerID, webOpenMode string, emailRecipients []string, anonRecipients bool, executionTime time.Time) (*drivers.ReportMetadata, error) {
+	var attrs map[string]any
+	if ownerID != "" {
+		attrs = a.ownerAttrs
+	}
+	delivery := make(map[string]drivers.ReportDelivery)
+	for _, recipient := range emailRecipients {
+		delivery[recipient] = drivers.ReportDelivery{
+			OpenURL:   "https://example.com/open",
+			ExportURL: "https://example.com/export",
+			UserID:    ownerID,
+			UserAttrs: attrs,
+		}
+	}
+	return &drivers.ReportMetadata{ReportDelivery: delivery}, nil
 }

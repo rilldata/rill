@@ -1378,6 +1378,8 @@ export interface V1ReportOptions {
   exportLimit?: string;
   exportFormat?: V1ExportFormat;
   exportIncludeHeader?: boolean;
+  /** If true, the export is attached to email notifications (only supported for explore reports run as the creator). */
+  exportAttach?: boolean;
   emailRecipients?: string[];
   slackUsers?: string[];
   slackChannels?: string[];
