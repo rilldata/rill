@@ -26,6 +26,10 @@ type issueRuntimeTokenOptions struct {
 	projectPermissions *adminv1.ProjectPermissions
 	// forOwner issues the token for the current claims owner (user/service/anon/etc).
 	forOwner bool
+	// omitServiceSubject leaves the subject empty when forOwner is set and the owner is a service.
+	// Some users use service accounts to issue tokens for end users without specifying who they are;
+	// a shared subject across those users could leak per-user state, such as AI chats.
+	omitServiceSubject bool
 	// forUserID issues the token for a specific Rill user. Mutually exclusive with the other for* fields.
 	forUserID string
 	// forUserEmail issues the token for a user by email.
@@ -104,7 +108,9 @@ func (s *Server) issueRuntimeToken(ctx context.Context, opts *issueRuntimeTokenO
 			}
 			rules = append(rules, securityRulesFromResources(restrict, resources)...)
 		case auth.OwnerTypeService:
-			subject = claims.OwnerID()
+			if !opts.omitServiceSubject {
+				subject = claims.OwnerID()
+			}
 			a, err := s.jwtAttributesForService(ctx, claims.OwnerID(), opts.projectPermissions)
 			if err != nil {
 				return "", err
