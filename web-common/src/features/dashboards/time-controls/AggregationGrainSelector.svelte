@@ -3,29 +3,27 @@
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import { translateV1TimeGrain } from "@rilldata/web-common/lib/time/new-grains";
-  import type { V1TimeGrain } from "@rilldata/web-common/runtime-client";
+  import type { TimeFilterManager } from "@rilldata/web-common/features/dashboards/time-controls/TimeFilterManager.svelte.ts";
+  import type { MetricsViewsProvider } from "@rilldata/web-common/features/metrics-views/providers/MetricsViewsProvider.svelte.ts";
 
   // The "by Day" aggregation grain dropdown shared by the explore chart toolbar,
   // the canvas filter bar and the canvas widget inspector.
   let {
-    activeTimeGrain,
-    options,
-    onSelect,
+    timeFilterManager,
     defaultOption = undefined,
   }: {
-    activeTimeGrain: V1TimeGrain;
-    options: V1TimeGrain[];
-    onSelect: (timeGrain: V1TimeGrain) => void;
+    timeFilterManager: TimeFilterManager;
     // Listed above the grains: "Adaptive" in explore and the canvas filter bar,
     // "Inherit from canvas" in the widget inspector. `hint` shows next to the trigger while selected.
     defaultOption?: {
       label: string;
       description?: string;
       hint?: string;
-      selected: boolean;
-      onSelect: () => void;
     };
   } = $props();
+
+  let { urlTimeGrain, timeGrain, aggregationOptions } =
+    $derived(timeFilterManager);
 
   let open = $state(false);
 </script>
@@ -40,9 +38,9 @@
       >
         {m.explore_by_grain_prefix()}
         <b>
-          {translateV1TimeGrain(activeTimeGrain)}
+          {translateV1TimeGrain(timeGrain)}
         </b>
-        {#if defaultOption?.selected && defaultOption.hint}
+        {#if !urlTimeGrain && defaultOption?.hint}
           <i>{defaultOption.hint}</i>
         {/if}
         <span class={["transition-transform", { "-rotate-90": open }]}>
@@ -56,9 +54,9 @@
     {#if defaultOption}
       <DropdownMenu.CheckboxItem
         checkRight
-        checked={defaultOption.selected}
+        checked={!urlTimeGrain}
         class="text-xs cursor-pointer"
-        onclick={defaultOption.onSelect}
+        onclick={() => timeFilterManager.onSelectGrain(undefined)}
       >
         <div class="flex flex-col">
           <span>{defaultOption.label}</span>
@@ -69,12 +67,12 @@
       </DropdownMenu.CheckboxItem>
       <DropdownMenu.Separator />
     {/if}
-    {#each options as option (option)}
+    {#each aggregationOptions as option (option)}
       <DropdownMenu.CheckboxItem
         checkRight
-        checked={!defaultOption?.selected && option === activeTimeGrain}
+        checked={option === urlTimeGrain}
         class="text-xs cursor-pointer"
-        onclick={() => onSelect(option)}
+        onclick={() => timeFilterManager.onSelectGrain(option)}
       >
         {translateV1TimeGrain(option)}
       </DropdownMenu.CheckboxItem>

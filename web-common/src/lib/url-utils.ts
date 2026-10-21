@@ -41,12 +41,3 @@ export function copySubsetParams(src: URLSearchParams, keys: Set<string>) {
   }
   return newParams;
 }
-
-export function copySubsetParams(src: URLSearchParams, keys: Set<string>) {
-  const newParams = new URLSearchParams();
-  for (const key of keys) {
-    if (!src.has(key)) continue;
-    newParams.set(key, src.get(key)!);
-  }
-  return newParams;
-}

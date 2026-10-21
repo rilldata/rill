@@ -9,6 +9,7 @@ export type TimeFiltersConfig = {
   showFullRange?: boolean;
   showWatermark?: boolean;
   showInheritRange?: boolean;
+  showGrainPicker?: boolean;
 
   log?: boolean;
 

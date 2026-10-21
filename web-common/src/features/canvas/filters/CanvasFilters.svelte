@@ -46,6 +46,7 @@
       config={{
         showTimeDimensionSelector: false,
         showWatermark: false,
+        showGrainPicker: true,
       }}
       context="canvas"
     />

@@ -694,11 +694,10 @@ describe("yaml config change", () => {
     expect(filterManager.ready).toBe(true);
     expect(filterManager.sortedFilterManagers.dimensions).toEqual([]);
 
-    yamlConfigProvider.update(
-      {},
-      [AD_BIDS_PUBLISHER_DIMENSION, AD_BIDS_IMPRESSIONS_MEASURE],
-      [AD_BIDS_DOMAIN_DIMENSION],
-    );
+    yamlConfigProvider.update({
+      pinnedFilters: [AD_BIDS_PUBLISHER_DIMENSION, AD_BIDS_IMPRESSIONS_MEASURE],
+      requiredFilters: [AD_BIDS_DOMAIN_DIMENSION],
+    });
 
     expect(names(filterManager.sortedFilterManagers.dimensions)).toEqual([
       AD_BIDS_DOMAIN_DIMENSION,
@@ -712,7 +711,7 @@ describe("yaml config change", () => {
 
   it("keeps the chips it has when the config is applied again", () => {
     const yamlConfigProvider = new YAMLConfigProvider();
-    yamlConfigProvider.update({}, [AD_BIDS_PUBLISHER_DIMENSION], []);
+    yamlConfigProvider.update({ pinnedFilters: [AD_BIDS_PUBLISHER_DIMENSION] });
     const filterManager = createFilterManager(yamlConfigProvider);
     filterManager.storeSync.setUrlParams(
       perMetricsViewParams({
@@ -725,7 +724,7 @@ describe("yaml config change", () => {
       AD_BIDS_DOMAIN_DIMENSION,
     ]);
 
-    yamlConfigProvider.update({}, [AD_BIDS_PUBLISHER_DIMENSION], []);
+    yamlConfigProvider.update({ pinnedFilters: [AD_BIDS_PUBLISHER_DIMENSION] });
 
     const chipsAfter = filterManager.sortedFilterManagers.dimensions;
     expect(chipsAfter.length).toBe(chipsBefore.length);
@@ -736,7 +735,7 @@ describe("yaml config change", () => {
     const yamlConfigProvider = new YAMLConfigProvider();
     const filterManager = createFilterManager(yamlConfigProvider);
 
-    yamlConfigProvider.update({}, ["not_a_field"], []);
+    yamlConfigProvider.update({ pinnedFilters: ["not_a_field"] });
 
     expect(filterManager.sortedFilterManagers.dimensions).toEqual([]);
     expect(filterManager.sortedFilterManagers.measures).toEqual([]);

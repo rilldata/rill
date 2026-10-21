@@ -73,6 +73,7 @@
             {metricsViewsProvider}
             {yamlConfigProvider}
             showComparison={config?.meta?.hasComparison}
+            showGrain={config?.meta?.hasGrain}
             updateLocalTimeFilterString={(newString) => {
               component.updateProperty("time_filters", newString);
             }}

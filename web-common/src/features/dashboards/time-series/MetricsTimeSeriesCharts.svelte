@@ -92,8 +92,6 @@
     comparisonTimeStart,
     comparisonTimeEnd,
 
-    aggregationOptions,
-
     ready: chartReady,
   } = $derived(timeFilterManager);
   let timeDimension = $derived(
@@ -107,7 +105,6 @@
   const client = useRuntimeClient();
 
   let { selectedTimezone } = $derived($dashboardStore);
-  let adaptiveTimeGrain = $derived(!!$dashboardStore?.adaptiveTimeGrain);
 
   let exploreState = $derived(useExploreState(exploreName));
 
@@ -277,22 +274,13 @@
         </div>
       </DashboardMetricsDraggableList>
 
-      {#if $rillTime && activeTimeGrain}
+      {#if $rillTime && timeGrain}
         <AggregationGrainSelector
-          {activeTimeGrain}
-          options={aggregationOptions ?? []}
-          onSelect={(timeGrain) =>
-            metricsExplorerStore.setTimeGrain(exploreName, timeGrain)}
+          {timeFilterManager}
           defaultOption={{
             label: m.time_grain_adaptive(),
             description: m.time_grain_adaptive_description(),
             hint: m.time_grain_adaptive_hint(),
-            selected: adaptiveTimeGrain,
-            onSelect: () =>
-              metricsExplorerStore.setAdaptiveTimeGrain(
-                exploreName,
-                $exploreValidSpec.data?.metricsView ?? {},
-              ),
           }}
         />
       {/if}

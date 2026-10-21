@@ -52,6 +52,7 @@ import { toStore } from "svelte/store";
 import { UrlParamsChangeTracker } from "@rilldata/web-common/lib/store-utils/url-search-params-store.svelte.ts";
 import { EventEmitter } from "@rilldata/web-common/lib/event-emitter.ts";
 import type { TimeFiltersConfig } from "@rilldata/web-common/features/dashboards/time-controls/time-filters-config.ts";
+import { getValidatedTimeGrain } from "@rilldata/web-common/lib/time/grains";
 
 type ComparisonTimeRangeOption = {
   name: TimeComparisonOption;
@@ -109,7 +110,14 @@ export class TimeFilterManager implements UrlParamsStore {
    * Resolved time range, taking into account the parent time range when `inherit` is set.
    */
   public timeRange = $state<string | undefined>(undefined);
-  public timeGrain = $state<V1TimeGrain | undefined>(undefined);
+  /**
+   * Exact value of time grain as set from setUrlParams.
+   */
+  public urlTimeGrain = $state<V1TimeGrain | undefined>(undefined);
+  /**
+   * Resolved time grain. Always has a value, if url param is undefined, it is based on time range's interval.
+   */
+  public timeGrain = $state<V1TimeGrain>(MinSupportedGrain);
   public timeZone = $state<string>(DEFAULT_TIMEZONE);
   public timeDimension = $state<string | undefined>(undefined);
   /**
@@ -325,7 +333,7 @@ export class TimeFilterManager implements UrlParamsStore {
 
     if (!this.config.skipTimeGrain) {
       const urlGrain = urlParams.get(ExploreStateURLParams.TimeGrain);
-      this.timeGrain = urlGrain
+      this.urlTimeGrain = urlGrain
         ? DateTimeUnitToV1TimeGrain[urlGrain]
         : undefined;
     }
@@ -403,8 +411,8 @@ export class TimeFilterManager implements UrlParamsStore {
     }
 
     if (!this.config.skipTimeGrain) {
-      const mappedGrain = this.timeGrain
-        ? V1TimeGrainToDateTimeUnit[this.timeGrain]
+      const mappedGrain = this.urlTimeGrain
+        ? V1TimeGrainToDateTimeUnit[this.urlTimeGrain]
         : undefined;
       if (mappedGrain) {
         urlParams.set(ExploreStateURLParams.TimeGrain, mappedGrain);
@@ -534,8 +542,15 @@ export class TimeFilterManager implements UrlParamsStore {
     return this.applyTimeRange(newString, this.timeZone);
   }
 
-  public onSelectGrain(grain: V1TimeGrain) {
-    this.timeGrain = grain;
+  public onSelectGrain(grain: V1TimeGrain | undefined) {
+    this.urlTimeGrain = grain;
+    this.timeGrain =
+      getValidatedTimeGrain(
+        this.interval,
+        this.metricsViewsProvider.largestMinTimeGrain ?? MinSupportedGrain,
+        grain,
+        this.parsedTime,
+      ) ?? MinSupportedGrain;
     this.storeSync.stateChanged();
   }
 
@@ -700,12 +715,24 @@ export class TimeFilterManager implements UrlParamsStore {
       this.metricsViewsProvider.largestMinTimeGrain ?? MinSupportedGrain,
     );
 
-    const finalGrain =
-      this.timeGrain && allowedGrains.includes(this.timeGrain)
-        ? this.timeGrain
+    let finalGrain: V1TimeGrain = allowedGrains[0];
+    if (this.urlTimeGrain) {
+      // If url time grain is explicitly set, use it if it is still valid in new interval.
+      finalGrain = allowedGrains.includes(this.urlTimeGrain)
+        ? this.urlTimeGrain
         : smallestGrain && allowedGrains.includes(smallestGrain)
           ? smallestGrain
-          : allowedGrains[0];
+          : finalGrain;
+    } else {
+      // Else get the valid time grain for the new interval.
+      finalGrain =
+        getValidatedTimeGrain(
+          latestInterval,
+          this.metricsViewsProvider.largestMinTimeGrain ?? MinSupportedGrain,
+          undefined,
+          parseRillTime(newTimeRange),
+        ) ?? MinSupportedGrain;
+    }
 
     this.interval = latestInterval;
     this.adjustedInterval = getAdjustedInterval(

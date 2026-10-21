@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import * as Tooltip from "@rilldata/web-common/components/tooltip-v2";
   import type { TimeFilterManager } from "@rilldata/web-common/features/dashboards/time-controls/TimeFilterManager.svelte.ts";
   import { Nudge } from "@rilldata/web-common/features/dashboards/time-controls/super-pill/components";
@@ -9,6 +10,7 @@
   import ComparisonTimeRangePicker from "@rilldata/web-common/features/dashboards/time-controls/comparison/ComparisonTimeRangePicker.svelte";
   import type { YAMLConfigProvider } from "@rilldata/web-common/features/dashboards/providers/YAMLConfigProvider.svelte.ts";
   import type { MetricsViewsProvider } from "@rilldata/web-common/features/metrics-views/providers/MetricsViewsProvider.svelte.ts";
+  import AggregationGrainSelector from "@rilldata/web-common/features/dashboards/time-controls/AggregationGrainSelector.svelte";
 
   let {
     timeFilterManager,
@@ -24,11 +26,14 @@
     config: TimeFiltersConfig;
   } = $props();
 
-  let hidePan = $derived(config.hidePan ?? false);
+  let {
+    hidePan = false,
+    showComparisonSelector = true,
+    showGrainPicker = false,
+  } = $derived(config);
+
   let canPanLeft = $derived(timeFilterManager.canPanLeft ?? !hidePan);
   let canPanRight = $derived(timeFilterManager.canPanRight ?? !hidePan);
-
-  let showComparisonSelector = $derived(config.showComparisonSelector ?? true);
 
   let { timeZone, minDate, maxDate } = $derived(timeFilterManager);
 </script>
@@ -79,6 +84,17 @@
       {timeFilterManager}
       {metricsViewsProvider}
       {config}
+    />
+  {/if}
+
+  {#if showGrainPicker}
+    <AggregationGrainSelector
+      {timeFilterManager}
+      defaultOption={{
+        label: m.time_grain_adaptive(),
+        description: m.time_grain_adaptive_description(),
+        hint: m.time_grain_adaptive_hint(),
+      }}
     />
   {/if}
 </div>

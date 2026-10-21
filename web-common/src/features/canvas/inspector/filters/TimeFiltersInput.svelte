@@ -7,6 +7,7 @@
   import type { MetricsViewsProvider } from "@rilldata/web-common/features/metrics-views/providers/MetricsViewsProvider.svelte.ts";
   import type { YAMLConfigProvider } from "@rilldata/web-common/features/dashboards/providers/YAMLConfigProvider.svelte.ts";
   import { onMount } from "svelte";
+  import AggregationGrainSelector from "@rilldata/web-common/features/dashboards/time-controls/AggregationGrainSelector.svelte";
 
   let {
     id,
@@ -14,6 +15,7 @@
     metricsViewsProvider,
     yamlConfigProvider,
     showComparison,
+    showGrain,
     updateLocalTimeFilterString,
   }: {
     id: string;
@@ -21,6 +23,7 @@
     metricsViewsProvider: MetricsViewsProvider;
     yamlConfigProvider: YAMLConfigProvider;
     showComparison: boolean;
+    showGrain: boolean;
     updateLocalTimeFilterString: (newFilterString: string) => void;
   } = $props();
 
@@ -54,20 +57,16 @@
       label={m.canvas_time_range_label()}
       {id}
     />
-    <!--{#if showGrain && activeTimeGrain && grainOptions.length}-->
-    <!--  <AggregationGrainSelector-->
-    <!--    {activeTimeGrain}-->
-    <!--    options={grainOptions}-->
-    <!--    onSelect={set.grain}-->
-    <!--    defaultOption={{-->
-    <!--      label: hasLocalTimeRange-->
-    <!--        ? m.time_default()-->
-    <!--        : m.canvas_inherit_from_canvas(),-->
-    <!--      selected: resolved.grain === undefined,-->
-    <!--      onSelect: clearGrain,-->
-    <!--    }}-->
-    <!--  />-->
-    <!--{/if}-->
+    {#if showGrain}
+      <AggregationGrainSelector
+        timeFilterManager={localTimeFilters}
+        defaultOption={{
+          label: hasLocalTimeRange
+            ? m.time_default()
+            : m.canvas_inherit_from_canvas(),
+        }}
+      />
+    {/if}
   </div>
   <div class="text-fg-secondary">
     {#if hasLocalTimeRange}

@@ -59,7 +59,9 @@
   // so there is nothing to clear unless a chip actually holds a filter.
   let hasClearableFilters = $derived(
     sortedDimensionManagers.some((dfm) => !!dfm.expr) ||
-      sortedMeasureManagers.some((mfm) => !!mfm.expr),
+      sortedMeasureManagers.some((mfm) => !!mfm.expr) ||
+      // Advanced/complex filter wont have pills, but can be cleared.
+      expressionFilterManager.isComplexFilter,
   );
 
   let excludedDimensions = $derived(
@@ -140,10 +142,8 @@
     {/if}
 
     <!-- if filters are present, place a chip at the end of the flex container
-    that enables clearing all filters.
-    An advanced filter is gated on the flag rather than on its pill: a param the chips cannot
-    show may also parse to no pill at all, and it still has to be clearable. -->
-    {#if expressionFilterManager.isComplexFilter || hasClearableFilters}
+         that enables clearing all filters -->
+    {#if hasClearableFilters}
       <Button type="text" onClick={() => expressionFilterManager.clear()}>
         {m.dashboard_clear_filters()}
       </Button>
