@@ -13,15 +13,16 @@ import (
 	"golang.org/x/oauth2"
 )
 
-// newDiscoveryServer serves authorization server metadata on its origin, and protected resource metadata for /mcp if withPRM is set.
-func newDiscoveryServer(t *testing.T, withPRM bool) *httptest.Server {
+// newDiscoveryServer serves authorization server metadata on its origin.
+// If prmPath is set, it also serves protected resource metadata at that path, declaring the server URL followed by resourcePath as its resource.
+func newDiscoveryServer(t *testing.T, prmPath, resourcePath string) *httptest.Server {
 	var srv *httptest.Server
 	mux := http.NewServeMux()
-	if withPRM {
-		mux.HandleFunc("/.well-known/oauth-protected-resource/mcp", func(w http.ResponseWriter, r *http.Request) {
+	if prmPath != "" {
+		mux.HandleFunc(prmPath, func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Content-Type", "application/json")
 			_ = json.NewEncoder(w).Encode(map[string]any{
-				"resource":              srv.URL + "/mcp",
+				"resource":              srv.URL + resourcePath,
 				"authorization_servers": []string{srv.URL},
 				"scopes_supported":      []string{"read", "write"},
 			})
@@ -54,7 +55,7 @@ func TestDiscover(t *testing.T) {
 	}
 
 	t.Run("protected resource metadata", func(t *testing.T) {
-		srv := newDiscoveryServer(t, true)
+		srv := newDiscoveryServer(t, "/.well-known/oauth-protected-resource/mcp", "/mcp")
 		c, err := discover(srv.URL+"/mcp", nil)
 		require.NoError(t, err)
 		require.Equal(t, srv.URL, c.Issuer)
@@ -63,8 +64,24 @@ func TestDiscover(t *testing.T) {
 		require.Equal(t, []string{"read", "write"}, c.Scopes)
 	})
 
+	t.Run("root protected resource metadata declaring the origin", func(t *testing.T) {
+		srv := newDiscoveryServer(t, "/.well-known/oauth-protected-resource", "")
+		c, err := discover(srv.URL+"/mcp", nil)
+		require.NoError(t, err)
+		require.Equal(t, srv.URL, c.Resource)
+		require.Equal(t, []string{"read", "write"}, c.Scopes)
+	})
+
+	t.Run("root protected resource metadata declaring the server url", func(t *testing.T) {
+		srv := newDiscoveryServer(t, "/.well-known/oauth-protected-resource", "/mcp")
+		c, err := discover(srv.URL+"/mcp", nil)
+		require.NoError(t, err)
+		require.Equal(t, srv.URL+"/mcp", c.Resource)
+		require.Equal(t, []string{"read", "write"}, c.Scopes)
+	})
+
 	t.Run("trailing slash matches the declared resource", func(t *testing.T) {
-		srv := newDiscoveryServer(t, true)
+		srv := newDiscoveryServer(t, "/.well-known/oauth-protected-resource/mcp", "/mcp")
 		c, err := discover(srv.URL+"/mcp/", []string{"read"})
 		require.NoError(t, err)
 		require.Equal(t, srv.URL+"/mcp", c.Resource)
@@ -72,7 +89,7 @@ func TestDiscover(t *testing.T) {
 	})
 
 	t.Run("falls back to authorization server metadata on the origin", func(t *testing.T) {
-		srv := newDiscoveryServer(t, false)
+		srv := newDiscoveryServer(t, "", "")
 		c, err := discover(srv.URL+"/mcp", nil)
 		require.NoError(t, err)
 		require.Equal(t, srv.URL, c.Issuer)

@@ -24,6 +24,8 @@ type testMCPServer struct {
 	mu       sync.Mutex
 	accepted map[string]bool
 	requests int
+	// sessions are the session IDs seen so far; expired ones get a 404, as after a server restart.
+	sessions map[string]bool
 }
 
 func (s *testMCPServer) url() string {
@@ -39,9 +41,18 @@ func (s *testMCPServer) accept(tokens ...string) {
 	}
 }
 
+// expireSessions makes the server forget all sessions seen so far.
+func (s *testMCPServer) expireSessions() {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	for id := range s.sessions {
+		s.sessions[id] = false
+	}
+}
+
 func newTestMCPServer(t *testing.T) *testMCPServer {
 	t.Helper()
-	ts := &testMCPServer{}
+	ts := &testMCPServer{sessions: make(map[string]bool)}
 
 	server := gomcp.NewServer(&gomcp.Implementation{Name: "test", Version: "1.0.0"}, nil)
 	type echoArgs struct {
@@ -67,7 +78,16 @@ func newTestMCPServer(t *testing.T) *testMCPServer {
 		ts.mu.Lock()
 		ts.requests++
 		accepted := ts.accepted
+		id := r.Header.Get("Mcp-Session-Id")
+		live, seen := ts.sessions[id]
+		if id != "" && !seen {
+			ts.sessions[id] = true
+		}
 		ts.mu.Unlock()
+		if seen && !live {
+			w.WriteHeader(http.StatusNotFound)
+			return
+		}
 		if accepted != nil {
 			token := strings.TrimPrefix(r.Header.Get("Authorization"), "Bearer ")
 			if token == "forbidden" {
@@ -171,6 +191,20 @@ func TestListAndCallTools(t *testing.T) {
 	require.True(t, res.Truncated)
 	require.Less(t, len(res.Content), 300*1024)
 	require.Contains(t, res.Content, "[truncated")
+}
+
+func TestReconnectAfterSessionExpired(t *testing.T) {
+	ts := newTestMCPServer(t)
+	h := openTestHandle(t, map[string]any{"url": ts.url()})
+	ctx := t.Context()
+
+	_, err := h.CallTool(ctx, "echo", map[string]any{"text": "hello"}, &drivers.MCPCallOptions{})
+	require.NoError(t, err)
+
+	ts.expireSessions()
+	res, err := h.CallTool(ctx, "echo", map[string]any{"text": "again"}, &drivers.MCPCallOptions{})
+	require.NoError(t, err)
+	require.Equal(t, "again", res.Content)
 }
 
 func TestStaticBearerToken(t *testing.T) {

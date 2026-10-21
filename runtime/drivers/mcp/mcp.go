@@ -530,7 +530,7 @@ func (h *handle) resolveCredentials(opts *drivers.MCPCallOptions) (*credentials,
 	return creds, nil
 }
 
-// withSession runs fn with a client session for the credentials, reconnecting once if the session was closed by the server.
+// withSession runs fn with a client session for the credentials, reconnecting once if the server closed or forgot the session.
 // Authorization failures are reported as drivers.ErrMCPAuthorizationRequired.
 func (h *handle) withSession(ctx context.Context, creds *credentials, fn func(sess *gomcp.ClientSession) error) error {
 	for attempt := range 2 {
@@ -549,7 +549,7 @@ func (h *handle) withSession(ctx context.Context, creds *credentials, fn func(se
 			h.dropSession(creds.key)
 			return fmt.Errorf("%w: %w", drivers.ErrMCPAuthorizationRequired, err)
 		}
-		if errors.Is(err, gomcp.ErrConnectionClosed) && attempt == 0 {
+		if (errors.Is(err, gomcp.ErrConnectionClosed) || errors.Is(err, gomcp.ErrSessionMissing)) && attempt == 0 {
 			h.dropSession(creds.key)
 			continue
 		}

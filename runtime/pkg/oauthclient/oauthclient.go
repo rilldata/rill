@@ -69,23 +69,25 @@ type DiscoverOptions struct {
 func Discover(ctx context.Context, opts *DiscoverOptions) (*Client, error) {
 	hc := opts.HTTPClient
 
-	// The resource indicator is the canonical server URL; protected resource metadata must declare exactly this resource (RFC 9728 section 3.3).
+	// The resource indicator defaults to the canonical server URL (RFC 8707 section 2).
 	resource := canonicalResource(opts.ServerURL)
 
 	// Find the authorization server through the protected resource metadata at its well-known URLs.
+	// The metadata must declare the resource its URL was derived from (RFC 9728 section 3.3), which then becomes the resource indicator.
 	var issuer string
 	var scopes []string
 	var prmErrs []error
-	for _, u := range protectedResourceMetadataURLs(resource) {
-		prm, err := oauthex.GetProtectedResourceMetadata(ctx, u, resource, hc)
+	for _, c := range protectedResourceMetadataCandidates(resource) {
+		prm, err := oauthex.GetProtectedResourceMetadata(ctx, c.url, c.resource, hc)
 		if err != nil {
 			prmErrs = append(prmErrs, err)
 			continue
 		}
 		if len(prm.AuthorizationServers) == 0 {
-			prmErrs = append(prmErrs, fmt.Errorf("%s does not list any authorization servers", u))
+			prmErrs = append(prmErrs, fmt.Errorf("%s does not list any authorization servers", c.url))
 			continue
 		}
+		resource = c.resource
 		issuer = prm.AuthorizationServers[0]
 		scopes = prm.ScopesSupported
 		break
@@ -437,19 +439,30 @@ func GenerateVerifier() string {
 	return oauth2.GenerateVerifier()
 }
 
-// protectedResourceMetadataURLs returns the well-known metadata URLs for a server URL, most specific first (RFC 9728 section 3).
-func protectedResourceMetadataURLs(serverURL string) []string {
+// protectedResourceMetadataCandidate is a well-known protected resource metadata URL and the resource its metadata must declare.
+type protectedResourceMetadataCandidate struct {
+	url      string
+	resource string
+}
+
+// protectedResourceMetadataCandidates returns the well-known metadata URLs for a server URL, most specific first (RFC 9728 section 3).
+// Metadata at the root URL describes the origin, but servers commonly declare their full URL there, so both are accepted.
+func protectedResourceMetadataCandidates(serverURL string) []protectedResourceMetadataCandidate {
 	u, err := url.Parse(serverURL)
 	if err != nil {
 		return nil
 	}
 	origin := u.Scheme + "://" + u.Host
-	var res []string
-	if p := strings.Trim(u.Path, "/"); p != "" {
-		res = append(res, origin+"/.well-known/oauth-protected-resource/"+p)
+	root := origin + "/.well-known/oauth-protected-resource"
+	p := strings.Trim(u.Path, "/")
+	if p == "" {
+		return []protectedResourceMetadataCandidate{{url: root, resource: serverURL}}
 	}
-	res = append(res, origin+"/.well-known/oauth-protected-resource")
-	return res
+	return []protectedResourceMetadataCandidate{
+		{url: root + "/" + p, resource: serverURL},
+		{url: root, resource: serverURL},
+		{url: root, resource: origin},
+	}
 }
 
 // canonicalResource returns the canonical URI of the server for use as a resource indicator (RFC 8707 section 2).
