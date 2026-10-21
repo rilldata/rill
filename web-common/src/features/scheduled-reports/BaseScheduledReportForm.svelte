@@ -14,9 +14,6 @@
     type ReportValues,
   } from "@rilldata/web-common/features/scheduled-reports/utils";
   import { V1ExportFormat } from "@rilldata/web-common/runtime-client";
-  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
-  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
-  import InfoCircle from "@rilldata/web-common/components/icons/InfoCircle.svelte";
   import type { Readable } from "svelte/store";
   import type { SuperFormErrors } from "sveltekit-superforms/client";
   import Input from "../../components/forms/Input.svelte";
@@ -69,6 +66,11 @@
   $: selectedRunAsOption = RUN_AS_OPTIONS.find(
     (o) => o.value === $data["webOpenMode"],
   );
+
+  // Attachments are only supported when running as the creator, since every recipient then gets the same file.
+  // Clear the option otherwise, so the form never holds a setting that will not be saved.
+  $: canAttach = $data["webOpenMode"] === ReportRunAs.Creator;
+  $: if (!canAttach && $data["exportAttach"]) $data["exportAttach"] = false;
 
   $: hasSlackNotifier = getHasSlackConnection(runtimeClient);
 
@@ -240,27 +242,29 @@
         optional
         placeholder={m.report_form_row_limit_placeholder()}
       />
-      <div class="flex items-center gap-x-1">
-        <Checkbox
-          bind:checked={$data["exportIncludeHeader"]}
-          id="exportIncludeHeader"
-          onCheckedChange={(checked) => {
-            $data["exportIncludeHeader"] = Boolean(checked);
-          }}
-          inverse
-          disabled={$data["exportFormat"] ===
-            V1ExportFormat.EXPORT_FORMAT_PARQUET}
-          label={m.report_form_include_metadata()}
-        />
-        <Tooltip location="right" alignment="middle" distance={8}>
-          <div class="text-fg-secondary" style="transform:translateY(-.5px)">
-            <InfoCircle size="13px" />
-          </div>
-          <TooltipContent maxWidth="400px" slot="tooltip-content">
-            {m.report_form_metadata_tooltip()}
-          </TooltipContent>
-        </Tooltip>
-      </div>
+      <Checkbox
+        bind:checked={$data["exportIncludeHeader"]}
+        id="exportIncludeHeader"
+        onCheckedChange={(checked) => {
+          $data["exportIncludeHeader"] = Boolean(checked);
+        }}
+        inverse
+        disabled={$data["exportFormat"] ===
+          V1ExportFormat.EXPORT_FORMAT_PARQUET}
+        label={m.report_form_include_metadata()}
+        hint={m.report_form_metadata_tooltip()}
+      />
+      <Checkbox
+        bind:checked={$data["exportAttach"]}
+        id="exportAttach"
+        onCheckedChange={(checked) => {
+          $data["exportAttach"] = Boolean(checked);
+        }}
+        inverse
+        disabled={!canAttach}
+        label={m.report_form_attach_file()}
+        hint={m.report_form_attach_file_hint()}
+      />
 
       {#if filters && timeControls}
         <div class="flex flex-col gap-y-3">

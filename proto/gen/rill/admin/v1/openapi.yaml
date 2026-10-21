@@ -1911,6 +1911,9 @@ components:
                 explore:
                     title: either canvas or explore should be set
                     type: string
+                exportAttach:
+                    description: If true, the export is attached to email notifications (only supported for explore reports run as the creator).
+                    type: boolean
                 exportFormat:
                     $ref: '#/components/schemas/v1ExportFormat'
                 exportIncludeHeader:
