@@ -137,6 +137,8 @@ A component can't have both `spec` and `vega_spec`; Rill reports an error when i
 
 `.fields` exists for `measure`, `dimension` and `time_dimension` params. Rill rejects a reference to `.fields` on another type of param, or to a property not listed here, when it parses the file.
 
+Values are JSON-escaped when they are substituted into `vega_spec`, so a display name or string param containing a quote or backslash is safe inside any JSON string. Keep every placeholder inside a JSON string, such as `"title": "{{ .fields.measure.display_name }}"`; a string param cannot carry a JSON fragment to splice in as structure.
+
 Format values with `"formatType": "{{ .fields.<name>.format_type }}"` rather than a `format` string. It formats a measure the way Rill formats it everywhere else, including currency, percentage and interval presets. Set it on an axis, on a `tooltip` or `text` encoding, or on a field you compute from the measure, such as a running total. The formatter is also a function you can call in an expression, as the [reference line](#a-reference-line) example does to format its label.
 
 ### Scalar Params in Expressions

@@ -530,6 +530,7 @@ See [Custom Viz](/developers/build/dashboards/canvas-widgets/custom-viz).
   Read the query result from the `query1` dataset, i.e. `"data": {"name": "query1"}`,
   and size the chart to its container with `"width": "container"`, `"height": "container"`
   and `"autosize": {"type": "fit", "contains": "padding"}`. Mutually exclusive with `spec`.
+  Template values are JSON-escaped, so place placeholders inside JSON strings.
   See [Vega-Lite](/developers/build/dashboards/canvas-widgets/custom-viz/vega-lite).
 
 
