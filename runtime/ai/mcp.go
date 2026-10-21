@@ -88,9 +88,6 @@ func (s *Session) MCPServer(ctx context.Context) *mcp.Server {
 				}
 			},
 			HasTools: true,
-			GetSessionID: func() string {
-				return s.id
-			},
 		},
 	)
 
