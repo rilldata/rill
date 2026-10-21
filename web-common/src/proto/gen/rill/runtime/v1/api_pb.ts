@@ -5606,9 +5606,10 @@ export class CompleteRequest extends Message$1<CompleteRequest> {
   feedbackAgentContext?: FeedbackAgentContext;
 
   /**
-   * Optional current browser path. The origin is intentionally omitted.
+   * Deprecated: no longer read by the server. The agents learn what the user is viewing from the analyst and developer contexts.
    *
-   * @generated from field: string ui_page_path = 14;
+   * @generated from field: string ui_page_path = 14 [deprecated = true];
+   * @deprecated
    */
   uiPagePath = "";
 
@@ -5760,9 +5761,10 @@ export class CompleteStreamingRequest extends Message$1<CompleteStreamingRequest
   feedbackAgentContext?: FeedbackAgentContext;
 
   /**
-   * Optional current browser path. The origin is intentionally omitted.
+   * Deprecated: no longer read by the server. The agents learn what the user is viewing from the analyst and developer contexts.
    *
-   * @generated from field: string ui_page_path = 14;
+   * @generated from field: string ui_page_path = 14 [deprecated = true];
+   * @deprecated
    */
   uiPagePath = "";
 
