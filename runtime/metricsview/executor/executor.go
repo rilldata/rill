@@ -394,7 +394,7 @@ func (e *Executor) Query(ctx context.Context, qry *metricsview.Query, executionT
 	ok, err := e.rewriteTwoPhaseComparisons(ctx, qry, ast, ogLimit)
 	if err != nil {
 		return nil, err
-	} // TODO if !ok then can log a warning that two phase comparison is not possible with a reason
+	}
 
 	e.rewriteApproxComparisons(ast, ok)
 
