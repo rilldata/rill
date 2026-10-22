@@ -7,7 +7,7 @@ export const exploreExactSurface = {
   /** The big numbers and their time series charts. */
   measures: "measures",
   dimensionTable: "dimension-table",
-  /** The Time Dimension Detail table. */
+  /** The Time Dimension Detail page: its chart, totals and table. */
   tdd: "tdd",
   pivot: "pivot",
   leaderboard: (dimensionName: string) => `leaderboard:${dimensionName}`,

@@ -102,8 +102,6 @@ export abstract class BaseChart<
         spec,
       ),
       this.parent.currentExactMeasures(this.id),
-      get(this.parent.metricsView.getMeasuresForMetricView(spec.metrics_view)),
-      ephemeralSpecsToDefs(spec.adhoc_measures),
     );
     return exactMeasures.length
       ? { ...spec, exact_measures: exactMeasures }

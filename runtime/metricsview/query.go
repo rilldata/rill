@@ -55,9 +55,8 @@ type Measure struct {
 	Name    string          `json:"name,omitempty" mapstructure:"name"`
 	Compute *MeasureCompute `json:"compute,omitempty" mapstructure:"compute"`
 	// Exact computes the measure with its exact_expression instead of its (approximate) expression.
-	// Measures referenced by this measure are also computed exactly, and a measure flagged anywhere in a query (including in a filter subquery) is computed exactly everywhere in it.
-	// A measure of the query that is calculated from an exact measure is computed from exact inputs only, so its other inputs with an exact_expression are exact as well.
-	// It is a no-op for measures without an exact_expression. See ExactMeasureSet.
+	// A measure flagged anywhere in a query (including in a filter subquery) is computed exactly everywhere in it; a derived measure is calculated from the measures as the query computes them.
+	// It is a no-op for measures without an exact_expression, which only simple measures define. See ExactMeasureSet.
 	Exact bool `json:"exact,omitempty" mapstructure:"exact"`
 }
 
@@ -656,7 +655,7 @@ const QueryJSONSchema = `
         },
         "exact": {
           "type": "boolean",
-          "description": "Compute the measure with its exact_expression when the metrics view defines one (slower). Measures it references are also computed exactly. Defaults to false (approximate)."
+          "description": "Compute the measure with its exact_expression when the metrics view defines one (slower). Defaults to false (approximate)."
         }
       },
       "required": ["name"]

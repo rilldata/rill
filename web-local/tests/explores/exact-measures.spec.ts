@@ -91,12 +91,10 @@ test.describe("exact measures", () => {
     await expect(tableChip).toHaveAttribute("aria-pressed", "false");
   });
 
-  // `records_per_publisher` is calculated from `publishers`. Switching the
-  // ratio to exact computes `publishers` exactly as well, everywhere: its own
-  // card shows the exact value with the inherited (dashed, not pressed) chip.
-  test("switching a derived measure to exact makes the measures it is calculated from exact", async ({
-    page,
-  }) => {
+  // `records_per_publisher` is calculated from `publishers`. Derived measures
+  // have no exact variant of their own, so the card shows no chip; the ratio is
+  // computed from the measures as the query computes them.
+  test("a derived measure has no precision chip", async ({ page }) => {
     const currentUrl = new URL(page.url());
     const baseUrl = `${currentUrl.protocol}//${currentUrl.host}`;
 
@@ -109,52 +107,21 @@ test.describe("exact measures", () => {
       .locator(".big-number")
       .filter({ hasText: "Publishers" })
       .first();
-    const publishersChip = publishersCard.getByRole("button", {
-      name: "Toggle exact value for Publishers",
-    });
-    const ratioChip = page
-      .locator(".big-number")
-      .filter({ hasText: "Records per publisher" })
-      .getByRole("button", {
-        name: "Toggle exact value for Records per publisher",
-      });
-
-    await expect(publishersChip).toHaveText("≈");
-    await expect(ratioChip).toHaveText("≈");
-    await expect(publishersCard.getByText("1,004")).toBeVisible();
-
-    // The request for the publishers card itself carries the flag, although
-    // only the ratio was clicked.
-    const exactRequest = waitForAggregation(page, (body) =>
-      body.includes('"name":"publishers","exact":true'),
-    );
-    await ratioChip.click();
-    const request = await exactRequest;
-    expect(request.postData()).not.toContain(
-      '"name":"total_records","exact":true',
-    );
-
-    await expect(ratioChip).toHaveText("=");
-    await expect(ratioChip).toHaveAttribute("aria-pressed", "true");
-    await expect(publishersChip).toHaveText("=");
-    await expect(publishersChip).toHaveAttribute("aria-pressed", "false");
-    await expect(publishersCard.getByText("4", { exact: true })).toBeVisible();
-    await expect(publishersCard.getByText("1,004")).toBeHidden();
-
-    // The selection is tab memory, not URL or storage state: a reload starts
-    // approximate again.
-    expect(new URL(page.url()).searchParams.get("exact")).toBeNull();
-    await page.reload();
     await expect(
-      page
-        .locator(".big-number")
-        .filter({ hasText: "Publishers" })
-        .first()
-        .getByRole("button", { name: "Toggle exact value for Publishers" }),
+      publishersCard.getByRole("button", {
+        name: "Toggle exact value for Publishers",
+      }),
     ).toHaveText("≈");
+
+    const ratioCard = page
+      .locator(".big-number")
+      .filter({ hasText: "Records per publisher" });
+    await expect(ratioCard).toBeVisible();
     await expect(
-      page.locator(".big-number").filter({ hasText: "Publishers" }).first(),
-    ).toContainText("1,004");
+      ratioCard.getByRole("button", {
+        name: "Toggle exact value for Records per publisher",
+      }),
+    ).toHaveCount(0);
   });
 
   // Every leaderboard, the big numbers, the dimension table and the pivot are

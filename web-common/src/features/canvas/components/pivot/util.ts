@@ -241,8 +241,6 @@ export function processPivot(
   const exactMeasures = canvasExactRequestNames(
     baseMeasureNames,
     selectedExact,
-    metricsView?.measures,
-    ephemeralMeasures,
   );
 
   const config: PivotDataStoreConfig = {
@@ -352,12 +350,7 @@ export function processFlat(
     $tableSpec,
   );
 
-  const exactMeasures = canvasExactRequestNames(
-    measures,
-    selectedExact,
-    metricsView?.measures,
-    ephemeralMeasures,
-  );
+  const exactMeasures = canvasExactRequestNames(measures, selectedExact);
 
   const config: PivotDataStoreConfig = {
     ready,

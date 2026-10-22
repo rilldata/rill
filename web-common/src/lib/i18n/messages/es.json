@@ -1006,7 +1006,6 @@
   "dashboard_precision_approx": "Valor aproximado. Haz clic para calcular el valor exacto (más lento).",
   "dashboard_precision_error": "La consulta exacta falló: {message}. Haz clic para volver al valor aproximado.",
   "dashboard_precision_exact": "Valor exacto. Haz clic para volver al valor aproximado.",
-  "dashboard_precision_inherited": "Valor exacto, porque se calcula a partir de una medida exacta o se usa en ella. Haz clic para mantener esta medida exacta por sí misma.",
   "dashboard_precision_loading": "Calculando el valor exacto…",
   "dashboard_precision_partial": "Algunos valores son exactos. Haz clic para calcularlos todos de forma exacta.",
   "dashboard_precision_toggle_aria": "Alternar el valor exacto de {measure}",

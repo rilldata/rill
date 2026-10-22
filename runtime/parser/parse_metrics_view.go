@@ -600,6 +600,11 @@ func (p *Parser) parseMetricsView(node *Node) error {
 			return fmt.Errorf(`invalid measure type %q (allowed values: simple, derived, time_comparison)`, measure.Type)
 		}
 
+		// Derived measures are calculated from the measures as a query computes them, so only simple measures have an exact variant.
+		if measure.ExactExpression != "" && (typ != runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE || window != nil) {
+			return fmt.Errorf(`measure %q: "exact_expression" can only be set on simple measures without a window`, measure.Name)
+		}
+
 		measures = append(measures, &runtimev1.MetricsViewSpec_Measure{
 			Name:                measure.Name,
 			DisplayName:         measure.DisplayName,

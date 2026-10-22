@@ -26,15 +26,15 @@ measures:
   - name: revenue_per_user
     display_name: Revenue per User
     requires: [total_revenue, unique_users]
-    expression: total_revenue / unique_users   # follows the precision of unique_users
+    expression: total_revenue / unique_users   # uses unique_users as the query computes it
     format_preset: currency_usd
 ```
 
 ## How it behaves
 
-- Both expressions share every other setting of the measure: `requires`, `per`, `window`, `treat_nulls_as`, formatting, tags and security policies. Only the SQL differs. Setting `exact_expression` without `expression` is an error.
+- Both expressions share every other setting of the measure: `treat_nulls_as`, formatting, tags and security policies. Only the SQL differs. Setting `exact_expression` without `expression` is an error, and only simple measures can define it: a measure with `requires` or `per` (a derived measure), a measure with a `window`, and an ad hoc measure defined in a dashboard have no exact variant.
 - Dashboards show the approximate value by default and mark measures that have an exact variant with a small `≈` chip. Clicking the chip computes that measure exactly for the current filters and time range, in the leaderboard, table or chart the chip sits in; see [Exact values in Explore](/guide/dashboards/explore/exact-measures).
-- A measure that references an exact measure (such as `revenue_per_user` above) is computed from the exact value too, and requesting such a measure exactly computes the measures it references exactly. You do not declare anything for it. Precision is resolved once per query: a measure requested exactly anywhere in a query, including inside a measure filter or through a derived measure, is computed exactly everywhere in it. A derived measure never mixes precisions: when a query contains a measure calculated from an exact measure, its other inputs with an `exact_expression` are computed exactly as well.
+- A derived measure such as `revenue_per_user` above is calculated from the other measures as the query computes them: in a table where `unique_users` is exact, the ratio uses the exact count. It shows no chip of its own. Precision is resolved once per query: a measure requested exactly anywhere in a query, including inside a measure filter, is computed exactly everywhere in it.
 - Measures without an `exact_expression` are unchanged. Rill does not know whether a lone `expression` is approximate, so they show no chip.
 - Queries that compute a measure exactly never use rollups, because exact aggregates cannot be derived from pre-aggregated rows.
 - Rill validates `exact_expression` like `expression` when the metrics view reconciles, and the exact variant must produce a numeric type.

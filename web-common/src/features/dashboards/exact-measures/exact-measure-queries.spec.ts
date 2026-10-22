@@ -138,12 +138,12 @@ describe("exact measures in explore queries", () => {
     destroy();
   });
 
-  it("flags the exact measure a selected derived measure is calculated from in every request", async () => {
+  it("ignores a selection of a derived measure: derived measures have no exact variant", async () => {
     const { stateManagers, destroy } = initStateManagers();
 
-    // The derived measure is not shown on the explore, so no request names it.
-    // Its input is exact nonetheless, because the runtime would compute the
-    // input exactly wherever the derived measure is requested exactly.
+    // The derived measure is calculated from bid_price, but selecting it must
+    // not make bid_price exact: only measures with their own exact expression
+    // have exact behavior.
     stateManagers.actions.exactMeasures.toggleExactMeasure(
       exploreExactSurface.measures,
       BID_PRICE_PER_IMPRESSION_MEASURE,
@@ -152,31 +152,13 @@ describe("exact measures in explore queries", () => {
     const unsub = createTimeSeriesDataStore(stateManagers).subscribe(() => {});
     await asyncWait(500);
 
-    const aggregationBodies = requestBodies.filter(
-      (body) =>
-        body.includes(`"name":"${AD_BIDS_BID_PRICE_MEASURE}"`) &&
-        !body.includes("measureNames"),
-    );
-    expect(aggregationBodies.length).toBeGreaterThan(0);
-    for (const body of aggregationBodies) {
-      expect(body).not.toContain(BID_PRICE_PER_IMPRESSION_MEASURE);
-      expect(body).toMatch(
-        new RegExp(`"name":"${AD_BIDS_BID_PRICE_MEASURE}","exact":true`),
-      );
-      expect(body).not.toMatch(
-        new RegExp(`"name":"${AD_BIDS_IMPRESSIONS_MEASURE}","exact":true`),
-      );
-    }
-
-    const timeSeriesBodies = requestBodies.filter((body) =>
-      body.includes("measureNames"),
-    );
-    expect(timeSeriesBodies.length).toBeGreaterThan(0);
-    for (const body of timeSeriesBodies) {
-      expect(body).toContain(
-        `"exactMeasureNames":["${AD_BIDS_BID_PRICE_MEASURE}"]`,
-      );
-    }
+    expect(requestBodies.length).toBeGreaterThan(0);
+    expect(
+      requestBodies.filter((body) => body.includes('"exact":true')),
+    ).toEqual([]);
+    expect(
+      requestBodies.filter((body) => body.includes("exactMeasureNames")),
+    ).toEqual([]);
 
     unsub();
     destroy();

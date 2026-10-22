@@ -96,20 +96,6 @@
     expressionFilterManager,
   } = StateManagers;
 
-  // The big numbers and their charts are one surface: a click applies to this
-  // row only.
-  const measuresSurface = exploreExactSurface.measures;
-
-  // Measures that are requested with `exact: true`: the selection of the
-  // big-number row plus the measures that reference a selected measure.
-  const exactContext = $derived($exactMeasureContext(measuresSurface));
-  const exactRequestNames = $derived(
-    requestExactNames(
-      $visibleMeasures.map((measure) => measure.name ?? ""),
-      exactContext,
-    ),
-  );
-
   const timeControlsStore = useTimeControlStore(StateManagers);
 
   let connectNulls = $state(true);
@@ -165,6 +151,24 @@
     Boolean(activePage === DashboardState_ActivePage.TIME_DIMENSIONAL_DETAIL),
   );
   let expandedMeasureName = $derived($exploreState?.tdd?.expandedMeasureName);
+
+  // The big numbers and their charts are one surface: a click applies to this
+  // row only. On the Time Dimension Detail page the chart, totals and table
+  // form one surface instead, controlled by the chip in the page's header.
+  const measuresSurface = $derived(
+    showTimeDimensionDetail
+      ? exploreExactSurface.tdd
+      : exploreExactSurface.measures,
+  );
+
+  // Measures that are requested with `exact: true`: the surface's selection.
+  const exactContext = $derived($exactMeasureContext(measuresSurface));
+  const exactRequestNames = $derived(
+    requestExactNames(
+      $visibleMeasures.map((measure) => measure.name ?? ""),
+      exactContext,
+    ),
+  );
 
   let comparisonDimension = $derived(
     $exploreState?.selectedComparisonDimension,

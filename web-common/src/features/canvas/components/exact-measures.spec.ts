@@ -27,54 +27,16 @@ const NONE: ReadonlySet<string> = new Set();
 
 describe("canvasExactRequestNames", () => {
   it("is empty without a selection", () => {
-    expect(
-      canvasExactRequestNames(["users"], NONE, MEASURES, undefined),
-    ).toEqual([]);
+    expect(canvasExactRequestNames(["users"], NONE)).toEqual([]);
   });
 
-  it("flags the surface's selection and the measures calculated from it", () => {
+  it("flags the surface's selection among the measures it shows", () => {
     expect(
       canvasExactRequestNames(
         ["users", "revenue", "revenue_per_user"],
-        new Set(["users"]),
-        MEASURES,
-        undefined,
-      ),
-    ).toEqual(["users", "revenue_per_user"]);
-  });
-
-  it("flags the measures a selected ratio is calculated from, in a component that shows only them", () => {
-    expect(
-      canvasExactRequestNames(
-        ["users", "revenue"],
-        new Set(["revenue_per_user"]),
-        MEASURES,
-        undefined,
+        new Set(["users", "sessions"]),
       ),
     ).toEqual(["users"]);
-  });
-
-  it("is a no-op for a selection without exact variants", () => {
-    expect(
-      canvasExactRequestNames(
-        ["revenue"],
-        new Set(["revenue"]),
-        MEASURES,
-        undefined,
-      ),
-    ).toEqual([]);
-  });
-
-  it("follows ephemeral measures calculated from an exact measure", () => {
-    expect(
-      canvasExactRequestNames(["double_users"], new Set(["users"]), MEASURES, [
-        {
-          name: "double_users",
-          displayName: "Double users",
-          expression: "users * 2",
-        },
-      ]),
-    ).toEqual(["double_users"]);
   });
 });
 
@@ -128,14 +90,18 @@ describe("canvasPrecisionChip", () => {
     });
   });
 
-  it("renders the measures a selected ratio is calculated from as inherited", () => {
-    const ctx = createExactMeasureContext(
-      new Set(["revenue_per_user"]),
-      MEASURES,
-    );
+  it("is undefined for a derived measure: it has no exact variant of its own", () => {
+    const ctx = createExactMeasureContext(new Set(["users"]), MEASURES);
     expect(
-      canvasPrecisionChip("users", "Users", ctx, false, undefined, noop),
-    ).toMatchObject({ state: "inherited" });
+      canvasPrecisionChip(
+        "revenue_per_user",
+        "Revenue per user",
+        ctx,
+        false,
+        undefined,
+        noop,
+      ),
+    ).toBeUndefined();
   });
 
   it("does not report loading or errors for an approximate measure", () => {
@@ -182,10 +148,7 @@ describe("canvasChartPrecisionChip", () => {
   });
 
   it("is exact when every exact-capable measure of the chart is exact, with the query status", () => {
-    const ctx = createExactMeasureContext(
-      new Set(["users", "revenue_per_user"]),
-      MEASURES,
-    );
+    const ctx = createExactMeasureContext(new Set(["users"]), MEASURES);
     expect(
       canvasChartPrecisionChip(CHART, "Users by day", ctx, true, "boom", noop),
     ).toMatchObject({
@@ -194,24 +157,6 @@ describe("canvasChartPrecisionChip", () => {
       error: "boom",
       onToggle: noop,
     });
-  });
-
-  it("counts the measures that are exact through a related measure", () => {
-    // Only the ratio is selected; the users it is calculated from are exact too.
-    const ctx = createExactMeasureContext(
-      new Set(["revenue_per_user"]),
-      MEASURES,
-    );
-    expect(
-      canvasChartPrecisionChip(
-        CHART,
-        "Users by day",
-        ctx,
-        false,
-        undefined,
-        noop,
-      ),
-    ).toMatchObject({ state: "exact" });
   });
 
   it("is partial when only some exact-capable measures are exact", () => {

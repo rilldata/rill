@@ -93,7 +93,6 @@
     ctx.canvasEntity,
     surface,
     metricsViewName,
-    ephemeralMeasures,
   );
   $: exact = requestExactNames([measureName], $exactContextStore).has(
     measureName,

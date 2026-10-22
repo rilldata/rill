@@ -650,7 +650,7 @@ func TestRewriteQueryForRollup_ExactMeasureSkipped(t *testing.T) {
 
 	for _, measures := range [][]metricsview.Measure{
 		{{Name: "users", Exact: true}},
-		{{Name: "users_per_publisher", Exact: true}},
+		{{Name: "users_prev", Compute: &metricsview.MeasureCompute{ComparisonValue: &metricsview.MeasureComputeComparisonValue{Measure: "users"}}, Exact: true}},
 	} {
 		qry := &metricsview.Query{
 			Dimensions: []metricsview.Dimension{{Name: "publisher"}},

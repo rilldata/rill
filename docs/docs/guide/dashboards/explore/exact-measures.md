@@ -15,17 +15,16 @@ A small chip after the measure name tells you how the value was computed:
 |------|---------|
 | `≈` outlined | Approximate. The default; fast. |
 | `=` filled | Exact. You switched this measure to its exact expression. |
-| `=` dashed | Exact through a related measure: a measure this one is calculated from, or a measure calculated from it, is exact. |
 | spinner | The exact value is being computed. The previous approximate value stays visible, dimmed, until it arrives. |
 | `!` | The exact query failed or timed out. Hover for the error, click to return to the approximate value. |
 
-Measures without an exact expression show no chip.
+Measures without an exact expression show no chip. That includes measures calculated from other measures, such as a ratio of two unique counts: they are computed from the values shown next to them, so a ratio follows the precision of the unique counts in the same table.
 
-Each chip controls the part of the dashboard it sits in: the big-number row (the big numbers and their charts), one leaderboard, the dimension table, the Time Dimension Detail table or the pivot. Within that part, precision is resolved once, so a measure never has two values in the same table. Switching a unique count to exact makes every ratio calculated from it in that part exact (dashed chip). Switching a ratio to exact makes the unique counts it is calculated from exact as well, again with the dashed chip. Clicking a dashed chip keeps that measure exact on its own, so it stays exact when you switch the related measure back.
+Each chip controls the part of the dashboard it sits in: the big-number row (the big numbers and their charts), one leaderboard, the dimension table, the Time Dimension Detail page (its chart and table) or the pivot. Within that part, precision is resolved once, so a measure never has two values in the same table.
 
 ## Switch a measure to exact
 
-Click the `≈` chip next to the measure name, in a big number, a leaderboard or dimension table header, the Time Dimension Detail header, or a pivot column header. Only that part of the dashboard is recomputed exactly: the big-number row with its charts, that one leaderboard, the dimension table, the Time Dimension Detail table or the pivot. Other leaderboards and tables keep their approximate value until you click their own chip, so each click runs one expensive query rather than one for every table on the page. Click the chip again to return to the approximate value.
+Click the `≈` chip next to the measure name, in a big number, a leaderboard or dimension table header, the Time Dimension Detail header, or a pivot column header. Only that part of the dashboard is recomputed exactly: the big-number row with its charts, that one leaderboard, the dimension table, the Time Dimension Detail page or the pivot. Other leaderboards and tables keep their approximate value until you click their own chip, so each click runs one expensive query rather than one for every table on the page. Click the chip again to return to the approximate value.
 
 Exact queries can take noticeably longer than approximate ones, so the switch applies only to the view you are looking at:
 

@@ -36,7 +36,6 @@ export const exactMeasureContextFor = (
   createExactMeasureContext(
     selectedExactMeasureNames({ dashboard }, surface),
     validMetricsView?.measures,
-    dashboard.ephemeralMeasures,
   );
 
 /**

@@ -7,7 +7,6 @@
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import { themeControl } from "@rilldata/web-common/features/themes/theme-control";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
-  import { ephemeralSpecsToDefs } from "@rilldata/web-common/features/dashboards/ephemeral-measures/canvas";
   import {
     requestExactNames,
     withExactVariant,
@@ -88,7 +87,6 @@
     store.canvasEntity,
     component.id,
     metrics_view,
-    ephemeralSpecsToDefs(chartSpec.adhoc_measures),
   );
   $: exactRequestNames = [
     ...requestExactNames(measureNames, $exactContextStore),

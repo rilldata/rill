@@ -1,8 +1,6 @@
-import type { EphemeralMeasureDef } from "@rilldata/web-common/features/dashboards/ephemeral-measures/types";
 import {
   createExactMeasureContext,
   precisionStateFor,
-  requestExactNames,
   withExactVariant,
   type ExactMeasureContext,
   type PrecisionChipProps,
@@ -10,7 +8,6 @@ import {
 } from "@rilldata/web-common/features/dashboards/exact-measures/exact-measures";
 import type { ComponentInputParam } from "@rilldata/web-common/features/canvas/inspector/types";
 import type { CanvasEntity } from "@rilldata/web-common/features/canvas/stores/canvas-entity";
-import type { MetricsViewSpecMeasure } from "@rilldata/web-common/runtime-client";
 import { derived, type Readable } from "svelte/store";
 
 /**
@@ -28,13 +25,12 @@ export function canvasExactSurface(
 
 /**
  * The exact-measure context of a canvas surface: its selection, resolved over
- * the metrics view's measures and the component's ephemeral measures.
+ * the metrics view's measures.
  */
 export function canvasExactMeasureContext(
   canvasEntity: CanvasEntity,
   surface: string,
   metricsViewName: string,
-  ephemeralMeasures: EphemeralMeasureDef[] | undefined,
 ): Readable<ExactMeasureContext> {
   return derived(
     [
@@ -42,28 +38,22 @@ export function canvasExactMeasureContext(
       canvasEntity.metricsView.getMeasuresForMetricView(metricsViewName),
     ],
     ([selected, specMeasures]) =>
-      createExactMeasureContext(selected, specMeasures, ephemeralMeasures),
+      createExactMeasureContext(selected, specMeasures),
   );
 }
 
 /**
- * The measures of a canvas surface to request with `exact: true`, given its
- * selection. Pure variant of `canvasExactMeasureContext` for code that already
- * holds the metrics view spec.
+ * The measures of a canvas surface to request with `exact: true`: the ones in
+ * its selection. The selection only ever holds measures with an exact variant
+ * (see `CanvasEntity.toggleExactSurface`), and the runtime ignores the flag on
+ * any other measure, so the metrics view spec is not consulted here.
  */
 export function canvasExactRequestNames(
   measureNames: string[],
   selected: ReadonlySet<string>,
-  specMeasures: MetricsViewSpecMeasure[] | undefined,
-  ephemeralMeasures: EphemeralMeasureDef[] | undefined,
 ): string[] {
   if (!selected.size) return [];
-  return [
-    ...requestExactNames(
-      measureNames,
-      createExactMeasureContext(selected, specMeasures, ephemeralMeasures),
-    ),
-  ];
+  return measureNames.filter((name) => selected.has(name));
 }
 
 /**

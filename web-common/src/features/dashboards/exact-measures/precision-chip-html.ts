@@ -29,9 +29,6 @@ export function precisionChipHTML(precision: PrecisionChipProps): string {
   } else if (state === "exact") {
     tooltip = m.dashboard_precision_exact();
     colors = "border-primary-400 text-primary-700 bg-primary-100";
-  } else if (state === "inherited") {
-    tooltip = m.dashboard_precision_inherited();
-    colors = "border-primary-300 border-dashed text-primary-700 bg-primary-50";
   } else if (state === "partial") {
     tooltip = m.dashboard_precision_partial();
     colors = "border-primary-300 border-dashed text-primary-700 bg-primary-50";

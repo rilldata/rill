@@ -6730,7 +6730,7 @@ definitions:
         type: boolean
         description: |-
           Optional. Compute the measure with its `exact_expression` instead of its (approximate) `expression`.
-          Measures referenced by this measure are also computed exactly. No-op for measures without an `exact_expression`.
+          No-op for measures without an `exact_expression`, which only simple measures define.
   v1MetricsViewAggregationMeasureComputeComparisonDelta:
     type: object
     properties:

@@ -3,7 +3,6 @@ import {
   mapEphemeralMeasuresForRequest,
 } from "@rilldata/web-common/features/dashboards/ephemeral-measures/measure-mapping";
 import { requestExactNames } from "@rilldata/web-common/features/dashboards/exact-measures/exact-measures";
-import { exploreExactSurface } from "@rilldata/web-common/features/dashboards/exact-measures/explore-surfaces";
 import { exactMeasureContextFor } from "@rilldata/web-common/features/dashboards/state-managers/selectors/exact-measures";
 import {
   getURIRequestMeasure,
@@ -79,18 +78,12 @@ interface DimensionTopList {
  * and further filter using search text if present
  */
 
-// The exact selection a comparison-dimension query follows: the time series
-// charts' for the chart variant, the Time Dimension Detail's for the table.
-function exactSurfaceFor(surface: "chart" | "table"): string {
-  return surface === "table"
-    ? exploreExactSurface.tdd
-    : exploreExactSurface.measures;
-}
-
 export function getDimensionValuesForComparison(
   ctx: StateManagers,
   measures: string[],
   surface: "chart" | "table",
+  // The surface whose exact selection the table variant's query follows; see `exploreExactSurface`.
+  exactSurface: string,
 ): Readable<DimensionTopList> {
   return derived(
     [
@@ -164,7 +157,7 @@ export function getDimensionValuesForComparison(
                   dashboard: dashboardStore,
                   validMetricsView: validSpec?.data?.metricsView,
                 },
-                exactSurfaceFor(surface),
+                exactSurface,
               ),
             ),
           );
@@ -373,24 +366,16 @@ export function getDimensionValueTimeSeries(
   ctx: StateManagers,
   measures: string[],
   surface: "chart" | "table",
+  // The surface whose exact selection the queries follow; see `exploreExactSurface`.
+  exactSurface: string,
 ): Readable<DimensionDataItem[]> {
   return derived(
     [
       ctx.dashboardStore,
       useTimeControlStore(ctx),
-      createMetricsViewTimeSeries(
-        ctx,
-        measures,
-        false,
-        exactSurfaceFor(surface),
-      ),
-      createMetricsViewTimeSeries(
-        ctx,
-        measures,
-        true,
-        exactSurfaceFor(surface),
-      ),
-      getDimensionValuesForComparison(ctx, measures, surface),
+      createMetricsViewTimeSeries(ctx, measures, false, exactSurface),
+      createMetricsViewTimeSeries(ctx, measures, true, exactSurface),
+      getDimensionValuesForComparison(ctx, measures, surface, exactSurface),
     ],
     (
       [
@@ -429,7 +414,7 @@ export function getDimensionValueTimeSeries(
         ctx,
         measures,
         dimensionValues,
-        exactSurfaceFor(surface),
+        exactSurface,
         includeTimeComparisonForDimension,
       );
 

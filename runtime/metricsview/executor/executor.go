@@ -638,10 +638,14 @@ func (e *Executor) Search(ctx context.Context, qry *metricsview.SearchQuery, exe
 				RequireTimeRange: false,
 				MaxTimeRangeDays: 0, // not enforced
 			},
-			ExactMeasures: nil, // resolved by NewAST from the flags of the where subqueries
+			ExactMeasures: nil, // resolved by rewriteQueryExactMeasures
 			UnusedFields:  nil,
 		} //exhaustruct:enforce
 		q.Where = whereExprForSearch(qry.Where, d, qry.Search)
+
+		if err := e.rewriteQueryExactMeasures(q); err != nil {
+			return nil, err
+		}
 
 		err := e.RewriteQueryTimeRanges(ctx, q, executionTime)
 		if err != nil {
@@ -790,11 +794,15 @@ func (e *Executor) executeSearchInDruid(ctx context.Context, qry *metricsview.Se
 			RequireTimeRange: false,
 			MaxTimeRangeDays: 0, // not enforced
 		},
-		ExactMeasures: nil, // resolved by NewAST from the flags of the where subqueries
+		ExactMeasures: nil, // resolved by rewriteQueryExactMeasures
 		UnusedFields:  nil,
 	} //exhaustruct:enforce
 
 	if err := e.RewriteQueryTimeRanges(ctx, q, executionTime); err != nil {
+		return nil, err
+	}
+
+	if err := e.rewriteQueryExactMeasures(q); err != nil {
 		return nil, err
 	}
 

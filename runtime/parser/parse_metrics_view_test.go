@@ -1335,4 +1335,42 @@ measures:
 		require.NotEmpty(t, p.Errors)
 		require.Contains(t, p.Errors[0].Message, `"exact_expression" can only be set if "expression" is set`)
 	})
+
+	t.Run("only on simple measures without a window", func(t *testing.T) {
+		for name, measure := range map[string]string{
+			"derived": `
+- name: users_per_record
+  requires: [records]
+  expression: records / 2
+  exact_expression: records / 2
+`,
+			"window": `
+- name: running_users
+  expression: approx_count_distinct(user_id)
+  exact_expression: count(DISTINCT user_id)
+  window:
+    order: ts
+`,
+		} {
+			t.Run(name, func(t *testing.T) {
+				repo := makeRepo(t, map[string]string{
+					`rill.yaml`:     ``,
+					`models/m1.sql`: `SELECT 1 AS user_id, now() AS ts`,
+					`metrics_views/mv1.yaml`: `
+type: metrics_view
+version: 1
+model: m1
+timeseries: ts
+measures:
+- name: records
+  expression: count(*)
+` + measure,
+				})
+				p, err := Parse(ctx, repo, "", "", "duckdb", true)
+				require.NoError(t, err)
+				require.NotEmpty(t, p.Errors)
+				require.Contains(t, p.Errors[0].Message, `"exact_expression" can only be set on simple measures without a window`)
+			})
+		}
+	})
 }

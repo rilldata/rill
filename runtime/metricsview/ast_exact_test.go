@@ -25,12 +25,9 @@ func exactTestMetricsView() *runtimev1.MetricsViewSpec {
 		},
 		Measures: []*runtimev1.MetricsViewSpec_Measure{
 			{Name: "users", Expression: approxUsersSQL, ExactExpression: exactUsersSQL, Type: runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE},
+			{Name: "sessions", Expression: "approx_count_distinct(session_id)", ExactExpression: "count(DISTINCT session_id)", Type: runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE},
 			{Name: "revenue", Expression: "sum(revenue)", Type: runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE},
 			{Name: "revenue_per_user", Expression: "revenue / users", Type: runtimev1.MetricsViewSpec_MEASURE_TYPE_DERIVED, ReferencedMeasures: []string{"revenue", "users"}},
-			{Name: "sessions", Expression: "approx_count_distinct(session_id)", ExactExpression: "count(DISTINCT session_id)", Type: runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE},
-			{Name: "views", Expression: "approx_count_distinct(view_id)", ExactExpression: "count(DISTINCT view_id)", Type: runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE},
-			{Name: "sessions_per_user", Expression: "sessions / users", Type: runtimev1.MetricsViewSpec_MEASURE_TYPE_DERIVED, ReferencedMeasures: []string{"sessions", "users"}},
-			{Name: "views_per_session", Expression: "views / sessions", Type: runtimev1.MetricsViewSpec_MEASURE_TYPE_DERIVED, ReferencedMeasures: []string{"views", "sessions"}},
 		},
 	}
 }
@@ -78,9 +75,14 @@ func TestExactMeasureSet(t *testing.T) {
 			want:     map[string]bool{"users": true},
 		},
 		{
-			name:     "flagged derived measure resolves its referenced measures",
+			name:     "every flagged measure with an exact expression",
+			measures: []Measure{{Name: "users", Exact: true}, {Name: "sessions", Exact: true}},
+			want:     map[string]bool{"users": true, "sessions": true},
+		},
+		{
+			name:     "flag on a derived measure is a no-op: derived measures have no exact variant",
 			measures: []Measure{{Name: "revenue_per_user", Exact: true}},
-			want:     map[string]bool{"users": true},
+			want:     nil,
 		},
 		{
 			name:     "flagged comparison compute resolves its base measure",
@@ -93,12 +95,12 @@ func TestExactMeasureSet(t *testing.T) {
 			want:     map[string]bool{"users": true},
 		},
 		{
-			name:     "flagged expression compute resolves its referenced measures",
+			name:     "flag on an expression compute is a no-op: ad hoc measures have no exact variant",
 			measures: []Measure{{Name: "double_users", Compute: &MeasureCompute{Expression: &MeasureComputeExpression{Expression: "users * 2"}}, Exact: true}},
-			want:     map[string]bool{"users": true},
+			want:     nil,
 		},
 		{
-			name:     "flagged count compute has no referenced measures",
+			name:     "flagged count compute has no base measure",
 			measures: []Measure{{Name: "cnt", Compute: &MeasureCompute{Count: true}, Exact: true}},
 			want:     nil,
 		},
@@ -125,39 +127,6 @@ func TestExactMeasureSet(t *testing.T) {
 			measures: []Measure{{Name: "users"}},
 			where:    usersAbove10Filter(false),
 			want:     nil,
-		},
-		{
-			name:     "a derived measure calculated from an exact measure makes its other inputs exact",
-			measures: []Measure{{Name: "users", Exact: true}, {Name: "sessions"}, {Name: "sessions_per_user"}},
-			want:     map[string]bool{"users": true, "sessions": true},
-		},
-		{
-			name:     "without that derived measure in the query, its other inputs stay approximate",
-			measures: []Measure{{Name: "users", Exact: true}, {Name: "sessions"}},
-			want:     map[string]bool{"users": true},
-		},
-		{
-			name:     "a derived measure whose other inputs have no exact expression adds nothing",
-			measures: []Measure{{Name: "users", Exact: true}, {Name: "revenue_per_user"}},
-			want:     map[string]bool{"users": true},
-		},
-		{
-			// views_per_session comes first so that it only meets the set once sessions_per_user has added sessions, in a second round.
-			name:     "measures made exact by a derived measure make further derived measures exact",
-			measures: []Measure{{Name: "users", Exact: true}, {Name: "views_per_session"}, {Name: "sessions_per_user"}},
-			want:     map[string]bool{"users": true, "sessions": true, "views": true},
-		},
-		{
-			name:     "a derived measure in a filter subquery follows the same rule",
-			measures: []Measure{{Name: "users", Exact: true}},
-			where: &Expression{Condition: &Condition{
-				Operator: OperatorIn,
-				Expressions: []*Expression{
-					{Name: "publisher"},
-					{Subquery: &Subquery{Dimension: Dimension{Name: "publisher"}, Measures: []Measure{{Name: "sessions_per_user"}}}},
-				},
-			}},
-			want: map[string]bool{"users": true, "sessions": true},
 		},
 	}
 
@@ -206,20 +175,14 @@ func TestExactMeasureSQL(t *testing.T) {
 			wantApproxCount: 1,
 		},
 		{
-			name:            "flagged derived measure computes its referenced measure exactly",
+			name:            "flag on a derived measure leaves the measures it is calculated from approximate",
 			qry:             &Query{MetricsView: "test", Dimensions: []Dimension{{Name: "publisher"}}, Measures: []Measure{{Name: "revenue_per_user", Exact: true}}},
-			wantExactCount:  1,
-			wantApproxCount: 0,
+			wantExactCount:  0,
+			wantApproxCount: 1,
 		},
 		{
-			name:            "flagged and unflagged requests of one measure promote it to exact (unflagged first)",
-			qry:             &Query{MetricsView: "test", Dimensions: []Dimension{{Name: "publisher"}}, Measures: []Measure{{Name: "users"}, {Name: "revenue_per_user", Exact: true}}},
-			wantExactCount:  1,
-			wantApproxCount: 0,
-		},
-		{
-			name:            "flagged and unflagged requests of one measure promote it to exact (flagged first)",
-			qry:             &Query{MetricsView: "test", Dimensions: []Dimension{{Name: "publisher"}}, Measures: []Measure{{Name: "revenue_per_user", Exact: true}, {Name: "users"}}},
+			name:            "a derived measure is calculated from the exact measure when the query computes it exactly",
+			qry:             &Query{MetricsView: "test", Dimensions: []Dimension{{Name: "publisher"}}, Measures: []Measure{{Name: "users", Exact: true}, {Name: "revenue_per_user"}}},
 			wantExactCount:  1,
 			wantApproxCount: 0,
 		},
@@ -236,10 +199,10 @@ func TestExactMeasureSQL(t *testing.T) {
 			wantApproxCount: 0,
 		},
 		{
-			name:            "flagged expression compute computes its referenced measure exactly",
+			name:            "flag on an expression compute leaves the measures it references approximate",
 			qry:             &Query{MetricsView: "test", Dimensions: []Dimension{{Name: "publisher"}}, Measures: []Measure{{Name: "double_users", Compute: &MeasureCompute{Expression: &MeasureComputeExpression{Expression: "users * 2"}}, Exact: true}}},
-			wantExactCount:  1,
-			wantApproxCount: 0,
+			wantExactCount:  0,
+			wantApproxCount: 1,
 		},
 		{
 			name:            "where subquery inherits the outer query's exact measures",

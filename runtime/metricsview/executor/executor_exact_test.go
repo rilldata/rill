@@ -118,22 +118,24 @@ func TestExactMeasures(t *testing.T) {
 		require.EqualValues(t, 6, rows[0]["ids"])
 	})
 
-	t.Run("flagged derived measure computes its referenced measure exactly", func(t *testing.T) {
-		rows, err := resolveMetrics(t, rt, instanceID, map[string]any{
-			"measures": []map[string]any{{"name": "records_per_id", "exact": true}},
-		})
-		require.NoError(t, err)
-		require.Len(t, rows, 1)
-		require.InDelta(t, 103.0/6.0, rows[0]["records_per_id"], 1e-9)
-	})
-
-	t.Run("a measure requested both ways is exact", func(t *testing.T) {
+	t.Run("a flag on a derived measure is a no-op: derived measures have no exact variant", func(t *testing.T) {
 		rows, err := resolveMetrics(t, rt, instanceID, map[string]any{
 			"measures": []map[string]any{{"name": "records"}, {"name": "records_per_id", "exact": true}},
 		})
 		require.NoError(t, err)
 		require.Len(t, rows, 1)
+		require.EqualValues(t, 3, rows[0]["records"])
+		require.InDelta(t, 0.5, rows[0]["records_per_id"], 1e-9)
+	})
+
+	t.Run("a derived measure is calculated from the measures as the query computes them", func(t *testing.T) {
+		rows, err := resolveMetrics(t, rt, instanceID, map[string]any{
+			"measures": []map[string]any{{"name": "records", "exact": true}, {"name": "ids"}, {"name": "records_per_id"}},
+		})
+		require.NoError(t, err)
+		require.Len(t, rows, 1)
 		require.EqualValues(t, 103, rows[0]["records"])
+		require.EqualValues(t, 6, rows[0]["ids"])
 		require.InDelta(t, 103.0/6.0, rows[0]["records_per_id"], 1e-9)
 	})
 
@@ -220,26 +222,16 @@ func TestExactMeasures(t *testing.T) {
 		require.EqualValues(t, 102, rows[0]["records"])
 	})
 
-	t.Run("a derived measure calculated from an exact measure computes its other inputs exactly", func(t *testing.T) {
+	t.Run("a derived measure follows only the inputs the query computes exactly", func(t *testing.T) {
 		rows, err := resolveMetrics(t, rt, instanceID, map[string]any{
 			"measures": []map[string]any{{"name": "records", "exact": true}, {"name": "publishers"}, {"name": "records_per_publisher"}},
 		})
 		require.NoError(t, err)
 		require.Len(t, rows, 1)
-		// records_per_publisher is calculated from records, so it never divides an exact count by an approximate one: publishers is exact too (2 + 1000).
-		require.EqualValues(t, 103, rows[0]["records"])
-		require.EqualValues(t, 1002, rows[0]["publishers"])
-		require.InDelta(t, 103.0/1002.0, rows[0]["records_per_publisher"], 1e-9)
-	})
-
-	t.Run("without the derived measure, the other input stays approximate", func(t *testing.T) {
-		rows, err := resolveMetrics(t, rt, instanceID, map[string]any{
-			"measures": []map[string]any{{"name": "records", "exact": true}, {"name": "publishers"}},
-		})
-		require.NoError(t, err)
-		require.Len(t, rows, 1)
+		// publishers has an exact variant of its own but is not flagged, so the ratio divides the exact records by the approximate publishers.
 		require.EqualValues(t, 103, rows[0]["records"])
 		require.EqualValues(t, 2, rows[0]["publishers"])
+		require.InDelta(t, 103.0/2.0, rows[0]["records_per_publisher"], 1e-9)
 	})
 
 	t.Run("two-phase comparison applies the query's precision to a filter subquery", func(t *testing.T) {

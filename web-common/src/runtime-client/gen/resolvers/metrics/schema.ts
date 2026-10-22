@@ -125,7 +125,7 @@ export interface Measure {
   name: string;
   compute?: MeasureCompute;
   /**
-   * Compute the measure with its exact_expression when the metrics view defines one (slower). Measures it references are also computed exactly. Defaults to false (approximate).
+   * Compute the measure with its exact_expression when the metrics view defines one (slower). Defaults to false (approximate).
    */
   exact?: boolean;
   [k: string]: unknown;

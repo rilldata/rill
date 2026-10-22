@@ -33,8 +33,6 @@
     switch (precision) {
       case "exact":
         return m.dashboard_precision_exact();
-      case "inherited":
-        return m.dashboard_precision_inherited();
       case "partial":
         return m.dashboard_precision_partial();
       default:
@@ -67,8 +65,7 @@
     type="button"
     class="precision-chip"
     class:exact={precision === "exact" && !error}
-    class:inherited={(precision === "inherited" || precision === "partial") &&
-      !error}
+    class:partial={precision === "partial" && !error}
     class:error={!!error}
     class:interactive={canToggle}
     aria-pressed={precision === "partial" ? "mixed" : precision === "exact"}
@@ -116,10 +113,10 @@
   .precision-chip.exact.interactive:hover {
     @apply border-primary-600 text-primary-800;
   }
-  .precision-chip.inherited {
+  .precision-chip.partial {
     @apply bg-primary-50 border-primary-300 text-primary-700 border-dashed;
   }
-  .precision-chip.inherited.interactive:hover {
+  .precision-chip.partial.interactive:hover {
     @apply border-primary-500 text-primary-800;
   }
   .precision-chip.error {

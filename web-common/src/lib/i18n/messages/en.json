@@ -1006,7 +1006,6 @@
   "dashboard_precision_approx": "Approximate value. Click to compute the exact value (slower).",
   "dashboard_precision_error": "Exact query failed: {message}. Click to return to the approximate value.",
   "dashboard_precision_exact": "Exact value. Click to return to the approximate value.",
-  "dashboard_precision_inherited": "Exact value, because it is calculated from or used by an exact measure. Click to keep this measure exact on its own.",
   "dashboard_precision_loading": "Computing the exact value…",
   "dashboard_precision_partial": "Some values are exact. Click to compute all of them exactly.",
   "dashboard_precision_toggle_aria": "Toggle exact value for {measure}",

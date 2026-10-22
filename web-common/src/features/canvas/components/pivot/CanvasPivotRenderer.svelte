@@ -22,7 +22,6 @@
     type PivotClickToFilterResult,
   } from "./pivot-click-to-filter";
 
-  import { ephemeralSpecsToDefs } from "@rilldata/web-common/features/dashboards/ephemeral-measures/canvas";
   import type { PrecisionChipProps } from "@rilldata/web-common/features/dashboards/exact-measures/exact-measures";
   import {
     canvasExactMeasureContext,
@@ -121,7 +120,6 @@
     canvasEntity,
     component.id,
     $spec?.metrics_view ?? "",
-    ephemeralSpecsToDefs($spec?.adhoc_measures),
   );
   $: precisionFor = (measureName: string): PrecisionChipProps | undefined =>
     canvasPrecisionChip(

@@ -17,6 +17,8 @@ export function createTotalsForMeasure(
   ctx: StateManagers,
   measures: string[],
   isComparison = false,
+  // The surface whose exact selection the request follows; see `exploreExactSurface`.
+  exactSurface: string = exploreExactSurface.measures,
 ): CreateQueryResult<V1MetricsViewAggregationResponse, Error> {
   return derived(
     [
@@ -35,10 +37,7 @@ export function createTotalsForMeasure(
               measures.map((measure) => ({ name: measure })),
               dashboard.ephemeralMeasures,
             ),
-            requestExactNames(
-              measures,
-              exactContext(exploreExactSurface.measures),
-            ),
+            requestExactNames(measures, exactContext(exactSurface)),
           ),
           where: sanitiseExpression(dashboard.whereFilter, undefined),
           timeRange: {
@@ -66,6 +65,8 @@ export function createUnfilteredTotalsForMeasure(
   ctx: StateManagers,
   measures: string[],
   dimensionName: string,
+  // The surface whose exact selection the request follows; see `exploreExactSurface`.
+  exactSurface: string = exploreExactSurface.measures,
 ): CreateQueryResult<V1MetricsViewAggregationResponse, Error> {
   return derived(
     [
@@ -88,10 +89,7 @@ export function createUnfilteredTotalsForMeasure(
               measures.map((measure) => ({ name: measure })),
               dashboard.ephemeralMeasures,
             ),
-            requestExactNames(
-              measures,
-              exactContext(exploreExactSurface.measures),
-            ),
+            requestExactNames(measures, exactContext(exactSurface)),
           ),
           where: updatedFilter,
           timeRange: {

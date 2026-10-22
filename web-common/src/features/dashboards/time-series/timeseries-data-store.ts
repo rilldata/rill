@@ -151,6 +151,11 @@ export function createTimeSeriesDataStore(
         dashboardStore?.activePage ===
           DashboardState_ActivePage.TIME_DIMENSIONAL_DETAIL,
       );
+      // The Time Dimension Detail page is one surface: its chart, totals and
+      // table follow the chip in its header (see exploreExactSurface).
+      const exactSurface = showTimeDimensionDetail
+        ? exploreExactSurface.tdd
+        : exploreExactSurface.measures;
       const expandedMeasuerName = dashboardStore?.tdd?.expandedMeasureName;
       if (showTimeDimensionDetail && expandedMeasuerName) {
         const ephemeralMeasureNames = ephemeralMeasureNameSet(
@@ -180,7 +185,12 @@ export function createTimeSeriesDataStore(
 
       const primaryTimeSeries =
         measuresForTimeSeries.length > 0
-          ? createMetricsViewTimeSeries(ctx, measuresForTimeSeries, false)
+          ? createMetricsViewTimeSeries(
+              ctx,
+              measuresForTimeSeries,
+              false,
+              exactSurface,
+            )
           : writable({
               isFetching: false,
               isError: false,
@@ -190,7 +200,7 @@ export function createTimeSeriesDataStore(
 
       const primaryTotals =
         measuresForTotals.length > 0
-          ? createTotalsForMeasure(ctx, measuresForTotals, false)
+          ? createTotalsForMeasure(ctx, measuresForTotals, false, exactSurface)
           : writable({
               isFetching: false,
               isError: false,
@@ -207,6 +217,7 @@ export function createTimeSeriesDataStore(
           ctx,
           measuresForTotals,
           dashboardStore?.selectedComparisonDimension,
+          exactSurface,
         );
       }
       let comparisonTimeSeries:
@@ -220,8 +231,14 @@ export function createTimeSeriesDataStore(
           ctx,
           measuresForTimeSeries,
           true,
+          exactSurface,
         );
-        comparisonTotals = createTotalsForMeasure(ctx, measuresForTotals, true);
+        comparisonTotals = createTotalsForMeasure(
+          ctx,
+          measuresForTotals,
+          true,
+          exactSurface,
+        );
       }
 
       let dimensionTimeSeriesCharts:
@@ -232,6 +249,7 @@ export function createTimeSeriesDataStore(
           ctx,
           measuresForTimeSeries,
           "chart",
+          exactSurface,
         );
       }
 

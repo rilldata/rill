@@ -98,7 +98,6 @@
           store.canvasEntity,
           canvasExactSurface(component.id, dimension.name ?? ""),
           metricsViewName,
-          ephemeralMeasures,
         ),
       ),
       (contexts) =>

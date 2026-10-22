@@ -1769,7 +1769,7 @@ type MetricsViewAggregationMeasure struct {
 	//	*MetricsViewAggregationMeasure_Expression
 	Compute isMetricsViewAggregationMeasure_Compute `protobuf_oneof:"compute"`
 	// Optional. Compute the measure with its `exact_expression` instead of its (approximate) `expression`.
-	// Measures referenced by this measure are also computed exactly. No-op for measures without an `exact_expression`.
+	// No-op for measures without an `exact_expression`, which only simple measures define.
 	Exact bool `protobuf:"varint,14,opt,name=exact,proto3" json:"exact,omitempty"`
 }
 

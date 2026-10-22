@@ -1385,7 +1385,7 @@ export class MetricsViewAggregationMeasure extends Message<MetricsViewAggregatio
 
   /**
    * Optional. Compute the measure with its `exact_expression` instead of its (approximate) `expression`.
-   * Measures referenced by this measure are also computed exactly. No-op for measures without an `exact_expression`.
+   * No-op for measures without an `exact_expression`, which only simple measures define.
    *
    * @generated from field: bool exact = 14;
    */

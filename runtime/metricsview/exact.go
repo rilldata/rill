@@ -4,17 +4,12 @@ import (
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 )
 
-// ExactMeasureSet returns the names of the metrics view measures that the query must compute with their exact_expression.
+// ExactMeasureSet returns the names of the metrics view measures that the query must compute with their exact_expression:
+// every measure flagged Exact anywhere in the query that defines an exact_expression.
+// A flag counts wherever it appears: on a plain measure, on a comparison or percent-of-total compute (it applies to the base measure), or on a measure of a subquery in the where or having expressions.
+// Flags on other measures are no-ops. Only simple measures define an exact_expression; a derived measure is calculated from the measures as the query computes them.
 //
-// It starts from every measure flagged Exact anywhere in the query, including the measures of subqueries in its where and having expressions,
-// follows the measures they are calculated from (a derived measure's requires, the base measure of comparison and percent-of-total computes, and the refs of ephemeral expression measures),
-// and keeps the measures that define an exact_expression.
-// It then closes the set under the rule that a measure calculated from an exact measure is exact as well:
-// every measure of the query that is calculated from a measure of the set adds the measures it is calculated from,
-// so a ratio of two unique counts never divides an exact count by an approximate one.
-// The frontend resolves the precision chips of a dashboard with the same rule.
-//
-// A measure name has exactly one value per query: if a measure is requested both exactly and approximately (directly, through a derived measure, or in a filter subquery), it is computed exactly.
+// A measure name has exactly one value per query: if a measure is requested both exactly and approximately (directly, through a compute, or in a filter subquery), it is computed exactly.
 // The executor resolves the set once per query and stores it in Query.ExactMeasures; queries derived from it copy the set instead of resolving their own (see NewAST).
 //
 // It returns nil when no measure is flagged, which is the common case.
@@ -22,125 +17,34 @@ func ExactMeasureSet(mv *runtimev1.MetricsViewSpec, qry *Query) map[string]bool 
 	if !hasExactMeasure(qry.Measures, qry.Where, qry.Having) {
 		return nil
 	}
-	measures := appendQueryMeasures(nil, qry.Measures, qry.Where, qry.Having)
-	return newMeasureRefs(mv, measures).exactSet(measures)
-}
 
-// measureRefs resolves which metrics view measures the measures of a query are calculated from.
-type measureRefs struct {
-	byName map[string]*runtimev1.MetricsViewSpec_Measure
-	// The refs of the expression measures defined in the query itself (ephemeral measures), which can reference metrics view measures.
-	exprRefs map[string][]string
-}
-
-func newMeasureRefs(mv *runtimev1.MetricsViewSpec, measures []Measure) measureRefs {
-	r := measureRefs{
-		byName:   make(map[string]*runtimev1.MetricsViewSpec_Measure, len(mv.Measures)),
-		exprRefs: make(map[string][]string),
-	}
+	byName := make(map[string]*runtimev1.MetricsViewSpec_Measure, len(mv.Measures))
 	for _, m := range mv.Measures {
-		r.byName[m.Name] = m
+		byName[m.Name] = m
 	}
-	for _, qm := range measures {
-		if qm.Compute == nil || qm.Compute.Expression == nil {
-			continue
-		}
-		parsed, err := ParseMeasureExpression(qm.Compute.Expression.Expression)
-		if err != nil {
-			// Invalid expressions are reported when the AST resolves the measure.
-			continue
-		}
-		r.exprRefs[qm.Name] = parsed.Refs()
-	}
-	return r
-}
 
-// exactSet implements ExactMeasureSet for the measures of a query and of its filter subqueries (see appendQueryMeasures).
-func (r measureRefs) exactSet(measures []Measure) map[string]bool {
-	set := make(map[string]bool)
-	for _, qm := range measures {
-		if qm.Exact {
-			r.addExact(qm, set)
+	res := make(map[string]bool)
+	for _, qm := range appendQueryMeasures(nil, qry.Measures, qry.Where, qry.Having) {
+		if !qm.Exact {
+			continue
+		}
+		name, ok := measureBase(qm)
+		if !ok {
+			continue
+		}
+		if m, ok := byName[name]; ok && m.ExactExpression != "" {
+			res[name] = true
 		}
 	}
-	if len(set) == 0 {
+	if len(res) == 0 {
 		return nil
 	}
-
-	// A measure calculated from an exact measure is exact as well, so the measures it is calculated from join the set.
-	// They can make further measures exact in turn, so repeat until the set stops growing.
-	for grown := true; grown; {
-		grown = false
-		for _, qm := range measures {
-			if qm.Exact || !r.meets(qm, set) {
-				continue
-			}
-			n := len(set)
-			r.addExact(qm, set)
-			grown = grown || len(set) > n
-		}
-	}
-	return set
+	return res
 }
 
-// addExact adds the measures with an exact_expression that qm is calculated from, including qm itself, to the set.
-func (r measureRefs) addExact(qm Measure, set map[string]bool) {
-	r.walk(qm, func(m *runtimev1.MetricsViewSpec_Measure) bool {
-		if m.ExactExpression != "" {
-			set[m.Name] = true
-		}
-		return true
-	})
-}
-
-// meets reports whether qm is calculated from a measure of the set, or is one itself.
-func (r measureRefs) meets(qm Measure, set map[string]bool) bool {
-	found := false
-	r.walk(qm, func(m *runtimev1.MetricsViewSpec_Measure) bool {
-		found = set[m.Name]
-		return !found
-	})
-	return found
-}
-
-// walk calls fn with every metrics view measure that qm is calculated from, transitively, starting with qm itself if it is a metrics view measure.
-// It follows a derived measure's requires and an expression measure's refs, and stops when fn returns false.
-func (r measureRefs) walk(qm Measure, fn func(m *runtimev1.MetricsViewSpec_Measure) bool) {
-	root, ok := measureRoot(qm)
-	if !ok {
-		return
-	}
-	visited := make(map[string]bool)
-	var visit func(name string) bool
-	visit = func(name string) bool {
-		if visited[name] {
-			return true
-		}
-		visited[name] = true
-		if m, ok := r.byName[name]; ok {
-			if !fn(m) {
-				return false
-			}
-			for _, ref := range m.ReferencedMeasures {
-				if !visit(ref) {
-					return false
-				}
-			}
-			return true
-		}
-		for _, ref := range r.exprRefs[name] {
-			if !visit(ref) {
-				return false
-			}
-		}
-		return true
-	}
-	visit(root)
-}
-
-// measureRoot returns the name a query measure is calculated from directly: the measure itself for a plain or expression measure, and the base measure of a comparison or percent-of-total compute.
-// Count, count distinct, URI and comparison time computes do not reference metrics view measures.
-func measureRoot(qm Measure) (string, bool) {
+// measureBase returns the metrics view measure a query measure computes: the measure itself for a plain measure, and the base measure of a comparison or percent-of-total compute.
+// Count, count distinct, URI, comparison time and expression computes compute no metrics view measure.
+func measureBase(qm Measure) (string, bool) {
 	if qm.Compute == nil {
 		return qm.Name, true
 	}
@@ -154,8 +58,6 @@ func measureRoot(qm Measure) (string, bool) {
 		return c.ComparisonRatio.Measure, true
 	case c.PercentOfTotal != nil:
 		return c.PercentOfTotal.Measure, true
-	case c.Expression != nil:
-		return qm.Name, true
 	}
 	return "", false
 }
