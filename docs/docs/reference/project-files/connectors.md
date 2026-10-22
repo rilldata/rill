@@ -1024,7 +1024,28 @@ _[string]_ - Password for authentication
 
 ### `sslmode`
 
-_[string]_ - ssl mode options: `disable`, `allow`, `prefer` or `require`.
+_[string]_ - SSL mode options: `disable`, `allow`, `prefer`, `require`, `verify-ca`, or `verify-full`.
+When certificate contents are supplied, defaults to `verify-full`; other modes are rejected.
+
+### `sslrootcert_pem`
+
+_[string]_ - CA certificate contents as raw PEM or standard base64-encoded PEM.
+Used to verify the PostgreSQL server certificate. Requires individual connection
+parameters (not `dsn` or `database_url`) and `verify-full` TLS.
+
+### `sslcert_pem`
+
+_[string]_ - Client certificate contents as raw PEM or standard base64-encoded PEM.
+Requires `sslkey_pem` and `verify-full` TLS. Cannot be combined with `dsn` or `database_url`.
+
+### `sslkey_pem`
+
+_[string]_ - Matching unencrypted client private key contents as raw PEM or standard
+base64-encoded PEM. Requires `sslcert_pem` and `verify-full` TLS. Cannot be combined
+with `dsn` or `database_url`. Store this value in a secret project variable.
+
+See [PostgreSQL TLS certificates](/developers/build/connectors/data-source/postgres#tls-certificates-in-rill-cloud)
+for upload and Cloud configuration instructions.
 
 ### `max_open_conns`
 
