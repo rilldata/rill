@@ -102,19 +102,37 @@ export async function createConnector({
      * 3. Wait for reconciliation and surface any file errors
      */
 
-    // Get the project parser starting version
-    const projectParserStartingVersion = getProjectParserVersion(
-      runtimeClient.instanceId,
+    // Get the starting versions from the server; the cache can be stale if
+    // events were missed, which would let the waits below return early.
+    const projectParserStartingVersion = await getProjectParserVersion(
+      runtimeClient,
       queryClient,
     );
-    // Get the starting version of the connector resource
-    const connectorStartingVersion = queryClient.getQueryData<{
-      resource: V1Resource | undefined;
-    }>(
-      getRuntimeServiceGetResourceQueryKey(runtimeClient.instanceId, {
-        name: { name: connectorName, kind: ResourceKind.Connector },
-      }),
-    )?.resource?.meta?.stateVersion;
+    let connectorStartingVersion: string | undefined;
+    try {
+      const connector = await fetchResource(
+        runtimeClient,
+        queryClient,
+        connectorName,
+        ResourceKind.Connector,
+        true,
+      );
+      connectorStartingVersion = connector?.meta?.stateVersion;
+    } catch (error) {
+      if (isControllerClosedError(error)) {
+        // The controller is restarting; fall back to the last known version.
+        connectorStartingVersion = queryClient.getQueryData<{
+          resource: V1Resource | undefined;
+        }>(
+          getRuntimeServiceGetResourceQueryKey(runtimeClient.instanceId, {
+            name: { name: connectorName, kind: ResourceKind.Connector },
+          }),
+        )?.resource?.meta?.stateVersion;
+      } else if (!isNotFoundError(error)) {
+        // Not found means this is a new connector with no prior state.
+        throw error;
+      }
+    }
 
     const connectorYaml = getConnectorYAML({
       connector: connectorDriver,

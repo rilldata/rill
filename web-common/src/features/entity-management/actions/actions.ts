@@ -36,9 +36,7 @@ export async function runtimeServicePutFileAndWaitForReconciliation(
   client: RuntimeClient,
   runtimeServicePutFileBody: RuntimeServicePutFileBody,
 ) {
-  const projectParserStartingVersion = getProjectParserVersion(
-    client.instanceId,
-  );
+  const projectParserStartingVersion = await getProjectParserVersion(client);
 
   await runtimeServicePutFile(client, runtimeServicePutFileBody);
 

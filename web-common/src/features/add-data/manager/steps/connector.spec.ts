@@ -54,6 +54,10 @@ const explorerKey = getRuntimeServiceAnalyzeConnectorsQueryKey(
   client.instanceId,
 );
 
+// Set once the connector file is written, so the mocked server reports
+// the parser and connector state from before or after the parse.
+let parsed = false;
+
 function parser(version: number): V1Resource {
   return {
     meta: { version: String(version) },
@@ -106,6 +110,7 @@ async function submit(validate: boolean) {
 describe("ClickHouse connector readiness", () => {
   beforeEach(() => {
     vi.useFakeTimers();
+    parsed = false;
     queryClient.clear();
     fileArtifacts.removeFile(connectorPath);
     fileArtifacts.setClient(client, new RuntimeFileIO());
@@ -127,17 +132,21 @@ describe("ClickHouse connector readiness", () => {
       instance: { olapConnector: connectorName },
     });
     vi.mocked(runtimeServiceGetResource).mockImplementation(
-      async (_, params) => ({
-        resource:
-          params.name?.kind === ResourceKind.ProjectParser
-            ? parser(2)
-            : connector(),
-      }),
+      async (_, params) => {
+        if (params.name?.kind === ResourceKind.ProjectParser) {
+          return { resource: parser(parsed ? 2 : 1) };
+        }
+        if (!parsed) throw { code: 5, message: "resource not found" };
+        return { resource: connector() };
+      },
     );
     vi.mocked(runtimeServiceListResources).mockResolvedValue({
       resources: [connector()],
     });
-    vi.mocked(runtimeServicePutFile).mockResolvedValue({});
+    vi.mocked(runtimeServicePutFile).mockImplementation(async (_, body) => {
+      if (body.path === connectorPath) parsed = true;
+      return {};
+    });
   });
 
   afterEach(() => {
@@ -160,7 +169,6 @@ describe("ClickHouse connector readiness", () => {
   ])(
     "surfaces invalid credentials with event=$deliverEvent and parse delay=$parseDelay ms",
     async ({ deliverEvent, parseDelay }) => {
-      let parsed = false;
       vi.mocked(runtimeServicePutFile).mockImplementation(async () => {
         setTimeout(() => {
           parsed = true;
@@ -191,19 +199,14 @@ describe("ClickHouse connector readiness", () => {
   );
 
   it("surfaces new validation errors when the state version rolls from 9 to 10", async () => {
-    queryClient.setQueryData(connectorKey, {
-      resource: connector(undefined, "9"),
-    });
-    vi.mocked(runtimeServicePutFile).mockImplementation(async () => {
-      queryClient.setQueryData(parserKey, { resource: parser(2) });
-      return {};
-    });
     vi.mocked(runtimeServiceGetResource).mockImplementation(
       async (_, params) => ({
         resource:
           params.name?.kind === ResourceKind.ProjectParser
-            ? parser(2)
-            : connector("Authentication failed", "10"),
+            ? parser(parsed ? 2 : 1)
+            : parsed
+              ? connector("Authentication failed", "10")
+              : connector(undefined, "9"),
       }),
     );
 
@@ -213,6 +216,41 @@ describe("ClickHouse connector readiness", () => {
     expect(outcome).toMatchObject({
       status: "rejected",
       error: { details: "Authentication failed" },
+    });
+  });
+
+  it("waits for the new parse when the cached versions are stale", async () => {
+    // Missed events leave the cache behind the server.
+    queryClient.setQueryData(connectorKey, {
+      resource: connector("Old error", "1"),
+    });
+    let parsedAt = Infinity;
+    vi.mocked(runtimeServicePutFile).mockImplementation(async (_, body) => {
+      if (body.path === connectorPath) parsedAt = Date.now() + 900;
+      return {};
+    });
+    vi.mocked(runtimeServiceGetResource).mockImplementation(
+      async (_, params) => {
+        const done = Date.now() >= parsedAt;
+        return {
+          resource:
+            params.name?.kind === ResourceKind.ProjectParser
+              ? parser(done ? 6 : 5)
+              : done
+                ? connector(undefined, "4")
+                : connector("Old error", "3"),
+        };
+      },
+    );
+
+    const outcome = await submit(true);
+    await vi.advanceTimersByTimeAsync(500);
+    expect(outcome.status).toBe("pending");
+
+    await vi.advanceTimersByTimeAsync(3_000);
+    expect(outcome).toMatchObject({
+      status: "fulfilled",
+      value: connectorPath,
     });
   });
 
@@ -275,7 +313,7 @@ describe("ClickHouse connector readiness", () => {
       async (_, params) => ({
         resource:
           params.name?.kind === ResourceKind.ProjectParser
-            ? parser(2)
+            ? parser(parsed ? 2 : 1)
             : reconciling,
       }),
     );

@@ -12,25 +12,31 @@ import {
   SingletonProjectParserName,
 } from "./resource-selectors";
 
-export function getProjectParserVersion(
-  instanceId: string,
+// Reads the parser version from the server rather than the cache:
+// the cache lags behind if parser events were missed during a controller restart,
+// and a stale starting version lets the wait below return before the new file is parsed.
+export async function getProjectParserVersion(
+  client: RuntimeClient,
   queryClient: QueryClient = globalQueryClient,
 ) {
-  const projectParserQuery = queryClient.getQueryData<V1GetResourceResponse>(
-    getRuntimeServiceGetResourceQueryKey(instanceId, {
-      name: {
-        kind: ResourceKind.ProjectParser,
-        name: SingletonProjectParserName,
-      },
-    }),
-  );
-
-  if (!projectParserQuery?.resource?.meta?.version) {
-    // Project parser is not present during the init. So dont throw error here, but assume version 0.
-    return 0;
+  try {
+    const parser = await fetchProjectParser(client, queryClient, true);
+    return Number(parser?.meta?.version ?? 0);
+  } catch (error) {
+    // The project parser does not exist before the project is initialized.
+    if (isNotFoundError(error)) return 0;
+    if (!isControllerClosedError(error)) throw error;
+    // The controller is restarting; fall back to the last known version.
+    const cached = queryClient.getQueryData<V1GetResourceResponse>(
+      getRuntimeServiceGetResourceQueryKey(client.instanceId, {
+        name: {
+          kind: ResourceKind.ProjectParser,
+          name: SingletonProjectParserName,
+        },
+      }),
+    );
+    return Number(cached?.resource?.meta?.version ?? 0);
   }
-
-  return Number(projectParserQuery.resource.meta.version);
 }
 
 export async function waitForProjectParserVersion(
