@@ -601,6 +601,32 @@ func TestDiskCleanupOnFailures(t *testing.T) {
 	require.NoError(t, testDB.Close())
 }
 
+func TestStorageVersion(t *testing.T) {
+	db, _, _ := prepareDB(t)
+	ctx := context.Background()
+	_, err := db.CreateTableAsSelect(ctx, "test", "SELECT 1 AS id", &CreateTableOptions{})
+	require.NoError(t, err)
+	_, err = db.MutateTable(ctx, "test", nil, func(ctx context.Context, conn *sqlx.Conn) error {
+		_, err := conn.ExecContext(ctx, "INSERT INTO test VALUES (2)")
+		return err
+	})
+	require.NoError(t, err)
+
+	conn, release, err := db.AcquireReadConnection(ctx)
+	require.NoError(t, err)
+	var versions []string
+	err = conn.SelectContext(ctx, &versions, "SELECT tags['storage_version'] FROM duckdb_databases() WHERE NOT internal")
+	require.NoError(t, err)
+	require.NoError(t, release())
+
+	// main.db and the table file
+	require.Len(t, versions, 2)
+	for _, v := range versions {
+		require.Equal(t, "v1.5.0+", v)
+	}
+	require.NoError(t, db.Close())
+}
+
 func prepareDB(t *testing.T) (db DB, localDir, remoteDir string) {
 	localDir = t.TempDir()
 	ctx := context.Background()
