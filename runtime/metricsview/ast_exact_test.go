@@ -263,9 +263,6 @@ func TestExactMeasureSQL(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// The executor flags the measures the exact set makes exact before it builds any AST (see FlagExactMeasures);
-			// filter subqueries resolve their precision from those flags.
-			FlagExactMeasures(mv, tt.qry)
 			ast, err := NewAST(mv, sec, tt.qry, duckdb.DialectDuckDB)
 			require.NoError(t, err)
 
@@ -281,52 +278,35 @@ func TestExactMeasureSQL(t *testing.T) {
 	require.Equal(t, exactUsersSQL, mv.Measures[0].ExactExpression)
 }
 
-func TestFlagExactMeasures(t *testing.T) {
+func TestNewASTUsesResolvedExactMeasures(t *testing.T) {
+	// The executor resolves the exact measures once per query and derived queries copy the set (see Query.ExactMeasures),
+	// so a derived query that no longer contains the flagged measure still computes the measures it kept with the same precision.
 	mv := exactTestMetricsView()
+	sec := skipMetricsViewSecurity{}
 
-	t.Run("nothing to flag", func(t *testing.T) {
-		qry := &Query{MetricsView: "test", Measures: []Measure{{Name: "users"}, {Name: "revenue", Exact: true}}}
-		require.False(t, FlagExactMeasures(mv, qry))
-		// A flag on a measure without an exact expression is left in place; it has no effect.
-		require.Equal(t, []Measure{{Name: "users"}, {Name: "revenue", Exact: true}}, qry.Measures)
-	})
+	qry := &Query{MetricsView: "test", Measures: []Measure{{Name: "users"}}, ExactMeasures: map[string]bool{"users": true}}
+	ast, err := NewAST(mv, sec, qry, duckdb.DialectDuckDB)
+	require.NoError(t, err)
+	sql, _, err := ast.SQL()
+	require.NoError(t, err)
+	require.Equal(t, 1, strings.Count(sql, exactUsersSQL), sql)
+	require.Equal(t, 0, strings.Count(sql, approxUsersSQL), sql)
 
-	t.Run("flags every measure the set makes exact, including in filter subqueries", func(t *testing.T) {
-		qry := &Query{
-			MetricsView: "test",
-			Measures: []Measure{
-				{Name: "users", Exact: true},
-				{Name: "sessions"},
-				{Name: "sessions_per_user"},
-				{Name: "revenue"},
-				{Name: "revenue_per_user"},
-				{Name: "users_prev", Compute: &MeasureCompute{ComparisonValue: &MeasureComputeComparisonValue{Measure: "users"}}},
-				{Name: "cnt", Compute: &MeasureCompute{Count: true}},
-			},
-			Where: usersAbove10Filter(false),
-		}
-		require.True(t, FlagExactMeasures(mv, qry))
+	// The set applies to filter subqueries as well, although none of their measures is flagged.
+	qry = &Query{MetricsView: "test", Dimensions: []Dimension{{Name: "publisher"}}, Measures: []Measure{{Name: "revenue"}}, Where: usersAbove10Filter(false), ExactMeasures: map[string]bool{"users": true}}
+	ast, err = NewAST(mv, sec, qry, duckdb.DialectDuckDB)
+	require.NoError(t, err)
+	sql, _, err = ast.SQL()
+	require.NoError(t, err)
+	require.Equal(t, 1, strings.Count(sql, exactUsersSQL), sql)
+	require.Equal(t, 0, strings.Count(sql, approxUsersSQL), sql)
 
-		var flagged []string
-		for _, m := range qry.Measures {
-			if m.Exact {
-				flagged = append(flagged, m.Name)
-			}
-		}
-		// revenue has no exact variant, and the count compute is not calculated from any measure.
-		require.Equal(t, []string{"users", "sessions", "sessions_per_user", "revenue_per_user", "users_prev"}, flagged)
-		require.True(t, qry.Where.Condition.Expressions[1].Subquery.Measures[0].Exact)
-
-		// The flags carry the set: a query built from any subset of the measures resolves the same precision for them.
-		set := ExactMeasureSet(mv, qry)
-		require.Equal(t, map[string]bool{"users": true, "sessions": true}, set)
-		require.Equal(t, map[string]bool{"sessions": true}, ExactMeasureSet(mv, &Query{MetricsView: "test", Measures: []Measure{qry.Measures[1]}}))
-		require.Equal(t, map[string]bool{"users": true}, ExactMeasureSet(mv, &Query{MetricsView: "test", Measures: []Measure{qry.Measures[4]}}))
-
-		// Flagging again changes nothing.
-		measures := append([]Measure(nil), qry.Measures...)
-		require.True(t, FlagExactMeasures(mv, qry))
-		require.Equal(t, measures, qry.Measures)
-		require.Equal(t, set, ExactMeasureSet(mv, qry))
-	})
+	// A query that did not pass through the executor resolves the set from its flags.
+	qry = &Query{MetricsView: "test", Measures: []Measure{{Name: "users", Exact: true}}}
+	ast, err = NewAST(mv, sec, qry, duckdb.DialectDuckDB)
+	require.NoError(t, err)
+	sql, _, err = ast.SQL()
+	require.NoError(t, err)
+	require.Equal(t, 1, strings.Count(sql, exactUsersSQL), sql)
+	require.Equal(t, 0, strings.Count(sql, approxUsersSQL), sql)
 }

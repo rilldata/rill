@@ -15,7 +15,7 @@ import (
 // The frontend resolves the precision chips of a dashboard with the same rule.
 //
 // A measure name has exactly one value per query: if a measure is requested both exactly and approximately (directly, through a derived measure, or in a filter subquery), it is computed exactly.
-// FlagExactMeasures writes the set back into the query's flags, so that a query built from a subset of its measures resolves the same set.
+// The executor resolves the set once per query and stores it in Query.ExactMeasures; queries derived from it copy the set instead of resolving their own (see NewAST).
 //
 // It returns nil when no measure is flagged, which is the common case.
 func ExactMeasureSet(mv *runtimev1.MetricsViewSpec, qry *Query) map[string]bool {
@@ -24,26 +24,6 @@ func ExactMeasureSet(mv *runtimev1.MetricsViewSpec, qry *Query) map[string]bool 
 	}
 	measures := appendQueryMeasures(nil, qry.Measures, qry.Where, qry.Having)
 	return newMeasureRefs(mv, measures).exactSet(measures)
-}
-
-// FlagExactMeasures sets the Exact flag on every measure of the query that is calculated from a measure of its exact set (see ExactMeasureSet), including the measures of its filter subqueries,
-// and reports whether the set is non-empty.
-// After it, the flags carry the resolved set: a query built from a subset of the measures (the totals query of a percent-of-total measure, the first phase of a two-phase comparison, a filter subquery)
-// resolves the same precision for every measure it shares with this query, so the set never has to be passed along with it.
-// Flags on measures without an exact variant are left in place; they have no effect.
-func FlagExactMeasures(mv *runtimev1.MetricsViewSpec, qry *Query) bool {
-	if !hasExactMeasure(qry.Measures, qry.Where, qry.Having) {
-		return false
-	}
-	measures := appendQueryMeasures(nil, qry.Measures, qry.Where, qry.Having)
-	refs := newMeasureRefs(mv, measures)
-	set := refs.exactSet(measures)
-	if len(set) == 0 {
-		return false
-	}
-	refs.flag(qry.Measures, set)
-	refs.flagSubqueries(set, qry.Where, qry.Having)
-	return true
 }
 
 // measureRefs resolves which metrics view measures the measures of a query are calculated from.
@@ -101,31 +81,6 @@ func (r measureRefs) exactSet(measures []Measure) map[string]bool {
 		}
 	}
 	return set
-}
-
-// flag sets Exact on the measures that are calculated from a measure of the set.
-func (r measureRefs) flag(measures []Measure, set map[string]bool) {
-	for i := range measures {
-		if !measures[i].Exact && r.meets(measures[i], set) {
-			measures[i].Exact = true
-		}
-	}
-}
-
-// flagSubqueries calls flag for the measures of every subquery in the expressions, recursively.
-func (r measureRefs) flagSubqueries(set map[string]bool, exprs ...*Expression) {
-	for _, e := range exprs {
-		if e == nil {
-			continue
-		}
-		if e.Subquery != nil {
-			r.flag(e.Subquery.Measures, set)
-			r.flagSubqueries(set, e.Subquery.Where, e.Subquery.Having)
-		}
-		if e.Condition != nil {
-			r.flagSubqueries(set, e.Condition.Expressions...)
-		}
-	}
 }
 
 // addExact adds the measures with an exact_expression that qm is calculated from, including qm itself, to the set.

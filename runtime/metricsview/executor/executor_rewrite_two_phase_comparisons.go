@@ -10,8 +10,8 @@ import (
 )
 
 // rewriteTwoPhaseComparisons rewrites the query to query base time range first and then use the results to query the comparison time range.
-// The base query drops the comparison measures. The measures they are calculated from keep the precision of the full query,
-// because rewriteQueryExactMeasures flagged them before this rewrite: a flagged comparison measure makes its base measure exact in both phases.
+// The base query drops the comparison measures but copies the exact measures resolved for the full query (see rewriteQueryExactMeasures),
+// so a flagged comparison measure makes its base measure exact in both phases.
 func (e *Executor) rewriteTwoPhaseComparisons(ctx context.Context, qry *metricsview.Query, ast *metricsview.AST, ogLimit *int64) (bool, error) {
 	if qry.Limit == nil || (*qry.Limit > e.instanceCfg.MetricsApproxComparisonTwoPhaseLimit) {
 		return false, nil
@@ -64,6 +64,7 @@ func (e *Executor) rewriteTwoPhaseComparisons(ctx context.Context, qry *metricsv
 		UseDisplayNames:     false,
 		Rows:                false,
 		QueryLimits:         qry.QueryLimits,
+		ExactMeasures:       qry.ExactMeasures,
 		UnusedFields:        nil,
 	} //exhaustruct:enforce
 

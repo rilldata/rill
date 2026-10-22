@@ -15,7 +15,7 @@ import (
 // and then adding those dimension values as a filter in the outer query. The specific filter in the second query leads to more accurate measure values being returned.
 // For more details on this approach, see: https://druid.apache.org/docs/latest/querying/topnquery/#aliasing.
 // It returns the `dim IN (...)` expression it appended to the WHERE clause, or nil if the query was not rewritten.
-// The inner query copies the sort measure with its Exact flag, so both rank the dimension values with the same precision (see rewriteQueryExactMeasures).
+// The inner query copies the exact measures resolved for the query (see rewriteQueryExactMeasures), so both rank the dimension values with the same precision.
 func (e *Executor) rewriteQueryDruidExactify(ctx context.Context, qry *metricsview.Query) (*metricsview.Expression, error) {
 	// Check if it's enabled.
 	if !e.instanceCfg.MetricsExactifyDruidTopN {
@@ -50,6 +50,7 @@ func (e *Executor) rewriteQueryDruidExactify(ctx context.Context, qry *metricsvi
 		UseDisplayNames:     false,
 		Rows:                false,
 		QueryLimits:         qry.QueryLimits,
+		ExactMeasures:       qry.ExactMeasures,
 		UnusedFields:        nil,
 	} //exhaustruct:enforce
 

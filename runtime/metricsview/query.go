@@ -29,8 +29,12 @@ type Query struct {
 	UseDisplayNames     bool        `json:"use_display_names" mapstructure:"use_display_names"`
 	Rows                bool        `json:"rows" mapstructure:"rows"`
 
-	QueryLimits  *QueryLimits   `json:"query_limits,omitempty" mapstructure:"query_limits"`
-	UnusedFields map[string]any `json:"-" mapstructure:",remain"`
+	QueryLimits *QueryLimits `json:"query_limits,omitempty" mapstructure:"query_limits"`
+	// ExactMeasures is the resolved set of metrics view measures computed with their exact_expression (see ExactMeasureSet).
+	// The executor resolves it once per query before any rewrite, and queries derived from it (totals, two-phase base queries, Druid TopN inner queries, filter subqueries) copy it,
+	// so that every part of a query computes a measure with the same precision. It is derived from the measures' Exact flags and is not part of the query's wire format.
+	ExactMeasures map[string]bool `json:"-" mapstructure:"-"`
+	UnusedFields  map[string]any  `json:"-" mapstructure:",remain"`
 }
 
 type Dimension struct {

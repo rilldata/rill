@@ -656,6 +656,8 @@ func TestRewriteQueryForRollup_ExactMeasureSkipped(t *testing.T) {
 			Dimensions: []metricsview.Dimension{{Name: "publisher"}},
 			Measures:   measures,
 		}
+		// Resolved by rewriteQueryExactMeasures before this rewrite runs.
+		qry.ExactMeasures = metricsview.ExactMeasureSet(e.metricsView, qry)
 		result, err := e.rewriteQueryForRollup(context.Background(), qry)
 		require.NoError(t, err)
 		require.Nil(t, result)

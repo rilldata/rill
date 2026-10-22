@@ -221,8 +221,12 @@ func NewAST(mv *runtimev1.MetricsViewSpec, sec MetricsViewSecurity, qry *Query, 
 
 	// Resolve up front which measures must use their exact_expression.
 	// This must happen before any measure is resolved, because a measure name has exactly one value per query and AddMeasureField dedupes by name.
-	// Filter subqueries resolve their own set from their flags, which the executor sets along with the outer query's (see FlagExactMeasures).
-	ast.exactMeasures = ExactMeasureSet(mv, qry)
+	// The executor resolves the set once per query and derived queries copy it (see Query.ExactMeasures);
+	// a query that did not pass through the executor, such as the schema probe, resolves it from its flags here.
+	ast.exactMeasures = qry.ExactMeasures
+	if ast.exactMeasures == nil {
+		ast.exactMeasures = ExactMeasureSet(mv, qry)
+	}
 
 	// Determine the minimum time grain for the time dimension in the query.
 	minGrain := TimeGrainUnspecified

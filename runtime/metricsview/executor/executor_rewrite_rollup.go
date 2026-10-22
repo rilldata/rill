@@ -124,8 +124,8 @@ func (e *Executor) rewriteQueryForRollup(ctx context.Context, qry *metricsview.Q
 
 	// Disqualify: queries that compute measures with their exact_expression.
 	// Exact aggregates (e.g. exact distinct counts) cannot be computed from pre-aggregated rows.
-	// This is keyed on the resolved exact measures, so an `exact` flag on a measure without an exact_expression keeps the rollup eligible.
-	if len(metricsview.ExactMeasureSet(e.metricsView, qry)) > 0 {
+	// This is keyed on the exact measures resolved by rewriteQueryExactMeasures, so an `exact` flag on a measure without an exact_expression keeps the rollup eligible.
+	if len(qry.ExactMeasures) > 0 {
 		_, span := tracer.Start(ctx, "rollup.selection")
 		span.SetAttributes(
 			attribute.Int("rollup.candidate_count", len(e.metricsView.Rollups)),

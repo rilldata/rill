@@ -101,11 +101,12 @@ func (b *sqlExprBuilder) writeSubquery(sub *Subquery) error {
 		UseDisplayNames:     false,
 		Rows:                false,
 		QueryLimits:         outer.QueryLimits,
+		ExactMeasures:       b.ast.exactMeasures,
 		UnusedFields:        nil,
 	} //exhaustruct:enforce
 
 	// Generate SQL for the subquery.
-	// The subquery resolves its exact measures from its own flags. The executor sets them along with the outer query's, so both compute a shared measure with the same precision (see FlagExactMeasures).
+	// The subquery copies the exact measures resolved for the outer query, which already account for the subquery's own flags (see ExactMeasureSet), so both compute a shared measure with the same precision.
 	innerSecurity := b.ast.Security
 	if !b.visible {
 		innerSecurity = skipMetricsViewSecurity{}
