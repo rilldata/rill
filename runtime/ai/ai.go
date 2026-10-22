@@ -65,6 +65,7 @@ func NewRunner(rt *runtime.Runtime, activity *activity.Client) *Runner {
 	RegisterTool(r, &CreateChart{Runtime: rt})
 	RegisterTool(r, &ListSkills{Runtime: rt})
 	RegisterTool(r, &LoadSkill{Runtime: rt})
+	RegisterTool(r, &SearchExternalTools{Runtime: rt})
 
 	RegisterTool(r, &DevelopFile{Runtime: rt})
 	RegisterTool(r, &ListFiles{Runtime: rt})
@@ -1248,7 +1249,7 @@ func (s *Session) Complete(ctx context.Context, name string, out any, opts *Comp
 	// (such as an external server's tools that are scoped to another agent).
 	tools := make([]*aiv1.Tool, 0, len(opts.Tools))
 	offered := make(map[string]bool, len(opts.Tools))
-	for _, toolName := range opts.Tools {
+	offer := func(ctx context.Context, toolName string) error {
 		tool, ok := s.Tool(toolName)
 		if !ok {
 			return fmt.Errorf("unknown tool %q", toolName)
@@ -1258,7 +1259,7 @@ func (s *Session) Complete(ctx context.Context, name string, out any, opts *Comp
 			return fmt.Errorf("failed to check access for tool %q: %w", toolName, err)
 		}
 		if !ok {
-			continue
+			return nil
 		}
 		toolPB, err := tool.AsProto()
 		if err != nil {
@@ -1266,6 +1267,12 @@ func (s *Session) Complete(ctx context.Context, name string, out any, opts *Comp
 		}
 		tools = append(tools, toolPB)
 		offered[toolName] = true
+		return nil
+	}
+	for _, toolName := range opts.Tools {
+		if err := offer(ctx, toolName); err != nil {
+			return err
+		}
 	}
 	if len(tools) > maxTools {
 		return fmt.Errorf("too many tools: the connected external MCP servers bring the total to %d, but at most %d are supported; disconnect a server, or limit a server's tools with 'security.include' in its connector file", len(tools), maxTools)
@@ -1488,6 +1495,20 @@ func (s *Session) Complete(ctx context.Context, name string, out any, opts *Comp
 							return nil, fmt.Errorf("tool execution failed without producing a structured error: %w", err)
 						}
 						// Fall through since it's a structured error that we can capture in the messages.
+					} else if block.ToolCall.Name == SearchExternalToolsName {
+						// Offer the loaded external tools from the next iteration on.
+						var loaded SearchExternalToolsResult
+						if err := json.Unmarshal([]byte(toolResult.Result.Content), &loaded); err != nil {
+							return nil, fmt.Errorf("failed to parse loaded external tools: %w", err)
+						}
+						for _, info := range loaded.Tools {
+							if offered[info.Name] {
+								continue
+							}
+							if err := offer(ctx, info.Name); err != nil {
+								return nil, err
+							}
+						}
 					}
 					callMessage, err := s.NewCompletionMessage(toolResult.Call)
 					if err != nil {
