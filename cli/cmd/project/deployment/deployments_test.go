@@ -10,6 +10,7 @@ import (
 	"github.com/rilldata/rill/admin/testadmin"
 	"github.com/rilldata/rill/cli/testcli"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
+	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/gitutil"
 	"github.com/rilldata/rill/runtime/testruntime/testmode"
@@ -70,6 +71,32 @@ vars:
 		modelOutputFn, _ := checkModelOutput()
 		return modelOutputFn == 1
 	}, 10*time.Second, 100*time.Millisecond, "unexpected model output")
+
+	// reconcile the unchanged deployment twice: neither should bump updated_on,
+	// and the second should not make the runtime re-parse the project
+	// (the first may, since the runtime has not seen the deployment's updated_on before)
+	ctrl, err := adm.Runtime.Controller(t.Context(), depl.RuntimeInstanceID)
+	require.NoError(t, err)
+	parserStateVersion := func() int64 {
+		require.NoError(t, ctrl.WaitUntilIdle(t.Context(), false))
+		pp, err := ctrl.Get(t.Context(), runtime.GlobalProjectParserName, false)
+		require.NoError(t, err)
+		return pp.Meta.StateVersion
+	}
+	depl2 := adm.TriggerDeployment(t, "reload-configs-test", "rill-mgd-deploy")
+	require.True(t, depl.UpdatedOn.Equal(depl2.UpdatedOn), "updated_on changed from %v to %v", depl.UpdatedOn, depl2.UpdatedOn)
+	stateVersion := parserStateVersion()
+	depl2 = adm.TriggerDeployment(t, "reload-configs-test", "rill-mgd-deploy")
+	require.True(t, depl.UpdatedOn.Equal(depl2.UpdatedOn), "updated_on changed from %v to %v", depl.UpdatedOn, depl2.UpdatedOn)
+	require.Equal(t, stateVersion, parserStateVersion(), "the project was re-parsed")
+
+	// changing the slots reprovisions the runtime and marks the deployment as updating while that happens;
+	// the reconcile should still leave it running
+	result = u1.Run(t, "project", "edit", "--prod-slots=3", "--org=reload-configs-test", "--project=rill-mgd-deploy")
+	require.Equal(t, 0, result.ExitCode, result.Output)
+	depl = adm.TriggerDeployment(t, "reload-configs-test", "rill-mgd-deploy")
+	require.Equal(t, database.DeploymentStatusRunning, depl.Status)
+	require.Empty(t, depl.StatusMessage)
 
 	// set env via `rill env set limit 10`
 	result = u1.Run(t, "env", "set", "limit", "10", "--org=reload-configs-test", "--project=rill-mgd-deploy")
