@@ -10,15 +10,15 @@ import (
 )
 
 // rewritePercentOfTotals runs a totals query for the base measures of the query's percent-of-total measures and stores the totals on them.
-// The totals query is built with the exact measures resolved for the outer query, so every total has the same precision as the values it divides.
-func (e *Executor) rewritePercentOfTotals(ctx context.Context, qry *metricsview.Query, exactMeasures map[string]bool) error {
+// A base measure carries the Exact flag of its percent-of-total measure, so every total has the same precision as the values it divides (see rewriteQueryExactMeasures).
+func (e *Executor) rewritePercentOfTotals(ctx context.Context, qry *metricsview.Query) error {
 	var measures []metricsview.Measure
 	var measureIndices []int
 	for i, measure := range qry.Measures {
 		if measure.Compute != nil && measure.Compute.PercentOfTotal != nil {
 			// The referenced measure is usually a metrics view measure, but it may also be an expression measure defined in the same query,
 			// in which case the totals query must carry its expression compute.
-			totalOf := metricsview.Measure{Name: measure.Compute.PercentOfTotal.Measure}
+			totalOf := metricsview.Measure{Name: measure.Compute.PercentOfTotal.Measure, Exact: measure.Exact}
 			if qm, ok := queryExpressionMeasure(qry, totalOf.Name); ok {
 				totalOf = qm
 			}
@@ -52,14 +52,14 @@ func (e *Executor) rewritePercentOfTotals(ctx context.Context, qry *metricsview.
 	} //exhaustruct:enforce
 
 	// Build an AST for the totals query.
-	ast, err := metricsview.NewASTWithExactMeasures(e.metricsView, e.security, totalsQry, e.olap.Dialect(), exactMeasures)
+	ast, err := metricsview.NewAST(e.metricsView, e.security, totalsQry, e.olap.Dialect())
 	if err != nil {
 		return fmt.Errorf("percent of totals: failed to build the totals query AST: %w", err)
 	}
 
 	// Apply a limited subset of rewrites to the inner query.
 	e.rewriteApproxComparisons(ast, false)
-	_, err = e.rewriteQueryDruidExactify(ctx, totalsQry, exactMeasures)
+	_, err = e.rewriteQueryDruidExactify(ctx, totalsQry)
 	if err != nil {
 		return err
 	}

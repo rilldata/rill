@@ -15,8 +15,8 @@ import (
 // and then adding those dimension values as a filter in the outer query. The specific filter in the second query leads to more accurate measure values being returned.
 // For more details on this approach, see: https://druid.apache.org/docs/latest/querying/topnquery/#aliasing.
 // It returns the `dim IN (...)` expression it appended to the WHERE clause, or nil if the query was not rewritten.
-// The inner query is built with the exact measures resolved for the outer query, so both rank the dimension values with the same precision.
-func (e *Executor) rewriteQueryDruidExactify(ctx context.Context, qry *metricsview.Query, exactMeasures map[string]bool) (*metricsview.Expression, error) {
+// The inner query copies the sort measure with its Exact flag, so both rank the dimension values with the same precision (see rewriteQueryExactMeasures).
+func (e *Executor) rewriteQueryDruidExactify(ctx context.Context, qry *metricsview.Query) (*metricsview.Expression, error) {
 	// Check if it's enabled.
 	if !e.instanceCfg.MetricsExactifyDruidTopN {
 		return nil, nil
@@ -64,7 +64,7 @@ func (e *Executor) rewriteQueryDruidExactify(ctx context.Context, qry *metricsvi
 	}
 
 	// Build an AST for the inner query.
-	ast, err := metricsview.NewASTWithExactMeasures(e.metricsView, e.security, inner, e.olap.Dialect(), exactMeasures)
+	ast, err := metricsview.NewAST(e.metricsView, e.security, inner, e.olap.Dialect())
 	if err != nil {
 		return nil, fmt.Errorf("druid exactify: failed to build inner query AST: %w", err)
 	}

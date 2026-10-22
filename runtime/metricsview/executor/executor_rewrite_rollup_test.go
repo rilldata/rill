@@ -21,7 +21,7 @@ func TestRewriteQueryForRollup_NoRollups(t *testing.T) {
 		Measures: []metricsview.Measure{{Name: "count"}},
 	}
 
-	result, err := e.rewriteQueryForRollup(context.Background(), qry, nil)
+	result, err := e.rewriteQueryForRollup(context.Background(), qry)
 	require.NoError(t, err)
 	require.Nil(t, result)
 }
@@ -37,7 +37,7 @@ func TestRewriteQueryForRollup_RawRows(t *testing.T) {
 	}
 
 	qry := &metricsview.Query{Rows: true}
-	result, err := e.rewriteQueryForRollup(context.Background(), qry, nil)
+	result, err := e.rewriteQueryForRollup(context.Background(), qry)
 	require.NoError(t, err)
 	require.Nil(t, result)
 }
@@ -75,7 +75,7 @@ func TestRewriteQueryForRollup_MissingDimension(t *testing.T) {
 	}
 
 	// Rejected at eligibility (missing dimension); no watermark fetch needed
-	result, err := e.rewriteQueryForRollup(context.Background(), qry, nil)
+	result, err := e.rewriteQueryForRollup(context.Background(), qry)
 	require.NoError(t, err)
 	require.Nil(t, result)
 }
@@ -106,7 +106,7 @@ func TestRewriteQueryForRollup_MissingMeasure(t *testing.T) {
 		},
 	}
 
-	result, err := e.rewriteQueryForRollup(context.Background(), qry, nil)
+	result, err := e.rewriteQueryForRollup(context.Background(), qry)
 	require.NoError(t, err)
 	require.Nil(t, result)
 }
@@ -140,7 +140,7 @@ func TestRewriteQueryForRollup_GrainNotDerivable(t *testing.T) {
 	}
 
 	// Rejected at eligibility (grain not derivable); no watermark fetch needed
-	result, err := e.rewriteQueryForRollup(context.Background(), qry, nil)
+	result, err := e.rewriteQueryForRollup(context.Background(), qry)
 	require.NoError(t, err)
 	require.Nil(t, result)
 }
@@ -174,7 +174,7 @@ func TestRewriteQueryForRollup_StartNotAligned(t *testing.T) {
 	}
 
 	// Rejected at eligibility (start not aligned to rollup grain); no watermark fetch needed
-	result, err := e.rewriteQueryForRollup(context.Background(), qry, nil)
+	result, err := e.rewriteQueryForRollup(context.Background(), qry)
 	require.NoError(t, err)
 	require.Nil(t, result)
 }
@@ -217,7 +217,7 @@ func TestRewriteQueryForRollup_WhereDimensionMissing(t *testing.T) {
 		},
 	}
 
-	result, err := e.rewriteQueryForRollup(context.Background(), qry, nil)
+	result, err := e.rewriteQueryForRollup(context.Background(), qry)
 	require.NoError(t, err)
 	require.Nil(t, result)
 }
@@ -458,7 +458,7 @@ func TestRewriteQueryForRollup_ComparisonTimeRange_NonPrimaryTimeDim(t *testing.
 			TimeDimension: "other_ts",
 		},
 	}
-	result, err := e.rewriteQueryForRollup(context.Background(), qry, nil)
+	result, err := e.rewriteQueryForRollup(context.Background(), qry)
 	require.NoError(t, err)
 	require.Nil(t, result)
 }
@@ -489,7 +489,7 @@ func TestRewriteQueryForRollup_DerivedMeasure(t *testing.T) {
 		},
 	}
 
-	result, err := e.rewriteQueryForRollup(context.Background(), qry, nil)
+	result, err := e.rewriteQueryForRollup(context.Background(), qry)
 	require.NoError(t, err)
 	require.Nil(t, result)
 }
@@ -528,7 +528,7 @@ func TestRewriteQueryForRollup_ComputedMeasureRejected(t *testing.T) {
 		},
 	}
 
-	result, err := e.rewriteQueryForRollup(context.Background(), qry, nil)
+	result, err := e.rewriteQueryForRollup(context.Background(), qry)
 	require.NoError(t, err)
 	require.Nil(t, result)
 }
@@ -564,7 +564,7 @@ func TestRewriteQueryForRollup_TimezoneRejection(t *testing.T) {
 		},
 	}
 
-	result, err := e.rewriteQueryForRollup(context.Background(), qry, nil)
+	result, err := e.rewriteQueryForRollup(context.Background(), qry)
 	require.NoError(t, err)
 	require.Nil(t, result)
 }
@@ -656,7 +656,7 @@ func TestRewriteQueryForRollup_ExactMeasureSkipped(t *testing.T) {
 			Dimensions: []metricsview.Dimension{{Name: "publisher"}},
 			Measures:   measures,
 		}
-		result, err := e.rewriteQueryForRollup(context.Background(), qry, metricsview.ExactMeasureSet(e.metricsView, qry))
+		result, err := e.rewriteQueryForRollup(context.Background(), qry)
 		require.NoError(t, err)
 		require.Nil(t, result)
 		require.Equal(t, "base_table", e.LatestQueryTable())

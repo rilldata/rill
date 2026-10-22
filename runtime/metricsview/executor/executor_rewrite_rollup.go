@@ -90,7 +90,7 @@ type rollupCandidate struct {
 
 // rewriteQueryForRollup checks if a rollup table can satisfy the query.
 // It returns a synthetic MetricsViewSpec pointing to the rollup table, or nil if no rollup matches.
-func (e *Executor) rewriteQueryForRollup(ctx context.Context, qry *metricsview.Query, exactMeasures map[string]bool) (*runtimev1.MetricsViewSpec, error) {
+func (e *Executor) rewriteQueryForRollup(ctx context.Context, qry *metricsview.Query) (*runtimev1.MetricsViewSpec, error) {
 	e.latestQueryTable = e.metricsView.Table
 
 	if len(e.metricsView.Rollups) == 0 {
@@ -125,7 +125,7 @@ func (e *Executor) rewriteQueryForRollup(ctx context.Context, qry *metricsview.Q
 	// Disqualify: queries that compute measures with their exact_expression.
 	// Exact aggregates (e.g. exact distinct counts) cannot be computed from pre-aggregated rows.
 	// This is keyed on the resolved exact measures, so an `exact` flag on a measure without an exact_expression keeps the rollup eligible.
-	if len(exactMeasures) > 0 {
+	if len(metricsview.ExactMeasureSet(e.metricsView, qry)) > 0 {
 		_, span := tracer.Start(ctx, "rollup.selection")
 		span.SetAttributes(
 			attribute.Int("rollup.candidate_count", len(e.metricsView.Rollups)),

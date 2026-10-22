@@ -346,23 +346,6 @@ func (e *Executor) schema(ctx context.Context, exact bool) (*runtimev1.StructTyp
 	return schema, nil
 }
 
-// resolveExactMeasures resolves which measures the query computes with their exact_expression (see metricsview.ExactMeasureSet).
-// It returns an error if the query computes any measure exactly while the instance has disabled exact measures (rill.metrics.exact_measures=false).
-// It errors rather than silently ignoring the flags, so clients never present approximate values as exact.
-//
-// The result is never nil and must be passed to every rewrite and AST for the query, including queries derived from it (totals, two-phase base queries, Druid TopN inner queries).
-// Resolving it again from a derived query would be wrong: the derived query may have dropped the flagged measure that made another measure exact, which would change that measure's value.
-func (e *Executor) resolveExactMeasures(qry *metricsview.Query) (map[string]bool, error) {
-	exactMeasures := metricsview.ExactMeasureSet(e.metricsView, qry)
-	if len(exactMeasures) > 0 && !e.instanceCfg.MetricsExactMeasures {
-		return nil, errors.New("exact measures are disabled for this instance (rill.metrics.exact_measures=false)")
-	}
-	if exactMeasures == nil {
-		exactMeasures = map[string]bool{}
-	}
-	return exactMeasures, nil
-}
-
 // Query executes the provided query against the metrics view.
 func (e *Executor) Query(ctx context.Context, qry *metricsview.Query, executionTime *time.Time) (*drivers.Result, error) {
 	if !e.security.CanAccess() {
@@ -374,17 +357,10 @@ func (e *Executor) Query(ctx context.Context, qry *metricsview.Query, executionT
 		return nil, err
 	}
 
-	exactMeasures, err := e.resolveExactMeasures(qry)
-	if err != nil {
+	if err := e.rewriteQueryExactMeasures(qry); err != nil {
 		return nil, err
 	}
 
-	return e.query(ctx, qry, executionTime, exactMeasures)
-}
-
-// query implements Query for a validated query and the exact measures resolved for it.
-// Queries derived from another query (see rewriteTwoPhaseComparisons) call it directly with that query's exact measures.
-func (e *Executor) query(ctx context.Context, qry *metricsview.Query, executionTime *time.Time, exactMeasures map[string]bool) (*drivers.Result, error) {
 	// preserve the original limit, required in 2 phase comparison
 	ogLimit := qry.Limit
 
@@ -406,18 +382,18 @@ func (e *Executor) query(ctx context.Context, qry *metricsview.Query, executionT
 		return nil, err
 	}
 
-	if err := e.rewritePercentOfTotals(ctx, qry, exactMeasures); err != nil {
+	if err := e.rewritePercentOfTotals(ctx, qry); err != nil {
 		return nil, err
 	}
 
-	exactified, err := e.rewriteQueryDruidExactify(ctx, qry, exactMeasures)
+	exactified, err := e.rewriteQueryDruidExactify(ctx, qry)
 	if err != nil {
 		return nil, err
 	}
 
 	// Check if a rollup table can satisfy the query; if so, use a synthetic spec pointing to it
 	mvForAST := e.metricsView
-	rollupSpec, err := e.rewriteQueryForRollup(ctx, qry, exactMeasures)
+	rollupSpec, err := e.rewriteQueryForRollup(ctx, qry)
 	if err != nil {
 		return nil, err
 	}
@@ -425,12 +401,12 @@ func (e *Executor) query(ctx context.Context, qry *metricsview.Query, executionT
 		mvForAST = rollupSpec
 	}
 
-	ast, err := metricsview.NewASTWithExactMeasures(mvForAST, e.security, qry, e.olap.Dialect(), exactMeasures)
+	ast, err := metricsview.NewAST(mvForAST, e.security, qry, e.olap.Dialect())
 	if err != nil {
 		return nil, err
 	}
 
-	ok, err := e.rewriteTwoPhaseComparisons(ctx, qry, ast, ogLimit, exactMeasures)
+	ok, err := e.rewriteTwoPhaseComparisons(ctx, qry, ast, ogLimit)
 	if err != nil {
 		return nil, err
 	} // TODO if !ok then can log a warning that two phase comparison is not possible with a reason
@@ -540,8 +516,7 @@ func (e *Executor) Export(ctx context.Context, qry *metricsview.Query, execution
 		return "", err
 	}
 
-	exactMeasures, err := e.resolveExactMeasures(qry)
-	if err != nil {
+	if err := e.rewriteQueryExactMeasures(qry); err != nil {
 		return "", err
 	}
 
@@ -558,18 +533,18 @@ func (e *Executor) Export(ctx context.Context, qry *metricsview.Query, execution
 		return "", err
 	}
 
-	if err := e.rewritePercentOfTotals(ctx, qry, exactMeasures); err != nil {
+	if err := e.rewritePercentOfTotals(ctx, qry); err != nil {
 		return "", err
 	}
 
-	exactified, err := e.rewriteQueryDruidExactify(ctx, qry, exactMeasures)
+	exactified, err := e.rewriteQueryDruidExactify(ctx, qry)
 	if err != nil {
 		return "", err
 	}
 
 	// Check if a rollup table can satisfy the query; if so, use a synthetic spec pointing to it
 	mvForAST := e.metricsView
-	rollupSpec, err := e.rewriteQueryForRollup(ctx, qry, exactMeasures)
+	rollupSpec, err := e.rewriteQueryForRollup(ctx, qry)
 	if err != nil {
 		return "", err
 	}
@@ -577,7 +552,7 @@ func (e *Executor) Export(ctx context.Context, qry *metricsview.Query, execution
 		mvForAST = rollupSpec
 	}
 
-	ast, err := metricsview.NewASTWithExactMeasures(mvForAST, e.security, qry, e.olap.Dialect(), exactMeasures)
+	ast, err := metricsview.NewAST(mvForAST, e.security, qry, e.olap.Dialect())
 	if err != nil {
 		return "", err
 	}

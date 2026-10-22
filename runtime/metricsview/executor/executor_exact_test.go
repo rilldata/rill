@@ -28,6 +28,12 @@ measures:
   - name: records_per_id
     requires: [records, ids]
     expression: records / ids
+  - name: publishers
+    expression: count(distinct publisher)
+    exact_expression: count(distinct publisher) + 1000
+  - name: records_per_publisher
+    requires: [records, publishers]
+    expression: records / publishers
 `,
 	// m2 adds a time dimension: the rows of m1 on 2024-01-02, plus rows on 2024-01-01 that serve as a comparison period.
 	// Per publisher: a has 2 rows on the 2nd and 1 on the 1st; b has 1 row on the 2nd and 2 on the 1st.
@@ -50,13 +56,13 @@ measures:
 }
 
 // recordsFilterSubquery is a `publisher IN (SELECT publisher ... HAVING records > threshold)` filter
-// whose subquery requests records exactly.
-func recordsFilterSubquery(threshold int) map[string]any {
+// whose subquery requests records exactly when exact is set.
+func recordsFilterSubquery(threshold int, exact bool) map[string]any {
 	return map[string]any{"cond": map[string]any{"op": "in", "exprs": []map[string]any{
 		{"name": "publisher"},
 		{"subquery": map[string]any{
 			"dimension": map[string]any{"name": "publisher"},
-			"measures":  []map[string]any{{"name": "records", "exact": true}},
+			"measures":  []map[string]any{{"name": "records", "exact": exact}},
 			"having":    map[string]any{"cond": map[string]any{"op": "gt", "exprs": []map[string]any{{"name": "records"}, {"val": threshold}}}},
 		}},
 	}}}
@@ -204,7 +210,7 @@ func TestExactMeasures(t *testing.T) {
 		rows, err := resolveMetrics(t, rt, instanceID, map[string]any{
 			"dimensions": []map[string]any{{"name": "publisher"}},
 			"measures":   []map[string]any{{"name": "records"}},
-			"where":      recordsFilterSubquery(101),
+			"where":      recordsFilterSubquery(101, true),
 			"sort":       []map[string]any{{"name": "publisher"}},
 		})
 		require.NoError(t, err)
@@ -212,6 +218,54 @@ func TestExactMeasures(t *testing.T) {
 		require.Len(t, rows, 1)
 		require.Equal(t, "a", rows[0]["publisher"])
 		require.EqualValues(t, 102, rows[0]["records"])
+	})
+
+	t.Run("a derived measure calculated from an exact measure computes its other inputs exactly", func(t *testing.T) {
+		rows, err := resolveMetrics(t, rt, instanceID, map[string]any{
+			"measures": []map[string]any{{"name": "records", "exact": true}, {"name": "publishers"}, {"name": "records_per_publisher"}},
+		})
+		require.NoError(t, err)
+		require.Len(t, rows, 1)
+		// records_per_publisher is calculated from records, so it never divides an exact count by an approximate one: publishers is exact too (2 + 1000).
+		require.EqualValues(t, 103, rows[0]["records"])
+		require.EqualValues(t, 1002, rows[0]["publishers"])
+		require.InDelta(t, 103.0/1002.0, rows[0]["records_per_publisher"], 1e-9)
+	})
+
+	t.Run("without the derived measure, the other input stays approximate", func(t *testing.T) {
+		rows, err := resolveMetrics(t, rt, instanceID, map[string]any{
+			"measures": []map[string]any{{"name": "records", "exact": true}, {"name": "publishers"}},
+		})
+		require.NoError(t, err)
+		require.Len(t, rows, 1)
+		require.EqualValues(t, 103, rows[0]["records"])
+		require.EqualValues(t, 2, rows[0]["publishers"])
+	})
+
+	t.Run("two-phase comparison applies the query's precision to a filter subquery", func(t *testing.T) {
+		rows, err := resolveMetrics(t, rt, instanceID, map[string]any{
+			"metrics_view": "mv2",
+			"dimensions":   []map[string]any{{"name": "publisher"}},
+			"measures": []map[string]any{
+				{"name": "records"},
+				{"name": "records_prev", "compute": map[string]any{"comparison_value": map[string]any{"measure": "records"}}, "exact": true},
+			},
+			// The subquery does not flag records itself: it is exact because the query computes records exactly.
+			// Exact, both publishers pass the filter (102 and 101 are above 1); approximate, only a would (2 is, 1 is not).
+			"where":                 recordsFilterSubquery(1, false),
+			"time_range":            map[string]any{"start": "2024-01-02T00:00:00Z", "end": "2024-01-03T00:00:00Z"},
+			"comparison_time_range": map[string]any{"start": "2024-01-01T00:00:00Z", "end": "2024-01-02T00:00:00Z"},
+			"sort":                  []map[string]any{{"name": "records", "desc": true}},
+			"limit":                 10,
+		})
+		require.NoError(t, err)
+		require.Len(t, rows, 2)
+		require.Equal(t, "a", rows[0]["publisher"])
+		require.EqualValues(t, 102, rows[0]["records"])
+		require.EqualValues(t, 101, rows[0]["records_prev"])
+		require.Equal(t, "b", rows[1]["publisher"])
+		require.EqualValues(t, 101, rows[1]["records"])
+		require.EqualValues(t, 102, rows[1]["records_prev"])
 	})
 }
 
@@ -248,7 +302,7 @@ func TestExactMeasuresDisabled(t *testing.T) {
 	_, err = resolveMetrics(t, rt, instanceID, map[string]any{
 		"dimensions": []map[string]any{{"name": "publisher"}},
 		"measures":   []map[string]any{{"name": "records"}},
-		"where":      recordsFilterSubquery(0),
+		"where":      recordsFilterSubquery(0, true),
 	})
 	require.ErrorContains(t, err, "exact measures are disabled")
 }

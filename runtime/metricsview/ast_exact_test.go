@@ -27,6 +27,10 @@ func exactTestMetricsView() *runtimev1.MetricsViewSpec {
 			{Name: "users", Expression: approxUsersSQL, ExactExpression: exactUsersSQL, Type: runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE},
 			{Name: "revenue", Expression: "sum(revenue)", Type: runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE},
 			{Name: "revenue_per_user", Expression: "revenue / users", Type: runtimev1.MetricsViewSpec_MEASURE_TYPE_DERIVED, ReferencedMeasures: []string{"revenue", "users"}},
+			{Name: "sessions", Expression: "approx_count_distinct(session_id)", ExactExpression: "count(DISTINCT session_id)", Type: runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE},
+			{Name: "views", Expression: "approx_count_distinct(view_id)", ExactExpression: "count(DISTINCT view_id)", Type: runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE},
+			{Name: "sessions_per_user", Expression: "sessions / users", Type: runtimev1.MetricsViewSpec_MEASURE_TYPE_DERIVED, ReferencedMeasures: []string{"sessions", "users"}},
+			{Name: "views_per_session", Expression: "views / sessions", Type: runtimev1.MetricsViewSpec_MEASURE_TYPE_DERIVED, ReferencedMeasures: []string{"views", "sessions"}},
 		},
 	}
 }
@@ -121,6 +125,39 @@ func TestExactMeasureSet(t *testing.T) {
 			measures: []Measure{{Name: "users"}},
 			where:    usersAbove10Filter(false),
 			want:     nil,
+		},
+		{
+			name:     "a derived measure calculated from an exact measure makes its other inputs exact",
+			measures: []Measure{{Name: "users", Exact: true}, {Name: "sessions"}, {Name: "sessions_per_user"}},
+			want:     map[string]bool{"users": true, "sessions": true},
+		},
+		{
+			name:     "without that derived measure in the query, its other inputs stay approximate",
+			measures: []Measure{{Name: "users", Exact: true}, {Name: "sessions"}},
+			want:     map[string]bool{"users": true},
+		},
+		{
+			name:     "a derived measure whose other inputs have no exact expression adds nothing",
+			measures: []Measure{{Name: "users", Exact: true}, {Name: "revenue_per_user"}},
+			want:     map[string]bool{"users": true},
+		},
+		{
+			// views_per_session comes first so that it only meets the set once sessions_per_user has added sessions, in a second round.
+			name:     "measures made exact by a derived measure make further derived measures exact",
+			measures: []Measure{{Name: "users", Exact: true}, {Name: "views_per_session"}, {Name: "sessions_per_user"}},
+			want:     map[string]bool{"users": true, "sessions": true, "views": true},
+		},
+		{
+			name:     "a derived measure in a filter subquery follows the same rule",
+			measures: []Measure{{Name: "users", Exact: true}},
+			where: &Expression{Condition: &Condition{
+				Operator: OperatorIn,
+				Expressions: []*Expression{
+					{Name: "publisher"},
+					{Subquery: &Subquery{Dimension: Dimension{Name: "publisher"}, Measures: []Measure{{Name: "sessions_per_user"}}}},
+				},
+			}},
+			want: map[string]bool{"users": true, "sessions": true},
 		},
 	}
 
@@ -226,6 +263,9 @@ func TestExactMeasureSQL(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			// The executor flags the measures the exact set makes exact before it builds any AST (see FlagExactMeasures);
+			// filter subqueries resolve their precision from those flags.
+			FlagExactMeasures(mv, tt.qry)
 			ast, err := NewAST(mv, sec, tt.qry, duckdb.DialectDuckDB)
 			require.NoError(t, err)
 
@@ -241,24 +281,52 @@ func TestExactMeasureSQL(t *testing.T) {
 	require.Equal(t, exactUsersSQL, mv.Measures[0].ExactExpression)
 }
 
-func TestNewASTWithExactMeasures(t *testing.T) {
-	// A query derived from another query (e.g. the totals query of a percent-of-total measure) may no longer contain the flagged measure
-	// that made another measure exact, so it is built with the exact measures resolved for the original query rather than from its own flags.
+func TestFlagExactMeasures(t *testing.T) {
 	mv := exactTestMetricsView()
-	sec := skipMetricsViewSecurity{}
 
-	ast, err := NewASTWithExactMeasures(mv, sec, &Query{MetricsView: "test", Measures: []Measure{{Name: "users"}}}, duckdb.DialectDuckDB, map[string]bool{"users": true})
-	require.NoError(t, err)
-	sql, _, err := ast.SQL()
-	require.NoError(t, err)
-	require.Equal(t, 1, strings.Count(sql, exactUsersSQL), sql)
-	require.Equal(t, 0, strings.Count(sql, approxUsersSQL), sql)
+	t.Run("nothing to flag", func(t *testing.T) {
+		qry := &Query{MetricsView: "test", Measures: []Measure{{Name: "users"}, {Name: "revenue", Exact: true}}}
+		require.False(t, FlagExactMeasures(mv, qry))
+		// A flag on a measure without an exact expression is left in place; it has no effect.
+		require.Equal(t, []Measure{{Name: "users"}, {Name: "revenue", Exact: true}}, qry.Measures)
+	})
 
-	// A resolved empty set is respected too: the query's own flags are not consulted again.
-	ast, err = NewASTWithExactMeasures(mv, sec, &Query{MetricsView: "test", Measures: []Measure{{Name: "users", Exact: true}}}, duckdb.DialectDuckDB, map[string]bool{})
-	require.NoError(t, err)
-	sql, _, err = ast.SQL()
-	require.NoError(t, err)
-	require.Equal(t, 0, strings.Count(sql, exactUsersSQL), sql)
-	require.Equal(t, 1, strings.Count(sql, approxUsersSQL), sql)
+	t.Run("flags every measure the set makes exact, including in filter subqueries", func(t *testing.T) {
+		qry := &Query{
+			MetricsView: "test",
+			Measures: []Measure{
+				{Name: "users", Exact: true},
+				{Name: "sessions"},
+				{Name: "sessions_per_user"},
+				{Name: "revenue"},
+				{Name: "revenue_per_user"},
+				{Name: "users_prev", Compute: &MeasureCompute{ComparisonValue: &MeasureComputeComparisonValue{Measure: "users"}}},
+				{Name: "cnt", Compute: &MeasureCompute{Count: true}},
+			},
+			Where: usersAbove10Filter(false),
+		}
+		require.True(t, FlagExactMeasures(mv, qry))
+
+		var flagged []string
+		for _, m := range qry.Measures {
+			if m.Exact {
+				flagged = append(flagged, m.Name)
+			}
+		}
+		// revenue has no exact variant, and the count compute is not calculated from any measure.
+		require.Equal(t, []string{"users", "sessions", "sessions_per_user", "revenue_per_user", "users_prev"}, flagged)
+		require.True(t, qry.Where.Condition.Expressions[1].Subquery.Measures[0].Exact)
+
+		// The flags carry the set: a query built from any subset of the measures resolves the same precision for them.
+		set := ExactMeasureSet(mv, qry)
+		require.Equal(t, map[string]bool{"users": true, "sessions": true}, set)
+		require.Equal(t, map[string]bool{"sessions": true}, ExactMeasureSet(mv, &Query{MetricsView: "test", Measures: []Measure{qry.Measures[1]}}))
+		require.Equal(t, map[string]bool{"users": true}, ExactMeasureSet(mv, &Query{MetricsView: "test", Measures: []Measure{qry.Measures[4]}}))
+
+		// Flagging again changes nothing.
+		measures := append([]Measure(nil), qry.Measures...)
+		require.True(t, FlagExactMeasures(mv, qry))
+		require.Equal(t, measures, qry.Measures)
+		require.Equal(t, set, ExactMeasureSet(mv, qry))
+	})
 }

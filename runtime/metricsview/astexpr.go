@@ -105,12 +105,12 @@ func (b *sqlExprBuilder) writeSubquery(sub *Subquery) error {
 	} //exhaustruct:enforce
 
 	// Generate SQL for the subquery.
-	// The subquery uses the exact measures resolved for the outer query, which already account for the subquery's own flags (see ExactMeasureSet).
+	// The subquery resolves its exact measures from its own flags. The executor sets them along with the outer query's, so both compute a shared measure with the same precision (see FlagExactMeasures).
 	innerSecurity := b.ast.Security
 	if !b.visible {
 		innerSecurity = skipMetricsViewSecurity{}
 	}
-	innerAST, err := newAST(b.ast.MetricsView, innerSecurity, inner, b.ast.Dialect, b.ast.exactMeasures)
+	innerAST, err := NewAST(b.ast.MetricsView, innerSecurity, inner, b.ast.Dialect)
 	if err != nil {
 		return fmt.Errorf("failed to create AST for subquery: %w", err)
 	}

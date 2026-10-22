@@ -197,18 +197,6 @@ const (
 //
 // The qry's PivotOn must be empty. Pivot queries must be rewritten/handled upstream of NewAST.
 func NewAST(mv *runtimev1.MetricsViewSpec, sec MetricsViewSecurity, qry *Query, dialect drivers.Dialect) (*AST, error) {
-	return newAST(mv, sec, qry, dialect, nil)
-}
-
-// NewASTWithExactMeasures is like NewAST, but computes the given measures with their exact_expression instead of resolving them from the query's flags.
-// It is for queries derived from another query, which must use the exact set resolved for that query (see ExactMeasureSet).
-func NewASTWithExactMeasures(mv *runtimev1.MetricsViewSpec, sec MetricsViewSecurity, qry *Query, dialect drivers.Dialect, exactMeasures map[string]bool) (*AST, error) {
-	return newAST(mv, sec, qry, dialect, exactMeasures)
-}
-
-// newAST implements NewAST and NewASTWithExactMeasures.
-// If exactMeasures is nil, it is resolved from the query with ExactMeasureSet.
-func newAST(mv *runtimev1.MetricsViewSpec, sec MetricsViewSecurity, qry *Query, dialect drivers.Dialect, exactMeasures map[string]bool) (*AST, error) {
 	// Validation
 	if len(qry.PivotOn) > 0 {
 		return nil, errors.New("cannot build AST for pivot queries")
@@ -231,12 +219,10 @@ func newAST(mv *runtimev1.MetricsViewSpec, sec MetricsViewSecurity, qry *Query, 
 		Dialect:     dialect,
 	}
 
-	// Determine up front which measures must use their exact_expression.
-	// This must happen before any measure is resolved (including measures in WHERE subqueries), because a measure name has exactly one value per query.
-	if exactMeasures == nil {
-		exactMeasures = ExactMeasureSet(mv, qry)
-	}
-	ast.exactMeasures = exactMeasures
+	// Resolve up front which measures must use their exact_expression.
+	// This must happen before any measure is resolved, because a measure name has exactly one value per query and AddMeasureField dedupes by name.
+	// Filter subqueries resolve their own set from their flags, which the executor sets along with the outer query's (see FlagExactMeasures).
+	ast.exactMeasures = ExactMeasureSet(mv, qry)
 
 	// Determine the minimum time grain for the time dimension in the query.
 	minGrain := TimeGrainUnspecified
