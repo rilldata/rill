@@ -307,8 +307,9 @@ func databaseTypeToPB(dbt string, nullable bool) (*runtimev1.Type, error) {
 		t.Code = runtimev1.Type_CODE_POINT
 	case "POLYGON_2D":
 		t.Code = runtimev1.Type_CODE_POLYGON
-	// The type of the SQL NULL constant; information_schema reports it quoted as `"NULL"` in recent DuckDB versions.
-	case "NULL", `"NULL"`:
+	// The type of the SQL NULL constant; information_schema reports it quoted as `"NULL"` in recent DuckDB versions,
+	// and the driver reports it as `SQLNULL`.
+	case "NULL", `"NULL"`, "SQLNULL":
 		t.Code = runtimev1.Type_CODE_UNSPECIFIED
 	default:
 		match = false

@@ -18,8 +18,13 @@ const (
 	astKeyFunction         string = "function"
 	astKeyFunctionName     string = "function_name"
 	astKeyChildren         string = "children"
+	astKeyArguments        string = "arguments"
+	astKeyExpression       string = "expression"
 	astKeyChild            string = "child"
 	astKeyValue            string = "value"
+	astKeyLiteral          string = "literal"
+	astKeyKind             string = "kind"
+	astKeyText             string = "text"
 	astKeyLeft             string = "left"
 	astKeyRight            string = "right"
 	astKeyColumnNames      string = "column_names"
@@ -32,16 +37,13 @@ const (
 	astKeyLimit            string = "limit"
 	astKeyClass            string = "class"
 	astKeyCTE              string = "cte_map"
-	astKeyCTEName          string = "cte_name"
 	astKeyMap              string = "map"
-	astKeyQuery            string = "query"
+	astKeyQueryNode        string = "query_node"
 	astKeySubQuery         string = "subquery"
 	astKetRelationName     string = "relation_name"
 	astKeySchema           string = "schema"
-	astKeyIsNull           string = "is_null"
-	astKeyTypeInfo         string = "type_info"
-	astKeyScale            string = "scale"
-	astKeyCastType         string = "cast_type"
+	astKeyTypeExpr         string = "type_expr"
+	astKeyTypeName         string = "type_name"
 	astKeySource           string = "source"
 	astKeyPosition         string = "position"
 )
@@ -116,23 +118,33 @@ func getListOfValues[E interface{}](a astNode) []E {
 	arr := make([]E, 0)
 	switch toString(a, astKeyType) {
 	case "VALUE_CONSTANT":
-		if vt, ok := a[astKeyValue].(map[string]interface{})[astKeyValue].(E); ok {
+		if vt, ok := constantValueToGoValue(toNode(a, astKeyLiteral)).(E); ok {
 			arr = append(arr, vt)
 		}
 
 	case "FUNCTION":
 		if toString(a, astKeyFunctionName) == "list_value" {
-			for _, child := range toNodeArray(a, astKeyChildren) {
+			for _, child := range functionArgs(a) {
 				if toString(child, astKeyType) != "VALUE_CONSTANT" {
 					continue
 				}
-				if vt, ok := child[astKeyValue].(map[string]interface{})[astKeyValue].(E); ok {
+				if vt, ok := constantValueToGoValue(toNode(child, astKeyLiteral)).(E); ok {
 					arr = append(arr, vt)
 				}
 			}
 		}
 	}
 	return arr
+}
+
+// functionArgs returns the argument expressions of a function node.
+func functionArgs(fn astNode) []astNode {
+	args := toNodeArray(fn, astKeyArguments)
+	exprs := make([]astNode, len(args))
+	for i, arg := range args {
+		exprs[i] = toNode(arg, astKeyExpression)
+	}
+	return exprs
 }
 
 func getColumnName(node astNode) string {
