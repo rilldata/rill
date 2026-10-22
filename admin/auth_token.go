@@ -243,7 +243,9 @@ func (t *embedAuthToken) OwnerID() string {
 	return fmt.Sprintf("%s::%s", t.model.ProjectID, t.model.Email)
 }
 
-func (s *Service) IssueEmbedAuthToken(ctx context.Context, projectID, email string, ttl *time.Duration) (AuthToken, error) {
+// IssueEmbedAuthToken issues an embed auth token for an email in a project.
+// The openURL is optional; if set, it's used as the base URL for open links in emails from reports and alerts created with the token.
+func (s *Service) IssueEmbedAuthToken(ctx context.Context, projectID, email, openURL string, ttl *time.Duration) (AuthToken, error) {
 	tkn := authtoken.NewRandom(authtoken.TypeEmbed)
 
 	var expiresOn *time.Time
@@ -252,11 +254,17 @@ func (s *Service) IssueEmbedAuthToken(ctx context.Context, projectID, email stri
 		expiresOn = &t
 	}
 
+	var openURLPtr *string
+	if openURL != "" {
+		openURLPtr = &openURL
+	}
+
 	eat, err := s.DB.InsertEmbedAuthToken(ctx, &database.InsertEmbedAuthTokenOptions{
 		ID:         tkn.ID.String(),
 		SecretHash: tkn.SecretHash(),
 		ProjectID:  projectID,
 		Email:      email,
+		OpenURL:    openURLPtr,
 		ExpiresOn:  expiresOn,
 	})
 	if err != nil {

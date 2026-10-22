@@ -3,6 +3,7 @@ CREATE TABLE embed_auth_tokens (
     secret_hash BYTEA NOT NULL,
     project_id UUID NOT NULL REFERENCES projects (id) ON DELETE CASCADE,
     email TEXT NOT NULL,
+    open_url TEXT,
     created_on TIMESTAMPTZ DEFAULT now() NOT NULL,
     expires_on TIMESTAMPTZ,
     used_on TIMESTAMPTZ DEFAULT now() NOT NULL

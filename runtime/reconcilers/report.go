@@ -14,6 +14,7 @@ import (
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/duration"
 	"github.com/rilldata/rill/runtime/pkg/email"
+	"github.com/rilldata/rill/runtime/pkg/embedopen"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"github.com/rilldata/rill/runtime/pkg/pbutil"
 	"github.com/rilldata/rill/runtime/queries"
@@ -569,6 +570,18 @@ func (r *ReportReconciler) sendReport(ctx context.Context, self *runtimev1.Resou
 		return false, nil, fmt.Errorf("failed to get report metadata: %w", err)
 	}
 
+	// Reports created from an embed are only for the embed user, who opens them in the embedder's application.
+	// So their notifications only link to the embedder's application, without edit, download or unsubscribe links.
+	// The owner email annotation is only set for reports created from an embed.
+	embedCreated := rep.Spec.Annotations["admin_owner_user_email"] != ""
+	var embedLink string
+	if embedCreated {
+		embedLink, err = embedOpenLink(ctx, r.C, rep.Spec.Annotations, embedopen.KindReport, self.Meta.Name.Name, t)
+		if err != nil {
+			return false, nil, fmt.Errorf("failed to build open link: %w", err)
+		}
+	}
+
 	// recipient -> notification data
 	notificationsContent := make(map[string]*notificationData)
 
@@ -598,6 +611,14 @@ func (r *ReportReconciler) sendReport(ctx context.Context, self *runtimev1.Resou
 				aiReports[delivery.UserID] = report
 			}
 
+			if embedCreated {
+				notificationsContent[recipient] = &notificationData{
+					openLink: embedLink,
+					summary:  truncateSummary(report.summary, 500),
+				}
+				continue
+			}
+
 			openLink, err := buildAISessionURL(delivery.OpenURL, report.sessionID)
 			if err != nil {
 				return false, nil, fmt.Errorf("failed to build open link for %q: %w", recipient, err)
@@ -612,16 +633,18 @@ func (r *ReportReconciler) sendReport(ctx context.Context, self *runtimev1.Resou
 	default: // add more resolvers here, for default just generate export links
 		// Export the data to attach to emails.
 		// Attachments are only supported in creator mode (enforced by the parser), where every recipient gets the same data.
-		// So the data is exported once with the report owner's attributes, which the admin service returns for every recipient in creator mode.
+		// So the data is exported once with the identity the admin service resolved for creator mode (the owner, or the "for" identity if set),
+		// which it returns for every recipient.
 		var attachment *email.Attachment
 		var attachmentTooLarge bool
 		if rep.Spec.ExportAttach && len(emailRecipients) > 0 {
-			if ownerID == "" {
-				allWarnings = append(allWarnings, "The export was not attached to emails because the report has no owner")
+			delivery := meta.ReportDelivery[emailRecipients[0]]
+			if len(delivery.UserAttrs) == 0 {
+				allWarnings = append(allWarnings, "The export was not attached to emails because the report has no owner or identity to run as")
 			} else {
 				claims := &runtime.SecurityClaims{
-					UserID:         ownerID,
-					UserAttributes: meta.ReportDelivery[emailRecipients[0]].UserAttrs,
+					UserID:         delivery.UserID,
+					UserAttributes: delivery.UserAttrs,
 					Permissions:    []runtime.Permission{runtime.ReadObjects, runtime.ReadMetrics},
 				}
 				attachment, err = r.exportAttachment(ctx, rep, t, claims)
@@ -635,6 +658,16 @@ func (r *ReportReconciler) sendReport(ctx context.Context, self *runtimev1.Resou
 		}
 
 		for recipient, delivery := range meta.ReportDelivery {
+			if embedCreated {
+				notificationsContent[recipient] = &notificationData{
+					openLink:           embedLink,
+					downloadFormat:     formatExportFormat(rep.Spec.ExportFormat),
+					attachment:         attachment,
+					attachmentTooLarge: attachmentTooLarge,
+				}
+				continue
+			}
+
 			downloadURL, err := createExportURL(delivery.ExportURL, t)
 			if err != nil {
 				return false, nil, err

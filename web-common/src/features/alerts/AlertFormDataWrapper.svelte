@@ -14,7 +14,10 @@
     type EditAlertProps,
   } from "@rilldata/web-common/features/alerts/AlertForm.svelte";
   import { createFormMetadataProvider } from "@rilldata/web-common/features/scheduled-reports/FormMetadataProvider.svelte.ts";
-  import { getAlertMutationFactory } from "@rilldata/web-common/features/alerts/AlertFormMetadataProvider.ts";
+  import {
+    alertDeleteMutationFactory,
+    getAlertMutationFactory,
+  } from "@rilldata/web-common/features/alerts/AlertFormMetadataProvider.ts";
 
   let {
     onClose,
@@ -33,6 +36,7 @@
   const provider = createFormMetadataProvider(
     runtimeClient,
     getAlertMutationFactory(props.mode === "edit"),
+    alertDeleteMutationFactory,
   );
   $effect(() => () => provider.cleanup());
 

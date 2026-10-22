@@ -6615,6 +6615,10 @@ func (m *GetIFrameRequest) validate(all bool) error {
 
 	// no validation rules for Resource
 
+	// no validation rules for Open
+
+	// no validation rules for OpenUrl
+
 	// no validation rules for Theme
 
 	if m.GetThemeMode() != "" {

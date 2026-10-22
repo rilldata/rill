@@ -1,5 +1,5 @@
 /**
- * This file implements variants of the `CreateAlert`, `EditAlert` and `UnsubscribeAlert` client code that authenticate using a bearer token.
+ * This file implements variants of the `CreateAlert`, `EditAlert`, `DeleteAlert` and `UnsubscribeAlert` client code that authenticate using a bearer token.
  *
  * Modifications from the original Orval-generated code in `/web-admin/src/client/gen/default/default.ts` include:
  * - Request functions: Authentication via `Authorization: Bearer ${token}` header, replacing cookie-based authentication.
@@ -17,6 +17,7 @@ import {
   type AdminServiceUnsubscribeAlertBodyBody,
   type RpcStatus,
   type V1CreateAlertResponse,
+  type V1DeleteAlertResponse,
   type V1EditAlertResponse,
   type V1UnsubscribeAlertResponse,
 } from "@rilldata/web-admin/client";
@@ -129,6 +130,55 @@ export const createAdminServiceEditAlertUsingToken = <
       mutationKey: ["adminServiceEditAlert"],
       mutationFn: ({ org, project, name, data }) =>
         adminServiceEditAlertUsingToken(org, project, name, data, token),
+      ...options?.mutation,
+    },
+    queryClient,
+  );
+};
+
+export const adminServiceDeleteAlertUsingToken = (
+  org: string,
+  project: string,
+  name: string,
+  token: string,
+) => {
+  return httpClient<V1DeleteAlertResponse>({
+    url: `/v1/orgs/${org}/projects/${project}/alerts/${name}`,
+    method: "DELETE",
+    headers: {
+      // We use the bearer token to authenticate the request
+      Authorization: `Bearer ${token}`,
+    },
+    // To be explicit, we don't need to send credentials (cookies) with the request
+    withCredentials: false,
+  });
+};
+
+export const createAdminServiceDeleteAlertUsingToken = <
+  TError = RpcStatus,
+  TContext = unknown,
+>(
+  token: string,
+  options?: {
+    mutation?: CreateMutationOptions<
+      Awaited<ReturnType<typeof adminServiceDeleteAlertUsingToken>>,
+      TError,
+      { org: string; project: string; name: string },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateMutationResult<
+  Awaited<ReturnType<typeof adminServiceDeleteAlertUsingToken>>,
+  TError,
+  { org: string; project: string; name: string },
+  TContext
+> => {
+  return createMutation(
+    {
+      mutationKey: ["adminServiceDeleteAlert"],
+      mutationFn: ({ org, project, name }) =>
+        adminServiceDeleteAlertUsingToken(org, project, name, token),
       ...options?.mutation,
     },
     queryClient,

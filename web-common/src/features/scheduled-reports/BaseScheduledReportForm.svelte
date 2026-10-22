@@ -284,17 +284,24 @@
         label={m.report_form_include_metadata()}
         hint={m.report_form_metadata_tooltip()}
       />
-      <Checkbox
-        bind:checked={$data["exportAttach"]}
-        id="exportAttach"
-        onCheckedChange={(checked) => {
-          $data["exportAttach"] = Boolean(checked);
-        }}
-        inverse
-        disabled={!canAttach}
-        label={m.report_form_attach_file()}
-        hint={m.report_form_attach_file_hint()}
-      />
+      <!-- Reports created from an embed are only delivered as an email attachment, so the file is always attached. -->
+      {#if isEmbedded}
+        <div class="text-sm text-fg-secondary">
+          {m.report_form_attach_file_embed_note()}
+        </div>
+      {:else}
+        <Checkbox
+          bind:checked={$data["exportAttach"]}
+          id="exportAttach"
+          onCheckedChange={(checked) => {
+            $data["exportAttach"] = Boolean(checked);
+          }}
+          inverse
+          disabled={!canAttach}
+          label={m.report_form_attach_file()}
+          hint={m.report_form_attach_file_hint()}
+        />
+      {/if}
 
       {#if filters && timeControls}
         <div class="flex flex-col gap-y-3">

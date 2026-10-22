@@ -11,7 +11,7 @@ import {
 } from "@rilldata/web-common/runtime-client";
 
 /**
- * Creates the create/edit mutation for a form.
+ * Creates a mutation used by a form, i.e. the create/edit mutation or the delete mutation.
  * Admin mutations authenticate using cookies, embed mutations authenticate using the embed's admin token.
  */
 export type MutationFactory<M> = {
@@ -23,8 +23,9 @@ export type MutationFactory<M> = {
  * Provides the metadata needed by alert and report forms,
  * abstracting away whether the form is rendered in Rill Cloud or in an embed.
  */
-export interface FormMetadataProvider<M> {
+export interface FormMetadataProvider<M, D> {
   mutation: M;
+  deleteMutation: D;
 
   organization: string;
   project: string;
@@ -39,17 +40,27 @@ export interface FormMetadataProvider<M> {
   cleanup(): void;
 }
 
-export function createFormMetadataProvider<M>(
+export function createFormMetadataProvider<M, D>(
   client: RuntimeClient,
   mutationFactory: MutationFactory<M>,
-): FormMetadataProvider<M> {
+  deleteMutationFactory: MutationFactory<D>,
+): FormMetadataProvider<M, D> {
   return EmbedStore.isEmbedded()
-    ? new EmbedFormMetadataProvider(client, mutationFactory.embed)
-    : new AdminFormMetadataProvider(client, mutationFactory.admin);
+    ? new EmbedFormMetadataProvider(
+        client,
+        mutationFactory.embed,
+        deleteMutationFactory.embed,
+      )
+    : new AdminFormMetadataProvider(
+        client,
+        mutationFactory.admin,
+        deleteMutationFactory.admin,
+      );
 }
 
-class AdminFormMetadataProvider<M> implements FormMetadataProvider<M> {
+class AdminFormMetadataProvider<M, D> implements FormMetadataProvider<M, D> {
   public mutation: M;
+  public deleteMutation: D;
 
   public organization: string;
   public project: string;
@@ -67,8 +78,10 @@ class AdminFormMetadataProvider<M> implements FormMetadataProvider<M> {
   public constructor(
     client: RuntimeClient,
     createMutation: MutationFactory<M>["admin"],
+    createDeleteMutation: MutationFactory<D>["admin"],
   ) {
     this.mutation = createMutation();
+    this.deleteMutation = createDeleteMutation();
 
     this.organization = page.params.organization;
     this.project = page.params.project;
@@ -112,8 +125,9 @@ class AdminFormMetadataProvider<M> implements FormMetadataProvider<M> {
   }
 }
 
-class EmbedFormMetadataProvider<M> implements FormMetadataProvider<M> {
+class EmbedFormMetadataProvider<M, D> implements FormMetadataProvider<M, D> {
   public mutation: M;
+  public deleteMutation: D;
 
   public organization = "";
   public project = "";
@@ -128,6 +142,7 @@ class EmbedFormMetadataProvider<M> implements FormMetadataProvider<M> {
   public constructor(
     client: RuntimeClient,
     createMutation: MutationFactory<M>["embed"],
+    createDeleteMutation: MutationFactory<D>["embed"],
   ) {
     const embedInstance = EmbedStore.getInstance();
     if (!embedInstance) {
@@ -137,6 +152,7 @@ class EmbedFormMetadataProvider<M> implements FormMetadataProvider<M> {
     this.projectMembersSet = new Set([this.userEmail]);
 
     this.mutation = createMutation(embedInstance.adminToken);
+    this.deleteMutation = createDeleteMutation(embedInstance.adminToken);
 
     const instanceQuery = createRuntimeServiceGetInstance(client, {});
     this.instanceUnsub = instanceQuery.subscribe((instanceResp) => {

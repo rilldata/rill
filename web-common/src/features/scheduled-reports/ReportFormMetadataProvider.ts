@@ -1,5 +1,6 @@
 import {
   createAdminServiceCreateReport,
+  createAdminServiceDeleteReport,
   createAdminServiceEditReport,
 } from "@rilldata/web-admin/client";
 import type {
@@ -8,14 +9,19 @@ import type {
 } from "@rilldata/web-common/features/scheduled-reports/FormMetadataProvider.svelte.ts";
 import {
   createAdminServiceCreateReportUsingToken,
+  createAdminServiceDeleteReportUsingToken,
   createAdminServiceEditReportUsingToken,
 } from "@rilldata/web-common/features/scheduled-reports/report-client-using-token.ts";
 
 type ReportMutation = ReturnType<
   typeof createAdminServiceCreateReport | typeof createAdminServiceEditReport
 >;
+type ReportDeleteMutation = ReturnType<typeof createAdminServiceDeleteReport>;
 
-export type ReportFormMetadataProvider = FormMetadataProvider<ReportMutation>;
+export type ReportFormMetadataProvider = FormMetadataProvider<
+  ReportMutation,
+  ReportDeleteMutation
+>;
 
 export function getReportMutationFactory(
   isEdit: boolean,
@@ -32,3 +38,9 @@ export function getReportMutationFactory(
           createAdminServiceCreateReportUsingToken(adminToken),
       };
 }
+
+export const reportDeleteMutationFactory: MutationFactory<ReportDeleteMutation> =
+  {
+    admin: () => createAdminServiceDeleteReport(),
+    embed: (adminToken) => createAdminServiceDeleteReportUsingToken(adminToken),
+  };

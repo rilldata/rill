@@ -116,6 +116,24 @@ func (s *Server) GetReportMeta(ctx context.Context, req *adminv1.GetReportMetaRe
 		ownerEmail = req.GetQueryForUserEmail()
 	}
 
+	// Reports created from an embed are only for the embed user, who opens them through the embedder's app.
+	// So they don't get magic tokens or Rill Cloud links; the runtime builds their open links instead.
+	embedCreated, err := s.isEmbedCreated(ctx, proj.ID, virtualFilePathForManagedReport(req.Report))
+	if err != nil {
+		return nil, err
+	}
+	if embedCreated {
+		for _, recipient := range recipients {
+			delivery[recipient] = &adminv1.GetReportMetaResponse_DeliveryMeta{
+				UserId:    userID,
+				UserAttrs: userAttrsPb,
+			}
+		}
+		return &adminv1.GetReportMetaResponse{
+			DeliveryMeta: delivery,
+		}, nil
+	}
+
 	var tokens map[string]string
 	if webOpenMode == WebOpenModeRecipient {
 		tokens, err = s.createUnsubMagicTokens(ctx, proj.ID, req.Report, ownerID, ownerEmail, recipients)
@@ -218,17 +236,21 @@ func (s *Server) CreateReport(ctx context.Context, req *adminv1.CreateReportRequ
 		return nil, status.Error(codes.PermissionDenied, "does not have permission to read project repo")
 	}
 
-	ownerId := ""
+	ownerID := ""
 	ownerEmail := ""
+	embedOpenURL := ""
 	switch claims.OwnerType() {
 	case auth.OwnerTypeUser:
-		ownerId = claims.OwnerID()
+		ownerID = claims.OwnerID()
 	case auth.OwnerTypeEmbed:
 		mdl, ok := claims.AuthTokenModel().(*database.EmbedAuthToken)
 		if !ok {
 			return nil, status.Error(codes.PermissionDenied, "invalid embed token")
 		}
 		ownerEmail = mdl.Email
+		if mdl.OpenURL != nil {
+			embedOpenURL = *mdl.OpenURL
+		}
 	default:
 		return nil, status.Error(codes.PermissionDenied, "only users can create reports")
 	}
@@ -250,7 +272,7 @@ func (s *Server) CreateReport(ctx context.Context, req *adminv1.CreateReportRequ
 		return nil, err
 	}
 
-	data, err := s.yamlForManagedReport(req.Options, ownerId, ownerEmail)
+	data, err := s.yamlForManagedReport(req.Options, ownerID, ownerEmail, embedOpenURL)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "failed to generate report YAML: %s", err.Error())
 	}
@@ -316,8 +338,14 @@ func (s *Server) EditReport(ctx context.Context, req *adminv1.EditReportRequest)
 		return nil, status.Error(codes.PermissionDenied, "does not have permission to edit report")
 	}
 
+	// Keep the open URL the report was created with, unless the editing embed has a new one.
+	embedOpenURL := annotations.AdminEmbedOpenURL
+	if mdl, ok := claims.AuthTokenModel().(*database.EmbedAuthToken); ok && mdl.OpenURL != nil {
+		embedOpenURL = *mdl.OpenURL
+	}
+
 	// Preserve the original owner, since the editor may be someone with manage permissions.
-	data, err := s.yamlForManagedReport(req.Options, annotations.AdminOwnerUserID, annotations.AdminOwnerUserEmail)
+	data, err := s.yamlForManagedReport(req.Options, annotations.AdminOwnerUserID, annotations.AdminOwnerUserEmail, embedOpenURL)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "failed to generate report YAML: %s", err.Error())
 	}
@@ -591,7 +619,10 @@ func (s *Server) GenerateReportYAML(ctx context.Context, req *adminv1.GenerateRe
 	}, nil
 }
 
-func (s *Server) yamlForManagedReport(opts *adminv1.ReportOptions, ownerUserID, ownerEmail string) ([]byte, error) {
+// yamlForManagedReport generates the YAML for a report created from the UI.
+// For reports created from an embed, ownerEmail is the embed user's email,
+// and embedOpenURL is the optional base URL for open links in the report's emails.
+func (s *Server) yamlForManagedReport(opts *adminv1.ReportOptions, ownerUserID, ownerEmail, embedOpenURL string) ([]byte, error) {
 	res := reportYAML{}
 	res.Type = "report"
 	res.DisplayName = opts.DisplayName
@@ -645,13 +676,23 @@ func (s *Server) yamlForManagedReport(opts *adminv1.ReportOptions, ownerUserID, 
 		if res.Annotations.WebOpenMode != WebOpenModeCreator {
 			return nil, fmt.Errorf("reports created from an embed only support the %q web open mode", WebOpenModeCreator)
 		}
+		// Reports created from an embed are only for the embed user, and are only delivered by email.
+		if len(opts.EmailRecipients) > 1 || (len(opts.EmailRecipients) == 1 && !strings.EqualFold(opts.EmailRecipients[0], ownerEmail)) {
+			return nil, fmt.Errorf("reports created from an embed can only be sent to the creator")
+		}
+		if len(opts.SlackChannels) > 0 || len(opts.SlackUsers) > 0 || len(opts.SlackWebhooks) > 0 {
+			return nil, fmt.Errorf("reports created from an embed can't be sent to Slack")
+		}
 		res.For.UserEmail = ownerEmail
 		res.Query.For.UserEmail = ownerEmail
 		res.Annotations.AdminOwnerUserEmail = ownerEmail
+		res.Annotations.AdminEmbedOpenURL = embedOpenURL
+		// The emails of reports created from an embed have no download link, so they must always attach the export.
+		res.Export.Attach = true
 	} else {
 		res.Annotations.AdminOwnerUserID = ownerUserID
 	}
-	if opts.ExportAttach {
+	if res.Export.Attach {
 		if opts.QueryName == "" { // nolint:staticcheck // backwards compatibility
 			return nil, fmt.Errorf("export attachments are only supported for query-based reports")
 		}
@@ -918,6 +959,31 @@ func (s *Server) createUnsubMagicTokens(ctx context.Context, projectID, reportNa
 	return emailTokens, nil
 }
 
+// isEmbedCreated returns true if the virtual file at the path is an admin-managed report or alert that was created from an embed.
+func (s *Server) isEmbedCreated(ctx context.Context, projectID, path string) (bool, error) {
+	vf, err := s.admin.DB.FindVirtualFile(ctx, projectID, "prod", path)
+	if err != nil {
+		if errors.Is(err, database.ErrNotFound) {
+			return false, nil
+		}
+		return false, err
+	}
+	if vf.Deleted {
+		return false, nil
+	}
+
+	// Only parse the owner annotation, which is shared by reports and alerts.
+	var res struct {
+		Annotations struct {
+			AdminOwnerUserEmail string `yaml:"admin_owner_user_email"`
+		} `yaml:"annotations"`
+	}
+	if err := yaml.Unmarshal(vf.Data, &res); err != nil {
+		return false, fmt.Errorf("failed to parse virtual file %q: %w", path, err)
+	}
+	return res.Annotations.AdminOwnerUserEmail != "", nil
+}
+
 // getAttributesForProjectMember returns user attributes for a given email only if the user is a member of the project.
 func (s *Server) getAttributesForProjectMember(ctx context.Context, email, orgID, projID string) (map[string]any, string, error) {
 	if email == "" {
@@ -991,6 +1057,7 @@ type reportYAML struct {
 type reportAnnotations struct {
 	AdminOwnerUserID    string      `yaml:"admin_owner_user_id"`
 	AdminOwnerUserEmail string      `yaml:"admin_owner_user_email"`
+	AdminEmbedOpenURL   string      `yaml:"admin_embed_open_url,omitempty"` // Base URL for open links in emails from reports created from an embed
 	AdminManaged        bool        `yaml:"admin_managed"`
 	AdminNonce          string      `yaml:"admin_nonce"` // To ensure spec version gets updated on writes, to enable polling in TriggerReconcileAndAwaitReport
 	WebOpenPath         string      `yaml:"web_open_path"`
@@ -1028,6 +1095,7 @@ func parseReportAnnotations(annotations map[string]string) reportAnnotations {
 	res := reportAnnotations{}
 	res.AdminOwnerUserID = annotations["admin_owner_user_id"]
 	res.AdminOwnerUserEmail = annotations["admin_owner_user_email"]
+	res.AdminEmbedOpenURL = annotations["admin_embed_open_url"]
 	res.AdminManaged, _ = strconv.ParseBool(annotations["admin_managed"])
 	res.AdminNonce = annotations["admin_nonce"]
 	res.WebOpenPath = annotations["web_open_path"]

@@ -15,6 +15,7 @@ import (
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/duration"
+	"github.com/rilldata/rill/runtime/pkg/embedopen"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"github.com/rilldata/rill/runtime/pkg/pbutil"
 	"github.com/rilldata/rill/runtime/queries"
@@ -539,6 +540,12 @@ func (r *AlertReconciler) executeAll(ctx context.Context, self *runtimev1.Resour
 	if a.Spec.Annotations != nil {
 		ownerID = a.Spec.Annotations["admin_owner_user_id"]
 	}
+	// Alerts created from an embed don't use the recipient URLs, since their open links point to the embedder's application.
+	// So only request the "for" identity's attributes, which avoids issuing magic tokens for the recipients.
+	if a.Spec.Annotations["admin_owner_user_email"] != "" {
+		emailRecipients = nil
+		anonRecipients = false
+	}
 	adminMeta, err = admin.GetAlertMetadata(ctx, self.Meta.Name.Name, ownerID, emailRecipients, anonRecipients, a.Spec.Annotations, a.Spec.GetQueryForUserId(), a.Spec.GetQueryForUserEmail())
 	if err != nil && !errors.Is(err, drivers.ErrNotImplemented) {
 		return fmt.Errorf("failed to get alert metadata: %w", err)
@@ -876,6 +883,19 @@ func (r *AlertReconciler) popCurrentExecution(ctx context.Context, self *runtime
 		}
 	}
 
+	// Alerts created from an embed are only for the embed user, who opens them in the embedder's application.
+	// So their notifications only link to the embedder's application, without edit or unsubscribe links.
+	// The owner email annotation is only set for alerts created from an embed.
+	embedCreated := a.Spec.Annotations["admin_owner_user_email"] != ""
+	var embedLink string
+	if msg != nil && embedCreated {
+		var err error
+		embedLink, err = embedOpenLink(ctx, r.C, a.Spec.Annotations, embedopen.KindAlert, self.Meta.Name.Name, executionTime)
+		if err != nil {
+			return fmt.Errorf("failed to build open link: %w", err)
+		}
+	}
+
 	// Send a notification (if applicable)
 	var notificationErr error
 	var sentNotifications bool
@@ -889,7 +909,11 @@ func (r *AlertReconciler) popCurrentExecution(ctx context.Context, self *runtime
 					msg.ToEmail = recipient
 
 					// Set recipient-specific URLs if available from admin metadata
-					if adminMeta != nil && adminMeta.RecipientURLs != nil {
+					if embedCreated {
+						msg.OpenLink = embedLink
+						msg.EditLink = ""
+						msg.UnsubscribeLink = ""
+					} else if adminMeta != nil && adminMeta.RecipientURLs != nil {
 						if recipientURLs, ok := adminMeta.RecipientURLs[recipient]; ok {
 							// Use recipient-specific URLs (with magic token)
 							openLink, err := addExecutionTime(recipientURLs.OpenURL, executionTime)
@@ -928,7 +952,9 @@ func (r *AlertReconciler) popCurrentExecution(ctx context.Context, self *runtime
 					msg.OpenLink = ""
 					msg.EditLink = ""
 					msg.UnsubscribeLink = ""
-					if adminMeta != nil && adminMeta.RecipientURLs != nil {
+					if embedCreated {
+						msg.OpenLink = embedLink
+					} else if adminMeta != nil && adminMeta.RecipientURLs != nil {
 						urls, ok := adminMeta.RecipientURLs[""]
 						if !ok {
 							return fmt.Errorf("failed to get recipient URLs for anon user")

@@ -4757,6 +4757,19 @@ paths:
                                 navigation:
                                     description: Navigation denotes whether navigation between different resources should be enabled in the embed.
                                     type: boolean
+                                open:
+                                    description: |-
+                                        The `rill_open` query param of an open link from an email sent by a report or alert created from an embed.
+                                        If set, the embed opens the report or alert's dashboard in the state it captured, and `type` is ignored.
+                                        Cannot be combined with `resource`.
+                                    type: string
+                                openUrl:
+                                    description: |-
+                                        Base URL for open links in emails sent by reports and alerts created from this embed.
+                                        It should be a page that runs the embed integration and forwards the `rill_open` query param to `open`.
+                                        Must be an absolute http(s) URL. If not set, the `embeds.open_url` property in `rill.yaml` is used.
+                                        Only applies when `user_email` is set, since only those embeds can create reports and alerts.
+                                    type: string
                                 query:
                                     additionalProperties:
                                         type: string

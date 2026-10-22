@@ -1,5 +1,6 @@
 import {
   createAdminServiceCreateAlert,
+  createAdminServiceDeleteAlert,
   createAdminServiceEditAlert,
 } from "@rilldata/web-admin/client";
 import type {
@@ -8,14 +9,19 @@ import type {
 } from "@rilldata/web-common/features/scheduled-reports/FormMetadataProvider.svelte.ts";
 import {
   createAdminServiceCreateAlertUsingToken,
+  createAdminServiceDeleteAlertUsingToken,
   createAdminServiceEditAlertUsingToken,
 } from "@rilldata/web-common/features/alerts/alert-client-using-token.ts";
 
 type AlertMutation = ReturnType<
   typeof createAdminServiceCreateAlert | typeof createAdminServiceEditAlert
 >;
+type AlertDeleteMutation = ReturnType<typeof createAdminServiceDeleteAlert>;
 
-export type AlertFormMetadataProvider = FormMetadataProvider<AlertMutation>;
+export type AlertFormMetadataProvider = FormMetadataProvider<
+  AlertMutation,
+  AlertDeleteMutation
+>;
 
 export function getAlertMutationFactory(
   isEdit: boolean,
@@ -32,3 +38,9 @@ export function getAlertMutationFactory(
           createAdminServiceCreateAlertUsingToken(adminToken),
       };
 }
+
+export const alertDeleteMutationFactory: MutationFactory<AlertDeleteMutation> =
+  {
+    admin: () => createAdminServiceDeleteAlert(),
+    embed: (adminToken) => createAdminServiceDeleteAlertUsingToken(adminToken),
+  };
