@@ -69,8 +69,8 @@ class FeatureFlags {
   rillTime = new FeatureFlag("user", true);
   hidePublicUrl = new FeatureFlag("user", false);
   exportHeader = new FeatureFlag("user", false);
-  // Do not check alerts and reports directly to gate UI; use alertsEnabled and reportsEnabled instead,
-  // which also check that the environment can reach the admin APIs for them.
+  // Do not check reports directly to gate UI; use reportsEnabled instead,
+  // which also checks that the environment can reach the admin APIs for them.
   alerts = new FeatureFlag("user", true);
   reports = new FeatureFlag("user", true);
   chat = new FeatureFlag("user", true);
@@ -150,18 +150,9 @@ class FeatureFlags {
 
 export const featureFlags = new FeatureFlags();
 
-// Alerts and reports are managed through the admin server,
+// Reports are managed through the admin server,
 // so they need either a Rill Cloud session or an embed with an admin token.
 // They are never available in Rill Developer.
-export const alertsEnabled = derived(
-  [
-    featureFlags.alerts,
-    featureFlags.adminServer,
-    featureFlags.embedAdminActions,
-  ],
-  ([alerts, adminServer, embedAdminActions]) =>
-    alerts && (adminServer || embedAdminActions),
-);
 export const reportsEnabled = derived(
   [
     featureFlags.reports,

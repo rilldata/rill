@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { createAdminServiceGetCurrentUser } from "@rilldata/web-admin/client";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import {
     getAlertDashboardName,
@@ -13,72 +14,61 @@
     type CreateAlertProps,
     type EditAlertProps,
   } from "@rilldata/web-common/features/alerts/AlertForm.svelte";
-  import { createFormMetadataProvider } from "@rilldata/web-common/features/scheduled-reports/FormMetadataProvider.svelte.ts";
-  import {
-    alertDeleteMutationFactory,
-    getAlertMutationFactory,
-  } from "@rilldata/web-common/features/alerts/AlertFormMetadataProvider.ts";
+  import { derived } from "svelte/store";
 
-  let {
-    onClose,
-    onCancel,
-    props,
-  }: {
-    onClose: () => void;
-    onCancel: () => void;
-    props: CreateAlertProps | EditAlertProps;
-  } = $props();
+  export let onClose: () => void;
+  export let onCancel: () => void;
+  export let props: CreateAlertProps | EditAlertProps;
 
+  const user = createAdminServiceGetCurrentUser();
   const runtimeClient = useRuntimeClient();
 
-  // The wrapper is mounted fresh for each alert, so deriving these once at init is safe.
-  // svelte-ignore state_referenced_locally
-  const provider = createFormMetadataProvider(
-    runtimeClient,
-    getAlertMutationFactory(props.mode === "edit"),
-    alertDeleteMutationFactory,
-  );
-  $effect(() => () => provider.cleanup());
-
-  const exploreName = $derived(
+  $: exploreName =
     props.mode === "create"
       ? props.exploreName
-      : getAlertDashboardName(props.alertSpec),
-  );
+      : getAlertDashboardName(props.alertSpec);
 
-  const validExploreSpec = $derived(
-    useExploreValidSpec(runtimeClient, exploreName),
-  );
-  const metricsViewName = $derived(
-    $validExploreSpec.data?.explore?.metricsView ?? "",
-  );
+  $: validExploreSpec = useExploreValidSpec(runtimeClient, exploreName);
+  $: exploreSpec = $validExploreSpec.data?.explore ?? {};
+  $: metricsViewName = exploreSpec.metricsView ?? "";
 
-  // svelte-ignore state_referenced_locally
   const exploreStateStore =
     props.mode === "create"
       ? useExploreState(props.exploreName)
       : unwrapQueryData(useAlertDashboardState(runtimeClient, props.alertSpec));
 
-  const initialValues = $derived.by(() => {
-    const exploreState = $exploreStateStore;
-    if (
-      provider.isLoading ||
-      !exploreState ||
-      Object.keys(exploreState).length === 0
-    )
-      return undefined;
+  const initialValuesStore = derived(
+    [exploreStateStore, user],
+    ([exploreState, userResp]) => {
+      if (
+        userResp.isPending ||
+        !exploreState ||
+        Object.keys(exploreState).length === 0
+      )
+        return {
+          isLoading: true,
+          data: undefined,
+        };
 
-    return props.mode === "create"
-      ? getNewAlertInitialFormValues(
-          metricsViewName,
-          exploreName,
-          exploreState,
-          provider.userEmail,
-        )
-      : getExistingAlertInitialFormValues(props.alertSpec, metricsViewName);
-  });
+      const initialValues =
+        props.mode === "create"
+          ? getNewAlertInitialFormValues(
+              metricsViewName,
+              exploreName,
+              exploreState,
+              $user.data?.user,
+            )
+          : getExistingAlertInitialFormValues(props.alertSpec, metricsViewName);
+
+      return {
+        isLoading: false,
+        data: initialValues,
+      };
+    },
+  );
+  $: ({ data: initialValues, isLoading } = $initialValuesStore);
 </script>
 
-{#if initialValues}
-  <AlertForm {props} {provider} {initialValues} {onClose} {onCancel} />
+{#if !isLoading && initialValues}
+  <AlertForm {props} {initialValues} {onClose} {onCancel} />
 {/if}

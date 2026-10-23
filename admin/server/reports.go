@@ -984,6 +984,20 @@ func (s *Server) isEmbedCreated(ctx context.Context, projectID, path string) (bo
 	return res.Annotations.AdminOwnerUserEmail != "", nil
 }
 
+// isAdminManagedOwner returns true if the claims belong to the owner of an admin-managed alert or report.
+// Rill users are matched by user ID; embed users don't have a user ID, so they are matched by email.
+func isAdminManagedOwner(claims auth.Claims, ownerUserID, ownerEmail string) bool {
+	switch claims.OwnerType() {
+	case auth.OwnerTypeUser:
+		return ownerUserID != "" && ownerUserID == claims.OwnerID()
+	case auth.OwnerTypeEmbed:
+		tkn, ok := claims.AuthTokenModel().(*database.EmbedAuthToken)
+		return ok && ownerUserID == "" && ownerEmail != "" && ownerEmail == tkn.Email
+	default:
+		return false
+	}
+}
+
 // getAttributesForProjectMember returns user attributes for a given email only if the user is a member of the project.
 func (s *Server) getAttributesForProjectMember(ctx context.Context, email, orgID, projID string) (map[string]any, string, error) {
 	if email == "" {

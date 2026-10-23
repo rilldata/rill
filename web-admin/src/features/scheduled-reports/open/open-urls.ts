@@ -1,12 +1,9 @@
 import { getExploreName } from "@rilldata/web-common/features/explore-mappers/utils";
 import { stripInternalReportParams } from "@rilldata/web-common/features/scheduled-reports/utils";
-import type {
-  V1AlertSpec,
-  V1ReportSpec,
-} from "@rilldata/web-common/runtime-client";
+import type { V1ReportSpec } from "@rilldata/web-common/runtime-client";
 
 /**
- * Builds the paths of the dashboards that report and alert open links land on.
+ * Builds the paths of the dashboards that report open links land on.
  * Rill Cloud and embeds serve dashboards from different routes.
  */
 export type DashboardPathBuilder = {
@@ -59,9 +56,9 @@ export function getCanvasReportOpenUrl(
 }
 
 /**
- * Returns the explore that a report or alert opens.
+ * Returns the explore that a report opens.
  */
-export function getOpenExploreName(spec: V1ReportSpec | V1AlertSpec): string {
+export function getOpenExploreName(spec: V1ReportSpec): string {
   return (
     spec.annotations?.["explore"] ??
     getExploreName(spec.annotations?.web_open_path ?? "") // backwards compatibility
@@ -69,9 +66,9 @@ export function getOpenExploreName(spec: V1ReportSpec | V1AlertSpec): string {
 }
 
 /**
- * Returns the query that a report or alert runs, which is mapped to the dashboard state when opened.
+ * Returns the query that a report runs, which is mapped to the dashboard state when opened.
  */
-export function getOpenQuery(spec: V1ReportSpec | V1AlertSpec): {
+export function getOpenQuery(spec: V1ReportSpec): {
   queryName: string;
   queryArgsJson: string;
 } {

@@ -690,12 +690,6 @@ func (s *Server) GetIFrame(ctx context.Context, req *adminv1.GetIFrameRequest) (
 				return nil, fmt.Errorf("could not get report: %w", err)
 			}
 			annotations = spec.Annotations
-		case embedopen.KindAlert:
-			spec, err := s.admin.LookupAlert(ctx, prodDepl, open.Name)
-			if err != nil {
-				return nil, fmt.Errorf("could not get alert: %w", err)
-			}
-			annotations = spec.Annotations
 		default:
 			return nil, status.Errorf(codes.InvalidArgument, "unsupported open kind %q", open.Kind)
 		}

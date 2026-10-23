@@ -15,6 +15,10 @@
 <script lang="ts">
   import { page } from "$app/stores";
   import {
+    createAdminServiceCreateAlert,
+    createAdminServiceEditAlert,
+  } from "@rilldata/web-admin/client";
+  import {
     getAlertDashboardName,
     unwrapQueryData,
     useAlertDashboardState,
@@ -61,17 +65,15 @@
   import type { ExpressionFilterManager } from "@rilldata/web-common/features/dashboards/filters/ExpressionFilterManager.svelte.ts";
   import type { TimeControls } from "@rilldata/web-common/features/dashboards/stores/TimeControls.ts";
   import { onDestroy } from "svelte";
-  import type { AlertFormMetadataProvider } from "@rilldata/web-common/features/alerts/AlertFormMetadataProvider.ts";
 
   export let onClose: () => void;
   export let onCancel: () => void;
   export let props: CreateAlertProps | EditAlertProps;
-  export let provider: AlertFormMetadataProvider;
   export let initialValues: ReturnType<typeof getNewAlertInitialFormValues>;
 
   const runtimeClient = useRuntimeClient();
 
-  $: ({ alert: alertName } = $page.params);
+  $: ({ organization, project, alert: alertName } = $page.params);
   $: ({ instanceId } = runtimeClient);
 
   // Convenience variable to be used when other fields from props are not needed.
@@ -100,7 +102,10 @@
       ? useExploreState(props.exploreName)
       : unwrapQueryData(useAlertDashboardState(runtimeClient, props.alertSpec));
 
-  const { mutation } = provider;
+  const mutation =
+    props.mode === "create"
+      ? createAdminServiceCreateAlert()
+      : createAdminServiceEditAlert();
 
   let filters: ExpressionFilterManager;
   let timeControls: TimeControls;
@@ -179,8 +184,8 @@
     );
 
     await $mutation.mutateAsync({
-      org: provider.organization,
-      project: provider.project,
+      org: organization,
+      project,
       name: alertName,
       data: {
         options: {
@@ -234,7 +239,7 @@
       eventBus.emit("notification", {
         message: m.alert_form_created(),
         link: {
-          href: `${provider.pageBasePath}/alerts`,
+          href: `/${organization}/${project}/-/alerts`,
           text: m.alert_form_go_to_alerts(),
         },
       });
@@ -326,7 +331,7 @@
         <AlertDialogCriteriaTab {superFormInstance} {filters} {timeControls} />
       </DialogTabs.Content>
       <DialogTabs.Content {currentTabIndex} tabIndex={2} value={tabs[2]}>
-        <AlertDialogDeliveryTab {superFormInstance} {exploreName} {provider} />
+        <AlertDialogDeliveryTab {superFormInstance} {exploreName} />
       </DialogTabs.Content>
     </div>
   </DialogTabs.Root>

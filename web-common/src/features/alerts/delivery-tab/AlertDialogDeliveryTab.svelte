@@ -5,35 +5,26 @@
   import Input from "@rilldata/web-common/components/forms/Input.svelte";
   import MultiInput from "@rilldata/web-common/components/forms/MultiInput.svelte";
   import Select from "@rilldata/web-common/components/forms/Select.svelte";
+  import { getHasSlackConnection } from "@rilldata/web-common/features/alerts/delivery-tab/notifiers-utils";
   import { getSnoozeOptions } from "@rilldata/web-common/features/alerts/delivery-tab/snooze";
   import type { AlertFormValues } from "@rilldata/web-common/features/alerts/form-utils";
   import ScheduleForm from "@rilldata/web-common/features/scheduled-reports/ScheduleForm.svelte";
   import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import type { SuperForm } from "sveltekit-superforms/client";
-  import type { AlertFormMetadataProvider } from "@rilldata/web-common/features/alerts/AlertFormMetadataProvider.ts";
 
-  let {
-    superFormInstance,
-    exploreName,
-    provider,
-  }: {
-    superFormInstance: SuperForm<AlertFormValues>;
-    exploreName: string;
-    provider: AlertFormMetadataProvider;
-  } = $props();
+  export let superFormInstance: SuperForm<AlertFormValues>;
+  export let exploreName: string;
 
   const runtimeClient = useRuntimeClient();
 
-  const { form, errors } = $derived(superFormInstance);
+  $: ({ form, errors } = superFormInstance);
+
+  $: hasSlackNotifier = getHasSlackConnection(runtimeClient);
 
   // Time zone options from the dashboard's spec
-  const exploreSpecQuery = $derived(
-    useExploreValidSpec(runtimeClient, exploreName),
-  );
-  const availableTimeZones = $derived(
-    $exploreSpecQuery.data?.explore?.timeZones,
-  );
+  $: exploreSpecQuery = useExploreValidSpec(runtimeClient, exploreName);
+  $: availableTimeZones = $exploreSpecQuery.data?.explore?.timeZones;
 </script>
 
 <div class="flex flex-col gap-y-3">
@@ -79,7 +70,7 @@
       options={getSnoozeOptions()}
     />
   </FormSection>
-  {#if provider.hasSlackNotifier}
+  {#if $hasSlackNotifier.data}
     <FormSection
       bind:enabled={$form["enableSlackNotification"]}
       showSectionToggle

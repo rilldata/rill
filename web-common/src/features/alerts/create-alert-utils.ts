@@ -1,3 +1,4 @@
+import type { V1User } from "@rilldata/web-admin/client";
 import { getSnoozeOptions } from "@rilldata/web-common/features/alerts/delivery-tab/snooze.ts";
 import type { AlertFormValues } from "@rilldata/web-common/features/alerts/form-utils.ts";
 import { getEmptyMeasureFilterEntry } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry.ts";
@@ -17,7 +18,7 @@ export function getNewAlertInitialFormValues(
   metricsViewName: string,
   exploreName: string,
   exploreState: Partial<ExploreState>,
-  userEmail: string,
+  user: V1User | undefined,
 ): AlertFormValues {
   // Use comparison dimension only when in TDD view (where it's visually relevant).
   // Otherwise use the expanded dimension table dimension.
@@ -51,9 +52,9 @@ export function getNewAlertInitialFormValues(
     ...getInitialScheduleFormValues(),
     enableSlackNotification: false,
     slackChannels: [""],
-    slackUsers: [userEmail, ""],
+    slackUsers: [user?.email ?? "", ""],
     enableEmailNotification: true,
-    emailRecipients: [userEmail, ""],
+    emailRecipients: [user?.email ?? "", ""],
 
     metricsViewName,
     exploreName: exploreName,

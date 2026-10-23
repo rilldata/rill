@@ -40,7 +40,7 @@
 
   // Embedded dashboards communicate directly with the project runtime and have no user session with the admin server.
   // One by-product of this is that they have no access to control plane features like bookmarks.
-  // When given an admin token, they can call a scoped set of admin APIs, like creating alerts and scheduled reports.
+  // When given an admin token, they can call a scoped set of admin APIs, like creating scheduled reports.
   featureFlags.set(false, "adminServer");
   featureFlags.set(embedAdminActions, "embedAdminActions");
 

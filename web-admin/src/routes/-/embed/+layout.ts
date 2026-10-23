@@ -13,7 +13,7 @@ export const load = async ({ url }) => {
   if (!embedStore) {
     EmbedStore.init(url);
 
-    // Open links from report and alert emails open the report or alert instead of a dashboard.
+    // Open links from report emails open the report instead of a dashboard.
     const open = url.searchParams.get("open");
     if (open) {
       const payload = decodeEmbedOpen(open);

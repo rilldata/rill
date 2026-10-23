@@ -36,7 +36,7 @@ type SetValidStateParams = {
 type NavigateParams =
   | {
       type: "page";
-      name: "home" | "reports" | "alerts";
+      name: "home" | "reports";
     }
   | {
       type: "explore";
