@@ -3167,6 +3167,10 @@ message GetReportMetaResponse {
     string unsubscribe_url = 4;
     string user_id = 5;
     google.protobuf.Struct user_attrs = 6; // user attributes of intended recipient, will be empty for creator mode and for non Rill users
+    // If true, the report's data must only be accessed through the resources listed in `resources`.
+    // Set for reports created from an embed that was limited to specific resources.
+    bool restrict_resources = 7;
+    repeated ResourceName resources = 8;
   }
   map<string, DeliveryMeta> delivery_meta = 2;
   reserved 1;

@@ -4939,6 +4939,16 @@ definitions:
       userAttrs:
         type: object
         title: user attributes of intended recipient, will be empty for creator mode and for non Rill users
+      restrictResources:
+        type: boolean
+        description: |-
+          If true, the report's data must only be accessed through the resources listed in `resources`.
+          Set for reports created from an embed that was limited to specific resources.
+      resources:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1ResourceName'
   ListGithubUserReposResponseRepo:
     type: object
     properties:

@@ -603,7 +603,7 @@ func (r *ReportReconciler) sendReport(ctx context.Context, self *runtimev1.Resou
 			report, exists := aiReports[delivery.UserID]
 			if !exists {
 				var triggerWarnings []string
-				report, triggerWarnings, err = r.triggerAIReport(ctx, self, rep, t, webOpenMode, delivery.UserID, delivery.UserAttrs)
+				report, triggerWarnings, err = r.triggerAIReport(ctx, self, rep, t, webOpenMode, delivery.UserID, delivery.UserAttrs, deliverySecurityRules(delivery))
 				if err != nil {
 					return false, nil, fmt.Errorf("failed to trigger AI report for %q: %w", recipient, err)
 				}
@@ -643,9 +643,10 @@ func (r *ReportReconciler) sendReport(ctx context.Context, self *runtimev1.Resou
 				allWarnings = append(allWarnings, "The export was not attached to emails because the report has no owner or identity to run as")
 			} else {
 				claims := &runtime.SecurityClaims{
-					UserID:         delivery.UserID,
-					UserAttributes: delivery.UserAttrs,
-					Permissions:    []runtime.Permission{runtime.ReadObjects, runtime.ReadMetrics},
+					UserID:          delivery.UserID,
+					UserAttributes:  delivery.UserAttrs,
+					Permissions:     []runtime.Permission{runtime.ReadObjects, runtime.ReadMetrics},
+					AdditionalRules: deliverySecurityRules(delivery),
 				}
 				attachment, err = r.exportAttachment(ctx, rep, t, claims)
 				if errors.Is(err, errAttachmentTooLarge) {
@@ -842,7 +843,8 @@ type aiReport struct {
 // triggerAIReport executes an AI-powered report and returns session id with summary.
 // The session will be created with the given user's claims for row-level security.
 // The userID may be empty if the user is not a Rill user, in which case the session has no owner.
-func (r *ReportReconciler) triggerAIReport(ctx context.Context, self *runtimev1.Resource, rep *runtimev1.Report, t time.Time, webOpenMode, userID string, userAttrs map[string]any) (*aiReport, []string, error) {
+// The additionalRules optionally further restrict the data the session can access.
+func (r *ReportReconciler) triggerAIReport(ctx context.Context, self *runtimev1.Resource, rep *runtimev1.Report, t time.Time, webOpenMode, userID string, userAttrs map[string]any, additionalRules []*runtimev1.SecurityRule) (*aiReport, []string, error) {
 	if rep.Spec.Resolver != "ai" {
 		return nil, nil, fmt.Errorf("triggerAIReport called for non-AI report")
 	}
@@ -854,10 +856,11 @@ func (r *ReportReconciler) triggerAIReport(ctx context.Context, self *runtimev1.
 	// Create claims for executing the AI resolver
 	// The userID and userAttrs determines what data the AI can access (row-level security)
 	claims := &runtime.SecurityClaims{
-		UserID:         userID,
-		UserAttributes: userAttrs,
-		SkipChecks:     false,
-		Permissions:    []runtime.Permission{runtime.ReadObjects, runtime.ReadMetrics, runtime.UseAI},
+		UserID:          userID,
+		UserAttributes:  userAttrs,
+		SkipChecks:      false,
+		Permissions:     []runtime.Permission{runtime.ReadObjects, runtime.ReadMetrics, runtime.UseAI},
+		AdditionalRules: additionalRules,
 	}
 
 	// Execute AI resolver
@@ -1166,4 +1169,29 @@ func (b *limitedBuffer) Write(p []byte) (int, error) {
 		return 0, errAttachmentTooLarge
 	}
 	return b.buf.Write(p)
+}
+
+// deliverySecurityRules returns the security rules that limit a report delivery's data to the delivery's resources, if it is restricted.
+// It mirrors how the admin service limits an embed's runtime token to specific resources:
+// each resource grants transitive access to its dependencies, and access to anything else is denied.
+func deliverySecurityRules(delivery drivers.ReportDelivery) []*runtimev1.SecurityRule {
+	if !delivery.RestrictResources {
+		return nil
+	}
+	if len(delivery.Resources) == 0 {
+		return []*runtimev1.SecurityRule{{
+			Rule: &runtimev1.SecurityRule_Access{
+				Access: &runtimev1.SecurityRuleAccess{Allow: false},
+			},
+		}}
+	}
+	rules := make([]*runtimev1.SecurityRule, len(delivery.Resources))
+	for i, r := range delivery.Resources {
+		rules[i] = &runtimev1.SecurityRule{
+			Rule: &runtimev1.SecurityRule_TransitiveAccess{
+				TransitiveAccess: &runtimev1.SecurityRuleTransitiveAccess{Resource: r},
+			},
+		}
+	}
+	return rules
 }

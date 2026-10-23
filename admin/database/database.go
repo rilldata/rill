@@ -911,13 +911,14 @@ type InsertMagicAuthTokenOptions struct {
 // EmbedAuthToken is a persistent API token for an embedded project, scoped to an email.
 type EmbedAuthToken struct {
 	ID         string
-	SecretHash []byte     `db:"secret_hash"`
-	ProjectID  string     `db:"project_id"`
-	Email      string     `db:"email"`
-	OpenURL    *string    `db:"open_url"` // Base URL for open links in emails from reports and alerts created with the token
-	CreatedOn  time.Time  `db:"created_on"`
-	ExpiresOn  *time.Time `db:"expires_on"`
-	UsedOn     time.Time  `db:"used_on"`
+	SecretHash []byte         `db:"secret_hash"`
+	ProjectID  string         `db:"project_id"`
+	Email      string         `db:"email"`
+	OpenURL    *string        `db:"open_url"`  // Base URL for open links in emails from reports and alerts created with the token
+	Resources  []ResourceName `db:"resources"` // If non-empty, limits reports created with the token to these resources
+	CreatedOn  time.Time      `db:"created_on"`
+	ExpiresOn  *time.Time     `db:"expires_on"`
+	UsedOn     time.Time      `db:"used_on"`
 }
 
 // InsertEmbedAuthTokenOptions defines options for creating an EmbedAuthToken.
@@ -927,6 +928,7 @@ type InsertEmbedAuthTokenOptions struct {
 	ProjectID  string `validate:"required"`
 	Email      string `validate:"required"`
 	OpenURL    *string
+	Resources  []ResourceName
 	ExpiresOn  *time.Time
 }
 

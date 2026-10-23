@@ -1742,22 +1742,29 @@ func (c *connection) DeleteExpiredMagicAuthTokens(ctx context.Context, retention
 
 // FindEmbedAuthTokens returns the embed auth tokens for an email in a project.
 func (c *connection) FindEmbedAuthTokens(ctx context.Context, projectID, email string) ([]*database.EmbedAuthToken, error) {
-	var res []*database.EmbedAuthToken
-	err := c.getDB(ctx).SelectContext(ctx, &res, "SELECT t.* FROM embed_auth_tokens t WHERE t.project_id=$1 AND t.email=$2", projectID, email)
+	var dtos []*embedAuthTokenDTO
+	err := c.getDB(ctx).SelectContext(ctx, &dtos, "SELECT t.* FROM embed_auth_tokens t WHERE t.project_id=$1 AND t.email=$2", projectID, email)
 	if err != nil {
 		return nil, parseErr("embed auth tokens", err)
+	}
+	res := make([]*database.EmbedAuthToken, len(dtos))
+	for i, dto := range dtos {
+		res[i], err = dto.embedAuthTokenFromDTO()
+		if err != nil {
+			return nil, err
+		}
 	}
 	return res, nil
 }
 
 // FindEmbedAuthToken returns an embed auth token.
 func (c *connection) FindEmbedAuthToken(ctx context.Context, id string) (*database.EmbedAuthToken, error) {
-	res := &database.EmbedAuthToken{}
+	res := &embedAuthTokenDTO{}
 	err := c.getDB(ctx).QueryRowxContext(ctx, "SELECT t.* FROM embed_auth_tokens t WHERE t.id=$1", id).StructScan(res)
 	if err != nil {
 		return nil, parseErr("embed auth token", err)
 	}
-	return res, nil
+	return res.embedAuthTokenFromDTO()
 }
 
 // InsertEmbedAuthToken inserts an embed auth token.
@@ -1766,16 +1773,21 @@ func (c *connection) InsertEmbedAuthToken(ctx context.Context, opts *database.In
 		return nil, err
 	}
 
-	res := &database.EmbedAuthToken{}
-	err := c.getDB(ctx).QueryRowxContext(ctx, `
-		INSERT INTO embed_auth_tokens (id, secret_hash, project_id, email, open_url, expires_on)
-		VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
-		opts.ID, opts.SecretHash, opts.ProjectID, opts.Email, opts.OpenURL, opts.ExpiresOn,
+	resources, err := marshalResourceNames(opts.Resources)
+	if err != nil {
+		return nil, err
+	}
+
+	res := &embedAuthTokenDTO{}
+	err = c.getDB(ctx).QueryRowxContext(ctx, `
+		INSERT INTO embed_auth_tokens (id, secret_hash, project_id, email, open_url, resources, expires_on)
+		VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
+		opts.ID, opts.SecretHash, opts.ProjectID, opts.Email, opts.OpenURL, resources, opts.ExpiresOn,
 	).StructScan(res)
 	if err != nil {
 		return nil, parseErr("embed auth token", err)
 	}
-	return res, nil
+	return res.embedAuthTokenFromDTO()
 }
 
 func (c *connection) UpdateEmbedAuthTokenUsedOn(ctx context.Context, ids []string) error {
@@ -3715,6 +3727,20 @@ func (c *connection) magicAuthTokenFromDTO(dto *magicAuthTokenDTO, fetchSecret b
 	}
 
 	return dto.MagicAuthToken, nil
+}
+
+// embedAuthTokenDTO wraps database.EmbedAuthToken, using the pgtype package to handle types that pgx can't read directly into their native Go types.
+type embedAuthTokenDTO struct {
+	*database.EmbedAuthToken
+	Resources pgtype.JSONB `db:"resources"`
+}
+
+func (dto *embedAuthTokenDTO) embedAuthTokenFromDTO() (*database.EmbedAuthToken, error) {
+	err := dto.Resources.AssignTo(&dto.EmbedAuthToken.Resources)
+	if err != nil {
+		return nil, err
+	}
+	return dto.EmbedAuthToken, nil
 }
 
 // magicAuthTokenWithUserDTO wraps database.MagicAuthTokenWithUser, using the pgtype package to handly types that pgx can't read directly into their native Go types.

@@ -268,6 +268,7 @@ const EmbedParams = [
   "instance_id",
   "runtime_host",
   "access_token",
+  "admin_token",
   "resource",
   "type",
   "kind",
@@ -275,6 +276,7 @@ const EmbedParams = [
   "hide_navigation_bar",
   "theme",
   "theme_mode",
+  "user_email",
   "external_user_id",
   "open",
 ];

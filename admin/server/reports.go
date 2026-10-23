@@ -118,15 +118,33 @@ func (s *Server) GetReportMeta(ctx context.Context, req *adminv1.GetReportMetaRe
 
 	// Reports created from an embed are only for the embed user, who opens them through the embedder's app.
 	// So they don't get magic tokens or Rill Cloud links; the runtime builds their open links instead.
-	embedCreated, err := s.isEmbedCreated(ctx, proj.ID, virtualFilePathForManagedReport(req.Report))
+	embedCreated, embedResources, err := s.embedCreatedReportInfo(ctx, proj.ID, req.Report)
 	if err != nil {
 		return nil, err
 	}
 	if embedCreated {
+		// Match the attributes of the embed's runtime token, so security policies that check `.user.embed` apply to the report as well.
+		if userAttrs == nil {
+			userAttrs = map[string]any{}
+		}
+		userAttrs["embed"] = true
+		userAttrsPb, err = structpb.NewStruct(userAttrs)
+		if err != nil {
+			return nil, err
+		}
+
+		// Limit the report's data to the resources the embed was limited to.
+		resourcesPb := make([]*adminv1.ResourceName, len(embedResources))
+		for i, r := range embedResources {
+			resourcesPb[i] = &adminv1.ResourceName{Type: r.Type, Name: r.Name}
+		}
+
 		for _, recipient := range recipients {
 			delivery[recipient] = &adminv1.GetReportMetaResponse_DeliveryMeta{
-				UserId:    userID,
-				UserAttrs: userAttrsPb,
+				UserId:            userID,
+				UserAttrs:         userAttrsPb,
+				RestrictResources: len(embedResources) > 0,
+				Resources:         resourcesPb,
 			}
 		}
 		return &adminv1.GetReportMetaResponse{
@@ -239,6 +257,7 @@ func (s *Server) CreateReport(ctx context.Context, req *adminv1.CreateReportRequ
 	ownerID := ""
 	ownerEmail := ""
 	embedOpenURL := ""
+	var embedResources []database.ResourceName
 	switch claims.OwnerType() {
 	case auth.OwnerTypeUser:
 		ownerID = claims.OwnerID()
@@ -250,6 +269,10 @@ func (s *Server) CreateReport(ctx context.Context, req *adminv1.CreateReportRequ
 		ownerEmail = mdl.Email
 		if mdl.OpenURL != nil {
 			embedOpenURL = *mdl.OpenURL
+		}
+		embedResources, err = embedReportResources(mdl.Resources, req.Options)
+		if err != nil {
+			return nil, err
 		}
 	default:
 		return nil, status.Error(codes.PermissionDenied, "only users can create reports")
@@ -272,7 +295,7 @@ func (s *Server) CreateReport(ctx context.Context, req *adminv1.CreateReportRequ
 		return nil, err
 	}
 
-	data, err := s.yamlForManagedReport(req.Options, ownerID, ownerEmail, embedOpenURL)
+	data, err := s.yamlForManagedReport(req.Options, ownerID, ownerEmail, embedOpenURL, embedResources)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "failed to generate report YAML: %s", err.Error())
 	}
@@ -344,8 +367,22 @@ func (s *Server) EditReport(ctx context.Context, req *adminv1.EditReportRequest)
 		embedOpenURL = *mdl.OpenURL
 	}
 
+	// Keep the resources the report was limited to, unless the editor is an embed.
+	// An embed editor can only give the report the same access as its own embed, so its resources replace the report's.
+	embedResources, err := parseEmbedResources(annotations.AdminEmbedResources)
+	if err != nil {
+		return nil, err
+	}
+	if mdl, ok := claims.AuthTokenModel().(*database.EmbedAuthToken); ok {
+		embedResources = mdl.Resources
+	}
+	embedResources, err = embedReportResources(embedResources, req.Options)
+	if err != nil {
+		return nil, err
+	}
+
 	// Preserve the original owner, since the editor may be someone with manage permissions.
-	data, err := s.yamlForManagedReport(req.Options, annotations.AdminOwnerUserID, annotations.AdminOwnerUserEmail, embedOpenURL)
+	data, err := s.yamlForManagedReport(req.Options, annotations.AdminOwnerUserID, annotations.AdminOwnerUserEmail, embedOpenURL, embedResources)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "failed to generate report YAML: %s", err.Error())
 	}
@@ -621,8 +658,9 @@ func (s *Server) GenerateReportYAML(ctx context.Context, req *adminv1.GenerateRe
 
 // yamlForManagedReport generates the YAML for a report created from the UI.
 // For reports created from an embed, ownerEmail is the embed user's email,
-// and embedOpenURL is the optional base URL for open links in the report's emails.
-func (s *Server) yamlForManagedReport(opts *adminv1.ReportOptions, ownerUserID, ownerEmail, embedOpenURL string) ([]byte, error) {
+// embedOpenURL is the optional base URL for open links in the report's emails,
+// and embedResources optionally limits the report's data to the resources the embed was limited to.
+func (s *Server) yamlForManagedReport(opts *adminv1.ReportOptions, ownerUserID, ownerEmail, embedOpenURL string, embedResources []database.ResourceName) ([]byte, error) {
 	res := reportYAML{}
 	res.Type = "report"
 	res.DisplayName = opts.DisplayName
@@ -687,6 +725,13 @@ func (s *Server) yamlForManagedReport(opts *adminv1.ReportOptions, ownerUserID, 
 		res.Query.For.UserEmail = ownerEmail
 		res.Annotations.AdminOwnerUserEmail = ownerEmail
 		res.Annotations.AdminEmbedOpenURL = embedOpenURL
+		if len(embedResources) > 0 {
+			resourcesJSON, err := json.Marshal(embedResources)
+			if err != nil {
+				return nil, err
+			}
+			res.Annotations.AdminEmbedResources = string(resourcesJSON)
+		}
 		// The emails of reports created from an embed have no download link, so they must always attach the export.
 		res.Export.Attach = true
 	} else {
@@ -959,29 +1004,83 @@ func (s *Server) createUnsubMagicTokens(ctx context.Context, projectID, reportNa
 	return emailTokens, nil
 }
 
-// isEmbedCreated returns true if the virtual file at the path is an admin-managed report or alert that was created from an embed.
-func (s *Server) isEmbedCreated(ctx context.Context, projectID, path string) (bool, error) {
+// embedCreatedReportInfo returns whether the report is an admin-managed report that was created from an embed.
+// If so, it also returns the resources the report is limited to; an empty list means the report is not limited.
+func (s *Server) embedCreatedReportInfo(ctx context.Context, projectID, report string) (bool, []database.ResourceName, error) {
+	path := virtualFilePathForManagedReport(report)
 	vf, err := s.admin.DB.FindVirtualFile(ctx, projectID, "prod", path)
 	if err != nil {
 		if errors.Is(err, database.ErrNotFound) {
-			return false, nil
+			return false, nil, nil
 		}
-		return false, err
+		return false, nil, err
 	}
 	if vf.Deleted {
-		return false, nil
+		return false, nil, nil
 	}
 
-	// Only parse the owner annotation, which is shared by reports and alerts.
 	var res struct {
 		Annotations struct {
 			AdminOwnerUserEmail string `yaml:"admin_owner_user_email"`
+			AdminEmbedResources string `yaml:"admin_embed_resources"`
 		} `yaml:"annotations"`
 	}
 	if err := yaml.Unmarshal(vf.Data, &res); err != nil {
-		return false, fmt.Errorf("failed to parse virtual file %q: %w", path, err)
+		return false, nil, fmt.Errorf("failed to parse virtual file %q: %w", path, err)
 	}
-	return res.Annotations.AdminOwnerUserEmail != "", nil
+	if res.Annotations.AdminOwnerUserEmail == "" {
+		return false, nil, nil
+	}
+
+	resources, err := parseEmbedResources(res.Annotations.AdminEmbedResources)
+	if err != nil {
+		return false, nil, fmt.Errorf("failed to parse virtual file %q: %w", path, err)
+	}
+	return true, resources, nil
+}
+
+// embedReportResources checks that a report targets a dashboard the embed is limited to,
+// and returns the resources to limit the report's data to.
+// An empty list of resources means the embed is not limited, in which case it returns an empty list as well.
+// Reports and alerts are dropped from the returned resources, since their transitive access is derived from their own queries,
+// which can be edited by the embed user. For example, an embed that opens a report is limited to the report and its dashboard.
+func embedReportResources(resources []database.ResourceName, opts *adminv1.ReportOptions) ([]database.ResourceName, error) {
+	if len(resources) == 0 {
+		return nil, nil
+	}
+
+	var target database.ResourceName
+	switch {
+	case opts.Explore != "":
+		target = database.ResourceName{Type: runtime.ResourceKindExplore, Name: opts.Explore}
+	case opts.Canvas != "":
+		target = database.ResourceName{Type: runtime.ResourceKindCanvas, Name: opts.Canvas}
+	default:
+		return nil, status.Error(codes.PermissionDenied, "reports created from this embed must target an explore or canvas dashboard")
+	}
+	if !slices.Contains(resources, target) {
+		return nil, status.Errorf(codes.PermissionDenied, "reports created from this embed can't target %s %q", target.Type, target.Name)
+	}
+
+	var res []database.ResourceName
+	for _, r := range resources {
+		if r.Type == runtime.ResourceKindExplore || r.Type == runtime.ResourceKindCanvas {
+			res = append(res, r)
+		}
+	}
+	return res, nil
+}
+
+// parseEmbedResources parses the "admin_embed_resources" annotation of a report created from an embed.
+func parseEmbedResources(annotation string) ([]database.ResourceName, error) {
+	if annotation == "" {
+		return nil, nil
+	}
+	var res []database.ResourceName
+	if err := json.Unmarshal([]byte(annotation), &res); err != nil {
+		return nil, fmt.Errorf("invalid admin_embed_resources annotation: %w", err)
+	}
+	return res, nil
 }
 
 // isAdminManagedOwner returns true if the claims belong to the owner of an admin-managed alert or report.
@@ -1071,7 +1170,8 @@ type reportYAML struct {
 type reportAnnotations struct {
 	AdminOwnerUserID    string      `yaml:"admin_owner_user_id"`
 	AdminOwnerUserEmail string      `yaml:"admin_owner_user_email"`
-	AdminEmbedOpenURL   string      `yaml:"admin_embed_open_url,omitempty"` // Base URL for open links in emails from reports created from an embed
+	AdminEmbedOpenURL   string      `yaml:"admin_embed_open_url,omitempty"`  // Base URL for open links in emails from reports created from an embed
+	AdminEmbedResources string      `yaml:"admin_embed_resources,omitempty"` // JSON list of resources that limit the data of a report created from an embed
 	AdminManaged        bool        `yaml:"admin_managed"`
 	AdminNonce          string      `yaml:"admin_nonce"` // To ensure spec version gets updated on writes, to enable polling in TriggerReconcileAndAwaitReport
 	WebOpenPath         string      `yaml:"web_open_path"`
@@ -1110,6 +1210,7 @@ func parseReportAnnotations(annotations map[string]string) reportAnnotations {
 	res.AdminOwnerUserID = annotations["admin_owner_user_id"]
 	res.AdminOwnerUserEmail = annotations["admin_owner_user_email"]
 	res.AdminEmbedOpenURL = annotations["admin_embed_open_url"]
+	res.AdminEmbedResources = annotations["admin_embed_resources"]
 	res.AdminManaged, _ = strconv.ParseBool(annotations["admin_managed"])
 	res.AdminNonce = annotations["admin_nonce"]
 	res.WebOpenPath = annotations["web_open_path"]

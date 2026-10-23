@@ -463,6 +463,124 @@ annotations:
 	require.ElementsMatch(t, []string{"user_1@example.com", "user_2@example.com"}, recipients)
 }
 
+func TestReportExportAttachRestrictedResources(t *testing.T) {
+	e1 := []*runtimev1.ResourceName{{Kind: runtime.ResourceKindExplore, Name: "e1"}}
+	rt, id := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
+		AdminService: &creatorModeAdmin{resources: map[string][]*runtimev1.ResourceName{"r1": e1, "r2": e1}},
+		Files: map[string]string{
+			"rill.yaml": "",
+			"models/bar.sql": `
+SELECT * FROM (VALUES
+	('2024-01-01T00:00:00Z'::TIMESTAMP, 'Denmark')
+) AS t(__time, country)
+`,
+			"metrics/mv1.yaml": `
+version: 1
+type: metrics_view
+model: bar
+timeseries: __time
+dimensions:
+- column: country
+measures:
+- name: total
+  expression: count(*)
+`,
+			"metrics/mv2.yaml": `
+version: 1
+type: metrics_view
+model: bar
+timeseries: __time
+dimensions:
+- column: country
+measures:
+- name: total
+  expression: count(*)
+`,
+			"explores/e1.yaml": `
+type: explore
+metrics_view: mv1
+`,
+			"explores/e2.yaml": `
+type: explore
+metrics_view: mv2
+`,
+			// Queries the metrics view of the explore it is restricted to
+			"reports/r1.yaml": `
+type: report
+display_name: Report on allowed metrics view
+for:
+  user_email: embed@example.com
+query:
+  name: MetricsViewAggregation
+  args:
+    metrics_view: mv1
+    dimensions:
+    - name: country
+    measures:
+    - name: total
+  for:
+    user_email: embed@example.com
+export:
+  format: csv
+  attach: true
+notify:
+  email:
+    recipients:
+    - embed@example.com
+annotations:
+  admin_owner_user_email: embed@example.com
+  web_open_mode: creator
+  explore: e1
+`,
+			// Queries a metrics view outside the explore it is restricted to
+			"reports/r2.yaml": `
+type: report
+display_name: Report on other metrics view
+for:
+  user_email: embed@example.com
+query:
+  name: MetricsViewAggregation
+  args:
+    metrics_view: mv2
+    dimensions:
+    - name: country
+    measures:
+    - name: total
+  for:
+    user_email: embed@example.com
+export:
+  format: csv
+  attach: true
+notify:
+  email:
+    recipients:
+    - embed@example.com
+annotations:
+  admin_owner_user_email: embed@example.com
+  web_open_mode: creator
+  explore: e1
+`,
+		},
+	})
+	testruntime.RequireReconcileState(t, rt, id, 8, 0, 0)
+
+	testruntime.RefreshAndWait(t, rt, id, &runtimev1.ResourceName{Kind: runtime.ResourceKindReport, Name: "r1"})
+	r1 := testruntime.GetResource(t, rt, id, runtime.ResourceKindReport, "r1")
+	require.Len(t, r1.GetReport().State.ExecutionHistory, 1)
+	require.Empty(t, r1.GetReport().State.ExecutionHistory[0].ErrorMessage)
+
+	testruntime.RefreshAndWait(t, rt, id, &runtimev1.ResourceName{Kind: runtime.ResourceKindReport, Name: "r2"})
+	r2 := testruntime.GetResource(t, rt, id, runtime.ResourceKindReport, "r2")
+	require.NotEmpty(t, r2.GetReport().State.ExecutionHistory)
+	require.Contains(t, r2.GetReport().State.ExecutionHistory[0].ErrorMessage, "failed to export attachment: action not allowed")
+
+	emails := rt.Email.Sender.(*email.TestSender).Emails
+	require.Len(t, emails, 1)
+	require.True(t, strings.HasPrefix(emails[0].Subject, "Report on allowed metrics view"))
+	require.Len(t, emails[0].Attachments, 1)
+	require.Equal(t, "Country,Total\nDenmark,1\n", string(emails[0].Attachments[0].Data))
+}
+
 func TestReportExportAttachTooLarge(t *testing.T) {
 	rt, id := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
 		AdminService: &creatorModeAdmin{userAttrs: map[string]map[string]any{"owner": {"email": "owner@example.com"}}},
@@ -682,8 +800,9 @@ func requireEmbedOpenPayload(t *testing.T, body string) *embedopen.Payload {
 // creatorModeAdmin is an admin service that returns report metadata the way the admin service does for reports run as the creator:
 // every recipient's delivery has the user ID and attributes of the "for" identity if set, or else of the report owner.
 type creatorModeAdmin struct {
-	drivers.AdminService                           // Not implemented; calls to methods that are not overridden panic
-	userAttrs            map[string]map[string]any // User ID -> attributes
+	drivers.AdminService                                      // Not implemented; calls to methods that are not overridden panic
+	userAttrs            map[string]map[string]any            // User ID -> attributes
+	resources            map[string][]*runtimev1.ResourceName // Report name -> resources the report's data is restricted to
 }
 
 func (a *creatorModeAdmin) GetConfig(ctx context.Context) (*drivers.Config, error) {
@@ -711,15 +830,18 @@ func (a *creatorModeAdmin) GetReportMetadata(ctx context.Context, reportName, ow
 		attrs = a.userAttrs[ownerID]
 	}
 
+	resources, restrict := a.resources[reportName]
 	delivery := make(map[string]drivers.ReportDelivery)
 	for _, recipient := range emailRecipients {
 		delivery[recipient] = drivers.ReportDelivery{
-			OpenURL:        "https://example.com/open",
-			ExportURL:      "https://example.com/export",
-			EditURL:        "https://example.com/edit",
-			UnsubscribeURL: "https://example.com/unsubscribe",
-			UserID:         userID,
-			UserAttrs:      attrs,
+			OpenURL:           "https://example.com/open",
+			ExportURL:         "https://example.com/export",
+			EditURL:           "https://example.com/edit",
+			UnsubscribeURL:    "https://example.com/unsubscribe",
+			UserID:            userID,
+			UserAttrs:         attrs,
+			RestrictResources: restrict,
+			Resources:         resources,
 		}
 	}
 	return &drivers.ReportMetadata{ReportDelivery: delivery}, nil

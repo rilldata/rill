@@ -694,6 +694,13 @@ func (s *Server) GetIFrame(ctx context.Context, req *adminv1.GetIFrameRequest) (
 			return nil, status.Errorf(codes.InvalidArgument, "unsupported open kind %q", open.Kind)
 		}
 
+		// The open payload is not signed, so only allow opening a report or alert created by the embed user.
+		// Otherwise, a user could edit the payload to open another user's report or alert and gain access to its dashboard.
+		ownerEmail := annotations["admin_owner_user_email"]
+		if ownerEmail == "" || !strings.EqualFold(ownerEmail, req.GetUserEmail()) {
+			return nil, status.Errorf(codes.PermissionDenied, "%s %q was not created by the provided user_email", open.Kind, open.Name)
+		}
+
 		var dashboard database.ResourceName
 		switch {
 		case annotations["explore"] != "":
@@ -753,7 +760,8 @@ func (s *Server) GetIFrame(ctx context.Context, req *adminv1.GetIFrameRequest) (
 		opts.forUserEmail = forVal.UserEmail
 		email = forVal.UserEmail
 
-		tkn, err := s.admin.IssueEmbedAuthToken(ctx, proj.ID, opts.forUserEmail, req.OpenUrl, &ttlDuration)
+		// Pass the final overrideResources so reports created from the embed are limited to the same resources as the iframe.
+		tkn, err := s.admin.IssueEmbedAuthToken(ctx, proj.ID, opts.forUserEmail, req.OpenUrl, overrideResources, &ttlDuration)
 		if err != nil {
 			return nil, err
 		}
