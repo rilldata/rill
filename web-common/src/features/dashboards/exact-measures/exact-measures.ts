@@ -48,7 +48,7 @@ export interface ExactMeasureContext {
   hasExactVariant: (name: string) => boolean;
 }
 
-const EMPTY_SET: ReadonlySet<string> = new Set();
+export const EMPTY_SET: ReadonlySet<string> = new Set();
 
 export const EMPTY_EXACT_CONTEXT: ExactMeasureContext = {
   selected: EMPTY_SET,

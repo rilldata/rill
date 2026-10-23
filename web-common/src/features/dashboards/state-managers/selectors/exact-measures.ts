@@ -1,5 +1,6 @@
 import {
   createExactMeasureContext,
+  EMPTY_SET,
   selectedInSurface,
   type ExactMeasureContext,
 } from "@rilldata/web-common/features/dashboards/exact-measures/exact-measures";
@@ -15,12 +16,16 @@ import type { DashboardDataSources } from "./types";
 export const selectedExactMeasureNames = (
   { dashboard }: Pick<DashboardDataSources, "dashboard">,
   surface: string,
-): ReadonlySet<string> =>
-  selectedInSurface(
+): ReadonlySet<string> => {
+  // Skip serializing the query context in the common case of no selection;
+  // every surface calls this on every dashboard update.
+  if (!dashboard.exactMeasures) return EMPTY_SET;
+  return selectedInSurface(
     dashboard.exactMeasures,
     getQueryContextKey(dashboard),
     surface,
   );
+};
 
 /**
  * The context that decides the precision of every measure of a surface and
