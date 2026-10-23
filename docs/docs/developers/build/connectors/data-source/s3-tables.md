@@ -42,7 +42,17 @@ S3 table buckets do not write a `version-hint` file and do not allow listing obj
 
 ## Manual Configuration
 
-Create a model that creates an S3 secret, attaches the table bucket in `pre_exec`, and selects from a table using `<catalog>.<namespace>.<table>`.
+Create an [S3 connector](/developers/build/connectors/data-source/s3) in `connectors/s3.yaml`, setting `region` to the table bucket's region:
+
+```yaml
+type: connector
+driver: s3
+aws_access_key_id: '{{ .env.aws_access_key_id }}'
+aws_secret_access_key: '{{ .env.aws_secret_access_key }}'
+region: us-east-1
+```
+
+Then create a model that attaches the table bucket in `pre_exec` and selects from a table using `<catalog>.<namespace>.<table>`. `create_secrets_from_connectors` creates a DuckDB secret from the S3 connector before `pre_exec` runs.
 
 Create `models/s3tables_orders.yaml`:
 
@@ -50,15 +60,10 @@ Create `models/s3tables_orders.yaml`:
 type: model
 connector: duckdb
 materialize: true
+create_secrets_from_connectors: s3
 
 pre_exec: |
   INSTALL aws; LOAD aws; INSTALL iceberg; LOAD iceberg;
-  CREATE OR REPLACE TEMPORARY SECRET s3tables (
-    TYPE s3,
-    KEY_ID '{{ .env.aws_access_key_id }}',
-    SECRET '{{ .env.aws_secret_access_key }}',
-    REGION 'us-east-1'
-  );
   ATTACH OR REPLACE 'arn:aws:s3tables:us-east-1:123456789012:bucket/my-table-bucket' AS s3t (
     TYPE iceberg,
     ENDPOINT_TYPE s3_tables
@@ -67,7 +72,7 @@ pre_exec: |
 sql: SELECT * FROM s3t.my_namespace.orders
 ```
 
-Then add the credentials to your project's `.env` file:
+Finally, add the credentials to your project's `.env` file:
 
 ```bash
 aws_access_key_id=...
