@@ -26,17 +26,17 @@ func TestEncodeDecode(t *testing.T) {
 	require.True(t, ts.Equal(p.ExecutionTime))
 
 	// The execution time is optional
-	s, err = Encode(&Payload{Kind: KindReport, Name: "r1"})
+	s, err = Encode(&Payload{Kind: KindAlert, Name: "a1"})
 	require.NoError(t, err)
 	data, err = base64.RawURLEncoding.DecodeString(s)
 	require.NoError(t, err)
-	require.JSONEq(t, `{"kind":"report","name":"r1"}`, string(data))
+	require.JSONEq(t, `{"kind":"alert","name":"a1"}`, string(data))
 	p, err = Decode(s)
 	require.NoError(t, err)
-	require.Equal(t, &Payload{Kind: KindReport, Name: "r1"}, p)
+	require.Equal(t, &Payload{Kind: KindAlert, Name: "a1"}, p)
 
 	// Non-UTC times are encoded in UTC
-	s, err = Encode(&Payload{Kind: KindReport, Name: "r1", ExecutionTime: ts.In(time.FixedZone("x", 3600))})
+	s, err = Encode(&Payload{Kind: KindAlert, Name: "a1", ExecutionTime: ts.In(time.FixedZone("x", 3600))})
 	require.NoError(t, err)
 	data, err = base64.RawURLEncoding.DecodeString(s)
 	require.NoError(t, err)

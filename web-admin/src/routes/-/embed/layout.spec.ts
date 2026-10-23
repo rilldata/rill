@@ -65,14 +65,21 @@ describe("embed/+layout load", () => {
     );
   });
 
-  it("drops other params when opening a report", async () => {
+  it("redirects to the alert open route", async () => {
+    await expectRedirect(
+      { open: encodeOpen({ kind: "alert", name: "low_revenue" }) },
+      "/-/embed/alerts/low_revenue/open",
+    );
+  });
+
+  it("drops other params when opening a report or alert", async () => {
     await expectRedirect(
       {
-        open: encodeOpen({ kind: "report", name: "r" }),
+        open: encodeOpen({ kind: "alert", name: "a" }),
         navigation: "true",
         tr: "P7D",
       },
-      "/-/embed/reports/r/open",
+      "/-/embed/alerts/a/open",
     );
   });
 

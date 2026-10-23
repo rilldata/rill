@@ -27,18 +27,18 @@ describe("decodeEmbedOpen", () => {
     });
   });
 
-  it("decodes a payload without an execution time", () => {
-    expect(decodeEmbedOpen(encode({ kind: "report", name: "r" }))).toEqual({
-      kind: "report",
-      name: "r",
+  it("decodes an alert payload without an execution time", () => {
+    expect(decodeEmbedOpen(encode({ kind: "alert", name: "a" }))).toEqual({
+      kind: "alert",
+      name: "a",
     });
   });
 
   it("decodes base64url characters and non-ASCII names", () => {
     // "ü" and "?>" produce "-" and "_" in base64url.
-    const blob = encode({ kind: "report", name: "ü?>?>" });
+    const blob = encode({ kind: "alert", name: "ü?>?>" });
     expect(blob).toMatch(/[-_]/);
-    expect(decodeEmbedOpen(blob)).toEqual({ kind: "report", name: "ü?>?>" });
+    expect(decodeEmbedOpen(blob)).toEqual({ kind: "alert", name: "ü?>?>" });
   });
 
   it("accepts padded input", () => {
@@ -88,9 +88,9 @@ describe("getEmbedOpenPath", () => {
     );
   });
 
-  it("builds the open route without an execution time", () => {
-    expect(getEmbedOpenPath({ kind: "report", name: "a b" })).toBe(
-      "/-/embed/reports/a%20b/open",
+  it("builds the alert open route without an execution time", () => {
+    expect(getEmbedOpenPath({ kind: "alert", name: "a b" })).toBe(
+      "/-/embed/alerts/a%20b/open",
     );
   });
 });

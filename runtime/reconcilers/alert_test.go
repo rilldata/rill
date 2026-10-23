@@ -1,6 +1,7 @@
 package reconcilers_test
 
 import (
+	"context"
 	"fmt"
 	"slices"
 	"testing"
@@ -8,8 +9,10 @@ import (
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
+	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/parser"
 	"github.com/rilldata/rill/runtime/pkg/email"
+	"github.com/rilldata/rill/runtime/pkg/embedopen"
 	"github.com/rilldata/rill/runtime/testruntime"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/types/known/structpb"
@@ -657,6 +660,114 @@ func newMetricsView(name, model, timeDim string, measures, dimensions []any) (*r
 		},
 	}
 	return metrics, metricsRes
+}
+
+func TestAlertEmbedOpenLink(t *testing.T) {
+	tt := []struct {
+		name     string
+		rillYAML string
+		openURL  string // The admin_embed_open_url annotation
+		wantLink string
+	}{
+		{
+			name:     "embed open URL",
+			rillYAML: "embeds:\n  open_url: https://default.example.org/open\n",
+			openURL:  "https://embed.example.org/open",
+			wantLink: "https://embed.example.org/open?rill_open=",
+		},
+		{
+			name:     "default open URL",
+			rillYAML: "embeds:\n  open_url: https://default.example.org/open\n",
+			wantLink: "https://default.example.org/open?rill_open=",
+		},
+		{
+			name: "no open URL",
+		},
+	}
+	for _, tc := range tt {
+		t.Run(tc.name, func(t *testing.T) {
+			alert := `
+type: alert
+display_name: Embed alert
+refs:
+- type: Model
+  name: bar
+data:
+  sql: select * from bar
+notify:
+  email:
+    recipients:
+    - embed@other.com
+annotations:
+  admin_managed: true
+  admin_owner_user_email: embed@other.com
+  web_open_path: /explore/e1
+`
+			if tc.openURL != "" {
+				alert += "  admin_embed_open_url: " + tc.openURL + "\n"
+			}
+
+			adm := &embedAlertAdmin{}
+			rt, id := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
+				AdminService: adm,
+				Files: map[string]string{
+					"rill.yaml":      tc.rillYAML,
+					"models/bar.sql": `SELECT 'Denmark' AS country`,
+					"alerts/a1.yaml": alert,
+				},
+			})
+			testruntime.RequireReconcileState(t, rt, id, 3, 0, 0)
+
+			// The alert doesn't request recipient URLs from the admin service, which would issue magic tokens
+			require.True(t, adm.called)
+			require.Empty(t, adm.emailRecipients)
+			require.False(t, adm.anonRecipients)
+
+			emails := rt.Email.Sender.(*email.TestSender).Emails
+			require.Len(t, emails, 1)
+			e := emails[0]
+			require.Equal(t, "embed@other.com", e.ToEmail)
+			require.Contains(t, e.Body, "Denmark")
+			require.NotContains(t, e.Body, "https://example.com/")
+			require.NotContains(t, e.Body, "To edit this alert")
+			require.NotContains(t, e.Body, "To unsubscribe")
+			if tc.wantLink == "" {
+				require.NotContains(t, e.Body, "rill_open=")
+				return
+			}
+			require.Contains(t, e.Body, tc.wantLink)
+			p := requireEmbedOpenPayload(t, e.Body)
+			require.Equal(t, embedopen.KindAlert, p.Kind)
+			require.Equal(t, "a1", p.Name)
+		})
+	}
+}
+
+// embedAlertAdmin is an admin service that returns Rill Cloud URLs for every requested recipient, and records the requested recipients.
+type embedAlertAdmin struct {
+	drivers.AdminService // Not implemented; calls to methods that are not overridden panic
+	called               bool
+	emailRecipients      []string
+	anonRecipients       bool
+}
+
+func (a *embedAlertAdmin) GetConfig(ctx context.Context) (*drivers.Config, error) {
+	return &drivers.Config{}, nil
+}
+
+func (a *embedAlertAdmin) GetAlertMetadata(ctx context.Context, alertName, ownerID string, emailRecipients []string, anonRecipients bool, annotations map[string]string, queryForUserID, queryForUserEmail string) (*drivers.AlertMetadata, error) {
+	a.called = true
+	a.emailRecipients = emailRecipients
+	a.anonRecipients = anonRecipients
+	urls := make(map[string]drivers.AlertURLs)
+	for _, recipient := range emailRecipients {
+		urls[recipient] = drivers.AlertURLs{
+			OpenURL:        "https://example.com/open",
+			EditURL:        "https://example.com/edit",
+			UnsubscribeURL: "https://example.com/unsubscribe",
+		}
+	}
+	return &drivers.AlertMetadata{RecipientURLs: urls}, nil
 }
 
 func must[T any](v T, err error) T {

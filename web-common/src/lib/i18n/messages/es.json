@@ -101,6 +101,7 @@
   "alert_no_filters_hint": "Para aplicar filtros, cierra esta ventana y filtra tu dashboard.",
   "alert_none": "Ninguno",
   "alert_not_checked_yet": "Aún no se ha verificado",
+  "alert_open": "Abrir",
   "alert_recent_history": "Historial reciente",
   "alert_schedule": "Programación",
   "alert_set_non_custom_time_range": "Para crear una alerta, establece un rango de tiempo no personalizado.",
