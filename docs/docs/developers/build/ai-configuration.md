@@ -205,7 +205,7 @@ Feature flags support the same templating as other project settings, so memory c
 
 ## Visualization Tips 
 
-When using the [Rill MCP Server](/guide/ai/mcp) with external AI clients like Claude, you can provide specific instructions on how to visualize data. Since the MCP server returns structured data, the AI client is responsible for rendering it.
+When using the [Rill MCP Server](/guide/ai/mcp) with external AI clients, how results are visualized depends on the client. Clients that support MCP Apps, such as Claude and ChatGPT, render Rill's own interactive charts inline when the AI calls `create_chart`; see [Interactive charts in Claude and ChatGPT](/guide/ai/mcp#interactive-charts-in-claude-and-chatgpt). The tips below only apply to text-only clients, which receive structured data and leave the rendering to the AI, so you can tell it how to present results as text.
 
 :::note Visualization tips affect all AI interactions
 Visualization instructions added to `rill.yaml` will affect both [Rill Chat](/guide/ai/ai-chat) responses and external AI clients via the MCP Server. If you only want visualization tips to apply to external AI clients (like Claude Desktop), consider adding them to your client-specific configuration files instead:

@@ -1,0 +1,150 @@
+{
+  "name": "Multi-measure bar chart",
+  "description": "Two measures side by side; the color channel is the synthetic rill_measures field.",
+  "expect": "canvas",
+  "arguments": {
+    "chart_type": "bar_chart",
+    "spec": {
+      "metrics_view": "bids_metrics",
+      "time_range": {
+        "start": "2023-09-09T00:00:00Z",
+        "end": "2023-09-16T00:00:00Z"
+      },
+      "x": {
+        "field": "advertiser_name",
+        "type": "nominal",
+        "limit": 5,
+        "sort": "-y"
+      },
+      "y": {
+        "field": "total_bids",
+        "type": "quantitative",
+        "fields": ["total_bids", "impressions"]
+      },
+      "color": {
+        "field": "rill_measures",
+        "type": "nominal"
+      }
+    }
+  },
+  "result": {
+    "content": [
+      {
+        "type": "text",
+        "text": "**Bar: Total Bids, Impressions by Advertiser Name** (2023-09-09 to 2023-09-16)\n\n| Advertiser Name | Total Bids | Impressions |\n| - | - | - |\n| Acme Media | 128430 | 77118 |\n| Beta Brands | 99210 | 56314 |\n| Cobalt Retail | 87650 | 58327 |\n| Delta Travel | 64320 | 38239 |\n| Echo Games | 51200 | 32007 |\n\n_5 of 5 rows shown_\n\nOpen the interactive chart in Rill: https://ui.rilldata.com/demo/bids/-/ai/session-0b1c/message/call-4f2a/-/open"
+      }
+    ],
+    "structuredContent": {
+      "widget": "chart",
+      "chart_type": "bar_chart",
+      "spec": {
+        "metrics_view": "bids_metrics",
+        "time_range": {
+          "start": "2023-09-09T00:00:00Z",
+          "end": "2023-09-16T00:00:00Z"
+        },
+        "x": {
+          "field": "advertiser_name",
+          "type": "nominal",
+          "limit": 5,
+          "sort": "-y"
+        },
+        "y": {
+          "field": "total_bids",
+          "type": "quantitative",
+          "fields": ["total_bids", "impressions"]
+        },
+        "color": {
+          "field": "rill_measures",
+          "type": "nominal"
+        }
+      },
+      "message": "Chart created successfully: bar_chart",
+      "metrics_view": {
+        "name": "bids_metrics",
+        "display_name": "Bids",
+        "time_dimension": "__time",
+        "smallest_time_grain": "TIME_GRAIN_HOUR"
+      },
+      "resolved_time_range": {
+        "start": "2023-09-09T00:00:00Z",
+        "end": "2023-09-16T00:00:00Z"
+      },
+      "theme": {
+        "primaryColorRaw": "#4f46e5",
+        "light": {
+          "primary": "#4f46e5",
+          "secondary": "#f97316"
+        },
+        "dark": {
+          "primary": "#818cf8",
+          "secondary": "#fb923c"
+        }
+      },
+      "open_url": "https://ui.rilldata.com/demo/bids/-/ai/session-0b1c/message/call-4f2a/-/open",
+      "truncated": false,
+      "title": "Total Bids, Impressions by Advertiser Name",
+      "data": [
+        {
+          "advertiser_name": "Acme Media",
+          "total_bids": 128430,
+          "impressions": 77118
+        },
+        {
+          "advertiser_name": "Beta Brands",
+          "total_bids": 99210,
+          "impressions": 56314
+        },
+        {
+          "advertiser_name": "Cobalt Retail",
+          "total_bids": 87650,
+          "impressions": 58327
+        },
+        {
+          "advertiser_name": "Delta Travel",
+          "total_bids": 64320,
+          "impressions": 38239
+        },
+        {
+          "advertiser_name": "Echo Games",
+          "total_bids": 51200,
+          "impressions": 32007
+        }
+      ],
+      "fields": {
+        "advertiser_name": {
+          "name": "advertiser_name",
+          "kind": "dimension",
+          "display_name": "Advertiser Name",
+          "description": "Name of the advertiser bidding on the impression.",
+          "type": "STRING"
+        },
+        "total_bids": {
+          "name": "total_bids",
+          "kind": "measure",
+          "display_name": "Total Bids",
+          "description": "Count of bid requests.",
+          "type": "INT64",
+          "format_preset": "humanize"
+        },
+        "impressions": {
+          "name": "impressions",
+          "kind": "measure",
+          "display_name": "Impressions",
+          "type": "INT64",
+          "format_preset": "humanize"
+        }
+      },
+      "domain_values": {
+        "advertiser_name": [
+          "Acme Media",
+          "Beta Brands",
+          "Cobalt Retail",
+          "Delta Travel",
+          "Echo Games"
+        ],
+        "rill_measures": ["total_bids", "impressions"]
+      }
+    }
+  }
+}

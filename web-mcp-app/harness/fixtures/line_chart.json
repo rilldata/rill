@@ -1,0 +1,124 @@
+{
+  "name": "Line chart",
+  "description": "Daily total bids; Sep 12 is missing from the rows and gets zero-filled.",
+  "expect": "canvas",
+  "arguments": {
+    "chart_type": "line_chart",
+    "spec": {
+      "metrics_view": "bids_metrics",
+      "time_range": {
+        "start": "2023-09-09T00:00:00Z",
+        "end": "2023-09-16T00:00:00Z"
+      },
+      "time_grain": "TIME_GRAIN_DAY",
+      "x": {
+        "field": "__time",
+        "type": "temporal"
+      },
+      "y": {
+        "field": "total_bids",
+        "type": "quantitative",
+        "zeroBasedOrigin": true
+      },
+      "color": "primary"
+    }
+  },
+  "result": {
+    "content": [
+      {
+        "type": "text",
+        "text": "**Line: Total Bids over Time** (2023-09-09 to 2023-09-16)\n\n| Time | Total Bids |\n| - | - |\n| 2023-09-09T00:00:00Z | 41200 |\n| 2023-09-10T00:00:00Z | 45800 |\n| 2023-09-11T00:00:00Z | 39900 |\n| 2023-09-13T00:00:00Z | 47300 |\n| 2023-09-14T00:00:00Z | 52100 |\n| 2023-09-15T00:00:00Z | 36400 |\n\n_6 of 6 rows shown_\n\nOpen the interactive chart in Rill: https://ui.rilldata.com/demo/bids/-/ai/session-0b1c/message/call-4f2a/-/open"
+      }
+    ],
+    "structuredContent": {
+      "widget": "chart",
+      "chart_type": "line_chart",
+      "spec": {
+        "metrics_view": "bids_metrics",
+        "time_range": {
+          "start": "2023-09-09T00:00:00Z",
+          "end": "2023-09-16T00:00:00Z"
+        },
+        "time_grain": "TIME_GRAIN_DAY",
+        "x": {
+          "field": "__time",
+          "type": "temporal"
+        },
+        "y": {
+          "field": "total_bids",
+          "type": "quantitative",
+          "zeroBasedOrigin": true
+        },
+        "color": "primary"
+      },
+      "message": "Chart created successfully: line_chart",
+      "metrics_view": {
+        "name": "bids_metrics",
+        "display_name": "Bids",
+        "time_dimension": "__time",
+        "smallest_time_grain": "TIME_GRAIN_HOUR"
+      },
+      "resolved_time_range": {
+        "start": "2023-09-09T00:00:00Z",
+        "end": "2023-09-16T00:00:00Z"
+      },
+      "theme": {
+        "primaryColorRaw": "#4f46e5",
+        "light": {
+          "primary": "#4f46e5",
+          "secondary": "#f97316"
+        },
+        "dark": {
+          "primary": "#818cf8",
+          "secondary": "#fb923c"
+        }
+      },
+      "open_url": "https://ui.rilldata.com/demo/bids/-/ai/session-0b1c/message/call-4f2a/-/open",
+      "truncated": false,
+      "title": "Total Bids over Time",
+      "time_grain": "TIME_GRAIN_DAY",
+      "data": [
+        {
+          "__time": "2023-09-09T00:00:00Z",
+          "total_bids": 41200
+        },
+        {
+          "__time": "2023-09-10T00:00:00Z",
+          "total_bids": 45800
+        },
+        {
+          "__time": "2023-09-11T00:00:00Z",
+          "total_bids": 39900
+        },
+        {
+          "__time": "2023-09-13T00:00:00Z",
+          "total_bids": 47300
+        },
+        {
+          "__time": "2023-09-14T00:00:00Z",
+          "total_bids": 52100
+        },
+        {
+          "__time": "2023-09-15T00:00:00Z",
+          "total_bids": 36400
+        }
+      ],
+      "fields": {
+        "__time": {
+          "name": "__time",
+          "kind": "time",
+          "display_name": "Time",
+          "type": "TIMESTAMP"
+        },
+        "total_bids": {
+          "name": "total_bids",
+          "kind": "measure",
+          "display_name": "Total Bids",
+          "description": "Count of bid requests.",
+          "type": "INT64",
+          "format_preset": "humanize"
+        }
+      }
+    }
+  }
+}

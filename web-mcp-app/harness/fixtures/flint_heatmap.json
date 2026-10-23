@@ -1,0 +1,207 @@
+{
+  "name": "Flint heatmap",
+  "description": "Win rate per publisher and device.",
+  "expect": "canvas",
+  "arguments": {
+    "chart_spec": {
+      "chartType": "Heatmap",
+      "encodings": {
+        "x": {
+          "field": "publisher",
+          "limit": 40
+        },
+        "y": {
+          "field": "device",
+          "limit": 40
+        },
+        "color": "win_rate"
+      }
+    },
+    "data": {
+      "metrics_view": "bids_metrics",
+      "time_range": {
+        "start": "2023-09-09T00:00:00Z",
+        "end": "2023-09-16T00:00:00Z"
+      }
+    }
+  },
+  "result": {
+    "content": [
+      {
+        "type": "text",
+        "text": "**Heatmap: Win Rate by Publisher and Device** (2023-09-09 to 2023-09-16)\n\n| Publisher | Device | Win Rate |\n| - | - | - |\n| news.example | Mobile | 0.311 |\n| news.example | Desktop | 0.258 |\n| news.example | Tablet | 0.321 |\n| sports.example | Mobile | 0.197 |\n| sports.example | Desktop | 0.145 |\n| sports.example | Tablet | 0.162 |\n| video.example | Mobile | 0.086 |\n| video.example | Desktop | 0.163 |\n| video.example | Tablet | 0.18 |\n| music.example | Mobile | 0.345 |\n| music.example | Desktop | 0.367 |\n| music.example | Tablet | 0.138 |\n| shop.example | Mobile | 0.341 |\n| shop.example | Desktop | 0.255 |\n| shop.example | Tablet | 0.181 |\n\n_15 of 15 rows shown_\n\nOpen the interactive chart in Rill: https://ui.rilldata.com/demo/bids/-/ai/session-0b1c/message/call-4f2a/-/open"
+      }
+    ],
+    "structuredContent": {
+      "widget": "chart",
+      "chart_type": "Heatmap",
+      "input": {
+        "chart_spec": {
+          "chartType": "Heatmap",
+          "encodings": {
+            "x": {
+              "field": "publisher",
+              "limit": 40
+            },
+            "y": {
+              "field": "device",
+              "limit": 40
+            },
+            "color": "win_rate"
+          }
+        },
+        "data": {
+          "metrics_view": "bids_metrics",
+          "time_range": {
+            "start": "2023-09-09T00:00:00Z",
+            "end": "2023-09-16T00:00:00Z"
+          }
+        }
+      },
+      "message": "Chart created successfully: Heatmap",
+      "metrics_view": {
+        "name": "bids_metrics",
+        "display_name": "Bids",
+        "time_dimension": "__time",
+        "smallest_time_grain": "TIME_GRAIN_HOUR"
+      },
+      "resolved_time_range": {
+        "start": "2023-09-09T00:00:00Z",
+        "end": "2023-09-16T00:00:00Z"
+      },
+      "theme": {
+        "primaryColorRaw": "#4f46e5",
+        "light": {
+          "primary": "#4f46e5",
+          "secondary": "#f97316"
+        },
+        "dark": {
+          "primary": "#818cf8",
+          "secondary": "#fb923c"
+        }
+      },
+      "open_url": "https://ui.rilldata.com/demo/bids/-/ai/session-0b1c/message/call-4f2a/-/open",
+      "truncated": false,
+      "title": "Win Rate by Publisher and Device",
+      "data": [
+        {
+          "publisher": "news.example",
+          "device": "Mobile",
+          "win_rate": 0.311
+        },
+        {
+          "publisher": "news.example",
+          "device": "Desktop",
+          "win_rate": 0.258
+        },
+        {
+          "publisher": "news.example",
+          "device": "Tablet",
+          "win_rate": 0.321
+        },
+        {
+          "publisher": "sports.example",
+          "device": "Mobile",
+          "win_rate": 0.197
+        },
+        {
+          "publisher": "sports.example",
+          "device": "Desktop",
+          "win_rate": 0.145
+        },
+        {
+          "publisher": "sports.example",
+          "device": "Tablet",
+          "win_rate": 0.162
+        },
+        {
+          "publisher": "video.example",
+          "device": "Mobile",
+          "win_rate": 0.086
+        },
+        {
+          "publisher": "video.example",
+          "device": "Desktop",
+          "win_rate": 0.163
+        },
+        {
+          "publisher": "video.example",
+          "device": "Tablet",
+          "win_rate": 0.18
+        },
+        {
+          "publisher": "music.example",
+          "device": "Mobile",
+          "win_rate": 0.345
+        },
+        {
+          "publisher": "music.example",
+          "device": "Desktop",
+          "win_rate": 0.367
+        },
+        {
+          "publisher": "music.example",
+          "device": "Tablet",
+          "win_rate": 0.138
+        },
+        {
+          "publisher": "shop.example",
+          "device": "Mobile",
+          "win_rate": 0.341
+        },
+        {
+          "publisher": "shop.example",
+          "device": "Desktop",
+          "win_rate": 0.255
+        },
+        {
+          "publisher": "shop.example",
+          "device": "Tablet",
+          "win_rate": 0.181
+        }
+      ],
+      "fields": {
+        "publisher": {
+          "name": "publisher",
+          "kind": "dimension",
+          "display_name": "Publisher",
+          "type": "STRING"
+        },
+        "device": {
+          "name": "device",
+          "kind": "dimension",
+          "display_name": "Device",
+          "type": "STRING"
+        },
+        "win_rate": {
+          "name": "win_rate",
+          "kind": "measure",
+          "display_name": "Win Rate",
+          "type": "FLOAT64",
+          "format_preset": "percentage",
+          "lower_is_better": false
+        }
+      },
+      "domain_values": {
+        "publisher": [
+          "news.example",
+          "sports.example",
+          "video.example",
+          "music.example",
+          "shop.example"
+        ],
+        "device": ["Mobile", "Desktop", "Tablet"]
+      },
+      "semantic_types": {
+        "publisher": "Category",
+        "device": "Category",
+        "win_rate": "Percentage"
+      },
+      "field_display_names": {
+        "publisher": "Publisher",
+        "device": "Device",
+        "win_rate": "Win Rate"
+      }
+    }
+  }
+}

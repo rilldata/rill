@@ -179,7 +179,7 @@ Replace `org` and `project` with the ID of your organization and project.
             "command": "npx",
             "args": [
                 "mcp-remote",
-                "https://api.rilldata.com/v1/organizations/{org}/projects/{project}/runtime/mcp",
+                "https://api.rilldata.com/v1/orgs/{org}/projects/{project}/runtime/mcp",
                 "--header",
                 "Authorization:${AUTH_HEADER}"
             ],
@@ -202,7 +202,7 @@ See [our demo page](https://ui.rilldata.com/demo) for public projects to test.
             "command": "npx",
             "args": [
                 "mcp-remote",
-                "https://api.rilldata.com/v1/organizations/demo/projects/rill-github-analytics/runtime/mcp"
+                "https://api.rilldata.com/v1/orgs/demo/projects/rill-github-analytics/runtime/mcp"
             ]
         }
     }
@@ -260,6 +260,8 @@ You can look at one of our [example projects](https://github.com/rilldata/rill-e
 - __*Get metrics view spec*__ – Use `get_metrics_view` to fetch a metrics view's specification. This is important to understand all the dimensions and measures in a metrics view.
 - __*Query the time range*__ – Use `query_metrics_view_summary` to obtain the available time range for a metrics view. This is important to understand what time range the data spans.
 - __*Query the metrics*__ – Use `query_metrics_view` to run queries to get aggregated results.
+- __*Create a chart*__ – Use `create_chart` to draw a chart of a metrics view query. Every client receives the chart's data as a table with an **Open in Rill** link; clients that support MCP Apps show it inline as an interactive Rill chart when the chart app is enabled. See [Interactive charts in Claude and ChatGPT](#interactive-charts-in-claude-and-chatgpt).
+- __*Load chart data*__ – `chart_data` is called by the interactive chart to refetch its data when you change its time grain, limits or comparison. It is not meant to be called directly, and clients that support MCP Apps hide it from the model.
 - __*List skills*__ – Use `list_skills` to discover the [skills](/developers/build/ai-configuration#skills) defined in the project. It returns an empty list when the project defines no skills.
 - __*Load a skill*__ – Use `load_skill` to fetch a skill's full instructions before doing work its description covers.
 
@@ -275,6 +277,25 @@ Using all the above concepts, you can ask the Rill MCP server questions like:
 - During the *current year*, do I have any __outliers in website views__? What might this correlate to?
 - In the *previous quarter*, compared to the current ongoing quarter, what are the __trends for customer access__?
 - In the *last 7 days*, how many __auction requests were there from mobile vs desktop__?
+
+
+## Interactive charts in Claude and ChatGPT
+
+The server ships a `rill-charts` skill that tells the AI which chart fits which question and what to check before charting; external clients receive it in the `ai_instructions` of `list_metrics_views` and can also fetch it with `load_skill`. When the AI calls `create_chart`, the Rill MCP server answers with the chart's data. Every client receives it as a markdown table of the first rows with an **Open in Rill** link, which opens an Explore dashboard with the chart's measures, dimensions, filters and time range applied. Charts require the `chat_charts` feature flag, which is on by default.
+
+The AI describes the chart the way [custom viz components](/developers/build/dashboards/canvas-widgets/custom-viz) do: a chart type and which field goes on which channel (`chart_spec`, with Flint's chart types such as `Bar Chart`, `Line Chart`, `Waterfall Chart`, `Slope Chart` or `Heatmap`) together with the metrics view, time range, filter and grain the data comes from (`data`). Rill derives the scales, axes, number formats, sorting and layout from the metrics view's semantics, so the AI never writes styling.
+
+Clients that support [MCP Apps](https://modelcontextprotocol.io/docs/extensions/apps), such as Claude (web, desktop and mobile), ChatGPT, Cursor and VS Code, can instead show the chart inline in the conversation as an interactive Rill chart, with the same rendering, formatting and theme as custom viz components in Rill. In fullscreen, the chart offers data controls (time grain, top values, comparison with the previous period, each re-queried from Rill) and presentation controls (chart type, layout and chart properties, applied instantly), and tells the AI what it currently shows. Every Rill MCP endpoint serves the chart app whenever charts are enabled: project endpoints, the unified `https://api.rilldata.com/v1/mcp` endpoint and Rill Developer alike, with no configuration of its own. Clients that don't support MCP Apps, such as Claude Code, keep receiving the table and the link.
+
+:::tip Troubleshooting
+If charts show up as a table, check whether the server advertises the chart app with the MCP Inspector:
+
+```bash
+npx @modelcontextprotocol/inspector --cli <rill-mcp-url> --transport http --method resources/list
+```
+
+The output should list a `ui://rill/widget/...` resource. If it is missing, charts are disabled for the project (`chat_charts: false` under `features` in `rill.yaml`) or the deployment hasn't picked up a release that ships the chart app yet. If it is listed but your client still shows a table, the client doesn't support MCP Apps.
+:::
 
 
 ## Conclusion

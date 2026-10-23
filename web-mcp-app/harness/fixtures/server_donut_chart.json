@@ -1,0 +1,98 @@
+{
+  "name": "server_donut_chart",
+  "description": "Real create_chart output from rill start (donut with totals)",
+  "expect": "canvas",
+  "arguments": {
+    "chart_type": "donut_chart",
+    "spec": {
+      "color": {
+        "field": "device_os",
+        "limit": 2,
+        "type": "nominal"
+      },
+      "measure": {
+        "field": "total_bids",
+        "type": "quantitative"
+      },
+      "metrics_view": "bids_metrics",
+      "time_range": {
+        "end": "2024-01-22T00:00:00Z",
+        "start": "2024-01-01T00:00:00Z"
+      }
+    }
+  },
+  "result": {
+    "content": [
+      {
+        "type": "text",
+        "text": "**Donut chart: Total Bids split by Device OS** (2024-01-01 to 2024-01-22)\n\n| Device OS | Total Bids |\n| - | - |\n| iOS | 4845 |\n| Android | 4839 |\n\n_2 of 2 rows shown_\n\nThe chart data is incomplete: only the top 2 values of \"device_os\" are shown. To see the complete picture, lower the field limits or add filters.\n\nOpen the interactive chart in Rill: http://localhost:3001/-/ai/18b73406-dec4-4cbc-b5dd-027ce3c2a133/message/229533b7-eeb3-4f53-ab77-1a5fef0a27f9/-/open"
+      }
+    ],
+    "structuredContent": {
+      "chart_type": "donut_chart",
+      "data": [
+        {
+          "device_os": "iOS",
+          "total_bids": 4845
+        },
+        {
+          "device_os": "Android",
+          "total_bids": 4839
+        }
+      ],
+      "domain_values": {
+        "device_os": ["iOS", "Android"]
+      },
+      "fields": {
+        "device_os": {
+          "display_name": "Device OS",
+          "kind": "dimension",
+          "name": "device_os",
+          "type": "STRING"
+        },
+        "total_bids": {
+          "display_name": "Total Bids",
+          "format_preset": "humanize",
+          "kind": "measure",
+          "name": "total_bids",
+          "type": "INT128"
+        }
+      },
+      "message": "Chart created successfully: donut_chart",
+      "metrics_view": {
+        "display_name": "Bids",
+        "name": "bids_metrics",
+        "smallest_time_grain": "TIME_GRAIN_HOUR",
+        "time_dimension": "event_time"
+      },
+      "open_url": "http://localhost:3001/-/ai/18b73406-dec4-4cbc-b5dd-027ce3c2a133/message/229533b7-eeb3-4f53-ab77-1a5fef0a27f9/-/open",
+      "resolved_time_range": {
+        "end": "2024-01-22T00:00:00Z",
+        "start": "2024-01-01T00:00:00Z"
+      },
+      "spec": {
+        "color": {
+          "field": "device_os",
+          "limit": 2,
+          "type": "nominal"
+        },
+        "measure": {
+          "field": "total_bids",
+          "type": "quantitative"
+        },
+        "metrics_view": "bids_metrics",
+        "time_range": {
+          "end": "2024-01-22T00:00:00Z",
+          "start": "2024-01-01T00:00:00Z"
+        }
+      },
+      "title": "Total Bids split by Device OS",
+      "totals": {
+        "total_bids": 14517
+      },
+      "truncated": true,
+      "truncation_warning": "The chart data is incomplete: only the top 2 values of \"device_os\" are shown. To see the complete picture, lower the field limits or add filters.",
+      "widget": "chart"
+    }
+  }
+}

@@ -1,0 +1,135 @@
+{
+  "chart_type": "Pie Chart",
+  "fields": [
+    "bids",
+    "device"
+  ],
+  "measures": [
+    "bids"
+  ],
+  "row_limit": 1500,
+  "top_n": [
+    {
+      "channel": "color",
+      "field": "device",
+      "limit": 5,
+      "query": {
+        "metrics_view": "mv",
+        "dimensions": [
+          {
+            "name": "device"
+          }
+        ],
+        "measures": [
+          {
+            "name": "bids"
+          }
+        ],
+        "pivot_on": null,
+        "spine": null,
+        "sort": [
+          {
+            "name": "bids",
+            "desc": true
+          }
+        ],
+        "time_range": {
+          "start": "2024-01-01T00:00:00Z",
+          "end": "2024-02-01T00:00:00Z"
+        },
+        "comparison_time_range": null,
+        "where": {
+          "cond": {
+            "op": "nin",
+            "exprs": [
+              {
+                "name": "device"
+              },
+              {
+                "val": [
+                  null
+                ]
+              }
+            ]
+          }
+        },
+        "having": null,
+        "limit": 6,
+        "offset": null,
+        "time_zone": "",
+        "use_display_names": false,
+        "rows": false
+      }
+    }
+  ],
+  "main": {
+    "metrics_view": "mv",
+    "dimensions": [
+      {
+        "name": "device"
+      }
+    ],
+    "measures": [
+      {
+        "name": "bids"
+      }
+    ],
+    "pivot_on": null,
+    "spine": null,
+    "sort": [
+      {
+        "name": "bids",
+        "desc": true
+      }
+    ],
+    "time_range": {
+      "start": "2024-01-01T00:00:00Z",
+      "end": "2024-02-01T00:00:00Z"
+    },
+    "comparison_time_range": null,
+    "where": {
+      "cond": {
+        "op": "and",
+        "exprs": [
+          {
+            "cond": {
+              "op": "nin",
+              "exprs": [
+                {
+                  "name": "device"
+                },
+                {
+                  "val": [
+                    null
+                  ]
+                }
+              ]
+            }
+          },
+          {
+            "cond": {
+              "op": "in",
+              "exprs": [
+                {
+                  "name": "device"
+                },
+                {
+                  "val": [
+                    "iOS",
+                    "Android"
+                  ]
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    "having": null,
+    "limit": 1501,
+    "offset": null,
+    "time_zone": "",
+    "use_display_names": false,
+    "rows": false
+  }
+}

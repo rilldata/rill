@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Rill MCP chart widget harness</title>
+    <style>
+      :root {
+        color-scheme: light dark;
+        font-family: system-ui, sans-serif;
+        font-size: 13px;
+      }
+      body {
+        margin: 0;
+        display: grid;
+        grid-template-columns: minmax(360px, 1fr) 420px;
+        grid-template-rows: auto 1fr;
+        height: 100vh;
+        background: light-dark(#f7f7f8, #141414);
+        color: light-dark(#111, #eee);
+      }
+      body.dark {
+        color-scheme: dark;
+      }
+      header {
+        grid-column: 1 / -1;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        align-items: center;
+        padding: 10px 16px;
+        border-bottom: 1px solid light-dark(#ddd, #333);
+      }
+      header label {
+        display: inline-flex;
+        gap: 6px;
+        align-items: center;
+      }
+      main {
+        display: flex;
+        align-items: flex-start;
+        justify-content: center;
+        padding: 24px;
+        overflow: auto;
+      }
+      .frame {
+        border: 1px solid light-dark(#d9d9df, #333);
+        border-radius: 14px;
+        background: light-dark(#fff, #1f1f1f);
+        overflow: hidden;
+        transition: width 150ms;
+      }
+      .frame.fullscreen {
+        position: fixed;
+        inset: 0;
+        border: 0;
+        border-radius: 0;
+        width: 100vw !important;
+        height: 100vh !important;
+        z-index: 10;
+      }
+      iframe {
+        display: block;
+        width: 100%;
+        border: 0;
+        height: 120px;
+        transition: height 120ms;
+      }
+      aside {
+        border-left: 1px solid light-dark(#ddd, #333);
+        display: flex;
+        flex-direction: column;
+        min-height: 0;
+      }
+      aside h2 {
+        margin: 0;
+        padding: 10px 12px;
+        font-size: 12px;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        color: light-dark(#666, #aaa);
+      }
+      pre {
+        margin: 0;
+        padding: 8px 12px;
+        flex: 1;
+        overflow: auto;
+        font-size: 11px;
+        line-height: 1.45;
+        white-space: pre-wrap;
+        word-break: break-word;
+      }
+      .out {
+        color: light-dark(#0b57d0, #8ab4f8);
+      }
+      .in {
+        color: light-dark(#1b7f3b, #7bd88f);
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <label
+        >Fixture
+        <select id="fixture"></select
+      ></label>
+      <label
+        >Theme
+        <select id="theme">
+          <option value="light">light</option>
+          <option value="dark">dark</option>
+        </select>
+      </label>
+      <label
+        >Locale
+        <select id="locale">
+          <option value="en-US">en-US</option>
+          <option value="es-ES">es-ES</option>
+        </select>
+      </label>
+      <label
+        >Display
+        <select id="display">
+          <option value="inline">inline</option>
+          <option value="fullscreen">fullscreen</option>
+        </select>
+      </label>
+      <label
+        >Width
+        <input id="width" type="range" min="320" max="900" value="640" />
+        <span id="width-value">640</span>px</label
+      >
+      <label
+        ><input id="host-styles" type="checkbox" checked /> Send host style
+        variables</label
+      >
+      <button id="reload" type="button">Remount</button>
+    </header>
+    <main>
+      <div class="frame" id="frame" style="width: 640px">
+        <iframe
+          id="widget"
+          title="Rill chart widget"
+          sandbox="allow-scripts"
+        ></iframe>
+      </div>
+    </main>
+    <aside>
+      <h2>Messages</h2>
+      <pre id="log"></pre>
+    </aside>
+    <script type="module" src="./host.ts"></script>
+  </body>
+</html>

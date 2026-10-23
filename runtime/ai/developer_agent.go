@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"strings"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 	aiv1 "github.com/rilldata/rill/proto/gen/rill/ai/v1"
@@ -45,7 +44,7 @@ func (t *DeveloperAgent) Spec() *mcp.Tool {
 }
 
 func (t *DeveloperAgent) CheckAccess(ctx context.Context) (bool, error) {
-	return checkDeveloperAccess(ctx, t.Runtime, true)
+	return checkDeveloperAccess(ctx, true)
 }
 
 func (t *DeveloperAgent) Handler(ctx context.Context, args *DeveloperAgentArgs) (*DeveloperAgentResult, error) {
@@ -214,7 +213,7 @@ Task: {{ .prompt }}
 
 // checkDeveloperAccess checks whether developer tools should be available in the current session.
 // If internal is true, it indicates that the tool should not be exposed to external clients (like MCP).
-func checkDeveloperAccess(ctx context.Context, rt *runtime.Runtime, internal bool) (bool, error) {
+func checkDeveloperAccess(ctx context.Context, internal bool) (bool, error) {
 	// Must be able to use AI and edit the project
 	s := GetSession(ctx)
 	if !s.Claims().Can(runtime.UseAI) || !s.Claims().Can(runtime.EditRepo) {
@@ -223,13 +222,13 @@ func checkDeveloperAccess(ctx context.Context, rt *runtime.Runtime, internal boo
 
 	// Don't expose agent tools to external clients (like MCP)
 	if internal {
-		if !strings.HasPrefix(s.CatalogSession().UserAgent, "rill") {
+		if !isRillUserAgent(s) {
 			return false, nil
 		}
 	}
 
 	// Must have the developer_agent feature flag
-	ff, err := rt.FeatureFlags(ctx, s.InstanceID(), s.Claims())
+	ff, err := s.FeatureFlags(ctx)
 	if err != nil {
 		return false, err
 	}
