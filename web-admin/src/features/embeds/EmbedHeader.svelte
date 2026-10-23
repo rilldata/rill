@@ -16,6 +16,7 @@
   } from "@rilldata/web-common/runtime-client";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
+  import EmbedAlertButton from "@rilldata/web-admin/features/embeds/EmbedAlertButton.svelte";
   import EmbedReportButton from "@rilldata/web-admin/features/embeds/EmbedReportButton.svelte";
 
   export let activeResource: V1ResourceName;
@@ -91,6 +92,7 @@
     {/if}
 
     <EmbedReportButton />
+    <EmbedAlertButton />
     {#if showDashboardChat}
       <div class="flex gap-x-4 items-center">
         <LastRefreshedDate dashboard={activeResource?.name} />

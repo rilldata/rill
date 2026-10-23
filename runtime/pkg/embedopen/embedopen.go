@@ -24,12 +24,13 @@ type Kind string
 
 const (
 	KindReport Kind = "report"
+	KindAlert  Kind = "alert"
 )
 
 // Valid returns true if the kind is known.
 func (k Kind) Valid() bool {
 	switch k {
-	case KindReport:
+	case KindReport, KindAlert:
 		return true
 	}
 	return false

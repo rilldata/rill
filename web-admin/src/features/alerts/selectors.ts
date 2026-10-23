@@ -8,10 +8,7 @@ import {
   createRuntimeServiceGetResource,
   createRuntimeServiceListResources,
 } from "@rilldata/web-common/runtime-client";
-import type {
-  V1AlertSpec,
-  V1ExploreSpec,
-} from "@rilldata/web-common/runtime-client/gen/index.schemas";
+import type { V1AlertSpec } from "@rilldata/web-common/runtime-client/gen/index.schemas";
 import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import { smartRefetchIntervalFunc } from "@rilldata/web-admin/lib/refetch-interval-store";
 import { derived, type Readable, readable } from "svelte/store";
@@ -57,11 +54,11 @@ export function useAlertDashboardName(client: RuntimeClient, name: string) {
 }
 
 export function getAlertDashboardName(alertSpec: V1AlertSpec): string {
-  if (alertSpec.annotations.web_open_path)
+  if (alertSpec.annotations?.web_open_path)
     return getExploreName(alertSpec.annotations.web_open_path);
 
   const queryArgsJson = JSON.parse(
-    (alertSpec.resolverProperties.query_args_json as string) ||
+    (alertSpec.resolverProperties?.query_args_json as string) ||
       alertSpec.queryArgsJson ||
       "{}",
   );
@@ -89,7 +86,8 @@ export function useAlertOwnerName(
     },
     {
       query: {
-        select: (data) => data.users.find((u) => u.id === ownerId)?.displayName,
+        select: (data) =>
+          data.users?.find((u) => u.id === ownerId)?.displayName,
       },
     },
   );
@@ -104,7 +102,8 @@ export function useIsAlertCreatedByCode(client: RuntimeClient, name: string) {
     {
       query: {
         select: (data) =>
-          !data.resource.alert.spec.annotations["admin_owner_user_id"],
+          !data.resource?.alert?.spec?.annotations?.["admin_owner_user_id"] &&
+          !data.resource?.alert?.spec?.annotations?.["admin_owner_user_email"],
       },
     },
   );
@@ -139,7 +138,7 @@ export function useAlertDashboardState(
           getDashboardStateFromUrl(
             webState,
             data.metricsView?.metricsView?.state?.validSpec ?? {},
-            data.explore?.explore?.state?.validSpec as V1ExploreSpec,
+            data.explore?.explore?.state?.validSpec ?? {},
           ),
       },
     },

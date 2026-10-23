@@ -1,7 +1,6 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import { isNotFoundError } from "@rilldata/web-common/lib/errors";
-  import { createAdminServiceDeleteAlert } from "@rilldata/web-admin/client";
   import EditAlert from "@rilldata/web-admin/features/alerts/EditAlert.svelte";
   import AlertFilterCriteria from "@rilldata/web-admin/features/alerts/metadata/AlertFilterCriteria.svelte";
   import AlertFilters from "@rilldata/web-admin/features/alerts/metadata/AlertFilters.svelte";
@@ -19,7 +18,7 @@
   import MetadataValue from "@rilldata/web-admin/features/scheduled-reports/metadata/MetadataValue.svelte";
   import { extractNotifier } from "@rilldata/web-admin/features/scheduled-reports/metadata/notifiers-utils";
   import { formatRefreshSchedule } from "@rilldata/web-admin/features/scheduled-reports/metadata/utils.ts";
-  import { IconButton } from "@rilldata/web-common/components/button";
+  import { Button, IconButton } from "@rilldata/web-common/components/button";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import CancelCircle from "@rilldata/web-common/components/icons/CancelCircle.svelte";
   import ThreeDot from "@rilldata/web-common/components/icons/ThreeDot.svelte";
@@ -34,6 +33,13 @@
   } from "@rilldata/web-common/runtime-client";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { useQueryClient } from "@tanstack/svelte-query";
+  import { onDestroy } from "svelte";
+  import { createFormMetadataProvider } from "@rilldata/web-common/features/scheduled-reports/FormMetadataProvider.svelte.ts";
+  import {
+    alertDeleteMutationFactory,
+    getAlertMutationFactory,
+  } from "@rilldata/web-common/features/alerts/AlertFormMetadataProvider.ts";
+  import { EmbedStore } from "@rilldata/web-common/features/embeds/embed-store";
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 
   export let organization: string;
@@ -41,6 +47,7 @@
   export let alert: string;
 
   const runtimeClient = useRuntimeClient();
+  const isEmbedded = EmbedStore.isEmbedded();
 
   $: alertQuery = useAlert(runtimeClient, alert);
   $: isAlertCreatedByCode = useIsAlertCreatedByCode(runtimeClient, alert);
@@ -102,7 +109,13 @@
 
   // Actions
   const queryClient = useQueryClient();
-  const deleteAlert = createAdminServiceDeleteAlert();
+  const provider = createFormMetadataProvider(
+    runtimeClient,
+    getAlertMutationFactory(true),
+    alertDeleteMutationFactory,
+  );
+  const { deleteMutation: deleteAlert } = provider;
+  onDestroy(() => provider.cleanup());
 
   async function handleDeleteAlert() {
     await $deleteAlert.mutateAsync({
@@ -116,7 +129,7 @@
       ),
     });
     // goto only after invalidate is complete
-    goto(`/${organization}/${project}/-/alerts`);
+    goto(`${provider.pageBasePath}/alerts`);
   }
 </script>
 
@@ -133,6 +146,7 @@
                 {organization}
                 {project}
                 ownerId={alertSpec.annotations["admin_owner_user_id"]}
+                ownerEmail={alertSpec.annotations["admin_owner_user_email"]}
               />
             {/if}
           </svelte:fragment>
@@ -146,6 +160,15 @@
           {alertSpec.displayName}
         </h1>
         <div class="grow"></div>
+        <!-- The dashboard link points to Rill Cloud, so embeds open the alert through the embed open route. -->
+        {#if isEmbedded}
+          <Button
+            type="secondary"
+            href={`/-/embed/alerts/${encodeURIComponent(alert)}/open`}
+          >
+            {m.alert_open()}
+          </Button>
+        {/if}
         {#if !$isAlertCreatedByCode.data}
           <EditAlert {alertSpec} disabled={!$exploreIsValid} />
           <DropdownMenu.Root>
