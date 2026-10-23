@@ -623,3 +623,44 @@ func TestNormalizeTimezone(t *testing.T) {
 	_, err := normalizeTimezone("Not/A_Timezone")
 	require.Error(t, err)
 }
+
+func TestRewriteQueryForRollup_ExactMeasureSkipped(t *testing.T) {
+	// Exact aggregates cannot be computed from pre-aggregated rows, so a query whose exact set is non-empty skips rollups.
+	e := &Executor{
+		metricsView: &runtimev1.MetricsViewSpec{
+			Table:         "base_table",
+			TimeDimension: "timestamp",
+			Dimensions: []*runtimev1.MetricsViewSpec_Dimension{
+				{Name: "publisher", Column: "publisher"},
+			},
+			Measures: []*runtimev1.MetricsViewSpec_Measure{
+				{Name: "users", Expression: `approx_count_distinct("user_id")`, ExactExpression: `count(DISTINCT "user_id")`},
+				{Name: "users_per_publisher", Expression: "users / 2", Type: runtimev1.MetricsViewSpec_MEASURE_TYPE_DERIVED, ReferencedMeasures: []string{"users"}},
+			},
+			Rollups: []*runtimev1.MetricsViewSpec_Rollup{
+				{
+					Table:      "daily_rollup",
+					TimeGrain:  runtimev1.TimeGrain_TIME_GRAIN_DAY,
+					Dimensions: []string{"publisher"},
+					Measures:   []string{"users", "users_per_publisher"},
+				},
+			},
+		},
+	}
+
+	for _, measures := range [][]metricsview.Measure{
+		{{Name: "users", Exact: true}},
+		{{Name: "users_prev", Compute: &metricsview.MeasureCompute{ComparisonValue: &metricsview.MeasureComputeComparisonValue{Measure: "users"}}, Exact: true}},
+	} {
+		qry := &metricsview.Query{
+			Dimensions: []metricsview.Dimension{{Name: "publisher"}},
+			Measures:   measures,
+		}
+		// Resolved by rewriteQueryExactMeasures before this rewrite runs.
+		qry.ExactMeasures = metricsview.ExactMeasureSet(e.metricsView, qry)
+		result, err := e.rewriteQueryForRollup(context.Background(), qry)
+		require.NoError(t, err)
+		require.Nil(t, result)
+		require.Equal(t, "base_table", e.LatestQueryTable())
+	}
+}

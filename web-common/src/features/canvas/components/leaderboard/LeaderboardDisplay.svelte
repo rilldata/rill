@@ -1,6 +1,10 @@
 <script lang="ts">
   import { ephemeralSpecsToDefs } from "@rilldata/web-common/features/dashboards/ephemeral-measures/canvas";
   import { appendEphemeralSpecMeasures } from "@rilldata/web-common/features/dashboards/ephemeral-measures/measure-mapping";
+  import {
+    canvasExactMeasureContext,
+    canvasExactSurface,
+  } from "@rilldata/web-common/features/canvas/components/exact-measures";
   import type { LeaderboardComponent } from "@rilldata/web-common/features/canvas/components/leaderboard";
   import { validateLeaderboardSchema } from "@rilldata/web-common/features/canvas/components/leaderboard/selector";
   import { getCanvasStore } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
@@ -15,6 +19,7 @@
   import { selectedDimensionValues } from "@rilldata/web-common/features/dashboards/state-managers/selectors/dimension-filters";
   import { createMeasureValueFormatter } from "@rilldata/web-common/lib/number-formatting/format-measure-value";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
+  import { derived } from "svelte/store";
   import ComponentHeader from "../../ComponentHeader.svelte";
   import {
     getDimensionColumnWidth,
@@ -82,6 +87,27 @@
   );
   let allMeasuresWithEphemeral = $derived(
     appendEphemeralSpecMeasures($allMeasures, ephemeralMeasures),
+  );
+
+  // Exact measures: each leaderboard of the component is its own surface, so a
+  // click only re-runs that leaderboard's queries.
+  let exactContextsStore = $derived(
+    derived(
+      visibleDimensions.map((dimension) =>
+        canvasExactMeasureContext(
+          store.canvasEntity,
+          canvasExactSurface(component.id, dimension.name ?? ""),
+          metricsViewName,
+        ),
+      ),
+      (contexts) =>
+        new Map(
+          visibleDimensions.map((dimension, i) => [
+            dimension.name ?? "",
+            contexts[i],
+          ]),
+        ),
+    ),
   );
 
   let visibleMeasures = $derived(
@@ -194,6 +220,12 @@
                 leaderboardMeasureNames[0]}
               leaderboardMeasures={visibleMeasures}
               {ephemeralMeasures}
+              exactContext={$exactContextsStore.get(dimension.name ?? "")}
+              onToggleExact={(measureName) =>
+                store.canvasEntity.toggleExactMeasure(
+                  canvasExactSurface(component.id, dimension.name ?? ""),
+                  measureName,
+                )}
               {whereFilter}
               tableWidth={dimensionColumnWidth + totalContextWidth}
               {dimensionColumnWidth}

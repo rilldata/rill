@@ -105,6 +105,9 @@ type InstanceConfig struct {
 	MetricsApproximateComparisonsCTE bool `mapstructure:"rill.metrics.approximate_comparisons_cte"`
 	// MetricsApproxComparisonTwoPhaseLimit if query limit is less than this then rewrite metrics comparison queries to use a two-phase comparison approach where first query is used to get the base values and the second query is used to get the comparison values.
 	MetricsApproxComparisonTwoPhaseLimit int64 `mapstructure:"rill.metrics.approximate_comparisons_two_phase_limit"`
+	// MetricsExactMeasures indicates whether queries may compute measures with their exact_expression (requested per measure with `exact: true`).
+	// When false, such queries fail with an error. Acts as a kill switch for expensive exact aggregations.
+	MetricsExactMeasures bool `mapstructure:"rill.metrics.exact_measures"`
 	// MetricsExactifyDruidTopN indicates whether to split Druid TopN queries into two queries to increase the accuracy of the returned measures.
 	// Enabling it reduces the performance of Druid toplist queries.
 	// See runtime/metricsview/executor_rewrite_druid_exactify.go for more details.
@@ -224,6 +227,7 @@ func (i *Instance) Config() (InstanceConfig, error) {
 		MetricsApproximateComparisons:        true,
 		MetricsApproximateComparisonsCTE:     false,
 		MetricsApproxComparisonTwoPhaseLimit: 250,
+		MetricsExactMeasures:                 true,
 		MetricsExactifyDruidTopN:             false,
 		MetricsDruidMVDFilteredGroupBy:       false,
 		MetricsDruidMVDFilteredSearch:        false,

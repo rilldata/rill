@@ -119,7 +119,7 @@ export class FunnelChartComponent extends BaseChart<FunnelCanvasChartSpec> {
   constructor(resource: V1Resource, parent: CanvasEntity, path: ComponentPath) {
     super(resource, parent, path);
 
-    this.provider = new FunnelChartProvider(this.specStore, {
+    this.provider = new FunnelChartProvider(this.querySpecStore, {
       stageLimit: DEFAULT_STAGE_LIMIT,
       sort: DEFAULT_SORT,
     });

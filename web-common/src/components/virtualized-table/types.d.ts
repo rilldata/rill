@@ -18,6 +18,7 @@ export interface VirtualizedTableConfig {
   headerBgColorHighlightClass?: string;
 }
 
+import type { PrecisionChipProps } from "@rilldata/web-common/features/dashboards/exact-measures/exact-measures";
 import type { SortDirection } from "@rilldata/web-common/features/dashboards/proto-state/derived-types";
 import type { SvelteComponent } from "svelte";
 
@@ -27,6 +28,8 @@ export interface VirtualizedTableColumns {
   largestStringLength?: number;
   summary?: ProfileColumnSummary | any;
   label?: string | typeof SvelteComponent<any>;
+  // Precision chip rendered after the label for measures with an exact variant.
+  precision?: PrecisionChipProps;
   max?: number;
   description?: string;
   enableResize?: boolean;

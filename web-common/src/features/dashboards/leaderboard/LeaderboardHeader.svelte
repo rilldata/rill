@@ -4,6 +4,8 @@
   import Spacer from "@rilldata/web-common/components/icons/Spacer.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
+  import type { PrecisionChipProps } from "@rilldata/web-common/features/dashboards/exact-measures/exact-measures";
+  import PrecisionChip from "@rilldata/web-common/features/dashboards/exact-measures/PrecisionChip.svelte";
   import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
   import Resizer from "@rilldata/web-common/layout/Resizer.svelte";
   import { fly } from "svelte/transition";
@@ -40,6 +42,10 @@
     dimensionName: string | undefined,
   ) => void;
   export let measureLabel: (measureName: string) => string;
+  // Precision chip for a measure header; undefined when the measure has no exact variant.
+  export let precisionFor: (
+    measureName: string,
+  ) => PrecisionChipProps | undefined = () => undefined;
   export let dimensionColumnWidth: number;
   export let onDimensionColumnResize: ((width: number) => void) | null = null;
   // Height of the whole leaderboard table, so the resize handle can span all
@@ -121,6 +127,7 @@
     </th>
 
     {#each leaderboardMeasureNames as measureName, index (index)}
+      {@const precision = precisionFor(measureName)}
       <th data-measure-header>
         <button
           aria-label={m.dashboard_sort_by_value_aria()}
@@ -139,6 +146,11 @@
               #
             {/if}
           </span>
+          {#if precision}
+            <span class="inline-flex align-middle relative -top-px ml-1">
+              <PrecisionChip {...precision} />
+            </span>
+          {/if}
           {#if measureName === leaderboardSortByMeasureName && sortType === SortType.VALUE}
             <div class="text-fg-muted">
               {#if sortedAscending}

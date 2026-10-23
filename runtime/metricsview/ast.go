@@ -42,6 +42,8 @@ type AST struct {
 	comparisonDimFields []FieldNode
 	unnests             []string
 	nextIdentifier      int
+	// Names of metrics view measures that must be computed with their exact_expression (see ExactMeasureSet).
+	exactMeasures map[string]bool
 }
 
 // SelectNode represents a query that computes measures by dimensions.
@@ -215,6 +217,15 @@ func NewAST(mv *runtimev1.MetricsViewSpec, sec MetricsViewSecurity, qry *Query, 
 		Security:    sec,
 		Query:       qry,
 		Dialect:     dialect,
+	}
+
+	// Resolve up front which measures must use their exact_expression.
+	// This must happen before any measure is resolved, because a measure name has exactly one value per query and AddMeasureField dedupes by name.
+	// The executor resolves the set once per query and derived queries copy it (see Query.ExactMeasures);
+	// a query that did not pass through the executor, such as the schema probe, resolves it from its flags here.
+	ast.exactMeasures = qry.ExactMeasures
+	if ast.exactMeasures == nil {
+		ast.exactMeasures = ExactMeasureSet(mv, qry)
 	}
 
 	// Determine the minimum time grain for the time dimension in the query.
@@ -1514,15 +1525,22 @@ func (a *AST) sqlForTimeRange(timeDimExpr string, typeCode runtimev1.Type_Code, 
 
 // sqlForMeasure builds a SQL expression for a measure, including its window if present.
 // It uses the provided n to resolve dimensions expressions for window partitions.
+// It uses the measure's exact_expression if the query requests the measure exactly (see ExactMeasureSet).
 func (a *AST) sqlForMeasure(m *runtimev1.MetricsViewSpec_Measure, n *SelectNode) (string, error) {
+	// NOTE: m may be the metrics view's own spec measure, which is shared across queries, so it must never be mutated here.
+	expr := m.Expression
+	if m.ExactExpression != "" && a.exactMeasures[m.Name] {
+		expr = m.ExactExpression
+	}
+
 	// If not applying a window, just return the measure expression.
 	if m.Window == nil {
-		return m.Expression, nil
+		return expr, nil
 	}
 
 	// If partitioning is not enabled, ordering and framing doesn't matter
 	if !m.Window.Partition {
-		return fmt.Sprintf("%s OVER ()", m.Expression), nil
+		return fmt.Sprintf("%s OVER ()", expr), nil
 	}
 
 	// If partitioning is enabled, we partition by all dimensions that we don't order by.
@@ -1557,7 +1575,7 @@ func (a *AST) sqlForMeasure(m *runtimev1.MetricsViewSpec_Measure, n *SelectNode)
 
 	// Build the window expression
 	b := &strings.Builder{}
-	b.WriteString(m.Expression)
+	b.WriteString(expr)
 	b.WriteString(" OVER (")
 	if len(partitionFields) > 0 {
 		b.WriteString("PARTITION BY ")
