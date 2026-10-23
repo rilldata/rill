@@ -3,6 +3,7 @@ package duckdb
 import (
 	"context"
 	"fmt"
+	"os"
 	"strings"
 
 	"github.com/mitchellh/mapstructure"
@@ -65,9 +66,16 @@ func (e *sqlStoreToSelfExecutor) Execute(ctx context.Context, opts *drivers.Mode
 		return nil, fmt.Errorf("invalid input properties: %w", err)
 	}
 
+	// Holds files referenced by the input DSN, such as postgres certificates; DuckDB may open connections until execution finishes.
+	tempDir, err := e.c.storage.RandomTempDir("sqlstore-*")
+	if err != nil {
+		return nil, err
+	}
+	defer os.RemoveAll(tempDir)
+
 	// Build the model executor options with updated input properties
 	clone := *opts
-	newInputProps, err := e.modelInputProperties(opts.ModelName, opts.InputConnector, opts.InputHandle, inputProps)
+	newInputProps, err := e.modelInputProperties(opts.ModelName, opts.InputConnector, opts.InputHandle, inputProps, tempDir)
 	if err != nil {
 		return nil, err
 	}
@@ -84,7 +92,7 @@ func (e *sqlStoreToSelfExecutor) Execute(ctx context.Context, opts *drivers.Mode
 	return res, nil
 }
 
-func (e *sqlStoreToSelfExecutor) modelInputProperties(modelName, inputConnector string, inputHandle drivers.Handle, inputProps *sqlStoreToSelfInputProps) (map[string]any, error) {
+func (e *sqlStoreToSelfExecutor) modelInputProperties(modelName, inputConnector string, inputHandle drivers.Handle, inputProps *sqlStoreToSelfInputProps, tempDir string) (map[string]any, error) {
 	m := &ModelInputProperties{}
 	dbName := fmt.Sprintf("%s__%s", modelName, inputConnector)
 	safeDBName := safeName(dbName)
@@ -117,7 +125,11 @@ func (e *sqlStoreToSelfExecutor) modelInputProperties(modelName, inputConnector 
 			if err := mapstructure.WeakDecode(inputHandle.Config(), &config); err != nil {
 				return nil, err
 			}
-			dsn = config.ResolveDSN()
+			var err error
+			dsn, err = config.ResolveLibpqDSN(tempDir)
+			if err != nil {
+				return nil, err
+			}
 		}
 		if dsn == "" {
 			return nil, fmt.Errorf("must set `database_url` or `dsn` for models that transfer data from `postgres` to `duckdb`")

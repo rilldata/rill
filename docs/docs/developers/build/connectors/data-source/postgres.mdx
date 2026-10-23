@@ -137,8 +137,7 @@ sslkey_pem: "{{ .env.POSTGRES_SSLKEY }}"
 
 Set the variables through your [Cloud project credentials](/developers/deploy/deploy-credentials)
 or use `rill env push` to upload variables configured locally. Values can contain
-raw PEM text or standard base64-encoded PEM. The runtime loads these contents into
-memory; no certificate paths or filesystem mounts are needed in Rill Cloud.
+raw PEM text or standard base64-encoded PEM.
 
 - `sslrootcert_pem`: Contents of `root.crt`, used to verify the server certificate.
   Omit this to use the system trust roots.

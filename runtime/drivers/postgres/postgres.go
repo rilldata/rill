@@ -83,7 +83,7 @@ var spec = drivers.Spec{
 			Type:        drivers.StringPropertyType,
 			DisplayName: "SSL Mode",
 			Placeholder: "require",
-			Hint:        "Options include disable, allow, prefer, require, verify-ca, verify-full",
+			Hint:        "Options include disable, allow, prefer, require, verify-full",
 		},
 		{
 			Key:         "sslrootcert_pem",
@@ -170,7 +170,7 @@ var supabaseSpec = drivers.Spec{
 			DisplayName: "SSL Mode",
 			Placeholder: "require",
 			Default:     "require",
-			Hint:        "Options include disable, allow, prefer, require, verify-ca, verify-full",
+			Hint:        "Options include disable, allow, prefer, require, verify-full",
 		},
 		{
 			Key:         "sslrootcert_pem",
@@ -216,6 +216,7 @@ type ConfigProperties struct {
 	MaxOpenConns    int    `mapstructure:"max_open_conns"`
 	ConnMaxLifetime string `mapstructure:"conn_max_lifetime"`
 	LogQueries      bool   `mapstructure:"log_queries"`
+	AllowHostAccess bool   `mapstructure:"allow_host_access"`
 }
 
 func (c *ConfigProperties) Validate() error {
@@ -483,19 +484,12 @@ func (c *connection) getDB(ctx context.Context) (*sqlx.DB, error) {
 		return nil, c.dbErr
 	}
 
-	if c.config.hasCertificateContents() {
-		cfg, err := c.config.connectionConfig()
-		if err != nil {
-			c.dbErr = err
-			return nil, err
-		}
-		c.db = sqlx.NewDb(stdlib.OpenDB(*cfg), "pgx")
-	} else {
-		c.db, c.dbErr = sqlx.Open("pgx", c.config.ResolveDSN())
-	}
-	if c.dbErr != nil {
+	cfg, err := c.config.pgxConfig()
+	if err != nil {
+		c.dbErr = err
 		return nil, c.dbErr
 	}
+	c.db = sqlx.NewDb(stdlib.OpenDB(*cfg), "pgx")
 	c.db.SetMaxOpenConns(c.config.resolveMaxOpenConns())
 	c.db.SetConnMaxLifetime(connMaxLifetime)
 	c.db.SetConnMaxIdleTime(time.Minute)

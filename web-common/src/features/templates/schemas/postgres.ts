@@ -79,14 +79,7 @@ export const postgresSchema: MultiStepFormSchema = {
     sslmode: {
       type: "string",
       title: "SSL mode",
-      enum: [
-        "disable",
-        "allow",
-        "prefer",
-        "require",
-        "verify-ca",
-        "verify-full",
-      ],
+      enum: ["disable", "allow", "prefer", "require", "verify-full"],
       "x-placeholder": "Select SSL mode",
     },
     sslrootcert_pem: {
