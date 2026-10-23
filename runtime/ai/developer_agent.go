@@ -123,12 +123,13 @@ func (t *DeveloperAgent) Handler(ctx context.Context, args *DeveloperAgentArgs) 
 		DevelopFileName,
 		NavigateName,
 		ClickUIName,
-		UpdateMemoryName, // dropped automatically when memory is not available
+		UpdateMemoryName,        // dropped automatically when memory is not available
+		SearchExternalToolsName, // loads external tools on demand; dropped automatically when there are none
 	}
 	if len(skills) > 0 {
 		tools = append(tools, ListSkillsName, LoadSkillName)
 	}
-	tools = append(tools, s.ExternalToolNames(ctx, "developer")...)
+	tools = append(tools, loadedExternalTools(ctx, s, "developer")...)
 
 	// Run an LLM tool call loop
 	var response string
