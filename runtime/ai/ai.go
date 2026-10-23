@@ -1451,6 +1451,9 @@ func (s *Session) Complete(ctx context.Context, name string, out any, opts *Comp
 			// Add returned blocks as messages.
 			// Run the requested tool calls.
 			// TODO: How to do durable execution here?
+			// Tools loaded with search_external_tools are offered after the response is processed:
+			// later calls in the same response were made without their schemas.
+			var loaded []string
 			for _, block := range res.Message.Content {
 				switch block := block.BlockType.(type) {
 				case *aiv1.ContentBlock_Text:
@@ -1496,18 +1499,12 @@ func (s *Session) Complete(ctx context.Context, name string, out any, opts *Comp
 						}
 						// Fall through since it's a structured error that we can capture in the messages.
 					} else if block.ToolCall.Name == SearchExternalToolsName {
-						// Offer the loaded external tools from the next iteration on.
-						var loaded SearchExternalToolsResult
-						if err := json.Unmarshal([]byte(toolResult.Result.Content), &loaded); err != nil {
+						var found SearchExternalToolsResult
+						if err := json.Unmarshal([]byte(toolResult.Result.Content), &found); err != nil {
 							return nil, fmt.Errorf("failed to parse loaded external tools: %w", err)
 						}
-						for _, info := range loaded.Tools {
-							if offered[info.Name] {
-								continue
-							}
-							if err := offer(ctx, info.Name); err != nil {
-								return nil, err
-							}
+						for _, info := range found.Tools {
+							loaded = append(loaded, info.Name)
 						}
 					}
 					callMessage, err := s.NewCompletionMessage(toolResult.Call)
@@ -1521,6 +1518,14 @@ func (s *Session) Complete(ctx context.Context, name string, out any, opts *Comp
 					messages = append(messages, callMessage, resultMsg)
 				default:
 					return nil, fmt.Errorf("unexpected progress block type: %T", block)
+				}
+			}
+			for _, name := range loaded {
+				if offered[name] {
+					continue
+				}
+				if err := offer(ctx, name); err != nil {
+					return nil, err
 				}
 			}
 		}

@@ -284,7 +284,11 @@ security:
 	script := &scriptedAIService{turns: []turnFunc{
 		// Calling an external tool before loading it is refused.
 		toolCallTurn(deleteIssue, nil),
-		toolCallTurn(ai.SearchExternalToolsName, map[string]any{"query": "search issues"}),
+		// A loaded tool cannot be called in the same response as the search: the model has not seen its schema yet.
+		multiToolCallTurn(
+			toolCallTurn(ai.SearchExternalToolsName, map[string]any{"query": "search issues"}),
+			toolCallTurn(searchIssues, map[string]any{"query": "guessed"}),
+		),
 		// Tools of servers scoped to another agent are not found.
 		toolCallTurn(ai.SearchExternalToolsName, map[string]any{"names": []any{ai.ExternalToolName("devonly", "search_issues")}}),
 		toolCallTurn(searchIssues, map[string]any{"query": "bugs"}),
@@ -325,11 +329,13 @@ security:
 	require.Len(t, found.Tools, 1)
 	require.Equal(t, searchIssues, found.Tools[0].Name)
 	require.Equal(t, "Tracker", found.Tools[0].Server)
-	require.NoError(t, json.Unmarshal([]byte(results[2].Content), &found))
+	require.Equal(t, ai.MessageContentTypeError, results[2].ContentType)
+	require.Contains(t, results[2].Content, "not available")
+	require.NoError(t, json.Unmarshal([]byte(results[3].Content), &found))
 	require.Empty(t, found.Tools)
 	require.Equal(t, []string{ai.ExternalToolName("devonly", "search_issues")}, found.NotFound)
-	require.Equal(t, ai.MessageContentTypeJSON, results[3].ContentType)
-	require.Contains(t, results[3].Content, "results for bugs")
+	require.Equal(t, ai.MessageContentTypeJSON, results[4].ContentType)
+	require.Contains(t, results[4].Content, "results for bugs")
 
 	// Loaded tools stay offered in later turns.
 	_, err = session.CallTool(t.Context(), ai.RoleUser, ai.AnalystAgentName, nil, &ai.AnalystAgentArgs{Prompt: "again"})
@@ -459,6 +465,17 @@ func toolCallTurn(name string, input map[string]any) turnFunc {
 			Role:    "assistant",
 			Content: []*aiv1.ContentBlock{{BlockType: &aiv1.ContentBlock_ToolCall{ToolCall: &aiv1.ToolCall{Id: uuid.NewString(), Name: name, Input: in}}}},
 		}
+	}
+}
+
+// multiToolCallTurn makes the model call several tools in one response.
+func multiToolCallTurn(turns ...turnFunc) turnFunc {
+	return func(opts *drivers.CompleteOptions) *aiv1.CompletionMessage {
+		msg := &aiv1.CompletionMessage{Role: "assistant"}
+		for _, turn := range turns {
+			msg.Content = append(msg.Content, turn(opts).Content...)
+		}
+		return msg
 	}
 }
 
