@@ -5,6 +5,7 @@ import (
 	"time"
 
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
+	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
 	"google.golang.org/grpc/codes"
@@ -13,8 +14,8 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-func (h *Handle) GetReportMetadata(ctx context.Context, reportName, ownerID, webOpenMode string, emailRecipients []string, anonRecipients bool, executionTime time.Time) (*drivers.ReportMetadata, error) {
-	res, err := h.admin.GetReportMeta(ctx, &adminv1.GetReportMetaRequest{
+func (h *Handle) GetReportMetadata(ctx context.Context, reportName, ownerID, webOpenMode string, emailRecipients []string, anonRecipients bool, executionTime time.Time, queryForUserID, queryForUserEmail string, queryForAttributes map[string]any) (*drivers.ReportMetadata, error) {
+	req := &adminv1.GetReportMetaRequest{
 		ProjectId:       h.config.ProjectID,
 		Report:          reportName,
 		OwnerId:         ownerID,
@@ -28,20 +29,40 @@ func (h *Handle) GetReportMetadata(ctx context.Context, reportName, ownerID, web
 			},
 		},
 		WebOpenMode: webOpenMode,
-	})
+	}
+
+	if queryForUserID != "" {
+		req.QueryFor = &adminv1.GetReportMetaRequest_QueryForUserId{QueryForUserId: queryForUserID}
+	} else if queryForUserEmail != "" {
+		req.QueryFor = &adminv1.GetReportMetaRequest_QueryForUserEmail{QueryForUserEmail: queryForUserEmail}
+	} else if len(queryForAttributes) > 0 {
+		attrs, err := structpb.NewStruct(queryForAttributes)
+		if err != nil {
+			return nil, err
+		}
+		req.QueryFor = &adminv1.GetReportMetaRequest_QueryForAttributes{QueryForAttributes: attrs}
+	}
+
+	res, err := h.admin.GetReportMeta(ctx, req)
 	if err != nil {
 		return nil, err
 	}
 
 	delivery := make(map[string]drivers.ReportDelivery, len(res.DeliveryMeta))
 	for k, v := range res.DeliveryMeta {
+		resources := make([]*runtimev1.ResourceName, len(v.Resources))
+		for i, r := range v.Resources {
+			resources[i] = &runtimev1.ResourceName{Kind: r.Type, Name: r.Name}
+		}
 		delivery[k] = drivers.ReportDelivery{
-			OpenURL:        v.OpenUrl,
-			ExportURL:      v.ExportUrl,
-			EditURL:        v.EditUrl,
-			UnsubscribeURL: v.UnsubscribeUrl,
-			UserID:         v.UserId,
-			UserAttrs:      v.UserAttrs.AsMap(),
+			OpenURL:           v.OpenUrl,
+			ExportURL:         v.ExportUrl,
+			EditURL:           v.EditUrl,
+			UnsubscribeURL:    v.UnsubscribeUrl,
+			UserID:            v.UserId,
+			UserAttrs:         v.UserAttrs.AsMap(),
+			RestrictResources: v.RestrictResources,
+			Resources:         resources,
 		}
 	}
 

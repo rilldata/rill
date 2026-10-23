@@ -6,6 +6,7 @@ import {
   mapV1TimeRangeToSelectedComparisonTimeRange,
   mapV1TimeRangeToSelectedTimeRange,
 } from "@rilldata/web-common/features/dashboards/time-controls/time-range-mappers.ts";
+import { EmbedStore } from "@rilldata/web-common/features/embeds/embed-store.ts";
 import { getExploreName } from "@rilldata/web-common/features/explore-mappers/utils";
 import {
   getExistingScheduleFormValues,
@@ -57,7 +58,8 @@ export function getNewReportInitialFormValues(
     exportFormat: V1ExportFormat.EXPORT_FORMAT_CSV as V1ExportFormat,
     exportLimit: "",
     exportIncludeHeader: false,
-    exportAttach: false,
+    // Reports created from an embed are only delivered as an email attachment.
+    exportAttach: EmbedStore.isEmbedded(),
     pdfIncludeFilters: true,
     pdfAllTabs: true,
     ...extractNotification(undefined, userEmail, false),
@@ -91,7 +93,7 @@ export function getExistingReportInitialFormValues(
       reportSpec?.exportFormat ?? V1ExportFormat.EXPORT_FORMAT_UNSPECIFIED,
     exportLimit: reportSpec.exportLimit === "0" ? "" : reportSpec.exportLimit,
     exportIncludeHeader: reportSpec.exportIncludeHeader ?? false,
-    exportAttach: reportSpec.exportAttach ?? false,
+    exportAttach: EmbedStore.isEmbedded() || (reportSpec.exportAttach ?? false),
     ...pdfOptions,
     ...extractNotification(reportSpec.notifiers, userEmail, true),
     ...extractRowsAndColumns(aggregationRequest),

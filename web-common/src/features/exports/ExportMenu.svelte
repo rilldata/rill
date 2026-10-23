@@ -5,7 +5,10 @@
   import Export from "@rilldata/web-common/components/icons/Export.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
-  import { featureFlags } from "@rilldata/web-common/features/feature-flags";
+  import {
+    featureFlags,
+    reportsEnabled,
+  } from "@rilldata/web-common/features/feature-flags";
   import {
     createQueryServiceExportMutation,
     V1ExportFormat,
@@ -41,7 +44,7 @@
   }
 
   const exportDash = createQueryServiceExportMutation(runtimeClient);
-  const { reports, adminServer, exportHeader } = featureFlags;
+  const { adminServer, exportHeader } = featureFlags;
 
   async function handleExport(options: {
     format: V1ExportFormat;
@@ -70,11 +73,11 @@
     }
   }
 
-  // Only import the Scheduled Report dialog if in the Cloud context.
+  // Only import the Scheduled Report dialog if reports are available (Cloud or embed with an admin token).
   // This ensures Rill Developer doesn't try and fail to import the admin-client.
   let ScheduledReportDialog: typeof TScheduledReportDialog;
   onMount(async () => {
-    if (includeScheduledReport) {
+    if (includeScheduledReport && $reportsEnabled) {
       ({ default: ScheduledReportDialog } = await import(
         "../scheduled-reports/ScheduledReportDialog.svelte"
       ));
@@ -151,7 +154,7 @@
         Export as XLSX with metadata
       </DropdownMenu.Item>
     {/if}
-    {#if includeScheduledReport && $reports && exploreName}
+    {#if includeScheduledReport && $reportsEnabled && exploreName}
       <DropdownMenu.Item
         onclick={() => (showScheduledReportDialog = true)}
         disabled={!scheduledReportQuery}

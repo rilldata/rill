@@ -59,6 +59,34 @@ mock_users:
 	require.Equal(t, "bar", res.Variables[0].Default)
 }
 
+func TestRillYAMLEmbedOpenURL(t *testing.T) {
+	ctx := context.Background()
+
+	// Not set by default
+	repo := makeRepo(t, map[string]string{`rill.yaml`: ``})
+	res, err := ParseRillYAML(ctx, repo, "")
+	require.NoError(t, err)
+	require.Empty(t, res.EmbedOpenURL)
+
+	repo = makeRepo(t, map[string]string{`rill.yaml`: `
+embeds:
+  open_url: https://app.acme.com/analytics/open?tenant=foo
+`})
+	res, err = ParseRillYAML(ctx, repo, "")
+	require.NoError(t, err)
+	require.Equal(t, "https://app.acme.com/analytics/open?tenant=foo", res.EmbedOpenURL)
+
+	// Must be an absolute http(s) URL
+	repo = makeRepo(t, map[string]string{`rill.yaml`: `
+embeds:
+  open_url: /analytics/open
+`})
+	p, err := Parse(ctx, repo, "", "", "duckdb", false)
+	require.NoError(t, err)
+	require.Len(t, p.Errors, 1)
+	require.Contains(t, p.Errors[0].Message, `invalid property "embeds.open_url"`)
+}
+
 func TestRillYAMLFeatures(t *testing.T) {
 	tt := []struct {
 		yaml    string
@@ -1399,6 +1427,8 @@ query:
   name: MetricsViewToplist
   args:
     metrics_view: mv1
+  for:
+    user_email: benjamin@example.com
 
 export:
   format: csv
@@ -1461,6 +1491,10 @@ refresh:
 export:
   format: pdf
 
+for:
+  attributes:
+    domain: example.com
+
 notify:
   email:
     recipients:
@@ -1486,6 +1520,7 @@ annotations:
 					"query_name":      "MetricsViewToplist",
 					"query_args_json": "{\"metrics_view\":\"mv1\"}",
 				})),
+				QueryFor:            &runtimev1.ReportSpec_QueryForUserEmail{QueryForUserEmail: "benjamin@example.com"},
 				ExportFormat:        runtimev1.ExportFormat_EXPORT_FORMAT_CSV,
 				ExportIncludeHeader: true,
 				ExportLimit:         10000,
@@ -1535,6 +1570,9 @@ annotations:
 					Cron:     "0 * * * *",
 					TimeZone: "America/Los_Angeles",
 				},
+				QueryFor: &runtimev1.ReportSpec_QueryForAttributes{QueryForAttributes: must(structpb.NewStruct(map[string]any{
+					"domain": "example.com",
+				}))},
 				ExportFormat: runtimev1.ExportFormat_EXPORT_FORMAT_PDF,
 				Notifiers: []*runtimev1.Notifier{{
 					Connector:  "email",

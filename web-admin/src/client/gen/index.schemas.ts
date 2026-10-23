@@ -33,6 +33,10 @@ export interface GetReportMetaResponseDeliveryMeta {
   unsubscribeUrl?: string;
   userId?: string;
   userAttrs?: GetReportMetaResponseDeliveryMetaUserAttrs;
+  /** If true, the report's data must only be accessed through the resources listed in `resources`.
+Set for reports created from an embed that was limited to specific resources. */
+  restrictResources?: boolean;
+  resources?: V1ResourceName[];
 }
 
 export interface ListGithubUserReposResponseRepo {
@@ -2212,6 +2216,15 @@ Cannot be combined with `user_id`. If `user_email` matches a Rill Cloud user, th
   kind?: string;
   /** Name of the resource to embed. This should identify a resource that is valid for embedding, such as a dashboard or component. */
   resource?: string;
+  /** The `rill_open` query param of an open link from an email sent by a report or alert created from an embed.
+If set, the embed opens the report or alert's dashboard in the state it captured, and `type` is ignored.
+Cannot be combined with `resource`. */
+  open?: string;
+  /** Base URL for open links in emails sent by reports and alerts created from this embed.
+It should be a page that runs the embed integration and forwards the `rill_open` query param to `open`.
+Must be an absolute http(s) URL. If not set, the `embeds.open_url` property in `rill.yaml` is used.
+Only applies when `user_email` is set, since only those embeds can create reports and alerts. */
+  openUrl?: string;
   /** Theme to use for the embedded resource. */
   theme?: string;
   /** Theme mode to use for the embedded resource. Valid values: "light", "dark", "system". */
@@ -2504,6 +2517,10 @@ It is optional. If the call is made with a deployment access token, it defaults 
   superuserForceAccess?: boolean;
 };
 
+export type AdminServiceGetReportMetaBodyQueryForAttributes = {
+  [key: string]: unknown;
+};
+
 export type AdminServiceGetReportMetaBody = {
   report?: string;
   ownerId?: string;
@@ -2512,6 +2529,9 @@ export type AdminServiceGetReportMetaBody = {
   anonRecipients?: boolean;
   resources?: V1ResourceName[];
   webOpenMode?: string;
+  queryForUserId?: string;
+  queryForUserEmail?: string;
+  queryForAttributes?: AdminServiceGetReportMetaBodyQueryForAttributes;
   whereFilterJson?: string;
   accessibleFields?: string[];
 };

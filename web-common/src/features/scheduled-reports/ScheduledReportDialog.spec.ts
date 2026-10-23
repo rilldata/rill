@@ -28,6 +28,7 @@ import {
 } from "@rilldata/web-common/features/dashboards/stores/test-data/data";
 import ScheduledReportDialogTest from "@rilldata/web-common/features/scheduled-reports/test/ScheduledReportDialogTest.svelte";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
+import { EmbedStore } from "@rilldata/web-common/features/embeds/embed-store.ts";
 import { mockAnimationsForComponentTesting } from "@rilldata/web-common/lib/test/mock-animations";
 import {
   V1ExportFormat,
@@ -118,8 +119,24 @@ vi.mock("@rilldata/web-admin/client", async () => {
       readable({ mutateAsync: vi.fn(), error: null }),
     createAdminServiceEditReport: () =>
       readable({ mutateAsync: editReport, error: null }),
+    createAdminServiceDeleteReport: () =>
+      readable({ mutateAsync: vi.fn(), error: null }),
   };
 });
+
+// In an embed, the dialog saves with the embed's admin token instead.
+vi.mock(
+  "@rilldata/web-common/features/scheduled-reports/report-client-using-token.ts",
+  async () => {
+    const { readable } = await import("svelte/store");
+    return {
+      createAdminServiceEditReportUsingToken: () =>
+        readable({ mutateAsync: editReport, error: null }),
+      createAdminServiceDeleteReportUsingToken: () =>
+        readable({ mutateAsync: vi.fn(), error: null }),
+    };
+  },
+);
 
 const PUBLISHER_FILTER = createAndExpression([
   createInExpression(AD_BIDS_PUBLISHER_DIMENSION, ["Facebook", "Google"]),
@@ -278,5 +295,28 @@ describe("ScheduledReportDialog", () => {
     expect(checkbox).toBeDisabled();
 
     expect((await saveAndGetOptions()).exportAttach).toBe(false);
+  });
+
+  it("always attaches the export in an embed", async () => {
+    const isEmbedded = vi.spyOn(EmbedStore, "isEmbedded").mockReturnValue(true);
+    const getInstance = vi.spyOn(EmbedStore, "getInstance").mockReturnValue({
+      userEmail: "user@rilldata.com",
+      adminToken: "token",
+    } as EmbedStore);
+    try {
+      await openEditDialog(getReportSpec(undefined));
+
+      expect(screen.queryByLabelText("Attach file to emails")).toBeNull();
+      expect(
+        screen.getByText(
+          "The file is attached to emails if it is 10 MB or smaller.",
+        ),
+      ).toBeVisible();
+
+      expect((await saveAndGetOptions()).exportAttach).toBe(true);
+    } finally {
+      isEmbedded.mockRestore();
+      getInstance.mockRestore();
+    }
   });
 });

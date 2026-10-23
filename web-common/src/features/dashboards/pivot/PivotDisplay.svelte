@@ -42,7 +42,7 @@
     timeRangeSummaryStore,
   } = stateManagers;
 
-  const { adminServer, exports } = featureFlags;
+  const { exports } = featureFlags;
 
   const timeControlsStore = useTimeControlStore(stateManagers);
   $: timeControlsForPillActions = {
@@ -229,7 +229,7 @@
           {#if $exports}
             <ExportMenu
               label={m.dashboard_export_pivot_data()}
-              includeScheduledReport={$adminServer && exploreHasTimeDimension}
+              includeScheduledReport={exploreHasTimeDimension}
               getQuery={(isScheduled) =>
                 getPivotExportQuery(stateManagers, isScheduled)}
               exploreName={$exploreName}

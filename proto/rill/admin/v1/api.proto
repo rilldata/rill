@@ -1795,6 +1795,15 @@ message GetIFrameRequest {
   string kind = 4;
   // Name of the resource to embed. This should identify a resource that is valid for embedding, such as a dashboard or component.
   string resource = 5;
+  // The `rill_open` query param of an open link from an email sent by a report or alert created from an embed.
+  // If set, the embed opens the report or alert's dashboard in the state it captured, and `type` is ignored.
+  // Cannot be combined with `resource`.
+  string open = 20;
+  // Base URL for open links in emails sent by reports and alerts created from this embed.
+  // It should be a page that runs the embed integration and forwards the `rill_open` query param to `open`.
+  // Must be an absolute http(s) URL. If not set, the `embeds.open_url` property in `rill.yaml` is used.
+  // Only applies when `user_email` is set, since only those embeds can create reports and alerts.
+  string open_url = 19;
   // Theme to use for the embedded resource.
   string theme = 12;
   // Theme mode to use for the embedded resource. Valid values: "light", "dark", "system".
@@ -3140,6 +3149,11 @@ message GetReportMetaRequest {
   bool anon_recipients = 8;
   repeated ResourceName resources = 9;
   string web_open_mode = 10;
+  oneof query_for {
+    string query_for_user_id = 13;
+    string query_for_user_email = 14;
+    google.protobuf.Struct query_for_attributes = 15;
+  }
   string where_filter_json = 11 [deprecated = true];
   repeated string accessible_fields = 12 [deprecated = true];
   reserved 2, 4;
@@ -3153,6 +3167,10 @@ message GetReportMetaResponse {
     string unsubscribe_url = 4;
     string user_id = 5;
     google.protobuf.Struct user_attrs = 6; // user attributes of intended recipient, will be empty for creator mode and for non Rill users
+    // If true, the report's data must only be accessed through the resources listed in `resources`.
+    // Set for reports created from an embed that was limited to specific resources.
+    bool restrict_resources = 7;
+    repeated ResourceName resources = 8;
   }
   map<string, DeliveryMeta> delivery_meta = 2;
   reserved 1;

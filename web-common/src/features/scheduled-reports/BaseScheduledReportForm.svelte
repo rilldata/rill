@@ -4,7 +4,6 @@
   import InputLabel from "@rilldata/web-common/components/forms/InputLabel.svelte";
   import MultiInput from "@rilldata/web-common/components/forms/MultiInput.svelte";
   import FormSection from "@rilldata/web-common/components/forms/FormSection.svelte";
-  import { getHasSlackConnection } from "@rilldata/web-common/features/alerts/delivery-tab/notifiers-utils";
   import type { TimeControls } from "@rilldata/web-common/features/dashboards/stores/TimeControls.ts";
   import FiltersForm from "@rilldata/web-common/features/scheduled-reports/FiltersForm.svelte";
   import RowsAndColumnsForm from "@rilldata/web-common/features/scheduled-reports/fields/RowsAndColumnsForm.svelte";
@@ -15,7 +14,7 @@
   } from "@rilldata/web-common/features/scheduled-reports/utils";
   import { V1ExportFormat } from "@rilldata/web-common/runtime-client";
   import type { Readable } from "svelte/store";
-  import type { SuperFormErrors } from "sveltekit-superforms/client";
+  import type { SuperForm, SuperFormErrors } from "sveltekit-superforms/client";
   import Input from "../../components/forms/Input.svelte";
   import Select from "../../components/forms/Select.svelte";
   import Checkbox from "../../components/forms/Checkbox.svelte";
@@ -33,21 +32,40 @@
   import { specHasTabGroups } from "@rilldata/web-common/features/canvas/stores/tab-group";
   import type { EphemeralMeasureDef } from "@rilldata/web-common/features/dashboards/ephemeral-measures/types.ts";
   import type { V1Resource } from "@rilldata/web-common/runtime-client";
+  import { EmbedStore } from "@rilldata/web-common/features/embeds/embed-store.ts";
+  import type { ReportFormMetadataProvider } from "@rilldata/web-common/features/scheduled-reports/ReportFormMetadataProvider.ts";
 
-  export let formId: string;
-  export let data: Readable<ReportValues>;
-  export let errors: SuperFormErrors<ReportValues>;
-  export let submit: () => void;
-  export let enhance;
-  export let metricsViewName: string;
-  export let exploreName: string;
-  export let canvasName: string = "";
-  // Canvas state (URL search string) to display instead of the page URL; set when
-  // editing a report so the filter bar shows the report's captured state.
-  export let canvasStateOverride: string | undefined = undefined;
-  export let filters: ExpressionFilterManager | undefined = undefined;
-  export let timeControls: TimeControls | undefined = undefined;
-  export let ephemeralMeasures: EphemeralMeasureDef[] | undefined = undefined;
+  let {
+    formId,
+    data,
+    errors,
+    submit,
+    enhance,
+    metricsViewName,
+    exploreName,
+    canvasName = "",
+    canvasStateOverride,
+    filters,
+    timeControls,
+    ephemeralMeasures,
+    provider,
+  }: {
+    formId: string;
+    data: Readable<ReportValues>;
+    errors: SuperFormErrors<ReportValues>;
+    submit: () => void;
+    enhance: SuperForm<ReportValues>["enhance"];
+    metricsViewName: string;
+    exploreName: string;
+    canvasName?: string;
+    // Canvas state (URL search string) to display instead of the page URL; set when
+    // editing a report so the filter bar shows the report's captured state.
+    canvasStateOverride?: string;
+    filters?: ExpressionFilterManager;
+    timeControls?: TimeControls;
+    ephemeralMeasures?: EphemeralMeasureDef[];
+    provider: ReportFormMetadataProvider;
+  } = $props();
 
   const RUN_AS_OPTIONS = [
     {
@@ -62,46 +80,55 @@
     },
   ];
   const runtimeClient = useRuntimeClient();
+  // Reports created from an embed always run as the creator.
+  const isEmbedded = EmbedStore.isEmbedded();
 
-  $: selectedRunAsOption = RUN_AS_OPTIONS.find(
-    (o) => o.value === $data["webOpenMode"],
+  const selectedRunAsOption = $derived(
+    RUN_AS_OPTIONS.find((o) => o.value === $data["webOpenMode"]),
   );
 
   // Attachments are only supported when running as the creator, since every recipient then gets the same file.
   // Clear the option otherwise, so the form never holds a setting that will not be saved.
-  $: canAttach = $data["webOpenMode"] === ReportRunAs.Creator;
-  $: if (!canAttach && $data["exportAttach"]) $data["exportAttach"] = false;
-
-  $: hasSlackNotifier = getHasSlackConnection(runtimeClient);
+  const canAttach = $derived($data["webOpenMode"] === ReportRunAs.Creator);
+  $effect(() => {
+    if (!canAttach && $data["exportAttach"]) $data["exportAttach"] = false;
+  });
 
   // Pull the time zone options from the dashboard's spec
-  $: exploreSpecQuery = useExploreValidSpec(runtimeClient, exploreName);
-  $: canvasQuery = useResource<V1Resource>(
-    runtimeClient,
-    canvasName,
-    ResourceKind.Canvas,
+  const exploreSpecQuery = $derived(
+    useExploreValidSpec(runtimeClient, exploreName),
   );
-  $: availableTimeZones = canvasName
-    ? $canvasQuery.data?.canvas?.state?.validSpec?.timeZones
-    : $exploreSpecQuery.data?.explore?.timeZones;
+  const canvasQuery = $derived(
+    useResource<V1Resource>(runtimeClient, canvasName, ResourceKind.Canvas),
+  );
+  const availableTimeZones = $derived(
+    canvasName
+      ? $canvasQuery.data?.canvas?.state?.validSpec?.timeZones
+      : $exploreSpecQuery.data?.explore?.timeZones,
+  );
 
   // Gates the all-tabs option in the canvas PDF variant.
-  $: showTabOptions = specHasTabGroups(
-    $canvasQuery.data?.canvas?.state?.validSpec?.rows,
+  const showTabOptions = $derived(
+    specHasTabGroups($canvasQuery.data?.canvas?.state?.validSpec?.rows),
   );
-  $: canvasFiltersEnabled =
-    $canvasQuery.data?.canvas?.state?.validSpec?.filtersEnabled ?? true;
+  const canvasFiltersEnabled = $derived(
+    $canvasQuery.data?.canvas?.state?.validSpec?.filtersEnabled ?? true,
+  );
 
   // Reports render a canvas as the creator or as each recipient sees it, so point out content that only some viewers see.
-  $: conditionsCheck = useVisibilityConditionsCheck(
-    runtimeClient,
-    canvasName ? ($canvasQuery.data?.meta?.filePaths?.[0] ?? "") : "",
+  let conditionsCheck = $derived(
+    useVisibilityConditionsCheck(
+      runtimeClient,
+      canvasName ? ($canvasQuery.data?.meta?.filePaths?.[0] ?? "") : "",
+    ),
   );
-  $: visibilityNote = $conditionsCheck.data
-    ? $data["webOpenMode"] === ReportRunAs.Recipient
-      ? m.canvas_visibility_report_recipient_note()
-      : m.canvas_visibility_report_creator_note()
-    : "";
+  let visibilityNote = $derived(
+    $conditionsCheck.data
+      ? $data["webOpenMode"] === ReportRunAs.Recipient
+        ? m.canvas_visibility_report_recipient_note()
+        : m.canvas_visibility_report_creator_note()
+      : "",
+  );
 
   // Keyboard counterpart of the read-only filter bar's pointer-events guard:
   // its controls remain focusable, so kick focus back out to keep them inoperable.
@@ -129,17 +156,20 @@
       label={m.report_form_title_label()}
       placeholder={m.report_form_title_placeholder()}
     />
-    <Select
-      bind:value={$data["webOpenMode"]}
-      id="webOpenMode"
-      label={m.report_form_run_as()}
-      options={RUN_AS_OPTIONS}
-      dropdownWidth="w-[400px]"
-    />
-    {#if selectedRunAsOption}
-      <div>
-        {selectedRunAsOption.description}
-      </div>
+    <!-- TODO: Support other run as options in embed. They currently require recipients to be Rill project members. -->
+    {#if !isEmbedded}
+      <Select
+        bind:value={$data["webOpenMode"]}
+        id="webOpenMode"
+        label={m.report_form_run_as()}
+        options={RUN_AS_OPTIONS}
+        dropdownWidth="w-[400px]"
+      />
+      {#if selectedRunAsOption}
+        <div>
+          {selectedRunAsOption.description}
+        </div>
+      {/if}
     {/if}
     {#if visibilityNote}
       <div>
@@ -254,17 +284,24 @@
         label={m.report_form_include_metadata()}
         hint={m.report_form_metadata_tooltip()}
       />
-      <Checkbox
-        bind:checked={$data["exportAttach"]}
-        id="exportAttach"
-        onCheckedChange={(checked) => {
-          $data["exportAttach"] = Boolean(checked);
-        }}
-        inverse
-        disabled={!canAttach}
-        label={m.report_form_attach_file()}
-        hint={m.report_form_attach_file_hint()}
-      />
+      <!-- Reports created from an embed are only delivered as an email attachment, so the file is always attached. -->
+      {#if isEmbedded}
+        <div class="text-sm text-fg-secondary">
+          {m.report_form_attach_file_embed_note()}
+        </div>
+      {:else}
+        <Checkbox
+          bind:checked={$data["exportAttach"]}
+          id="exportAttach"
+          onCheckedChange={(checked) => {
+            $data["exportAttach"] = Boolean(checked);
+          }}
+          inverse
+          disabled={!canAttach}
+          label={m.report_form_attach_file()}
+          hint={m.report_form_attach_file_hint()}
+        />
+      {/if}
 
       {#if filters && timeControls}
         <div class="flex flex-col gap-y-3">
@@ -302,7 +339,7 @@
       plural="emails"
       placeholder={m.report_form_email_placeholder()}
     />
-    {#if $hasSlackNotifier.data}
+    {#if provider.hasSlackNotifier}
       <FormSection
         bind:enabled={$data["enableSlackNotification"]}
         showSectionToggle

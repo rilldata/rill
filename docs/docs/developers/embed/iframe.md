@@ -303,6 +303,8 @@ The API accepts the following parameters:
 | attributes       | Raw attributes about the end user. Used to populate attributes for use in security policies.                                                                                    | No (only one of `user_email` or `attributes` should be passed in) |
 | external_user_id | A stable identifier for an external end user. Enables per-user state.                                                                                                           | No                                                                |
 | ttl_seconds      | The time to live for the iframe URL                                                                                                                                             | No (Default: 86400)                                               |
+| open_url         | Absolute `http(s)` URL of a page in your application that opens links from report and alert emails. Applies to reports and alerts created from this embed and overrides `embeds.open_url` in `rill.yaml`. See [Open links in report and alert emails](#open-links-in-report-and-alert-emails). | No |
+| open             | The `rill_open` query parameter from a report or alert email link. Opens the dashboard in the state captured by the report or alert. See [Open links in report and alert emails](#open-links-in-report-and-alert-emails). | No (cannot be combined with `resource`) |
 
 
 The response of the POST request will then contain an `iframeSrc` value that can be used to embed the dashboard or set of dashboards in your application. It will also contain a `ttlSeconds` value, which indicates how long the iframe URL will be valid for. _After the TTL has elapsed_, the iframe URL needs to be refreshed as the underlying access token being used will no longer be valid (for security purposes). Here's an example response:
@@ -389,6 +391,64 @@ Your frontend should request an iframe URL from your backend API (which you set 
 ```
 
 Once the dashboard is embedded, the parent page can also read and write its UI state (selected resource, filters, time range, view type, and so on) using a `postMessage`-based API exposed by the iframe. See the [postMessage API](/developers/embed/postmessage) reference for details.
+
+## Open links in report and alert emails
+
+Users of an embedded dashboard can create scheduled reports and alerts.
+These are private to the user who created them: emails are only sent to the creator, and they don't include edit, download, or unsubscribe links.
+
+Since the embedded dashboard lives in your application, Rill can't link to it on its own.
+To include an **Open** link in these emails, give Rill the URL of a page in your application that runs your embed integration, such as `https://app.ezcommerce.com/analytics/open`.
+When a user clicks the link, they land on that page, which renders the embedded dashboard in the state captured by the report or alert.
+
+If no open URL is configured, the emails have no open link. Reports still attach the exported file.
+
+### Configure the open URL
+
+You can set a default open URL for the project in `rill.yaml`:
+
+```yaml
+embeds:
+  open_url: https://app.ezcommerce.com/analytics/open
+```
+
+You can also pass `open_url` when requesting the iframe URL for dashboards where users can create reports and alerts. This is useful when you serve different tenants on different domains. A per-embed `open_url` overrides the project default, and it is saved with each report or alert created from that embed:
+
+```json
+{
+  "type": "explore",
+  "resource": "dashboardName",
+  "user_email": "john@example.com",
+  "open_url": "https://app.ezcommerce.com/analytics/open"
+}
+```
+
+The open URL must be an absolute `http` or `https` URL. It can include its own query parameters; Rill keeps them and appends a `rill_open` parameter, for example:
+
+```
+https://app.ezcommerce.com/analytics/open?tenant=acme&rill_open=<value>
+```
+
+### Handle the open page
+
+On the open page:
+1. Authenticate the user with your own auth, as you do for other embedded dashboards.
+2. Read the `rill_open` query parameter from the URL, and pass it to your backend.
+3. On your backend, request an iframe URL with `open` set to the `rill_open` value. Use the same `user_email` that was used when the user created the report or alert; the report or alert is only accessible to its creator. Do not pass `resource`, since Rill resolves the dashboard from `open`.
+4. Render the returned `iframeSrc` in an iframe [as usual](#frontend-embed-the-dashboard).
+
+```json
+{
+  "user_email": "john@example.com",
+  "open": "<rill_open value>"
+}
+```
+
+You can combine `open` with other parameters such as `navigation`, `theme`, `theme_mode`, `attributes`, and `external_user_id`. When `navigation` is `false`, the iframe is limited to the report or alert and the dashboard it targets.
+
+:::note
+Treat the `rill_open` value as opaque and forward it to Rill unchanged. Its format may change over time.
+:::
 
 ## Appendix
 

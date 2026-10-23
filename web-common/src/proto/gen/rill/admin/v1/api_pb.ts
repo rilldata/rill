@@ -2819,6 +2819,25 @@ export class GetIFrameRequest extends Message<GetIFrameRequest> {
   resource = "";
 
   /**
+   * The `rill_open` query param of an open link from an email sent by a report or alert created from an embed.
+   * If set, the embed opens the report or alert's dashboard in the state it captured, and `type` is ignored.
+   * Cannot be combined with `resource`.
+   *
+   * @generated from field: string open = 20;
+   */
+  open = "";
+
+  /**
+   * Base URL for open links in emails sent by reports and alerts created from this embed.
+   * It should be a page that runs the embed integration and forwards the `rill_open` query param to `open`.
+   * Must be an absolute http(s) URL. If not set, the `embeds.open_url` property in `rill.yaml` is used.
+   * Only applies when `user_email` is set, since only those embeds can create reports and alerts.
+   *
+   * @generated from field: string open_url = 19;
+   */
+  openUrl = "";
+
+  /**
    * Theme to use for the embedded resource.
    *
    * @generated from field: string theme = 12;
@@ -2888,6 +2907,8 @@ export class GetIFrameRequest extends Message<GetIFrameRequest> {
     { no: 14, name: "type", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "kind", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 5, name: "resource", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 20, name: "open", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 19, name: "open_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 12, name: "theme", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 15, name: "theme_mode", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 13, name: "navigation", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
@@ -13602,6 +13623,29 @@ export class GetReportMetaRequest extends Message<GetReportMetaRequest> {
   webOpenMode = "";
 
   /**
+   * @generated from oneof rill.admin.v1.GetReportMetaRequest.query_for
+   */
+  queryFor: {
+    /**
+     * @generated from field: string query_for_user_id = 13;
+     */
+    value: string;
+    case: "queryForUserId";
+  } | {
+    /**
+     * @generated from field: string query_for_user_email = 14;
+     */
+    value: string;
+    case: "queryForUserEmail";
+  } | {
+    /**
+     * @generated from field: google.protobuf.Struct query_for_attributes = 15;
+     */
+    value: Struct;
+    case: "queryForAttributes";
+  } | { case: undefined; value?: undefined } = { case: undefined };
+
+  /**
    * @generated from field: string where_filter_json = 11 [deprecated = true];
    * @deprecated
    */
@@ -13629,6 +13673,9 @@ export class GetReportMetaRequest extends Message<GetReportMetaRequest> {
     { no: 8, name: "anon_recipients", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 9, name: "resources", kind: "message", T: ResourceName, repeated: true },
     { no: 10, name: "web_open_mode", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 13, name: "query_for_user_id", kind: "scalar", T: 9 /* ScalarType.STRING */, oneof: "query_for" },
+    { no: 14, name: "query_for_user_email", kind: "scalar", T: 9 /* ScalarType.STRING */, oneof: "query_for" },
+    { no: 15, name: "query_for_attributes", kind: "message", T: Struct, oneof: "query_for" },
     { no: 11, name: "where_filter_json", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 12, name: "accessible_fields", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
   ]);
@@ -13723,6 +13770,19 @@ export class GetReportMetaResponse_DeliveryMeta extends Message<GetReportMetaRes
    */
   userAttrs?: Struct;
 
+  /**
+   * If true, the report's data must only be accessed through the resources listed in `resources`.
+   * Set for reports created from an embed that was limited to specific resources.
+   *
+   * @generated from field: bool restrict_resources = 7;
+   */
+  restrictResources = false;
+
+  /**
+   * @generated from field: repeated rill.admin.v1.ResourceName resources = 8;
+   */
+  resources: ResourceName[] = [];
+
   constructor(data?: PartialMessage<GetReportMetaResponse_DeliveryMeta>) {
     super();
     proto3.util.initPartial(data, this);
@@ -13737,6 +13797,8 @@ export class GetReportMetaResponse_DeliveryMeta extends Message<GetReportMetaRes
     { no: 4, name: "unsubscribe_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 5, name: "user_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 6, name: "user_attrs", kind: "message", T: Struct },
+    { no: 7, name: "restrict_resources", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 8, name: "resources", kind: "message", T: ResourceName, repeated: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetReportMetaResponse_DeliveryMeta {

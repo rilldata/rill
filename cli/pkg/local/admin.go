@@ -85,7 +85,7 @@ func (l *localAdminService) GetConfig(ctx context.Context) (*drivers.Config, err
 }
 
 // GetReportMetadata implements drivers.AdminService.
-func (l *localAdminService) GetReportMetadata(ctx context.Context, reportName, ownerID, webOpenMode string, emailRecipients []string, anonRecipients bool, executionTime time.Time) (*drivers.ReportMetadata, error) {
+func (l *localAdminService) GetReportMetadata(ctx context.Context, reportName, ownerID, webOpenMode string, emailRecipients []string, anonRecipients bool, executionTime time.Time, queryForUserID, queryForUserEmail string, queryForAttributes map[string]any) (*drivers.ReportMetadata, error) {
 	return nil, drivers.ErrNotImplemented
 }
 

@@ -33,6 +33,20 @@ type SetValidStateParams = {
   failOnError?: boolean;
 };
 
+type NavigateParams =
+  | {
+      type: "page";
+      name: "home" | "reports";
+    }
+  | {
+      type: "explore";
+      name: string;
+    }
+  | {
+      type: "canvas";
+      name: string;
+    };
+
 export default function initEmbedPublicAPI(client: RuntimeClient): () => void {
   const embedThemeStore = getEmbedThemeStoreInstance();
 
@@ -119,6 +133,23 @@ export default function initEmbedPublicAPI(client: RuntimeClient): () => void {
       appliedState: currentUrl.search.replace(/^\?/, ""),
       errors: errorMessages,
     };
+  });
+
+  registerRPCMethod("navigate", async (params: NavigateParams) => {
+    // Do not block if navigate=false. This is meant for that specific use case.
+
+    switch (params.type) {
+      case "page": {
+        const page = params.name === "home" ? "" : "/" + params.name;
+        return goto(`/-/embed${page}`);
+      }
+
+      case "explore":
+        return goto(`/-/embed/explore/${params.name}`);
+
+      case "canvas":
+        return goto(`/-/embed/canvas/${params.name}`);
+    }
   });
 
   registerRPCMethod("getThemeMode", () => {
@@ -237,6 +268,7 @@ const EmbedParams = [
   "instance_id",
   "runtime_host",
   "access_token",
+  "admin_token",
   "resource",
   "type",
   "kind",
@@ -244,7 +276,9 @@ const EmbedParams = [
   "hide_navigation_bar",
   "theme",
   "theme_mode",
+  "user_email",
   "external_user_id",
+  "open",
 ];
 export function removeEmbedParams(searchParams: URLSearchParams) {
   const cleanedParams = new URLSearchParams(searchParams);

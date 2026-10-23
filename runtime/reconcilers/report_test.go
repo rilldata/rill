@@ -2,6 +2,7 @@ package reconcilers_test
 
 import (
 	"context"
+	"regexp"
 	"strings"
 	"testing"
 	"time"
@@ -10,6 +11,7 @@ import (
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/email"
+	"github.com/rilldata/rill/runtime/pkg/embedopen"
 	"github.com/rilldata/rill/runtime/testruntime"
 	"github.com/stretchr/testify/require"
 )
@@ -276,7 +278,7 @@ annotations:
 
 func TestReportExportAttach(t *testing.T) {
 	rt, id := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
-		AdminService: &creatorModeAdmin{ownerAttrs: map[string]any{"domain": "example.com"}},
+		AdminService: &creatorModeAdmin{userAttrs: map[string]map[string]any{"owner": {"domain": "example.com"}}},
 		Files: map[string]string{
 			"rill.yaml": "",
 			"models/bar.sql": `
@@ -351,25 +353,83 @@ notify:
 annotations:
   web_open_mode: creator
 `,
+			// Without an owner, the export is run with the "for" identity
+			"reports/r3.yaml": `
+type: report
+display_name: Report for identity
+for:
+  user_email: someone@example.com
+query:
+  name: MetricsViewAggregation
+  args:
+    metrics_view: mv1
+    dimensions:
+    - name: country
+    measures:
+    - name: total
+  for:
+    user_email: someone@example.com
+export:
+  format: csv
+  attach: true
+notify:
+  email:
+    recipients:
+    - user_1@example.com
+annotations:
+  web_open_mode: creator
+`,
+			// Reports created from an embed are run for the embed user's email,
+			// and have no open link when neither the embed nor rill.yaml configures an open URL
+			"reports/r4.yaml": `
+type: report
+display_name: Report from embed
+for:
+  user_email: embed@other.com
+query:
+  name: MetricsViewAggregation
+  args:
+    metrics_view: mv1
+    dimensions:
+    - name: country
+    measures:
+    - name: total
+  for:
+    user_email: embed@other.com
+export:
+  format: csv
+  attach: true
+notify:
+  email:
+    recipients:
+    - embed@other.com
+annotations:
+  admin_owner_user_email: embed@other.com
+  web_open_mode: creator
+  explore: e1
+`,
 		},
 	})
-	testruntime.RequireReconcileState(t, rt, id, 6, 0, 0)
+	testruntime.RequireReconcileState(t, rt, id, 8, 0, 0)
 
-	testruntime.RefreshAndWait(t, rt, id, &runtimev1.ResourceName{Kind: runtime.ResourceKindReport, Name: "r1"})
-	testruntime.RefreshAndWait(t, rt, id, &runtimev1.ResourceName{Kind: runtime.ResourceKindReport, Name: "r2"})
-
-	r1 := testruntime.GetResource(t, rt, id, runtime.ResourceKindReport, "r1")
-	require.Len(t, r1.GetReport().State.ExecutionHistory, 1)
-	require.Empty(t, r1.GetReport().State.ExecutionHistory[0].ErrorMessage)
-	require.Empty(t, r1.GetReport().State.ExecutionHistory[0].Warnings)
+	for _, name := range []string{"r1", "r2", "r3", "r4"} {
+		testruntime.RefreshAndWait(t, rt, id, &runtimev1.ResourceName{Kind: runtime.ResourceKindReport, Name: name})
+		if name == "r2" {
+			continue
+		}
+		r := testruntime.GetResource(t, rt, id, runtime.ResourceKindReport, name)
+		require.Len(t, r.GetReport().State.ExecutionHistory, 1)
+		require.Empty(t, r.GetReport().State.ExecutionHistory[0].ErrorMessage)
+		require.Empty(t, r.GetReport().State.ExecutionHistory[0].Warnings)
+	}
 
 	r2 := testruntime.GetResource(t, rt, id, runtime.ResourceKindReport, "r2")
 	require.Len(t, r2.GetReport().State.ExecutionHistory, 1)
 	require.Empty(t, r2.GetReport().State.ExecutionHistory[0].ErrorMessage)
-	require.Equal(t, []string{"The export was not attached to emails because the report has no owner"}, r2.GetReport().State.ExecutionHistory[0].Warnings)
+	require.Equal(t, []string{"The export was not attached to emails because the report has no owner or identity to run as"}, r2.GetReport().State.ExecutionHistory[0].Warnings)
 
 	emails := rt.Email.Sender.(*email.TestSender).Emails
-	require.Len(t, emails, 3)
+	require.Len(t, emails, 5)
 	var recipients []string
 	for _, e := range emails {
 		switch {
@@ -384,6 +444,18 @@ annotations:
 			require.Equal(t, "user_1@example.com", e.ToEmail)
 			require.NotContains(t, e.Body, "The CSV file is attached.")
 			require.Empty(t, e.Attachments)
+		case strings.HasPrefix(e.Subject, "Report for identity"):
+			require.Equal(t, "user_1@example.com", e.ToEmail)
+			require.Len(t, e.Attachments, 1)
+			require.Equal(t, "Country,Total\nDenmark,1\n", string(e.Attachments[0].Data))
+			require.Contains(t, e.Body, "https://example.com/open")
+		case strings.HasPrefix(e.Subject, "Report from embed"):
+			require.Equal(t, "embed@other.com", e.ToEmail)
+			require.Contains(t, e.Body, "is ready.")
+			require.Contains(t, e.Body, "The CSV file is attached.")
+			require.Len(t, e.Attachments, 1)
+			require.Equal(t, "Country,Total\nSweden,1\n", string(e.Attachments[0].Data))
+			require.NotContains(t, e.Body, "https://example.com/")
 		default:
 			require.Fail(t, "unexpected email", e.Subject)
 		}
@@ -391,9 +463,127 @@ annotations:
 	require.ElementsMatch(t, []string{"user_1@example.com", "user_2@example.com"}, recipients)
 }
 
+func TestReportExportAttachRestrictedResources(t *testing.T) {
+	e1 := []*runtimev1.ResourceName{{Kind: runtime.ResourceKindExplore, Name: "e1"}}
+	rt, id := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
+		AdminService: &creatorModeAdmin{resources: map[string][]*runtimev1.ResourceName{"r1": e1, "r2": e1}},
+		Files: map[string]string{
+			"rill.yaml": "",
+			"models/bar.sql": `
+SELECT * FROM (VALUES
+	('2024-01-01T00:00:00Z'::TIMESTAMP, 'Denmark')
+) AS t(__time, country)
+`,
+			"metrics/mv1.yaml": `
+version: 1
+type: metrics_view
+model: bar
+timeseries: __time
+dimensions:
+- column: country
+measures:
+- name: total
+  expression: count(*)
+`,
+			"metrics/mv2.yaml": `
+version: 1
+type: metrics_view
+model: bar
+timeseries: __time
+dimensions:
+- column: country
+measures:
+- name: total
+  expression: count(*)
+`,
+			"explores/e1.yaml": `
+type: explore
+metrics_view: mv1
+`,
+			"explores/e2.yaml": `
+type: explore
+metrics_view: mv2
+`,
+			// Queries the metrics view of the explore it is restricted to
+			"reports/r1.yaml": `
+type: report
+display_name: Report on allowed metrics view
+for:
+  user_email: embed@example.com
+query:
+  name: MetricsViewAggregation
+  args:
+    metrics_view: mv1
+    dimensions:
+    - name: country
+    measures:
+    - name: total
+  for:
+    user_email: embed@example.com
+export:
+  format: csv
+  attach: true
+notify:
+  email:
+    recipients:
+    - embed@example.com
+annotations:
+  admin_owner_user_email: embed@example.com
+  web_open_mode: creator
+  explore: e1
+`,
+			// Queries a metrics view outside the explore it is restricted to
+			"reports/r2.yaml": `
+type: report
+display_name: Report on other metrics view
+for:
+  user_email: embed@example.com
+query:
+  name: MetricsViewAggregation
+  args:
+    metrics_view: mv2
+    dimensions:
+    - name: country
+    measures:
+    - name: total
+  for:
+    user_email: embed@example.com
+export:
+  format: csv
+  attach: true
+notify:
+  email:
+    recipients:
+    - embed@example.com
+annotations:
+  admin_owner_user_email: embed@example.com
+  web_open_mode: creator
+  explore: e1
+`,
+		},
+	})
+	testruntime.RequireReconcileState(t, rt, id, 8, 0, 0)
+
+	testruntime.RefreshAndWait(t, rt, id, &runtimev1.ResourceName{Kind: runtime.ResourceKindReport, Name: "r1"})
+	r1 := testruntime.GetResource(t, rt, id, runtime.ResourceKindReport, "r1")
+	require.Len(t, r1.GetReport().State.ExecutionHistory, 1)
+	require.Empty(t, r1.GetReport().State.ExecutionHistory[0].ErrorMessage)
+
+	testruntime.RefreshAndWait(t, rt, id, &runtimev1.ResourceName{Kind: runtime.ResourceKindReport, Name: "r2"})
+	r2 := testruntime.GetResource(t, rt, id, runtime.ResourceKindReport, "r2")
+	require.NotEmpty(t, r2.GetReport().State.ExecutionHistory)
+	require.Contains(t, r2.GetReport().State.ExecutionHistory[0].ErrorMessage, "failed to export attachment: action not allowed")
+
+	emails := rt.Email.Sender.(*email.TestSender).Emails
+	require.Len(t, emails, 1)
+	require.True(t, strings.HasPrefix(emails[0].Subject, "Report on allowed metrics view"))
+	require.Len(t, emails[0].Attachments, 1)
+	require.Equal(t, "Country,Total\nDenmark,1\n", string(emails[0].Attachments[0].Data))
+}
+
 func TestReportExportAttachTooLarge(t *testing.T) {
 	rt, id := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
-		AdminService: &creatorModeAdmin{},
+		AdminService: &creatorModeAdmin{userAttrs: map[string]map[string]any{"owner": {"email": "owner@example.com"}}},
 		Files: map[string]string{
 			"rill.yaml": "",
 			// Exports to a CSV file of more than 10 MB
@@ -434,11 +624,40 @@ notify:
 annotations:
   admin_owner_user_id: owner
 `,
+			// Reports created from an embed have no download link to fall back to
+			"reports/r2.yaml": `
+type: report
+display_name: Large embed report
+for:
+  user_email: embed@example.com
+query:
+  name: MetricsViewAggregation
+  args:
+    metrics_view: mv1
+    dimensions:
+    - name: id
+    - name: padding
+    measures:
+    - name: total
+  for:
+    user_email: embed@example.com
+export:
+  format: csv
+  attach: true
+notify:
+  email:
+    recipients:
+    - embed@example.com
+annotations:
+  admin_owner_user_email: embed@example.com
+  web_open_mode: creator
+`,
 		},
 	})
-	testruntime.RequireReconcileState(t, rt, id, 4, 0, 0)
+	testruntime.RequireReconcileState(t, rt, id, 5, 0, 0)
 
 	testruntime.RefreshAndWait(t, rt, id, &runtimev1.ResourceName{Kind: runtime.ResourceKindReport, Name: "r1"})
+	testruntime.RefreshAndWait(t, rt, id, &runtimev1.ResourceName{Kind: runtime.ResourceKindReport, Name: "r2"})
 
 	// The report is still sent, but without the attachment
 	r1 := testruntime.GetResource(t, rt, id, runtime.ResourceKindReport, "r1")
@@ -446,36 +665,183 @@ annotations:
 	require.Empty(t, r1.GetReport().State.ExecutionHistory[0].ErrorMessage)
 	require.Equal(t, []string{"The export was not attached to emails because it is larger than 10 MB"}, r1.GetReport().State.ExecutionHistory[0].Warnings)
 
+	r2 := testruntime.GetResource(t, rt, id, runtime.ResourceKindReport, "r2")
+	require.Len(t, r2.GetReport().State.ExecutionHistory, 1)
+	require.Empty(t, r2.GetReport().State.ExecutionHistory[0].ErrorMessage)
+	require.Equal(t, []string{"The export was not attached to emails because it is larger than 10 MB"}, r2.GetReport().State.ExecutionHistory[0].Warnings)
+
 	emails := rt.Email.Sender.(*email.TestSender).Emails
-	require.Len(t, emails, 1)
-	require.Contains(t, emails[0].Body, "The CSV file is too large to attach to this email")
-	require.Contains(t, emails[0].Body, "https://example.com/export")
-	require.Empty(t, emails[0].Attachments)
+	require.Len(t, emails, 2)
+	for _, e := range emails {
+		require.Empty(t, e.Attachments)
+		switch {
+		case strings.HasPrefix(e.Subject, "Large report"):
+			require.Contains(t, e.Body, "The CSV file is too large to attach to this email, but you can download it below.")
+			require.Contains(t, e.Body, "https://example.com/export")
+		case strings.HasPrefix(e.Subject, "Large embed report"):
+			require.Contains(t, e.Body, "The CSV file is too large to attach to this email. Try lowering the row limit of the report.")
+			require.NotContains(t, e.Body, "https://example.com/")
+		default:
+			require.Fail(t, "unexpected email", e.Subject)
+		}
+	}
+}
+
+func TestReportEmbedOpenLink(t *testing.T) {
+	report := func(displayName, openURL string) string {
+		res := `
+type: report
+display_name: ` + displayName + `
+for:
+  user_email: embed@other.com
+query:
+  name: MetricsViewAggregation
+  args:
+    metrics_view: mv1
+    dimensions:
+    - name: country
+    measures:
+    - name: total
+  for:
+    user_email: embed@other.com
+export:
+  format: csv
+  attach: true
+notify:
+  email:
+    recipients:
+    - embed@other.com
+annotations:
+  admin_owner_user_email: embed@other.com
+  web_open_mode: creator
+  explore: e1
+`
+		if openURL != "" {
+			res += "  admin_embed_open_url: " + openURL + "\n"
+		}
+		return res
+	}
+
+	rt, id := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
+		AdminService: &creatorModeAdmin{},
+		Files: map[string]string{
+			"rill.yaml": `
+embeds:
+  open_url: https://default.example.org/open?tenant=foo
+`,
+			"models/bar.sql": `
+SELECT '2024-01-01T00:00:00Z'::TIMESTAMP AS __time, 'Denmark' AS country
+`,
+			"metrics/mv1.yaml": `
+version: 1
+type: metrics_view
+model: bar
+timeseries: __time
+dimensions:
+- column: country
+measures:
+- name: total
+  expression: count(*)
+`,
+			"explores/e1.yaml": `
+type: explore
+metrics_view: mv1
+`,
+			// The open URL of the embed that created the report takes precedence
+			"reports/r1.yaml": report("Report with embed open URL", "https://embed.example.org/open"),
+			// Without it, the open URL from rill.yaml is used
+			"reports/r2.yaml": report("Report with default open URL", ""),
+		},
+	})
+	testruntime.RequireReconcileState(t, rt, id, 6, 0, 0)
+
+	testruntime.RefreshAndWait(t, rt, id, &runtimev1.ResourceName{Kind: runtime.ResourceKindReport, Name: "r1"})
+	testruntime.RefreshAndWait(t, rt, id, &runtimev1.ResourceName{Kind: runtime.ResourceKindReport, Name: "r2"})
+
+	emails := rt.Email.Sender.(*email.TestSender).Emails
+	require.Len(t, emails, 2)
+	for _, e := range emails {
+		require.Equal(t, "embed@other.com", e.ToEmail)
+		require.Len(t, e.Attachments, 1)
+		require.Contains(t, e.Body, "is ready to view.")
+		// No links to Rill Cloud, and no edit, download or unsubscribe links
+		require.NotContains(t, e.Body, "https://example.com/")
+		require.NotContains(t, e.Body, "To edit this report")
+		require.NotContains(t, e.Body, "To unsubscribe")
+
+		var name string
+		switch {
+		case strings.HasPrefix(e.Subject, "Report with embed open URL"):
+			name = "r1"
+			require.Contains(t, e.Body, "https://embed.example.org/open?rill_open=")
+		case strings.HasPrefix(e.Subject, "Report with default open URL"):
+			name = "r2"
+			require.Contains(t, e.Body, "https://default.example.org/open?")
+			require.Contains(t, e.Body, "tenant=foo")
+		default:
+			require.Fail(t, "unexpected email", e.Subject)
+		}
+		p := requireEmbedOpenPayload(t, e.Body)
+		require.Equal(t, embedopen.KindReport, p.Kind)
+		require.Equal(t, name, p.Name)
+		require.False(t, p.ExecutionTime.IsZero())
+	}
+}
+
+// requireEmbedOpenPayload extracts and decodes the "rill_open" param of the open link in an email body.
+func requireEmbedOpenPayload(t *testing.T, body string) *embedopen.Payload {
+	m := regexp.MustCompile(`rill_open=([A-Za-z0-9_-]+)`).FindStringSubmatch(body)
+	require.NotNil(t, m, "no open link in email body")
+	p, err := embedopen.Decode(m[1])
+	require.NoError(t, err)
+	return p
 }
 
 // creatorModeAdmin is an admin service that returns report metadata the way the admin service does for reports run as the creator:
-// every recipient's delivery has the report owner's user ID and attributes.
+// every recipient's delivery has the user ID and attributes of the "for" identity if set, or else of the report owner.
 type creatorModeAdmin struct {
-	drivers.AdminService // Not implemented; calls to methods that are not overridden panic
-	ownerAttrs           map[string]any
+	drivers.AdminService                                      // Not implemented; calls to methods that are not overridden panic
+	userAttrs            map[string]map[string]any            // User ID -> attributes
+	resources            map[string][]*runtimev1.ResourceName // Report name -> resources the report's data is restricted to
 }
 
 func (a *creatorModeAdmin) GetConfig(ctx context.Context) (*drivers.Config, error) {
 	return &drivers.Config{}, nil
 }
 
-func (a *creatorModeAdmin) GetReportMetadata(ctx context.Context, reportName, ownerID, webOpenMode string, emailRecipients []string, anonRecipients bool, executionTime time.Time) (*drivers.ReportMetadata, error) {
+func (a *creatorModeAdmin) GetReportMetadata(ctx context.Context, reportName, ownerID, webOpenMode string, emailRecipients []string, anonRecipients bool, executionTime time.Time, queryForUserID, queryForUserEmail string, queryForAttributes map[string]any) (*drivers.ReportMetadata, error) {
+	var userID string
 	var attrs map[string]any
-	if ownerID != "" {
-		attrs = a.ownerAttrs
+	switch {
+	case queryForUserID != "":
+		userID = queryForUserID
+		attrs = a.userAttrs[queryForUserID]
+	case queryForUserEmail != "":
+		// Like the admin service, presents an email that doesn't belong to a Rill user as a non-admin user
+		attrs = map[string]any{
+			"email":  queryForUserEmail,
+			"domain": queryForUserEmail[strings.LastIndex(queryForUserEmail, "@")+1:],
+			"admin":  false,
+		}
+	case len(queryForAttributes) > 0:
+		attrs = queryForAttributes
+	case ownerID != "":
+		userID = ownerID
+		attrs = a.userAttrs[ownerID]
 	}
+
+	resources, restrict := a.resources[reportName]
 	delivery := make(map[string]drivers.ReportDelivery)
 	for _, recipient := range emailRecipients {
 		delivery[recipient] = drivers.ReportDelivery{
-			OpenURL:   "https://example.com/open",
-			ExportURL: "https://example.com/export",
-			UserID:    ownerID,
-			UserAttrs: attrs,
+			OpenURL:           "https://example.com/open",
+			ExportURL:         "https://example.com/export",
+			EditURL:           "https://example.com/edit",
+			UnsubscribeURL:    "https://example.com/unsubscribe",
+			UserID:            userID,
+			UserAttrs:         attrs,
+			RestrictResources: restrict,
+			Resources:         resources,
 		}
 	}
 	return &drivers.ReportMetadata{ReportDelivery: delivery}, nil
