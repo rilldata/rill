@@ -166,6 +166,8 @@ _[object]_ - A map of key-value pairs for setting variables on your project. It 
 
   - **`rill.metrics.approximate_comparisons_two_phase_limit`** - _[integer]_ - Row-limit threshold under which metrics comparison queries use a two-phase strategy (base values first, comparison values second). Default: 250.
 
+  - **`rill.metrics.exact_measures`** - _[boolean]_ - Allow queries to compute measures with their `exact_expression` when requested (per measure, with `exact: true`). When false, any query that would compute a measure exactly fails with an error; a flag on a measure without an `exact_expression` stays a no-op. Acts as a kill switch for expensive exact aggregations. Default: true.
+
   - **`rill.metrics.exactify_druid_topn`** - _[boolean]_ - Split Druid TopN queries into two queries to improve measure accuracy, at the cost of performance. Default: false.
 
   - **`rill.metrics.druid_mvd_filtered_group_by`** - _[boolean]_ - Narrow unnested (multi-value) dimensions to the filtered values when grouping in Druid, so results contain only the filtered values rather than every value co-occurring in matching rows. Default: false.

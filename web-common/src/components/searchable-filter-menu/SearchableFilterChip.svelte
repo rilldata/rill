@@ -10,6 +10,8 @@
   export let selectableItems: SearchableFilterSelectableItem[];
   export let selectedItems: string[];
   export let tooltipText: string;
+  // Hide the tooltip, for example while a child in the `additional-label` slot shows its own.
+  export let suppressTooltip = false;
   export let label: string;
   export let onSelect: (name: string) => void;
   // When set, ephemeral items in the menu get an edit button that closes the
@@ -35,7 +37,7 @@
         alignment="start"
         distance={8}
         location="bottom"
-        suppress={open}
+        suppress={open || suppressTooltip}
       >
         <Chip {...props} theme type="measure" active={open} {label}>
           <div slot="body" class="flex items-center gap-x-1 font-bold">

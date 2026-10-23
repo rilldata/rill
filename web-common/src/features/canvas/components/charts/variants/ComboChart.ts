@@ -117,7 +117,7 @@ export class ComboChartComponent extends BaseChart<ComboCanvasChartSpec> {
   constructor(resource: V1Resource, parent: CanvasEntity, path: ComponentPath) {
     super(resource, parent, path);
 
-    this.provider = new ComboChartProvider(this.specStore, {
+    this.provider = new ComboChartProvider(this.querySpecStore, {
       nominalLimit: DEFAULT_NOMINAL_LIMIT,
       sort: DEFAULT_SORT,
     });

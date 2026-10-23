@@ -8,6 +8,8 @@
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import TooltipShortcutContainer from "@rilldata/web-common/components/tooltip/TooltipShortcutContainer.svelte";
   import TooltipTitle from "@rilldata/web-common/components/tooltip/TooltipTitle.svelte";
+  import type { PrecisionChipProps } from "@rilldata/web-common/features/dashboards/exact-measures/exact-measures";
+  import PrecisionChip from "@rilldata/web-common/features/dashboards/exact-measures/PrecisionChip.svelte";
   import { SortDirection } from "@rilldata/web-common/features/dashboards/proto-state/derived-types";
   import {
     copyToClipboard,
@@ -31,6 +33,11 @@
   export let enableSorting = true;
   export let isSelected = false;
   export let sorted: SortDirection | undefined = undefined;
+  // Precision chip rendered after the label for measures with an exact variant.
+  export let precision: PrecisionChipProps | undefined = undefined;
+
+  // The precision chip has its own tooltip; the header tooltip hides while it is hovered.
+  let chipHovered = false;
   export let onResizeColumn: (size: number, name: string) => void = () => {};
   export let onResetColumnWidth: (name: string) => void = () => {};
   export let onClickColumn: (name: string) => void;
@@ -82,7 +89,12 @@
            {isDimensionTable ? '' : 'items-center gap-x-2'}
            "
   >
-    <Tooltip location="top" alignment="middle" distance={16}>
+    <Tooltip
+      location="top"
+      alignment="middle"
+      distance={16}
+      suppress={chipHovered}
+    >
       <div
         class="
         grid
@@ -109,6 +121,14 @@
             </div>
           {:else}
             {name}
+          {/if}
+          {#if precision}
+            <span class="inline-flex align-middle relative -top-px ml-1">
+              <PrecisionChip
+                {...precision}
+                onHoverChange={(hovered) => (chipHovered = hovered)}
+              />
+            </span>
           {/if}
         </span>
       </div>
