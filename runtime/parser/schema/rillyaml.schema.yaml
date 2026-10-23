@@ -191,6 +191,9 @@ allOf:
           rill.alerts.fast_streaming_refresh_cron:
             type: string
             description: "Cron expression for refreshing streaming alerts on always-on OLAP connectors. Default: `*/10 * * * *` (every 10 minutes)."
+          rill.health.make_live_queries:
+            type: boolean
+            description: "Run live queries against the OLAP (including pings) during health checks. Default: false."
           rill.parser.skip_updates_if_parse_errors:
             type: boolean
             description: "Short-circuit project parser reconciliation when parse errors exist. Default: false."

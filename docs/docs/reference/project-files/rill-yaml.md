@@ -178,6 +178,8 @@ _[object]_ - A map of key-value pairs for setting variables on your project. It 
 
   - **`rill.alerts.fast_streaming_refresh_cron`** - _[string]_ - Cron expression for refreshing streaming alerts on always-on OLAP connectors. Default: `*/10 * * * *` (every 10 minutes).
 
+  - **`rill.health.make_live_queries`** - _[boolean]_ - Run live queries against the OLAP (including pings) during health checks. Default: false.
+
   - **`rill.parser.skip_updates_if_parse_errors`** - _[boolean]_ - Short-circuit project parser reconciliation when parse errors exist. Default: false.
 
   - **`rill.ai.completion_timeout_seconds`** - _[integer]_ - Maximum duration of a full AI completion request (which may include multiple LLM calls and tool uses), in seconds. Default: 300.
