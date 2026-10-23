@@ -36,7 +36,6 @@ type MetricsViewAggregation struct {
 	PivotOn             []string                                       `json:"pivot_on,omitempty"`
 	SecurityClaims      *runtime.SecurityClaims                        `json:"security_claims,omitempty"`
 	Aliases             []*runtimev1.MetricsViewComparisonMeasureAlias `json:"aliases,omitempty"`
-	Exact               bool                                           `json:"exact,omitempty"`
 	FillMissing         bool                                           `json:"fill_missing,omitempty"`
 	Rows                bool                                           `json:"rows,omitempty"`
 	ExecutionTime       *time.Time                                     `json:"execution_time,omitempty"`
@@ -312,8 +311,7 @@ func (q *MetricsViewAggregation) rewriteToMetricsViewQuery(export bool) (*metric
 	var measureFilter *runtimev1.Expression
 
 	for _, m := range q.Measures {
-		// The request-level Exact flag computes every measure exactly; the measure-level flag targets a single measure.
-		res := metricsview.Measure{Name: m.Name, Exact: m.Exact || q.Exact}
+		res := metricsview.Measure{Name: m.Name, Exact: m.Exact}
 		switch m.BuiltinMeasure {
 		case runtimev1.BuiltinMeasure_BUILTIN_MEASURE_COUNT:
 			res.Compute = &metricsview.MeasureCompute{Count: true}

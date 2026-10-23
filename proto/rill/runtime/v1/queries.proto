@@ -472,7 +472,10 @@ message MetricsViewAggregationRequest {
   int32 priority = 11;
   // Optional
   MetricsViewFilter filter = 14; // Deprecated. should be removed once UI is moved to use new filters
-  bool exact = 17;
+  // Deprecated: ignored; use `exact` on individual measures instead.
+  // It originally disabled the approximate comparison join (limiting the base period to the top N rows), but has been unused since the metrics queries were refactored onto the metricsview package.
+  // That behavior is now controlled by the instance variable `rill.metrics.approximate_comparisons`.
+  bool exact = 17 [deprecated = true];
   bool fill_missing = 21;
   // Optional. Defaults to false. Used to fetch rows from underlying model
   bool rows = 22;
@@ -641,8 +644,10 @@ message MetricsViewComparisonRequest {
   int64 offset = 10 [(validate.rules).int64.gte = 0];
   // Optional
   int32 priority = 11;
-  // Optional, defaults to false
-  bool exact = 13;
+  // Deprecated: ignored; use `exact` on individual measures instead.
+  // It originally disabled the approximate comparison join and the two-phase Druid TopN query, but has been unused since the metrics queries were refactored onto the metricsview package.
+  // Those behaviors are now controlled by the instance variables `rill.metrics.approximate_comparisons` and `rill.metrics.exactify_druid_topn`.
+  bool exact = 13 [deprecated = true];
   // Optional
   MetricsViewFilter filter = 14; // Deprecated. should be removed once UI is moved to use new filters
   // Optional. If true, the response will include traces of spans captured during execution.

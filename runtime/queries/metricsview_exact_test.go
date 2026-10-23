@@ -39,19 +39,16 @@ func TestMetricsViewAggregation_exact(t *testing.T) {
 	tests := []struct {
 		name     string
 		measures []*runtimev1.MetricsViewAggregationMeasure
-		exact    bool
 		want     float64
 	}{
 		{name: "approximate by default", measures: []*runtimev1.MetricsViewAggregationMeasure{{Name: "records"}}, want: 3},
 		{name: "measure-level flag", measures: []*runtimev1.MetricsViewAggregationMeasure{{Name: "records", Exact: true}}, want: 103},
-		{name: "request-level flag applies to all measures", measures: []*runtimev1.MetricsViewAggregationMeasure{{Name: "records"}}, exact: true, want: 103},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			q := &queries.MetricsViewAggregation{
 				MetricsViewName: "mv1",
 				Measures:        tt.measures,
-				Exact:           tt.exact,
 				SecurityClaims:  testClaims(),
 			}
 			require.NoError(t, q.Resolve(t.Context(), rt, instanceID, 0))

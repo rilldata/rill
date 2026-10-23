@@ -72,7 +72,6 @@ func (s *Server) MetricsViewAggregation(ctx context.Context, req *runtimev1.Metr
 		Offset:              req.Offset,
 		PivotOn:             req.PivotOn,
 		SecurityClaims:      claims,
-		Exact:               req.Exact,
 		Aliases:             req.Aliases,
 		FillMissing:         req.FillMissing,
 		Rows:                req.Rows,
@@ -203,7 +202,6 @@ func (s *Server) MetricsViewComparison(ctx context.Context, req *runtimev1.Metri
 		WhereSQL:            req.WhereSql,
 		Having:              req.Having,
 		HavingSQL:           req.HavingSql,
-		Exact:               req.Exact,
 		Filter:              req.Filter,
 		SecurityClaims:      claims,
 	}

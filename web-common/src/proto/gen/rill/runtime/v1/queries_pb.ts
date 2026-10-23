@@ -1103,7 +1103,12 @@ export class MetricsViewAggregationRequest extends Message<MetricsViewAggregatio
   filter?: MetricsViewFilter;
 
   /**
-   * @generated from field: bool exact = 17;
+   * Deprecated: ignored; use `exact` on individual measures instead.
+   * It originally disabled the approximate comparison join (limiting the base period to the top N rows), but has been unused since the metrics queries were refactored onto the metricsview package.
+   * That behavior is now controlled by the instance variable `rill.metrics.approximate_comparisons`.
+   *
+   * @generated from field: bool exact = 17 [deprecated = true];
+   * @deprecated
    */
   exact = false;
 
@@ -2125,9 +2130,12 @@ export class MetricsViewComparisonRequest extends Message<MetricsViewComparisonR
   priority = 0;
 
   /**
-   * Optional, defaults to false
+   * Deprecated: ignored; use `exact` on individual measures instead.
+   * It originally disabled the approximate comparison join and the two-phase Druid TopN query, but has been unused since the metrics queries were refactored onto the metricsview package.
+   * Those behaviors are now controlled by the instance variables `rill.metrics.approximate_comparisons` and `rill.metrics.exactify_druid_topn`.
    *
-   * @generated from field: bool exact = 13;
+   * @generated from field: bool exact = 13 [deprecated = true];
+   * @deprecated
    */
   exact = false;
 
