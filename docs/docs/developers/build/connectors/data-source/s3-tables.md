@@ -74,16 +74,6 @@ aws_access_key_id=...
 aws_secret_access_key=...
 ```
 
-:::info Create the secret in `pre_exec`
-The secret must be created in `pre_exec` before the `ATTACH`, because attaching the table bucket immediately calls the S3 Tables catalog.
-For temporary credentials, add `SESSION_TOKEN '{{ .env.aws_session_token }}'` to the secret.
-To use the AWS credentials on your machine instead (e.g. from `~/.aws/credentials`), replace `KEY_ID` and `SECRET` with `PROVIDER credential_chain`; this only works in Rill Developer.
-:::
-
-:::warning Don't name the model after the table
-A model named `orders` that selects from `s3t.my_namespace.orders` is parsed as a reference to itself and fails with a cyclic dependency error. Use a different name, e.g. `s3tables_orders`.
-:::
-
 ## Deploy to Rill Cloud
 
 Push the credentials in your `.env` file to your Rill Cloud project:
@@ -91,8 +81,6 @@ Push the credentials in your `.env` file to your Rill Cloud project:
 ```bash
 rill env push
 ```
-
-`PROVIDER credential_chain` does not work on Rill Cloud; use `KEY_ID` and `SECRET` as shown above.
 
 ## Limitations
 
