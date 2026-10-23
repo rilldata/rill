@@ -1,7 +1,6 @@
 package reconcilers
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -29,10 +28,7 @@ const (
 	reportCheckDefaultTimeout   = 5 * time.Minute
 	reportDefaultIntervalsLimit = 25
 	reportQueryPriority         = 1
-	reportAttachmentSizeLimit   = 10 * 1024 * 1024 // Exports larger than this are linked instead of attached to emails
 )
-
-var errAttachmentTooLarge = errors.New("export exceeds the attachment size limit")
 
 func init() {
 	runtime.RegisterReconcilerInitializer(runtime.ResourceKindReport, newReportReconciler)
@@ -618,10 +614,27 @@ func (r *ReportReconciler) sendReport(ctx context.Context, self *runtimev1.Resou
 					UserAttributes: meta.ReportDelivery[emailRecipients[0]].UserAttrs,
 					Permissions:    []runtime.Permission{runtime.ReadObjects, runtime.ReadMetrics},
 				}
-				attachment, err = r.exportAttachment(ctx, rep, t, claims)
+				props := rep.Spec.ResolverProperties.AsMap()
+				queryName, _ := props["query_name"].(string)
+				queryArgsJSON, _ := props["query_args_json"].(string)
+				var originDashboard *runtimev1.ResourceName
+				if explore := rep.Spec.Annotations["explore"]; explore != "" {
+					originDashboard = &runtimev1.ResourceName{Kind: runtime.ResourceKindExplore, Name: explore}
+				}
+				attachment, err = exportAttachment(ctx, r.C, &exportAttachmentOptions{
+					QueryName:       queryName,
+					QueryArgsJSON:   queryArgsJSON,
+					ExecutionTime:   t,
+					Claims:          claims,
+					Format:          rep.Spec.ExportFormat,
+					IncludeHeader:   rep.Spec.ExportIncludeHeader,
+					Limit:           rep.Spec.ExportLimit,
+					Priority:        reportQueryPriority,
+					OriginDashboard: originDashboard,
+				})
 				if errors.Is(err, errAttachmentTooLarge) {
 					attachmentTooLarge = true
-					allWarnings = append(allWarnings, fmt.Sprintf("The export was not attached to emails because it is larger than %d MB", reportAttachmentSizeLimit/1024/1024))
+					allWarnings = append(allWarnings, fmt.Sprintf("The export was not attached to emails because it is larger than %d MB", exportAttachmentSizeLimit/1024/1024))
 				} else if err != nil {
 					return false, nil, fmt.Errorf("failed to export attachment: %w", err)
 				}
@@ -861,71 +874,6 @@ func (r *ReportReconciler) triggerAIReport(ctx context.Context, self *runtimev1.
 	}, warnings, nil
 }
 
-// exportAttachment exports a query-based report's data for attaching it to emails.
-// It exports the same data as the report's download link (see ExportReport in runtime/server).
-// It returns errAttachmentTooLarge if the export is larger than reportAttachmentSizeLimit.
-func (r *ReportReconciler) exportAttachment(ctx context.Context, rep *runtimev1.Report, t time.Time, claims *runtime.SecurityClaims) (*email.Attachment, error) {
-	var ext, contentType string
-	switch rep.Spec.ExportFormat {
-	case runtimev1.ExportFormat_EXPORT_FORMAT_CSV:
-		ext, contentType = "csv", "text/csv"
-	case runtimev1.ExportFormat_EXPORT_FORMAT_XLSX:
-		ext, contentType = "xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-	case runtimev1.ExportFormat_EXPORT_FORMAT_PARQUET:
-		ext, contentType = "parquet", "application/octet-stream"
-	default:
-		return nil, fmt.Errorf("export format %q cannot be attached", rep.Spec.ExportFormat.String())
-	}
-
-	props := rep.Spec.ResolverProperties.AsMap()
-	queryName, _ := props["query_name"].(string)
-	queryArgsJSON, _ := props["query_args_json"].(string)
-	qpb, err := queries.ProtoFromJSON(queryName, queryArgsJSON, &t)
-	if err != nil {
-		return nil, err
-	}
-	q, err := queries.ProtoToExportQuery(qpb, claims, int64(rep.Spec.ExportLimit), &t)
-	if err != nil {
-		return nil, err
-	}
-
-	var originDashboard *runtimev1.ResourceName
-	if explore := rep.Spec.Annotations["explore"]; explore != "" {
-		originDashboard = &runtimev1.ResourceName{Kind: runtime.ResourceKindExplore, Name: explore}
-	}
-
-	// Exports execute the query directly via q.Export (bypassing runtime.Query/Resolve), so emit the billable query metric here.
-	if r.C.Activity != nil {
-		queryAttrs := append(r.C.Runtime.GetInstanceAttributes(ctx, r.C.InstanceID), attribute.String("source", string(runtime.RequestSourceFromContext(ctx))))
-		r.C.Activity.RecordMetric(ctx, "query", 1, queryAttrs...)
-	}
-
-	var filename string
-	w := &limitedBuffer{limit: reportAttachmentSizeLimit}
-	err = q.Export(ctx, r.C.Runtime, r.C.InstanceID, w, &runtime.ExportOptions{
-		Format:   rep.Spec.ExportFormat,
-		Priority: reportQueryPriority,
-		PreWriteHook: func(name string) error {
-			filename = name
-			return nil
-		},
-		IncludeHeader:   rep.Spec.ExportIncludeHeader,
-		OriginDashboard: originDashboard,
-	})
-	if w.exceeded {
-		return nil, errAttachmentTooLarge
-	}
-	if err != nil {
-		return nil, err
-	}
-
-	return &email.Attachment{
-		Filename:    fmt.Sprintf("%s_%s.%s", filename, t.UTC().Format("20060102150405"), ext),
-		ContentType: contentType,
-		Data:        w.buf.Bytes(),
-	}, nil
-}
-
 func buildAISessionURL(baseOpenURL, sessionID string) (string, error) {
 	// add session_id as query param
 	u, err := url.Parse(baseOpenURL)
@@ -1109,21 +1057,4 @@ func latestReportWarnings(r *runtimev1.Report) []string {
 		return r.State.ExecutionHistory[len(r.State.ExecutionHistory)-1].Warnings
 	}
 	return nil
-}
-
-// limitedBuffer is an io.Writer that buffers data up to a size limit.
-// It records whether a write exceeded the limit, since writers wrapping it may not propagate the error it returns.
-// NOTE: It deliberately does not embed bytes.Buffer, which would let io.Copy bypass the limit through its io.ReaderFrom implementation.
-type limitedBuffer struct {
-	buf      bytes.Buffer
-	limit    int
-	exceeded bool
-}
-
-func (b *limitedBuffer) Write(p []byte) (int, error) {
-	if b.buf.Len()+len(p) > b.limit {
-		b.exceeded = true
-		return 0, errAttachmentTooLarge
-	}
-	return b.buf.Write(p)
 }

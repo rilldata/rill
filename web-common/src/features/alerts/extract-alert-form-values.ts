@@ -13,6 +13,7 @@ import {
   type V1MetricsViewAggregationDimension,
   type V1MetricsViewAggregationMeasure,
   type V1MetricsViewAggregationRequest,
+  V1ExportFormat,
   V1Operation,
 } from "@rilldata/web-common/runtime-client";
 
@@ -114,6 +115,18 @@ export function getExistingAlertInitialFormValues(
     refreshWhenDataRefreshes: !alertSpec.refreshSchedule?.cron,
     ...getExistingScheduleFormValues(alertSpec.refreshSchedule),
     ...extractAlertNotification(alertSpec),
+    exportAttach: alertSpec.exportAttach ?? false,
+    // Alerts that don't attach an export have no format, so default to CSV for when attaching is enabled
+    exportFormat:
+      alertSpec.exportFormat &&
+      alertSpec.exportFormat !== V1ExportFormat.EXPORT_FORMAT_UNSPECIFIED
+        ? alertSpec.exportFormat
+        : V1ExportFormat.EXPORT_FORMAT_CSV,
+    exportLimit:
+      !alertSpec.exportLimit || alertSpec.exportLimit === "0"
+        ? ""
+        : alertSpec.exportLimit,
+    exportIncludeHeader: alertSpec.exportIncludeHeader ?? false,
     ...extractAlertFormValues(queryArgsJson),
   };
 }

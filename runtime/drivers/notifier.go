@@ -13,9 +13,6 @@ type Notifier interface {
 }
 
 type AlertStatus struct {
-	// TODO: Remove ToEmail, ToName once email notifier is created
-	ToEmail         string
-	ToName          string
 	DisplayName     string
 	ExecutionTime   time.Time
 	Status          runtimev1.AssertionStatus

@@ -741,6 +741,10 @@ message AlertSpec {
     string query_for_user_email = 12;
     google.protobuf.Struct query_for_attributes = 13;
   }
+  bool export_attach = 24; // If true, the query's result is exported and attached to email notifications for failed checks (only supported for query-based alerts).
+  ExportFormat export_format = 25; // Format of the attached export.
+  bool export_include_header = 26;
+  uint64 export_limit = 27;
   bool notify_on_recover = 15;
   bool notify_on_fail = 16;
   bool notify_on_error = 17;
