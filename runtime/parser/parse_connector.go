@@ -2,6 +2,7 @@ package parser
 
 import (
 	"fmt"
+	"slices"
 
 	"google.golang.org/protobuf/types/known/structpb"
 	"gopkg.in/yaml.v3"
@@ -92,6 +93,7 @@ func analyzeTemplatedProperties(m map[string]any) ([]string, error) {
 			res = append(res, k)
 		}
 	}
+	slices.Sort(res)
 	return res, nil
 }
 
