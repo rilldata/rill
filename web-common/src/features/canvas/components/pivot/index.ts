@@ -259,6 +259,7 @@ export class PivotCanvasComponent extends BaseCanvasComponent<
 
     this.config = createPivotConfig(
       this.parent,
+      this.id,
       this.specStore,
       this.pivotState,
       this.timeAndFilterStore,

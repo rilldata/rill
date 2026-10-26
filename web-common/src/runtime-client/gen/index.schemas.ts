@@ -112,6 +112,8 @@ export interface MetricsViewSpecMeasure {
   treatNullsAs?: string;
   dataType?: Runtimev1Type;
   lowerIsBetter?: boolean;
+  /** Optional exact variant of `expression`. When set, `expression` is the approximate default. */
+  exactExpression?: string;
 }
 
 export type MetricsViewSpecMeasureType =
@@ -1587,6 +1589,8 @@ export interface V1MetricsViewAggregationMeasure {
   uri?: V1MetricsViewAggregationMeasureComputeURI;
   comparisonTime?: V1MetricsViewAggregationMeasureComputeComparisonTime;
   expression?: V1MetricsViewAggregationMeasureComputeExpression;
+  /** Optional. Compute the measure with its `exact_expression`. No-op for measures without one. */
+  exact?: boolean;
 }
 
 export interface V1MetricsViewAggregationMeasureComputeComparisonDelta {
@@ -1948,6 +1952,8 @@ export interface V1MetricsViewTimeSeriesRequest {
   /** Optional ephemeral measures, i.e. measures defined by the query rather than the metrics view.
 Only the `expression` compute is supported for time series. */
   ephemeralMeasures?: V1MetricsViewAggregationMeasure[];
+  /** Optional. Names of measures to compute with their `exact_expression`. */
+  exactMeasureNames?: string[];
   timeStart?: string;
   timeEnd?: string;
   timeGranularity?: V1TimeGrain;
@@ -3408,6 +3414,8 @@ export type QueryServiceMetricsViewTimeSeriesBody = {
   /** Optional ephemeral measures, i.e. measures defined by the query rather than the metrics view.
 Only the `expression` compute is supported for time series. */
   ephemeralMeasures?: V1MetricsViewAggregationMeasure[];
+  /** Optional. Names of measures to compute with their `exact_expression`. */
+  exactMeasureNames?: string[];
   timeStart?: string;
   timeEnd?: string;
   timeGranularity?: V1TimeGrain;
