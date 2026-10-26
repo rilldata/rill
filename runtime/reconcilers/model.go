@@ -861,6 +861,7 @@ func (r *ModelReconciler) updateStateClear(ctx context.Context, self *runtimev1.
 	mdl.State.IncrementalStateSchema = nil
 	mdl.State.PartitionsModelId = ""
 	mdl.State.PartitionsHaveErrors = false
+	mdl.State.PartitionsConcurrency = 0
 	mdl.State.Warnings = nil
 	mdl.State.TestWarnings = nil
 	mdl.State.RowsTotal = 0
@@ -1225,6 +1226,7 @@ func (r *ModelReconciler) executeAll(ctx context.Context, self *runtimev1.Resour
 
 	// If we're not partitionting execution, run the executor directly and return
 	if !usePartitions {
+		model.State.PartitionsConcurrency = 0
 		res, err := r.executeSingle(ctx, executor, self, model, incrementalRun, incrementalState, "", nil)
 		if err != nil {
 			return "", nil, false, 0, err
@@ -1251,6 +1253,8 @@ func (r *ModelReconciler) executeAll(ctx context.Context, self *runtimev1.Resour
 	if concurrency < 1 {
 		return "", nil, false, 0, fmt.Errorf("invalid concurrency limit %d for model executor %q", model.Spec.PartitionsConcurrencyLimit, executor.finalConnector)
 	}
+	// Saved by the next state update, so clients can show it before triggering partitions.
+	model.State.PartitionsConcurrency = uint32(concurrency)
 
 	// Prepare catalog which tracks partitions
 	catalog, release, err := r.C.Runtime.Catalog(ctx, r.C.InstanceID)

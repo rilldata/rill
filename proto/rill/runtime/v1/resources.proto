@@ -175,6 +175,9 @@ message ModelState {
   string partitions_model_id = 10;
   // partitions_have_errors is true if one or more partitions failed to execute.
   bool partitions_have_errors = 11;
+  // partitions_concurrency is the number of partitions the model's executor processed concurrently in its most recent partitioned execution.
+  // It is derived from the spec's partitions_concurrency_limit and the executor's own limits.
+  uint32 partitions_concurrency = 31;
   // warnings contains any warnings generated during the model's execution.
   repeated string warnings = 29;
   // total_execution_duration_ms is the time user queries took to execute while refreshing the model.

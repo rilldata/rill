@@ -7817,6 +7817,12 @@ definitions:
       partitionsHaveErrors:
         type: boolean
         description: partitions_have_errors is true if one or more partitions failed to execute.
+      partitionsConcurrency:
+        type: integer
+        format: int64
+        description: |-
+          partitions_concurrency is the number of partitions the model's executor processed concurrently in its most recent partitioned execution.
+          It is derived from the spec's partitions_concurrency_limit and the executor's own limits.
       warnings:
         type: array
         items:

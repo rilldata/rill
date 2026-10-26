@@ -2150,6 +2150,9 @@ export interface V1ModelState {
   partitionsModelId?: string;
   /** partitions_have_errors is true if one or more partitions failed to execute. */
   partitionsHaveErrors?: boolean;
+  /** partitions_concurrency is the number of partitions the model's executor processed concurrently in its most recent partitioned execution.
+It is derived from the spec's partitions_concurrency_limit and the executor's own limits. */
+  partitionsConcurrency?: number;
   /** total_execution_duration_ms is the time user queries took to execute while refreshing the model.
 In case of incremental models it is the sum of all successful executions so far.
 This is not the time it took to refresh the model which also includes other stuff like taking a write lock. */
