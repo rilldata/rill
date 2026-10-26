@@ -7,7 +7,9 @@
   import { BaseChart } from "@rilldata/web-common/features/canvas/components/charts/BaseChart";
   import VegaSpecInput from "@rilldata/web-common/features/canvas/inspector/chart/VegaSpecInput.svelte";
   import type { BaseCanvasComponent } from "../components/BaseCanvasComponent";
+  import { MapComponent } from "../components/map";
   import MapColorSelector from "../components/map/MapColorSelector.svelte";
+  import MapRegionsSelector from "../components/map/MapRegionsSelector.svelte";
   import { PivotCanvasComponent } from "../components/pivot";
   import type { ComponentSpec } from "../components/types";
   import AIGenerateButton from "./AIGenerateButton.svelte";
@@ -387,6 +389,18 @@
             onChange={(updatedConfig) => {
               localParamValues[key] = updatedConfig;
               component.updateProperty(key, updatedConfig);
+            }}
+          />
+          <!-- MAP REGIONS CONFIG -->
+        {:else if metricsView && config.type === "map_regions" && component instanceof MapComponent}
+          <MapRegionsSelector
+            {component}
+            {canvasName}
+            {metricsView}
+            regions={localParamValues[key]}
+            onChange={(updatedConfig) => {
+              localParamValues[key] = updatedConfig;
+              component.updateProperty("regions", updatedConfig);
             }}
           />
         {/if}

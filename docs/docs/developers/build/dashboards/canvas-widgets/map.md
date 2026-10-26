@@ -9,7 +9,10 @@ import ImageCodeToggle from '@site/src/components/ImageCodeToggle';
 
 The map widget plots a metrics view on an interactive basemap. Use it to show how a measure is distributed geographically: stores, sensors, or customers as points, or states, countries, or sales territories as shaded regions. For more information, refer to our [Components reference doc](/reference/project-files/component#map).
 
-Each map needs a **geo dimension** that holds a location for every row, and a **color measure**. Points can also be sized by a second measure.
+A map has up to two layers:
+
+- A **geo dimension** layer, which draws a location stored in every row as a point or polygon, colored by a measure. Points can also be sized by a second measure.
+- A **regions** layer, which fills built-in country or US state boundaries by a measure, matched through the values of a regular dimension such as `country` or `state`. It needs no geographic data in your model. See [Built-in regions](#built-in-regions).
 
 <ImageCodeToggle
   image="/img/build/dashboard/canvas/components/map-points.png"
@@ -70,7 +73,7 @@ Alternatively, `ST_Point2D(longitude, latitude) AS location` stores a DuckDB `PO
 
 ### Regions from a GeoJSON file
 
-To shade regions, load their boundaries as polygons. The following model reads a GeoJSON `FeatureCollection` file from your project's `data` folder and returns one row per feature, with the feature's geometry as a GeoJSON string:
+For countries and US states, a [regions layer](#built-in-regions) is simpler. For other regions, such as DMAs, postal codes, or sales territories, load their boundaries as polygons. The following model reads a GeoJSON `FeatureCollection` file from your project's `data` folder and returns one row per feature, with the feature's geometry as a GeoJSON string:
 
 ```sql
 -- models/state_population.sql
@@ -124,7 +127,9 @@ See [Metrics view YAML](/reference/project-files/metrics-views) for all dimensio
 4. Under **Color**, pick the measure and a color scheme or gradient.
 5. Optionally, add a **Size measure** and a **Tooltip dimension**.
 
-The map draws as soon as it has a metrics view, a geo dimension, and a color measure. You can also define the widget directly in the canvas YAML, as in the examples on this page.
+To shade countries or US states instead, pick a dimension under **Regions**; see [Built-in regions](#built-in-regions).
+
+The map draws as soon as it has a metrics view and either a geo dimension with a color measure or a complete regions layer. You can also define the widget directly in the canvas YAML, as in the examples on this page.
 
 ## Point maps
 
@@ -162,16 +167,48 @@ When the geo dimension holds polygons, each region is filled with the color of i
 
 Colors are spread linearly between the lowest and highest value on the map. If a few regions have much larger values than the rest, most regions end up in the same color. In the example above, the measure is `LN(AVG(population_density))` for that reason; a log-scaled or ratio measure (such as a per-capita value) often spreads colors more evenly.
 
+## Built-in regions
+
+To shade countries or US states, add a `regions` layer. It matches the values of a regular dimension to built-in boundaries, so your model only needs a column with country or state names or codes:
+
+```yaml
+- map:
+    metrics_view: sales_metrics
+    title: Revenue by country
+    regions:
+      dimension: country
+      boundaries: countries
+      color:
+        measure: total_revenue
+        colorRange:
+          mode: scheme
+          scheme: blues
+```
+
+In the visual editor, pick the dimension under **Regions**, then choose the **Boundaries**. When you add a map to a metrics view without a geo dimension, the map starts with a regions layer for the first dimension whose name contains `country` or `state`.
+
+| `boundaries` | Covers | `key` values |
+|--------------|--------|--------------|
+| `countries` | Every country | `iso_a2` (`US`), `iso_a3` (`USA`), `iso_n3` (`840`), `name` (`United States`) |
+| `us_states` | The 50 US states and the District of Columbia | `postal` (`CA`), `iso_3166_2` (`US-CA`), `fips` (`06`), `name` (`California`) |
+
+By default, values are matched against every key, so a column that mixes `US`, `USA`, and `United States` still works. Set `key` to match one key only. Matching ignores case, accents, and punctuation, and `name` also matches common alternative names, such as `UK` or `Ivory Coast`. The legend reports how many values didn't match a region; hover over the message to see them.
+
+Regions without data are drawn in gray. Regions are drawn below the basemap's labels and below a geo dimension layer, so you can combine both, for example to show stores as points over states shaded by revenue. The `color`, `size_measure`, and `tooltip_dimension` properties only apply to the geo dimension layer; the regions layer has its own `color`.
+
+Boundaries come from [Natural Earth](https://www.naturalearthdata.com/), which draws de facto borders for disputed territories. For other regions, such as DMAs, use [polygons from a GeoJSON file](#regions-from-a-geojson-file) instead.
+
 ## Properties
 
 | Property | Required | Description |
 |----------|----------|-------------|
 | `metrics_view` | Yes | Metrics view to query. |
-| `geo_dimension.field` | Yes | Dimension that holds each row's location. See [Prepare geographic data](#prepare-geographic-data). |
-| `color.measure` | Yes | Measure that sets the color of each point or region. |
+| `geo_dimension.field` | One of `geo_dimension` or `regions` | Dimension that holds each row's location. See [Prepare geographic data](#prepare-geographic-data). |
+| `color.measure` | With `geo_dimension` | Measure that sets the color of each point or polygon. |
 | `color.colorRange` | No | Color scale. Defaults to the `tealblues` scheme. See [Colors](#colors). |
 | `size_measure.field` | No | Measure that scales the radius of each point. Points only. |
 | `tooltip_dimension.field` | No | Dimension shown as the heading of the hover tooltip, such as a city or state name. |
+| `regions` | One of `geo_dimension` or `regions` | Built-in regions layer with `dimension`, `boundaries`, optional `key`, and `color` (`measure` and optional `colorRange`). See [Built-in regions](#built-in-regions). |
 | `initial_view` | No | `longitude`, `latitude`, and optional `zoom` the map opens with. See [Set the initial view](#set-the-initial-view). |
 | `title`, `description` | No | Title and description shown in the widget header. |
 | `time_filters`, `dimension_filters` | No | Filters that apply to this widget only, as on other [canvas widgets](/developers/build/dashboards/canvas#filters). |
@@ -217,7 +254,8 @@ initial_view:
 ## Interacting with a map
 
 - **Pan and zoom:** Drag to pan, scroll or pinch to zoom, and use the zoom and compass buttons in the top-right corner. A scale bar is shown in the bottom-left corner.
-- **Tooltips:** Hover over a point or region to see its tooltip dimension value, the color measure, and the size measure.
+- **Tooltips:** Hover over a point or polygon to see its tooltip dimension value, the color measure, and the size measure. Hover over a built-in region to see its name and value.
+- **Legend:** The top-left corner shows the color scale of each layer.
 - **Filters:** The map follows the canvas time range and filters. Changing a filter updates the data without moving the map, so the area you zoomed into stays in view.
 - **Dark mode:** The basemap switches between a light and a dark style with the dashboard's theme mode.
 
@@ -225,7 +263,7 @@ initial_view:
 
 - Coordinates must be longitude and latitude in degrees. Projected coordinates, such as meters in a local coordinate system, aren't supported. Reproject them in your model first, for example with DuckDB's `ST_Transform`.
 - Line geometries (`LineString`, `MultiLineString`) aren't drawn.
-- The map loads up to 5,000 rows, one for each combination of geo dimension and tooltip dimension values. Choose a tooltip dimension that has one value per location, and aggregate very large point sets, for example to a grid or to regions, before mapping them.
+- Each layer loads up to 5,000 rows. The geo dimension layer loads one row for each combination of geo dimension and tooltip dimension values. Choose a tooltip dimension that has one value per location, and aggregate very large point sets, for example to a grid or to regions, before mapping them.
 - The basemap is loaded from [Mapbox](https://www.mapbox.com/) in the viewer's browser, so viewers need access to `api.mapbox.com`.
 
 :::note Self-hosted builds

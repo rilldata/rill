@@ -1,35 +1,17 @@
 <script lang="ts">
   import ComponentHeader from "@rilldata/web-common/features/canvas/ComponentHeader.svelte";
   import { getCanvasStore } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
-  import { canQueryWithTimeRange } from "@rilldata/web-common/features/components/charts/query-util";
   import { themeControl } from "@rilldata/web-common/features/themes/theme-control";
   import { resolveThemeColors } from "@rilldata/web-common/features/themes/theme-utils";
-  import {
-    getQueryServiceMetricsViewAggregationQueryOptions,
-    type V1MetricsViewAggregationDimension,
-    type V1MetricsViewAggregationMeasure,
-  } from "@rilldata/web-common/runtime-client";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
-  import { createQuery, keepPreviousData } from "@tanstack/svelte-query";
-  import type * as GeoJSON from "geojson";
   import mapboxgl from "mapbox-gl";
   import "mapbox-gl/dist/mapbox-gl.css";
   import { onDestroy, onMount, untrack } from "svelte";
-  import { derived } from "svelte/store";
-  import { DEFAULT_MAP_COLOR_RANGE, type MapComponent, type MapSpec } from ".";
-  import {
-    buildColorExpression,
-    buildSizeExpression,
-    computeMinMax,
-    resolveColorRange,
-  } from "./color-utils";
-  import {
-    calculateBounds,
-    detectPolygonMode,
-    removeTooltip,
-    showTooltip,
-    transformToGeoJSON,
-  } from "./map-utils";
+  import type { MapComponent, MapSpec } from ".";
+  import MapPointsLayer from "./layers/MapPointsLayer.svelte";
+  import MapRegionLayer from "./layers/MapRegionLayer.svelte";
+  import type { MapLayerBoundsHandler, MapLayerId } from "./layers/types";
+  import { removeTooltip } from "./map-utils";
   import {
     MAPBOX_ACCESS_TOKEN,
     MAPBOX_STYLE_DARK,
@@ -43,13 +25,20 @@
   let { component }: Props = $props();
 
   let mapContainer = $state<HTMLDivElement>();
-  let mapReady = $state(false);
+  let map = $state.raw<mapboxgl.Map | null>(null);
+  // Bumped each time a style finishes loading, so layers re-add their sources
+  // and layers that `setStyle` dropped; null while a style is loading.
+  let styleKey = $state<number | null>(null);
+  let styleLoads = 0;
+  let mapLoaded = $state(false);
 
-  let map: mapboxgl.Map | null = null;
   let currentMapStyle = "";
-  let layerHandlersRegistered = false;
-  // Identifies the dataset the camera was last auto-fit to, so a filter change
-  // does not re-fit the camera.
+  // Latest bounds reported by each layer, and the data keys of the layers the
+  // camera was last auto-fit to, so a filter change does not re-fit the camera.
+  const layerBounds = new Map<
+    MapLayerId,
+    { dataKey: string; bounds: mapboxgl.LngLatBoundsLike | null }
+  >();
   let fittedDataKey: string | null = null;
 
   const runtimeClient = useRuntimeClient();
@@ -59,8 +48,6 @@
   // render, so they are read once rather than tracked.
   const {
     specStore,
-    timeAndFilterStore,
-    dataEnabled: visible,
     parent: {
       name: canvasName,
       metricsView: { getMetricsViewFromName },
@@ -74,14 +61,12 @@
     mapSpec.show_description_as_tooltip,
   );
   const metricsView = $derived(mapSpec.metrics_view ?? "");
-  const geoDimension = $derived(mapSpec.geo_dimension?.field ?? "");
-  const tooltipDimension = $derived(mapSpec.tooltip_dimension?.field);
-  const color = $derived(mapSpec.color);
-  const sizeMeasure = $derived(mapSpec.size_measure?.field);
   const filters = $derived({
     time_filters: mapSpec.time_filters,
     dimension_filters: mapSpec.dimension_filters,
   });
+  const hasPoints = $derived(!!mapSpec.geo_dimension?.field);
+  const hasRegions = $derived(!!mapSpec.regions?.dimension);
 
   // Read as primitives so that editing the view in YAML moves the camera,
   // without re-running on every unrelated spec update.
@@ -99,210 +84,35 @@
     resolveThemeColors($canvasTheme?.spec, isThemeModeDark),
   );
 
-  const colorMeasure = $derived(color?.measure ?? "");
-
   const metricsViewQuery = $derived(getMetricsViewFromName(metricsView));
   const metricsViewSpec = $derived($metricsViewQuery?.metricsView);
 
-  function getMeasureDisplayName(measureName: string): string {
-    const measure = metricsViewSpec?.measures?.find(
-      (m) => m.name === measureName,
-    );
-    return measure?.displayName || measureName;
-  }
-
-  const tooltipCtx = $derived({
-    tooltipDimension,
-    colorMeasure,
-    sizeMeasure,
-    getDisplayName: getMeasureDisplayName,
-  });
-
-  const queryOptionsStore = derived(
-    [specStore, timeAndFilterStore, visible],
-    ([specVal, $timeAndFilterStore, $visible]) => {
-      const spec = specVal ?? ({} as Partial<MapSpec>);
-      const mv = spec.metrics_view ?? "";
-      const gd = spec.geo_dimension?.field ?? "";
-
-      const { timeRange, where, hasTimeSeries } = $timeAndFilterStore;
-
-      const dimensions: V1MetricsViewAggregationDimension[] = [{ name: gd }];
-      if (spec.tooltip_dimension?.field) {
-        dimensions.push({ name: spec.tooltip_dimension.field });
-      }
-
-      const cm = spec.color?.measure ?? "";
-      const measures: V1MetricsViewAggregationMeasure[] = [];
-      if (cm) measures.push({ name: cm });
-      if (spec.size_measure?.field)
-        measures.push({ name: spec.size_measure.field });
-
-      const enabled =
-        $visible &&
-        !!mv &&
-        !!gd &&
-        !!cm &&
-        canQueryWithTimeRange(hasTimeSeries, timeRange);
-
-      return getQueryServiceMetricsViewAggregationQueryOptions(
-        runtimeClient,
-        {
-          metricsView: mv,
-          dimensions,
-          measures,
-          limit: "5000",
-          where,
-          timeRange: hasTimeSeries ? timeRange : undefined,
-        },
-        {
-          query: {
-            enabled,
-            placeholderData: keepPreviousData,
-          },
-        },
-      );
-    },
-  );
-
-  const mapDataQuery = createQuery(queryOptionsStore);
-
-  const rows = $derived($mapDataQuery.data?.data ?? []);
-  // `isPending` stays true while the query is disabled (incomplete spec), so
-  // nothing renders until the first result arrives. The color measure is
-  // checked separately because a spec edit can leave placeholder data from the
-  // previous query in place.
-  const isPending = $derived($mapDataQuery.isPending);
-  const canRender = $derived(mapReady && !isPending && !!colorMeasure);
-
-  const geoJsonOpts = $derived({
-    geoDimension,
-    colorMeasure,
-    sizeMeasure,
-    tooltipDimension,
-  });
-
-  // Only reached once `canRender` holds, so `colorMeasure` is set.
-  function getColorPaint(
-    geoJson: GeoJSON.FeatureCollection,
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  ): any {
-    const colors = resolveColorRange(
-      color?.colorRange ?? DEFAULT_MAP_COLOR_RANGE,
-      resolvedTheme,
-    );
-    const [min, max] = computeMinMax(geoJson.features, colorMeasure);
-    return buildColorExpression(colorMeasure, min, max, colors);
-  }
-
-  function getRadiusPaint(
-    geoJson: GeoJSON.FeatureCollection,
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  ): any {
-    if (!sizeMeasure) return 6;
-
-    const [min, max] = computeMinMax(geoJson.features, sizeMeasure);
-    return buildSizeExpression(sizeMeasure, min, max);
-  }
-
-  // Auto-fit the camera once per dataset. Re-fitting on every filter change
-  // moves the map under the user and discards any panning or zooming they did.
+  // Auto-fit the camera once per dataset, after every active layer has
+  // reported its bounds. Re-fitting on every filter change moves the map under
+  // the user and discards any panning or zooming they did.
   // An `initial_view` in the spec opts out of auto-fitting entirely.
-  function fitToData(geoJson: GeoJSON.FeatureCollection) {
+  const handleLayerBounds: MapLayerBoundsHandler = (layer, dataKey, bounds) => {
+    layerBounds.set(layer, { dataKey, bounds });
     if (!map || hasInitialView) return;
 
-    const dataKey = `${metricsView}::${geoDimension}`;
-    if (fittedDataKey === dataKey) return;
+    const activeLayers: MapLayerId[] = [];
+    if (hasRegions) activeLayers.push("regions");
+    if (hasPoints) activeLayers.push("points");
+    const reported = activeLayers.map((l) => layerBounds.get(l));
+    if (reported.some((r) => !r)) return;
 
-    const bounds = calculateBounds(geoJson.features);
-    if (!bounds) return;
+    const combinedKey = reported.map((r) => r?.dataKey).join("|");
+    if (fittedDataKey === combinedKey) return;
 
-    fittedDataKey = dataKey;
-    map.fitBounds(bounds, { padding: 50, maxZoom: 10 });
-  }
-
-  function updateMap(geoJson: GeoJSON.FeatureCollection) {
-    if (!map) return;
-
-    if (!map.isStyleLoaded()) {
-      map.once("load", () => {
-        updateMap(geoJson);
-      });
-      return;
+    const combined = new mapboxgl.LngLatBounds();
+    for (const r of reported) {
+      if (r?.bounds) combined.extend(r.bounds);
     }
+    if (combined.isEmpty()) return;
 
-    const source = map.getSource("map-data") as mapboxgl.GeoJSONSource;
-    if (source) {
-      source.setData(geoJson);
-    } else {
-      map.addSource("map-data", {
-        type: "geojson",
-        data: geoJson,
-      });
-
-      map.addLayer({
-        id: "points",
-        type: "circle",
-        source: "map-data",
-        filter: ["==", ["geometry-type"], "Point"],
-        paint: {},
-      });
-
-      map.addLayer({
-        id: "polygons-fill",
-        type: "fill",
-        source: "map-data",
-        filter: ["==", ["geometry-type"], "Polygon"],
-        paint: {},
-      });
-
-      map.addLayer({
-        id: "polygons-outline",
-        type: "line",
-        source: "map-data",
-        filter: ["==", ["geometry-type"], "Polygon"],
-        paint: {},
-      });
-
-      // Layer event handlers persist across style reloads (they bind by layer
-      // id), so register them only once to avoid stacking duplicates.
-      if (!layerHandlersRegistered) {
-        layerHandlersRegistered = true;
-        for (const layerId of ["points", "polygons-fill"]) {
-          map.on("mousemove", layerId, (e) => {
-            if (map) map.getCanvas().style.cursor = "pointer";
-            showTooltip(e, tooltipCtx);
-          });
-          map.on("mouseleave", layerId, () => {
-            if (map) map.getCanvas().style.cursor = "";
-            removeTooltip();
-          });
-        }
-      }
-    }
-
-    const colorPaint = getColorPaint(geoJson);
-    const radiusPaint = getRadiusPaint(geoJson);
-
-    // Contrast ring around points: white on the light base map, dark on the
-    // dark base map, so the stroke stays visible in either theme mode.
-    const strokeColor = isThemeModeDark ? "#1a1a1a" : "#fff";
-    const outlineColor = resolvedTheme.primary.hex();
-
-    map.setPaintProperty("points", "circle-color", colorPaint);
-    map.setPaintProperty("points", "circle-radius", radiusPaint);
-    map.setPaintProperty("points", "circle-opacity", 0.8);
-    map.setPaintProperty("points", "circle-stroke-width", 1);
-    map.setPaintProperty("points", "circle-stroke-color", strokeColor);
-
-    map.setPaintProperty("polygons-fill", "fill-color", colorPaint);
-    map.setPaintProperty("polygons-fill", "fill-opacity", 0.4);
-
-    map.setPaintProperty("polygons-outline", "line-color", outlineColor);
-    map.setPaintProperty("polygons-outline", "line-width", 2);
-
-    fitToData(geoJson);
-  }
+    fittedDataKey = combinedKey;
+    map.fitBounds(combined, { padding: 50, maxZoom: 10 });
+  };
 
   onMount(() => {
     if (!mapContainer) return;
@@ -310,7 +120,7 @@
     mapboxgl.accessToken = MAPBOX_ACCESS_TOKEN;
     currentMapStyle = isThemeModeDark ? MAPBOX_STYLE_DARK : MAPBOX_STYLE_LIGHT;
 
-    map = new mapboxgl.Map({
+    const newMap = new mapboxgl.Map({
       container: mapContainer,
       style: currentMapStyle,
       ...(initialLongitude !== undefined && initialLatitude !== undefined
@@ -321,20 +131,26 @@
         : {}),
     });
 
-    map.addControl(new mapboxgl.NavigationControl(), "top-right");
-    map.addControl(
+    newMap.addControl(new mapboxgl.NavigationControl(), "top-right");
+    newMap.addControl(
       new mapboxgl.ScaleControl({ maxWidth: 100, unit: "metric" }),
       "bottom-left",
     );
 
-    map.on("load", () => {
-      mapReady = true;
+    // Fires for the initial style and again after every `setStyle`.
+    newMap.on("style.load", () => {
+      styleKey = ++styleLoads;
     });
+    newMap.on("load", () => {
+      mapLoaded = true;
+    });
+
+    map = newMap;
   });
 
   // Keeps the camera in sync while the initial view is being edited.
   $effect(() => {
-    if (!map || !mapReady) return;
+    if (!map || !mapLoaded) return;
     if (initialLongitude === undefined || initialLatitude === undefined) return;
     map.jumpTo({
       center: [initialLongitude, initialLatitude],
@@ -342,33 +158,18 @@
     });
   });
 
-  // setStyle() strips all sources/layers, so re-add data only after the new
-  // style has finished loading. Re-adding synchronously would race the async
-  // style load and get wiped, causing the points to disappear.
+  // setStyle() strips all sources and layers. Layers wait for the new style
+  // to finish loading before re-adding them, since anything added while it
+  // loads is wiped.
   $effect(() => {
     const targetStyle = isThemeModeDark
       ? MAPBOX_STYLE_DARK
       : MAPBOX_STYLE_LIGHT;
-    if (!map || !mapReady || targetStyle === currentMapStyle) return;
+    if (!map || targetStyle === currentMapStyle) return;
 
     currentMapStyle = targetStyle;
+    styleKey = null;
     map.setStyle(targetStyle);
-    map.once("style.load", () => {
-      if (canRender) updateMap(transformToGeoJSON(rows, geoJsonOpts));
-    });
-  });
-
-  $effect(() => {
-    const isPolygonMode = detectPolygonMode(rows, geoDimension);
-    if (component._isPolygonMode === isPolygonMode) return;
-    component._isPolygonMode = isPolygonMode;
-    component.specStore.update((s) => ({ ...s }));
-  });
-
-  // Reruns on any spec, theme or data change read by `updateMap`.
-  $effect(() => {
-    if (!canRender) return;
-    updateMap(transformToGeoJSON(rows, geoJsonOpts));
   });
 
   onDestroy(() => {
@@ -391,6 +192,33 @@
   />
   <div class="relative flex-1 min-h-[300px]">
     <div bind:this={mapContainer} class="size-full"></div>
+    {#if map}
+      <!-- Layers draw on the map; the markup they render is their legend. -->
+      <div class="absolute top-2 left-2 flex flex-col gap-1">
+        {#if hasRegions}
+          <MapRegionLayer
+            {map}
+            {styleKey}
+            {component}
+            {metricsViewSpec}
+            theme={resolvedTheme}
+            {isThemeModeDark}
+            onBounds={handleLayerBounds}
+          />
+        {/if}
+        {#if hasPoints}
+          <MapPointsLayer
+            {map}
+            {styleKey}
+            {component}
+            {metricsViewSpec}
+            theme={resolvedTheme}
+            {isThemeModeDark}
+            onBounds={handleLayerBounds}
+          />
+        {/if}
+      </div>
+    {/if}
   </div>
 </div>
 

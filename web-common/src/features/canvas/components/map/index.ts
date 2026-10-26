@@ -19,7 +19,12 @@ import type {
   ComponentCommonProperties,
   ComponentFilterProperties,
 } from "../types";
+import { get } from "svelte/store";
 import CanvasMap from "./CanvasMap.svelte";
+import {
+  guessRegionBoundaries,
+  type RegionBoundaries,
+} from "./regions/registry";
 
 export { default as CanvasMap } from "./CanvasMap.svelte";
 
@@ -34,6 +39,15 @@ export const DEFAULT_MAP_COLOR_RANGE: ColorRangeMapping = {
   scheme: "tealblues",
 };
 
+/** Regions such as countries or states, filled by a measure and matched through a dimension's values. */
+export interface MapRegionsConfig {
+  dimension: string;
+  boundaries: RegionBoundaries;
+  /** Region property the dimension values are matched against. Defaults to matching every key of the boundary set. */
+  key?: string;
+  color: MapColorConfig;
+}
+
 /** Camera position the map opens with. When set, the map never auto-fits to the data. */
 export interface MapInitialView {
   longitude: number;
@@ -45,10 +59,12 @@ export interface MapSpec
   extends ComponentCommonProperties,
     ComponentFilterProperties {
   metrics_view: string;
-  geo_dimension: FieldConfig<"nominal">;
-  color: MapColorConfig;
+  // Points or polygons from a geo dimension. `color` and the fields below it only apply to this layer.
+  geo_dimension?: FieldConfig<"nominal">;
+  color?: MapColorConfig;
   size_measure?: FieldConfig<"quantitative">;
   tooltip_dimension?: FieldConfig<"nominal">;
+  regions?: MapRegionsConfig;
   initial_view?: MapInitialView;
 }
 
@@ -60,6 +76,7 @@ export class MapComponent extends BaseCanvasComponent<MapSpec> {
     "color",
     "size_measure",
     "tooltip_dimension",
+    "regions",
     "initial_view",
   ];
   type: CanvasComponentType = "map";
@@ -75,38 +92,50 @@ export class MapComponent extends BaseCanvasComponent<MapSpec> {
     super(resource, parent, path, defaultSpec);
   }
 
+  // A map needs at least one complete layer.
   isValid(spec: MapSpec): boolean {
-    return (
-      typeof spec.metrics_view === "string" &&
-      !!spec.geo_dimension?.field &&
-      !!spec.color?.measure
-    );
+    if (typeof spec.metrics_view !== "string") return false;
+    const hasPoints = !!spec.geo_dimension?.field && !!spec.color?.measure;
+    const hasRegions =
+      !!spec.regions?.dimension &&
+      !!spec.regions?.boundaries &&
+      !!spec.regions?.color?.measure;
+    return hasPoints || hasRegions;
   }
 
   inputParams(): InputParams<MapSpec> {
+    const hasGeoDimension = !!get(this.specStore)?.geo_dimension?.field;
     const inputParams: InputParams<MapSpec> = {
       options: {
         metrics_view: { type: "metrics", label: "Metrics view" },
+        regions: {
+          type: "map_regions",
+          optional: true,
+          label: "Regions",
+        },
         geo_dimension: {
           type: "positional",
+          optional: true,
           label: "Geo dimension",
           meta: {
             chartFieldInput: {
               type: "dimension",
               geoOnly: true,
               hideTimeDimension: true,
+              isRemovable: true,
             },
           },
         },
         color: {
           type: "map_color",
           label: "Color",
+          showInUI: hasGeoDimension,
         },
         size_measure: {
           type: "positional",
           optional: true,
           label: "Size measure",
-          showInUI: !this._isPolygonMode,
+          showInUI: hasGeoDimension && !this._isPolygonMode,
           meta: {
             chartFieldInput: {
               type: "measure",
@@ -118,6 +147,7 @@ export class MapComponent extends BaseCanvasComponent<MapSpec> {
           type: "positional",
           optional: true,
           label: "Tooltip dimension",
+          showInUI: hasGeoDimension,
           meta: {
             chartFieldInput: {
               type: "dimension",
@@ -138,7 +168,6 @@ export class MapComponent extends BaseCanvasComponent<MapSpec> {
     metricsViewName: string,
     metricsViewSpec: V1MetricsViewSpec | undefined,
   ): MapSpec {
-    // Find first geo dimension
     const geoDimension = metricsViewSpec?.dimensions?.find(
       (d) => d.type === MetricsViewSpecDimensionType.DIMENSION_TYPE_GEOSPATIAL,
     );
@@ -146,6 +175,25 @@ export class MapComponent extends BaseCanvasComponent<MapSpec> {
 
     // Color is required, so fall back to the first measure in the metrics view
     const colorMeasure = metricsViewSpec?.measures?.[0]?.name ?? "";
+
+    // Without a geo dimension, look for one that names regions, such as `country`.
+    if (!geoDimensionName) {
+      for (const d of metricsViewSpec?.dimensions ?? []) {
+        const boundaries = d.name ? guessRegionBoundaries(d.name) : undefined;
+        if (!d.name || !boundaries) continue;
+        return {
+          metrics_view: metricsViewName,
+          regions: {
+            dimension: d.name,
+            boundaries,
+            color: {
+              measure: colorMeasure,
+              colorRange: DEFAULT_MAP_COLOR_RANGE,
+            },
+          },
+        };
+      }
+    }
 
     return {
       metrics_view: metricsViewName,
