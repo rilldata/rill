@@ -127,6 +127,11 @@ func Discover(ctx context.Context, opts *DiscoverOptions) (*Client, error) {
 	if len(opts.Scopes) > 0 {
 		scopes = opts.Scopes
 	}
+	// Rill stores tokens securely and refreshes them, so it asks for a refresh token where the authorization server
+	// lets clients request one with the offline_access scope (MCP SEP-2207). Servers may still decline to issue one.
+	if slices.Contains(meta.ScopesSupported, "offline_access") && !slices.Contains(scopes, "offline_access") {
+		scopes = append(slices.Clone(scopes), "offline_access")
+	}
 
 	c := &Client{
 		ServerURL:             opts.ServerURL,

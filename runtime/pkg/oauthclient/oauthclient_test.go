@@ -17,6 +17,11 @@ import (
 // newDiscoveryServer serves authorization server metadata on its origin.
 // If prmPath is set, it also serves protected resource metadata at that path, declaring the server URL followed by resourcePath as its resource.
 func newDiscoveryServer(t *testing.T, prmPath, resourcePath string) *httptest.Server {
+	return newDiscoveryServerWithScopes(t, prmPath, resourcePath, nil)
+}
+
+// newDiscoveryServerWithScopes is like newDiscoveryServer, with asScopes as the authorization server's scopes_supported.
+func newDiscoveryServerWithScopes(t *testing.T, prmPath, resourcePath string, asScopes []string) *httptest.Server {
 	var srv *httptest.Server
 	mux := http.NewServeMux()
 	if prmPath != "" {
@@ -37,6 +42,7 @@ func newDiscoveryServer(t *testing.T, prmPath, resourcePath string) *httptest.Se
 			"token_endpoint":                   srv.URL + "/token",
 			"response_types_supported":         []string{"code"},
 			"code_challenge_methods_supported": []string{"S256"},
+			"scopes_supported":                 asScopes,
 		})
 	})
 	srv = httptest.NewServer(mux)
@@ -110,6 +116,33 @@ func TestDiscover(t *testing.T) {
 		})
 		require.NoError(t, err)
 		require.Equal(t, map[string]string{"access_type": "offline"}, c.AuthorizationParams)
+	})
+
+	t.Run("requests offline_access when the authorization server supports it", func(t *testing.T) {
+		srv := newDiscoveryServerWithScopes(t, "/.well-known/oauth-protected-resource/mcp", "/mcp", []string{"openid", "offline_access"})
+		c, err := discover(srv.URL+"/mcp", nil)
+		require.NoError(t, err)
+		require.Equal(t, []string{"read", "write", "offline_access"}, c.Scopes)
+
+		// Spare capacity would let an append write into the configured scopes' backing array
+		scopes := make([]string, 1, 4)
+		scopes[0] = "read"
+		c, err = discover(srv.URL+"/mcp", scopes)
+		require.NoError(t, err)
+		require.Equal(t, []string{"read", "offline_access"}, c.Scopes)
+		require.Equal(t, []string{"read"}, scopes, "the configured scopes must not be modified")
+		require.Empty(t, scopes[:2][1], "the configured scopes' backing array must not be modified")
+
+		c, err = discover(srv.URL+"/mcp", []string{"offline_access", "read"})
+		require.NoError(t, err)
+		require.Equal(t, []string{"offline_access", "read"}, c.Scopes)
+	})
+
+	t.Run("does not request offline_access when the authorization server does not support it", func(t *testing.T) {
+		srv := newDiscoveryServerWithScopes(t, "/.well-known/oauth-protected-resource/mcp", "/mcp", []string{"openid"})
+		c, err := discover(srv.URL+"/mcp", nil)
+		require.NoError(t, err)
+		require.Equal(t, []string{"read", "write"}, c.Scopes)
 	})
 
 	t.Run("fails without any metadata", func(t *testing.T) {

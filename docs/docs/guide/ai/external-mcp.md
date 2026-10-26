@@ -70,7 +70,7 @@ oauth_authorization_params:
 
 With `prompt: consent`, Google shows its consent screen every time a user connects, which only happens again when the user disconnects or the authorization is revoked. Parameters that Rill sets itself or depends on, such as `state`, `scope`, `code_challenge`, `request` or `response_mode`, cannot be set. Changing `oauth_authorization_params` requires users to connect again.
 
-Tokens are never shared between users. Rill Cloud stores each user's token encrypted in the control plane and refreshes it as needed; runtimes only receive short-lived access tokens. Users can disconnect a server at any time from the chat, even while the server is unreachable, which deletes the token.
+Tokens are never shared between users. Rill Cloud stores each user's token encrypted in the control plane and refreshes it as needed; runtimes only receive short-lived access tokens. When the authorization server advertises the `offline_access` scope, as Microsoft Entra ID does, Rill requests it so that the server issues a refresh token. Users can disconnect a server at any time from the chat, even while the server is unreachable, which deletes the token.
 
 ### Project-scoped credentials
 
