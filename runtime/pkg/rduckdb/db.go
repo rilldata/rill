@@ -874,7 +874,7 @@ func (d *db) acquireWriteConn(ctx context.Context, dsn, table string, initQuerie
 	return conn, release, nil
 }
 
-func (d *db) openDBAndAttach(ctx context.Context, uri, ignoreTable string, initQueries []string, read bool) (db *sqlx.DB, dbErr error) {
+func (d *db) openDBAndAttach(ctx context.Context, uri, ignoreTable string, initQueries []string, read bool) (_ *sqlx.DB, dbErr error) {
 	d.logger.Debug("open db", zap.Bool("read", read), zap.String("uri", uri), observability.ZapCtx(ctx))
 	// open the db
 	var settings map[string]string
@@ -929,11 +929,10 @@ func (d *db) openDBAndAttach(ctx context.Context, uri, ignoreTable string, initQ
 			},
 		}
 	}
-	db = sqlx.NewDb(otelsql.OpenDB(connector, otelsql.WithSpanOptions(spanOptions)), "duckdb")
+	db := sqlx.NewDb(otelsql.OpenDB(connector, otelsql.WithSpanOptions(spanOptions)), "duckdb")
 	defer func() {
 		// there are too many error paths after this so closing the db in a defer seems better
-		// but the dbErr can be non nil even before function reaches this point so need to check for db is non nil
-		if dbErr != nil && db != nil {
+		if dbErr != nil {
 			_ = db.Close()
 		}
 	}()
