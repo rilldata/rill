@@ -709,6 +709,20 @@ func convertTool(t *gomcp.Tool) *drivers.MCPTool {
 		Description:  t.Description,
 		InputSchema:  schemaToMap(t.InputSchema),
 		OutputSchema: schemaToMap(t.OutputSchema),
+		Annotations:  convertAnnotations(t.Annotations),
+	}
+}
+
+// convertAnnotations applies the protocol's defaults for hints the server leaves unset.
+func convertAnnotations(a *gomcp.ToolAnnotations) drivers.MCPToolAnnotations {
+	if a == nil {
+		return drivers.MCPToolAnnotations{Destructive: true, OpenWorld: true}
+	}
+	return drivers.MCPToolAnnotations{
+		ReadOnly:    a.ReadOnlyHint,
+		Destructive: !a.ReadOnlyHint && (a.DestructiveHint == nil || *a.DestructiveHint),
+		Idempotent:  a.IdempotentHint,
+		OpenWorld:   a.OpenWorldHint == nil || *a.OpenWorldHint,
 	}
 }
 

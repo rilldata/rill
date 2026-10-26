@@ -62,14 +62,16 @@ func newTestMCPServer(t *testing.T) *testMCPServer {
 	gomcp.AddTool(server, &gomcp.Tool{Name: "echo", Description: "Echoes the text"}, func(ctx context.Context, req *gomcp.CallToolRequest, args echoArgs) (*gomcp.CallToolResult, any, error) {
 		return &gomcp.CallToolResult{Content: []gomcp.Content{&gomcp.TextContent{Text: args.Text}}}, nil, nil
 	})
-	gomcp.AddTool(server, &gomcp.Tool{Name: "whoami", Description: "Returns the request headers"}, func(ctx context.Context, req *gomcp.CallToolRequest, args struct{}) (*gomcp.CallToolResult, any, error) {
+	openWorld := false
+	gomcp.AddTool(server, &gomcp.Tool{Name: "whoami", Description: "Returns the request headers", Annotations: &gomcp.ToolAnnotations{ReadOnlyHint: true, IdempotentHint: true, OpenWorldHint: &openWorld}}, func(ctx context.Context, req *gomcp.CallToolRequest, args struct{}) (*gomcp.CallToolResult, any, error) {
 		text := req.Extra.Header.Get("X-User") + "/" + req.Extra.Header.Get("X-Env")
 		return &gomcp.CallToolResult{Content: []gomcp.Content{&gomcp.TextContent{Text: text}}}, nil, nil
 	})
 	gomcp.AddTool(server, &gomcp.Tool{Name: "big", Description: "Returns a large result"}, func(ctx context.Context, req *gomcp.CallToolRequest, args struct{}) (*gomcp.CallToolResult, any, error) {
 		return &gomcp.CallToolResult{Content: []gomcp.Content{&gomcp.TextContent{Text: strings.Repeat("x", 300*1024)}}}, nil, nil
 	})
-	gomcp.AddTool(server, &gomcp.Tool{Name: "fail", Description: "Always fails"}, func(ctx context.Context, req *gomcp.CallToolRequest, args struct{}) (*gomcp.CallToolResult, any, error) {
+	notDestructive := false
+	gomcp.AddTool(server, &gomcp.Tool{Name: "fail", Description: "Always fails", Annotations: &gomcp.ToolAnnotations{DestructiveHint: &notDestructive}}, func(ctx context.Context, req *gomcp.CallToolRequest, args struct{}) (*gomcp.CallToolResult, any, error) {
 		return &gomcp.CallToolResult{IsError: true, Content: []gomcp.Content{&gomcp.TextContent{Text: "boom"}}}, nil, nil
 	})
 	handler := gomcp.NewStreamableHTTPHandler(func(*http.Request) *gomcp.Server { return server }, nil)
@@ -148,6 +150,18 @@ func TestListAndCallTools(t *testing.T) {
 		require.NotNil(t, tool.InputSchema)
 	}
 	require.ElementsMatch(t, []string{"echo", "whoami", "big", "fail"}, names)
+
+	// Annotations are passed through, with the protocol's defaults where the server sets none
+	for _, tool := range tools {
+		switch tool.Name {
+		case "whoami":
+			require.Equal(t, drivers.MCPToolAnnotations{ReadOnly: true, Destructive: false, Idempotent: true, OpenWorld: false}, tool.Annotations)
+		case "fail":
+			require.Equal(t, drivers.MCPToolAnnotations{ReadOnly: false, Destructive: false, Idempotent: false, OpenWorld: true}, tool.Annotations)
+		case "echo":
+			require.Equal(t, drivers.MCPToolAnnotations{ReadOnly: false, Destructive: true, Idempotent: false, OpenWorld: true}, tool.Annotations)
+		}
+	}
 
 	// Listing again is served from the cache
 	before := ts.requests

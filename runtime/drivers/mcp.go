@@ -56,6 +56,21 @@ type MCPTool struct {
 	Description  string
 	InputSchema  map[string]any
 	OutputSchema map[string]any
+	// Annotations describe the tool's behavior as claimed by the server.
+	Annotations MCPToolAnnotations
+}
+
+// MCPToolAnnotations are the behavior hints a server declares for a tool, with the protocol's defaults applied where it declares none.
+// They are claims of the server, not guarantees: callers must only act on them for servers they trust.
+type MCPToolAnnotations struct {
+	// ReadOnly is true if the tool does not modify its environment.
+	ReadOnly bool
+	// Destructive is true if the tool may perform destructive updates. It is always false for a read-only tool.
+	Destructive bool
+	// Idempotent is true if calling the tool repeatedly with the same arguments has no additional effect.
+	Idempotent bool
+	// OpenWorld is true if the tool may interact with external entities outside a closed domain.
+	OpenWorld bool
 }
 
 // MCPToolResult is the result of a tool call on an external MCP server.
