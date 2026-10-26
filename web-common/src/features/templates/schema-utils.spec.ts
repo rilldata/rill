@@ -12,7 +12,9 @@ import {
   radioOptions,
   tabOptions,
   selectOptions,
+  getConditionalValues,
 } from "./schema-utils";
+import { postgresSchema } from "./schemas/postgres";
 import type { MultiStepFormSchema, JSONSchemaField } from "./schemas/types";
 
 describe("schema-utils", () => {
@@ -249,6 +251,43 @@ describe("schema-utils", () => {
         "connector",
       );
       expect(sourceRequired.has("name")).toBe(false);
+    });
+
+    it("evaluates required conditions", () => {
+      const params = {
+        connection_mode: "parameters",
+        host: "db",
+        user: "rill",
+        dbname: "analytics",
+      };
+      expect(
+        getRequiredFieldsForValues(postgresSchema, params).has("sslkey_pem"),
+      ).toBe(false);
+      expect(
+        getRequiredFieldsForValues(postgresSchema, {
+          ...params,
+          sslcert_pem: "cert",
+        }).has("sslkey_pem"),
+      ).toBe(true);
+    });
+  });
+
+  describe("getConditionalValues", () => {
+    it("forces verify-full when any certificate is uploaded", () => {
+      for (const field of ["sslrootcert_pem", "sslcert_pem", "sslkey_pem"]) {
+        expect(
+          getConditionalValues(postgresSchema, {
+            sslmode: "disable",
+            [field]: "pem",
+          }).sslmode,
+        ).toBe("verify-full");
+      }
+      expect(
+        getConditionalValues(postgresSchema, {
+          sslmode: "disable",
+          sslrootcert_pem: "",
+        }).sslmode,
+      ).toBeUndefined();
     });
   });
 
