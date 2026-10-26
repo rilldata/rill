@@ -1,6 +1,7 @@
 import type { ComponentType, SvelteComponent } from "svelte";
 import type {
   ButtonLabels,
+  JSONSchemaCondition,
   JSONSchemaConditional,
   JSONSchemaField,
   MultiStepFormSchema,
@@ -282,8 +283,7 @@ export function getRequiredFieldsForValues(
   });
 
   for (const conditional of schema.allOf ?? []) {
-    const condition = conditional.if?.properties;
-    const matches = matchesCondition(condition, values);
+    const matches = matchesCondition(conditional.if, values);
     const branch = matches ? conditional.then : conditional.else;
     branch?.required?.forEach((key) => {
       if (isStepMatch(schema, key, step)) required.add(key);
@@ -444,15 +444,28 @@ export function getRequiredFieldsByEnumValue(
   return result;
 }
 
+// Supports `properties` with `const`, `required`, and `anyOf`; all present keywords must match.
 function matchesCondition(
-  condition: Record<string, { const?: string | number | boolean }> | undefined,
+  condition: JSONSchemaCondition | undefined,
   values: Record<string, unknown>,
-) {
-  if (!condition || !Object.keys(condition).length) return false;
-  return Object.entries(condition).every(([depKey, def]) => {
-    if (def.const === undefined || def.const === null) return false;
-    return String(values?.[depKey]) === String(def.const);
-  });
+): boolean {
+  const properties = Object.entries(condition?.properties ?? {});
+  const required = condition?.required ?? [];
+  const anyOf = condition?.anyOf ?? [];
+  if (!properties.length && !required.length && !anyOf.length) return false;
+  return (
+    properties.every(([depKey, def]) => {
+      if (def.const === undefined || def.const === null) return false;
+      return String(values?.[depKey]) === String(def.const);
+    }) &&
+    required.every(
+      (key) =>
+        values?.[key] !== undefined &&
+        values[key] !== null &&
+        values[key] !== "",
+    ) &&
+    (!anyOf.length || anyOf.some((c) => matchesCondition(c, values)))
+  );
 }
 
 function matchesEnumCondition(
@@ -505,8 +518,7 @@ export function getConditionalValues(
   const result: Record<string, unknown> = {};
 
   for (const conditional of schema.allOf ?? []) {
-    const condition = conditional.if?.properties;
-    const matches = matchesCondition(condition, values);
+    const matches = matchesCondition(conditional.if, values);
     const branch = matches ? conditional.then : conditional.else;
 
     if (!branch?.properties) continue;

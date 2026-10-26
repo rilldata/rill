@@ -111,6 +111,55 @@ POSTGRES_DSN=postgresql://postgres_user:postgres_pass@localhost:5432/postgres_db
 
 Then, [create your first model](#create-your-first-model).
 
+## TLS certificates in Rill Cloud
+
+Use certificate contents to connect to PostgreSQL with a private CA or mutual TLS.
+In the PostgreSQL connector form, choose **Enter parameters**, select **verify-full**
+for SSL mode, and upload the CA certificate, client certificate, and client private
+key under the advanced settings. The form stores file contents as base64-encoded
+secret variables and writes variable references into the connector YAML.
+
+For manual configuration:
+
+```yaml
+type: connector
+driver: postgres
+host: db.example.com
+port: "5432"
+dbname: analytics
+user: rill
+password: "{{ .env.POSTGRES_PASSWORD }}" # If required by the server
+sslmode: verify-full
+sslrootcert_pem: "{{ .env.POSTGRES_SSLROOTCERT }}"
+sslcert_pem: "{{ .env.POSTGRES_SSLCERT }}"
+sslkey_pem: "{{ .env.POSTGRES_SSLKEY }}"
+```
+
+Set the variables through your [Cloud project credentials](/developers/deploy/deploy-credentials)
+or use `rill env push` to upload variables configured locally. Values can contain
+raw PEM text or standard base64-encoded PEM.
+
+- `sslrootcert_pem`: Contents of `root.crt`, used to verify the server certificate.
+  Omit this to use the system trust roots.
+- `sslcert_pem`: Contents of `postgresql.crt`, including any intermediate certificates.
+- `sslkey_pem`: Contents of the matching, unencrypted `postgresql.key`.
+  Client certificate and private key must be provided together; omit both if the
+  server does not require client certificates.
+
+Certificate contents require individual connection parameters and `sslmode: verify-full`.
+If omitted, SSL mode defaults to `verify-full` when certificate contents are supplied.
+The server certificate must match the configured host. These options cannot be
+combined with `dsn` or `database_url`.
+
+Keep the private key out of Git. Store credentials using project variables, which
+follow the existing project credential access controls, including authorized
+`rill env pull` access. Base64 is an encoding, not encryption. Rotate credentials
+by updating the corresponding project variables.
+
+For local or self-hosted deployments, a DSN can instead specify `sslrootcert`,
+`sslcert`, and `sslkey` file paths. Those paths must be readable by the Rill process;
+local certificate files are not automatically provisioned into Rill Cloud.
+
 ## Create Your First Model
 
 Once your connector is configured using any method above, create a model to define what data to pull.
