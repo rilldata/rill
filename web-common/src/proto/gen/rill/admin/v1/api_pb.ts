@@ -4989,6 +4989,195 @@ export class GetDeploymentConfigResponse extends Message<GetDeploymentConfigResp
 }
 
 /**
+ * @generated from message rill.admin.v1.GetConnectorOAuthTokenRequest
+ */
+export class GetConnectorOAuthTokenRequest extends Message<GetConnectorOAuthTokenRequest> {
+  /**
+   * Name of the connector in the deployment's project.
+   *
+   * @generated from field: string connector = 1;
+   */
+  connector = "";
+
+  /**
+   * Hash of the connector's current OAuth configuration, as computed by the runtime.
+   * A token is only returned if the user authorized this configuration, so changing it never reuses an existing authorization.
+   *
+   * @generated from field: string config_hash = 2;
+   */
+  configHash = "";
+
+  /**
+   * ID of the user whose token to return.
+   *
+   * @generated from field: string user_id = 3;
+   */
+  userId = "";
+
+  /**
+   * If true, the token is refreshed even if it has not expired yet (used after the server rejected the current token).
+   *
+   * @generated from field: bool force_refresh = 4;
+   */
+  forceRefresh = false;
+
+  constructor(data?: PartialMessage<GetConnectorOAuthTokenRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.GetConnectorOAuthTokenRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "connector", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "config_hash", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "user_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "force_refresh", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetConnectorOAuthTokenRequest {
+    return new GetConnectorOAuthTokenRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetConnectorOAuthTokenRequest {
+    return new GetConnectorOAuthTokenRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetConnectorOAuthTokenRequest {
+    return new GetConnectorOAuthTokenRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: GetConnectorOAuthTokenRequest | PlainMessage<GetConnectorOAuthTokenRequest> | undefined, b: GetConnectorOAuthTokenRequest | PlainMessage<GetConnectorOAuthTokenRequest> | undefined): boolean {
+    return proto3.util.equals(GetConnectorOAuthTokenRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.GetConnectorOAuthTokenResponse
+ */
+export class GetConnectorOAuthTokenResponse extends Message<GetConnectorOAuthTokenResponse> {
+  /**
+   * @generated from field: string access_token = 1;
+   */
+  accessToken = "";
+
+  /**
+   * When the access token expires. Unset if the token does not expire.
+   *
+   * @generated from field: google.protobuf.Timestamp expires_on = 2;
+   */
+  expiresOn?: Timestamp;
+
+  constructor(data?: PartialMessage<GetConnectorOAuthTokenResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.GetConnectorOAuthTokenResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "access_token", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "expires_on", kind: "message", T: Timestamp },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetConnectorOAuthTokenResponse {
+    return new GetConnectorOAuthTokenResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetConnectorOAuthTokenResponse {
+    return new GetConnectorOAuthTokenResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetConnectorOAuthTokenResponse {
+    return new GetConnectorOAuthTokenResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: GetConnectorOAuthTokenResponse | PlainMessage<GetConnectorOAuthTokenResponse> | undefined, b: GetConnectorOAuthTokenResponse | PlainMessage<GetConnectorOAuthTokenResponse> | undefined): boolean {
+    return proto3.util.equals(GetConnectorOAuthTokenResponse, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.DeleteConnectorOAuthTokenRequest
+ */
+export class DeleteConnectorOAuthTokenRequest extends Message<DeleteConnectorOAuthTokenRequest> {
+  /**
+   * @generated from field: string connector = 1;
+   */
+  connector = "";
+
+  /**
+   * @generated from field: string config_hash = 2;
+   */
+  configHash = "";
+
+  /**
+   * @generated from field: string user_id = 3;
+   */
+  userId = "";
+
+  constructor(data?: PartialMessage<DeleteConnectorOAuthTokenRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.DeleteConnectorOAuthTokenRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "connector", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "config_hash", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "user_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): DeleteConnectorOAuthTokenRequest {
+    return new DeleteConnectorOAuthTokenRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): DeleteConnectorOAuthTokenRequest {
+    return new DeleteConnectorOAuthTokenRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): DeleteConnectorOAuthTokenRequest {
+    return new DeleteConnectorOAuthTokenRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: DeleteConnectorOAuthTokenRequest | PlainMessage<DeleteConnectorOAuthTokenRequest> | undefined, b: DeleteConnectorOAuthTokenRequest | PlainMessage<DeleteConnectorOAuthTokenRequest> | undefined): boolean {
+    return proto3.util.equals(DeleteConnectorOAuthTokenRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.DeleteConnectorOAuthTokenResponse
+ */
+export class DeleteConnectorOAuthTokenResponse extends Message<DeleteConnectorOAuthTokenResponse> {
+  constructor(data?: PartialMessage<DeleteConnectorOAuthTokenResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.DeleteConnectorOAuthTokenResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): DeleteConnectorOAuthTokenResponse {
+    return new DeleteConnectorOAuthTokenResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): DeleteConnectorOAuthTokenResponse {
+    return new DeleteConnectorOAuthTokenResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): DeleteConnectorOAuthTokenResponse {
+    return new DeleteConnectorOAuthTokenResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: DeleteConnectorOAuthTokenResponse | PlainMessage<DeleteConnectorOAuthTokenResponse> | undefined, b: DeleteConnectorOAuthTokenResponse | PlainMessage<DeleteConnectorOAuthTokenResponse> | undefined): boolean {
+    return proto3.util.equals(DeleteConnectorOAuthTokenResponse, a, b);
+  }
+}
+
+/**
  * @generated from message rill.admin.v1.ListRolesRequest
  */
 export class ListRolesRequest extends Message<ListRolesRequest> {
@@ -18816,6 +19005,13 @@ export class ReportOptions extends Message<ReportOptions> {
   exportIncludeHeader = false;
 
   /**
+   * If true, the export is attached to email notifications (only supported for explore reports run as the creator).
+   *
+   * @generated from field: bool export_attach = 24;
+   */
+  exportAttach = false;
+
+  /**
    * @generated from field: repeated string email_recipients = 8;
    */
   emailRecipients: string[] = [];
@@ -18898,6 +19094,7 @@ export class ReportOptions extends Message<ReportOptions> {
     { no: 5, name: "export_limit", kind: "scalar", T: 4 /* ScalarType.UINT64 */ },
     { no: 6, name: "export_format", kind: "enum", T: proto3.getEnumType(ExportFormat) },
     { no: 20, name: "export_include_header", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 24, name: "export_attach", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 8, name: "email_recipients", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 10, name: "slack_users", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 11, name: "slack_channels", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },

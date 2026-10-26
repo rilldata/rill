@@ -56,7 +56,7 @@ const hoistedPage: HoistedPageForComponentTests = vi.hoisted(() => ({}) as any);
 const editReport = vi.hoisted(() =>
   vi.fn<
     (request: {
-      data: { options: { queryArgsJson: string } };
+      data: { options: { queryArgsJson: string; exportAttach?: boolean } };
     }) => Promise<unknown>
   >(),
 );
@@ -111,8 +111,9 @@ vi.mock("@rilldata/web-admin/client", async () => {
     getAdminServiceListBookmarksQueryOptions: () => ({}),
     createAdminServiceGetCurrentUser: () =>
       readable({ data: { user: { email: "user@rilldata.com" } } }),
+    // The report's recipient is a project member, so the report can also run as the recipient.
     createAdminServiceListProjectMemberUsers: () =>
-      readable({ data: { members: [] } }),
+      readable({ data: { members: [{ userEmail: "user@rilldata.com" }] } }),
     createAdminServiceCreateReport: () =>
       readable({ mutateAsync: vi.fn(), error: null }),
     createAdminServiceEditReport: () =>
@@ -124,7 +125,10 @@ const PUBLISHER_FILTER = createAndExpression([
   createInExpression(AD_BIDS_PUBLISHER_DIMENSION, ["Facebook", "Google"]),
 ]);
 
-function getReportSpec(where: V1Expression | undefined): V1ReportSpec {
+function getReportSpec(
+  where: V1Expression | undefined,
+  webOpenMode = "creator",
+): V1ReportSpec {
   const queryArgs: V1MetricsViewAggregationRequest = {
     metricsView: AD_BIDS_METRICS_NAME,
     dimensions: [{ name: AD_BIDS_DOMAIN_DIMENSION }],
@@ -143,7 +147,7 @@ function getReportSpec(where: V1Expression | undefined): V1ReportSpec {
     ],
     annotations: {
       explore: AD_BIDS_EXPLORE_NAME,
-      web_open_mode: "creator",
+      web_open_mode: webOpenMode,
     },
   };
 }
@@ -166,12 +170,16 @@ async function openEditDialog(reportSpec: V1ReportSpec) {
   return rendered;
 }
 
-/** Saves the report and returns the `where` of the query the dialog sent to the admin API. */
-async function saveAndGetWhere() {
+/** Saves the report and returns the options the dialog sent to the admin API. */
+async function saveAndGetOptions() {
   await act(() => screen.getByLabelText("Save report").click());
   await waitFor(() => expect(editReport).toHaveBeenCalledOnce());
+  return editReport.mock.calls[0][0].data.options;
+}
 
-  const { options } = editReport.mock.calls[0][0].data;
+/** Saves the report and returns the `where` of the query the dialog sent to the admin API. */
+async function saveAndGetWhere() {
+  const options = await saveAndGetOptions();
   const queryArgs = JSON.parse(
     options.queryArgsJson,
   ) as V1MetricsViewAggregationRequest;
@@ -247,5 +255,28 @@ describe("ScheduledReportDialog", () => {
     );
 
     expect(await saveAndGetWhere()).toEqual(PUBLISHER_FILTER);
+  });
+
+  it("keeps attaching the export when the report runs as the creator", async () => {
+    await openEditDialog({ ...getReportSpec(undefined), exportAttach: true });
+
+    const checkbox = screen.getByLabelText("Attach file to emails");
+    expect(checkbox).toBeChecked();
+    expect(checkbox).toBeEnabled();
+
+    expect((await saveAndGetOptions()).exportAttach).toBe(true);
+  });
+
+  it("does not attach the export when the report runs as the recipient", async () => {
+    await openEditDialog({
+      ...getReportSpec(undefined, "recipient"),
+      exportAttach: true,
+    });
+
+    const checkbox = screen.getByLabelText("Attach file to emails");
+    expect(checkbox).not.toBeChecked();
+    expect(checkbox).toBeDisabled();
+
+    expect((await saveAndGetOptions()).exportAttach).toBe(false);
   });
 });

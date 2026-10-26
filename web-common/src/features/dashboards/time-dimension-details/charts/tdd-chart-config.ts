@@ -42,6 +42,8 @@ export function createTDDCartesianSpec(
   showTimeDimensionDetail = true,
   dynamicYAxis = false,
   ephemeralMeasures?: EphemeralMeasureDef[],
+  // Request the measure with `exact: true` (see `requestExactNames`).
+  exact = false,
 ): CartesianChartSpec & Pick<ChartSpec, "vl_config"> {
   const spec: CartesianChartSpec & Pick<ChartSpec, "vl_config"> = {
     metrics_view: metricsViewName,
@@ -62,6 +64,9 @@ export function createTDDCartesianSpec(
     ...(ephemeralMeasures?.some((def) => def.name === measureName)
       ? { adhoc_measures: ephemeralDefsToSpecs(ephemeralMeasures) }
       : {}),
+    // The chart's query is built by the shared chart providers, which read the
+    // exact selection from the spec.
+    ...(exact ? { exact_measures: [measureName] } : {}),
     isInteractive: true,
     // Fix vertical alignment across stacked TDD charts: force a fixed axis
     // width so every measure's plot area is identical regardless of label width.

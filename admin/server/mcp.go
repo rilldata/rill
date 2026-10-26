@@ -83,7 +83,7 @@ func (s *Server) mcpHandler() (http.Handler, error) {
 		}
 	}
 
-	return mcp.NewStreamableHTTPHandler(func(r *http.Request) *mcp.Server {
+	return middleware.MCPSessionIDMiddleware(mcp.NewStreamableHTTPHandler(func(r *http.Request) *mcp.Server {
 		srv := mcp.NewServer(
 			&mcp.Implementation{
 				Name:    "rill",
@@ -93,8 +93,6 @@ func (s *Server) mcpHandler() (http.Handler, error) {
 			&mcp.ServerOptions{
 				Instructions: mcpInstructions,
 				HasTools:     true,
-				// Issue a session ID so clients pass it back on subsequent requests, enabling us to keep one AI session per project.
-				GetSessionID: uuid.NewString,
 			},
 		)
 
@@ -106,7 +104,7 @@ func (s *Server) mcpHandler() (http.Handler, error) {
 		}))
 
 		client := &mcpClient{
-			sessionID:       r.Header.Get("Mcp-Session-Id"),
+			sessionID:       r.Header.Get(middleware.MCPSessionIDHeader), // Issued by MCPSessionIDMiddleware if the client did not send one
 			userAgent:       r.UserAgent(),
 			protocolVersion: r.Header.Get("Mcp-Protocol-Version"),
 		}
@@ -121,7 +119,7 @@ func (s *Server) mcpHandler() (http.Handler, error) {
 		return srv
 	}, &mcp.StreamableHTTPOptions{
 		Stateless: true, // Required since the server serves multiple users.
-	}), nil
+	})), nil
 }
 
 // mcpRequireAuth rejects unauthenticated requests to the MCP server.
@@ -267,12 +265,10 @@ func (s *Server) callRuntimeTool(ctx context.Context, depl *database.Deployment,
 	if client.userAgent != "" {
 		req.Header.Set("User-Agent", client.userAgent)
 	}
-	if client.sessionID != "" {
-		// Derive a session ID per project instead of passing the client's through.
-		// A runtime may serve several projects from one catalog, where AI session IDs must be unique.
-		sessionID := uuid.NewSHA1(mcpSessionNamespace, []byte(depl.RuntimeInstanceID+"/"+client.sessionID))
-		req.Header.Set("Mcp-Session-Id", sessionID.String())
-	}
+	// Derive a session ID per project instead of passing the client's through.
+	// A runtime may serve several projects from one catalog, where AI session IDs must be unique.
+	sessionID := uuid.NewSHA1(mcpSessionNamespace, []byte(depl.RuntimeInstanceID+"/"+client.sessionID))
+	req.Header.Set(middleware.MCPSessionIDHeader, sessionID.String())
 
 	// Uses http.DefaultClient to get caching/pooling of TCP connections.
 	res, err := http.DefaultClient.Do(req)

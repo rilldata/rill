@@ -18,12 +18,26 @@ type AdminService interface {
 	// SavePersonalCanvas creates a personal canvas owned by the given user, or edits it if name is not empty.
 	// Annotations in the YAML are ignored: the admin sets the owner and keeps the canvas' sharing state.
 	SavePersonalCanvas(ctx context.Context, userID, name, displayName, yaml string) (*PersonalCanvas, error)
+	// GetConnectorOAuthToken returns a user's OAuth access token for a connector, refreshing it first if it is about to expire.
+	// configHash identifies the connector's current OAuth configuration; a token granted for another configuration is reported as not found.
+	// It returns ErrNotFound if the user has not authorized the connector.
+	GetConnectorOAuthToken(ctx context.Context, connector, configHash, userID string, forceRefresh bool) (*MCPOAuthToken, error)
+	// DeleteConnectorOAuthToken removes a user's OAuth authorizations for a connector, including those granted for its earlier OAuth configurations.
+	// configHash identifies the current configuration.
+	DeleteConnectorOAuthToken(ctx context.Context, connector, configHash, userID string) error
 }
 
 // PersonalCanvas identifies a saved personal canvas.
 type PersonalCanvas struct {
 	Name string
 	URL  string
+}
+
+// MCPOAuthToken is a user's OAuth access token for an external MCP connector.
+type MCPOAuthToken struct {
+	AccessToken string
+	// ExpiresOn is zero if the token does not expire.
+	ExpiresOn time.Time
 }
 
 type ReportMetadata struct {

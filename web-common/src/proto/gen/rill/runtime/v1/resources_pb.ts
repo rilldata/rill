@@ -2057,6 +2057,13 @@ export class MetricsViewSpec_Measure extends Message<MetricsViewSpec_Measure> {
    */
   lowerIsBetter = false;
 
+  /**
+   * Optional exact variant of `expression`. When set, `expression` is treated as the approximate default and `exact_expression` is only used when a query explicitly requests exact values for the measure.
+   *
+   * @generated from field: string exact_expression = 18;
+   */
+  exactExpression = "";
+
   constructor(data?: PartialMessage<MetricsViewSpec_Measure>) {
     super();
     proto3.util.initPartial(data, this);
@@ -2082,6 +2089,7 @@ export class MetricsViewSpec_Measure extends Message<MetricsViewSpec_Measure> {
     { no: 14, name: "treat_nulls_as", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 15, name: "data_type", kind: "message", T: Type },
     { no: 17, name: "lower_is_better", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 18, name: "exact_expression", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewSpec_Measure {
@@ -3780,6 +3788,13 @@ export class ReportSpec extends Message<ReportSpec> {
   exportIncludeHeader = false;
 
   /**
+   * If true, the export is attached to email notifications (only supported for query-based reports run as the creator).
+   *
+   * @generated from field: bool export_attach = 19;
+   */
+  exportAttach = false;
+
+  /**
    * @generated from field: repeated rill.runtime.v1.Notifier notifiers = 11;
    */
   notifiers: Notifier[] = [];
@@ -3830,6 +3845,7 @@ export class ReportSpec extends Message<ReportSpec> {
     { no: 7, name: "export_limit", kind: "scalar", T: 4 /* ScalarType.UINT64 */ },
     { no: 8, name: "export_format", kind: "enum", T: proto3.getEnumType(ExportFormat) },
     { no: 16, name: "export_include_header", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 19, name: "export_attach", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 11, name: "notifiers", kind: "message", T: Notifier, repeated: true },
     { no: 10, name: "annotations", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
     { no: 12, name: "watermark_inherit", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
@@ -6455,6 +6471,21 @@ export class ConnectorSpec extends Message<ConnectorSpec> {
    */
   provisionArgs?: Struct;
 
+  /**
+   * Security rules that control which users may use the connector and, for MCP connectors, which of its tools.
+   * Parsed from the connector's "security" YAML block; currently only the "mcp" driver supports it.
+   *
+   * @generated from field: repeated rill.runtime.v1.SecurityRule security_rules = 8;
+   */
+  securityRules: SecurityRule[] = [];
+
+  /**
+   * AI agents that may use the connector's tools (MCP connectors only). Empty means all agents.
+   *
+   * @generated from field: repeated string agents = 9;
+   */
+  agents: string[] = [];
+
   constructor(data?: PartialMessage<ConnectorSpec>) {
     super();
     proto3.util.initPartial(data, this);
@@ -6468,6 +6499,8 @@ export class ConnectorSpec extends Message<ConnectorSpec> {
     { no: 4, name: "templated_properties", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 5, name: "provision", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 6, name: "provision_args", kind: "message", T: Struct },
+    { no: 8, name: "security_rules", kind: "message", T: SecurityRule, repeated: true },
+    { no: 9, name: "agents", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ConnectorSpec {
@@ -6521,6 +6554,51 @@ export class ConnectorState extends Message<ConnectorState> {
 
   static equals(a: ConnectorState | PlainMessage<ConnectorState> | undefined, b: ConnectorState | PlainMessage<ConnectorState> | undefined): boolean {
     return proto3.util.equals(ConnectorState, a, b);
+  }
+}
+
+/**
+ * MCPTool describes a tool exposed by an external MCP server.
+ *
+ * @generated from message rill.runtime.v1.MCPTool
+ */
+export class MCPTool extends Message<MCPTool> {
+  /**
+   * @generated from field: string name = 1;
+   */
+  name = "";
+
+  /**
+   * @generated from field: string description = 2;
+   */
+  description = "";
+
+  constructor(data?: PartialMessage<MCPTool>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.MCPTool";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "description", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MCPTool {
+    return new MCPTool().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): MCPTool {
+    return new MCPTool().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): MCPTool {
+    return new MCPTool().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: MCPTool | PlainMessage<MCPTool> | undefined, b: MCPTool | PlainMessage<MCPTool> | undefined): boolean {
+    return proto3.util.equals(MCPTool, a, b);
   }
 }
 

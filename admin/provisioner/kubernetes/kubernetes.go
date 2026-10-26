@@ -346,6 +346,12 @@ func (p *KubernetesProvisioner) Hibernate(ctx context.Context, r *provisioner.Re
 		return nil, err
 	}
 
+	// Wait for the resources to be removed, so a subsequent Provision doesn't patch them while they are terminating.
+	err = p.awaitDeleted(ctx, names, false)
+	if err != nil {
+		return nil, err
+	}
+
 	state.Hibernated = true
 
 	return &provisioner.Resource{
@@ -390,8 +396,43 @@ func (p *KubernetesProvisioner) Deprovision(ctx context.Context, r *provisioner.
 		}
 	}
 
-	// This returns 'nil' if all errors are 'nil'
-	return multierr.Combine(errs...)
+	if err := multierr.Combine(errs...); err != nil {
+		return err
+	}
+
+	// Wait for the resources to be removed, so resources with the same names can be re-created afterwards.
+	return p.awaitDeleted(ctx, names, true)
+}
+
+// awaitDeleted waits until the Kubernetes resources with the given names no longer exist.
+// The deletes in Hibernate and Deprovision only mark resources for deletion.
+// With foreground propagation, they are removed asynchronously once their dependents are gone (and, for the PVC, once no pod uses it).
+// Callers may re-create resources with the same names right afterwards (e.g. when restarting a deployment, or switching it to a provisioner in the same namespace).
+// Without waiting, that would patch the terminating resources instead of creating new ones, and the new runtime would never become ready.
+func (p *KubernetesProvisioner) awaitDeleted(ctx context.Context, names ResourceNames, includePVC bool) error {
+	err := wait.PollUntilContextTimeout(ctx, time.Second, time.Duration(p.Spec.TimeoutSeconds)*time.Second, true, func(ctx context.Context) (bool, error) {
+		_, err1 := p.clientset.NetworkingV1().Ingresses(p.Spec.Namespace).Get(ctx, names.HTTPIngress, metav1.GetOptions{})
+		_, err2 := p.clientset.NetworkingV1().Ingresses(p.Spec.Namespace).Get(ctx, names.GRPCIngress, metav1.GetOptions{})
+		_, err3 := p.clientset.CoreV1().Services(p.Spec.Namespace).Get(ctx, names.Service, metav1.GetOptions{})
+		_, err4 := p.clientset.AppsV1().Deployments(p.Spec.Namespace).Get(ctx, names.Deployment, metav1.GetOptions{})
+		errs := []error{err1, err2, err3, err4}
+		if includePVC {
+			_, err5 := p.clientset.CoreV1().PersistentVolumeClaims(p.Spec.Namespace).Get(ctx, names.PVC, metav1.GetOptions{})
+			errs = append(errs, err5)
+		}
+
+		for _, err := range errs {
+			// Keep polling if the resource still exists or the lookup failed.
+			if !k8serrs.IsNotFound(err) {
+				return false, nil
+			}
+		}
+		return true, nil
+	})
+	if err != nil {
+		return fmt.Errorf("failed waiting for Kubernetes resources to be deleted: %w", err)
+	}
+	return nil
 }
 
 func (p *KubernetesProvisioner) AwaitReady(ctx context.Context, r *provisioner.Resource) error {

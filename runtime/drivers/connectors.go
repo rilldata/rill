@@ -33,6 +33,7 @@ type Spec struct {
 	ImplementsFileStore   bool
 	ImplementsNotifier    bool
 	ImplementsWarehouse   bool
+	ImplementsMCP         bool
 }
 
 // PropertySpec provides metadata about a single connector property.

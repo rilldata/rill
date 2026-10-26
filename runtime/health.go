@@ -99,6 +99,8 @@ func (r *Runtime) Health(ctx context.Context, fullStatus bool) (*Health, error) 
 	}, nil
 }
 
+// InstanceHealth returns the health of an instance.
+// Unless enabled in the instance config, it skips OLAP pings and metrics view queries, and does not update the cached health.
 func (r *Runtime) InstanceHealth(ctx context.Context, instanceID string) (*InstanceHealth, error) {
 	// Tag the health-check probe queries with the "health" source so they're identifiable and excluded from billing.
 	ctx = WithRequestSource(ctx, RequestSourceHealth)
@@ -106,6 +108,11 @@ func (r *Runtime) InstanceHealth(ctx context.Context, instanceID string) (*Insta
 	res := &InstanceHealth{}
 
 	inst, err := r.Instance(ctx, instanceID)
+	if err != nil {
+		return nil, err
+	}
+
+	cfg, err := inst.Config()
 	if err != nil {
 		return nil, err
 	}
@@ -128,22 +135,12 @@ func (r *Runtime) InstanceHealth(ctx context.Context, instanceID string) (*Insta
 	}
 	res.ParseErrCount = count
 
-	cachedHealth, _ := r.cachedInstanceHealth(ctx, ctrl.InstanceID, ctrl.catalog.version)
-
 	// check repo error
 	err = r.checkRepo(ctx, inst)
 	if err == nil {
 		res.Repo = ""
 	} else {
 		res.Repo = err.Error()
-	}
-
-	// check OLAP error
-	err = r.checkOLAP(ctx, inst, cachedHealth)
-	if err == nil {
-		res.OLAP = ""
-	} else {
-		res.OLAP = err.Error()
 	}
 
 	// check resources with reconcile errors
@@ -155,6 +152,20 @@ func (r *Runtime) InstanceHealth(ctx context.Context, instanceID string) (*Insta
 		if r.Meta.ReconcileError != "" {
 			res.ReconcileErrCount++
 		}
+	}
+
+	if !cfg.HealthMakeLiveQueries {
+		return res, nil
+	}
+
+	cachedHealth, _ := r.cachedInstanceHealth(ctx, ctrl.InstanceID, ctrl.catalog.version)
+
+	// check OLAP error
+	err = r.checkOLAP(ctx, inst, cachedHealth)
+	if err == nil {
+		res.OLAP = ""
+	} else {
+		res.OLAP = err.Error()
 	}
 
 	// run queries against metrics views

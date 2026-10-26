@@ -13,6 +13,11 @@
   import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
   import { timeFormat } from "d3-time-format";
   import { onDestroy } from "svelte";
+  import {
+    precisionStateFor,
+    type PrecisionChipProps,
+  } from "../exact-measures/exact-measures";
+  import { exploreExactSurface } from "../exact-measures/explore-surfaces";
   import TDDHeader from "./TDDHeader.svelte";
   import TDDTable from "./TDDTable.svelte";
   import { useTimeDimensionDataStore } from "./time-dimension-data-store";
@@ -43,9 +48,11 @@
     selectors: {
       dimensions: { allDimensions },
       measures: { allMeasures },
+      exactMeasures: { exactMeasureContext },
     },
     actions: {
       sorting: { toggleSort },
+      exactMeasures: { toggleExactMeasure },
     },
     expressionFilterManager,
   } = getStateManagers();
@@ -67,6 +74,22 @@
   );
 
   const measureLabel = $derived(measure?.displayName ?? "");
+
+  // Precision chip of the measure header; undefined when it has no exact variant.
+  const measurePrecision = $derived.by((): PrecisionChipProps | undefined => {
+    const state = precisionStateFor(
+      expandedMeasureName,
+      $exactMeasureContext(exploreExactSurface.tdd),
+    );
+    if (!state) return undefined;
+    return {
+      state,
+      measureLabel,
+      loading: state !== "approx" && !!$timeDimensionDataStore?.isFetching,
+      onToggle: () =>
+        toggleExactMeasure(exploreExactSurface.tdd, expandedMeasureName),
+    };
+  });
 
   const dimensionLabel = $derived.by(() => {
     if (comparing === "dimension") {
@@ -274,6 +297,7 @@
       {excludeMode}
       {dimensionLabel}
       {measureLabel}
+      precision={measurePrecision}
       sortDirection={$dashboardStore.sortDirection === SortDirection.ASCENDING}
       sortType={$dashboardStore.dashboardSortType}
       comparing={comparisonCopy}

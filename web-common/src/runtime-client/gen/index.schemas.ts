@@ -112,6 +112,8 @@ export interface MetricsViewSpecMeasure {
   treatNullsAs?: string;
   dataType?: Runtimev1Type;
   lowerIsBetter?: boolean;
+  /** Optional exact variant of `expression`. When set, `expression` is the approximate default. */
+  exactExpression?: string;
 }
 
 export type MetricsViewSpecMeasureType =
@@ -809,10 +811,22 @@ export interface V1ConnectorSpec {
   templatedProperties?: string[];
   provision?: boolean;
   provisionArgs?: V1ConnectorSpecProvisionArgs;
+  /** Security rules that control which users may use the connector and, for MCP connectors, which of its tools. */
+  securityRules?: V1SecurityRule[];
+  /** AI agents that may use the connector's tools (MCP connectors only). Empty means all agents. */
+  agents?: string[];
 }
 
 export interface V1ConnectorState {
   specHash?: string;
+  /** Tools discovered on an external MCP server (MCP connectors only). */
+  mcpTools?: V1MCPTool[];
+}
+
+/** MCPTool describes a tool exposed by an external MCP server. */
+export interface V1MCPTool {
+  name?: string;
+  description?: string;
 }
 
 export interface V1ConnectorV2 {
@@ -1570,6 +1584,8 @@ export interface V1MetricsViewAggregationMeasure {
   uri?: V1MetricsViewAggregationMeasureComputeURI;
   comparisonTime?: V1MetricsViewAggregationMeasureComputeComparisonTime;
   expression?: V1MetricsViewAggregationMeasureComputeExpression;
+  /** Optional. Compute the measure with its `exact_expression`. No-op for measures without one. */
+  exact?: boolean;
 }
 
 export interface V1MetricsViewAggregationMeasureComputeComparisonDelta {
@@ -1931,6 +1947,8 @@ export interface V1MetricsViewTimeSeriesRequest {
   /** Optional ephemeral measures, i.e. measures defined by the query rather than the metrics view.
 Only the `expression` compute is supported for time series. */
   ephemeralMeasures?: V1MetricsViewAggregationMeasure[];
+  /** Optional. Names of measures to compute with their `exact_expression`. */
+  exactMeasureNames?: string[];
   timeStart?: string;
   timeEnd?: string;
   timeGranularity?: V1TimeGrain;
@@ -2395,6 +2413,8 @@ export interface V1ReportSpec {
   exportLimit?: string;
   exportFormat?: V1ExportFormat;
   exportIncludeHeader?: boolean;
+  /** If true, the export is attached to email notifications (only supported for query-based reports run as the creator). */
+  exportAttach?: boolean;
   notifiers?: V1Notifier[];
   annotations?: V1ReportSpecAnnotations;
   /** If true, will use the lowest watermark of its refs instead of the trigger time. */
@@ -2946,7 +2966,10 @@ If not set, it will infer an agent based on the prompt and conversation history.
   analystAgentContext?: V1AnalystAgentContext;
   developerAgentContext?: V1DeveloperAgentContext;
   feedbackAgentContext?: V1FeedbackAgentContext;
-  /** Optional current browser path. The origin is intentionally omitted. */
+  /**
+   * Deprecated: no longer read by the server. The agents learn what the user is viewing from the analyst and developer contexts.
+   * @deprecated
+   */
   uiPagePath?: string;
   /** Optional visible, enabled, uniquely-addressable browser actions. */
   uiActions?: V1UIAction[];
@@ -2963,7 +2986,10 @@ If not set, it will infer an agent based on the prompt and conversation history.
   analystAgentContext?: V1AnalystAgentContext;
   developerAgentContext?: V1DeveloperAgentContext;
   feedbackAgentContext?: V1FeedbackAgentContext;
-  /** Optional current browser path. The origin is intentionally omitted. */
+  /**
+   * Deprecated: no longer read by the server. The agents learn what the user is viewing from the analyst and developer contexts.
+   * @deprecated
+   */
   uiPagePath?: string;
   /** Optional visible, enabled, uniquely-addressable browser actions. */
   uiActions?: V1UIAction[];
@@ -3383,6 +3409,8 @@ export type QueryServiceMetricsViewTimeSeriesBody = {
   /** Optional ephemeral measures, i.e. measures defined by the query rather than the metrics view.
 Only the `expression` compute is supported for time series. */
   ephemeralMeasures?: V1MetricsViewAggregationMeasure[];
+  /** Optional. Names of measures to compute with their `exact_expression`. */
+  exactMeasureNames?: string[];
   timeStart?: string;
   timeEnd?: string;
   timeGranularity?: V1TimeGrain;

@@ -6,7 +6,7 @@ description: Detailed instructions and examples for developing component (custom
 
 ## Introduction
 
-Components are reusable visualizations ("custom viz") defined as standalone `type: component` files, conventionally under `viz_library/`. A component declares typed **params** and a **renderer**; canvas dashboards reference the component by name and bind values to its params. This makes one visualization reusable across many dashboards with different metrics views, measures, and dimensions.
+Components are reusable visualizations ("custom viz") defined as standalone `type: component` files, conventionally under `viz/`. A component declares typed **params** and a **renderer**; canvas dashboards reference the component by name and bind values to its params. This makes one visualization reusable across many dashboards with different metrics views, measures, and dimensions.
 
 Charts are described with a declarative chart spec: you state the chart type and which field goes on which channel, and Rill derives the scales, axes, number formats, sorting, stacking, colors and layout from the data and from the metrics view's semantics. **In a chart spec, do not set axis titles, tick counts, colors, fonts, widths or heights anywhere**; they are computed. Reach for Vega-Lite only when the chart spec cannot express what was asked, and then only as described in "Going beyond the chart spec" below.
 
@@ -15,7 +15,7 @@ Charts are described with a declarative chart spec: you state the chart type and
 A component file's only top-level keys are `type`, `display_name`, `description` (optional), `params`, and one renderer block such as `custom_chart` (which contains `metrics_sql` and `spec`). **Never place `metrics_sql` or `spec` at the top level of the YAML, and never wrap the renderer under a `renderer:` key.** A file without a proper renderer block parses as an empty draft and renders nothing: it reports no error, so a misplaced block is silent.
 
 ```yaml
-# viz_library/measure_trend.yaml
+# viz/measure_trend.yaml
 type: component
 display_name: Measure trend
 description: Line chart of any measure over a time dimension.
@@ -173,27 +173,27 @@ Small multiples: one panel per value of a dimension:
       color: { field: "{{ .params.series }}" }
 ```
 
-## Going beyond the chart spec: ejecting to Vega-Lite
+## Going beyond the chart spec: converting to Vega-Lite
 
 The chart spec is deliberately narrow: a chart type, six encoding keys, and `chartProperties`. When a
 request needs something it cannot reach — a mark it has no chart type for, layered or dual-axis
 composition, a data transform, an interaction, or specific control over an axis, legend, scale or
-number format — the component **ejects**: `spec` is replaced by `vega_spec`, a Vega-Lite v5 spec
+number format — the component is **converted to Vega-Lite**: `spec` is replaced by `vega_spec`, a Vega-Lite v5 spec
 written as a string. The two are mutually exclusive; a component that declares both fails to parse.
 
-Try the chart spec first. Ejecting is a one-way trade: Rill stops deriving scales, axes, formats,
+Try the chart spec first. Converting is a one-way trade: Rill stops deriving scales, axes, formats,
 sorting, stacking and layout, so the chart no longer adapts to its data, and everything the chart
-spec used to compute becomes yours to write and maintain. Eject when the request genuinely cannot be
+spec used to compute becomes yours to write and maintain. Convert when the request genuinely cannot be
 met otherwise, not to gain incidental control. If a listed chart type does what was asked, use it.
-Say plainly in your summary that the component was ejected and what it gave up.
+Say plainly in your summary that the component was converted to Vega-Lite and what it gave up.
 
 Nothing else about the component changes: keep the `params` and the `metrics_sql` exactly as they
 were, so every dashboard already referencing the component keeps working. Only the renderer's chart
 description changes.
 
-### Keeping an ejected component parameterized
+### Keeping a converted component parameterized
 
-A component is reusable because its bindings are templated, and an ejected spec must stay that way.
+A component is reusable because its bindings are templated, and a converted spec must stay that way.
 Never write a field name, an axis title or a number format as a literal — bind each one back to the
 param it came from:
 
@@ -217,7 +217,7 @@ Scalar params (`string`, `number`, `boolean`) are additionally injected as nativ
 so a spec can reference one as a signal by name in an expression, predicate or extent — in addition
 to substituting it textually as `{{ .params.<name> }}`.
 
-### Vega-Lite rules for an ejected component
+### Vega-Lite rules for a converted component
 
 - Write a valid Vega-Lite v5 spec as a YAML block scalar (`vega_spec: |`).
 - Read the query result from `{"data": {"name": "query1"}}`. A component issues exactly one query, so
@@ -231,6 +231,8 @@ to substituting it textually as `{{ .params.<name> }}`.
   so encode it as `"type": "temporal"` and let the query drive the bucket.
 - Include a tooltip covering the encoded fields, titled with `display_name` and formatted with
   `format_type`.
+- Put every placeholder inside a JSON string. Values are JSON-escaped on substitution, so quotes in
+  display names are safe, and a string param cannot inject a JSON fragment.
 
 ```yaml
 custom_chart:
@@ -276,7 +278,7 @@ custom_chart:
     }
 ```
 
-The component editor also has an **Eject to Vega-Lite** action, which compiles the current chart spec
+The component editor also has a **Convert to Vega-Lite** action, which compiles the current chart spec
 and writes the equivalent parameterized Vega-Lite for the user. It is a good starting point for
 someone editing by hand, but it is not available to you: write the `vega_spec` directly.
 
@@ -304,4 +306,4 @@ If a visualization needs cross-row derivations (running sums, per-group offsets,
 - **Do not set `type` or `aggregate` on an encoding** unless the derived behaviour is actually wrong; the semantics Rill supplies are usually right, and hardcoding them is what breaks a component when it is rebound to a different metrics view. A dimension typed `quantitative` renders a blank chart.
 - New params on an already-used component should be optional or have a default, otherwise existing dashboards break.
 - Components are validated leniently while they contain unresolved `{{ .params.* }}` placeholders; the fully-bound instance is validated in each canvas that references it.
-- Inline `custom_chart` blocks inside a canvas are a different, Vega-Lite-based widget and always use `vega_spec`; they never accept `spec`. A component file authors `spec` by default and switches to `vega_spec` only when ejected (see "Going beyond the chart spec").
+- Inline `custom_chart` blocks inside a canvas are a different, Vega-Lite-based widget and always use `vega_spec`; they never accept `spec`. A component file authors `spec` by default and switches to `vega_spec` only when converted (see "Going beyond the chart spec").

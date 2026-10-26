@@ -130,6 +130,7 @@ export type JSONSchemaCondition = {
     { const?: string | number | boolean; minLength?: number }
   >;
   required?: string[];
+  anyOf?: JSONSchemaCondition[];
   not?: JSONSchemaCondition;
 };
 

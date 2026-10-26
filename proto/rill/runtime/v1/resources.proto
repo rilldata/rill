@@ -282,6 +282,8 @@ message MetricsViewSpec {
     Type data_type = 15;
     // When true, decreases in this measure are favorable (e.g. bounce rate, latency, error count). UI surfaces that render comparison deltas (KPIs, big numbers, leaderboards, pivot tables, time-series tooltips) swap their positive/negative coloring accordingly.
     bool lower_is_better = 17;
+    // Optional exact variant of `expression`. When set, `expression` is treated as the approximate default and `exact_expression` is only used when a query explicitly requests exact values for the measure.
+    string exact_expression = 18;
   }
   // name of parent metrics view, if this is a derived metrics view. If this is set then certain fields like table, connector, database*, model, dimensions, and measures will only be set in `state.valid_spec`.
   string parent = 30;
@@ -692,6 +694,7 @@ message ReportSpec {
   uint64 export_limit = 7;
   ExportFormat export_format = 8;
   bool export_include_header = 16;
+  bool export_attach = 19; // If true, the export is attached to email notifications (only supported for query-based reports run as the creator).
   repeated Notifier notifiers = 11;
   map<string, string> annotations = 10;
   bool watermark_inherit = 12; // If true, will use the lowest watermark of its refs instead of the trigger time.
@@ -1113,8 +1116,19 @@ message ConnectorSpec {
   repeated string templated_properties = 4;
   bool provision = 5;
   google.protobuf.Struct provision_args = 6;
+  // Security rules that control which users may use the connector and, for MCP connectors, which of its tools.
+  // Parsed from the connector's "security" YAML block; currently only the "mcp" driver supports it.
+  repeated SecurityRule security_rules = 8;
+  // AI agents that may use the connector's tools (MCP connectors only). Empty means all agents.
+  repeated string agents = 9;
 }
 
 message ConnectorState {
   string spec_hash = 1;
+}
+
+// MCPTool describes a tool exposed by an external MCP server.
+message MCPTool {
+  string name = 1;
+  string description = 2;
 }

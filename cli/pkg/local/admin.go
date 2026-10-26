@@ -165,6 +165,17 @@ func (l *localAdminService) UpdateProjectVariables(ctx context.Context, environm
 	return err
 }
 
+// GetConnectorOAuthToken implements drivers.AdminService.
+// Per-user OAuth for connectors is only available in Rill Cloud; ErrNotImplemented makes the runtime report such connectors as not connected.
+func (l *localAdminService) GetConnectorOAuthToken(ctx context.Context, connector, configHash, userID string, forceRefresh bool) (*drivers.MCPOAuthToken, error) {
+	return nil, drivers.ErrNotImplemented
+}
+
+// DeleteConnectorOAuthToken implements drivers.AdminService.
+func (l *localAdminService) DeleteConnectorOAuthToken(ctx context.Context, connector, configHash, userID string) error {
+	return drivers.ErrNotImplemented
+}
+
 // HasAnonymousSourceAccess implements [drivers.Driver].
 func (l *localAdminService) HasAnonymousSourceAccess(ctx context.Context, srcProps map[string]any, logger *zap.Logger) (bool, error) {
 	return true, nil
@@ -220,6 +231,11 @@ func (l *localAdminService) AsModelExecutor(instanceID string, opts *drivers.Mod
 // AsModelManager implements [drivers.Handle].
 func (l *localAdminService) AsModelManager(instanceID string) (drivers.ModelManager, error) {
 	return nil, drivers.ErrNotImplemented
+}
+
+// AsMCP implements drivers.Handle.
+func (l *localAdminService) AsMCP() (drivers.MCPService, bool) {
+	return nil, false
 }
 
 // AsNotifier implements [drivers.Handle].

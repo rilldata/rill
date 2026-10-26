@@ -52,6 +52,8 @@ const (
 	AdminService_TriggerRedeploy_FullMethodName                          = "/rill.admin.v1.AdminService/TriggerRedeploy"
 	AdminService_Provision_FullMethodName                                = "/rill.admin.v1.AdminService/Provision"
 	AdminService_GetDeploymentConfig_FullMethodName                      = "/rill.admin.v1.AdminService/GetDeploymentConfig"
+	AdminService_GetConnectorOAuthToken_FullMethodName                   = "/rill.admin.v1.AdminService/GetConnectorOAuthToken"
+	AdminService_DeleteConnectorOAuthToken_FullMethodName                = "/rill.admin.v1.AdminService/DeleteConnectorOAuthToken"
 	AdminService_ListRoles_FullMethodName                                = "/rill.admin.v1.AdminService/ListRoles"
 	AdminService_ListOrganizationMemberUsers_FullMethodName              = "/rill.admin.v1.AdminService/ListOrganizationMemberUsers"
 	AdminService_ListOrganizationInvites_FullMethodName                  = "/rill.admin.v1.AdminService/ListOrganizationInvites"
@@ -272,6 +274,14 @@ type AdminServiceClient interface {
 	// GetDeploymentConfig returns the configuration for a deployment that the runtime should apply.
 	// This is called by the runtime to pull its Variables and Annotations from the admin service.
 	GetDeploymentConfig(ctx context.Context, in *GetDeploymentConfigRequest, opts ...grpc.CallOption) (*GetDeploymentConfigResponse, error)
+	// GetConnectorOAuthToken returns a user's OAuth access token for a connector in the calling deployment's project,
+	// refreshing it first if it is about to expire.
+	// It returns NotFound if the user has not authorized the connector's current OAuth configuration.
+	// It can only be called by deployments.
+	GetConnectorOAuthToken(ctx context.Context, in *GetConnectorOAuthTokenRequest, opts ...grpc.CallOption) (*GetConnectorOAuthTokenResponse, error)
+	// DeleteConnectorOAuthToken removes a user's OAuth authorization for a connector in the calling deployment's project.
+	// It can only be called by deployments.
+	DeleteConnectorOAuthToken(ctx context.Context, in *DeleteConnectorOAuthTokenRequest, opts ...grpc.CallOption) (*DeleteConnectorOAuthTokenResponse, error)
 	// ListRoles lists all the roles available for orgs and projects.
 	ListRoles(ctx context.Context, in *ListRolesRequest, opts ...grpc.CallOption) (*ListRolesResponse, error)
 	// ListOrganizationMemberUsers lists all the org members
@@ -891,6 +901,26 @@ func (c *adminServiceClient) GetDeploymentConfig(ctx context.Context, in *GetDep
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(GetDeploymentConfigResponse)
 	err := c.cc.Invoke(ctx, AdminService_GetDeploymentConfig_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminServiceClient) GetConnectorOAuthToken(ctx context.Context, in *GetConnectorOAuthTokenRequest, opts ...grpc.CallOption) (*GetConnectorOAuthTokenResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetConnectorOAuthTokenResponse)
+	err := c.cc.Invoke(ctx, AdminService_GetConnectorOAuthToken_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminServiceClient) DeleteConnectorOAuthToken(ctx context.Context, in *DeleteConnectorOAuthTokenRequest, opts ...grpc.CallOption) (*DeleteConnectorOAuthTokenResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(DeleteConnectorOAuthTokenResponse)
+	err := c.cc.Invoke(ctx, AdminService_DeleteConnectorOAuthToken_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -2348,6 +2378,14 @@ type AdminServiceServer interface {
 	// GetDeploymentConfig returns the configuration for a deployment that the runtime should apply.
 	// This is called by the runtime to pull its Variables and Annotations from the admin service.
 	GetDeploymentConfig(context.Context, *GetDeploymentConfigRequest) (*GetDeploymentConfigResponse, error)
+	// GetConnectorOAuthToken returns a user's OAuth access token for a connector in the calling deployment's project,
+	// refreshing it first if it is about to expire.
+	// It returns NotFound if the user has not authorized the connector's current OAuth configuration.
+	// It can only be called by deployments.
+	GetConnectorOAuthToken(context.Context, *GetConnectorOAuthTokenRequest) (*GetConnectorOAuthTokenResponse, error)
+	// DeleteConnectorOAuthToken removes a user's OAuth authorization for a connector in the calling deployment's project.
+	// It can only be called by deployments.
+	DeleteConnectorOAuthToken(context.Context, *DeleteConnectorOAuthTokenRequest) (*DeleteConnectorOAuthTokenResponse, error)
 	// ListRoles lists all the roles available for orgs and projects.
 	ListRoles(context.Context, *ListRolesRequest) (*ListRolesResponse, error)
 	// ListOrganizationMemberUsers lists all the org members
@@ -2741,6 +2779,12 @@ func (UnimplementedAdminServiceServer) Provision(context.Context, *ProvisionRequ
 }
 func (UnimplementedAdminServiceServer) GetDeploymentConfig(context.Context, *GetDeploymentConfigRequest) (*GetDeploymentConfigResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetDeploymentConfig not implemented")
+}
+func (UnimplementedAdminServiceServer) GetConnectorOAuthToken(context.Context, *GetConnectorOAuthTokenRequest) (*GetConnectorOAuthTokenResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetConnectorOAuthToken not implemented")
+}
+func (UnimplementedAdminServiceServer) DeleteConnectorOAuthToken(context.Context, *DeleteConnectorOAuthTokenRequest) (*DeleteConnectorOAuthTokenResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method DeleteConnectorOAuthToken not implemented")
 }
 func (UnimplementedAdminServiceServer) ListRoles(context.Context, *ListRolesRequest) (*ListRolesResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListRoles not implemented")
@@ -3764,6 +3808,42 @@ func _AdminService_GetDeploymentConfig_Handler(srv interface{}, ctx context.Cont
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(AdminServiceServer).GetDeploymentConfig(ctx, req.(*GetDeploymentConfigRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminService_GetConnectorOAuthToken_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetConnectorOAuthTokenRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).GetConnectorOAuthToken(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_GetConnectorOAuthToken_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).GetConnectorOAuthToken(ctx, req.(*GetConnectorOAuthTokenRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminService_DeleteConnectorOAuthToken_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeleteConnectorOAuthTokenRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).DeleteConnectorOAuthToken(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_DeleteConnectorOAuthToken_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).DeleteConnectorOAuthToken(ctx, req.(*DeleteConnectorOAuthTokenRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -6372,6 +6452,14 @@ var AdminService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetDeploymentConfig",
 			Handler:    _AdminService_GetDeploymentConfig_Handler,
+		},
+		{
+			MethodName: "GetConnectorOAuthToken",
+			Handler:    _AdminService_GetConnectorOAuthToken_Handler,
+		},
+		{
+			MethodName: "DeleteConnectorOAuthToken",
+			Handler:    _AdminService_DeleteConnectorOAuthToken_Handler,
 		},
 		{
 			MethodName: "ListRoles",

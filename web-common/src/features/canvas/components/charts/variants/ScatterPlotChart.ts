@@ -99,7 +99,7 @@ export class ScatterPlotChartComponent extends BaseChart<ScatterPlotCanvasChartS
   constructor(resource: V1Resource, parent: CanvasEntity, path: ComponentPath) {
     super(resource, parent, path);
 
-    this.provider = new ScatterPlotChartProvider(this.specStore);
+    this.provider = new ScatterPlotChartProvider(this.querySpecStore);
 
     this.provider.combinedWhere.subscribe((where) => {
       this.componentFilters = where;

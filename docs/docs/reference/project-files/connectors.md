@@ -1024,7 +1024,32 @@ _[string]_ - Password for authentication
 
 ### `sslmode`
 
-_[string]_ - ssl mode options: `disable`, `allow`, `prefer` or `require`.
+_[string]_ - SSL mode options: `disable`, `allow`, `prefer`, `require`, `verify-ca`, or `verify-full`.
+When certificate contents are supplied, defaults to `verify-full`; other modes are rejected.
+
+
+### `sslrootcert_pem`
+
+_[string]_ - CA certificate contents as raw PEM or standard base64-encoded PEM.
+Used to verify the PostgreSQL server certificate; omit to use the system trust roots.
+Requires individual connection parameters (not `dsn` or `database_url`) and `verify-full` TLS.
+
+
+### `sslcert_pem`
+
+_[string]_ - Client certificate contents as raw PEM or standard base64-encoded PEM.
+Requires `sslkey_pem` and `verify-full` TLS. Cannot be combined with `dsn` or `database_url`.
+
+
+### `sslkey_pem`
+
+_[string]_ - Matching unencrypted client private key contents as raw PEM or standard base64-encoded PEM.
+Requires `sslcert_pem` and `verify-full` TLS. Cannot be combined with `dsn` or `database_url`.
+Store this value in a secret project variable.
+
+See [PostgreSQL TLS certificates](/developers/build/connectors/data-source/postgres#tls-certificates-in-rill-cloud)
+for upload and Cloud configuration instructions.
+
 
 ### `max_open_conns`
 
@@ -1244,6 +1269,127 @@ aws_secret_access_key: "{{ .env.AWS_SECRET_ACCESS_KEY }}" # AWS Secret Access Ke
 aws_access_token: "{{ .env.AWS_ACCESS_TOKEN }}" # Optional AWS session token for temporary credentials
 endpoint: "https://my-s3-endpoint.com" # Optional custom endpoint URL for S3-compatible storage
 region: "us-east-1" # AWS region of the S3 bucket
+```
+
+## MCP Server
+
+Connects an external MCP (Model Context Protocol) server so its tools become available to Rill's AI agents.
+Credentials are either project-scoped (`headers` with `{{ .env.* }}` templating) or per-user (`auth: oauth`, where each user authorizes the server in their browser from the chat).
+
+
+### `driver`
+
+_[string]_ - Refers to the driver type and must be driver `mcp` _(required)_
+
+### `url`
+
+_[string]_ - URL of the MCP server's streamable HTTP endpoint. Must use `https` in Rill Cloud _(required)_
+
+### `display_name`
+
+_[string]_ - Human-friendly name for the server, shown in the chat and to AI agents. Defaults to the connector name
+
+### `ai_instructions`
+
+_[string]_ - Guidance for AI agents on when and how to use the server's tools
+
+### `auth`
+
+_[string]_ - Set to `oauth` for servers that require each user to authorize access in their browser (OAuth 2.1 with PKCE).
+Only available in Rill Cloud, where users connect from the chat and each user's token is stored encrypted. Rill Developer lists such servers but cannot connect them.
+Cannot be combined with an `Authorization` header.
+
+
+### `oauth_client_id`
+
+_[string]_ - Pre-registered OAuth client ID, for authorization servers that do not support dynamic client registration
+
+### `oauth_client_secret`
+
+_[string]_ - Secret of the pre-registered OAuth client. Reference it from `.env` with `{{ .env.* }}` templating rather than committing it
+
+### `oauth_scopes`
+
+_[array of string]_ - Scopes to request during authorization. Defaults to all scopes the server advertises
+
+### `headers`
+
+_[object]_ - HTTP headers sent on every request to the server, such as a project-scoped `Authorization` header.
+Values may use `{{ .env.* }}` for secrets and `{{ .user.* }}` to pass attributes of the requesting user (which makes the server usable only by identified users).
+
+
+### `timeout`
+
+_[string]_ - Timeout per tool call, as a duration (default `60s`)
+
+### `connect_timeout`
+
+_[string]_ - Timeout for connecting to the server and listing its tools, as a duration (default `10s`)
+
+### `max_result_bytes`
+
+_[integer]_ - Maximum size of a tool result passed to the AI, in bytes. Larger results are truncated (default `131072`)
+
+### `security`
+
+_[object]_ - Controls who may use the server and which of its tools. It uses the same syntax as [metrics view security policies](/developers/build/metrics-view/security),
+with tool names in place of dimension and measure names, plus an `agents` field.
+Omit the block to allow every user with AI access; a block without `access` denies everyone.
+
+
+  - **`access`** - _[oneOf]_ - Expression indicating whether the user may use the server. Can reference user attributes with `{{ .user.* }}`
+
+    - **option 1** - _[string]_ - SQL expression that evaluates to a boolean to determine access
+
+    - **option 2** - _[boolean]_ - Direct boolean value to allow or deny access
+
+  - **`agents`** - _[array of string]_ - AI agents that may use the server's tools. Defaults to all agents
+
+  - **`include`** - _[array of object]_ - Tools each user may call. If any include rule is present, tools not matched by a passing rule are denied
+
+    - **`if`** - _[string]_ - Templated boolean condition over user attributes _(required)_
+
+    - **`names`** - _[oneOf]_ - Tool names the rule applies to, or `'*'` for all tools _(required)_
+
+      - **option 1** - _[string]_ - (no description)
+
+      - **option 2** - _[array of string]_ - (no description)
+
+  - **`exclude`** - _[array of object]_ - Tools to deny. A matching exclude always wins over an include
+
+    - **`if`** - _[string]_ - Templated boolean condition over user attributes _(required)_
+
+    - **`names`** - _[oneOf]_ - Tool names the rule applies to, or `'*'` for all tools _(required)_
+
+      - **option 1** - _[string]_ - (no description)
+
+      - **option 2** - _[array of string]_ - (no description)
+
+```yaml
+# Example: MCP server with per-user OAuth
+type: connector # Must be `connector` (required)
+driver: mcp # Must be `mcp` _(required)_
+url: "https://mcp.linear.app/mcp" # Streamable HTTP endpoint of the MCP server
+display_name: "Linear" # Name shown in the chat and to AI agents
+ai_instructions: "Use Linear to look up issues. Search before creating anything."
+auth: oauth # Each user authorizes the server from the chat
+security:
+    access: "'{{ .user.domain }}' == 'example.com'" # Only users of this domain may use the server
+    agents: [analyst] # Only the analyst agent may use it
+    exclude:
+        - if: "NOT {{ .user.admin }}"
+          names: [create_issue, update_issue, delete_issue]
+```
+
+```yaml
+# Example: internal MCP server with a project-scoped token
+type: connector
+driver: mcp
+url: "https://mcp.internal.example.com/mcp"
+display_name: "Company data"
+headers:
+    Authorization: "Bearer {{ .env.INTERNAL_MCP_TOKEN }}" # Secret from .env or Rill Cloud variables
+    X-Rill-User: "{{ .user.email }}" # Pass the requesting user's identity to the server
 ```
 
 ## Slack

@@ -6,6 +6,7 @@ import (
 	"net/url"
 	"strings"
 	"testing"
+	"time"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
@@ -32,6 +33,7 @@ func TestClickhouseSingle(t *testing.T) {
 
 	t.Run("WithConnection", func(t *testing.T) { testWithConnection(t, olap) })
 	t.Run("DropTable", func(t *testing.T) { testDropTable(t, c, olap) })
+	t.Run("DropStaleTempTables", func(t *testing.T) { testDropStaleTempTables(t, c, olap) })
 	t.Run("RenameView", func(t *testing.T) { testRenameView(t, c, olap) })
 	t.Run("RenameTable", func(t *testing.T) { testRenameTable(t, c, olap) })
 	t.Run("CreateTableAsSelect", func(t *testing.T) { testCreateTableAsSelect(t, c) })
@@ -45,6 +47,7 @@ func TestClickhouseSingle(t *testing.T) {
 	t.Run("QueryAttributesReadonlyUser", func(t *testing.T) { testQueryAttributesReadonlyUser(t, olap, dsn) })
 	t.Run("CreateTableAsSelect_WithPrePostExec", func(t *testing.T) { testCreateTableAsSelect_WithPrePostExec(t, c, olap) })
 	t.Run("InsertTableAsSelect_WithPrePostExec", func(t *testing.T) { testInsertTableAsSelect_WithPrePostExec(t, c, olap) })
+	t.Run("SelectInlineResults", func(t *testing.T) { testSelectInlineResults(t, olap) })
 }
 
 func TestClickhouseCluster(t *testing.T) {
@@ -64,6 +67,7 @@ func TestClickhouseCluster(t *testing.T) {
 
 	t.Run("WithConnection", func(t *testing.T) { testWithConnection(t, olap) })
 	t.Run("DropTable", func(t *testing.T) { testDropTable(t, c, olap) })
+	t.Run("DropStaleTempTables", func(t *testing.T) { testDropStaleTempTables(t, c, olap) })
 	t.Run("RenameView", func(t *testing.T) { testRenameView(t, c, olap) })
 	t.Run("RenameTable", func(t *testing.T) { testRenameTable(t, c, olap) })
 	t.Run("CreateTableAsSelect", func(t *testing.T) { testCreateTableAsSelect(t, c) })
@@ -120,6 +124,51 @@ func testDropTable(t *testing.T, c *Connection, olap drivers.OLAPStore) {
 	require.NoError(t, err)
 	require.NoError(t, c.dropTable(ctx, "drop_view"))
 	notExists(t, olap, "drop_view")
+
+	if c.config.Cluster != "" {
+		// Only the `_local` table exists if the execution was cancelled before it created the Distributed table over it.
+		err = olap.Exec(ctx, &drivers.Statement{Query: fmt.Sprintf("CREATE TABLE drop_local_only_local %s (id Int32) ENGINE = MergeTree ORDER BY tuple()", c.onClusterClause())})
+		require.NoError(t, err)
+		require.NoError(t, c.dropTable(ctx, "drop_local_only"))
+		notExists(t, olap, "drop_local_only_local")
+	}
+}
+
+func testDropStaleTempTables(t *testing.T, c *Connection, olap drivers.OLAPStore) {
+	ctx := context.Background()
+	props := &ModelOutputProperties{Columns: "(id Int32)", Engine: "MergeTree"}
+
+	// A partition insert's table and a column inference view, as an interrupted execution leaves them behind.
+	staleTable := tempTablePrefix + "stale_tbl_" + strings.Repeat("0", 32)
+	staleView := tempTablePrefix + stagingTableNameFor("stale_tbl") + "_" + strings.Repeat("1", 32)
+	require.NoError(t, c.createTable(ctx, staleTable, "", props))
+	_, err := c.createTableAsSelect(ctx, staleView, "SELECT 1 AS id", &ModelOutputProperties{Typ: "VIEW"}, "", "")
+	require.NoError(t, err)
+	// The model's own table must be left alone.
+	require.NoError(t, c.createTable(ctx, "stale_tbl", "", props))
+	// Only the `_local` table exists if the execution was cancelled before it created the Distributed table over it.
+	localOnly := localTableName(tempTablePrefix + "stale_tbl_" + strings.Repeat("2", 32))
+	if c.config.Cluster != "" {
+		err = olap.Exec(ctx, &drivers.Statement{Query: fmt.Sprintf("CREATE TABLE %s %s (id Int32) ENGINE = MergeTree ORDER BY tuple()", safeSQLName(localOnly), c.onClusterClause())})
+		require.NoError(t, err)
+	}
+
+	// Tables younger than the TTL may still be written to by a running execution.
+	require.NoError(t, c.dropStaleTempTables(ctx, tempTableTTL))
+	require.True(t, tableExists(t, olap, staleTable))
+	require.True(t, tableExists(t, olap, staleView))
+
+	// metadata_modification_time has second resolution, so let the tables age past a zero TTL.
+	time.Sleep(time.Second)
+	require.NoError(t, c.dropStaleTempTables(ctx, 0))
+	notExists(t, olap, staleTable)
+	notExists(t, olap, staleView)
+	if c.config.Cluster != "" {
+		notExists(t, olap, localTableName(staleTable))
+		notExists(t, olap, localOnly)
+	}
+	require.True(t, tableExists(t, olap, "stale_tbl"))
+	require.NoError(t, c.dropTable(ctx, "stale_tbl"))
 }
 
 func testRenameView(t *testing.T, c *Connection, olap drivers.OLAPStore) {
@@ -165,6 +214,10 @@ func testRenameTable(t *testing.T, c *Connection, olap drivers.OLAPStore) {
 }
 
 func notExists(t *testing.T, olap drivers.OLAPStore, tbl string) {
+	require.False(t, tableExists(t, olap, tbl), "table %q should not exist", tbl)
+}
+
+func tableExists(t *testing.T, olap drivers.OLAPStore, tbl string) bool {
 	result, err := olap.Query(context.Background(), &drivers.Statement{
 		Query: "EXISTS " + tbl,
 	})
@@ -172,8 +225,8 @@ func notExists(t *testing.T, olap drivers.OLAPStore, tbl string) {
 	require.True(t, result.Next())
 	var exist bool
 	require.NoError(t, result.Scan(&exist))
-	require.False(t, exist)
 	require.NoError(t, result.Close())
+	return exist
 }
 
 func testCreateTableAsSelect(t *testing.T, c *Connection) {
@@ -1167,4 +1220,62 @@ func testEntityTypeRestrictedUser(t *testing.T, olap drivers.OLAPStore, dsn, clu
 	exists, err := restrictedConnection.checkBillingTableExists(ctx, cluster)
 	require.NoError(t, err)
 	require.False(t, exists)
+}
+
+// testSelectInlineResults checks that query results can be inlined in a VALUES clause that preserves their types.
+// UUID and Decimal values are bound as strings, so they must be cast back to their ClickHouse type to stay joinable with the original columns.
+func testSelectInlineResults(t *testing.T, olap drivers.OLAPStore) {
+	ctx := context.Background()
+	res, err := olap.Query(ctx, &drivers.Statement{
+		Query: `SELECT * FROM (
+				SELECT toUUID('6ba7b810-9dad-11d1-80b4-00c04fd430c8') AS id, toNullable(toUUID('6ba7b811-9dad-11d1-80b4-00c04fd430c8')) AS nid, toDecimal64(1.25, 2) AS price, toNullable(toDecimal128(-3.5, 4)) AS nprice, 'a' AS name, toDate('2024-01-02') AS day
+				UNION ALL
+				SELECT toUUID('6ba7b812-9dad-11d1-80b4-00c04fd430c8'), NULL, toDecimal64(0, 2), NULL, 'b', toDate('2024-01-03')
+			) ORDER BY name`,
+	})
+	require.NoError(t, err)
+	defer res.Close()
+
+	sql, args, dimVals, err := olap.Dialect().SelectInlineResults(res)
+	require.NoError(t, err)
+	require.Len(t, dimVals, 2)
+	require.Contains(t, sql, "CAST(? AS UUID)")
+	require.Contains(t, sql, "CAST(? AS Nullable(UUID))")
+	require.Contains(t, sql, "CAST(? AS Decimal(18, 2))")
+	require.Contains(t, sql, "CAST(? AS Nullable(Decimal(38, 4)))")
+	require.Contains(t, sql, "toDate(?)")
+
+	// Round-trip the inlined results through ClickHouse and check the values and the types they come back with.
+	rows, err := olap.Query(ctx, &drivers.Statement{
+		Query: fmt.Sprintf(`SELECT toTypeName(id) AS id_type, toString(id) AS id_text, toTypeName(nid) AS nid_type, ifNull(toString(nid), '<null>') AS nid_text, toTypeName(price) AS price_type, toString(price) AS price_text, toTypeName(nprice) AS nprice_type, ifNull(toString(nprice), '<null>') AS nprice_text, name, toTypeName(day) AS day_type, toString(day) AS day_text FROM (%s) ORDER BY name`, sql),
+		Args:  args,
+	})
+	require.NoError(t, err)
+	defer rows.Close()
+
+	var got []map[string]any
+	for rows.Next() {
+		row := make(map[string]any)
+		require.NoError(t, rows.MapScan(row))
+		got = append(got, row)
+	}
+	require.NoError(t, rows.Err())
+	require.Equal(t, []map[string]any{
+		{
+			"id_type": "UUID", "id_text": "6ba7b810-9dad-11d1-80b4-00c04fd430c8",
+			"nid_type": "Nullable(UUID)", "nid_text": "6ba7b811-9dad-11d1-80b4-00c04fd430c8",
+			"price_type": "Decimal(18, 2)", "price_text": "1.25",
+			"nprice_type": "Nullable(Decimal(38, 4))", "nprice_text": "-3.5",
+			"name":     "a",
+			"day_type": "Date", "day_text": "2024-01-02",
+		},
+		{
+			"id_type": "UUID", "id_text": "6ba7b812-9dad-11d1-80b4-00c04fd430c8",
+			"nid_type": "Nullable(UUID)", "nid_text": "<null>",
+			"price_type": "Decimal(18, 2)", "price_text": "0",
+			"nprice_type": "Nullable(Decimal(38, 4))", "nprice_text": "<null>",
+			"name":     "b",
+			"day_type": "Date", "day_text": "2024-01-03",
+		},
+	}, got)
 }

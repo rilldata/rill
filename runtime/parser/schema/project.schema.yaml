@@ -956,7 +956,29 @@ definitions:
               description: Password for authentication
             sslmode:
               type: string
-              description:  "ssl mode options: `disable`, `allow`, `prefer` or `require`."
+              description: |
+                SSL mode options: `disable`, `allow`, `prefer`, `require`, `verify-ca`, or `verify-full`.
+                When certificate contents are supplied, defaults to `verify-full`; other modes are rejected.
+            sslrootcert_pem:
+              type: string
+              description: |
+                CA certificate contents as raw PEM or standard base64-encoded PEM.
+                Used to verify the PostgreSQL server certificate; omit to use the system trust roots.
+                Requires individual connection parameters (not `dsn` or `database_url`) and `verify-full` TLS.
+            sslcert_pem:
+              type: string
+              description: |
+                Client certificate contents as raw PEM or standard base64-encoded PEM.
+                Requires `sslkey_pem` and `verify-full` TLS. Cannot be combined with `dsn` or `database_url`.
+            sslkey_pem:
+              type: string
+              description: |
+                Matching unencrypted client private key contents as raw PEM or standard base64-encoded PEM.
+                Requires `sslcert_pem` and `verify-full` TLS. Cannot be combined with `dsn` or `database_url`.
+                Store this value in a secret project variable.
+
+                See [PostgreSQL TLS certificates](/developers/build/connectors/data-source/postgres#tls-certificates-in-rill-cloud)
+                for upload and Cloud configuration instructions.
             max_open_conns:
               type: integer
               description: Maximum number of open connections to the database (defaults to 1)
@@ -1145,6 +1167,142 @@ definitions:
 
           required:
             - driver
+        - type: object
+          title: MCP Server
+          description: |
+            Connects an external MCP (Model Context Protocol) server so its tools become available to Rill's AI agents.
+            Credentials are either project-scoped (`headers` with `{{ .env.* }}` templating) or per-user (`auth: oauth`, where each user authorizes the server in their browser from the chat).
+          properties:
+            driver:
+              type: string
+              description: Refers to the driver type and must be driver `mcp`
+              const: mcp
+            url:
+              type: string
+              description: URL of the MCP server's streamable HTTP endpoint. Must use `https` in Rill Cloud
+            display_name:
+              type: string
+              description: Human-friendly name for the server, shown in the chat and to AI agents. Defaults to the connector name
+            ai_instructions:
+              type: string
+              description: Guidance for AI agents on when and how to use the server's tools
+            auth:
+              type: string
+              enum: [oauth]
+              description: |
+                Set to `oauth` for servers that require each user to authorize access in their browser (OAuth 2.1 with PKCE).
+                Only available in Rill Cloud, where users connect from the chat and each user's token is stored encrypted. Rill Developer lists such servers but cannot connect them.
+                Cannot be combined with an `Authorization` header.
+            oauth_client_id:
+              type: string
+              description: Pre-registered OAuth client ID, for authorization servers that do not support dynamic client registration
+            oauth_client_secret:
+              type: string
+              description: Secret of the pre-registered OAuth client. Reference it from `.env` with `{{ .env.* }}` templating rather than committing it
+            oauth_scopes:
+              type: array
+              items:
+                type: string
+              description: Scopes to request during authorization. Defaults to all scopes the server advertises
+            headers:
+              type: object
+              additionalProperties:
+                type: string
+              description: |
+                HTTP headers sent on every request to the server, such as a project-scoped `Authorization` header.
+                Values may use `{{ .env.* }}` for secrets and `{{ .user.* }}` to pass attributes of the requesting user (which makes the server usable only by identified users).
+            timeout:
+              type: string
+              description: Timeout per tool call, as a duration (default `60s`)
+            connect_timeout:
+              type: string
+              description: Timeout for connecting to the server and listing its tools, as a duration (default `10s`)
+            max_result_bytes:
+              type: integer
+              description: Maximum size of a tool result passed to the AI, in bytes. Larger results are truncated (default `131072`)
+            security:
+              type: object
+              description: |
+                Controls who may use the server and which of its tools. It uses the same syntax as [metrics view security policies](/developers/build/metrics-view/security),
+                with tool names in place of dimension and measure names, plus an `agents` field.
+                Omit the block to allow every user with AI access; a block without `access` denies everyone.
+              properties:
+                access:
+                  oneOf:
+                    - type: string
+                      description: SQL expression that evaluates to a boolean to determine access
+                    - type: boolean
+                      description: Direct boolean value to allow or deny access
+                  description: Expression indicating whether the user may use the server. Can reference user attributes with `{{ .user.* }}`
+                agents:
+                  type: array
+                  items:
+                    type: string
+                    enum: [analyst, developer]
+                  description: AI agents that may use the server's tools. Defaults to all agents
+                include:
+                  type: array
+                  description: Tools each user may call. If any include rule is present, tools not matched by a passing rule are denied
+                  items:
+                    type: object
+                    properties:
+                      if:
+                        type: string
+                        description: Templated boolean condition over user attributes
+                      names:
+                        oneOf:
+                          - type: string
+                          - type: array
+                            items:
+                              type: string
+                        description: Tool names the rule applies to, or `'*'` for all tools
+                    required:
+                      - if
+                      - names
+                exclude:
+                  type: array
+                  description: Tools to deny. A matching exclude always wins over an include
+                  items:
+                    type: object
+                    properties:
+                      if:
+                        type: string
+                        description: Templated boolean condition over user attributes
+                      names:
+                        oneOf:
+                          - type: string
+                          - type: array
+                            items:
+                              type: string
+                        description: Tool names the rule applies to, or `'*'` for all tools
+                    required:
+                      - if
+                      - names
+          examples:
+            - # Example: MCP server with per-user OAuth
+              type: connector                                  # Must be `connector` (required)
+              driver: mcp                                      # Must be `mcp` _(required)_
+              url: "https://mcp.linear.app/mcp"                # Streamable HTTP endpoint of the MCP server
+              display_name: "Linear"                           # Name shown in the chat and to AI agents
+              ai_instructions: "Use Linear to look up issues. Search before creating anything."
+              auth: oauth                                      # Each user authorizes the server from the chat
+              security:
+                access: "'{{ .user.domain }}' == 'example.com'" # Only users of this domain may use the server
+                agents: [analyst]                              # Only the analyst agent may use it
+                exclude:
+                  - if: "NOT {{ .user.admin }}"
+                    names: [create_issue, update_issue, delete_issue]
+            - # Example: internal MCP server with a project-scoped token
+              type: connector
+              driver: mcp
+              url: "https://mcp.internal.example.com/mcp"
+              display_name: "Company data"
+              headers:
+                Authorization: "Bearer {{ .env.INTERNAL_MCP_TOKEN }}" # Secret from .env or Rill Cloud variables
+                X-Rill-User: "{{ .user.email }}"                      # Pass the requesting user's identity to the server
+          required:
+            - driver
+            - url
         - type: object
           title: Slack
           properties:
@@ -2191,6 +2349,9 @@ definitions:
                 expression:
                   type: string
                   description: a combination of operators and functions for aggregations
+                exact_expression:
+                  type: string
+                  description: 'An optional exact variant of `expression` for measures whose default expression is approximate (e.g. `expression: uniq(user_id)` with `exact_expression: uniqExact(user_id)` in ClickHouse, or `approx_count_distinct(user_id)` with `count(DISTINCT user_id)` in DuckDB). Dashboards show the approximate value by default and only use the exact expression when a viewer or query explicitly asks for exact values. It shares all other measure settings with `expression`. Only simple measures without a `window` can define it: derived measures are calculated from the measures as a query computes them.'
                 window:
                   description: A measure window can be defined as a keyword string (e.g. 'time' or 'all') or an object with detailed window configuration. For more information, see the [window functions](/developers/build/metrics-view/measures/windows) documentation.
                   anyOf:
@@ -3014,6 +3175,9 @@ definitions:
                 type: integer
                 description: Maximum number of rows to export
                 minimum: 0
+              attach:
+                type: boolean
+                description: If true, attaches the exported file to email notifications. Only supported for query-based reports run as the creator (`web_open_mode` set to `creator`, which is the default). Files larger than 10 MB are not attached; the email links to the download instead.
           notify:
             $ref: '#/definitions/notify_properties'
             description: Notification configuration for email and Slack delivery
@@ -3283,6 +3447,7 @@ definitions:
       A custom visualization: a Metrics SQL query plus a chart spec describing how to draw it.
       Rill derives scales, axes, formats, sorting, stacking and layout from the data and from the
       metrics view's semantics, so the spec only states the chart type and which field goes on which channel.
+      See [Custom Viz](/developers/build/dashboards/canvas-widgets/custom-viz).
     properties:
       metrics_sql:
         type: string
@@ -3296,12 +3461,14 @@ definitions:
         type: string
         description: |
           A Vega-Lite spec, as an alternative to `spec` for a chart Rill cannot describe.
-          This is what ejecting a chart spec in the component editor produces: the Vega-Lite it
+          This is what converting a chart spec in the component editor produces: the Vega-Lite it
           compiled to, with the param bindings turned back into template references. Rill no longer
           derives scales, axes, formats, sorting or layout, so the chart stops adapting on its own.
           Read the query result from the `query1` dataset, i.e. `"data": {"name": "query1"}`,
           and size the chart to its container with `"width": "container"`, `"height": "container"`
-          and `"autosize": {"type": "fit"}`. Mutually exclusive with `spec`.
+          and `"autosize": {"type": "fit", "contains": "padding"}`. Mutually exclusive with `spec`.
+          Template values are JSON-escaped, so place placeholders inside JSON strings.
+          See [Vega-Lite](/developers/build/dashboards/canvas-widgets/custom-viz/vega-lite).
     additionalProperties: false
 
   # Flint Chart Spec
@@ -3310,11 +3477,11 @@ definitions:
     properties:
       chartType:
         type: string
-        description: The chart type, e.g. `Line Chart`, `Bar Chart`, `Heatmap`, `Waterfall Chart`.
+        description: The chart type, e.g. `Line Chart`, `Bar Chart`, `Heatmap`, `Waterfall Chart`. See [Chart Types](/developers/build/dashboards/canvas-widgets/custom-viz/chart-types) for the full list.
       encodings:
         type: object
         description: |
-          Maps a visual channel (`x`, `y`, `color`, `size`, `column`, `row`, `group`, `angle`, `goal`, ...)
+          Maps a visual channel (`x`, `y`, `x2`, `y2`, `color`, `size`, `column`, `row`, `group`, `goal`, ...)
           to a field. Each value is either a field name or an encoding object.
         additionalProperties:
           oneOf:

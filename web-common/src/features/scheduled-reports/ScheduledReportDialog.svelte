@@ -370,6 +370,7 @@
       queryArgsJson: JSON.stringify(updatedAggregationRequest),
       exportLimit: values.exportLimit || undefined,
       exportIncludeHeader: values.exportIncludeHeader || false,
+      exportAttach: values.exportAttach,
       exportFormat: values.exportFormat,
       webOpenState:
         props.mode === "create"

@@ -9,6 +9,7 @@ import (
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/ai"
+	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/pkg/ratelimit"
 	"github.com/rilldata/rill/runtime/server/auth"
@@ -227,3 +228,83 @@ ARPU excludes trial users.`,
 type roundTripperFunc func(*http.Request) (*http.Response, error)
 
 func (f roundTripperFunc) RoundTrip(req *http.Request) (*http.Response, error) { return f(req) }
+
+// TestMCPSessionContinuity asserts that all the requests of one MCP client connection share one AI session,
+// and that separate connections get separate sessions.
+// The server runs the go-sdk's streamable HTTP handler in stateless mode, which since go-sdk v1.8 no longer issues the Mcp-Session-Id header itself.
+func TestMCPSessionContinuity(t *testing.T) {
+	// Clients on the 2025 protocol versions (Claude, ChatGPT, Cursor, ...) do an initialize handshake.
+	// Clients on the 2026-07-28 protocol version (the go-sdk client's default) do not: the server only ever sees their tool calls.
+	for _, protocolVersion := range []string{"2025-06-18", "2026-07-28"} {
+		t.Run(protocolVersion, func(t *testing.T) {
+			rt, instanceID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
+				Files: map[string]string{"rill.yaml": ""},
+			})
+			testruntime.RequireReconcileState(t, rt, instanceID, 1, 0, 0)
+
+			srv, err := NewServer(context.Background(), &Options{}, rt, zap.NewNop(), ratelimit.NewNoop(), activity.NewNoopClient())
+			require.NoError(t, err)
+
+			httpSrv := httptest.NewServer(auth.HTTPMiddleware(srv.aud, srv.mcpHandler()))
+			defer httpSrv.Close()
+
+			catalog, release, err := rt.Catalog(t.Context(), instanceID)
+			require.NoError(t, err)
+			defer release()
+			sessions := func(t *testing.T) []*drivers.AISession {
+				res, err := catalog.FindAISessions(t.Context(), "", "")
+				require.NoError(t, err)
+				return res
+			}
+			require.Empty(t, sessions(t))
+
+			// The first request is answered with a session ID, which the client echoes on every subsequent request.
+			mcpClient := mcp.NewClient(&mcp.Implementation{Name: "mcp/test", Version: "1.0.0"}, nil)
+			connOpts := &mcp.ClientSessionOptions{ProtocolVersion: protocolVersion}
+			conn, err := mcpClient.Connect(t.Context(), &mcp.StreamableClientTransport{Endpoint: httpSrv.URL}, connOpts)
+			require.NoError(t, err)
+			defer conn.Close()
+			require.Equal(t, protocolVersion, conn.InitializeResult().ProtocolVersion)
+			require.NotEmpty(t, conn.ID())
+
+			_, err = conn.ListTools(t.Context(), &mcp.ListToolsParams{})
+			require.NoError(t, err)
+			_, err = conn.CallTool(t.Context(), &mcp.CallToolParams{Name: ai.ListMetricsViewsName})
+			require.NoError(t, err)
+			_, err = conn.CallTool(t.Context(), &mcp.CallToolParams{Name: ai.ListMetricsViewsName})
+			require.NoError(t, err)
+
+			// All the requests above land in a single session.
+			res := sessions(t)
+			require.Len(t, res, 1)
+			require.Equal(t, conn.ID(), res[0].ID)
+			// Note the user agent is the HTTP User-Agent header, not the client info from the initialize handshake:
+			// a stateless server handles the initialized notification in a session synthesized without the initialize params, so InitializedHandler never sees the client info.
+			require.NotEmpty(t, res[0].UserAgent)
+			msgs, err := catalog.FindAIMessages(t.Context(), conn.ID())
+			require.NoError(t, err)
+			require.Len(t, msgs, 4) // two tool calls, each with a call and a result message
+
+			// A second connection gets its own session.
+			conn2, err := mcpClient.Connect(t.Context(), &mcp.StreamableClientTransport{Endpoint: httpSrv.URL}, connOpts)
+			require.NoError(t, err)
+			defer conn2.Close()
+			require.NotEmpty(t, conn2.ID())
+			require.NotEqual(t, conn.ID(), conn2.ID())
+			_, err = conn2.CallTool(t.Context(), &mcp.CallToolParams{Name: ai.ListMetricsViewsName})
+			require.NoError(t, err)
+			require.Len(t, sessions(t), 2)
+
+			// Requests other than POST are rejected without creating a session.
+			for _, method := range []string{http.MethodGet, http.MethodDelete} {
+				req, err := http.NewRequestWithContext(t.Context(), method, httpSrv.URL, nil)
+				require.NoError(t, err)
+				res, err := http.DefaultClient.Do(req)
+				require.NoError(t, err)
+				res.Body.Close()
+				require.Equal(t, http.StatusMethodNotAllowed, res.StatusCode, method)
+			}
+			require.Len(t, sessions(t), 2)
+		})
+	}
+}

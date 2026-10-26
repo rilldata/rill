@@ -217,6 +217,7 @@ func (s *Server) GetDeployment(ctx context.Context, req *adminv1.GetDeploymentRe
 		project:            proj,
 		deployment:         depl,
 		projectPermissions: permissions,
+		omitServiceSubject: true,
 		externalUserID:     req.ExternalUserId,
 		ttl:                ttlDuration,
 	}
@@ -558,6 +559,7 @@ func (s *Server) GetDeploymentCredentials(ctx context.Context, req *adminv1.GetD
 		project:            proj,
 		deployment:         prodDepl,
 		projectPermissions: permissions,
+		omitServiceSubject: true,
 		externalUserID:     req.ExternalUserId,
 		ttl:                ttlDuration,
 	}
@@ -662,6 +664,7 @@ func (s *Server) GetIFrame(ctx context.Context, req *adminv1.GetIFrameRequest) (
 		project:            proj,
 		deployment:         prodDepl,
 		projectPermissions: permissions,
+		omitServiceSubject: true,
 		externalUserID:     req.ExternalUserId,
 		extraAttributes:    map[string]any{"embed": true},
 		overrideResources:  overrideResources,
