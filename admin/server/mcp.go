@@ -439,8 +439,6 @@ func takeMCPProjectArg(args json.RawMessage) (org, project string, rest json.Raw
 	return org, project, rest, nil
 }
 
-// mcpToolErrorf returns a tool call result representing an error.
-// Unlike an error returned from a tool handler, it is presented to the model as a result it can act on.
 // mcpUnavailableToolMessage explains why a project's runtime does not serve a forwarded tool.
 // The tools are listed for every project, so the client only learns that a project lacks one when it calls it.
 func mcpUnavailableToolMessage(name string) string {
@@ -450,6 +448,8 @@ func mcpUnavailableToolMessage(name string) string {
 	return fmt.Sprintf("Tool %q is not available in this project: the project doesn't enable it, or you lack the permission it needs.", name)
 }
 
+// mcpToolErrorf returns a tool call result representing an error.
+// Unlike an error returned from a tool handler, it is presented to the model as a result it can act on.
 func mcpToolErrorf(format string, args ...any) *mcp.CallToolResult {
 	return &mcp.CallToolResult{
 		IsError: true,
