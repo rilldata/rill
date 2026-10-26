@@ -658,6 +658,77 @@ map:
 	testruntime.RequireReconcileState(t, rt, id, 4, 1, 0)
 	testruntime.RequireReconcileErrorContains(t, rt, id, runtime.ResourceKindComponent, "c1", "'regions.boundaries' must be one of")
 
+	// Valid: custom boundaries from a file.
+	testruntime.PutFiles(t, rt, id, map[string]string{
+		"c1.yaml": `
+type: component
+map:
+  metrics_view: mv1
+  regions:
+    dimension: foo
+    boundaries:
+      file: public/dma.topojson
+      id: dma_code
+      name: dma_name
+    color:
+      measure: y
+`})
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireReconcileState(t, rt, id, 4, 0, 0)
+
+	// Invalid: custom boundaries without an id.
+	testruntime.PutFiles(t, rt, id, map[string]string{
+		"c1.yaml": `
+type: component
+map:
+  metrics_view: mv1
+  regions:
+    dimension: foo
+    boundaries:
+      file: public/dma.topojson
+    color:
+      measure: y
+`})
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireReconcileState(t, rt, id, 4, 1, 0)
+	testruntime.RequireReconcileErrorContains(t, rt, id, runtime.ResourceKindComponent, "c1", "must include a string 'id' property")
+
+	// Invalid: custom boundaries without a file.
+	testruntime.PutFiles(t, rt, id, map[string]string{
+		"c1.yaml": `
+type: component
+map:
+  metrics_view: mv1
+  regions:
+    dimension: foo
+    boundaries:
+      id: dma_code
+    color:
+      measure: y
+`})
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireReconcileState(t, rt, id, 4, 1, 0)
+	testruntime.RequireReconcileErrorContains(t, rt, id, runtime.ResourceKindComponent, "c1", "must include a string 'file' property")
+
+	// Invalid: key with custom boundaries.
+	testruntime.PutFiles(t, rt, id, map[string]string{
+		"c1.yaml": `
+type: component
+map:
+  metrics_view: mv1
+  regions:
+    dimension: foo
+    boundaries:
+      file: public/dma.topojson
+      id: dma_code
+    key: name
+    color:
+      measure: y
+`})
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireReconcileState(t, rt, id, 4, 1, 0)
+	testruntime.RequireReconcileErrorContains(t, rt, id, runtime.ResourceKindComponent, "c1", "'regions.key' is not supported with custom boundaries")
+
 	// Invalid: key from another boundary set.
 	testruntime.PutFiles(t, rt, id, map[string]string{
 		"c1.yaml": `

@@ -73,7 +73,7 @@ Alternatively, `ST_Point2D(longitude, latitude) AS location` stores a DuckDB `PO
 
 ### Regions from a GeoJSON file
 
-For countries and US states, a [regions layer](#built-in-regions) is simpler. For other regions, such as DMAs, postal codes, or sales territories, load their boundaries as polygons. The following model reads a GeoJSON `FeatureCollection` file from your project's `data` folder and returns one row per feature, with the feature's geometry as a GeoJSON string:
+For most regions, a regions layer is simpler: use [built-in regions](#built-in-regions) for countries and US states, or [custom regions](#custom-regions) for others, such as DMAs, postal codes, or sales territories. Alternatively, load the boundaries as polygons in a geo dimension. The following model reads a GeoJSON `FeatureCollection` file from your project's `data` folder and returns one row per feature, with the feature's geometry as a GeoJSON string:
 
 ```sql
 -- models/state_population.sql
@@ -196,7 +196,43 @@ By default, values are matched against every key, so a column that mixes `US`, `
 
 Regions without data are drawn in gray. Regions are drawn below the basemap's labels and below a geo dimension layer, so you can combine both, for example to show stores as points over states shaded by revenue. The `color`, `size_measure`, and `tooltip_dimension` properties only apply to the geo dimension layer; the regions layer has its own `color`.
 
-Boundaries come from [Natural Earth](https://www.naturalearthdata.com/), which draws de facto borders for disputed territories. For other regions, such as DMAs, use [polygons from a GeoJSON file](#regions-from-a-geojson-file) instead.
+Boundaries come from [Natural Earth](https://www.naturalearthdata.com/), which draws de facto borders for disputed territories. For other regions, such as DMAs, use [custom regions](#custom-regions).
+
+## Custom regions
+
+To shade regions that aren't built in, such as Nielsen DMAs, sales territories, or store trade areas, add a GeoJSON or TopoJSON boundary file to your project's `public` folder and point `boundaries` to it:
+
+```yaml
+- map:
+    metrics_view: ad_metrics
+    title: Impressions by DMA
+    regions:
+      dimension: dma_code
+      boundaries:
+        file: public/dma.topojson
+        id: dma_code
+        name: dma_name
+      color:
+        measure: impressions
+```
+
+| Property | Required | Description |
+|----------|----------|-------------|
+| `file` | Yes | Path of the boundary file from the project root. It must be directly inside one of the project's [`public_paths`](/reference/project-files/rill-yaml#public_paths), which default to `public`; files in subfolders aren't served. |
+| `id` | Yes | Feature property that identifies each region. The values of `dimension` are matched against it, ignoring case, punctuation, and leading zeros. Features without this property use their top-level GeoJSON `id` instead. |
+| `name` | No | Feature property shown as the region name in tooltips. Defaults to the `id` property. |
+
+The file must be a GeoJSON `FeatureCollection` or a TopoJSON file with a single object. Only `Polygon` and `MultiPolygon` features with an id are drawn; if several features share an `id`, the first one is used. Your metrics view only needs a dimension whose values match the `id` property; no joins or geo dimensions are required. `key` doesn't apply to custom regions.
+
+In the visual editor, choose **Custom file** under **Boundaries**, then enter the file and properties.
+
+Every viewer's browser downloads the whole file, so keep it small. Simplifying the shapes and converting them to TopoJSON, which shares borders between neighboring regions, typically makes the file several times smaller:
+
+```sh
+npx mapshaper dma.geojson -simplify 10% keep-shapes -o format=topojson public/dma.topojson
+```
+
+The file is served only to viewers of your project, who receive it in full, including any viewers of [embedded dashboards](/developers/embed). Shapes aren't subject to [security policies](/developers/build/metrics-view/security): regions a viewer can't see data for still draw, in gray. Boundary sets such as DMAs are often licensed; you are responsible for ensuring your license permits displaying the shapes to your dashboard viewers, including embed users.
 
 ## Properties
 
@@ -208,7 +244,7 @@ Boundaries come from [Natural Earth](https://www.naturalearthdata.com/), which d
 | `color.colorRange` | No | Color scale. Defaults to the `tealblues` scheme. See [Colors](#colors). |
 | `size_measure.field` | No | Measure that scales the radius of each point. Points only. |
 | `tooltip_dimension.field` | No | Dimension shown as the heading of the hover tooltip, such as a city or state name. |
-| `regions` | One of `geo_dimension` or `regions` | Built-in regions layer with `dimension`, `boundaries`, optional `key`, and `color` (`measure` and optional `colorRange`). See [Built-in regions](#built-in-regions). |
+| `regions` | One of `geo_dimension` or `regions` | Regions layer with `dimension`, `boundaries`, optional `key`, and `color` (`measure` and optional `colorRange`). See [Built-in regions](#built-in-regions) and [Custom regions](#custom-regions). |
 | `initial_view` | No | `longitude`, `latitude`, and optional `zoom` the map opens with. See [Set the initial view](#set-the-initial-view). |
 | `title`, `description` | No | Title and description shown in the widget header. |
 | `time_filters`, `dimension_filters` | No | Filters that apply to this widget only, as on other [canvas widgets](/developers/build/dashboards/canvas#filters). |
@@ -254,7 +290,7 @@ initial_view:
 ## Interacting with a map
 
 - **Pan and zoom:** Drag to pan, scroll or pinch to zoom, and use the zoom and compass buttons in the top-right corner. A scale bar is shown in the bottom-left corner.
-- **Tooltips:** Hover over a point or polygon to see its tooltip dimension value, the color measure, and the size measure. Hover over a built-in region to see its name and value.
+- **Tooltips:** Hover over a point or polygon to see its tooltip dimension value, the color measure, and the size measure. Hover over a region to see its name and value.
 - **Legend:** The top-left corner shows the color scale of each layer.
 - **Filters:** The map follows the canvas time range and filters. Changing a filter updates the data without moving the map, so the area you zoomed into stays in view.
 - **Dark mode:** The basemap switches between a light and a dark style with the dashboard's theme mode.

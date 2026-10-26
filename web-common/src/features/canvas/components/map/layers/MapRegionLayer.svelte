@@ -20,12 +20,13 @@
     removeTooltip,
     showTooltip,
   } from "../map-utils";
-  import { buildRegionIndex, matchRegions } from "../regions/match";
   import {
-    AUTO_REGION_KEY,
-    BOUNDARY_SETS,
-    isRegionBoundaries,
-  } from "../regions/registry";
+    createRegionBoundariesQuery,
+    isValidRegionBoundaries,
+    regionBoundariesKey,
+    regionIndexKeys,
+  } from "../regions/boundaries";
+  import { buildRegionIndex, matchRegions } from "../regions/match";
   import { createMapLayerQuery } from "./query";
   import type { MapLayerBoundsHandler } from "./types";
 
@@ -74,13 +75,20 @@
   );
   const metricsView = $derived($specStore?.metrics_view ?? "");
   const dimension = $derived(regions?.dimension ?? "");
-  const boundariesName = $derived(
-    isRegionBoundaries(regions?.boundaries) ? regions.boundaries : undefined,
+  const boundariesConfig = $derived(
+    isValidRegionBoundaries(regions?.boundaries)
+      ? regions.boundaries
+      : undefined,
   );
-  const boundarySet = $derived(
-    boundariesName ? BOUNDARY_SETS[boundariesName] : undefined,
+  // Primitives, so that unrelated spec updates don't rebuild the region index.
+  const boundariesKey = $derived(
+    boundariesConfig ? regionBoundariesKey(boundariesConfig) : undefined,
   );
-  const regionKey = $derived(regions?.key ?? AUTO_REGION_KEY);
+  const indexKeys = $derived(
+    boundariesConfig
+      ? regionIndexKeys(boundariesConfig, regions?.key).join(",")
+      : undefined,
+  );
   const colorMeasure = $derived(regions?.color?.measure ?? "");
   const colorRange = $derived(
     regions?.color?.colorRange ?? DEFAULT_MAP_COLOR_RANGE,
@@ -94,7 +102,7 @@
       if (
         !r?.dimension ||
         !r.color?.measure ||
-        !isRegionBoundaries(r.boundaries)
+        !isValidRegionBoundaries(r.boundaries)
       )
         return null;
       return {
@@ -104,36 +112,20 @@
     },
   );
 
-  let boundaries = $state.raw<GeoJSON.FeatureCollection | null>(null);
-  let loadError = $state<string | null>(null);
-
-  $effect(() => {
-    const set = boundarySet;
-    boundaries = null;
-    loadError = null;
-    if (!set) return;
-
-    let cancelled = false;
-    set.load().then(
-      (fc) => {
-        if (!cancelled) boundaries = fc;
-      },
-      (err: unknown) => {
-        if (!cancelled) loadError = `Failed to load ${set.label}: ${err}`;
-      },
-    );
-    return () => {
-      cancelled = true;
-    };
-  });
+  const boundariesQuery = createRegionBoundariesQuery(
+    runtimeClient,
+    untrack(() => component),
+  );
+  const boundaries = $derived(
+    boundariesConfig ? ($boundariesQuery.data ?? null) : null,
+  );
+  const loadError = $derived(
+    boundariesConfig ? ($boundariesQuery.error?.message ?? null) : null,
+  );
 
   const regionIndex = $derived.by(() => {
-    if (!boundaries || !boundarySet) return null;
-    const keys =
-      regionKey === AUTO_REGION_KEY
-        ? boundarySet.keys.map((k) => k.name)
-        : [regionKey];
-    return buildRegionIndex(boundaries.features, keys);
+    if (!boundaries || !indexKeys) return null;
+    return buildRegionIndex(boundaries.features, indexKeys.split(","));
   });
 
   const rows = $derived($dataQuery.data?.data ?? []);
@@ -315,14 +307,14 @@
     );
     onBounds(
       "regions",
-      `${metricsView}::${dimension}::${boundariesName}`,
+      `${metricsView}::${dimension}::${boundariesKey}`,
       calculateWrappedBounds(matched),
     );
   });
 </script>
 
 {#if loadError}
-  <div class="no-match">{loadError}</div>
+  <div class="load-error" title={loadError}>{loadError}</div>
 {:else if canRender && match && match.values.size > 0}
   <MapLegend
     title={measureLabel}
@@ -342,5 +334,10 @@
   .no-match {
     @apply px-2 py-1.5 rounded shadow-sm text-[11px] text-fg-secondary;
     @apply bg-surface-background/90;
+  }
+
+  .load-error {
+    @apply max-w-80 px-2 py-1.5 rounded shadow-sm text-xs text-fg-primary;
+    @apply bg-destructive/30 break-words;
   }
 </style>

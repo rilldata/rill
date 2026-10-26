@@ -22,9 +22,10 @@ import type {
 import { get } from "svelte/store";
 import CanvasMap from "./CanvasMap.svelte";
 import {
-  guessRegionBoundaries,
-  type RegionBoundaries,
-} from "./regions/registry";
+  isValidRegionBoundaries,
+  type RegionBoundariesConfig,
+} from "./regions/boundaries";
+import { guessRegionBoundaries } from "./regions/registry";
 
 export { default as CanvasMap } from "./CanvasMap.svelte";
 
@@ -42,8 +43,11 @@ export const DEFAULT_MAP_COLOR_RANGE: ColorRangeMapping = {
 /** Regions such as countries or states, filled by a measure and matched through a dimension's values. */
 export interface MapRegionsConfig {
   dimension: string;
-  boundaries: RegionBoundaries;
-  /** Region property the dimension values are matched against. Defaults to matching every key of the boundary set. */
+  boundaries: RegionBoundariesConfig;
+  /**
+   * Region property the dimension values are matched against, for built-in boundaries only.
+   * Defaults to matching every key of the boundary set.
+   */
   key?: string;
   color: MapColorConfig;
 }
@@ -98,7 +102,7 @@ export class MapComponent extends BaseCanvasComponent<MapSpec> {
     const hasPoints = !!spec.geo_dimension?.field && !!spec.color?.measure;
     const hasRegions =
       !!spec.regions?.dimension &&
-      !!spec.regions?.boundaries &&
+      isValidRegionBoundaries(spec.regions?.boundaries) &&
       !!spec.regions?.color?.measure;
     return hasPoints || hasRegions;
   }

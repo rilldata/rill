@@ -3868,18 +3868,36 @@ definitions:
           - field
       regions:
         type: object
-        description: Regions layer that fills built-in region boundaries by a measure, joined to the rows through the values of `dimension`. Drawn below the base map's labels and the `geo_dimension` layer.
+        description: Regions layer that fills region boundaries by a measure, joined to the rows through the values of `dimension`. Boundaries are either a built-in set or a GeoJSON or TopoJSON file in the project. Drawn below the base map's labels and the `geo_dimension` layer.
         properties:
           dimension:
             type: string
             description: Name of the dimension whose values identify regions, such as country codes or state names
           boundaries:
-            type: string
-            enum: ["countries", "us_states"]
-            description: Built-in boundary set to draw. `countries` covers every country; `us_states` covers the 50 US states and the District of Columbia.
+            description: Boundaries to draw, either the name of a built-in set or a mapping that points to a boundary file in the project.
+            oneOf:
+              - type: string
+                enum: ["countries", "us_states"]
+                description: Built-in boundary set to draw. `countries` covers every country; `us_states` covers the 50 US states and the District of Columbia.
+              - type: object
+                description: 'Custom boundaries from a GeoJSON `FeatureCollection` or a TopoJSON file with a single object, such as Nielsen DMAs or sales territories. The file must be under one of the project''s `public_paths` (`public/` by default); every dashboard viewer downloads it, so make sure its license allows that.'
+                properties:
+                  file:
+                    type: string
+                    description: Path of the GeoJSON or TopoJSON file, relative to the project root, such as `public/dma.topojson`
+                  id:
+                    type: string
+                    description: Feature property that identifies each region, matched against the values of `dimension`. Features without this property use their top-level GeoJSON `id` instead. Only polygon features with an id are drawn.
+                  name:
+                    type: string
+                    description: Feature property shown as the region name in tooltips. Defaults to the `id` property.
+                required:
+                  - file
+                  - id
+                additionalProperties: false
           key:
             type: string
-            description: 'Region property the dimension values are matched against. For `countries`: `iso_a2` (`US`), `iso_a3` (`USA`), `iso_n3` (`840`) or `name`. For `us_states`: `postal` (`CA`), `iso_3166_2` (`US-CA`), `fips` (`06`) or `name`. `name` also matches common alternative names. Defaults to `auto`, which tries every key. Matching ignores case, accents and punctuation.'
+            description: 'Region property the dimension values are matched against, for built-in boundaries only. For `countries`: `iso_a2` (`US`), `iso_a3` (`USA`), `iso_n3` (`840`) or `name`. For `us_states`: `postal` (`CA`), `iso_3166_2` (`US-CA`), `fips` (`06`) or `name`. `name` also matches common alternative names. Defaults to `auto`, which tries every key. Matching ignores case, accents and punctuation.'
           color:
             type: object
             description: Measure that fills each region

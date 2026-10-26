@@ -698,19 +698,36 @@ func (v rendererValidator) validateMapRegions(mv *runtimev1.MetricsViewSpec, mvn
 		return fmt.Errorf("referenced regions.dimension %q is not a dimension in metrics view %q", dim, mvn)
 	}
 
-	boundaries, ok := pathutil.GetPathString(props, "regions.boundaries")
-	if !ok {
-		return errors.New("renderer property 'regions' must include a string 'boundaries' property")
-	}
-	keys, ok := mapRegionKeys[boundaries]
-	if !ok {
-		if v.lenient && IsTemplated(boundaries) {
-			return nil
+	switch boundaries := props["regions"].(map[string]any)["boundaries"].(type) {
+	case string:
+		keys, ok := mapRegionKeys[boundaries]
+		if !ok {
+			if v.lenient && IsTemplated(boundaries) {
+				break
+			}
+			return fmt.Errorf("renderer property 'regions.boundaries' must be one of %v or a mapping with 'file' and 'id' properties, got %q", slices.Sorted(maps.Keys(mapRegionKeys)), boundaries)
 		}
-		return fmt.Errorf("renderer property 'regions.boundaries' must be one of %v, got %q", slices.Sorted(maps.Keys(mapRegionKeys)), boundaries)
-	}
-	if err := v.validateOptionalStringEnum(props, "regions.key", keys); err != nil {
-		return err
+		if err := v.validateOptionalStringEnum(props, "regions.key", keys); err != nil {
+			return err
+		}
+	case map[string]any:
+		// Custom boundaries from a GeoJSON or TopoJSON file in the project, matched on a single feature property.
+		// The file is not checked here: it is served from a public path and loaded by the browser,
+		// so a missing file surfaces as an error when the map renders.
+		if file, ok := pathutil.GetPathString(props, "regions.boundaries.file"); !ok || file == "" {
+			return errors.New("renderer property 'regions.boundaries' must include a string 'file' property")
+		}
+		if id, ok := pathutil.GetPathString(props, "regions.boundaries.id"); !ok || id == "" {
+			return errors.New("renderer property 'regions.boundaries' must include a string 'id' property")
+		}
+		if _, _, err := getOptionalPathString(props, "regions.boundaries.name"); err != nil {
+			return err
+		}
+		if _, ok := pathutil.GetPath(props, "regions.key"); ok {
+			return errors.New("renderer property 'regions.key' is not supported with custom boundaries; use 'regions.boundaries.id' instead")
+		}
+	default:
+		return errors.New("renderer property 'regions' must include a 'boundaries' property that is a string or a mapping")
 	}
 
 	measure, ok := pathutil.GetPathString(props, "regions.color.measure")

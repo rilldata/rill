@@ -572,13 +572,23 @@ _[object]_ - Map with up to two layers: points or polygons from a geo dimension,
 
     - **`type`** - _[string]_ - Field type, always `nominal`
 
-  - **`regions`** - _[object]_ - Regions layer that fills built-in region boundaries by a measure, joined to the rows through the values of `dimension`. Drawn below the base map's labels and the `geo_dimension` layer.
+  - **`regions`** - _[object]_ - Regions layer that fills region boundaries by a measure, joined to the rows through the values of `dimension`. Boundaries are either a built-in set or a GeoJSON or TopoJSON file in the project. Drawn below the base map's labels and the `geo_dimension` layer.
 
     - **`dimension`** - _[string]_ - Name of the dimension whose values identify regions, such as country codes or state names _(required)_
 
-    - **`boundaries`** - _[string]_ - Built-in boundary set to draw. `countries` covers every country; `us_states` covers the 50 US states and the District of Columbia. _(required)_
+    - **`boundaries`** - _[oneOf]_ - Boundaries to draw, either the name of a built-in set or a mapping that points to a boundary file in the project. _(required)_
 
-    - **`key`** - _[string]_ - Region property the dimension values are matched against. For `countries`: `iso_a2` (`US`), `iso_a3` (`USA`), `iso_n3` (`840`) or `name`. For `us_states`: `postal` (`CA`), `iso_3166_2` (`US-CA`), `fips` (`06`) or `name`. `name` also matches common alternative names. Defaults to `auto`, which tries every key. Matching ignores case, accents and punctuation.
+      - **option 1** - _[string]_ - Built-in boundary set to draw. `countries` covers every country; `us_states` covers the 50 US states and the District of Columbia.
+
+      - **option 2** - _[object]_ - Custom boundaries from a GeoJSON `FeatureCollection` or a TopoJSON file with a single object, such as Nielsen DMAs or sales territories. The file must be under one of the project's `public_paths` (`public/` by default); every dashboard viewer downloads it, so make sure its license allows that.
+
+        - **`file`** - _[string]_ - Path of the GeoJSON or TopoJSON file, relative to the project root, such as `public/dma.topojson` _(required)_
+
+        - **`id`** - _[string]_ - Feature property that identifies each region, matched against the values of `dimension`. Features without this property use their top-level GeoJSON `id` instead. Only polygon features with an id are drawn. _(required)_
+
+        - **`name`** - _[string]_ - Feature property shown as the region name in tooltips. Defaults to the `id` property.
+
+    - **`key`** - _[string]_ - Region property the dimension values are matched against, for built-in boundaries only. For `countries`: `iso_a2` (`US`), `iso_a3` (`USA`), `iso_n3` (`840`) or `name`. For `us_states`: `postal` (`CA`), `iso_3166_2` (`US-CA`), `fips` (`06`) or `name`. `name` also matches common alternative names. Defaults to `auto`, which tries every key. Matching ignores case, accents and punctuation.
 
     - **`color`** - _[object]_ - Measure that fills each region _(required)_
 
