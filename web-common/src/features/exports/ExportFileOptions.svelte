@@ -22,6 +22,10 @@
 <Select
   bind:value={format}
   id="exportFormat"
+  onChange={(value) => {
+    // Parquet files have no header, so clear the option instead of leaving it hidden behind the disabled checkbox
+    if (value === V1ExportFormat.EXPORT_FORMAT_PARQUET) includeHeader = false;
+  }}
   label={m.report_form_format()}
   options={[
     {

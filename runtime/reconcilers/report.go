@@ -614,23 +614,15 @@ func (r *ReportReconciler) sendReport(ctx context.Context, self *runtimev1.Resou
 					UserAttributes: meta.ReportDelivery[emailRecipients[0]].UserAttrs,
 					Permissions:    []runtime.Permission{runtime.ReadObjects, runtime.ReadMetrics},
 				}
-				props := rep.Spec.ResolverProperties.AsMap()
-				queryName, _ := props["query_name"].(string)
-				queryArgsJSON, _ := props["query_args_json"].(string)
-				var originDashboard *runtimev1.ResourceName
-				if explore := rep.Spec.Annotations["explore"]; explore != "" {
-					originDashboard = &runtimev1.ResourceName{Kind: runtime.ResourceKindExplore, Name: explore}
-				}
 				attachment, err = exportAttachment(ctx, r.C, &exportAttachmentOptions{
-					QueryName:       queryName,
-					QueryArgsJSON:   queryArgsJSON,
-					ExecutionTime:   t,
-					Claims:          claims,
-					Format:          rep.Spec.ExportFormat,
-					IncludeHeader:   rep.Spec.ExportIncludeHeader,
-					Limit:           rep.Spec.ExportLimit,
-					Priority:        reportQueryPriority,
-					OriginDashboard: originDashboard,
+					ResolverProperties: rep.Spec.ResolverProperties.AsMap(),
+					Annotations:        rep.Spec.Annotations,
+					ExecutionTime:      t,
+					Claims:             claims,
+					Format:             rep.Spec.ExportFormat,
+					IncludeHeader:      rep.Spec.ExportIncludeHeader,
+					Limit:              rep.Spec.ExportLimit,
+					Priority:           reportQueryPriority,
 				})
 				if errors.Is(err, errAttachmentTooLarge) {
 					attachmentTooLarge = true

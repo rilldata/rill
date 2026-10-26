@@ -1,5 +1,6 @@
 <script lang="ts">
   import { Button } from "@rilldata/web-common/components/button";
+  import AlertTriangle from "@rilldata/web-common/components/icons/AlertTriangle.svelte";
   import FormSection from "@rilldata/web-common/components/forms/FormSection.svelte";
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import Checkbox from "@rilldata/web-common/components/forms/Checkbox.svelte";
@@ -140,6 +141,12 @@
       hint={m.alert_form_attach_rows_hint()}
     />
     {#if $form["exportAttach"]}
+      <div
+        class="flex items-start gap-x-2 rounded-sm border border-yellow-200 bg-yellow-50 px-3 py-2 text-xs text-yellow-800 dark:border-yellow-900/40 dark:bg-yellow-900/20 dark:text-yellow-300"
+      >
+        <AlertTriangle size="14px" className="mt-px flex-none" />
+        <span>{m.alert_form_attach_rows_warning()}</span>
+      </div>
       <ExportFileOptions
         bind:format={$form["exportFormat"]}
         bind:limit={$form["exportLimit"]}

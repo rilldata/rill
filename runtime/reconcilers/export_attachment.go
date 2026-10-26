@@ -22,15 +22,14 @@ var errAttachmentTooLarge = errors.New("export exceeds the attachment size limit
 
 // exportAttachmentOptions are the options for exportAttachment.
 type exportAttachmentOptions struct {
-	QueryName       string
-	QueryArgsJSON   string
-	ExecutionTime   time.Time
-	Claims          *runtime.SecurityClaims
-	Format          runtimev1.ExportFormat
-	IncludeHeader   bool
-	Limit           uint64 // Zero means no limit
-	Priority        int
-	OriginDashboard *runtimev1.ResourceName
+	ResolverProperties map[string]any    // Properties of the "legacy_metrics" resolver to export
+	Annotations        map[string]string // Annotations of the report or alert, used to find the explore it originates from
+	ExecutionTime      time.Time
+	Claims             *runtime.SecurityClaims
+	Format             runtimev1.ExportFormat
+	IncludeHeader      bool
+	Limit              uint64 // Zero means no limit
+	Priority           int
 }
 
 // exportAttachment exports the results of a legacy metrics query for attaching them to emails.
@@ -49,7 +48,9 @@ func exportAttachment(ctx context.Context, c *runtime.Controller, opts *exportAt
 		return nil, fmt.Errorf("export format %q cannot be attached", opts.Format.String())
 	}
 
-	qpb, err := queries.ProtoFromJSON(opts.QueryName, opts.QueryArgsJSON, &opts.ExecutionTime)
+	queryName, _ := opts.ResolverProperties["query_name"].(string)
+	queryArgsJSON, _ := opts.ResolverProperties["query_args_json"].(string)
+	qpb, err := queries.ProtoFromJSON(queryName, queryArgsJSON, &opts.ExecutionTime)
 	if err != nil {
 		return nil, err
 	}
@@ -64,6 +65,11 @@ func exportAttachment(ctx context.Context, c *runtime.Controller, opts *exportAt
 		c.Activity.RecordMetric(ctx, "query", 1, queryAttrs...)
 	}
 
+	var originDashboard *runtimev1.ResourceName
+	if explore := exploreNameFromAnnotations(opts.Annotations, ""); explore != "" {
+		originDashboard = &runtimev1.ResourceName{Kind: runtime.ResourceKindExplore, Name: explore}
+	}
+
 	var filename string
 	w := &limitedBuffer{limit: exportAttachmentSizeLimit}
 	err = q.Export(ctx, c.Runtime, c.InstanceID, w, &runtime.ExportOptions{
@@ -74,7 +80,7 @@ func exportAttachment(ctx context.Context, c *runtime.Controller, opts *exportAt
 			return nil
 		},
 		IncludeHeader:   opts.IncludeHeader,
-		OriginDashboard: opts.OriginDashboard,
+		OriginDashboard: originDashboard,
 	})
 	if w.exceeded {
 		return nil, errAttachmentTooLarge

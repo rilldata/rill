@@ -1988,6 +1988,35 @@ notify:
     recipients:
       - user_1@example.com
 `,
+		// Attachments require email recipients
+		`alerts/a5.yaml`: `
+type: alert
+query:
+  name: MetricsViewAggregation
+  args:
+    metrics_view: mv1
+export:
+  attach: true
+  format: csv
+notify:
+  slack:
+    channels:
+      - alerts
+`,
+		// Export options are ignored when not attaching
+		`alerts/a6.yaml`: `
+type: alert
+query:
+  name: MetricsViewAggregation
+  args:
+    metrics_view: mv1
+export:
+  format: pdf
+notify:
+  email:
+    recipients:
+      - user_1@example.com
+`,
 	})
 
 	resources := []*Resource{
@@ -2010,6 +2039,21 @@ notify:
 				Notifiers:           []*runtimev1.Notifier{{Connector: "email", Properties: must(structpb.NewStruct(map[string]any{"recipients": []any{"user_1@example.com"}}))}},
 			},
 		},
+		{
+			Name:  ResourceName{Kind: ResourceKindAlert, Name: "a6"},
+			Paths: []string{"/alerts/a6.yaml"},
+			AlertSpec: &runtimev1.AlertSpec{
+				DisplayName:     "A6",
+				RefreshSchedule: &runtimev1.Schedule{RefUpdate: true},
+				Resolver:        "legacy_metrics",
+				ResolverProperties: must(structpb.NewStruct(map[string]any{
+					"query_name":      "MetricsViewAggregation",
+					"query_args_json": `{"metrics_view":"mv1"}`,
+				})),
+				NotifyOnFail: true,
+				Notifiers:    []*runtimev1.Notifier{{Connector: "email", Properties: must(structpb.NewStruct(map[string]any{"recipients": []any{"user_1@example.com"}}))}},
+			},
+		},
 	}
 
 	p, err := Parse(ctx, repo, "", "", "duckdb", true)
@@ -2026,6 +2070,10 @@ notify:
 		{
 			Message:  `export format "pdf" is not supported for alerts`,
 			FilePath: "/alerts/a4.yaml",
+		},
+		{
+			Message:  `"export.attach" requires email recipients`,
+			FilePath: "/alerts/a5.yaml",
 		},
 	})
 }

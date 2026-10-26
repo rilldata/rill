@@ -235,19 +235,23 @@ func (p *Parser) parseAlert(node *Node) error {
 	}
 
 	// Parse export options, which only apply to the export attached to email notifications for failed checks.
-	exportFormat, err := parseExportFormat(tmp.Export.Format)
-	if err != nil {
-		return err
-	}
-	if exportFormat == runtimev1.ExportFormat_EXPORT_FORMAT_PDF {
-		return errors.New(`export format "pdf" is not supported for alerts`)
-	}
+	var exportFormat runtimev1.ExportFormat
 	if tmp.Export.Attach {
 		if resolver != "legacy_metrics" {
 			return errors.New(`"export.attach" requires the "query" property`)
 		}
+		if len(tmp.Email.Recipients) == 0 && len(tmp.Notify.Email.Recipients) == 0 {
+			return errors.New(`"export.attach" requires email recipients`)
+		}
+		exportFormat, err = parseExportFormat(tmp.Export.Format)
+		if err != nil {
+			return err
+		}
 		if exportFormat == runtimev1.ExportFormat_EXPORT_FORMAT_UNSPECIFIED {
 			return errors.New(`missing required property "export.format"`)
+		}
+		if exportFormat == runtimev1.ExportFormat_EXPORT_FORMAT_PDF {
+			return errors.New(`export format "pdf" is not supported for alerts`)
 		}
 	}
 

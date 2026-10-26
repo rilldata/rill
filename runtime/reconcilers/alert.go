@@ -872,20 +872,32 @@ func (r *AlertReconciler) popCurrentExecution(ctx context.Context, self *runtime
 	var notificationErr error
 	var sentNotifications bool
 	if msg != nil {
+		// Export the rows that triggered the alert to attach them to the emails.
+		// The alert's query runs with the same attributes for every recipient, so the data is exported once.
+		var attachment *email.Attachment
+		var attachmentTooLarge bool
+		if msg.Status == runtimev1.AssertionStatus_ASSERTION_STATUS_FAIL && a.Spec.ExportAttach {
+			hasEmailRecipients := false
+			for _, notifier := range a.Spec.Notifiers {
+				if notifier.Connector == "email" && len(pbutil.ToSliceString(notifier.Properties.AsMap()["recipients"])) > 0 {
+					hasEmailRecipients = true
+					break
+				}
+			}
+			if hasEmailRecipients {
+				var err error
+				attachment, attachmentTooLarge, err = r.exportAttachment(ctx, self, a, adminMeta, executionTime)
+				if err != nil {
+					return err
+				}
+			}
+		}
+
 		for _, notifier := range a.Spec.Notifiers {
 			switch notifier.Connector {
 			// TODO: transform email client to notifier
 			case "email":
 				recipients := pbutil.ToSliceString(notifier.Properties.AsMap()["recipients"])
-
-				// Export the rows that triggered the alert to attach them to the emails.
-				// The alert's query runs with the same attributes for every recipient, so the data is exported once.
-				var attachment *email.Attachment
-				var attachmentTooLarge bool
-				if msg.Status == runtimev1.AssertionStatus_ASSERTION_STATUS_FAIL && a.Spec.ExportAttach && len(recipients) > 0 {
-					attachment, attachmentTooLarge = r.exportAttachment(ctx, self, a, adminMeta, executionTime)
-				}
-
 				for _, recipient := range recipients {
 					opts := &email.AlertStatus{
 						ToEmail:            recipient,
@@ -998,45 +1010,39 @@ func (r *AlertReconciler) popCurrentExecution(ctx context.Context, self *runtime
 // If the export fails, it records a warning on the current execution and returns a nil attachment,
 // so the emails are still sent without the attachment.
 // The returned bool is true if the export was too large to attach.
-func (r *AlertReconciler) exportAttachment(ctx context.Context, self *runtimev1.Resource, a *runtimev1.Alert, adminMeta *drivers.AlertMetadata, executionTime time.Time) (*email.Attachment, bool) {
-	props := a.Spec.ResolverProperties.AsMap()
-	queryName, _ := props["query_name"].(string)
-	queryArgsJSON, _ := props["query_args_json"].(string)
-
-	var originDashboard *runtimev1.ResourceName
-	if explore := exploreNameFromAnnotations(a.Spec.Annotations, ""); explore != "" {
-		originDashboard = &runtimev1.ResourceName{Kind: runtime.ResourceKindExplore, Name: explore}
-	}
-
+// It only returns an error on cancellation or timeout, so the alert is retried instead of sending emails without the attachment.
+func (r *AlertReconciler) exportAttachment(ctx context.Context, self *runtimev1.Resource, a *runtimev1.Alert, adminMeta *drivers.AlertMetadata, executionTime time.Time) (*email.Attachment, bool, error) {
 	// Tag as alert execution so the export query is attributed to the "alert" source for billing.
 	ctx = runtime.WithRequestSource(ctx, runtime.RequestSourceAlert)
 
 	attachment, err := exportAttachment(ctx, r.C, &exportAttachmentOptions{
-		QueryName:     queryName,
-		QueryArgsJSON: queryArgsJSON,
-		ExecutionTime: executionTime,
+		ResolverProperties: a.Spec.ResolverProperties.AsMap(),
+		Annotations:        a.Spec.Annotations,
+		ExecutionTime:      executionTime,
 		Claims: &runtime.SecurityClaims{
 			UserAttributes: alertQueryForAttributes(a, adminMeta),
 			Permissions:    []runtime.Permission{runtime.ReadObjects, runtime.ReadMetrics},
 		},
-		Format:          a.Spec.ExportFormat,
-		IncludeHeader:   a.Spec.ExportIncludeHeader,
-		Limit:           a.Spec.ExportLimit,
-		Priority:        alertQueryPriority,
-		OriginDashboard: originDashboard,
+		Format:        a.Spec.ExportFormat,
+		IncludeHeader: a.Spec.ExportIncludeHeader,
+		Limit:         a.Spec.ExportLimit,
+		Priority:      alertQueryPriority,
 	})
+	if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
+		return nil, false, err
+	}
 	if errors.Is(err, errAttachmentTooLarge) {
 		warning := fmt.Sprintf("The rows that triggered the alert were not attached to emails because they are larger than %d MB", exportAttachmentSizeLimit/1024/1024)
 		a.State.CurrentExecution.Result.Warnings = append(a.State.CurrentExecution.Result.Warnings, warning)
-		return nil, true
+		return nil, true, nil
 	}
 	if err != nil {
 		r.C.Logger.Warn("Failed to export alert attachment", zap.String("name", self.Meta.Name.Name), zap.Time("execution_time", executionTime), zap.Error(err), observability.ZapCtx(ctx))
 		warning := fmt.Sprintf("The rows that triggered the alert were not attached to emails: %s", err.Error())
 		a.State.CurrentExecution.Result.Warnings = append(a.State.CurrentExecution.Result.Warnings, warning)
-		return nil, false
+		return nil, false, nil
 	}
-	return attachment, false
+	return attachment, false, nil
 }
 
 // computeInheritedWatermark computes the inherited watermark for the alert.

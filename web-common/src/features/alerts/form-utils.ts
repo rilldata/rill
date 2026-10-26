@@ -24,6 +24,7 @@ import type {
 } from "@rilldata/web-common/runtime-client";
 import type { ValidationErrors } from "sveltekit-superforms";
 import { yup, type ValidationAdapter } from "sveltekit-superforms/adapters";
+import { getExportLimitSchema } from "@rilldata/web-common/features/exports/export-file-options";
 import { object, array, string } from "yup";
 
 export type AlertFormValues = {
@@ -165,6 +166,7 @@ export const alertFormValidationSchema = yup(
     snooze: string().required("Required"),
     slackUsers: array(string().email("Invalid email")),
     emailRecipients: array(string().email("Invalid email")),
+    exportLimit: getExportLimitSchema(),
   }),
 ) as unknown as ValidationAdapter<AlertFormValues>;
 export const FieldsByTab: (keyof AlertFormValues)[][] = [
