@@ -440,6 +440,61 @@ security:
 	require.Contains(t, results[0].Content, "limit of 100 loaded external tools")
 }
 
+func TestExternalToolsLimitOverlappingTurns(t *testing.T) {
+	ext := newBigExternalMCPServer(t, 70)
+	connector := fmt.Sprintf(`
+type: connector
+driver: mcp
+url: %s
+`, ext.URL)
+	rt, instanceID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
+		Files: map[string]string{"rill.yaml": "", "connectors/a.yaml": connector, "connectors/b.yaml": connector},
+	})
+	testruntime.RequireReconcileState(t, rt, instanceID, 3, 0, 0)
+
+	names := func(connector string) []any {
+		var res []any
+		for i := range 70 {
+			res = append(res, ai.ExternalToolName(connector, fmt.Sprintf("tool_%d", i)))
+		}
+		return res
+	}
+	script := &scriptedAIService{turns: []turnFunc{
+		toolCallTurn(ai.SearchExternalToolsName, map[string]any{"names": names("a")}),
+		textTurn("first"),
+		toolCallTurn(ai.SearchExternalToolsName, map[string]any{"names": names("b")}),
+		textTurn("second"),
+		textTurn("third"),
+	}}
+	runner := ai.NewRunner(rt, activity.NewNoopClient())
+	claims := newTestClaims("u@x.com", "x.com", false)
+	newTurnSession := func(sessionID string) *ai.Session {
+		session, err := runner.Session(t.Context(), &ai.SessionOptions{InstanceID: instanceID, SessionID: sessionID, CreateIfNotExists: sessionID == "", Claims: claims, UserAgent: "rill/test"})
+		require.NoError(t, err)
+		session.SetLLM(func(_ context.Context) (drivers.AIService, func(), error) {
+			return script, func() {}, nil
+		})
+		return session
+	}
+	conversationID := newTurnSession("").ID()
+
+	// Two overlapping turns each load 70 tools: neither sees the other's, so both pass the search's cap.
+	first, second := newTurnSession(conversationID), newTurnSession(conversationID)
+	for _, session := range []*ai.Session{first, second} {
+		res, err := session.CallTool(t.Context(), ai.RoleUser, ai.AnalystAgentName, nil, ai.AnalystAgentArgs{Prompt: "load"})
+		require.NoError(t, err)
+		require.Equal(t, ai.MessageContentTypeJSON, callResults(session, res.Call.ID)[0].ContentType)
+	}
+	require.NoError(t, first.Flush(t.Context()))
+	require.NoError(t, second.Flush(t.Context()))
+
+	// The next turn sees all 140 loaded tools, more than the providers accept, but offers no more than the cap.
+	_, err := newTurnSession(conversationID).CallTool(t.Context(), ai.RoleUser, ai.AnalystAgentName, nil, ai.AnalystAgentArgs{Prompt: "resume"})
+	require.NoError(t, err)
+	offered := slices.DeleteFunc(slices.Clone(script.tools[len(script.tools)-1]), func(name string) bool { return !isExternalToolName(name) })
+	require.Len(t, offered, 100)
+}
+
 // newBigExternalMCPServer serves an in-process MCP server with n tools named tool_0 to tool_<n-1>.
 func newBigExternalMCPServer(t *testing.T, n int) *httptest.Server {
 	t.Helper()

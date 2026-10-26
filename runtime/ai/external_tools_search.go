@@ -163,12 +163,17 @@ func externalToolsAgent(s *Session) string {
 }
 
 // loadedExternalTools returns the names of the external tools loaded in the session that the given agent may still use, sorted for stable requests.
+// Overlapping turns on the same conversation can each pass the cap in search_external_tools,
+// so the cap is also enforced here, keeping the most recently loaded tools.
 func loadedExternalTools(ctx context.Context, s *Session, agent string) []string {
 	available := s.ExternalToolNames(ctx, agent)
-	return slices.DeleteFunc(loadedExternalToolNames(s), func(name string) bool { return !slices.Contains(available, name) })
+	res := slices.DeleteFunc(loadedExternalToolNames(s), func(name string) bool { return !slices.Contains(available, name) })
+	res = res[max(0, len(res)-maxLoadedExternalTools):]
+	slices.Sort(res)
+	return res
 }
 
-// loadedExternalToolNames returns the names of all external tools loaded in the session, whether or not they are still available, sorted.
+// loadedExternalToolNames returns the names of all external tools loaded in the session, whether or not they are still available, in the order they were first loaded.
 func loadedExternalToolNames(s *Session) []string {
 	var res []string
 	for _, call := range s.Messages(FilterByType(MessageTypeCall), FilterByTool(SearchExternalToolsName)) {
@@ -185,11 +190,12 @@ func loadedExternalToolNames(s *Session) []string {
 			continue
 		}
 		for _, info := range r.Tools {
-			res = append(res, info.Name)
+			if !slices.Contains(res, info.Name) {
+				res = append(res, info.Name)
+			}
 		}
 	}
-	slices.Sort(res)
-	return slices.Compact(res)
+	return res
 }
 
 // externalSearchDoc holds the tokenized fields of an external tool for keyword search.
