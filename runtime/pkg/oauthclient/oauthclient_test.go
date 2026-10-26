@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"strings"
 	"testing"
 	"time"
 
@@ -98,12 +99,63 @@ func TestDiscover(t *testing.T) {
 		require.Empty(t, c.Scopes)
 	})
 
+	t.Run("keeps the authorization params", func(t *testing.T) {
+		srv := newDiscoveryServer(t, "/.well-known/oauth-protected-resource/mcp", "/mcp")
+		c, err := Discover(t.Context(), &DiscoverOptions{
+			ServerURL:           srv.URL + "/mcp",
+			RedirectURL:         "http://localhost:9009/callback",
+			ClientID:            "pre-registered",
+			AuthorizationParams: map[string]string{"access_type": "offline"},
+			HTTPClient:          safehttp.NewHTTPClient(true, 5*time.Second),
+		})
+		require.NoError(t, err)
+		require.Equal(t, map[string]string{"access_type": "offline"}, c.AuthorizationParams)
+	})
+
 	t.Run("fails without any metadata", func(t *testing.T) {
 		srv := httptest.NewServer(http.NotFoundHandler())
 		t.Cleanup(srv.Close)
 		_, err := discover(srv.URL+"/mcp", nil)
 		require.ErrorContains(t, err, "serves no authorization server metadata")
 	})
+}
+
+func TestAuthCodeURL(t *testing.T) {
+	c := &Client{
+		RedirectURL:           "http://localhost:9009/callback",
+		Resource:              "https://mcp.example.com/mcp",
+		AuthorizationEndpoint: "https://auth.example.com/authorize",
+		TokenEndpoint:         "https://auth.example.com/token",
+		ClientID:              "client-1",
+		Scopes:                []string{"read"},
+		AuthorizationParams: map[string]string{
+			"access_type": "offline",
+			"prompt":      "consent",
+			"login_hint":  "a&b=c",
+		},
+	}
+	// Parameters that the flow sets itself or depends on are never overridden or added, whatever their case
+	reserved := []string{"response_type", "client_id", "redirect_uri", "scope", "state", "code_challenge", "code_challenge_method", "resource", "request", "request_uri", "response_mode"}
+	for _, k := range reserved {
+		c.AuthorizationParams[k] = "other"
+		c.AuthorizationParams[strings.ToUpper(k)] = "other"
+	}
+
+	u, err := url.Parse(c.AuthCodeURL("state-1", "verifier-1"))
+	require.NoError(t, err)
+	require.Equal(t, url.Values{
+		"access_type":           {"offline"},
+		"prompt":                {"consent"},
+		"login_hint":            {"a&b=c"},
+		"response_type":         {"code"},
+		"client_id":             {"client-1"},
+		"redirect_uri":          {"http://localhost:9009/callback"},
+		"scope":                 {"read"},
+		"state":                 {"state-1"},
+		"code_challenge":        {oauth2.S256ChallengeFromVerifier("verifier-1")},
+		"code_challenge_method": {"S256"},
+		"resource":              {"https://mcp.example.com/mcp"},
+	}, u.Query())
 }
 
 func TestValidateIssuer(t *testing.T) {

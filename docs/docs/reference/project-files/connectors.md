@@ -1312,6 +1312,10 @@ _[string]_ - Secret of the pre-registered OAuth client. Reference it from `.env`
 
 _[array of string]_ - Scopes to request during authorization. Defaults to all scopes the server advertises
 
+### `oauth_authorization_params`
+
+_[object]_ - Extra query parameters for the authorization request, for servers that need non-standard ones. For example, Google issues a refresh token only with `access_type: offline`, and only on the first consent unless `prompt: consent` is also set. Changing them requires users to connect again
+
 ### `headers`
 
 _[object]_ - HTTP headers sent on every request to the server, such as a project-scoped `Authorization` header.

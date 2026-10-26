@@ -33,6 +33,7 @@ import (
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/parser"
 	"github.com/rilldata/rill/runtime/pkg/activity"
+	"github.com/rilldata/rill/runtime/pkg/oauthclient"
 	"github.com/rilldata/rill/runtime/pkg/safehttp"
 	"github.com/rilldata/rill/runtime/storage"
 	"go.uber.org/zap"
@@ -149,18 +150,20 @@ func (d driver) TertiarySourceConnectors(ctx context.Context, srcProps map[strin
 // Header values may contain templating ({{ .env.* }} and {{ .user.* }}); they are resolved per request in resolveCredentials
 // with the environment, variables and user attributes provided in drivers.MCPCallOptions.
 type configProperties struct {
-	URL               string            `mapstructure:"url"`
-	Auth              string            `mapstructure:"auth"`
-	OAuthClientID     string            `mapstructure:"oauth_client_id"`
-	OAuthClientSecret string            `mapstructure:"oauth_client_secret"`
-	OAuthScopes       []string          `mapstructure:"oauth_scopes"`
-	Headers           map[string]string `mapstructure:"headers"`
-	Timeout           string            `mapstructure:"timeout"`
-	ConnectTimeout    string            `mapstructure:"connect_timeout"`
-	MaxResultBytes    int64             `mapstructure:"max_result_bytes"`
-	DisplayName       string            `mapstructure:"display_name"`
-	AIInstructions    string            `mapstructure:"ai_instructions"`
-	AllowHostAccess   bool              `mapstructure:"allow_host_access"`
+	URL               string   `mapstructure:"url"`
+	Auth              string   `mapstructure:"auth"`
+	OAuthClientID     string   `mapstructure:"oauth_client_id"`
+	OAuthClientSecret string   `mapstructure:"oauth_client_secret"`
+	OAuthScopes       []string `mapstructure:"oauth_scopes"`
+	// OAuthAuthorizationParams are extra query parameters for the authorization endpoint, such as Google's access_type=offline.
+	OAuthAuthorizationParams map[string]string `mapstructure:"oauth_authorization_params"`
+	Headers                  map[string]string `mapstructure:"headers"`
+	Timeout                  string            `mapstructure:"timeout"`
+	ConnectTimeout           string            `mapstructure:"connect_timeout"`
+	MaxResultBytes           int64             `mapstructure:"max_result_bytes"`
+	DisplayName              string            `mapstructure:"display_name"`
+	AIInstructions           string            `mapstructure:"ai_instructions"`
+	AllowHostAccess          bool              `mapstructure:"allow_host_access"`
 
 	timeout        time.Duration
 	connectTimeout time.Duration
@@ -197,6 +200,14 @@ func newConfigProperties(config map[string]any) (*configProperties, error) {
 
 	if cfg.Auth != "" && cfg.Auth != AuthOAuth {
 		return nil, fmt.Errorf("invalid 'auth': expected \"oauth\" or empty, got %q", cfg.Auth)
+	}
+	if len(cfg.OAuthAuthorizationParams) > 0 && cfg.Auth != AuthOAuth {
+		return nil, errors.New("'oauth_authorization_params' requires 'auth: oauth'")
+	}
+	for k := range cfg.OAuthAuthorizationParams {
+		if oauthclient.IsReservedAuthorizationParam(k) {
+			return nil, fmt.Errorf("invalid 'oauth_authorization_params': cannot set %q, which Rill sets itself", k)
+		}
 	}
 	for k := range cfg.Headers {
 		if strings.EqualFold(k, "authorization") && cfg.Auth == AuthOAuth {
@@ -373,11 +384,12 @@ func (h *handle) OAuthConfig() *drivers.MCPOAuthConfig {
 		return nil
 	}
 	return &drivers.MCPOAuthConfig{
-		ServerURL:    h.config.URL,
-		ClientID:     h.config.OAuthClientID,
-		ClientSecret: h.config.OAuthClientSecret,
-		Scopes:       h.config.OAuthScopes,
-		Hash:         h.oauthConfigHash,
+		ServerURL:           h.config.URL,
+		ClientID:            h.config.OAuthClientID,
+		ClientSecret:        h.config.OAuthClientSecret,
+		Scopes:              h.config.OAuthScopes,
+		AuthorizationParams: h.config.OAuthAuthorizationParams,
+		Hash:                h.oauthConfigHash,
 	}
 }
 
@@ -619,13 +631,26 @@ func (h *handle) dropSession(key string) {
 	delete(h.tools, key)
 }
 
-// oauthConfigHash identifies a connector's OAuth configuration: the server URL, the pre-registered client and the scopes.
+// oauthConfigHash identifies a connector's OAuth configuration: the server URL, the pre-registered client, the scopes and the authorization params.
 // Authorizations are bound to it, so changing any of them requires the user to authorize again.
 // Each field is length-prefixed so that different configurations can never produce the same input.
 func oauthConfigHash(cfg *configProperties) string {
 	h := sha256.New()
 	for _, s := range append([]string{cfg.URL, cfg.OAuthClientID, cfg.OAuthClientSecret}, cfg.OAuthScopes...) {
 		_, _ = fmt.Fprintf(h, "%d:%s;", len(s), s)
+	}
+	if len(cfg.OAuthAuthorizationParams) > 0 {
+		// The marker can't be confused with a length-prefixed field, and configurations without params keep their hash.
+		_, _ = h.Write([]byte("params;"))
+		keys := make([]string, 0, len(cfg.OAuthAuthorizationParams))
+		for k := range cfg.OAuthAuthorizationParams {
+			keys = append(keys, k)
+		}
+		sort.Strings(keys)
+		for _, k := range keys {
+			v := cfg.OAuthAuthorizationParams[k]
+			_, _ = fmt.Fprintf(h, "%d:%s;%d:%s;", len(k), k, len(v), v)
+		}
 	}
 	return hex.EncodeToString(h.Sum(nil))
 }

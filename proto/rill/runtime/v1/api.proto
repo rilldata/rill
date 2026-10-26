@@ -1140,6 +1140,8 @@ message ConnectorOAuthConfig {
   string client_secret = 3;
   // Scopes to request. If empty, the scopes the resource advertises are requested.
   repeated string scopes = 4;
+  // Extra query parameters for the authorization endpoint, for servers that need non-standard ones (e.g. Google's access_type=offline).
+  map<string, string> authorization_params = 5;
 }
 
 // Request message for RuntimeService.ListNotifierConnectors

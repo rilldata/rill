@@ -1204,6 +1204,11 @@ definitions:
               items:
                 type: string
               description: Scopes to request during authorization. Defaults to all scopes the server advertises
+            oauth_authorization_params:
+              type: object
+              additionalProperties:
+                type: string
+              description: 'Extra query parameters for the authorization request, for servers that need non-standard ones. For example, Google issues a refresh token only with `access_type: offline`, and only on the first consent unless `prompt: consent` is also set. Changing them requires users to connect again'
             headers:
               type: object
               additionalProperties:
