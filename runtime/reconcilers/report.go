@@ -574,6 +574,22 @@ func (r *ReportReconciler) sendReport(ctx context.Context, self *runtimev1.Resou
 	// The owner email annotation is only set for reports created from an embed.
 	embedCreated := rep.Spec.Annotations["admin_owner_user_email"] != ""
 
+	// Embed users can only use reports if the project enables the "reports" feature flag for them (it's disabled for embeds by default).
+	// The UI hides reports otherwise, but this check also covers reports created directly through the API.
+	// Reports created from an embed are run as the creator, so every delivery has the same attributes.
+	if embedCreated {
+		for _, delivery := range meta.ReportDelivery {
+			flags, err := r.C.Runtime.FeatureFlags(ctx, r.C.InstanceID, &runtime.SecurityClaims{UserAttributes: delivery.UserAttrs})
+			if err != nil {
+				return false, nil, fmt.Errorf("failed to resolve feature flags: %w", err)
+			}
+			if !flags["reports"] {
+				return false, nil, errors.New(`reports created from an embed require the "reports" feature flag to be enabled for embed users`)
+			}
+			break
+		}
+	}
+
 	// recipient -> notification data
 	notificationsContent := make(map[string]*notificationData)
 
@@ -585,10 +601,10 @@ func (r *ReportReconciler) sendReport(ctx context.Context, self *runtimev1.Resou
 		aiReports := make(map[string]*aiReport)
 		// For AI reports, in recipient mode, we require the metadata to contain user attributes for reach recipient, since we'll need them to trigger the report and generate personalized content.
 		// In creator mode, we create a shared session for all recipients and create the session with creator's (or the "for" identity's) attributes.
-		// NOTE: The user ID is empty when the report is run for explicit attributes or for an email that doesn't belong to a Rill user.
+		// The session is owned by the user, which restricts access to it. So we require a user ID, which is empty when the report is run for explicit attributes or for an email that doesn't belong to a Rill user.
 		for recipient, delivery := range meta.ReportDelivery {
-			if len(delivery.UserAttrs) == 0 {
-				r.C.Logger.Warn("Skipping recipient - no user attributes found in metadata", zap.String("recipient", recipient), zap.String("report", self.Meta.Name.Name), observability.ZapCtx(ctx))
+			if delivery.UserID == "" || len(delivery.UserAttrs) == 0 {
+				r.C.Logger.Warn("Skipping recipient - no user ID or attributes found in metadata", zap.String("recipient", recipient), zap.String("report", self.Meta.Name.Name), observability.ZapCtx(ctx))
 				continue
 			}
 			// In recipient mode, delivery.UserID will be recipients userId, in creator mode, delivery.UserID will be the same for all recipients so report will be triggered once.
@@ -831,16 +847,15 @@ type aiReport struct {
 }
 
 // triggerAIReport executes an AI-powered report and returns session id with summary.
-// The session will be created with the given user's claims for row-level security.
-// The userID may be empty if the user is not a Rill user, in which case the session has no owner.
+// The session will be created with the given user's claims for row-level security, and is owned by the user.
 // The additionalRules optionally further restrict the data the session can access.
 func (r *ReportReconciler) triggerAIReport(ctx context.Context, self *runtimev1.Resource, rep *runtimev1.Report, t time.Time, webOpenMode, userID string, userAttrs map[string]any, additionalRules []*runtimev1.SecurityRule) (*aiReport, []string, error) {
 	if rep.Spec.Resolver != "ai" {
 		return nil, nil, fmt.Errorf("triggerAIReport called for non-AI report")
 	}
 
-	if len(userAttrs) == 0 {
-		return nil, nil, fmt.Errorf("userAttrs are required for AI report")
+	if userID == "" || len(userAttrs) == 0 {
+		return nil, nil, fmt.Errorf("userID and userAttrs are required for AI report")
 	}
 
 	// Create claims for executing the AI resolver

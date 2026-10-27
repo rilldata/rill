@@ -10,6 +10,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/types/known/structpb"
 	"gopkg.in/yaml.v3"
 )
 
@@ -162,6 +163,13 @@ func TestYAMLForManagedReportEmbed(t *testing.T) {
 	opts.SlackWebhooks = []string{"https://hooks.slack.com/x"}
 	_, err = s.yamlForManagedReport(opts, "", "embed@example.com", nil)
 	require.ErrorContains(t, err, "can't be sent to Slack")
+
+	// Data resolvers are not supported, since they could access data the embed doesn't expose
+	opts = newOpts()
+	opts.Resolver = "sql"
+	opts.ResolverProperties, _ = structpb.NewStruct(map[string]any{"sql": "SELECT * FROM secrets"})
+	_, err = s.yamlForManagedReport(opts, "", "embed@example.com", nil)
+	require.ErrorContains(t, err, "must use a query")
 
 	// The restrictions don't apply to reports created by Rill users
 	opts = newOpts()

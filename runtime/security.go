@@ -621,7 +621,7 @@ func (p *securityEngine) builtInReportSecurityRule(reportRes *runtimev1.Resource
 		if spec.Annotations["admin_owner_user_id"] != "" {
 			explicitAllow = userID == spec.Annotations["admin_owner_user_id"]
 		} else if spec.Annotations["admin_owner_user_email"] != "" {
-			explicitAllow = email == spec.Annotations["admin_owner_user_email"]
+			explicitAllow = strings.EqualFold(email, spec.Annotations["admin_owner_user_email"])
 		}
 	}
 

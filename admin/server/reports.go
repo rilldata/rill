@@ -133,9 +133,18 @@ func (s *Server) GetReportMeta(ctx context.Context, req *adminv1.GetReportMetaRe
 			return nil, err
 		}
 
-		// Limit the report's data to the resources the embed was limited to.
-		resourcesPb := make([]*adminv1.ResourceName, len(embedResources))
-		for i, r := range embedResources {
+		// Limit the report's data the same way as the embed's runtime token:
+		// to the resources the embed was limited to, or else to the resource restrictions of the project member with the embed user's email.
+		restrictResources := len(embedResources) > 0
+		resources := embedResources
+		if !restrictResources && userID != "" {
+			restrictResources, resources, err = s.getResourceRestrictionsForUser(ctx, proj.ID, userID)
+			if err != nil {
+				return nil, err
+			}
+		}
+		resourcesPb := make([]*adminv1.ResourceName, len(resources))
+		for i, r := range resources {
 			resourcesPb[i] = &adminv1.ResourceName{Type: r.Type, Name: r.Name}
 		}
 
@@ -143,7 +152,7 @@ func (s *Server) GetReportMeta(ctx context.Context, req *adminv1.GetReportMetaRe
 			delivery[recipient] = &adminv1.GetReportMetaResponse_DeliveryMeta{
 				UserId:            userID,
 				UserAttrs:         userAttrsPb,
-				RestrictResources: len(embedResources) > 0,
+				RestrictResources: restrictResources,
 				Resources:         resourcesPb,
 			}
 		}
@@ -357,14 +366,23 @@ func (s *Server) EditReport(ctx context.Context, req *adminv1.EditReportRequest)
 		return nil, status.Error(codes.PermissionDenied, "does not have permission to edit report")
 	}
 
-	// Keep the resources the report was limited to, unless the editor is an embed.
-	// An embed editor can only give the report the same access as its own embed, so its resources replace the report's.
+	// Keep the resources the report was limited to.
+	// An embed editor can't give the report more access than its own embed has, so it can only narrow them.
 	embedResources, err := parseEmbedResources(annotations.AdminEmbedResources)
 	if err != nil {
 		return nil, err
 	}
-	if mdl, ok := claims.AuthTokenModel().(*database.EmbedAuthToken); ok {
-		embedResources = mdl.Resources
+	if mdl, ok := claims.AuthTokenModel().(*database.EmbedAuthToken); ok && len(mdl.Resources) > 0 {
+		if len(embedResources) == 0 {
+			embedResources = mdl.Resources
+		} else {
+			embedResources = slices.DeleteFunc(embedResources, func(r database.ResourceName) bool {
+				return !slices.Contains(mdl.Resources, r)
+			})
+			if len(embedResources) == 0 {
+				return nil, status.Error(codes.PermissionDenied, "can't edit a report that targets dashboards outside of this embed")
+			}
+		}
 	}
 	embedResources, err = embedReportResources(embedResources, req.Options)
 	if err != nil {
@@ -709,6 +727,11 @@ func (s *Server) yamlForManagedReport(opts *adminv1.ReportOptions, ownerUserID, 
 		}
 		if len(opts.SlackChannels) > 0 || len(opts.SlackUsers) > 0 || len(opts.SlackWebhooks) > 0 {
 			return nil, fmt.Errorf("reports created from an embed can't be sent to Slack")
+		}
+		// Embed users can only export metrics queries, which are subject to the same security policies as the embedded dashboard.
+		// Other resolvers, such as "sql" or "ai", could access data that the embed doesn't expose.
+		if opts.Resolver != "" {
+			return nil, fmt.Errorf("reports created from an embed must use a query, not a data resolver")
 		}
 		res.For.UserEmail = ownerEmail
 		res.Query.For.UserEmail = ownerEmail
@@ -1079,7 +1102,7 @@ func isAdminManagedOwner(claims auth.Claims, ownerUserID, ownerEmail string) boo
 		return ownerUserID != "" && ownerUserID == claims.OwnerID()
 	case auth.OwnerTypeEmbed:
 		tkn, ok := claims.AuthTokenModel().(*database.EmbedAuthToken)
-		return ok && ownerUserID == "" && ownerEmail != "" && ownerEmail == tkn.Email
+		return ok && ownerUserID == "" && ownerEmail != "" && strings.EqualFold(ownerEmail, tkn.Email)
 	default:
 		return false
 	}

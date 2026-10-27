@@ -2,6 +2,8 @@ package reconcilers_test
 
 import (
 	"context"
+	"fmt"
+	"maps"
 	"strings"
 	"testing"
 	"time"
@@ -684,6 +686,72 @@ annotations:
 	}
 }
 
+func TestReportEmbedFeatureFlag(t *testing.T) {
+	for _, enabled := range []bool{false, true} {
+		t.Run(fmt.Sprintf("enabled=%v", enabled), func(t *testing.T) {
+			rillYAML := ""
+			if enabled {
+				rillYAML = "features:\n  reports: true\n"
+			}
+			rt, id := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
+				AdminService: &embedAdmin{},
+				Files: map[string]string{
+					"rill.yaml":      rillYAML,
+					"models/bar.sql": `SELECT 'US' AS country`,
+					"metrics/mv1.yaml": `
+version: 1
+type: metrics_view
+model: bar
+dimensions:
+- column: country
+measures:
+- name: total
+  expression: count(*)
+`,
+					"reports/r1.yaml": `
+type: report
+display_name: Embed report
+query:
+  name: MetricsViewAggregation
+  args:
+    metrics_view: mv1
+    dimensions:
+    - name: country
+    measures:
+    - name: total
+  for:
+    user_email: embed@example.com
+export:
+  format: csv
+  attach: true
+notify:
+  email:
+    recipients:
+    - embed@example.com
+annotations:
+  admin_owner_user_email: embed@example.com
+  web_open_mode: creator
+`,
+				},
+			})
+			testruntime.RequireReconcileState(t, rt, id, 4, 0, 0)
+			testruntime.RefreshAndWait(t, rt, id, &runtimev1.ResourceName{Kind: runtime.ResourceKindReport, Name: "r1"})
+
+			// Reports created from an embed only run if the "reports" feature flag is enabled for embed users
+			r1 := testruntime.GetResource(t, rt, id, runtime.ResourceKindReport, "r1")
+			require.NotEmpty(t, r1.GetReport().State.ExecutionHistory)
+			emails := rt.Email.Sender.(*email.TestSender).Emails
+			if enabled {
+				require.Empty(t, r1.GetReport().State.ExecutionHistory[0].ErrorMessage)
+				require.Len(t, emails, 1)
+			} else {
+				require.Contains(t, r1.GetReport().State.ExecutionHistory[0].ErrorMessage, `"reports" feature flag`)
+				require.Empty(t, emails)
+			}
+		})
+	}
+}
+
 // creatorModeAdmin is an admin service that returns report metadata the way the admin service does for reports run as the creator:
 // every recipient's delivery has the user ID and attributes of the "for" identity if set, or else of the report owner.
 type creatorModeAdmin struct {
@@ -732,4 +800,23 @@ func (a *creatorModeAdmin) GetReportMetadata(ctx context.Context, reportName, ow
 		}
 	}
 	return &drivers.ReportMetadata{ReportDelivery: delivery}, nil
+}
+
+// embedAdmin is a creatorModeAdmin that marks every delivery's attributes as an embed user's,
+// the way the admin service does for reports created from an embed.
+type embedAdmin struct {
+	creatorModeAdmin
+}
+
+func (a *embedAdmin) GetReportMetadata(ctx context.Context, reportName, ownerID, webOpenMode string, emailRecipients []string, anonRecipients bool, executionTime time.Time, queryForUserID, queryForUserEmail string, queryForAttributes map[string]any) (*drivers.ReportMetadata, error) {
+	meta, err := a.creatorModeAdmin.GetReportMetadata(ctx, reportName, ownerID, webOpenMode, emailRecipients, anonRecipients, executionTime, queryForUserID, queryForUserEmail, queryForAttributes)
+	if err != nil {
+		return nil, err
+	}
+	for recipient, delivery := range meta.ReportDelivery {
+		delivery.UserAttrs = maps.Clone(delivery.UserAttrs)
+		delivery.UserAttrs["embed"] = true
+		meta.ReportDelivery[recipient] = delivery
+	}
+	return meta, nil
 }
