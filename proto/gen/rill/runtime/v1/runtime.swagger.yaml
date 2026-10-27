@@ -5520,6 +5520,11 @@ definitions:
         items:
           type: string
         description: Scopes to request. If empty, the scopes the resource advertises are requested.
+      authorizationParams:
+        type: object
+        additionalProperties:
+          type: string
+        description: Extra query parameters for the authorization endpoint, for servers that need non-standard ones (e.g. Google's access_type=offline).
     description: ConnectorOAuthConfig describes how to reach a connector's authorization server and which client to use with it.
   v1ConnectorSpec:
     type: object

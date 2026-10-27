@@ -30,6 +30,8 @@ auth: oauth
 oauth_client_id: client-1
 oauth_client_secret: secret-1
 oauth_scopes: [read]
+oauth_authorization_params:
+  access_type: offline
 security:
   access: "'{{ .user.domain }}' = 'rilldata.com'"
 `,
@@ -58,6 +60,7 @@ url: https://static.example.com/mcp
 		require.Equal(t, "client-1", res.Config.ClientId)
 		require.Equal(t, "secret-1", res.Config.ClientSecret)
 		require.Equal(t, []string{"read"}, res.Config.Scopes)
+		require.Equal(t, map[string]string{"access_type": "offline"}, res.Config.AuthorizationParams)
 	})
 
 	t.Run("denies a user without access", func(t *testing.T) {
