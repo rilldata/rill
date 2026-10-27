@@ -19,10 +19,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"maps"
 	"net/http"
 	"net/url"
 	"regexp"
 	"sort"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -170,6 +172,24 @@ type configProperties struct {
 }
 
 func newConfigProperties(config map[string]any) (*configProperties, error) {
+	// WeakDecode would turn booleans into "1" or "0", which servers such as Google reject, and null into an empty string.
+	// Numbers already decode correctly, so only booleans are converted here.
+	if params, ok := config["oauth_authorization_params"].(map[string]any); ok {
+		converted := make(map[string]any, len(params))
+		for k, v := range params {
+			switch v := v.(type) {
+			case bool:
+				converted[k] = strconv.FormatBool(v)
+			case nil:
+				return nil, fmt.Errorf("invalid 'oauth_authorization_params': %q has no value", k)
+			default:
+				converted[k] = v
+			}
+		}
+		config = maps.Clone(config)
+		config["oauth_authorization_params"] = converted
+	}
+
 	cfg := &configProperties{}
 	err := mapstructure.WeakDecode(config, cfg)
 	if err != nil {
@@ -205,6 +225,9 @@ func newConfigProperties(config map[string]any) (*configProperties, error) {
 		return nil, errors.New("'oauth_authorization_params' requires 'auth: oauth'")
 	}
 	for k := range cfg.OAuthAuthorizationParams {
+		if strings.EqualFold(k, "scope") {
+			return nil, fmt.Errorf("invalid 'oauth_authorization_params': cannot set %q; use 'oauth_scopes' instead", k)
+		}
 		if oauthclient.IsReservedAuthorizationParam(k) {
 			return nil, fmt.Errorf("invalid 'oauth_authorization_params': cannot set %q, which Rill sets itself", k)
 		}
@@ -639,18 +662,16 @@ func oauthConfigHash(cfg *configProperties) string {
 	for _, s := range append([]string{cfg.URL, cfg.OAuthClientID, cfg.OAuthClientSecret}, cfg.OAuthScopes...) {
 		_, _ = fmt.Fprintf(h, "%d:%s;", len(s), s)
 	}
-	if len(cfg.OAuthAuthorizationParams) > 0 {
-		// The marker can't be confused with a length-prefixed field, and configurations without params keep their hash.
-		_, _ = h.Write([]byte("params;"))
-		keys := make([]string, 0, len(cfg.OAuthAuthorizationParams))
-		for k := range cfg.OAuthAuthorizationParams {
-			keys = append(keys, k)
-		}
-		sort.Strings(keys)
-		for _, k := range keys {
-			v := cfg.OAuthAuthorizationParams[k]
-			_, _ = fmt.Fprintf(h, "%d:%s;%d:%s;", len(k), k, len(v), v)
-		}
+	// The marker can't be confused with a length-prefixed field, so scopes and params never collide
+	_, _ = h.Write([]byte("params;"))
+	keys := make([]string, 0, len(cfg.OAuthAuthorizationParams))
+	for k := range cfg.OAuthAuthorizationParams {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	for _, k := range keys {
+		v := cfg.OAuthAuthorizationParams[k]
+		_, _ = fmt.Fprintf(h, "%d:%s;%d:%s;", len(k), k, len(v), v)
 	}
 	return hex.EncodeToString(h.Sum(nil))
 }

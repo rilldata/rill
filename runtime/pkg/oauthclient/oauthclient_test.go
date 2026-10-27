@@ -5,7 +5,6 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
-	"strings"
 	"testing"
 	"time"
 
@@ -16,12 +15,8 @@ import (
 
 // newDiscoveryServer serves authorization server metadata on its origin.
 // If prmPath is set, it also serves protected resource metadata at that path, declaring the server URL followed by resourcePath as its resource.
-func newDiscoveryServer(t *testing.T, prmPath, resourcePath string) *httptest.Server {
-	return newDiscoveryServerWithScopes(t, prmPath, resourcePath, nil)
-}
-
-// newDiscoveryServerWithScopes is like newDiscoveryServer, with asScopes as the authorization server's scopes_supported.
-func newDiscoveryServerWithScopes(t *testing.T, prmPath, resourcePath string, asScopes []string) *httptest.Server {
+// prmScopes and asScopes are the scopes_supported of the protected resource and of the authorization server.
+func newDiscoveryServer(t *testing.T, prmPath, resourcePath string, prmScopes, asScopes []string) *httptest.Server {
 	var srv *httptest.Server
 	mux := http.NewServeMux()
 	if prmPath != "" {
@@ -30,7 +25,7 @@ func newDiscoveryServerWithScopes(t *testing.T, prmPath, resourcePath string, as
 			_ = json.NewEncoder(w).Encode(map[string]any{
 				"resource":              srv.URL + resourcePath,
 				"authorization_servers": []string{srv.URL},
-				"scopes_supported":      []string{"read", "write"},
+				"scopes_supported":      prmScopes,
 			})
 		})
 	}
@@ -62,7 +57,7 @@ func TestDiscover(t *testing.T) {
 	}
 
 	t.Run("protected resource metadata", func(t *testing.T) {
-		srv := newDiscoveryServer(t, "/.well-known/oauth-protected-resource/mcp", "/mcp")
+		srv := newDiscoveryServer(t, "/.well-known/oauth-protected-resource/mcp", "/mcp", []string{"read", "write"}, nil)
 		c, err := discover(srv.URL+"/mcp", nil)
 		require.NoError(t, err)
 		require.Equal(t, srv.URL, c.Issuer)
@@ -72,7 +67,7 @@ func TestDiscover(t *testing.T) {
 	})
 
 	t.Run("root protected resource metadata declaring the origin", func(t *testing.T) {
-		srv := newDiscoveryServer(t, "/.well-known/oauth-protected-resource", "")
+		srv := newDiscoveryServer(t, "/.well-known/oauth-protected-resource", "", []string{"read", "write"}, nil)
 		c, err := discover(srv.URL+"/mcp", nil)
 		require.NoError(t, err)
 		require.Equal(t, srv.URL, c.Resource)
@@ -80,7 +75,7 @@ func TestDiscover(t *testing.T) {
 	})
 
 	t.Run("root protected resource metadata declaring the server url", func(t *testing.T) {
-		srv := newDiscoveryServer(t, "/.well-known/oauth-protected-resource", "/mcp")
+		srv := newDiscoveryServer(t, "/.well-known/oauth-protected-resource", "/mcp", []string{"read", "write"}, nil)
 		c, err := discover(srv.URL+"/mcp", nil)
 		require.NoError(t, err)
 		require.Equal(t, srv.URL+"/mcp", c.Resource)
@@ -88,7 +83,7 @@ func TestDiscover(t *testing.T) {
 	})
 
 	t.Run("trailing slash matches the declared resource", func(t *testing.T) {
-		srv := newDiscoveryServer(t, "/.well-known/oauth-protected-resource/mcp", "/mcp")
+		srv := newDiscoveryServer(t, "/.well-known/oauth-protected-resource/mcp", "/mcp", []string{"read", "write"}, nil)
 		c, err := discover(srv.URL+"/mcp/", []string{"read"})
 		require.NoError(t, err)
 		require.Equal(t, srv.URL+"/mcp", c.Resource)
@@ -96,7 +91,7 @@ func TestDiscover(t *testing.T) {
 	})
 
 	t.Run("falls back to authorization server metadata on the origin", func(t *testing.T) {
-		srv := newDiscoveryServer(t, "", "")
+		srv := newDiscoveryServer(t, "", "", nil, nil)
 		c, err := discover(srv.URL+"/mcp", nil)
 		require.NoError(t, err)
 		require.Equal(t, srv.URL, c.Issuer)
@@ -106,7 +101,7 @@ func TestDiscover(t *testing.T) {
 	})
 
 	t.Run("keeps the authorization params", func(t *testing.T) {
-		srv := newDiscoveryServer(t, "/.well-known/oauth-protected-resource/mcp", "/mcp")
+		srv := newDiscoveryServer(t, "/.well-known/oauth-protected-resource/mcp", "/mcp", []string{"read", "write"}, nil)
 		c, err := Discover(t.Context(), &DiscoverOptions{
 			ServerURL:           srv.URL + "/mcp",
 			RedirectURL:         "http://localhost:9009/callback",
@@ -119,27 +114,36 @@ func TestDiscover(t *testing.T) {
 	})
 
 	t.Run("requests offline_access when the authorization server supports it", func(t *testing.T) {
-		srv := newDiscoveryServerWithScopes(t, "/.well-known/oauth-protected-resource/mcp", "/mcp", []string{"openid", "offline_access"})
+		srv := newDiscoveryServer(t, "/.well-known/oauth-protected-resource/mcp", "/mcp", []string{"read", "write"}, []string{"openid", "offline_access"})
 		c, err := discover(srv.URL+"/mcp", nil)
 		require.NoError(t, err)
 		require.Equal(t, []string{"read", "write", "offline_access"}, c.Scopes)
+	})
 
-		// Spare capacity would let an append write into the configured scopes' backing array
-		scopes := make([]string, 1, 4)
-		scopes[0] = "read"
-		c, err = discover(srv.URL+"/mcp", scopes)
+	t.Run("does not repeat offline_access", func(t *testing.T) {
+		srv := newDiscoveryServer(t, "/.well-known/oauth-protected-resource/mcp", "/mcp", []string{"read", "offline_access"}, []string{"openid", "offline_access"})
+		c, err := discover(srv.URL+"/mcp", nil)
 		require.NoError(t, err)
 		require.Equal(t, []string{"read", "offline_access"}, c.Scopes)
-		require.Equal(t, []string{"read"}, scopes, "the configured scopes must not be modified")
-		require.Empty(t, scopes[:2][1], "the configured scopes' backing array must not be modified")
+	})
 
-		c, err = discover(srv.URL+"/mcp", []string{"offline_access", "read"})
+	t.Run("requests configured scopes exactly", func(t *testing.T) {
+		srv := newDiscoveryServer(t, "/.well-known/oauth-protected-resource/mcp", "/mcp", []string{"read", "write"}, []string{"openid", "offline_access"})
+		c, err := discover(srv.URL+"/mcp", []string{"read"})
 		require.NoError(t, err)
-		require.Equal(t, []string{"offline_access", "read"}, c.Scopes)
+		require.Equal(t, []string{"read"}, c.Scopes)
+	})
+
+	t.Run("does not request offline_access alone", func(t *testing.T) {
+		// Without protected resource metadata there are no scopes, so no scope is sent and the server applies its defaults
+		srv := newDiscoveryServer(t, "", "", nil, []string{"openid", "offline_access"})
+		c, err := discover(srv.URL+"/mcp", nil)
+		require.NoError(t, err)
+		require.Empty(t, c.Scopes)
 	})
 
 	t.Run("does not request offline_access when the authorization server does not support it", func(t *testing.T) {
-		srv := newDiscoveryServerWithScopes(t, "/.well-known/oauth-protected-resource/mcp", "/mcp", []string{"openid"})
+		srv := newDiscoveryServer(t, "/.well-known/oauth-protected-resource/mcp", "/mcp", []string{"read", "write"}, []string{"openid"})
 		c, err := discover(srv.URL+"/mcp", nil)
 		require.NoError(t, err)
 		require.Equal(t, []string{"read", "write"}, c.Scopes)
@@ -167,13 +171,6 @@ func TestAuthCodeURL(t *testing.T) {
 			"login_hint":  "a&b=c",
 		},
 	}
-	// Parameters that the flow sets itself or depends on are never overridden or added, whatever their case
-	reserved := []string{"response_type", "client_id", "redirect_uri", "scope", "state", "code_challenge", "code_challenge_method", "resource", "request", "request_uri", "response_mode"}
-	for _, k := range reserved {
-		c.AuthorizationParams[k] = "other"
-		c.AuthorizationParams[strings.ToUpper(k)] = "other"
-	}
-
 	u, err := url.Parse(c.AuthCodeURL("state-1", "verifier-1"))
 	require.NoError(t, err)
 	require.Equal(t, url.Values{

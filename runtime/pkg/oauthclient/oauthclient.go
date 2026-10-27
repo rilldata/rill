@@ -125,12 +125,13 @@ func Discover(ctx context.Context, opts *DiscoverOptions) (*Client, error) {
 	}
 
 	if len(opts.Scopes) > 0 {
+		// Configured scopes are requested exactly as they are, so a client that may not use offline_access can opt out by listing its scopes.
 		scopes = opts.Scopes
-	}
-	// Rill stores tokens securely and refreshes them, so it asks for a refresh token where the authorization server
-	// lets clients request one with the offline_access scope (MCP SEP-2207). Servers may still decline to issue one.
-	if slices.Contains(meta.ScopesSupported, "offline_access") && !slices.Contains(scopes, "offline_access") {
-		scopes = append(slices.Clone(scopes), "offline_access")
+	} else if len(scopes) > 0 && slices.Contains(meta.ScopesSupported, "offline_access") && !slices.Contains(scopes, "offline_access") {
+		// Rill stores tokens securely and refreshes them, so it asks for a refresh token where the authorization server lets clients request one with the offline_access scope (MCP SEP-2207).
+		// Servers may still decline to issue one.
+		// Without scopes, no scope is sent and the server applies its defaults, which offline_access alone would replace.
+		scopes = append(scopes, "offline_access")
 	}
 
 	c := &Client{
@@ -202,13 +203,10 @@ func TokenExpiring(tok *oauth2.Token, obtainedOn time.Time) bool {
 }
 
 // AuthCodeURL returns the URL to send the user's browser to.
-// Authorization params that are reserved (see IsReservedAuthorizationParam) are skipped, so they can never override the flow's own parameters.
 func (c *Client) AuthCodeURL(state, verifier string) string {
 	opts := make([]oauth2.AuthCodeOption, 0, len(c.AuthorizationParams)+2)
 	for k, v := range c.AuthorizationParams {
-		if !IsReservedAuthorizationParam(k) {
-			opts = append(opts, oauth2.SetAuthURLParam(k, v))
-		}
+		opts = append(opts, oauth2.SetAuthURLParam(k, v))
 	}
 	opts = append(opts, oauth2.S256ChallengeOption(verifier), oauth2.SetAuthURLParam("resource", c.Resource))
 	return c.oauth2Config().AuthCodeURL(state, opts...)

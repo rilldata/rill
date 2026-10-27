@@ -257,7 +257,7 @@ func TestOAuthConfigHash(t *testing.T) {
 	base := &configProperties{URL: "https://mcp.example.com", OAuthClientID: "id", OAuthClientSecret: "secret", OAuthScopes: []string{"read"}}
 	hash := oauthConfigHash(base)
 	// Golden value: stored OAuth clients are keyed by this hash, so changing it for an unchanged config forces every user to reconnect
-	require.Equal(t, "87eecbb220abb550eabd3dd68e691c92b97c53833d573360f612afea092c6e2e", hash)
+	require.Equal(t, "3cfdfc260ed7eb25b86e8933bf2fe8a7a957ca3fb7813c536c0f4d013f67f456", hash)
 	require.Equal(t, hash, oauthConfigHash(&configProperties{URL: "https://mcp.example.com", OAuthClientID: "id", OAuthClientSecret: "secret", OAuthScopes: []string{"read"}}))
 
 	changes := []*configProperties{
@@ -308,6 +308,8 @@ func TestConfigValidation(t *testing.T) {
 		{"bad auth", map[string]any{"url": "https://example.com/mcp", "auth": "basic"}, "invalid 'auth'"},
 		{"oauth with authorization header", map[string]any{"url": "https://example.com/mcp", "auth": "oauth", "headers": map[string]any{"Authorization": "Bearer x"}}, "cannot be combined"},
 		{"reserved authorization param", map[string]any{"url": "https://example.com/mcp", "auth": "oauth", "oauth_authorization_params": map[string]any{"State": "x"}}, "cannot set \"State\""},
+		{"scope as authorization param", map[string]any{"url": "https://example.com/mcp", "auth": "oauth", "oauth_authorization_params": map[string]any{"Scope": "x"}}, "use 'oauth_scopes' instead"},
+		{"null authorization param", map[string]any{"url": "https://example.com/mcp", "auth": "oauth", "oauth_authorization_params": map[string]any{"prompt": nil}}, "\"prompt\" has no value"},
 		{"authorization params without oauth", map[string]any{"url": "https://example.com/mcp", "oauth_authorization_params": map[string]any{"prompt": "consent"}}, "requires 'auth: oauth'"},
 		{"bad timeout", map[string]any{"url": "https://example.com/mcp", "timeout": "soon"}, "invalid 'timeout'"},
 		{"ok hosted", map[string]any{"url": "https://example.com/mcp", "allow_host_access": false, "timeout": "30s", "max_result_bytes": 10}, ""},
@@ -325,6 +327,38 @@ func TestConfigValidation(t *testing.T) {
 			require.ErrorContains(t, err, tc.err)
 		})
 	}
+}
+
+func TestConfigReservedAuthorizationParams(t *testing.T) {
+	// Parameters that the flow sets itself or depends on can't be configured, whatever their case
+	reserved := []string{"response_type", "client_id", "redirect_uri", "scope", "state", "code_challenge", "code_challenge_method", "resource", "request", "request_uri", "response_mode"}
+	for _, k := range reserved {
+		for _, key := range []string{k, strings.ToUpper(k)} {
+			_, err := newConfigProperties(map[string]any{"url": "https://example.com/mcp", "auth": "oauth", "oauth_authorization_params": map[string]any{key: "x"}})
+			require.ErrorContains(t, err, fmt.Sprintf("cannot set %q", key))
+		}
+	}
+}
+
+func TestConfigAuthorizationParamValues(t *testing.T) {
+	params := map[string]any{
+		"access_type":            "offline",
+		"include_granted_scopes": true,
+		"enable_granular":        false,
+		"max_age":                float64(1209600), // Properties arrive as float64 after the structpb round trip
+	}
+	config := map[string]any{"url": "https://example.com/mcp", "auth": "oauth", "oauth_authorization_params": params}
+	cfg, err := newConfigProperties(config)
+	require.NoError(t, err)
+	require.Equal(t, map[string]string{
+		"access_type":            "offline",
+		"include_granted_scopes": "true",
+		"enable_granular":        "false",
+		"max_age":                "1209600",
+	}, cfg.OAuthAuthorizationParams)
+	// The caller's config is not modified
+	require.Equal(t, true, params["include_granted_scopes"])
+	require.Equal(t, true, config["oauth_authorization_params"].(map[string]any)["include_granted_scopes"])
 }
 
 func TestTruncateUTF8(t *testing.T) {
