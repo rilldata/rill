@@ -348,8 +348,9 @@ func (h *handle) MigrationStatus(ctx context.Context) (current, desired int, err
 // Ping implements drivers.Handle.
 // It verifies the AWS credentials (including any assumed role) without invoking the model.
 // API keys can't be verified without invoking the model, so they are not checked.
+// This includes an API key loaded from the host (see Open), in which case there may be no AWS credentials to verify.
 func (h *handle) Ping(ctx context.Context) error {
-	if h.config.APIKey != "" {
+	if h.client.Options().BearerAuthTokenProvider != nil {
 		return nil
 	}
 	_, err := sts.NewFromConfig(h.awsConfig).GetCallerIdentity(ctx, &sts.GetCallerIdentityInput{})

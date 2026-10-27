@@ -5,7 +5,9 @@ sidebar_label: Amazon Bedrock
 sidebar_position: 5
 ---
 
-[Amazon Bedrock](https://aws.amazon.com/bedrock/) is a managed AWS service for running foundation models. Rill can route its AI features (AI chat, generating metrics views and dashboards, and more) to a model in your own AWS account instead of Rill's built-in LLM service. Prompts, completions, and billing for model usage then stay within your AWS account.
+[Amazon Bedrock](https://aws.amazon.com/bedrock/) is a managed AWS service for running foundation models. Rill can route its AI features (AI chat, generating metrics views and dashboards, and more) to a model in your own AWS account instead of Rill's built-in LLM service. Model inference then runs in your AWS account, and model usage is billed to your AWS account.
+
+Note that this only changes where the model runs: as with any AI connector, Rill still stores conversation history (including prompts and responses) with your project.
 
 ## Requirements
 

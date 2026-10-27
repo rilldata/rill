@@ -103,6 +103,55 @@ func TestAuth(t *testing.T) {
 	}
 }
 
+func TestPing(t *testing.T) {
+	// Ping skips the STS check when the client authenticates with an API key,
+	// including one loaded from the host, in which case there may be no AWS credentials to verify.
+	cases := []struct {
+		name     string
+		config   map[string]any
+		envToken string
+	}{
+		{
+			name:   "api key",
+			config: map[string]any{"api_key": "configured-key"},
+		},
+		{
+			name:     "host token",
+			config:   map[string]any{"allow_host_access": true},
+			envToken: "host-key",
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			// Point STS at a closed server, so the test fails if Ping calls it.
+			newFakeBedrock(t)
+			t.Setenv("AWS_ENDPOINT_URL_STS", "https://127.0.0.1:1")
+			t.Setenv("AWS_BEARER_TOKEN_BEDROCK", tc.envToken)
+
+			cfg := map[string]any{"model": "test-model", "region": "us-east-1"}
+			for k, v := range tc.config {
+				cfg[k] = v
+			}
+			h, err := driver{}.Open(t.Context(), "", "default", cfg, nil, nil, zap.NewNop())
+			require.NoError(t, err)
+			require.NoError(t, h.Ping(t.Context()))
+		})
+	}
+
+	t.Run("access keys are verified with STS", func(t *testing.T) {
+		newFakeBedrock(t)
+		t.Setenv("AWS_ENDPOINT_URL_STS", "https://127.0.0.1:1")
+		h, err := driver{}.Open(t.Context(), "", "default", map[string]any{
+			"model":                 "test-model",
+			"region":                "us-east-1",
+			"aws_access_key_id":     "AKIATEST",
+			"aws_secret_access_key": "secret",
+		}, nil, nil, zap.NewNop())
+		require.NoError(t, err)
+		require.ErrorContains(t, h.Ping(t.Context()), "failed to verify AWS credentials")
+	})
+}
+
 func TestInferenceConfig(t *testing.T) {
 	// Inference parameters are only sent if configured, since some models (e.g. reasoning models) reject temperature.
 	cases := []struct {
