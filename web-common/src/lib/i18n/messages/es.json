@@ -1870,6 +1870,7 @@
   "report_form_day_wednesday": "Miércoles",
   "report_form_docs": "documentación",
   "report_form_edited_notification": "Informe editado",
+  "report_form_email_embed_note": "Los informes se envían a {email}.",
   "report_form_email_hint": "Los destinatarios recibirán vistas diferentes según su política de seguridad. Los destinatarios sin acceso al proyecto solo pueden descargar el informe.",
   "report_form_email_placeholder": "Ingresa una dirección de correo",
   "report_form_email_recipients": "Destinatarios de correo",

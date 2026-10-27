@@ -1861,6 +1861,7 @@
   "report_form_day_wednesday": "Wednesday",
   "report_form_docs": "docs",
   "report_form_edited_notification": "Report edited",
+  "report_form_email_embed_note": "Reports are sent to {email}.",
   "report_form_email_hint": "Recipients will receive different views based on their security policy. Recipients without project access can only download the report.",
   "report_form_email_placeholder": "Enter an email address",
   "report_form_email_recipients": "Email Recipients",

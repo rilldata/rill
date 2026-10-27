@@ -57,7 +57,13 @@ const hoistedPage: HoistedPageForComponentTests = vi.hoisted(() => ({}) as any);
 const editReport = vi.hoisted(() =>
   vi.fn<
     (request: {
-      data: { options: { queryArgsJson: string; exportAttach?: boolean } };
+      data: {
+        options: {
+          queryArgsJson: string;
+          exportAttach?: boolean;
+          emailRecipients?: string[];
+        };
+      };
     }) => Promise<unknown>
   >(),
 );
@@ -314,6 +320,31 @@ describe("ScheduledReportDialog", () => {
       ).toBeVisible();
 
       expect((await saveAndGetOptions()).exportAttach).toBe(true);
+    } finally {
+      isEmbedded.mockRestore();
+      getInstance.mockRestore();
+    }
+  });
+
+  it("only sends the report to the embed user in an embed", async () => {
+    const isEmbedded = vi.spyOn(EmbedStore, "isEmbedded").mockReturnValue(true);
+    const getInstance = vi.spyOn(EmbedStore, "getInstance").mockReturnValue({
+      userEmail: "embed@rilldata.com",
+      adminToken: "token",
+    } as EmbedStore);
+    try {
+      await openEditDialog(getReportSpec(undefined));
+
+      expect(
+        screen.queryByPlaceholderText("Enter an email address"),
+      ).toBeNull();
+      expect(
+        screen.getByText("Reports are sent to embed@rilldata.com."),
+      ).toBeVisible();
+
+      expect((await saveAndGetOptions()).emailRecipients).toEqual([
+        "embed@rilldata.com",
+      ]);
     } finally {
       isEmbedded.mockRestore();
       getInstance.mockRestore();

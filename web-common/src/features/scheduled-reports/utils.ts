@@ -269,6 +269,18 @@ function extractNotification(
     slackNotifier?.properties?.users as string[],
   );
 
+  // Reports created from an embed are only sent to the embed user.
+  if (EmbedStore.isEmbedded()) {
+    return {
+      enableSlackNotification: false,
+      slackChannels: [""],
+      slackUsers: [""],
+
+      enableEmailNotification: true,
+      emailRecipients: userEmail ? [userEmail] : [],
+    };
+  }
+
   const emailNotifier = notifiers?.find((n) => n.connector === "email");
   const emailRecipients = mapAndAddEmptyEntry(
     emailNotifier?.properties?.recipients as string[],

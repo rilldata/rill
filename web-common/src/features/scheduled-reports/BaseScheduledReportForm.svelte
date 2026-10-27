@@ -329,54 +329,68 @@
       />
     {/if}
 
-    <MultiInput
-      id="emailRecipients"
-      label={m.report_form_email_recipients()}
-      hint={m.report_form_email_hint()}
-      bind:values={$data["emailRecipients"]}
-      errors={$errors["emailRecipients"]}
-      singular="email"
-      plural="emails"
-      placeholder={m.report_form_email_placeholder()}
-    />
-    {#if provider.hasSlackNotifier}
-      <FormSection
-        bind:enabled={$data["enableSlackNotification"]}
-        showSectionToggle
-        title={m.report_form_slack_title()}
-        padding=""
-      >
-        <MultiInput
-          id="slackChannels"
-          label={m.report_form_channels()}
-          hint={m.report_form_slack_channels_hint()}
-          bind:values={$data["slackChannels"]}
-          errors={$errors["slackChannels"]}
-          singular="channel"
-          plural="channels"
-          placeholder={m.alert_form_slack_placeholder()}
+    <!-- Reports created from an embed are only sent to the embed user, by email. -->
+    {#if isEmbedded}
+      <div class="flex flex-col gap-y-1">
+        <InputLabel
+          label={m.report_form_email_recipients()}
+          id="emailRecipients"
+          capitalize={false}
         />
-        <MultiInput
-          id="slackUsers"
-          label={m.report_form_slack_users()}
-          hint={m.report_form_slack_users_hint()}
-          bind:values={$data["slackUsers"]}
-          errors={$errors["slackUsers"]}
-          singular="user"
-          plural="users"
-          placeholder={m.report_form_email_placeholder()}
-        />
-      </FormSection>
+        <div class="text-sm text-fg-secondary">
+          {m.report_form_email_embed_note({ email: provider.userEmail })}
+        </div>
+      </div>
     {:else}
-      <FormSection title={m.report_form_slack_title()} padding="">
-        <svelte:fragment slot="description">
-          <span class="text-sm text-fg-secondary">
-            {@html m.report_form_slack_not_configured({
-              link: `<a href="https://docs.rilldata.com/guides/alerts#configuring-slack-targets" target="_blank">${escapeHtml(m.report_form_docs())}</a>`,
-            })}
-          </span>
-        </svelte:fragment>
-      </FormSection>
+      <MultiInput
+        id="emailRecipients"
+        label={m.report_form_email_recipients()}
+        hint={m.report_form_email_hint()}
+        bind:values={$data["emailRecipients"]}
+        errors={$errors["emailRecipients"]}
+        singular="email"
+        plural="emails"
+        placeholder={m.report_form_email_placeholder()}
+      />
+      {#if provider.hasSlackNotifier}
+        <FormSection
+          bind:enabled={$data["enableSlackNotification"]}
+          showSectionToggle
+          title={m.report_form_slack_title()}
+          padding=""
+        >
+          <MultiInput
+            id="slackChannels"
+            label={m.report_form_channels()}
+            hint={m.report_form_slack_channels_hint()}
+            bind:values={$data["slackChannels"]}
+            errors={$errors["slackChannels"]}
+            singular="channel"
+            plural="channels"
+            placeholder={m.alert_form_slack_placeholder()}
+          />
+          <MultiInput
+            id="slackUsers"
+            label={m.report_form_slack_users()}
+            hint={m.report_form_slack_users_hint()}
+            bind:values={$data["slackUsers"]}
+            errors={$errors["slackUsers"]}
+            singular="user"
+            plural="users"
+            placeholder={m.report_form_email_placeholder()}
+          />
+        </FormSection>
+      {:else}
+        <FormSection title={m.report_form_slack_title()} padding="">
+          <svelte:fragment slot="description">
+            <span class="text-sm text-fg-secondary">
+              {@html m.report_form_slack_not_configured({
+                link: `<a href="https://docs.rilldata.com/guides/alerts#configuring-slack-targets" target="_blank">${escapeHtml(m.report_form_docs())}</a>`,
+              })}
+            </span>
+          </svelte:fragment>
+        </FormSection>
+      {/if}
     {/if}
   </div>
 </form>
