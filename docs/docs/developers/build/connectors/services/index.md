@@ -10,6 +10,7 @@ Service Integrations extend Rill's capabilities by connecting to third-party ser
 
 ## AI Integrations
 
+### Amazon Bedrock
 ### Claude
 ### Gemini
 ### OpenAI
@@ -17,6 +18,14 @@ Service Integrations extend Rill's capabilities by connecting to third-party ser
 
 
 <div className="connector-icon-grid">
+  <ConnectorIcon
+    icon={<img src="/img/build/connectors/icons/Logo-AI.svg" alt="Amazon Bedrock" className="sheets-icon" />}
+    header="Amazon Bedrock"
+    content="Route AI features to models hosted in your own AWS account."
+    link="/developers/build/connectors/services/bedrock"
+    linkLabel="Learn more"
+    referenceLink="bedrock"
+  />
   <ConnectorIcon
     icon={<img src="/img/build/connectors/icons/Logo-Claude.svg" alt="Claude" className="sheets-icon" />}
     header="AI"
