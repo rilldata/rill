@@ -1780,9 +1780,9 @@ func (c *connection) InsertEmbedAuthToken(ctx context.Context, opts *database.In
 
 	res := &embedAuthTokenDTO{}
 	err = c.getDB(ctx).QueryRowxContext(ctx, `
-		INSERT INTO embed_auth_tokens (id, secret_hash, project_id, email, resources, expires_on)
-		VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
-		opts.ID, opts.SecretHash, opts.ProjectID, opts.Email, resources, opts.ExpiresOn,
+		INSERT INTO embed_auth_tokens (id, secret_hash, project_id, email, open_url, resources, expires_on)
+		VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
+		opts.ID, opts.SecretHash, opts.ProjectID, opts.Email, opts.OpenURL, resources, opts.ExpiresOn,
 	).StructScan(res)
 	if err != nil {
 		return nil, parseErr("embed auth token", err)

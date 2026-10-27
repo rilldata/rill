@@ -7,6 +7,8 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"net/url"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -18,6 +20,7 @@ import (
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
+	"github.com/rilldata/rill/runtime/pkg/embedopen"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"go.opentelemetry.io/otel/attribute"
 	"google.golang.org/grpc/codes"
@@ -603,9 +606,30 @@ func (s *Server) GetIFrame(ctx context.Context, req *adminv1.GetIFrameRequest) (
 		attribute.String("args.resource", req.Resource),
 		attribute.String("args.ttl_seconds", strconv.FormatUint(uint64(req.TtlSeconds), 10)),
 		attribute.String("args.state", req.State),
+		attribute.String("args.open", req.Open),
+		attribute.String("args.open_url", req.OpenUrl),
 	)
 
-	if !req.Navigation && req.Resource == "" {
+	if req.OpenUrl != "" {
+		if err := embedopen.ValidateOpenURL(req.OpenUrl); err != nil {
+			return nil, status.Error(codes.InvalidArgument, err.Error())
+		}
+	}
+
+	// Decode the "rill_open" param of an open link from an email sent by a report or alert created from an embed.
+	var open *embedopen.Payload
+	if req.Open != "" {
+		if req.Resource != "" {
+			return nil, status.Error(codes.InvalidArgument, "open can't be combined with resource")
+		}
+		var err error
+		open, err = embedopen.Decode(req.Open)
+		if err != nil {
+			return nil, status.Errorf(codes.InvalidArgument, "invalid open: %s", err.Error())
+		}
+	}
+
+	if !req.Navigation && req.Resource == "" && open == nil {
 		return nil, status.Error(codes.InvalidArgument, "resource must be provided if navigation is not enabled")
 	}
 
@@ -655,6 +679,58 @@ func (s *Server) GetIFrame(ctx context.Context, req *adminv1.GetIFrameRequest) (
 		}}
 	}
 
+	// When opening a report or alert, the embed opens the dashboard it targets.
+	// If navigation is disabled, limit access to the report or alert and its dashboard.
+	if open != nil {
+		var annotations map[string]string
+		switch open.Kind {
+		case embedopen.KindReport:
+			spec, err := s.admin.LookupReport(ctx, prodDepl, open.Name)
+			if err != nil {
+				return nil, fmt.Errorf("could not get report: %w", err)
+			}
+			annotations = spec.Annotations
+		default:
+			return nil, status.Errorf(codes.InvalidArgument, "unsupported open kind %q", open.Kind)
+		}
+
+		// The open payload is not signed, so only allow opening a report or alert created by the embed user.
+		// Otherwise, a user could edit the payload to open another user's report or alert and gain access to its dashboard.
+		ownerEmail := annotations["admin_owner_user_email"]
+		if ownerEmail == "" || !strings.EqualFold(ownerEmail, req.GetUserEmail()) {
+			return nil, status.Errorf(codes.PermissionDenied, "%s %q was not created by the provided user_email", open.Kind, open.Name)
+		}
+
+		var dashboard database.ResourceName
+		switch {
+		case annotations["explore"] != "":
+			dashboard = database.ResourceName{Type: runtime.ResourceKindExplore, Name: annotations["explore"]}
+		case annotations["canvas"] != "":
+			dashboard = database.ResourceName{Type: runtime.ResourceKindCanvas, Name: annotations["canvas"]}
+		default:
+			// Backwards compatibility for reports and alerts that only have a web open path, such as "/explore/{name}".
+			if m := webOpenPathDashboardRegex.FindStringSubmatch(annotations["web_open_path"]); m != nil {
+				name, err := url.PathUnescape(m[2])
+				if err == nil {
+					dashboard = database.ResourceName{Type: runtime.ResourceKindFromShorthand(m[1]), Name: name}
+				}
+			}
+		}
+		if dashboard.Name != "" {
+			req.Type = dashboard.Type
+		}
+
+		if !req.Navigation {
+			if dashboard.Name == "" {
+				return nil, status.Errorf(codes.FailedPrecondition, "can't open %s %q without navigation because it doesn't target a dashboard", open.Kind, open.Name)
+			}
+			overrideResources = []database.ResourceName{
+				{Type: runtime.ResourceKindFromShorthand(string(open.Kind)), Name: open.Name},
+				dashboard,
+			}
+		}
+	}
+
 	ttlDuration := runtimeAccessTokenEmbedTTL
 	if req.TtlSeconds > 0 {
 		ttlDuration = time.Duration(req.TtlSeconds) * time.Second
@@ -685,7 +761,7 @@ func (s *Server) GetIFrame(ctx context.Context, req *adminv1.GetIFrameRequest) (
 		email = forVal.UserEmail
 
 		// Pass the final overrideResources so reports created from the embed are limited to the same resources as the iframe.
-		tkn, err := s.admin.IssueEmbedAuthToken(ctx, proj.ID, opts.forUserEmail, overrideResources, &ttlDuration)
+		tkn, err := s.admin.IssueEmbedAuthToken(ctx, proj.ID, opts.forUserEmail, req.OpenUrl, overrideResources, &ttlDuration)
 		if err != nil {
 			return nil, err
 		}
@@ -716,6 +792,10 @@ func (s *Server) GetIFrame(ctx context.Context, req *adminv1.GetIFrameRequest) (
 
 	if req.Resource != "" {
 		iframeQuery["resource"] = req.Resource
+	}
+
+	if req.Open != "" {
+		iframeQuery["open"] = req.Open
 	}
 
 	if req.Theme != "" {
@@ -769,6 +849,9 @@ func (s *Server) GetIFrame(ctx context.Context, req *adminv1.GetIFrameRequest) (
 		TtlSeconds:  uint32(opts.ttl.Seconds()),
 	}, nil
 }
+
+// webOpenPathDashboardRegex matches the dashboard in the web open path of a report or alert, such as "/explore/{name}".
+var webOpenPathDashboardRegex = regexp.MustCompile(`/(explore|canvas)/([^/?#]+)`)
 
 func (s *Server) GetDeploymentConfig(ctx context.Context, req *adminv1.GetDeploymentConfigRequest) (*adminv1.GetDeploymentConfigResponse, error) {
 	// If the deployment ID is not provided, attempt to infer it from the access token.

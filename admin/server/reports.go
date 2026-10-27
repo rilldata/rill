@@ -265,6 +265,7 @@ func (s *Server) CreateReport(ctx context.Context, req *adminv1.CreateReportRequ
 
 	ownerID := ""
 	ownerEmail := ""
+	embedOpenURL := ""
 	var embedResources []database.ResourceName
 	switch claims.OwnerType() {
 	case auth.OwnerTypeUser:
@@ -275,6 +276,9 @@ func (s *Server) CreateReport(ctx context.Context, req *adminv1.CreateReportRequ
 			return nil, status.Error(codes.PermissionDenied, "invalid embed token")
 		}
 		ownerEmail = mdl.Email
+		if mdl.OpenURL != nil {
+			embedOpenURL = *mdl.OpenURL
+		}
 		embedResources, err = embedReportResources(mdl.Resources, req.Options)
 		if err != nil {
 			return nil, err
@@ -300,7 +304,7 @@ func (s *Server) CreateReport(ctx context.Context, req *adminv1.CreateReportRequ
 		return nil, err
 	}
 
-	data, err := s.yamlForManagedReport(req.Options, ownerID, ownerEmail, embedResources)
+	data, err := s.yamlForManagedReport(req.Options, ownerID, ownerEmail, embedOpenURL, embedResources)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "failed to generate report YAML: %s", err.Error())
 	}
@@ -366,6 +370,12 @@ func (s *Server) EditReport(ctx context.Context, req *adminv1.EditReportRequest)
 		return nil, status.Error(codes.PermissionDenied, "does not have permission to edit report")
 	}
 
+	// Keep the open URL the report was created with, unless the editing embed has a new one.
+	embedOpenURL := annotations.AdminEmbedOpenURL
+	if mdl, ok := claims.AuthTokenModel().(*database.EmbedAuthToken); ok && mdl.OpenURL != nil {
+		embedOpenURL = *mdl.OpenURL
+	}
+
 	// Keep the resources the report was limited to.
 	// An embed editor can't give the report more access than its own embed has, so it can only narrow them.
 	embedResources, err := parseEmbedResources(annotations.AdminEmbedResources)
@@ -390,7 +400,7 @@ func (s *Server) EditReport(ctx context.Context, req *adminv1.EditReportRequest)
 	}
 
 	// Preserve the original owner, since the editor may be someone with manage permissions.
-	data, err := s.yamlForManagedReport(req.Options, annotations.AdminOwnerUserID, annotations.AdminOwnerUserEmail, embedResources)
+	data, err := s.yamlForManagedReport(req.Options, annotations.AdminOwnerUserID, annotations.AdminOwnerUserEmail, embedOpenURL, embedResources)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "failed to generate report YAML: %s", err.Error())
 	}
@@ -666,8 +676,9 @@ func (s *Server) GenerateReportYAML(ctx context.Context, req *adminv1.GenerateRe
 
 // yamlForManagedReport generates the YAML for a report created from the UI.
 // For reports created from an embed, ownerEmail is the embed user's email,
+// embedOpenURL is the optional base URL for open links in the report's emails,
 // and embedResources optionally limits the report's data to the resources the embed was limited to.
-func (s *Server) yamlForManagedReport(opts *adminv1.ReportOptions, ownerUserID, ownerEmail string, embedResources []database.ResourceName) ([]byte, error) {
+func (s *Server) yamlForManagedReport(opts *adminv1.ReportOptions, ownerUserID, ownerEmail, embedOpenURL string, embedResources []database.ResourceName) ([]byte, error) {
 	res := reportYAML{}
 	res.Type = "report"
 	res.DisplayName = opts.DisplayName
@@ -736,6 +747,7 @@ func (s *Server) yamlForManagedReport(opts *adminv1.ReportOptions, ownerUserID, 
 		res.For.UserEmail = ownerEmail
 		res.Query.For.UserEmail = ownerEmail
 		res.Annotations.AdminOwnerUserEmail = ownerEmail
+		res.Annotations.AdminEmbedOpenURL = embedOpenURL
 		if len(embedResources) > 0 {
 			resourcesJSON, err := json.Marshal(embedResources)
 			if err != nil {
@@ -1181,6 +1193,7 @@ type reportYAML struct {
 type reportAnnotations struct {
 	AdminOwnerUserID    string      `yaml:"admin_owner_user_id"`
 	AdminOwnerUserEmail string      `yaml:"admin_owner_user_email"`
+	AdminEmbedOpenURL   string      `yaml:"admin_embed_open_url,omitempty"`  // Base URL for open links in emails from reports created from an embed
 	AdminEmbedResources string      `yaml:"admin_embed_resources,omitempty"` // JSON list of resources that limit the data of a report created from an embed
 	AdminManaged        bool        `yaml:"admin_managed"`
 	AdminNonce          string      `yaml:"admin_nonce"` // To ensure spec version gets updated on writes, to enable polling in TriggerReconcileAndAwaitReport
@@ -1219,6 +1232,7 @@ func parseReportAnnotations(annotations map[string]string) reportAnnotations {
 	res := reportAnnotations{}
 	res.AdminOwnerUserID = annotations["admin_owner_user_id"]
 	res.AdminOwnerUserEmail = annotations["admin_owner_user_email"]
+	res.AdminEmbedOpenURL = annotations["admin_embed_open_url"]
 	res.AdminEmbedResources = annotations["admin_embed_resources"]
 	res.AdminManaged, _ = strconv.ParseBool(annotations["admin_managed"])
 	res.AdminNonce = annotations["admin_nonce"]

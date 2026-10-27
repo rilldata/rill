@@ -226,6 +226,17 @@ You can provide context and instructions for AI tools (like [AI Chat](/guide/ai/
 
 For detailed instructions and examples on how to configure AI instructions at both the project and metrics view levels, please refer to our [AI Configuration guide](/developers/build/ai-configuration).
 
+## Embed Configuration
+
+If you [embed dashboards](/developers/embed/iframe) in your application, set `embeds.open_url` to the URL of a page in your application that opens links from emails sent by reports and alerts created in an embed:
+
+```yaml
+embeds:
+  open_url: https://app.example.com/analytics/open
+```
+
+Rill appends a `rill_open` query parameter to this URL. For details on handling it, and on overriding the URL per embed, see [Open links in report and alert emails](/developers/embed/iframe#open-links-in-report-and-alert-emails).
+
 ## Testing Security
 
 Rill Developer lets you preview dashboards as synthetic **mock users** so you can verify [security policies](/developers/build/metrics-view/security) locally before deploying. Define them under `mock_users` in `rill.yaml`:

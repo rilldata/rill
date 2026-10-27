@@ -914,6 +914,7 @@ type EmbedAuthToken struct {
 	SecretHash []byte         `db:"secret_hash"`
 	ProjectID  string         `db:"project_id"`
 	Email      string         `db:"email"`
+	OpenURL    *string        `db:"open_url"`  // Base URL for open links in emails from reports and alerts created with the token
 	Resources  []ResourceName `db:"resources"` // If non-empty, limits reports created with the token to these resources
 	CreatedOn  time.Time      `db:"created_on"`
 	ExpiresOn  *time.Time     `db:"expires_on"`
@@ -926,6 +927,7 @@ type InsertEmbedAuthTokenOptions struct {
 	SecretHash []byte
 	ProjectID  string `validate:"required"`
 	Email      string `validate:"required"`
+	OpenURL    *string
 	Resources  []ResourceName
 	ExpiresOn  *time.Time
 }
