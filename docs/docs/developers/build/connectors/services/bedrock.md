@@ -44,6 +44,8 @@ sidebar_position: 5
    aws_secret_access_key: "{{ .env.BEDROCK_AWS_SECRET_ACCESS_KEY }}"
    ```
 
+   The `region` is optional and defaults to `us-east-1`. When running Rill Developer locally, Rill uses the region from your local AWS configuration instead, if one is set.
+
    The `model` can be a foundation model ID, a cross-region inference profile ID (like the one above), or the ARN of an application inference profile, provisioned throughput, or imported custom model. Some models can only be called through an inference profile; if you see an error about on-demand throughput not being supported, use the model's inference profile ID instead (find it under **Cross-region inference** in the Bedrock console).
 
 2. **Set up environment variables:**

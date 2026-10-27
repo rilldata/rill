@@ -19,7 +19,7 @@ Service Integrations extend Rill's capabilities by connecting to third-party ser
 
 <div className="connector-icon-grid">
   <ConnectorIcon
-    icon={<img src="/img/build/connectors/icons/Logo-AI.svg" alt="Amazon Bedrock" className="sheets-icon" />}
+    icon={<img src="/img/build/connectors/icons/Logo-Bedrock.svg" alt="Amazon Bedrock" className="sheets-icon" />}
     header="Amazon Bedrock"
     content="Route AI features to models hosted in your own AWS account."
     link="/developers/build/connectors/services/bedrock"

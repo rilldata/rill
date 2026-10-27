@@ -858,7 +858,7 @@ _[string]_ - The Bedrock model ID, inference profile ID, or ARN to use (e.g., 'u
 
 ### `region`
 
-_[string]_ - AWS region to call Bedrock in (e.g., us-east-1). Defaults to 'us-east-1' if not specified. When using a long-term API key, this must be the region the key was generated in.
+_[string]_ - Optional AWS region to call Bedrock in (e.g., us-east-1). Defaults to 'us-east-1' if not specified. When using a long-term API key, this must be the region the key was generated in.
 
 ### `api_key`
 
