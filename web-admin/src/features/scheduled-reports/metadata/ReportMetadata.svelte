@@ -3,12 +3,14 @@
   import { isNotFoundError } from "@rilldata/web-common/lib/errors";
   import MetadataList from "@rilldata/web-admin/features/scheduled-reports/metadata/MetadataList.svelte";
   import { extractNotifier } from "@rilldata/web-admin/features/scheduled-reports/metadata/notifiers-utils";
+  import { Button } from "@rilldata/web-common/components/button";
   import IconButton from "@rilldata/web-common/components/button/IconButton.svelte";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import CancelCircle from "@rilldata/web-common/components/icons/CancelCircle.svelte";
   import ThreeDot from "@rilldata/web-common/components/icons/ThreeDot.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
+  import { EmbedStore } from "@rilldata/web-common/features/embeds/embed-store";
   import { hasValidMetricsViewTimeRange } from "@rilldata/web-common/features/dashboards/selectors.ts";
   import {
     getMappedAIExploreUrl,
@@ -60,6 +62,7 @@
   export let report: string;
 
   const runtimeClient = useRuntimeClient();
+  const isEmbedded = EmbedStore.isEmbedded();
 
   $: reportQuery = useReport(runtimeClient, report);
   $: isReportCreatedByCode = useIsReportCreatedByCode(runtimeClient, report);
@@ -224,6 +227,15 @@
           {reportSpec.displayName}
         </h1>
         <div class="grow"></div>
+        <!-- The dashboard link points to Rill Cloud, so embeds open the report through the embed open route. -->
+        {#if isEmbedded && !isAIReport}
+          <Button
+            type="secondary"
+            href={`/-/embed/reports/${encodeURIComponent(report)}/open`}
+          >
+            {m.report_open()}
+          </Button>
+        {/if}
         <RunNowButton {organization} {project} {report} />
         {#if !$isReportCreatedByCode.data}
           <DropdownMenu.Root>

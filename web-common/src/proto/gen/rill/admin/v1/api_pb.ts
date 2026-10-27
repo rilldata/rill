@@ -2819,6 +2819,25 @@ export class GetIFrameRequest extends Message<GetIFrameRequest> {
   resource = "";
 
   /**
+   * The `rill_open` query param of an open link from an email sent by a report or alert created from an embed.
+   * If set, the embed opens the report or alert's dashboard in the state it captured, and `type` is ignored.
+   * Cannot be combined with `resource`.
+   *
+   * @generated from field: string open = 20;
+   */
+  open = "";
+
+  /**
+   * Base URL for open links in emails sent by reports and alerts created from this embed.
+   * It should be a page that runs the embed integration and forwards the `rill_open` query param to `open`.
+   * Must be an absolute http(s) URL. If not set, the `embeds.open_url` property in `rill.yaml` is used.
+   * Only applies when `user_email` is set, since only those embeds can create reports and alerts.
+   *
+   * @generated from field: string open_url = 19;
+   */
+  openUrl = "";
+
+  /**
    * Theme to use for the embedded resource.
    *
    * @generated from field: string theme = 12;
@@ -2888,6 +2907,8 @@ export class GetIFrameRequest extends Message<GetIFrameRequest> {
     { no: 14, name: "type", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "kind", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 5, name: "resource", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 20, name: "open", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 19, name: "open_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 12, name: "theme", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 15, name: "theme_mode", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 13, name: "navigation", kind: "scalar", T: 8 /* ScalarType.BOOL */ },

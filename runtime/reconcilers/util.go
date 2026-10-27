@@ -12,6 +12,7 @@ import (
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/parser"
+	"github.com/rilldata/rill/runtime/pkg/embedopen"
 	"github.com/robfig/cron/v3"
 )
 
@@ -166,6 +167,25 @@ func exploreNameFromAnnotations(annotations map[string]string, fallback string) 
 		}
 	}
 	return fallback
+}
+
+// embedOpenLink returns the link for opening a report or alert created from an embed in the embedder's application.
+// The link's base URL is the "admin_embed_open_url" annotation set from the embed that created the resource,
+// or else the project's default from rill.yaml.
+// It returns an empty string if neither is set.
+func embedOpenLink(ctx context.Context, c *runtime.Controller, annotations map[string]string, kind embedopen.Kind, name string, executionTime time.Time) (string, error) {
+	openURL := annotations["admin_embed_open_url"]
+	if openURL == "" {
+		inst, err := c.Runtime.Instance(ctx, c.InstanceID)
+		if err != nil {
+			return "", err
+		}
+		openURL = inst.EmbedOpenURL
+	}
+	if openURL == "" {
+		return "", nil
+	}
+	return embedopen.Link(openURL, &embedopen.Payload{Kind: kind, Name: name, ExecutionTime: executionTime})
 }
 
 // analyzeTemplatedVariables analyzes strings nested in the provided props for template tags that reference instance variables.
