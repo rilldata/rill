@@ -138,5 +138,6 @@ func (r *resourceStatusResolver) ResolveExport(ctx context.Context, w io.Writer,
 }
 
 func (r *resourceStatusResolver) InferRequiredSecurityRules() ([]*runtimev1.SecurityRule, error) {
-	return nil, errors.New("security rule inference not implemented")
+	// The resolver doesn't access any resources' data, so it doesn't require any security rules.
+	return nil, nil
 }

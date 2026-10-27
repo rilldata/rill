@@ -665,3 +665,45 @@ func must[T any](v T, err error) T {
 	}
 	return v
 }
+
+func TestAlertResourceStatusResolveTransitiveAccess(t *testing.T) {
+	rt, id := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
+		Files: map[string]string{
+			"rill.yaml": "",
+			"m1.sql":    `SELECT 1 AS x`,
+			"a1.yaml": `
+type: alert
+refresh:
+  cron: "0 * * * *"
+data:
+  resource_status:
+    where_error: true
+`,
+		},
+	})
+	testruntime.RequireReconcileState(t, rt, id, 3, 0, 0)
+
+	// Opening an alert from a notification link resolves transitive access through the alert.
+	claims := &runtime.SecurityClaims{
+		AdditionalRules: []*runtimev1.SecurityRule{
+			{
+				Rule: &runtimev1.SecurityRule_TransitiveAccess{
+					TransitiveAccess: &runtimev1.SecurityRuleTransitiveAccess{
+						Resource: &runtimev1.ResourceName{Kind: runtime.ResourceKindAlert, Name: "a1"},
+					},
+				},
+			},
+		},
+	}
+
+	a1 := testruntime.GetResource(t, rt, id, runtime.ResourceKindAlert, "a1")
+	sec, err := rt.ResolveSecurity(t.Context(), id, claims, a1)
+	require.NoError(t, err)
+	require.True(t, sec.CanAccess())
+
+	// Other resources should not be accessible
+	m1 := testruntime.GetResource(t, rt, id, runtime.ResourceKindModel, "m1")
+	sec, err = rt.ResolveSecurity(t.Context(), id, claims, m1)
+	require.NoError(t, err)
+	require.False(t, sec.CanAccess())
+}
