@@ -124,6 +124,23 @@ data:
 
 This triggers when any resource in your project has a reconciliation error.
 
+To watch specific resources, filter by `where_kind` and/or `where_name`:
+
+```yaml
+refresh:
+  cron: "*/10 * * * *"
+
+data:
+  resource_status:
+    where_error: true
+    where_kind: [model]
+    where_name: [orders, customers]
+```
+
+:::note
+Use a `refresh.cron` schedule for these alerts. Don't add the watched resources to `refs`: an error in a referenced resource makes the alert itself error instead of firing.
+:::
+
 ## Notification Configuration
 
 Configure where and how you receive notifications when alerts trigger. You can send notifications via email, Slack, or both. Notifications are sent when the alert condition is met (when the data query returns rows), and optionally when the alert recovers or encounters evaluation errors.

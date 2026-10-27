@@ -176,6 +176,10 @@ _[object]_ - Based on resource status _(required)_
 
   - **`where_error`** - _[boolean]_ - Indicates whether the condition should trigger when the resource is in an error state.
 
+  - **`where_kind`** - _[array of string]_ - Only include resources of these kinds (e.g. `model`, `metrics_view`, `explore`).
+
+  - **`where_name`** - _[array of string]_ - Only include resources with these names (case-insensitive).
+
 ```yaml
 type: api
 resource_status:

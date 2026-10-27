@@ -111,6 +111,10 @@ Supports ai resolvers only as of now.
 
       - **`where_error`** - _[boolean]_ - Indicates whether the condition should trigger when the resource is in an error state.
 
+      - **`where_kind`** - _[array of string]_ - Only include resources of these kinds (e.g. `model`, `metrics_view`, `explore`).
+
+      - **`where_name`** - _[array of string]_ - Only include resources with these names (case-insensitive).
+
   - **option 6** - _[object]_ - Invokes multiple resolvers and returns the union of their results. Each entry in the list is a resolver definition (e.g. sql, glob, metrics_sql, api).
 
     - **`union`** - _[array of object]_ - List of resolver definitions whose results are combined into a single result set. _(required)_

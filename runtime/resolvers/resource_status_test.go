@@ -12,10 +12,11 @@ import (
 
 func TestResourceStatus(t *testing.T) {
 	cases := []struct {
-		name       string
-		files      map[string]string
-		whereError bool
-		expected   []map[string]any
+		name     string
+		files    map[string]string
+		props    map[string]any
+		expected []map[string]any
+		err      string
 	}{
 		{
 			name:  "no resources",
@@ -25,10 +26,10 @@ func TestResourceStatus(t *testing.T) {
 			},
 		},
 		{
-			name:       "no resources with where_error",
-			files:      map[string]string{`rill.yaml`: ``},
-			whereError: true,
-			expected:   []map[string]any{},
+			name:     "no resources with where_error",
+			files:    map[string]string{`rill.yaml`: ``},
+			props:    map[string]any{"where_error": true},
+			expected: []map[string]any{},
 		},
 		{
 			name: "multiple resources",
@@ -50,8 +51,8 @@ func TestResourceStatus(t *testing.T) {
 				"m1.sql":    `SELECT 314`,
 				"m2.sql":    `SELECT 159`,
 			},
-			whereError: true,
-			expected:   []map[string]any{},
+			props:    map[string]any{"where_error": true},
+			expected: []map[string]any{},
 		},
 		{
 			name: "resource in error state",
@@ -73,7 +74,7 @@ func TestResourceStatus(t *testing.T) {
 				"m1.sql":    `SELECT 314`,
 				"m2.sql":    `SELECT error("booom!")`,
 			},
-			whereError: true,
+			props: map[string]any{"where_error": true},
 			expected: []map[string]any{
 				{"type": "Model", "name": "m2", "status": "Idle", "error": "booom!"},
 			},
@@ -88,6 +89,59 @@ func TestResourceStatus(t *testing.T) {
 				{"type": "ProjectParser", "name": "parser", "status": "Idle", "error": "encountered parse errors"},
 			},
 		},
+		{
+			name: "where_kind",
+			files: map[string]string{
+				"rill.yaml": ``,
+				"m1.sql":    `SELECT 314`,
+			},
+			props: map[string]any{"where_kind": []string{"rill.runtime.v1.Model"}},
+			expected: []map[string]any{
+				{"type": "Model", "name": "m1", "status": "Idle", "error": ""},
+			},
+		},
+		{
+			name: "where_kind shorthand as string",
+			files: map[string]string{
+				"rill.yaml": ``,
+				"m1.sql":    `SELECT 314`,
+			},
+			props: map[string]any{"where_kind": "project_parser"},
+			expected: []map[string]any{
+				{"type": "ProjectParser", "name": "parser", "status": "Idle", "error": ""},
+			},
+		},
+		{
+			name: "where_name is case-insensitive",
+			files: map[string]string{
+				"rill.yaml": ``,
+				"m1.sql":    `SELECT 314`,
+				"m2.sql":    `SELECT 159`,
+			},
+			props: map[string]any{"where_name": []string{"M2"}},
+			expected: []map[string]any{
+				{"type": "Model", "name": "m2", "status": "Idle", "error": ""},
+			},
+		},
+		{
+			name: "where_name with where_error",
+			files: map[string]string{
+				"rill.yaml": ``,
+				"m1.sql":    `SELECT error("boom1")`,
+				"m2.sql":    `SELECT error("boom2")`,
+				"m3.sql":    `SELECT 314`,
+			},
+			props: map[string]any{"where_error": true, "where_kind": []string{"model"}, "where_name": []string{"m2", "m3"}},
+			expected: []map[string]any{
+				{"type": "Model", "name": "m2", "status": "Idle", "error": "boom2"},
+			},
+		},
+		{
+			name:  "unknown kind",
+			files: map[string]string{`rill.yaml`: ``},
+			props: map[string]any{"where_kind": []string{"dashboard"}},
+			err:   `unknown resource kind "dashboard"`,
+		},
 	}
 
 	for _, tc := range cases {
@@ -99,10 +153,14 @@ func TestResourceStatus(t *testing.T) {
 			res, _, err := rt.Resolve(context.Background(), &runtime.ResolveOptions{
 				InstanceID:         instanceID,
 				Resolver:           "resource_status",
-				ResolverProperties: map[string]any{"where_error": tc.whereError},
+				ResolverProperties: tc.props,
 				Args:               nil,
 				Claims:             &runtime.SecurityClaims{},
 			})
+			if tc.err != "" {
+				require.ErrorContains(t, err, tc.err)
+				return
+			}
 			require.NoError(t, err)
 			defer res.Close()
 

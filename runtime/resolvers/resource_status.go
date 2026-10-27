@@ -3,6 +3,7 @@ package resolvers
 import (
 	"context"
 	"errors"
+	"fmt"
 	"io"
 	"slices"
 	"strings"
@@ -33,7 +34,11 @@ type resourceStatusResolver struct {
 // resourceStatusProps declares the properties for the "resource_status" resolver.
 type resourceStatusProps struct {
 	// WhereError is a flag to only return resources that are in the error state.
-	WhereError   bool           `mapstructure:"where_error"`
+	WhereError bool `mapstructure:"where_error"`
+	// WhereKind restricts results to resources of the given kinds; accepts shorthands like "model" or "metrics_view".
+	WhereKind []string `mapstructure:"where_kind"`
+	// WhereName restricts results to resources with the given names (case-insensitive).
+	WhereName    []string       `mapstructure:"where_name"`
 	UnusedFields map[string]any `mapstructure:",remain"`
 }
 
@@ -42,6 +47,9 @@ func newResourceStatus(ctx context.Context, opts *runtime.ResolverOptions) (runt
 	props := &resourceStatusProps{}
 	if err := mapstructureutil.WeakDecode(opts.Properties, props); err != nil {
 		return nil, err
+	}
+	for i, k := range props.WhereKind {
+		props.WhereKind[i] = runtime.ResourceKindFromShorthand(k)
 	}
 
 	return &resourceStatusResolver{
@@ -70,6 +78,11 @@ func (r *resourceStatusResolver) Validate(ctx context.Context) error {
 			Fields: maps.Keys(r.props.UnusedFields),
 		}
 	}
+	for _, k := range r.props.WhereKind {
+		if !runtime.IsKnownResourceKind(k) {
+			return fmt.Errorf("resource_status: unknown resource kind %q", k)
+		}
+	}
 	return nil
 }
 
@@ -84,22 +97,18 @@ func (r *resourceStatusResolver) ResolveInteractive(ctx context.Context) (runtim
 		return nil, err
 	}
 
-	if r.props.WhereError {
-		// In-place trim resources that are not in error state
-		i := 0
-		for i < len(rs) {
-			r := rs[i]
-			if r.Meta.ReconcileError == "" {
-				// Remove from the slice
-				rs[i] = rs[len(rs)-1]
-				rs[len(rs)-1] = nil
-				rs = rs[:len(rs)-1]
-				continue
-			}
-			rs[i] = r
-			i++
+	rs = slices.DeleteFunc(rs, func(res *runtimev1.Resource) bool {
+		if r.props.WhereError && res.Meta.ReconcileError == "" {
+			return true
 		}
-	}
+		if len(r.props.WhereKind) > 0 && !slices.Contains(r.props.WhereKind, res.Meta.Name.Kind) {
+			return true
+		}
+		if len(r.props.WhereName) > 0 && !slices.ContainsFunc(r.props.WhereName, func(n string) bool { return strings.EqualFold(n, res.Meta.Name.Name) }) {
+			return true
+		}
+		return false
+	})
 
 	slices.SortFunc(rs, func(a, b *runtimev1.Resource) int {
 		an := a.Meta.Name
