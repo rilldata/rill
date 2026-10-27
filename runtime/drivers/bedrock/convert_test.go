@@ -127,7 +127,7 @@ func TestConvertResponseMessage(t *testing.T) {
 			&types.ContentBlockMemberText{Value: "Running a query."},
 			&types.ContentBlockMemberToolUse{Value: types.ToolUseBlock{ToolUseId: aws.String("call_2"), Name: aws.String("query"), Input: input}},
 		},
-	}, nil)
+	})
 	require.NoError(t, err)
 	require.Equal(t, "assistant", msg.Role)
 	require.Len(t, msg.Content, 2)
@@ -168,52 +168,6 @@ func TestConvertMessagesWithoutTools(t *testing.T) {
 	require.Equal(t, types.ConversationRoleUser, res[2].Role)
 	require.Len(t, res[2].Content, 2)
 	require.Equal(t, "Error from tool \"query\":\nbad query", res[2].Content[0].(*types.ContentBlockMemberText).Value)
-}
-
-func TestCoerceStringifiedArgs(t *testing.T) {
-	schema := `{
-		"type": "object",
-		"properties": {
-			"time_range": {"$ref": "#/$defs/TimeRange"},
-			"where": {"$ref": "#/definitions/Expression"},
-			"dimensions": {"type": "array", "items": {"type": "object"}},
-			"metrics_view": {"type": "string"},
-			"limit": {"type": "integer"}
-		},
-		"$defs": {"TimeRange": {"type": "object"}},
-		"definitions": {"Expression": {"type": "object"}}
-	}`
-
-	input := map[string]any{
-		"time_range":   `{"start": "2022-09-28T00:00:00Z", "end": "2022-09-29T00:00:00Z"}`,
-		"where":        "not json",
-		"dimensions":   `[{"name": "country"}]`,
-		"metrics_view": `{"looks": "like json"}`,
-		"limit":        float64(10),
-	}
-	coerceStringifiedArgs(input, schema)
-
-	require.Equal(t, map[string]any{
-		// Decoded since the schema declares an object (via $ref) or array
-		"time_range": map[string]any{"start": "2022-09-28T00:00:00Z", "end": "2022-09-29T00:00:00Z"},
-		"dimensions": []any{map[string]any{"name": "country"}},
-		// Left as-is since it doesn't decode to the declared type
-		"where": "not json",
-		// Left as-is since the schema declares a string
-		"metrics_view": `{"looks": "like json"}`,
-		"limit":        float64(10),
-	}, input)
-}
-
-func TestCoerceStringifiedArgsQuerySchema(t *testing.T) {
-	// Reproduces a failure seen with DeepSeek on Bedrock, which sent time_range as a string on every call.
-	input := map[string]any{
-		"metrics_view": "orders",
-		"measures":     []any{map[string]any{"name": "count"}},
-		"time_range":   `{"start": "2022-09-28T00:00:00Z", "end": "2022-09-29T00:00:00Z"}`,
-	}
-	coerceStringifiedArgs(input, metricsview.QueryJSONSchema)
-	require.Equal(t, map[string]any{"start": "2022-09-28T00:00:00Z", "end": "2022-09-29T00:00:00Z"}, input["time_range"])
 }
 
 func text(s string) *aiv1.ContentBlock {

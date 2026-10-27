@@ -423,7 +423,7 @@ func (h *handle) Complete(ctx context.Context, opts *drivers.CompleteOptions) (*
 		return nil, fmt.Errorf("unexpected Bedrock output type %T", res.Output)
 	}
 
-	resMsg, err := convertResponseMessage(&out.Value, opts.Tools)
+	resMsg, err := convertResponseMessage(&out.Value)
 	if err != nil {
 		return nil, fmt.Errorf("failed to convert response message: %w", err)
 	}
@@ -574,13 +574,7 @@ func convertTools(tools []*aiv1.Tool) ([]types.Tool, error) {
 }
 
 // convertResponseMessage converts a Bedrock Converse response message to a Rill completion message.
-// The offered tools are used to repair tool call arguments that the model encoded as strings (see coerceStringifiedArgs).
-func convertResponseMessage(msg *types.Message, tools []*aiv1.Tool) (*aiv1.CompletionMessage, error) {
-	inputSchemas := make(map[string]string, len(tools))
-	for _, tool := range tools {
-		inputSchemas[tool.Name] = tool.InputSchema
-	}
-
+func convertResponseMessage(msg *types.Message) (*aiv1.CompletionMessage, error) {
 	var blocks []*aiv1.ContentBlock
 	for _, block := range msg.Content {
 		switch b := block.(type) {
@@ -601,7 +595,6 @@ func convertResponseMessage(msg *types.Message, tools []*aiv1.Tool) (*aiv1.Compl
 					return nil, fmt.Errorf("failed to unmarshal input for tool call %q: %w", aws.ToString(b.Value.Name), err)
 				}
 			}
-			coerceStringifiedArgs(input, inputSchemas[aws.ToString(b.Value.Name)])
 			inputStruct, err := structpb.NewStruct(input)
 			if err != nil {
 				return nil, fmt.Errorf("failed to convert input for tool call %q: %w", aws.ToString(b.Value.Name), err)
@@ -624,42 +617,6 @@ func convertResponseMessage(msg *types.Message, tools []*aiv1.Tool) (*aiv1.Compl
 		Role:    "assistant",
 		Content: blocks,
 	}, nil
-}
-
-// coerceStringifiedArgs decodes top-level tool call arguments that the model sent as JSON-encoded strings,
-// even though the tool's input schema declares them as objects or arrays.
-// Some Bedrock models (such as DeepSeek) do this for parameters that are declared using a $ref.
-// Arguments that don't decode to the declared type are left as-is, so the tool reports a normal validation error.
-func coerceStringifiedArgs(input map[string]any, inputSchema string) {
-	if inputSchema == "" {
-		return
-	}
-	var schema map[string]any
-	if err := json.Unmarshal([]byte(inputSchema), &schema); err != nil {
-		return
-	}
-	props, _ := schema["properties"].(map[string]any)
-
-	for name, val := range input {
-		str, ok := val.(string)
-		if !ok {
-			continue
-		}
-
-		prop, _ := props[name].(map[string]any)
-		switch propertyType(schema, prop) {
-		case "object":
-			var obj map[string]any
-			if err := json.Unmarshal([]byte(str), &obj); err == nil && obj != nil {
-				input[name] = obj
-			}
-		case "array":
-			var arr []any
-			if err := json.Unmarshal([]byte(str), &arr); err == nil && arr != nil {
-				input[name] = arr
-			}
-		}
-	}
 }
 
 // propertyType returns the JSON schema type of a top-level property in a tool's input schema.
