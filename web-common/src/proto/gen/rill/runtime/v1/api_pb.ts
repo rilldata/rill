@@ -4341,6 +4341,13 @@ export class ConnectorOAuthConfig extends Message$1<ConnectorOAuthConfig> {
    */
   scopes: string[] = [];
 
+  /**
+   * Extra query parameters for the authorization endpoint, for servers that need non-standard ones (e.g. Google's access_type=offline).
+   *
+   * @generated from field: map<string, string> authorization_params = 5;
+   */
+  authorizationParams: { [key: string]: string } = {};
+
   constructor(data?: PartialMessage<ConnectorOAuthConfig>) {
     super();
     proto3.util.initPartial(data, this);
@@ -4353,6 +4360,7 @@ export class ConnectorOAuthConfig extends Message$1<ConnectorOAuthConfig> {
     { no: 2, name: "client_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "client_secret", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "scopes", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 5, name: "authorization_params", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ConnectorOAuthConfig {

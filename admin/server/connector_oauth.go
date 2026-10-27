@@ -582,12 +582,13 @@ func (s *Server) connectorOAuthClient(ctx context.Context, proj *database.Projec
 	}
 
 	oauthClient, err := oauthclient.Discover(ctx, &oauthclient.DiscoverOptions{
-		ServerURL:    cfg.Config.ResourceUrl,
-		RedirectURL:  redirectURL,
-		ClientID:     cfg.Config.ClientId,
-		ClientSecret: cfg.Config.ClientSecret,
-		Scopes:       cfg.Config.Scopes,
-		HTTPClient:   safehttp.NewHTTPClient(false, connectorOAuthHTTPTimeout),
+		ServerURL:           cfg.Config.ResourceUrl,
+		RedirectURL:         redirectURL,
+		ClientID:            cfg.Config.ClientId,
+		ClientSecret:        cfg.Config.ClientSecret,
+		Scopes:              cfg.Config.Scopes,
+		AuthorizationParams: cfg.Config.AuthorizationParams,
+		HTTPClient:          safehttp.NewHTTPClient(false, connectorOAuthHTTPTimeout),
 	})
 	if err != nil {
 		return nil, nil, connectorOAuthHTTPError{status: http.StatusBadGateway, msg: err.Error()}
