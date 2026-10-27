@@ -11,6 +11,7 @@
   import {
     buildEnumOptions,
     getConditionalValues,
+    getRequiredFieldsForValues,
     isDisabledForValues,
     isRadioEnum,
     isRichSelectEnum,
@@ -74,7 +75,7 @@
     ? computeVisibleEntries(schema, stepFilter, $form)
     : [];
   $: requiredFields = schema
-    ? computeRequiredFields(schema, $form, stepFilter)
+    ? getRequiredFieldsForValues(schema, $form, stepFilter)
     : new Set<string>();
   $: renderOrder = schema
     ? computeRenderOrder(visibleEntries, groupedChildKeys)
@@ -193,40 +194,6 @@
       if (!isStepMatch(currentSchema, key, currentStep)) return false;
       return isVisibleForValues(currentSchema, key, values);
     });
-  }
-
-  function matchesCondition(
-    condition:
-      | Record<string, { const?: string | number | boolean }>
-      | undefined,
-    values: Record<string, unknown>,
-  ) {
-    if (!condition || !Object.keys(condition).length) return false;
-    return Object.entries(condition).every(([depKey, def]) => {
-      if (def.const === undefined || def.const === null) return false;
-      return String(values?.[depKey]) === String(def.const);
-    });
-  }
-
-  function computeRequiredFields(
-    currentSchema: MultiStepFormSchema,
-    values: Record<string, unknown>,
-    currentStep: string | undefined,
-  ) {
-    const required = new Set<string>();
-    (currentSchema.required ?? []).forEach((key) => {
-      if (isStepMatch(currentSchema, key, currentStep)) required.add(key);
-    });
-
-    for (const conditional of currentSchema.allOf ?? []) {
-      const condition = conditional.if?.properties;
-      const matches = matchesCondition(condition, values);
-      const branch = matches ? conditional.then : conditional.else;
-      branch?.required?.forEach((key) => {
-        if (isStepMatch(currentSchema, key, currentStep)) required.add(key);
-      });
-    }
-    return required;
   }
 
   function computeRenderOrder(

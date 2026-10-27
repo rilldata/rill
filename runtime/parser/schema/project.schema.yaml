@@ -956,7 +956,29 @@ definitions:
               description: Password for authentication
             sslmode:
               type: string
-              description:  "ssl mode options: `disable`, `allow`, `prefer` or `require`."
+              description: |
+                SSL mode options: `disable`, `allow`, `prefer`, `require`, `verify-ca`, or `verify-full`.
+                When certificate contents are supplied, defaults to `verify-full`; other modes are rejected.
+            sslrootcert_pem:
+              type: string
+              description: |
+                CA certificate contents as raw PEM or standard base64-encoded PEM.
+                Used to verify the PostgreSQL server certificate; omit to use the system trust roots.
+                Requires individual connection parameters (not `dsn` or `database_url`) and `verify-full` TLS.
+            sslcert_pem:
+              type: string
+              description: |
+                Client certificate contents as raw PEM or standard base64-encoded PEM.
+                Requires `sslkey_pem` and `verify-full` TLS. Cannot be combined with `dsn` or `database_url`.
+            sslkey_pem:
+              type: string
+              description: |
+                Matching unencrypted client private key contents as raw PEM or standard base64-encoded PEM.
+                Requires `sslcert_pem` and `verify-full` TLS. Cannot be combined with `dsn` or `database_url`.
+                Store this value in a secret project variable.
+
+                See [PostgreSQL TLS certificates](/developers/build/connectors/data-source/postgres#tls-certificates-in-rill-cloud)
+                for upload and Cloud configuration instructions.
             max_open_conns:
               type: integer
               description: Maximum number of open connections to the database (defaults to 1)
@@ -2327,6 +2349,9 @@ definitions:
                 expression:
                   type: string
                   description: a combination of operators and functions for aggregations
+                exact_expression:
+                  type: string
+                  description: 'An optional exact variant of `expression` for measures whose default expression is approximate (e.g. `expression: uniq(user_id)` with `exact_expression: uniqExact(user_id)` in ClickHouse, or `approx_count_distinct(user_id)` with `count(DISTINCT user_id)` in DuckDB). Dashboards show the approximate value by default and only use the exact expression when a viewer or query explicitly asks for exact values. It shares all other measure settings with `expression`. Only simple measures without a `window` can define it: derived measures are calculated from the measures as a query computes them.'
                 window:
                   description: A measure window can be defined as a keyword string (e.g. 'time' or 'all') or an object with detailed window configuration. For more information, see the [window functions](/developers/build/metrics-view/measures/windows) documentation.
                   anyOf:
@@ -3422,6 +3447,7 @@ definitions:
       A custom visualization: a Metrics SQL query plus a chart spec describing how to draw it.
       Rill derives scales, axes, formats, sorting, stacking and layout from the data and from the
       metrics view's semantics, so the spec only states the chart type and which field goes on which channel.
+      See [Custom Viz](/developers/build/dashboards/canvas-widgets/custom-viz).
     properties:
       metrics_sql:
         type: string
@@ -3440,7 +3466,9 @@ definitions:
           derives scales, axes, formats, sorting or layout, so the chart stops adapting on its own.
           Read the query result from the `query1` dataset, i.e. `"data": {"name": "query1"}`,
           and size the chart to its container with `"width": "container"`, `"height": "container"`
-          and `"autosize": {"type": "fit"}`. Mutually exclusive with `spec`.
+          and `"autosize": {"type": "fit", "contains": "padding"}`. Mutually exclusive with `spec`.
+          Template values are JSON-escaped, so place placeholders inside JSON strings.
+          See [Vega-Lite](/developers/build/dashboards/canvas-widgets/custom-viz/vega-lite).
     additionalProperties: false
 
   # Flint Chart Spec
@@ -3449,11 +3477,11 @@ definitions:
     properties:
       chartType:
         type: string
-        description: The chart type, e.g. `Line Chart`, `Bar Chart`, `Heatmap`, `Waterfall Chart`.
+        description: The chart type, e.g. `Line Chart`, `Bar Chart`, `Heatmap`, `Waterfall Chart`. See [Chart Types](/developers/build/dashboards/canvas-widgets/custom-viz/chart-types) for the full list.
       encodings:
         type: object
         description: |
-          Maps a visual channel (`x`, `y`, `color`, `size`, `column`, `row`, `group`, `angle`, `goal`, ...)
+          Maps a visual channel (`x`, `y`, `x2`, `y2`, `color`, `size`, `column`, `row`, `group`, `goal`, ...)
           to a field. Each value is either a field name or an encoding object.
         additionalProperties:
           oneOf:

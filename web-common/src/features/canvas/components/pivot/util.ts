@@ -7,6 +7,7 @@ import {
   ephemeralMeasureNameSet,
 } from "@rilldata/web-common/features/dashboards/ephemeral-measures/measure-mapping";
 import type { CanvasStore } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
+import { canvasExactRequestNames } from "@rilldata/web-common/features/canvas/components/exact-measures";
 import { createPivotDataStore } from "@rilldata/web-common/features/dashboards/pivot/pivot-data-store";
 import {
   canEnablePivotComparison,
@@ -112,6 +113,8 @@ let lastKey: string | undefined = undefined;
 
 export function createPivotConfig(
   canvas: CanvasEntity,
+  // The exact-selection surface of the component; see `canvasExactSurface`.
+  surface: string,
   tableSpecStore: Readable<PivotSpec | TableSpec>,
   pivotState: Writable<PivotState>,
   timeAndFilterStore: Readable<TimeAndFilterStore>,
@@ -126,6 +129,7 @@ export function createPivotConfig(
       pivotState,
       timeAndFilterStore,
       selfFilteredStore,
+      canvas.exactMeasures,
     ],
     ([
       $canvasData,
@@ -136,6 +140,10 @@ export function createPivotConfig(
     ]) => {
       const { timeRange, comparisonTimeRange, where } = $timeAndFilterStore;
       const metricsViewName = $tableSpec.metrics_view;
+      // The exact selection of this component. Read through the entity so the
+      // context-key check applies; `canvas.exactMeasures` above re-runs this
+      // derivation when the selection changes.
+      const selectedExact = canvas.currentExactMeasures(surface);
       const metricsView =
         $canvasData?.data?.metricsViews[metricsViewName]?.state?.validSpec;
       const ready =
@@ -165,6 +173,7 @@ export function createPivotConfig(
             pivotState,
             timeRange,
             ready,
+            selectedExact,
           )
         : processPivot(
             $tableSpec,
@@ -176,6 +185,7 @@ export function createPivotConfig(
             pivotState,
             timeRange,
             ready,
+            selectedExact,
           );
     },
   );
@@ -191,6 +201,7 @@ export function processPivot(
   pivotState: Writable<PivotState>,
   timeRange: V1TimeRange,
   ready: boolean,
+  selectedExact: ReadonlySet<string> = new Set(),
 ) {
   if (!$tableSpec) {
     return {
@@ -226,9 +237,16 @@ export function processPivot(
     $tableSpec,
   );
 
+  const baseMeasureNames = fieldNames($tableSpec?.measures);
+  const exactMeasures = canvasExactRequestNames(
+    baseMeasureNames,
+    selectedExact,
+  );
+
   const config: PivotDataStoreConfig = {
     ready,
-    measureNames: fieldNames($tableSpec?.measures).flatMap((name) => {
+    exactMeasures,
+    measureNames: baseMeasureNames.flatMap((name) => {
       const group = [name];
       // Comparison columns are not supported for ephemeral measures.
       if (enableComparison && !ephemeralMeasureNames.has(name)) {
@@ -288,6 +306,7 @@ export function processFlat(
   pivotState: Writable<PivotState>,
   timeRange: V1TimeRange,
   ready: boolean,
+  selectedExact: ReadonlySet<string> = new Set(),
 ) {
   if (!$tableSpec) {
     return {
@@ -331,8 +350,11 @@ export function processFlat(
     $tableSpec,
   );
 
+  const exactMeasures = canvasExactRequestNames(measures, selectedExact);
+
   const config: PivotDataStoreConfig = {
     ready,
+    exactMeasures,
     measureNames: (measures || []).flatMap((name) => {
       const group = [name];
       // Comparison columns are not supported for ephemeral measures.

@@ -1,5 +1,13 @@
 <script lang="ts">
-  import { mapEphemeralMeasuresForRequest } from "@rilldata/web-common/features/dashboards/ephemeral-measures/measure-mapping";
+  import {
+    applyExactMeasures,
+    mapEphemeralMeasuresForRequest,
+  } from "@rilldata/web-common/features/dashboards/ephemeral-measures/measure-mapping";
+  import {
+    precisionStateFor,
+    requestExactNames,
+  } from "@rilldata/web-common/features/dashboards/exact-measures/exact-measures";
+  import { exploreExactSurface } from "@rilldata/web-common/features/dashboards/exact-measures/explore-surfaces";
   /**
    * DimensionDisplay.svelte
    * -------------------------
@@ -51,6 +59,11 @@
         leaderboardShowContextForAllMeasures,
         leaderboardSortByMeasureName,
       },
+      measures: { measureLabel },
+      exactMeasures: { exactMeasureContext },
+    },
+    actions: {
+      exactMeasures: { toggleExactMeasure },
     },
     dashboardStore,
     validSpecStore,
@@ -78,25 +91,36 @@
     dimensionName,
   );
 
-  $: measures = mapEphemeralMeasuresForRequest(
-    [
-      ...getMeasuresForDimensionOrLeaderboardDisplay(
-        $leaderboardShowContextForAllMeasures
-          ? null
-          : $leaderboardSortByMeasureName,
-        whereFilter,
-        visibleMeasureNames,
-      ).map((name) => ({ name }) as V1MetricsViewAggregationMeasure),
+  // Measures requested with `exact: true`: the table's own selection plus the
+  // visible measures that reference a selected measure.
+  $: exactContext = $exactMeasureContext(exploreExactSurface.dimensionTable);
+  $: exactNames = requestExactNames(
+    [...visibleMeasureNames, $leaderboardSortByMeasureName],
+    exactContext,
+  );
 
-      // Add comparison measures if comparison time range exists.
-      ...(comparisonTimeRange
-        ? ($leaderboardShowContextForAllMeasures
-            ? visibleMeasureNames
-            : [$leaderboardSortByMeasureName]
-          ).flatMap((name) => getComparisonRequestMeasures(name))
-        : []),
-    ],
-    $dashboardStore.ephemeralMeasures,
+  $: measures = applyExactMeasures(
+    mapEphemeralMeasuresForRequest(
+      [
+        ...getMeasuresForDimensionOrLeaderboardDisplay(
+          $leaderboardShowContextForAllMeasures
+            ? null
+            : $leaderboardSortByMeasureName,
+          whereFilter,
+          visibleMeasureNames,
+        ).map((name) => ({ name }) as V1MetricsViewAggregationMeasure),
+
+        // Add comparison measures if comparison time range exists.
+        ...(comparisonTimeRange
+          ? ($leaderboardShowContextForAllMeasures
+              ? visibleMeasureNames
+              : [$leaderboardSortByMeasureName]
+            ).flatMap((name) => getComparisonRequestMeasures(name))
+          : []),
+      ],
+      $dashboardStore.ephemeralMeasures,
+    ),
+    exactNames,
   );
   $: filteredMeasures = filterOutSomeAdvancedAggregationMeasures(
     $dashboardStore,
@@ -181,7 +205,23 @@
   $: columns = $virtualizedTableColumns(
     tableRows,
     $leaderboardShowContextForAllMeasures ? visibleMeasureNames : undefined,
-  );
+  ).map((column) => {
+    // Measure columns with an exact variant get a precision chip in their header.
+    if (!visibleMeasureNames.includes(column.name)) return column;
+    const state = precisionStateFor(column.name, exactContext);
+    if (!state) return column;
+    return {
+      ...column,
+      precision: {
+        state,
+        measureLabel: $measureLabel(column.name),
+        loading: state !== "approx" && !!$sortedQuery?.isFetching,
+        error: state !== "approx" ? $sortedQuery?.error?.message : undefined,
+        onToggle: () =>
+          toggleExactMeasure(exploreExactSurface.dimensionTable, column.name),
+      },
+    };
+  });
 
   function onSelectItem(data: { index: number; meta: boolean }) {
     const label = tableRows[data.index][dimensionName] as string;

@@ -2387,6 +2387,10 @@ paths:
                 title: Optional
               exact:
                 type: boolean
+                description: |-
+                  Deprecated: ignored; use `exact` on individual measures instead.
+                  It originally disabled the approximate comparison join (limiting the base period to the top N rows), but has been unused since the metrics queries were refactored onto the metricsview package.
+                  That behavior is now controlled by the instance variable `rill.metrics.approximate_comparisons`.
               fillMissing:
                 type: boolean
               rows:
@@ -2556,7 +2560,10 @@ paths:
                 title: Optional
               exact:
                 type: boolean
-                title: Optional, defaults to false
+                description: |-
+                  Deprecated: ignored; use `exact` on individual measures instead.
+                  It originally disabled the approximate comparison join and the two-phase Druid TopN query, but has been unused since the metrics queries were refactored onto the metricsview package.
+                  Those behaviors are now controlled by the instance variables `rill.metrics.approximate_comparisons` and `rill.metrics.exactify_druid_topn`.
               filter:
                 $ref: '#/definitions/v1MetricsViewFilter'
                 description: Deprecated. should be removed once UI is moved to use new filters
@@ -2881,6 +2888,13 @@ paths:
                 description: |-
                   Optional ephemeral measures, i.e. measures defined by the query rather than the metrics view.
                   Only the `expression` compute is supported for time series.
+              exactMeasureNames:
+                type: array
+                items:
+                  type: string
+                description: |-
+                  Optional. Names of measures (from measure_names or ephemeral_measures) to compute with their `exact_expression`.
+                  No-op for measures without an `exact_expression`.
               timeStart:
                 type: string
                 format: date-time
@@ -4233,6 +4247,9 @@ definitions:
       lowerIsBetter:
         type: boolean
         description: When true, decreases in this measure are favorable (e.g. bounce rate, latency, error count). UI surfaces that render comparison deltas (KPIs, big numbers, leaderboards, pivot tables, time-series tooltips) swap their positive/negative coloring accordingly.
+      exactExpression:
+        type: string
+        description: Optional exact variant of `expression`. When set, `expression` is treated as the approximate default and `exact_expression` is only used when a query explicitly requests exact values for the measure.
     title: Measures are aggregated computed values
   MetricsViewSpecMeasureType:
     type: string
@@ -6716,6 +6733,11 @@ definitions:
         $ref: '#/definitions/v1MetricsViewAggregationMeasureComputeComparisonTime'
       expression:
         $ref: '#/definitions/v1MetricsViewAggregationMeasureComputeExpression'
+      exact:
+        type: boolean
+        description: |-
+          Optional. Compute the measure with its `exact_expression` instead of its (approximate) `expression`.
+          No-op for measures without an `exact_expression`, which only simple measures define.
   v1MetricsViewAggregationMeasureComputeComparisonDelta:
     type: object
     properties:
@@ -6848,6 +6870,10 @@ definitions:
         title: Optional
       exact:
         type: boolean
+        description: |-
+          Deprecated: ignored; use `exact` on individual measures instead.
+          It originally disabled the approximate comparison join (limiting the base period to the top N rows), but has been unused since the metrics queries were refactored onto the metricsview package.
+          That behavior is now controlled by the instance variable `rill.metrics.approximate_comparisons`.
       fillMissing:
         type: boolean
       rows:
@@ -7012,7 +7038,10 @@ definitions:
         title: Optional
       exact:
         type: boolean
-        title: Optional, defaults to false
+        description: |-
+          Deprecated: ignored; use `exact` on individual measures instead.
+          It originally disabled the approximate comparison join and the two-phase Druid TopN query, but has been unused since the metrics queries were refactored onto the metricsview package.
+          Those behaviors are now controlled by the instance variables `rill.metrics.approximate_comparisons` and `rill.metrics.exactify_druid_topn`.
       filter:
         $ref: '#/definitions/v1MetricsViewFilter'
         description: Deprecated. should be removed once UI is moved to use new filters
@@ -7432,6 +7461,13 @@ definitions:
         description: |-
           Optional ephemeral measures, i.e. measures defined by the query rather than the metrics view.
           Only the `expression` compute is supported for time series.
+      exactMeasureNames:
+        type: array
+        items:
+          type: string
+        description: |-
+          Optional. Names of measures (from measure_names or ephemeral_measures) to compute with their `exact_expression`.
+          No-op for measures without an `exact_expression`.
       timeStart:
         type: string
         format: date-time

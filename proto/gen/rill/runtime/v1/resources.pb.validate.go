@@ -14649,6 +14649,8 @@ func (m *MetricsViewSpec_Measure) validate(all bool) error {
 
 	// no validation rules for LowerIsBetter
 
+	// no validation rules for ExactExpression
+
 	if len(errors) > 0 {
 		return MetricsViewSpec_MeasureMultiError(errors)
 	}

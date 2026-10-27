@@ -4,6 +4,9 @@
   import Row from "@rilldata/web-common/components/icons/Row.svelte";
   import SearchableFilterChip from "@rilldata/web-common/components/searchable-filter-menu/SearchableFilterChip.svelte";
   import { ephemeralMeasureDialog } from "@rilldata/web-common/features/dashboards/ephemeral-measures/dialog-store";
+  import { precisionStateFor } from "@rilldata/web-common/features/dashboards/exact-measures/exact-measures";
+  import { exploreExactSurface } from "@rilldata/web-common/features/dashboards/exact-measures/explore-surfaces";
+  import PrecisionChip from "@rilldata/web-common/features/dashboards/exact-measures/PrecisionChip.svelte";
   import { splitPivotChips } from "@rilldata/web-common/features/dashboards/pivot/pivot-utils";
   import ReplacePivotDialog from "@rilldata/web-common/features/dashboards/pivot/ReplacePivotDialog.svelte";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
@@ -62,6 +65,10 @@
     selectors: {
       measures: { measureLabel, allMeasures },
       dimensions: { getDimensionDisplayName },
+      exactMeasures: { exactMeasureContext },
+    },
+    actions: {
+      exactMeasures: { toggleExactMeasure },
     },
     dashboardStore,
     validSpecStore,
@@ -71,6 +78,14 @@
   const ephemeralDefsByName = $derived(
     new Map(
       ($dashboardStore?.ephemeralMeasures ?? []).map((def) => [def.name, def]),
+    ),
+  );
+
+  // Precision of the expanded measure; null when it has no exact variant.
+  const expandedMeasurePrecision = $derived(
+    precisionStateFor(
+      expandedMeasureName,
+      $exactMeasureContext(exploreExactSurface.tdd),
     ),
   );
 
@@ -123,6 +138,8 @@
   }
 
   let showReplacePivotModal = $state(false);
+  // The precision chip has its own tooltip; the measure chip's tooltip hides while it is hovered.
+  let precisionChipHovered = $state(false);
   function startPivotForTDD() {
     const pivot = $dashboardStore?.pivot;
 
@@ -260,10 +277,26 @@
           selectableItems={selectableMeasures}
           selectedItems={[expandedMeasureName]}
           tooltipText="Choose a measure to display"
+          suppressTooltip={precisionChipHovered}
         >
           <svelte:fragment slot="additional-label">
             {#if ephemeralDefsByName.has(expandedMeasureName)}
               <span class="flex-none text-[10px] font-semibold italic">ƒx</span>
+            {/if}
+            {#if expandedMeasurePrecision}
+              <span class="flex-none inline-flex">
+                <PrecisionChip
+                  state={expandedMeasurePrecision}
+                  measureLabel={selectedMeasureLabel}
+                  loading={expandedMeasurePrecision !== "approx" && isFetching}
+                  onToggle={() =>
+                    toggleExactMeasure(
+                      exploreExactSurface.tdd,
+                      expandedMeasureName,
+                    )}
+                  onHoverChange={(hovered) => (precisionChipHovered = hovered)}
+                />
+              </span>
             {/if}
           </svelte:fragment>
         </SearchableFilterChip>

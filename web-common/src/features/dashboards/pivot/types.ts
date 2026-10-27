@@ -183,6 +183,11 @@ export interface PivotDataStoreConfig {
   // Sourced from the explore state in explore dashboards, and from the
   // component spec in canvas table/pivot components.
   ephemeralMeasures?: EphemeralMeasureDef[];
+  // Measures to request with `exact: true` (see `requestExactNames`).
+  // Sourced from the viewer's exact selection in explore dashboards, and from
+  // the canvas exact selection plus the component's `exact` pin in canvas
+  // table/pivot components.
+  exactMeasures?: string[];
 }
 
 export interface PivotAxesData {

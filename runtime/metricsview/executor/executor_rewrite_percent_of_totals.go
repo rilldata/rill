@@ -9,6 +9,8 @@ import (
 	"github.com/rilldata/rill/runtime/metricsview"
 )
 
+// rewritePercentOfTotals runs a totals query for the base measures of the query's percent-of-total measures and stores the totals on them.
+// The totals query copies the exact measures resolved for the query (see rewriteQueryExactMeasures), so every total has the same precision as the values it divides.
 func (e *Executor) rewritePercentOfTotals(ctx context.Context, qry *metricsview.Query) error {
 	var measures []metricsview.Measure
 	var measureIndices []int
@@ -46,6 +48,7 @@ func (e *Executor) rewritePercentOfTotals(ctx context.Context, qry *metricsview.
 		UseDisplayNames:     false,
 		Rows:                false,
 		QueryLimits:         qry.QueryLimits,
+		ExactMeasures:       qry.ExactMeasures,
 		UnusedFields:        nil,
 	} //exhaustruct:enforce
 
