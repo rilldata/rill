@@ -2,7 +2,6 @@ package reconcilers_test
 
 import (
 	"context"
-	"regexp"
 	"strings"
 	"testing"
 	"time"
@@ -11,7 +10,6 @@ import (
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/email"
-	"github.com/rilldata/rill/runtime/pkg/embedopen"
 	"github.com/rilldata/rill/runtime/testruntime"
 	"github.com/stretchr/testify/require"
 )
@@ -379,8 +377,7 @@ notify:
 annotations:
   web_open_mode: creator
 `,
-			// Reports created from an embed are run for the embed user's email,
-			// and have no open link when neither the embed nor rill.yaml configures an open URL
+			// Reports created from an embed are run for the embed user's email, and have no open link
 			"reports/r4.yaml": `
 type: report
 display_name: Report from embed
@@ -685,116 +682,6 @@ annotations:
 			require.Fail(t, "unexpected email", e.Subject)
 		}
 	}
-}
-
-func TestReportEmbedOpenLink(t *testing.T) {
-	report := func(displayName, openURL string) string {
-		res := `
-type: report
-display_name: ` + displayName + `
-for:
-  user_email: embed@other.com
-query:
-  name: MetricsViewAggregation
-  args:
-    metrics_view: mv1
-    dimensions:
-    - name: country
-    measures:
-    - name: total
-  for:
-    user_email: embed@other.com
-export:
-  format: csv
-  attach: true
-notify:
-  email:
-    recipients:
-    - embed@other.com
-annotations:
-  admin_owner_user_email: embed@other.com
-  web_open_mode: creator
-  explore: e1
-`
-		if openURL != "" {
-			res += "  admin_embed_open_url: " + openURL + "\n"
-		}
-		return res
-	}
-
-	rt, id := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
-		AdminService: &creatorModeAdmin{},
-		Files: map[string]string{
-			"rill.yaml": `
-embeds:
-  open_url: https://default.example.org/open?tenant=foo
-`,
-			"models/bar.sql": `
-SELECT '2024-01-01T00:00:00Z'::TIMESTAMP AS __time, 'Denmark' AS country
-`,
-			"metrics/mv1.yaml": `
-version: 1
-type: metrics_view
-model: bar
-timeseries: __time
-dimensions:
-- column: country
-measures:
-- name: total
-  expression: count(*)
-`,
-			"explores/e1.yaml": `
-type: explore
-metrics_view: mv1
-`,
-			// The open URL of the embed that created the report takes precedence
-			"reports/r1.yaml": report("Report with embed open URL", "https://embed.example.org/open"),
-			// Without it, the open URL from rill.yaml is used
-			"reports/r2.yaml": report("Report with default open URL", ""),
-		},
-	})
-	testruntime.RequireReconcileState(t, rt, id, 6, 0, 0)
-
-	testruntime.RefreshAndWait(t, rt, id, &runtimev1.ResourceName{Kind: runtime.ResourceKindReport, Name: "r1"})
-	testruntime.RefreshAndWait(t, rt, id, &runtimev1.ResourceName{Kind: runtime.ResourceKindReport, Name: "r2"})
-
-	emails := rt.Email.Sender.(*email.TestSender).Emails
-	require.Len(t, emails, 2)
-	for _, e := range emails {
-		require.Equal(t, "embed@other.com", e.ToEmail)
-		require.Len(t, e.Attachments, 1)
-		require.Contains(t, e.Body, "is ready to view.")
-		// No links to Rill Cloud, and no edit, download or unsubscribe links
-		require.NotContains(t, e.Body, "https://example.com/")
-		require.NotContains(t, e.Body, "To edit this report")
-		require.NotContains(t, e.Body, "To unsubscribe")
-
-		var name string
-		switch {
-		case strings.HasPrefix(e.Subject, "Report with embed open URL"):
-			name = "r1"
-			require.Contains(t, e.Body, "https://embed.example.org/open?rill_open=")
-		case strings.HasPrefix(e.Subject, "Report with default open URL"):
-			name = "r2"
-			require.Contains(t, e.Body, "https://default.example.org/open?")
-			require.Contains(t, e.Body, "tenant=foo")
-		default:
-			require.Fail(t, "unexpected email", e.Subject)
-		}
-		p := requireEmbedOpenPayload(t, e.Body)
-		require.Equal(t, embedopen.KindReport, p.Kind)
-		require.Equal(t, name, p.Name)
-		require.False(t, p.ExecutionTime.IsZero())
-	}
-}
-
-// requireEmbedOpenPayload extracts and decodes the "rill_open" param of the open link in an email body.
-func requireEmbedOpenPayload(t *testing.T, body string) *embedopen.Payload {
-	m := regexp.MustCompile(`rill_open=([A-Za-z0-9_-]+)`).FindStringSubmatch(body)
-	require.NotNil(t, m, "no open link in email body")
-	p, err := embedopen.Decode(m[1])
-	require.NoError(t, err)
-	return p
 }
 
 // creatorModeAdmin is an admin service that returns report metadata the way the admin service does for reports run as the creator:

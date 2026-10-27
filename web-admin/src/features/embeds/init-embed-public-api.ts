@@ -278,7 +278,6 @@ const EmbedParams = [
   "theme_mode",
   "user_email",
   "external_user_id",
-  "open",
 ];
 export function removeEmbedParams(searchParams: URLSearchParams) {
   const cleanedParams = new URLSearchParams(searchParams);

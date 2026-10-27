@@ -42,7 +42,7 @@ func TestYAMLForManagedReportOwner(t *testing.T) {
 				EmailRecipients: []string{"embed@example.com"},
 				WebOpenMode:     string(tc.webOpenMode),
 			}
-			data, err := (&Server{}).yamlForManagedReport(opts, tc.ownerUserID, tc.ownerEmail, "", nil)
+			data, err := (&Server{}).yamlForManagedReport(opts, tc.ownerUserID, tc.ownerEmail, nil)
 			if tc.wantErr {
 				require.Error(t, err)
 				return
@@ -76,7 +76,7 @@ func TestYAMLForManagedReportExportAttach(t *testing.T) {
 	}
 
 	// The export is attached for reports run as the creator
-	data, err := s.yamlForManagedReport(opts, "owner", "", "", nil)
+	data, err := s.yamlForManagedReport(opts, "owner", "", nil)
 	require.NoError(t, err)
 	var res reportYAML
 	require.NoError(t, yaml.Unmarshal(data, &res))
@@ -84,21 +84,21 @@ func TestYAMLForManagedReportExportAttach(t *testing.T) {
 
 	// The property is omitted when the export is not attached, so runtimes that predate it can still parse the YAML
 	opts.ExportAttach = false
-	data, err = s.yamlForManagedReport(opts, "owner", "", "", nil)
+	data, err = s.yamlForManagedReport(opts, "owner", "", nil)
 	require.NoError(t, err)
 	require.NotContains(t, string(data), "attach")
 	opts.ExportAttach = true
 
 	// Attachments are not supported for reports run as the recipient
 	opts.WebOpenMode = string(WebOpenModeRecipient)
-	_, err = s.yamlForManagedReport(opts, "owner", "", "", nil)
+	_, err = s.yamlForManagedReport(opts, "owner", "", nil)
 	require.ErrorContains(t, err, "only supported for reports run as the creator")
 	opts.WebOpenMode = string(WebOpenModeCreator)
 
 	// The export is always attached for reports created from an embed, since the email has no download link
 	opts.ExportAttach = false
 	opts.EmailRecipients = []string{"embed@example.com"}
-	data, err = s.yamlForManagedReport(opts, "", "embed@example.com", "", nil)
+	data, err = s.yamlForManagedReport(opts, "", "embed@example.com", nil)
 	require.NoError(t, err)
 	res = reportYAML{}
 	require.NoError(t, yaml.Unmarshal(data, &res))
@@ -115,7 +115,7 @@ func TestYAMLForManagedReportExportAttach(t *testing.T) {
 		EmailRecipients: []string{"user_1@example.com"},
 		Canvas:          "c1",
 		WebOpenMode:     string(WebOpenModeCreator),
-	}, "owner", "", "", nil)
+	}, "owner", "", nil)
 	require.ErrorContains(t, err, "only supported for query-based reports")
 }
 
@@ -134,58 +134,40 @@ func TestYAMLForManagedReportEmbed(t *testing.T) {
 		}
 	}
 
-	// The open URL of the embed is copied into the annotations
-	data, err := s.yamlForManagedReport(newOpts(), "", "embed@example.com", "https://app.acme.com/open?tenant=foo", nil)
-	require.NoError(t, err)
-	var res reportYAML
-	require.NoError(t, yaml.Unmarshal(data, &res))
-	require.Equal(t, "https://app.acme.com/open?tenant=foo", res.Annotations.AdminEmbedOpenURL)
-	require.Equal(t, "https://app.acme.com/open?tenant=foo", parseReportAnnotations(map[string]string{"admin_embed_open_url": "https://app.acme.com/open?tenant=foo"}).AdminEmbedOpenURL)
-
-	// The annotation is omitted when the embed has no open URL
-	data, err = s.yamlForManagedReport(newOpts(), "", "embed@example.com", "", nil)
-	require.NoError(t, err)
-	require.NotContains(t, string(data), "admin_embed_open_url")
-
-	// The open URL only applies to reports created from an embed
-	data, err = s.yamlForManagedReport(newOpts(), "owner", "", "https://app.acme.com/open", nil)
-	require.NoError(t, err)
-	require.NotContains(t, string(data), "admin_embed_open_url")
-
 	// No recipients is allowed
 	opts := newOpts()
 	opts.EmailRecipients = nil
-	_, err = s.yamlForManagedReport(opts, "", "embed@example.com", "", nil)
+	_, err := s.yamlForManagedReport(opts, "", "embed@example.com", nil)
 	require.NoError(t, err)
 
 	// Only the creator can be a recipient
 	opts = newOpts()
 	opts.EmailRecipients = []string{"other@example.com"}
-	_, err = s.yamlForManagedReport(opts, "", "embed@example.com", "", nil)
+	_, err = s.yamlForManagedReport(opts, "", "embed@example.com", nil)
 	require.ErrorContains(t, err, "can only be sent to the creator")
 	opts.EmailRecipients = []string{"embed@example.com", "other@example.com"}
-	_, err = s.yamlForManagedReport(opts, "", "embed@example.com", "", nil)
+	_, err = s.yamlForManagedReport(opts, "", "embed@example.com", nil)
 	require.ErrorContains(t, err, "can only be sent to the creator")
 
 	// Slack is not supported
 	opts = newOpts()
 	opts.SlackChannels = []string{"#general"}
-	_, err = s.yamlForManagedReport(opts, "", "embed@example.com", "", nil)
+	_, err = s.yamlForManagedReport(opts, "", "embed@example.com", nil)
 	require.ErrorContains(t, err, "can't be sent to Slack")
 	opts = newOpts()
 	opts.SlackUsers = []string{"embed@example.com"}
-	_, err = s.yamlForManagedReport(opts, "", "embed@example.com", "", nil)
+	_, err = s.yamlForManagedReport(opts, "", "embed@example.com", nil)
 	require.ErrorContains(t, err, "can't be sent to Slack")
 	opts = newOpts()
 	opts.SlackWebhooks = []string{"https://hooks.slack.com/x"}
-	_, err = s.yamlForManagedReport(opts, "", "embed@example.com", "", nil)
+	_, err = s.yamlForManagedReport(opts, "", "embed@example.com", nil)
 	require.ErrorContains(t, err, "can't be sent to Slack")
 
 	// The restrictions don't apply to reports created by Rill users
 	opts = newOpts()
 	opts.EmailRecipients = []string{"other@example.com", "another@example.com"}
 	opts.SlackChannels = []string{"#general"}
-	_, err = s.yamlForManagedReport(opts, "owner", "", "", nil)
+	_, err = s.yamlForManagedReport(opts, "owner", "", nil)
 	require.NoError(t, err)
 }
 
@@ -234,7 +216,7 @@ func TestEmbedReportResources(t *testing.T) {
 		WebOpenMode:     string(WebOpenModeCreator),
 	}
 	s := &Server{}
-	data, err := s.yamlForManagedReport(opts, "", "embed@example.com", "", []database.ResourceName{e1})
+	data, err := s.yamlForManagedReport(opts, "", "embed@example.com", []database.ResourceName{e1})
 	require.NoError(t, err)
 	var rep reportYAML
 	require.NoError(t, yaml.Unmarshal(data, &rep))
@@ -243,7 +225,7 @@ func TestEmbedReportResources(t *testing.T) {
 	require.Equal(t, []database.ResourceName{e1}, parsed)
 
 	// The annotation is omitted when the embed isn't limited
-	data, err = s.yamlForManagedReport(opts, "", "embed@example.com", "", nil)
+	data, err = s.yamlForManagedReport(opts, "", "embed@example.com", nil)
 	require.NoError(t, err)
 	require.NotContains(t, string(data), "admin_embed_resources")
 }

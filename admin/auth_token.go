@@ -244,9 +244,8 @@ func (t *embedAuthToken) OwnerID() string {
 }
 
 // IssueEmbedAuthToken issues an embed auth token for an email in a project.
-// The openURL is optional; if set, it's used as the base URL for open links in emails from reports and alerts created with the token.
 // If resources is non-empty, reports created with the token are limited to those resources.
-func (s *Service) IssueEmbedAuthToken(ctx context.Context, projectID, email, openURL string, resources []database.ResourceName, ttl *time.Duration) (AuthToken, error) {
+func (s *Service) IssueEmbedAuthToken(ctx context.Context, projectID, email string, resources []database.ResourceName, ttl *time.Duration) (AuthToken, error) {
 	tkn := authtoken.NewRandom(authtoken.TypeEmbed)
 
 	var expiresOn *time.Time
@@ -255,17 +254,11 @@ func (s *Service) IssueEmbedAuthToken(ctx context.Context, projectID, email, ope
 		expiresOn = &t
 	}
 
-	var openURLPtr *string
-	if openURL != "" {
-		openURLPtr = &openURL
-	}
-
 	eat, err := s.DB.InsertEmbedAuthToken(ctx, &database.InsertEmbedAuthTokenOptions{
 		ID:         tkn.ID.String(),
 		SecretHash: tkn.SecretHash(),
 		ProjectID:  projectID,
 		Email:      email,
-		OpenURL:    openURLPtr,
 		Resources:  resources,
 		ExpiresOn:  expiresOn,
 	})

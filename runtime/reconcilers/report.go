@@ -14,7 +14,6 @@ import (
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/duration"
 	"github.com/rilldata/rill/runtime/pkg/email"
-	"github.com/rilldata/rill/runtime/pkg/embedopen"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"github.com/rilldata/rill/runtime/pkg/pbutil"
 	"github.com/rilldata/rill/runtime/queries"
@@ -570,17 +569,10 @@ func (r *ReportReconciler) sendReport(ctx context.Context, self *runtimev1.Resou
 		return false, nil, fmt.Errorf("failed to get report metadata: %w", err)
 	}
 
-	// Reports created from an embed are only for the embed user, who opens them in the embedder's application.
-	// So their notifications only link to the embedder's application, without edit, download or unsubscribe links.
+	// Reports created from an embed are only for the embed user, who has no access to Rill Cloud.
+	// So their notifications have no open, edit, download or unsubscribe links.
 	// The owner email annotation is only set for reports created from an embed.
 	embedCreated := rep.Spec.Annotations["admin_owner_user_email"] != ""
-	var embedLink string
-	if embedCreated {
-		embedLink, err = embedOpenLink(ctx, r.C, rep.Spec.Annotations, embedopen.KindReport, self.Meta.Name.Name, t)
-		if err != nil {
-			return false, nil, fmt.Errorf("failed to build open link: %w", err)
-		}
-	}
 
 	// recipient -> notification data
 	notificationsContent := make(map[string]*notificationData)
@@ -613,8 +605,7 @@ func (r *ReportReconciler) sendReport(ctx context.Context, self *runtimev1.Resou
 
 			if embedCreated {
 				notificationsContent[recipient] = &notificationData{
-					openLink: embedLink,
-					summary:  truncateSummary(report.summary, 500),
+					summary: truncateSummary(report.summary, 500),
 				}
 				continue
 			}
@@ -661,7 +652,6 @@ func (r *ReportReconciler) sendReport(ctx context.Context, self *runtimev1.Resou
 		for recipient, delivery := range meta.ReportDelivery {
 			if embedCreated {
 				notificationsContent[recipient] = &notificationData{
-					openLink:           embedLink,
 					downloadFormat:     formatExportFormat(rep.Spec.ExportFormat),
 					attachment:         attachment,
 					attachmentTooLarge: attachmentTooLarge,

@@ -9,7 +9,6 @@ import (
 
 	"github.com/iancoleman/strcase"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
-	"github.com/rilldata/rill/runtime/pkg/embedopen"
 	"github.com/rilldata/rill/runtime/pkg/env"
 	"gopkg.in/yaml.v3"
 )
@@ -32,7 +31,6 @@ type RillYAML struct {
 	Defaults       map[ResourceKind]yaml.Node
 	FeatureFlags   map[string]string
 	PublicPaths    []string
-	EmbedOpenURL   string
 }
 
 // ConnectorDef is a subtype of RillYAML, defining connectors required by the project
@@ -110,11 +108,6 @@ type rillYAML struct {
 	Features yaml.Node `yaml:"features"`
 	// Paths to expose over HTTP (defaults to ./public)
 	PublicPaths []string `yaml:"public_paths"`
-	// Configuration for embedded dashboards
-	Embeds struct {
-		// Base URL for open links in emails from reports and alerts created from an embed
-		OpenURL string `yaml:"open_url"`
-	} `yaml:"embeds"`
 	// Paths to ignore when watching for changes.
 	// This is ignored in this parser because it's consumed directly by the repo driver.
 	IgnorePaths []string `yaml:"ignore_paths"`
@@ -299,12 +292,6 @@ func (p *Parser) parseRillYAML(ctx context.Context, path string) error {
 		tmp.PublicPaths = []string{"public"}
 	}
 
-	if tmp.Embeds.OpenURL != "" {
-		if err := embedopen.ValidateOpenURL(tmp.Embeds.OpenURL); err != nil {
-			return fmt.Errorf(`invalid property "embeds.open_url": %w`, err)
-		}
-	}
-
 	defaults := map[ResourceKind]yaml.Node{
 		ResourceKindSource:      tmp.Sources,
 		ResourceKindModel:       tmp.Models,
@@ -336,7 +323,6 @@ func (p *Parser) parseRillYAML(ctx context.Context, path string) error {
 		Defaults:       defaults,
 		FeatureFlags:   snakeCaseFeatureFlags,
 		PublicPaths:    tmp.PublicPaths,
-		EmbedOpenURL:   tmp.Embeds.OpenURL,
 	}
 
 	for i, c := range tmp.Connectors {

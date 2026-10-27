@@ -55,7 +55,6 @@ func (c *connection) findInstances(_ context.Context, whereClause string, args .
 			feature_flags,
 			annotations,
 			public_paths,
-			embed_open_url,
 			ai_instructions,
 			ai_prompts,
 			frontend_url,
@@ -95,7 +94,6 @@ func (c *connection) findInstances(_ context.Context, whereClause string, args .
 			&featureFlags,
 			&annotations,
 			&publicPaths,
-			&i.EmbedOpenURL,
 			&i.AIInstructions,
 			&aiPrompts,
 			&i.FrontendURL,
@@ -253,13 +251,12 @@ func (c *connection) CreateInstance(_ context.Context, inst *drivers.Instance) e
 			feature_flags,
 			annotations,
 			public_paths,
-			embed_open_url,
 			ai_instructions,
 			ai_prompts,
 			frontend_url,
 			theme
 		)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24)
 		`,
 		inst.ID,
 		inst.Environment,
@@ -281,7 +278,6 @@ func (c *connection) CreateInstance(_ context.Context, inst *drivers.Instance) e
 		featureFlags,
 		annotations,
 		publicPaths,
-		inst.EmbedOpenURL,
 		inst.AIInstructions,
 		aiPrompts,
 		inst.FrontendURL,
@@ -371,11 +367,10 @@ func (c *connection) EditInstance(_ context.Context, inst *drivers.Instance) err
 			feature_flags = $17,
 			annotations = $18,
 			public_paths = $19,
-			embed_open_url = $20,
-			ai_instructions = $21,
-			ai_prompts = $22,
-			frontend_url = $23,
-			theme = $24
+			ai_instructions = $20,
+			ai_prompts = $21,
+			frontend_url = $22,
+			theme = $23
 		WHERE id = $1
 		`,
 		inst.ID,
@@ -397,7 +392,6 @@ func (c *connection) EditInstance(_ context.Context, inst *drivers.Instance) err
 		featureFlags,
 		annotations,
 		publicPaths,
-		inst.EmbedOpenURL,
 		inst.AIInstructions,
 		aiPrompts,
 		inst.FrontendURL,
