@@ -14,10 +14,6 @@ export const bedrockSchema: MultiStepFormSchema = {
       default: "api_key",
       "x-display": "radio",
       "x-enum-labels": ["API key", "AWS access keys"],
-      "x-enum-descriptions": [
-        "Use a long-term Amazon Bedrock API key. The quickest way to get started.",
-        "Use an AWS access key ID and secret access key. Recommended for production.",
-      ],
       "x-ui-only": true,
     },
     api_key: {
