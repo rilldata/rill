@@ -124,7 +124,7 @@ data:
 
 This triggers when any resource in your project has a reconciliation error.
 
-To watch specific resources, filter by `where_kind` and/or `where_name`:
+To watch specific resources, filter by `where_resource` using `kind/name` patterns:
 
 ```yaml
 refresh:
@@ -133,8 +133,10 @@ refresh:
 data:
   resource_status:
     where_error: true
-    where_kind: [model]
-    where_name: [orders, customers]
+    where_resource:
+      - model/orders       # the model named orders
+      - metrics_view/*     # all metrics views
+      - "*/customers"      # any resource named customers
 ```
 
 :::note

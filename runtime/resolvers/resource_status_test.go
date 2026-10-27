@@ -11,6 +11,23 @@ import (
 )
 
 func TestResourceStatus(t *testing.T) {
+	// A model, a metrics view, and its inline explore all named "orders".
+	sameNameFiles := map[string]string{
+		"rill.yaml":  ``,
+		"orders.sql": `SELECT 1 AS x`,
+		"metrics/orders.yaml": `
+type: metrics_view
+model: orders
+dimensions:
+- column: x
+measures:
+- name: count
+  expression: count(*)
+explore:
+  display_name: Orders
+`,
+	}
+
 	cases := []struct {
 		name     string
 		files    map[string]string
@@ -90,57 +107,79 @@ func TestResourceStatus(t *testing.T) {
 			},
 		},
 		{
-			name: "where_kind",
-			files: map[string]string{
-				"rill.yaml": ``,
-				"m1.sql":    `SELECT 314`,
-			},
-			props: map[string]any{"where_kind": []string{"rill.runtime.v1.Model"}},
+			name:  "where_resource exact match",
+			files: sameNameFiles,
+			props: map[string]any{"where_resource": []string{"metrics_view/orders"}},
 			expected: []map[string]any{
-				{"type": "Model", "name": "m1", "status": "Idle", "error": ""},
+				{"type": "MetricsView", "name": "orders", "status": "Idle", "error": ""},
 			},
 		},
 		{
-			name: "where_kind shorthand as string",
-			files: map[string]string{
-				"rill.yaml": ``,
-				"m1.sql":    `SELECT 314`,
-			},
-			props: map[string]any{"where_kind": "project_parser"},
+			name:  "where_resource does not cross kinds and names",
+			files: sameNameFiles,
+			props: map[string]any{"where_resource": []string{"model/orders", "explore/sales"}},
 			expected: []map[string]any{
-				{"type": "ProjectParser", "name": "parser", "status": "Idle", "error": ""},
+				{"type": "Model", "name": "orders", "status": "Idle", "error": ""},
 			},
 		},
 		{
-			name: "where_name is case-insensitive",
-			files: map[string]string{
-				"rill.yaml": ``,
-				"m1.sql":    `SELECT 314`,
-				"m2.sql":    `SELECT 159`,
-			},
-			props: map[string]any{"where_name": []string{"M2"}},
+			name:  "where_resource wildcard name",
+			files: sameNameFiles,
+			props: map[string]any{"where_resource": "explore/*"},
 			expected: []map[string]any{
-				{"type": "Model", "name": "m2", "status": "Idle", "error": ""},
+				{"type": "Explore", "name": "orders", "status": "Idle", "error": ""},
 			},
 		},
 		{
-			name: "where_name with where_error",
+			name:  "where_resource wildcard kind",
+			files: sameNameFiles,
+			props: map[string]any{"where_resource": []string{"*/ORDERS"}},
+			expected: []map[string]any{
+				{"type": "Explore", "name": "orders", "status": "Idle", "error": ""},
+				{"type": "MetricsView", "name": "orders", "status": "Idle", "error": ""},
+				{"type": "Model", "name": "orders", "status": "Idle", "error": ""},
+			},
+		},
+		{
+			name:  "where_resource bare name",
+			files: sameNameFiles,
+			props: map[string]any{"where_resource": []string{"orders"}},
+			expected: []map[string]any{
+				{"type": "Explore", "name": "orders", "status": "Idle", "error": ""},
+				{"type": "MetricsView", "name": "orders", "status": "Idle", "error": ""},
+				{"type": "Model", "name": "orders", "status": "Idle", "error": ""},
+			},
+		},
+		{
+			name: "where_resource with where_error",
 			files: map[string]string{
 				"rill.yaml": ``,
 				"m1.sql":    `SELECT error("boom1")`,
 				"m2.sql":    `SELECT error("boom2")`,
 				"m3.sql":    `SELECT 314`,
 			},
-			props: map[string]any{"where_error": true, "where_kind": []string{"model"}, "where_name": []string{"m2", "m3"}},
+			props: map[string]any{"where_error": true, "where_resource": []string{"model/m2", "model/m3"}},
 			expected: []map[string]any{
 				{"type": "Model", "name": "m2", "status": "Idle", "error": "boom2"},
 			},
 		},
 		{
-			name:  "unknown kind",
+			name:  "where_resource unknown kind",
 			files: map[string]string{`rill.yaml`: ``},
-			props: map[string]any{"where_kind": []string{"dashboard"}},
-			err:   `unknown resource kind "dashboard"`,
+			props: map[string]any{"where_resource": []string{"dashboard/orders"}},
+			err:   `invalid where_resource "dashboard/orders": unknown resource kind`,
+		},
+		{
+			name:  "where_resource empty segment",
+			files: map[string]string{`rill.yaml`: ``},
+			props: map[string]any{"where_resource": []string{"model/"}},
+			err:   `invalid where_resource "model/"`,
+		},
+		{
+			name:  "where_resource too many segments",
+			files: map[string]string{`rill.yaml`: ``},
+			props: map[string]any{"where_resource": []string{"model/a/b"}},
+			err:   `invalid where_resource "model/a/b"`,
 		},
 	}
 

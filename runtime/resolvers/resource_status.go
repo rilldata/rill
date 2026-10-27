@@ -29,17 +29,19 @@ type resourceStatusResolver struct {
 	runtime    *runtime.Runtime
 	instanceID string
 	props      *resourceStatusProps
+	// patterns are the parsed WhereResource patterns; an empty kind or name is a wildcard.
+	patterns []*runtimev1.ResourceName
 }
 
 // resourceStatusProps declares the properties for the "resource_status" resolver.
 type resourceStatusProps struct {
 	// WhereError is a flag to only return resources that are in the error state.
 	WhereError bool `mapstructure:"where_error"`
-	// WhereKind restricts results to resources of the given kinds; accepts shorthands like "model" or "metrics_view".
-	WhereKind []string `mapstructure:"where_kind"`
-	// WhereName restricts results to resources with the given names (case-insensitive).
-	WhereName    []string       `mapstructure:"where_name"`
-	UnusedFields map[string]any `mapstructure:",remain"`
+	// WhereResource restricts results to resources matching any of the given "kind/name" patterns.
+	// Kinds accept shorthands like "model" or "metrics_view"; names are case-insensitive.
+	// Either segment can be "*"; a bare name matches resources with that name of any kind.
+	WhereResource []string       `mapstructure:"where_resource"`
+	UnusedFields  map[string]any `mapstructure:",remain"`
 }
 
 // newResourceStatus creates a new resourceStatusResolver.
@@ -48,14 +50,35 @@ func newResourceStatus(ctx context.Context, opts *runtime.ResolverOptions) (runt
 	if err := mapstructureutil.WeakDecode(opts.Properties, props); err != nil {
 		return nil, err
 	}
-	for i, k := range props.WhereKind {
-		props.WhereKind[i] = runtime.ResourceKindFromShorthand(k)
+
+	patterns := make([]*runtimev1.ResourceName, 0, len(props.WhereResource))
+	for _, p := range props.WhereResource {
+		kind, name, ok := strings.Cut(p, "/")
+		if !ok {
+			kind, name = "*", kind
+		}
+		if kind == "" || name == "" || strings.Contains(name, "/") {
+			return nil, fmt.Errorf("resource_status: invalid where_resource %q: expected \"kind/name\"", p)
+		}
+		if kind == "*" {
+			kind = ""
+		} else {
+			kind = runtime.ResourceKindFromShorthand(kind)
+			if !runtime.IsKnownResourceKind(kind) {
+				return nil, fmt.Errorf("resource_status: invalid where_resource %q: unknown resource kind", p)
+			}
+		}
+		if name == "*" {
+			name = ""
+		}
+		patterns = append(patterns, &runtimev1.ResourceName{Kind: kind, Name: name})
 	}
 
 	return &resourceStatusResolver{
 		runtime:    opts.Runtime,
 		instanceID: opts.InstanceID,
 		props:      props,
+		patterns:   patterns,
 	}, nil
 }
 
@@ -78,11 +101,6 @@ func (r *resourceStatusResolver) Validate(ctx context.Context) error {
 			Fields: maps.Keys(r.props.UnusedFields),
 		}
 	}
-	for _, k := range r.props.WhereKind {
-		if !runtime.IsKnownResourceKind(k) {
-			return fmt.Errorf("resource_status: unknown resource kind %q", k)
-		}
-	}
 	return nil
 }
 
@@ -101,10 +119,9 @@ func (r *resourceStatusResolver) ResolveInteractive(ctx context.Context) (runtim
 		if r.props.WhereError && res.Meta.ReconcileError == "" {
 			return true
 		}
-		if len(r.props.WhereKind) > 0 && !slices.Contains(r.props.WhereKind, res.Meta.Name.Kind) {
-			return true
-		}
-		if len(r.props.WhereName) > 0 && !slices.ContainsFunc(r.props.WhereName, func(n string) bool { return strings.EqualFold(n, res.Meta.Name.Name) }) {
+		if len(r.patterns) > 0 && !slices.ContainsFunc(r.patterns, func(p *runtimev1.ResourceName) bool {
+			return (p.Kind == "" || p.Kind == res.Meta.Name.Kind) && (p.Name == "" || strings.EqualFold(p.Name, res.Meta.Name.Name))
+		}) {
 			return true
 		}
 		return false
