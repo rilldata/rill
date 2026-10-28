@@ -21,7 +21,7 @@ export class RuntimeClient {
   // JWT state (mutable; read by the transport interceptor)
   private currentJwt: string | undefined;
   private jwtReceivedAt: number;
-  private authContext: AuthContext;
+  private _authContext: AuthContext;
   private disposed = false;
 
   // Cached service clients (created once per RuntimeClient)
@@ -51,7 +51,7 @@ export class RuntimeClient {
     this.instanceId = opts.instanceId;
     this.currentJwt = opts.jwt;
     this.jwtReceivedAt = opts.jwt ? Date.now() : 0;
-    this.authContext = opts.authContext ?? "user";
+    this._authContext = opts.authContext ?? "user";
     this.requestQueue = new RequestQueue();
 
     this.transport = createConnectTransport({
@@ -77,13 +77,13 @@ export class RuntimeClient {
    */
   updateJwt(jwt: string | undefined, authContext?: AuthContext): boolean {
     const authContextChanged =
-      !!this.authContext && !!authContext && authContext !== this.authContext;
+      !!this._authContext && !!authContext && authContext !== this._authContext;
 
     if (jwt !== this.currentJwt) {
       this.currentJwt = jwt;
       this.jwtReceivedAt = Date.now();
     }
-    if (authContext) this.authContext = authContext;
+    if (authContext) this._authContext = authContext;
 
     return authContextChanged;
   }
@@ -91,6 +91,11 @@ export class RuntimeClient {
   /** Returns the current JWT (used by SSE clients and other non-query consumers). */
   getJwt(): string | undefined {
     return this.currentJwt;
+  }
+
+  /** Returns how the client authenticates with the runtime, e.g. "magic" on public URLs. */
+  get authContext(): AuthContext {
+    return this._authContext;
   }
 
   get queryService() {
@@ -118,7 +123,7 @@ export class RuntimeClient {
    */
   private async waitForFreshJwt(): Promise<void> {
     // Embeds have a 24h backend-issued TTL; skip client-side expiry check
-    if (this.authContext === "embed") return;
+    if (this._authContext === "embed") return;
 
     const deadline = Date.now() + 60_000;
     let expiresAt = this.jwtReceivedAt + RUNTIME_ACCESS_TOKEN_DEFAULT_TTL;

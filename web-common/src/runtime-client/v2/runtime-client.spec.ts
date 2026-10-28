@@ -311,5 +311,12 @@ describe("RuntimeClient JWT refresh", () => {
       const changed = client.updateJwt("new-token", "user");
       expect(changed).toBe(false);
     });
+
+    it("exposes the auth context, including updates", () => {
+      const client = createClient({ jwt: "token", authContext: "magic" });
+      expect(client.authContext).toBe("magic");
+      client.updateJwt("token", "user");
+      expect(client.authContext).toBe("user");
+    });
   });
 });
