@@ -20,8 +20,6 @@ import (
 	"google.golang.org/protobuf/types/known/structpb"
 )
 
-const defaultTemperature = 0.1
-
 func init() {
 	drivers.Register("openai", driver{})
 	drivers.RegisterAsConnector("openai", driver{})
@@ -175,18 +173,6 @@ func (c *configProperties) getMaxOutputTokens() int64 {
 	return 8192
 }
 
-func (c *configProperties) getTemperature() *float64 {
-	if c.Temperature != nil {
-		return c.Temperature
-	}
-	// When reasoning is enabled, default temperature must be 1 (or omitted).
-	if c.ReasoningEffort != "" {
-		return nil
-	}
-	t := defaultTemperature
-	return &t
-}
-
 type openaiHandle struct {
 	client openai.Client
 	config *configProperties
@@ -325,8 +311,9 @@ func (o *openaiHandle) Complete(ctx context.Context, opts *drivers.CompleteOptio
 		Tools:               openaiTools,
 		MaxCompletionTokens: openai.Int(o.config.getMaxOutputTokens()),
 	}
-	if t := o.config.getTemperature(); t != nil {
-		params.Temperature = openai.Float(*t)
+	// Only set temperature if configured, since reasoning models reject it unless reasoning effort is "none".
+	if o.config.Temperature != nil {
+		params.Temperature = openai.Float(*o.config.Temperature)
 	}
 	if o.config.ReasoningEffort != "" {
 		params.ReasoningEffort = shared.ReasoningEffort(o.config.ReasoningEffort)

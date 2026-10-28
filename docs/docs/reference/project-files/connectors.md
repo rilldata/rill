@@ -785,7 +785,7 @@ _[number]_ - Maximum number of tokens in the response (e.g., 8192)
 
 ### `temperature`
 
-_[number]_ - Sampling temperature to use (e.g., 0.0)
+_[number]_ - Sampling temperature to use (e.g., 0.0). Defaults to the model's default. Leave unset for models that don't support it, such as Claude Opus 4.7 and later.
 
 ### `base_url`
 
@@ -827,7 +827,7 @@ _[number]_ - Maximum number of tokens in the response (e.g., 8192)
 
 ### `temperature`
 
-_[number]_ - Sampling temperature to use (0.0-2.0)
+_[number]_ - Sampling temperature to use (0.0-2.0). Defaults to the model's default, which Google recommends keeping for Gemini 3 models.
 
 ### `top_p`
 

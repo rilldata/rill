@@ -17,8 +17,6 @@ import (
 	"google.golang.org/protobuf/types/known/structpb"
 )
 
-const defaultTemperature = 0.1
-
 func init() {
 	drivers.Register("claude", driver{})
 	drivers.RegisterAsConnector("claude", driver{})
@@ -58,8 +56,7 @@ var spec = drivers.Spec{
 			Type:        drivers.NumberPropertyType,
 			Required:    false,
 			DisplayName: "Temperature",
-			Description: "Sampling temperature to use.",
-			Default:     "0.1",
+			Description: "Sampling temperature to use. Defaults to the model's default. Leave unset for models that don't support it, such as Claude Opus 4.7 and later.",
 		},
 		{
 			Key:         "base_url",
@@ -139,13 +136,6 @@ func (c *configProperties) getMaxTokens() int {
 		return c.MaxTokens
 	}
 	return 8192 // Default max tokens
-}
-
-func (c *configProperties) getTemperature() float64 {
-	if c.Temperature != nil {
-		return *c.Temperature
-	}
-	return defaultTemperature
 }
 
 type handle struct {
@@ -270,11 +260,14 @@ func (h *handle) Complete(ctx context.Context, opts *drivers.CompleteOptions) (*
 	}
 
 	params := anthropic.BetaMessageNewParams{
-		Model:       anthropic.Model(h.config.getModel()),
-		MaxTokens:   int64(h.config.getMaxTokens()),
-		Temperature: anthropic.Float(h.config.getTemperature()),
-		Messages:    msgs,
-		System:      system,
+		Model:     anthropic.Model(h.config.getModel()),
+		MaxTokens: int64(h.config.getMaxTokens()),
+		Messages:  msgs,
+		System:    system,
+	}
+	// Only set temperature if configured, since current models reject it (or reject non-default values).
+	if h.config.Temperature != nil {
+		params.Temperature = anthropic.Float(*h.config.Temperature)
 	}
 
 	if len(betaTools) > 0 {
@@ -336,6 +329,9 @@ func convertMessages(msgs []*aiv1.CompletionMessage) ([]anthropic.BetaTextBlockP
 		for _, block := range msg.Content {
 			switch block := block.BlockType.(type) {
 			case *aiv1.ContentBlock_Text:
+				if block.Text == "" {
+					continue
+				}
 				system = append(system, anthropic.BetaTextBlockParam{Text: block.Text})
 			default:
 				return nil, nil, fmt.Errorf("unsupported system message block type: %T", block)
@@ -359,6 +355,10 @@ func convertMessage(msg *aiv1.CompletionMessage) ([]anthropic.BetaMessageParam, 
 	for _, block := range msg.Content {
 		switch b := block.BlockType.(type) {
 		case *aiv1.ContentBlock_Text:
+			// Skip empty text blocks, which the API rejects (e.g. from conversations saved before thinking blocks were skipped).
+			if b.Text == "" {
+				continue
+			}
 			result = append(result, anthropic.BetaMessageParam{
 				Role: role,
 				Content: []anthropic.BetaContentBlockParamUnion{
@@ -434,6 +434,22 @@ func convertTool(tool *aiv1.Tool) (anthropic.BetaToolUnionParam, error) {
 		if err := json.Unmarshal([]byte(tool.InputSchema), &inputSchema); err != nil {
 			return anthropic.BetaToolUnionParam{}, fmt.Errorf("failed to parse schema for tool %q: %w", tool.Name, err)
 		}
+		// The SDK type only has fields for "type", "properties", and "required", and unmarshaling doesn't populate ExtraFields.
+		// So we copy the remaining keywords (such as "$defs", which "$ref"s point to) to ExtraFields to send them as-is.
+		var raw map[string]any
+		if err := json.Unmarshal([]byte(tool.InputSchema), &raw); err != nil {
+			return anthropic.BetaToolUnionParam{}, fmt.Errorf("failed to parse schema for tool %q: %w", tool.Name, err)
+		}
+		for k, v := range raw {
+			switch k {
+			case "type", "properties", "required":
+			default:
+				if inputSchema.ExtraFields == nil {
+					inputSchema.ExtraFields = make(map[string]any)
+				}
+				inputSchema.ExtraFields[k] = v
+			}
+		}
 	}
 
 	result := anthropic.BetaToolUnionParamOfTool(inputSchema, tool.Name)
@@ -451,12 +467,12 @@ func convertResponseMessage(msg *anthropic.BetaMessage) (*aiv1.CompletionMessage
 		block := msg.Content[idx] // Note: Separate line to avoid lint error about copying large structs
 		switch block.Type {
 		case "text":
+			// Skip empty text blocks, since the API rejects them when they're sent back in a later request.
+			if block.Text == "" {
+				continue
+			}
 			blocks = append(blocks, &aiv1.ContentBlock{
 				BlockType: &aiv1.ContentBlock_Text{Text: block.Text},
-			})
-		case "thinking":
-			blocks = append(blocks, &aiv1.ContentBlock{
-				BlockType: &aiv1.ContentBlock_Text{Text: block.Thinking},
 			})
 		case "tool_use":
 			cb, err := convertResponseToolUse(block)
@@ -465,7 +481,11 @@ func convertResponseMessage(msg *anthropic.BetaMessage) (*aiv1.CompletionMessage
 			}
 			blocks = append(blocks, cb)
 		default:
-			// We ignore other blocks for now
+			// We ignore other blocks for now.
+			// This includes thinking blocks, which current models return by default (with empty text unless display is "summarized").
+			// They must not be turned into text: the model's reasoning isn't part of its response, and empty text blocks are rejected.
+			// Note that dropping them means the model doesn't see its earlier reasoning in later turns;
+			// preserving them requires carrying thinking blocks (with signatures) through Rill's message format.
 		}
 	}
 

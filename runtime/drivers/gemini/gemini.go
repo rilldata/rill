@@ -18,8 +18,6 @@ import (
 	"google.golang.org/protobuf/types/known/structpb"
 )
 
-const defaultTemperature = 0.1
-
 func init() {
 	drivers.Register("gemini", driver{})
 	drivers.RegisterAsConnector("gemini", driver{})
@@ -73,7 +71,7 @@ var spec = drivers.Spec{
 			Type:        drivers.NumberPropertyType,
 			Required:    false,
 			DisplayName: "Temperature",
-			Description: "Sampling temperature to use (0.0-2.0).",
+			Description: "Sampling temperature to use (0.0-2.0). Defaults to the model's default, which Google recommends keeping for Gemini 3 models.",
 		},
 		{
 			Key:         "top_p",
@@ -153,13 +151,6 @@ func (c *configProperties) getModel() string {
 		return c.Model
 	}
 	return "gemini-3-flash-preview"
-}
-
-func (c *configProperties) getTemperature() float64 {
-	if c.Temperature != nil {
-		return *c.Temperature
-	}
-	return defaultTemperature
 }
 
 func (c *configProperties) getThinkingConfig() *genai.ThinkingConfig {
@@ -295,7 +286,10 @@ func (h *handle) Complete(ctx context.Context, opts *drivers.CompleteOptions) (*
 		MaxOutputTokens:   int32(h.config.MaxOutputTokens),
 		SystemInstruction: systemInstructions,
 		ThinkingConfig:    h.config.getThinkingConfig(),
-		Temperature:       genai.Ptr(float32(h.config.getTemperature())),
+	}
+	// Only set temperature if configured, since Google warns that lowering it on Gemini 3 models can cause looping and degraded performance.
+	if h.config.Temperature != nil {
+		genConfig.Temperature = genai.Ptr(float32(*h.config.Temperature))
 	}
 	if h.config.TopP > 0 {
 		genConfig.TopP = genai.Ptr(float32(h.config.TopP))

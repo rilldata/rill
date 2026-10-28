@@ -745,7 +745,7 @@ definitions:
               description: Maximum number of tokens in the response (e.g., 8192)
             temperature:
               type: number
-              description: Sampling temperature to use (e.g., 0.0)
+              description: Sampling temperature to use (e.g., 0.0). Defaults to the model's default. Leave unset for models that don't support it, such as Claude Opus 4.7 and later.
             base_url:
               type: string
               description: The base URL for the Claude API
@@ -781,7 +781,7 @@ definitions:
               description: Maximum number of tokens in the response (e.g., 8192)
             temperature:
               type: number
-              description: Sampling temperature to use (0.0-2.0)
+              description: Sampling temperature to use (0.0-2.0). Defaults to the model's default, which Google recommends keeping for Gemini 3 models.
             top_p:
               type: number
               description: Nucleus sampling parameter
