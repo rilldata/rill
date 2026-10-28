@@ -5047,6 +5047,170 @@ export class GetConversationResponse extends Message$1<GetConversationResponse> 
 }
 
 /**
+ * Request message for RuntimeService.UpdateConversation
+ *
+ * @generated from message rill.runtime.v1.UpdateConversationRequest
+ */
+export class UpdateConversationRequest extends Message$1<UpdateConversationRequest> {
+  /**
+   * @generated from field: string instance_id = 1;
+   */
+  instanceId = "";
+
+  /**
+   * @generated from field: string conversation_id = 2;
+   */
+  conversationId = "";
+
+  /**
+   * New title for the conversation. Not changed if unset.
+   *
+   * @generated from field: optional string title = 3;
+   */
+  title?: string;
+
+  constructor(data?: PartialMessage<UpdateConversationRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.UpdateConversationRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "conversation_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "title", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): UpdateConversationRequest {
+    return new UpdateConversationRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): UpdateConversationRequest {
+    return new UpdateConversationRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): UpdateConversationRequest {
+    return new UpdateConversationRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: UpdateConversationRequest | PlainMessage<UpdateConversationRequest> | undefined, b: UpdateConversationRequest | PlainMessage<UpdateConversationRequest> | undefined): boolean {
+    return proto3.util.equals(UpdateConversationRequest, a, b);
+  }
+}
+
+/**
+ * Response message for RuntimeService.UpdateConversation
+ *
+ * @generated from message rill.runtime.v1.UpdateConversationResponse
+ */
+export class UpdateConversationResponse extends Message$1<UpdateConversationResponse> {
+  constructor(data?: PartialMessage<UpdateConversationResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.UpdateConversationResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): UpdateConversationResponse {
+    return new UpdateConversationResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): UpdateConversationResponse {
+    return new UpdateConversationResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): UpdateConversationResponse {
+    return new UpdateConversationResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: UpdateConversationResponse | PlainMessage<UpdateConversationResponse> | undefined, b: UpdateConversationResponse | PlainMessage<UpdateConversationResponse> | undefined): boolean {
+    return proto3.util.equals(UpdateConversationResponse, a, b);
+  }
+}
+
+/**
+ * Request message for RuntimeService.DeleteConversation
+ *
+ * @generated from message rill.runtime.v1.DeleteConversationRequest
+ */
+export class DeleteConversationRequest extends Message$1<DeleteConversationRequest> {
+  /**
+   * @generated from field: string instance_id = 1;
+   */
+  instanceId = "";
+
+  /**
+   * @generated from field: string conversation_id = 2;
+   */
+  conversationId = "";
+
+  constructor(data?: PartialMessage<DeleteConversationRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.DeleteConversationRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "conversation_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): DeleteConversationRequest {
+    return new DeleteConversationRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): DeleteConversationRequest {
+    return new DeleteConversationRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): DeleteConversationRequest {
+    return new DeleteConversationRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: DeleteConversationRequest | PlainMessage<DeleteConversationRequest> | undefined, b: DeleteConversationRequest | PlainMessage<DeleteConversationRequest> | undefined): boolean {
+    return proto3.util.equals(DeleteConversationRequest, a, b);
+  }
+}
+
+/**
+ * Response message for RuntimeService.DeleteConversation
+ *
+ * @generated from message rill.runtime.v1.DeleteConversationResponse
+ */
+export class DeleteConversationResponse extends Message$1<DeleteConversationResponse> {
+  constructor(data?: PartialMessage<DeleteConversationResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.DeleteConversationResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): DeleteConversationResponse {
+    return new DeleteConversationResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): DeleteConversationResponse {
+    return new DeleteConversationResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): DeleteConversationResponse {
+    return new DeleteConversationResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: DeleteConversationResponse | PlainMessage<DeleteConversationResponse> | undefined, b: DeleteConversationResponse | PlainMessage<DeleteConversationResponse> | undefined): boolean {
+    return proto3.util.equals(DeleteConversationResponse, a, b);
+  }
+}
+
+/**
  * Request message for RuntimeService.ShareConversation
  *
  * @generated from message rill.runtime.v1.ShareConversationRequest

@@ -55,8 +55,11 @@ type CatalogStore interface {
 	FindAISessions(ctx context.Context, ownerID string, userAgentPattern string) ([]*AISession, error)
 	FindAISession(ctx context.Context, sessionID string) (*AISession, error)
 	InsertAISession(ctx context.Context, s *AISession) error
+	// UpdateAISession returns ErrNotFound if the session does not exist.
 	UpdateAISession(ctx context.Context, s *AISession) error
+	DeleteAISession(ctx context.Context, sessionID string) error
 	FindAIMessages(ctx context.Context, sessionID string) ([]*AIMessage, error)
+	// InsertAIMessage returns ErrNotFound if the message's session does not exist.
 	InsertAIMessage(ctx context.Context, m *AIMessage) error
 
 	FindAIMemories(ctx context.Context, ownerID string) ([]*AIMemory, error)

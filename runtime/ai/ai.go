@@ -607,6 +607,10 @@ func (s *BaseSession) Flush(ctx context.Context) error {
 	if s.dtoDirty {
 		err = catalog.UpdateAISession(ctx, s.dto)
 		if err != nil {
+			if errors.Is(err, drivers.ErrNotFound) {
+				s.discardDeleted()
+				return nil
+			}
 			return err
 		}
 		s.dtoDirty = false
@@ -632,8 +636,13 @@ func (s *BaseSession) Flush(ctx context.Context) error {
 				Content:     msg.Content,
 			})
 			if err != nil {
+				if errors.Is(err, drivers.ErrNotFound) {
+					s.discardDeleted()
+					return nil
+				}
 				return err
 			}
+			msg.dirty = false
 			content := "<redacted>"
 			if msg.ContentType == MessageContentTypeError {
 				content = msg.Content
@@ -653,6 +662,17 @@ func (s *BaseSession) Flush(ctx context.Context) error {
 	}
 
 	return nil
+}
+
+// discardDeleted drops pending changes for a session that was deleted from the catalog while in use.
+// This can happen if the owner deletes a conversation during an ongoing completion.
+func (s *BaseSession) discardDeleted() {
+	s.logger.Info("ai: discarding changes for deleted session")
+	for _, msg := range s.messages {
+		msg.dirty = false
+	}
+	s.dtoDirty = false
+	s.messagesDirty = false
 }
 
 func (s *BaseSession) ID() string {
