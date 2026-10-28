@@ -498,6 +498,9 @@ func convertMessage(msg *aiv1.CompletionMessage, callIDToName map[string]string)
 			}
 			parts = append(parts, part)
 
+		case *aiv1.ContentBlock_Reasoning:
+			// Skip reasoning from other providers, which Gemini can't use.
+
 		default:
 			return nil, fmt.Errorf("unsupported message block type: %T", block.BlockType)
 		}

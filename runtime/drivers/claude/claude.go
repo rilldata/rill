@@ -258,7 +258,7 @@ func (h *handle) Ping(ctx context.Context) error {
 
 // Complete implements drivers.AIService.
 func (h *handle) Complete(ctx context.Context, opts *drivers.CompleteOptions) (*drivers.CompleteResult, error) {
-	system, msgs, err := convertMessages(opts.Messages)
+	system, msgs, err := convertMessages(opts.Messages, len(opts.Tools) > 0)
 	if err != nil {
 		return nil, fmt.Errorf("failed to convert messages: %w", err)
 	}
@@ -342,13 +342,17 @@ func (h *handle) Complete(ctx context.Context, opts *drivers.CompleteOptions) (*
 
 // convertMessages converts Rill messages to Claude beta message format.
 // It returns system blocks separately because Claude's API treats them differently.
-func convertMessages(msgs []*aiv1.CompletionMessage) ([]anthropic.BetaTextBlockParam, []anthropic.BetaMessageParam, error) {
+//
+// Reasoning blocks are passed back as thinking blocks, which Claude requires within a tool call loop.
+// But a thinking block is bound to the tools offered when it was produced,
+// so if no tools are offered (e.g. on the final iteration of a tool call loop), all reasoning blocks are removed.
+func convertMessages(msgs []*aiv1.CompletionMessage, toolsOffered bool) ([]anthropic.BetaTextBlockParam, []anthropic.BetaMessageParam, error) {
 	var system []anthropic.BetaTextBlockParam
 	var other []anthropic.BetaMessageParam
 
 	for _, msg := range msgs {
 		if msg.Role != "system" {
-			converted, err := convertMessage(msg)
+			converted, err := convertMessage(msg, toolsOffered)
 			if err != nil {
 				return nil, nil, err
 			}
@@ -374,7 +378,7 @@ func convertMessages(msgs []*aiv1.CompletionMessage) ([]anthropic.BetaTextBlockP
 
 // convertMessage converts a single Rill message to Claude beta messages.
 // Tool results become separate user messages per Claude's API requirements.
-func convertMessage(msg *aiv1.CompletionMessage) ([]anthropic.BetaMessageParam, error) {
+func convertMessage(msg *aiv1.CompletionMessage, toolsOffered bool) ([]anthropic.BetaMessageParam, error) {
 	var result []anthropic.BetaMessageParam
 
 	role := anthropic.BetaMessageParamRoleUser
@@ -385,7 +389,7 @@ func convertMessage(msg *aiv1.CompletionMessage) ([]anthropic.BetaMessageParam, 
 	for _, block := range msg.Content {
 		switch b := block.BlockType.(type) {
 		case *aiv1.ContentBlock_Text:
-			// Skip empty text blocks, which the API rejects (e.g. from conversations saved before thinking blocks were skipped).
+			// Skip empty text blocks, which the API rejects (e.g. from conversations saved when thinking blocks were turned into text).
 			if b.Text == "" {
 				continue
 			}
@@ -394,6 +398,18 @@ func convertMessage(msg *aiv1.CompletionMessage) ([]anthropic.BetaMessageParam, 
 				Content: []anthropic.BetaContentBlockParamUnion{
 					anthropic.NewBetaTextBlock(b.Text),
 				},
+			})
+		case *aiv1.ContentBlock_Reasoning:
+			if !toolsOffered {
+				continue
+			}
+			thinking := anthropic.NewBetaThinkingBlock(b.Reasoning.Signature, b.Reasoning.Text)
+			if b.Reasoning.RedactedData != "" {
+				thinking = anthropic.NewBetaRedactedThinkingBlock(b.Reasoning.RedactedData)
+			}
+			result = append(result, anthropic.BetaMessageParam{
+				Role:    anthropic.BetaMessageParamRoleAssistant, // NOTE: Hard-coded as assistant
+				Content: []anthropic.BetaContentBlockParamUnion{thinking},
 			})
 		case *aiv1.ContentBlock_ToolCall:
 			result = append(result, anthropic.BetaMessageParam{
@@ -504,6 +520,16 @@ func convertResponseMessage(msg *anthropic.BetaMessage) (*aiv1.CompletionMessage
 			blocks = append(blocks, &aiv1.ContentBlock{
 				BlockType: &aiv1.ContentBlock_Text{Text: block.Text},
 			})
+		case "thinking":
+			// Current models return thinking blocks by default, with empty text unless display is "summarized".
+			// They're kept with their signature, since they must be passed back unmodified within a tool call loop.
+			blocks = append(blocks, &aiv1.ContentBlock{
+				BlockType: &aiv1.ContentBlock_Reasoning{Reasoning: &aiv1.Reasoning{Text: block.Thinking, Signature: block.Signature}},
+			})
+		case "redacted_thinking":
+			blocks = append(blocks, &aiv1.ContentBlock{
+				BlockType: &aiv1.ContentBlock_Reasoning{Reasoning: &aiv1.Reasoning{RedactedData: block.Data}},
+			})
 		case "tool_use":
 			cb, err := convertResponseToolUse(block)
 			if err != nil {
@@ -511,11 +537,7 @@ func convertResponseMessage(msg *anthropic.BetaMessage) (*aiv1.CompletionMessage
 			}
 			blocks = append(blocks, cb)
 		default:
-			// We ignore other blocks for now.
-			// This includes thinking blocks, which current models return by default (with empty text unless display is "summarized").
-			// They must not be turned into text: the model's reasoning isn't part of its response, and empty text blocks are rejected.
-			// Note that dropping them means the model doesn't see its earlier reasoning in later turns;
-			// preserving them requires carrying thinking blocks (with signatures) through Rill's message format.
+			// We ignore other blocks for now
 		}
 	}
 

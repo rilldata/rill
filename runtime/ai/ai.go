@@ -1452,6 +1452,13 @@ func (s *Session) Complete(ctx context.Context, name string, out any, opts *Comp
 			// TODO: How to do durable execution here?
 			for _, block := range res.Message.Content {
 				switch block := block.BlockType.(type) {
+				case *aiv1.ContentBlock_Reasoning:
+					// Some providers require the reasoning to be passed back within the tool call loop, so keep it for the next iterations.
+					// It isn't added to the session, since it's only needed until the loop completes.
+					messages = append(messages, &aiv1.CompletionMessage{
+						Role:    string(RoleAssistant),
+						Content: []*aiv1.ContentBlock{{BlockType: block}},
+					})
 				case *aiv1.ContentBlock_Text:
 					msg := s.AddMessage(&AddMessageOptions{
 						Role:        RoleAssistant,
@@ -1523,6 +1530,8 @@ func (s *Session) Complete(ctx context.Context, name string, out any, opts *Comp
 				} else if outputSchema != nil {
 					outVal = json.RawMessage(block.Text)
 				}
+			case *aiv1.ContentBlock_Reasoning:
+				// Not needed after the loop completes.
 			default:
 				return nil, fmt.Errorf("unexpected result block type: %T", block)
 			}
@@ -1770,6 +1779,14 @@ func maybeTruncateMessages(messages []*aiv1.CompletionMessage) []*aiv1.Completio
 			}
 		}
 		return false
+	})
+
+	// Remove reasoning blocks, since providers that require them (e.g. Claude) reject them after the history they were produced from has changed.
+	// Removing all of them is allowed; removing only some of them is not.
+	result = slices.DeleteFunc(result, func(msg *aiv1.CompletionMessage) bool {
+		return slices.ContainsFunc(msg.Content, func(block *aiv1.ContentBlock) bool {
+			return block.GetReasoning() != nil
+		})
 	})
 
 	return result

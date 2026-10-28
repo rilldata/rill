@@ -22,6 +22,7 @@ func (h *Handle) Complete(ctx context.Context, opts *drivers.CompleteOptions) (*
 		Messages:         opts.Messages,
 		Tools:            opts.Tools,
 		OutputJsonSchema: outputJSONSchema,
+		IncludeReasoning: true,
 	})
 	if err != nil {
 		return nil, err
