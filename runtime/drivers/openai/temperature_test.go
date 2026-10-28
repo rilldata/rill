@@ -20,9 +20,14 @@ func TestTemperature(t *testing.T) {
 		want   any
 	}{
 		{
-			// Reasoning models reject temperature unless reasoning effort is "none", so it's only sent if configured.
 			name:   "default",
 			config: map[string]any{},
+			want:   0.1,
+		},
+		{
+			// Reasoning models reject temperature unless reasoning effort is "none", so it's omitted when reasoning effort is set.
+			name:   "reasoning effort",
+			config: map[string]any{"reasoning_effort": "medium"},
 			want:   nil,
 		},
 		{

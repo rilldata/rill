@@ -703,7 +703,7 @@ definitions:
               description: "Maximum number of tokens to generate in the completion (default: 8192)"
             reasoning_effort:
               type: string
-              description: "Constrains effort on reasoning for reasoning models (e.g., 'low', 'medium', 'high')"
+              description: "Constrains effort on reasoning for reasoning models (e.g., 'low', 'medium', 'high'). Set this when using a model that reasons by default, since Rill otherwise sends a temperature of 0.1, which reasoning models reject."
             base_url:
               type: string
               description: The base URL for the OpenAI API (e.g., 'https://api.openai.com/v1')

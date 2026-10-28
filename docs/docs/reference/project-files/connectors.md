@@ -738,7 +738,7 @@ _[number]_ - Maximum number of tokens to generate in the completion (default: 81
 
 ### `reasoning_effort`
 
-_[string]_ - Constrains effort on reasoning for reasoning models (e.g., 'low', 'medium', 'high')
+_[string]_ - Constrains effort on reasoning for reasoning models (e.g., 'low', 'medium', 'high'). Set this when using a model that reasons by default, since Rill otherwise sends a temperature of 0.1, which reasoning models reject.
 
 ### `base_url`
 
