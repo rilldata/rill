@@ -2,6 +2,7 @@ package claude
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -34,26 +35,18 @@ func TestComplete(t *testing.T) {
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			var body map[string]any
-			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				data, err := io.ReadAll(r.Body)
-				require.NoError(t, err)
-				require.NoError(t, json.Unmarshal(data, &body))
-				w.Header().Set("Content-Type", "application/json")
-				// Current models return thinking blocks by default, with empty text unless display is "summarized".
-				_, _ = w.Write([]byte(`{
-					"id": "msg_1", "type": "message", "role": "assistant", "model": "test-model",
-					"content": [
-						{"type": "thinking", "thinking": "", "signature": "sig"},
-						{"type": "text", "text": "Revenue is 100."}
-					],
-					"stop_reason": "end_turn",
-					"usage": {"input_tokens": 10, "output_tokens": 3}
-				}`))
-			}))
-			defer srv.Close()
+			// Current models return thinking blocks by default, with empty text unless display is "summarized".
+			body, url := newFakeClaude(t, `{
+				"id": "msg_1", "type": "message", "role": "assistant", "model": "test-model",
+				"content": [
+					{"type": "thinking", "thinking": "", "signature": "sig"},
+					{"type": "text", "text": "Revenue is 100."}
+				],
+				"stop_reason": "end_turn",
+				"usage": {"input_tokens": 10, "output_tokens": 3}
+			}`)
 
-			cfg := map[string]any{"api_key": "test-key", "base_url": srv.URL}
+			cfg := map[string]any{"api_key": "test-key", "base_url": url}
 			for k, v := range tc.config {
 				cfg[k] = v
 			}
@@ -73,14 +66,14 @@ func TestComplete(t *testing.T) {
 			require.NoError(t, err)
 
 			// Temperature is only sent if configured.
-			require.Equal(t, tc.wantTemperature, body["temperature"])
+			require.Equal(t, tc.wantTemperature, (*body)["temperature"])
 
 			// The empty text block isn't sent.
-			msgs := body["messages"].([]any)
+			msgs := (*body)["messages"].([]any)
 			require.Len(t, msgs, 1)
 
 			// The tool schema keeps $defs, which the $ref parameters point to.
-			schema := body["tools"].([]any)[0].(map[string]any)["input_schema"].(map[string]any)
+			schema := (*body)["tools"].([]any)[0].(map[string]any)["input_schema"].(map[string]any)
 			require.Contains(t, schema["$defs"], "TimeRange")
 			timeRange := schema["properties"].(map[string]any)["time_range"].(map[string]any)
 			require.Equal(t, "#/$defs/TimeRange", timeRange["$ref"])
@@ -90,6 +83,69 @@ func TestComplete(t *testing.T) {
 			require.Equal(t, "Revenue is 100.", res.Message.Content[0].GetText())
 		})
 	}
+}
+
+func TestPromptCaching(t *testing.T) {
+	for _, enabled := range []bool{false, true} {
+		t.Run(fmt.Sprintf("enabled=%v", enabled), func(t *testing.T) {
+			body, url := newFakeClaude(t, `{
+				"id": "msg_1", "type": "message", "role": "assistant", "model": "test-model",
+				"content": [{"type": "text", "text": "hi"}],
+				"stop_reason": "end_turn",
+				"usage": {"input_tokens": 10, "output_tokens": 3, "cache_read_input_tokens": 100, "cache_creation_input_tokens": 50}
+			}`)
+
+			h, err := driver{}.Open(t.Context(), "", "default", map[string]any{"api_key": "test-key", "base_url": url, "prompt_caching": enabled}, nil, nil, zap.NewNop())
+			require.NoError(t, err)
+			ai, _ := h.AsAI("default")
+			res, err := ai.Complete(t.Context(), &drivers.CompleteOptions{
+				Messages: []*aiv1.CompletionMessage{
+					{Role: "system", Content: []*aiv1.ContentBlock{textBlock("You are an analyst.")}},
+					{Role: "user", Content: []*aiv1.ContentBlock{textBlock("What is revenue?")}},
+				},
+				Tools: []*aiv1.Tool{{Name: "first"}, {Name: "last"}},
+			})
+			require.NoError(t, err)
+
+			// Cache reads and writes are reported regardless of whether caching is enabled.
+			require.Equal(t, 100, res.CachedInputTokens)
+			require.Equal(t, 50, res.CacheWriteInputTokens)
+
+			// If enabled, the last tool, system block, and message block are marked as cache breakpoints.
+			tools := (*body)["tools"].([]any)
+			system := (*body)["system"].([]any)
+			msgs := (*body)["messages"].([]any)
+			lastMsgContent := msgs[len(msgs)-1].(map[string]any)["content"].([]any)
+			marked := []any{
+				tools[len(tools)-1],
+				system[len(system)-1],
+				lastMsgContent[len(lastMsgContent)-1],
+			}
+			for _, block := range marked {
+				if enabled {
+					require.Equal(t, map[string]any{"type": "ephemeral"}, block.(map[string]any)["cache_control"])
+				} else {
+					require.NotContains(t, block, "cache_control")
+				}
+			}
+			require.NotContains(t, tools[0], "cache_control")
+		})
+	}
+}
+
+// newFakeClaude starts a fake Claude API server that returns the given response.
+// It returns a pointer to the decoded body of the last request, and the server's URL to use as the base URL.
+func newFakeClaude(t *testing.T, response string) (*map[string]any, string) {
+	body := &map[string]any{}
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		data, err := io.ReadAll(r.Body)
+		require.NoError(t, err)
+		require.NoError(t, json.Unmarshal(data, body))
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(response))
+	}))
+	t.Cleanup(srv.Close)
+	return body, srv.URL
 }
 
 func textBlock(s string) *aiv1.ContentBlock {

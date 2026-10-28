@@ -315,6 +315,8 @@ export interface V1CompleteResponse {
   outputTokens?: number;
   /** Number of cache-read (discounted) input tokens; a subset of input_tokens. */
   cachedInputTokens?: number;
+  /** Number of input tokens written to the prompt cache, which some providers (e.g. Claude) bill at a premium. */
+  cacheWriteInputTokens?: number;
   /** The LLM provider that served the completion (e.g. "claude", "openai", "gemini"). */
   provider?: string;
 }

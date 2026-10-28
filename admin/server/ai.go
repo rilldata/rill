@@ -65,6 +65,7 @@ func (s *Server) Complete(ctx context.Context, req *adminv1.CompleteRequest) (*a
 		zap.Int("output_messages", len(res.Message.Content)),
 		zap.Int("input_tokens", res.InputTokens),
 		zap.Int("cached_input_tokens", res.CachedInputTokens),
+		zap.Int("cache_write_input_tokens", res.CacheWriteInputTokens),
 		zap.Int("output_tokens", res.OutputTokens),
 		observability.ZapCtx(ctx),
 	)
@@ -78,11 +79,12 @@ func (s *Server) Complete(ctx context.Context, req *adminv1.CompleteRequest) (*a
 
 	// Any tool use response will be passed to the client (the runtime server) for execution.
 	return &adminv1.CompleteResponse{
-		Message:           responseMessage,
-		Provider:          res.Provider,
-		InputTokens:       uint32(res.InputTokens),
-		OutputTokens:      uint32(res.OutputTokens),
-		CachedInputTokens: uint32(res.CachedInputTokens),
+		Message:               responseMessage,
+		Provider:              res.Provider,
+		InputTokens:           uint32(res.InputTokens),
+		OutputTokens:          uint32(res.OutputTokens),
+		CachedInputTokens:     uint32(res.CachedInputTokens),
+		CacheWriteInputTokens: uint32(res.CacheWriteInputTokens),
 	}, nil
 }
 

@@ -791,6 +791,10 @@ _[number]_ - Sampling temperature to use (e.g., 0.0). Defaults to the model's de
 
 _[string]_ - The base URL for the Claude API
 
+### `prompt_caching`
+
+_[boolean]_ - Cache the tools, system prompt, and conversation between requests (default false). Cache reads cost a fraction of the input price, which typically lowers cost for AI chat, but cache writes cost more than the input price.
+
 ```yaml
 # Example: Claude connector configuration
 type: connector

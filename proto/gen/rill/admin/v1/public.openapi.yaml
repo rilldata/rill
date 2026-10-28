@@ -398,6 +398,10 @@ components:
             type: object
         v1CompleteResponse:
             properties:
+                cacheWriteInputTokens:
+                    description: Number of input tokens written to the prompt cache, which some providers (e.g. Claude) bill at a premium.
+                    format: int64
+                    type: integer
                 cachedInputTokens:
                     description: Number of cache-read (discounted) input tokens; a subset of input_tokens.
                     format: int64

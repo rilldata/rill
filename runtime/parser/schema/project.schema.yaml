@@ -749,6 +749,9 @@ definitions:
             base_url:
               type: string
               description: The base URL for the Claude API
+            prompt_caching:
+              type: boolean
+              description: Cache the tools, system prompt, and conversation between requests (default false). Cache reads cost a fraction of the input price, which typically lowers cost for AI chat, but cache writes cost more than the input price.
           examples:
             - # Example: Claude connector configuration
               type: connector

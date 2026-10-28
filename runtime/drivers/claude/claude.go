@@ -66,6 +66,14 @@ var spec = drivers.Spec{
 			Description: "Custom base URL for the Claude API.",
 			Placeholder: "",
 		},
+		{
+			Key:         "prompt_caching",
+			Type:        drivers.BooleanPropertyType,
+			Required:    false,
+			DisplayName: "Prompt Caching",
+			Description: "Cache the tools, system prompt, and conversation between requests. Cache reads cost a fraction of the input price, but cache writes cost more than it.",
+			Default:     "false",
+		},
 	},
 	ImplementsAI: true,
 }
@@ -117,11 +125,12 @@ func (d driver) TertiarySourceConnectors(ctx context.Context, srcProps map[strin
 }
 
 type configProperties struct {
-	APIKey      string   `mapstructure:"api_key"`
-	Model       string   `mapstructure:"model"`
-	MaxTokens   int      `mapstructure:"max_tokens"`
-	Temperature *float64 `mapstructure:"temperature"`
-	BaseURL     string   `mapstructure:"base_url"`
+	APIKey        string   `mapstructure:"api_key"`
+	Model         string   `mapstructure:"model"`
+	MaxTokens     int      `mapstructure:"max_tokens"`
+	Temperature   *float64 `mapstructure:"temperature"`
+	BaseURL       string   `mapstructure:"base_url"`
+	PromptCaching bool     `mapstructure:"prompt_caching"`
 }
 
 func (c *configProperties) getModel() string {
@@ -290,6 +299,26 @@ func (h *handle) Complete(ctx context.Context, opts *drivers.CompleteOptions) (*
 		params.OutputFormat = anthropic.BetaJSONSchemaOutputFormat(schemaMap)
 	}
 
+	// The tools, system prompt, and conversation are resent on every step of a tool loop.
+	// If enabled, mark the end of each as a cache breakpoint, so later steps read them from the prompt cache.
+	if h.config.PromptCaching {
+		if n := len(params.Tools); n > 0 {
+			if cc := params.Tools[n-1].GetCacheControl(); cc != nil {
+				*cc = anthropic.NewBetaCacheControlEphemeralParam()
+			}
+		}
+		if n := len(params.System); n > 0 {
+			params.System[n-1].CacheControl = anthropic.NewBetaCacheControlEphemeralParam()
+		}
+		if n := len(params.Messages); n > 0 {
+			if content := params.Messages[n-1].Content; len(content) > 0 {
+				if cc := content[len(content)-1].GetCacheControl(); cc != nil {
+					*cc = anthropic.NewBetaCacheControlEphemeralParam()
+				}
+			}
+		}
+	}
+
 	res, err := h.client.Beta.Messages.New(ctx, params)
 	if err != nil {
 		return nil, err
@@ -302,11 +331,12 @@ func (h *handle) Complete(ctx context.Context, opts *drivers.CompleteOptions) (*
 
 	// Claude reports cache-read and cache-creation tokens separately from InputTokens.
 	return &drivers.CompleteResult{
-		Message:           resMsgs,
-		Provider:          "claude",
-		InputTokens:       int(res.Usage.InputTokens),
-		CachedInputTokens: int(res.Usage.CacheReadInputTokens),
-		OutputTokens:      int(res.Usage.OutputTokens),
+		Message:               resMsgs,
+		Provider:              "claude",
+		InputTokens:           int(res.Usage.InputTokens),
+		CachedInputTokens:     int(res.Usage.CacheReadInputTokens),
+		CacheWriteInputTokens: int(res.Usage.CacheCreationInputTokens),
+		OutputTokens:          int(res.Usage.OutputTokens),
 	}, nil
 }
 

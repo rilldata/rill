@@ -34,6 +34,8 @@ message CompleteResponse {
   uint32 output_tokens = 3;
   // Number of cache-read (discounted) input tokens; a subset of input_tokens.
   uint32 cached_input_tokens = 4;
+  // Number of input tokens written to the prompt cache, which some providers (e.g. Claude) bill at a premium.
+  uint32 cache_write_input_tokens = 6;
   // The LLM provider that served the completion (e.g. "claude", "openai", "gemini").
   string provider = 5;
 }

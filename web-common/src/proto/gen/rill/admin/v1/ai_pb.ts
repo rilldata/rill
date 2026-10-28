@@ -95,6 +95,13 @@ export class CompleteResponse extends Message<CompleteResponse> {
   cachedInputTokens = 0;
 
   /**
+   * Number of input tokens written to the prompt cache, which some providers (e.g. Claude) bill at a premium.
+   *
+   * @generated from field: uint32 cache_write_input_tokens = 6;
+   */
+  cacheWriteInputTokens = 0;
+
+  /**
    * The LLM provider that served the completion (e.g. "claude", "openai", "gemini").
    *
    * @generated from field: string provider = 5;
@@ -113,6 +120,7 @@ export class CompleteResponse extends Message<CompleteResponse> {
     { no: 2, name: "input_tokens", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
     { no: 3, name: "output_tokens", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
     { no: 4, name: "cached_input_tokens", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
+    { no: 6, name: "cache_write_input_tokens", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
     { no: 5, name: "provider", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 

@@ -1312,7 +1312,7 @@ func (s *Session) Complete(ctx context.Context, name string, out any, opts *Comp
 		// TODO: For durable execution, add messages from current scope.
 
 		// Telemetry
-		var iterations, truncations, inputTokens, outputTokens, cachedInputTokens int
+		var iterations, truncations, inputTokens, outputTokens, cachedInputTokens, cacheWriteInputTokens int
 		var provider string
 		s.logger.Debug("completion started",
 			zap.Int("initial_messages", len(messages)),
@@ -1347,13 +1347,15 @@ func (s *Session) Complete(ctx context.Context, name string, out any, opts *Comp
 				attribute.Int("input_tokens", inputTokens),
 				attribute.Int("output_tokens", outputTokens),
 				attribute.Int("cached_input_tokens", cachedInputTokens),
+				attribute.Int("cache_write_input_tokens", cacheWriteInputTokens),
 				attribute.String("provider", provider),
 			)
 
 			// Emit billable token metrics. Tagged with the request source, the LLM provider, and whether the completion used
 			// the Rill-managed AI connector, so the billable scope is decided downstream in SQL (emitted for every completion,
 			// unlike tool_call). Values are reported as the provider returns them; cached_input_tokens is emitted separately
-			// so billing can price cached input at the cheaper rate (its relationship to input_tokens is provider-specific).
+			// so billing can price cached input at the cheaper rate (its relationship to input_tokens is provider-specific),
+			// and cache_write_input_tokens so billing can price cache writes at their premium rate.
 			source := attribute.String("source", string(runtime.RequestSourceFromContext(ctx)))
 			managedAI := attribute.Bool("managed_ai", s.managedAI)
 			providerAttr := attribute.String("provider", provider)
@@ -1365,6 +1367,9 @@ func (s *Session) Complete(ctx context.Context, name string, out any, opts *Comp
 			}
 			if cachedInputTokens > 0 {
 				s.activity.RecordMetric(ctx, "cached_input_tokens", float64(cachedInputTokens), source, managedAI, providerAttr)
+			}
+			if cacheWriteInputTokens > 0 {
+				s.activity.RecordMetric(ctx, "cache_write_input_tokens", float64(cacheWriteInputTokens), source, managedAI, providerAttr)
 			}
 		}()
 
@@ -1408,6 +1413,7 @@ func (s *Session) Complete(ctx context.Context, name string, out any, opts *Comp
 				inputTokens += res.InputTokens
 				outputTokens += res.OutputTokens
 				cachedInputTokens += res.CachedInputTokens
+				cacheWriteInputTokens += res.CacheWriteInputTokens
 				if res.Provider != "" {
 					provider = res.Provider
 				}
