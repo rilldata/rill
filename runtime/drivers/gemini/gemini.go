@@ -18,8 +18,6 @@ import (
 	"google.golang.org/protobuf/types/known/structpb"
 )
 
-const defaultTemperature = 0.1
-
 func init() {
 	drivers.Register("gemini", driver{})
 	drivers.RegisterAsConnector("gemini", driver{})
@@ -155,11 +153,12 @@ func (c *configProperties) getModel() string {
 	return "gemini-3-flash-preview"
 }
 
-func (c *configProperties) getTemperature() float64 {
-	if c.Temperature != nil {
-		return *c.Temperature
+// getTemperature returns nil unless configured, so the model's default applies: Gemini 3 models are tuned for it.
+func (c *configProperties) getTemperature() *float32 {
+	if c.Temperature == nil {
+		return nil
 	}
-	return defaultTemperature
+	return genai.Ptr(float32(*c.Temperature))
 }
 
 func (c *configProperties) getThinkingConfig() *genai.ThinkingConfig {
@@ -295,7 +294,7 @@ func (h *handle) Complete(ctx context.Context, opts *drivers.CompleteOptions) (*
 		MaxOutputTokens:   int32(h.config.MaxOutputTokens),
 		SystemInstruction: systemInstructions,
 		ThinkingConfig:    h.config.getThinkingConfig(),
-		Temperature:       genai.Ptr(float32(h.config.getTemperature())),
+		Temperature:       h.config.getTemperature(),
 	}
 	if h.config.TopP > 0 {
 		genConfig.TopP = genai.Ptr(float32(h.config.TopP))
