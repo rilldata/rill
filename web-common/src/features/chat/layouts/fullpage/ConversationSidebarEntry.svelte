@@ -61,6 +61,7 @@
     <div class="conversation-title-editor">
       <InlineTitleEditor
         value={stripPartialChatReference(conversation.title ?? "")}
+        size="xs"
         onSave={rename}
         onCancel={() => (editing = false)}
       />

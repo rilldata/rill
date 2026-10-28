@@ -9,11 +9,13 @@
 
   let {
     value,
+    size,
     onSave,
     onCancel,
   }: {
     // Raw title, with chat references as markup.
     value: string;
+    size: "xs" | "sm";
     onSave: (title: string) => void;
     onCancel: () => void;
   } = $props();
@@ -65,7 +67,11 @@
 <svelte:document onpointerdowncapture={handleDocumentPointerDown} />
 
 <!-- svelte-ignore a11y_no_static_element_interactions -->
-<div class="title-editor" bind:this={container} onkeydown={handleKeyDown}></div>
+<div
+  class="title-editor {size}"
+  bind:this={container}
+  onkeydown={handleKeyDown}
+></div>
 
 <style lang="postcss">
   .title-editor {
@@ -74,5 +80,13 @@
 
   .title-editor :global(.tiptap) {
     @apply text-xs leading-normal text-fg-primary;
+  }
+
+  .title-editor.xs :global(.tiptap) {
+    @apply text-xs;
+  }
+
+  .title-editor.sm :global(.tiptap) {
+    @apply text-sm;
   }
 </style>

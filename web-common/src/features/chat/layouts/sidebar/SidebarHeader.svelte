@@ -82,6 +82,7 @@
     <div class="chatbot-title-editor">
       <InlineTitleEditor
         value={stripPartialChatReference(currentConversationDto.title ?? "")}
+        size="sm"
         onSave={handleRename}
         onCancel={() => (editing = false)}
       />
@@ -153,12 +154,11 @@
   }
 
   .chatbot-title {
-    @apply flex min-w-0 text-fg-secondary text-sm font-semibold;
-    max-width: 300px;
+    @apply flex min-w-0 max-w-80 text-fg-secondary text-sm font-semibold;
   }
 
   .chatbot-title-editor {
-    @apply flex-1 min-w-0;
+    @apply flex-1 min-w-0 min-h-6;
   }
 
   .chatbot-header-actions {
