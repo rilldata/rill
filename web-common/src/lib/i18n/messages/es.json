@@ -2100,6 +2100,81 @@
   "status_action_view_partitions": "Ver particiones",
   "status_all_statuses": "Todos los estados",
   "status_all_types": "Todos los tipos",
+  "status_backfill_back": "Volver a particiones",
+  "status_backfill_button": "Rellenar rango",
+  "status_backfill_concurrency_configured": "Desde partitions_concurrency en el archivo del modelo",
+  "status_backfill_concurrency_label": "Concurrencia",
+  "status_backfill_concurrency_observed": "Desde la última ejecución con particiones del modelo",
+  "status_backfill_concurrency_unknown": "Valor predeterminado del conector; se muestra tras la próxima ejecución del modelo",
+  "status_backfill_concurrency_value": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "{count} partición a la vez",
+        "countPlural=other": "{count} particiones a la vez"
+      }
+    }
+  ],
+  "status_backfill_confirm": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "Rellenar {count} partición",
+        "countPlural=other": "Rellenar {count} particiones"
+      }
+    }
+  ],
+  "status_backfill_end_label": "Fin (inclusive)",
+  "status_backfill_error_missing": "Elige un campo e introduce un inicio y un fin.",
+  "status_backfill_error_start_after_end": "El inicio debe ser menor o igual que el fin.",
+  "status_backfill_failed": "No se pudo iniciar el relleno: {message}",
+  "status_backfill_field_label": "Campo de partición",
+  "status_backfill_field_placeholder": "Selecciona un campo",
+  "status_backfill_matched": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "{count} partición coincide con este rango",
+        "countPlural=other": "{count} particiones coinciden con este rango"
+      }
+    }
+  ],
+  "status_backfill_no_match": "Ninguna partición coincide con este rango.",
+  "status_backfill_pending_note": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "{count} partición pendiente más también se ejecutará con este relleno.",
+        "countPlural=other": "{count} particiones pendientes más también se ejecutarán con este relleno."
+      }
+    }
+  ],
+  "status_backfill_preview": "Previsualizar particiones",
+  "status_backfill_retry_attempts": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "{count} intento por partición",
+        "countPlural=other": "{count} intentos por partición"
+      }
+    }
+  ],
+  "status_backfill_retry_backoff": "espera exponencial",
+  "status_backfill_retry_configured": "Desde retry en el archivo del modelo",
+  "status_backfill_retry_default": "Valores predeterminados del runtime",
+  "status_backfill_retry_delay": "espera de {seconds}s",
+  "status_backfill_retry_fixed": "espera fija",
+  "status_backfill_retry_label": "Reintentos",
+  "status_backfill_retry_matches": "Reintenta errores que coinciden con: {patterns}",
+  "status_backfill_settings_hint": "Solo lectura. Cámbialos en el archivo del modelo.",
+  "status_backfill_settings_title": "Configuración de ejecución",
+  "status_backfill_start_label": "Inicio (inclusive)",
+  "status_backfill_title": "Rellenar rango de particiones",
   "status_cancel": "Cancelar",
   "status_checking_errors": "Verificando errores...",
   "status_clear": "Limpiar",

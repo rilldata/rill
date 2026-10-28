@@ -2091,6 +2091,81 @@
   "status_action_view_partitions": "View Partitions",
   "status_all_statuses": "All statuses",
   "status_all_types": "All types",
+  "status_backfill_back": "Back to partitions",
+  "status_backfill_button": "Backfill range",
+  "status_backfill_concurrency_configured": "From partitions_concurrency in the model file",
+  "status_backfill_concurrency_label": "Concurrency",
+  "status_backfill_concurrency_observed": "From the model's last partitioned run",
+  "status_backfill_concurrency_unknown": "Connector default; shown after the model's next run",
+  "status_backfill_concurrency_value": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "{count} partition at a time",
+        "countPlural=other": "{count} partitions at a time"
+      }
+    }
+  ],
+  "status_backfill_confirm": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "Backfill {count} partition",
+        "countPlural=other": "Backfill {count} partitions"
+      }
+    }
+  ],
+  "status_backfill_end_label": "End (inclusive)",
+  "status_backfill_error_missing": "Choose a field and enter a start and an end.",
+  "status_backfill_error_start_after_end": "Start must be less than or equal to end.",
+  "status_backfill_failed": "Failed to start the backfill: {message}",
+  "status_backfill_field_label": "Partition field",
+  "status_backfill_field_placeholder": "Select a field",
+  "status_backfill_matched": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "{count} partition matches this range",
+        "countPlural=other": "{count} partitions match this range"
+      }
+    }
+  ],
+  "status_backfill_no_match": "No partitions match this range.",
+  "status_backfill_pending_note": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "{count} other pending partition will also run with this backfill.",
+        "countPlural=other": "{count} other pending partitions will also run with this backfill."
+      }
+    }
+  ],
+  "status_backfill_preview": "Preview partitions",
+  "status_backfill_retry_attempts": [
+    {
+      "declarations": ["input count", "local countPlural = count: plural"],
+      "selectors": ["countPlural"],
+      "match": {
+        "countPlural=one": "{count} attempt per partition",
+        "countPlural=other": "{count} attempts per partition"
+      }
+    }
+  ],
+  "status_backfill_retry_backoff": "exponential backoff",
+  "status_backfill_retry_configured": "From retry in the model file",
+  "status_backfill_retry_default": "Runtime defaults",
+  "status_backfill_retry_delay": "{seconds}s delay",
+  "status_backfill_retry_fixed": "fixed delay",
+  "status_backfill_retry_label": "Retries",
+  "status_backfill_retry_matches": "Retries errors matching: {patterns}",
+  "status_backfill_settings_hint": "Read-only. Change these in the model file.",
+  "status_backfill_settings_title": "Execution settings",
+  "status_backfill_start_label": "Start (inclusive)",
+  "status_backfill_title": "Backfill partition range",
   "status_cancel": "Cancel",
   "status_checking_errors": "Checking for errors...",
   "status_clear": "Clear",

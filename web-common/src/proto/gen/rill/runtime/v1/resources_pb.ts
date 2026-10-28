@@ -1210,6 +1210,14 @@ export class ModelState extends Message<ModelState> {
   partitionsHaveErrors = false;
 
   /**
+   * partitions_concurrency is the number of partitions the model's executor processed concurrently in its most recent partitioned execution.
+   * It is derived from the spec's partitions_concurrency_limit and the executor's own limits.
+   *
+   * @generated from field: uint32 partitions_concurrency = 31;
+   */
+  partitionsConcurrency = 0;
+
+  /**
    * warnings contains any warnings generated during the model's execution.
    *
    * @generated from field: repeated string warnings = 29;
@@ -1268,6 +1276,7 @@ export class ModelState extends Message<ModelState> {
     { no: 8, name: "incremental_state_schema", kind: "message", T: StructType },
     { no: 10, name: "partitions_model_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 11, name: "partitions_have_errors", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 31, name: "partitions_concurrency", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
     { no: 29, name: "warnings", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 12, name: "total_execution_duration_ms", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
     { no: 13, name: "latest_execution_duration_ms", kind: "scalar", T: 3 /* ScalarType.INT64 */ },

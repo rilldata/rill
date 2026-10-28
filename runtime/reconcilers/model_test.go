@@ -187,6 +187,38 @@ post_exec: |
 	})
 }
 
+func TestPartitionsConcurrencyInState(t *testing.T) {
+	rt, instanceID := testruntime.NewInstance(t)
+
+	// DuckDB executes partitions one at a time.
+	testruntime.PutFiles(t, rt, instanceID, map[string]string{
+		"rill.yaml": ``,
+		"models/foo.yaml": `
+type: model
+incremental: true
+partitions:
+  sql: SELECT range AS num FROM range(1, 4)
+sql: SELECT {{ .partition.num }} AS num
+`,
+	})
+	testruntime.ReconcileParserAndWait(t, rt, instanceID)
+	testruntime.RequireReconcileState(t, rt, instanceID, 2, 0, 0)
+	model := testruntime.GetResource(t, rt, instanceID, runtime.ResourceKindModel, "foo").GetModel()
+	require.Equal(t, uint32(1), model.State.PartitionsConcurrency)
+
+	// The value is cleared when the model no longer uses partitions.
+	testruntime.PutFiles(t, rt, instanceID, map[string]string{
+		"models/foo.yaml": `
+type: model
+sql: SELECT 1 AS num
+`,
+	})
+	testruntime.ReconcileParserAndWait(t, rt, instanceID)
+	testruntime.RequireReconcileState(t, rt, instanceID, 2, 0, 0)
+	model = testruntime.GetResource(t, rt, instanceID, runtime.ResourceKindModel, "foo").GetModel()
+	require.Equal(t, uint32(0), model.State.PartitionsConcurrency)
+}
+
 func TestModelTests(t *testing.T) {
 	rt, instanceID := testruntime.NewInstance(t)
 
