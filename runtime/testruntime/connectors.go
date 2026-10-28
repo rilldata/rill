@@ -344,6 +344,25 @@ var Connectors = map[string]ConnectorAcquireFunc{
 		require.NotEmpty(t, apiKey)
 		return map[string]string{"api_key": apiKey}
 	},
+	"bedrock": func(t TestingT) map[string]string {
+		loadDotEnv(t)
+		model := os.Getenv("RILL_RUNTIME_BEDROCK_TEST_MODEL")
+		require.NotEmpty(t, model)
+		cfg := map[string]string{
+			"model":  model,
+			"region": os.Getenv("RILL_RUNTIME_BEDROCK_TEST_REGION"),
+		}
+		// Authenticate with a Bedrock API key if provided, else with AWS access keys.
+		if apiKey := os.Getenv("RILL_RUNTIME_BEDROCK_TEST_API_KEY"); apiKey != "" {
+			cfg["api_key"] = apiKey
+			return cfg
+		}
+		cfg["aws_access_key_id"] = os.Getenv("RILL_RUNTIME_BEDROCK_TEST_AWS_ACCESS_KEY_ID")
+		cfg["aws_secret_access_key"] = os.Getenv("RILL_RUNTIME_BEDROCK_TEST_AWS_SECRET_ACCESS_KEY")
+		require.NotEmpty(t, cfg["aws_access_key_id"])
+		require.NotEmpty(t, cfg["aws_secret_access_key"])
+		return cfg
+	},
 }
 
 func uploadDirectory(ctx context.Context, client *azblob.Client, containerName, localDir string) error {

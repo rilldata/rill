@@ -4,7 +4,9 @@
   import * as Select from "@rilldata/web-common/components/select";
   import Button from "@rilldata/web-common/components/button/Button.svelte";
   import Input from "@rilldata/web-common/components/forms/Input.svelte";
+  import Radio from "@rilldata/web-common/components/forms/Radio.svelte";
   import CaretDownIcon from "../../../components/icons/CaretDownIcon.svelte";
+  import BedrockIcon from "../../../components/icons/connectors/BedrockIcon.svelte";
   import ClaudeIcon from "../../../components/icons/connectors/ClaudeIcon.svelte";
   import GeminiIcon from "../../../components/icons/connectors/GeminiIcon.svelte";
   import OpenAIIcon from "../../../components/icons/connectors/OpenAIIcon.svelte";
@@ -13,6 +15,13 @@
     getBackendConnectorName,
     getConnectorSchema,
   } from "../../sources/modal/connector-schemas";
+  import {
+    getRequiredFieldsForValues,
+    getSchemaInitialValues,
+    isVisibleForValues,
+    radioOptions,
+  } from "../../templates/schema-utils";
+  import type { MultiStepFormSchema } from "../../templates/schemas/types";
   import { saveAiConnector } from "./saveAiConnector";
   import { ExternalLinkIcon } from "lucide-svelte";
   import type { ComponentType, SvelteComponent } from "svelte";
@@ -52,18 +61,30 @@
     { value: "claude", label: "Claude", icon: ClaudeIcon },
     { value: "gemini", label: "Gemini", icon: GeminiIcon },
     { value: "openai", label: "OpenAI", icon: OpenAIIcon },
+    { value: "bedrock", label: "Amazon Bedrock", icon: BedrockIcon },
   ];
 
-  let schemaName = "claude";
-  let apiKey = "";
-  let model = "";
+  const defaultSchemaName = "claude";
+
+  let schemaName = defaultSchemaName;
+  let values: Record<string, string> = {};
   let saving = false;
   let error = "";
   let existingAiConnector = "";
 
   $: schema = schemaName ? getConnectorSchema(schemaName) : null;
-  $: apiKeyProp = schema?.properties?.api_key;
-  $: modelProp = schema?.properties?.model;
+  // Render the provider's connector fields in schema order (e.g. an API key for
+  // Claude, or an auth method choice, credentials, and a region for Bedrock).
+  $: fields = schema
+    ? Object.entries(schema.properties ?? {}).filter(
+        ([key, prop]) =>
+          !prop["x-advanced"] && isVisibleForValues(schema, key, values),
+      )
+    : [];
+  $: required = schema
+    ? getRequiredFieldsForValues(schema, values)
+    : new Set<string>();
+  $: canSave = fields.every(([key]) => !required.has(key) || !!values[key]);
   $: selectedOption = providerOptions.find((o) => o.value === schemaName);
   $: docsUrl = schemaName
     ? `https://docs.rilldata.com/developers/build/connectors/services/${getBackendConnectorName(schemaName)}`
@@ -72,7 +93,7 @@
   $: envEditSession = new EnvEditSession(envStore, schemaName, schema);
 
   // Soft validation: warn when the API key doesn't match the expected prefix
-  $: apiKeyWarning = getApiKeyWarning(schemaName, apiKey);
+  $: apiKeyWarning = getApiKeyWarning(schemaName, values.api_key ?? "");
 
   function getApiKeyWarning(provider: string, key: string): string {
     if (!key) return "";
@@ -95,11 +116,12 @@
     return `This doesn't look like a ${expected.label} API key`;
   }
 
-  // Reset form fields when dialog opens; also fetch the current AI connector
+  // Reset form fields when dialog opens; also fetch the current AI connector.
+  // Note: this block must not read `schemaName` or `values`, or it would re-run
+  // (and reset the form) whenever the user changes the provider or a field.
   $: if (open) {
-    schemaName = "claude";
-    apiKey = "";
-    model = "";
+    schemaName = defaultSchemaName;
+    values = initialValues(getConnectorSchema(defaultSchemaName));
     saving = false;
     error = "";
     existingAiConnector = "";
@@ -115,9 +137,21 @@
   // Clear inputs when the provider changes
   function handleProviderChange(value: string) {
     schemaName = value;
-    apiKey = "";
-    model = "";
+    values = initialValues(getConnectorSchema(value));
     error = "";
+  }
+
+  // Defaults such as the initial auth method choice.
+  function initialValues(
+    schema: MultiStepFormSchema | null,
+  ): Record<string, string> {
+    if (!schema) return {};
+    return Object.fromEntries(
+      Object.entries(getSchemaInitialValues(schema)).map(([k, v]) => [
+        k,
+        String(v),
+      ]),
+    );
   }
 
   async function fetchExistingAiConnector() {
@@ -135,7 +169,7 @@
   }
 
   async function handleSave() {
-    if (!schemaName || !apiKey) return;
+    if (!schemaName || !canSave) return;
     saving = true;
     error = "";
     try {
@@ -143,8 +177,13 @@
       // the persisted secrets rather than an empty store, which would let the
       // commit overwrite an existing secret instead of suffixing it.
       await envStore.whenReady();
-      const formValues: Record<string, string> = { api_key: apiKey };
-      if (model) formValues.model = model;
+      // Only submit visible, non-empty connector properties (e.g. skip the
+      // UI-only auth method and credentials for the unselected auth method).
+      const formValues = Object.fromEntries(
+        fields
+          .filter(([key, prop]) => !prop["x-ui-only"] && values[key])
+          .map(([key]) => [key, values[key]]),
+      );
       await saveAiConnector(
         runtimeClient,
         queryClient,
@@ -233,26 +272,31 @@
         </SelectPrimitive.Root>
       </div>
 
-      <Input
-        id="ai-connector-api-key"
-        label={apiKeyProp?.title ?? "API Key"}
-        placeholder={apiKeyProp?.["x-placeholder"] ?? ""}
-        hint={apiKeyProp?.description ?? ""}
-        secret
-        bind:value={apiKey}
-      />
-      {#if apiKeyWarning}
-        <p class="text-sm text-red-500">{apiKeyWarning}</p>
-      {/if}
-
-      <Input
-        id="ai-connector-model"
-        label={modelProp?.title ?? "Model"}
-        placeholder={modelProp?.["x-placeholder"] ?? ""}
-        hint={modelProp?.description ?? ""}
-        optional
-        bind:value={model}
-      />
+      {#each fields as [key, prop] (`${schemaName}.${key}`)}
+        {#if prop["x-display"] === "radio"}
+          <div class="flex flex-col gap-y-2">
+            <span class="text-sm font-medium">{prop.title ?? key}</span>
+            <Radio
+              name={`ai-connector-${key}`}
+              options={radioOptions(prop)}
+              bind:value={values[key]}
+            />
+          </div>
+        {:else}
+          <Input
+            id={`ai-connector-${key}`}
+            label={prop.title ?? key}
+            placeholder={prop["x-placeholder"] ?? ""}
+            hint={prop.description ?? ""}
+            secret={!!prop["x-secret"]}
+            optional={!required.has(key)}
+            bind:value={values[key]}
+          />
+        {/if}
+        {#if key === "api_key" && apiKeyWarning}
+          <p class="text-sm text-red-500">{apiKeyWarning}</p>
+        {/if}
+      {/each}
       {#if existingAiConnector}
         <p class="text-sm text-red-500">
           This will replace your existing AI connector ({existingAiConnector}).
@@ -275,7 +319,7 @@
       <!-- Use a plain button instead of AlertDialog.Action to prevent
            the dialog from auto-closing before the async save completes. -->
       <Button
-        disabled={!apiKey || saving}
+        disabled={!canSave || saving}
         large
         type="primary"
         onClick={handleSave}
