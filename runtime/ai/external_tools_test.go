@@ -6,15 +6,20 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"slices"
 	"strings"
 	"testing"
 
+	"github.com/google/uuid"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
+	aiv1 "github.com/rilldata/rill/proto/gen/rill/ai/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/ai"
+	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/testruntime"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/protobuf/types/known/structpb"
 )
 
 // newExternalMCPServer serves an in-process MCP server with two tools. Requests must carry the given bearer token if it is not empty.
@@ -251,15 +256,96 @@ security:
 	require.Equal(t, "search_issues", servers[0].Tools[0].Name)
 }
 
-func TestExternalToolsLimit(t *testing.T) {
-	server := mcp.NewServer(&mcp.Implementation{Name: "big", Version: "1.0.0"}, nil)
-	for i := range 130 {
-		mcp.AddTool(server, &mcp.Tool{Name: fmt.Sprintf("tool_%d", i)}, func(ctx context.Context, req *mcp.CallToolRequest, args struct{}) (*mcp.CallToolResult, any, error) {
-			return &mcp.CallToolResult{}, nil, nil
-		})
+func TestExternalToolsSearch(t *testing.T) {
+	ext := newExternalMCPServer(t, "")
+	rt, instanceID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
+		Files: map[string]string{
+			"rill.yaml": "",
+			"connectors/tracker.yaml": fmt.Sprintf(`
+type: connector
+driver: mcp
+url: %s
+display_name: Tracker
+`, ext.URL),
+			"connectors/devonly.yaml": fmt.Sprintf(`
+type: connector
+driver: mcp
+url: %s
+security:
+  access: true
+  agents: [developer]
+`, ext.URL),
+		},
+	})
+	testruntime.RequireReconcileState(t, rt, instanceID, 3, 0, 0)
+
+	searchIssues := ai.ExternalToolName("tracker", "search_issues")
+	deleteIssue := ai.ExternalToolName("tracker", "delete_issue")
+	script := &scriptedAIService{turns: []turnFunc{
+		// Calling an external tool before loading it is refused.
+		toolCallTurn(deleteIssue, nil),
+		// A loaded tool cannot be called in the same response as the search: the model has not seen its schema yet.
+		multiToolCallTurn(
+			toolCallTurn(ai.SearchExternalToolsName, map[string]any{"query": "search issues"}),
+			toolCallTurn(searchIssues, map[string]any{"query": "guessed"}),
+		),
+		// Tools of servers scoped to another agent are not found.
+		toolCallTurn(ai.SearchExternalToolsName, map[string]any{"names": []any{ai.ExternalToolName("devonly", "search_issues")}}),
+		toolCallTurn(searchIssues, map[string]any{"query": "bugs"}),
+		textTurn("first"),
+		textTurn("second"),
+	}}
+	runner := ai.NewRunner(rt, activity.NewNoopClient())
+	session, err := runner.Session(t.Context(), &ai.SessionOptions{InstanceID: instanceID, Claims: newTestClaims("u@x.com", "x.com", false), UserAgent: "rill/test"})
+	require.NoError(t, err)
+	session.SetLLM(func(_ context.Context) (drivers.AIService, func(), error) {
+		return script, func() {}, nil
+	})
+
+	res, err := session.CallTool(t.Context(), ai.RoleUser, ai.AnalystAgentName, nil, &ai.AnalystAgentArgs{Prompt: "find bugs"})
+	require.NoError(t, err)
+
+	// External tools are listed by name in the prompt, but only the search tool is offered up front.
+	var prompt strings.Builder
+	for _, m := range script.inputs[0] {
+		for _, b := range m.Content {
+			prompt.WriteString(b.GetText())
+		}
 	}
-	ext := httptest.NewServer(mcp.NewStreamableHTTPHandler(func(*http.Request) *mcp.Server { return server }, nil))
-	t.Cleanup(ext.Close)
+	require.Contains(t, prompt.String(), "Tools: "+deleteIssue+", "+searchIssues)
+	require.Contains(t, script.tools[0], ai.SearchExternalToolsName)
+	require.False(t, slices.ContainsFunc(script.tools[0], isExternalToolName))
+
+	// The search loads only the matching tool, which is offered from the next iteration on.
+	require.NotContains(t, script.tools[1], searchIssues)
+	require.Contains(t, script.tools[2], searchIssues)
+	require.NotContains(t, script.tools[2], deleteIssue)
+
+	results := callResults(session, res.Call.ID)
+	require.Equal(t, ai.MessageContentTypeError, results[0].ContentType)
+	require.Contains(t, results[0].Content, "not available")
+	var found ai.SearchExternalToolsResult
+	require.NoError(t, json.Unmarshal([]byte(results[1].Content), &found))
+	require.Len(t, found.Tools, 1)
+	require.Equal(t, searchIssues, found.Tools[0].Name)
+	require.Equal(t, "Tracker", found.Tools[0].Server)
+	require.Equal(t, ai.MessageContentTypeError, results[2].ContentType)
+	require.Contains(t, results[2].Content, "not available")
+	require.NoError(t, json.Unmarshal([]byte(results[3].Content), &found))
+	require.Empty(t, found.Tools)
+	require.Equal(t, []string{ai.ExternalToolName("devonly", "search_issues")}, found.NotFound)
+	require.Equal(t, ai.MessageContentTypeJSON, results[4].ContentType)
+	require.Contains(t, results[4].Content, "results for bugs")
+
+	// Loaded tools stay offered in later turns.
+	_, err = session.CallTool(t.Context(), ai.RoleUser, ai.AnalystAgentName, nil, &ai.AnalystAgentArgs{Prompt: "again"})
+	require.NoError(t, err)
+	require.Contains(t, script.tools[5], searchIssues)
+	require.NotContains(t, script.tools[5], deleteIssue)
+}
+
+func TestExternalToolsLimit(t *testing.T) {
+	ext := newBigExternalMCPServer(t, 130)
 	rt, instanceID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
 		Files: map[string]string{
 			"rill.yaml": "",
@@ -272,14 +358,196 @@ url: %s
 	})
 	testruntime.RequireReconcileState(t, rt, instanceID, 2, 0, 0)
 
+	var names []any
+	for i := range 130 {
+		names = append(names, ai.ExternalToolName("big", fmt.Sprintf("tool_%d", i)))
+	}
+	script := &scriptedAIService{turns: []turnFunc{
+		toolCallTurn(ai.SearchExternalToolsName, map[string]any{"names": names}),
+		textTurn("done"),
+	}}
 	runner := ai.NewRunner(rt, activity.NewNoopClient())
 	session, err := runner.Session(t.Context(), &ai.SessionOptions{InstanceID: instanceID, Claims: newTestClaims("u@x.com", "x.com", false), UserAgent: "rill/test"})
 	require.NoError(t, err)
-	require.Len(t, session.ExternalToolNames(t.Context(), "analyst"), 130)
+	session.SetLLM(func(_ context.Context) (drivers.AIService, func(), error) {
+		return script, func() {}, nil
+	})
 
-	// The request fails before reaching the LLM, whose provider would reject it
-	_, err = session.CallTool(t.Context(), ai.RoleUser, ai.AnalystAgentName, nil, ai.AnalystAgentArgs{Prompt: "hi"})
-	require.ErrorContains(t, err, "too many tools")
+	// More tools than the providers accept no longer fail the request: loading too many is a tool error the LLM can recover from.
+	res, err := session.CallTool(t.Context(), ai.RoleUser, ai.AnalystAgentName, nil, ai.AnalystAgentArgs{Prompt: "hi"})
+	require.NoError(t, err)
+	results := callResults(session, res.Call.ID)
+	require.Equal(t, ai.MessageContentTypeError, results[0].ContentType)
+	require.Contains(t, results[0].Content, "limit of 100 loaded external tools")
+	require.False(t, slices.ContainsFunc(script.tools[1], isExternalToolName))
+}
+
+func TestExternalToolsLimitCountsUnavailableTools(t *testing.T) {
+	ext := newBigExternalMCPServer(t, 60)
+	connector := fmt.Sprintf(`
+type: connector
+driver: mcp
+url: %s
+`, ext.URL)
+	rt, instanceID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
+		Files: map[string]string{"rill.yaml": "", "connectors/a.yaml": connector, "connectors/b.yaml": connector},
+	})
+	testruntime.RequireReconcileState(t, rt, instanceID, 3, 0, 0)
+
+	names := func(connector string) []any {
+		var res []any
+		for i := range 60 {
+			res = append(res, ai.ExternalToolName(connector, fmt.Sprintf("tool_%d", i)))
+		}
+		return res
+	}
+	script := &scriptedAIService{turns: []turnFunc{
+		toolCallTurn(ai.SearchExternalToolsName, map[string]any{"names": names("a")}),
+		textTurn("first"),
+		toolCallTurn(ai.SearchExternalToolsName, map[string]any{"names": names("b")}),
+		textTurn("second"),
+	}}
+	runner := ai.NewRunner(rt, activity.NewNoopClient())
+	claims := newTestClaims("u@x.com", "x.com", false)
+	newTurnSession := func(sessionID string) *ai.Session {
+		session, err := runner.Session(t.Context(), &ai.SessionOptions{InstanceID: instanceID, SessionID: sessionID, CreateIfNotExists: sessionID == "", Claims: claims, UserAgent: "rill/test"})
+		require.NoError(t, err)
+		session.SetLLM(func(_ context.Context) (drivers.AIService, func(), error) {
+			return script, func() {}, nil
+		})
+		return session
+	}
+
+	// The first turn loads all of a's tools.
+	session := newTurnSession("")
+	res, err := session.CallTool(t.Context(), ai.RoleUser, ai.AnalystAgentName, nil, ai.AnalystAgentArgs{Prompt: "first"})
+	require.NoError(t, err)
+	require.Equal(t, ai.MessageContentTypeJSON, callResults(session, res.Call.ID)[0].ContentType)
+	require.NoError(t, session.Flush(t.Context()))
+
+	// After a becomes unavailable, its loaded tools still count: otherwise loading b's tools would succeed,
+	// and all 120 would be offered once a is available again.
+	testruntime.PutFiles(t, rt, instanceID, map[string]string{"connectors/a.yaml": connector + `
+security:
+  access: false
+`})
+	testruntime.ReconcileParserAndWait(t, rt, instanceID)
+	session = newTurnSession(session.ID())
+	res, err = session.CallTool(t.Context(), ai.RoleUser, ai.AnalystAgentName, nil, ai.AnalystAgentArgs{Prompt: "second"})
+	require.NoError(t, err)
+	results := callResults(session, res.Call.ID)
+	require.Equal(t, ai.MessageContentTypeError, results[0].ContentType)
+	require.Contains(t, results[0].Content, "limit of 100 loaded external tools")
+}
+
+func TestExternalToolsLimitOverlappingTurns(t *testing.T) {
+	ext := newBigExternalMCPServer(t, 70)
+	connector := fmt.Sprintf(`
+type: connector
+driver: mcp
+url: %s
+`, ext.URL)
+	rt, instanceID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
+		Files: map[string]string{"rill.yaml": "", "connectors/a.yaml": connector, "connectors/b.yaml": connector},
+	})
+	testruntime.RequireReconcileState(t, rt, instanceID, 3, 0, 0)
+
+	names := func(connector string) []any {
+		var res []any
+		for i := range 70 {
+			res = append(res, ai.ExternalToolName(connector, fmt.Sprintf("tool_%d", i)))
+		}
+		return res
+	}
+	script := &scriptedAIService{turns: []turnFunc{
+		toolCallTurn(ai.SearchExternalToolsName, map[string]any{"names": names("a")}),
+		textTurn("first"),
+		toolCallTurn(ai.SearchExternalToolsName, map[string]any{"names": names("b")}),
+		textTurn("second"),
+		textTurn("third"),
+	}}
+	runner := ai.NewRunner(rt, activity.NewNoopClient())
+	claims := newTestClaims("u@x.com", "x.com", false)
+	newTurnSession := func(sessionID string) *ai.Session {
+		session, err := runner.Session(t.Context(), &ai.SessionOptions{InstanceID: instanceID, SessionID: sessionID, CreateIfNotExists: sessionID == "", Claims: claims, UserAgent: "rill/test"})
+		require.NoError(t, err)
+		session.SetLLM(func(_ context.Context) (drivers.AIService, func(), error) {
+			return script, func() {}, nil
+		})
+		return session
+	}
+	conversationID := newTurnSession("").ID()
+
+	// Two overlapping turns each load 70 tools: neither sees the other's, so both pass the search's cap.
+	first, second := newTurnSession(conversationID), newTurnSession(conversationID)
+	for _, session := range []*ai.Session{first, second} {
+		res, err := session.CallTool(t.Context(), ai.RoleUser, ai.AnalystAgentName, nil, ai.AnalystAgentArgs{Prompt: "load"})
+		require.NoError(t, err)
+		require.Equal(t, ai.MessageContentTypeJSON, callResults(session, res.Call.ID)[0].ContentType)
+	}
+	require.NoError(t, first.Flush(t.Context()))
+	require.NoError(t, second.Flush(t.Context()))
+
+	// The next turn sees all 140 loaded tools, more than the providers accept, but offers no more than the cap.
+	_, err := newTurnSession(conversationID).CallTool(t.Context(), ai.RoleUser, ai.AnalystAgentName, nil, ai.AnalystAgentArgs{Prompt: "resume"})
+	require.NoError(t, err)
+	offered := slices.DeleteFunc(slices.Clone(script.tools[len(script.tools)-1]), func(name string) bool { return !isExternalToolName(name) })
+	require.Len(t, offered, 100)
+}
+
+// newBigExternalMCPServer serves an in-process MCP server with n tools named tool_0 to tool_<n-1>.
+func newBigExternalMCPServer(t *testing.T, n int) *httptest.Server {
+	t.Helper()
+	server := mcp.NewServer(&mcp.Implementation{Name: "big", Version: "1.0.0"}, nil)
+	for i := range n {
+		mcp.AddTool(server, &mcp.Tool{Name: fmt.Sprintf("tool_%d", i)}, func(ctx context.Context, req *mcp.CallToolRequest, args struct{}) (*mcp.CallToolResult, any, error) {
+			return &mcp.CallToolResult{}, nil, nil
+		})
+	}
+	ext := httptest.NewServer(mcp.NewStreamableHTTPHandler(func(*http.Request) *mcp.Server { return server }, nil))
+	t.Cleanup(ext.Close)
+	return ext
+}
+
+// toolCallTurn makes the model call a tool.
+func toolCallTurn(name string, input map[string]any) turnFunc {
+	return func(_ *drivers.CompleteOptions) *aiv1.CompletionMessage {
+		in, err := structpb.NewStruct(input)
+		if err != nil {
+			panic(err)
+		}
+		return &aiv1.CompletionMessage{
+			Role:    "assistant",
+			Content: []*aiv1.ContentBlock{{BlockType: &aiv1.ContentBlock_ToolCall{ToolCall: &aiv1.ToolCall{Id: uuid.NewString(), Name: name, Input: in}}}},
+		}
+	}
+}
+
+// multiToolCallTurn makes the model call several tools in one response.
+func multiToolCallTurn(turns ...turnFunc) turnFunc {
+	return func(opts *drivers.CompleteOptions) *aiv1.CompletionMessage {
+		msg := &aiv1.CompletionMessage{Role: "assistant"}
+		for _, turn := range turns {
+			msg.Content = append(msg.Content, turn(opts).Content...)
+		}
+		return msg
+	}
+}
+
+// callResults returns the results of the external and search_external_tools calls within the given agent call, in order.
+func callResults(s *ai.Session, callID string) []*ai.Message {
+	external := func(m *ai.Message) bool { return m.Tool == ai.SearchExternalToolsName || isExternalToolName(m.Tool) }
+	var res []*ai.Message
+	for _, call := range s.Messages(ai.FilterByParent(callID), ai.FilterByType(ai.MessageTypeCall), external) {
+		if result, ok := s.Message(ai.FilterByParent(call.ID), ai.FilterByType(ai.MessageTypeResult)); ok {
+			res = append(res, result)
+		}
+	}
+	return res
+}
+
+func isExternalToolName(name string) bool {
+	return strings.HasPrefix(name, ai.ExternalToolPrefix)
 }
 
 func TestExternalToolName(t *testing.T) {
