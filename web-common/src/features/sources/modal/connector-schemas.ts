@@ -5,6 +5,7 @@ import type {
 } from "../../templates/schemas/types";
 import { athenaSchema } from "../../templates/schemas/athena";
 import { azureSchema } from "../../templates/schemas/azure";
+import { bedrockSchema } from "../../templates/schemas/bedrock";
 import { bigquerySchema } from "../../templates/schemas/bigquery";
 import { claudeSchema } from "../../templates/schemas/claude";
 import { databricksSchema } from "../../templates/schemas/databricks";
@@ -61,6 +62,7 @@ export const multiStepFormSchemas: Record<string, MultiStepFormSchema> = {
   databricks: databricksSchema,
   openai: openaiSchema,
   gemini: geminiSchema,
+  bedrock: bedrockSchema,
 };
 
 /**
