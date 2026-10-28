@@ -52,6 +52,10 @@ func (n *noopAdminService) UpdateProjectVariables(ctx context.Context, environme
 	return drivers.ErrNotImplemented
 }
 
+func (n *noopAdminService) SavePersonalCanvas(ctx context.Context, userID, name, displayName, yaml string) (*drivers.PersonalCanvas, error) {
+	return nil, drivers.ErrNotImplemented
+}
+
 // GetConnectorOAuthToken behaves like Rill Cloud for a user who has not authorized the connector.
 func (n *noopAdminService) GetConnectorOAuthToken(ctx context.Context, connector, configHash, userID string, forceRefresh bool) (*drivers.MCPOAuthToken, error) {
 	return nil, drivers.ErrNotFound

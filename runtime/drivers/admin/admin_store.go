@@ -157,6 +157,24 @@ func (h *Handle) ListDeployments(ctx context.Context) ([]*drivers.Deployment, er
 	return res, nil
 }
 
+func (h *Handle) SavePersonalCanvas(ctx context.Context, userID, name, displayName, yaml string) (*drivers.PersonalCanvas, error) {
+	res, err := h.admin.SavePersonalFileForUser(ctx, &adminv1.SavePersonalFileForUserRequest{
+		ProjectId:   h.config.ProjectID,
+		UserId:      userID,
+		Kind:        runtime.ResourceKindCanvas,
+		Name:        name,
+		DisplayName: displayName,
+		Yaml:        yaml,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return &drivers.PersonalCanvas{
+		Name: res.Name,
+		URL:  res.Url,
+	}, nil
+}
+
 func (h *Handle) UpdateProjectVariables(ctx context.Context, environment string, variables map[string]string) error {
 	projectResp, err := h.admin.GetProjectByID(ctx, &adminv1.GetProjectByIDRequest{
 		Id: h.config.ProjectID,

@@ -1996,6 +1996,14 @@ components:
             type: object
         v1RevokeUserAuthTokenResponse:
             type: object
+        v1SavePersonalFileForUserResponse:
+            properties:
+                name:
+                    type: string
+                url:
+                    description: URL where the user can open the personal file.
+                    type: string
+            type: object
         v1SearchProjectNamesResponse:
             properties:
                 names:
@@ -4009,6 +4017,7 @@ paths:
     /v1/projects/-/redeploy: {}
     /v1/projects/{id}: {}
     /v1/projects/{projectId}/alerts/meta: {}
+    /v1/projects/{projectId}/personal-files/for-user: {}
     /v1/projects/{projectId}/repo/meta: {}
     /v1/projects/{projectId}/repo/virtual: {}
     /v1/projects/{projectId}/repo/virtual/file: {}

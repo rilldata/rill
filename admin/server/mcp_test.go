@@ -37,6 +37,20 @@ func TestMCPForwardedToolSpecs(t *testing.T) {
 	}
 }
 
+func TestMCPForwardsPersonalCanvasDeveloper(t *testing.T) {
+	tools, err := mcpForwardedToolSpecs()
+	require.NoError(t, err)
+
+	var names []string
+	for _, tool := range tools {
+		names = append(names, tool.Name)
+	}
+
+	// Clients can create personal canvases, but only through the sub-agent that knows how to author them.
+	require.Contains(t, names, ai.DevelopPersonalCanvasName)
+	require.NotContains(t, names, ai.WritePersonalCanvasName)
+}
+
 func TestTakeMCPProjectArg(t *testing.T) {
 	org, project, rest, err := takeMCPProjectArg(json.RawMessage(`{"project":"org/proj","metrics_view":"mv"}`))
 	require.NoError(t, err)
@@ -91,7 +105,13 @@ func TestCallRuntimeToolErrors(t *testing.T) {
 	require.NoError(t, err)
 	require.True(t, res.IsError)
 	require.Len(t, res.Content, 1)
-	require.Contains(t, res.Content[0].(*mcp.TextContent).Text, "unknown tool")
+	require.Contains(t, res.Content[0].(*mcp.TextContent).Text, "is not available in this project")
+
+	// For develop_personal_canvas, the error says the project doesn't enable personal canvases.
+	res, err = s.callRuntimeTool(t.Context(), depl, "jwt", client, ai.DevelopPersonalCanvasName, json.RawMessage(`{}`))
+	require.NoError(t, err)
+	require.True(t, res.IsError)
+	require.Contains(t, res.Content[0].(*mcp.TextContent).Text, "Personal dashboards can't be created for you in this project")
 
 	// Invalid arguments are also returned as a tool error.
 	res, err = s.callRuntimeTool(t.Context(), depl, "jwt", client, "echo", json.RawMessage(`{"name":123}`))
