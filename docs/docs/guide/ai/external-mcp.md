@@ -52,7 +52,25 @@ oauth_scopes: [search:read, channels:history]
 
 Register `https://admin.rilldata.com/connectors/oauth/callback` as the redirect URL when the server asks for one.
 
-Tokens are never shared between users. Rill Cloud stores each user's token encrypted in the control plane and refreshes it as needed; runtimes only receive short-lived access tokens. Users can disconnect a server at any time from the chat, even while the server is unreachable, which deletes the token.
+Some authorization servers need extra parameters in the authorization request. Google, for example, issues a refresh token only when asked for offline access, and only on a user's first consent unless it is asked to show the consent screen again. Without a refresh token, users have to connect again each time their access token expires (typically after one hour for Google). Pass such parameters with `oauth_authorization_params`:
+
+```yaml
+type: connector
+driver: mcp
+url: https://drivemcp.googleapis.com/mcp/v1
+display_name: Google Drive
+auth: oauth
+oauth_client_id: "{{ .env.GOOGLE_OAUTH_CLIENT_ID }}"
+oauth_client_secret: "{{ .env.GOOGLE_OAUTH_CLIENT_SECRET }}"
+oauth_scopes: [https://www.googleapis.com/auth/drive.readonly]
+oauth_authorization_params:
+  access_type: offline
+  prompt: consent
+```
+
+With `prompt: consent`, Google shows its consent screen every time a user connects, which only happens again when the user disconnects or the authorization is revoked. Parameters that Rill sets itself or depends on, such as `state`, `scope`, `code_challenge`, `request` or `response_mode`, cannot be set. Changing `oauth_authorization_params` requires users to connect again.
+
+Tokens are never shared between users. Rill Cloud stores each user's token encrypted in the control plane and refreshes it as needed; runtimes only receive short-lived access tokens. When the authorization server advertises the `offline_access` scope, as Microsoft Entra ID does, Rill requests it so that the server issues a refresh token. Rill only adds it to the scopes it discovers: `oauth_scopes` are requested exactly as listed, so include `offline_access` there if the server needs it. Users can disconnect a server at any time from the chat, even while the server is unreachable, which deletes the token.
 
 ### Project-scoped credentials
 
@@ -105,6 +123,7 @@ The defaults match metrics views: no `security` block allows every user with AI 
 | `ai_instructions` | Guidance for the agents on when and how to use the server. |
 | `auth` | `oauth` for per-user authorization. |
 | `oauth_client_id`, `oauth_client_secret`, `oauth_scopes` | Pre-registered client and scopes for servers without dynamic client registration. |
+| `oauth_authorization_params` | Extra query parameters for the authorization request, such as Google's `access_type: offline`. |
 | `headers` | Headers sent on every request. Supports `{{ .env.* }}` and `{{ .user.* }}`. |
 | `timeout` | Timeout per tool call (default `60s`). |
 | `connect_timeout` | Timeout for connecting and listing tools (default `10s`). |
