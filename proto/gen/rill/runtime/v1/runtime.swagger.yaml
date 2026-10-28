@@ -566,6 +566,62 @@ paths:
           type: string
       tags:
         - RuntimeService
+    delete:
+      summary: DeleteConversation deletes a conversation and its messages. Only the owner can delete a conversation.
+      operationId: RuntimeService_DeleteConversation
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1DeleteConversationResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: conversationId
+          in: path
+          required: true
+          type: string
+      tags:
+        - RuntimeService
+    patch:
+      summary: UpdateConversation updates a conversation's metadata. Only the owner can update a conversation.
+      operationId: RuntimeService_UpdateConversation
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1UpdateConversationResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: conversationId
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              title:
+                type: string
+                description: New title for the conversation. Not changed if unset.
+            title: Request message for RuntimeService.UpdateConversation
+      tags:
+        - RuntimeService
   /v1/instances/{instanceId}/ai/conversations/{conversationId}/fork:
     post:
       summary: |-
@@ -5672,6 +5728,9 @@ definitions:
   v1DeleteAIMemoryResponse:
     type: object
     title: Response message for RuntimeService.DeleteAIMemory
+  v1DeleteConversationResponse:
+    type: object
+    title: Response message for RuntimeService.DeleteConversation
   v1DeleteFileResponse:
     type: object
     title: Response message for RuntimeService.DeleteFile
@@ -9088,6 +9147,9 @@ definitions:
   v1UpdateAIMemorySettingsResponse:
     type: object
     title: Response message for RuntimeService.UpdateAIMemorySettings
+  v1UpdateConversationResponse:
+    type: object
+    title: Response message for RuntimeService.UpdateConversation
   v1WatchFilesResponse:
     type: object
     properties:

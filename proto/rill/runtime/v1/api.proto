@@ -262,6 +262,19 @@ service RuntimeService {
     option (google.api.http) = {get: "/v1/instances/{instance_id}/ai/conversations/{conversation_id}"};
   }
 
+  // UpdateConversation updates a conversation's metadata. Only the owner can update a conversation.
+  rpc UpdateConversation(UpdateConversationRequest) returns (UpdateConversationResponse) {
+    option (google.api.http) = {
+      patch: "/v1/instances/{instance_id}/ai/conversations/{conversation_id}",
+      body: "*"
+    };
+  }
+
+  // DeleteConversation deletes a conversation and its messages. Only the owner can delete a conversation.
+  rpc DeleteConversation(DeleteConversationRequest) returns (DeleteConversationResponse) {
+    option (google.api.http) = {delete: "/v1/instances/{instance_id}/ai/conversations/{conversation_id}"};
+  }
+
   // ShareConversation enables sharing of the conversation by adding metadata.
   rpc ShareConversation(ShareConversationRequest) returns (ShareConversationResponse) {
     option (google.api.http) = {
@@ -1254,6 +1267,26 @@ message GetConversationResponse {
   repeated Message messages = 2;
   bool is_owner = 3; // would be false for shared conversations accessed by non-owners
 }
+
+// Request message for RuntimeService.UpdateConversation
+message UpdateConversationRequest {
+  string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
+  string conversation_id = 2 [(validate.rules).string.min_len = 1];
+  // New title for the conversation. Not changed if unset.
+  optional string title = 3;
+}
+
+// Response message for RuntimeService.UpdateConversation
+message UpdateConversationResponse {}
+
+// Request message for RuntimeService.DeleteConversation
+message DeleteConversationRequest {
+  string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
+  string conversation_id = 2 [(validate.rules).string.min_len = 1];
+}
+
+// Response message for RuntimeService.DeleteConversation
+message DeleteConversationResponse {}
 
 // Request message for RuntimeService.ShareConversation
 message ShareConversationRequest {

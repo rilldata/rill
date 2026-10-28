@@ -11936,6 +11936,466 @@ var _ interface {
 	ErrorName() string
 } = GetConversationResponseValidationError{}
 
+// Validate checks the field values on UpdateConversationRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *UpdateConversationRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on UpdateConversationRequest with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// UpdateConversationRequestMultiError, or nil if none found.
+func (m *UpdateConversationRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *UpdateConversationRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if !_UpdateConversationRequest_InstanceId_Pattern.MatchString(m.GetInstanceId()) {
+		err := UpdateConversationRequestValidationError{
+			field:  "InstanceId",
+			reason: "value does not match regex pattern \"^[_\\\\-a-zA-Z0-9]+$\"",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if utf8.RuneCountInString(m.GetConversationId()) < 1 {
+		err := UpdateConversationRequestValidationError{
+			field:  "ConversationId",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if m.Title != nil {
+		// no validation rules for Title
+	}
+
+	if len(errors) > 0 {
+		return UpdateConversationRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// UpdateConversationRequestMultiError is an error wrapping multiple validation
+// errors returned by UpdateConversationRequest.ValidateAll() if the
+// designated constraints aren't met.
+type UpdateConversationRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m UpdateConversationRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m UpdateConversationRequestMultiError) AllErrors() []error { return m }
+
+// UpdateConversationRequestValidationError is the validation error returned by
+// UpdateConversationRequest.Validate if the designated constraints aren't met.
+type UpdateConversationRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e UpdateConversationRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e UpdateConversationRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e UpdateConversationRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e UpdateConversationRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e UpdateConversationRequestValidationError) ErrorName() string {
+	return "UpdateConversationRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e UpdateConversationRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sUpdateConversationRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = UpdateConversationRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = UpdateConversationRequestValidationError{}
+
+var _UpdateConversationRequest_InstanceId_Pattern = regexp.MustCompile("^[_\\-a-zA-Z0-9]+$")
+
+// Validate checks the field values on UpdateConversationResponse with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *UpdateConversationResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on UpdateConversationResponse with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// UpdateConversationResponseMultiError, or nil if none found.
+func (m *UpdateConversationResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *UpdateConversationResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if len(errors) > 0 {
+		return UpdateConversationResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// UpdateConversationResponseMultiError is an error wrapping multiple
+// validation errors returned by UpdateConversationResponse.ValidateAll() if
+// the designated constraints aren't met.
+type UpdateConversationResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m UpdateConversationResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m UpdateConversationResponseMultiError) AllErrors() []error { return m }
+
+// UpdateConversationResponseValidationError is the validation error returned
+// by UpdateConversationResponse.Validate if the designated constraints aren't met.
+type UpdateConversationResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e UpdateConversationResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e UpdateConversationResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e UpdateConversationResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e UpdateConversationResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e UpdateConversationResponseValidationError) ErrorName() string {
+	return "UpdateConversationResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e UpdateConversationResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sUpdateConversationResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = UpdateConversationResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = UpdateConversationResponseValidationError{}
+
+// Validate checks the field values on DeleteConversationRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *DeleteConversationRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on DeleteConversationRequest with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// DeleteConversationRequestMultiError, or nil if none found.
+func (m *DeleteConversationRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *DeleteConversationRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if !_DeleteConversationRequest_InstanceId_Pattern.MatchString(m.GetInstanceId()) {
+		err := DeleteConversationRequestValidationError{
+			field:  "InstanceId",
+			reason: "value does not match regex pattern \"^[_\\\\-a-zA-Z0-9]+$\"",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if utf8.RuneCountInString(m.GetConversationId()) < 1 {
+		err := DeleteConversationRequestValidationError{
+			field:  "ConversationId",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if len(errors) > 0 {
+		return DeleteConversationRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// DeleteConversationRequestMultiError is an error wrapping multiple validation
+// errors returned by DeleteConversationRequest.ValidateAll() if the
+// designated constraints aren't met.
+type DeleteConversationRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m DeleteConversationRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m DeleteConversationRequestMultiError) AllErrors() []error { return m }
+
+// DeleteConversationRequestValidationError is the validation error returned by
+// DeleteConversationRequest.Validate if the designated constraints aren't met.
+type DeleteConversationRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e DeleteConversationRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e DeleteConversationRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e DeleteConversationRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e DeleteConversationRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e DeleteConversationRequestValidationError) ErrorName() string {
+	return "DeleteConversationRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e DeleteConversationRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sDeleteConversationRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = DeleteConversationRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = DeleteConversationRequestValidationError{}
+
+var _DeleteConversationRequest_InstanceId_Pattern = regexp.MustCompile("^[_\\-a-zA-Z0-9]+$")
+
+// Validate checks the field values on DeleteConversationResponse with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *DeleteConversationResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on DeleteConversationResponse with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// DeleteConversationResponseMultiError, or nil if none found.
+func (m *DeleteConversationResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *DeleteConversationResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if len(errors) > 0 {
+		return DeleteConversationResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// DeleteConversationResponseMultiError is an error wrapping multiple
+// validation errors returned by DeleteConversationResponse.ValidateAll() if
+// the designated constraints aren't met.
+type DeleteConversationResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m DeleteConversationResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m DeleteConversationResponseMultiError) AllErrors() []error { return m }
+
+// DeleteConversationResponseValidationError is the validation error returned
+// by DeleteConversationResponse.Validate if the designated constraints aren't met.
+type DeleteConversationResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e DeleteConversationResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e DeleteConversationResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e DeleteConversationResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e DeleteConversationResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e DeleteConversationResponseValidationError) ErrorName() string {
+	return "DeleteConversationResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e DeleteConversationResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sDeleteConversationResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = DeleteConversationResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = DeleteConversationResponseValidationError{}
+
 // Validate checks the field values on ShareConversationRequest with the rules
 // defined in the proto definition for this message. If any rules are
 // violated, the first error encountered is returned, or nil if there are no violations.
