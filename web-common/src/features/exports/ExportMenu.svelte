@@ -30,6 +30,10 @@
   export let getQuery: (isScheduled: boolean) => V1Query | undefined;
   export let exploreName: string | undefined = undefined;
 
+  // Public URLs authenticate with a magic token that only grants viewing and exporting.
+  // Creating a scheduled report from one fails with a 403, so the option is hidden there.
+  const onPublicURL = runtimeClient.authContext === "magic";
+
   let showScheduledReportDialog = false;
   let open = false;
 
@@ -77,7 +81,7 @@
   // This ensures Rill Developer doesn't try and fail to import the admin-client.
   let ScheduledReportDialog: typeof TScheduledReportDialog;
   onMount(async () => {
-    if (includeScheduledReport && $reportsEnabled) {
+    if (includeScheduledReport && $reportsEnabled && !onPublicURL) {
       ({ default: ScheduledReportDialog } = await import(
         "../scheduled-reports/ScheduledReportDialog.svelte"
       ));
@@ -154,7 +158,7 @@
         Export as XLSX with metadata
       </DropdownMenu.Item>
     {/if}
-    {#if includeScheduledReport && $reportsEnabled && exploreName}
+    {#if includeScheduledReport && !onPublicURL && $reportsEnabled && exploreName}
       <DropdownMenu.Item
         onclick={() => (showScheduledReportDialog = true)}
         disabled={!scheduledReportQuery}

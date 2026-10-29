@@ -33,12 +33,24 @@ message ToolResult {
   bool is_error = 3;
 }
 
+// The model's reasoning before its text or tool calls.
+// Some providers (e.g. Claude) require it to be passed back unmodified within a tool call loop.
+message Reasoning {
+  // Readable reasoning. Often empty, since providers may omit it or return a summary.
+  string text = 1;
+  // Opaque provider signature that lets the provider verify the reasoning.
+  string signature = 2;
+  // Opaque encrypted reasoning, set instead of text and signature when the provider redacts the reasoning.
+  string redacted_data = 3;
+}
+
 // Content block within a message
 message ContentBlock {
   oneof block_type {
     string text = 1;
     ToolCall tool_call = 2;
     ToolResult tool_result = 3;
+    Reasoning reasoning = 4;
   }
 }
 

@@ -18,6 +18,7 @@
   import Input from "../../components/forms/Input.svelte";
   import Select from "../../components/forms/Select.svelte";
   import Checkbox from "../../components/forms/Checkbox.svelte";
+  import ExportFileOptions from "@rilldata/web-common/features/exports/ExportFileOptions.svelte";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import type { ExpressionFilterManager } from "../dashboards/filters/ExpressionFilterManager.svelte.ts";
   import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors.ts";
@@ -245,44 +246,11 @@
         </div>
       {/if}
     {:else}
-      <Select
-        bind:value={$data["exportFormat"]}
-        id="exportFormat"
-        label={m.report_form_format()}
-        options={[
-          {
-            value: V1ExportFormat.EXPORT_FORMAT_CSV,
-            label: m.report_form_format_csv(),
-          },
-          {
-            value: V1ExportFormat.EXPORT_FORMAT_PARQUET,
-            label: m.report_form_format_parquet(),
-          },
-          {
-            value: V1ExportFormat.EXPORT_FORMAT_XLSX,
-            label: m.report_form_format_xlsx(),
-          },
-        ]}
-      />
-      <Input
-        bind:value={$data["exportLimit"]}
-        errors={$errors["exportLimit"]}
-        id="exportLimit"
-        label={m.report_form_row_limit()}
-        optional
-        placeholder={m.report_form_row_limit_placeholder()}
-      />
-      <Checkbox
-        bind:checked={$data["exportIncludeHeader"]}
-        id="exportIncludeHeader"
-        onCheckedChange={(checked) => {
-          $data["exportIncludeHeader"] = Boolean(checked);
-        }}
-        inverse
-        disabled={$data["exportFormat"] ===
-          V1ExportFormat.EXPORT_FORMAT_PARQUET}
-        label={m.report_form_include_metadata()}
-        hint={m.report_form_metadata_tooltip()}
+      <ExportFileOptions
+        bind:format={$data["exportFormat"]}
+        bind:limit={$data["exportLimit"]}
+        bind:includeHeader={$data["exportIncludeHeader"]}
+        limitErrors={$errors["exportLimit"]}
       />
       <!-- Reports created from an embed are only delivered as an email attachment, so the file is always attached. -->
       {#if isEmbedded}

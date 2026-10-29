@@ -182,10 +182,11 @@ func (s *Server) GetConnectorOAuthConfig(ctx context.Context, req *runtimev1.Get
 	return &runtimev1.GetConnectorOAuthConfigResponse{
 		ConfigHash: cfg.Hash,
 		Config: &runtimev1.ConnectorOAuthConfig{
-			ResourceUrl:  cfg.ServerURL,
-			ClientId:     cfg.ClientID,
-			ClientSecret: cfg.ClientSecret,
-			Scopes:       cfg.Scopes,
+			ResourceUrl:         cfg.ServerURL,
+			ClientId:            cfg.ClientID,
+			ClientSecret:        cfg.ClientSecret,
+			Scopes:              cfg.Scopes,
+			AuthorizationParams: cfg.AuthorizationParams,
 		},
 	}, nil
 }

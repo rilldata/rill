@@ -4507,6 +4507,10 @@ type AlertSpec struct {
 	//	*AlertSpec_QueryForUserEmail
 	//	*AlertSpec_QueryForAttributes
 	QueryFor             isAlertSpec_QueryFor `protobuf_oneof:"query_for"`
+	ExportAttach         bool                 `protobuf:"varint,24,opt,name=export_attach,json=exportAttach,proto3" json:"export_attach,omitempty"`                                   // If true, the query's result is exported and attached to email notifications for failed checks (only supported for query-based alerts).
+	ExportFormat         ExportFormat         `protobuf:"varint,25,opt,name=export_format,json=exportFormat,proto3,enum=rill.runtime.v1.ExportFormat" json:"export_format,omitempty"` // Format of the attached export.
+	ExportIncludeHeader  bool                 `protobuf:"varint,26,opt,name=export_include_header,json=exportIncludeHeader,proto3" json:"export_include_header,omitempty"`
+	ExportLimit          uint64               `protobuf:"varint,27,opt,name=export_limit,json=exportLimit,proto3" json:"export_limit,omitempty"`
 	NotifyOnRecover      bool                 `protobuf:"varint,15,opt,name=notify_on_recover,json=notifyOnRecover,proto3" json:"notify_on_recover,omitempty"`
 	NotifyOnFail         bool                 `protobuf:"varint,16,opt,name=notify_on_fail,json=notifyOnFail,proto3" json:"notify_on_fail,omitempty"`
 	NotifyOnError        bool                 `protobuf:"varint,17,opt,name=notify_on_error,json=notifyOnError,proto3" json:"notify_on_error,omitempty"`
@@ -4658,6 +4662,34 @@ func (x *AlertSpec) GetQueryForAttributes() *structpb.Struct {
 		return x.QueryForAttributes
 	}
 	return nil
+}
+
+func (x *AlertSpec) GetExportAttach() bool {
+	if x != nil {
+		return x.ExportAttach
+	}
+	return false
+}
+
+func (x *AlertSpec) GetExportFormat() ExportFormat {
+	if x != nil {
+		return x.ExportFormat
+	}
+	return ExportFormat_EXPORT_FORMAT_UNSPECIFIED
+}
+
+func (x *AlertSpec) GetExportIncludeHeader() bool {
+	if x != nil {
+		return x.ExportIncludeHeader
+	}
+	return false
+}
+
+func (x *AlertSpec) GetExportLimit() uint64 {
+	if x != nil {
+		return x.ExportLimit
+	}
+	return 0
 }
 
 func (x *AlertSpec) GetNotifyOnRecover() bool {
@@ -9620,7 +9652,7 @@ var file_rill_runtime_v1_resources_proto_rawDesc = []byte{
 	0x73, 0x70, 0x65, 0x63, 0x12, 0x31, 0x0a, 0x05, 0x73, 0x74, 0x61, 0x74, 0x65, 0x18, 0x02, 0x20,
 	0x01, 0x28, 0x0b, 0x32, 0x1b, 0x2e, 0x72, 0x69, 0x6c, 0x6c, 0x2e, 0x72, 0x75, 0x6e, 0x74, 0x69,
 	0x6d, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x41, 0x6c, 0x65, 0x72, 0x74, 0x53, 0x74, 0x61, 0x74, 0x65,
-	0x52, 0x05, 0x73, 0x74, 0x61, 0x74, 0x65, 0x22, 0xf8, 0x08, 0x0a, 0x09, 0x41, 0x6c, 0x65, 0x72,
+	0x52, 0x05, 0x73, 0x74, 0x61, 0x74, 0x65, 0x22, 0xb8, 0x0a, 0x0a, 0x09, 0x41, 0x6c, 0x65, 0x72,
 	0x74, 0x53, 0x70, 0x65, 0x63, 0x12, 0x21, 0x0a, 0x0c, 0x64, 0x69, 0x73, 0x70, 0x6c, 0x61, 0x79,
 	0x5f, 0x6e, 0x61, 0x6d, 0x65, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x52, 0x0b, 0x64, 0x69, 0x73,
 	0x70, 0x6c, 0x61, 0x79, 0x4e, 0x61, 0x6d, 0x65, 0x12, 0x18, 0x0a, 0x07, 0x74, 0x72, 0x69, 0x67,
@@ -9666,7 +9698,19 @@ var file_rill_runtime_v1_resources_proto_rawDesc = []byte{
 	0x28, 0x0b, 0x32, 0x17, 0x2e, 0x67, 0x6f, 0x6f, 0x67, 0x6c, 0x65, 0x2e, 0x70, 0x72, 0x6f, 0x74,
 	0x6f, 0x62, 0x75, 0x66, 0x2e, 0x53, 0x74, 0x72, 0x75, 0x63, 0x74, 0x48, 0x00, 0x52, 0x12, 0x71,
 	0x75, 0x65, 0x72, 0x79, 0x46, 0x6f, 0x72, 0x41, 0x74, 0x74, 0x72, 0x69, 0x62, 0x75, 0x74, 0x65,
-	0x73, 0x12, 0x2a, 0x0a, 0x11, 0x6e, 0x6f, 0x74, 0x69, 0x66, 0x79, 0x5f, 0x6f, 0x6e, 0x5f, 0x72,
+	0x73, 0x12, 0x23, 0x0a, 0x0d, 0x65, 0x78, 0x70, 0x6f, 0x72, 0x74, 0x5f, 0x61, 0x74, 0x74, 0x61,
+	0x63, 0x68, 0x18, 0x18, 0x20, 0x01, 0x28, 0x08, 0x52, 0x0c, 0x65, 0x78, 0x70, 0x6f, 0x72, 0x74,
+	0x41, 0x74, 0x74, 0x61, 0x63, 0x68, 0x12, 0x42, 0x0a, 0x0d, 0x65, 0x78, 0x70, 0x6f, 0x72, 0x74,
+	0x5f, 0x66, 0x6f, 0x72, 0x6d, 0x61, 0x74, 0x18, 0x19, 0x20, 0x01, 0x28, 0x0e, 0x32, 0x1d, 0x2e,
+	0x72, 0x69, 0x6c, 0x6c, 0x2e, 0x72, 0x75, 0x6e, 0x74, 0x69, 0x6d, 0x65, 0x2e, 0x76, 0x31, 0x2e,
+	0x45, 0x78, 0x70, 0x6f, 0x72, 0x74, 0x46, 0x6f, 0x72, 0x6d, 0x61, 0x74, 0x52, 0x0c, 0x65, 0x78,
+	0x70, 0x6f, 0x72, 0x74, 0x46, 0x6f, 0x72, 0x6d, 0x61, 0x74, 0x12, 0x32, 0x0a, 0x15, 0x65, 0x78,
+	0x70, 0x6f, 0x72, 0x74, 0x5f, 0x69, 0x6e, 0x63, 0x6c, 0x75, 0x64, 0x65, 0x5f, 0x68, 0x65, 0x61,
+	0x64, 0x65, 0x72, 0x18, 0x1a, 0x20, 0x01, 0x28, 0x08, 0x52, 0x13, 0x65, 0x78, 0x70, 0x6f, 0x72,
+	0x74, 0x49, 0x6e, 0x63, 0x6c, 0x75, 0x64, 0x65, 0x48, 0x65, 0x61, 0x64, 0x65, 0x72, 0x12, 0x21,
+	0x0a, 0x0c, 0x65, 0x78, 0x70, 0x6f, 0x72, 0x74, 0x5f, 0x6c, 0x69, 0x6d, 0x69, 0x74, 0x18, 0x1b,
+	0x20, 0x01, 0x28, 0x04, 0x52, 0x0b, 0x65, 0x78, 0x70, 0x6f, 0x72, 0x74, 0x4c, 0x69, 0x6d, 0x69,
+	0x74, 0x12, 0x2a, 0x0a, 0x11, 0x6e, 0x6f, 0x74, 0x69, 0x66, 0x79, 0x5f, 0x6f, 0x6e, 0x5f, 0x72,
 	0x65, 0x63, 0x6f, 0x76, 0x65, 0x72, 0x18, 0x0f, 0x20, 0x01, 0x28, 0x08, 0x52, 0x0f, 0x6e, 0x6f,
 	0x74, 0x69, 0x66, 0x79, 0x4f, 0x6e, 0x52, 0x65, 0x63, 0x6f, 0x76, 0x65, 0x72, 0x12, 0x24, 0x0a,
 	0x0e, 0x6e, 0x6f, 0x74, 0x69, 0x66, 0x79, 0x5f, 0x6f, 0x6e, 0x5f, 0x66, 0x61, 0x69, 0x6c, 0x18,
@@ -10508,94 +10552,95 @@ var file_rill_runtime_v1_resources_proto_depIdxs = []int32{
 	79,  // 110: rill.runtime.v1.AlertSpec.refresh_schedule:type_name -> rill.runtime.v1.Schedule
 	103, // 111: rill.runtime.v1.AlertSpec.resolver_properties:type_name -> google.protobuf.Struct
 	103, // 112: rill.runtime.v1.AlertSpec.query_for_attributes:type_name -> google.protobuf.Struct
-	47,  // 113: rill.runtime.v1.AlertSpec.notifiers:type_name -> rill.runtime.v1.Notifier
-	98,  // 114: rill.runtime.v1.AlertSpec.annotations:type_name -> rill.runtime.v1.AlertSpec.AnnotationsEntry
-	103, // 115: rill.runtime.v1.Notifier.properties:type_name -> google.protobuf.Struct
-	102, // 116: rill.runtime.v1.AlertState.next_run_on:type_name -> google.protobuf.Timestamp
-	49,  // 117: rill.runtime.v1.AlertState.current_execution:type_name -> rill.runtime.v1.AlertExecution
-	49,  // 118: rill.runtime.v1.AlertState.execution_history:type_name -> rill.runtime.v1.AlertExecution
-	50,  // 119: rill.runtime.v1.AlertExecution.result:type_name -> rill.runtime.v1.AssertionResult
-	102, // 120: rill.runtime.v1.AlertExecution.execution_time:type_name -> google.protobuf.Timestamp
-	102, // 121: rill.runtime.v1.AlertExecution.started_on:type_name -> google.protobuf.Timestamp
-	102, // 122: rill.runtime.v1.AlertExecution.finished_on:type_name -> google.protobuf.Timestamp
-	102, // 123: rill.runtime.v1.AlertExecution.suppressed_since:type_name -> google.protobuf.Timestamp
-	5,   // 124: rill.runtime.v1.AssertionResult.status:type_name -> rill.runtime.v1.AssertionStatus
-	103, // 125: rill.runtime.v1.AssertionResult.fail_row:type_name -> google.protobuf.Struct
-	52,  // 126: rill.runtime.v1.RefreshTrigger.spec:type_name -> rill.runtime.v1.RefreshTriggerSpec
-	53,  // 127: rill.runtime.v1.RefreshTrigger.state:type_name -> rill.runtime.v1.RefreshTriggerState
-	10,  // 128: rill.runtime.v1.RefreshTriggerSpec.resources:type_name -> rill.runtime.v1.ResourceName
-	54,  // 129: rill.runtime.v1.RefreshTriggerSpec.models:type_name -> rill.runtime.v1.RefreshModelTrigger
-	56,  // 130: rill.runtime.v1.Skill.spec:type_name -> rill.runtime.v1.SkillSpec
-	57,  // 131: rill.runtime.v1.Skill.state:type_name -> rill.runtime.v1.SkillState
-	59,  // 132: rill.runtime.v1.Theme.spec:type_name -> rill.runtime.v1.ThemeSpec
-	60,  // 133: rill.runtime.v1.Theme.state:type_name -> rill.runtime.v1.ThemeState
-	108, // 134: rill.runtime.v1.ThemeSpec.primary_color:type_name -> rill.runtime.v1.Color
-	108, // 135: rill.runtime.v1.ThemeSpec.secondary_color:type_name -> rill.runtime.v1.Color
-	61,  // 136: rill.runtime.v1.ThemeSpec.light:type_name -> rill.runtime.v1.ThemeColors
-	61,  // 137: rill.runtime.v1.ThemeSpec.dark:type_name -> rill.runtime.v1.ThemeColors
-	99,  // 138: rill.runtime.v1.ThemeColors.variables:type_name -> rill.runtime.v1.ThemeColors.VariablesEntry
-	63,  // 139: rill.runtime.v1.Component.spec:type_name -> rill.runtime.v1.ComponentSpec
-	64,  // 140: rill.runtime.v1.Component.state:type_name -> rill.runtime.v1.ComponentState
-	103, // 141: rill.runtime.v1.ComponentSpec.renderer_properties:type_name -> google.protobuf.Struct
-	66,  // 142: rill.runtime.v1.ComponentSpec.params:type_name -> rill.runtime.v1.ComponentParam
-	65,  // 143: rill.runtime.v1.ComponentSpec.input:type_name -> rill.runtime.v1.ComponentVariable
-	65,  // 144: rill.runtime.v1.ComponentSpec.output:type_name -> rill.runtime.v1.ComponentVariable
-	63,  // 145: rill.runtime.v1.ComponentState.valid_spec:type_name -> rill.runtime.v1.ComponentSpec
-	102, // 146: rill.runtime.v1.ComponentState.data_refreshed_on:type_name -> google.protobuf.Timestamp
-	109, // 147: rill.runtime.v1.ComponentVariable.default_value:type_name -> google.protobuf.Value
-	109, // 148: rill.runtime.v1.ComponentParam.default:type_name -> google.protobuf.Value
-	109, // 149: rill.runtime.v1.ComponentParam.options:type_name -> google.protobuf.Value
-	68,  // 150: rill.runtime.v1.Canvas.spec:type_name -> rill.runtime.v1.CanvasSpec
-	69,  // 151: rill.runtime.v1.Canvas.state:type_name -> rill.runtime.v1.CanvasState
-	59,  // 152: rill.runtime.v1.CanvasSpec.embedded_theme:type_name -> rill.runtime.v1.ThemeSpec
-	33,  // 153: rill.runtime.v1.CanvasSpec.time_ranges:type_name -> rill.runtime.v1.ExploreTimeRange
-	74,  // 154: rill.runtime.v1.CanvasSpec.default_preset:type_name -> rill.runtime.v1.CanvasPreset
-	65,  // 155: rill.runtime.v1.CanvasSpec.variables:type_name -> rill.runtime.v1.ComponentVariable
-	70,  // 156: rill.runtime.v1.CanvasSpec.rows:type_name -> rill.runtime.v1.CanvasRow
-	23,  // 157: rill.runtime.v1.CanvasSpec.security_rules:type_name -> rill.runtime.v1.SecurityRule
-	100, // 158: rill.runtime.v1.CanvasSpec.annotations:type_name -> rill.runtime.v1.CanvasSpec.AnnotationsEntry
-	32,  // 159: rill.runtime.v1.CanvasSpec.ai_prompts:type_name -> rill.runtime.v1.AIPrompt
-	68,  // 160: rill.runtime.v1.CanvasState.valid_spec:type_name -> rill.runtime.v1.CanvasSpec
-	102, // 161: rill.runtime.v1.CanvasState.data_refreshed_on:type_name -> google.protobuf.Timestamp
-	73,  // 162: rill.runtime.v1.CanvasRow.items:type_name -> rill.runtime.v1.CanvasItem
-	71,  // 163: rill.runtime.v1.CanvasRow.tab_group:type_name -> rill.runtime.v1.CanvasTabGroup
-	72,  // 164: rill.runtime.v1.CanvasTabGroup.tabs:type_name -> rill.runtime.v1.CanvasTab
-	70,  // 165: rill.runtime.v1.CanvasTab.rows:type_name -> rill.runtime.v1.CanvasRow
-	103, // 166: rill.runtime.v1.CanvasItem.params:type_name -> google.protobuf.Struct
-	2,   // 167: rill.runtime.v1.CanvasPreset.comparison_mode:type_name -> rill.runtime.v1.ExploreComparisonMode
-	101, // 168: rill.runtime.v1.CanvasPreset.filter_expr:type_name -> rill.runtime.v1.CanvasPreset.FilterExprEntry
-	106, // 169: rill.runtime.v1.DefaultMetricsSQLFilter.expression:type_name -> rill.runtime.v1.Expression
-	77,  // 170: rill.runtime.v1.API.spec:type_name -> rill.runtime.v1.APISpec
-	78,  // 171: rill.runtime.v1.API.state:type_name -> rill.runtime.v1.APIState
-	103, // 172: rill.runtime.v1.APISpec.resolver_properties:type_name -> google.protobuf.Struct
-	23,  // 173: rill.runtime.v1.APISpec.security_rules:type_name -> rill.runtime.v1.SecurityRule
-	84,  // 174: rill.runtime.v1.ParseError.start_location:type_name -> rill.runtime.v1.CharLocation
-	86,  // 175: rill.runtime.v1.ConnectorV2.spec:type_name -> rill.runtime.v1.ConnectorSpec
-	87,  // 176: rill.runtime.v1.ConnectorV2.state:type_name -> rill.runtime.v1.ConnectorState
-	103, // 177: rill.runtime.v1.ConnectorSpec.properties:type_name -> google.protobuf.Struct
-	103, // 178: rill.runtime.v1.ConnectorSpec.provision_args:type_name -> google.protobuf.Struct
-	23,  // 179: rill.runtime.v1.ConnectorSpec.security_rules:type_name -> rill.runtime.v1.SecurityRule
-	6,   // 180: rill.runtime.v1.MetricsViewSpec.Dimension.type:type_name -> rill.runtime.v1.MetricsViewSpec.DimensionType
-	105, // 181: rill.runtime.v1.MetricsViewSpec.Dimension.smallest_time_grain:type_name -> rill.runtime.v1.TimeGrain
-	110, // 182: rill.runtime.v1.MetricsViewSpec.Dimension.data_type:type_name -> rill.runtime.v1.Type
-	105, // 183: rill.runtime.v1.MetricsViewSpec.DimensionSelector.time_grain:type_name -> rill.runtime.v1.TimeGrain
-	91,  // 184: rill.runtime.v1.MetricsViewSpec.MeasureWindow.order_by:type_name -> rill.runtime.v1.MetricsViewSpec.DimensionSelector
-	7,   // 185: rill.runtime.v1.MetricsViewSpec.Measure.type:type_name -> rill.runtime.v1.MetricsViewSpec.MeasureType
-	92,  // 186: rill.runtime.v1.MetricsViewSpec.Measure.window:type_name -> rill.runtime.v1.MetricsViewSpec.MeasureWindow
-	91,  // 187: rill.runtime.v1.MetricsViewSpec.Measure.per_dimensions:type_name -> rill.runtime.v1.MetricsViewSpec.DimensionSelector
-	91,  // 188: rill.runtime.v1.MetricsViewSpec.Measure.required_dimensions:type_name -> rill.runtime.v1.MetricsViewSpec.DimensionSelector
-	103, // 189: rill.runtime.v1.MetricsViewSpec.Measure.format_d3_locale:type_name -> google.protobuf.Struct
-	110, // 190: rill.runtime.v1.MetricsViewSpec.Measure.data_type:type_name -> rill.runtime.v1.Type
-	36,  // 191: rill.runtime.v1.MetricsViewSpec.Annotation.measures_selector:type_name -> rill.runtime.v1.FieldSelector
-	105, // 192: rill.runtime.v1.MetricsViewSpec.Rollup.time_grain:type_name -> rill.runtime.v1.TimeGrain
-	36,  // 193: rill.runtime.v1.MetricsViewSpec.Rollup.dimensions_selector:type_name -> rill.runtime.v1.FieldSelector
-	36,  // 194: rill.runtime.v1.MetricsViewSpec.Rollup.measures_selector:type_name -> rill.runtime.v1.FieldSelector
-	75,  // 195: rill.runtime.v1.CanvasPreset.FilterExprEntry.value:type_name -> rill.runtime.v1.DefaultMetricsSQLFilter
-	196, // [196:196] is the sub-list for method output_type
-	196, // [196:196] is the sub-list for method input_type
-	196, // [196:196] is the sub-list for extension type_name
-	196, // [196:196] is the sub-list for extension extendee
-	0,   // [0:196] is the sub-list for field type_name
+	107, // 113: rill.runtime.v1.AlertSpec.export_format:type_name -> rill.runtime.v1.ExportFormat
+	47,  // 114: rill.runtime.v1.AlertSpec.notifiers:type_name -> rill.runtime.v1.Notifier
+	98,  // 115: rill.runtime.v1.AlertSpec.annotations:type_name -> rill.runtime.v1.AlertSpec.AnnotationsEntry
+	103, // 116: rill.runtime.v1.Notifier.properties:type_name -> google.protobuf.Struct
+	102, // 117: rill.runtime.v1.AlertState.next_run_on:type_name -> google.protobuf.Timestamp
+	49,  // 118: rill.runtime.v1.AlertState.current_execution:type_name -> rill.runtime.v1.AlertExecution
+	49,  // 119: rill.runtime.v1.AlertState.execution_history:type_name -> rill.runtime.v1.AlertExecution
+	50,  // 120: rill.runtime.v1.AlertExecution.result:type_name -> rill.runtime.v1.AssertionResult
+	102, // 121: rill.runtime.v1.AlertExecution.execution_time:type_name -> google.protobuf.Timestamp
+	102, // 122: rill.runtime.v1.AlertExecution.started_on:type_name -> google.protobuf.Timestamp
+	102, // 123: rill.runtime.v1.AlertExecution.finished_on:type_name -> google.protobuf.Timestamp
+	102, // 124: rill.runtime.v1.AlertExecution.suppressed_since:type_name -> google.protobuf.Timestamp
+	5,   // 125: rill.runtime.v1.AssertionResult.status:type_name -> rill.runtime.v1.AssertionStatus
+	103, // 126: rill.runtime.v1.AssertionResult.fail_row:type_name -> google.protobuf.Struct
+	52,  // 127: rill.runtime.v1.RefreshTrigger.spec:type_name -> rill.runtime.v1.RefreshTriggerSpec
+	53,  // 128: rill.runtime.v1.RefreshTrigger.state:type_name -> rill.runtime.v1.RefreshTriggerState
+	10,  // 129: rill.runtime.v1.RefreshTriggerSpec.resources:type_name -> rill.runtime.v1.ResourceName
+	54,  // 130: rill.runtime.v1.RefreshTriggerSpec.models:type_name -> rill.runtime.v1.RefreshModelTrigger
+	56,  // 131: rill.runtime.v1.Skill.spec:type_name -> rill.runtime.v1.SkillSpec
+	57,  // 132: rill.runtime.v1.Skill.state:type_name -> rill.runtime.v1.SkillState
+	59,  // 133: rill.runtime.v1.Theme.spec:type_name -> rill.runtime.v1.ThemeSpec
+	60,  // 134: rill.runtime.v1.Theme.state:type_name -> rill.runtime.v1.ThemeState
+	108, // 135: rill.runtime.v1.ThemeSpec.primary_color:type_name -> rill.runtime.v1.Color
+	108, // 136: rill.runtime.v1.ThemeSpec.secondary_color:type_name -> rill.runtime.v1.Color
+	61,  // 137: rill.runtime.v1.ThemeSpec.light:type_name -> rill.runtime.v1.ThemeColors
+	61,  // 138: rill.runtime.v1.ThemeSpec.dark:type_name -> rill.runtime.v1.ThemeColors
+	99,  // 139: rill.runtime.v1.ThemeColors.variables:type_name -> rill.runtime.v1.ThemeColors.VariablesEntry
+	63,  // 140: rill.runtime.v1.Component.spec:type_name -> rill.runtime.v1.ComponentSpec
+	64,  // 141: rill.runtime.v1.Component.state:type_name -> rill.runtime.v1.ComponentState
+	103, // 142: rill.runtime.v1.ComponentSpec.renderer_properties:type_name -> google.protobuf.Struct
+	66,  // 143: rill.runtime.v1.ComponentSpec.params:type_name -> rill.runtime.v1.ComponentParam
+	65,  // 144: rill.runtime.v1.ComponentSpec.input:type_name -> rill.runtime.v1.ComponentVariable
+	65,  // 145: rill.runtime.v1.ComponentSpec.output:type_name -> rill.runtime.v1.ComponentVariable
+	63,  // 146: rill.runtime.v1.ComponentState.valid_spec:type_name -> rill.runtime.v1.ComponentSpec
+	102, // 147: rill.runtime.v1.ComponentState.data_refreshed_on:type_name -> google.protobuf.Timestamp
+	109, // 148: rill.runtime.v1.ComponentVariable.default_value:type_name -> google.protobuf.Value
+	109, // 149: rill.runtime.v1.ComponentParam.default:type_name -> google.protobuf.Value
+	109, // 150: rill.runtime.v1.ComponentParam.options:type_name -> google.protobuf.Value
+	68,  // 151: rill.runtime.v1.Canvas.spec:type_name -> rill.runtime.v1.CanvasSpec
+	69,  // 152: rill.runtime.v1.Canvas.state:type_name -> rill.runtime.v1.CanvasState
+	59,  // 153: rill.runtime.v1.CanvasSpec.embedded_theme:type_name -> rill.runtime.v1.ThemeSpec
+	33,  // 154: rill.runtime.v1.CanvasSpec.time_ranges:type_name -> rill.runtime.v1.ExploreTimeRange
+	74,  // 155: rill.runtime.v1.CanvasSpec.default_preset:type_name -> rill.runtime.v1.CanvasPreset
+	65,  // 156: rill.runtime.v1.CanvasSpec.variables:type_name -> rill.runtime.v1.ComponentVariable
+	70,  // 157: rill.runtime.v1.CanvasSpec.rows:type_name -> rill.runtime.v1.CanvasRow
+	23,  // 158: rill.runtime.v1.CanvasSpec.security_rules:type_name -> rill.runtime.v1.SecurityRule
+	100, // 159: rill.runtime.v1.CanvasSpec.annotations:type_name -> rill.runtime.v1.CanvasSpec.AnnotationsEntry
+	32,  // 160: rill.runtime.v1.CanvasSpec.ai_prompts:type_name -> rill.runtime.v1.AIPrompt
+	68,  // 161: rill.runtime.v1.CanvasState.valid_spec:type_name -> rill.runtime.v1.CanvasSpec
+	102, // 162: rill.runtime.v1.CanvasState.data_refreshed_on:type_name -> google.protobuf.Timestamp
+	73,  // 163: rill.runtime.v1.CanvasRow.items:type_name -> rill.runtime.v1.CanvasItem
+	71,  // 164: rill.runtime.v1.CanvasRow.tab_group:type_name -> rill.runtime.v1.CanvasTabGroup
+	72,  // 165: rill.runtime.v1.CanvasTabGroup.tabs:type_name -> rill.runtime.v1.CanvasTab
+	70,  // 166: rill.runtime.v1.CanvasTab.rows:type_name -> rill.runtime.v1.CanvasRow
+	103, // 167: rill.runtime.v1.CanvasItem.params:type_name -> google.protobuf.Struct
+	2,   // 168: rill.runtime.v1.CanvasPreset.comparison_mode:type_name -> rill.runtime.v1.ExploreComparisonMode
+	101, // 169: rill.runtime.v1.CanvasPreset.filter_expr:type_name -> rill.runtime.v1.CanvasPreset.FilterExprEntry
+	106, // 170: rill.runtime.v1.DefaultMetricsSQLFilter.expression:type_name -> rill.runtime.v1.Expression
+	77,  // 171: rill.runtime.v1.API.spec:type_name -> rill.runtime.v1.APISpec
+	78,  // 172: rill.runtime.v1.API.state:type_name -> rill.runtime.v1.APIState
+	103, // 173: rill.runtime.v1.APISpec.resolver_properties:type_name -> google.protobuf.Struct
+	23,  // 174: rill.runtime.v1.APISpec.security_rules:type_name -> rill.runtime.v1.SecurityRule
+	84,  // 175: rill.runtime.v1.ParseError.start_location:type_name -> rill.runtime.v1.CharLocation
+	86,  // 176: rill.runtime.v1.ConnectorV2.spec:type_name -> rill.runtime.v1.ConnectorSpec
+	87,  // 177: rill.runtime.v1.ConnectorV2.state:type_name -> rill.runtime.v1.ConnectorState
+	103, // 178: rill.runtime.v1.ConnectorSpec.properties:type_name -> google.protobuf.Struct
+	103, // 179: rill.runtime.v1.ConnectorSpec.provision_args:type_name -> google.protobuf.Struct
+	23,  // 180: rill.runtime.v1.ConnectorSpec.security_rules:type_name -> rill.runtime.v1.SecurityRule
+	6,   // 181: rill.runtime.v1.MetricsViewSpec.Dimension.type:type_name -> rill.runtime.v1.MetricsViewSpec.DimensionType
+	105, // 182: rill.runtime.v1.MetricsViewSpec.Dimension.smallest_time_grain:type_name -> rill.runtime.v1.TimeGrain
+	110, // 183: rill.runtime.v1.MetricsViewSpec.Dimension.data_type:type_name -> rill.runtime.v1.Type
+	105, // 184: rill.runtime.v1.MetricsViewSpec.DimensionSelector.time_grain:type_name -> rill.runtime.v1.TimeGrain
+	91,  // 185: rill.runtime.v1.MetricsViewSpec.MeasureWindow.order_by:type_name -> rill.runtime.v1.MetricsViewSpec.DimensionSelector
+	7,   // 186: rill.runtime.v1.MetricsViewSpec.Measure.type:type_name -> rill.runtime.v1.MetricsViewSpec.MeasureType
+	92,  // 187: rill.runtime.v1.MetricsViewSpec.Measure.window:type_name -> rill.runtime.v1.MetricsViewSpec.MeasureWindow
+	91,  // 188: rill.runtime.v1.MetricsViewSpec.Measure.per_dimensions:type_name -> rill.runtime.v1.MetricsViewSpec.DimensionSelector
+	91,  // 189: rill.runtime.v1.MetricsViewSpec.Measure.required_dimensions:type_name -> rill.runtime.v1.MetricsViewSpec.DimensionSelector
+	103, // 190: rill.runtime.v1.MetricsViewSpec.Measure.format_d3_locale:type_name -> google.protobuf.Struct
+	110, // 191: rill.runtime.v1.MetricsViewSpec.Measure.data_type:type_name -> rill.runtime.v1.Type
+	36,  // 192: rill.runtime.v1.MetricsViewSpec.Annotation.measures_selector:type_name -> rill.runtime.v1.FieldSelector
+	105, // 193: rill.runtime.v1.MetricsViewSpec.Rollup.time_grain:type_name -> rill.runtime.v1.TimeGrain
+	36,  // 194: rill.runtime.v1.MetricsViewSpec.Rollup.dimensions_selector:type_name -> rill.runtime.v1.FieldSelector
+	36,  // 195: rill.runtime.v1.MetricsViewSpec.Rollup.measures_selector:type_name -> rill.runtime.v1.FieldSelector
+	75,  // 196: rill.runtime.v1.CanvasPreset.FilterExprEntry.value:type_name -> rill.runtime.v1.DefaultMetricsSQLFilter
+	197, // [197:197] is the sub-list for method output_type
+	197, // [197:197] is the sub-list for method input_type
+	197, // [197:197] is the sub-list for extension type_name
+	197, // [197:197] is the sub-list for extension extendee
+	0,   // [0:197] is the sub-list for field type_name
 }
 
 func init() { file_rill_runtime_v1_resources_proto_init() }

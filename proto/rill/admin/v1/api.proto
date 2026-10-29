@@ -3869,6 +3869,10 @@ message AlertOptions {
   string query_name = 3;
   // DEPRECATED: Use resolver and resolver_properties instead.
   string query_args_json = 4;
+  bool export_attach = 18; // If true, the query's result is exported and attached to email notifications for failed checks (only supported for query-based alerts).
+  rill.runtime.v1.ExportFormat export_format = 19;
+  bool export_include_header = 20;
+  uint64 export_limit = 21;
   string metrics_view_name = 5;
   bool renotify = 6;
   uint32 renotify_after_seconds = 7;

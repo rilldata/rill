@@ -30,6 +30,16 @@
           {{ end }}
         </mj-text>
 
+        <mj-raw>{{ if .Attached }}</mj-raw>
+        <mj-text padding-bottom="0px">
+          The rows that matched your alert criteria are attached.
+        </mj-text>
+        <mj-raw>{{ else if .AttachmentTooLarge }}</mj-raw>
+        <mj-text padding-bottom="0px">
+          The rows that matched your alert criteria are too large to attach to this email.
+        </mj-text>
+        <mj-raw>{{ end }}</mj-raw>
+
         <mj-spacer height="20px" />
 
         <mj-button background-color="#ECF0FF" color="#3524C7" font-weight="bold" href="{{ .OpenLink }}">

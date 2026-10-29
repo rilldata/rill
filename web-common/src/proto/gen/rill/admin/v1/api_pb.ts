@@ -19094,6 +19094,28 @@ export class AlertOptions extends Message<AlertOptions> {
   queryArgsJson = "";
 
   /**
+   * If true, the query's result is exported and attached to email notifications for failed checks (only supported for query-based alerts).
+   *
+   * @generated from field: bool export_attach = 18;
+   */
+  exportAttach = false;
+
+  /**
+   * @generated from field: rill.runtime.v1.ExportFormat export_format = 19;
+   */
+  exportFormat = ExportFormat.UNSPECIFIED;
+
+  /**
+   * @generated from field: bool export_include_header = 20;
+   */
+  exportIncludeHeader = false;
+
+  /**
+   * @generated from field: uint64 export_limit = 21;
+   */
+  exportLimit = protoInt64.zero;
+
+  /**
    * @generated from field: string metrics_view_name = 5;
    */
   metricsViewName = "";
@@ -19158,6 +19180,10 @@ export class AlertOptions extends Message<AlertOptions> {
     { no: 14, name: "resolver_properties", kind: "message", T: Struct },
     { no: 3, name: "query_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "query_args_json", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 18, name: "export_attach", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 19, name: "export_format", kind: "enum", T: proto3.getEnumType(ExportFormat) },
+    { no: 20, name: "export_include_header", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 21, name: "export_limit", kind: "scalar", T: 4 /* ScalarType.UINT64 */ },
     { no: 5, name: "metrics_view_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 6, name: "renotify", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 7, name: "renotify_after_seconds", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },

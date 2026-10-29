@@ -1935,6 +1935,159 @@ annotations:
 	requireResourcesAndErrors(t, p, resources, nil)
 }
 
+func TestAlertAttach(t *testing.T) {
+	ctx := context.Background()
+	repo := makeRepo(t, map[string]string{
+		`rill.yaml`: ``,
+		// Query-based alert with all export options
+		`alerts/a1.yaml`: `
+type: alert
+query:
+  name: MetricsViewAggregation
+  args:
+    metrics_view: mv1
+export:
+  attach: true
+  format: xlsx
+  include_header: true
+  limit: 100
+notify:
+  email:
+    recipients:
+      - user_1@example.com
+`,
+		// Attachments require an export format
+		`alerts/a2.yaml`: `
+type: alert
+query:
+  name: MetricsViewAggregation
+  args:
+    metrics_view: mv1
+export:
+  attach: true
+notify:
+  email:
+    recipients:
+      - user_1@example.com
+`,
+		// Attachments are not supported for alerts using "data"
+		`alerts/a3.yaml`: `
+type: alert
+data:
+  sql: SELECT 1
+export:
+  attach: true
+  format: csv
+notify:
+  email:
+    recipients:
+      - user_1@example.com
+`,
+		// PDF exports are not supported for alerts
+		`alerts/a4.yaml`: `
+type: alert
+query:
+  name: MetricsViewAggregation
+  args:
+    metrics_view: mv1
+export:
+  attach: true
+  format: pdf
+notify:
+  email:
+    recipients:
+      - user_1@example.com
+`,
+		// Attachments require email recipients
+		`alerts/a5.yaml`: `
+type: alert
+query:
+  name: MetricsViewAggregation
+  args:
+    metrics_view: mv1
+export:
+  attach: true
+  format: csv
+notify:
+  slack:
+    channels:
+      - alerts
+`,
+		// Export options are ignored when not attaching
+		`alerts/a6.yaml`: `
+type: alert
+query:
+  name: MetricsViewAggregation
+  args:
+    metrics_view: mv1
+export:
+  format: pdf
+notify:
+  email:
+    recipients:
+      - user_1@example.com
+`,
+	})
+
+	resources := []*Resource{
+		{
+			Name:  ResourceName{Kind: ResourceKindAlert, Name: "a1"},
+			Paths: []string{"/alerts/a1.yaml"},
+			AlertSpec: &runtimev1.AlertSpec{
+				DisplayName:     "A1",
+				RefreshSchedule: &runtimev1.Schedule{RefUpdate: true},
+				Resolver:        "legacy_metrics",
+				ResolverProperties: must(structpb.NewStruct(map[string]any{
+					"query_name":      "MetricsViewAggregation",
+					"query_args_json": `{"metrics_view":"mv1"}`,
+				})),
+				ExportAttach:        true,
+				ExportFormat:        runtimev1.ExportFormat_EXPORT_FORMAT_XLSX,
+				ExportIncludeHeader: true,
+				ExportLimit:         100,
+				NotifyOnFail:        true,
+				Notifiers:           []*runtimev1.Notifier{{Connector: "email", Properties: must(structpb.NewStruct(map[string]any{"recipients": []any{"user_1@example.com"}}))}},
+			},
+		},
+		{
+			Name:  ResourceName{Kind: ResourceKindAlert, Name: "a6"},
+			Paths: []string{"/alerts/a6.yaml"},
+			AlertSpec: &runtimev1.AlertSpec{
+				DisplayName:     "A6",
+				RefreshSchedule: &runtimev1.Schedule{RefUpdate: true},
+				Resolver:        "legacy_metrics",
+				ResolverProperties: must(structpb.NewStruct(map[string]any{
+					"query_name":      "MetricsViewAggregation",
+					"query_args_json": `{"metrics_view":"mv1"}`,
+				})),
+				NotifyOnFail: true,
+				Notifiers:    []*runtimev1.Notifier{{Connector: "email", Properties: must(structpb.NewStruct(map[string]any{"recipients": []any{"user_1@example.com"}}))}},
+			},
+		},
+	}
+
+	p, err := Parse(ctx, repo, "", "", "duckdb", true)
+	require.NoError(t, err)
+	requireResourcesAndErrors(t, p, resources, []*runtimev1.ParseError{
+		{
+			Message:  `missing required property "export.format"`,
+			FilePath: "/alerts/a2.yaml",
+		},
+		{
+			Message:  `"export.attach" requires the "query" property`,
+			FilePath: "/alerts/a3.yaml",
+		},
+		{
+			Message:  `export format "pdf" is not supported for alerts`,
+			FilePath: "/alerts/a4.yaml",
+		},
+		{
+			Message:  `"export.attach" requires email recipients`,
+			FilePath: "/alerts/a5.yaml",
+		},
+	})
+}
+
 func TestMetricsViewAvoidSelfCyclicRef(t *testing.T) {
 	ctx := context.Background()
 	repo := makeRepo(t, map[string]string{

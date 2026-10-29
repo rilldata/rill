@@ -14,7 +14,6 @@ import (
 
 	"github.com/google/uuid"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
-	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/stretchr/testify/require"
 )
 
@@ -89,7 +88,7 @@ func TestAlertFail(t *testing.T) {
 	mock := &mockSender{}
 	client := New(mock)
 
-	opts := &drivers.AlertStatus{
+	opts := &AlertStatus{
 		ToEmail:       uuid.New().String(),
 		ToName:        uuid.New().String(),
 		DisplayName:   "Foobar",
@@ -111,13 +110,31 @@ func TestAlertFail(t *testing.T) {
 		require.Contains(t, mock.body, k)
 		require.Contains(t, mock.body, fmt.Sprintf("%v", v))
 	}
+	require.NotContains(t, mock.body, "are attached")
+	require.NotContains(t, mock.body, "too large to attach")
+	require.Empty(t, mock.attachments)
+
+	// The export is attached
+	opts.Attachment = &Attachment{Filename: "foobar.csv", ContentType: "text/csv", Data: []byte("a,b\n1,2\n")}
+	err = client.SendAlertStatus(opts)
+	require.NoError(t, err)
+	require.Contains(t, mock.body, "The rows that matched your alert criteria are attached.")
+	require.Equal(t, []Attachment{*opts.Attachment}, mock.attachments)
+
+	// The export was too large to attach
+	opts.Attachment = nil
+	opts.AttachmentTooLarge = true
+	err = client.SendAlertStatus(opts)
+	require.NoError(t, err)
+	require.Contains(t, mock.body, "too large to attach to this email")
+	require.Empty(t, mock.attachments)
 }
 
 func TestAlertRecover(t *testing.T) {
 	mock := &mockSender{}
 	client := New(mock)
 
-	opts := &drivers.AlertStatus{
+	opts := &AlertStatus{
 		ToEmail:       uuid.New().String(),
 		ToName:        uuid.New().String(),
 		DisplayName:   "Foobar",
@@ -142,7 +159,7 @@ func TestAlertError(t *testing.T) {
 	mock := &mockSender{}
 	client := New(mock)
 
-	opts := &drivers.AlertStatus{
+	opts := &AlertStatus{
 		ToEmail:        uuid.New().String(),
 		ToName:         uuid.New().String(),
 		DisplayName:    "Foobar",

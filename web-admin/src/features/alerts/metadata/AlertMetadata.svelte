@@ -18,7 +18,10 @@
   import MetadataList from "@rilldata/web-admin/features/scheduled-reports/metadata/MetadataList.svelte";
   import MetadataValue from "@rilldata/web-admin/features/scheduled-reports/metadata/MetadataValue.svelte";
   import { extractNotifier } from "@rilldata/web-admin/features/scheduled-reports/metadata/notifiers-utils";
-  import { formatRefreshSchedule } from "@rilldata/web-admin/features/scheduled-reports/metadata/utils.ts";
+  import {
+    exportFormatToPrettyString,
+    formatRefreshSchedule,
+  } from "@rilldata/web-admin/features/scheduled-reports/metadata/utils.ts";
   import { IconButton } from "@rilldata/web-common/components/button";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import CancelCircle from "@rilldata/web-common/components/icons/CancelCircle.svelte";
@@ -30,6 +33,7 @@
   import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors";
   import {
     getRuntimeServiceListResourcesQueryKey,
+    V1ExportFormat,
     type V1MetricsViewAggregationRequest,
   } from "@rilldata/web-common/runtime-client";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
@@ -224,6 +228,20 @@
         <MetadataLabel>{m.alert_snooze()}</MetadataLabel>
         <MetadataValue>{snoozeLabel}</MetadataValue>
       </div>
+
+      <!-- Email attachment -->
+      {#if alertSpec.exportAttach}
+        <div class="flex flex-col gap-y-3">
+          <MetadataLabel>{m.alert_email_attachment()}</MetadataLabel>
+          <MetadataValue>
+            {exportFormatToPrettyString(
+              alertSpec.exportFormat ?? V1ExportFormat.EXPORT_FORMAT_CSV,
+            )} • {!alertSpec.exportLimit || alertSpec.exportLimit === "0"
+              ? m.report_no_row_limit()
+              : m.report_row_limit({ count: alertSpec.exportLimit })}
+          </MetadataValue>
+        </div>
+      {/if}
     </div>
 
     <!-- Filters -->

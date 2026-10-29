@@ -566,6 +566,62 @@ paths:
           type: string
       tags:
         - RuntimeService
+    delete:
+      summary: DeleteConversation deletes a conversation and its messages. Only the owner can delete a conversation.
+      operationId: RuntimeService_DeleteConversation
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1DeleteConversationResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: conversationId
+          in: path
+          required: true
+          type: string
+      tags:
+        - RuntimeService
+    patch:
+      summary: UpdateConversation updates a conversation's metadata. Only the owner can update a conversation.
+      operationId: RuntimeService_UpdateConversation
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1UpdateConversationResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: conversationId
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              title:
+                type: string
+                description: New title for the conversation. Not changed if unset.
+            title: Request message for RuntimeService.UpdateConversation
+      tags:
+        - RuntimeService
   /v1/instances/{instanceId}/ai/conversations/{conversationId}/fork:
     post:
       summary: |-
@@ -4588,6 +4644,17 @@ definitions:
         type: string
       queryForAttributes:
         type: object
+      exportAttach:
+        type: boolean
+        description: If true, the query's result is exported and attached to email notifications for failed checks (only supported for query-based alerts).
+      exportFormat:
+        $ref: '#/definitions/v1ExportFormat'
+        description: Format of the attached export.
+      exportIncludeHeader:
+        type: boolean
+      exportLimit:
+        type: string
+        format: uint64
       notifyOnRecover:
         type: boolean
       notifyOnFail:
@@ -5520,6 +5587,11 @@ definitions:
         items:
           type: string
         description: Scopes to request. If empty, the scopes the resource advertises are requested.
+      authorizationParams:
+        type: object
+        additionalProperties:
+          type: string
+        description: Extra query parameters for the authorization endpoint, for servers that need non-standard ones (e.g. Google's access_type=offline).
     description: ConnectorOAuthConfig describes how to reach a connector's authorization server and which client to use with it.
   v1ConnectorSpec:
     type: object
@@ -5570,6 +5642,8 @@ definitions:
         $ref: '#/definitions/v1ToolCall'
       toolResult:
         $ref: '#/definitions/v1ToolResult'
+      reasoning:
+        $ref: '#/definitions/v1Reasoning'
     title: Content block within a message
   v1Conversation:
     type: object
@@ -5672,6 +5746,9 @@ definitions:
   v1DeleteAIMemoryResponse:
     type: object
     title: Response message for RuntimeService.DeleteAIMemory
+  v1DeleteConversationResponse:
+    type: object
+    title: Response message for RuntimeService.DeleteConversation
   v1DeleteFileResponse:
     type: object
     title: Response message for RuntimeService.DeleteFile
@@ -8182,6 +8259,21 @@ definitions:
         type: array
         items:
           type: object
+  v1Reasoning:
+    type: object
+    properties:
+      text:
+        type: string
+        description: Readable reasoning. Often empty, since providers may omit it or return a summary.
+      signature:
+        type: string
+        description: Opaque provider signature that lets the provider verify the reasoning.
+      redactedData:
+        type: string
+        description: Opaque encrypted reasoning, set instead of text and signature when the provider redacts the reasoning.
+    description: |-
+      The model's reasoning before its text or tool calls.
+      Some providers (e.g. Claude) require it to be passed back unmodified within a tool call loop.
   v1ReconcileStatus:
     type: string
     enum:
@@ -9094,6 +9186,9 @@ definitions:
   v1UpdateAIMemorySettingsResponse:
     type: object
     title: Response message for RuntimeService.UpdateAIMemorySettings
+  v1UpdateConversationResponse:
+    type: object
+    title: Response message for RuntimeService.UpdateConversation
   v1WatchFilesResponse:
     type: object
     properties:
