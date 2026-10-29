@@ -382,6 +382,11 @@ components:
             type: object
         v1CompleteRequest:
             properties:
+                includeReasoning:
+                    description: |-
+                        Whether the response may include reasoning blocks.
+                        Older clients don't support them, so they are removed from the response unless this is set.
+                    type: boolean
                 messages:
                     description: Input message(s) for the AI to complete.
                     items:
@@ -398,6 +403,10 @@ components:
             type: object
         v1CompleteResponse:
             properties:
+                cacheWriteInputTokens:
+                    description: Number of input tokens written to the prompt cache, which some providers (e.g. Claude) bill at a premium.
+                    format: int64
+                    type: integer
                 cachedInputTokens:
                     description: Number of cache-read (discounted) input tokens; a subset of input_tokens.
                     format: int64
@@ -442,6 +451,8 @@ components:
             type: object
         v1ContentBlock:
             properties:
+                reasoning:
+                    $ref: '#/components/schemas/v1Reasoning'
                 text:
                     type: string
                 toolCall:
@@ -1858,6 +1869,21 @@ components:
                 storageLimitBytesPerDeployment:
                     type: string
                 tokensPerSeat:
+                    type: string
+            type: object
+        v1Reasoning:
+            description: |-
+                The model's reasoning before its text or tool calls.
+                Some providers (e.g. Claude) require it to be passed back unmodified within a tool call loop.
+            properties:
+                redactedData:
+                    description: Opaque encrypted reasoning, set instead of text and signature when the provider redacts the reasoning.
+                    type: string
+                signature:
+                    description: Opaque provider signature that lets the provider verify the reasoning.
+                    type: string
+                text:
+                    description: Readable reasoning. Often empty, since providers may omit it or return a summary.
                     type: string
             type: object
         v1RecordEventsRequest:

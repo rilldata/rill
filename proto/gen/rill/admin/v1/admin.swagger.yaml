@@ -5287,6 +5287,11 @@ definitions:
       outputJsonSchema:
         type: string
         title: Optional output JSON schema
+      includeReasoning:
+        type: boolean
+        description: |-
+          Whether the response may include reasoning blocks.
+          Older clients don't support them, so they are removed from the response unless this is set.
   v1CompleteResponse:
     type: object
     properties:
@@ -5305,6 +5310,10 @@ definitions:
         type: integer
         format: int64
         description: Number of cache-read (discounted) input tokens; a subset of input_tokens.
+      cacheWriteInputTokens:
+        type: integer
+        format: int64
+        description: Number of input tokens written to the prompt cache, which some providers (e.g. Claude) bill at a premium.
       provider:
         type: string
         description: The LLM provider that served the completion (e.g. "claude", "openai", "gemini").
@@ -5343,6 +5352,8 @@ definitions:
         $ref: '#/definitions/v1ToolCall'
       toolResult:
         $ref: '#/definitions/v1ToolResult'
+      reasoning:
+        $ref: '#/definitions/v1Reasoning'
     title: Content block within a message
   v1CreateAlertResponse:
     type: object
@@ -6792,6 +6803,21 @@ definitions:
         type: string
       tokensPerSeat:
         type: string
+  v1Reasoning:
+    type: object
+    properties:
+      text:
+        type: string
+        description: Readable reasoning. Often empty, since providers may omit it or return a summary.
+      signature:
+        type: string
+        description: Opaque provider signature that lets the provider verify the reasoning.
+      redactedData:
+        type: string
+        description: Opaque encrypted reasoning, set instead of text and signature when the provider redacts the reasoning.
+    description: |-
+      The model's reasoning before its text or tool calls.
+      Some providers (e.g. Claude) require it to be passed back unmodified within a tool call loop.
   v1RecordEventsRequest:
     type: object
     properties:
