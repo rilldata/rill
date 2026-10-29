@@ -49637,6 +49637,14 @@ func (m *AlertOptions) validate(all bool) error {
 
 	// no validation rules for QueryArgsJson
 
+	// no validation rules for ExportAttach
+
+	// no validation rules for ExportFormat
+
+	// no validation rules for ExportIncludeHeader
+
+	// no validation rules for ExportLimit
+
 	// no validation rules for MetricsViewName
 
 	// no validation rules for Renotify

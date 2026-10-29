@@ -209,6 +209,15 @@
           emailRecipients: values.enableEmailNotification
             ? values.emailRecipients.filter(Boolean)
             : undefined,
+          // Attachments are only sent with emails, and the export options only apply to attachments
+          ...(values.enableEmailNotification && values.exportAttach
+            ? {
+                exportAttach: true,
+                exportFormat: values.exportFormat,
+                exportLimit: values.exportLimit || undefined,
+                exportIncludeHeader: values.exportIncludeHeader,
+              }
+            : { exportAttach: false }),
           refreshCron: !values.refreshWhenDataRefreshes ? refreshCron : "", // for testing: "* * * * *"
           refreshTimeZone: values.timeZone,
           renotify: !!values.snooze,

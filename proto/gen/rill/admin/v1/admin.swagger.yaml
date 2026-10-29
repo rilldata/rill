@@ -5019,6 +5019,16 @@ definitions:
       queryArgsJson:
         type: string
         description: 'DEPRECATED: Use resolver and resolver_properties instead.'
+      exportAttach:
+        type: boolean
+        description: If true, the query's result is exported and attached to email notifications for failed checks (only supported for query-based alerts).
+      exportFormat:
+        $ref: '#/definitions/v1ExportFormat'
+      exportIncludeHeader:
+        type: boolean
+      exportLimit:
+        type: string
+        format: uint64
       metricsViewName:
         type: string
       renotify:
