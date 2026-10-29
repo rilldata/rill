@@ -12,4 +12,17 @@ enum TimeGrain {
   TIME_GRAIN_MONTH = 7;
   TIME_GRAIN_QUARTER = 8;
   TIME_GRAIN_YEAR = 9;
+  // Multiples of a base grain. They are only used to bucket time series (not as the smallest grain, for rollups or for snapping),
+  // and each multiple divides its parent unit so buckets nest inside hours and days and align to local midnight.
+  // The numeric values are not the grain order: compare grains by duration, never by enum value.
+  TIME_GRAIN_5_MINUTE = 10;
+  TIME_GRAIN_10_MINUTE = 11;
+  TIME_GRAIN_15_MINUTE = 12;
+  TIME_GRAIN_30_MINUTE = 13;
+  TIME_GRAIN_2_HOUR = 14;
+  TIME_GRAIN_3_HOUR = 15;
+  TIME_GRAIN_4_HOUR = 16;
+  TIME_GRAIN_6_HOUR = 17;
+  TIME_GRAIN_8_HOUR = 18;
+  TIME_GRAIN_12_HOUR = 19;
 }

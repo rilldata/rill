@@ -102,7 +102,9 @@ func (d *dialect) DateTruncExpr(dim *runtimev1.MetricsViewSpec_Dimension, grain 
 		}
 	}
 
-	specifier := d.ConvertToDateTruncSpecifier(grain)
+	// Multiples such as TIME_GRAIN_10_MINUTE bucket with the dialect's interval function instead of date_trunc.
+	unit, n := timeutil.TimeGrainBase(grain)
+	specifier := d.ConvertToDateTruncSpecifier(unit)
 
 	var expr string
 	if dim.Expression != "" {
@@ -125,6 +127,13 @@ func (d *dialect) DateTruncExpr(dim *runtimev1.MetricsViewSpec_Dimension, grain 
 
 	var result string
 	switch {
+	case n > 1:
+		// Multiples floor the unit within its parent: minutes within the hour, hours within the day.
+		parent := "DAY"
+		if specifier == "MINUTE" {
+			parent = "HOUR"
+		}
+		result = fmt.Sprintf("DATEADD(%s, FLOOR(EXTRACT(%s FROM %s) / %d) * %d, DATE_TRUNC('%s', %s))", specifier, specifier, inner, n, n, parent, inner)
 	case grain == runtimev1.TimeGrain_TIME_GRAIN_WEEK && firstDayOfWeek > 1:
 		offset := 8 - firstDayOfWeek
 		result = fmt.Sprintf("DATEADD(DAY, -%d, DATE_TRUNC('%s', DATEADD(DAY, %d, %s)))", offset, specifier, offset, inner)

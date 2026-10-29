@@ -127,6 +127,7 @@ export class DashboardStateDataLoader {
           exploreSpec,
           metricsViewTimeRangeResp?.timeRangeSummary,
           metricsViewSpec.smallestTimeGrain,
+          metricsViewSpec.timeGrains,
         );
       },
     );

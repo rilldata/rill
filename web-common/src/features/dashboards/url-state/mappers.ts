@@ -1,6 +1,7 @@
 import { TDDChart } from "@rilldata/web-common/features/dashboards/time-dimension-details/types";
 import { reverseMap } from "@rilldata/web-common/lib/map-utils.ts";
 import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
+import { V1TimeGrainToToken } from "@rilldata/web-common/lib/time/new-grains";
 import { TimeRangePreset } from "@rilldata/web-common/lib/time/types";
 import { DashboardState_ActivePage } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
 import {
@@ -49,9 +50,12 @@ export const FromURLParamsSortTypeMap: Record<string, V1ExploreSortType> = {
 };
 export const ToURLParamSortTypeMap = reverseMap(FromURLParamsSortTypeMap);
 
+// Pivot time dimensions use the grain token (`time.day`, `time.10m`), which matches the English
+// label of the standard grains that older URLs carry.
 export const FromURLParamTimeDimensionMap: Record<string, V1TimeGrain> = {};
 Object.values(TIME_GRAIN).forEach((tg) => {
-  FromURLParamTimeDimensionMap["time." + tg.label] = tg.grain;
+  FromURLParamTimeDimensionMap["time." + V1TimeGrainToToken[tg.grain]] =
+    tg.grain;
 });
 export const ToURLParamTimeDimensionMap = reverseMap(
   FromURLParamTimeDimensionMap,

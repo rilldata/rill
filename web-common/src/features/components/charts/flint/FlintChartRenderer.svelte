@@ -16,7 +16,7 @@
     type V1Expression,
     type V1TimeRange,
   } from "@rilldata/web-common/runtime-client";
-  import { V1TimeGrainToDateTimeUnit } from "@rilldata/web-common/lib/time/new-grains";
+  import { V1TimeGrainToToken } from "@rilldata/web-common/lib/time/new-grains";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import type { View, VisualizationSpec } from "svelte-vega";
   import { metricsSQLFilterProperties } from "../custom/expression-utils";
@@ -110,7 +110,7 @@
         // the dashboard's time controls rather than one per raw timestamp. A component that writes
         // its own date_trunc keeps that bucket instead.
         ...(timeGrain && timeGrain !== V1TimeGrain.TIME_GRAIN_UNSPECIFIED
-          ? { additional_time_grain: V1TimeGrainToDateTimeUnit[timeGrain] }
+          ? { additional_time_grain: V1TimeGrainToToken[timeGrain] }
           : {}),
         // The time zone rides on the time range, which the resolver reads as a filter only; the
         // grain needs it as well, or the buckets are cut on UTC boundaries.

@@ -73,8 +73,9 @@ func (d *dialect) DateTruncExpr(dim *runtimev1.MetricsViewSpec_Dimension, grain 
 		}
 	}
 
+	_, n := timeutil.TimeGrainBase(grain)
 	var specifier string
-	if tz != "" {
+	if tz != "" || n > 1 {
 		specifier = druidTimeFloorSpecifier(grain)
 	} else {
 		specifier = d.ConvertToDateTruncSpecifier(grain)
@@ -85,6 +86,14 @@ func (d *dialect) DateTruncExpr(dim *runtimev1.MetricsViewSpec_Dimension, grain 
 		expr = fmt.Sprintf("(%s)", dim.Expression)
 	} else {
 		expr = d.EscapeIdentifier(dim.Column)
+	}
+
+	if n > 1 {
+		// Multiples use time_floor with an ISO period; date_trunc only supports standard units.
+		if tz == "" {
+			return fmt.Sprintf("time_floor(%s, '%s')", expr, specifier), nil
+		}
+		return fmt.Sprintf("time_floor(%s, '%s', null, '%s')", expr, specifier, tz), nil
 	}
 
 	var shift int
@@ -207,26 +216,28 @@ func (d *dialect) SelectInlineResults(result *drivers.Result) (string, []any, []
 	return prefix + suffix, nil, dimVals, nil
 }
 
+// druidTimeFloorSpecifier returns the ISO 8601 period for a grain, including multiples such as PT10M.
 func druidTimeFloorSpecifier(grain runtimev1.TimeGrain) string {
-	switch grain {
+	unit, n := timeutil.TimeGrainBase(grain)
+	switch unit {
 	case runtimev1.TimeGrain_TIME_GRAIN_MILLISECOND:
 		return "PT0.001S"
 	case runtimev1.TimeGrain_TIME_GRAIN_SECOND:
-		return "PT1S"
+		return fmt.Sprintf("PT%dS", n)
 	case runtimev1.TimeGrain_TIME_GRAIN_MINUTE:
-		return "PT1M"
+		return fmt.Sprintf("PT%dM", n)
 	case runtimev1.TimeGrain_TIME_GRAIN_HOUR:
-		return "PT1H"
+		return fmt.Sprintf("PT%dH", n)
 	case runtimev1.TimeGrain_TIME_GRAIN_DAY:
-		return "P1D"
+		return fmt.Sprintf("P%dD", n)
 	case runtimev1.TimeGrain_TIME_GRAIN_WEEK:
-		return "P1W"
+		return fmt.Sprintf("P%dW", n)
 	case runtimev1.TimeGrain_TIME_GRAIN_MONTH:
-		return "P1M"
+		return fmt.Sprintf("P%dM", n)
 	case runtimev1.TimeGrain_TIME_GRAIN_QUARTER:
-		return "P3M"
+		return fmt.Sprintf("P%dM", 3*n)
 	case runtimev1.TimeGrain_TIME_GRAIN_YEAR:
-		return "P1Y"
+		return fmt.Sprintf("P%dY", n)
 	}
 	panic(fmt.Errorf("invalid time grain enum value %d", int(grain)))
 }

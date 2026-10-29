@@ -41,6 +41,8 @@
         timeRangeOptionsStore,
         minTimeGrainMap,
         largestMinTimeGrain,
+        availableGrainsMap,
+        commonAvailableGrains,
         availableTimeZonesStore,
         state: {
           rangeStore: globalRangeStore,
@@ -84,7 +86,15 @@
     : $globalRangeStore;
   // The grain in effect, resolved like the widget's queries: its own grain when the range allows it.
   $: activeTimeGrain = $timeAndFilterStore.timeGrain;
-  $: grainOptions = allowedGrainsForInterval(interval, $largestMinTimeGrain);
+  // A widget bound to one metrics view offers that view's grains, see getAvailableTimeGrains.
+  $: availableGrains =
+    (metricsView ? $availableGrainsMap.get(metricsView) : undefined) ??
+    $commonAvailableGrains;
+  $: grainOptions = allowedGrainsForInterval(
+    interval,
+    $largestMinTimeGrain,
+    availableGrains,
+  );
   $: activeTimeZone = hasLocalTimeRange
     ? $localTimeZoneStore
     : $globalTimeZoneStore;

@@ -36,16 +36,26 @@ for (const op in ToProtoOperationMap) {
 }
 
 export const ToProtoTimeGrainMap: Record<V1TimeGrain, TimeGrain> = {
-  [V1TimeGrain.TIME_GRAIN_UNSPECIFIED]: TimeGrain.UNSPECIFIED,
-  [V1TimeGrain.TIME_GRAIN_DAY]: TimeGrain.DAY,
-  [V1TimeGrain.TIME_GRAIN_HOUR]: TimeGrain.HOUR,
-  [V1TimeGrain.TIME_GRAIN_MILLISECOND]: TimeGrain.MILLISECOND,
-  [V1TimeGrain.TIME_GRAIN_MINUTE]: TimeGrain.MINUTE,
-  [V1TimeGrain.TIME_GRAIN_MONTH]: TimeGrain.MONTH,
-  [V1TimeGrain.TIME_GRAIN_QUARTER]: TimeGrain.QUARTER,
-  [V1TimeGrain.TIME_GRAIN_SECOND]: TimeGrain.SECOND,
-  [V1TimeGrain.TIME_GRAIN_WEEK]: TimeGrain.WEEK,
-  [V1TimeGrain.TIME_GRAIN_YEAR]: TimeGrain.YEAR,
+  [V1TimeGrain.TIME_GRAIN_UNSPECIFIED]: TimeGrain.TIME_GRAIN_UNSPECIFIED,
+  [V1TimeGrain.TIME_GRAIN_DAY]: TimeGrain.TIME_GRAIN_DAY,
+  [V1TimeGrain.TIME_GRAIN_HOUR]: TimeGrain.TIME_GRAIN_HOUR,
+  [V1TimeGrain.TIME_GRAIN_MILLISECOND]: TimeGrain.TIME_GRAIN_MILLISECOND,
+  [V1TimeGrain.TIME_GRAIN_MINUTE]: TimeGrain.TIME_GRAIN_MINUTE,
+  [V1TimeGrain.TIME_GRAIN_MONTH]: TimeGrain.TIME_GRAIN_MONTH,
+  [V1TimeGrain.TIME_GRAIN_QUARTER]: TimeGrain.TIME_GRAIN_QUARTER,
+  [V1TimeGrain.TIME_GRAIN_SECOND]: TimeGrain.TIME_GRAIN_SECOND,
+  [V1TimeGrain.TIME_GRAIN_WEEK]: TimeGrain.TIME_GRAIN_WEEK,
+  [V1TimeGrain.TIME_GRAIN_YEAR]: TimeGrain.TIME_GRAIN_YEAR,
+  [V1TimeGrain.TIME_GRAIN_5_MINUTE]: TimeGrain.TIME_GRAIN_5_MINUTE,
+  [V1TimeGrain.TIME_GRAIN_10_MINUTE]: TimeGrain.TIME_GRAIN_10_MINUTE,
+  [V1TimeGrain.TIME_GRAIN_15_MINUTE]: TimeGrain.TIME_GRAIN_15_MINUTE,
+  [V1TimeGrain.TIME_GRAIN_30_MINUTE]: TimeGrain.TIME_GRAIN_30_MINUTE,
+  [V1TimeGrain.TIME_GRAIN_2_HOUR]: TimeGrain.TIME_GRAIN_2_HOUR,
+  [V1TimeGrain.TIME_GRAIN_3_HOUR]: TimeGrain.TIME_GRAIN_3_HOUR,
+  [V1TimeGrain.TIME_GRAIN_4_HOUR]: TimeGrain.TIME_GRAIN_4_HOUR,
+  [V1TimeGrain.TIME_GRAIN_6_HOUR]: TimeGrain.TIME_GRAIN_6_HOUR,
+  [V1TimeGrain.TIME_GRAIN_8_HOUR]: TimeGrain.TIME_GRAIN_8_HOUR,
+  [V1TimeGrain.TIME_GRAIN_12_HOUR]: TimeGrain.TIME_GRAIN_12_HOUR,
 };
 
 export const FromProtoTimeGrainMap = {} as Record<TimeGrain, V1TimeGrain>;

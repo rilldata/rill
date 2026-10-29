@@ -1,0 +1,285 @@
+connectors:
+  - clickhouse
+project_files:
+  clickhouse_data.yaml:
+    type: model
+    connector: clickhouse
+    output: clickhouse
+    sql: |
+      select parseDateTimeBestEffort('2024-03-10T04:03:00Z') as time, 'US' as country, 1 as val union all
+      select parseDateTimeBestEffort('2024-03-10T04:07:00Z') as time, 'US' as country, 2 as val union all
+      select parseDateTimeBestEffort('2024-03-10T04:12:00Z') as time, 'DK' as country, 4 as val union all
+      select parseDateTimeBestEffort('2024-03-10T04:35:00Z') as time, 'DK' as country, 8 as val union all
+      select parseDateTimeBestEffort('2024-03-10T11:00:00Z') as time, 'US' as country, 16 as val union all
+      select parseDateTimeBestEffort('2024-03-10T23:30:00Z') as time, 'US' as country, 32 as val
+  clickhouse_metrics.yaml:
+    type: metrics_view
+    model: clickhouse_data
+    timeseries: time
+    smallest_time_grain: minute
+    time_grains: [10m, 30m, hour, 6h, day]
+    dimensions:
+      - column: country
+    measures:
+      - name: sum
+        expression: sum(val)
+        treat_nulls_as: 0
+  duckdb_data.yaml:
+    type: model
+    connector: duckdb
+    sql: |
+      select '2024-03-10T04:03:00Z'::TIMESTAMP as time, 'US' as country, 1 as val union all
+      select '2024-03-10T04:07:00Z'::TIMESTAMP as time, 'US' as country, 2 as val union all
+      select '2024-03-10T04:12:00Z'::TIMESTAMP as time, 'DK' as country, 4 as val union all
+      select '2024-03-10T04:35:00Z'::TIMESTAMP as time, 'DK' as country, 8 as val union all
+      select '2024-03-10T11:00:00Z'::TIMESTAMP as time, 'US' as country, 16 as val union all
+      select '2024-03-10T23:30:00Z'::TIMESTAMP as time, 'US' as country, 32 as val
+  duckdb_metrics.yaml:
+    type: metrics_view
+    model: duckdb_data
+    timeseries: time
+    smallest_time_grain: minute
+    time_grains: [10m, 30m, hour, 6h, day]
+    dimensions:
+      - column: country
+    measures:
+      - name: sum
+        expression: sum(val)
+        treat_nulls_as: 0
+tests:
+  - name: time_floor_10m_duckdb
+    resolver: metrics
+    properties:
+      metrics_view: duckdb_metrics
+      dimensions:
+        - name: time__10m
+          compute:
+            time_floor:
+              dimension: time
+              grain: 10m
+      measures:
+        - name: sum
+      time_range:
+        start: 2024-03-10T04:00:00Z
+        end: 2024-03-10T05:00:00Z
+      sort:
+        - name: time__10m
+    result:
+      - sum: 3
+        time__10m: "2024-03-10T04:00:00Z"
+      - sum: 4
+        time__10m: "2024-03-10T04:10:00Z"
+      - sum: 8
+        time__10m: "2024-03-10T04:30:00Z"
+  - name: time_floor_10m_clickhouse
+    resolver: metrics
+    properties:
+      metrics_view: clickhouse_metrics
+      dimensions:
+        - name: time__10m
+          compute:
+            time_floor:
+              dimension: time
+              grain: 10m
+      measures:
+        - name: sum
+      time_range:
+        start: 2024-03-10T04:00:00Z
+        end: 2024-03-10T05:00:00Z
+      sort:
+        - name: time__10m
+    result:
+      - sum: 3
+        time__10m: "2024-03-10T04:00:00Z"
+      - sum: 4
+        time__10m: "2024-03-10T04:10:00Z"
+      - sum: 8
+        time__10m: "2024-03-10T04:30:00Z"
+  - name: time_floor_6h_kolkata_duckdb
+    resolver: metrics
+    properties:
+      metrics_view: duckdb_metrics
+      dimensions:
+        - name: time__6h
+          compute:
+            time_floor:
+              dimension: time
+              grain: 6h
+      measures:
+        - name: sum
+      time_range:
+        start: 2024-03-09T18:30:00Z
+        end: 2024-03-10T18:30:00Z
+      time_zone: Asia/Kolkata
+      sort:
+        - name: time__6h
+    result:
+      - sum: 15
+        time__6h: "2024-03-10T00:30:00Z"
+      - sum: 16
+        time__6h: "2024-03-10T06:30:00Z"
+  - name: time_floor_6h_kolkata_clickhouse
+    resolver: metrics
+    properties:
+      metrics_view: clickhouse_metrics
+      dimensions:
+        - name: time__6h
+          compute:
+            time_floor:
+              dimension: time
+              grain: 6h
+      measures:
+        - name: sum
+      time_range:
+        start: 2024-03-09T18:30:00Z
+        end: 2024-03-10T18:30:00Z
+      time_zone: Asia/Kolkata
+      sort:
+        - name: time__6h
+    result:
+      - sum: 15
+        time__6h: "2024-03-10T06:00:00+05:30"
+      - sum: 16
+        time__6h: "2024-03-10T12:00:00+05:30"
+  - name: time_spine_10m_duckdb
+    resolver: metrics
+    properties:
+      metrics_view: duckdb_metrics
+      dimensions:
+        - name: time__10m
+          compute:
+            time_floor:
+              dimension: time
+              grain: 10m
+      measures:
+        - name: sum
+      time_range:
+        start: 2024-03-10T04:00:00Z
+        end: 2024-03-10T05:00:00Z
+      sort:
+        - name: time__10m
+      spine:
+        time:
+          start:
+          end:
+          grain:
+    result:
+      - sum: 3
+        time__10m: "2024-03-10T04:00:00Z"
+      - sum: 4
+        time__10m: "2024-03-10T04:10:00Z"
+      - sum: 0
+        time__10m: "2024-03-10T04:20:00Z"
+      - sum: 8
+        time__10m: "2024-03-10T04:30:00Z"
+      - sum: 0
+        time__10m: "2024-03-10T04:40:00Z"
+      - sum: 0
+        time__10m: "2024-03-10T04:50:00Z"
+  - name: time_spine_10m_clickhouse
+    resolver: metrics
+    properties:
+      metrics_view: clickhouse_metrics
+      dimensions:
+        - name: time__10m
+          compute:
+            time_floor:
+              dimension: time
+              grain: 10m
+      measures:
+        - name: sum
+      time_range:
+        start: 2024-03-10T04:00:00Z
+        end: 2024-03-10T05:00:00Z
+      sort:
+        - name: time__10m
+      spine:
+        time:
+          start:
+          end:
+          grain:
+    result:
+      - sum: 3
+        time__10m: "2024-03-10T04:00:00Z"
+      - sum: 4
+        time__10m: "2024-03-10T04:10:00Z"
+      - sum: 0
+        time__10m: "2024-03-10T04:20:00Z"
+      - sum: 8
+        time__10m: "2024-03-10T04:30:00Z"
+      - sum: 0
+        time__10m: "2024-03-10T04:40:00Z"
+      - sum: 0
+        time__10m: "2024-03-10T04:50:00Z"
+  - name: comparison_30m_duckdb
+    resolver: metrics
+    properties:
+      metrics_view: duckdb_metrics
+      dimensions:
+        - name: time__30m
+          compute:
+            time_floor:
+              dimension: time
+              grain: 30m
+      measures:
+        - name: sum
+        - name: sum_prev
+          compute:
+            comparison_value:
+              measure: sum
+      time_range:
+        start: 2024-03-10T04:30:00Z
+        end: 2024-03-10T05:00:00Z
+      comparison_time_range:
+        start: 2024-03-10T04:00:00Z
+        end: 2024-03-10T04:30:00Z
+      sort:
+        - name: time__30m
+    result:
+      - sum: 8
+        sum_prev: 7
+        time__30m: "2024-03-10T04:30:00Z"
+  - name: comparison_30m_clickhouse
+    resolver: metrics
+    properties:
+      metrics_view: clickhouse_metrics
+      dimensions:
+        - name: time__30m
+          compute:
+            time_floor:
+              dimension: time
+              grain: 30m
+      measures:
+        - name: sum
+        - name: sum_prev
+          compute:
+            comparison_value:
+              measure: sum
+      time_range:
+        start: 2024-03-10T04:30:00Z
+        end: 2024-03-10T05:00:00Z
+      comparison_time_range:
+        start: 2024-03-10T04:00:00Z
+        end: 2024-03-10T04:30:00Z
+      sort:
+        - name: time__30m
+    result:
+      - sum: 8
+        sum_prev: 7
+        time__30m: "2024-03-10T04:30:00Z"
+  - name: metrics_sql_10m_duckdb
+    resolver: metrics_sql
+    properties:
+      sql: |
+        select date_trunc('10m', time) as t, sum from duckdb_metrics order by t
+    result:
+      - sum: 3
+        t: "2024-03-10T04:00:00Z"
+      - sum: 4
+        t: "2024-03-10T04:10:00Z"
+      - sum: 8
+        t: "2024-03-10T04:30:00Z"
+      - sum: 16
+        t: "2024-03-10T11:00:00Z"
+      - sum: 32
+        t: "2024-03-10T23:30:00Z"

@@ -12,7 +12,7 @@ import {
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils.ts";
 import { parseTimeRangeFromFilters } from "@rilldata/web-common/features/explore-mappers/parse-time-range-from-filters.ts";
 import { TDDChart } from "@rilldata/web-common/features/dashboards/time-dimension-details/types.ts";
-import { DateTimeUnitToV1TimeGrain } from "@rilldata/web-common/lib/time/new-grains.ts";
+import { TokenToV1TimeGrain } from "@rilldata/web-common/lib/time/new-grains.ts";
 import {
   type DashboardTimeControls,
   TimeComparisonOption,
@@ -350,7 +350,7 @@ function mapActivePage(
     if (shouldUpdateTimeGrain) {
       // Selected time grain is used in TDD's pivot table at the bottom.
       partialExploreState.selectedTimeRange!.interval =
-        DateTimeUnitToV1TimeGrain[timeDimension.compute!.time_floor!.grain];
+        TokenToV1TimeGrain[timeDimension.compute!.time_floor!.grain];
       partialExploreState.adaptiveTimeGrain = false;
     }
   } else if (showDimensionTable) {
@@ -374,7 +374,7 @@ function mapPivot(
   const columns: PivotChipData[] = timeDimensions
     .map((d) => {
       if (!d.compute?.time_floor?.grain) return undefined;
-      const grain = DateTimeUnitToV1TimeGrain[d.compute.time_floor.grain];
+      const grain = TokenToV1TimeGrain[d.compute.time_floor.grain];
       return {
         id: grain,
         title: d.compute.time_floor.grain,
@@ -412,7 +412,7 @@ function mapPivot(
         return { id: s.name, desc: !!s.desc };
 
       const grain =
-        DateTimeUnitToV1TimeGrain[td.compute.time_floor.grain] ??
+        TokenToV1TimeGrain[td.compute.time_floor.grain] ??
         V1TimeGrain.TIME_GRAIN_SECOND;
       const id = td?.compute?.time_floor?.grain
         ? `${td.name}_rill_${grain}`

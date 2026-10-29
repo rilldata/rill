@@ -1,4 +1,5 @@
 import { isGrainBigger } from "@rilldata/web-common/lib/time/grains";
+import { getAvailableTimeGrains } from "@rilldata/web-common/lib/time/new-grains";
 import {
   V1ExploreComparisonMode,
   V1TimeGrain,
@@ -18,6 +19,10 @@ export class TimeManager {
 
   hasTimeSeriesMap = writable<Map<string, boolean>>(new Map());
   minTimeGrainMap = writable<Map<string, V1TimeGrain>>(new Map());
+  // The grains each metrics view with a time dimension offers, see getAvailableTimeGrains.
+  availableGrainsMap = writable<Map<string, V1TimeGrain[]>>(new Map());
+  // The grains every referenced metrics view offers; the canvas filter bar lists these.
+  commonAvailableGrains: Readable<V1TimeGrain[]>;
   hasTimeSeriesStore: Readable<boolean>;
 
   defaultTimeRangeStore = maybeWritable<string>();
@@ -47,6 +52,20 @@ export class TimeManager {
       }
       return largest;
     });
+
+    this.commonAvailableGrains = derived(
+      [this.availableGrainsMap, this.largestMinTimeGrain],
+      ([map, largestMinTimeGrain]) => {
+        const lists = Array.from(map.values());
+        const common = lists[0]?.filter((grain) =>
+          lists.every((list) => list.includes(grain)),
+        );
+        if (common?.length) return common;
+        return getAvailableTimeGrains({
+          smallestTimeGrain: largestMinTimeGrain,
+        });
+      },
+    );
 
     this.hasTimeSeriesStore = derived(
       [this.hasTimeSeriesMap],
@@ -124,6 +143,7 @@ export class TimeManager {
     const metricsViews = response.metricsViews || {};
 
     const timeGrainMap = new Map<string, V1TimeGrain>();
+    const availableGrainsMap = new Map<string, V1TimeGrain[]>();
     const hasTimeSeriesMap = new Map<string, boolean>();
 
     Object.entries(metricsViews).forEach(([mvName, mv]) => {
@@ -132,9 +152,13 @@ export class TimeManager {
       timeGrainMap.set(mvName, timeGrain || V1TimeGrain.TIME_GRAIN_UNSPECIFIED);
       const hasTimeDimension = Boolean(metricsViewSpec?.timeDimension);
       hasTimeSeriesMap.set(mvName, hasTimeDimension);
+      if (hasTimeDimension) {
+        availableGrainsMap.set(mvName, getAvailableTimeGrains(metricsViewSpec));
+      }
     });
 
     this.minTimeGrainMap.set(timeGrainMap);
+    this.availableGrainsMap.set(availableGrainsMap);
     this.hasTimeSeriesMap.set(hasTimeSeriesMap);
   }
 

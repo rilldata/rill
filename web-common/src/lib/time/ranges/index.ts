@@ -35,7 +35,7 @@ import {
   TimeRangePreset,
 } from "../types";
 import { DateTime, type DateTimeUnit } from "luxon";
-import { V1TimeGrainToDateTimeUnit } from "../new-grains";
+import { floorToGrain, plusGrain } from "../new-grains";
 
 // Loop through all presets to check if they can be a part of subset of given start and end date
 export function getChildTimeRanges(
@@ -182,19 +182,25 @@ export function getAdjustedFetchTime(
   if (!startTime || !endTime || !interval)
     return { start: startTime?.toISOString(), end: endTime?.toISOString() };
 
-  const luxonUnit = V1TimeGrainToDateTimeUnit[interval];
-
   // Should only fail if somehow the Luxon unit is invalid
   try {
-    const start = DateTime.fromJSDate(startTime, { zone: zone || "UTC" })
-      .minus({
-        [luxonUnit]: 1,
-      })
-      .startOf(luxonUnit);
+    const start = floorToGrain(
+      plusGrain(
+        DateTime.fromJSDate(startTime, { zone: zone || "UTC" }),
+        interval,
+        -1,
+      ),
+      interval,
+    );
 
-    const end = DateTime.fromJSDate(endTime, { zone: zone || "UTC" })
-      .plus({ [luxonUnit]: 1 })
-      .startOf(luxonUnit);
+    const end = floorToGrain(
+      plusGrain(
+        DateTime.fromJSDate(endTime, { zone: zone || "UTC" }),
+        interval,
+        1,
+      ),
+      interval,
+    );
 
     return {
       start: start.toUTC().toISO(),

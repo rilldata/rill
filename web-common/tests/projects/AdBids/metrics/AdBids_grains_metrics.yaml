@@ -1,0 +1,26 @@
+# Metrics view YAML
+# Reference documentation: https://docs.rilldata.com/reference/project-files/metrics-views
+
+version: 1
+type: metrics_view
+
+display_name: Adbids grains
+table: AdBids_model
+timeseries: timestamp
+smallest_time_grain: minute
+# Only these grains are offered in dashboards; see the time-grains e2e specs.
+time_grains: [10m, hour, day, week]
+
+dimensions:
+  - name: publisher
+    display_name: Publisher
+    column: publisher
+  - name: domain
+    display_name: Domain
+    column: domain
+
+measures:
+  - name: total_records
+    display_name: Total records
+    expression: COUNT(*)
+    format_preset: humanize

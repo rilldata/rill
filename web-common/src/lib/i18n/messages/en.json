@@ -2308,6 +2308,8 @@
   "time_grain_millisecond": "millisecond",
   "time_grain_minute": "minute",
   "time_grain_minutes": "minutes",
+  "time_grain_n_hours": "{count} hours",
+  "time_grain_n_minutes": "{count} minutes",
   "time_grain_month": "month",
   "time_grain_months": "months",
   "time_grain_quarter": "quarter",

@@ -38,7 +38,7 @@
   export let setColumns: (items: PivotChipData[]) => void;
   export let timeControlsForPillActions: Pick<
     TimeControlState,
-    "timeStart" | "timeEnd" | "minTimeGrain"
+    "timeStart" | "timeEnd" | "minTimeGrain" | "availableTimeGrains"
   >;
 
   const { exploreName, dashboardStore, validSpecStore } = getStateManagers();
@@ -88,6 +88,7 @@
       timeControlsForPillActions.timeStart,
       timeControlsForPillActions.timeEnd,
       timeControlsForPillActions.minTimeGrain,
+      timeControlsForPillActions.availableTimeGrains,
     );
   }
 

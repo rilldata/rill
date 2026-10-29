@@ -10,25 +10,26 @@ import (
 )
 
 func timeGrainToDuration(tg runtimev1.TimeGrain) duration.Duration {
-	switch tg {
+	unit, n := timeutil.TimeGrainBase(tg)
+	switch unit {
 	// not supported
 	// case runtimev1.TimeGrain_TIME_GRAIN_MILLISECOND:
 	case runtimev1.TimeGrain_TIME_GRAIN_SECOND:
-		return duration.StandardDuration{Second: 1}
+		return duration.StandardDuration{Second: n}
 	case runtimev1.TimeGrain_TIME_GRAIN_MINUTE:
-		return duration.StandardDuration{Minute: 1}
+		return duration.StandardDuration{Minute: n}
 	case runtimev1.TimeGrain_TIME_GRAIN_HOUR:
-		return duration.StandardDuration{Hour: 1}
+		return duration.StandardDuration{Hour: n}
 	case runtimev1.TimeGrain_TIME_GRAIN_DAY:
-		return duration.StandardDuration{Day: 1}
+		return duration.StandardDuration{Day: n}
 	case runtimev1.TimeGrain_TIME_GRAIN_WEEK:
-		return duration.StandardDuration{Week: 1}
+		return duration.StandardDuration{Week: n}
 	case runtimev1.TimeGrain_TIME_GRAIN_MONTH:
-		return duration.StandardDuration{Month: 1}
+		return duration.StandardDuration{Month: n}
 	case runtimev1.TimeGrain_TIME_GRAIN_QUARTER:
-		return duration.StandardDuration{Month: 3}
+		return duration.StandardDuration{Month: 3 * n}
 	case runtimev1.TimeGrain_TIME_GRAIN_YEAR:
-		return duration.StandardDuration{Year: 1}
+		return duration.StandardDuration{Year: n}
 	}
 
 	return duration.InfDuration{}

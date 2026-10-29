@@ -1867,6 +1867,8 @@ export interface V1MetricsViewSpec {
   aiInstructions?: string;
   timeDimension?: string;
   smallestTimeGrain?: V1TimeGrain;
+  /** Time grains offered by dashboards for bucketing the time dimension, sorted from fine to coarse. Empty means the standard grains at or above smallest_time_grain. */
+  timeGrains?: V1TimeGrain[];
   /** Expression to evaluate a watermark for the metrics view. If not set, the watermark defaults to max(time_dimension). */
   watermarkExpression?: string;
   dimensions?: MetricsViewSpecDimension[];
@@ -2817,6 +2819,16 @@ export const V1TimeGrain = {
   TIME_GRAIN_MONTH: "TIME_GRAIN_MONTH",
   TIME_GRAIN_QUARTER: "TIME_GRAIN_QUARTER",
   TIME_GRAIN_YEAR: "TIME_GRAIN_YEAR",
+  TIME_GRAIN_5_MINUTE: "TIME_GRAIN_5_MINUTE",
+  TIME_GRAIN_10_MINUTE: "TIME_GRAIN_10_MINUTE",
+  TIME_GRAIN_15_MINUTE: "TIME_GRAIN_15_MINUTE",
+  TIME_GRAIN_30_MINUTE: "TIME_GRAIN_30_MINUTE",
+  TIME_GRAIN_2_HOUR: "TIME_GRAIN_2_HOUR",
+  TIME_GRAIN_3_HOUR: "TIME_GRAIN_3_HOUR",
+  TIME_GRAIN_4_HOUR: "TIME_GRAIN_4_HOUR",
+  TIME_GRAIN_6_HOUR: "TIME_GRAIN_6_HOUR",
+  TIME_GRAIN_8_HOUR: "TIME_GRAIN_8_HOUR",
+  TIME_GRAIN_12_HOUR: "TIME_GRAIN_12_HOUR",
 } as const;
 
 export interface V1TimeRange {

@@ -1464,7 +1464,15 @@ export class MetricsViewSpec extends Message<MetricsViewSpec> {
    *
    * @generated from field: rill.runtime.v1.TimeGrain smallest_time_grain = 8;
    */
-  smallestTimeGrain = TimeGrain.UNSPECIFIED;
+  smallestTimeGrain = TimeGrain.TIME_GRAIN_UNSPECIFIED;
+
+  /**
+   * Time grains offered by dashboards for bucketing the time dimension, sorted from fine to coarse.
+   * Empty means the standard grains at or above smallest_time_grain.
+   *
+   * @generated from field: repeated rill.runtime.v1.TimeGrain time_grains = 38;
+   */
+  timeGrains: TimeGrain[] = [];
 
   /**
    * Expression to evaluate a watermark for the metrics view. If not set, the watermark defaults to max(time_dimension).
@@ -1608,6 +1616,7 @@ export class MetricsViewSpec extends Message<MetricsViewSpec> {
     { no: 28, name: "ai_instructions", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 5, name: "time_dimension", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 8, name: "smallest_time_grain", kind: "enum", T: proto3.getEnumType(TimeGrain) },
+    { no: 38, name: "time_grains", kind: "enum", T: proto3.getEnumType(TimeGrain), repeated: true },
     { no: 20, name: "watermark_expression", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 37, name: "data_time_range", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 6, name: "dimensions", kind: "message", T: MetricsViewSpec_Dimension, repeated: true },
@@ -1798,7 +1807,7 @@ export class MetricsViewSpec_Dimension extends Message<MetricsViewSpec_Dimension
    *
    * @generated from field: rill.runtime.v1.TimeGrain smallest_time_grain = 13;
    */
-  smallestTimeGrain = TimeGrain.UNSPECIFIED;
+  smallestTimeGrain = TimeGrain.TIME_GRAIN_UNSPECIFIED;
 
   /**
    * The data type of the dimension. Only populated in ValidSpec.
@@ -1866,7 +1875,7 @@ export class MetricsViewSpec_DimensionSelector extends Message<MetricsViewSpec_D
    *
    * @generated from field: rill.runtime.v1.TimeGrain time_grain = 2;
    */
-  timeGrain = TimeGrain.UNSPECIFIED;
+  timeGrain = TimeGrain.TIME_GRAIN_UNSPECIFIED;
 
   /**
    * Only for when ordering (optional)
@@ -2263,7 +2272,7 @@ export class MetricsViewSpec_Rollup extends Message<MetricsViewSpec_Rollup> {
    *
    * @generated from field: rill.runtime.v1.TimeGrain time_grain = 5;
    */
-  timeGrain = TimeGrain.UNSPECIFIED;
+  timeGrain = TimeGrain.TIME_GRAIN_UNSPECIFIED;
 
   /**
    * IANA timezone the rollup was aggregated in; defaults to UTC

@@ -245,7 +245,7 @@ func NewAST(mv *runtimev1.MetricsViewSpec, sec MetricsViewSecurity, qry *Query, 
 			minGrain = tg
 			continue
 		}
-		if tg.ToTimeutil() < minGrain.ToTimeutil() {
+		if tg.ToTimeutil().Compare(minGrain.ToTimeutil()) < 0 {
 			minGrain = tg
 		}
 	}
@@ -1622,6 +1622,9 @@ func (a *AST) sqlForExpressionAdjustedByComparisonTimeRangeOffset(expr, timeDim 
 	start1 := a.Query.TimeRange.Start
 	start2 := a.Query.ComparisonTimeRange.Start
 
+	// Multiples such as "10m" offset by their base unit and re-truncate below, since DateDiff and IntervalSubtract only take standard grains.
+	_, gn := g.Base()
+
 	var dateDiff string
 	if g == TimeGrainUnspecified {
 		g = TimeGrainMillisecond // todo millis won't work for druid
@@ -1630,7 +1633,7 @@ func (a *AST) sqlForExpressionAdjustedByComparisonTimeRangeOffset(expr, timeDim 
 			return "", err
 		}
 		dateDiff = res
-	} else if g == mg {
+	} else if g == mg && gn == 1 {
 		res, err := a.Dialect.DateDiff(g.ToProto(), start1, start2)
 		if err != nil {
 			return "", err
@@ -1638,7 +1641,8 @@ func (a *AST) sqlForExpressionAdjustedByComparisonTimeRangeOffset(expr, timeDim 
 		dateDiff = res
 	} else {
 		// larger time grain values can change as well
-		res, err := a.Dialect.DateDiff(mg.ToProto(), start1, start2)
+		mgUnit, _ := mg.Base()
+		res, err := a.Dialect.DateDiff(mgUnit.ToProto(), start1, start2)
 		if err != nil {
 			return "", err
 		}
@@ -1646,7 +1650,7 @@ func (a *AST) sqlForExpressionAdjustedByComparisonTimeRangeOffset(expr, timeDim 
 
 		// DATE_TRUNC('year', t - INTERVAL (DATE_DIFF(start, end)) day)
 		tc := a.Dialect.EscapeIdentifier(timeDim)
-		expr, err := a.Dialect.IntervalSubtract(tc, dateDiff, mg.ToProto())
+		expr, err := a.Dialect.IntervalSubtract(tc, dateDiff, mgUnit.ToProto())
 		if err != nil {
 			return "", err
 		}
