@@ -38,7 +38,8 @@
     ExploreDashboardConfigProvider,
   } from "@rilldata/web-common/features/dashboards/providers/DashboardConfigProvider.svelte.ts";
   import { onDestroy } from "svelte";
-  import { syncStoreWithSource } from "@rilldata/web-common/lib/store-utils/url-params-store-sync.svelte.ts";
+  import { useCanvas } from "@rilldata/web-common/features/canvas/selector";
+  import { useVisibilityConditionsCheck } from "@rilldata/web-common/features/dashboards/granular-access-policies/useSecurityPolicyCheck";
 
   let {
     dashboardResource,
@@ -69,11 +70,19 @@
 
   // Always load from current state. This is the only route to overwrite bookmark state.
   // A future PR will improve this by adding `Replace` action, in that case this should only have bookmark's state.
-  syncStoreWithSource(
-    expressionFilterManager,
-    async (newUrlParams) => expressionFilterManager.setUrlParams(newUrlParams),
-    () => dashboardConfigProvider.metricsViewsProvider.ready,
+  expressionFilterManager.storeSync.setUrlParams(page.url.searchParams);
+
+  // A public URL shows a canvas the way its creator sees it, so point out content that only some viewers see.
+  const canvasQuery = useCanvas(runtimeClient, dashboardName, {
+    enabled: !isExplore,
+  });
+  let canvasFilePath = $derived(
+    isExplore ? "" : ($canvasQuery.data?.filePath ?? ""),
   );
+  let conditionsCheck = $derived(
+    useVisibilityConditionsCheck(runtimeClient, canvasFilePath),
+  );
+  let hasConditionalContent = $derived(!!$conditionsCheck.data);
 
   const exprByMetricsView = $derived(expressionFilterManager.exprByMetricsView);
   const hasSomeFilter = $derived(Object.keys(exprByMetricsView).length > 0);
@@ -279,6 +288,12 @@
           {/each}
         </ul>
       </div>
+    {/if}
+
+    {#if hasConditionalContent}
+      <p class="text-xs text-fg-primary font-normal mb-4">
+        {m.canvas_visibility_public_url_note()}
+      </p>
     {/if}
 
     <Button

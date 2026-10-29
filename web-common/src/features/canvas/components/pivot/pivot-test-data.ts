@@ -118,3 +118,10 @@ export const PIVOT_METRICS_INIT: V1MetricsViewSpec = {
   measures: PIVOT_MEASURES,
   dimensions: PIVOT_DIMENSIONS,
 };
+
+export const PIVOT_MIRROR_METRICS_NAME = "mv2";
+export const PIVOT_METRICS_MIRROR_INIT: V1MetricsViewSpec = {
+  ...PIVOT_METRICS_INIT,
+  displayName: "PivotTest Mirror",
+  table: "PivotTest_Mirror_Source",
+};

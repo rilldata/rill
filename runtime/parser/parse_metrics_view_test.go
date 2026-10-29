@@ -7,6 +7,7 @@ import (
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/structpb"
 )
 
@@ -29,6 +30,7 @@ dimensions:
   lookup_table: default.m2 # Expect ref to m2 after stripping the schema prefix since it is a model in the same project
   lookup_key_column: id
   lookup_value_column: value
+  lookup_group_by_key: true
 - name: bar
   expression: id
   lookup_table: ext # Expect no ref since it is not a known model (assumed to be a pre-existing table)
@@ -83,6 +85,7 @@ measures:
 						LookupTable:       "default.m2",
 						LookupKeyColumn:   "id",
 						LookupValueColumn: "value",
+						LookupGroupByKey:  proto.Bool(true),
 					},
 					{
 						Name:              "bar",
@@ -110,6 +113,36 @@ measures:
 	p, err := Parse(ctx, repo, "", "", "duckdb", true)
 	require.NoError(t, err)
 	requireResourcesAndErrors(t, p, resources, nil)
+}
+
+func TestMetricsViewLookupGroupByKeyRequiresLookup(t *testing.T) {
+	files := map[string]string{
+		`rill.yaml`:     ``,
+		`models/m1.sql`: `SELECT 1 AS id`,
+		`metrics_views/mv1.yaml`: `
+type: metrics_view
+version: 1
+model: m1
+dimensions:
+- name: foo
+  column: id
+  lookup_group_by_key: true
+- name: bar
+  column: id
+  lookup_group_by_key: false
+measures:
+- name: count
+  expression: COUNT(*)
+`,
+	}
+
+	ctx := context.Background()
+	repo := makeRepo(t, files)
+	p, err := Parse(ctx, repo, "", "", "duckdb", true)
+	require.NoError(t, err)
+	require.Len(t, p.Errors, 1)
+	require.Equal(t, "/metrics_views/mv1.yaml", p.Errors[0].FilePath)
+	require.Contains(t, p.Errors[0].Message, "lookup_group_by_key requires lookup_table, lookup_key_column and lookup_value_column")
 }
 
 func TestMetricsViewDimensionSmallestTimeGrain(t *testing.T) {
@@ -1251,4 +1284,93 @@ explore:
 	require.Equal(t, []string{"foo"}, e3.Dimensions)
 	require.Nil(t, e3.DimensionsSelector)
 	require.Equal(t, &runtimev1.FieldSelector{Selector: &runtimev1.FieldSelector_Regex{Regex: "count.*"}}, e3.MeasuresSelector)
+}
+
+func TestMetricsViewExactExpression(t *testing.T) {
+	ctx := context.Background()
+
+	t.Run("parsed into the spec", func(t *testing.T) {
+		repo := makeRepo(t, map[string]string{
+			`rill.yaml`:     ``,
+			`models/m1.sql`: `SELECT 1 AS user_id`,
+			`metrics_views/mv1.yaml`: `
+type: metrics_view
+version: 1
+model: m1
+measures:
+- name: users
+  expression: approx_count_distinct(user_id)
+  exact_expression: count(DISTINCT user_id)
+- name: records
+  expression: count(*)
+`,
+		})
+		p, err := Parse(ctx, repo, "", "", "duckdb", true)
+		require.NoError(t, err)
+		require.Empty(t, p.Errors)
+
+		mv := p.Resources[ResourceName{Kind: ResourceKindMetricsView, Name: "mv1"}]
+		require.NotNil(t, mv)
+		require.Len(t, mv.MetricsViewSpec.Measures, 2)
+		require.Equal(t, "approx_count_distinct(user_id)", mv.MetricsViewSpec.Measures[0].Expression)
+		require.Equal(t, "count(DISTINCT user_id)", mv.MetricsViewSpec.Measures[0].ExactExpression)
+		require.Empty(t, mv.MetricsViewSpec.Measures[1].ExactExpression)
+	})
+
+	t.Run("requires expression", func(t *testing.T) {
+		repo := makeRepo(t, map[string]string{
+			`rill.yaml`:     ``,
+			`models/m1.sql`: `SELECT 1 AS user_id`,
+			`metrics_views/mv1.yaml`: `
+type: metrics_view
+version: 1
+model: m1
+measures:
+- name: users
+  exact_expression: count(DISTINCT user_id)
+`,
+		})
+		p, err := Parse(ctx, repo, "", "", "duckdb", true)
+		require.NoError(t, err)
+		require.NotEmpty(t, p.Errors)
+		require.Contains(t, p.Errors[0].Message, `"exact_expression" can only be set if "expression" is set`)
+	})
+
+	t.Run("only on simple measures without a window", func(t *testing.T) {
+		for name, measure := range map[string]string{
+			"derived": `
+- name: users_per_record
+  requires: [records]
+  expression: records / 2
+  exact_expression: records / 2
+`,
+			"window": `
+- name: running_users
+  expression: approx_count_distinct(user_id)
+  exact_expression: count(DISTINCT user_id)
+  window:
+    order: ts
+`,
+		} {
+			t.Run(name, func(t *testing.T) {
+				repo := makeRepo(t, map[string]string{
+					`rill.yaml`:     ``,
+					`models/m1.sql`: `SELECT 1 AS user_id, now() AS ts`,
+					`metrics_views/mv1.yaml`: `
+type: metrics_view
+version: 1
+model: m1
+timeseries: ts
+measures:
+- name: records
+  expression: count(*)
+` + measure,
+				})
+				p, err := Parse(ctx, repo, "", "", "duckdb", true)
+				require.NoError(t, err)
+				require.NotEmpty(t, p.Errors)
+				require.Contains(t, p.Errors[0].Message, `"exact_expression" can only be set on simple measures without a window`)
+			})
+		}
+	})
 }

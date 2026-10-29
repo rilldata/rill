@@ -1,6 +1,7 @@
 import {
   LOADING_CELL,
   MAX_ROW_EXPANSION_LIMIT,
+  PIVOT_TOTALS_ROW_ID,
   SHOW_MORE_BUTTON,
 } from "@rilldata/web-common/features/dashboards/pivot/pivot-constants";
 import { mergeFilters } from "@rilldata/web-common/features/dashboards/pivot/pivot-merge-filters";
@@ -59,18 +60,15 @@ export function getValuesForExpandedKey(
   tableData: PivotDataRow[],
   rowDimensions: string[],
   key: string,
-  hasTotalsRow = true,
 ): string[] {
-  const indices = key.split(".").map((index) => parseInt(index, 10));
+  const dimensionValues: string[] = [];
+  // The totals row is not part of the table data and has no dimension values.
+  if (key === PIVOT_TOTALS_ROW_ID) return dimensionValues;
 
-  if (hasTotalsRow) {
-    // The first row is always the totals row for the expanded context with measures
-    indices[0] = indices[0] - 1;
-  }
+  const indices = key.split(".").map((index) => parseInt(index, 10));
 
   // Retrieve the value from the nested array
   let currentValue: PivotDataRow[] | undefined = tableData;
-  const dimensionValues: string[] = [];
 
   indices.forEach((index, i) => {
     if (!currentValue?.[index]) {
@@ -216,7 +214,6 @@ export function queryExpandedRowMeasureValues(
         tableData,
         rowDimensionNames,
         expandIndex,
-        config.pivot?.showTotalsRow !== false && numMeasures > 0,
       );
 
       if (
@@ -481,14 +478,6 @@ export function addExpandedDataToPivot(
     const indices = expandedRowData.expandIndex
       .split(".")
       .map((index) => parseInt(index, 10));
-
-    if (
-      config.pivot?.showTotalsRow !== false &&
-      config.measureNames.length > 0
-    ) {
-      // The first row is always the totals row for the expanded context with measures
-      indices[0] = indices[0] - 1;
-    }
 
     let parent: PivotDataRow[] = pivotData; // Keep a reference to the parent array
     let lastIdx = 0;

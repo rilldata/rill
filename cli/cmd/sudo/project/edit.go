@@ -11,7 +11,7 @@ import (
 
 func EditCmd(ch *cmdutil.Helper) *cobra.Command {
 	var prodSlots, devSlots int
-	var prodVersion string
+	var prodVersion, provisioner string
 	var overrideDiskGB int64
 	var cloudEditingDisabled bool
 
@@ -47,6 +47,10 @@ func EditCmd(ch *cmdutil.Helper) *cobra.Command {
 				}
 				devSlotsInt64 := int64(devSlots)
 				req.DevSlots = &devSlotsInt64
+				isProjectEditRequested = true
+			}
+			if cmd.Flags().Changed("provisioner") {
+				req.Provisioner = &provisioner
 				isProjectEditRequested = true
 			}
 			if cmd.Flags().Changed("override-disk-gb") {
@@ -107,6 +111,11 @@ func EditCmd(ch *cmdutil.Helper) *cobra.Command {
 			ch.PrintfSuccess("Updated project\n")
 			ch.PrintProjects([]*adminv1.Project{updatedProject})
 
+			if cmd.Flags().Changed("provisioner") {
+				ch.PrintfWarn("Running deployments keep their current provisioner. The change applies to each deployment the next time it starts.\n")
+				ch.PrintfWarn("To apply it now, run `rill sudo project restart %s %s`.\n", args[0], args[1])
+			}
+
 			return nil
 		},
 	}
@@ -114,6 +123,7 @@ func EditCmd(ch *cmdutil.Helper) *cobra.Command {
 	editCmd.Flags().IntVar(&prodSlots, "prod-slots", 0, "Slots to allocate for production deployments")
 	editCmd.Flags().IntVar(&devSlots, "dev-slots", 0, "Slots to allocate for dev deployments")
 	editCmd.Flags().StringVar(&prodVersion, "prod-version", "", "Rill version for production deployment")
+	editCmd.Flags().StringVar(&provisioner, "provisioner", "", "Provisioner for the project's deployments, applied the next time each deployment starts (empty to unset; new deployments then use the org or global default, existing deployments use the org default if set)")
 	editCmd.Flags().Int64Var(&overrideDiskGB, "override-disk-gb", 0, "Override disk size in GB for prod and dev deployments (0 clears the override)")
 	editCmd.Flags().BoolVar(&cloudEditingDisabled, "cloud-editing-disabled", false, "Hide cloud editing in the UI even when enabled in rill.yaml")
 	return editCmd

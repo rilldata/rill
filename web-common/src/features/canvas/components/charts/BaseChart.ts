@@ -25,7 +25,14 @@ import type {
   V1Resource,
 } from "@rilldata/web-common/runtime-client";
 import { ephemeralSpecsToDefs } from "@rilldata/web-common/features/dashboards/ephemeral-measures/canvas";
-import { get, writable, type Readable, type Writable } from "svelte/store";
+import {
+  derived,
+  get,
+  writable,
+  type Readable,
+  type Writable,
+} from "svelte/store";
+import { canvasExactRequestNames, chartMeasureNames } from "../exact-measures";
 import type {
   ChartDataQuery,
   ChartDomainValues,
@@ -39,7 +46,7 @@ import {
   type CanvasEntity,
   type ComponentPath,
 } from "../../stores/canvas-entity";
-import { namePrefixFromPath } from "../../layout-util";
+import { getItemPropertiesExcept, namePrefixFromPath } from "../../layout-util";
 import type {
   ComponentCommonProperties,
   ComponentFilterProperties,
@@ -63,6 +70,11 @@ export abstract class BaseChart<
   type: ChartType;
   chartType: Writable<ChartType>;
   component = Chart;
+  // The spec the chart's queries are built from: the YAML spec plus
+  // `exact_measures`, the measures to request exactly given the chart's own
+  // exact selection (the chart is its own surface). Chart providers are
+  // constructed with this store instead of `specStore`.
+  querySpecStore: Readable<TConfig>;
 
   constructor(resource: V1Resource, parent: CanvasEntity, path: ComponentPath) {
     const baseSpec: BaseChartConfig = {
@@ -77,6 +89,23 @@ export abstract class BaseChart<
         ? resource.component?.spec?.renderer
         : undefined)) as ChartType;
     this.chartType = writable(this.type);
+    this.querySpecStore = derived(
+      [this.specStore, parent.exactMeasures, parent.specStore],
+      ([spec]) => this.withExactMeasures(spec),
+    );
+  }
+
+  private withExactMeasures(spec: TConfig): TConfig {
+    const exactMeasures = canvasExactRequestNames(
+      chartMeasureNames(
+        CANVAS_CHART_CONFIG[this.type]?.component.chartInputParams,
+        spec,
+      ),
+      this.parent.currentExactMeasures(this.id),
+    );
+    return exactMeasures.length
+      ? { ...spec, exact_measures: exactMeasures }
+      : spec;
   }
 
   isValid(spec: TConfig): boolean {
@@ -179,7 +208,7 @@ export abstract class BaseChart<
   ) {
     if (!this.parent.fileArtifact) return;
 
-    const currentSpec = get(this.specStore);
+    const currentSpec = this.specForChartTypeSwitch(get(this.specStore), key);
     const parentPath = this.pathInYAML.slice(0, -1);
 
     const parseDocumentStore = this.parent.parsedContent;
@@ -222,14 +251,30 @@ export abstract class BaseChart<
     this.parent.setSelectedComponent(newComponent.id);
     this.parent._rows.refresh();
 
-    // Preserve the width from the current chart
-    const width = parsedDocument.getIn([...parentPath, "width"]);
+    // Keep the item's other properties, such as its width and `if` condition
+    const itemProperties = getItemPropertiesExcept(
+      parsedDocument,
+      parentPath,
+      this.pathInYAML.at(-1),
+    );
 
-    parsedDocument.setIn(parentPath, { [key]: mergedSpec, width });
+    parsedDocument.setIn(parentPath, { [key]: mergedSpec, ...itemProperties });
 
     updateEditorContent(parsedDocument.toString(), false, true);
 
     this.chartType.set(key);
+  }
+
+  /**
+   * The spec that a switch to `targetType` copies its common properties from.
+   * Subclasses override it when their spec has layouts the target cannot read.
+   */
+  protected specForChartTypeSwitch(
+    spec: TConfig,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    targetType: ChartType,
+  ): TConfig {
+    return spec;
   }
 
   private extractCommonProperties(
@@ -252,14 +297,15 @@ export abstract class BaseChart<
     const targetChartParams =
       CANVAS_CHART_CONFIG[targetType].component.chartInputParams || {};
 
-    // Check for common keys and type match first
+    // Check for common keys and type match first. Params without a value in
+    // the spec (e.g. UI-only params) are skipped so they never become keys.
     const commonProps = Object.keys(sourceChartParams).filter((key) => {
       const isKeyAndTypeMatch =
         targetChartParams?.[key]?.type === sourceChartParams[key]?.type;
       const isFieldTypeMatch =
         targetChartParams?.[key]?.meta?.chartFieldInput?.type ===
         sourceChartParams[key]?.meta?.chartFieldInput?.type;
-      return isKeyAndTypeMatch && isFieldTypeMatch;
+      return isKeyAndTypeMatch && isFieldTypeMatch && spec[key] !== undefined;
     });
 
     const commonPropsObject = commonProps.reduce(

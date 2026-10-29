@@ -2,104 +2,65 @@ import path from "path";
 import fs from "fs";
 import type { LoadContext, Plugin } from "@docusaurus/types";
 
-export default function llmsTxtPlugin(context: LoadContext): Plugin<any> {
+type DocRecord = {
+    title: string;
+    permalink: string;
+    description: string;
+    source: string;
+};
+
+// Writes llms.txt (an index of every doc) and llms-full.txt (every doc's Markdown) to the build output.
+// Docs come from the docs plugin's loaded content, so URLs, titles and descriptions match the built site.
+export default function llmsTxtPlugin(context: LoadContext): Plugin<void> {
+    let docs: DocRecord[] = [];
+
     return {
         name: "llms-txt-plugin",
-        loadContent: async () => {
-            const { siteDir } = context;
-            const contentDir = path.join(siteDir, "docs");
-            const allMdx: string[] = [];
-            const docsRecords: {
-                title: string;
-                path: string;
-                description: string;
-            }[] = [];
-
-            const getMdxFiles = async (
-                dir: string,
-                relativePath: string = "",
-                depth: number = 0
-            ) => {
-                const entries = await fs.promises.readdir(dir, {
-                    withFileTypes: true,
-                });
-
-                entries.sort((a, b) => {
-                    if (a.isDirectory() && !b.isDirectory()) return -1;
-                    if (!a.isDirectory() && b.isDirectory()) return 1;
-                    return a.name.localeCompare(b.name);
-                });
-
-                for (const entry of entries) {
-                    const fullPath = path.join(dir, entry.name);
-                    const currentRelativePath = path.join(relativePath, entry.name);
-
-                    if (entry.isDirectory()) {
-                        const dirName = entry.name
-                            .split("-")
-                            .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-                            .join(" ");
-                        const headingLevel = "#".repeat(depth + 2);
-                        allMdx.push(`\n${headingLevel} ${dirName}\n`);
-                        await getMdxFiles(fullPath, currentRelativePath, depth + 1);
-                    } else if (entry.name.endsWith(".md")) {
-                        const content = await fs.promises.readFile(fullPath, "utf8");
-                        let title = entry.name.replace(".md", "");
-                        let description = "";
-
-                        const frontmatterMatch = content.match(/^---\n([\s\S]*?)\n---/);
-                        if (frontmatterMatch) {
-                            const titleMatch = frontmatterMatch[1].match(/title:\s*(.+)/);
-                            const descriptionMatch =
-                                frontmatterMatch[1].match(/description:\s*(.+)/);
-
-                            if (titleMatch) {
-                                title = titleMatch[1].trim();
-                            }
-                            if (descriptionMatch) {
-                                description = descriptionMatch[1].trim();
-                            }
-                        }
-
-                        const headingLevel = "#".repeat(depth + 3);
-                        allMdx.push(`\n${headingLevel} ${title}\n\n${content}`);
-
-                        // Add to docs records for llms.txt
-                        docsRecords.push({
-                            title,
-                            path: currentRelativePath.replace(/\\/g, "/"),
-                            description,
-                        });
-                    }
-                }
-            };
-
-            await getMdxFiles(contentDir);
-            return { allMdx, docsRecords };
+        async allContentLoaded({ allContent }) {
+            const content: any =
+                allContent["docusaurus-plugin-content-docs"]?.["default"];
+            docs = content.loadedVersions[0].docs
+                .filter((d: any) => !d.draft && !d.unlisted)
+                .map((d: any) => ({
+                    title: d.title,
+                    permalink: d.permalink,
+                    description: d.description ?? "",
+                    source: d.source,
+                }))
+                .sort((a: DocRecord, b: DocRecord) =>
+                    a.permalink.localeCompare(b.permalink)
+                );
         },
-        postBuild: async ({ content, outDir }) => {
-            const { allMdx, docsRecords } = content as {
-                allMdx: string[];
-                docsRecords: { title: string; path: string; description: string }[];
-            };
+        async postBuild({ outDir }) {
+            const site = context.siteConfig.url;
 
-            // Write concatenated MDX content
-            const concatenatedPath = path.join(outDir, "llms-full.txt");
-            await fs.promises.writeFile(concatenatedPath, allMdx.join("\n\n---\n\n"));
+            const list = docs.map(
+                (d) =>
+                    `- [${d.title}](${site}${d.permalink})${d.description ? `: ${d.description}` : ""}`
+            );
+            await fs.promises.writeFile(
+                path.join(outDir, "llms.txt"),
+                `# ${context.siteConfig.title}\n\n## Documentation\n\n${list.join("\n")}\n`
+            );
 
-            // Create llms.txt with the requested format
-            const llmsTxt = `# ${context.siteConfig.title
-                }\n\n## Documentation\n\n${docsRecords
-                    .map(
-                        (doc) =>
-                            `- [${doc.title}](${context.siteConfig.url}/${doc.path.replace(
-                                ".md",
-                                ""
-                            )}): ${doc.description}`
-                    )
-                    .join("\n")}`;
-            const llmsTxtPath = path.join(outDir, "llms.txt");
-            await fs.promises.writeFile(llmsTxtPath, llmsTxt);
+            const pages = await Promise.all(
+                docs.map(async (d) => {
+                    const raw = await fs.promises.readFile(
+                        d.source.replace(/^@site\//, `${context.siteDir}/`),
+                        "utf8"
+                    );
+                    // Drop front matter and MDX component imports; keep imports inside code samples.
+                    const body = raw
+                        .replace(/^---\n[\s\S]*?\n---\n/, "")
+                        .replace(/^import .* from ['"]@(site|theme|docusaurus)\/.*$/gm, "")
+                        .trim();
+                    return `# ${d.title}\n\nURL: ${site}${d.permalink}\n\n${body}`;
+                })
+            );
+            await fs.promises.writeFile(
+                path.join(outDir, "llms-full.txt"),
+                pages.join("\n\n---\n\n")
+            );
         },
     };
 }

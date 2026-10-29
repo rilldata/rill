@@ -82,6 +82,7 @@ export function createPivotAggregationRowQuery(
           measures: prepareMeasuresForRequest(
             measures,
             config.ephemeralMeasures,
+            config.exactMeasures,
           ),
           dimensions,
           where: sanitiseExpression(whereFilter, undefined),

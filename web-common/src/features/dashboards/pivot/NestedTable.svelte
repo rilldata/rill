@@ -1,5 +1,7 @@
 <script lang="ts">
   import ArrowDown from "@rilldata/web-common/components/icons/ArrowDown.svelte";
+  import type { PrecisionChipProps } from "@rilldata/web-common/features/dashboards/exact-measures/exact-measures";
+  import { precisionForColumn } from "@rilldata/web-common/features/dashboards/pivot/pivot-utils";
   import Resizer from "@rilldata/web-common/layout/Resizer.svelte";
   import { modified } from "@rilldata/web-common/lib/actions/modified-click";
   import { writable } from "svelte/store";
@@ -24,10 +26,13 @@
   import {
     calculateMeasureWidth,
     calculateRowDimensionWidth,
-    distributeColumnWidthsToFillContainer,
+    clampColumnWidth,
+    fitColumnWidthsToContainer,
     getNestedRowDimensionWidthKey,
+    layoutColumnWidths,
     COLUMN_WIDTH_CONSTANTS as WIDTHS,
   } from "./pivot-column-width-utils";
+  import PivotExpandableCell from "./PivotExpandableCell.svelte";
   import type { PivotRowSelectionState } from "./pivot-row-selection";
   import {
     computeAncestorRowIds,
@@ -43,7 +48,12 @@
   import type { CellFormatter } from "./pivot-conditional-formatting";
   import { isShowMoreRow } from "./pivot-utils";
   import PivotHeaderLabel from "./PivotHeaderLabel.svelte";
-  import type { PivotDataRow } from "./types";
+  import {
+    type PivotColumnAlign,
+    type PivotColumnStyles,
+    type PivotDataRow,
+    type PivotTotalsRowPosition,
+  } from "./types";
 
   // State props
   export let hasColumnDimension: boolean;
@@ -54,14 +64,31 @@
   export let dataRows: PivotDataRow[];
   export let measures: MeasureColumnProps;
   export let cellFormatters: Map<string, CellFormatter> = new Map();
-  export let totalsRow: PivotDataRow | undefined;
+  // The grand-totals row is not part of `rows`; it is a standalone tanstack row
+  // pinned to the top of the body or rendered in a sticky <tfoot>.
+  export let totalsRow: Row<PivotDataRow> | undefined;
+  export let totalsRowPosition: PivotTotalsRowPosition = "top";
   export let canShowDataViewer = false;
   export let enableClickToFilter = false;
   export let rowSelectionState: PivotRowSelectionState | undefined = undefined;
   export let clickSelection: PivotClickSelectionState | undefined = undefined;
   export let activeCell: { rowId: string; columnId: string } | null | undefined;
+  // Precision chip for a measure column header; undefined when the measure has no exact variant.
+  export let precisionFor:
+    | ((measureName: string) => PrecisionChipProps | undefined)
+    | undefined = undefined;
   export let fillWidth = false;
   export let containerWidth = 0;
+  export let headerHeight = 30;
+  // Per-column presentation overrides keyed by measure name, or by the first
+  // row dimension name for the merged row-header column.
+  export let columnStyles: PivotColumnStyles = {};
+  export let fitToWidth = false;
+  export let wrapText = false;
+  export let wrapHeaders = false;
+  export let onColumnResizeEnd:
+    | ((columnId: string, width: number | null) => void)
+    | undefined = undefined;
 
   // Table props
   export let headerGroups: HeaderGroup<PivotDataRow>[];
@@ -82,8 +109,9 @@
 
   const measureLengths = writable(new Map<string, number>());
   const rowDimensionLengths = writable(new Map<string, number>());
-
-  const HEADER_HEIGHT = 30;
+  // First estimates, used as the double-click reset widths.
+  let rowHeaderEstimate = WIDTHS.ROW_DIMENSION_MIN_WIDTH;
+  const measureEstimates = new Map<string, number>();
 
   // Hover state for column dimension headers
   let hoveredColRange: HoveredColRange | null = null;
@@ -117,7 +145,12 @@
   $: hasRowDimension = rowDimensions.length > 0;
   $: hasExpandableRows = rowDimensions.length > 1;
   $: hasMeasures = measures.length > 0;
+
+  $: totalsRowAtBottom = totalsRowPosition === "bottom";
   $: rowDimensionNames = rowDimensions.map((d) => d.name);
+  // The merged row-header column is keyed (for widths and styles) by the
+  // first row dimension.
+  $: firstRowDimensionName = rowDimensions[0]?.name;
   $: rowDimensionLabel = getRowNestedLabel(rowDimensions);
   $: rowDimensionName = rowDimensionLabel ? rowDimensionLabel : null;
   $: rowDimensionWidthKey = getNestedRowDimensionWidthKey(
@@ -125,20 +158,30 @@
     rowDimensions,
   );
 
+  // Seed the row-header width: the configured width when there is one, else
+  // an estimate from the data.
   $: if (
     hasRowDimension &&
     rowDimensionName &&
+    firstRowDimensionName &&
     rowDimensionWidthKey &&
     !$rowDimensionLengths.has(rowDimensionWidthKey)
   ) {
     const estimatedWidth = calculateRowDimensionWidth(
+      firstRowDimensionName,
       rowDimensionName,
       timeDimension,
       dataRows,
     );
+    rowHeaderEstimate = estimatedWidth;
+    const configured = columnStyles[firstRowDimensionName]?.width;
+    const initialWidth =
+      configured === undefined
+        ? estimatedWidth
+        : clampColumnWidth("dimension", configured);
 
     rowDimensionLengths.update((rowDimensionLengths) => {
-      return rowDimensionLengths.set(rowDimensionWidthKey, estimatedWidth);
+      return rowDimensionLengths.set(rowDimensionWidthKey, initialWidth);
     });
   }
 
@@ -159,16 +202,116 @@
           name,
           label,
           formatter,
-          totalsRow,
+          totalsRow?.original,
           dataRows,
           hasColumnDimension ? maxColumnDimensionHeader : undefined,
         );
+        measureEstimates.set(name, estimatedWidth);
+        const configured = columnStyles[name]?.width;
+        const initialWidth =
+          configured === undefined
+            ? estimatedWidth
+            : clampColumnWidth("measure", configured);
 
         measureLengths.update((measureLengths) => {
-          return measureLengths.set(name, estimatedWidth);
+          return measureLengths.set(name, initialWidth);
         });
       }
     });
+  }
+
+  // Re-apply configured widths when they change (e.g. the YAML is edited while
+  // the table is open) without touching columns the user resized. Compares
+  // against the last applied values so unrelated spec emissions are no-ops,
+  // and does not read the width stores so it never re-runs per drag frame.
+  let appliedConfiguredWidths: Record<string, number> = {};
+  $: applyConfiguredWidths(
+    columnStyles,
+    firstRowDimensionName,
+    rowDimensionWidthKey,
+  );
+  function applyConfiguredWidths(
+    styles: PivotColumnStyles,
+    rowHeaderId: string | undefined,
+    rowHeaderKey: string | undefined,
+  ) {
+    const next: Record<string, number> = {};
+    for (const [id, style] of Object.entries(styles)) {
+      if (typeof style?.width === "number") next[id] = style.width;
+    }
+    const changed = Object.keys(next).filter(
+      (id) => appliedConfiguredWidths[id] !== next[id],
+    );
+    const removed = Object.keys(appliedConfiguredWidths).filter(
+      (id) => !(id in next),
+    );
+    appliedConfiguredWidths = next;
+    if (!changed.length && !removed.length) return;
+
+    const isRowHeader = (id: string) => id === rowHeaderId;
+    if (rowHeaderId && rowHeaderKey) {
+      if (changed.some(isRowHeader)) {
+        rowDimensionLengths.update((lengths) =>
+          lengths.set(
+            rowHeaderKey,
+            clampColumnWidth("dimension", next[rowHeaderId]),
+          ),
+        );
+      } else if (removed.some(isRowHeader)) {
+        // Dropping the entry makes the seeding above estimate the width again.
+        rowDimensionLengths.update((lengths) => {
+          lengths.delete(rowHeaderKey);
+          return lengths;
+        });
+      }
+    }
+
+    const changedMeasures = changed.filter((id) => !isRowHeader(id));
+    const removedMeasures = removed.filter((id) => !isRowHeader(id));
+    if (changedMeasures.length || removedMeasures.length) {
+      measureLengths.update((lengths) => {
+        for (const id of changedMeasures) {
+          lengths.set(id, clampColumnWidth("measure", next[id]));
+        }
+        for (const id of removedMeasures) lengths.delete(id);
+        return lengths;
+      });
+    }
+  }
+
+  // Configured columns and columns the user resized in this session keep
+  // their width: stretch and fit only move the other columns.
+  let draggedIds = new Set<string>();
+  $: pinnedIds = new Set<string>([
+    ...Object.keys(columnStyles).filter(
+      (id) => typeof columnStyles[id]?.width === "number",
+    ),
+    ...draggedIds,
+  ]);
+
+  $: rowHeaderWrap =
+    hasRowDimension &&
+    !!firstRowDimensionName &&
+    (columnStyles[firstRowDimensionName]?.wrap ?? wrapText);
+
+  // Alignment overrides keyed by measure name, applied to the measure's leaf
+  // columns (and its comparison sub-columns) in every column group.
+  $: measureAlign = new Map<string, PivotColumnAlign>(
+    Object.entries(columnStyles).flatMap(([id, style]) =>
+      style?.align ? [[id, style.align] as [string, PivotColumnAlign]] : [],
+    ),
+  );
+
+  function markDragged(columnId: string) {
+    if (draggedIds.has(columnId)) return;
+    draggedIds = new Set(draggedIds).add(columnId);
+  }
+
+  function unmarkDragged(columnId: string) {
+    if (!draggedIds.has(columnId)) return;
+    const next = new Set(draggedIds);
+    next.delete(columnId);
+    draggedIds = next;
   }
 
   $: if (resizingMeasure && containerRefElement && measureLengths) {
@@ -227,25 +370,28 @@
       }) => ({ name }),
     ),
   );
-  $: displayColumnWidths = fillWidth
-    ? distributeColumnWidthsToFillContainer(
-        [
-          ...(hasRowDimension
-            ? [{ width: baseRowDimensionWidth, role: "dimension" as const }]
-            : []),
-          ...visibleMeasureColumns.map(({ name }) => ({
-            width: $measureLengths.get(name) ?? WIDTHS.INIT_MEASURE_WIDTH,
-            role: "measure" as const,
-          })),
-        ],
-        containerWidth,
-      )
-    : [
-        ...(hasRowDimension ? [baseRowDimensionWidth] : []),
-        ...visibleMeasureColumns.map(
-          ({ name }) => $measureLengths.get(name) ?? WIDTHS.INIT_MEASURE_WIDTH,
-        ),
-      ];
+  $: displayColumnWidths = layoutColumnWidths(
+    [
+      ...(hasRowDimension
+        ? [
+            {
+              width: baseRowDimensionWidth,
+              role: "dimension" as const,
+              pinned:
+                firstRowDimensionName !== undefined &&
+                pinnedIds.has(firstRowDimensionName),
+            },
+          ]
+        : []),
+      ...visibleMeasureColumns.map(({ name }) => ({
+        width: $measureLengths.get(name) ?? WIDTHS.INIT_MEASURE_WIDTH,
+        role: "measure" as const,
+        pinned: pinnedIds.has(name),
+      })),
+    ],
+    containerWidth,
+    { fill: fillWidth, fit: fitToWidth },
+  );
   $: displayRowDimensionWidth = hasRowDimension
     ? (displayColumnWidths[0] ?? baseRowDimensionWidth)
     : 0;
@@ -269,6 +415,49 @@
     0,
   );
   $: totalLength = measureGroupsLength * totalMeasureWidth;
+
+  /**
+   * One-shot resize of every column so the table fits the given width.
+   * Columns are ordered as rendered: the row dimension column (if any) followed
+   * by every visible measure column across all column-dimension groups. The
+   * fitted widths are written back into the width stores so subsequent manual
+   * resizes start from them and nothing re-fits. Each measure shares one width
+   * across groups, so every group yields the same fitted value per measure.
+   */
+  export function fitColumnsToWidth(availableWidth: number) {
+    const fitted = fitColumnWidthsToContainer(
+      [
+        ...(hasRowDimension
+          ? [
+              {
+                width: baseRowDimensionWidth,
+                min: WIDTHS.MIN_COL_WIDTH,
+                max: WIDTHS.MAX_COL_WIDTH,
+              },
+            ]
+          : []),
+        ...visibleMeasureColumns.map(({ name }) => ({
+          width: $measureLengths.get(name) ?? WIDTHS.INIT_MEASURE_WIDTH,
+          min: WIDTHS.MIN_MEASURE_WIDTH,
+          max: WIDTHS.MAX_MEASURE_WIDTH,
+        })),
+      ],
+      availableWidth,
+    );
+
+    const offset = hasRowDimension ? 1 : 0;
+    if (hasRowDimension && rowDimensionWidthKey) {
+      rowDimensionLengths.update((lengths) =>
+        lengths.set(rowDimensionWidthKey, fitted[0]),
+      );
+    }
+    measureLengths.update((lengths) => {
+      visibleMeasureColumns.forEach(({ name }, i) =>
+        lengths.set(name, fitted[i + offset]),
+      );
+      return lengths;
+    });
+  }
 
   function isMeasureColumn(header, colNumber: number) {
     // Measure columns are the last columns in the header group
@@ -336,7 +525,7 @@
     return (index + offset) % measureCount === 0;
   }
 
-  $: totalHeaderHeight = headerGroups.length * HEADER_HEIGHT;
+  $: totalHeaderHeight = headerGroups.length * headerHeight;
 </script>
 
 <div
@@ -353,9 +542,14 @@
       direction="EW"
       min={WIDTHS.MIN_COL_WIDTH}
       max={WIDTHS.MAX_COL_WIDTH}
+      basis={(firstRowDimensionName &&
+        columnStyles[firstRowDimensionName]?.width) ||
+        rowHeaderEstimate}
       dimension={baseRowDimensionWidth}
       onUpdate={(d: number) => {
         if (!rowDimensionWidthKey) return;
+        // Pinned once the pointer has actually moved, not on mousedown.
+        if (firstRowDimensionName) markDragged(firstRowDimensionName);
 
         rowDimensionLengths.update((rowDimensionLengths) => {
           return rowDimensionLengths.set(rowDimensionWidthKey, d);
@@ -365,8 +559,17 @@
         resizingMeasure = false;
         onResizeStart(e);
       }}
-      onMouseUp={() => {
+      onMouseUp={(d: number, moved: boolean) => {
         resizingMeasure = false;
+        // A click without movement must neither persist nor pin the column.
+        if (moved && firstRowDimensionName) {
+          onColumnResizeEnd?.(firstRowDimensionName, d);
+        }
+      }}
+      onReset={() => {
+        if (!firstRowDimensionName) return;
+        unmarkDragged(firstRowDimensionName);
+        onColumnResizeEnd?.(firstRowDimensionName, null);
       }}
     >
       <div class="resize-bar"></div>
@@ -388,19 +591,31 @@
             direction="EW"
             min={WIDTHS.MIN_MEASURE_WIDTH}
             max={WIDTHS.MAX_MEASURE_WIDTH}
+            basis={columnStyles[name]?.width ??
+              measureEstimates.get(name) ??
+              WIDTHS.INIT_MEASURE_WIDTH}
             dimension={baseLength}
             justify={last ? "end" : "center"}
             hang={!last}
-            onUpdate={(d: number) =>
+            onUpdate={(d: number) => {
+              // Pinned once the pointer has actually moved, not on mousedown.
+              markDragged(name);
               measureLengths.update((measureLengths) => {
                 return measureLengths.set(name, d);
-              })}
+              });
+            }}
             onMouseDown={(e: MouseEvent) => {
               resizingMeasure = true;
               onResizeStart(e);
             }}
-            onMouseUp={() => {
+            onMouseUp={(d: number, moved: boolean) => {
               resizingMeasure = false;
+              // A click without movement must neither persist nor pin the column.
+              if (moved) onColumnResizeEnd?.(name, d);
+            }}
+            onReset={() => {
+              unmarkDragged(name);
+              onColumnResizeEnd?.(name, null);
             }}
           >
             <div class="resize-bar"></div>
@@ -415,7 +630,6 @@
   class:with-row-dimension={hasRowDimension}
   class:with-col-dimension={hasColumnDimension}
   class:with-expandable-rows={hasExpandableRows}
-  class:with-totals-row={!!totalsRow}
   class:with-measures={hasMeasures}
   role="presentation"
   style:width="{totalLength + displayRowDimensionWidth}px"
@@ -454,6 +668,7 @@
           {@const icon = dimMeta?.icon}
           {@const isColDimHeader =
             !header.isPlaceholder && !!dimMeta?.dimensionPath}
+          {@const headerAlign = measureAlign.get(dimMeta?.measureName ?? "")}
           {@const colStart = headerGroup.headers
             .slice(0, i)
             .reduce((sum, h) => sum + h.colSpan, 0)}
@@ -519,7 +734,10 @@
               class:cursor-pointer={header.column.getCanSort() ||
                 (isColDimHeader && !!onColumnHeaderClick)}
               class:select-none={header.column.getCanSort()}
-              class:flex-row-reverse={isMeasureColumn(header, i)}
+              class:flex-row-reverse={isMeasureColumn(header, i) &&
+                headerAlign !== "left" &&
+                headerAlign !== "center"}
+              class:justify-center={headerAlign === "center"}
               class:border-r={shouldShowHeaderRightBorder(header, i)}
               onclick={(e) => {
                 if (isColDimHeader && onColumnHeaderClick) {
@@ -536,9 +754,14 @@
                   <PivotHeaderLabel
                     label={String(header.column.columnDef.header)}
                     description={dimMeta?.description}
+                    wrap={wrapHeaders}
+                    precision={precisionForColumn(header.column, precisionFor)}
                   />
                 {:else}
-                  <p class="truncate">
+                  <p
+                    class:truncate={!wrapHeaders}
+                    class:wrap-text={wrapHeaders}
+                  >
                     {header.column.columnDef.header}
                   </p>
                 {/if}
@@ -559,122 +782,143 @@
   </thead>
   <tbody>
     <tr style:height="{before}px"></tr>
-    {#each virtualRows as row (row.index)}
-      {@const cells = rows[row.index].getVisibleCells()}
-      {@const rowId = rows[row.index].id}
-      {@const rowData = rows[row.index].original}
-      {@const dk =
-        rows[row.index].depth > 0
-          ? nestedDimKeyFromRow(rows[row.index], rowDimensionNames)
-          : dimKeyFromRow(rowData, rowDimensionNames)}
-      {@const isTotalsRow = !!totalsRow && rowId === "0"}
-      {@const filterSelected =
-        rowSelectionState?.isRowSelected(
-          rowData,
-          rows[row.index].depth,
-          rows[row.index].getParentRows().map((r) => r.original),
-        ) ?? false}
-      {@const isRowHeaderSelected =
-        clickSelection?.isRowHeaderSelected(dk) ?? false}
-      {@const hasClickedCell =
-        clickSelection?.hasSelectedCellInRow(dk) ?? false}
-      {@const isSelected =
-        rows[row.index].depth > 0 && clickSelection?.hasAnySelection
-          ? filterSelected && (isRowHeaderSelected || hasClickedCell)
-          : filterSelected}
-      {@const isAncestorOfSelectedHeader =
-        ancestorRowIdsOfSelectedHeaders.has(rowId)}
-      {@const isShowMore = isShowMoreRow(rows[row.index])}
-      {@const rs = nestedRowState({
-        isSelected,
-        hasSelection: rowSelectionState?.hasActiveSelection ?? false,
-        isRowHeaderSelected,
-        hasClickedCell,
-        hasCrossSelection,
-        isAncestorOfSelectedHeader,
-        isShowMore,
-      })}
-      <tr
-        class:show-more-row={rs.showMoreRow}
-        class:selected-row={rs.selectedRow}
-        class:dimmed-row={rs.dimmedRow}
-        class:ancestor-of-selected-row={rs.ancestorOfSelectedRow}
-      >
-        {#each cells as cell, i (cell.id)}
-          {@const result =
-            typeof cell.column.columnDef.cell === "function"
-              ? cell.column.columnDef.cell(cell.getContext())
-              : cell.column.columnDef.cell}
-          {@const cs = nestedCellState({
-            isActive: isCellActive(cell.row.id, cell.column.id),
-            isClicked:
-              clickSelection?.isCellSelected(dk, cell.column.id) ?? false,
-            cellIndex: i,
-            hasClickedCell,
-            inHoveredCol: isHeaderInHoveredRange(i, 1, hoveredColRange),
-            inSelectedCol: selectedColIndices.has(i),
-            inCellSelectedColDimGroup: cellSelectedColDimGroupIndices.has(i),
-            isRowHeaderSelected,
-            hasCrossSelection,
-            isAncestorOfSelectedHeader,
-            isTotalsRow,
-            isShowMore,
-            canShowDataViewer,
-            enableClickToFilter,
-          })}
-          {@const tooltipValue = cell.column.columnDef.meta?.tooltipFormatter
-            ? cell.column.columnDef.meta.tooltipFormatter(cell.getValue())
-            : cell.getValue()}
-          {@const cellFmt = getCellFormatting(cell, isTotalsRow)}
-          <td
-            class="ui-copy-number cell truncate group/cell"
-            class:has-conditional-format={cellFmt !== null}
-            style:--cf-bg={cellFmt?.background ?? null}
-            style:--cf-color={cellFmt?.color ?? null}
-            class:active-cell={cs.activeCell}
-            class:selected-cell={cs.selectedCell}
-            class:col-dim-hover-body={cs.colDimHoverBody}
-            class:selected-col-body={cs.selectedColBody}
-            class:cell-selected-col-dim-group-body={cs.cellSelectedColDimGroupBody}
-            class:out-of-group-row-cell={cs.outOfGroupRowCell}
-            class:cell-selected-row-header={cs.cellSelectedRowHeader}
-            class:cross-intersection={cs.crossIntersection}
-            class:cross-row-arm={cs.crossRowArm}
-            class:cross-col-arm={cs.crossColArm}
-            class:partial-aggregate-cell={cs.partialAggregateCell}
-            class:cross-selected-row-header={cs.crossSelectedRowHeader}
-            class:interactive-cell={cs.interactiveCell}
-            class:border-r={shouldShowRightBorder(i)}
-            data-value={tooltipValue}
-            data-rowid={cell.row.id}
-            data-columnid={cell.column.id}
-            data-rowheader={i === 0 || undefined}
-            class:totals-column={i > 0 && i <= measureCount}
-            onmouseover={() =>
-              cellInspectorStore.updateValue(cell.getValue(), tooltipValue)}
-            onfocus={() =>
-              cellInspectorStore.updateValue(cell.getValue(), tooltipValue)}
-          >
-            {#if result?.component && result?.props}
-              <svelte:component
-                this={result.component}
-                {...result.props}
-                {assembled}
-              />
-            {:else if typeof result === "string" || typeof result === "number"}
-              {result}
-            {:else}
-              <svelte:component
-                this={flexRender(cell.column.columnDef.cell, cell.getContext())}
-              />
-            {/if}
-          </td>
-        {/each}
-      </tr>
+    {#if totalsRow && !totalsRowAtBottom}
+      {@render pivotRow(totalsRow, true)}
+    {/if}
+    {#each virtualRows as virtualRow (virtualRow.index)}
+      {@render pivotRow(rows[virtualRow.index], false)}
     {/each}
     <tr style:height="{after}px"></tr>
   </tbody>
+  {#if totalsRow && totalsRowAtBottom}
+    <tfoot>
+      {@render pivotRow(totalsRow, true)}
+    </tfoot>
+  {/if}
 </table>
+
+{#snippet pivotRow(row: Row<PivotDataRow>, isTotalsRow: boolean)}
+  {@const cells = row.getVisibleCells()}
+  {@const rowData = row.original}
+  {@const dk =
+    row.depth > 0
+      ? nestedDimKeyFromRow(row, rowDimensionNames)
+      : dimKeyFromRow(rowData, rowDimensionNames)}
+  {@const filterSelected =
+    rowSelectionState?.isRowSelected(
+      rowData,
+      row.depth,
+      row.getParentRows().map((r) => r.original),
+    ) ?? false}
+  {@const isRowHeaderSelected =
+    clickSelection?.isRowHeaderSelected(dk) ?? false}
+  {@const hasClickedCell = clickSelection?.hasSelectedCellInRow(dk) ?? false}
+  {@const isSelected =
+    row.depth > 0 && clickSelection?.hasAnySelection
+      ? filterSelected && (isRowHeaderSelected || hasClickedCell)
+      : filterSelected}
+  {@const isAncestorOfSelectedHeader = ancestorRowIdsOfSelectedHeaders.has(
+    row.id,
+  )}
+  {@const isShowMore = isShowMoreRow(row)}
+  {@const rs = nestedRowState({
+    isSelected,
+    hasSelection: rowSelectionState?.hasActiveSelection ?? false,
+    isRowHeaderSelected,
+    hasClickedCell,
+    hasCrossSelection,
+    isAncestorOfSelectedHeader,
+    isShowMore,
+  })}
+  <tr
+    class:totals-row={isTotalsRow}
+    class:show-more-row={rs.showMoreRow}
+    class:selected-row={rs.selectedRow}
+    class:dimmed-row={rs.dimmedRow}
+    class:ancestor-of-selected-row={rs.ancestorOfSelectedRow}
+  >
+    {#each cells as cell, i (cell.id)}
+      {@const result =
+        typeof cell.column.columnDef.cell === "function"
+          ? cell.column.columnDef.cell(cell.getContext())
+          : cell.column.columnDef.cell}
+      {@const cs = nestedCellState({
+        isActive: isCellActive(cell.row.id, cell.column.id),
+        isClicked: clickSelection?.isCellSelected(dk, cell.column.id) ?? false,
+        cellIndex: i,
+        hasClickedCell,
+        inHoveredCol: isHeaderInHoveredRange(i, 1, hoveredColRange),
+        inSelectedCol: selectedColIndices.has(i),
+        inCellSelectedColDimGroup: cellSelectedColDimGroupIndices.has(i),
+        isRowHeaderSelected,
+        hasCrossSelection,
+        isAncestorOfSelectedHeader,
+        isTotalsRow,
+        isShowMore,
+        canShowDataViewer,
+        enableClickToFilter,
+      })}
+      {@const tooltipValue = cell.column.columnDef.meta?.tooltipFormatter
+        ? cell.column.columnDef.meta.tooltipFormatter(cell.getValue())
+        : cell.getValue()}
+      {@const cellFmt = getCellFormatting(cell, isTotalsRow)}
+      {@const isRowHeaderCell = hasRowDimension && i === 0}
+      {@const wrapCell = isRowHeaderCell && rowHeaderWrap}
+      {@const cellAlign = isRowHeaderCell
+        ? undefined
+        : measureAlign.get(cell.column.columnDef.meta?.measureName ?? "")}
+      <td
+        class="ui-copy-number cell group/cell"
+        class:truncate={!wrapCell}
+        class:wrap-cell={wrapCell}
+        class:has-conditional-format={cellFmt !== null}
+        style:--cf-bg={cellFmt?.background ?? null}
+        style:--cf-color={cellFmt?.color ?? null}
+        style:text-align={cellAlign ?? null}
+        class:active-cell={cs.activeCell}
+        class:selected-cell={cs.selectedCell}
+        class:col-dim-hover-body={cs.colDimHoverBody}
+        class:selected-col-body={cs.selectedColBody}
+        class:cell-selected-col-dim-group-body={cs.cellSelectedColDimGroupBody}
+        class:out-of-group-row-cell={cs.outOfGroupRowCell}
+        class:cell-selected-row-header={cs.cellSelectedRowHeader}
+        class:cross-intersection={cs.crossIntersection}
+        class:cross-row-arm={cs.crossRowArm}
+        class:cross-col-arm={cs.crossColArm}
+        class:partial-aggregate-cell={cs.partialAggregateCell}
+        class:cross-selected-row-header={cs.crossSelectedRowHeader}
+        class:interactive-cell={cs.interactiveCell}
+        class:border-r={shouldShowRightBorder(i)}
+        data-value={tooltipValue}
+        data-rowid={cell.row.id}
+        data-columnid={cell.column.id}
+        data-rowheader={i === 0 || undefined}
+        class:totals-column={i > 0 && i <= measureCount}
+        onmouseover={() =>
+          cellInspectorStore.updateValue(cell.getValue(), tooltipValue)}
+        onfocus={() =>
+          cellInspectorStore.updateValue(cell.getValue(), tooltipValue)}
+      >
+        {#if result?.component && result?.props}
+          <svelte:component
+            this={result.component}
+            {...result.props}
+            {assembled}
+            {...wrapCell && result.component === PivotExpandableCell
+              ? { wrap: true }
+              : {}}
+          />
+        {:else if typeof result === "string" || typeof result === "number"}
+          {result}
+        {:else}
+          <svelte:component
+            this={flexRender(cell.column.columnDef.cell, cell.getContext())}
+          />
+        {/if}
+      </td>
+    {/each}
+  </tr>
+{/snippet}
 
 <style lang="postcss">
   * {
@@ -705,7 +949,8 @@
     @apply flex-row;
   }
 
-  tbody .cell {
+  tbody .cell,
+  tfoot .cell {
     height: var(--row-height);
   }
 
@@ -742,6 +987,21 @@
 
   .cell {
     @apply size-full p-1 px-2 text-fg-primary;
+  }
+
+  /* Wrapped row-header cells: the row keeps its fixed height and the text is
+     clamped to --wrap-lines lines */
+  td.wrap-cell {
+    @apply whitespace-normal;
+  }
+
+  .wrap-text {
+    @apply whitespace-normal overflow-hidden;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: var(--wrap-lines, 2);
+    overflow-wrap: anywhere;
+    line-height: 1rem;
   }
 
   /* Conditional formatting (heatmap / data bar). Placed before the
@@ -794,34 +1054,41 @@
     @apply bg-surface-background;
   }
 
-  /* The totals row */
-  .with-totals-row tbody > tr:nth-of-type(2) {
+  /* The totals row: pinned under the header, or above the bottom edge when
+     rendered in the tfoot */
+  tbody > tr.totals-row,
+  tfoot > tr.totals-row {
     @apply bg-surface-background sticky z-20;
-    top: var(--total-header-height);
     height: calc(var(--row-height) + 2px);
+  }
+  tbody > tr.totals-row {
+    top: var(--total-header-height);
+  }
+  tfoot > tr.totals-row {
+    @apply bottom-0;
+  }
+  tfoot > tr.totals-row > td {
+    @apply border-t;
   }
 
   /* The totals row header - only apply when there are actual measures and totals */
-  .with-row-dimension.with-totals-row.with-measures
-    tbody
-    > tr:nth-of-type(2)
-    > td:first-of-type {
+  .with-row-dimension.with-measures tr.totals-row > td:first-of-type {
     @apply font-semibold bg-surface-background;
   }
 
-  .with-expandable-rows.with-totals-row
-    tbody
-    > tr:nth-of-type(2)
-    > td:first-of-type {
+  .with-expandable-rows tr.totals-row > td:first-of-type {
     @apply pl-5;
   }
 
   tbody tr:hover,
-  tbody tr:hover .cell {
+  tbody tr:hover .cell,
+  tfoot tr:hover,
+  tfoot tr:hover .cell {
     @apply bg-surface-hover;
   }
 
-  tbody tr:hover .active-cell {
+  tbody tr:hover .active-cell,
+  tfoot tr:hover .active-cell {
     @apply bg-primary-100;
   }
 
@@ -846,15 +1113,15 @@
       inset 1px 0 0 0 theme(colors.primary.400);
   }
   /* The totals row is z-20 and covers the outset top shadow; add inset top border */
-  .with-totals-row tbody > tr:nth-of-type(3) > td.selected-cell.cell {
+  tbody > tr.totals-row + tr > td.selected-cell.cell {
     box-shadow:
       0 0 0 1px theme(colors.primary.400),
       inset 0 1px 0 0 theme(colors.primary.400);
   }
   /* Both: right after totals AND next to sticky row header */
-  .with-totals-row
-    tbody
-    > tr:nth-of-type(3)
+  tbody
+    > tr.totals-row
+    + tr
     > td.cell-selected-row-header
     + td.selected-cell.cell {
     box-shadow:

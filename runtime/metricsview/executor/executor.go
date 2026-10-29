@@ -275,6 +275,17 @@ func (e *Executor) BindQuery(qry *metricsview.Query, timestamps metricsview.Time
 
 // Schema returns a schema for the metrics view's dimensions and measures.
 func (e *Executor) Schema(ctx context.Context) (*runtimev1.StructType, error) {
+	return e.schema(ctx, false)
+}
+
+// ExactSchema returns a schema for the metrics view's dimensions and measures, computing every measure that has an exact_expression with it.
+// It is used during validation to check the types of exact expressions.
+func (e *Executor) ExactSchema(ctx context.Context) (*runtimev1.StructType, error) {
+	return e.schema(ctx, true)
+}
+
+// schema returns a schema for the metrics view's dimensions and measures. If exact is true, measures with an exact_expression are computed with it.
+func (e *Executor) schema(ctx context.Context, exact bool) (*runtimev1.StructType, error) {
 	if !e.security.CanAccess() {
 		return nil, runtime.ErrForbidden
 	}
@@ -294,7 +305,7 @@ func (e *Executor) Schema(ctx context.Context) (*runtimev1.StructType, error) {
 
 	for _, m := range e.metricsView.Measures {
 		if e.security.CanAccessField(m.Name) {
-			qry.Measures = append(qry.Measures, metricsview.Measure{Name: m.Name})
+			qry.Measures = append(qry.Measures, metricsview.Measure{Name: m.Name, Exact: exact && m.ExactExpression != ""})
 		}
 	}
 
@@ -343,6 +354,10 @@ func (e *Executor) Query(ctx context.Context, qry *metricsview.Query, executionT
 
 	err := qry.Validate()
 	if err != nil {
+		return nil, err
+	}
+
+	if err := e.rewriteQueryExactMeasures(qry); err != nil {
 		return nil, err
 	}
 
@@ -412,6 +427,8 @@ func (e *Executor) Query(ctx context.Context, qry *metricsview.Query, executionT
 	if err != nil {
 		return nil, err
 	}
+
+	e.rewriteLookupGroupByKey(ctx, ast)
 
 	var res *drivers.Result
 	if !pivoting {
@@ -499,6 +516,10 @@ func (e *Executor) Export(ctx context.Context, qry *metricsview.Query, execution
 		return "", err
 	}
 
+	if err := e.rewriteQueryExactMeasures(qry); err != nil {
+		return "", err
+	}
+
 	pivotAST, pivoting, err := e.rewriteQueryForPivot(qry)
 	if err != nil {
 		return "", err
@@ -552,6 +573,8 @@ func (e *Executor) Export(ctx context.Context, qry *metricsview.Query, execution
 	if err != nil {
 		return "", err
 	}
+
+	e.rewriteLookupGroupByKey(ctx, ast)
 
 	if pivoting {
 		return e.executePivotExport(ctx, ast, pivotAST, format, headers)
@@ -615,9 +638,14 @@ func (e *Executor) Search(ctx context.Context, qry *metricsview.SearchQuery, exe
 				RequireTimeRange: false,
 				MaxTimeRangeDays: 0, // not enforced
 			},
-			UnusedFields: nil,
+			ExactMeasures: nil, // resolved by rewriteQueryExactMeasures
+			UnusedFields:  nil,
 		} //exhaustruct:enforce
 		q.Where = whereExprForSearch(qry.Where, d, qry.Search)
+
+		if err := e.rewriteQueryExactMeasures(q); err != nil {
+			return nil, err
+		}
 
 		err := e.RewriteQueryTimeRanges(ctx, q, executionTime)
 		if err != nil {
@@ -639,6 +667,8 @@ func (e *Executor) Search(ctx context.Context, qry *metricsview.SearchQuery, exe
 		}
 
 		e.rewriteDruidMVDFilteredGroupBy(ast, nil)
+
+		e.rewriteLookupGroupByKey(ctx, ast)
 
 		sql, args, err := ast.SQL()
 		if err != nil {
@@ -764,10 +794,15 @@ func (e *Executor) executeSearchInDruid(ctx context.Context, qry *metricsview.Se
 			RequireTimeRange: false,
 			MaxTimeRangeDays: 0, // not enforced
 		},
-		UnusedFields: nil,
+		ExactMeasures: nil, // resolved by rewriteQueryExactMeasures
+		UnusedFields:  nil,
 	} //exhaustruct:enforce
 
 	if err := e.RewriteQueryTimeRanges(ctx, q, executionTime); err != nil {
+		return nil, err
+	}
+
+	if err := e.rewriteQueryExactMeasures(q); err != nil {
 		return nil, err
 	}
 
@@ -945,14 +980,18 @@ END) as __rill_time_grain`)
 	b.WriteString(" FROM ")
 	b.WriteString(dialect.EscapeTable(annotation.Database, annotation.DatabaseSchema, annotation.Table))
 
+	// Select the annotations that overlap the time range.
+	// A point annotation overlaps when its time falls in the range.
+	// A range annotation overlaps when it ends after the range starts and starts before the range ends.
+	// A null time_end denotes a point annotation.
 	b.WriteString(" WHERE ")
-
-	b.WriteString("time >= ? AND time < ?")
-	args := []any{start, end}
-
+	var args []any
 	if annotation.HasTimeEnd {
-		b.WriteString(" AND time_end >= ? AND time_end < ?")
-		args = append(args, start, end)
+		b.WriteString("(time >= ? OR time_end > ?) AND time < ?")
+		args = []any{start, start, end}
+	} else {
+		b.WriteString("time >= ? AND time < ?")
+		args = []any{start, end}
 	}
 
 	if annotation.HasDuration && qry.TimeGrain != metricsview.TimeGrainUnspecified {

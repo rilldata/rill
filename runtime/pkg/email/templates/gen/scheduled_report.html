@@ -139,7 +139,7 @@
                     </tr>
                     <tr>
                       <td align="left" style="font-size:0px;padding:10px 25px;padding-bottom:0px;word-break:break-word;">
-                        <div style="font-family:Helvetica;font-size:16px;line-height:1.25;text-align:left;color:#000000;">Your report for <b>{{ .ReportTimeString }}</b> is ready to view.</div>
+                        <div style="font-family:Helvetica;font-size:16px;line-height:1.25;text-align:left;color:#000000;">Your report for <b>{{ .ReportTimeString }}</b> is ready to view.{{ if .Attached }} The {{ .DownloadFormat }} file is attached.{{ else if .AttachmentTooLarge }} The {{ .DownloadFormat }} file is too large to attach to this email, but you can download it below.{{ end }}</div>
                       </td>
                     </tr>
                     <tr>

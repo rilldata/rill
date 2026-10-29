@@ -25,13 +25,21 @@ import type {
 import { connectCodeToHTTPStatus } from "@rilldata/web-common/lib/errors";
 import type { ConnectError } from "@connectrpc/connect";
 import type { QueryObserverResult } from "@tanstack/svelte-query";
-import type { Row } from "tanstack-table-8-svelte-5";
+import type { Column, Row } from "tanstack-table-8-svelte-5";
+import type { PrecisionChipProps } from "@rilldata/web-common/features/dashboards/exact-measures/exact-measures";
 import { getURIRequestMeasure } from "@rilldata/web-common/features/dashboards/dashboard-utils";
-import { SHOW_MORE_BUTTON } from "./pivot-constants";
+import {
+  MAX_PIVOT_COMPARISON_MEASURES,
+  PIVOT_TOTALS_ROW_ID,
+  SHOW_MORE_BUTTON,
+} from "./pivot-constants";
 import { getColumnFiltersForPage } from "./pivot-infinite-scroll";
 import { mergeFilters } from "./pivot-merge-filters";
 import type { EphemeralMeasureDef } from "@rilldata/web-common/features/dashboards/ephemeral-measures/types";
-import { mapEphemeralMeasuresForRequest } from "@rilldata/web-common/features/dashboards/ephemeral-measures/measure-mapping";
+import {
+  applyExactMeasures,
+  mapEphemeralMeasuresForRequest,
+} from "@rilldata/web-common/features/dashboards/ephemeral-measures/measure-mapping";
 import {
   COMPARISON_DELTA,
   COMPARISON_PERCENT,
@@ -100,8 +108,11 @@ export function getPivotConfigKey(config: PivotDataStoreConfig) {
   // Ephemeral measure definitions are part of the key so editing an
   // expression (without renaming) refetches instead of serving cached data.
   const ephemeralMeasuresKey = JSON.stringify(config.ephemeralMeasures ?? []);
+  // The exact selection is part of the key so switching a measure to exact
+  // refetches instead of serving cached approximate rows.
+  const exactMeasuresKey = JSON.stringify(config.exactMeasures ?? []);
 
-  return `${dimsAndMeasures}_${timeKey}_${sortingKey}_${tableModeKey}_${filterKey}_${enableComparison}_${comparisonTimeKey}_${showTotalsColumn}_${showTotalsRow}_${rowLimit ?? "all"}_${outermostRowLimit ?? "none"}_${ephemeralMeasuresKey}`;
+  return `${dimsAndMeasures}_${timeKey}_${sortingKey}_${tableModeKey}_${filterKey}_${enableComparison}_${comparisonTimeKey}_${showTotalsColumn}_${showTotalsRow}_${rowLimit ?? "all"}_${outermostRowLimit ?? "none"}_${ephemeralMeasuresKey}_${exactMeasuresKey}`;
 }
 
 /**
@@ -547,27 +558,49 @@ export function prepareMeasureForComparison(
 
 /**
  * Maps plain measure names to request measures: comparison-suffixed names get
- * their comparison compute, and ephemeral measure names get the `expression`
- * compute carrying their definition.
+ * their comparison compute, ephemeral measure names get the `expression`
+ * compute carrying their definition, and exact measures (and the comparison
+ * measures derived from them) get `exact: true`.
  */
 export function prepareMeasuresForRequest(
   measures: V1MetricsViewAggregationMeasure[],
   ephemeralMeasures: EphemeralMeasureDef[] | undefined,
+  exactMeasures?: Iterable<string>,
 ): V1MetricsViewAggregationMeasure[] {
-  return mapEphemeralMeasuresForRequest(
-    prepareMeasureForComparison(measures),
-    ephemeralMeasures,
+  return applyExactMeasures(
+    mapEphemeralMeasuresForRequest(
+      prepareMeasureForComparison(measures),
+      ephemeralMeasures,
+    ),
+    exactMeasures ? new Set(exactMeasures) : undefined,
   );
+}
+
+/**
+ * The precision chip of a pivot column header. Only the main measure columns
+ * get one: their delta and percent companions share the base measure in their
+ * column meta but are named with a comparison suffix.
+ */
+export function precisionForColumn(
+  column: Column<PivotDataRow, unknown>,
+  precisionFor:
+    | ((measureName: string) => PrecisionChipProps | undefined)
+    | undefined,
+): PrecisionChipProps | undefined {
+  if (!precisionFor) return undefined;
+  const measureName = column.columnDef.meta?.measureName;
+  const columnName = (column.columnDef as { name?: string }).name;
+  if (!measureName || columnName !== measureName) return undefined;
+  return precisionFor(measureName);
 }
 
 export function canEnablePivotComparison(
   pivotState: PivotState,
   comparisonStart: string | Date | undefined,
 ) {
-  // Disable if more than 10 measures
-
+  // Disable if there are too many measures to compare
   const measures = splitPivotChips(pivotState.columns).measure;
-  if (measures.length > 10) {
+  if (measures.length > MAX_PIVOT_COMPARISON_MEASURES) {
     return false;
   }
   // Disable if time comparison is not present
@@ -603,14 +636,12 @@ export function getValuesForFlatTable(
   tableData: PivotDataRow[],
   rowDimensions: string[],
   rowId: string,
-  hasTotalsRow: boolean,
 ): string[] {
-  let index = parseInt(rowId, 10);
   const dimensionValues: string[] = [];
+  // The totals row is not part of the table data and has no dimension values.
+  if (rowId === PIVOT_TOTALS_ROW_ID) return dimensionValues;
 
-  if (hasTotalsRow) index = index - 1;
-
-  const row = tableData?.[index];
+  const row = tableData?.[parseInt(rowId, 10)];
   if (!row) return dimensionValues;
 
   // For flat tables, collect all dimension values in order
@@ -673,28 +704,16 @@ export function getFiltersForCell(
   tableData: PivotDataRow[],
   upToDimensionIndex?: number,
 ): PivotFilter {
-  const { rowDimensionNames, measureNames, isFlat } = config;
-  const hasTotalsRow =
-    config.pivot?.showTotalsRow !== false && measureNames.length > 0;
+  const { rowDimensionNames, isFlat } = config;
 
   let values: string[];
   if (isFlat) {
-    values = getValuesForFlatTable(
-      tableData,
-      rowDimensionNames,
-      rowId,
-      hasTotalsRow,
-    );
+    values = getValuesForFlatTable(tableData, rowDimensionNames, rowId);
     if (upToDimensionIndex !== undefined && upToDimensionIndex >= 0) {
       values = values.slice(0, upToDimensionIndex + 1);
     }
   } else {
-    values = getValuesForExpandedKey(
-      tableData,
-      rowDimensionNames,
-      rowId,
-      hasTotalsRow,
-    );
+    values = getValuesForExpandedKey(tableData, rowDimensionNames, rowId);
   }
 
   const rowEntries = values.map((value, index) => ({

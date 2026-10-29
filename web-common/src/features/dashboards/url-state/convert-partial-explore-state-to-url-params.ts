@@ -191,7 +191,10 @@ function toTimeRangesUrl(
     );
   }
 
+  // Only a fixed grain goes in the URL. In adaptive mode, the default, the grain is derived
+  // from the time range on load, so a partial state without the flag also writes no grain.
   if (
+    partialExploreState.adaptiveTimeGrain === false &&
     timeControlsState.selectedTimeRange &&
     "interval" in timeControlsState.selectedTimeRange
   ) {
@@ -457,6 +460,11 @@ function toPivotUrlParams(partialExploreState: Partial<ExploreState>) {
 
   if (partialExploreState.pivot.showTotalsRow === false) {
     searchParams.set(ExploreStateURLParams.PivotShowTotalsRow, "false");
+  }
+
+  // "top" is the default, so only "bottom" needs to be in the URL.
+  if (partialExploreState.pivot.totalsRowPosition === "bottom") {
+    searchParams.set(ExploreStateURLParams.PivotTotalsRowPosition, "bottom");
   }
 
   // Always set so clearing formatting removes it from the URL; cleanUrlParams

@@ -138,7 +138,12 @@
 
 <div class="gap-y-1">
   <div class="flex justify-between items-center">
-    <InputLabel small label={config.label ?? key} id={key} />
+    <div class="flex items-center gap-x-1.5">
+      <InputLabel small label={config.label ?? key} id={key} />
+      {#if config.meta?.axisLabel}
+        <span class="axis-label">{config.meta.axisLabel}</span>
+      {/if}
+    </div>
     {#key popoverKey}
       {#if hasPopoverContent}
         <FieldConfigPopover
@@ -216,3 +221,10 @@
     />
   {/if}
 </div>
+
+<style lang="postcss">
+  .axis-label {
+    @apply text-[10px] text-gray-400 bg-gray-100 rounded-full px-1.5 py-0.5;
+    @apply leading-none select-none;
+  }
+</style>

@@ -1,7 +1,13 @@
-import type { PivotTableMode } from "@rilldata/web-common/features/dashboards/pivot/types";
+import type {
+  PivotTableMode,
+  PivotTotalsRowPosition,
+} from "@rilldata/web-common/features/dashboards/pivot/types";
 import { Operation } from "@rilldata/web-common/proto/gen/rill/runtime/v1/expression_pb";
 import { TimeGrain } from "@rilldata/web-common/proto/gen/rill/runtime/v1/time_grain_pb";
-import { DashboardState_PivotTableMode } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
+import {
+  DashboardState_PivotTableMode,
+  DashboardState_PivotTotalsRowPosition,
+} from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
 import { V1Operation, V1TimeGrain } from "@rilldata/web-common/runtime-client";
 
 // This file should contain all the map from proto and API values.
@@ -61,4 +67,20 @@ export const FromProtoPivotTableModeMap = {} as Record<
 >;
 for (const op in ToProtoPivotTableModeMap) {
   FromProtoPivotTableModeMap[ToProtoPivotTableModeMap[op]] = op;
+}
+
+export const ToProtoPivotTotalsRowPositionMap: Record<
+  PivotTotalsRowPosition,
+  DashboardState_PivotTotalsRowPosition
+> = {
+  top: DashboardState_PivotTotalsRowPosition.TOP,
+  bottom: DashboardState_PivotTotalsRowPosition.BOTTOM,
+};
+
+export const FromProtoPivotTotalsRowPositionMap = {} as Record<
+  DashboardState_PivotTotalsRowPosition,
+  PivotTotalsRowPosition
+>;
+for (const op in ToProtoPivotTotalsRowPositionMap) {
+  FromProtoPivotTotalsRowPositionMap[ToProtoPivotTotalsRowPositionMap[op]] = op;
 }

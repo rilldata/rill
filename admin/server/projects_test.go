@@ -7,6 +7,8 @@ import (
 	"github.com/rilldata/rill/admin/testadmin"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 func TestCreateProjectSlots(t *testing.T) {
@@ -179,5 +181,113 @@ func TestProjectVariables(t *testing.T) {
 		require.Equal(t, "FOO", r5.Variables[0].Name)
 		require.Equal(t, "bar", r5.Variables[0].Value)
 		require.Equal(t, "", r5.Variables[0].UpdatedByUserId)
+	})
+}
+
+func TestProjectProvisioner(t *testing.T) {
+	fix := testadmin.New(t)
+	_, sc := fix.NewSuperuser(t)
+	_, uc := fix.NewUser(t)
+
+	// The user creates an org, which makes them an org admin and lets them create projects.
+	org, err := uc.CreateOrganization(t.Context(), &adminv1.CreateOrganizationRequest{Name: randomName()})
+	require.NoError(t, err)
+
+	t.Run("non-superuser cannot set the provisioner", func(t *testing.T) {
+		// "static" is the provisioner configured by testadmin.
+		_, err := uc.CreateProject(t.Context(), &adminv1.CreateProjectRequest{
+			Org:         org.Organization.Name,
+			Project:     "with-provisioner",
+			Provisioner: "static",
+			SkipDeploy:  true,
+		})
+		require.Error(t, err)
+		require.Equal(t, codes.PermissionDenied, status.Code(err))
+
+		// Creating without a provisioner still works.
+		proj, err := uc.CreateProject(t.Context(), &adminv1.CreateProjectRequest{
+			Org:        org.Organization.Name,
+			Project:    "proj1",
+			SkipDeploy: true,
+		})
+		require.NoError(t, err)
+		require.Empty(t, proj.Project.Provisioner)
+
+		// The project admin cannot set it through UpdateProject either.
+		provisioner := "static"
+		_, err = uc.UpdateProject(t.Context(), &adminv1.UpdateProjectRequest{
+			Org:         org.Organization.Name,
+			Project:     "proj1",
+			Provisioner: &provisioner,
+		})
+		require.Error(t, err)
+		require.Equal(t, codes.PermissionDenied, status.Code(err))
+
+		// An ordinary update by the project admin still works and does not touch the provisioner.
+		desc := "updated description"
+		res, err := uc.UpdateProject(t.Context(), &adminv1.UpdateProjectRequest{
+			Org:         org.Organization.Name,
+			Project:     "proj1",
+			Description: &desc,
+		})
+		require.NoError(t, err)
+		require.Equal(t, desc, res.Project.Description)
+		require.Empty(t, res.Project.Provisioner)
+	})
+
+	t.Run("superuser can set the provisioner", func(t *testing.T) {
+		provisioner := "static"
+		res, err := sc.UpdateProject(t.Context(), &adminv1.UpdateProjectRequest{
+			Org:                  org.Organization.Name,
+			Project:              "proj1",
+			Provisioner:          &provisioner,
+			SuperuserForceAccess: true,
+		})
+		require.NoError(t, err)
+		require.Equal(t, "static", res.Project.Provisioner)
+
+		// An ordinary update by the project admin does not clear it.
+		desc := "another description"
+		res, err = uc.UpdateProject(t.Context(), &adminv1.UpdateProjectRequest{
+			Org:         org.Organization.Name,
+			Project:     "proj1",
+			Description: &desc,
+		})
+		require.NoError(t, err)
+		require.Equal(t, "static", res.Project.Provisioner)
+
+		// An unknown provisioner is rejected even for superusers.
+		unknown := "nonexistent"
+		_, err = sc.UpdateProject(t.Context(), &adminv1.UpdateProjectRequest{
+			Org:                  org.Organization.Name,
+			Project:              "proj1",
+			Provisioner:          &unknown,
+			SuperuserForceAccess: true,
+		})
+		require.Error(t, err)
+		require.Contains(t, err.Error(), `provisioner "nonexistent" is not configured`)
+
+		// The superuser can clear it again.
+		empty := ""
+		res, err = sc.UpdateProject(t.Context(), &adminv1.UpdateProjectRequest{
+			Org:                  org.Organization.Name,
+			Project:              "proj1",
+			Provisioner:          &empty,
+			SuperuserForceAccess: true,
+		})
+		require.NoError(t, err)
+		require.Empty(t, res.Project.Provisioner)
+
+		// A superuser can also set it at creation time (in an org they can create projects in).
+		suOrg, err := sc.CreateOrganization(t.Context(), &adminv1.CreateOrganizationRequest{Name: randomName()})
+		require.NoError(t, err)
+		proj, err := sc.CreateProject(t.Context(), &adminv1.CreateProjectRequest{
+			Org:         suOrg.Organization.Name,
+			Project:     "proj2",
+			Provisioner: "static",
+			SkipDeploy:  true,
+		})
+		require.NoError(t, err)
+		require.Equal(t, "static", proj.Project.Provisioner)
 	})
 }

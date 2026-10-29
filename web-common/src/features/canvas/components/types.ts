@@ -3,6 +3,7 @@ import type { CircularCanvasChartSpec } from "@rilldata/web-common/features/canv
 import type { ScatterPlotCanvasChartSpec } from "@rilldata/web-common/features/canvas/components/charts/variants/ScatterPlotChart";
 import type { KPIGridSpec } from "@rilldata/web-common/features/canvas/components/kpi-grid";
 import type { ChartType } from "../../components/charts/types";
+import type { ComponentRefSpec } from "./component-ref";
 import type { CustomChart } from "./charts/custom-chart";
 import type { ImageSpec } from "./image";
 import type { KPISpec } from "./kpi";
@@ -23,7 +24,11 @@ export type ComponentWithMetricsView =
   | MapSpec
   | CustomChart;
 
-export type ComponentSpec = ComponentWithMetricsView | ImageSpec | MarkdownSpec;
+export type ComponentSpec =
+  | ComponentWithMetricsView
+  | ImageSpec
+  | MarkdownSpec
+  | ComponentRefSpec;
 
 export interface ComponentCommonProperties {
   title?: string;
@@ -44,8 +49,15 @@ export type ComponentComparisonOptions =
   | "percent_change";
 
 export interface ComponentFilterProperties {
+  // Explore URL params (`tr`, `compare_tr`, `grain`, `tz`). See time-filters.ts for how
+  // `inherit` and an absent `compare_tr` resolve.
   time_filters?: string;
   dimension_filters?: string;
+  /**
+   * Hides the local filter chips from the rendered component.
+   * The filters still apply to the component's queries.
+   */
+  hide_local_filters?: boolean;
 }
 
 export interface ComponentSize {
@@ -62,7 +74,8 @@ export type CanvasComponentType =
   | "table"
   | "leaderboard"
   | "map"
-  | "custom_chart";
+  | "custom_chart"
+  | "component_ref";
 
 interface LineChart {
   line_chart: CartesianCanvasChartSpec;

@@ -495,6 +495,7 @@ export class Conversation {
         config?.onResult?.(
           this.messageById.get(response.message.parentId ?? ""),
           response.message,
+          this.instanceId,
         );
       }
     }

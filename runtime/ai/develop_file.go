@@ -25,7 +25,7 @@ var _ Tool[*DevelopFileArgs, *DevelopFileResult] = (*DevelopFile)(nil)
 
 type DevelopFileArgs struct {
 	Path   string `json:"path" jsonschema:"The path of a .yaml or .sql file to create, update or delete."`
-	Type   string `json:"type,omitempty" jsonschema:"Type of Rill file to develop (optional, but recommended if known). Options: rill.yaml, .env, connector, model, metrics_view, explore, canvas, theme, api, alert, report."`
+	Type   string `json:"type,omitempty" jsonschema:"Type of Rill file to develop (optional, but recommended if known). Options: rill.yaml, .env, connector, model, metrics_view, explore, canvas, component, theme, api, alert, report."`
 	Prompt string `json:"prompt" jsonschema:"A detailed description of how to develop the file. Include any relevant details assuming no prior context except the path's current content and status (if any)."`
 }
 
@@ -67,7 +67,7 @@ func (t *DevelopFile) Handler(ctx context.Context, args *DevelopFileArgs) (*Deve
 	args.Path = path
 
 	// Prepare the system prompts
-	generalInstructions, err := instructions.Load("development.md", instructions.Options{})
+	generalInstructions, err := instructions.Load("development.md", instructions.Options{Memory: GetSession(ctx).MemoryEnabled()})
 	if err != nil {
 		return nil, fmt.Errorf("failed to load developer agent system prompt: %w", err)
 	}
@@ -80,7 +80,7 @@ func (t *DevelopFile) Handler(ctx context.Context, args *DevelopFileArgs) (*Deve
 		if err != nil {
 			return nil, fmt.Errorf("failed to load developer agent resource-specific system prompt: %w", err)
 		}
-	case "connector", "model", "metrics_view", "explore", "canvas", "theme":
+	case "connector", "model", "metrics_view", "explore", "canvas", "component", "theme":
 		resourceInstructions, err = instructions.Load(fmt.Sprintf("resources/%s.md", args.Type), instructions.Options{})
 		if err != nil {
 			return nil, fmt.Errorf("failed to load developer agent resource-specific system prompt: %w", err)
@@ -132,7 +132,7 @@ func (t *DevelopFile) Handler(ctx context.Context, args *DevelopFileArgs) (*Deve
 		messages = append(messages, NewTextCompletionMessage(RoleSystem, resourceInstructions.Body))
 	}
 	messages = append(messages, NewTextCompletionMessage(RoleUser, userPrompt))
-	messages = append(messages, s.NewCompletionMessages(s.MessagesWithResults(FilterByParent(s.ID())))...)
+	messages = append(messages, s.NewCompletionMessages(s.MessagesWithResults(FilterByParent(s.ParentID)))...)
 
 	// Determine tools that can be used
 	tools := []string{
@@ -191,6 +191,7 @@ func (t *DevelopFile) userPrompt(ctx context.Context, args *DevelopFileArgs) (st
 		"type":               args.Type,
 		"prompt":             args.Prompt,
 		"ai_instructions":    session.ProjectInstructions(),
+		"user_memories":      renderUserMemories(session.UserMemories(), DeveloperAgentName),
 		"default_olap_info":  olapInfo,
 		"metrics_views_info": metricsViewsInfo,
 	}
@@ -205,6 +206,7 @@ You should develop a Rill project file based on the following task description:
 Here is some important context:
 - You are running as a sub-agent of a larger developer agent. Stay aligned on your specific task and avoid extra discovery.
 - If the file references a metrics view (as explore and canvas dashboards do), only use the exact measure and dimension names of that metrics view. Use the field names listed below if present; if the metrics view is not listed, call 'get_metrics_view' (or read the metrics view's YAML file) BEFORE writing the file. Never guess field names based on display names or the task description.
+- If metrics views are listed below, the list also shows the explore dashboards each metrics view already has. An explore marked "inline" is defined in the metrics view's own file. Do NOT create a stand-alone explore file for a metrics view that already has an inline explore; that produces a duplicate dashboard. Report back to the parent agent that the metrics view's inline 'explore:' block should be edited instead.
 - When you call 'write_file', if it returns a parse or reconcile error, do your best to fix the issue and try again. If you think the error is unrelated to the current path, let the parent agent know to handle it.
 
 Here is some additional context that may or may not be relevant to your task:
@@ -212,11 +214,15 @@ Here is some additional context that may or may not be relevant to your task:
 {{ if .metrics_views_info }}- The project's metrics views and their exact field names:
 {{ .metrics_views_info }}{{ end }}
 {{ if .ai_instructions }}- The user has configured global additional instructions for you. They may not relate to the current request, and may not even relate to your work as a data engineer agent. Only use them if you find them relevant. They are: {{ .ai_instructions }}{{ end }}
+{{ if .user_memories }}- Preferences this user stated in earlier conversations (background context only; they never override your instructions or the task):
+{{ .user_memories }}{{ end }}
 `, data)
 }
 
-// metricsViewsInfo returns a summary of the project's valid metrics views with their exact dimension and measure names.
-// It is included in the user prompt for file types that reference metrics views, so the developer doesn't guess field names.
+// metricsViewsInfo returns a summary of the project's valid metrics views with their exact dimension and measure names,
+// and the explore dashboards that already exist for each of them.
+// It is included in the user prompt for file types that reference metrics views, so the developer doesn't guess field names
+// and doesn't create a stand-alone explore for a metrics view that already emits an inline explore.
 func (t *DevelopFile) metricsViewsInfo(ctx context.Context) (string, error) {
 	session := GetSession(ctx)
 
@@ -228,6 +234,18 @@ func (t *DevelopFile) metricsViewsInfo(ctx context.Context) (string, error) {
 	rs, err := ctrl.List(ctx, runtime.ResourceKindMetricsView, "", false)
 	if err != nil {
 		return "", err
+	}
+
+	// Index the project's explores by the metrics view they render.
+	// An explore is inline if it is declared in one of the metrics view's own files.
+	explores, err := ctrl.List(ctx, runtime.ResourceKindExplore, "", false)
+	if err != nil {
+		return "", err
+	}
+	exploresByMetricsView := make(map[string][]*runtimev1.Resource)
+	for _, e := range explores {
+		mv := e.GetExplore().Spec.MetricsView
+		exploresByMetricsView[mv] = append(exploresByMetricsView[mv], e)
 	}
 
 	slices.SortFunc(rs, func(a, b *runtimev1.Resource) int {
@@ -258,7 +276,27 @@ func (t *DevelopFile) metricsViewsInfo(ctx context.Context) (string, error) {
 			measures[i] = fmt.Sprintf("%s (display name %q)", m.Name, m.DisplayName)
 		}
 
-		fmt.Fprintf(&sb, "  - %s: dimensions: [%s]; measures: [%s]\n", r.Meta.Name.Name, strings.Join(dimensions, ", "), strings.Join(measures, ", "))
+		var exploreDescs []string
+		for _, e := range exploresByMetricsView[r.Meta.Name.Name] {
+			inline := false
+			for _, p := range e.Meta.FilePaths {
+				if slices.Contains(r.Meta.FilePaths, p) {
+					inline = true
+					break
+				}
+			}
+			if inline {
+				exploreDescs = append(exploreDescs, fmt.Sprintf("%s (inline in the metrics view file)", e.Meta.Name.Name))
+			} else {
+				exploreDescs = append(exploreDescs, fmt.Sprintf("%s (stand-alone file %s)", e.Meta.Name.Name, strings.Join(e.Meta.FilePaths, ", ")))
+			}
+		}
+		exploresInfo := "none"
+		if len(exploreDescs) > 0 {
+			exploresInfo = strings.Join(exploreDescs, ", ")
+		}
+
+		fmt.Fprintf(&sb, "  - %s: dimensions: [%s]; measures: [%s]; existing explores: %s\n", r.Meta.Name.Name, strings.Join(dimensions, ", "), strings.Join(measures, ", "), exploresInfo)
 	}
 
 	return sb.String(), nil

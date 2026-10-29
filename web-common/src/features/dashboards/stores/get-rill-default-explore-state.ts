@@ -77,6 +77,7 @@ function getRillDefaultExploreTimeState(
     return {
       // for consistency with fromUrl
       showTimeComparison: false,
+      adaptiveTimeGrain: true,
     };
   }
 
@@ -104,6 +105,7 @@ function getRillDefaultExploreTimeState(
       name: timeRangeName,
       interval,
     } as DashboardTimeControls,
+    adaptiveTimeGrain: true,
     selectedTimezone: timeZone,
     showTimeComparison: false,
     selectedComparisonTimeRange: undefined,
@@ -289,6 +291,7 @@ function getRillDefaultPivotViewState() {
       activeCell: null,
       showTotalsColumn: true,
       showTotalsRow: true,
+      totalsRowPosition: "top",
       tableMode: "nest",
     },
   };

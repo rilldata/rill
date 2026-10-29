@@ -9,25 +9,38 @@ import type {
 } from "@rilldata/web-common/features/canvas/inspector/types";
 import { getFiltersFromText } from "@rilldata/web-common/features/dashboards/filters/dimension-filters/dimension-search-text-utils";
 import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
+import { ExploreStateURLParams } from "@rilldata/web-common/features/dashboards/url-state/url-params";
+import { getComparisonInterval } from "@rilldata/web-common/lib/time/comparisons";
+import { allowedGrainsForInterval } from "@rilldata/web-common/lib/time/new-grains";
 import { TimeRangePreset } from "@rilldata/web-common/lib/time/types";
 import type {
+  V1CanvasItem,
   V1Expression,
   V1Resource,
   V1TimeRange,
 } from "@rilldata/web-common/runtime-client";
+import type { Interval } from "luxon";
 import type { Component, ComponentType, SvelteComponent } from "svelte";
 import type { Readable, Unsubscriber } from "svelte/store";
 import { derived, get, writable, type Writable } from "svelte/store";
+import { isMap } from "yaml";
 import { mergeFilters } from "../../dashboards/pivot/pivot-merge-filters";
 import {
   createAndExpression,
   sanitiseExpression,
 } from "../../dashboards/stores/filter-utils";
+import { ALL_TIME_RANGE_ALIAS } from "../../dashboards/time-controls/new-time-controls";
 import type {
   ComparisonTimeRangeState,
   TimeAndFilterStore,
   TimeRangeState,
 } from "../../dashboards/time-controls/time-control-store";
+import {
+  normalizeTimeFilters,
+  resolveTimeFilters,
+  stripInheritedTimeFilters,
+  TIME_FILTER_INHERIT,
+} from "./time-filters";
 import type {
   CanvasEntity,
   ComponentPath,
@@ -109,13 +122,16 @@ export abstract class BaseCanvasComponent<T = ComponentSpec> {
     );
 
     const yamlTimeFilterStore: SearchParamsStore = (() => {
-      const store = derived(this.specStore, (spec) => {
-        return new URLSearchParams(spec?.["time_filters"] ?? "");
+      const rawStore = derived(this.specStore, (spec) => {
+        return new URLSearchParams((spec?.["time_filters"] ?? "") as string);
       });
+      // The widget's own time state only sees real ranges; `inherit` is resolved here.
+      const store = derived(rawStore, stripInheritedTimeFilters);
       return {
         subscribe: store.subscribe,
         set: (map: Map<string, string | undefined>) => {
-          const searchParams = get(store);
+          const searchParams = get(rawStore);
+          const before = resolveTimeFilters(searchParams.toString());
 
           map.forEach((value, key) => {
             if (value === undefined || value === null || value === "") {
@@ -125,22 +141,31 @@ export abstract class BaseCanvasComponent<T = ComponentSpec> {
             }
           });
 
+          const after = resolveTimeFilters(searchParams.toString());
+          // Picking a local time range on a fully inherited widget keeps the comparison it showed,
+          // since a local `tr` without `compare_tr` means no comparison.
+          if (
+            !before.hasLocalTimeRange &&
+            before.comparison.mode === "inherit" &&
+            after.hasLocalTimeRange &&
+            !searchParams.has(ExploreStateURLParams.ComparisonTimeRange)
+          ) {
+            searchParams.set(
+              ExploreStateURLParams.ComparisonTimeRange,
+              TIME_FILTER_INHERIT,
+            );
+          }
+
           this.updateProperty(
             "time_filters" as AllKeys<T>,
-            searchParams.toString() as T[AllKeys<T>],
+            normalizeTimeFilters(searchParams) as T[AllKeys<T>],
           );
           return true;
         },
         clearAll: () => {
-          const searchParams = get(store);
-
-          searchParams.forEach((_, key) => {
-            searchParams.delete(key);
-          });
-
           this.updateProperty(
             "time_filters" as AllKeys<T>,
-            searchParams.toString() as T[AllKeys<T>],
+            undefined as T[AllKeys<T>],
           );
         },
       };
@@ -164,7 +189,9 @@ export abstract class BaseCanvasComponent<T = ComponentSpec> {
       );
 
       this.localTimeControls.onUrlChange(
-        new URLSearchParams(spec?.["time_filters"] ?? ""),
+        stripInheritedTimeFilters(
+          new URLSearchParams((spec?.["time_filters"] ?? "") as string),
+        ),
       );
     });
   }
@@ -175,7 +202,10 @@ export abstract class BaseCanvasComponent<T = ComponentSpec> {
     this.localExpressionFilters.yamlConfigProvider.cleanup?.();
   }
 
-  update(resource: V1Resource, path: ComponentPath) {
+  // item is the canvas item this instance renders; only used by components whose
+  // editable state lives on the item rather than the resource (see ComponentRefComponent).
+  update(resource: V1Resource, path: ComponentPath, item?: V1CanvasItem) {
+    void item;
     const yamlSpec = (resource.component?.state?.validSpec
       ?.rendererProperties ??
       (this.parent.allowUnvalidatedSpec
@@ -198,11 +228,10 @@ export abstract class BaseCanvasComponent<T = ComponentSpec> {
         this.parent.timeManager.state.timeZoneStore,
         this.parent.timeManager.state.rangeStore,
         this.localTimeControls.interval,
-        this.localTimeControls.comparisonIntervalStore,
-        this.localTimeControls.showTimeComparisonStore,
         this.localTimeControls.grainStore,
-        this.localTimeControls.comparisonRangeStore,
+        this.localTimeControls.urlGrainStore,
         this.localTimeControls.rangeStore,
+        this.parent.timeManager.largestMinTimeGrain,
         this.parent.expressionFilterManager.getExprStoreForMetricsView(
           this.metricsViewName,
         ),
@@ -218,18 +247,35 @@ export abstract class BaseCanvasComponent<T = ComponentSpec> {
         timeZone,
         globalRange,
         localInterval,
-        localComparisonInterval,
-        localShowTimeComparison,
         localGrainStore,
-        localComparisonRange,
+        localRequestedGrain,
         localRange,
+        minTimeGrain,
         metricsViewFilters,
         hasTimeSeriesMap,
         componentSpec,
       ]) => {
         const hasTimeSeries = hasTimeSeriesMap.get(this.metricsViewName);
 
+        const {
+          hasLocalTimeRange: usesLocalTimeRange,
+          comparison: resolvedComparison,
+        } = resolveTimeFilters(componentSpec?.["time_filters"] as string);
+
+        // The grain in effect: the widget's own grain when it has a local range
+        // (already validated against that range by its time state),
+        // its own grain on the canvas range when that range allows it, else the canvas grain.
         let timeGrain = globalGrainStore;
+        if (usesLocalTimeRange) {
+          timeGrain = localGrainStore ?? globalGrainStore;
+        } else if (
+          localRequestedGrain &&
+          allowedGrainsForInterval(globalInterval, minTimeGrain).includes(
+            localRequestedGrain,
+          )
+        ) {
+          timeGrain = localRequestedGrain;
+        }
 
         // Timestamps sent to the runtime must be UTC:
         // the protobuf JSON codec rejects ISO strings with both milliseconds and a timezone offset,
@@ -246,76 +292,89 @@ export abstract class BaseCanvasComponent<T = ComponentSpec> {
                 name: globalRange ?? TimeRangePreset.CUSTOM,
                 start: globalInterval.start.toJSDate(),
                 end: globalInterval.end.toJSDate(),
-                interval: globalGrainStore,
+                interval: timeGrain,
               }
             : undefined,
           timeStart: globalInterval?.start.toUTC().toISO(),
           timeEnd: globalInterval?.end.toUTC().toISO(),
         };
 
-        let comparisonTimeRange: V1TimeRange | undefined = {
-          start: globalComparisonInterval?.start.toUTC().toISO(),
-          end: globalComparisonInterval?.end.toUTC().toISO(),
-          timeZone,
-        };
-
-        let showTimeComparison = globalShowTimeComparison;
-
-        let comparisonTimeRangeState: ComparisonTimeRangeState | undefined =
-          globalComparisonInterval && {
-            comparisonTimeStart: globalComparisonInterval.start.toUTC().toISO(),
-            comparisonTimeEnd: globalComparisonInterval.end.toUTC().toISO(),
-            selectedComparisonTimeRange: {
-              start: globalComparisonInterval.start.toJSDate(),
-              end: globalComparisonInterval.end.toJSDate(),
-              name: globalComparisonRange,
-            },
-          };
-
-        if (componentSpec?.["time_filters"]) {
+        if (usesLocalTimeRange) {
           timeRange = {
             start: localInterval?.start.toUTC().toISO(),
             end: localInterval?.end.toUTC().toISO(),
             timeZone,
           };
 
-          comparisonTimeRange = {
-            start: localComparisonInterval?.start.toUTC().toISO(),
-            end: localComparisonInterval?.end.toUTC().toISO(),
-            timeZone,
-          };
-
-          showTimeComparison = localShowTimeComparison;
-
-          timeGrain = localGrainStore ?? globalGrainStore;
-
-          const localTimeRangeState: TimeRangeState = {
+          timeRangeState = {
             selectedTimeRange: localInterval
               ? {
                   name: localRange ?? TimeRangePreset.CUSTOM,
                   start: localInterval.start.toJSDate(),
                   end: localInterval.end.toJSDate(),
-                  interval: localGrainStore ?? globalGrainStore,
+                  interval: timeGrain,
                 }
               : undefined,
             timeStart: localInterval?.start.toUTC().toISO(),
             timeEnd: localInterval?.end.toUTC().toISO(),
           };
-          const localComparisonRangeState:
-            | ComparisonTimeRangeState
-            | undefined = localComparisonInterval && {
-            comparisonTimeStart: localComparisonInterval.start.toUTC().toISO(),
-            comparisonTimeEnd: localComparisonInterval.end.toUTC().toISO(),
+        }
+
+        // Comparison is its own axis: `compare_tr` decides whether the component inherits
+        // the canvas comparison, turns it off, or compares against its own range.
+        // Either way the comparison interval is relative to the component's effective time range.
+        const effectiveInterval = usesLocalTimeRange
+          ? localInterval
+          : globalInterval;
+        const effectiveRange = usesLocalTimeRange ? localRange : globalRange;
+
+        let showTimeComparison = false;
+        let comparisonRangeName: string | undefined;
+        let comparisonInterval: Interval<true> | undefined;
+
+        if (effectiveRange !== ALL_TIME_RANGE_ALIAS) {
+          switch (resolvedComparison.mode) {
+            case "inherit":
+              showTimeComparison = globalShowTimeComparison;
+              comparisonRangeName = globalComparisonRange;
+              comparisonInterval = usesLocalTimeRange
+                ? getComparisonInterval(
+                    localInterval,
+                    globalComparisonRange,
+                    timeZone,
+                  )
+                : globalComparisonInterval;
+              break;
+            case "none":
+              break;
+            case "local":
+              showTimeComparison = true;
+              comparisonRangeName = resolvedComparison.range;
+              comparisonInterval = getComparisonInterval(
+                effectiveInterval,
+                resolvedComparison.range,
+                timeZone,
+              );
+              break;
+          }
+        }
+
+        const comparisonTimeRange: V1TimeRange = {
+          start: comparisonInterval?.start.toUTC().toISO(),
+          end: comparisonInterval?.end.toUTC().toISO(),
+          timeZone,
+        };
+
+        const comparisonTimeRangeState: ComparisonTimeRangeState | undefined =
+          comparisonInterval && {
+            comparisonTimeStart: comparisonInterval.start.toUTC().toISO(),
+            comparisonTimeEnd: comparisonInterval.end.toUTC().toISO(),
             selectedComparisonTimeRange: {
-              start: localComparisonInterval.start.toJSDate(),
-              end: localComparisonInterval.end.toJSDate(),
-              name: localComparisonRange,
+              start: comparisonInterval.start.toJSDate(),
+              end: comparisonInterval.end.toJSDate(),
+              name: comparisonRangeName,
             },
           };
-
-          timeRangeState = localTimeRangeState;
-          comparisonTimeRangeState = localComparisonRangeState;
-        }
 
         // Dimension Filters
         // The global filters are absent until the canvas' metrics views resolve, and for a component
@@ -377,16 +436,25 @@ export abstract class BaseCanvasComponent<T = ComponentSpec> {
   }
 
   updateProperty(key: AllKeys<T>, value: T[AllKeys<T>]) {
-    const currentSpec = get(this.specStore);
+    this.updateProperties({ [key]: value } as unknown as Partial<T>);
+  }
 
-    const newSpec = { ...currentSpec, [key]: value };
+  // Writes several properties in one YAML update, so dependent keys (such as
+  // a sort field and its direction) never reach the reconciler half-applied.
+  // A key whose value is undefined or empty is removed from the spec.
+  updateProperties(patch: Partial<T>) {
+    const currentSpec = this.specInYAML() ?? get(this.specStore);
 
-    if (value === undefined || value == "") {
-      delete newSpec[key];
+    const newSpec = { ...currentSpec, ...patch };
+
+    for (const [key, value] of Object.entries(patch)) {
+      if (value === undefined || value == "") {
+        delete newSpec[key];
+      }
     }
 
     // If the metrics_view is changed, clear the time_filters and dimension_filters
-    if (key === "metrics_view") {
+    if ("metrics_view" in patch) {
       if ("time_filters" in newSpec) {
         delete newSpec.time_filters;
       }
@@ -404,5 +472,42 @@ export abstract class BaseCanvasComponent<T = ComponentSpec> {
       this.updateYAML(newSpec);
     }
     this.specStore.set(newSpec);
+  }
+
+  // The component's properties as currently written in the file. While
+  // editing, the spec store trails the file by a reconcile: a write built on
+  // the store would drop a previous write the runtime has not echoed back yet,
+  // and would come back with the runtime's alphabetical key order.
+  private specInYAML(): T | undefined {
+    if (!this.parent.fileArtifact || !this.parent.parsedContent) return;
+    const document = get(this.parent.parsedContent);
+    const node: unknown = document.getIn(this.pathInYAML);
+    if (!isMap(node)) return;
+    const spec: unknown = node.toJS(document);
+    return spec as T;
+  }
+
+  // Sets how this component compares against a previous period:
+  // "inherit" follows the canvas, "none" turns comparison off,
+  // anything else is a comparison range such as rill-PW or a custom start,end pair.
+  setComparisonRange(value: string) {
+    const searchParams = new URLSearchParams(
+      (get(this.specStore)?.["time_filters"] ?? "") as string,
+    );
+
+    if (value === "none") {
+      searchParams.delete(ExploreStateURLParams.ComparisonTimeRange);
+      // Off is spelled by a `tr` without `compare_tr`.
+      if (!searchParams.has(ExploreStateURLParams.TimeRange)) {
+        searchParams.set(ExploreStateURLParams.TimeRange, TIME_FILTER_INHERIT);
+      }
+    } else {
+      searchParams.set(ExploreStateURLParams.ComparisonTimeRange, value);
+    }
+
+    this.updateProperty(
+      "time_filters" as AllKeys<T>,
+      normalizeTimeFilters(searchParams) as T[AllKeys<T>],
+    );
   }
 }

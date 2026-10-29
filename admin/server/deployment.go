@@ -117,6 +117,11 @@ func (s *Server) ListDeployments(ctx context.Context, req *adminv1.ListDeploymen
 
 	claims := auth.GetClaims(ctx)
 	permissions := claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID)
+	if claims.Superuser(ctx) && req.SuperuserForceAccess {
+		permissions.ReadProject = true
+		permissions.ReadProd = true
+		permissions.ReadDev = true
+	}
 
 	if !permissions.ReadProject {
 		return nil, status.Error(codes.PermissionDenied, "does not have permission to read project")
@@ -212,6 +217,7 @@ func (s *Server) GetDeployment(ctx context.Context, req *adminv1.GetDeploymentRe
 		project:            proj,
 		deployment:         depl,
 		projectPermissions: permissions,
+		omitServiceSubject: true,
 		externalUserID:     req.ExternalUserId,
 		ttl:                ttlDuration,
 	}
@@ -406,14 +412,17 @@ func (s *Server) StartDeployment(ctx context.Context, req *adminv1.StartDeployme
 	}
 
 	claims := auth.GetClaims(ctx)
+	forceAccess := claims.Superuser(ctx) && req.SuperuserForceAccess
 	permissions := claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID)
-	if depl.Environment == "dev" {
-		if !permissions.ManageDev {
-			return nil, status.Error(codes.PermissionDenied, "does not have permission to manage dev deployment")
-		}
-	} else {
-		if !permissions.ManageProd {
-			return nil, status.Error(codes.PermissionDenied, "does not have permission to manage prod deployment")
+	if !forceAccess {
+		if depl.Environment == "dev" {
+			if !permissions.ManageDev {
+				return nil, status.Error(codes.PermissionDenied, "does not have permission to manage dev deployment")
+			}
+		} else {
+			if !permissions.ManageProd {
+				return nil, status.Error(codes.PermissionDenied, "does not have permission to manage prod deployment")
+			}
 		}
 	}
 
@@ -446,14 +455,17 @@ func (s *Server) StopDeployment(ctx context.Context, req *adminv1.StopDeployment
 	}
 
 	claims := auth.GetClaims(ctx)
+	forceAccess := claims.Superuser(ctx) && req.SuperuserForceAccess
 	permissions := claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID)
-	if depl.Environment == "dev" {
-		if !permissions.ManageDev {
-			return nil, status.Error(codes.PermissionDenied, "does not have permission to manage dev deployment")
-		}
-	} else {
-		if !permissions.ManageProd {
-			return nil, status.Error(codes.PermissionDenied, "does not have permission to manage prod deployment")
+	if !forceAccess {
+		if depl.Environment == "dev" {
+			if !permissions.ManageDev {
+				return nil, status.Error(codes.PermissionDenied, "does not have permission to manage dev deployment")
+			}
+		} else {
+			if !permissions.ManageProd {
+				return nil, status.Error(codes.PermissionDenied, "does not have permission to manage prod deployment")
+			}
 		}
 	}
 
@@ -547,6 +559,7 @@ func (s *Server) GetDeploymentCredentials(ctx context.Context, req *adminv1.GetD
 		project:            proj,
 		deployment:         prodDepl,
 		projectPermissions: permissions,
+		omitServiceSubject: true,
 		externalUserID:     req.ExternalUserId,
 		ttl:                ttlDuration,
 	}
@@ -651,6 +664,7 @@ func (s *Server) GetIFrame(ctx context.Context, req *adminv1.GetIFrameRequest) (
 		project:            proj,
 		deployment:         prodDepl,
 		projectPermissions: permissions,
+		omitServiceSubject: true,
 		externalUserID:     req.ExternalUserId,
 		extraAttributes:    map[string]any{"embed": true},
 		overrideResources:  overrideResources,

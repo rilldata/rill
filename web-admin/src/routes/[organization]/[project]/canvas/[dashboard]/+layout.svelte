@@ -10,7 +10,8 @@
 
   // Record usage on every dashboard change. The layout persists across
   // param-only navigations, so onMount would only capture the first visit.
-  $: if (dashboard) recentlyUsedDashboards.update(dashboard.toLowerCase());
+  $: if (dashboard)
+    recentlyUsedDashboards.update(ResourceKind.Canvas, dashboard);
 </script>
 
 <div class="flex h-full overflow-hidden">

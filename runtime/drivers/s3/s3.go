@@ -130,7 +130,7 @@ type ConfigProperties struct {
 }
 
 // Open implements drivers.Driver
-func (d driver) Open(_, instanceID string, config map[string]any, st *storage.Client, ac *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
+func (d driver) Open(_ context.Context, _, instanceID string, config map[string]any, st *storage.Client, ac *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
 	if instanceID == "" {
 		return nil, errors.New("s3 driver can't be shared")
 	}
@@ -282,6 +282,11 @@ func (c *Connection) AsFileStore() (drivers.FileStore, bool) {
 
 // AsWarehouse implements drivers.Handle.
 func (c *Connection) AsWarehouse() (drivers.Warehouse, bool) {
+	return nil, false
+}
+
+// AsMCP implements drivers.Handle.
+func (c *Connection) AsMCP() (drivers.MCPService, bool) {
 	return nil, false
 }
 

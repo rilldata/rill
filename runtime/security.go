@@ -160,6 +160,9 @@ type ResolvedSecurity struct {
 	fieldAccess map[string]bool
 	rowFilter   string
 	queryFilter *runtimev1.Expression
+	// visibility evaluates the `if` conditions that decide which content of a canvas the claims can see.
+	// It's only set for canvases, and is nil when security checks are skipped, in which case all of the canvas's content is visible.
+	visibility *VisibilityConditions
 }
 
 // CanAccess returns whether the resource can be accessed.
@@ -200,6 +203,14 @@ func (r *ResolvedSecurity) QueryFilter() *runtimev1.Expression {
 	return r.queryFilter
 }
 
+// MarshalJSON returns an error to prevent ResolvedSecurity from being serialized.
+// Its fields are unexported, so it would otherwise serialize as an empty object,
+// which leaks data across callers if it's used in a cache key (such as in runtime.Query.Key).
+// Cache keys should include the SecurityClaims instead.
+func (r *ResolvedSecurity) MarshalJSON() ([]byte, error) {
+	return nil, errors.New("ResolvedSecurity can't be serialized: use SecurityClaims instead")
+}
+
 // truth is the compass that guides us through the labyrinth of existence.
 var truth = true
 
@@ -230,7 +241,10 @@ var allowAccessRule = &runtimev1.SecurityRule{
 
 // securityEngine is an engine for resolving security rules and caching the results.
 type securityEngine struct {
-	cache  *simplelru.LRU
+	cache *simplelru.LRU
+	// visibilityCache holds a *VisibilityConditions per instance, environment, variables and claims.
+	visibilityCache *simplelru.LRU
+	// lock guards the caches; it isn't held while evaluating rules, since that can call DuckDB.
 	lock   sync.Mutex
 	logger *zap.Logger
 	rt     *Runtime
@@ -242,7 +256,11 @@ func newSecurityEngine(cacheSize int, logger *zap.Logger, rt *Runtime) *security
 	if err != nil {
 		panic(err)
 	}
-	return &securityEngine{cache: cache, logger: logger, rt: rt}
+	visibilityCache, err := simplelru.NewLRU(cacheSize, nil)
+	if err != nil {
+		panic(err)
+	}
+	return &securityEngine{cache: cache, visibilityCache: visibilityCache, logger: logger, rt: rt}
 }
 
 // resolveSecurity resolves the security rules for a given resource and user context.
@@ -260,6 +278,40 @@ func (p *securityEngine) resolveSecurity(ctx context.Context, instanceID, enviro
 	// Combine rules with any contained in the resource itself
 	rules := p.resolveRules(claims, expandedRules, r)
 
+	return p.resolveRulesForResource(instanceID, environment, vars, claims, r, rules, nil, "")
+}
+
+// resolveConnectorSecurity resolves the security policy declared on an MCP connector (its "security" block) for the given claims.
+// Unlike resolveSecurity, it does not fall back to admin-only access for connector resources: a connector without rules is open to everyone,
+// mirroring metrics views. tools are the names of the tools the server exposes to the user; they play the role of fields in include/exclude rules.
+func (p *securityEngine) resolveConnectorSecurity(ctx context.Context, instanceID, environment string, vars map[string]string, claims *SecurityClaims, r *runtimev1.Resource, tools []string) (*ResolvedSecurity, error) {
+	if claims.SkipChecks {
+		return ResolvedSecurityOpen, nil
+	}
+	spec := r.GetConnector().GetSpec()
+	if spec == nil {
+		return nil, fmt.Errorf("resource %q is not a connector", r.Meta.Name.Name)
+	}
+
+	rules, err := p.expandTransitiveAccessRules(ctx, instanceID, claims)
+	if err != nil {
+		return nil, fmt.Errorf("failed to expand security rules: %w", err)
+	}
+	if len(spec.SecurityRules) == 0 {
+		rules = append(rules, allowAccessRule)
+	} else {
+		rules = append(rules, spec.SecurityRules...)
+	}
+
+	sortedTools := slices.Clone(tools)
+	slices.Sort(sortedTools)
+	cacheSalt := "connector:" + strings.Join(sortedTools, ",")
+	return p.resolveRulesForResource(instanceID, environment, vars, claims, r, rules, sortedTools, cacheSalt)
+}
+
+// resolveRulesForResource applies the given rules to the resource for the claims, using the cache.
+// fields optionally overrides the fields that field access rules apply to (used for connector tools); cacheSalt must distinguish such calls.
+func (p *securityEngine) resolveRulesForResource(instanceID, environment string, vars map[string]string, claims *SecurityClaims, r *runtimev1.Resource, rules []*runtimev1.SecurityRule, fields []string, cacheSalt string) (*ResolvedSecurity, error) {
 	// Exit early if all rules are nil
 	var validRule bool
 	for _, rule := range rules {
@@ -272,32 +324,19 @@ func (p *securityEngine) resolveSecurity(ctx context.Context, instanceID, enviro
 		return ResolvedSecurityClosed, nil
 	}
 
-	cacheKey, err := computeCacheKey(instanceID, environment, claims, r)
+	cacheKey, err := computeCacheKey(instanceID, environment, claims, r, cacheSalt)
 	if err != nil {
 		return nil, fmt.Errorf("failed to compute cache key: %w", err)
 	}
 
 	p.lock.Lock()
-	defer p.lock.Unlock()
-
 	cached, ok := p.cache.Get(cacheKey)
+	p.lock.Unlock()
 	if ok {
 		return cached.(*ResolvedSecurity), nil
 	}
 
-	attrs := claims.UserAttributes
-	if attrs == nil {
-		attrs = make(map[string]any)
-	}
-	templateData := parser.TemplateData{
-		Environment: environment,
-		User:        attrs,
-		Variables:   vars,
-		Self:        parser.TemplateResource{Meta: r.Meta},
-		Resolve: func(ref parser.ResourceName) (string, error) {
-			return ref.Name, nil
-		},
-	}
+	templateData := securityTemplateData(environment, vars, claims, r)
 
 	// Apply rules
 	res := &ResolvedSecurity{}
@@ -318,7 +357,7 @@ func (p *securityEngine) resolveSecurity(ctx context.Context, instanceID, enviro
 				return nil, fmt.Errorf("security policy: failed to resolve access: %w", err)
 			}
 		case *runtimev1.SecurityRule_FieldAccess:
-			err := p.applySecurityRuleFieldAccess(res, r, rule.FieldAccess, templateData)
+			err := p.applySecurityRuleFieldAccess(res, r, rule.FieldAccess, templateData, fields)
 			if err != nil {
 				return nil, fmt.Errorf("security policy: failed to resolve field access: %w", err)
 			}
@@ -337,9 +376,57 @@ func (p *securityEngine) resolveSecurity(ctx context.Context, instanceID, enviro
 		res.queryFilter = nil
 	}
 
+	// Apply the `if` conditions that decide which content of a canvas the claims can see.
+	// The canvas's conditions are evaluated lazily when its content is pruned.
+	// An inline canvas component inherits the conditions of its item, so a viewer who can't see the item can't access the component either.
+	if res.CanAccess() && (r.Meta.Name.Kind == ResourceKindCanvas || r.Meta.Name.Kind == ResourceKindComponent) {
+		visibility, err := p.visibilityConditions(instanceID, environment, vars, claims)
+		if err != nil {
+			return nil, err
+		}
+		if r.Meta.Name.Kind == ResourceKindCanvas {
+			res.visibility = visibility
+		} else if !visibility.ComponentMet(r) {
+			res.access = new(bool)
+		}
+	}
+
+	p.lock.Lock()
 	p.cache.Add(cacheKey, res)
+	p.lock.Unlock()
 
 	return res, nil
+}
+
+// visibilityConditions returns the evaluator of `if` conditions for the claims.
+// It's cached so its memoized results are shared by every canvas and component the claims access.
+func (p *securityEngine) visibilityConditions(instanceID, environment string, vars map[string]string, claims *SecurityClaims) (*VisibilityConditions, error) {
+	hash := md5.New()
+	for _, s := range []string{instanceID, environment} {
+		if _, err := hash.Write([]byte(s)); err != nil {
+			return nil, err
+		}
+	}
+	for _, v := range []any{vars, claims} {
+		data, err := json.Marshal(v)
+		if err != nil {
+			return nil, err
+		}
+		if _, err := hash.Write(data); err != nil {
+			return nil, err
+		}
+	}
+	cacheKey := hex.EncodeToString(hash.Sum(nil))
+
+	p.lock.Lock()
+	defer p.lock.Unlock()
+	if cached, ok := p.visibilityCache.Get(cacheKey); ok {
+		return cached.(*VisibilityConditions), nil
+	}
+	// Conditions don't depend on the resource that declares them, so the template data has no Self.
+	visibility := newVisibilityConditions(securityTemplateData(environment, vars, claims, nil))
+	p.visibilityCache.Add(cacheKey, visibility)
+	return visibility, nil
 }
 
 // resolveRules combines the provided rules with built-in rules and rules declared in the resource itself.
@@ -667,11 +754,15 @@ func (p *securityEngine) applySecurityRuleAccess(res *ResolvedSecurity, r *runti
 }
 
 // applySecurityRuleFieldAccess applies a field access rule to the resolved security.
-func (p *securityEngine) applySecurityRuleFieldAccess(res *ResolvedSecurity, r *runtimev1.Resource, rule *runtimev1.SecurityRuleFieldAccess, td parser.TemplateData) error {
-	// This rule currently only applies to metrics views and explores.
+// fields overrides the fields the rule can apply to; it is used for MCP connectors, whose tools are listed per user.
+func (p *securityEngine) applySecurityRuleFieldAccess(res *ResolvedSecurity, r *runtimev1.Resource, rule *runtimev1.SecurityRuleFieldAccess, td parser.TemplateData, fields []string) error {
+	// This rule currently only applies to metrics views, explores and MCP connectors.
 	// Skip it for other resource types.
 	var availableFields []string
 	switch r.Meta.Name.Kind {
+	case ResourceKindConnector:
+		// For MCP connectors, the "fields" are the server's tools, which the caller lists per user.
+		availableFields = fields
 	case ResourceKindMetricsView:
 		mv := r.GetMetricsView().State.ValidSpec
 		if mv == nil {
@@ -876,10 +967,35 @@ func (p *securityEngine) expandTransitiveAccessRules(ctx context.Context, instan
 	return rules, nil
 }
 
+// securityTemplateData returns the template data for evaluating security policies and `if` conditions for the claims.
+// The resource is exposed as Self; it may be nil.
+func securityTemplateData(environment string, vars map[string]string, claims *SecurityClaims, r *runtimev1.Resource) parser.TemplateData {
+	attrs := claims.UserAttributes
+	if attrs == nil {
+		attrs = make(map[string]any)
+	}
+	td := parser.TemplateData{
+		Environment: environment,
+		User:        attrs,
+		Variables:   vars,
+		Resolve: func(ref parser.ResourceName) (string, error) {
+			return ref.Name, nil
+		},
+	}
+	if r != nil {
+		td.Self = parser.TemplateResource{Meta: r.Meta}
+	}
+	return td
+}
+
 // computeCacheKey computes a cache key for a resolved security policy.
-func computeCacheKey(instanceID, environment string, claims *SecurityClaims, r *runtimev1.Resource) (string, error) {
+func computeCacheKey(instanceID, environment string, claims *SecurityClaims, r *runtimev1.Resource, salt string) (string, error) {
 	hash := md5.New()
 	_, err := hash.Write([]byte(instanceID))
+	if err != nil {
+		return "", err
+	}
+	_, err = hash.Write([]byte(salt))
 	if err != nil {
 		return "", err
 	}
@@ -892,6 +1008,11 @@ func computeCacheKey(instanceID, environment string, claims *SecurityClaims, r *
 		return "", err
 	}
 	_, err = hash.Write([]byte(r.Meta.StateUpdatedOn.AsTime().String()))
+	if err != nil {
+		return "", err
+	}
+	// Some resources (APIs, connectors) read security rules from the spec without updating state, so the spec time must be part of the key.
+	_, err = hash.Write([]byte(r.Meta.SpecUpdatedOn.AsTime().String()))
 	if err != nil {
 		return "", err
 	}

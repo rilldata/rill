@@ -10,7 +10,10 @@ import {
   Pencil,
   CornerDownRight,
   GraduationCap,
+  MousePointerClick,
+  Plug,
 } from "lucide-svelte";
+import { isMcpToolName } from "../../../connect/mcp-servers";
 import type { ComponentType } from "svelte";
 import Chart from "../../../../../components/icons/Chart.svelte";
 import List from "../../../../../components/icons/List.svelte";
@@ -38,6 +41,7 @@ export const TOOL_ICONS: Record<string, ComponentType> = {
 
   // Common tools
   [ToolName.NAVIGATE]: CornerDownRight,
+  [ToolName.CLICK_UI]: MousePointerClick,
   [ToolName.LIST_SKILLS]: GraduationCap,
   [ToolName.LOAD_SKILL]: GraduationCap,
 };
@@ -48,5 +52,6 @@ export const TOOL_ICONS: Record<string, ComponentType> = {
  */
 export function getToolIcon(toolName: string | undefined): ComponentType {
   if (!toolName) return Search;
+  if (isMcpToolName(toolName)) return Plug;
   return TOOL_ICONS[toolName] || Search;
 }

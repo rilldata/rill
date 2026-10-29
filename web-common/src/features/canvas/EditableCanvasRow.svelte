@@ -6,7 +6,6 @@
   import CanvasComponent from "./CanvasComponent.svelte";
   import type { BaseCanvasComponent } from "./components/BaseCanvasComponent";
   import DropZone from "./components/DropZone.svelte";
-  import type { CanvasComponentType } from "./components/types";
   import ElementDivider from "./ElementDivider.svelte";
   import ItemWrapper from "./ItemWrapper.svelte";
   import {
@@ -15,9 +14,11 @@
     MIN_WIDTH,
     mousePosition,
     normalizeSizeArray,
+    type AddableItem,
   } from "./layout-util";
   import RowDropZone from "./RowDropZone.svelte";
   import RowWrapper from "./RowWrapper.svelte";
+  import VisibilityBadge from "./VisibilityBadge.svelte";
   import { rowColFromPath } from "./stores/canvas-entity";
   import type { Row } from "./stores/row";
   import { activeDivider } from "./stores/ui-stores";
@@ -30,10 +31,14 @@
   export let columnWidth: number;
   export let components: Map<string, BaseCanvasComponent>;
   export let dragComponent: BaseCanvasComponent | null;
+  // True while a whole tab group is being dragged. Top-level rows (zoneScope "canvas") then
+  // expose their row drop zones as landing slots for the group; rows inside a tab do not, and
+  // all rows suspend component interaction for the duration of the drag.
+  export let blockDragging = false;
   export let selectedComponent: Writable<string | null>;
   export let addItems: (
     position: { row: number; column: number },
-    items: CanvasComponentType[],
+    items: AddableItem[],
   ) => void;
   export let spreadEvenly: (index: number) => void;
   export let onComponentMouseDown: (params: {
@@ -47,7 +52,7 @@
   // Optional: insert a tab group at a given top-level index (top-level rows only).
   export let onAddTabGroup: ((index: number) => void) | undefined = undefined;
   export let onDrop: (row: number, column: number | null) => void;
-  export let initializeRow: (row: number, type: CanvasComponentType) => void;
+  export let initializeRow: (row: number, type: AddableItem) => void;
   export let updateRowHeight: (newHeight: number, index: number) => void;
   export let updateComponentWidths: (
     index: number,
@@ -72,6 +77,9 @@
 
   $: isSpreadEvenly = widths.every((w) => w === widths[0]);
   $: activelyDragging = !!dragComponent;
+  // Either kind of drag suspends component and divider interaction in this row.
+  $: interactionSuspended = activelyDragging || blockDragging;
+  $: allowBlockDrop = blockDragging && zoneScope === "canvas";
 
   $: updateHeightFromSpec($height);
   $: updateWidthsFromSpec($itemWidths);
@@ -204,7 +212,7 @@
           addIndex={columnIndex}
           {zoneScope}
           rowLength={itemCount}
-          dragging={activelyDragging}
+          dragging={interactionSuspended}
           {isSpreadEvenly}
           {spreadEvenly}
           {addItems}
@@ -216,7 +224,7 @@
         columnWidth={widths[columnIndex]}
         {rowIndex}
         {zoneScope}
-        dragging={activelyDragging}
+        dragging={interactionSuspended}
         resizeIndex={columnIndex}
         addIndex={columnIndex + 1}
         rowLength={itemCount}
@@ -244,7 +252,7 @@
           editable
           ghost={dragComponent === component}
           selected={$selectedComponent === id}
-          allowPointerEvents={!$activeDivider && !activelyDragging}
+          allowPointerEvents={!$activeDivider && !interactionSuspended}
           onMouseDown={(event) => {
             onComponentMouseDown({
               event,
@@ -261,13 +269,14 @@
             ? () => onConvertToTabGroup?.()
             : undefined}
         />
+        <VisibilityBadge {component} />
       {:else}
         <ComponentError error={m.canvas_no_valid_component({ id })} />
       {/if}
     </ItemWrapper>
   {/each}
   <RowDropZone
-    allowDrop={activelyDragging}
+    allowDrop={activelyDragging || allowBlockDrop}
     resizeIndex={rowIndex}
     dropIndex={rowIndex + 1}
     {zoneScope}
@@ -283,7 +292,7 @@
 
   {#if rowIndex === 0}
     <RowDropZone
-      allowDrop={activelyDragging}
+      allowDrop={activelyDragging || allowBlockDrop}
       dropIndex={0}
       {zoneScope}
       {onDrop}

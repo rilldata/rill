@@ -92,6 +92,60 @@ func (s *Server) GetConversation(ctx context.Context, req *runtimev1.GetConversa
 	}, nil
 }
 
+func (s *Server) UpdateConversation(ctx context.Context, req *runtimev1.UpdateConversationRequest) (*runtimev1.UpdateConversationResponse, error) {
+	claims := auth.GetClaims(ctx, req.InstanceId)
+	if !claims.Can(runtime.UseAI) {
+		return nil, ErrForbidden
+	}
+
+	catalog, release, err := s.runtime.Catalog(ctx, req.InstanceId)
+	if err != nil {
+		return nil, err
+	}
+	defer release()
+
+	session, err := findOwnedAISession(ctx, catalog, claims, req.ConversationId)
+	if err != nil {
+		return nil, err
+	}
+
+	if req.Title != nil {
+		session.Title = *req.Title
+	}
+
+	err = catalog.UpdateAISession(ctx, session)
+	if err != nil {
+		return nil, err
+	}
+
+	return &runtimev1.UpdateConversationResponse{}, nil
+}
+
+func (s *Server) DeleteConversation(ctx context.Context, req *runtimev1.DeleteConversationRequest) (*runtimev1.DeleteConversationResponse, error) {
+	claims := auth.GetClaims(ctx, req.InstanceId)
+	if !claims.Can(runtime.UseAI) {
+		return nil, ErrForbidden
+	}
+
+	catalog, release, err := s.runtime.Catalog(ctx, req.InstanceId)
+	if err != nil {
+		return nil, err
+	}
+	defer release()
+
+	_, err = findOwnedAISession(ctx, catalog, claims, req.ConversationId)
+	if err != nil {
+		return nil, err
+	}
+
+	err = catalog.DeleteAISession(ctx, req.ConversationId)
+	if err != nil {
+		return nil, err
+	}
+
+	return &runtimev1.DeleteConversationResponse{}, nil
+}
+
 func (s *Server) ShareConversation(ctx context.Context, req *runtimev1.ShareConversationRequest) (*runtimev1.ShareConversationResponse, error) {
 	claims := auth.GetClaims(ctx, req.InstanceId)
 	if !claims.Can(runtime.UseAI) {
@@ -197,6 +251,7 @@ func (s *Server) ListTools(ctx context.Context, req *runtimev1.ListToolsRequest)
 		}
 		pbs = append(pbs, pb)
 	}
+
 	return &runtimev1.ListToolsResponse{
 		Tools: pbs,
 	}, nil
@@ -221,6 +276,8 @@ func (s *Server) Complete(ctx context.Context, req *runtimev1.CompleteRequest) (
 	// Tag as chat so the agent's queries are attributed to the "chat" source (overrides the "ui" tag the gRPC
 	// interceptor sets, and covers the SSE HTTP handler which bypasses that interceptor).
 	ctx = runtime.WithRequestSource(ctx, runtime.RequestSourceChat)
+	// req.UiPagePath is deprecated and intentionally not read: the agents learn what the user is viewing from the analyst and developer contexts.
+	ctx = ai.WithUIContext(ctx, s.uiContextFromPB(req.UiActions))
 
 	// Validate request - either prompt or feedback context must be provided
 	if req.Prompt == "" && req.FeedbackAgentContext == nil {
@@ -340,6 +397,8 @@ func (s *Server) CompleteStreaming(req *runtimev1.CompleteStreamingRequest, stre
 	// Tag as chat so the agent's queries are attributed to the "chat" source (overrides the "ui" tag the gRPC
 	// interceptor sets, and covers the SSE HTTP handler which bypasses that interceptor).
 	ctx = runtime.WithRequestSource(ctx, runtime.RequestSourceChat)
+	// req.UiPagePath is deprecated and intentionally not read: the agents learn what the user is viewing from the analyst and developer contexts.
+	ctx = ai.WithUIContext(ctx, s.uiContextFromPB(req.UiActions))
 
 	// Validate request - either prompt or feedback context must be provided
 	if req.Prompt == "" && req.FeedbackAgentContext == nil {
@@ -457,6 +516,46 @@ func (s *Server) CompleteStreaming(req *runtimev1.CompleteStreamingRequest, stre
 		return err
 	}
 	return nil
+}
+
+// Limits for browser-supplied UI actions.
+// They keep the display metadata that is included in an LLM system message small and predictable.
+// The label limit counts characters (runes), not bytes, matching the label truncation in ui-actions.ts on the browser side.
+const (
+	maxUIActions          = 100
+	maxUIActionIDBytes    = 128
+	maxUIActionLabelRunes = 256
+)
+
+// uiContextFromPB converts the browser-supplied UI actions of a chat request to the transient context the agents read.
+// The UI context is optional, best-effort metadata, so it must never cause the chat request to fail:
+// oversized labels are truncated, malformed actions are dropped and the list is capped after validation.
+// Dropping an action only removes it from the set the agent may click, which click_ui validates against this same context.
+// Any dropped action is logged so a page that outgrows the cap is noticed instead of silently losing actions.
+func (s *Server) uiContextFromPB(pbActions []*runtimev1.UIAction) *ai.UIContext {
+	if len(pbActions) == 0 {
+		return nil
+	}
+
+	actions := make([]ai.UIAction, 0, len(pbActions))
+	for _, action := range pbActions {
+		if action == nil || action.Id == "" || len(action.Id) > maxUIActionIDBytes {
+			continue
+		}
+		label := action.Label
+		if r := []rune(label); len(r) > maxUIActionLabelRunes {
+			label = string(r[:maxUIActionLabelRunes])
+		}
+		actions = append(actions, ai.UIAction{ID: action.Id, Label: label})
+	}
+	if len(actions) > maxUIActions {
+		actions = actions[:maxUIActions]
+	}
+	if len(actions) != len(pbActions) {
+		s.logger.Warn("chat: some ui_actions were dropped from the UI context", zap.Int("received", len(pbActions)), zap.Int("kept", len(actions)), zap.Int("limit", maxUIActions))
+	}
+
+	return &ai.UIContext{Actions: actions}
 }
 
 // CompleteStreamingHandler is a HTTP handler that wraps CompleteStreaming and maps it to SSE.
@@ -597,6 +696,19 @@ func (s *Server) GetAIMessage(ctx context.Context, req *runtimev1.GetAIMessageRe
 }
 
 // sessionToPB converts a drivers.AISession to a runtimev1.Conversation.
+// findOwnedAISession loads an AI session and verifies the caller owns it.
+// Anonymous callers never own a session, except in Rill Developer where SkipChecks is true.
+func findOwnedAISession(ctx context.Context, catalog drivers.CatalogStore, claims *runtime.SecurityClaims, sessionID string) (*drivers.AISession, error) {
+	session, err := catalog.FindAISession(ctx, sessionID)
+	if err != nil {
+		return nil, err
+	}
+	if !claims.SkipChecks && (claims.UserID == "" || session.OwnerID != claims.UserID) {
+		return nil, ErrForbidden
+	}
+	return session, nil
+}
+
 func sessionToPB(s *drivers.AISession, messages []*runtimev1.Message) *runtimev1.Conversation {
 	return &runtimev1.Conversation{
 		Id:        s.ID,

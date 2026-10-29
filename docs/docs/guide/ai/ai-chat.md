@@ -55,6 +55,35 @@ This context-aware functionality means you can ask questions like:
 Opening AI Chat from within a dashboard allows for more natural, context-aware questions. The AI understands what you're looking at, so you don't need to repeat filters or time ranges in your questions.
 :::
 
+### Suggested Prompts
+
+If the project administrator has configured starter prompts for a dashboard or for the project, a new chat shows them as clickable suggestions. Click one to send it with your current filters and time range applied. Prompts are configured with the `ai_prompts` key; see [AI Configuration](/developers/build/ai-configuration#suggested-prompts).
+
+## Using Project Skills
+
+Skills are playbooks that your project's developers write for the AI, such as how to investigate a revenue drop or what your company's business terms mean. The AI loads a skill on its own when your question matches the skill's description. To make sure the AI follows a specific skill, invoke it yourself with `/`:
+
+1. In the chat input, type `/` at the start of a line or after a space, or click the **/** button next to **@** below the input.
+2. Pick a skill from the list. Each entry shows the skill's name and description. Keep typing to narrow the list, and use the arrow keys and **Enter** to select.
+3. Type your question after the skill and send the message.
+
+![Skill picker in AI Chat](/img/explore/chat/skill-picker.png)
+
+The list shows the skills that apply to the chat you're in:
+
+| Chat | Skills listed |
+|------|---------------|
+| Project chat (the **AI** tab), dashboard chat on Explore and Canvas dashboards, and chat in embedded dashboards | Skills written for data analysis (`agents: [analyst]`) |
+| Developer chat, which edits your project files in Rill Developer | Skills written for project development (`agents: [developer]`) |
+
+The **/** button appears only when the project has skills for that chat. Skills with errors in their file are not listed.
+
+When the AI uses a skill, whether you picked it or the AI chose it, the response's activity trace shows a **Loaded skill** step. In an analysis chat, a skill is loaded once per conversation, so referencing it again in a later message does not add it a second time.
+
+:::tip Writing skills
+Skills are files in your project. To create or change one, see [Skills](/developers/build/ai-configuration#skills) in the AI Configuration guide.
+:::
+
 ## Understanding Responses
 
 AI Chat provides rich, multi-layered responses to help you understand your data quickly while maintaining easy access to deeper exploration:
@@ -111,6 +140,39 @@ You can add `ai_instructions` in two places:
 2. **`<metrics_view>.yaml`** - Metrics view-specific instructions for individual dashboards
 
 For detailed examples and best practices on writing effective AI instructions, see the [AI Configuration guide](/developers/build/ai-configuration).
+
+## Memory
+
+AI Chat remembers durable preferences and clarifications you share with it, and uses them in later conversations in the same project. Each user has their own memory, and memories never cross users or projects.
+
+### What is remembered
+
+Memory only holds what you tell the AI about yourself and how you want it to work, for example:
+
+- Preferences such as tables instead of charts, units, a default time range or comparison
+- Definitions such as "revenue means net revenue" or "active means 30-day active"
+- Context such as your role, your team, and which metrics views you care about
+- Feedback such as "do not use the legacy metrics view"
+
+You can ask the AI directly ("remember that I always want week-over-week comparisons", "forget that") or just state a preference in passing. When the AI saves, changes or removes a memory, it shows a **Memory updated** notice under its reply. Open **Manage memory** from the notice to edit or delete it.
+
+Memories are kept per agent: what the AI learns while analyzing data is used when it analyzes data, and what it learns while developing the project is used when it develops the project. When you add a memory yourself, you choose whether it applies to one of them or to both.
+
+### What is never remembered
+
+- Data values, query results, or anything about what the data showed
+- Credentials, tokens, connection details, or file contents
+- Sensitive personal details such as health, ethnicity, religion, politics, identification numbers, or account numbers
+- One-off requests that only apply to the current question
+- Anything the project's `ai_instructions` already say
+
+### Managing memory
+
+Open **Manage memory** from the chat sidebar (or **Settings > AI memory** in Rill Cloud) to see everything the AI remembers, edit or delete individual memories, or add your own. Each memory links to the conversation it was learned from. Deleting a memory is permanent.
+
+Turn **Use memory** off to keep your memories but stop the AI from using or updating them until you turn it back on.
+
+Memory is available in Rill Cloud for logged-in users and in Rill Developer, where it is stored locally and never committed to git. It is not used by AI reports, shared conversations viewed by other users, or external AI clients connected through MCP. Project administrators can turn memory off for a project with the `chat_memory` feature flag; see [AI Configuration](/developers/build/ai-configuration#user-memory).
 
 ## Use in Your Favorite AI Client
 

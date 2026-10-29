@@ -13,9 +13,12 @@ import {
 import { describe, expect, it } from "vitest";
 
 const AD_BIDS_MIRROR_METRICS_NAME = "AdBids_mirror_metrics";
+// Mixed-case resource name, as produced by a file like `AdBids_Mixed_Metrics.yaml`.
+const AD_BIDS_MIXED_CASE_METRICS_NAME = "AdBids_Mixed_Metrics";
 
 useMetricsViewMocks({
   [AD_BIDS_METRICS_NAME]: AD_BIDS_METRICS_INIT,
+  [AD_BIDS_MIXED_CASE_METRICS_NAME]: AD_BIDS_METRICS_INIT,
   // Shares the publisher dimension and the impressions measure with AdBids.
   [AD_BIDS_MIRROR_METRICS_NAME]: {
     ...AD_BIDS_METRICS_INIT,
@@ -43,6 +46,29 @@ describe("MetricsViewsProvider", () => {
       AD_BIDS_DOMAIN_DIMENSION,
     ]);
     // No time dimension, so there is no time range summary to wait for.
+    expect(provider.ready).toBe(true);
+
+    destroy();
+  });
+
+  it("resolves a lowercase reference to a mixed-case metrics view", async () => {
+    // Resource names are case-insensitive in the runtime, so an explore whose
+    // `metrics_view` is written in lowercase still reconciles against a mixed-case
+    // metrics view. The provider has to resolve it the same way.
+    const requestedName = AD_BIDS_MIXED_CASE_METRICS_NAME.toLowerCase();
+    const { value: provider, destroy } = await createTestMetricsViewsProvider([
+      requestedName,
+    ]);
+
+    // Keyed by the requested name, which is what callers use for lookups.
+    expect(provider.specs[requestedName]).toMatchObject(AD_BIDS_METRICS_INIT);
+    expect(
+      Object.keys(provider.dimensionSpecs[AD_BIDS_PUBLISHER_DIMENSION]),
+    ).toEqual([requestedName]);
+    expect(provider.dimensions.map((d) => d.name)).toEqual([
+      AD_BIDS_PUBLISHER_DIMENSION,
+      AD_BIDS_DOMAIN_DIMENSION,
+    ]);
     expect(provider.ready).toBe(true);
 
     destroy();

@@ -211,6 +211,30 @@ rows:
                 bar_chart: # ...
 ```
 
+### Conditional content (`if`)
+
+Rows, tab-group rows, tabs and items accept an optional `if` condition that shows the element only to viewers for whom it's true. It uses the same templating as security policies (`.user` attributes, Sprig functions) and renders to a boolean expression. An element shows only when its own condition and those of its containers are true.
+
+```yaml
+rows:
+  - if: '{{ has "finance" .user.groups }}' # row: finance group only
+    items:
+      - width: 8
+        line_chart: # ...
+      - width: 4
+        if: '{{ .user.admin }}' # item: admins only
+        table: # ...
+  - name: deep_dives
+    tabs:
+      - label: Premium
+        if: '{{ eq .user.plan "premium" }}' # tab: custom attribute, e.g. from an embed
+        rows: # ...
+```
+
+- Prefer comparisons inside the template (`{{ eq .user.plan "premium" }}`, `{{ has "finance" .user.groups }}`) over SQL comparisons of quoted values.
+- Built-in attributes (`name`, `email`, `domain`, `groups`, `admin`, `embed`) always resolve; referencing a missing custom attribute makes the condition false. Use `get .user "plan"` to treat a missing attribute as an empty string.
+- `if` controls what the dashboard shows, not data access. Use the metrics view's `security` to restrict data.
+
 ## Dashboard Composition Best Practices
 
 When building a new canvas dashboard, follow this recommended structure:
@@ -408,7 +432,6 @@ bar_chart:
     type: nominal
     limit: 10
     sort: -y
-    labelAngle: 0
   y:
     field: total_revenue
     type: quantitative
@@ -434,6 +457,26 @@ bar_chart:
     field: total_revenue
     type: quantitative
 ```
+
+**Horizontal bars** (bars run left to right; useful for long category labels or many categories). `x` and `y` always name the field drawn on that axis, so put the measure on `x` and the dimension on `y`:
+
+```yaml
+bar_chart:
+  metrics_view: sales_metrics
+  title: "Revenue by Product Category"
+  color: primary
+  x:
+    field: total_revenue
+    type: quantitative
+    zeroBasedOrigin: true
+  y:
+    field: product_category
+    type: nominal
+    limit: 15
+    sort: -x
+```
+
+Sort values refer to axes, so `sort: -x` on `y` orders the categories by the measure. The same layout works for `stacked_bar` and `stacked_bar_normalized`; `line_chart` and `area_chart` always keep the dimension on `x`.
 
 ### Stacked Bar
 
@@ -835,6 +878,34 @@ pivot:
   hide_totals_col: false
 ```
 
+**With column widths, wrapping, and an initial sort:**
+
+Any entry of `measures`, `row_dimensions`, or `col_dimensions` can be an object with the field `name` plus overrides. In a pivot only measures and the first row dimension render a column of their own: a measure's `width` applies under every column-dimension value (as do `delta: { width }` and `percent_change: { width }` for its comparison columns), and `col_dimensions` entries accept only `name` and `label` (set widths on the measures instead).
+
+```yaml
+pivot:
+  metrics_view: sales_metrics
+  fit_to_width: true          # shrink unconfigured columns to fit instead of scrolling
+  wrap_headers: true          # wrap header labels over `wrap_lines` lines (default 2)
+  sort_by: total_revenue      # a measure (by row total) or a row dimension
+  sort_dir: desc
+  row_dimensions:
+    - name: region
+      width: 220
+      wrap: true
+    - product_category
+  col_dimensions:
+    - name: quarter
+      label: Quarter
+  measures:
+    - name: total_revenue
+      width: 120
+      format_preset: currency_usd
+    - name: order_count
+      format_d3: ".3s"
+      align: center
+```
+
 **Simple pivot (rows only):**
 
 ```yaml
@@ -867,6 +938,32 @@ table:
   hide_totals_row: false
 ```
 
+**With column widths, wrapping, and an initial sort:**
+
+Any entry of `columns` can be an object with the field `name` plus overrides: `width` (pixels; measures 60–300, dimensions 100–600), `wrap` (dimension columns), `align` (`left`, `center`, `right`), `label`, and for measures `format_preset` or `format_d3`, plus `delta: { width }` or `percent_change: { width }` for the comparison columns a metrics view measure gets while a time comparison is shown. Component-level `fit_to_width`, `wrap`, `wrap_headers`, `wrap_lines`, `sort_by`, and `sort_dir` apply to the whole table; `sort_comparison: delta` or `percent_change` sorts on a measure's comparison column while a time comparison is shown.
+
+```yaml
+table:
+  metrics_view: sales_metrics
+  title: "Product Performance"
+  fit_to_width: true
+  wrap: true
+  wrap_lines: 2
+  sort_by: total_revenue
+  sort_dir: desc
+  columns:
+    - name: product_name
+      width: 260
+      label: Product
+    - product_category
+    - name: total_revenue
+      width: 120
+      format_preset: currency_usd
+    - name: order_count
+      format_d3: ".3s"
+      align: center
+```
+
 **With dimension filters:**
 
 ```yaml
@@ -896,6 +993,19 @@ image:
 ### Custom Chart
 
 Build fully custom visualizations using Metrics SQL queries and Vega-Lite specifications. Use this when the built-in chart types are insufficient and you need complete control over the visualization.
+
+**Prefer a standalone component over an inline block.** Instead of embedding the `custom_chart` block in the canvas, create a `type: component` file under `viz/` that declares typed params, and reference it from the canvas item with `component: <name>` plus a `params:` map. This keeps canvas files small and makes the visualization reusable across dashboards. Note that component files describe charts with a chart spec under `spec` rather than with `vega_spec`, switching to `vega_spec` only when the chart spec cannot express the chart: the format below applies to inline blocks, and to a converted component with the addition of param templating. See the component resource instructions for the file format, param types, and templating conventions. Use an inline `custom_chart` block only for trivial one-off charts. Example reference:
+
+```yaml
+rows:
+  - items:
+      - component: measure_trend
+        params:
+          metrics_view: bids_metrics
+          measure: total_bids
+          time_dim: __time
+        width: 8
+```
 
 Custom charts use `metrics_sql` to query data from metrics views and `vega_spec` to define the Vega-Lite visualization. The data from each query is available in the Vega-Lite spec as named datasets: `query1`, `query2`, etc.
 
@@ -1086,13 +1196,14 @@ x:
   limit: 10                  # Max values to display
   sort: -y                   # Sort order (see below)
   showNull: true             # Include null values
-  labelAngle: 45             # Label rotation angle
+  labelAngle: -45            # Label rotation angle; omit for automatic orientation (0, -45 or -90 based on available width)
 ```
 
 ### Sort Options
 
 - `"x"` or `"-x"`: Sort by x-axis values (ascending/descending)
 - `"y"` or `"-y"`: Sort by y-axis values (ascending/descending)
+- `"y_delta"` or `"-y_delta"`: Sort by the change versus the comparison period (`"x_delta"` / `"-x_delta"` on the y field of a horizontal bar chart)
 - `"color"` or `"-color"`: Sort by color field (heatmaps)
 - `"measure"` or `"-measure"`: Sort by measure (donut charts)
 - Array of values: Custom sort order (e.g., `["Mon", "Tue", "Wed"]`)
@@ -1104,6 +1215,20 @@ y:
   field: total_revenue
   type: quantitative
   zeroBasedOrigin: true      # Start y-axis at zero
+```
+
+### Horizontal Bars
+
+`bar_chart`, `stacked_bar` and `stacked_bar_normalized` draw horizontal bars when the measure is on `x` and the dimension on `y`:
+
+```yaml
+x:
+  field: total_revenue
+  type: quantitative
+y:
+  field: category_name
+  type: nominal
+  sort: -x                   # Sort categories by the measure (x-axis)
 ```
 
 **Multiple measures:**
@@ -1218,6 +1343,41 @@ stacked_bar:
   metrics_view: sales_metrics
   time_filters: tr=P12M&compare_tr=rill-PY&grain=week
   # ... other config
+```
+
+### Comparison Per Widget
+
+Components inherit the canvas time range and time comparison. `time_filters` overrides either one per component, using the same `tr` and `compare_tr` parameters as explore URLs. `inherit` is a special value for both: `tr=inherit` keeps the canvas time range, and once `tr` is set a missing `compare_tr` means no comparison. A comparison range is `rill-PP`, `rill-PD`, `rill-PW`, `rill-PM`, `rill-PQ`, `rill-PY`, or a custom `<start>,<end>` pair, and it applies even when the canvas comparison is off. Applies to `kpi_grid`, `table`, `pivot`, `leaderboard`, and time-series charts:
+
+| `time_filters` | Time range | Comparison |
+| --- | --- | --- |
+| (absent) | canvas | canvas |
+| `tr=inherit` | canvas | off |
+| `tr=inherit&compare_tr=rill-PP` | canvas | previous period |
+| `tr=P7D` | last 7 days | off |
+| `tr=P7D&compare_tr=inherit` | last 7 days | canvas |
+| `tr=P7D&compare_tr=rill-PP` | last 7 days | previous period |
+
+```yaml
+kpi_grid:
+  metrics_view: sales_metrics
+  measures:
+    - total_revenue
+  time_filters: tr=inherit
+```
+
+### Hiding Local Filters
+
+Components with `dimension_filters` or `time_filters` show the local filters as chips in the component header. Set `hide_local_filters: true` to hide the chips while the filters still apply to the component's data. Useful when the title already describes the filter:
+
+```yaml
+kpi_grid:
+  metrics_view: sales_metrics
+  title: North America revenue
+  measures:
+    - total_revenue
+  dimension_filters: region IN ('North America')
+  hide_local_filters: true
 ```
 
 ### Vega-Lite Configuration

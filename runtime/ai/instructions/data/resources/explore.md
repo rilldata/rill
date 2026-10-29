@@ -17,6 +17,10 @@ Explore dashboards are lightweight resources that sit downstream of a metrics vi
 
 ## Development approach
 
+**Check for an existing inline explore first.** Most metrics views already emit an explore dashboard: any metrics view with `version: 1` and an `explore:` block, and any legacy metrics view without a `version:` property. If the target metrics view already emits an explore, do NOT create a stand-alone `type: explore` file for it; that produces a second, duplicate dashboard. Instead, edit the `explore:` block in the metrics view file. If you are a sub-agent restricted to a different path, report this back to the parent agent instead of writing a duplicate file.
+
+Only create a stand-alone explore file when the metrics view needs more than one explore dashboard, or when the user explicitly asks for a separate file.
+
 Explore dashboards require minimal configuration. In most cases, you only need to:
 
 1. Reference the metrics view
@@ -27,7 +31,7 @@ Explore dashboards require minimal configuration. In most cases, you only need t
 
 ## Inline explores in metrics views
 
-The preferred way to create an explore is inline in the metrics view file: set `version: 1` and add an `explore:` block, which emits an explore resource with the same name as the metrics view (or `name:` if set):
+The default way to create an explore is inline in the metrics view file: set `version: 1` and add an `explore:` block, which emits an explore resource with the same name as the metrics view (or `name:` if set):
 
 ```yaml
 # metrics/sales.yaml
@@ -61,9 +65,11 @@ explore:
 
 For legacy reasons, metrics views without `version:` auto-emit an explore even without an `explore:` block; metrics views with `version: 1` only emit one when the block is present.
 
-Use inline explores to keep the metrics view and its dashboard configuration together. Use separate explore files when you need multiple explores for the same metrics view.
+Use inline explores to keep the metrics view and its dashboard configuration together. Use separate explore files only when you need multiple explores for the same metrics view (for example, a second dashboard that exposes a restricted subset of dimensions), and give each one a distinct name so it does not collide with the inline explore.
 
-## Example with annotations
+## Stand-alone explore example with annotations
+
+The examples below are for stand-alone explore files. Only use them in the cases described above; otherwise put the same properties in the metrics view's `explore:` block.
 
 Note that most explore dashboards work great without any of the optional properties shown here.
 
@@ -116,9 +122,9 @@ security:
   access: "{{ .user.admin }} OR '{{ .user.email }}' LIKE '%@example.com'"
 ```
 
-## Minimal example
+## Minimal stand-alone example
 
-For most use cases, a minimal explore is sufficient:
+When a stand-alone file is warranted, a minimal explore is sufficient:
 
 ```yaml
 type: explore

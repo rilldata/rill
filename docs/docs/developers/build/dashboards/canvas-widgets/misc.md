@@ -108,3 +108,15 @@ Reference a reusable component created outside of the canvas dashboard.
   code={`- component: my_component`}
   codeLanguage="yaml"
 />
+
+To reuse one chart with different metrics views and fields, define it as a [custom viz](/developers/build/dashboards/canvas-widgets/custom-viz): a component that declares params, which each canvas item binds.
+
+```yaml
+- component: bullet_chart
+  params:
+    metrics_view: bids_metrics
+    y_axis: device_type
+    x_axis: avg_bid_price
+    goal: avg_bid_floor
+  width: 6
+```

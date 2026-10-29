@@ -7,9 +7,11 @@ import (
 	"time"
 
 	"github.com/google/go-github/v71/github"
+	"github.com/rilldata/rill/admin/database"
 	"github.com/rilldata/rill/admin/testadmin"
 	"github.com/rilldata/rill/cli/testcli"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
+	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/gitutil"
 	"github.com/rilldata/rill/runtime/testruntime/testmode"
@@ -70,6 +72,32 @@ vars:
 		modelOutputFn, _ := checkModelOutput()
 		return modelOutputFn == 1
 	}, 10*time.Second, 100*time.Millisecond, "unexpected model output")
+
+	// reconcile the unchanged deployment twice: neither should bump updated_on,
+	// and the second should not make the runtime re-parse the project
+	// (the first may, since the runtime has not seen the deployment's updated_on before)
+	ctrl, err := adm.Runtime.Controller(t.Context(), depl.RuntimeInstanceID)
+	require.NoError(t, err)
+	parserStateVersion := func() int64 {
+		require.NoError(t, ctrl.WaitUntilIdle(t.Context(), false))
+		pp, err := ctrl.Get(t.Context(), runtime.GlobalProjectParserName, false)
+		require.NoError(t, err)
+		return pp.Meta.StateVersion
+	}
+	depl2 := adm.TriggerDeployment(t, "reload-configs-test", "rill-mgd-deploy")
+	require.True(t, depl.UpdatedOn.Equal(depl2.UpdatedOn), "updated_on changed from %v to %v", depl.UpdatedOn, depl2.UpdatedOn)
+	stateVersion := parserStateVersion()
+	depl2 = adm.TriggerDeployment(t, "reload-configs-test", "rill-mgd-deploy")
+	require.True(t, depl.UpdatedOn.Equal(depl2.UpdatedOn), "updated_on changed from %v to %v", depl.UpdatedOn, depl2.UpdatedOn)
+	require.Equal(t, stateVersion, parserStateVersion(), "the project was re-parsed")
+
+	// changing the slots reprovisions the runtime and marks the deployment as updating while that happens;
+	// the reconcile should still leave it running
+	result = u1.Run(t, "project", "edit", "--prod-slots=3", "--org=reload-configs-test", "--project=rill-mgd-deploy")
+	require.Equal(t, 0, result.ExitCode, result.Output)
+	depl = adm.TriggerDeployment(t, "reload-configs-test", "rill-mgd-deploy")
+	require.Equal(t, database.DeploymentStatusRunning, depl.Status)
+	require.Empty(t, depl.StatusMessage)
 
 	// set env via `rill env set limit 10`
 	result = u1.Run(t, "env", "set", "limit", "10", "--org=reload-configs-test", "--project=rill-mgd-deploy")
@@ -239,6 +267,131 @@ olap_connector: duckdb`,
 		branch, _ := checkModelOutput()
 		return branch == "feature"
 	}, 10*time.Second, 100*time.Millisecond, "expected model output to be 'feature' after branch change")
+}
+
+// TestProvisionerSwitch tests that restarting a deployment moves it to a changed project or org provisioner while keeping its IDs,
+// and that it isn't moved to the global default provisioner.
+// Both provisioners in the test admin service point to the same runtime, and the static provisioner doesn't delete instances when deprovisioning.
+// So the restarted deployment reuses the existing instance on that runtime;
+// the test doesn't cover a new runtime restoring the instance's state from object storage.
+func TestProvisionerSwitch(t *testing.T) {
+	testmode.Expensive(t)
+
+	adm := testadmin.NewWithOptionalRuntime(t, true)
+	_, c := adm.NewUser(t)
+	u1 := testcli.New(t, adm, c.Token)
+	_, sc := adm.NewSuperuser(t)
+	su := testcli.New(t, adm, sc.Token)
+
+	result := u1.Run(t, "org", "create", "provisioner-switch-test")
+	require.Equal(t, 0, result.ExitCode, result.Output)
+
+	// deploy the project
+	tempDir := t.TempDir()
+	putFiles(t, tempDir, map[string]string{"rill.yaml": `compiler: rillv1
+display_name: Provisioner Switch Test
+olap_connector: duckdb`,
+	})
+	putFiles(t, tempDir, map[string]string{"models/model.sql": "SELECT 1 AS one"})
+	result = u1.Run(t, "project", "deploy", "--interactive=false", "--org=provisioner-switch-test", "--project=switch-test", "--path="+tempDir)
+	require.Equal(t, 0, result.ExitCode, result.Output)
+
+	// manually trigger deployment
+	depl := adm.TriggerDeployment(t, "provisioner-switch-test", "switch-test")
+	require.Equal(t, database.DeploymentStatusRunning, depl.Status)
+	pr, ok, err := adm.Admin.FindProvisionedRuntimeResource(t.Context(), depl.ID)
+	require.NoError(t, err)
+	require.True(t, ok)
+	require.Equal(t, "static", pr.Provisioner)
+
+	// change the project's provisioner
+	result = su.Run(t, "sudo", "project", "edit", "provisioner-switch-test", "switch-test", "--provisioner=static-alt")
+	require.Equal(t, 0, result.ExitCode, result.Output)
+	require.Contains(t, result.Output, "rill sudo project restart provisioner-switch-test switch-test")
+
+	// reconciling the running deployment should not switch its provisioner
+	depl2 := adm.TriggerDeployment(t, "provisioner-switch-test", "switch-test")
+	require.Equal(t, database.DeploymentStatusRunning, depl2.Status)
+	pr2, ok, err := adm.Admin.FindProvisionedRuntimeResource(t.Context(), depl.ID)
+	require.NoError(t, err)
+	require.True(t, ok)
+	require.Equal(t, "static", pr2.Provisioner)
+
+	// restart the project's deployments.
+	// The command polls for status changes, so we run it in the background and reconcile the deployment while it runs (since the test admin service doesn't run river workers).
+	restart := func() {
+		done := make(chan testcli.Result, 1)
+		go func() {
+			done <- su.Run(t, "sudo", "project", "restart", "provisioner-switch-test", "switch-test", "--force")
+		}()
+		ticker := time.NewTicker(200 * time.Millisecond)
+		defer ticker.Stop()
+		timeout := time.After(time.Minute)
+		for {
+			select {
+			case result := <-done:
+				require.Equal(t, 0, result.ExitCode, result.Output)
+				return
+			case <-ticker.C:
+				adm.TriggerDeployment(t, "provisioner-switch-test", "switch-test")
+			case <-timeout:
+				t.Fatal("timed out waiting for restart to complete")
+			}
+		}
+	}
+	restart()
+
+	// the deployment should keep its IDs, but now be provisioned by the new provisioner
+	depl3, err := adm.Admin.DB.FindDeployment(t.Context(), depl.ID)
+	require.NoError(t, err)
+	require.Equal(t, database.DeploymentStatusRunning, depl3.Status)
+	require.Equal(t, depl.RuntimeInstanceID, depl3.RuntimeInstanceID)
+	pr3, ok, err := adm.Admin.FindProvisionedRuntimeResource(t.Context(), depl.ID)
+	require.NoError(t, err)
+	require.True(t, ok)
+	require.Equal(t, pr.ID, pr3.ID)
+	require.Equal(t, "static-alt", pr3.Provisioner)
+	require.Equal(t, database.ProvisionerResourceStatusOK, pr3.Status)
+
+	// the instance should still serve queries
+	require.Eventually(t, func() bool {
+		olap, release, err := adm.Runtime.OLAP(t.Context(), depl3.RuntimeInstanceID, "duckdb")
+		if err != nil {
+			return false
+		}
+		defer release()
+		rows, err := olap.Query(t.Context(), &drivers.Statement{Query: "SELECT one FROM model"})
+		if err != nil {
+			return false
+		}
+		defer rows.Close()
+		var res int
+		for rows.Next() {
+			if err := rows.Scan(&res); err != nil {
+				return false
+			}
+		}
+		return rows.Err() == nil && res == 1
+	}, 10*time.Second, 100*time.Millisecond, "unexpected model output after provisioner switch")
+
+	// unsetting the project's provisioner should not move the deployment to the global default provisioner
+	result = su.Run(t, "sudo", "project", "edit", "provisioner-switch-test", "switch-test", "--provisioner=")
+	require.Equal(t, 0, result.ExitCode, result.Output)
+	restart()
+	pr4, ok, err := adm.Admin.FindProvisionedRuntimeResource(t.Context(), depl.ID)
+	require.NoError(t, err)
+	require.True(t, ok)
+	require.Equal(t, "static-alt", pr4.Provisioner)
+
+	// changing the org's default provisioner should move the deployment to it
+	result = su.Run(t, "sudo", "org", "set-default-provisioner", "provisioner-switch-test", "static")
+	require.Equal(t, 0, result.ExitCode, result.Output)
+	restart()
+	pr5, ok, err := adm.Admin.FindProvisionedRuntimeResource(t.Context(), depl.ID)
+	require.NoError(t, err)
+	require.True(t, ok)
+	require.Equal(t, pr.ID, pr5.ID)
+	require.Equal(t, "static", pr5.Provisioner)
 }
 
 func putFiles(t *testing.T, baseDir string, files map[string]string) {

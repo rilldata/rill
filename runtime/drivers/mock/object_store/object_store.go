@@ -36,14 +36,14 @@ func (driver) Spec() drivers.Spec {
 }
 
 // Open implements drivers.Driver.
-func (driver) Open(_, instanceID string, config map[string]any, st *storage.Client, ac *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
+func (driver) Open(ctx context.Context, _, instanceID string, config map[string]any, st *storage.Client, ac *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
 	cfg := &configProperties{}
 	err := mapstructure.WeakDecode(config, cfg)
 	if err != nil {
 		return nil, err
 	}
 
-	bucket, err := blob.OpenBucket(context.Background(), "file://"+cfg.Path)
+	bucket, err := blob.OpenBucket(ctx, "file://"+cfg.Path)
 	if err != nil {
 		return nil, err
 	}
@@ -160,6 +160,11 @@ func (h *handle) AsFileStore() (drivers.FileStore, bool) {
 
 // AsWarehouse implements drivers.Handle.
 func (h *handle) AsWarehouse() (drivers.Warehouse, bool) {
+	return nil, false
+}
+
+// AsMCP implements drivers.Handle.
+func (h *handle) AsMCP() (drivers.MCPService, bool) {
 	return nil, false
 }
 

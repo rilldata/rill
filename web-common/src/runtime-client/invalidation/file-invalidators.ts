@@ -14,6 +14,7 @@ import {
   type V1GitStatusResponse,
   type V1WatchFilesResponse,
 } from "@rilldata/web-common/runtime-client";
+import { deletePreviewArgsStore } from "@rilldata/web-common/features/custom-viz/workspace/preview-state";
 import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 
 const REFETCH_LIST_FILES_THROTTLE_MS = 100;
@@ -83,6 +84,7 @@ export async function handleFileEvent(
           }),
         });
         fileArtifacts.removeFile(event.path);
+        deletePreviewArgsStore(event.path);
         // The dev JWT is intentionally NOT invalidated on delete: the key is
         // project-bound and the next load of rill.yaml handles re-issuance.
         if (event.path === "/rill.yaml") {

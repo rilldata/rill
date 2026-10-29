@@ -6,7 +6,13 @@
   import Spinner from "../../../entity-management/Spinner.svelte";
   import { EntityStatus } from "../../../entity-management/types";
   import type { ConversationManager } from "../../core/conversation-manager";
+  import type { V1Conversation } from "../../../../runtime-client";
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
+  import MemoryButton from "../../memory/MemoryButton.svelte";
+  import { formatConversationTitle } from "@rilldata/web-common/features/chat/core/context/conversation-title.ts";
+  import { getInlineChatContextMetadata } from "@rilldata/web-common/features/chat/core/context/metadata.ts";
+  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
+  import ConversationSidebarEntry from "@rilldata/web-common/features/chat/layouts/fullpage/ConversationSidebarEntry.svelte";
 
   export let conversationManager: ConversationManager;
   export let basePath: string;
@@ -21,6 +27,12 @@
 
   $: listConversationsQuery = conversationManager.listConversationsQuery();
 
+  const contextMetadata = getInlineChatContextMetadata(useRuntimeClient());
+  // Reactive so that titles are re-rendered once the metadata used for reference labels loads.
+  $: getTitle = (conversation: V1Conversation) =>
+    formatConversationTitle(conversation.title ?? "", $contextMetadata) ||
+    m.chat_new_conversation();
+
   $: conversations = ($listConversationsQuery.data?.conversations ?? []).filter(
     (c) => c.userAgent !== "rill/report",
   );
@@ -30,6 +42,12 @@
   // Handle conversation item clicks (for focus, navigation handled by href)
   function handleConversationItemClick() {
     onConversationClick();
+  }
+
+  // Leave the deleted conversation if it was open
+  function handleConversationDeleted(conversationId: string | undefined) {
+    if (conversationId !== currentConversationDto?.id) return;
+    conversationManager.enterNewConversationMode();
   }
 
   // Handle new conversation button click (for focus, navigation handled by href)
@@ -61,6 +79,7 @@
     </div>
 
     <div class="collapsed-footer">
+      <MemoryButton variant="square" conversationBasePath={basePath} />
       <slot name="collapsed-footer" />
     </div>
   {:else}
@@ -99,20 +118,15 @@
           {m.chat_error_loading_conversations()}
         </div>
       {:else if conversations.length}
-        {#each conversations as conversation}
-          <a
-            href={`${basePath}/${conversation.id}`}
-            class="conversation-item"
-            class:active={conversation.id === currentConversationDto?.id}
-            data-testid="conversation-item"
-            data-conversation-id={conversation.id}
-            title={conversation.title || m.chat_new_conversation()}
-            onclick={handleConversationItemClick}
-          >
-            <div class="conversation-title" data-testid="conversation-title">
-              {conversation.title || m.chat_new_conversation()}
-            </div>
-          </a>
+        {#each conversations as conversation (conversation.id)}
+          <ConversationSidebarEntry
+            {conversation}
+            active={conversation.id === currentConversationDto?.id}
+            {basePath}
+            {getTitle}
+            onClick={handleConversationItemClick}
+            onDeleted={() => handleConversationDeleted(conversation.id)}
+          />
         {/each}
       {:else}
         <div class="no-conversations" data-testid="no-conversations">
@@ -121,8 +135,9 @@
       {/if}
     </div>
 
-    <!-- Footer slot for additional actions (e.g., MCP config button) -->
+    <!-- Footer: memory manager plus a slot for additional actions (e.g., MCP config button) -->
     <div class="conversation-sidebar-footer">
+      <MemoryButton variant="button" conversationBasePath={basePath} />
       <slot name="footer" />
     </div>
   {/if}
@@ -166,32 +181,11 @@
 
   .conversation-sidebar-footer {
     @apply shrink-0 p-3 border-t border-border mt-auto;
+    @apply flex flex-col gap-2;
   }
 
   .loading-conversations {
     @apply p-2 flex justify-center items-center;
-  }
-
-  .conversation-item {
-    @apply block w-full py-2 px-3 mb-0.5;
-    @apply bg-transparent border-none rounded-md;
-    @apply text-left cursor-pointer no-underline;
-    color: inherit;
-    font-family: inherit;
-    font-size: inherit;
-    @apply transition-colors duration-200;
-  }
-
-  .conversation-item:hover {
-    @apply bg-surface-muted;
-  }
-
-  .conversation-item.active {
-    @apply bg-gray-100;
-  }
-
-  .conversation-title {
-    @apply text-xs text-fg-primary truncate;
   }
 
   .no-conversations {
@@ -216,11 +210,6 @@
       flex-direction: row;
       overflow-x: auto;
       gap: 0.25rem;
-    }
-
-    .conversation-item {
-      flex-shrink: 0;
-      min-width: 150px;
     }
   }
 </style>

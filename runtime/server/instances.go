@@ -171,6 +171,7 @@ func (s *Server) EditInstance(ctx context.Context, req *runtimev1.EditInstanceRe
 		SystemVariables:      oldInst.SystemVariables,
 		FeatureFlags:         oldInst.FeatureFlags,
 		AIInstructions:       oldInst.AIInstructions,
+		AIPrompts:            oldInst.AIPrompts,
 	}
 
 	err = s.runtime.EditInstance(ctx, inst, true)
@@ -309,6 +310,7 @@ func instanceToPB(inst *drivers.Instance, featureFlags map[string]bool, sensitiv
 		UpdatedOn:          timestamppb.New(inst.UpdatedOn),
 		FeatureFlags:       featureFlags,
 		AiInstructions:     inst.AIInstructions,
+		AiPrompts:          inst.AIPrompts,
 		FrontendUrl:        inst.FrontendURL,
 		Theme:              inst.Theme,
 	}

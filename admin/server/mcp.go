@@ -14,6 +14,7 @@ import (
 
 	"github.com/google/jsonschema-go/jsonschema"
 	"github.com/google/uuid"
+	"github.com/modelcontextprotocol/go-sdk/jsonrpc"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 	"github.com/rilldata/rill/admin/database"
 	"github.com/rilldata/rill/admin/server/auth"
@@ -78,7 +79,7 @@ func (s *Server) mcpHandler() (http.Handler, error) {
 		}
 	}
 
-	return mcp.NewStreamableHTTPHandler(func(r *http.Request) *mcp.Server {
+	return middleware.MCPSessionIDMiddleware(mcp.NewStreamableHTTPHandler(func(r *http.Request) *mcp.Server {
 		srv := mcp.NewServer(
 			&mcp.Implementation{
 				Name:    "rill",
@@ -88,8 +89,6 @@ func (s *Server) mcpHandler() (http.Handler, error) {
 			&mcp.ServerOptions{
 				Instructions: mcpInstructions,
 				HasTools:     true,
-				// Issue a session ID so clients pass it back on subsequent requests, enabling us to keep one AI session per project.
-				GetSessionID: uuid.NewString,
 			},
 		)
 
@@ -101,7 +100,7 @@ func (s *Server) mcpHandler() (http.Handler, error) {
 		}))
 
 		client := &mcpClient{
-			sessionID:       r.Header.Get("Mcp-Session-Id"),
+			sessionID:       r.Header.Get(middleware.MCPSessionIDHeader), // Issued by MCPSessionIDMiddleware if the client did not send one
 			userAgent:       r.UserAgent(),
 			protocolVersion: r.Header.Get("Mcp-Protocol-Version"),
 		}
@@ -116,7 +115,7 @@ func (s *Server) mcpHandler() (http.Handler, error) {
 		return srv
 	}, &mcp.StreamableHTTPOptions{
 		Stateless: true, // Required since the server serves multiple users.
-	}), nil
+	})), nil
 }
 
 // mcpRequireAuth rejects unauthenticated requests to the MCP server.
@@ -142,7 +141,12 @@ func (s *Server) mcpAdminTools() []mcpAdminTool {
 				Name:        "list_projects",
 				Title:       "List Projects",
 				Description: `List the Rill projects you have access to. Pass a returned value as the "project" argument of other tools. The list may be incomplete; if you already know a project, you can pass it directly.`,
-				Annotations: &mcp.ToolAnnotations{ReadOnlyHint: true},
+				Annotations: &mcp.ToolAnnotations{
+					DestructiveHint: new(false),
+					IdempotentHint:  true,
+					OpenWorldHint:   new(false),
+					ReadOnlyHint:    true,
+				},
 				InputSchema: &jsonschema.Schema{Type: "object"},
 			},
 			handler: s.mcpListProjects,
@@ -257,12 +261,10 @@ func (s *Server) callRuntimeTool(ctx context.Context, depl *database.Deployment,
 	if client.userAgent != "" {
 		req.Header.Set("User-Agent", client.userAgent)
 	}
-	if client.sessionID != "" {
-		// Derive a session ID per project instead of passing the client's through.
-		// A runtime may serve several projects from one catalog, where AI session IDs must be unique.
-		sessionID := uuid.NewSHA1(mcpSessionNamespace, []byte(depl.RuntimeInstanceID+"/"+client.sessionID))
-		req.Header.Set("Mcp-Session-Id", sessionID.String())
-	}
+	// Derive a session ID per project instead of passing the client's through.
+	// A runtime may serve several projects from one catalog, where AI session IDs must be unique.
+	sessionID := uuid.NewSHA1(mcpSessionNamespace, []byte(depl.RuntimeInstanceID+"/"+client.sessionID))
+	req.Header.Set(middleware.MCPSessionIDHeader, sessionID.String())
 
 	// Uses http.DefaultClient to get caching/pooling of TCP connections.
 	res, err := http.DefaultClient.Do(req)
@@ -289,14 +291,17 @@ func (s *Server) callRuntimeTool(ctx context.Context, depl *database.Deployment,
 	for _, msg := range msgs {
 		var rpc struct {
 			Result *mcp.CallToolResult `json:"result"`
-			Error  *struct {
-				Message string `json:"message"`
-			} `json:"error"`
+			Error  *jsonrpc.Error      `json:"error"`
 		}
 		if err := json.Unmarshal(msg, &rpc); err != nil {
 			return nil, err
 		}
 		if rpc.Error != nil {
+			// The runtime rejects calls with invalid arguments, and calls to a tool it does not serve (e.g. because the caller lacks a permission), as invalid params.
+			// The caller can act on both, so they are returned as tool errors; any other error is unexpected and stays a protocol error.
+			if rpc.Error.Code == jsonrpc.CodeInvalidParams {
+				return mcpToolErrorf("%s", rpc.Error.Message), nil
+			}
 			return nil, errors.New(rpc.Error.Message)
 		}
 		if rpc.Result != nil {

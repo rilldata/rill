@@ -10,7 +10,6 @@ import (
 
 	"github.com/rilldata/rill/admin/database"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
-	"github.com/rilldata/rill/runtime/drivers"
 )
 
 //go:embed templates/gen/*
@@ -34,40 +33,46 @@ func New(sender Sender) *Client {
 }
 
 type ScheduledReport struct {
-	ToEmail         string
-	ToName          string
-	DisplayName     string
-	ReportTime      time.Time
-	DownloadFormat  string
-	OpenLink        string
-	DownloadLink    string
-	EditLink        string
-	UnsubscribeLink string
-	Summary         string // For AI reports
+	ToEmail            string
+	ToName             string
+	DisplayName        string
+	ReportTime         time.Time
+	DownloadFormat     string
+	OpenLink           string
+	DownloadLink       string
+	EditLink           string
+	UnsubscribeLink    string
+	Summary            string      // For AI reports
+	Attachment         *Attachment // The exported file, if it is attached to the email
+	AttachmentTooLarge bool        // If true, the email explains that the exported file was too large to attach
 }
 
 type scheduledReportData struct {
-	DisplayName      string
-	ReportTimeString string // Will be inferred from ReportTime
-	DownloadFormat   string
-	OpenLink         template.URL
-	DownloadLink     template.URL
-	EditLink         template.URL
-	UnsubscribeLink  template.URL
-	Summary          string // For AI reports
+	DisplayName        string
+	ReportTimeString   string // Will be inferred from ReportTime
+	DownloadFormat     string
+	OpenLink           template.URL
+	DownloadLink       template.URL
+	EditLink           template.URL
+	UnsubscribeLink    template.URL
+	Summary            string // For AI reports
+	Attached           bool
+	AttachmentTooLarge bool
 }
 
 func (c *Client) SendScheduledReport(opts *ScheduledReport) error {
 	// Build template data
 	data := &scheduledReportData{
-		DisplayName:      opts.DisplayName,
-		ReportTimeString: opts.ReportTime.Format(time.RFC1123),
-		DownloadFormat:   opts.DownloadFormat,
-		OpenLink:         template.URL(opts.OpenLink),
-		DownloadLink:     template.URL(opts.DownloadLink),
-		EditLink:         template.URL(opts.EditLink),
-		UnsubscribeLink:  template.URL(opts.UnsubscribeLink),
-		Summary:          opts.Summary,
+		DisplayName:        opts.DisplayName,
+		ReportTimeString:   opts.ReportTime.Format(time.RFC1123),
+		DownloadFormat:     opts.DownloadFormat,
+		OpenLink:           template.URL(opts.OpenLink),
+		DownloadLink:       template.URL(opts.DownloadLink),
+		EditLink:           template.URL(opts.EditLink),
+		UnsubscribeLink:    template.URL(opts.UnsubscribeLink),
+		Summary:            opts.Summary,
+		Attached:           opts.Attachment != nil,
+		AttachmentTooLarge: opts.AttachmentTooLarge,
 	}
 
 	// Build subject
@@ -82,10 +87,30 @@ func (c *Client) SendScheduledReport(opts *ScheduledReport) error {
 	}
 	html := buf.String()
 
-	return c.Sender.Send(opts.ToEmail, opts.ToName, subject, html)
+	var attachments []Attachment
+	if opts.Attachment != nil {
+		attachments = []Attachment{*opts.Attachment}
+	}
+	return c.Sender.Send(opts.ToEmail, opts.ToName, subject, html, attachments)
 }
 
-func (c *Client) SendAlertStatus(opts *drivers.AlertStatus) error {
+type AlertStatus struct {
+	ToEmail            string
+	ToName             string
+	DisplayName        string
+	ExecutionTime      time.Time
+	Status             runtimev1.AssertionStatus
+	IsRecover          bool
+	FailRow            map[string]any
+	ExecutionError     string
+	OpenLink           string
+	EditLink           string
+	UnsubscribeLink    string
+	Attachment         *Attachment // An export of the rows that triggered the alert; only sent for failed checks
+	AttachmentTooLarge bool        // If true, the email explains that the export was too large to attach
+}
+
+func (c *Client) SendAlertStatus(opts *AlertStatus) error {
 	switch opts.Status {
 	case runtimev1.AssertionStatus_ASSERTION_STATUS_PASS:
 		return c.sendAlertStatus(opts, &alertStatusData{
@@ -105,6 +130,8 @@ func (c *Client) SendAlertStatus(opts *drivers.AlertStatus) error {
 			OpenLink:            template.URL(opts.OpenLink),
 			EditLink:            template.URL(opts.EditLink),
 			UnsubscribeLink:     template.URL(opts.UnsubscribeLink),
+			Attached:            opts.Attachment != nil,
+			AttachmentTooLarge:  opts.AttachmentTooLarge,
 		})
 	case runtimev1.AssertionStatus_ASSERTION_STATUS_ERROR:
 		return c.sendAlertStatus(opts, &alertStatusData{
@@ -128,9 +155,11 @@ type alertFailData struct {
 	OpenLink            template.URL
 	EditLink            template.URL
 	UnsubscribeLink     template.URL
+	Attached            bool
+	AttachmentTooLarge  bool
 }
 
-func (c *Client) sendAlertFail(opts *drivers.AlertStatus, data *alertFailData) error {
+func (c *Client) sendAlertFail(opts *AlertStatus, data *alertFailData) error {
 	subject := fmt.Sprintf("%s (%s)", data.DisplayName, data.ExecutionTimeString)
 
 	buf := new(bytes.Buffer)
@@ -140,7 +169,11 @@ func (c *Client) sendAlertFail(opts *drivers.AlertStatus, data *alertFailData) e
 	}
 	html := buf.String()
 
-	return c.Sender.Send(opts.ToEmail, opts.ToName, subject, html)
+	var attachments []Attachment
+	if opts.Attachment != nil {
+		attachments = []Attachment{*opts.Attachment}
+	}
+	return c.Sender.Send(opts.ToEmail, opts.ToName, subject, html, attachments)
 }
 
 type alertStatusData struct {
@@ -155,7 +188,7 @@ type alertStatusData struct {
 	UnsubscribeLink     template.URL
 }
 
-func (c *Client) sendAlertStatus(opts *drivers.AlertStatus, data *alertStatusData) error {
+func (c *Client) sendAlertStatus(opts *AlertStatus, data *alertStatusData) error {
 	subject := fmt.Sprintf("%s (%s)", data.DisplayName, data.ExecutionTimeString)
 	if data.IsRecover {
 		subject = fmt.Sprintf("Recovered: %s", subject)
@@ -168,7 +201,7 @@ func (c *Client) sendAlertStatus(opts *drivers.AlertStatus, data *alertStatusDat
 	}
 	html := buf.String()
 
-	return c.Sender.Send(opts.ToEmail, opts.ToName, subject, html)
+	return c.Sender.Send(opts.ToEmail, opts.ToName, subject, html, nil)
 }
 
 type CallToAction struct {
@@ -189,7 +222,7 @@ func (c *Client) SendCallToAction(opts *CallToAction) error {
 		return fmt.Errorf("email template error: %w", err)
 	}
 	html := buf.String()
-	return c.Sender.Send(opts.ToEmail, opts.ToName, opts.Subject, html)
+	return c.Sender.Send(opts.ToEmail, opts.ToName, opts.Subject, html, nil)
 }
 
 type Informational struct {
@@ -207,7 +240,7 @@ func (c *Client) SendInformational(opts *Informational) error {
 		return fmt.Errorf("email template error: %w", err)
 	}
 	html := buf.String()
-	return c.Sender.Send(opts.ToEmail, opts.ToName, opts.Subject, html)
+	return c.Sender.Send(opts.ToEmail, opts.ToName, opts.Subject, html, nil)
 }
 
 type Welcome struct {
@@ -225,7 +258,7 @@ func (c *Client) SendWelcomeToTrial(opts *Welcome) error {
 		return fmt.Errorf("email template error: %w", err)
 	}
 	html := buf.String()
-	return c.Sender.Send(opts.ToEmail, opts.ToName, opts.Subject, html)
+	return c.Sender.Send(opts.ToEmail, opts.ToName, opts.Subject, html, nil)
 }
 
 func (c *Client) SendWelcomeToTeam(opts *Welcome) error {
@@ -235,7 +268,7 @@ func (c *Client) SendWelcomeToTeam(opts *Welcome) error {
 		return fmt.Errorf("email template error: %w", err)
 	}
 	html := buf.String()
-	return c.Sender.Send(opts.ToEmail, opts.ToName, opts.Subject, html)
+	return c.Sender.Send(opts.ToEmail, opts.ToName, opts.Subject, html, nil)
 }
 
 type OrganizationInvite struct {
@@ -371,7 +404,7 @@ func (c *Client) SendProjectAccessRequest(opts *ProjectAccessRequest) error {
 		return fmt.Errorf("email template error: %w", err)
 	}
 	html := buf.String()
-	return c.Sender.Send(opts.ToEmail, opts.ToName, subject, html)
+	return c.Sender.Send(opts.ToEmail, opts.ToName, subject, html, nil)
 }
 
 type ProjectAccessGranted struct {

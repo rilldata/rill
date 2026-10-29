@@ -17,12 +17,14 @@ import type { TimeControlState } from "@rilldata/web-common/features/dashboards/
 import { getInitialScheduleFormValues } from "@rilldata/web-common/features/scheduled-reports/time-utils.ts";
 import type {
   V1ExploreSpec,
+  V1ExportFormat,
   V1Expression,
   V1MetricsViewAggregationRequest,
   V1Operation,
 } from "@rilldata/web-common/runtime-client";
 import type { ValidationErrors } from "sveltekit-superforms";
 import { yup, type ValidationAdapter } from "sveltekit-superforms/adapters";
+import { getExportLimitSchema } from "@rilldata/web-common/features/exports/export-file-options";
 import { object, array, string } from "yup";
 
 export type AlertFormValues = {
@@ -38,6 +40,11 @@ export type AlertFormValues = {
   slackUsers: string[];
   enableEmailNotification: boolean;
   emailRecipients: string[];
+  // Options for attaching the rows that triggered the alert to emails
+  exportAttach: boolean;
+  exportFormat: V1ExportFormat;
+  exportLimit: string;
+  exportIncludeHeader: boolean;
   refreshWhenDataRefreshes: boolean;
   // The following fields are not editable in the form, but they're state that's used throughout the form, so
   // it's helpful to have them here. Also, in the future they may be editable in the form.
@@ -159,6 +166,12 @@ export const alertFormValidationSchema = yup(
     snooze: string().required("Required"),
     slackUsers: array(string().email("Invalid email")),
     emailRecipients: array(string().email("Invalid email")),
+    // The row limit input is hidden unless attachments are enabled for email delivery
+    exportLimit: string().when(["enableEmailNotification", "exportAttach"], {
+      is: (enableEmailNotification: boolean, exportAttach: boolean) =>
+        enableEmailNotification && exportAttach,
+      then: () => getExportLimitSchema(),
+    }),
   }),
 ) as unknown as ValidationAdapter<AlertFormValues>;
 export const FieldsByTab: (keyof AlertFormValues)[][] = [

@@ -1,6 +1,6 @@
 ---
 title: SQL Models
-description: Create models from source data and apply SQL transformations
+description: Write a model as a SQL file and set its properties with SQL annotations
 sidebar_label: SQL Models
 sidebar_position: 05
 ---

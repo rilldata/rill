@@ -1,11 +1,15 @@
 <script lang="ts">
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
-  import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import DashboardMetricsDraggableList from "@rilldata/web-common/components/menu/DashboardMetricsDraggableList.svelte";
   import CreateEphemeralMeasureButton from "@rilldata/web-common/features/dashboards/ephemeral-measures/CreateEphemeralMeasureButton.svelte";
   import { ephemeralMeasureDialog } from "@rilldata/web-common/features/dashboards/ephemeral-measures/dialog-store";
   import { ephemeralMeasureNameSet } from "@rilldata/web-common/features/dashboards/ephemeral-measures/measure-mapping";
+  import {
+    precisionStateFor,
+    requestExactNames,
+  } from "@rilldata/web-common/features/dashboards/exact-measures/exact-measures";
+  import { exploreExactSurface } from "@rilldata/web-common/features/dashboards/exact-measures/explore-surfaces";
   import ReplacePivotDialog from "@rilldata/web-common/features/dashboards/pivot/ReplacePivotDialog.svelte";
   import { splitPivotChips } from "@rilldata/web-common/features/dashboards/pivot/pivot-utils";
   import {
@@ -17,6 +21,7 @@
     metricsExplorerStore,
     useExploreState,
   } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
+  import AggregationGrainSelector from "@rilldata/web-common/features/dashboards/time-controls/AggregationGrainSelector.svelte";
   import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
   import ChartTypeSelector from "@rilldata/web-common/features/dashboards/time-dimension-details/charts/ChartTypeSelector.svelte";
   import { TDDChart } from "@rilldata/web-common/features/dashboards/time-dimension-details/types";
@@ -25,7 +30,6 @@
   import { measureSelection } from "@rilldata/web-common/features/dashboards/time-series/measure-selection/measure-selection.ts";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors";
-  import { translateV1TimeGrain } from "@rilldata/web-common/lib/time/new-grains";
   import {
     TimeComparisonOption,
     TimeRangePreset,
@@ -83,16 +87,17 @@
       measures: { allMeasures, visibleMeasures, getMeasureByName },
       charts: { canPanLeft, canPanRight, getNewPanRange },
       tags: { measureTagIndex },
+      exactMeasures: { exactMeasureContext },
     },
     actions: {
       measures: { setMeasureVisibility },
+      exactMeasures: { toggleExactMeasure },
     },
     expressionFilterManager,
   } = StateManagers;
 
   const timeControlsStore = useTimeControlStore(StateManagers);
 
-  let grainDropdownOpen = $state(false);
   let connectNulls = $state(true);
 
   const client = useRuntimeClient();
@@ -111,6 +116,7 @@
   } = $derived($timeControlsStore);
 
   let { selectedTimezone } = $derived($dashboardStore);
+  let adaptiveTimeGrain = $derived(!!$dashboardStore?.adaptiveTimeGrain);
 
   // Use the full selected time range for chart data fetching (not modified by scrub)
   let chartInterval = $derived(
@@ -145,6 +151,24 @@
     Boolean(activePage === DashboardState_ActivePage.TIME_DIMENSIONAL_DETAIL),
   );
   let expandedMeasureName = $derived($exploreState?.tdd?.expandedMeasureName);
+
+  // The big numbers and their charts are one surface: a click applies to this
+  // row only. On the Time Dimension Detail page the chart, totals and table
+  // form one surface instead, controlled by the chip in the page's header.
+  const measuresSurface = $derived(
+    showTimeDimensionDetail
+      ? exploreExactSurface.tdd
+      : exploreExactSurface.measures,
+  );
+
+  // Measures that are requested with `exact: true`: the surface's selection.
+  const exactContext = $derived($exactMeasureContext(measuresSurface));
+  const exactRequestNames = $derived(
+    requestExactNames(
+      $visibleMeasures.map((measure) => measure.name ?? ""),
+      exactContext,
+    ),
+  );
 
   let comparisonDimension = $derived(
     $exploreState?.selectedComparisonDimension,
@@ -349,43 +373,23 @@
       </DashboardMetricsDraggableList>
 
       {#if $rillTime && activeTimeGrain}
-        <DropdownMenu.Root bind:open={grainDropdownOpen}>
-          <DropdownMenu.Trigger>
-            {#snippet child({ props })}
-              <button
-                {...props}
-                aria-label={m.dashboard_select_aggregation_grain_aria()}
-                class="flex gap-x-1 items-center text-fg-muted hover:text-fg-accent"
-              >
-                {m.explore_by_grain_prefix()}
-                <b>
-                  {translateV1TimeGrain(activeTimeGrain)}
-                </b>
-                <span
-                  class:-rotate-90={grainDropdownOpen}
-                  class="transition-transform"
-                >
-                  <CaretDownIcon />
-                </span>
-              </button>
-            {/snippet}
-          </DropdownMenu.Trigger>
-
-          <DropdownMenu.Content align="start" class="w-48">
-            {#each aggregationOptions ?? [] as option (option)}
-              <DropdownMenu.CheckboxItem
-                checkRight
-                checked={option === activeTimeGrain}
-                class="text-xs cursor-pointer"
-                onclick={() => {
-                  metricsExplorerStore.setTimeGrain(exploreName, option);
-                }}
-              >
-                {translateV1TimeGrain(option)}
-              </DropdownMenu.CheckboxItem>
-            {/each}
-          </DropdownMenu.Content>
-        </DropdownMenu.Root>
+        <AggregationGrainSelector
+          {activeTimeGrain}
+          options={aggregationOptions ?? []}
+          onSelect={(timeGrain) =>
+            metricsExplorerStore.setTimeGrain(exploreName, timeGrain)}
+          defaultOption={{
+            label: m.time_grain_adaptive(),
+            description: m.time_grain_adaptive_description(),
+            hint: m.time_grain_adaptive_hint(),
+            selected: adaptiveTimeGrain,
+            onSelect: () =>
+              metricsExplorerStore.setAdaptiveTimeGrain(
+                exploreName,
+                $exploreValidSpec.data?.metricsView ?? {},
+              ),
+          }}
+        />
       {/if}
 
       <ChartSettingsMenu
@@ -404,6 +408,7 @@
         <div class="grow"></div>
         <Button
           type="toolbar"
+          dataAttributes={{ "data-ai-action": "dashboard.start-pivot" }}
           onClick={() => {
             startPivotForTimeseries();
           }}
@@ -442,9 +447,14 @@
       {/if}
 
       {#each renderedMeasures as measure (measure.name)}
+        {@const measureName = measure.name ?? ""}
+        {@const exact = exactRequestNames.has(measureName)}
         <MeasureBigNumber
           {measure}
           ephemeralMeasures={$dashboardStore.ephemeralMeasures}
+          {exact}
+          precision={precisionStateFor(measureName, exactContext)}
+          onToggleExact={() => toggleExactMeasure(measuresSurface, measureName)}
           isMeasureExpanded={showTimeDimensionDetail}
           {showComparison}
           metricsViewName={chartMetricsViewName}
@@ -465,6 +475,7 @@
             <MeasureChart
               {measure}
               ephemeralMeasures={$dashboardStore.ephemeralMeasures}
+              {exact}
               {scrubController}
               {connectNulls}
               tddChartType={tddChartType ?? TDDChart.DEFAULT}

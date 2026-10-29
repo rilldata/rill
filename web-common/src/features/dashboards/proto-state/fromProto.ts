@@ -11,6 +11,7 @@ import {
 import {
   FromProtoOperationMap,
   FromProtoPivotTableModeMap,
+  FromProtoPivotTotalsRowPositionMap,
   FromProtoTimeGrainMap,
 } from "@rilldata/web-common/features/dashboards/proto-state/enum-maps";
 import { convertFilterToExpression } from "@rilldata/web-common/features/dashboards/proto-state/filter-converter";
@@ -44,6 +45,7 @@ import {
   DashboardState_ActivePage,
   DashboardState_LeaderboardContextColumn,
   DashboardState_PivotTableMode,
+  DashboardState_PivotTotalsRowPosition,
   DashboardTimeRange,
   PivotElement,
 } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
@@ -145,6 +147,9 @@ export function getDashboardStateFromProto(
     if (dashboard.timeGrain) {
       entity.selectedTimeRange.interval =
         FromProtoTimeGrainMap[dashboard.timeGrain];
+      entity.adaptiveTimeGrain = false;
+    } else {
+      entity.adaptiveTimeGrain = true;
     }
   }
 
@@ -466,6 +471,11 @@ function fromPivotProto(
     activeCell: null,
     showTotalsColumn: dashboard.pivotShowTotalsColumn ?? true,
     showTotalsRow: dashboard.pivotShowTotalsRow ?? true,
+    totalsRowPosition:
+      FromProtoPivotTotalsRowPositionMap[
+        dashboard.pivotTotalsRowPosition ||
+          DashboardState_PivotTotalsRowPosition.TOP
+      ],
     tableMode:
       FromProtoPivotTableModeMap[
         dashboard.pivotTableMode || DashboardState_PivotTableMode.NEST
@@ -525,6 +535,7 @@ function blankPivotState(): PivotState {
     activeCell: null,
     showTotalsColumn: true,
     showTotalsRow: true,
+    totalsRowPosition: "top",
     tableMode: "nest" as PivotTableMode,
   };
 }

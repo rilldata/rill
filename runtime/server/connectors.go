@@ -2,14 +2,19 @@ package server
 
 import (
 	"context"
+	"errors"
 	"strings"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/parser"
+	"github.com/rilldata/rill/runtime/pkg/observability"
 	"github.com/rilldata/rill/runtime/server/auth"
+	"go.opentelemetry.io/otel/attribute"
 	"golang.org/x/exp/maps"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/structpb"
 )
 
@@ -121,6 +126,68 @@ func (s *Server) AnalyzeConnectors(ctx context.Context, req *runtimev1.AnalyzeCo
 
 	return &runtimev1.AnalyzeConnectorsResponse{
 		Connectors: maps.Values(res),
+	}, nil
+}
+
+// GetConnectorOAuthConfig implements RuntimeService.
+// It is called by the admin service with a management token, on behalf of the user described by the request.
+func (s *Server) GetConnectorOAuthConfig(ctx context.Context, req *runtimev1.GetConnectorOAuthConfigRequest) (*runtimev1.GetConnectorOAuthConfigResponse, error) {
+	observability.AddRequestAttributes(ctx,
+		attribute.String("args.instance_id", req.InstanceId),
+		attribute.String("args.connector", req.Connector),
+	)
+
+	if !auth.GetClaims(ctx, req.InstanceId).Can(runtime.ManageInstances) {
+		return nil, ErrForbidden
+	}
+
+	ctrl, err := s.runtime.Controller(ctx, req.InstanceId)
+	if err != nil {
+		return nil, err
+	}
+	res, err := ctrl.Get(ctx, &runtimev1.ResourceName{Kind: runtime.ResourceKindConnector, Name: req.Connector}, false)
+	if err != nil {
+		if errors.Is(err, drivers.ErrResourceNotFound) {
+			return nil, status.Errorf(codes.NotFound, "connector %q not found", req.Connector)
+		}
+		return nil, err
+	}
+
+	// Evaluate the connector's security policy for the user the authorization is for, so Rill never collects a token for a user who cannot use the connector.
+	claims := &runtime.SecurityClaims{
+		UserAttributes:  req.UserAttributes.AsMap(),
+		AdditionalRules: req.UserRules,
+	}
+	sec, err := s.runtime.ResolveConnectorSecurity(ctx, req.InstanceId, claims, res, nil)
+	if err != nil {
+		return nil, err
+	}
+	if !sec.CanAccess() {
+		return nil, status.Errorf(codes.PermissionDenied, "the user may not use connector %q", req.Connector)
+	}
+	handle, release, err := s.runtime.AcquireHandle(ctx, req.InstanceId, req.Connector)
+	if err != nil {
+		return nil, status.Errorf(codes.FailedPrecondition, "failed to open connector %q: %s", req.Connector, err)
+	}
+	defer release()
+	svc, ok := handle.AsMCP()
+	if !ok {
+		return nil, status.Errorf(codes.FailedPrecondition, "connector %q does not support OAuth", req.Connector)
+	}
+	cfg := svc.OAuthConfig()
+	if cfg == nil {
+		return nil, status.Errorf(codes.FailedPrecondition, "connector %q does not use per-user OAuth", req.Connector)
+	}
+
+	return &runtimev1.GetConnectorOAuthConfigResponse{
+		ConfigHash: cfg.Hash,
+		Config: &runtimev1.ConnectorOAuthConfig{
+			ResourceUrl:         cfg.ServerURL,
+			ClientId:            cfg.ClientID,
+			ClientSecret:        cfg.ClientSecret,
+			Scopes:              cfg.Scopes,
+			AuthorizationParams: cfg.AuthorizationParams,
+		},
 	}, nil
 }
 

@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
+	"slices"
 	"strings"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
@@ -100,10 +101,12 @@ func (b *sqlExprBuilder) writeSubquery(sub *Subquery) error {
 		UseDisplayNames:     false,
 		Rows:                false,
 		QueryLimits:         outer.QueryLimits,
+		ExactMeasures:       b.ast.exactMeasures,
 		UnusedFields:        nil,
 	} //exhaustruct:enforce
 
-	// Generate SQL for the subquery
+	// Generate SQL for the subquery.
+	// The subquery copies the exact measures resolved for the outer query, which already account for the subquery's own flags (see ExactMeasureSet), so both compute a shared measure with the same precision.
 	innerSecurity := b.ast.Security
 	if !b.visible {
 		innerSecurity = skipMetricsViewSecurity{}
@@ -119,7 +122,7 @@ func (b *sqlExprBuilder) writeSubquery(sub *Subquery) error {
 
 	// Output: (SELECT <dimension> FROM (<subquery>))
 	b.writeString("(SELECT ")
-	b.writeString(b.ast.Dialect.EscapeIdentifier(sub.Dimension.Name))
+	b.writeString(b.ast.Dialect.EscapeAlias(sub.Dimension.Name))
 	b.writeString(" FROM (")
 	b.writeString(sql)
 	b.writeString("))")
@@ -258,30 +261,19 @@ func (b *sqlExprBuilder) writeBinaryCondition(exprs []*Expression, op Operator) 
 		// If not unnested, write the expression as-is or if its a lookup rewrite as per dialect
 		if !unnest {
 			if lookup != nil {
-				b.writeString(fmt.Sprintf("%s IN ", lookup.keyExpr))
-				b.writeByte('(')
-				ex, err := b.ast.Dialect.LookupSelectExpr(lookup.table, lookup.keyCol)
-				if err != nil {
-					return err
-				}
-				b.writeString(ex)
-				b.writeString(" WHERE ")
-				err = b.writeBinaryConditionInner(nil, right, lookup.valueCol, op)
-				if err != nil {
-					return err
-				}
-				b.writeString(")")
-				return nil
+				return b.writeLookupCondition(left, right, leftExpr, lookup, op)
 			}
 
 			// The left expression is passed along with its rendered SQL so the inner writers can look up the dimension's data type.
 			return b.writeBinaryConditionInner(left, right, leftExpr, op)
 		}
 
-		// For IN/NIN on unnest dimensions backed by DuckDB or ClickHouse, use native array-contains
-		// functions (list_has_any / hasAny). This avoids double-counting when a row's array contains multiple matching values.
-		if (op == OperatorIn || op == OperatorNin) && b.ast.Dialect.RequiresArrayContainsForInOperator() {
-			return b.writeArrayContainsCondition(leftExpr, right, op == OperatorNin)
+		// For IN/NIN on unnest dimensions, prefer a native array-contains expression over an unnest join where the dialect supports it.
+		// It avoids scanning the unnested rows and double-counting rows whose array contains multiple matching values.
+		if op == OperatorIn || op == OperatorNin {
+			if handled, err := b.writeArrayContainsCondition(leftExpr, right, op == OperatorNin); handled || err != nil {
+				return err
+			}
 		}
 
 		// Generate unnest join
@@ -295,16 +287,19 @@ func (b *sqlExprBuilder) writeBinaryCondition(exprs []*Expression, op Operator) 
 			leftExpr = b.ast.Dialect.AutoUnnest(leftExpr)
 			return b.writeBinaryConditionInner(left, right, leftExpr, op)
 		}
-		var unnestColAlias string
-		if tupleStyle {
-			unnestColAlias = b.ast.Dialect.EscapeMember(unnestTableAlias, left.Name)
-		} else {
-			unnestColAlias = b.ast.Dialect.EscapeAlias(left.Name)
+		// A filter on an unnest dimension that is not selected should match each source row once, even if several of its elements match.
+		// Prefer the dialect's native any-element expression, otherwise use a correlated EXISTS subquery over the unnest join.
+		open, elem, closing, ok := b.ast.Dialect.ArrayAnyExpression(leftExpr, unnestTableAlias)
+		if ok && right.Subquery != nil {
+			return fmt.Errorf("dialect %s does not support subquery filters on unnest dimension %q", b.ast.Dialect, left.Name)
 		}
-
-		if !tupleStyle { // if tupleStyle, then we cannot refer to the column by table alias
-			b.ast.unnests = append(b.ast.unnests, unnestFrom)
-			return b.writeBinaryConditionInner(nil, right, unnestColAlias, op)
+		if !ok && !tupleStyle {
+			return fmt.Errorf("dialect %s cannot filter on unnest dimension %q: it must support tuple-style unnest or an array any-element expression", b.ast.Dialect, left.Name)
+		}
+		if !ok {
+			open = "EXISTS (SELECT 1 FROM " + unnestFrom + " WHERE "
+			elem = b.ast.Dialect.UnnestedColumn(unnestTableAlias, left.Name)
+			closing = ")"
 		}
 
 		// Need to move "NOT" to outside of the subquery
@@ -321,23 +316,73 @@ func (b *sqlExprBuilder) writeBinaryCondition(exprs []*Expression, op Operator) 
 			not = true
 		}
 
-		// Output: [NOT] EXISTS (SELECT 1 FROM <unnestFrom> WHERE <unnestColAlias> <operator> <right>)
 		if not {
 			b.writeString("NOT ")
 		}
-		b.writeString("EXISTS (SELECT 1 FROM ")
-		b.writeString(unnestFrom)
-		b.writeString(" WHERE ")
-		err = b.writeBinaryConditionInner(nil, right, unnestColAlias, op)
+		b.writeString(open)
+		err = b.writeBinaryConditionInner(nil, right, elem, op)
 		if err != nil {
 			return err
 		}
-		b.writeByte(')')
+		b.writeString(closing)
 		return nil
 	}
 
 	// Handle netiher side is a name
 	return b.writeBinaryConditionInner(left, right, "", op)
+}
+
+// writeLookupCondition writes a binary condition whose left side is a lookup dimension.
+// The dimension's value is the lookup table's value for the row's key,
+// so the condition is rewritten to one on the key: "key IN (SELECT key FROM lookup WHERE <condition on value>)".
+// This lets the database use an index on the key column instead of evaluating the lookup for every row.
+//
+// Keys that are absent from the lookup table are not covered by the rewrite.
+// Their value is NULL, or the lookup default expression if one is set,
+// and a condition that matches that value must include those rows as well.
+// The NULL case assumes the lookup table's value column is nullable without a custom default;
+// otherwise absent keys resolve to that column's default value, which this rewrite does not account for.
+func (b *sqlExprBuilder) writeLookupCondition(left, right *Expression, leftExpr string, lookup *lookupMeta, op Operator) error {
+	// Rows whose value is NULL cannot be found through the lookup table, so a condition that matches NULL is applied to the dimension expression itself.
+	// Such conditions (selecting NULL, or excluding values) could not use an index on the key column anyway.
+	if conditionMatchesNull(right, op) {
+		return b.writeBinaryConditionInner(left, right, leftExpr, op)
+	}
+
+	selectKeys, err := b.ast.Dialect.LookupSelectExpr(lookup.table, lookup.keyCol)
+	if err != nil {
+		return err
+	}
+
+	if lookup.defaultExpr != "" {
+		b.writeByte('(')
+	}
+	b.writeString(lookup.keyExpr)
+	b.writeString(" IN (")
+	b.writeString(selectKeys)
+	b.writeString(" WHERE ")
+	err = b.writeBinaryConditionInner(nil, right, lookup.valueCol, op)
+	if err != nil {
+		return err
+	}
+	b.writeByte(')')
+
+	if lookup.defaultExpr != "" {
+		// Absent keys resolve to the default expression, so they match when the condition holds for it.
+		// When the default expression is a constant, the database folds the condition on it: when it is false, only the indexed condition above remains.
+		b.writeString(" OR (")
+		err = b.writeBinaryConditionInner(nil, right, lookup.defaultExpr, op)
+		if err != nil {
+			return err
+		}
+		b.writeString(" AND ")
+		b.writeString(lookup.keyExpr)
+		b.writeString(" NOT IN (")
+		b.writeString(selectKeys)
+		b.writeString(")))")
+	}
+
+	return nil
 }
 
 func (b *sqlExprBuilder) writeBinaryConditionInner(left, right *Expression, leftOverride string, op Operator) error {
@@ -683,46 +728,38 @@ func (b *sqlExprBuilder) writeInConditionForValues(left *Expression, leftOverrid
 	return nil
 }
 
-func (b *sqlExprBuilder) writeArrayContainsCondition(leftExpr string, right *Expression, not bool) error {
-	vals, ok := right.Value.([]any)
-	if !ok {
-		return fmt.Errorf("the right value must be a list of values for an array IN condition")
-	}
-
-	if len(vals) == 0 {
+// writeArrayContainsCondition writes a native array-contains condition for a list of values.
+// It returns false without writing anything if the dialect has no such expression.
+func (b *sqlExprBuilder) writeArrayContainsCondition(leftExpr string, right *Expression, not bool) (bool, error) {
+	vals, isList := right.Value.([]any)
+	if isList && len(vals) == 0 {
 		if not {
 			b.writeString("TRUE")
 		} else {
 			b.writeString("FALSE")
 		}
-		return nil
+		return true, nil
+	}
+
+	// NULL values in the list are not handled separately: ClickHouse's hasAny matches them, while DuckDB's list_has_any and Databricks' arrays_overlap ignore them.
+	// There is no reliable way to check for NULL elements; leftExpr IS NULL checks for a NULL array, not NULL elements.
+	expr, ok := b.ast.Dialect.ArrayContainsAnyExpression("("+leftExpr+")", strings.TrimSuffix(strings.Repeat("?,", len(vals)), ","))
+	if !ok {
+		return false, nil
+	}
+	if !isList {
+		return false, fmt.Errorf("the right value must be a list of values for an array IN condition")
 	}
 
 	b.writeByte('(')
 	if not {
 		b.writeString("NOT ")
 	}
-	arrayContainsFunc, err := b.ast.Dialect.GetArrayContainsFunction()
-	if err != nil {
-		return err
-	}
-	b.writeString(arrayContainsFunc)
-	b.writeByte('(')
-	b.writeParenthesizedString(leftExpr)
-	b.writeString(", [")
-	// not handling NULL values separately as clickhouse hasAny function takes care of it however, duckdb ignores null values in the list_has_any function, but there is no reliable way to make it work,
-	// but even using leftExpr IS NULL does not solve the issue as it checks for null array rather than null values in the array.
-	for i, val := range vals {
-		if i > 0 {
-			b.writeByte(',')
-		}
-		b.writeString("?")
-		b.args = append(b.args, val)
-	}
-	b.writeString("])")
+	b.writeString(expr)
 	b.writeByte(')')
+	b.args = append(b.args, vals...)
 
-	return nil
+	return true, nil
 }
 
 func (b *sqlExprBuilder) writeByte(v byte) {
@@ -737,6 +774,34 @@ func (b *sqlExprBuilder) writeParenthesizedString(s string) {
 	_ = b.out.WriteByte('(')
 	_, _ = b.out.WriteString(s)
 	_ = b.out.WriteByte(')')
+}
+
+// conditionMatchesNull reports whether a binary condition, as written by writeBinaryConditionInner, holds when its left operand is NULL.
+// For IN and NOT IN the right operand is a list of values; for the other operators it is a single value.
+// It returns true when the right operand is not a plain value, since the outcome cannot be determined in that case.
+func conditionMatchesNull(right *Expression, op Operator) bool {
+	if right.Name != "" || right.Condition != nil || right.Subquery != nil {
+		return true
+	}
+	switch op {
+	case OperatorEq:
+		// "dim = NULL" is written as "dim IS NULL"; a comparison with any other value is not true for NULL.
+		return right.Value == nil
+	case OperatorIn:
+		// A NULL in the list is written as "OR dim IS NULL".
+		vals, _ := right.Value.([]any)
+		return slices.Contains(vals, nil)
+	case OperatorNin:
+		// NOT IN is written with "OR dim IS NULL" unless NULL is one of the excluded values, and an empty list is written as TRUE.
+		vals, _ := right.Value.([]any)
+		return !slices.Contains(vals, nil)
+	case OperatorNilike:
+		// NOT ILIKE is written with "OR dim IS NULL".
+		return true
+	default:
+		// "dim != NULL" is written as "dim IS NOT NULL"; the remaining comparisons are never true for NULL.
+		return false
+	}
 }
 
 func (b *sqlExprBuilder) sqlForName(name string) (expr string, unnest bool, lookup *lookupMeta, err error) {
@@ -763,23 +828,8 @@ func (b *sqlExprBuilder) sqlForName(name string) (expr string, unnest bool, look
 			return "", false, nil, fmt.Errorf("invalid dimension reference %q: %w", name, err)
 		}
 
-		var lm *lookupMeta
-		if dim.LookupTable != "" {
-			var keyExpr string
-			if dim.Column != "" {
-				keyExpr = b.ast.Dialect.EscapeIdentifier(dim.Column)
-			} else {
-				keyExpr = dim.Expression
-			}
-			lm = &lookupMeta{
-				table:    dim.LookupTable,
-				keyExpr:  keyExpr,
-				keyCol:   dim.LookupKeyColumn,
-				valueCol: dim.LookupValueColumn,
-			}
-		}
 		// Note: If dim.Unnest is true, we need to unnest it inside of the generated expression (because it's not part of the dimFields and therefore not unnested with a LATERAL JOIN).
-		return ex, dim.Unnest, lm, nil
+		return ex, dim.Unnest, newLookupMeta(b.ast.Dialect, dim), nil
 	}
 
 	// Since node is not nil, we're in the context of a wrapped SELECT.

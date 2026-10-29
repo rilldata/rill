@@ -48,7 +48,7 @@ func (d driver) TertiarySourceConnectors(ctx context.Context, srcProps map[strin
 	return nil, nil
 }
 
-func (d driver) Open(_, instanceID string, config map[string]any, st *storage.Client, ac *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
+func (d driver) Open(_ context.Context, _, instanceID string, config map[string]any, st *storage.Client, ac *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
 	toolCallingEnabled, _ := config["enable_tool_calling"].(bool)
 
 	return &connection{
@@ -153,6 +153,11 @@ func (c *connection) AsFileStore() (drivers.FileStore, bool) {
 
 // AsWarehouse implements drivers.Handle.
 func (c *connection) AsWarehouse() (drivers.Warehouse, bool) {
+	return nil, false
+}
+
+// AsMCP implements drivers.Handle.
+func (c *connection) AsMCP() (drivers.MCPService, bool) {
 	return nil, false
 }
 

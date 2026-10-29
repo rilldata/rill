@@ -1,5 +1,5 @@
 ---
-title: ""
+title: Tutorials
 collapsed: true
 tags:
   - Tutorial

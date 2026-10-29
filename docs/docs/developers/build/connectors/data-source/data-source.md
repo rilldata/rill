@@ -111,7 +111,7 @@ Rill supports connecting your data to both [DuckDB](/developers/build/connectors
     content="Connect to PostgreSQL databases with support for SSL connections and various authentication methods."
     link="/developers/build/connectors/data-source/postgres"
     linkLabel="Learn more"
-    referenceLink="postgresql"
+    referenceLink="postgres"
   />
   <ConnectorIcon
     icon={<img src="/img/build/connectors/icons/Logo-SQLite.svg" alt="SQLite" />}
@@ -169,6 +169,7 @@ Rill supports connecting your data to both [DuckDB](/developers/build/connectors
 ## Table Formats
 ### Delta Lake
 ### Apache Iceberg
+### Amazon S3 Tables
 
 <div className="connector-icon-grid">
   <ConnectorIcon
@@ -183,6 +184,13 @@ Rill supports connecting your data to both [DuckDB](/developers/build/connectors
     header="Apache Iceberg"
     content="Read Iceberg tables directly from object storage through compatible query engines."
     link="/developers/build/connectors/data-source/iceberg"
+    linkLabel="Learn more"
+  />
+  <ConnectorIcon
+    icon={<img src="/img/build/connectors/icons/Logo-S3.svg" alt="Amazon S3 Tables" />}
+    header="Amazon S3 Tables"
+    content="Read Iceberg tables from Amazon S3 table buckets through the built-in Iceberg catalog."
+    link="/developers/build/connectors/data-source/s3-tables"
     linkLabel="Learn more"
   />
 </div>

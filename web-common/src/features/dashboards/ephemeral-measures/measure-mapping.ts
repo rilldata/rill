@@ -17,8 +17,9 @@ export function ephemeralMeasureToSpecMeasure(
     name: def.name,
     displayName: def.displayName,
     expression: def.expression,
-    // Surfaces the calculation in description-driven tooltips.
-    description: def.expression,
+    // Description-driven tooltips show the calculation unless the user
+    // described the measure.
+    description: def.description || def.expression,
     formatPreset: def.formatPreset ?? (FormatPreset.HUMANIZE as string),
   };
 }
@@ -104,6 +105,52 @@ export function splitTimeSeriesMeasures(
     measureNames,
     ephemeralMeasures: measures.length ? measures : undefined,
   };
+}
+
+/**
+ * The spec measure a request measure is computed from: the base measure of a
+ * comparison or percent-of-total compute, otherwise the measure itself.
+ */
+function requestMeasureBase(
+  measure: V1MetricsViewAggregationMeasure,
+): string | undefined {
+  return (
+    measure.comparisonValue?.measure ??
+    measure.comparisonDelta?.measure ??
+    measure.comparisonRatio?.measure ??
+    measure.percentOfTotal?.measure ??
+    measure.name
+  );
+}
+
+/**
+ * Flags request measures with `exact: true` when their measure, or the base
+ * measure of their compute, is in `exactNames` (see `requestExactNames`).
+ * The runtime then computes those measures, and the measures they reference,
+ * with their `exact_expression`. Leaves other measures untouched.
+ */
+export function applyExactMeasures(
+  measures: V1MetricsViewAggregationMeasure[],
+  exactNames: ReadonlySet<string> | undefined,
+): V1MetricsViewAggregationMeasure[] {
+  if (!exactNames?.size) return measures;
+  return measures.map((measure) => {
+    const base = requestMeasureBase(measure);
+    return base && exactNames.has(base) ? { ...measure, exact: true } : measure;
+  });
+}
+
+/**
+ * The measure names to send as `exactMeasureNames` on a time series request:
+ * the requested names that are in `exactNames`. Undefined when there are none.
+ */
+export function exactTimeSeriesMeasureNames(
+  names: string[],
+  exactNames: ReadonlySet<string> | undefined,
+): string[] | undefined {
+  if (!exactNames?.size) return undefined;
+  const result = names.filter((name) => exactNames.has(name));
+  return result.length ? result : undefined;
 }
 
 /**

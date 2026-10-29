@@ -351,6 +351,7 @@ function mapActivePage(
       // Selected time grain is used in TDD's pivot table at the bottom.
       partialExploreState.selectedTimeRange!.interval =
         DateTimeUnitToV1TimeGrain[timeDimension.compute!.time_floor!.grain];
+      partialExploreState.adaptiveTimeGrain = false;
     }
   } else if (showDimensionTable) {
     partialExploreState.selectedDimensionName = visibleDimensions[0];

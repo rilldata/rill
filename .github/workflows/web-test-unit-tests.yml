@@ -47,6 +47,9 @@ jobs:
       - name: Generate i18n files
         run: npm run build:i18n
 
+      - name: Sync SvelteKit
+        run: npm run generate:sveltekit -w web-common
+
       - name: Run web-common unit tests
         if: steps.filter.outputs.common == 'true'
         run: npm run test -w web-common

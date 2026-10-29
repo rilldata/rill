@@ -9,15 +9,19 @@ import (
 	"os/exec"
 )
 
-func Install(ctx context.Context, version string) error {
-	return execScript(ctx, version, "--version", version)
+func Install(ctx context.Context, version string, force bool) error {
+	var env []string
+	if force {
+		env = append(os.Environ(), "RILL_INSTALL_FORCE=1")
+	}
+	return execScript(ctx, version, env, "--version", version)
 }
 
 func Uninstall(ctx context.Context) error {
-	return execScript(ctx, "", "--uninstall")
+	return execScript(ctx, "", nil, "--uninstall")
 }
 
-func execScript(ctx context.Context, version string, args ...string) error {
+func execScript(ctx context.Context, version string, env []string, args ...string) error {
 	script, err := createScriptFile(ctx, version)
 	if err != nil {
 		return err
@@ -26,6 +30,7 @@ func execScript(ctx context.Context, version string, args ...string) error {
 
 	scriptArgs := append([]string{script}, args...)
 	cmd := exec.CommandContext(ctx, "/bin/sh", scriptArgs...)
+	cmd.Env = env
 	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr

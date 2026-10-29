@@ -122,7 +122,8 @@ Always materialize models.`,
 	}
 }
 
-// TestSkillsEmptyProject verifies that the skill tools are not available in a project without skills.
+// TestSkillsEmptyProject verifies that the skill tools stay available in a project without skills,
+// so that MCP clients see the same tools for every project, and that they return recoverable results.
 func TestSkillsEmptyProject(t *testing.T) {
 	rt, instanceID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{})
 	s := newSession(t, rt, instanceID)
@@ -132,10 +133,16 @@ func TestSkillsEmptyProject(t *testing.T) {
 		require.True(t, ok)
 		allowed, err := tool.CheckAccess(ai.WithSession(t.Context(), s))
 		require.NoError(t, err)
-		require.False(t, allowed, "tool %q access", name)
+		require.True(t, allowed, "tool %q access", name)
 	}
-	_, err := s.CallTool(t.Context(), ai.RoleUser, ai.LoadSkillName, nil, &ai.LoadSkillArgs{Name: "anything"})
-	require.ErrorContains(t, err, "access denied")
+
+	var res *ai.ListSkillsResult
+	_, err := s.CallTool(t.Context(), ai.RoleUser, ai.ListSkillsName, &res, &ai.ListSkillsArgs{})
+	require.NoError(t, err)
+	require.Empty(t, res.Skills)
+
+	_, err = s.CallTool(t.Context(), ai.RoleUser, ai.LoadSkillName, nil, &ai.LoadSkillArgs{Name: "anything"})
+	require.ErrorContains(t, err, "does not define any skills")
 }
 
 // TestSkillsValidation verifies that invalid skill files surface as parse errors on the file,

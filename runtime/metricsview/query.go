@@ -29,8 +29,12 @@ type Query struct {
 	UseDisplayNames     bool        `json:"use_display_names" mapstructure:"use_display_names"`
 	Rows                bool        `json:"rows" mapstructure:"rows"`
 
-	QueryLimits  *QueryLimits   `json:"query_limits,omitempty" mapstructure:"query_limits"`
-	UnusedFields map[string]any `json:"-" mapstructure:",remain"`
+	QueryLimits *QueryLimits `json:"query_limits,omitempty" mapstructure:"query_limits"`
+	// ExactMeasures is the resolved set of metrics view measures computed with their exact_expression (see ExactMeasureSet).
+	// The executor resolves it once per query before any rewrite, and queries derived from it (totals, two-phase base queries, Druid TopN inner queries, filter subqueries) copy it,
+	// so that every part of a query computes a measure with the same precision. It is derived from the measures' Exact flags and is not part of the query's wire format.
+	ExactMeasures map[string]bool `json:"-" mapstructure:"-"`
+	UnusedFields  map[string]any  `json:"-" mapstructure:",remain"`
 }
 
 type Dimension struct {
@@ -50,6 +54,10 @@ type DimensionComputeTimeFloor struct {
 type Measure struct {
 	Name    string          `json:"name,omitempty" mapstructure:"name"`
 	Compute *MeasureCompute `json:"compute,omitempty" mapstructure:"compute"`
+	// Exact computes the measure with its exact_expression instead of its (approximate) expression.
+	// A measure flagged anywhere in a query (including in a filter subquery) is computed exactly everywhere in it; a derived measure is calculated from the measures as the query computes them.
+	// It is a no-op for measures without an exact_expression, which only simple measures define. See ExactMeasureSet.
+	Exact bool `json:"exact,omitempty" mapstructure:"exact"`
 }
 
 type MeasureCompute struct {
@@ -644,6 +652,10 @@ const QueryJSONSchema = `
         "compute": {
           "$ref": "#/$defs/MeasureCompute",
           "description": "Optionally configure a derived measure, such as a comparison."
+        },
+        "exact": {
+          "type": "boolean",
+          "description": "Compute the measure with its exact_expression when the metrics view defines one (slower). Defaults to false (approximate)."
         }
       },
       "required": ["name"]
