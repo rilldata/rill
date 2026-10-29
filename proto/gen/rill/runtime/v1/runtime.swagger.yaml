@@ -4644,6 +4644,17 @@ definitions:
         type: string
       queryForAttributes:
         type: object
+      exportAttach:
+        type: boolean
+        description: If true, the query's result is exported and attached to email notifications for failed checks (only supported for query-based alerts).
+      exportFormat:
+        $ref: '#/definitions/v1ExportFormat'
+        description: Format of the attached export.
+      exportIncludeHeader:
+        type: boolean
+      exportLimit:
+        type: string
+        format: uint64
       notifyOnRecover:
         type: boolean
       notifyOnFail:
