@@ -739,7 +739,7 @@ _[number]_ - Maximum number of tokens to generate in the completion (default: 81
 
 ### `reasoning_effort`
 
-_[string]_ - Constrains effort on reasoning for reasoning models (e.g., 'low', 'medium', 'high')
+_[string]_ - Constrains effort on reasoning for reasoning models (e.g., 'low', 'medium', 'high'). Set this when using a model that reasons by default, since Rill otherwise sends a temperature of 0.1, which reasoning models reject.
 
 ### `base_url`
 
@@ -786,11 +786,15 @@ _[number]_ - Maximum number of tokens in the response (e.g., 8192)
 
 ### `temperature`
 
-_[number]_ - Sampling temperature to use (e.g., 0.0)
+_[number]_ - Sampling temperature to use (e.g., 0.0). Defaults to the model's default. Leave unset for models that don't support it, such as Claude Opus 4.7 and later.
 
 ### `base_url`
 
 _[string]_ - The base URL for the Claude API
+
+### `prompt_caching`
+
+_[boolean]_ - Cache the tools, system prompt, and conversation between requests (default false). Cache reads cost a fraction of the input price, which typically lowers cost for AI chat, but cache writes cost more than the input price.
 
 ```yaml
 # Example: Claude connector configuration
@@ -828,7 +832,7 @@ _[number]_ - Maximum number of tokens in the response (e.g., 8192)
 
 ### `temperature`
 
-_[number]_ - Sampling temperature to use (0.0-2.0)
+_[number]_ - Sampling temperature to use (0.0-2.0). Defaults to the model's default, which Google recommends keeping for Gemini 3 models.
 
 ### `top_p`
 

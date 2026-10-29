@@ -1319,7 +1319,7 @@ func (s *Session) Complete(ctx context.Context, name string, out any, opts *Comp
 		// TODO: For durable execution, add messages from current scope.
 
 		// Telemetry
-		var iterations, truncations, inputTokens, outputTokens, cachedInputTokens int
+		var iterations, truncations, inputTokens, outputTokens, cachedInputTokens, cacheWriteInputTokens int
 		var provider string
 		s.logger.Debug("completion started",
 			zap.Int("initial_messages", len(messages)),
@@ -1354,13 +1354,15 @@ func (s *Session) Complete(ctx context.Context, name string, out any, opts *Comp
 				attribute.Int("input_tokens", inputTokens),
 				attribute.Int("output_tokens", outputTokens),
 				attribute.Int("cached_input_tokens", cachedInputTokens),
+				attribute.Int("cache_write_input_tokens", cacheWriteInputTokens),
 				attribute.String("provider", provider),
 			)
 
 			// Emit billable token metrics. Tagged with the request source, the LLM provider, and whether the completion used
 			// the Rill-managed AI connector, so the billable scope is decided downstream in SQL (emitted for every completion,
 			// unlike tool_call). Values are reported as the provider returns them; cached_input_tokens is emitted separately
-			// so billing can price cached input at the cheaper rate (its relationship to input_tokens is provider-specific).
+			// so billing can price cached input at the cheaper rate (its relationship to input_tokens is provider-specific),
+			// and cache_write_input_tokens so billing can price cache writes at their premium rate.
 			source := attribute.String("source", string(runtime.RequestSourceFromContext(ctx)))
 			managedAI := attribute.Bool("managed_ai", s.managedAI)
 			providerAttr := attribute.String("provider", provider)
@@ -1372,6 +1374,9 @@ func (s *Session) Complete(ctx context.Context, name string, out any, opts *Comp
 			}
 			if cachedInputTokens > 0 {
 				s.activity.RecordMetric(ctx, "cached_input_tokens", float64(cachedInputTokens), source, managedAI, providerAttr)
+			}
+			if cacheWriteInputTokens > 0 {
+				s.activity.RecordMetric(ctx, "cache_write_input_tokens", float64(cacheWriteInputTokens), source, managedAI, providerAttr)
 			}
 		}()
 
@@ -1415,6 +1420,7 @@ func (s *Session) Complete(ctx context.Context, name string, out any, opts *Comp
 				inputTokens += res.InputTokens
 				outputTokens += res.OutputTokens
 				cachedInputTokens += res.CachedInputTokens
+				cacheWriteInputTokens += res.CacheWriteInputTokens
 				if res.Provider != "" {
 					provider = res.Provider
 				}
@@ -1456,6 +1462,13 @@ func (s *Session) Complete(ctx context.Context, name string, out any, opts *Comp
 			var loaded []string
 			for _, block := range res.Message.Content {
 				switch block := block.BlockType.(type) {
+				case *aiv1.ContentBlock_Reasoning:
+					// Some providers require the reasoning to be passed back within the tool call loop, so keep it for the next iterations.
+					// It isn't added to the session, since it's only needed until the loop completes.
+					messages = append(messages, &aiv1.CompletionMessage{
+						Role:    string(RoleAssistant),
+						Content: []*aiv1.ContentBlock{{BlockType: block}},
+					})
 				case *aiv1.ContentBlock_Text:
 					msg := s.AddMessage(&AddMessageOptions{
 						Role:        RoleAssistant,
@@ -1543,6 +1556,8 @@ func (s *Session) Complete(ctx context.Context, name string, out any, opts *Comp
 				} else if outputSchema != nil {
 					outVal = json.RawMessage(block.Text)
 				}
+			case *aiv1.ContentBlock_Reasoning:
+				// Not needed after the loop completes.
 			default:
 				return nil, fmt.Errorf("unexpected result block type: %T", block)
 			}
@@ -1790,6 +1805,14 @@ func maybeTruncateMessages(messages []*aiv1.CompletionMessage) []*aiv1.Completio
 			}
 		}
 		return false
+	})
+
+	// Remove reasoning blocks, since providers that require them (e.g. Claude) reject them after the history they were produced from has changed.
+	// Removing all of them is allowed; removing only some of them is not.
+	result = slices.DeleteFunc(result, func(msg *aiv1.CompletionMessage) bool {
+		return slices.ContainsFunc(msg.Content, func(block *aiv1.ContentBlock) bool {
+			return block.GetReasoning() != nil
+		})
 	})
 
 	return result
