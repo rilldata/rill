@@ -29,7 +29,7 @@ import {
 import { createAndExpression } from "./filter-utils";
 import { TDDChart } from "../time-dimension-details/types";
 import {
-  isGrainAllowed,
+  getAvailableTimeGrains,
   V1TimeGrainToAlias,
   V1TimeGrainToOrder,
 } from "@rilldata/web-common/lib/time/new-grains";
@@ -96,9 +96,12 @@ function getRillDefaultExploreTimeState(
     timeRangeSummary,
   );
 
-  const interval = isGrainAllowed(grainForRange, smallestTimeGrain)
-    ? grainForRange
-    : smallestTimeGrain;
+  // Adaptive mode re-derives the grain once the range is resolved; this is the placeholder until then.
+  const availableTimeGrains = getAvailableTimeGrains(metricsViewSpec);
+  const interval =
+    grainForRange && availableTimeGrains.includes(grainForRange)
+      ? grainForRange
+      : (availableTimeGrains[0] ?? smallestTimeGrain);
 
   return {
     selectedTimeRange: {

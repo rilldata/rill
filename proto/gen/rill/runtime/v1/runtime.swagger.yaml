@@ -7335,6 +7335,13 @@ definitions:
         description: |-
           The smallest time grain that can be queried for.
           This can be useful to set if the time_dimension is not available below a certain granularity.
+      timeGrains:
+        type: array
+        items:
+          $ref: '#/definitions/v1TimeGrain'
+        description: |-
+          Time grains offered by dashboards for bucketing the time dimension, sorted from fine to coarse.
+          Empty means the standard grains at or above smallest_time_grain.
       watermarkExpression:
         type: string
         description: Expression to evaluate a watermark for the metrics view. If not set, the watermark defaults to max(time_dimension).
@@ -9000,7 +9007,21 @@ definitions:
       - TIME_GRAIN_MONTH
       - TIME_GRAIN_QUARTER
       - TIME_GRAIN_YEAR
+      - TIME_GRAIN_5_MINUTE
+      - TIME_GRAIN_10_MINUTE
+      - TIME_GRAIN_15_MINUTE
+      - TIME_GRAIN_30_MINUTE
+      - TIME_GRAIN_2_HOUR
+      - TIME_GRAIN_3_HOUR
+      - TIME_GRAIN_4_HOUR
+      - TIME_GRAIN_6_HOUR
+      - TIME_GRAIN_8_HOUR
+      - TIME_GRAIN_12_HOUR
     default: TIME_GRAIN_UNSPECIFIED
+    description: |2-
+       - TIME_GRAIN_5_MINUTE: Multiples of a base grain. They are only used to bucket time series (not as the smallest grain, for rollups or for snapping),
+      and each multiple divides its parent unit so buckets nest inside hours and days and align to local midnight.
+      The numeric values are not the grain order: compare grains by duration, never by enum value.
   v1TimeRange:
     type: object
     properties:

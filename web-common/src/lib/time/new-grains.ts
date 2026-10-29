@@ -1,11 +1,15 @@
 import { reverseMap } from "@rilldata/web-common/lib/map-utils.ts";
 import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
-import { V1TimeGrain } from "@rilldata/web-common/runtime-client/gen/index.schemas";
+import {
+  V1TimeGrain,
+  type V1MetricsViewSpec,
+} from "@rilldata/web-common/runtime-client/gen/index.schemas";
 import type { DateTime, DateTimeUnit, Interval } from "luxon";
 
 const MAX_BUCKETS = 1500;
 
-type Order = 0 | 1 | 2 | 3 | 4 | 5 | 6 | typeof Infinity;
+/** Position of a grain in `aggregationGrainOrder`; larger is coarser. */
+type Order = number;
 
 export type TimeGrainAlias =
   | "ms"
@@ -63,25 +67,100 @@ export function getAllowedEndingGrains(
   return getSmallerGrainsFromOrders(order, getGrainOrder(smallestTimeGrain));
 }
 
+/**
+ * Every grain a time series can be bucketed by, from fine to coarse.
+ * Multiples such as TIME_GRAIN_10_MINUTE sit between their base unit and the next standard grain.
+ * A grain's index in this list is its order.
+ */
+export const aggregationGrainOrder: V1TimeGrain[] = [
+  V1TimeGrain.TIME_GRAIN_MINUTE,
+  V1TimeGrain.TIME_GRAIN_5_MINUTE,
+  V1TimeGrain.TIME_GRAIN_10_MINUTE,
+  V1TimeGrain.TIME_GRAIN_15_MINUTE,
+  V1TimeGrain.TIME_GRAIN_30_MINUTE,
+  V1TimeGrain.TIME_GRAIN_HOUR,
+  V1TimeGrain.TIME_GRAIN_2_HOUR,
+  V1TimeGrain.TIME_GRAIN_3_HOUR,
+  V1TimeGrain.TIME_GRAIN_4_HOUR,
+  V1TimeGrain.TIME_GRAIN_6_HOUR,
+  V1TimeGrain.TIME_GRAIN_8_HOUR,
+  V1TimeGrain.TIME_GRAIN_12_HOUR,
+  V1TimeGrain.TIME_GRAIN_DAY,
+  V1TimeGrain.TIME_GRAIN_WEEK,
+  V1TimeGrain.TIME_GRAIN_MONTH,
+  V1TimeGrain.TIME_GRAIN_QUARTER,
+  V1TimeGrain.TIME_GRAIN_YEAR,
+];
+
 export const V1TimeGrainToOrder: Record<V1TimeGrain, Order> = {
   [V1TimeGrain.TIME_GRAIN_UNSPECIFIED]: 0,
   [V1TimeGrain.TIME_GRAIN_MILLISECOND]: 0,
   [V1TimeGrain.TIME_GRAIN_SECOND]: 0,
   [V1TimeGrain.TIME_GRAIN_MINUTE]: 0,
-  [V1TimeGrain.TIME_GRAIN_HOUR]: 1,
-  [V1TimeGrain.TIME_GRAIN_DAY]: 2,
-  [V1TimeGrain.TIME_GRAIN_WEEK]: 3,
-  [V1TimeGrain.TIME_GRAIN_MONTH]: 4,
-  [V1TimeGrain.TIME_GRAIN_QUARTER]: 5,
-  [V1TimeGrain.TIME_GRAIN_YEAR]: 6,
+  [V1TimeGrain.TIME_GRAIN_5_MINUTE]: 1,
+  [V1TimeGrain.TIME_GRAIN_10_MINUTE]: 2,
+  [V1TimeGrain.TIME_GRAIN_15_MINUTE]: 3,
+  [V1TimeGrain.TIME_GRAIN_30_MINUTE]: 4,
+  [V1TimeGrain.TIME_GRAIN_HOUR]: 5,
+  [V1TimeGrain.TIME_GRAIN_2_HOUR]: 6,
+  [V1TimeGrain.TIME_GRAIN_3_HOUR]: 7,
+  [V1TimeGrain.TIME_GRAIN_4_HOUR]: 8,
+  [V1TimeGrain.TIME_GRAIN_6_HOUR]: 9,
+  [V1TimeGrain.TIME_GRAIN_8_HOUR]: 10,
+  [V1TimeGrain.TIME_GRAIN_12_HOUR]: 11,
+  [V1TimeGrain.TIME_GRAIN_DAY]: 12,
+  [V1TimeGrain.TIME_GRAIN_WEEK]: 13,
+  [V1TimeGrain.TIME_GRAIN_MONTH]: 14,
+  [V1TimeGrain.TIME_GRAIN_QUARTER]: 15,
+  [V1TimeGrain.TIME_GRAIN_YEAR]: 16,
 };
 
+/** Number of base units in one bucket of the grain: 1 for standard grains, 10 for TIME_GRAIN_10_MINUTE. */
+export const V1TimeGrainToCount: Record<V1TimeGrain, number> = {
+  [V1TimeGrain.TIME_GRAIN_UNSPECIFIED]: 1,
+  [V1TimeGrain.TIME_GRAIN_MILLISECOND]: 1,
+  [V1TimeGrain.TIME_GRAIN_SECOND]: 1,
+  [V1TimeGrain.TIME_GRAIN_MINUTE]: 1,
+  [V1TimeGrain.TIME_GRAIN_5_MINUTE]: 5,
+  [V1TimeGrain.TIME_GRAIN_10_MINUTE]: 10,
+  [V1TimeGrain.TIME_GRAIN_15_MINUTE]: 15,
+  [V1TimeGrain.TIME_GRAIN_30_MINUTE]: 30,
+  [V1TimeGrain.TIME_GRAIN_HOUR]: 1,
+  [V1TimeGrain.TIME_GRAIN_2_HOUR]: 2,
+  [V1TimeGrain.TIME_GRAIN_3_HOUR]: 3,
+  [V1TimeGrain.TIME_GRAIN_4_HOUR]: 4,
+  [V1TimeGrain.TIME_GRAIN_6_HOUR]: 6,
+  [V1TimeGrain.TIME_GRAIN_8_HOUR]: 8,
+  [V1TimeGrain.TIME_GRAIN_12_HOUR]: 12,
+  [V1TimeGrain.TIME_GRAIN_DAY]: 1,
+  [V1TimeGrain.TIME_GRAIN_WEEK]: 1,
+  [V1TimeGrain.TIME_GRAIN_MONTH]: 1,
+  [V1TimeGrain.TIME_GRAIN_QUARTER]: 1,
+  [V1TimeGrain.TIME_GRAIN_YEAR]: 1,
+};
+
+/** Whether the grain is a standard unit rather than a multiple of one. */
+export function isStandardGrain(grain: V1TimeGrain): boolean {
+  return V1TimeGrainToCount[grain] === 1;
+}
+
+/** The rill-time alias of the grain's base unit. */
 export const V1TimeGrainToAlias: Record<V1TimeGrain, TimeGrainAlias> = {
   [V1TimeGrain.TIME_GRAIN_UNSPECIFIED]: "m",
   [V1TimeGrain.TIME_GRAIN_MILLISECOND]: "ms",
   [V1TimeGrain.TIME_GRAIN_SECOND]: "s",
   [V1TimeGrain.TIME_GRAIN_MINUTE]: "m",
+  [V1TimeGrain.TIME_GRAIN_5_MINUTE]: "m",
+  [V1TimeGrain.TIME_GRAIN_10_MINUTE]: "m",
+  [V1TimeGrain.TIME_GRAIN_15_MINUTE]: "m",
+  [V1TimeGrain.TIME_GRAIN_30_MINUTE]: "m",
   [V1TimeGrain.TIME_GRAIN_HOUR]: "h",
+  [V1TimeGrain.TIME_GRAIN_2_HOUR]: "h",
+  [V1TimeGrain.TIME_GRAIN_3_HOUR]: "h",
+  [V1TimeGrain.TIME_GRAIN_4_HOUR]: "h",
+  [V1TimeGrain.TIME_GRAIN_6_HOUR]: "h",
+  [V1TimeGrain.TIME_GRAIN_8_HOUR]: "h",
+  [V1TimeGrain.TIME_GRAIN_12_HOUR]: "h",
   [V1TimeGrain.TIME_GRAIN_DAY]: "D",
   [V1TimeGrain.TIME_GRAIN_WEEK]: "W",
   [V1TimeGrain.TIME_GRAIN_MONTH]: "M",
@@ -89,12 +168,23 @@ export const V1TimeGrainToAlias: Record<V1TimeGrain, TimeGrainAlias> = {
   [V1TimeGrain.TIME_GRAIN_YEAR]: "Y",
 };
 
+/** The luxon unit of the grain's base unit; combine with `V1TimeGrainToCount` for multiples. */
 export const V1TimeGrainToDateTimeUnit: Record<V1TimeGrain, DateTimeUnit> = {
   [V1TimeGrain.TIME_GRAIN_UNSPECIFIED]: "minute",
   [V1TimeGrain.TIME_GRAIN_MILLISECOND]: "millisecond",
   [V1TimeGrain.TIME_GRAIN_SECOND]: "second",
   [V1TimeGrain.TIME_GRAIN_MINUTE]: "minute",
+  [V1TimeGrain.TIME_GRAIN_5_MINUTE]: "minute",
+  [V1TimeGrain.TIME_GRAIN_10_MINUTE]: "minute",
+  [V1TimeGrain.TIME_GRAIN_15_MINUTE]: "minute",
+  [V1TimeGrain.TIME_GRAIN_30_MINUTE]: "minute",
   [V1TimeGrain.TIME_GRAIN_HOUR]: "hour",
+  [V1TimeGrain.TIME_GRAIN_2_HOUR]: "hour",
+  [V1TimeGrain.TIME_GRAIN_3_HOUR]: "hour",
+  [V1TimeGrain.TIME_GRAIN_4_HOUR]: "hour",
+  [V1TimeGrain.TIME_GRAIN_6_HOUR]: "hour",
+  [V1TimeGrain.TIME_GRAIN_8_HOUR]: "hour",
+  [V1TimeGrain.TIME_GRAIN_12_HOUR]: "hour",
   [V1TimeGrain.TIME_GRAIN_DAY]: "day",
   [V1TimeGrain.TIME_GRAIN_WEEK]: "week",
   [V1TimeGrain.TIME_GRAIN_MONTH]: "month",
@@ -102,7 +192,95 @@ export const V1TimeGrainToDateTimeUnit: Record<V1TimeGrain, DateTimeUnit> = {
   [V1TimeGrain.TIME_GRAIN_YEAR]: "year",
 };
 
-export const DateTimeUnitToV1TimeGrain = reverseMap(V1TimeGrainToDateTimeUnit);
+/** Luxon unit to the standard grain of that unit. */
+export const DateTimeUnitToV1TimeGrain = reverseMap(
+  Object.fromEntries(
+    Object.entries(V1TimeGrainToDateTimeUnit).filter(([grain]) =>
+      isStandardGrain(grain as V1TimeGrain),
+    ),
+  ) as Record<V1TimeGrain, DateTimeUnit>,
+);
+
+/**
+ * The grain's token in URLs (`tg=10m`), explore presets, component `time_filters` and the metrics
+ * resolver (`grain: "10m"`): the luxon unit name for standard grains and `<n>m` or `<n>h` for multiples.
+ */
+export const V1TimeGrainToToken: Record<V1TimeGrain, string> = {
+  ...V1TimeGrainToDateTimeUnit,
+  [V1TimeGrain.TIME_GRAIN_5_MINUTE]: "5m",
+  [V1TimeGrain.TIME_GRAIN_10_MINUTE]: "10m",
+  [V1TimeGrain.TIME_GRAIN_15_MINUTE]: "15m",
+  [V1TimeGrain.TIME_GRAIN_30_MINUTE]: "30m",
+  [V1TimeGrain.TIME_GRAIN_2_HOUR]: "2h",
+  [V1TimeGrain.TIME_GRAIN_3_HOUR]: "3h",
+  [V1TimeGrain.TIME_GRAIN_4_HOUR]: "4h",
+  [V1TimeGrain.TIME_GRAIN_6_HOUR]: "6h",
+  [V1TimeGrain.TIME_GRAIN_8_HOUR]: "8h",
+  [V1TimeGrain.TIME_GRAIN_12_HOUR]: "12h",
+};
+
+export const TokenToV1TimeGrain: Record<string, V1TimeGrain> = {
+  ...DateTimeUnitToV1TimeGrain,
+  ...reverseMap(
+    Object.fromEntries(
+      Object.entries(V1TimeGrainToToken).filter(
+        ([grain]) => !isStandardGrain(grain as V1TimeGrain),
+      ),
+    ) as Record<V1TimeGrain, string>,
+  ),
+} as Record<string, V1TimeGrain>;
+
+/** Floors a time to the start of its bucket. Multiples floor on the wall clock within the hour or day, like the runtime. */
+export function floorToGrain<IsValid extends boolean>(
+  dt: DateTime<IsValid>,
+  grain: V1TimeGrain,
+): DateTime<IsValid> {
+  const unit = V1TimeGrainToDateTimeUnit[grain];
+  const count = V1TimeGrainToCount[grain];
+  const floored = dt.startOf(unit);
+  if (count === 1) return floored;
+  if (unit === "minute") {
+    return floored.set({ minute: floored.minute - (floored.minute % count) });
+  }
+  return floored.set({ hour: floored.hour - (floored.hour % count) });
+}
+
+/** Adds `n` buckets of the grain. */
+export function plusGrain<IsValid extends boolean>(
+  dt: DateTime<IsValid>,
+  grain: V1TimeGrain,
+  n = 1,
+): DateTime<IsValid> {
+  return dt.plus({
+    [V1TimeGrainToDateTimeUnit[grain]]: n * V1TimeGrainToCount[grain],
+  });
+}
+
+/** Number of buckets of the grain in the interval. */
+export function grainBucketCount(
+  interval: Interval<true>,
+  grain: V1TimeGrain,
+): number {
+  return (
+    interval.length(V1TimeGrainToDateTimeUnit[grain]) /
+    V1TimeGrainToCount[grain]
+  );
+}
+
+/**
+ * The grains a metrics view offers in grain pickers: its `time_grains` when declared,
+ * otherwise the standard grains at or above `smallest_time_grain`.
+ */
+export function getAvailableTimeGrains(
+  metricsViewSpec:
+    | Pick<V1MetricsViewSpec, "timeGrains" | "smallestTimeGrain">
+    | undefined,
+): V1TimeGrain[] {
+  if (metricsViewSpec?.timeGrains?.length) return metricsViewSpec.timeGrains;
+  return allowedAggregationGrains.filter((grain) =>
+    isGrainAllowed(grain, metricsViewSpec?.smallestTimeGrain),
+  );
+}
 
 export function grainAliasToDateTimeUnit(alias: TimeGrainAlias): DateTimeUnit {
   const v1TimeGrain = GrainAliasToV1TimeGrain[alias];
@@ -112,19 +290,12 @@ export function grainAliasToDateTimeUnit(alias: TimeGrainAlias): DateTimeUnit {
   return V1TimeGrainToDateTimeUnit[v1TimeGrain];
 }
 
-// We prevent users from aggregating by second or millisecond
-export const allowedAggregationGrains = [
-  V1TimeGrain.TIME_GRAIN_MINUTE,
-  V1TimeGrain.TIME_GRAIN_HOUR,
-  V1TimeGrain.TIME_GRAIN_DAY,
-  V1TimeGrain.TIME_GRAIN_WEEK,
-  V1TimeGrain.TIME_GRAIN_MONTH,
-  V1TimeGrain.TIME_GRAIN_QUARTER,
-  V1TimeGrain.TIME_GRAIN_YEAR,
-];
-
-const ALLOWABLE_AGGREGATION_UNITS: DateTimeUnit[] =
-  allowedAggregationGrains.map((grain) => V1TimeGrainToDateTimeUnit[grain]);
+/**
+ * The standard aggregation grains, which a metrics view offers unless it declares `time_grains`.
+ * Seconds and milliseconds are never offered.
+ */
+export const allowedAggregationGrains =
+  aggregationGrainOrder.filter(isStandardGrain);
 
 export const GrainAliasToOrder: Record<TimeGrainAlias, Order> = {
   ms: V1TimeGrainToOrder[V1TimeGrain.TIME_GRAIN_MILLISECOND],
@@ -206,15 +377,17 @@ export function getGrainOrder(
 }
 
 export function getAllowedGrainsFromOrder(order: Order) {
-  return allowedAggregationGrains.slice(order);
+  return aggregationGrainOrder.slice(order).filter(isStandardGrain);
 }
 
 export function getLargerGrainsFromOrder(order: Order) {
-  return allowedAggregationGrains.slice(order + 1);
+  return aggregationGrainOrder.slice(order + 1).filter(isStandardGrain);
 }
 
 export function getSmallerGrainsFromOrders(maxOrder: Order, minOrder = 0) {
-  return allowedAggregationGrains.slice(minOrder, maxOrder + 1);
+  return aggregationGrainOrder
+    .slice(minOrder, maxOrder + 1)
+    .filter(isStandardGrain);
 }
 
 export function getOptionsFromSmallestToLargest(
@@ -320,6 +493,13 @@ export function getLowerOrderGrain(grain: V1TimeGrain): V1TimeGrain {
       return V1TimeGrain.TIME_GRAIN_MONTH;
     case V1TimeGrain.TIME_GRAIN_YEAR:
       return V1TimeGrain.TIME_GRAIN_MONTH;
+    case V1TimeGrain.TIME_GRAIN_2_HOUR:
+    case V1TimeGrain.TIME_GRAIN_3_HOUR:
+    case V1TimeGrain.TIME_GRAIN_4_HOUR:
+    case V1TimeGrain.TIME_GRAIN_6_HOUR:
+    case V1TimeGrain.TIME_GRAIN_8_HOUR:
+    case V1TimeGrain.TIME_GRAIN_12_HOUR:
+      return V1TimeGrain.TIME_GRAIN_HOUR;
     default:
       return V1TimeGrain.TIME_GRAIN_MINUTE;
   }
@@ -358,7 +538,17 @@ export const minTimeGrainToDefaultTimeRange: Record<V1TimeGrain, string> = {
   [V1TimeGrain.TIME_GRAIN_MILLISECOND]: "24h as of latest/h+1h",
   [V1TimeGrain.TIME_GRAIN_SECOND]: "24h as of latest/h+1h",
   [V1TimeGrain.TIME_GRAIN_MINUTE]: "24h as of latest/h+1h",
+  [V1TimeGrain.TIME_GRAIN_5_MINUTE]: "24h as of latest/h+1h",
+  [V1TimeGrain.TIME_GRAIN_10_MINUTE]: "24h as of latest/h+1h",
+  [V1TimeGrain.TIME_GRAIN_15_MINUTE]: "24h as of latest/h+1h",
+  [V1TimeGrain.TIME_GRAIN_30_MINUTE]: "24h as of latest/h+1h",
   [V1TimeGrain.TIME_GRAIN_HOUR]: "24h as of latest/h",
+  [V1TimeGrain.TIME_GRAIN_2_HOUR]: "24h as of latest/h",
+  [V1TimeGrain.TIME_GRAIN_3_HOUR]: "24h as of latest/h",
+  [V1TimeGrain.TIME_GRAIN_4_HOUR]: "24h as of latest/h",
+  [V1TimeGrain.TIME_GRAIN_6_HOUR]: "24h as of latest/h",
+  [V1TimeGrain.TIME_GRAIN_8_HOUR]: "24h as of latest/h",
+  [V1TimeGrain.TIME_GRAIN_12_HOUR]: "24h as of latest/h",
   [V1TimeGrain.TIME_GRAIN_DAY]: "7d as of latest/d",
   [V1TimeGrain.TIME_GRAIN_WEEK]: "4w as of latest/w",
   [V1TimeGrain.TIME_GRAIN_MONTH]: "3M as of latest/M",
@@ -383,33 +573,35 @@ export function getSmallestGrain(grains: (V1TimeGrain | undefined)[]) {
   );
 }
 
+/**
+ * The grains of `availableGrains` (by default the standard grains) that bucket the interval into a sensible
+ * number of points, excluding grains finer than `minTimeGrain`.
+ * Falls back to the finest usable grain when none fits.
+ */
 export function allowedGrainsForInterval(
   interval: Interval<true> | undefined,
   minTimeGrain?: V1TimeGrain,
+  availableGrains: V1TimeGrain[] = allowedAggregationGrains,
 ): V1TimeGrain[] {
   minTimeGrain = minTimeGrain ?? V1TimeGrain.TIME_GRAIN_MINUTE;
   if (!interval) return [];
 
-  const validGrains = ALLOWABLE_AGGREGATION_UNITS.filter((unit) => {
-    return isGrainAllowed(unit, minTimeGrain);
+  const validGrains = availableGrains.filter((grain) =>
+    isGrainAllowed(grain, minTimeGrain),
+  );
+
+  const allowedGrains = validGrains.filter((grain) => {
+    const bucketCount = grainBucketCount(interval, grain);
+    return (
+      bucketCount >= 1 &&
+      (bucketCount <= MAX_BUCKETS || grain === V1TimeGrain.TIME_GRAIN_YEAR)
+    );
   });
-
-  const allowedGrains = validGrains
-    .filter((unit) => {
-      const grain = DateTimeUnitToV1TimeGrain[unit];
-      if (!grain) return false;
-      const bucketCount = interval.length(unit);
-
-      return (
-        bucketCount >= 1 && (bucketCount <= MAX_BUCKETS || unit === "year")
-      );
-    })
-    .map((unit) => DateTimeUnitToV1TimeGrain[unit]!);
 
   if (allowedGrains.length) {
     return allowedGrains;
   } else {
-    return [minTimeGrain];
+    return [validGrains[0] ?? minTimeGrain];
   }
 }
 
@@ -481,5 +673,11 @@ export function translateGrainNamePlural(grain: string): string {
  */
 export function translateV1TimeGrain(grain: V1TimeGrain): string {
   const unit = V1TimeGrainToDateTimeUnit[grain];
+  const count = V1TimeGrainToCount[grain];
+  if (count > 1) {
+    return unit === "hour"
+      ? m.time_grain_n_hours({ count })
+      : m.time_grain_n_minutes({ count });
+  }
   return translateGrainName(unit);
 }

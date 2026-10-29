@@ -2,6 +2,7 @@ import type { ExploreState } from "@rilldata/web-common/features/dashboards/stor
 import { parseRillTime } from "@rilldata/web-common/features/dashboards/url-state/time-ranges/parser";
 import type { RillTime } from "@rilldata/web-common/features/dashboards/url-state/time-ranges/RillTime";
 import { getAdaptiveTimeGrain } from "@rilldata/web-common/lib/time/grains";
+import { getAvailableTimeGrains } from "@rilldata/web-common/lib/time/new-grains";
 import {
   V1TimeGrain,
   type V1MetricsViewSpec,
@@ -44,6 +45,7 @@ export function applyAdaptiveTimeGrain(
     interval,
     metricsViewSpec.smallestTimeGrain || V1TimeGrain.TIME_GRAIN_MINUTE,
     parsed,
+    getAvailableTimeGrains(metricsViewSpec),
   );
   if (grain) timeRange.interval = grain;
 }

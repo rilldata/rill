@@ -4,6 +4,7 @@ import (
 	"time"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
+	"github.com/rilldata/rill/runtime/pkg/timeutil"
 )
 
 // grainOrder defines the numeric ordering of grains for derivability checks and rollup selection.
@@ -40,6 +41,12 @@ var grainBranch = map[runtimev1.TimeGrain]int{
 	runtimev1.TimeGrain_TIME_GRAIN_YEAR:        branchCalendar,
 }
 
+// branchOf returns the branch of a grain. Multiples such as TIME_GRAIN_10_MINUTE share the branch of their base unit.
+func branchOf(grain runtimev1.TimeGrain) int {
+	unit, _ := timeutil.TimeGrainBase(grain)
+	return grainBranch[unit]
+}
+
 // grainDerivableFrom returns true if queryGrain can be computed by re-aggregating data stored at rollupGrain.
 //
 // The grain hierarchy has two branches diverging from day:
@@ -50,6 +57,7 @@ var grainBranch = map[runtimev1.TimeGrain]int{
 // A coarser grain is derivable from a finer grain only if they are on the
 // same branch (or one is sub-day/day and the other is on a branch rooted at day).
 // For example, month is derivable from day, but not from week.
+// Sub-day buckets must also tile exactly: 10-minute buckets are derivable from a minute rollup but not from a 15-minute one.
 func grainDerivableFrom(queryGrain, rollupGrain runtimev1.TimeGrain) bool {
 	if queryGrain == runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED || rollupGrain == runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED {
 		return false
@@ -58,16 +66,21 @@ func grainDerivableFrom(queryGrain, rollupGrain runtimev1.TimeGrain) bool {
 		return true
 	}
 
-	qOrder := grainOrder[queryGrain]
-	rOrder := grainOrder[rollupGrain]
+	q := timeutil.TimeGrainFromAPI(queryGrain)
+	r := timeutil.TimeGrainFromAPI(rollupGrain)
 
-	// Query grain must be coarser (higher order) than rollup grain
-	if qOrder <= rOrder {
+	// Query grain must be coarser than rollup grain
+	if q.Compare(r) <= 0 {
 		return false
 	}
 
-	qBranch := grainBranch[queryGrain]
-	rBranch := grainBranch[rollupGrain]
+	qBranch := branchOf(queryGrain)
+	rBranch := branchOf(rollupGrain)
+
+	// Both sub-day: the rollup bucket must divide the query bucket
+	if qBranch == branchSubDay && rBranch == branchSubDay {
+		return q.ApproxDuration()%r.ApproxDuration() == 0
+	}
 
 	// Same branch: always derivable (finer -> coarser)
 	if qBranch == rBranch {

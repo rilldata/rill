@@ -55,7 +55,7 @@ export class DashboardState extends Message<DashboardState> {
    *
    * @generated from field: rill.runtime.v1.TimeGrain time_grain = 3;
    */
-  timeGrain = TimeGrain.UNSPECIFIED;
+  timeGrain = TimeGrain.TIME_GRAIN_UNSPECIFIED;
 
   /**
    * @generated from field: rill.ui.v1.DashboardTimeRange compare_time_range = 4;

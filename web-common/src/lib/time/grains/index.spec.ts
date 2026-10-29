@@ -559,3 +559,63 @@ describe("getAdaptiveTimeGrain", () => {
     expect(getAdaptiveTimeGrain(undefined, minute, undefined)).toBeUndefined();
   });
 });
+
+describe("declared time grains", () => {
+  const minute = V1TimeGrain.TIME_GRAIN_MINUTE;
+  const declared = [
+    V1TimeGrain.TIME_GRAIN_10_MINUTE,
+    V1TimeGrain.TIME_GRAIN_HOUR,
+    V1TimeGrain.TIME_GRAIN_DAY,
+  ];
+  function interval(hours: number): Interval<true> {
+    const start = DateTime.fromISO("2024-01-01T00:00:00Z");
+    return Interval.fromDateTimes(
+      start,
+      start.plus({ hours }),
+    ) as Interval<true>;
+  }
+
+  it("adaptive mode only picks declared grains", () => {
+    // Two hours would be minutes by default; 10 minutes gives 12 points instead of 120.
+    expect(getAdaptiveTimeGrain(interval(2), minute, undefined, declared)).toBe(
+      V1TimeGrain.TIME_GRAIN_10_MINUTE,
+    );
+    // Half a year would be weeks by default, but week is not declared.
+    expect(
+      getAdaptiveTimeGrain(interval(24 * 180), minute, undefined, declared),
+    ).toBe(V1TimeGrain.TIME_GRAIN_DAY);
+    // The range's own precision is only kept when it is declared.
+    expect(
+      getAdaptiveTimeGrain(
+        interval(24 * 28),
+        minute,
+        parseRillTime("4W"),
+        declared,
+      ),
+    ).toBe(V1TimeGrain.TIME_GRAIN_DAY);
+    expect(
+      getAdaptiveTimeGrain(undefined, minute, parseRillTime("4W"), declared),
+    ).toBeUndefined();
+  });
+
+  it("falls back to a declared grain when the requested one is not offered", () => {
+    expect(
+      getValidatedTimeGrain(
+        interval(24 * 3),
+        minute,
+        V1TimeGrain.TIME_GRAIN_WEEK,
+        undefined,
+        declared,
+      ),
+    ).toBe(V1TimeGrain.TIME_GRAIN_10_MINUTE);
+    expect(
+      getValidatedTimeGrain(
+        interval(24 * 3),
+        minute,
+        V1TimeGrain.TIME_GRAIN_HOUR,
+        undefined,
+        declared,
+      ),
+    ).toBe(V1TimeGrain.TIME_GRAIN_HOUR);
+  });
+});

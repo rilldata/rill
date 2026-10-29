@@ -71,13 +71,23 @@ func (d *dialect) DateTruncExpr(dim *runtimev1.MetricsViewSpec_Dimension, grain 
 		}
 	}
 
-	specifier := d.ConvertToDateTruncSpecifier(grain)
+	// Multiples such as TIME_GRAIN_10_MINUTE bucket with the dialect's interval function instead of date_trunc.
+	unit, n := timeutil.TimeGrainBase(grain)
+	specifier := d.ConvertToDateTruncSpecifier(unit)
 
 	var expr string
 	if dim.Expression != "" {
 		expr = fmt.Sprintf("(%s)", dim.Expression)
 	} else {
 		expr = d.EscapeIdentifier(dim.Column)
+	}
+
+	if n > 1 {
+		// Multiples bucket with time_bucket, whose origin (2000-01-03 00:00 in the given zone) keeps buckets aligned to local midnight.
+		if tz == "" {
+			return fmt.Sprintf("time_bucket(INTERVAL '%d %s', %s::TIMESTAMP)", n, specifier, expr), nil
+		}
+		return fmt.Sprintf("time_bucket(INTERVAL '%d %s', %s::TIMESTAMPTZ, '%s')", n, specifier, expr, tz), nil
 	}
 
 	var shift string
@@ -123,13 +133,16 @@ func (d *dialect) IntervalSubtract(tsExpr, unitExpr string, grain runtimev1.Time
 func (d *dialect) SelectTimeRangeBins(start, end time.Time, grain runtimev1.TimeGrain, alias string, tz *time.Location, firstDay, firstMonth int) (string, []any, error) {
 	g := timeutil.TimeGrainFromAPI(grain)
 	start = timeutil.TruncateTime(start, g, tz, firstDay, firstMonth)
+	// Multiples such as TIME_GRAIN_10_MINUTE bucket with the dialect's interval function instead of date_trunc.
+	unit, n := timeutil.TimeGrainBase(grain)
+	specifier := d.ConvertToDateTruncSpecifier(unit)
 	// first convert start and end to the target timezone as the application sends UTC representation of the time, so it will send `2024-03-12T18:30:00Z` for the 13th day of March in Asia/Kolkata timezone (`2024-03-13T00:00:00Z`)
 	// then let duckdb range over it and then convert back to the target timezone
-	return fmt.Sprintf("SELECT range AT TIME ZONE '%s' AS %s FROM range('%s'::TIMESTAMPTZ AT TIME ZONE '%s', '%s'::TIMESTAMPTZ AT TIME ZONE '%s', INTERVAL '1 %s')",
+	return fmt.Sprintf("SELECT range AT TIME ZONE '%s' AS %s FROM range('%s'::TIMESTAMPTZ AT TIME ZONE '%s', '%s'::TIMESTAMPTZ AT TIME ZONE '%s', INTERVAL '%d %s')",
 		tz.String(), d.EscapeAlias(alias),
 		start.Format(time.RFC3339), tz.String(),
 		end.Format(time.RFC3339), tz.String(),
-		d.ConvertToDateTruncSpecifier(grain),
+		n, specifier,
 	), nil, nil
 }
 

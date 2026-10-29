@@ -51,7 +51,7 @@ import {
   type V1MetricsViewSpec,
 } from "@rilldata/web-common/runtime-client";
 import { TimeRangePreset } from "@rilldata/web-common/lib/time/types";
-import { V1TimeGrainToDateTimeUnit } from "@rilldata/web-common/lib/time/new-grains";
+import { V1TimeGrainToToken } from "@rilldata/web-common/lib/time/new-grains";
 
 export function convertLegacyStateToExplorePreset(
   legacyState: DashboardState,
@@ -172,7 +172,7 @@ function fromLegacyTimeRangeFields(
   }
   if (legacyState.timeGrain) {
     preset.timeGrain =
-      V1TimeGrainToDateTimeUnit[FromProtoTimeGrainMap[legacyState.timeGrain]];
+      V1TimeGrainToToken[FromProtoTimeGrainMap[legacyState.timeGrain]];
   }
 
   if (legacyState.compareTimeRange?.name) {

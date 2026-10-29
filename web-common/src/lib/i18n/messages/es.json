@@ -2317,6 +2317,8 @@
   "time_grain_millisecond": "milisegundo",
   "time_grain_minute": "minuto",
   "time_grain_minutes": "minutos",
+  "time_grain_n_hours": "{count} horas",
+  "time_grain_n_minutes": "{count} minutos",
   "time_grain_month": "mes",
   "time_grain_months": "meses",
   "time_grain_quarter": "trimestre",

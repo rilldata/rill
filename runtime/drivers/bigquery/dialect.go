@@ -109,7 +109,9 @@ func (d *dialect) DateTruncExpr(dim *runtimev1.MetricsViewSpec_Dimension, grain 
 		}
 	}
 
-	specifier := d.ConvertToDateTruncSpecifier(grain)
+	// Multiples such as TIME_GRAIN_10_MINUTE bucket with the dialect's interval function instead of date_trunc.
+	unit, n := timeutil.TimeGrainBase(grain)
+	specifier := d.ConvertToDateTruncSpecifier(unit)
 	// BigQuery's bare WEEK specifier truncates to Sunday-start weeks. Rill's firstDayOfWeek follows ISO 8601
 	// (1=Monday, 7=Sunday, default 1), so map it to BigQuery's WEEK(<WEEKDAY>) form to keep them aligned.
 	if grain == runtimev1.TimeGrain_TIME_GRAIN_WEEK {
@@ -127,6 +129,18 @@ func (d *dialect) DateTruncExpr(dim *runtimev1.MetricsViewSpec_Dimension, grain 
 	// For DATE columns, explicitly cast to TIMESTAMP first to ensure the result is TIMESTAMP (not DATETIME).
 	if dim.DataType != nil && dim.DataType.Code == runtimev1.Type_CODE_DATE {
 		expr = fmt.Sprintf("TIMESTAMP(%s)", expr)
+	}
+	if n > 1 {
+		// Multiples floor the unit within its parent (minutes within the hour, hours within the day) in the given zone.
+		// TIMESTAMP_BUCKET is anchored on the UTC epoch, so it would misalign hour multiples in zones with a non-hour offset.
+		parent := "DAY"
+		if specifier == "MINUTE" {
+			parent = "HOUR"
+		}
+		if tz == "" {
+			return fmt.Sprintf("TIMESTAMP_ADD(TIMESTAMP_TRUNC(%s, %s), INTERVAL DIV(EXTRACT(%s FROM %s), %d) * %d %s)", expr, parent, specifier, expr, n, n, specifier), nil
+		}
+		return fmt.Sprintf("TIMESTAMP_ADD(TIMESTAMP_TRUNC(%s, %s, '%s'), INTERVAL DIV(EXTRACT(%s FROM %s AT TIME ZONE '%s'), %d) * %d %s)", expr, parent, tz, specifier, expr, tz, n, n, specifier), nil
 	}
 	if tz == "" {
 		if grain == runtimev1.TimeGrain_TIME_GRAIN_YEAR && firstMonthOfYear > 1 {
@@ -160,14 +174,15 @@ func (d *dialect) SelectTimeRangeBins(start, end time.Time, grain runtimev1.Time
 	startStr := start.Format(time.RFC3339)
 	endStr := end.Format(time.RFC3339)
 	tzStr := tz.String()
-	switch grain {
+	unit, n := timeutil.TimeGrainBase(grain)
+	switch unit {
 	case runtimev1.TimeGrain_TIME_GRAIN_MILLISECOND,
 		runtimev1.TimeGrain_TIME_GRAIN_SECOND,
 		runtimev1.TimeGrain_TIME_GRAIN_MINUTE,
 		runtimev1.TimeGrain_TIME_GRAIN_HOUR:
 		return fmt.Sprintf(
-			"SELECT ts AS %s FROM UNNEST(GENERATE_TIMESTAMP_ARRAY(TIMESTAMP '%s', TIMESTAMP '%s', INTERVAL 1 %s)) AS ts WHERE ts < TIMESTAMP '%s'",
-			d.EscapeAlias(alias), startStr, endStr, d.ConvertToDateTruncSpecifier(grain), endStr,
+			"SELECT ts AS %s FROM UNNEST(GENERATE_TIMESTAMP_ARRAY(TIMESTAMP '%s', TIMESTAMP '%s', INTERVAL %d %s)) AS ts WHERE ts < TIMESTAMP '%s'",
+			d.EscapeAlias(alias), startStr, endStr, n, d.ConvertToDateTruncSpecifier(unit), endStr,
 		), nil, nil
 	default:
 		return fmt.Sprintf(

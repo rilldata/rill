@@ -1,7 +1,21 @@
 import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
 import type { TimeUnit } from "vega-lite/types_unstable/timeunit.js";
 
-export const timeGrainToVegaTimeUnitMap: Record<V1TimeGrain, TimeUnit> = {
+// Multiples such as TIME_GRAIN_10_MINUTE have no Vega time unit; their values are already bucketed by the query.
+export const timeGrainToVegaTimeUnitMap: Record<
+  V1TimeGrain,
+  TimeUnit | undefined
+> = {
+  [V1TimeGrain.TIME_GRAIN_5_MINUTE]: undefined,
+  [V1TimeGrain.TIME_GRAIN_10_MINUTE]: undefined,
+  [V1TimeGrain.TIME_GRAIN_15_MINUTE]: undefined,
+  [V1TimeGrain.TIME_GRAIN_30_MINUTE]: undefined,
+  [V1TimeGrain.TIME_GRAIN_2_HOUR]: undefined,
+  [V1TimeGrain.TIME_GRAIN_3_HOUR]: undefined,
+  [V1TimeGrain.TIME_GRAIN_4_HOUR]: undefined,
+  [V1TimeGrain.TIME_GRAIN_6_HOUR]: undefined,
+  [V1TimeGrain.TIME_GRAIN_8_HOUR]: undefined,
+  [V1TimeGrain.TIME_GRAIN_12_HOUR]: undefined,
   [V1TimeGrain.TIME_GRAIN_MILLISECOND]: "yearmonthdatehoursminutesseconds",
   [V1TimeGrain.TIME_GRAIN_SECOND]: "yearmonthdatehoursminutesseconds",
   [V1TimeGrain.TIME_GRAIN_MINUTE]: "yearmonthdatehoursminutes",

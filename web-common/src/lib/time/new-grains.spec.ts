@@ -1,7 +1,20 @@
 import { describe, it, expect } from "vitest";
 import { DateTime, Interval } from "luxon";
 import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
-import { allowedGrainsForInterval } from "./new-grains";
+import {
+  aggregationGrainOrder,
+  allowedAggregationGrains,
+  allowedGrainsForInterval,
+  DateTimeUnitToV1TimeGrain,
+  floorToGrain,
+  getAvailableTimeGrains,
+  grainBucketCount,
+  isGrainAllowed,
+  plusGrain,
+  TokenToV1TimeGrain,
+  translateV1TimeGrain,
+  V1TimeGrainToToken,
+} from "./new-grains";
 
 function createInterval(start: string, end: string): Interval<true> {
   const interval = Interval.fromDateTimes(
@@ -203,5 +216,122 @@ describe("allowedGrainsForInterval", () => {
       const orderedResult = expectedOrder.filter((g) => grains.includes(g));
       expect(grains).toEqual(orderedResult);
     });
+  });
+});
+
+describe("catalog grains", () => {
+  it("orders multiples between their base unit and the next standard grain", () => {
+    const order = (grain: V1TimeGrain) => aggregationGrainOrder.indexOf(grain);
+    expect(order(V1TimeGrain.TIME_GRAIN_MINUTE)).toBeLessThan(
+      order(V1TimeGrain.TIME_GRAIN_10_MINUTE),
+    );
+    expect(order(V1TimeGrain.TIME_GRAIN_30_MINUTE)).toBeLessThan(
+      order(V1TimeGrain.TIME_GRAIN_HOUR),
+    );
+    expect(order(V1TimeGrain.TIME_GRAIN_12_HOUR)).toBeLessThan(
+      order(V1TimeGrain.TIME_GRAIN_DAY),
+    );
+    expect(isGrainAllowed(V1TimeGrain.TIME_GRAIN_10_MINUTE, "minute")).toBe(
+      true,
+    );
+    expect(
+      isGrainAllowed(
+        V1TimeGrain.TIME_GRAIN_10_MINUTE,
+        V1TimeGrain.TIME_GRAIN_HOUR,
+      ),
+    ).toBe(false);
+    expect(allowedAggregationGrains).not.toContain(
+      V1TimeGrain.TIME_GRAIN_10_MINUTE,
+    );
+  });
+
+  it("maps URL and resolver tokens both ways", () => {
+    expect(V1TimeGrainToToken[V1TimeGrain.TIME_GRAIN_10_MINUTE]).toBe("10m");
+    expect(V1TimeGrainToToken[V1TimeGrain.TIME_GRAIN_6_HOUR]).toBe("6h");
+    expect(V1TimeGrainToToken[V1TimeGrain.TIME_GRAIN_DAY]).toBe("day");
+    expect(TokenToV1TimeGrain["10m"]).toBe(V1TimeGrain.TIME_GRAIN_10_MINUTE);
+    expect(TokenToV1TimeGrain["minute"]).toBe(V1TimeGrain.TIME_GRAIN_MINUTE);
+    expect(TokenToV1TimeGrain["day"]).toBe(V1TimeGrain.TIME_GRAIN_DAY);
+    expect(DateTimeUnitToV1TimeGrain["minute"]).toBe(
+      V1TimeGrain.TIME_GRAIN_MINUTE,
+    );
+  });
+
+  it("floors and steps on the wall clock", () => {
+    const utc = DateTime.fromISO("2024-03-10T04:27:33Z", { zone: "UTC" });
+    expect(floorToGrain(utc, V1TimeGrain.TIME_GRAIN_10_MINUTE).toISO()).toBe(
+      "2024-03-10T04:20:00.000Z",
+    );
+    expect(floorToGrain(utc, V1TimeGrain.TIME_GRAIN_6_HOUR).toISO()).toBe(
+      "2024-03-10T00:00:00.000Z",
+    );
+    // 10:30 in Asia/Kolkata floors to 06:00 local (00:30Z), not to the UTC epoch bucket.
+    const kolkata = DateTime.fromISO("2024-03-10T05:00:00Z").setZone(
+      "Asia/Kolkata",
+    );
+    expect(
+      floorToGrain(kolkata, V1TimeGrain.TIME_GRAIN_6_HOUR).toUTC().toISO(),
+    ).toBe("2024-03-10T00:30:00.000Z");
+    expect(plusGrain(utc, V1TimeGrain.TIME_GRAIN_10_MINUTE, 3).toISO()).toBe(
+      "2024-03-10T04:57:33.000Z",
+    );
+    expect(
+      grainBucketCount(
+        createInterval("2024-03-10T04:00:00", "2024-03-10T05:00:00"),
+        V1TimeGrain.TIME_GRAIN_10_MINUTE,
+      ),
+    ).toBe(6);
+  });
+
+  it("offers the declared grains, else the standard grains above the smallest one", () => {
+    const declared = [
+      V1TimeGrain.TIME_GRAIN_10_MINUTE,
+      V1TimeGrain.TIME_GRAIN_HOUR,
+      V1TimeGrain.TIME_GRAIN_DAY,
+    ];
+    expect(getAvailableTimeGrains({ timeGrains: declared })).toEqual(declared);
+    expect(
+      getAvailableTimeGrains({
+        smallestTimeGrain: V1TimeGrain.TIME_GRAIN_HOUR,
+      }),
+    ).toEqual([
+      V1TimeGrain.TIME_GRAIN_HOUR,
+      V1TimeGrain.TIME_GRAIN_DAY,
+      V1TimeGrain.TIME_GRAIN_WEEK,
+      V1TimeGrain.TIME_GRAIN_MONTH,
+      V1TimeGrain.TIME_GRAIN_QUARTER,
+      V1TimeGrain.TIME_GRAIN_YEAR,
+    ]);
+    expect(getAvailableTimeGrains(undefined)).toEqual(allowedAggregationGrains);
+
+    // A day offers the declared grains that fit it; a week drops the 10-minute grain (1008 buckets still fit) only past 1500 buckets.
+    const day = createInterval("2024-03-10T00:00:00", "2024-03-11T00:00:00");
+    expect(
+      allowedGrainsForInterval(day, V1TimeGrain.TIME_GRAIN_MINUTE, declared),
+    ).toEqual(declared);
+    const month = createInterval("2024-03-01T00:00:00", "2024-04-01T00:00:00");
+    expect(
+      allowedGrainsForInterval(month, V1TimeGrain.TIME_GRAIN_MINUTE, declared),
+    ).toEqual([V1TimeGrain.TIME_GRAIN_HOUR, V1TimeGrain.TIME_GRAIN_DAY]);
+    // Nothing fits a few seconds: fall back to the finest declared grain rather than the smallest grain.
+    const seconds = createInterval(
+      "2024-03-10T00:00:00",
+      "2024-03-10T00:00:30",
+    );
+    expect(
+      allowedGrainsForInterval(
+        seconds,
+        V1TimeGrain.TIME_GRAIN_MINUTE,
+        declared,
+      ),
+    ).toEqual([V1TimeGrain.TIME_GRAIN_10_MINUTE]);
+  });
+
+  it("labels multiples with their count", () => {
+    expect(translateV1TimeGrain(V1TimeGrain.TIME_GRAIN_10_MINUTE)).toBe(
+      "10 minutes",
+    );
+    expect(translateV1TimeGrain(V1TimeGrain.TIME_GRAIN_6_HOUR)).toBe("6 hours");
+    expect(translateV1TimeGrain(V1TimeGrain.TIME_GRAIN_DAY)).toBe("day");
   });
 });

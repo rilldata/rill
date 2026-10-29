@@ -12,52 +12,106 @@ export enum TimeGrain {
   /**
    * @generated from enum value: TIME_GRAIN_UNSPECIFIED = 0;
    */
-  UNSPECIFIED = 0,
+  TIME_GRAIN_UNSPECIFIED = 0,
 
   /**
    * @generated from enum value: TIME_GRAIN_MILLISECOND = 1;
    */
-  MILLISECOND = 1,
+  TIME_GRAIN_MILLISECOND = 1,
 
   /**
    * @generated from enum value: TIME_GRAIN_SECOND = 2;
    */
-  SECOND = 2,
+  TIME_GRAIN_SECOND = 2,
 
   /**
    * @generated from enum value: TIME_GRAIN_MINUTE = 3;
    */
-  MINUTE = 3,
+  TIME_GRAIN_MINUTE = 3,
 
   /**
    * @generated from enum value: TIME_GRAIN_HOUR = 4;
    */
-  HOUR = 4,
+  TIME_GRAIN_HOUR = 4,
 
   /**
    * @generated from enum value: TIME_GRAIN_DAY = 5;
    */
-  DAY = 5,
+  TIME_GRAIN_DAY = 5,
 
   /**
    * @generated from enum value: TIME_GRAIN_WEEK = 6;
    */
-  WEEK = 6,
+  TIME_GRAIN_WEEK = 6,
 
   /**
    * @generated from enum value: TIME_GRAIN_MONTH = 7;
    */
-  MONTH = 7,
+  TIME_GRAIN_MONTH = 7,
 
   /**
    * @generated from enum value: TIME_GRAIN_QUARTER = 8;
    */
-  QUARTER = 8,
+  TIME_GRAIN_QUARTER = 8,
 
   /**
    * @generated from enum value: TIME_GRAIN_YEAR = 9;
    */
-  YEAR = 9,
+  TIME_GRAIN_YEAR = 9,
+
+  /**
+   * Multiples of a base grain. They are only used to bucket time series (not as the smallest grain, for rollups or for snapping),
+   * and each multiple divides its parent unit so buckets nest inside hours and days and align to local midnight.
+   * The numeric values are not the grain order: compare grains by duration, never by enum value.
+   *
+   * @generated from enum value: TIME_GRAIN_5_MINUTE = 10;
+   */
+  TIME_GRAIN_5_MINUTE = 10,
+
+  /**
+   * @generated from enum value: TIME_GRAIN_10_MINUTE = 11;
+   */
+  TIME_GRAIN_10_MINUTE = 11,
+
+  /**
+   * @generated from enum value: TIME_GRAIN_15_MINUTE = 12;
+   */
+  TIME_GRAIN_15_MINUTE = 12,
+
+  /**
+   * @generated from enum value: TIME_GRAIN_30_MINUTE = 13;
+   */
+  TIME_GRAIN_30_MINUTE = 13,
+
+  /**
+   * @generated from enum value: TIME_GRAIN_2_HOUR = 14;
+   */
+  TIME_GRAIN_2_HOUR = 14,
+
+  /**
+   * @generated from enum value: TIME_GRAIN_3_HOUR = 15;
+   */
+  TIME_GRAIN_3_HOUR = 15,
+
+  /**
+   * @generated from enum value: TIME_GRAIN_4_HOUR = 16;
+   */
+  TIME_GRAIN_4_HOUR = 16,
+
+  /**
+   * @generated from enum value: TIME_GRAIN_6_HOUR = 17;
+   */
+  TIME_GRAIN_6_HOUR = 17,
+
+  /**
+   * @generated from enum value: TIME_GRAIN_8_HOUR = 18;
+   */
+  TIME_GRAIN_8_HOUR = 18,
+
+  /**
+   * @generated from enum value: TIME_GRAIN_12_HOUR = 19;
+   */
+  TIME_GRAIN_12_HOUR = 19,
 }
 // Retrieve enum metadata with: proto3.getEnumType(TimeGrain)
 proto3.util.setEnumType(TimeGrain, "rill.runtime.v1.TimeGrain", [
@@ -71,5 +125,15 @@ proto3.util.setEnumType(TimeGrain, "rill.runtime.v1.TimeGrain", [
   { no: 7, name: "TIME_GRAIN_MONTH" },
   { no: 8, name: "TIME_GRAIN_QUARTER" },
   { no: 9, name: "TIME_GRAIN_YEAR" },
+  { no: 10, name: "TIME_GRAIN_5_MINUTE" },
+  { no: 11, name: "TIME_GRAIN_10_MINUTE" },
+  { no: 12, name: "TIME_GRAIN_15_MINUTE" },
+  { no: 13, name: "TIME_GRAIN_30_MINUTE" },
+  { no: 14, name: "TIME_GRAIN_2_HOUR" },
+  { no: 15, name: "TIME_GRAIN_3_HOUR" },
+  { no: 16, name: "TIME_GRAIN_4_HOUR" },
+  { no: 17, name: "TIME_GRAIN_6_HOUR" },
+  { no: 18, name: "TIME_GRAIN_8_HOUR" },
+  { no: 19, name: "TIME_GRAIN_12_HOUR" },
 ]);
 

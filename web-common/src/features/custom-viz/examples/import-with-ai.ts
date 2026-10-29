@@ -6,7 +6,7 @@ import { navigateToFile } from "@rilldata/web-common/layout/navigation/editor-ro
 import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
 import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 import { asyncWaitUntil, waitUntil } from "@rilldata/web-common/lib/waitUtils";
-import { V1TimeGrainToDateTimeUnit } from "@rilldata/web-common/lib/time/new-grains";
+import { V1TimeGrainToToken } from "@rilldata/web-common/lib/time/new-grains";
 import {
   runtimeServicePutFile,
   V1ReconcileStatus,
@@ -289,8 +289,7 @@ async function previewQueryError(
       resolverProperties: {
         sql,
         // The preview's grain, so time series are checked as they render.
-        additional_time_grain:
-          V1TimeGrainToDateTimeUnit[V1TimeGrain.TIME_GRAIN_DAY],
+        additional_time_grain: V1TimeGrainToToken[V1TimeGrain.TIME_GRAIN_DAY],
       } as unknown as PartialMessage<Struct>,
     });
     return queryResultError(data.data?.length ?? 0, sql);

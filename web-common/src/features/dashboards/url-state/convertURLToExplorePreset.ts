@@ -37,7 +37,7 @@ import {
   getMissingValues,
 } from "@rilldata/web-common/lib/arrayUtils";
 import { TIME_COMPARISON } from "@rilldata/web-common/lib/time/config";
-import { DateTimeUnitToV1TimeGrain } from "@rilldata/web-common/lib/time/new-grains";
+import { TokenToV1TimeGrain } from "@rilldata/web-common/lib/time/new-grains";
 import { DashboardState } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
 import {
   type MetricsViewSpecDimension,
@@ -391,7 +391,7 @@ export function fromTimeRangesParams(
   if (searchParams.has(ExploreStateURLParams.TimeGrain)) {
     const tg = searchParams.get(ExploreStateURLParams.TimeGrain) as string;
 
-    if (tg in DateTimeUnitToV1TimeGrain) {
+    if (tg in TokenToV1TimeGrain) {
       preset.timeGrain = tg;
     } else {
       errors.push(getSingleFieldError("time grain", tg));

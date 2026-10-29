@@ -14,6 +14,7 @@ import (
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/metricsview"
 	"github.com/rilldata/rill/runtime/pkg/fieldselectorpb"
+	"github.com/rilldata/rill/runtime/pkg/timeutil"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -237,8 +238,13 @@ func (e *Executor) ValidateAndNormalizeMetricsView(ctx context.Context) (*Valida
 		// Check the grain or apply the smallest possible grain as the default
 		if mv.SmallestTimeGrain == runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED {
 			mv.SmallestTimeGrain = smallestPossibleGrain
-		} else if mv.SmallestTimeGrain < smallestPossibleGrain {
+		} else if timeutil.TimeGrainFromAPI(mv.SmallestTimeGrain).Compare(timeutil.TimeGrainFromAPI(smallestPossibleGrain)) < 0 {
 			res.OtherErrs = append(res.OtherErrs, fmt.Errorf("smallest_time_grain %q is smaller than the smallest possible grain %q based on the data type of the default time dimension", metricsview.TimeGrainFromProto(mv.SmallestTimeGrain), metricsview.TimeGrainFromProto(smallestPossibleGrain)))
+		}
+		for _, tg := range mv.TimeGrains {
+			if timeutil.TimeGrainFromAPI(tg).Compare(timeutil.TimeGrainFromAPI(smallestPossibleGrain)) < 0 {
+				res.OtherErrs = append(res.OtherErrs, fmt.Errorf("time_grains entry %q is smaller than the smallest possible grain %q based on the data type of the default time dimension", metricsview.TimeGrainFromProto(tg), metricsview.TimeGrainFromProto(smallestPossibleGrain)))
+			}
 		}
 	}
 	for _, d := range mv.Dimensions {
@@ -264,7 +270,7 @@ func (e *Executor) ValidateAndNormalizeMetricsView(ctx context.Context) (*Valida
 		// Check the grain or apply the smallest possible grain as the default
 		if d.SmallestTimeGrain == runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED {
 			d.SmallestTimeGrain = smallestPossibleGrain
-		} else if d.SmallestTimeGrain < smallestPossibleGrain {
+		} else if timeutil.TimeGrainFromAPI(d.SmallestTimeGrain).Compare(timeutil.TimeGrainFromAPI(smallestPossibleGrain)) < 0 {
 			res.OtherErrs = append(res.OtherErrs, fmt.Errorf("smallest_time_grain %q for time dimension %q is smaller than the smallest possible grain %q based on the data type of the time dimension", metricsview.TimeGrainFromProto(d.SmallestTimeGrain), d.Name, metricsview.TimeGrainFromProto(smallestPossibleGrain)))
 		}
 	}

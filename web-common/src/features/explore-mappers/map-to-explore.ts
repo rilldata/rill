@@ -171,6 +171,7 @@ export function mapQueryToDashboard(
         validSpecResp.data.explore,
         timeRangeSummary.data?.timeRangeSummary,
         metricsView.smallestTimeGrain,
+        metricsView.timeGrains,
       );
       const defaultExploreState = {
         ...rillDefaultExploreState,

@@ -99,6 +99,7 @@
     showTimeComparison,
     selectedComparisonTimeRange,
     minTimeGrain,
+    availableTimeGrains,
     timeStart,
     timeEnd,
     ready: timeControlsReady,
@@ -419,6 +420,7 @@
           {selectedRangeAlias}
           showPivot={$showPivot}
           {minTimeGrain}
+          {availableTimeGrains}
           {defaultTimeRange}
           {availableTimeZones}
           {timeRanges}

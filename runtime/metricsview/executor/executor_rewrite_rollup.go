@@ -334,7 +334,7 @@ func rollupEligible(rollup *runtimev1.MetricsViewSpec_Rollup, qry *metricsview.Q
 
 	// 2. For day+ rollup grains, the query timezone must match the rollup's timezone.
 	// Sub-day grains are timezone-agnostic (hour boundaries are the same everywhere).
-	if rollup.TimeGrain >= runtimev1.TimeGrain_TIME_GRAIN_DAY {
+	if timeutil.TimeGrainFromAPI(rollup.TimeGrain).Compare(timeutil.TimeGrainDay) >= 0 {
 		rollupTZ, err := normalizeTimezone(rollup.TimeZone)
 		if err != nil {
 			return false, "", err

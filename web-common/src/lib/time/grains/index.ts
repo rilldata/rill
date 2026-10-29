@@ -8,8 +8,9 @@ import { Duration, Interval } from "luxon";
 import { TIME_GRAIN } from "../config";
 import type { AvailableTimeGrain, TimeGrain } from "../types";
 import {
+  aggregationGrainOrder,
   allowedGrainsForInterval,
-  V1TimeGrainToDateTimeUnit,
+  grainBucketCount,
 } from "@rilldata/web-common/lib/time/new-grains";
 import { getRangePrecision } from "@rilldata/web-common/lib/time/rill-time-grains";
 import type { RillTime } from "@rilldata/web-common/features/dashboards/url-state/time-ranges/RillTime";
@@ -55,23 +56,23 @@ export function getDefaultTimeGrain(start: Date, end: Date): TimeGrain {
 
 // Return time grains that are allowed for a given time range.
 // This should be deprecated in favor of using allowedGrainsForInterval directly
-export function getAllowedTimeGrains(start: Date, end: Date): TimeGrain[] {
+export function getAllowedTimeGrains(
+  start: Date,
+  end: Date,
+  availableGrains?: V1TimeGrain[],
+): TimeGrain[] {
   const interval = Interval.fromDateTimes(start, end);
-  return allowedGrainsForInterval(interval.isValid ? interval : undefined).map(
-    (g) => TIME_GRAIN[g],
-  );
+  return allowedGrainsForInterval(
+    interval.isValid ? interval : undefined,
+    undefined,
+    availableGrains,
+  ).map((g) => TIME_GRAIN[g]);
 }
 
 const APITimeGrainOrder: V1TimeGrain[] = [
   V1TimeGrain.TIME_GRAIN_MILLISECOND,
   V1TimeGrain.TIME_GRAIN_SECOND,
-  V1TimeGrain.TIME_GRAIN_MINUTE,
-  V1TimeGrain.TIME_GRAIN_HOUR,
-  V1TimeGrain.TIME_GRAIN_DAY,
-  V1TimeGrain.TIME_GRAIN_WEEK,
-  V1TimeGrain.TIME_GRAIN_MONTH,
-  V1TimeGrain.TIME_GRAIN_QUARTER,
-  V1TimeGrain.TIME_GRAIN_YEAR,
+  ...aggregationGrainOrder,
 ];
 
 export function isGrainBigger(
@@ -129,15 +130,8 @@ export function isAvailableTimeGrain(
   );
 }
 
-const grainOrder: AvailableTimeGrain[] = [
-  V1TimeGrain.TIME_GRAIN_YEAR,
-  V1TimeGrain.TIME_GRAIN_QUARTER,
-  V1TimeGrain.TIME_GRAIN_MONTH,
-  V1TimeGrain.TIME_GRAIN_WEEK,
-  V1TimeGrain.TIME_GRAIN_DAY,
-  V1TimeGrain.TIME_GRAIN_HOUR,
-  V1TimeGrain.TIME_GRAIN_MINUTE,
-];
+// Coarse to fine
+const grainOrder = [...aggregationGrainOrder].reverse() as AvailableTimeGrain[];
 
 /**
  * Get the largest grain from available grains
@@ -193,18 +187,23 @@ export function getValidatedTimeGrain(
   minTimeGrain: V1TimeGrain,
   requestedPrecision: V1TimeGrain | undefined,
   parsed: RillTime | undefined,
+  availableGrains?: V1TimeGrain[],
 ): V1TimeGrain | undefined {
   if (!interval || !interval.isValid) {
     return undefined;
   }
 
   if (!requestedPrecision) {
-    return getAdaptiveTimeGrain(interval, minTimeGrain, parsed) ?? minTimeGrain;
+    return (
+      getAdaptiveTimeGrain(interval, minTimeGrain, parsed, availableGrains) ??
+      minTimeGrain
+    );
   }
 
   const allowedGrains = allowedGrainsForInterval(
     interval as Interval<true>,
     minTimeGrain,
+    availableGrains,
   );
   if (allowedGrains.includes(requestedPrecision)) {
     return requestedPrecision;
@@ -241,26 +240,35 @@ const ADAPTIVE_MAX_PRECISION_POINTS = 400;
  * when that gives a reasonable number of points.
  * Otherwise, and for custom ranges, the grain whose point count is closest to
  * `ADAPTIVE_IDEAL_POINTS` wins, preferring the coarser grain on a tie.
- * Only grains the interval allows are considered, which also enforces the metrics view's smallest grain.
+ * Only grains the interval allows are considered, which also enforces the metrics view's smallest grain
+ * and, when given, restricts the choice to the grains the metrics view offers (`availableGrains`).
  * Without a valid interval only the rill-time precision can be used.
  */
 export function getAdaptiveTimeGrain(
   interval: Interval | undefined,
   minTimeGrain: V1TimeGrain,
   parsed: RillTime | undefined,
+  availableGrains?: V1TimeGrain[],
 ): V1TimeGrain | undefined {
   const rangePrecision = parsed && getRangePrecision(parsed);
 
   if (!interval?.isValid) {
-    return rangePrecision && isGrainBigger(minTimeGrain, rangePrecision)
-      ? undefined
-      : rangePrecision;
+    if (!rangePrecision || isGrainBigger(minTimeGrain, rangePrecision)) {
+      return undefined;
+    }
+    return !availableGrains || availableGrains.includes(rangePrecision)
+      ? rangePrecision
+      : undefined;
   }
 
   const validInterval = interval as Interval<true>;
-  const allowedGrains = allowedGrainsForInterval(validInterval, minTimeGrain);
+  const allowedGrains = allowedGrainsForInterval(
+    validInterval,
+    minTimeGrain,
+    availableGrains,
+  );
   const pointCount = (grain: V1TimeGrain) =>
-    validInterval.length(V1TimeGrainToDateTimeUnit[grain]);
+    grainBucketCount(validInterval, grain);
 
   if (rangePrecision && allowedGrains.includes(rangePrecision)) {
     const points = pointCount(rangePrecision);

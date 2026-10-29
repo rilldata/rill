@@ -58,13 +58,23 @@ func (d *dialect) DateTruncExpr(dim *runtimev1.MetricsViewSpec_Dimension, grain 
 		}
 	}
 
-	specifier := d.ConvertToDateTruncSpecifier(grain)
+	// Multiples such as TIME_GRAIN_10_MINUTE bucket with the dialect's interval function instead of date_trunc.
+	unit, n := timeutil.TimeGrainBase(grain)
+	specifier := d.ConvertToDateTruncSpecifier(unit)
 
 	var expr string
 	if dim.Expression != "" {
 		expr = fmt.Sprintf("(%s)", dim.Expression)
 	} else {
 		expr = d.EscapeIdentifier(dim.Column)
+	}
+
+	if n > 1 {
+		// Multiples bucket with time_slice on the local wall clock, so buckets stay aligned to local midnight.
+		if tz == "" {
+			return fmt.Sprintf("time_slice(%s, INTERVAL %d %s)", expr, n, specifier), nil
+		}
+		return fmt.Sprintf("CONVERT_TZ(time_slice(CONVERT_TZ(%s, 'UTC', '%s'), INTERVAL %d %s), '%s', 'UTC')", expr, tz, n, specifier, tz), nil
 	}
 
 	if tz == "" {

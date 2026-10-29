@@ -25,14 +25,15 @@ import {
 import { createQuery } from "@tanstack/svelte-query";
 import { derived, type Readable } from "svelte/store";
 import {
-  DateTimeUnitToV1TimeGrain,
-  isGrainAllowed,
+  getAvailableTimeGrains,
+  TokenToV1TimeGrain,
 } from "@rilldata/web-common/lib/time/new-grains";
 
 export function getExploreStateFromYAMLConfig(
   exploreSpec: V1ExploreSpec,
   timeRangeSummary: V1TimeRangeSummary | undefined,
   smallestTimeGrain: V1TimeGrain | undefined = undefined,
+  timeGrains: V1TimeGrain[] | undefined = undefined,
 ) {
   // TODO: support all fields from V1ExplorePreset. Not urgent since we do not parse them in backend.
   return <Partial<ExploreState>>{
@@ -42,6 +43,7 @@ export function getExploreStateFromYAMLConfig(
       exploreSpec,
       timeRangeSummary,
       smallestTimeGrain,
+      timeGrains,
     ),
     ...getExploreViewStateFromYAMLConfig(exploreSpec),
   };
@@ -69,6 +71,7 @@ export function createUrlForExploreYAMLDefaultState(
         exploreSpec,
         timeRangeSummary,
         metricsViewSpec.smallestTimeGrain,
+        metricsViewSpec.timeGrains,
       );
 
       const timeControlState = getTimeControlState(
@@ -93,6 +96,7 @@ function getExploreTimeStateFromYAMLConfig(
   exploreSpec: V1ExploreSpec,
   timeRangeSummary: V1TimeRangeSummary | undefined,
   smallestTimeGrain: V1TimeGrain | undefined = undefined,
+  timeGrains: V1TimeGrain[] | undefined = undefined,
 ): Partial<ExploreState> {
   const exploreTimeState: Partial<ExploreState> = {};
   if (!exploreSpec.defaultPreset || !timeRangeSummary) {
@@ -107,7 +111,7 @@ function getExploreTimeStateFromYAMLConfig(
 
     if (defaultPreset.timeGrain) {
       exploreTimeState.selectedTimeRange.interval =
-        DateTimeUnitToV1TimeGrain[defaultPreset.timeGrain];
+        TokenToV1TimeGrain[defaultPreset.timeGrain];
       exploreTimeState.adaptiveTimeGrain = false;
     } else {
       const grainForRange = getGrainForRange(
@@ -116,9 +120,14 @@ function getExploreTimeStateFromYAMLConfig(
         timeRangeSummary,
       );
 
-      const interval = isGrainAllowed(grainForRange, smallestTimeGrain)
-        ? grainForRange
-        : smallestTimeGrain;
+      const availableTimeGrains = getAvailableTimeGrains({
+        smallestTimeGrain,
+        timeGrains,
+      });
+      const interval =
+        grainForRange && availableTimeGrains.includes(grainForRange)
+          ? grainForRange
+          : (availableTimeGrains[0] ?? smallestTimeGrain);
 
       exploreTimeState.selectedTimeRange.interval = interval;
     }

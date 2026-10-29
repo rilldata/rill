@@ -3,6 +3,8 @@
   import { type DateTime, type Interval } from "luxon";
   import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
   import {
+    floorToGrain,
+    V1TimeGrainToCount,
     V1TimeGrainToOrder,
     V1TimeGrainToDateTimeUnit,
   } from "@rilldata/web-common/lib/time/new-grains";
@@ -56,11 +58,11 @@
     if (!unit) return [];
 
     // Truncate start to grain boundary (e.g. Wednesday → Monday for week grain)
-    const aligned = iv.start.startOf(unit).until(iv.end);
+    const aligned = floorToGrain(iv.start, grain).until(iv.end);
     if (!aligned.isValid) return [];
 
     return aligned
-      .splitBy({ [unit + "s"]: 1 })
+      .splitBy({ [unit + "s"]: V1TimeGrainToCount[grain] })
       .map((i) => i.start!)
       .filter((dt): dt is DateTime => dt !== null);
   }
