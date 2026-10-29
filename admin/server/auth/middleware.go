@@ -9,6 +9,7 @@ import (
 
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
 	"github.com/grpc-ecosystem/go-grpc-middleware/util/metautils"
+	"github.com/rilldata/rill/admin/pkg/authtoken"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"go.opentelemetry.io/otel/attribute"
 	semconv "go.opentelemetry.io/otel/semconv/v1.21.0"
@@ -191,6 +192,15 @@ func (a *Authenticator) parseClaimsFromBearer(ctx context.Context, authorization
 }
 
 func (a *Authenticator) parseClaimsFromToken(ctx context.Context, token string) (context.Context, error) {
+	// Embed tokens are JWTs, which unlike other auth tokens don't have the auth token prefix.
+	if !strings.HasPrefix(token, authtoken.Prefix+"_") {
+		embedToken, err := a.admin.ValidateEmbedToken(token)
+		if err != nil {
+			return nil, err
+		}
+		return WithClaims(ctx, &embedClaims{token: embedToken, admin: a.admin}), nil
+	}
+
 	// Validate token against database
 	validated, err := a.admin.ValidateAuthToken(ctx, token)
 	if err != nil {

@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/golang-jwt/jwt/v4"
 	"github.com/rilldata/rill/admin/database"
 	"github.com/rilldata/rill/admin/pkg/authtoken"
 )
@@ -226,47 +227,51 @@ func (s *Service) IssueMagicAuthToken(ctx context.Context, opts *IssueMagicAuthT
 	return &magicAuthToken{model: dat, token: tkn}, nil
 }
 
-type embedAuthToken struct {
-	model *database.EmbedAuthToken
-	token *authtoken.Token
+// embedTokenAudience is the audience of embed tokens.
+// It is not a URL, so embed tokens can't be confused with runtime JWTs, which use the runtime's URL as the audience.
+const embedTokenAudience = "rill:admin:embed"
+
+// EmbedToken contains the claims of a JWT that identifies an embed user.
+// It is issued along with an embed's runtime JWT, and lets the embed user manage their own reports in the project.
+// Since it is signed and short-lived, it is not stored in the database.
+type EmbedToken struct {
+	jwt.RegisteredClaims
+	ProjectID string                  `json:"project_id"`
+	Email     string                  `json:"email"`
+	Resources []database.ResourceName `json:"resources,omitempty"` // If non-empty, limits reports created with the token to these resources
 }
 
-func (t *embedAuthToken) Token() *authtoken.Token {
-	return t.token
-}
-
-func (t *embedAuthToken) TokenModel() any {
-	return t.model
-}
-
-func (t *embedAuthToken) OwnerID() string {
-	return fmt.Sprintf("%s::%s", t.model.ProjectID, t.model.Email)
-}
-
-// IssueEmbedAuthToken issues an embed auth token for an email in a project.
+// IssueEmbedToken issues an embed token for an email in a project.
 // If resources is non-empty, reports created with the token are limited to those resources.
-func (s *Service) IssueEmbedAuthToken(ctx context.Context, projectID, email string, resources []database.ResourceName, ttl *time.Duration) (AuthToken, error) {
-	tkn := authtoken.NewRandom(authtoken.TypeEmbed)
-
-	var expiresOn *time.Time
-	if ttl != nil {
-		t := time.Now().Add(*ttl)
-		expiresOn = &t
-	}
-
-	eat, err := s.DB.InsertEmbedAuthToken(ctx, &database.InsertEmbedAuthTokenOptions{
-		ID:         tkn.ID.String(),
-		SecretHash: tkn.SecretHash(),
-		ProjectID:  projectID,
-		Email:      email,
-		Resources:  resources,
-		ExpiresOn:  expiresOn,
+func (s *Service) IssueEmbedToken(projectID, email string, resources []database.ResourceName, ttl time.Duration) (string, error) {
+	now := time.Now()
+	return s.issuer.SignClaims(&EmbedToken{
+		RegisteredClaims: jwt.RegisteredClaims{
+			Subject:   email,
+			Audience:  jwt.ClaimStrings{embedTokenAudience},
+			IssuedAt:  jwt.NewNumericDate(now),
+			NotBefore: jwt.NewNumericDate(now),
+			ExpiresAt: jwt.NewNumericDate(now.Add(ttl)),
+		},
+		ProjectID: projectID,
+		Email:     email,
+		Resources: resources,
 	})
-	if err != nil {
-		return nil, err
-	}
+}
 
-	return &embedAuthToken{model: eat, token: tkn}, nil
+// ValidateEmbedToken parses and validates an embed token issued by IssueEmbedToken.
+func (s *Service) ValidateEmbedToken(token string) (*EmbedToken, error) {
+	res := &EmbedToken{}
+	if err := s.issuer.ParseClaims(token, res); err != nil {
+		return nil, fmt.Errorf("invalid embed token: %w", err)
+	}
+	if !res.VerifyAudience(embedTokenAudience, true) {
+		return nil, fmt.Errorf("invalid embed token audience %q", res.Audience)
+	}
+	if res.ExpiresAt == nil || res.ProjectID == "" || res.Email == "" {
+		return nil, errors.New("invalid embed token: missing expiry, project or email")
+	}
+	return res, nil
 }
 
 // ExtendBrowserSessionAuthToken extends a Rill web browser session token when its
@@ -304,8 +309,6 @@ func (s *Service) RevokeAuthToken(ctx context.Context, token string) error {
 		return fmt.Errorf("deployment auth tokens cannot be revoked")
 	case authtoken.TypeMagic:
 		return s.DB.DeleteMagicAuthToken(ctx, parsed.ID.String())
-	case authtoken.TypeEmbed:
-		return s.DB.DeleteEmbedAuthToken(ctx, parsed.ID.String())
 	default:
 		return fmt.Errorf("unknown auth token type %q", parsed.Type)
 	}
@@ -436,23 +439,6 @@ func (s *Service) validateAuthTokenUncached(ctx context.Context, token string) (
 		s.Used.MagicAuthToken(mat.ID)
 
 		return &magicAuthToken{model: mat, token: parsed}, nil
-	case authtoken.TypeEmbed:
-		eat, err := s.DB.FindEmbedAuthToken(ctx, parsed.ID.String())
-		if err != nil {
-			return nil, err
-		}
-
-		if eat.ExpiresOn != nil && eat.ExpiresOn.Before(time.Now()) {
-			return nil, fmt.Errorf("auth token is expired")
-		}
-
-		if !bytes.Equal(eat.SecretHash, parsed.SecretHash()) {
-			return nil, fmt.Errorf("invalid auth token")
-		}
-
-		s.Used.EmbedAuthToken(eat.ID)
-
-		return &embedAuthToken{model: eat, token: parsed}, nil
 	default:
 		return nil, fmt.Errorf("unknown auth token type %q", parsed.Type)
 	}

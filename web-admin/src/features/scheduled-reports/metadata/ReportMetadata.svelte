@@ -16,6 +16,7 @@
   } from "@rilldata/web-common/features/explore-mappers/get-mapped-explore-url.ts";
   import type { AIResolverProps } from "@rilldata/web-common/features/explore-mappers/map-ai-resolver-props-to-metrics-resolver-query.ts";
   import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors";
+  import { EmbedStore } from "@rilldata/web-common/features/embeds/embed-store.ts";
   import ScheduledReportDialog from "@rilldata/web-common/features/scheduled-reports/ScheduledReportDialog.svelte";
   import {
     isAIReportSpec,
@@ -60,6 +61,8 @@
   export let report: string;
 
   const runtimeClient = useRuntimeClient();
+  // Embed users have no Rill session, so dashboard links must stay within the embed.
+  const embedded = EmbedStore.isEmbedded();
 
   $: reportQuery = useReport(runtimeClient, report);
   $: isReportCreatedByCode = useIsReportCreatedByCode(runtimeClient, report);
@@ -128,13 +131,16 @@
       client: runtimeClient,
       organization,
       project,
+      embedded,
     },
   );
 
   // Canvas reports link to the canvas page with the captured state applied.
   $: canvasUrl = (() => {
     if (!$dashboardName.data) return "";
-    const path = `/${organization}/${project}/canvas/${$dashboardName.data}`;
+    const path = embedded
+      ? `/-/embed/canvas/${$dashboardName.data}`
+      : `/${organization}/${project}/canvas/${$dashboardName.data}`;
     const search = stripInternalReportParams(
       new URLSearchParams(reportSpec?.annotations?.web_open_state ?? ""),
     ).toString();
@@ -144,7 +150,7 @@
   $: aiExploreUrl = getMappedAIExploreUrl(
     (reportSpec?.resolverProperties ?? {}) as AIResolverProps,
     isAIReport ? ($dashboardName.data ?? "") : "",
-    { client: runtimeClient, organization, project },
+    { client: runtimeClient, organization, project, embedded },
   );
   $: dashboardUrl = isCanvasReport
     ? canvasUrl

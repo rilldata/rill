@@ -685,11 +685,11 @@ func (s *Server) GetIFrame(ctx context.Context, req *adminv1.GetIFrameRequest) (
 		email = forVal.UserEmail
 
 		// Pass the final overrideResources so reports created from the embed are limited to the same resources as the iframe.
-		tkn, err := s.admin.IssueEmbedAuthToken(ctx, proj.ID, opts.forUserEmail, overrideResources, &ttlDuration)
+		var err error
+		adminToken, err = s.admin.IssueEmbedToken(proj.ID, opts.forUserEmail, overrideResources, ttlDuration)
 		if err != nil {
 			return nil, err
 		}
-		adminToken = tkn.Token().String()
 	case *adminv1.GetIFrameRequest_Attributes:
 		opts.forUserAttributes = forVal.Attributes.AsMap()
 	default:

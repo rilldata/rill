@@ -270,7 +270,7 @@ func (s *Server) CreateReport(ctx context.Context, req *adminv1.CreateReportRequ
 	case auth.OwnerTypeUser:
 		ownerID = claims.OwnerID()
 	case auth.OwnerTypeEmbed:
-		mdl, ok := claims.AuthTokenModel().(*database.EmbedAuthToken)
+		mdl, ok := claims.AuthTokenModel().(*admin.EmbedToken)
 		if !ok {
 			return nil, status.Error(codes.PermissionDenied, "invalid embed token")
 		}
@@ -372,7 +372,7 @@ func (s *Server) EditReport(ctx context.Context, req *adminv1.EditReportRequest)
 	if err != nil {
 		return nil, err
 	}
-	if mdl, ok := claims.AuthTokenModel().(*database.EmbedAuthToken); ok && len(mdl.Resources) > 0 {
+	if mdl, ok := claims.AuthTokenModel().(*admin.EmbedToken); ok && len(mdl.Resources) > 0 {
 		if len(embedResources) == 0 {
 			embedResources = mdl.Resources
 		} else {
@@ -1101,7 +1101,7 @@ func isAdminManagedOwner(claims auth.Claims, ownerUserID, ownerEmail string) boo
 	case auth.OwnerTypeUser:
 		return ownerUserID != "" && ownerUserID == claims.OwnerID()
 	case auth.OwnerTypeEmbed:
-		tkn, ok := claims.AuthTokenModel().(*database.EmbedAuthToken)
+		tkn, ok := claims.AuthTokenModel().(*admin.EmbedToken)
 		return ok && ownerUserID == "" && ownerEmail != "" && strings.EqualFold(ownerEmail, tkn.Email)
 	default:
 		return false

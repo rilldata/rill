@@ -1,5 +1,5 @@
 /**
- * This file implements variants of the `CreateReport`, `EditReport`, `DeleteReport` and `UnsubscribeReport` client code that authenticate using a bearer token.
+ * This file implements variants of the `CreateReport`, `EditReport`, `DeleteReport`, `TriggerReport` and `UnsubscribeReport` client code that authenticate using a bearer token.
  *
  * Modifications from the original Orval-generated code in `/web-admin/src/client/gen/default/default.ts` include:
  * - Request functions: Authentication via `Authorization: Bearer ${token}` header, replacing cookie-based authentication.
@@ -14,11 +14,13 @@ import {
 } from "@tanstack/svelte-query";
 import {
   type AdminServiceCreateReportBodyBody,
+  type AdminServiceTriggerReconcileBodyBody,
   type AdminServiceUnsubscribeAlertBodyBody,
   type RpcStatus,
   type V1CreateReportResponse,
   type V1DeleteReportResponse,
   type V1EditReportResponse,
+  type V1TriggerReportResponse,
   type V1UnsubscribeReportResponse,
 } from "@rilldata/web-admin/client";
 import httpClient from "@rilldata/web-admin/client/http-client.ts";
@@ -179,6 +181,68 @@ export const createAdminServiceDeleteReportUsingToken = <
       mutationKey: ["adminServiceDeleteReport"],
       mutationFn: ({ org, project, name }) =>
         adminServiceDeleteReportUsingToken(org, project, name, token),
+      ...options?.mutation,
+    },
+    queryClient,
+  );
+};
+
+export const adminServiceTriggerReportUsingToken = (
+  org: string,
+  project: string,
+  name: string,
+  adminServiceTriggerReconcileBodyBody: AdminServiceTriggerReconcileBodyBody,
+  token: string,
+) => {
+  return httpClient<V1TriggerReportResponse>({
+    url: `/v1/orgs/${org}/projects/${project}/reports/${name}/trigger`,
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      // We use the bearer token to authenticate the request
+      Authorization: `Bearer ${token}`,
+    },
+    data: adminServiceTriggerReconcileBodyBody,
+    // To be explicit, we don't need to send credentials (cookies) with the request
+    withCredentials: false,
+  });
+};
+
+export const createAdminServiceTriggerReportUsingToken = <
+  TError = RpcStatus,
+  TContext = unknown,
+>(
+  token: string,
+  options?: {
+    mutation?: CreateMutationOptions<
+      Awaited<ReturnType<typeof adminServiceTriggerReportUsingToken>>,
+      TError,
+      {
+        org: string;
+        project: string;
+        name: string;
+        data: AdminServiceTriggerReconcileBodyBody;
+      },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateMutationResult<
+  Awaited<ReturnType<typeof adminServiceTriggerReportUsingToken>>,
+  TError,
+  {
+    org: string;
+    project: string;
+    name: string;
+    data: AdminServiceTriggerReconcileBodyBody;
+  },
+  TContext
+> => {
+  return createMutation(
+    {
+      mutationKey: ["adminServiceTriggerReport"],
+      mutationFn: ({ org, project, name, data }) =>
+        adminServiceTriggerReportUsingToken(org, project, name, data, token),
       ...options?.mutation,
     },
     queryClient,

@@ -269,10 +269,11 @@ func (s *Service) ProjectPermissionsForMagicAuthToken(ctx context.Context, proje
 	}, nil
 }
 
-func (s *Service) ProjectPermissionsForEmbedAuthToken(ctx context.Context, projectID string, tkn *database.EmbedAuthToken) (*adminv1.ProjectPermissions, error) {
+// ProjectPermissionsForEmbedToken resolves project permissions for an embed user.
+func (s *Service) ProjectPermissionsForEmbedToken(projectID string, tkn *EmbedToken) *adminv1.ProjectPermissions {
 	// No access if the token belongs to another project
 	if projectID != tkn.ProjectID {
-		return &adminv1.ProjectPermissions{}, nil
+		return &adminv1.ProjectPermissions{}
 	}
 
 	// Grant basic read access to the project and its prod deployment.
@@ -300,7 +301,7 @@ func (s *Service) ProjectPermissionsForEmbedAuthToken(ctx context.Context, proje
 		ManageAlerts:               false,
 		CreateBookmarks:            false,
 		ManageBookmarks:            false,
-	}, nil
+	}
 }
 
 // UnionOrgRoles merges an organization role's permissions into the given permissions object.

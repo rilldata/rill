@@ -53,24 +53,3 @@ func (w *DeleteUnusedServiceTokenWorker) Work(ctx context.Context, job *river.Jo
 	}
 	return nil
 }
-
-// DeleteUnusedEmbedTokenArgs and Worker for embed tokens only
-
-type DeleteUnusedEmbedTokenArgs struct{}
-
-func (DeleteUnusedEmbedTokenArgs) Kind() string { return "delete_unused_embed_tokens" }
-
-type DeleteUnusedEmbedTokenWorker struct {
-	river.WorkerDefaults[DeleteUnusedEmbedTokenArgs]
-	admin  *admin.Service
-	logger *zap.Logger
-}
-
-// NewDeleteUnusedEmbedTokenWorker creates a new worker that deletes unused embed tokens.
-func (w *DeleteUnusedEmbedTokenWorker) Work(ctx context.Context, job *river.Job[DeleteUnusedEmbedTokenArgs]) error {
-	err := w.admin.DB.DeleteInactiveEmbedAuthTokens(ctx, tokenRetentionPeriod)
-	if err != nil {
-		return fmt.Errorf("failed to delete unused embed tokens: %w", err)
-	}
-	return nil
-}

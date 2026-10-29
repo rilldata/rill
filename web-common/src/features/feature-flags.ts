@@ -48,7 +48,7 @@ class FeatureFlags {
   adminServer = new FeatureFlag("rill", false);
   // True in embeds that were given an admin token and user email.
   // Embeds have no user session with the admin server, but can call the subset of admin APIs
-  // that embed admin tokens are permitted to call (see ProjectPermissionsForEmbedAuthToken in admin/permissions.go).
+  // that embed admin tokens are permitted to call (see ProjectPermissionsForEmbedToken in admin/permissions.go).
   // Only use it to gate features that embed admin tokens support.
   embedAdminActions = new FeatureFlag("rill", false);
   readOnly = new FeatureFlag("rill", false);

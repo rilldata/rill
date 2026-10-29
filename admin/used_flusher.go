@@ -26,7 +26,6 @@ type usedFlusher struct {
 	serviceTokens    map[string]bool
 	deploymentTokens map[string]bool
 	magicAuthTokens  map[string]bool
-	embedAuthTokens  map[string]bool
 	client           map[string]bool
 	ctx              context.Context
 	cancel           context.CancelFunc
@@ -46,7 +45,6 @@ func newUsedFlusher(logger *zap.Logger, db database.DB) *usedFlusher {
 		serviceTokens:    make(map[string]bool),
 		deploymentTokens: make(map[string]bool),
 		magicAuthTokens:  make(map[string]bool),
-		embedAuthTokens:  make(map[string]bool),
 		client:           make(map[string]bool),
 		ctx:              ctx,
 		cancel:           cancel,
@@ -103,13 +101,6 @@ func (u *usedFlusher) MagicAuthToken(id string) {
 	defer u.mu.Unlock()
 
 	u.magicAuthTokens[id] = true
-}
-
-func (u *usedFlusher) EmbedAuthToken(id string) {
-	u.mu.Lock()
-	defer u.mu.Unlock()
-
-	u.embedAuthTokens[id] = true
 }
 
 func (u *usedFlusher) Client(id string) {
@@ -185,12 +176,6 @@ func (u *usedFlusher) flush() {
 		u.magicAuthTokens = make(map[string]bool)
 	}
 
-	var embedAuthTokens map[string]bool
-	if len(u.embedAuthTokens) > 0 {
-		embedAuthTokens = u.embedAuthTokens
-		u.embedAuthTokens = make(map[string]bool)
-	}
-
 	var client map[string]bool
 	if len(u.client) > 0 {
 		client = u.client
@@ -218,9 +203,6 @@ func (u *usedFlusher) flush() {
 
 	// Flush magic auth tokens
 	u.flushToDB(magicAuthTokens, u.db.UpdateMagicAuthTokenUsedOn, "magic auth tokens")
-
-	// Flush embed auth tokens
-	u.flushToDB(embedAuthTokens, u.db.UpdateEmbedAuthTokenUsedOn, "embed auth tokens")
 
 	// Flush auth clients
 	u.flushToDB(client, u.db.UpdateAuthClientUsedOn, "auth clients")
