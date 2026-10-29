@@ -282,6 +282,7 @@ function mapSort(
   const measure = measures.find((m) => m.name === sortField.name);
   if (!measure) return;
   const { name, type } = getMeasureNameAndType(measure);
+  if (!partialExploreState.visibleMeasures?.includes(name)) return;
 
   partialExploreState.leaderboardSortByMeasureName = name;
   partialExploreState.sortDirection = sortField.desc
@@ -406,19 +407,26 @@ function mapPivot(
   }
 
   const sorting: SortingState =
-    query.sort?.map((s) => {
-      const td = timeDimensions.find((td) => td.name === s.name);
-      if (!td?.compute?.time_floor?.grain)
-        return { id: s.name, desc: !!s.desc };
+    query.sort
+      ?.filter(
+        (s) =>
+          partialExploreState.visibleMeasures?.includes(s.name) ||
+          partialExploreState.visibleDimensions?.includes(s.name) ||
+          timeDimensions.some((td) => td.name === s.name),
+      )
+      .map((s) => {
+        const td = timeDimensions.find((td) => td.name === s.name);
+        if (!td?.compute?.time_floor?.grain)
+          return { id: s.name, desc: !!s.desc };
 
-      const grain =
-        DateTimeUnitToV1TimeGrain[td.compute.time_floor.grain] ??
-        V1TimeGrain.TIME_GRAIN_SECOND;
-      const id = td?.compute?.time_floor?.grain
-        ? `${td.name}_rill_${grain}`
-        : s.name;
-      return { id, desc: !!s.desc };
-    }) ?? [];
+        const grain =
+          DateTimeUnitToV1TimeGrain[td.compute.time_floor.grain] ??
+          V1TimeGrain.TIME_GRAIN_SECOND;
+        const id = td?.compute?.time_floor?.grain
+          ? `${td.name}_rill_${grain}`
+          : s.name;
+        return { id, desc: !!s.desc };
+      }) ?? [];
 
   return {
     rows: [],
