@@ -3868,7 +3868,7 @@ definitions:
           - field
       regions:
         type: object
-        description: Regions layer that fills region boundaries by a measure, joined to the rows through the values of `dimension`. Boundaries are either a built-in set or a GeoJSON or TopoJSON file in the project. Drawn below the base map's labels and the `geo_dimension` layer.
+        description: Regions layer that fills region boundaries by a measure, joined to the rows through the values of `dimension`. Boundaries are either a built-in set, such as countries or the states of a country, or a GeoJSON or TopoJSON file in the project. Drawn below the base map's labels and the `geo_dimension` layer.
         properties:
           dimension:
             type: string
@@ -3877,8 +3877,8 @@ definitions:
             description: Boundaries to draw, either the name of a built-in set or a mapping that points to a boundary file in the project.
             oneOf:
               - type: string
-                enum: ["countries", "us_states"]
-                description: Built-in boundary set to draw. `countries` covers every country; `us_states` covers the 50 US states and the District of Columbia.
+                enum: ["countries", "states", "us_states"]
+                description: 'Built-in boundary set to draw. `countries` covers every country; `states` covers the first-level subdivisions of the country in `country`, such as states, provinces or regions; `us_states` is the same as `states` with `country: US`.'
               - type: object
                 description: 'Custom boundaries from a GeoJSON `FeatureCollection` or a TopoJSON file with a single object, such as Nielsen DMAs or sales territories. The file must be under one of the project''s `public_paths` (`public/` by default); every dashboard viewer downloads it, so make sure its license allows that.'
                 properties:
@@ -3895,9 +3895,12 @@ definitions:
                   - file
                   - id
                 additionalProperties: false
+          country:
+            type: string
+            description: 'Country whose states to draw, as an ISO 3166-1 alpha-2 code such as `DE`. Required with `boundaries: states`, and not supported with other boundaries.'
           key:
             type: string
-            description: 'Region property the dimension values are matched against, for built-in boundaries only. For `countries`: `iso_a2` (`US`), `iso_a3` (`USA`), `iso_n3` (`840`) or `name`. For `us_states`: `postal` (`CA`), `iso_3166_2` (`US-CA`), `fips` (`06`) or `name`. `name` also matches common alternative names. Defaults to `auto`, which tries every key. Matching ignores case, accents and punctuation.'
+            description: 'Region property the dimension values are matched against, for built-in boundaries only. For `countries`: `iso_a2` (`US`), `iso_a3` (`USA`), `iso_n3` (`840`) or `name`. For `states`: `code` (`CA`), `iso_3166_2` (`US-CA`), `fips` (`06`, US only) or `name`. For `us_states`: `postal` (`CA`), `iso_3166_2` (`US-CA`), `fips` (`06`) or `name`. `name` also matches common alternative names. Defaults to `auto`, which tries every key. Matching ignores case, accents and punctuation.'
           color:
             type: object
             description: Measure that fills each region

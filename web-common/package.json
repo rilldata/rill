@@ -83,6 +83,7 @@
     "lucide-svelte": "^0.298.0",
     "luxon": "^3.5.0",
     "mapbox-gl": "^3.0.0",
+    "mapshaper": "0.7.98",
     "marked": "^16.4.0",
     "match-sorter": "^6.3.1",
     "memoizee": "^0.4.17",

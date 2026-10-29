@@ -75,14 +75,17 @@
   );
   const metricsView = $derived($specStore?.metrics_view ?? "");
   const dimension = $derived(regions?.dimension ?? "");
+  const country = $derived(regions?.country);
   const boundariesConfig = $derived(
-    isValidRegionBoundaries(regions?.boundaries)
+    isValidRegionBoundaries(regions?.boundaries, country)
       ? regions.boundaries
       : undefined,
   );
   // Primitives, so that unrelated spec updates don't rebuild the region index.
   const boundariesKey = $derived(
-    boundariesConfig ? regionBoundariesKey(boundariesConfig) : undefined,
+    boundariesConfig
+      ? regionBoundariesKey(boundariesConfig, country)
+      : undefined,
   );
   const indexKeys = $derived(
     boundariesConfig
@@ -102,7 +105,7 @@
       if (
         !r?.dimension ||
         !r.color?.measure ||
-        !isValidRegionBoundaries(r.boundaries)
+        !isValidRegionBoundaries(r.boundaries, r.country)
       )
         return null;
       return {

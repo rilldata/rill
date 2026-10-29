@@ -746,6 +746,73 @@ map:
 	testruntime.RequireReconcileState(t, rt, id, 4, 1, 0)
 	testruntime.RequireReconcileErrorContains(t, rt, id, runtime.ResourceKindComponent, "c1", `"regions.key" must be one of`)
 
+	// Valid: states of a country.
+	testruntime.PutFiles(t, rt, id, map[string]string{
+		"c1.yaml": `
+type: component
+map:
+  metrics_view: mv1
+  regions:
+    dimension: foo
+    boundaries: states
+    country: DE
+    key: code
+    color:
+      measure: y
+`})
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireReconcileState(t, rt, id, 4, 0, 0)
+
+	// Invalid: states without a country.
+	testruntime.PutFiles(t, rt, id, map[string]string{
+		"c1.yaml": `
+type: component
+map:
+  metrics_view: mv1
+  regions:
+    dimension: foo
+    boundaries: states
+    color:
+      measure: y
+`})
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireReconcileState(t, rt, id, 4, 1, 0)
+	testruntime.RequireReconcileErrorContains(t, rt, id, runtime.ResourceKindComponent, "c1", "must include a string 'country' property")
+
+	// Invalid: states with a country that is not an alpha-2 code.
+	testruntime.PutFiles(t, rt, id, map[string]string{
+		"c1.yaml": `
+type: component
+map:
+  metrics_view: mv1
+  regions:
+    dimension: foo
+    boundaries: states
+    country: DEU
+    color:
+      measure: y
+`})
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireReconcileState(t, rt, id, 4, 1, 0)
+	testruntime.RequireReconcileErrorContains(t, rt, id, runtime.ResourceKindComponent, "c1", "must be an ISO 3166-1 alpha-2 code")
+
+	// Invalid: country with boundaries other than states.
+	testruntime.PutFiles(t, rt, id, map[string]string{
+		"c1.yaml": `
+type: component
+map:
+  metrics_view: mv1
+  regions:
+    dimension: foo
+    boundaries: countries
+    country: DE
+    color:
+      measure: y
+`})
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireReconcileState(t, rt, id, 4, 1, 0)
+	testruntime.RequireReconcileErrorContains(t, rt, id, runtime.ResourceKindComponent, "c1", "'regions.country' is only supported with 'boundaries: states'")
+
 	// Invalid: region color is a dimension.
 	testruntime.PutFiles(t, rt, id, map[string]string{
 		"c1.yaml": `

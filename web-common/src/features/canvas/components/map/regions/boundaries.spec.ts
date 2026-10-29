@@ -4,6 +4,7 @@ import {
   buildCustomFeatures,
   decodeBoundaries,
   isValidRegionBoundaries,
+  regionBoundariesKey,
   regionIndexKeys,
 } from "./boundaries";
 import { buildRegionIndex } from "./match";
@@ -174,12 +175,32 @@ describe("buildCustomFeatures", () => {
 
 describe("isValidRegionBoundaries", () => {
   it("accepts built-in sets and complete custom boundaries", () => {
-    expect(isValidRegionBoundaries("countries")).toBe(true);
-    expect(isValidRegionBoundaries("dmas")).toBe(false);
-    expect(isValidRegionBoundaries({ file: "public/a.json", id: "x" })).toBe(
-      true,
+    expect(isValidRegionBoundaries("countries", undefined)).toBe(true);
+    expect(isValidRegionBoundaries("us_states", undefined)).toBe(true);
+    expect(isValidRegionBoundaries("dmas", undefined)).toBe(false);
+    expect(
+      isValidRegionBoundaries({ file: "public/a.json", id: "x" }, undefined),
+    ).toBe(true);
+    expect(isValidRegionBoundaries({ file: "public/a.json" }, undefined)).toBe(
+      false,
     );
-    expect(isValidRegionBoundaries({ file: "public/a.json" })).toBe(false);
-    expect(isValidRegionBoundaries({ file: "", id: "x" })).toBe(false);
+    expect(isValidRegionBoundaries({ file: "", id: "x" }, undefined)).toBe(
+      false,
+    );
+  });
+
+  it("requires a country code for states", () => {
+    expect(isValidRegionBoundaries("states", "DE")).toBe(true);
+    expect(isValidRegionBoundaries("states", undefined)).toBe(false);
+    expect(isValidRegionBoundaries("states", "de")).toBe(false);
+    expect(isValidRegionBoundaries("states", "DEU")).toBe(false);
+  });
+});
+
+describe("regionBoundariesKey", () => {
+  it("identifies states by country, and us_states as the US states", () => {
+    expect(regionBoundariesKey("states", "DE")).toBe("states/DE");
+    expect(regionBoundariesKey("us_states", undefined)).toBe("states/US");
+    expect(regionBoundariesKey("countries", "DE")).toBe("countries");
   });
 });

@@ -10,10 +10,14 @@
     type MapRegionsConfig,
   } from ".";
   import MapColorSelector from "./MapColorSelector.svelte";
-  import { isCustomRegionBoundaries } from "./regions/boundaries";
+  import {
+    isCustomRegionBoundaries,
+    loadStatesCountries,
+  } from "./regions/boundaries";
   import {
     AUTO_REGION_KEY,
     BOUNDARY_SETS,
+    DEFAULT_STATES_COUNTRY,
     guessRegionBoundaries,
     isRegionBoundaries,
     type RegionBoundaries,
@@ -36,13 +40,30 @@
 
   const CUSTOM_BOUNDARIES = "custom";
 
+  // `us_states` is only written by hand; the editor shows it as `states` in the US.
   const boundariesOptions = [
-    ...Object.entries(BOUNDARY_SETS).map(([value, set]) => ({
+    ...(["countries", "states"] as const).map((value) => ({
       value,
-      label: set.label,
+      label: BOUNDARY_SETS[value].label,
     })),
     { value: CUSTOM_BOUNDARIES, label: "Custom file" },
   ];
+
+  const countryNames = new Intl.DisplayNames(undefined, { type: "region" });
+  let countryOptions = $state<{ value: string; label: string }[]>([]);
+  let countryOptionsLoading = $state(true);
+  $effect(() => {
+    loadStatesCountries()
+      .then((countries) => {
+        countryOptions = countries
+          .map((value) => ({ value, label: countryNames.of(value) ?? value }))
+          .sort((a, b) => a.label.localeCompare(b.label));
+      })
+      .catch(() => {
+        // The region layer shows the error when it loads the boundaries.
+      })
+      .finally(() => (countryOptionsLoading = false));
+  });
 
   const customBoundaries = $derived(
     isCustomRegionBoundaries(regions?.boundaries)
@@ -72,13 +93,22 @@
   });
   const isCustom = $derived(!!customBoundaries || customSelected);
 
+  const isStates = $derived(
+    regions?.boundaries === "states" || regions?.boundaries === "us_states",
+  );
+  const country = $derived(
+    regions?.boundaries === "us_states"
+      ? DEFAULT_STATES_COUNTRY
+      : regions?.country,
+  );
+
   const keyOptions = $derived([
     { value: AUTO_REGION_KEY, label: "Automatic" },
     ...(isRegionBoundaries(regions?.boundaries)
-      ? BOUNDARY_SETS[regions.boundaries].keys.map((k) => ({
-          value: k.name,
-          label: k.label,
-        }))
+      ? BOUNDARY_SETS[regions.boundaries].keys
+          // FIPS codes only exist for US states.
+          .filter((k) => k.name !== "fips" || country === "US")
+          .map((k) => ({ value: k.name, label: k.label }))
       : []),
   ]);
 
@@ -95,7 +125,7 @@
       "";
     onChange({
       dimension,
-      boundaries: guessRegionBoundaries(dimension) ?? "countries",
+      ...(guessRegionBoundaries(dimension) ?? { boundaries: "countries" }),
       color: { measure, colorRange: DEFAULT_MAP_COLOR_RANGE },
     });
   }
@@ -112,7 +142,22 @@
     onChange({
       dimension: regions.dimension,
       boundaries: boundaries as RegionBoundaries,
+      ...(boundaries === "states"
+        ? { country: country ?? DEFAULT_STATES_COUNTRY }
+        : {}),
       color: regions.color,
+    });
+  }
+
+  function handleCountryChange(newCountry: string) {
+    if (!regions) return;
+    // Every country has the same keys, so the key is kept; FIPS codes only match US states.
+    const { key, ...rest } = regions;
+    onChange({
+      ...rest,
+      boundaries: "states",
+      country: newCountry,
+      ...(key && (key !== "fips" || newCountry === "US") ? { key } : {}),
     });
   }
 
@@ -138,12 +183,9 @@
 
   function handleKeyChange(key: string) {
     if (!regions) return;
-    const { dimension, boundaries, color } = regions;
-    onChange(
-      key === AUTO_REGION_KEY
-        ? { dimension, boundaries, color }
-        : { dimension, boundaries, key, color },
-    );
+    const updated: MapRegionsConfig = { ...regions, key };
+    if (key === AUTO_REGION_KEY) delete updated.key;
+    onChange(updated);
   }
 </script>
 
@@ -166,7 +208,11 @@
       id="map-regions-boundaries"
       label="Boundaries"
       options={boundariesOptions}
-      value={isCustom ? CUSTOM_BOUNDARIES : (regions.boundaries as string)}
+      value={isCustom
+        ? CUSTOM_BOUNDARIES
+        : isStates
+          ? "states"
+          : (regions.boundaries as string)}
       full
       size="sm"
       sameWidth
@@ -216,6 +262,22 @@
         onEnter={commitCustomBoundaries}
       />
     {:else}
+      {#if isStates}
+        <Select
+          id="map-regions-country"
+          label="Country"
+          options={countryOptions}
+          optionsLoading={countryOptionsLoading}
+          value={country ?? ""}
+          placeholder="Select a country"
+          enableSearch
+          full
+          size="sm"
+          sameWidth
+          fontSize={12}
+          onChange={handleCountryChange}
+        />
+      {/if}
       <Select
         id="map-regions-key"
         label="Match values by"

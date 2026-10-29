@@ -572,13 +572,13 @@ _[object]_ - Map with up to two layers: points or polygons from a geo dimension,
 
     - **`type`** - _[string]_ - Field type, always `nominal`
 
-  - **`regions`** - _[object]_ - Regions layer that fills region boundaries by a measure, joined to the rows through the values of `dimension`. Boundaries are either a built-in set or a GeoJSON or TopoJSON file in the project. Drawn below the base map's labels and the `geo_dimension` layer.
+  - **`regions`** - _[object]_ - Regions layer that fills region boundaries by a measure, joined to the rows through the values of `dimension`. Boundaries are either a built-in set, such as countries or the states of a country, or a GeoJSON or TopoJSON file in the project. Drawn below the base map's labels and the `geo_dimension` layer.
 
     - **`dimension`** - _[string]_ - Name of the dimension whose values identify regions, such as country codes or state names _(required)_
 
     - **`boundaries`** - _[oneOf]_ - Boundaries to draw, either the name of a built-in set or a mapping that points to a boundary file in the project. _(required)_
 
-      - **option 1** - _[string]_ - Built-in boundary set to draw. `countries` covers every country; `us_states` covers the 50 US states and the District of Columbia.
+      - **option 1** - _[string]_ - Built-in boundary set to draw. `countries` covers every country; `states` covers the first-level subdivisions of the country in `country`, such as states, provinces or regions; `us_states` is the same as `states` with `country: US`.
 
       - **option 2** - _[object]_ - Custom boundaries from a GeoJSON `FeatureCollection` or a TopoJSON file with a single object, such as Nielsen DMAs or sales territories. The file must be under one of the project's `public_paths` (`public/` by default); every dashboard viewer downloads it, so make sure its license allows that.
 
@@ -588,7 +588,9 @@ _[object]_ - Map with up to two layers: points or polygons from a geo dimension,
 
         - **`name`** - _[string]_ - Feature property shown as the region name in tooltips. Defaults to the `id` property.
 
-    - **`key`** - _[string]_ - Region property the dimension values are matched against, for built-in boundaries only. For `countries`: `iso_a2` (`US`), `iso_a3` (`USA`), `iso_n3` (`840`) or `name`. For `us_states`: `postal` (`CA`), `iso_3166_2` (`US-CA`), `fips` (`06`) or `name`. `name` also matches common alternative names. Defaults to `auto`, which tries every key. Matching ignores case, accents and punctuation.
+    - **`country`** - _[string]_ - Country whose states to draw, as an ISO 3166-1 alpha-2 code such as `DE`. Required with `boundaries: states`, and not supported with other boundaries.
+
+    - **`key`** - _[string]_ - Region property the dimension values are matched against, for built-in boundaries only. For `countries`: `iso_a2` (`US`), `iso_a3` (`USA`), `iso_n3` (`840`) or `name`. For `states`: `code` (`CA`), `iso_3166_2` (`US-CA`), `fips` (`06`, US only) or `name`. For `us_states`: `postal` (`CA`), `iso_3166_2` (`US-CA`), `fips` (`06`) or `name`. `name` also matches common alternative names. Defaults to `auto`, which tries every key. Matching ignores case, accents and punctuation.
 
     - **`color`** - _[object]_ - Measure that fills each region _(required)_
 

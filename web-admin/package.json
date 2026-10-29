@@ -3,8 +3,8 @@
   "private": true,
   "version": "0.0.0",
   "scripts": {
-    "dev": "vite dev",
-    "build": "npm run generate:sveltekit -w web-common && vite build && cp _redirects build",
+    "dev": "npm run generate:map-boundaries -w web-common && vite dev",
+    "build": "npm run generate:sveltekit -w web-common && npm run generate:map-boundaries -w web-common && vite build && cp _redirects build",
     "preview": "vite preview",
     "test": "playwright test",
     "test:unit": "vitest run",

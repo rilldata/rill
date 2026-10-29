@@ -53,6 +53,9 @@ jobs:
         with:
           node-version-file: '.nvmrc'
 
+      - name: Cache map boundaries
+        uses: ./.github/actions/map-boundaries-cache
+
       - name: Build and embed static UI
         run: make cli.prepare
         env:

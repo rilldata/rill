@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"maps"
 	"math"
+	"regexp"
 	"slices"
 	"strings"
 
@@ -681,8 +682,14 @@ func (v rendererValidator) validateMap(props map[string]any) error {
 // It must be kept in sync with BOUNDARY_SETS in web-common/src/features/canvas/components/map/regions/registry.ts.
 var mapRegionKeys = map[string][]string{
 	"countries": {"auto", "iso_a2", "iso_a3", "iso_n3", "name"},
+	"states":    {"auto", "code", "iso_3166_2", "fips", "name"},
 	"us_states": {"auto", "postal", "iso_3166_2", "fips", "name"},
 }
+
+// mapRegionCountry matches an ISO 3166-1 alpha-2 country code, as used by the `states` boundary set.
+// Whether the country has built-in state boundaries is only known to the frontend,
+// so an unsupported country surfaces as an error when the map renders.
+var mapRegionCountry = regexp.MustCompile(`^[A-Z]{2}$`)
 
 // validateMapRegions validates the regions layer of a map.
 func (v rendererValidator) validateMapRegions(mv *runtimev1.MetricsViewSpec, mvn string, props map[string]any, ephemeralNames map[string]bool) error {
@@ -698,6 +705,11 @@ func (v rendererValidator) validateMapRegions(mv *runtimev1.MetricsViewSpec, mvn
 		return fmt.Errorf("referenced regions.dimension %q is not a dimension in metrics view %q", dim, mvn)
 	}
 
+	country, hasCountry, err := getOptionalPathString(props, "regions.country")
+	if err != nil {
+		return err
+	}
+
 	switch boundaries := props["regions"].(map[string]any)["boundaries"].(type) {
 	case string:
 		keys, ok := mapRegionKeys[boundaries]
@@ -709,6 +721,18 @@ func (v rendererValidator) validateMapRegions(mv *runtimev1.MetricsViewSpec, mvn
 		}
 		if err := v.validateOptionalStringEnum(props, "regions.key", keys); err != nil {
 			return err
+		}
+		if boundaries != "states" {
+			if hasCountry {
+				return errors.New("renderer property 'regions.country' is only supported with 'boundaries: states'")
+			}
+			break
+		}
+		if !hasCountry {
+			return errors.New("renderer property 'regions' must include a string 'country' property with 'boundaries: states'")
+		}
+		if !mapRegionCountry.MatchString(country) && !(v.lenient && IsTemplated(country)) {
+			return fmt.Errorf("renderer property 'regions.country' must be an ISO 3166-1 alpha-2 code such as \"DE\", got %q", country)
 		}
 	case map[string]any:
 		// Custom boundaries from a GeoJSON or TopoJSON file in the project, matched on a single feature property.
@@ -725,6 +749,9 @@ func (v rendererValidator) validateMapRegions(mv *runtimev1.MetricsViewSpec, mvn
 		}
 		if _, ok := pathutil.GetPath(props, "regions.key"); ok {
 			return errors.New("renderer property 'regions.key' is not supported with custom boundaries; use 'regions.boundaries.id' instead")
+		}
+		if hasCountry {
+			return errors.New("renderer property 'regions.country' is only supported with 'boundaries: states'")
 		}
 	default:
 		return errors.New("renderer property 'regions' must include a 'boundaries' property that is a string or a mapping")

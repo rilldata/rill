@@ -169,7 +169,7 @@ Colors are spread linearly between the lowest and highest value on the map. If a
 
 ## Built-in regions
 
-To shade countries or US states, add a `regions` layer. It matches the values of a regular dimension to built-in boundaries, so your model only needs a column with country or state names or codes:
+To shade countries, or the states or provinces of a country, add a `regions` layer. It matches the values of a regular dimension to built-in boundaries, so your model only needs a column with country or state names or codes:
 
 ```yaml
 - map:
@@ -185,12 +185,26 @@ To shade countries or US states, add a `regions` layer. It matches the values of
           scheme: blues
 ```
 
-In the visual editor, pick the dimension under **Regions**, then choose the **Boundaries**. When you add a map to a metrics view without a geo dimension, the map starts with a regions layer for the first dimension whose name contains `country` or `state`.
+To shade states, set `boundaries` to `states` and `country` to the country's ISO 3166-1 alpha-2 code:
+
+```yaml
+    regions:
+      dimension: state
+      boundaries: states
+      country: DE
+      color:
+        measure: total_revenue
+```
+
+In the visual editor, pick the dimension under **Regions**, then choose the **Boundaries** and, for states, the **Country**. When you add a map to a metrics view without a geo dimension, the map starts with a regions layer for the first dimension whose name contains `country`, `state`, or `province`.
 
 | `boundaries` | Covers | `key` values |
 |--------------|--------|--------------|
 | `countries` | Every country | `iso_a2` (`US`), `iso_a3` (`USA`), `iso_n3` (`840`), `name` (`United States`) |
-| `us_states` | The 50 US states and the District of Columbia | `postal` (`CA`), `iso_3166_2` (`US-CA`), `fips` (`06`), `name` (`California`) |
+| `states` | The first-level subdivisions of `country`, such as states, provinces, or regions | `code` (`CA`), `iso_3166_2` (`US-CA`), `fips` (`06`, US only), `name` (`California`) |
+| `us_states` | Same as `states` with `country: US`: the US states, the District of Columbia, and Puerto Rico | `postal` (`CA`), `iso_3166_2` (`US-CA`), `fips` (`06`), `name` (`California`) |
+
+`states` is available for Argentina, Australia, Austria, Belgium, Brazil, Canada, Chile, China, Colombia, Czechia, Denmark, Egypt, Finland, France, Germany, Greece, Hungary, India, Ireland, Israel, Italy, Japan, Malaysia, Mexico, the Netherlands, New Zealand, Nigeria, Peru, the Philippines, Poland, Portugal, Romania, Russia, Saudi Arabia, Singapore, South Africa, South Korea, Spain, Sweden, Switzerland, Thailand, Turkey, Ukraine, the United Arab Emirates, the United Kingdom, and the United States. Regions follow each country's first-level subdivisions in ISO 3166-2: for example, the regions of France and Italy, the autonomous communities of Spain, and England, Scotland, Wales, and Northern Ireland for the United Kingdom.
 
 By default, values are matched against every key, so a column that mixes `US`, `USA`, and `United States` still works. Set `key` to match one key only. Matching ignores case, accents, and punctuation, and `name` also matches common alternative names, such as `UK` or `Ivory Coast`. The legend reports how many values didn't match a region; hover over the message to see them.
 

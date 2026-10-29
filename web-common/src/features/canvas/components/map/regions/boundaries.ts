@@ -8,6 +8,7 @@ import type { MapComponent, MapSpec } from "..";
 import {
   AUTO_REGION_KEY,
   BOUNDARY_SETS,
+  boundaryFileName,
   isRegionBoundaries,
   type RegionBoundaries,
 } from "./registry";
@@ -33,17 +34,25 @@ export function isCustomRegionBoundaries(
   return typeof file === "string" && !!file && typeof id === "string" && !!id;
 }
 
-/** Whether the boundaries are complete enough to load. */
+/**
+ * Whether the boundaries are complete enough to load.
+ * `country` is the `regions.country` property, which `states` boundaries require.
+ */
 export function isValidRegionBoundaries(
   value: unknown,
+  country: string | undefined,
 ): value is RegionBoundariesConfig {
-  return isRegionBoundaries(value) || isCustomRegionBoundaries(value);
+  if (isRegionBoundaries(value)) return !!boundaryFileName(value, country);
+  return isCustomRegionBoundaries(value);
 }
 
 /** Identifies the boundaries, e.g. to tell when the drawn regions change. */
-export function regionBoundariesKey(boundaries: RegionBoundariesConfig) {
+export function regionBoundariesKey(
+  boundaries: RegionBoundariesConfig,
+  country: string | undefined,
+) {
   return isRegionBoundaries(boundaries)
-    ? boundaries
+    ? (boundaryFileName(boundaries, country) ?? boundaries)
     : `${boundaries.file}::${boundaries.id}::${boundaries.name ?? ""}`;
 }
 
@@ -75,18 +84,22 @@ export function createRegionBoundariesQuery(
   const queryOptionsStore = derived(
     [specStore, dataEnabled],
     ([specVal, $visible]) => {
-      const boundaries = (specVal as Partial<MapSpec> | undefined)?.regions
-        ?.boundaries;
-      const valid = isValidRegionBoundaries(boundaries);
+      const regions = (specVal as Partial<MapSpec> | undefined)?.regions;
+      const boundaries = regions?.boundaries;
+      const country = regions?.country;
+      const valid = isValidRegionBoundaries(boundaries, country);
       return {
         queryKey: [
           "map-region-boundaries",
           runtimeClient.instanceId,
-          valid ? regionBoundariesKey(boundaries) : "",
+          valid ? regionBoundariesKey(boundaries, country) : "",
         ],
         queryFn: () => {
-          if (isRegionBoundaries(boundaries))
-            return BOUNDARY_SETS[boundaries].load();
+          if (isRegionBoundaries(boundaries)) {
+            return loadBuiltinBoundaries(
+              boundaryFileName(boundaries, country) as string,
+            );
+          }
           return loadCustomBoundaries(
             runtimeClient,
             boundaries as CustomRegionBoundaries,
@@ -102,6 +115,73 @@ export function createRegionBoundariesQuery(
   );
 
   return createQuery(queryOptionsStore);
+}
+
+const BUILTIN_BOUNDARIES_PATH = "/map-boundaries";
+
+/**
+ * Maps the built-in boundary files, such as `countries` and `states/DE`, to file names that include a hash of their content.
+ * Written by `web-common/scripts/generate-map-boundaries.ts`.
+ */
+interface BuiltinBoundariesManifest {
+  files: Record<string, string>;
+}
+
+let builtinManifest: Promise<BuiltinBoundariesManifest> | undefined;
+const builtinBoundaries = new Map<string, Promise<GeoJSON.FeatureCollection>>();
+
+/** Countries with a built-in `states` boundary set, as ISO 3166-1 alpha-2 codes. */
+export async function loadStatesCountries(): Promise<string[]> {
+  const { files } = await loadBuiltinManifest();
+  return Object.keys(files)
+    .filter((name) => name.startsWith("states/"))
+    .map((name) => name.slice("states/".length));
+}
+
+/** Loads a built-in boundary file, such as `countries` or `states/DE`. Every map that uses it shares one load. */
+function loadBuiltinBoundaries(
+  name: string,
+): Promise<GeoJSON.FeatureCollection> {
+  let promise = builtinBoundaries.get(name);
+  if (!promise) {
+    promise = loadBuiltinManifest().then(async ({ files }) => {
+      const file = files[name];
+      if (!file) {
+        throw new Error(
+          name.startsWith("states/")
+            ? `No built-in state boundaries for country "${name.slice("states/".length)}"`
+            : `No built-in boundaries named "${name}"`,
+        );
+      }
+      return decodeBoundaries(
+        await fetchBuiltinJSON(`${BUILTIN_BOUNDARIES_PATH}/${file}`),
+      );
+    });
+    // Drop failed loads so a later render can retry.
+    promise.catch(() => builtinBoundaries.delete(name));
+    builtinBoundaries.set(name, promise);
+  }
+  return promise;
+}
+
+function loadBuiltinManifest(): Promise<BuiltinBoundariesManifest> {
+  if (!builtinManifest) {
+    builtinManifest = fetchBuiltinJSON(
+      `${BUILTIN_BOUNDARIES_PATH}/manifest.json`,
+    ) as Promise<BuiltinBoundariesManifest>;
+    builtinManifest.catch(() => (builtinManifest = undefined));
+  }
+  return builtinManifest;
+}
+
+async function fetchBuiltinJSON(url: string): Promise<unknown> {
+  const response = await fetch(url);
+  if (!response.ok) {
+    throw new Error(
+      `Failed to load map boundaries from "${url}": ${response.statusText || `HTTP ${response.status}`}`,
+    );
+  }
+  return response.json();
 }
 
 async function loadCustomBoundaries(

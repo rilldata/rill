@@ -44,6 +44,8 @@ export const DEFAULT_MAP_COLOR_RANGE: ColorRangeMapping = {
 export interface MapRegionsConfig {
   dimension: string;
   boundaries: RegionBoundariesConfig;
+  /** Country of `states` boundaries, as an ISO 3166-1 alpha-2 code such as `DE`. */
+  country?: string;
   /**
    * Region property the dimension values are matched against, for built-in boundaries only.
    * Defaults to matching every key of the boundary set.
@@ -102,7 +104,10 @@ export class MapComponent extends BaseCanvasComponent<MapSpec> {
     const hasPoints = !!spec.geo_dimension?.field && !!spec.color?.measure;
     const hasRegions =
       !!spec.regions?.dimension &&
-      isValidRegionBoundaries(spec.regions?.boundaries) &&
+      isValidRegionBoundaries(
+        spec.regions?.boundaries,
+        spec.regions?.country,
+      ) &&
       !!spec.regions?.color?.measure;
     return hasPoints || hasRegions;
   }
@@ -183,13 +188,13 @@ export class MapComponent extends BaseCanvasComponent<MapSpec> {
     // Without a geo dimension, look for one that names regions, such as `country`.
     if (!geoDimensionName) {
       for (const d of metricsViewSpec?.dimensions ?? []) {
-        const boundaries = d.name ? guessRegionBoundaries(d.name) : undefined;
-        if (!d.name || !boundaries) continue;
+        const guess = d.name ? guessRegionBoundaries(d.name) : undefined;
+        if (!d.name || !guess) continue;
         return {
           metrics_view: metricsViewName,
           regions: {
             dimension: d.name,
-            boundaries,
+            ...guess,
             color: {
               measure: colorMeasure,
               colorRange: DEFAULT_MAP_COLOR_RANGE,
