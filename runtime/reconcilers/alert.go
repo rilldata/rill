@@ -1010,7 +1010,8 @@ func (r *AlertReconciler) popCurrentExecution(ctx context.Context, self *runtime
 // If the export fails, it records a warning on the current execution and returns a nil attachment,
 // so the emails are still sent without the attachment.
 // The returned bool is true if the export was too large to attach.
-// It only returns an error on cancellation or timeout, so the alert is retried instead of sending emails without the attachment.
+// It only returns an error on cancellation, so the alert is retried instead of sending emails without the attachment.
+// A timeout is not retried by executeAll, so it is handled like other export failures to avoid dropping the notifications.
 func (r *AlertReconciler) exportAttachment(ctx context.Context, self *runtimev1.Resource, a *runtimev1.Alert, adminMeta *drivers.AlertMetadata, executionTime time.Time) (*email.Attachment, bool, error) {
 	// Tag as alert execution so the export query is attributed to the "alert" source for billing.
 	ctx = runtime.WithRequestSource(ctx, runtime.RequestSourceAlert)
@@ -1028,7 +1029,7 @@ func (r *AlertReconciler) exportAttachment(ctx context.Context, self *runtimev1.
 		Limit:         a.Spec.ExportLimit,
 		Priority:      alertQueryPriority,
 	})
-	if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
+	if errors.Is(err, context.Canceled) {
 		return nil, false, err
 	}
 	if errors.Is(err, errAttachmentTooLarge) {

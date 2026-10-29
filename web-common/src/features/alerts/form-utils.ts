@@ -166,7 +166,12 @@ export const alertFormValidationSchema = yup(
     snooze: string().required("Required"),
     slackUsers: array(string().email("Invalid email")),
     emailRecipients: array(string().email("Invalid email")),
-    exportLimit: getExportLimitSchema(),
+    // The row limit input is hidden unless attachments are enabled for email delivery
+    exportLimit: string().when(["enableEmailNotification", "exportAttach"], {
+      is: (enableEmailNotification: boolean, exportAttach: boolean) =>
+        enableEmailNotification && exportAttach,
+      then: () => getExportLimitSchema(),
+    }),
   }),
 ) as unknown as ValidationAdapter<AlertFormValues>;
 export const FieldsByTab: (keyof AlertFormValues)[][] = [
