@@ -22,7 +22,7 @@
     exportFormatToPrettyString,
     formatRefreshSchedule,
   } from "@rilldata/web-admin/features/scheduled-reports/metadata/utils.ts";
-  import { IconButton } from "@rilldata/web-common/components/button";
+  import { Button, IconButton } from "@rilldata/web-common/components/button";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import CancelCircle from "@rilldata/web-common/components/icons/CancelCircle.svelte";
   import ThreeDot from "@rilldata/web-common/components/icons/ThreeDot.svelte";
@@ -39,6 +39,8 @@
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
+  import { prettyResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
+  import { isResourceErrorAlert } from "@rilldata/web-admin/features/alerts/resource-errors/utils";
 
   export let organization: string;
   export let project: string;
@@ -64,6 +66,12 @@
   );
 
   $: alertSpec = $alertQuery.data?.resource?.alert?.spec;
+  $: isSystem = isResourceErrorAlert(alertSpec);
+  $: watchedResources = isSystem
+    ? ((alertSpec?.resolverProperties?.where_resource as
+        | string[]
+        | undefined) ?? [])
+    : [];
 
   // Get human-readable frequency
   $: humanReadableFrequency = alertSpec?.refreshSchedule?.cron
@@ -130,17 +138,21 @@
       <!-- Header row 1 -->
       <div class="uppercase text-xs text-fg-secondary font-semibold">
         <!-- Author -->
-        <ProjectAccessControls {organization} {project}>
-          <svelte:fragment slot="manage-project">
-            {#if $alertQuery.data}
-              <AlertOwnerBlock
-                {organization}
-                {project}
-                ownerId={alertSpec.annotations["admin_owner_user_id"]}
-              />
-            {/if}
-          </svelte:fragment>
-        </ProjectAccessControls>
+        {#if isSystem}
+          {m.alert_errors_system_label()}
+        {:else}
+          <ProjectAccessControls {organization} {project}>
+            <svelte:fragment slot="manage-project">
+              {#if $alertQuery.data}
+                <AlertOwnerBlock
+                  {organization}
+                  {project}
+                  ownerId={alertSpec.annotations["admin_owner_user_id"]}
+                />
+              {/if}
+            </svelte:fragment>
+          </ProjectAccessControls>
+        {/if}
       </div>
       <div class="flex gap-x-2 items-center">
         <h1
@@ -150,7 +162,14 @@
           {alertSpec.displayName}
         </h1>
         <div class="grow"></div>
-        {#if !$isAlertCreatedByCode.data}
+        {#if isSystem}
+          <Button
+            type="secondary"
+            href={`/${organization}/${project}/-/settings/notifications`}
+          >
+            {m.alert_errors_manage_in_settings()}
+          </Button>
+        {:else if !$isAlertCreatedByCode.data}
           <EditAlert {alertSpec} disabled={!$exploreIsValid} />
           <DropdownMenu.Root>
             <DropdownMenu.Trigger>
@@ -170,49 +189,68 @@
 
     <!-- Five columns of metadata -->
     <div class="flex flex-wrap gap-x-16 gap-y-6">
-      <!-- Dashboard -->
-      <div
-        class="flex flex-col gap-y-3"
-        aria-label={m.alert_metadata_dashboard_name_aria()}
-      >
-        {#if dashboardTitle}
-          <MetadataLabel>{m.alert_dashboard()}</MetadataLabel>
+      {#if isSystem}
+        <!-- Watched resources -->
+        <div class="flex flex-col gap-y-3">
+          <MetadataLabel>{m.alert_errors_scope_title()}</MetadataLabel>
           <MetadataValue>
-            {#if dashboardDoesNotExist}
-              <div class="flex items-center gap-x-1">
-                {dashboardTitle}
-                <Tooltip distance={8}>
-                  <CancelCircle size="16px" className="text-red-500" />
-                  <TooltipContent slot="tooltip-content">
-                    {m.alert_dashboard_not_exist()}
-                  </TooltipContent>
-                </Tooltip>
-              </div>
+            {#if watchedResources.length}
+              {watchedResources
+                .map((r) => {
+                  const [kind, name] = r.split("/");
+                  return `${prettyResourceKind(kind)}: ${name}`;
+                })
+                .join(", ")}
             {:else}
-              <a href={$exploreUrl}>
-                {dashboardTitle}
-              </a>
+              {m.alert_errors_scope_all()}
             {/if}
           </MetadataValue>
-        {:else}
-          <MetadataLabel>{m.alert_name_label()}</MetadataLabel>
-          <MetadataValue>
-            {$alertQuery.data?.resource?.meta?.name?.name}
-          </MetadataValue>
-        {/if}
-      </div>
+        </div>
+      {:else}
+        <!-- Dashboard -->
+        <div
+          class="flex flex-col gap-y-3"
+          aria-label={m.alert_metadata_dashboard_name_aria()}
+        >
+          {#if dashboardTitle}
+            <MetadataLabel>{m.alert_dashboard()}</MetadataLabel>
+            <MetadataValue>
+              {#if dashboardDoesNotExist}
+                <div class="flex items-center gap-x-1">
+                  {dashboardTitle}
+                  <Tooltip distance={8}>
+                    <CancelCircle size="16px" className="text-red-500" />
+                    <TooltipContent slot="tooltip-content">
+                      {m.alert_dashboard_not_exist()}
+                    </TooltipContent>
+                  </Tooltip>
+                </div>
+              {:else}
+                <a href={$exploreUrl}>
+                  {dashboardTitle}
+                </a>
+              {/if}
+            </MetadataValue>
+          {:else}
+            <MetadataLabel>{m.alert_name_label()}</MetadataLabel>
+            <MetadataValue>
+              {$alertQuery.data?.resource?.meta?.name?.name}
+            </MetadataValue>
+          {/if}
+        </div>
 
-      <!-- Split by dimension -->
-      <div
-        class="flex flex-col gap-y-3"
-        aria-label={m.alert_metadata_split_by_dimension_aria()}
-      >
-        <MetadataLabel>{m.alert_split_by_dimension()}</MetadataLabel>
-        <MetadataValue>
-          {metricsViewAggregationRequest?.dimensions?.[0]?.name ??
-            m.alert_none()}
-        </MetadataValue>
-      </div>
+        <!-- Split by dimension -->
+        <div
+          class="flex flex-col gap-y-3"
+          aria-label={m.alert_metadata_split_by_dimension_aria()}
+        >
+          <MetadataLabel>{m.alert_split_by_dimension()}</MetadataLabel>
+          <MetadataValue>
+            {metricsViewAggregationRequest?.dimensions?.[0]?.name ??
+              m.alert_none()}
+          </MetadataValue>
+        </div>
+      {/if}
 
       <!-- Schedule: TODO: change based on non UI settings -->
       <div
@@ -244,21 +282,23 @@
       {/if}
     </div>
 
-    <!-- Filters -->
-    <AlertFilters
-      {metricsViewName}
-      filters={metricsViewAggregationRequest?.where}
-      dimensionsWithInlistFilter={$dashboardState.data
-        ?.dimensionsWithInlistFilter ?? []}
-      timeRange={metricsViewAggregationRequest?.timeRange}
-      comparisonTimeRange={metricsViewAggregationRequest?.comparisonTimeRange}
-    />
+    {#if !isSystem}
+      <!-- Filters -->
+      <AlertFilters
+        {metricsViewName}
+        filters={metricsViewAggregationRequest?.where}
+        dimensionsWithInlistFilter={$dashboardState.data
+          ?.dimensionsWithInlistFilter ?? []}
+        timeRange={metricsViewAggregationRequest?.timeRange}
+        comparisonTimeRange={metricsViewAggregationRequest?.comparisonTimeRange}
+      />
 
-    <!-- Criteria -->
-    <AlertFilterCriteria
-      filters={metricsViewAggregationRequest?.having}
-      comparisonTimeRange={metricsViewAggregationRequest?.comparisonTimeRange}
-    />
+      <!-- Criteria -->
+      <AlertFilterCriteria
+        filters={metricsViewAggregationRequest?.having}
+        comparisonTimeRange={metricsViewAggregationRequest?.comparisonTimeRange}
+      />
+    {/if}
 
     <!-- Slack notification -->
     {#if slackNotifier}

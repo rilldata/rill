@@ -6,6 +6,7 @@
   import { renderComponent, type ColumnDef } from "tanstack-table-8-svelte-5";
   import AlertsTableCompositeCell from "./AlertsTableCompositeCell.svelte";
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
+  import { isResourceErrorAlert } from "../resource-errors/utils";
 
   export let data: V1Resource[];
   export let organization: string;
@@ -37,6 +38,7 @@
             info.row.original.alert.state.executionHistory[0]?.startedOn,
           ownerId:
             info.row.original.alert.spec.annotations["admin_owner_user_id"],
+          isSystem: isResourceErrorAlert(info.row.original.alert?.spec),
           lastTriggerErrorMessage:
             info.row.original.alert.state.executionHistory[0]?.result
               .errorMessage,

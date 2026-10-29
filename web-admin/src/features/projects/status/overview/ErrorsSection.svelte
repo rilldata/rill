@@ -11,9 +11,13 @@
   import AlertCircleOutline from "@rilldata/web-common/components/icons/AlertCircleOutline.svelte";
   import { groupErrorsByKind, pluralizeKind } from "./overview-utils";
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
+  import { featureFlags } from "@rilldata/web-common/features/feature-flags";
+
+  const { alerts: alertsFlag } = featureFlags;
 
   const runtimeClient = useRuntimeClient();
   $: basePage = `/${$page.params.organization}/${$page.params.project}/-/status`;
+  $: notificationsPage = `/${$page.params.organization}/${$page.params.project}/-/settings/notifications`;
 
   // Parse errors (file-level YAML/SQL errors)
   $: projectParserQuery = createRuntimeServiceGetResource(
@@ -49,6 +53,11 @@
         {m.status_errors()}
         <span class="error-badge">{totalErrors}</span>
       </h3>
+      {#if $alertsFlag}
+        <a href={notificationsPage} class="notifications-link">
+          {m.status_configure_notifications()}
+        </a>
+      {/if}
     </div>
 
     <div class="error-chips">
@@ -78,6 +87,11 @@
   <div class="section">
     <div class="section-header">
       <h3 class="section-title flex items-center gap-2">{m.status_errors()}</h3>
+      {#if $alertsFlag}
+        <a href={notificationsPage} class="notifications-link">
+          {m.status_configure_notifications()}
+        </a>
+      {/if}
     </div>
 
     {#if $projectParserQuery.isError || $resourcesQuery.isError}
@@ -104,6 +118,9 @@
   }
   .section-title {
     @apply text-sm font-semibold text-fg-primary uppercase tracking-wide;
+  }
+  .notifications-link {
+    @apply text-xs text-primary-600 hover:underline;
   }
   .error-badge {
     @apply text-xs font-semibold text-white bg-red-500 rounded-full px-1.5 py-0.5 min-w-[20px] text-center;
