@@ -122,6 +122,16 @@ Custom apps with Developer mode are only available in the paid plans of ChatGPT.
 6. Log in to Rill and authorize the connection
 7. ChatGPT will receive an access token and your Rill app will be connected
 
+### Connecting to all your projects (Unified MCP Server)
+
+If you work across multiple Rill projects in your organization, you can connect once to Rill Cloud's unified MCP endpoint instead of adding a separate connector per project:
+```
+https://api.rilldata.com/v1/mcp
+```
+The unified MCP server works with both OAuth (Claude Desktop, Claude Code, and ChatGPT) and bearer tokens (`rill token issue` or a service token). It exposes a `list_projects` tool that returns the `<org>/<project>` slugs you have access to, and adds a required `project` argument to the metrics view and skill tools (`list_metrics_views`, `get_metrics_view`, `query_metrics_view_summary`, `query_metrics_view`, `list_skills`, and `load_skill`) to route each call to that project's production deployment.
+
+Use the per-project endpoint (`/v1/orgs/{org_name}/projects/{project_name}/runtime/mcp`) when you want the connection scoped to a single project, need to target a specific branch deployment, or use developer file-editing tools (`list_files`, `read_file`, `search_files`, `write_file`).
+
 ### Connecting to a specific branch
 
 The normal MCP URL targets your project's production deployment. To connect to the deployment for a specific branch (e.g. a dev/preview deployment), insert `/branch/{branch_name}` after the project name:
@@ -170,7 +180,7 @@ Depending on which Rill instance you are trying to connect to (locally running R
 
 __*Private Rill Project on Rill Cloud*__
 
-Replace `org` and `project` with the ID of your organization and project.
+Replace `org` and `project` with the name of your organization and project (or use `https://api.rilldata.com/v1/mcp` to access all projects your token has access to).
 
 ```json
 {
@@ -256,6 +266,7 @@ You can look at one of our [example projects](https://github.com/rilldata/rill-e
 
 ### Supported Actions
 
+- __*List projects (unified endpoint only)*__ – When connected to `https://api.rilldata.com/v1/mcp`, use `list_projects` to discover the `<org>/<project>` slugs you have access to, then pass `project` on every other tool call.
 - __*List metrics views*__ – Use `list_metrics_views` to discover available metrics views in the project.
 - __*Get metrics view spec*__ – Use `get_metrics_view` to fetch a metrics view's specification. This is important to understand all the dimensions and measures in a metrics view.
 - __*Query the time range*__ – Use `query_metrics_view_summary` to obtain the available time range for a metrics view. This is important to understand what time range the data spans.
