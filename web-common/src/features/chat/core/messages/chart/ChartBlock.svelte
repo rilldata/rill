@@ -5,10 +5,12 @@
 <script lang="ts">
   import { page } from "$app/stores";
   import { ChartContainer } from "@rilldata/web-common/features/components/charts";
+  import { useGetExploresForMetricsView } from "@rilldata/web-common/features/dashboards/selectors";
   import {
     ResourceKind,
     useResource,
   } from "@rilldata/web-common/features/entity-management/resource-selectors";
+  import { selectBestDashboard } from "@rilldata/web-common/features/explore-mappers/explore-validation";
   import { mapResolverExpressionToV1Expression } from "@rilldata/web-common/features/explore-mappers/map-metrics-resolver-query-to-dashboard";
   import { Theme } from "@rilldata/web-common/features/themes/theme";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
@@ -17,7 +19,7 @@
   import { readable } from "svelte/store";
   import type { V1Tool } from "../../../../../runtime-client";
   import ToolCall from "../tools/ToolCall.svelte";
-  import type { ChartBlock } from "./chart-block";
+  import { resolveChartTimeZone, type ChartBlock } from "./chart-block";
 
   export let block: ChartBlock;
   export let tools: V1Tool[] | undefined = undefined;
@@ -33,17 +35,34 @@
 
   $: spec = readable(chartSpec);
 
+  $: explicitTimeZone =
+    typeof chartSpec.time_range?.time_zone === "string" &&
+    chartSpec.time_range.time_zone
+      ? chartSpec.time_range.time_zone
+      : undefined;
+
+  $: exploresQuery = useGetExploresForMetricsView(
+    runtimeClient,
+    chartSpec.metrics_view ?? "",
+  );
+  $: exploreSpec = selectBestDashboard($exploresQuery.data ?? [])?.explore
+    ?.state?.validSpec;
+  $: timeZone = resolveChartTimeZone(explicitTimeZone, exploreSpec);
+  // Wait for explore lookup when the spec omits time_zone so we don't
+  // briefly query UTC and then refetch after inheritance resolves.
+  $: timezoneReady = !!explicitTimeZone || !$exploresQuery.isLoading;
+
   // Extract time range from the chart spec or use defaults
   $: timeRange = chartSpec.time_range
     ? {
         start: chartSpec.time_range.start,
         end: chartSpec.time_range.end,
-        timeZone: chartSpec.time_range.time_zone || "UTC",
+        timeZone,
       }
     : {
         start: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
         end: new Date().toISOString(),
-        timeZone: "UTC",
+        timeZone,
       };
 
   $: comparisonTimeRange = chartSpec.comparison_time_range
@@ -113,16 +132,18 @@
   />
 
   <div class="chart-container">
-    <ChartContainer
-      chartType={block.chartType}
-      {spec}
-      {timeAndFilterStore}
-      {project}
-      theme={$themeQuery?.data}
-      showExploreLink
-      {organization}
-      themeMode="light"
-    />
+    {#if timezoneReady}
+      <ChartContainer
+        chartType={block.chartType}
+        {spec}
+        {timeAndFilterStore}
+        {project}
+        theme={$themeQuery?.data}
+        showExploreLink
+        {organization}
+        themeMode="light"
+      />
+    {/if}
   </div>
 </div>
 
