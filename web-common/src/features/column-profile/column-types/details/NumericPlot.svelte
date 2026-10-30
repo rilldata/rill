@@ -17,9 +17,9 @@ Otherwise, the page will jump around as the data is fetched.
   import type {
     NumericHistogramBinsBin,
     NumericOutliersOutlier,
-    TopKEntry,
     V1NumericStatistics,
   } from "@rilldata/web-common/runtime-client";
+  import type { TopK_Entry } from "@rilldata/web-common/proto/gen/rill/runtime/v1/queries_pb";
   import { bisector } from "d3-array";
   import { scaleLinear } from "d3-scale";
   import { createHistogramScales } from "../histogram-utils";
@@ -38,7 +38,7 @@ Otherwise, the page will jump around as the data is fetched.
   export let data: NumericHistogramBinsBin[];
   export let rug: NumericOutliersOutlier[];
   export let summary: V1NumericStatistics | undefined;
-  export let topK: TopKEntry[];
+  export let topK: TopK_Entry[];
   export let totalRows: number;
   export let type: string;
 
@@ -46,7 +46,8 @@ Otherwise, the page will jump around as the data is fetched.
   let topKLimit = 15;
   let rowHeight = 24;
   let containerWidth = 400;
-  let focusPoint: TopKEntry | undefined = undefined;
+  // The entry focused in the top-K list, in the plain JS form TopK.svelte emits.
+  let focusPoint: { value: unknown; count: number } | undefined = undefined;
 
   $: if (summaryMode !== "summary") focusPoint = undefined;
 
