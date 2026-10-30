@@ -15,8 +15,9 @@ export enum ReportFrequency {
   Custom = "Custom",
 }
 
+// The form keeps the English day name as its value (see weekDayMap), so it must not follow the app locale.
 export function getTodaysDayOfWeek(): string {
-  return DateTime.now().toLocaleString({ weekday: "long" });
+  return DateTime.now().setLocale("en-US").toLocaleString({ weekday: "long" });
 }
 
 export function getTodaysDayOfMonth(): number {
