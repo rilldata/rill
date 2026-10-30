@@ -79,7 +79,7 @@ func TestCallRuntimeToolErrors(t *testing.T) {
 	client := &mcpClient{sessionID: "session", userAgent: "test"}
 
 	// A successful call returns the runtime's result.
-	res, err := s.callRuntimeTool(t.Context(), depl, "jwt", client, "echo", json.RawMessage(`{"name":"hello"}`))
+	res, err := s.callRuntimeTool(t.Context(), depl, "jwt", client, &mcp.CallToolParams{Name: "echo", Arguments: json.RawMessage(`{"name":"hello"}`)})
 	require.NoError(t, err)
 	require.False(t, res.IsError)
 	require.Equal(t, map[string]any{"name": "hello"}, res.StructuredContent)
@@ -87,17 +87,29 @@ func TestCallRuntimeToolErrors(t *testing.T) {
 	require.Equal(t, uuid.NewSHA1(mcpSessionNamespace, []byte("default/session")).String(), runtimeSessionID)
 
 	// Calling a tool the runtime does not serve returns a tool error the client can act on, not a protocol error.
-	res, err = s.callRuntimeTool(t.Context(), depl, "jwt", client, ai.ListSkillsName, json.RawMessage(`{}`))
+	res, err = s.callRuntimeTool(t.Context(), depl, "jwt", client, &mcp.CallToolParams{Name: ai.ListSkillsName, Arguments: json.RawMessage(`{}`)})
 	require.NoError(t, err)
 	require.True(t, res.IsError)
 	require.Len(t, res.Content, 1)
 	require.Contains(t, res.Content[0].(*mcp.TextContent).Text, "unknown tool")
 
 	// Invalid arguments are also returned as a tool error.
-	res, err = s.callRuntimeTool(t.Context(), depl, "jwt", client, "echo", json.RawMessage(`{"name":123}`))
+	res, err = s.callRuntimeTool(t.Context(), depl, "jwt", client, &mcp.CallToolParams{Name: "echo", Arguments: json.RawMessage(`{"name":123}`)})
 	require.NoError(t, err)
 	require.True(t, res.IsError)
 	require.NotEmpty(t, res.Content)
+
+	// Calls from clients on protocol versions >= 2026-07-28 carry their protocol version and capabilities in _meta, which must reach the runtime.
+	newProtocolClient := &mcpClient{sessionID: "session", userAgent: "test", protocolVersion: "2026-07-28"}
+	meta := mcp.Meta{
+		mcp.MetaKeyProtocolVersion:    "2026-07-28",
+		mcp.MetaKeyClientCapabilities: map[string]any{},
+		mcp.MetaKeyClientInfo:         map[string]any{"name": "test", "version": "1.0"},
+	}
+	res, err = s.callRuntimeTool(t.Context(), depl, "jwt", newProtocolClient, &mcp.CallToolParams{Meta: meta, Name: "echo", Arguments: json.RawMessage(`{"name":"hello"}`)})
+	require.NoError(t, err)
+	require.False(t, res.IsError)
+	require.Equal(t, map[string]any{"name": "hello"}, res.StructuredContent)
 
 	// Any other error from the runtime stays a protocol error.
 	internal := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -109,7 +121,7 @@ func TestCallRuntimeToolErrors(t *testing.T) {
 		})
 	}))
 	t.Cleanup(internal.Close)
-	_, err = s.callRuntimeTool(t.Context(), &database.Deployment{RuntimeHost: internal.URL, RuntimeInstanceID: "default"}, "jwt", client, "echo", json.RawMessage(`{}`))
+	_, err = s.callRuntimeTool(t.Context(), &database.Deployment{RuntimeHost: internal.URL, RuntimeInstanceID: "default"}, "jwt", client, &mcp.CallToolParams{Name: "echo", Arguments: json.RawMessage(`{}`)})
 	require.ErrorContains(t, err, "boom")
 }
 

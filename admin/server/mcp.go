@@ -224,19 +224,20 @@ func (s *Server) mcpForwardToolCall(name string, client *mcpClient) mcp.ToolHand
 
 		s.admin.Used.Deployment(depl.ID)
 
-		return s.callRuntimeTool(ctx, depl, jwt, client, name, args)
+		// The client's _meta is passed through, since protocol versions >= 2026-07-28 carry the protocol version and client capabilities in it.
+		return s.callRuntimeTool(ctx, depl, jwt, client, &mcp.CallToolParams{Meta: req.Params.Meta, Name: name, Arguments: args})
 	}
 }
 
 // callRuntimeTool calls a tool on a deployment's MCP server.
 // It sends a plain JSON-RPC request instead of using the MCP SDK's client, which would add an initialization
 // handshake to every tool call and would not let us pass through the session ID and user agent.
-func (s *Server) callRuntimeTool(ctx context.Context, depl *database.Deployment, jwt string, client *mcpClient, name string, args json.RawMessage) (*mcp.CallToolResult, error) {
+func (s *Server) callRuntimeTool(ctx context.Context, depl *database.Deployment, jwt string, client *mcpClient, params *mcp.CallToolParams) (*mcp.CallToolResult, error) {
 	body, err := json.Marshal(map[string]any{
 		"jsonrpc": "2.0",
 		"id":      1,
 		"method":  "tools/call",
-		"params":  mcp.CallToolParams{Name: name, Arguments: args},
+		"params":  params,
 	})
 	if err != nil {
 		return nil, err
@@ -255,6 +256,9 @@ func (s *Server) callRuntimeTool(ctx context.Context, depl *database.Deployment,
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Accept", "application/json, text/event-stream") // The runtime requires both, even though it responds with JSON
 	req.Header.Set("Authorization", "Bearer "+jwt)
+	// Protocol versions >= 2026-07-28 require these headers to mirror the body; older versions ignore them.
+	req.Header.Set("Mcp-Method", "tools/call")
+	req.Header.Set("Mcp-Name", params.Name)
 	if client.protocolVersion != "" {
 		req.Header.Set("Mcp-Protocol-Version", client.protocolVersion)
 	}
