@@ -1,0 +1,119 @@
+{
+  "time_grain": "TIME_GRAIN_DAY",
+  "row_limit": 1500,
+  "top_n": [
+    {
+      "channel": "color",
+      "field": "username",
+      "limit": 3,
+      "query": {
+        "metrics_view": "mv",
+        "dimensions": [
+          {
+            "name": "username"
+          }
+        ],
+        "measures": [
+          {
+            "name": "commits"
+          }
+        ],
+        "pivot_on": null,
+        "spine": null,
+        "sort": [
+          {
+            "name": "commits",
+            "desc": true
+          }
+        ],
+        "time_range": {
+          "start": "2024-01-01T00:00:00Z",
+          "end": "2024-02-01T00:00:00Z"
+        },
+        "comparison_time_range": null,
+        "where": {
+          "cond": {
+            "op": "nin",
+            "exprs": [
+              {
+                "name": "username"
+              },
+              {
+                "val": [
+                  null
+                ]
+              }
+            ]
+          }
+        },
+        "having": null,
+        "limit": 4,
+        "offset": null,
+        "time_zone": "",
+        "use_display_names": false,
+        "rows": false
+      }
+    }
+  ],
+  "main": {
+    "metrics_view": "mv",
+    "dimensions": [
+      {
+        "name": "date",
+        "compute": {
+          "time_floor": {
+            "dimension": "date",
+            "grain": "day"
+          }
+        }
+      },
+      {
+        "name": "username"
+      }
+    ],
+    "measures": [
+      {
+        "name": "commits"
+      }
+    ],
+    "pivot_on": null,
+    "spine": null,
+    "sort": [
+      {
+        "name": "date",
+        "desc": true
+      },
+      {
+        "name": "username",
+        "desc": false
+      }
+    ],
+    "time_range": {
+      "start": "2024-01-01T00:00:00Z",
+      "end": "2024-02-01T00:00:00Z"
+    },
+    "comparison_time_range": null,
+    "where": {
+      "cond": {
+        "op": "in",
+        "exprs": [
+          {
+            "name": "username"
+          },
+          {
+            "val": [
+              "alice",
+              "bob"
+            ]
+          }
+        ]
+      }
+    },
+    "having": null,
+    "limit": 1501,
+    "offset": null,
+    "time_zone": "",
+    "use_display_names": false,
+    "rows": false
+  }
+}

@@ -1,0 +1,164 @@
+@import "@rilldata/web-common/colors.css";
+@import "@rilldata/web-common/styles/chart-base.css";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*
+ * Rill's semantic tokens mapped onto the MCP Apps host style variables
+ * (--color-background-*, --color-text-*, --color-border-*, --font-sans, --border-radius-md).
+ * Every mapping has a light-dark() fallback for hosts that send no variables.
+ * `color-scheme` is switched by the `dark` class, which the host theme toggles.
+ */
+@layer base {
+  :root {
+    color-scheme: light;
+
+    --white: #ffffff;
+    --radius: var(--border-radius-md, 0.5rem);
+    --font-sans-fallback:
+      -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue",
+      Arial, "Noto Sans", sans-serif;
+
+    --surface-base: transparent;
+    --surface-background: var(
+      --color-background-primary,
+      light-dark(#ffffff, #1f1f1f)
+    );
+    --surface-card: var(
+      --color-background-primary,
+      light-dark(#ffffff, #1f1f1f)
+    );
+    --surface-subtle: var(
+      --color-background-secondary,
+      light-dark(#f5f5f5, #262626)
+    );
+    --surface-hover: var(
+      --color-background-secondary,
+      light-dark(#f5f5f5, #262626)
+    );
+    --surface-active: var(
+      --color-background-tertiary,
+      light-dark(#ececec, #2e2e2e)
+    );
+    --surface-overlay: var(
+      --color-background-tertiary,
+      light-dark(#ececec, #2e2e2e)
+    );
+    --surface-muted: var(
+      --color-background-secondary,
+      light-dark(#f5f5f5, #262626)
+    );
+
+    --fg-primary: var(--color-text-primary, light-dark(#171717, #ededed));
+    --fg-secondary: var(--color-text-secondary, light-dark(#404040, #c7c7c7));
+    --fg-tertiary: var(--color-text-tertiary, light-dark(#737373, #a3a3a3));
+    --fg-muted: var(--color-text-tertiary, light-dark(#737373, #a3a3a3));
+    --fg-disabled: var(--color-text-disabled, light-dark(#a3a3a3, #6b6b6b));
+    /* Text on the surfaces that stay dark in both modes: Vega tooltips and the error badge. */
+    --fg-inverse: #fafafa;
+    --fg-accent: var(--color-primary-900);
+
+    --accent-primary: var(--color-primary-500);
+    --accent-primary-action: var(--color-primary-500);
+    --accent-secondary: var(--color-primary-500);
+    --accent-secondary-action: var(--color-secondary-500);
+
+    --icon-default: var(--color-text-secondary, light-dark(#404040, #c7c7c7));
+    --icon-muted: var(--color-text-tertiary, light-dark(#737373, #a3a3a3));
+    --icon-disabled: var(--color-text-disabled, light-dark(#a3a3a3, #6b6b6b));
+    --icon-accent: var(--color-primary-500);
+
+    --border: var(
+      --color-border-primary,
+      light-dark(rgb(0 0 0 / 0.1), rgb(255 255 255 / 0.12))
+    );
+    --input: var(
+      --color-border-secondary,
+      light-dark(rgb(0 0 0 / 0.08), rgb(255 255 255 / 0.1))
+    );
+    --ring-focus: var(--color-ring-primary, var(--color-theme-300));
+    --ring-offset: transparent;
+
+    --dimension: var(--color-primary-100);
+    --dimension-foreground: var(--color-primary-800);
+    --dimension-border: var(--color-primary-800);
+    --measure: var(--color-secondary-100);
+    --measure-foreground: var(--color-secondary-800);
+    --measure-border: var(--color-secondary-800);
+
+    --tooltip: var(--color-rill-gray-dark-500);
+
+    --destructive: var(--color-background-danger, light-dark(#dc2626, #ef4444));
+    --destructive-foreground: var(--color-text-inverse, #ffffff);
+    --kpi-positive: var(--fg-secondary);
+    --kpi-negative: var(--color-red-500);
+
+    --popover: var(--surface-overlay);
+    --popover-accent: var(--surface-hover);
+    --popover-foreground: var(--fg-primary);
+    --popover-footer: var(--surface-subtle);
+  }
+
+  :root.dark {
+    color-scheme: dark;
+
+    --fg-accent: var(--color-primary-light-100);
+    --accent-primary: var(--color-primary-light-600);
+    --accent-primary-action: var(--color-primary-light-400);
+    --accent-secondary: var(--color-primary-light-700);
+    --accent-secondary-action: var(--color-secondary-light-400);
+    --icon-accent: var(--color-primary-light-400);
+    --ring-focus: var(--color-ring-primary, var(--color-primary-light-500));
+    --dimension: var(--color-primary-light-950);
+    --dimension-foreground: var(--color-primary-light-100);
+    --dimension-border: var(--color-primary-light-800);
+    --measure: var(--color-secondary-light-950);
+    --measure-foreground: var(--color-secondary-light-100);
+    --measure-border: var(--color-secondary-light-800);
+  }
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  background: transparent;
+  /* Inline cards never scroll on their own; the host sizes the frame to the content. */
+  overflow: hidden;
+}
+
+body {
+  color: var(--fg-primary);
+  font-family: var(--font-sans, var(--font-sans-fallback));
+  font-size: 13px;
+  line-height: 1.4;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+#app {
+  width: 100%;
+}
+
+/* Keyboard focus follows the host's ring color; pointer focus stays quiet. */
+:focus-visible {
+  outline: 2px solid var(--ring-focus);
+  outline-offset: 2px;
+}
+
+/*
+ * Vega tooltips (web-common's vega.css) assume Rill's Inter font and keep a dark surface in both
+ * modes. The widget bundles no font, so they take the host's, and in dark mode a hairline sets the
+ * tooltip off from the host's dark background.
+ */
+:root #vg-tooltip-element,
+:root #rill-vg-tooltip {
+  font-family: var(--font-sans, var(--font-sans-fallback));
+}
+:root.dark #vg-tooltip-element,
+:root.dark #rill-vg-tooltip {
+  box-shadow:
+    0 0 0 1px rgb(255 255 255 / 0.14),
+    0 4px 12px rgb(0 0 0 / 0.45);
+}

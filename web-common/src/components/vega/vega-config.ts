@@ -25,10 +25,20 @@ const colors = {
   },
 };
 
+export interface RillThemeOptions {
+  /**
+   * Font family for axis labels and titles, legends and text marks.
+   * Unset keeps Rill's Inter for the axes and Vega's default elsewhere.
+   */
+  fontFamily?: string;
+}
+
 export const getRillTheme: (
   isDarkMode?: boolean,
   theme?: Record<string, string>,
-) => Config = (isDarkMode = false, theme) => {
+  options?: RillThemeOptions,
+) => Config = (isDarkMode = false, theme, options) => {
+  const axisFont = options?.fontFamily ?? "Inter, sans-serif";
   const gridColor = isDarkMode ? colors.dark.grid : colors.light.grid;
   const axisLabelColor = isDarkMode
     ? colors.dark.axisLabel
@@ -71,11 +81,33 @@ export const getRillTheme: (
     );
   }
 
+  // The sequential palette: the project's, else the palette store's (scoped themes, hex).
+  const sequentialColors = (() => {
+    const defaultColors = getSequentialColorsAsHex();
+
+    if (!theme) return defaultColors;
+
+    const themeColors = [
+      theme["color-sequential-1"],
+      theme["color-sequential-2"],
+      theme["color-sequential-3"],
+      theme["color-sequential-4"],
+      theme["color-sequential-5"],
+      theme["color-sequential-6"],
+      theme["color-sequential-7"],
+      theme["color-sequential-8"],
+      theme["color-sequential-9"],
+    ].filter(Boolean);
+
+    return themeColors.length > 0 ? themeColors : defaultColors;
+  })();
+
   return {
     autosize: {
       type: "fit-x",
     },
     background: "transparent",
+    ...(options?.fontFamily && { font: options.fontFamily }),
     arc: { fill: lineColor },
     area: {
       line: { stroke: lineColor, strokeWidth: 1 },
@@ -115,8 +147,24 @@ export const getRillTheme: (
     shape: { stroke: lineColor },
     symbol: { fill: lineColor },
 
+    // Facet headers and titles, so they read in dark mode too (Vega's default is black).
+    header: {
+      labelColor: axisLabelColor,
+      titleColor: axisLabelColor,
+      labelFont: axisFont,
+      titleFont: axisFont,
+      labelFontSize: 11,
+      labelFontWeight: 400,
+      titleFontSize: 12,
+      titleFontWeight: 500,
+    },
+    title: { color: axisLabelColor, font: axisFont },
     legend: {
       orient: "top",
+      ...(options?.fontFamily && {
+        labelFont: options.fontFamily,
+        titleFont: options.fontFamily,
+      }),
       labelFontSize: 11,
       labelColor: axisLabelColor,
       titleColor: axisLabelColor,
@@ -131,13 +179,13 @@ export const getRillTheme: (
       tickColor: gridColor,
       domain: false,
       tickSize: 0,
-      labelFont: "Inter, sans-serif",
+      labelFont: axisFont,
       labelFontSize: 11,
       labelFontWeight: 400,
       labelColor: axisLabelColor,
       labelPadding: 10,
       titleColor: axisLabelColor,
-      titleFont: "Inter, sans-serif",
+      titleFont: axisFont,
       titleFontSize: 12,
       titleFontWeight: 500,
       titlePadding: 10,
@@ -150,7 +198,7 @@ export const getRillTheme: (
       tickColor: gridColor,
       tickSize: 0,
       domain: false,
-      labelFont: "Inter, sans-serif",
+      labelFont: axisFont,
       labelFontSize: 11,
       labelFontWeight: 400,
       labelPadding: 12,
@@ -158,7 +206,7 @@ export const getRillTheme: (
       labelSeparation: 5,
       labelColor: axisLabelColor,
       titleColor: axisLabelColor,
-      titleFont: "Inter, sans-serif",
+      titleFont: axisFont,
       titleFontSize: 12,
       titleFontWeight: 500,
       titlePadding: 10,
@@ -208,26 +256,10 @@ export const getRillTheme: (
 
         return themeColors.length > 0 ? themeColors : defaultColors;
       })(),
-      heatmap: (() => {
-        // Use palette store which respects scoped themes and converts to hex
-        const defaultColors = getSequentialColorsAsHex();
-
-        if (!theme) return defaultColors;
-
-        const themeColors = [
-          theme["color-sequential-1"],
-          theme["color-sequential-2"],
-          theme["color-sequential-3"],
-          theme["color-sequential-4"],
-          theme["color-sequential-5"],
-          theme["color-sequential-6"],
-          theme["color-sequential-7"],
-          theme["color-sequential-8"],
-          theme["color-sequential-9"],
-        ].filter(Boolean);
-
-        return themeColors.length > 0 ? themeColors : defaultColors;
-      })(),
+      heatmap: sequentialColors,
+      // Quantitative color on other marks and ordinal color follow the same palette.
+      ramp: sequentialColors,
+      ordinal: sequentialColors,
     },
     numberFormat: "s",
     tooltipFormat: {

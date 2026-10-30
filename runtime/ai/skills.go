@@ -7,6 +7,8 @@ import (
 	"strings"
 
 	"github.com/rilldata/rill/runtime"
+	"github.com/rilldata/rill/runtime/ai/instructions"
+	"github.com/rilldata/rill/runtime/parser"
 	"go.uber.org/zap"
 )
 
@@ -65,11 +67,52 @@ func (s *BaseSession) Skills(ctx context.Context) ([]*Skill, error) {
 			Body:         spec.Body,
 		})
 	}
+	builtin, err := s.builtinSkills(ctx)
+	if err != nil {
+		return nil, err
+	}
+	for _, sk := range builtin {
+		// A project skill of the same name takes precedence.
+		if !slices.ContainsFunc(skills, func(other *Skill) bool { return other.Name == sk.Name }) {
+			skills = append(skills, sk)
+		}
+	}
 	slices.SortFunc(skills, func(a, b *Skill) int { return strings.Compare(a.Name, b.Name) })
 
 	s.skills = skills
 	s.skillsLoaded = true
 	return s.skills, nil
+}
+
+// chartSkillName is the built-in skill that teaches external MCP clients how to use create_chart.
+const chartSkillName = "rill-charts"
+
+// builtinSkills returns the skills Rill ships for external MCP clients.
+// Rill's own agents carry the same guidance in their prompts, so they get none.
+// The chart skill is an always-apply skill, so external clients receive it in the ai_instructions of list_metrics_views
+// and do not depend on the host loading skills; it is only served where create_chart is (see CreateChart.CheckAccess).
+func (s *BaseSession) builtinSkills(ctx context.Context) ([]*Skill, error) {
+	if strings.HasPrefix(s.dto.UserAgent, "rill") {
+		return nil, nil
+	}
+	ff, err := s.FeatureFlags(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if !ff["chat_charts"] {
+		return nil, nil
+	}
+	instr, err := instructions.Load("charts.md", instructions.Options{External: true})
+	if err != nil {
+		return nil, err
+	}
+	return []*Skill{{
+		Name:        chartSkillName,
+		Description: instr.Description,
+		Agents:      []string{parser.SkillAgentAnalyst},
+		AlwaysApply: true,
+		Body:        instr.Body,
+	}}, nil
 }
 
 // checkSkillAccess checks whether the skill tools should be available in the current session.

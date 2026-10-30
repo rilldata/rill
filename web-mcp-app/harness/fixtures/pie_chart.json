@@ -1,0 +1,113 @@
+{
+  "name": "Pie chart",
+  "description": "Bid share per device.",
+  "expect": "canvas",
+  "arguments": {
+    "chart_type": "pie_chart",
+    "spec": {
+      "metrics_view": "bids_metrics",
+      "time_range": {
+        "start": "2023-09-09T00:00:00Z",
+        "end": "2023-09-16T00:00:00Z"
+      },
+      "measure": {
+        "field": "total_bids",
+        "type": "quantitative"
+      },
+      "color": {
+        "field": "device",
+        "type": "nominal",
+        "limit": 10
+      }
+    }
+  },
+  "result": {
+    "content": [
+      {
+        "type": "text",
+        "text": "**Pie: Total Bids split by Device** (2023-09-09 to 2023-09-16)\n\n| Device | Total Bids |\n| - | - |\n| Mobile | 312400 |\n| Desktop | 201300 |\n| Tablet | 48900 |\n\n_3 of 3 rows shown_\n\nOpen the interactive chart in Rill: https://ui.rilldata.com/demo/bids/-/ai/session-0b1c/message/call-4f2a/-/open"
+      }
+    ],
+    "structuredContent": {
+      "widget": "chart",
+      "chart_type": "pie_chart",
+      "spec": {
+        "metrics_view": "bids_metrics",
+        "time_range": {
+          "start": "2023-09-09T00:00:00Z",
+          "end": "2023-09-16T00:00:00Z"
+        },
+        "measure": {
+          "field": "total_bids",
+          "type": "quantitative"
+        },
+        "color": {
+          "field": "device",
+          "type": "nominal",
+          "limit": 10
+        }
+      },
+      "message": "Chart created successfully: pie_chart",
+      "metrics_view": {
+        "name": "bids_metrics",
+        "display_name": "Bids",
+        "time_dimension": "__time",
+        "smallest_time_grain": "TIME_GRAIN_HOUR"
+      },
+      "resolved_time_range": {
+        "start": "2023-09-09T00:00:00Z",
+        "end": "2023-09-16T00:00:00Z"
+      },
+      "theme": {
+        "primaryColorRaw": "#4f46e5",
+        "light": {
+          "primary": "#4f46e5",
+          "secondary": "#f97316"
+        },
+        "dark": {
+          "primary": "#818cf8",
+          "secondary": "#fb923c"
+        }
+      },
+      "open_url": "https://ui.rilldata.com/demo/bids/-/ai/session-0b1c/message/call-4f2a/-/open",
+      "truncated": false,
+      "title": "Total Bids split by Device",
+      "data": [
+        {
+          "device": "Mobile",
+          "total_bids": 312400
+        },
+        {
+          "device": "Desktop",
+          "total_bids": 201300
+        },
+        {
+          "device": "Tablet",
+          "total_bids": 48900
+        }
+      ],
+      "fields": {
+        "device": {
+          "name": "device",
+          "kind": "dimension",
+          "display_name": "Device",
+          "type": "STRING"
+        },
+        "total_bids": {
+          "name": "total_bids",
+          "kind": "measure",
+          "display_name": "Total Bids",
+          "description": "Count of bid requests.",
+          "type": "INT64",
+          "format_preset": "humanize"
+        }
+      },
+      "domain_values": {
+        "device": ["Mobile", "Desktop", "Tablet"]
+      },
+      "totals": {
+        "total_bids": 562600
+      }
+    }
+  }
+}

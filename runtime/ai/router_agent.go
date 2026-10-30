@@ -69,7 +69,7 @@ func (t *RouterAgent) CheckAccess(ctx context.Context) (bool, error) {
 	}
 
 	// Only allow for rill user agents since it's not useful in MCP contexts.
-	if !strings.HasPrefix(s.CatalogSession().UserAgent, "rill") {
+	if !isRillUserAgent(s) {
 		return false, nil
 	}
 	return true, nil

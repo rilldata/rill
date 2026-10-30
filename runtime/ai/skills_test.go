@@ -310,3 +310,53 @@ ARPU excludes trial users.`,
 	assertAccess(t, s, ai.ListSkillsName, false)
 	assertAccess(t, s, ai.LoadSkillName, false)
 }
+
+// TestBuiltinChartSkill verifies that external MCP clients get the built-in rill-charts skill (always-apply, so it rides in
+// ai_instructions) while Rill's own agents, which carry the chart guidance in their prompts, do not.
+func TestBuiltinChartSkill(t *testing.T) {
+	rt, instanceID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
+		Files: map[string]string{
+			"models/orders.sql": `SELECT 1 AS revenue`,
+			"metrics/orders.yaml": `
+type: metrics_view
+model: orders
+measures:
+- name: revenue
+  expression: SUM(revenue)
+`,
+		},
+	})
+	testruntime.RequireReconcileState(t, rt, instanceID, 4, 0, 0)
+
+	r := ai.NewRunner(rt, activity.NewNoopClient())
+	external, err := r.Session(t.Context(), &ai.SessionOptions{
+		InstanceID: instanceID,
+		Claims:     &runtime.SecurityClaims{UserID: uuid.NewString(), SkipChecks: true},
+		UserAgent:  "mcp-client",
+	})
+	require.NoError(t, err)
+	t.Cleanup(func() { require.NoError(t, external.Flush(t.Context())) })
+
+	var listRes *ai.ListSkillsResult
+	_, err = external.CallTool(t.Context(), ai.RoleUser, ai.ListSkillsName, &listRes, &ai.ListSkillsArgs{})
+	require.NoError(t, err)
+	require.Len(t, listRes.Skills, 1)
+	require.Equal(t, "rill-charts", listRes.Skills[0].Name)
+	require.True(t, listRes.Skills[0].AlwaysApply)
+	require.Equal(t, []string{parser.SkillAgentAnalyst}, listRes.Skills[0].Agents)
+
+	var loadRes *ai.LoadSkillResult
+	_, err = external.CallTool(t.Context(), ai.RoleUser, ai.LoadSkillName, &loadRes, &ai.LoadSkillArgs{Name: "rill-charts"})
+	require.NoError(t, err)
+	require.Contains(t, loadRes.Body, "Grouped Bar Chart")
+
+	var mvRes *ai.ListMetricsViewsResult
+	_, err = external.CallTool(t.Context(), ai.RoleUser, ai.ListMetricsViewsName, &mvRes, &ai.ListMetricsViewsArgs{})
+	require.NoError(t, err)
+	require.Contains(t, mvRes.AIInstructions, "## Skill: rill-charts")
+
+	internal := newSession(t, rt, instanceID)
+	_, err = internal.CallTool(t.Context(), ai.RoleUser, ai.ListSkillsName, &listRes, &ai.ListSkillsArgs{})
+	require.NoError(t, err)
+	require.Empty(t, listRes.Skills)
+}

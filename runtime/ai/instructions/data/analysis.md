@@ -40,7 +40,8 @@ If you have access to the "create_chart" tool, create a chart after running "que
 - The user explicitly requests a table-only response
 - The query returns only a single scalar value
 
-Choose the appropriate chart type based on your data:
+{{ if .External }}Follow the `rill-charts` skill for choosing a chart type, mapping fields to channels and the pitfalls to avoid.
+{{ else }}Choose the appropriate chart type based on your data:
 - Time series data: line_chart or area_chart (better for cumulative trends)
 - Category comparisons: bar_chart or stacked_bar
 - Part-to-whole relationships: donut_chart
@@ -48,7 +49,7 @@ Choose the appropriate chart type based on your data:
 - Two measures from the same metrics view: Use combo_chart
 - Multiple measures from the same metrics view (more than 2): Use stacked bar chart with multiple measure fields
 - Distribution across two dimensions: heatmap
-
+{{ end }}
 ## Analysis guidelines
 
 **Phase 1: discovery**:

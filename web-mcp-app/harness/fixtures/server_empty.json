@@ -1,0 +1,84 @@
+{
+  "name": "server_empty",
+  "description": "Real create_chart output from rill start (time range without rows)",
+  "expect": "empty",
+  "arguments": {
+    "chart_type": "bar_chart",
+    "spec": {
+      "metrics_view": "bids_metrics",
+      "time_range": {
+        "end": "2023-02-01T00:00:00Z",
+        "start": "2023-01-01T00:00:00Z"
+      },
+      "x": {
+        "field": "advertiser_name",
+        "limit": 20,
+        "type": "nominal"
+      },
+      "y": {
+        "field": "total_bids",
+        "type": "quantitative"
+      }
+    }
+  },
+  "result": {
+    "content": [
+      {
+        "type": "text",
+        "text": "**Bar chart: Total Bids per Advertiser Name** (2023-01-01 to 2023-02-01)\n\n_No data for this chart._\n\nOpen the interactive chart in Rill: http://localhost:3001/-/ai/18b73406-dec4-4cbc-b5dd-027ce3c2a133/message/772f9550-1744-49d4-a906-74615c2789ae/-/open"
+      }
+    ],
+    "structuredContent": {
+      "chart_type": "bar_chart",
+      "data": [],
+      "domain_values": {
+        "advertiser_name": []
+      },
+      "fields": {
+        "advertiser_name": {
+          "display_name": "Advertiser Name",
+          "kind": "dimension",
+          "name": "advertiser_name",
+          "type": "STRING"
+        },
+        "total_bids": {
+          "display_name": "Total Bids",
+          "format_preset": "humanize",
+          "kind": "measure",
+          "name": "total_bids",
+          "type": "INT128"
+        }
+      },
+      "message": "Chart created successfully: bar_chart",
+      "metrics_view": {
+        "display_name": "Bids",
+        "name": "bids_metrics",
+        "smallest_time_grain": "TIME_GRAIN_HOUR",
+        "time_dimension": "event_time"
+      },
+      "open_url": "http://localhost:3001/-/ai/18b73406-dec4-4cbc-b5dd-027ce3c2a133/message/772f9550-1744-49d4-a906-74615c2789ae/-/open",
+      "resolved_time_range": {
+        "end": "2023-02-01T00:00:00Z",
+        "start": "2023-01-01T00:00:00Z"
+      },
+      "spec": {
+        "metrics_view": "bids_metrics",
+        "time_range": {
+          "end": "2023-02-01T00:00:00Z",
+          "start": "2023-01-01T00:00:00Z"
+        },
+        "x": {
+          "field": "advertiser_name",
+          "limit": 20,
+          "type": "nominal"
+        },
+        "y": {
+          "field": "total_bids",
+          "type": "quantitative"
+        }
+      },
+      "title": "Total Bids per Advertiser Name",
+      "widget": "chart"
+    }
+  }
+}

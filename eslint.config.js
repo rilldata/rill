@@ -89,6 +89,9 @@ export default [
       "web-local/build/*",
       "web-local/playwright-report/*",
       "web-local/playwright/*",
+      "web-mcp-app/dist/*",
+      "web-mcp-app/playwright-report/*",
+      "web-mcp-app/test-results/*",
     ],
   },
   {

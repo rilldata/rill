@@ -9,7 +9,7 @@ export async function load({ parent, params: { organization, project } }) {
   const { runtime, message, result } = await parent();
   const client = getCloudRuntimeClient(runtime);
 
-  const query = maybeGetMetricsResolverQueryFromMessage(message);
+  const query = maybeGetMetricsResolverQueryFromMessage(message, result);
   const resolvedTimeRanges = getResolvedTimeRangesFromMessage(result);
 
   await openQuery({
