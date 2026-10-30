@@ -25,6 +25,15 @@ components:
                     type: string
                 openUrl:
                     type: string
+                resources:
+                    items:
+                        $ref: '#/components/schemas/v1ResourceName'
+                    type: array
+                restrictResources:
+                    description: |-
+                        If true, the report's data must only be accessed through the resources listed in `resources`.
+                        Set for reports created from an embed that was limited to specific resources.
+                    type: boolean
                 unsubscribeUrl:
                     type: string
                 userAttrs:
@@ -872,6 +881,12 @@ components:
                 ttlSeconds:
                     format: int64
                     type: integer
+            type: object
+        v1GetEmbedUserResponse:
+            properties:
+                externalUserId:
+                    description: The external user ID passed to GetIFrame.
+                    type: string
             type: object
         v1GetGithubPullRequestResponse:
             properties:
@@ -4638,6 +4653,42 @@ paths:
                                 $ref: '#/components/schemas/rpcStatus'
                     description: An unexpected error response.
             summary: CreateDeployment creates a new deployment for a project.
+    /v1/orgs/{org}/projects/{project}/embed-users/{id}:
+        get:
+            operationId: AdminService_GetEmbedUser
+            parameters:
+                - in: path
+                  name: org
+                  required: true
+                  schema:
+                    type: string
+                - in: path
+                  name: project
+                  required: true
+                  schema:
+                    type: string
+                - description: ID of the embed user, which is the value of the "admin_embed_owner_id" annotation of reports created from an embed.
+                  in: path
+                  name: id
+                  required: true
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/v1GetEmbedUserResponse'
+                    description: A successful response.
+                default:
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/rpcStatus'
+                    description: An unexpected error response.
+            summary: |-
+                GetEmbedUser returns an embed user, which is created when GetIFrame is called with an external user ID.
+                It is used to show which external user owns a report created from an embed.
     /v1/orgs/{org}/projects/{project}/github/pr:
         post:
             operationId: AdminService_CreateGithubPullRequest

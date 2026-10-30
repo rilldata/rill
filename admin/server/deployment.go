@@ -690,11 +690,42 @@ func (s *Server) GetIFrame(ctx context.Context, req *adminv1.GetIFrameRequest) (
 		return nil, err
 	}
 
+	// Embed users with an external user ID can create reports, which run as the identity of their latest iframe.
+	// So we store the identity, and issue an admin token that identifies the embed user.
+	// This happens after issuing the runtime token, so invalid combinations of "for" and external user ID don't write anything.
+	var adminToken string
+	if req.ExternalUserId != "" {
+		embedUserID := subjectForExternalUser(req.ExternalUserId, proj.ID)
+		var email *string
+		if opts.forUserEmail != "" {
+			email = &opts.forUserEmail
+		}
+		err = s.admin.DB.UpsertEmbedUser(ctx, &database.UpsertEmbedUserOptions{
+			ID:             embedUserID,
+			ProjectID:      proj.ID,
+			ExternalUserID: req.ExternalUserId,
+			Email:          email,
+			Attributes:     opts.forUserAttributes,
+		})
+		if err != nil {
+			return nil, err
+		}
+
+		// Pass the final overrideResources so reports created from the embed are limited to the same resources as the iframe.
+		adminToken, err = s.admin.IssueEmbedToken(proj.ID, embedUserID, overrideResources, ttlDuration)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	// Build the iframe URL search params
 	iframeQuery := map[string]string{
 		"runtime_host": prodDepl.RuntimeHost,
 		"instance_id":  prodDepl.RuntimeInstanceID,
 		"access_token": jwt,
+	}
+	if adminToken != "" {
+		iframeQuery["admin_token"] = adminToken
 	}
 
 	iframeQuery["type"] = req.Type
@@ -728,6 +759,11 @@ func (s *Server) GetIFrame(ctx context.Context, req *adminv1.GetIFrameRequest) (
 		iframeQuery["external_user_id"] = req.ExternalUserId
 	}
 
+	// The UI uses the email to pre-fill the recipients of reports.
+	if opts.forUserEmail != "" {
+		iframeQuery["user_email"] = opts.forUserEmail
+	}
+
 	for k, v := range req.Query {
 		iframeQuery[k] = v
 	}
@@ -749,6 +785,39 @@ func (s *Server) GetIFrame(ctx context.Context, req *adminv1.GetIFrameRequest) (
 		InstanceId:  prodDepl.RuntimeInstanceID,
 		AccessToken: jwt,
 		TtlSeconds:  uint32(opts.ttl.Seconds()),
+	}, nil
+}
+
+// GetEmbedUser returns the external user ID of an embed user.
+// It is only available to users who can manage reports, since it shows who created reports from an embed.
+func (s *Server) GetEmbedUser(ctx context.Context, req *adminv1.GetEmbedUserRequest) (*adminv1.GetEmbedUserResponse, error) {
+	observability.AddRequestAttributes(ctx,
+		attribute.String("args.organization", req.Org),
+		attribute.String("args.project", req.Project),
+		attribute.String("args.id", req.Id),
+	)
+
+	proj, err := s.admin.DB.FindProjectByName(ctx, req.Org, req.Project)
+	if err != nil {
+		return nil, err
+	}
+
+	claims := auth.GetClaims(ctx)
+	permissions := claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID)
+	if !permissions.ManageReports {
+		return nil, status.Error(codes.PermissionDenied, "does not have permission to read embed users")
+	}
+
+	embedUser, err := s.admin.DB.FindEmbedUser(ctx, req.Id)
+	if err != nil {
+		return nil, err
+	}
+	if embedUser.ProjectID != proj.ID {
+		return nil, status.Error(codes.NotFound, "embed user not found")
+	}
+
+	return &adminv1.GetEmbedUserResponse{
+		ExternalUserId: embedUser.ExternalUserID,
 	}, nil
 }
 
@@ -847,28 +916,6 @@ func (s *Server) GetDeploymentConfig(ctx context.Context, req *adminv1.GetDeploy
 	return resp, nil
 }
 
-// getAttributesAndResourceRestrictionsForUser returns a map of attributes and resource restrictions for a given user and project.
-// The caller should only provide one of userID or userEmail (if both or neither are set, an error will be returned).
-// NOTE: The value returned from this function must be valid for structpb.NewStruct (e.g. must use []any for slices, not a more specific slice type).
-func (s *Server) getAttributesAndResourceRestrictionsForUser(ctx context.Context, orgID, projID, userID, userEmail string) (map[string]any, bool, []database.ResourceName, error) {
-	attr, userID, _, err := s.getAttributesForUser(ctx, orgID, projID, userID, userEmail)
-	if err != nil {
-		return nil, false, nil, err
-	}
-
-	if userID == "" {
-		return attr, false, nil, nil
-	}
-
-	// Determine resource restrictions from project member and usergroups
-	restrictResources, resources, err := s.getResourceRestrictionsForUser(ctx, projID, userID)
-	if err != nil {
-		return nil, false, nil, err
-	}
-
-	return attr, restrictResources, resources, nil
-}
-
 // getAttributesForUser returns
 //  1. map of attributes for a given user and project and
 //  2. userID
@@ -959,6 +1006,8 @@ func (s *Server) getResourceRestrictionsForUser(ctx context.Context, projID, use
 
 // subjectForExternalUser generates a safe subject from an external user ID accessing a deployment in the specified project.
 // The result is safe to use as a JWT subject and in telemetry (where we need to avoid collisions and PII).
+// It is also the ID of the database.EmbedUser for the external user, which owns resources such as reports created from an embed.
+// NOTE: The hash is unsalted, so anyone who knows the project ID can recover guessable external user IDs from it.
 func subjectForExternalUser(externalUserID, projectID string) string {
 	hash := sha256.Sum256([]byte(externalUserID + projectID))
 	return "ext_" + hex.EncodeToString(hash[:])

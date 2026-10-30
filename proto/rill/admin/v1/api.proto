@@ -895,6 +895,12 @@ service AdminService {
     };
   }
 
+  // GetEmbedUser returns an embed user, which is created when GetIFrame is called with an external user ID.
+  // It is used to show which external user owns a report created from an embed.
+  rpc GetEmbedUser(GetEmbedUserRequest) returns (GetEmbedUserResponse) {
+    option (google.api.http) = {get: "/v1/orgs/{org}/projects/{project}/embed-users/{id}"};
+  }
+
   // SetSuperuser adds/remove a superuser
   rpc SetSuperuser(SetSuperuserRequest) returns (SetSuperuserResponse) {
     option (google.api.http) = {
@@ -1819,6 +1825,18 @@ message GetIFrameResponse {
   string instance_id = 3;
   string access_token = 4;
   uint32 ttl_seconds = 5;
+}
+
+message GetEmbedUserRequest {
+  string org = 1 [(validate.rules).string.min_len = 1];
+  string project = 2 [(validate.rules).string.min_len = 1];
+  // ID of the embed user, which is the value of the "admin_embed_owner_id" annotation of reports created from an embed.
+  string id = 3 [(validate.rules).string.min_len = 1];
+}
+
+message GetEmbedUserResponse {
+  // The external user ID passed to GetIFrame.
+  string external_user_id = 1;
 }
 
 message ListServicesRequest {
@@ -3153,6 +3171,10 @@ message GetReportMetaResponse {
     string unsubscribe_url = 4;
     string user_id = 5;
     google.protobuf.Struct user_attrs = 6; // user attributes of intended recipient, will be empty for creator mode and for non Rill users
+    // If true, the report's data must only be accessed through the resources listed in `resources`.
+    // Set for reports created from an embed that was limited to specific resources.
+    bool restrict_resources = 7;
+    repeated ResourceName resources = 8;
   }
   map<string, DeliveryMeta> delivery_meta = 2;
   reserved 1;
@@ -3196,7 +3218,7 @@ message CreateReportResponse {
 message EditReportRequest {
   string org = 1;
   string project = 2;
-  string name = 3;
+  string name = 3 [(validate.rules).string.not_contains = "/"];
   ReportOptions options = 4 [(validate.rules).message.required = true];
 }
 
@@ -3206,7 +3228,7 @@ message EditReportResponse {
 message UnsubscribeReportRequest {
   string org = 1;
   string project = 2;
-  string name = 3;
+  string name = 3 [(validate.rules).string.not_contains = "/"];
   string email = 4 [(validate.rules).string = {email: true, ignore_empty: true}];
   string slack_user = 5 [(validate.rules).string = {email: true, ignore_empty: true}];
 }
@@ -3216,7 +3238,7 @@ message UnsubscribeReportResponse {}
 message DeleteReportRequest {
   string org = 1;
   string project = 2;
-  string name = 3;
+  string name = 3 [(validate.rules).string.not_contains = "/"];
 }
 
 message DeleteReportResponse {
@@ -3225,7 +3247,7 @@ message DeleteReportResponse {
 message TriggerReportRequest {
   string org = 1;
   string project = 2;
-  string name = 3;
+  string name = 3 [(validate.rules).string.not_contains = "/"];
 }
 
 message TriggerReportResponse {}
@@ -3253,7 +3275,7 @@ message CreateAlertResponse {
 message EditAlertRequest {
   string org = 1;
   string project = 2;
-  string name = 3;
+  string name = 3 [(validate.rules).string.not_contains = "/"];
   AlertOptions options = 4 [(validate.rules).message.required = true];
 }
 
@@ -3263,7 +3285,7 @@ message EditAlertResponse {
 message UnsubscribeAlertRequest {
   string org = 1;
   string project = 2;
-  string name = 3;
+  string name = 3 [(validate.rules).string.not_contains = "/"];
   string email = 4 [(validate.rules).string = {email: true, ignore_empty: true}];
   string slack_user = 5 [(validate.rules).string = {email: true, ignore_empty: true}];
 }
@@ -3273,7 +3295,7 @@ message UnsubscribeAlertResponse {}
 message DeleteAlertRequest {
   string org = 1;
   string project = 2;
-  string name = 3;
+  string name = 3 [(validate.rules).string.not_contains = "/"];
 }
 
 message DeleteAlertResponse {
@@ -3292,7 +3314,7 @@ message GenerateAlertYAMLResponse {
 message GetAlertYAMLRequest {
   string org = 1;
   string project = 2;
-  string name = 3;
+  string name = 3 [(validate.rules).string.not_contains = "/"];
 }
 
 message GetAlertYAMLResponse {
@@ -3324,7 +3346,7 @@ message CreatePersonalFileResponse {
 message GetPersonalFileRequest {
   string org = 1;
   string project = 2;
-  string name = 3;
+  string name = 3 [(validate.rules).string.not_contains = "/"];
 }
 
 message GetPersonalFileResponse {
@@ -3335,7 +3357,7 @@ message GetPersonalFileResponse {
 message EditPersonalFileRequest {
   string org = 1;
   string project = 2;
-  string name = 3;
+  string name = 3 [(validate.rules).string.not_contains = "/"];
   string kind = 4;
   string yaml = 5;
 }
@@ -3346,7 +3368,7 @@ message EditPersonalFileResponse {
 message DeletePersonalFileRequest {
   string org = 1;
   string project = 2;
-  string name = 3;
+  string name = 3 [(validate.rules).string.not_contains = "/"];
 }
 
 message DeletePersonalFileResponse {

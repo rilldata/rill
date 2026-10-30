@@ -33,6 +33,10 @@ export interface GetReportMetaResponseDeliveryMeta {
   unsubscribeUrl?: string;
   userId?: string;
   userAttrs?: GetReportMetaResponseDeliveryMetaUserAttrs;
+  /** If true, the report's data must only be accessed through the resources listed in `resources`.
+Set for reports created from an embed that was limited to specific resources. */
+  restrictResources?: boolean;
+  resources?: V1ResourceName[];
 }
 
 export interface ListGithubUserReposResponseRepo {
@@ -690,6 +694,11 @@ export interface V1GetDeploymentResponse {
   instanceId?: string;
   accessToken?: string;
   ttlSeconds?: number;
+}
+
+export interface V1GetEmbedUserResponse {
+  /** The external user ID passed to GetIFrame. */
+  externalUserId?: string;
 }
 
 export interface V1GetGithubPullRequestResponse {

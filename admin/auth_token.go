@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/golang-jwt/jwt/v4"
 	"github.com/rilldata/rill/admin/database"
 	"github.com/rilldata/rill/admin/pkg/authtoken"
 )
@@ -224,6 +225,54 @@ func (s *Service) IssueMagicAuthToken(ctx context.Context, opts *IssueMagicAuthT
 	}
 
 	return &magicAuthToken{model: dat, token: tkn}, nil
+}
+
+// embedTokenAudience is the audience of embed tokens.
+// It is not a URL, so embed tokens can't be confused with runtime JWTs, which use the runtime's URL as the audience.
+const embedTokenAudience = "rill:admin:embed" // nolint:gosec // It's not a credential
+
+// EmbedToken contains the claims of a JWT that identifies an embed user.
+// It is issued along with an embed's runtime JWT, and lets the embed user manage their own reports in the project.
+// Since it is signed and short-lived, it is not stored in the database.
+// It doesn't carry the embed user's email or attributes; resources owned by the embed user read them from the database.EmbedUser instead.
+type EmbedToken struct {
+	jwt.RegisteredClaims
+	ProjectID   string                  `json:"project_id"`
+	EmbedUserID string                  `json:"embed_user_id"`       // ID of the database.EmbedUser; also the token's subject
+	Resources   []database.ResourceName `json:"resources,omitempty"` // If non-empty, limits reports created with the token to these resources
+}
+
+// IssueEmbedToken issues an embed token for an embed user in a project.
+// If resources is non-empty, reports created with the token are limited to those resources.
+func (s *Service) IssueEmbedToken(projectID, embedUserID string, resources []database.ResourceName, ttl time.Duration) (string, error) {
+	now := time.Now()
+	return s.issuer.SignClaims(&EmbedToken{
+		RegisteredClaims: jwt.RegisteredClaims{
+			Subject:   embedUserID,
+			Audience:  jwt.ClaimStrings{embedTokenAudience},
+			IssuedAt:  jwt.NewNumericDate(now),
+			NotBefore: jwt.NewNumericDate(now),
+			ExpiresAt: jwt.NewNumericDate(now.Add(ttl)),
+		},
+		ProjectID:   projectID,
+		EmbedUserID: embedUserID,
+		Resources:   resources,
+	})
+}
+
+// ValidateEmbedToken parses and validates an embed token issued by IssueEmbedToken.
+func (s *Service) ValidateEmbedToken(token string) (*EmbedToken, error) {
+	res := &EmbedToken{}
+	if err := s.issuer.ParseClaims(token, res); err != nil {
+		return nil, fmt.Errorf("invalid embed token: %w", err)
+	}
+	if !res.VerifyAudience(embedTokenAudience, true) {
+		return nil, fmt.Errorf("invalid embed token audience %q", res.Audience)
+	}
+	if res.ExpiresAt == nil || res.ProjectID == "" || res.EmbedUserID == "" {
+		return nil, errors.New("invalid embed token: missing expiry, project or embed user")
+	}
+	return res, nil
 }
 
 // ExtendBrowserSessionAuthToken extends a Rill web browser session token when its

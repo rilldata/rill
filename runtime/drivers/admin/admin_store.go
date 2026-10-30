@@ -5,6 +5,7 @@ import (
 	"time"
 
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
+	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
 	"google.golang.org/grpc/codes"
@@ -35,13 +36,19 @@ func (h *Handle) GetReportMetadata(ctx context.Context, reportName, ownerID, web
 
 	delivery := make(map[string]drivers.ReportDelivery, len(res.DeliveryMeta))
 	for k, v := range res.DeliveryMeta {
+		resources := make([]*runtimev1.ResourceName, len(v.Resources))
+		for i, r := range v.Resources {
+			resources[i] = &runtimev1.ResourceName{Kind: r.Type, Name: r.Name}
+		}
 		delivery[k] = drivers.ReportDelivery{
-			OpenURL:        v.OpenUrl,
-			ExportURL:      v.ExportUrl,
-			EditURL:        v.EditUrl,
-			UnsubscribeURL: v.UnsubscribeUrl,
-			UserID:         v.UserId,
-			UserAttrs:      v.UserAttrs.AsMap(),
+			OpenURL:           v.OpenUrl,
+			ExportURL:         v.ExportUrl,
+			EditURL:           v.EditUrl,
+			UnsubscribeURL:    v.UnsubscribeUrl,
+			UserID:            v.UserId,
+			UserAttrs:         v.UserAttrs.AsMap(),
+			RestrictResources: v.RestrictResources,
+			Resources:         resources,
 		}
 	}
 

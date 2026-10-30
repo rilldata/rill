@@ -16,6 +16,7 @@
   } from "@rilldata/web-common/features/explore-mappers/get-mapped-explore-url.ts";
   import type { AIResolverProps } from "@rilldata/web-common/features/explore-mappers/map-ai-resolver-props-to-metrics-resolver-query.ts";
   import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors";
+  import { EmbedStore } from "@rilldata/web-common/features/embeds/embed-store.ts";
   import ScheduledReportDialog from "@rilldata/web-common/features/scheduled-reports/ScheduledReportDialog.svelte";
   import {
     isAIReportSpec,
@@ -32,7 +33,8 @@
   } from "@rilldata/web-common/runtime-client";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { useQueryClient } from "@tanstack/svelte-query";
-  import { createAdminServiceDeleteReport } from "../../../client";
+  import { createMutationFromFactory } from "@rilldata/web-common/features/scheduled-reports/FormMetadataProvider.svelte.ts";
+  import { reportDeleteMutationFactory } from "@rilldata/web-common/features/scheduled-reports/ReportFormMetadataProvider.ts";
   import ProjectAccessControls from "../../projects/ProjectAccessControls.svelte";
   import {
     useIsReportCreatedByCode,
@@ -55,6 +57,8 @@
   export let report: string;
 
   const runtimeClient = useRuntimeClient();
+  // Embed users have no Rill session, so dashboard links must stay within the embed.
+  const embedded = EmbedStore.isEmbedded();
 
   $: reportQuery = useReport(runtimeClient, report);
   $: isReportCreatedByCode = useIsReportCreatedByCode(runtimeClient, report);
@@ -123,13 +127,16 @@
       client: runtimeClient,
       organization,
       project,
+      embedded,
     },
   );
 
   // Canvas reports link to the canvas page with the captured state applied.
   $: canvasUrl = (() => {
     if (!$dashboardName.data) return "";
-    const path = `/${organization}/${project}/canvas/${$dashboardName.data}`;
+    const path = embedded
+      ? `/-/embed/canvas/${$dashboardName.data}`
+      : `/${organization}/${project}/canvas/${$dashboardName.data}`;
     const search = stripInternalReportParams(
       new URLSearchParams(reportSpec?.annotations?.web_open_state ?? ""),
     ).toString();
@@ -139,7 +146,7 @@
   $: aiExploreUrl = getMappedAIExploreUrl(
     (reportSpec?.resolverProperties ?? {}) as AIResolverProps,
     isAIReport ? ($dashboardName.data ?? "") : "",
-    { client: runtimeClient, organization, project },
+    { client: runtimeClient, organization, project, embedded },
   );
   $: dashboardUrl = isCanvasReport
     ? canvasUrl
@@ -149,7 +156,7 @@
 
   // Actions
   const queryClient = useQueryClient();
-  const deleteReport = createAdminServiceDeleteReport();
+  const deleteReport = createMutationFromFactory(reportDeleteMutationFactory);
 
   let showEditReportDialog = false;
   function handleEditReport() {
@@ -167,7 +174,9 @@
         runtimeClient.instanceId,
       ),
     });
-    goto(`/${organization}/${project}/-/reports`);
+    goto(
+      embedded ? "/-/embed/reports" : `/${organization}/${project}/-/reports`,
+    );
   }
 </script>
 
@@ -183,6 +192,7 @@
               {organization}
               {project}
               ownerId={reportSpec.annotations["admin_owner_user_id"]}
+              embedOwnerId={reportSpec.annotations["admin_embed_owner_id"]}
             />
           </svelte:fragment>
         </ProjectAccessControls>
