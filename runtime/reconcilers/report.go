@@ -603,7 +603,7 @@ func (r *ReportReconciler) sendReport(ctx context.Context, self *runtimev1.Resou
 			report, exists := aiReports[delivery.UserID]
 			if !exists {
 				var triggerWarnings []string
-				report, triggerWarnings, err = r.triggerAIReport(ctx, self, rep, t, webOpenMode, delivery.UserID, delivery.UserAttrs, deliverySecurityRules(delivery))
+				report, triggerWarnings, err = r.triggerAIReport(ctx, self, rep, t, webOpenMode, delivery.UserID, delivery.UserAttrs, runtime.SecurityRulesForResources(delivery.RestrictResources, delivery.Resources))
 				if err != nil {
 					return false, nil, fmt.Errorf("failed to trigger AI report for %q: %w", recipient, err)
 				}
@@ -646,7 +646,7 @@ func (r *ReportReconciler) sendReport(ctx context.Context, self *runtimev1.Resou
 					UserID:          delivery.UserID,
 					UserAttributes:  delivery.UserAttrs,
 					Permissions:     []runtime.Permission{runtime.ReadObjects, runtime.ReadMetrics},
-					AdditionalRules: deliverySecurityRules(delivery),
+					AdditionalRules: runtime.SecurityRulesForResources(delivery.RestrictResources, delivery.Resources),
 				}
 				attachment, err = exportAttachment(ctx, r.C, &exportAttachmentOptions{
 					ResolverProperties: rep.Spec.ResolverProperties.AsMap(),
@@ -1095,29 +1095,4 @@ func latestReportWarnings(r *runtimev1.Report) []string {
 		return r.State.ExecutionHistory[len(r.State.ExecutionHistory)-1].Warnings
 	}
 	return nil
-}
-
-// deliverySecurityRules returns the security rules that limit a report delivery's data to the delivery's resources, if it is restricted.
-// It mirrors how the admin service limits an embed's runtime token to specific resources:
-// each resource grants transitive access to its dependencies, and access to anything else is denied.
-func deliverySecurityRules(delivery drivers.ReportDelivery) []*runtimev1.SecurityRule {
-	if !delivery.RestrictResources {
-		return nil
-	}
-	if len(delivery.Resources) == 0 {
-		return []*runtimev1.SecurityRule{{
-			Rule: &runtimev1.SecurityRule_Access{
-				Access: &runtimev1.SecurityRuleAccess{Allow: false},
-			},
-		}}
-	}
-	rules := make([]*runtimev1.SecurityRule, len(delivery.Resources))
-	for i, r := range delivery.Resources {
-		rules[i] = &runtimev1.SecurityRule{
-			Rule: &runtimev1.SecurityRule_TransitiveAccess{
-				TransitiveAccess: &runtimev1.SecurityRuleTransitiveAccess{Resource: r},
-			},
-		}
-	}
-	return rules
 }

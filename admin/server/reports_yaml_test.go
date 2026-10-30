@@ -20,8 +20,8 @@ func TestYAMLForManagedReportOwner(t *testing.T) {
 		name         string
 		ownerUserID  string
 		embedOwnerID string
-		webOpenMode WebOpenMode
-		wantErr     bool
+		webOpenMode  WebOpenMode
+		wantErr      bool
 	}{
 		{name: "user creator mode", ownerUserID: "u1", webOpenMode: WebOpenModeCreator},
 		{name: "user recipient mode", ownerUserID: "u1", webOpenMode: WebOpenModeRecipient},

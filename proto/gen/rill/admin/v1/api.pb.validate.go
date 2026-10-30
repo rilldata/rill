@@ -37958,7 +37958,16 @@ func (m *EditReportRequest) validate(all bool) error {
 
 	// no validation rules for Project
 
-	// no validation rules for Name
+	if strings.Contains(m.GetName(), "/") {
+		err := EditReportRequestValidationError{
+			field:  "Name",
+			reason: "value contains substring \"/\"",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
 	if m.GetOptions() == nil {
 		err := EditReportRequestValidationError{
@@ -38208,7 +38217,16 @@ func (m *UnsubscribeReportRequest) validate(all bool) error {
 
 	// no validation rules for Project
 
-	// no validation rules for Name
+	if strings.Contains(m.GetName(), "/") {
+		err := UnsubscribeReportRequestValidationError{
+			field:  "Name",
+			reason: "value contains substring \"/\"",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
 	if m.GetEmail() != "" {
 
@@ -38500,7 +38518,16 @@ func (m *DeleteReportRequest) validate(all bool) error {
 
 	// no validation rules for Project
 
-	// no validation rules for Name
+	if strings.Contains(m.GetName(), "/") {
+		err := DeleteReportRequestValidationError{
+			field:  "Name",
+			reason: "value contains substring \"/\"",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
 	if len(errors) > 0 {
 		return DeleteReportRequestMultiError(errors)
@@ -38710,7 +38737,16 @@ func (m *TriggerReportRequest) validate(all bool) error {
 
 	// no validation rules for Project
 
-	// no validation rules for Name
+	if strings.Contains(m.GetName(), "/") {
+		err := TriggerReportRequestValidationError{
+			field:  "Name",
+			reason: "value contains substring \"/\"",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
 	if len(errors) > 0 {
 		return TriggerReportRequestMultiError(errors)
@@ -39420,7 +39456,16 @@ func (m *EditAlertRequest) validate(all bool) error {
 
 	// no validation rules for Project
 
-	// no validation rules for Name
+	if strings.Contains(m.GetName(), "/") {
+		err := EditAlertRequestValidationError{
+			field:  "Name",
+			reason: "value contains substring \"/\"",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
 	if m.GetOptions() == nil {
 		err := EditAlertRequestValidationError{
@@ -39668,7 +39713,16 @@ func (m *UnsubscribeAlertRequest) validate(all bool) error {
 
 	// no validation rules for Project
 
-	// no validation rules for Name
+	if strings.Contains(m.GetName(), "/") {
+		err := UnsubscribeAlertRequestValidationError{
+			field:  "Name",
+			reason: "value contains substring \"/\"",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
 	if m.GetEmail() != "" {
 
@@ -39960,7 +40014,16 @@ func (m *DeleteAlertRequest) validate(all bool) error {
 
 	// no validation rules for Project
 
-	// no validation rules for Name
+	if strings.Contains(m.GetName(), "/") {
+		err := DeleteAlertRequestValidationError{
+			field:  "Name",
+			reason: "value contains substring \"/\"",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
 	if len(errors) > 0 {
 		return DeleteAlertRequestMultiError(errors)
@@ -40420,7 +40483,16 @@ func (m *GetAlertYAMLRequest) validate(all bool) error {
 
 	// no validation rules for Project
 
-	// no validation rules for Name
+	if strings.Contains(m.GetName(), "/") {
+		err := GetAlertYAMLRequestValidationError{
+			field:  "Name",
+			reason: "value contains substring \"/\"",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
 	if len(errors) > 0 {
 		return GetAlertYAMLRequestMultiError(errors)
@@ -41065,7 +41137,16 @@ func (m *GetPersonalFileRequest) validate(all bool) error {
 
 	// no validation rules for Project
 
-	// no validation rules for Name
+	if strings.Contains(m.GetName(), "/") {
+		err := GetPersonalFileRequestValidationError{
+			field:  "Name",
+			reason: "value contains substring \"/\"",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
 	if len(errors) > 0 {
 		return GetPersonalFileRequestMultiError(errors)
@@ -41279,7 +41360,16 @@ func (m *EditPersonalFileRequest) validate(all bool) error {
 
 	// no validation rules for Project
 
-	// no validation rules for Name
+	if strings.Contains(m.GetName(), "/") {
+		err := EditPersonalFileRequestValidationError{
+			field:  "Name",
+			reason: "value contains substring \"/\"",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
 	// no validation rules for Kind
 
@@ -41493,7 +41583,16 @@ func (m *DeletePersonalFileRequest) validate(all bool) error {
 
 	// no validation rules for Project
 
-	// no validation rules for Name
+	if strings.Contains(m.GetName(), "/") {
+		err := DeletePersonalFileRequestValidationError{
+			field:  "Name",
+			reason: "value contains substring \"/\"",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
 	if len(errors) > 0 {
 		return DeletePersonalFileRequestMultiError(errors)

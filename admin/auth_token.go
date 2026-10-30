@@ -229,7 +229,7 @@ func (s *Service) IssueMagicAuthToken(ctx context.Context, opts *IssueMagicAuthT
 
 // embedTokenAudience is the audience of embed tokens.
 // It is not a URL, so embed tokens can't be confused with runtime JWTs, which use the runtime's URL as the audience.
-const embedTokenAudience = "rill:admin:embed"
+const embedTokenAudience = "rill:admin:embed" // nolint:gosec // It's not a credential
 
 // EmbedToken contains the claims of a JWT that identifies an embed user.
 // It is issued along with an embed's runtime JWT, and lets the embed user manage their own reports in the project.

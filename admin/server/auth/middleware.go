@@ -10,6 +10,7 @@ import (
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
 	"github.com/grpc-ecosystem/go-grpc-middleware/util/metautils"
 	"github.com/rilldata/rill/admin/pkg/authtoken"
+	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"go.opentelemetry.io/otel/attribute"
 	semconv "go.opentelemetry.io/otel/semconv/v1.21.0"
@@ -19,6 +20,17 @@ import (
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 )
+
+// embedTokenAllowedMethods are the gRPC methods that embed tokens are allowed to call.
+// Embed users are untrusted outside users, but many handlers only check the ReadProject or ReadProd permissions that embed tokens have.
+// So we deny embed tokens by default, and handlers on this list must do their own checks for embed users.
+var embedTokenAllowedMethods = map[string]bool{
+	adminv1.AdminService_CreateReport_FullMethodName:      true,
+	adminv1.AdminService_EditReport_FullMethodName:        true,
+	adminv1.AdminService_DeleteReport_FullMethodName:      true,
+	adminv1.AdminService_TriggerReport_FullMethodName:     true,
+	adminv1.AdminService_UnsubscribeReport_FullMethodName: true,
+}
 
 // Annotator is a gRPC-gateway annotator that moves access tokens in HTTP cookies to the "authorization" gRPC metadata.
 func (a *Authenticator) Annotator(ctx context.Context, r *http.Request) metadata.MD {
@@ -45,6 +57,10 @@ func (a *Authenticator) UnaryServerInterceptor() grpc.UnaryServerInterceptor {
 			return nil, status.Error(codes.Unauthenticated, err.Error())
 		}
 
+		if GetClaims(newCtx).OwnerType() == OwnerTypeEmbed && !embedTokenAllowedMethods[info.FullMethod] {
+			return nil, status.Error(codes.PermissionDenied, "embed tokens are not allowed to call this method")
+		}
+
 		return handler(newCtx, req)
 	}
 }
@@ -56,6 +72,10 @@ func (a *Authenticator) StreamServerInterceptor() grpc.StreamServerInterceptor {
 		newCtx, err := a.parseClaimsFromBearer(ss.Context(), authHeader)
 		if err != nil {
 			return status.Error(codes.Unauthenticated, err.Error())
+		}
+
+		if GetClaims(newCtx).OwnerType() == OwnerTypeEmbed {
+			return status.Error(codes.PermissionDenied, "embed tokens are not allowed to call this method")
 		}
 
 		wrapped := grpc_middleware.WrapServerStream(ss)

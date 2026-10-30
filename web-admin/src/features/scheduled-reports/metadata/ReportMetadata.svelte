@@ -33,12 +33,8 @@
   } from "@rilldata/web-common/runtime-client";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { useQueryClient } from "@tanstack/svelte-query";
-  import { onDestroy } from "svelte";
-  import { createFormMetadataProvider } from "@rilldata/web-common/features/scheduled-reports/FormMetadataProvider.svelte.ts";
-  import {
-    getReportMutationFactory,
-    reportDeleteMutationFactory,
-  } from "@rilldata/web-common/features/scheduled-reports/ReportFormMetadataProvider.ts";
+  import { createMutationFromFactory } from "@rilldata/web-common/features/scheduled-reports/FormMetadataProvider.svelte.ts";
+  import { reportDeleteMutationFactory } from "@rilldata/web-common/features/scheduled-reports/ReportFormMetadataProvider.ts";
   import ProjectAccessControls from "../../projects/ProjectAccessControls.svelte";
   import {
     useIsReportCreatedByCode,
@@ -160,13 +156,7 @@
 
   // Actions
   const queryClient = useQueryClient();
-  const provider = createFormMetadataProvider(
-    runtimeClient,
-    getReportMutationFactory(true),
-    reportDeleteMutationFactory,
-  );
-  const { deleteMutation: deleteReport } = provider;
-  onDestroy(() => provider.cleanup());
+  const deleteReport = createMutationFromFactory(reportDeleteMutationFactory);
 
   let showEditReportDialog = false;
   function handleEditReport() {
@@ -184,7 +174,9 @@
         runtimeClient.instanceId,
       ),
     });
-    goto(`${provider.pageBasePath}/reports`);
+    goto(
+      embedded ? "/-/embed/reports" : `/${organization}/${project}/-/reports`,
+    );
   }
 </script>
 

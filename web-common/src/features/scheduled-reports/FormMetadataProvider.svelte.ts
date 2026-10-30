@@ -5,10 +5,8 @@ import {
 } from "@rilldata/web-admin/client";
 import { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import { EmbedStore } from "@rilldata/web-common/features/embeds/embed-store.ts";
-import {
-  createRuntimeServiceGetInstance,
-  createRuntimeServiceListNotifierConnectors,
-} from "@rilldata/web-common/runtime-client";
+import { getOrgAndProjectForEmbed } from "@rilldata/web-common/features/embeds/selectors.ts";
+import { createRuntimeServiceListNotifierConnectors } from "@rilldata/web-common/runtime-client";
 
 /**
  * Creates a mutation used by a form, i.e. the create/edit mutation or the delete mutation.
@@ -18,6 +16,17 @@ export type MutationFactory<M> = {
   admin: () => M;
   embed: (adminToken: string) => M;
 };
+
+/**
+ * Creates the admin or embed variant of a mutation, depending on whether the app is embedded.
+ * It must be called during component initialization, since mutations read the query client from the component context.
+ */
+export function createMutationFromFactory<M>(factory: MutationFactory<M>): M {
+  const embedInstance = EmbedStore.getInstance();
+  return embedInstance
+    ? factory.embed(embedInstance.adminToken)
+    : factory.admin();
+}
 
 /**
  * Provides the metadata needed by alert and report forms,
@@ -45,17 +54,11 @@ export function createFormMetadataProvider<M, D>(
   mutationFactory: MutationFactory<M>,
   deleteMutationFactory: MutationFactory<D>,
 ): FormMetadataProvider<M, D> {
+  const mutation = createMutationFromFactory(mutationFactory);
+  const deleteMutation = createMutationFromFactory(deleteMutationFactory);
   return EmbedStore.isEmbedded()
-    ? new EmbedFormMetadataProvider(
-        client,
-        mutationFactory.embed,
-        deleteMutationFactory.embed,
-      )
-    : new AdminFormMetadataProvider(
-        client,
-        mutationFactory.admin,
-        deleteMutationFactory.admin,
-      );
+    ? new EmbedFormMetadataProvider(client, mutation, deleteMutation)
+    : new AdminFormMetadataProvider(client, mutation, deleteMutation);
 }
 
 class AdminFormMetadataProvider<M, D> implements FormMetadataProvider<M, D> {
@@ -75,13 +78,9 @@ class AdminFormMetadataProvider<M, D> implements FormMetadataProvider<M, D> {
   private readonly projectMembersUnsub: () => void;
   private readonly notifiersUnsub: () => void;
 
-  public constructor(
-    client: RuntimeClient,
-    createMutation: MutationFactory<M>["admin"],
-    createDeleteMutation: MutationFactory<D>["admin"],
-  ) {
-    this.mutation = createMutation();
-    this.deleteMutation = createDeleteMutation();
+  public constructor(client: RuntimeClient, mutation: M, deleteMutation: D) {
+    this.mutation = mutation;
+    this.deleteMutation = deleteMutation;
 
     this.organization = page.params.organization;
     this.project = page.params.project;
@@ -129,21 +128,17 @@ class EmbedFormMetadataProvider<M, D> implements FormMetadataProvider<M, D> {
   public mutation: M;
   public deleteMutation: D;
 
-  public organization = "";
-  public project = "";
+  public organization = $state("");
+  public project = $state("");
   public pageBasePath = "/-/embed";
   public userEmail = "";
   public isLoading = false;
   public projectMembersSet = new Set<string>();
   public hasSlackNotifier = false; // not support in embed
 
-  private readonly instanceUnsub: () => void;
+  private readonly orgAndProjectUnsub: () => void;
 
-  public constructor(
-    client: RuntimeClient,
-    createMutation: MutationFactory<M>["embed"],
-    createDeleteMutation: MutationFactory<D>["embed"],
-  ) {
+  public constructor(client: RuntimeClient, mutation: M, deleteMutation: D) {
     const embedInstance = EmbedStore.getInstance();
     if (!embedInstance) {
       throw new Error("missing embed instance");
@@ -151,20 +146,18 @@ class EmbedFormMetadataProvider<M, D> implements FormMetadataProvider<M, D> {
     this.userEmail = embedInstance.userEmail;
     this.projectMembersSet = new Set([this.userEmail]);
 
-    this.mutation = createMutation(embedInstance.adminToken);
-    this.deleteMutation = createDeleteMutation(embedInstance.adminToken);
+    this.mutation = mutation;
+    this.deleteMutation = deleteMutation;
 
-    const instanceQuery = createRuntimeServiceGetInstance(client, {});
-    this.instanceUnsub = instanceQuery.subscribe((instanceResp) => {
-      const url = instanceResp.data?.instance?.frontendUrl;
-      if (!url) return;
-      const parts = url.split("/");
-      this.organization = parts[parts.length - 2] ?? "";
-      this.project = parts[parts.length - 1] ?? "";
-    });
+    this.orgAndProjectUnsub = getOrgAndProjectForEmbed(client).subscribe(
+      ({ organization, project }) => {
+        this.organization = organization;
+        this.project = project;
+      },
+    );
   }
 
   public cleanup() {
-    this.instanceUnsub();
+    this.orgAndProjectUnsub();
   }
 }

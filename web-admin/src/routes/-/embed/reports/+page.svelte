@@ -5,7 +5,7 @@
     useClientFilteredResources,
   } from "@rilldata/web-common/features/entity-management/resource-selectors.ts";
   import ReportsTable from "@rilldata/web-admin/features/scheduled-reports/listing/ReportsTable.svelte";
-  import { getOrgAndProjectForEmbed } from "@rilldata/web-admin/features/embeds/selectors.ts";
+  import { getOrgAndProjectForEmbed } from "@rilldata/web-common/features/embeds/selectors.ts";
   import ProjectPage from "@rilldata/web-admin/features/projects/ProjectPage.svelte";
 
   const runtimeClient = useRuntimeClient();

@@ -2,6 +2,7 @@ import {
   createAdminServiceCreateReport,
   createAdminServiceDeleteReport,
   createAdminServiceEditReport,
+  createAdminServiceTriggerReport,
 } from "@rilldata/web-admin/client";
 import type {
   FormMetadataProvider,
@@ -11,12 +12,14 @@ import {
   createAdminServiceCreateReportUsingToken,
   createAdminServiceDeleteReportUsingToken,
   createAdminServiceEditReportUsingToken,
+  createAdminServiceTriggerReportUsingToken,
 } from "@rilldata/web-common/features/scheduled-reports/report-client-using-token.ts";
 
 type ReportMutation = ReturnType<
   typeof createAdminServiceCreateReport | typeof createAdminServiceEditReport
 >;
 type ReportDeleteMutation = ReturnType<typeof createAdminServiceDeleteReport>;
+type ReportTriggerMutation = ReturnType<typeof createAdminServiceTriggerReport>;
 
 export type ReportFormMetadataProvider = FormMetadataProvider<
   ReportMutation,
@@ -43,4 +46,11 @@ export const reportDeleteMutationFactory: MutationFactory<ReportDeleteMutation> 
   {
     admin: () => createAdminServiceDeleteReport(),
     embed: (adminToken) => createAdminServiceDeleteReportUsingToken(adminToken),
+  };
+
+export const reportTriggerMutationFactory: MutationFactory<ReportTriggerMutation> =
+  {
+    admin: () => createAdminServiceTriggerReport(),
+    embed: (adminToken) =>
+      createAdminServiceTriggerReportUsingToken(adminToken),
   };

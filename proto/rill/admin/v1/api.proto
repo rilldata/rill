@@ -3218,7 +3218,7 @@ message CreateReportResponse {
 message EditReportRequest {
   string org = 1;
   string project = 2;
-  string name = 3;
+  string name = 3 [(validate.rules).string.not_contains = "/"];
   ReportOptions options = 4 [(validate.rules).message.required = true];
 }
 
@@ -3228,7 +3228,7 @@ message EditReportResponse {
 message UnsubscribeReportRequest {
   string org = 1;
   string project = 2;
-  string name = 3;
+  string name = 3 [(validate.rules).string.not_contains = "/"];
   string email = 4 [(validate.rules).string = {email: true, ignore_empty: true}];
   string slack_user = 5 [(validate.rules).string = {email: true, ignore_empty: true}];
 }
@@ -3238,7 +3238,7 @@ message UnsubscribeReportResponse {}
 message DeleteReportRequest {
   string org = 1;
   string project = 2;
-  string name = 3;
+  string name = 3 [(validate.rules).string.not_contains = "/"];
 }
 
 message DeleteReportResponse {
@@ -3247,7 +3247,7 @@ message DeleteReportResponse {
 message TriggerReportRequest {
   string org = 1;
   string project = 2;
-  string name = 3;
+  string name = 3 [(validate.rules).string.not_contains = "/"];
 }
 
 message TriggerReportResponse {}
@@ -3275,7 +3275,7 @@ message CreateAlertResponse {
 message EditAlertRequest {
   string org = 1;
   string project = 2;
-  string name = 3;
+  string name = 3 [(validate.rules).string.not_contains = "/"];
   AlertOptions options = 4 [(validate.rules).message.required = true];
 }
 
@@ -3285,7 +3285,7 @@ message EditAlertResponse {
 message UnsubscribeAlertRequest {
   string org = 1;
   string project = 2;
-  string name = 3;
+  string name = 3 [(validate.rules).string.not_contains = "/"];
   string email = 4 [(validate.rules).string = {email: true, ignore_empty: true}];
   string slack_user = 5 [(validate.rules).string = {email: true, ignore_empty: true}];
 }
@@ -3295,7 +3295,7 @@ message UnsubscribeAlertResponse {}
 message DeleteAlertRequest {
   string org = 1;
   string project = 2;
-  string name = 3;
+  string name = 3 [(validate.rules).string.not_contains = "/"];
 }
 
 message DeleteAlertResponse {
@@ -3314,7 +3314,7 @@ message GenerateAlertYAMLResponse {
 message GetAlertYAMLRequest {
   string org = 1;
   string project = 2;
-  string name = 3;
+  string name = 3 [(validate.rules).string.not_contains = "/"];
 }
 
 message GetAlertYAMLResponse {
@@ -3346,7 +3346,7 @@ message CreatePersonalFileResponse {
 message GetPersonalFileRequest {
   string org = 1;
   string project = 2;
-  string name = 3;
+  string name = 3 [(validate.rules).string.not_contains = "/"];
 }
 
 message GetPersonalFileResponse {
@@ -3357,7 +3357,7 @@ message GetPersonalFileResponse {
 message EditPersonalFileRequest {
   string org = 1;
   string project = 2;
-  string name = 3;
+  string name = 3 [(validate.rules).string.not_contains = "/"];
   string kind = 4;
   string yaml = 5;
 }
@@ -3368,7 +3368,7 @@ message EditPersonalFileResponse {
 message DeletePersonalFileRequest {
   string org = 1;
   string project = 2;
-  string name = 3;
+  string name = 3 [(validate.rules).string.not_contains = "/"];
 }
 
 message DeletePersonalFileResponse {

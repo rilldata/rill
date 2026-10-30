@@ -195,6 +195,22 @@ func TestEmbedReports(t *testing.T) {
 		require.Equal(t, true, d.UserAttrs.AsMap()["embed"])
 	})
 
+	t.Run("embed tokens can only call allowlisted methods", func(t *testing.T) {
+		embedClient := adm.NewClient(t, getIFrame(t, &adminv1.GetIFrameRequest{ExternalUserId: "allowlist"}))
+		_, err := embedClient.ListPersonalFiles(t.Context(), &adminv1.ListPersonalFilesRequest{Org: "report-test", Project: "report-project"})
+		require.Equal(t, codes.PermissionDenied, status.Code(err))
+		_, err = embedClient.GetAlertYAML(t.Context(), &adminv1.GetAlertYAMLRequest{Org: "report-test", Project: "report-project", Name: "a1"})
+		require.Equal(t, codes.PermissionDenied, status.Code(err))
+	})
+
+	t.Run("virtual file names cannot contain slashes", func(t *testing.T) {
+		createReport(t, "r-traversal", nil)
+		_, err := u1Client.DeletePersonalFile(t.Context(), &adminv1.DeletePersonalFileRequest{Org: "report-test", Project: "report-project", Name: "../reports/r-traversal"})
+		require.Equal(t, codes.InvalidArgument, status.Code(err))
+		_, err = u1Client.GetAlertYAML(t.Context(), &adminv1.GetAlertYAMLRequest{Org: "report-test", Project: "report-project", Name: "../reports/r-traversal"})
+		require.Equal(t, codes.InvalidArgument, status.Code(err))
+	})
+
 	t.Run("missing embed user fails closed", func(t *testing.T) {
 		createReport(t, "r-missing", nil)
 		_, err := getReportMeta(t, "r-missing", "a@customer.com")

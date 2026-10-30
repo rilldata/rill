@@ -14,6 +14,7 @@ import (
 	"github.com/rilldata/rill/admin/server/auth"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
+	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/pkg/email"
 	"github.com/rilldata/rill/runtime/pkg/env"
 	"github.com/rilldata/rill/runtime/pkg/gitutil"
@@ -2428,39 +2429,13 @@ func projectVariableToDTO(v *database.ProjectVariable) *adminv1.ProjectVariable 
 	}
 }
 
+// securityRulesFromResources returns security rules that limit access to the given resources, if restricted is true.
 func securityRulesFromResources(restricted bool, resources []database.ResourceName) []*runtimev1.SecurityRule {
-	if !restricted {
-		// No resource restrictions
-		return nil
+	names := make([]*runtimev1.ResourceName, len(resources))
+	for i, r := range resources {
+		names[i] = &runtimev1.ResourceName{Kind: r.Type, Name: r.Name}
 	}
-	if len(resources) == 0 {
-		// No access to any resources
-		return []*runtimev1.SecurityRule{{
-			Rule: &runtimev1.SecurityRule_Access{
-				Access: &runtimev1.SecurityRuleAccess{
-					Allow: false,
-				},
-			},
-		}}
-	}
-
-	rules := make([]*runtimev1.SecurityRule, 0, len(resources))
-	for _, r := range resources {
-		if r.Type == "" || r.Name == "" {
-			continue
-		}
-		rules = append(rules, &runtimev1.SecurityRule{
-			Rule: &runtimev1.SecurityRule_TransitiveAccess{
-				TransitiveAccess: &runtimev1.SecurityRuleTransitiveAccess{
-					Resource: &runtimev1.ResourceName{
-						Kind: r.Type,
-						Name: r.Name,
-					},
-				},
-			},
-		})
-	}
-	return rules
+	return runtime.SecurityRulesForResources(restricted, names)
 }
 
 func resourceNamesFromProto(resources []*adminv1.ResourceName) []database.ResourceName {

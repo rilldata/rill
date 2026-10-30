@@ -239,6 +239,41 @@ var allowAccessRule = &runtimev1.SecurityRule{
 	},
 }
 
+// SecurityRulesForResources returns security rules that limit access to the given resources, if restricted is true.
+// Each resource grants transitive access to its dependencies, and access to anything else is denied.
+// It is used by the admin service to limit runtime JWTs, and by reports that are limited to specific resources.
+func SecurityRulesForResources(restricted bool, resources []*runtimev1.ResourceName) []*runtimev1.SecurityRule {
+	if !restricted {
+		// No resource restrictions
+		return nil
+	}
+	if len(resources) == 0 {
+		// No access to any resources
+		return []*runtimev1.SecurityRule{{
+			Rule: &runtimev1.SecurityRule_Access{
+				Access: &runtimev1.SecurityRuleAccess{
+					Allow: false,
+				},
+			},
+		}}
+	}
+
+	rules := make([]*runtimev1.SecurityRule, 0, len(resources))
+	for _, r := range resources {
+		if r.Kind == "" || r.Name == "" {
+			continue
+		}
+		rules = append(rules, &runtimev1.SecurityRule{
+			Rule: &runtimev1.SecurityRule_TransitiveAccess{
+				TransitiveAccess: &runtimev1.SecurityRuleTransitiveAccess{
+					Resource: r,
+				},
+			},
+		})
+	}
+	return rules
+}
+
 // securityEngine is an engine for resolving security rules and caching the results.
 type securityEngine struct {
 	cache *simplelru.LRU
@@ -618,8 +653,10 @@ func (p *securityEngine) builtInReportSecurityRule(reportRes *runtimev1.Resource
 
 	// Reports created from an embed are only accessible to admins and the embed user who created them.
 	// Recipients don't get access, since they may be other embed users or project members, and the report shouldn't leak the owner or other recipients.
+	// The embed user is identified by the subject of the embed's runtime JWT, which is stored in the "admin_embed_owner_id" annotation.
+	// Rill user IDs are UUIDs and embed user IDs start with "ext_", so they can't collide.
 	if spec.Annotations["admin_embed_owner_id"] != "" {
-		explicitAllow = claims.Admin() || isEmbedOwner(spec.Annotations, claims)
+		explicitAllow = claims.Admin() || (claims.UserID != "" && claims.UserID == spec.Annotations["admin_embed_owner_id"])
 	} else {
 		// Allow if the owner is accessing the report
 		if spec.Annotations["admin_owner_user_id"] != "" && userID == spec.Annotations["admin_owner_user_id"] {
@@ -674,13 +711,6 @@ func (p *securityEngine) builtInReportSecurityRule(reportRes *runtimev1.Resource
 			},
 		},
 	}
-}
-
-// isEmbedOwner returns true if the claims belong to the embed user who owns a resource created from an embed.
-// The embed user is identified by the subject of the embed's runtime JWT, which is stored in the "admin_embed_owner_id" annotation.
-// Rill user IDs are UUIDs and embed user IDs start with "ext_", so they can't collide.
-func isEmbedOwner(annotations map[string]string, claims *SecurityClaims) bool {
-	return claims.UserID != "" && claims.UserID == annotations["admin_embed_owner_id"]
 }
 
 // isAdminManagedAnnotations returns true if the resource annotations indicate it is admin-managed

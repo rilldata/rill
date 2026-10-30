@@ -4,7 +4,7 @@
   import ReportHistoryTable from "@rilldata/web-admin/features/scheduled-reports/history/ReportHistoryTable.svelte";
   import ReportMetadata from "@rilldata/web-admin/features/scheduled-reports/metadata/ReportMetadata.svelte";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
-  import { getOrgAndProjectForEmbed } from "@rilldata/web-admin/features/embeds/selectors.ts";
+  import { getOrgAndProjectForEmbed } from "@rilldata/web-common/features/embeds/selectors.ts";
 
   let report = $derived(page.params.report);
   const runtimeClient = useRuntimeClient();

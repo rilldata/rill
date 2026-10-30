@@ -67,26 +67,28 @@ func (s *Server) GetReportMeta(ctx context.Context, req *adminv1.GetReportMetaRe
 	}
 
 	// Reports created from an embed run as the embed user, and are handled separately.
-	embedInfo, err := s.embedCreatedReportInfo(ctx, proj.ID, req.Report)
-	if err != nil {
-		return nil, err
-	}
-	if embedInfo != nil {
-		return s.getEmbedReportMeta(ctx, org, proj, req, embedInfo, recipients)
+	// They don't have a Rill owner, so the lookup is skipped for reports that have one.
+	if req.OwnerId == "" {
+		embedInfo, err := s.embedCreatedReportInfo(ctx, proj.ID, req.Report)
+		if err != nil {
+			return nil, err
+		}
+		if embedInfo != nil {
+			return s.getEmbedReportMeta(ctx, org, proj, req, embedInfo, recipients)
+		}
 	}
 
 	// Resolve the identity to evaluate security policies for when accessing the report's data.
 	// NOTE: userID is empty if the report has no owner.
-	ownerID := req.OwnerId
 	var userID string
 	var userAttrs map[string]any
 	var ownerEmail string
-	if ownerID != "" {
-		userAttrs, userID, _, err = s.getAttributesForUser(ctx, proj.OrganizationID, proj.ID, ownerID, "")
+	if req.OwnerId != "" {
+		userAttrs, userID, _, err = s.getAttributesForUser(ctx, proj.OrganizationID, proj.ID, req.OwnerId, "")
 		if err != nil {
 			return nil, err
 		}
-		owner, err := s.admin.DB.FindUser(ctx, ownerID)
+		owner, err := s.admin.DB.FindUser(ctx, req.OwnerId)
 		if err != nil {
 			return nil, err
 		}
@@ -97,11 +99,17 @@ func (s *Server) GetReportMeta(ctx context.Context, req *adminv1.GetReportMetaRe
 		return nil, err
 	}
 
+	// Reports without an owner are defined in Git, so they can't be unsubscribed from.
+	canUnsubscribe := req.OwnerId != ""
+
 	var tokens map[string]string
 	if webOpenMode == WebOpenModeRecipient {
-		tokens, err = s.createUnsubMagicTokens(ctx, proj.ID, req.Report, ownerID, ownerEmail, recipients)
+		// In recipient mode, the tokens are only used for unsubscribe links.
+		if canUnsubscribe {
+			tokens, err = s.createUnsubMagicTokens(ctx, proj.ID, req.Report, req.OwnerId, ownerEmail, recipients)
+		}
 	} else {
-		tokens, err = s.createMagicTokens(ctx, proj.ID, req.Report, ownerID, recipients, req.Resources, userAttrs)
+		tokens, err = s.createMagicTokens(ctx, proj.ID, req.Report, req.OwnerId, recipients, req.Resources, userAttrs)
 	}
 	if err != nil {
 		return nil, fmt.Errorf("failed to issue magic auth tokens: %w", err)
@@ -113,9 +121,10 @@ func (s *Server) GetReportMeta(ctx context.Context, req *adminv1.GetReportMetaRe
 	// 	Recipients in recipient mode get an unsubscribe link with token but no token for open/export.
 	// 	Recipients in none web open mode do not get an open link.
 	// 	Recipients other than owner do not get an edit link, they can edit from the project UI if they have permissions.
+	// 	Recipients do not get an unsubscribe link for reports defined in Git.
 	for _, recipient := range recipients {
 		if recipient == ownerEmail {
-			if webOpenMode == WebOpenModeRecipient && ownerID != "" {
+			if webOpenMode == WebOpenModeRecipient {
 				// owner in recipient mode gets plain open and export url without token as token does not have any access
 				delivery[recipient] = &adminv1.GetReportMetaResponse_DeliveryMeta{
 					OpenUrl:   s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportOpen(org.Name, proj.Name, req.Report, "", req.ExecutionTime.AsTime()),
@@ -135,11 +144,16 @@ func (s *Server) GetReportMeta(ctx context.Context, req *adminv1.GetReportMetaRe
 			}
 			continue
 		}
+		// The unsubscribe link always uses a token, so that it works seamlessly for non Rill users.
+		var unsubscribeURL string
+		if canUnsubscribe {
+			unsubscribeURL = s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportUnsubscribe(org.Name, proj.Name, req.Report, tokens[recipient], recipient)
+		}
 		if webOpenMode == WebOpenModeCreator {
 			delivery[recipient] = &adminv1.GetReportMetaResponse_DeliveryMeta{
 				OpenUrl:        s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportOpen(org.Name, proj.Name, req.Report, tokens[recipient], req.ExecutionTime.AsTime()),
 				ExportUrl:      s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportExport(org.Name, proj.Name, req.Report, tokens[recipient]),
-				UnsubscribeUrl: s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportUnsubscribe(org.Name, proj.Name, req.Report, tokens[recipient], recipient),
+				UnsubscribeUrl: unsubscribeURL,
 				UserId:         userID,
 				UserAttrs:      userAttrsPb,
 			}
@@ -155,7 +169,7 @@ func (s *Server) GetReportMeta(ctx context.Context, req *adminv1.GetReportMetaRe
 			delivery[recipient] = &adminv1.GetReportMetaResponse_DeliveryMeta{
 				OpenUrl:        s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportOpen(org.Name, proj.Name, req.Report, "", req.ExecutionTime.AsTime()),
 				ExportUrl:      s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportExport(org.Name, proj.Name, req.Report, ""),
-				UnsubscribeUrl: s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportUnsubscribe(org.Name, proj.Name, req.Report, tokens[recipient], recipient), // still use token for unsubscribe so that it works seamlessly for non Rill users
+				UnsubscribeUrl: unsubscribeURL,
 				UserId:         userID,
 				UserAttrs:      pbAttrs,
 			}
@@ -170,7 +184,7 @@ func (s *Server) GetReportMeta(ctx context.Context, req *adminv1.GetReportMetaRe
 			}
 			delivery[recipient] = &adminv1.GetReportMetaResponse_DeliveryMeta{
 				ExportUrl:      s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportExport(org.Name, proj.Name, req.Report, ""),
-				UnsubscribeUrl: s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportUnsubscribe(org.Name, proj.Name, req.Report, tokens[recipient], recipient), // still use token for unsubscribe so that it works seamlessly for non Rill users
+				UnsubscribeUrl: unsubscribeURL,
 				UserId:         userID,
 				UserAttrs:      pbAttrs,
 			}
@@ -377,9 +391,13 @@ func (s *Server) EditReport(ctx context.Context, req *adminv1.EditReportRequest)
 	if !annotations.AdminManaged {
 		return nil, status.Error(codes.FailedPrecondition, "can't edit report because it was not created from the UI")
 	}
-	embedInfo, err := s.embedCreatedReportInfo(ctx, proj.ID, req.Name)
-	if err != nil {
-		return nil, err
+	// Only reports created from an embed have the embed owner annotation, so the lookup is skipped for other reports.
+	var embedInfo *embedReportInfo
+	if annotations.AdminEmbedOwnerID != "" {
+		embedInfo, err = s.embedCreatedReportInfo(ctx, proj.ID, req.Name)
+		if err != nil {
+			return nil, err
+		}
 	}
 	if !permissions.ManageReports && !isAdminManagedOwner(claims, annotations.AdminOwnerUserID, embedInfo) {
 		return nil, status.Error(codes.PermissionDenied, "does not have permission to edit report")
@@ -620,9 +638,13 @@ func (s *Server) DeleteReport(ctx context.Context, req *adminv1.DeleteReportRequ
 		return nil, status.Error(codes.FailedPrecondition, "can't edit report because it was not created from the UI")
 	}
 
-	embedInfo, err := s.embedCreatedReportInfo(ctx, proj.ID, req.Name)
-	if err != nil {
-		return nil, err
+	// Only reports created from an embed have the embed owner annotation, so the lookup is skipped for other reports.
+	var embedInfo *embedReportInfo
+	if annotations.AdminEmbedOwnerID != "" {
+		embedInfo, err = s.embedCreatedReportInfo(ctx, proj.ID, req.Name)
+		if err != nil {
+			return nil, err
+		}
 	}
 	if !permissions.ManageReports && !isAdminManagedOwner(claims, annotations.AdminOwnerUserID, embedInfo) {
 		return nil, status.Error(codes.PermissionDenied, "does not have permission to edit report")
@@ -674,9 +696,13 @@ func (s *Server) TriggerReport(ctx context.Context, req *adminv1.TriggerReportRe
 	}
 	annotations := parseReportAnnotations(spec.Annotations)
 
-	embedInfo, err := s.embedCreatedReportInfo(ctx, proj.ID, req.Name)
-	if err != nil {
-		return nil, err
+	// Only reports created from an embed have the embed owner annotation, so the lookup is skipped for other reports.
+	var embedInfo *embedReportInfo
+	if annotations.AdminEmbedOwnerID != "" {
+		embedInfo, err = s.embedCreatedReportInfo(ctx, proj.ID, req.Name)
+		if err != nil {
+			return nil, err
+		}
 	}
 	if !permissions.ManageReports && !isAdminManagedOwner(claims, annotations.AdminOwnerUserID, embedInfo) {
 		return nil, status.Error(codes.PermissionDenied, "does not have permission to edit report")
