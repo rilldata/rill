@@ -98,7 +98,22 @@ func PruneRendererProperties(renderer string, props map[string]any, timeDimensio
 		}
 		p.clearSortIfRestricted()
 	case "map":
-		if !p.allowedAt("geo_dimension.field") || !p.allowedAt("color.measure") {
+		// A map renders as long as one of its layers is left: points from a geo dimension, or regions.
+		_, hadPoints := props["geo_dimension"]
+		_, hadRegions := props["regions"]
+		if hadPoints && (!p.allowedAt("geo_dimension.field") || !p.allowedAt("color.measure")) {
+			for _, key := range []string{"geo_dimension", "color", "size_measure", "tooltip_dimension"} {
+				delete(props, key)
+			}
+			p.changed = true
+		}
+		if hadRegions && (!p.allowedAt("regions.dimension") || !p.allowedAt("regions.color.measure")) {
+			delete(props, "regions")
+			p.changed = true
+		}
+		_, hasPoints := props["geo_dimension"]
+		_, hasRegions := props["regions"]
+		if (hadPoints || hadRegions) && !hasPoints && !hasRegions {
 			return false, true
 		}
 		p.dropKeyIfRestricted("size_measure.field", "size_measure")

@@ -85,6 +85,9 @@ jobs:
           node-version-file: '.nvmrc'
           cache: 'npm'
 
+      - name: Cache map boundaries
+        uses: ./.github/actions/map-boundaries-cache
+
       - name: NPM Install
         run: npm ci
 

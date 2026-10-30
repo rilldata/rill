@@ -19,6 +19,7 @@ type CustomInputTypes =
   | "sparkline"
   | "comparison_options"
   | "map_color"
+  | "map_regions"
   | "vega_spec"
   | "switcher_tab"
   | "ai_generate"

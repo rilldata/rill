@@ -4,7 +4,6 @@ import {
   mouseLocationToBoundingRect,
   placeElement,
 } from "@rilldata/web-common/lib/place-element";
-import { justEnoughPrecision } from "@rilldata/web-common/lib/formatters";
 
 // ── GeoJSON transformation ──────────────────────────────────────
 
@@ -138,6 +137,75 @@ export function calculateBounds(
   return hasValidCoord ? bounds : null;
 }
 
+/**
+ * Calculates the bounds of features that may cross the antimeridian, such as Russia or Fiji.
+ * Longitudes are also measured with the western hemisphere shifted east by 360°,
+ * and whichever measurement spans fewer degrees is used,
+ * so the camera fits the shape instead of zooming out to the whole world.
+ * The returned east edge can exceed 180°, which Mapbox handles.
+ */
+export function calculateWrappedBounds(
+  features: GeoJSON.Feature[],
+): mapboxgl.LngLatBoundsLike | null {
+  let south = Infinity;
+  let north = -Infinity;
+  let west = Infinity;
+  let east = -Infinity;
+  let shiftedWest = Infinity;
+  let shiftedEast = -Infinity;
+
+  for (const feature of features) {
+    forEachCoordinate(feature.geometry, ([lng, lat]) => {
+      south = Math.min(south, lat);
+      north = Math.max(north, lat);
+      west = Math.min(west, lng);
+      east = Math.max(east, lng);
+      const shifted = lng < 0 ? lng + 360 : lng;
+      shiftedWest = Math.min(shiftedWest, shifted);
+      shiftedEast = Math.max(shiftedEast, shifted);
+    });
+  }
+  if (south === Infinity) return null;
+
+  if (shiftedEast - shiftedWest < east - west) {
+    return [
+      [shiftedWest, south],
+      [shiftedEast, north],
+    ];
+  }
+  return [
+    [west, south],
+    [east, north],
+  ];
+}
+
+function forEachCoordinate(
+  geometry: GeoJSON.Geometry,
+  fn: (coord: number[]) => void,
+) {
+  switch (geometry.type) {
+    case "Point":
+      fn(geometry.coordinates);
+      break;
+    case "MultiPoint":
+    case "LineString":
+      geometry.coordinates.forEach(fn);
+      break;
+    case "Polygon":
+    case "MultiLineString":
+      geometry.coordinates.forEach((ring) => ring.forEach(fn));
+      break;
+    case "MultiPolygon":
+      geometry.coordinates.forEach((polygon) =>
+        polygon.forEach((ring) => ring.forEach(fn)),
+      );
+      break;
+    case "GeometryCollection":
+      geometry.geometries.forEach((g) => forEachCoordinate(g, fn));
+      break;
+  }
+}
+
 // ── Polygon detection ───────────────────────────────────────────
 
 export function detectPolygonMode(
@@ -168,68 +236,36 @@ function escapeHTML(value: unknown): string {
   return String(value).replace(/&/g, "&amp;").replace(/</g, "&lt;");
 }
 
-interface TooltipContext {
-  tooltipDimension: string | undefined;
-  colorMeasure: string | null;
-  sizeMeasure: string | undefined;
-  getDisplayName: (name: string) => string;
+export interface TooltipRow {
+  label: string;
+  value: string;
 }
 
 export function buildTooltipHTML(
-  properties: Record<string, unknown> | null,
-  ctx: TooltipContext,
+  title: string | undefined,
+  rows: TooltipRow[],
 ): string | null {
-  if (!properties) return null;
-
-  const { tooltipDimension, colorMeasure: cm, sizeMeasure: sm } = ctx;
-  if (!tooltipDimension && !cm && !sm) return null;
-
   let html = "";
-
-  if (tooltipDimension && properties[tooltipDimension] != null) {
-    html += `<h2>${escapeHTML(properties[tooltipDimension])}</h2>`;
+  if (title) {
+    html += `<h2>${escapeHTML(title)}</h2>`;
   }
-
-  const rows: string[] = [];
-  if (cm && properties[cm] != null) {
-    const val =
-      typeof properties[cm] === "number"
-        ? justEnoughPrecision(properties[cm] as number)
-        : String(properties[cm]);
-    rows.push(
-      `<tr><td class="key">${escapeHTML(ctx.getDisplayName(cm))}</td><td class="value">${escapeHTML(val)}</td></tr>`,
-    );
-  }
-  if (sm && sm !== cm && properties[sm] != null) {
-    const val =
-      typeof properties[sm] === "number"
-        ? justEnoughPrecision(properties[sm] as number)
-        : String(properties[sm]);
-    rows.push(
-      `<tr><td class="key">${escapeHTML(ctx.getDisplayName(sm))}</td><td class="value">${escapeHTML(val)}</td></tr>`,
-    );
-  }
-
   if (rows.length > 0) {
-    html += `<table><tbody>${rows.join("")}</tbody></table>`;
+    const cells = rows
+      .map(
+        (r) =>
+          `<tr><td class="key">${escapeHTML(r.label)}</td><td class="value">${escapeHTML(r.value)}</td></tr>`,
+      )
+      .join("");
+    html += `<table><tbody>${cells}</tbody></table>`;
   }
-
   return html || null;
 }
 
 export function showTooltip(
-  event: mapboxgl.MapMouseEvent & { features?: GeoJSON.Feature[] },
-  ctx: TooltipContext,
+  event: mapboxgl.MapMouseEvent,
+  html: string | null,
 ) {
   removeTooltip();
-
-  const feature = event.features?.[0];
-  if (!feature) return;
-
-  const html = buildTooltipHTML(
-    feature.properties as Record<string, unknown> | null,
-    ctx,
-  );
   if (!html) return;
 
   const el = document.createElement("div");

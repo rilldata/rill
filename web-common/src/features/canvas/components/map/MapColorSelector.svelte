@@ -7,12 +7,19 @@
 
   type Props = {
     canvasName: string;
+    id?: string;
     metricsView: string;
     colorConfig: MapColorConfig | undefined;
     onChange: (updatedConfig: MapColorConfig) => void;
   };
 
-  let { canvasName, metricsView, colorConfig, onChange }: Props = $props();
+  let {
+    canvasName,
+    id = "map-color-measure",
+    metricsView,
+    colorConfig,
+    onChange,
+  }: Props = $props();
 
   function handleMeasureSelect(measure: string) {
     onChange({
@@ -28,12 +35,12 @@
 </script>
 
 <div class="space-y-2">
-  <InputLabel small label="Color" id="map-color-measure" />
+  <InputLabel small label="Color" {id} />
 
   <SingleFieldInput
     {canvasName}
     metricName={metricsView}
-    id="map-color-measure"
+    {id}
     type="measure"
     selectedItem={colorConfig?.measure}
     onSelect={handleMeasureSelect}
