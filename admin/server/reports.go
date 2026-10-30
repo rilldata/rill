@@ -798,6 +798,10 @@ func (s *Server) yamlForManagedReport(opts *adminv1.ReportOptions, ownerUserID, 
 		if opts.Resolver != "" {
 			return nil, fmt.Errorf("reports created from an embed must use a query, not a data resolver")
 		}
+		// Their emails have no open link, so they need an attachment, which canvas reports don't support.
+		if opts.Explore == "" || opts.Canvas != "" {
+			return nil, fmt.Errorf("reports created from an embed only support explore dashboards")
+		}
 		res.Annotations.AdminEmbedOwnerID = embedOwnerID
 		if len(embedResources) > 0 {
 			resourcesJSON, err := json.Marshal(embedResources)
@@ -1137,15 +1141,11 @@ func embedReportResources(resources []database.ResourceName, opts *adminv1.Repor
 		return nil, nil
 	}
 
-	var target database.ResourceName
-	switch {
-	case opts.Explore != "":
-		target = database.ResourceName{Type: runtime.ResourceKindExplore, Name: opts.Explore}
-	case opts.Canvas != "":
-		target = database.ResourceName{Type: runtime.ResourceKindCanvas, Name: opts.Canvas}
-	default:
-		return nil, status.Error(codes.PermissionDenied, "reports created from this embed must target an explore or canvas dashboard")
+	// Reports created from an embed only support explore dashboards (see yamlForManagedReport).
+	if opts.Explore == "" {
+		return nil, status.Error(codes.InvalidArgument, "reports created from an embed only support explore dashboards")
 	}
+	target := database.ResourceName{Type: runtime.ResourceKindExplore, Name: opts.Explore}
 	if !slices.Contains(resources, target) {
 		return nil, status.Errorf(codes.PermissionDenied, "reports created from this embed can't target %s %q", target.Type, target.Name)
 	}

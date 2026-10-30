@@ -41,6 +41,7 @@ func TestYAMLForManagedReportOwner(t *testing.T) {
 				QueryName:       "MetricsViewAggregation",
 				QueryArgsJson:   "{}",
 				EmailRecipients: []string{"embed@example.com"},
+				Explore:         "e1",
 				WebOpenMode:     string(tc.webOpenMode),
 			}
 			data, err := (&Server{}).yamlForManagedReport(opts, tc.ownerUserID, tc.embedOwnerID, nil)
@@ -169,6 +170,17 @@ func TestYAMLForManagedReportEmbed(t *testing.T) {
 	_, err = s.yamlForManagedReport(opts, "", "ext_abc", nil)
 	require.ErrorContains(t, err, "must use a query")
 
+	// Canvas dashboards are not supported, since their emails would have no content
+	opts = newOpts()
+	opts.Explore = ""
+	opts.Canvas = "c1"
+	_, err = s.yamlForManagedReport(opts, "", "ext_abc", nil)
+	require.ErrorContains(t, err, "only support explore dashboards")
+	opts = newOpts()
+	opts.Explore = ""
+	_, err = s.yamlForManagedReport(opts, "", "ext_abc", nil)
+	require.ErrorContains(t, err, "only support explore dashboards")
+
 	// The restrictions don't apply to reports created by Rill users
 	opts = newOpts()
 	opts.EmailRecipients = []string{"other@example.com", "another@example.com"}
@@ -189,19 +201,18 @@ func TestEmbedReportResources(t *testing.T) {
 	require.NoError(t, err)
 	require.Empty(t, res)
 
-	// The target must be one of the embed's dashboards, of the same kind
+	// The target must be one of the embed's dashboards
 	res, err = embedReportResources([]database.ResourceName{e1}, &adminv1.ReportOptions{Explore: "e1"})
 	require.NoError(t, err)
 	require.Equal(t, []database.ResourceName{e1}, res)
 	_, err = embedReportResources([]database.ResourceName{e1}, &adminv1.ReportOptions{Explore: "e2"})
 	require.Equal(t, codes.PermissionDenied, status.Code(err))
-	_, err = embedReportResources([]database.ResourceName{e1}, &adminv1.ReportOptions{Canvas: "e1"})
-	require.Equal(t, codes.PermissionDenied, status.Code(err))
+
+	// Canvas dashboards are not supported, even if the embed is limited to them
+	_, err = embedReportResources([]database.ResourceName{c1}, &adminv1.ReportOptions{Canvas: "c1"})
+	require.Equal(t, codes.InvalidArgument, status.Code(err))
 	_, err = embedReportResources([]database.ResourceName{e1}, &adminv1.ReportOptions{})
-	require.Equal(t, codes.PermissionDenied, status.Code(err))
-	res, err = embedReportResources([]database.ResourceName{c1}, &adminv1.ReportOptions{Canvas: "c1"})
-	require.NoError(t, err)
-	require.Equal(t, []database.ResourceName{c1}, res)
+	require.Equal(t, codes.InvalidArgument, status.Code(err))
 
 	// Reports are dropped, since the embed user controls their queries; for example, when the embed opens a report
 	res, err = embedReportResources([]database.ResourceName{r1, e1}, &adminv1.ReportOptions{Explore: "e1"})
