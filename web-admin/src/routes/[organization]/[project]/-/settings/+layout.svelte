@@ -10,7 +10,7 @@
   import { escapeHtml } from "@rilldata/web-common/lib/i18n";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
 
-  const { chat, chatMemory } = featureFlags;
+  const { alerts, chat, chatMemory } = featureFlags;
 
   $: organization = $page.params.organization;
   $: project = $page.params.project;
@@ -32,6 +32,11 @@
       label: m.settings_nav_public_urls(),
       route: "/public-urls",
       hasPermission: true,
+    },
+    {
+      label: m.settings_nav_notifications(),
+      route: "/notifications",
+      hasPermission: $alerts,
     },
     {
       label: m.settings_nav_ai_memory(),

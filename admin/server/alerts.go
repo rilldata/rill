@@ -25,6 +25,9 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+// resolverResourceStatus is the resolver for project-owned alerts on resource reconcile errors.
+const resolverResourceStatus = "resource_status"
+
 func (s *Server) GetAlertMeta(ctx context.Context, req *adminv1.GetAlertMetaRequest) (*adminv1.GetAlertMetaResponse, error) {
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.project_id", req.ProjectId),
@@ -137,12 +140,21 @@ func (s *Server) CreateAlert(ctx context.Context, req *adminv1.CreateAlertReques
 
 	claims := auth.GetClaims(ctx)
 	permissions := claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID)
-	if !permissions.CreateAlerts {
+	if req.Options.Resolver == resolverResourceStatus {
+		if !permissions.ManageProject {
+			return nil, status.Error(codes.PermissionDenied, "does not have permission to manage resource status alerts")
+		}
+	} else if !permissions.CreateAlerts {
 		return nil, status.Error(codes.PermissionDenied, "does not have permission to read project repo")
 	}
 
 	if claims.OwnerType() != auth.OwnerTypeUser {
 		return nil, status.Error(codes.PermissionDenied, "only users can create alerts")
+	}
+
+	err = s.validateAlertOptions(ctx, proj, req.Options)
+	if err != nil {
+		return nil, err
 	}
 
 	if proj.PrimaryDeploymentID == nil {
@@ -228,9 +240,24 @@ func (s *Server) EditAlert(ctx context.Context, req *adminv1.EditAlertRequest) (
 		return nil, status.Error(codes.FailedPrecondition, "can't edit alert because it was not created from the UI")
 	}
 
-	isOwner := claims.OwnerType() == auth.OwnerTypeUser && annotations.AdminOwnerUserID == claims.OwnerID()
-	if !permissions.ManageAlerts && !isOwner {
-		return nil, status.Error(codes.PermissionDenied, "does not have permission to edit alert")
+	if annotations.AdminSystem != (req.Options.Resolver == resolverResourceStatus) {
+		return nil, status.Error(codes.InvalidArgument, "can't change the resolver of an existing alert")
+	}
+
+	if annotations.AdminSystem {
+		if !permissions.ManageProject {
+			return nil, status.Error(codes.PermissionDenied, "does not have permission to manage resource status alerts")
+		}
+	} else {
+		isOwner := claims.OwnerType() == auth.OwnerTypeUser && annotations.AdminOwnerUserID == claims.OwnerID()
+		if !permissions.ManageAlerts && !isOwner {
+			return nil, status.Error(codes.PermissionDenied, "does not have permission to edit alert")
+		}
+	}
+
+	err = s.validateAlertOptions(ctx, proj, req.Options)
+	if err != nil {
+		return nil, err
 	}
 
 	data, err := s.yamlForManagedAlert(req.Options, annotations.AdminOwnerUserID)
@@ -446,9 +473,15 @@ func (s *Server) DeleteAlert(ctx context.Context, req *adminv1.DeleteAlertReques
 		return nil, status.Error(codes.FailedPrecondition, "can't edit alert because it was not created from the UI")
 	}
 
-	isOwner := claims.OwnerType() == auth.OwnerTypeUser && annotations.AdminOwnerUserID == claims.OwnerID()
-	if !permissions.ManageAlerts && !isOwner {
-		return nil, status.Error(codes.PermissionDenied, "does not have permission to edit alert")
+	if annotations.AdminSystem {
+		if !permissions.ManageProject {
+			return nil, status.Error(codes.PermissionDenied, "does not have permission to manage resource status alerts")
+		}
+	} else {
+		isOwner := claims.OwnerType() == auth.OwnerTypeUser && annotations.AdminOwnerUserID == claims.OwnerID()
+		if !permissions.ManageAlerts && !isOwner {
+			return nil, status.Error(codes.PermissionDenied, "does not have permission to edit alert")
+		}
 	}
 
 	err = s.admin.DB.UpdateVirtualFileDeleted(ctx, proj.ID, "prod", virtualFilePathForManagedAlert(req.Name))
@@ -518,13 +551,51 @@ func (s *Server) GetAlertYAML(ctx context.Context, req *adminv1.GetAlertYAMLRequ
 	}, nil
 }
 
+// validateAlertOptions validates alert options received from a client.
+// Only the legacy query and the resource_status resolver are allowed;
+// other resolvers (e.g. sql) don't enforce security policies, so they would expose data that the alert creator can't access.
+func (s *Server) validateAlertOptions(ctx context.Context, proj *database.Project, opts *adminv1.AlertOptions) error {
+	switch opts.Resolver {
+	case "":
+		return nil
+	case resolverResourceStatus:
+	default:
+		return status.Errorf(codes.InvalidArgument, "unsupported alert resolver %q", opts.Resolver)
+	}
+
+	if opts.RefreshCron == "" {
+		return status.Error(codes.InvalidArgument, "resource status alerts require a refresh schedule")
+	}
+
+	// Errors may contain sensitive details (e.g. SQL, paths, hosts), so only project admins can receive them by email.
+	for _, email := range opts.EmailRecipients {
+		user, err := s.admin.DB.FindUserByEmail(ctx, email)
+		if err != nil {
+			if errors.Is(err, database.ErrNotFound) {
+				return status.Errorf(codes.InvalidArgument, "email recipient %q is not a project admin", email)
+			}
+			return err
+		}
+		orgPerms, err := s.admin.OrganizationPermissionsForUser(ctx, proj.OrganizationID, user.ID)
+		if err != nil {
+			return err
+		}
+		projPerms, err := s.admin.ProjectPermissionsForUser(ctx, proj.ID, user.ID, orgPerms)
+		if err != nil {
+			return err
+		}
+		if !projPerms.ManageProject {
+			return status.Errorf(codes.InvalidArgument, "email recipient %q is not a project admin", email)
+		}
+	}
+
+	return nil
+}
+
 func (s *Server) yamlForManagedAlert(opts *adminv1.AlertOptions, ownerUserID string) ([]byte, error) {
 	res := alertYAML{}
 	res.Type = "alert"
-	// Trigger the alert when the metrics view refreshes.
-	res.Refs = []string{fmt.Sprintf("MetricsView/%s", opts.MetricsViewName)}
 	res.DisplayName = opts.DisplayName
-	res.Watermark = "inherit"
 	if opts.RefreshCron != "" {
 		res.Refresh.Cron = opts.RefreshCron
 		res.Refresh.TimeZone = opts.RefreshTimeZone
@@ -532,14 +603,24 @@ func (s *Server) yamlForManagedAlert(opts *adminv1.AlertOptions, ownerUserID str
 	res.Intervals.Duration = opts.IntervalDuration
 	if opts.Resolver != "" {
 		res.Data = map[string]any{
-			opts.Resolver: opts.ResolverProperties,
+			opts.Resolver: opts.ResolverProperties.AsMap(),
 		}
 	}
-	res.Query.Name = opts.QueryName
-	res.Query.ArgsJSON = opts.QueryArgsJson
-	// Hard code the user id to run for (to avoid exposing data through alert creation)
-	res.For.UserID = ownerUserID
-	res.Query.For.UserID = ownerUserID
+	if opts.Resolver == resolverResourceStatus {
+		// Resource status alerts are owned by the project and only run on their refresh schedule.
+		// They must not ref the watched resources since errors in refs fail the alert's execution instead of triggering it.
+		res.OnRecover = true
+		res.Annotations.AdminSystem = true
+	} else {
+		// Trigger the alert when the metrics view refreshes.
+		res.Refs = []string{fmt.Sprintf("MetricsView/%s", opts.MetricsViewName)}
+		res.Watermark = "inherit"
+		res.Query = &alertQueryYAML{Name: opts.QueryName, ArgsJSON: opts.QueryArgsJson}
+		// Hard code the user id to run for (to avoid exposing data through alert creation)
+		res.For = &alertForYAML{UserID: ownerUserID}
+		res.Query.For.UserID = ownerUserID
+		res.Annotations.AdminOwnerUserID = ownerUserID
+	}
 	err := setAlertExportYAML(&res, opts)
 	if err != nil {
 		return nil, err
@@ -551,7 +632,6 @@ func (s *Server) yamlForManagedAlert(opts *adminv1.AlertOptions, ownerUserID str
 	res.Notify.Slack.Channels = opts.SlackChannels
 	res.Notify.Slack.Users = opts.SlackUsers
 	res.Notify.Slack.Webhooks = opts.SlackWebhooks
-	res.Annotations.AdminOwnerUserID = ownerUserID
 	res.Annotations.AdminManaged = true
 	res.Annotations.AdminNonce = time.Now().Format(time.RFC3339Nano)
 	res.Annotations.WebOpenPath = opts.WebOpenPath
@@ -571,10 +651,7 @@ func (s *Server) yamlForCommittedAlert(opts *adminv1.AlertOptions) ([]byte, erro
 
 	res := alertYAML{}
 	res.Type = "alert"
-	// Trigger the alert when the metrics view refreshes.
-	res.Refs = []string{fmt.Sprintf("MetricsView/%s", opts.MetricsViewName)}
 	res.DisplayName = opts.DisplayName
-	res.Watermark = "inherit"
 	if opts.RefreshCron != "" {
 		res.Refresh.Cron = opts.RefreshCron
 		res.Refresh.TimeZone = opts.RefreshTimeZone
@@ -582,11 +659,17 @@ func (s *Server) yamlForCommittedAlert(opts *adminv1.AlertOptions) ([]byte, erro
 	res.Intervals.Duration = opts.IntervalDuration
 	if opts.Resolver != "" {
 		res.Data = map[string]any{
-			opts.Resolver: opts.ResolverProperties,
+			opts.Resolver: opts.ResolverProperties.AsMap(),
 		}
 	}
-	res.Query.Name = opts.QueryName
-	res.Query.Args = args
+	if opts.Resolver == resolverResourceStatus {
+		res.OnRecover = true
+	} else {
+		// Trigger the alert when the metrics view refreshes.
+		res.Refs = []string{fmt.Sprintf("MetricsView/%s", opts.MetricsViewName)}
+		res.Watermark = "inherit"
+		res.Query = &alertQueryYAML{Name: opts.QueryName, Args: args}
+	}
 	err := setAlertExportYAML(&res, opts)
 	if err != nil {
 		return nil, err
@@ -627,35 +710,27 @@ func setAlertExportYAML(res *alertYAML, opts *adminv1.AlertOptions) error {
 // alertYAML is derived from runtime/parser.AlertYAML, but adapted for generating (as opposed to parsing) the alert YAML.
 type alertYAML struct {
 	Type        string   `yaml:"type"`
-	Refs        []string `yaml:"refs"`
+	Refs        []string `yaml:"refs,omitempty"`
 	DisplayName string   `yaml:"display_name"`
 	Title       string   `yaml:"title,omitempty"` // Deprecated: replaced by display_name, but preserved for backwards compatibility
 	Refresh     struct {
 		Cron     string `yaml:"cron"`
 		TimeZone string `yaml:"time_zone"`
 	} `yaml:"refresh"`
-	Watermark string `yaml:"watermark"`
+	Watermark string `yaml:"watermark,omitempty"`
 	Intervals struct {
 		Duration string `yaml:"duration"`
 	} `yaml:"intervals"`
-	Data map[string]any `yaml:"data,omitempty"`
-	For  struct {
-		UserID string `yaml:"user_id"`
-	} `yaml:"for"`
-	Query struct {
-		Name     string         `yaml:"name"`
-		Args     map[string]any `yaml:"args,omitempty"`
-		ArgsJSON string         `yaml:"args_json,omitempty"`
-		For      struct {
-			UserID string `yaml:"user_id"`
-		} `yaml:"for"`
-	} `yaml:"query"`
+	Data   map[string]any  `yaml:"data,omitempty"`
+	For    *alertForYAML   `yaml:"for,omitempty"`
+	Query  *alertQueryYAML `yaml:"query,omitempty"`
 	Export struct {
 		Attach        bool   `yaml:"attach"`
 		Format        string `yaml:"format"`
 		IncludeHeader bool   `yaml:"include_header"`
 		Limit         uint64 `yaml:"limit,omitempty"`
 	} `yaml:"export,omitempty"` // Omitted unless attaching, so runtimes that predate it can parse the YAML
+	OnRecover     bool   `yaml:"on_recover,omitempty"`
 	Renotify      bool   `yaml:"renotify"`
 	RenotifyAfter uint32 `yaml:"renotify_after"`
 	Notify        struct {
@@ -671,10 +746,22 @@ type alertYAML struct {
 	Annotations alertAnnotations `yaml:"annotations,omitempty"`
 }
 
+type alertForYAML struct {
+	UserID string `yaml:"user_id"`
+}
+
+type alertQueryYAML struct {
+	Name     string         `yaml:"name"`
+	Args     map[string]any `yaml:"args,omitempty"`
+	ArgsJSON string         `yaml:"args_json,omitempty"`
+	For      alertForYAML   `yaml:"for"`
+}
+
 type alertAnnotations struct {
-	AdminOwnerUserID string `yaml:"admin_owner_user_id"`
+	AdminOwnerUserID string `yaml:"admin_owner_user_id,omitempty"`
 	AdminManaged     bool   `yaml:"admin_managed"`
-	AdminNonce       string `yaml:"admin_nonce"` // To ensure spec version gets updated on writes, to enable polling in TriggerReconcileAndAwaitAlert
+	AdminSystem      bool   `yaml:"admin_system,omitempty"` // Set for project-owned resource status alerts managed by project admins
+	AdminNonce       string `yaml:"admin_nonce"`            // To ensure spec version gets updated on writes, to enable polling in TriggerReconcileAndAwaitAlert
 	WebOpenPath      string `yaml:"web_open_path"`
 	WebOpenState     string `yaml:"web_open_state"`
 }
@@ -687,6 +774,7 @@ func parseAlertAnnotations(annotations map[string]string) alertAnnotations {
 	res := alertAnnotations{}
 	res.AdminOwnerUserID = annotations["admin_owner_user_id"]
 	res.AdminManaged, _ = strconv.ParseBool(annotations["admin_managed"])
+	res.AdminSystem, _ = strconv.ParseBool(annotations["admin_system"])
 	res.AdminNonce = annotations["admin_nonce"]
 
 	return res
