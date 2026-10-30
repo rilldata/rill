@@ -49,9 +49,12 @@ export async function fillTimeRange(
   exploreState: ExploreState,
   reqTimeRange: V1TimeRange | undefined,
   reqComparisonTimeRange: V1TimeRange | undefined,
-  timeRangeSummary: V1TimeRangeSummary,
+  timeRangeSummary: V1TimeRangeSummary | undefined,
   executionTime?: string,
 ) {
+  // Metrics views without a time dimension have no time range to fill.
+  if (!timeRangeSummary) return;
+
   const endTime =
     executionTime ?? timeRangeSummary.max ?? new Date().toISOString();
 
