@@ -171,6 +171,12 @@ func (a *Authenticator) httpMiddleware(next http.Handler, lenient bool) http.Han
 	})
 }
 
+// AuthenticateToken validates a raw token for a PostgreSQL wire-compatible connection.
+// Unlike HTTP authentication, token must not include the "Bearer" scheme.
+func (a *Authenticator) AuthenticateToken(ctx context.Context, token string) (context.Context, error) {
+	return a.parseClaimsFromToken(ctx, token)
+}
+
 func (a *Authenticator) parseClaimsFromBearer(ctx context.Context, authorizationHeader string) (context.Context, error) {
 	// If authorization header is not set, we set anonClaims.
 	if authorizationHeader == "" {
