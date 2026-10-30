@@ -326,7 +326,7 @@ describe("ScheduledReportDialog", () => {
     }
   });
 
-  it("only sends the report to the embed user in an embed", async () => {
+  it("keeps the existing recipients when editing in an embed", async () => {
     const isEmbedded = vi.spyOn(EmbedStore, "isEmbedded").mockReturnValue(true);
     const getInstance = vi.spyOn(EmbedStore, "getInstance").mockReturnValue({
       userEmail: "embed@rilldata.com",
@@ -335,15 +335,11 @@ describe("ScheduledReportDialog", () => {
     try {
       await openEditDialog(getReportSpec(undefined));
 
-      expect(
-        screen.queryByPlaceholderText("Enter an email address"),
-      ).toBeNull();
-      expect(
-        screen.getByText("Reports are sent to embed@rilldata.com."),
-      ).toBeVisible();
+      // Recipients can be any address, so the email input is shown with the existing recipients
+      expect(screen.getByText("user@rilldata.com")).toBeVisible();
 
       expect((await saveAndGetOptions()).emailRecipients).toEqual([
-        "embed@rilldata.com",
+        "user@rilldata.com",
       ]);
     } finally {
       isEmbedded.mockRestore();

@@ -200,7 +200,7 @@
               {organization}
               {project}
               ownerId={reportSpec.annotations["admin_owner_user_id"]}
-              ownerEmail={reportSpec.annotations["admin_owner_user_email"]}
+              embedOwnerId={reportSpec.annotations["admin_embed_owner_id"]}
             />
           </svelte:fragment>
         </ProjectAccessControls>

@@ -895,6 +895,12 @@ service AdminService {
     };
   }
 
+  // GetEmbedUser returns an embed user, which is created when GetIFrame is called with an external user ID.
+  // It is used to show which external user owns a report created from an embed.
+  rpc GetEmbedUser(GetEmbedUserRequest) returns (GetEmbedUserResponse) {
+    option (google.api.http) = {get: "/v1/orgs/{org}/projects/{project}/embed-users/{id}"};
+  }
+
   // SetSuperuser adds/remove a superuser
   rpc SetSuperuser(SetSuperuserRequest) returns (SetSuperuserResponse) {
     option (google.api.http) = {
@@ -1819,6 +1825,18 @@ message GetIFrameResponse {
   string instance_id = 3;
   string access_token = 4;
   uint32 ttl_seconds = 5;
+}
+
+message GetEmbedUserRequest {
+  string org = 1 [(validate.rules).string.min_len = 1];
+  string project = 2 [(validate.rules).string.min_len = 1];
+  // ID of the embed user, which is the value of the "admin_embed_owner_id" annotation of reports created from an embed.
+  string id = 3 [(validate.rules).string.min_len = 1];
+}
+
+message GetEmbedUserResponse {
+  // The external user ID passed to GetIFrame.
+  string external_user_id = 1;
 }
 
 message ListServicesRequest {
@@ -3140,11 +3158,6 @@ message GetReportMetaRequest {
   bool anon_recipients = 8;
   repeated ResourceName resources = 9;
   string web_open_mode = 10;
-  oneof query_for {
-    string query_for_user_id = 13;
-    string query_for_user_email = 14;
-    google.protobuf.Struct query_for_attributes = 15;
-  }
   string where_filter_json = 11 [deprecated = true];
   repeated string accessible_fields = 12 [deprecated = true];
   reserved 2, 4;

@@ -34,7 +34,6 @@ export const load = async ({ url }) => {
     navigationBarEnabled,
     visibleExplores,
     adminToken,
-    userEmail,
   } = embedStore;
 
   return {
@@ -45,6 +44,7 @@ export const load = async ({ url }) => {
     navigationEnabled,
     navigationBarEnabled,
     visibleExplores,
-    embedAdminActions: !!adminToken && !!userEmail,
+    // The admin token is only issued for embeds with an external user ID, which identifies the owner of reports created from the embed.
+    embedAdminActions: !!adminToken,
   };
 };

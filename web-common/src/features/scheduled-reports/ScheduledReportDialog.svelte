@@ -74,6 +74,7 @@
     reportDeleteMutationFactory,
     getReportMutationFactory,
   } from "@rilldata/web-common/features/scheduled-reports/ReportFormMetadataProvider.ts";
+  import { EmbedStore } from "@rilldata/web-common/features/embeds/embed-store.ts";
 
   let {
     open = $bindable(),
@@ -443,18 +444,23 @@
 
       open = false;
 
+      // Show report link only during create.
+      // There only show when navigation is enabled in embed.
+      const showReportLink =
+        props.mode === "create" &&
+        (!EmbedStore.getInstance() ||
+          EmbedStore.getInstance()?.navigationEnabled);
       eventBus.emit("notification", {
         message:
           props.mode === "edit"
             ? m.report_form_edited_notification()
             : m.report_form_created_notification(),
-        link:
-          props.mode === "edit"
-            ? undefined
-            : {
-                href: `${provider.pageBasePath}/reports`,
-                text: m.report_form_go_to_reports(),
-              },
+        link: showReportLink
+          ? {
+              href: `${provider.pageBasePath}/reports`,
+              text: m.report_form_go_to_reports(),
+            }
+          : undefined,
         type: "success",
       });
     } catch {

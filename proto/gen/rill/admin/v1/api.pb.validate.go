@@ -6970,6 +6970,245 @@ var _ interface {
 	ErrorName() string
 } = GetIFrameResponseValidationError{}
 
+// Validate checks the field values on GetEmbedUserRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *GetEmbedUserRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on GetEmbedUserRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// GetEmbedUserRequestMultiError, or nil if none found.
+func (m *GetEmbedUserRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *GetEmbedUserRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if utf8.RuneCountInString(m.GetOrg()) < 1 {
+		err := GetEmbedUserRequestValidationError{
+			field:  "Org",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if utf8.RuneCountInString(m.GetProject()) < 1 {
+		err := GetEmbedUserRequestValidationError{
+			field:  "Project",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if utf8.RuneCountInString(m.GetId()) < 1 {
+		err := GetEmbedUserRequestValidationError{
+			field:  "Id",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if len(errors) > 0 {
+		return GetEmbedUserRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// GetEmbedUserRequestMultiError is an error wrapping multiple validation
+// errors returned by GetEmbedUserRequest.ValidateAll() if the designated
+// constraints aren't met.
+type GetEmbedUserRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m GetEmbedUserRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m GetEmbedUserRequestMultiError) AllErrors() []error { return m }
+
+// GetEmbedUserRequestValidationError is the validation error returned by
+// GetEmbedUserRequest.Validate if the designated constraints aren't met.
+type GetEmbedUserRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e GetEmbedUserRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e GetEmbedUserRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e GetEmbedUserRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e GetEmbedUserRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e GetEmbedUserRequestValidationError) ErrorName() string {
+	return "GetEmbedUserRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e GetEmbedUserRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sGetEmbedUserRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = GetEmbedUserRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = GetEmbedUserRequestValidationError{}
+
+// Validate checks the field values on GetEmbedUserResponse with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *GetEmbedUserResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on GetEmbedUserResponse with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// GetEmbedUserResponseMultiError, or nil if none found.
+func (m *GetEmbedUserResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *GetEmbedUserResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for ExternalUserId
+
+	if len(errors) > 0 {
+		return GetEmbedUserResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// GetEmbedUserResponseMultiError is an error wrapping multiple validation
+// errors returned by GetEmbedUserResponse.ValidateAll() if the designated
+// constraints aren't met.
+type GetEmbedUserResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m GetEmbedUserResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m GetEmbedUserResponseMultiError) AllErrors() []error { return m }
+
+// GetEmbedUserResponseValidationError is the validation error returned by
+// GetEmbedUserResponse.Validate if the designated constraints aren't met.
+type GetEmbedUserResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e GetEmbedUserResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e GetEmbedUserResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e GetEmbedUserResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e GetEmbedUserResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e GetEmbedUserResponseValidationError) ErrorName() string {
+	return "GetEmbedUserResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e GetEmbedUserResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sGetEmbedUserResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = GetEmbedUserResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = GetEmbedUserResponseValidationError{}
+
 // Validate checks the field values on ListServicesRequest with the rules
 // defined in the proto definition for this message. If any rules are
 // violated, the first error encountered is returned, or nil if there are no violations.
@@ -36896,76 +37135,6 @@ func (m *GetReportMetaRequest) validate(all bool) error {
 	// no validation rules for WebOpenMode
 
 	// no validation rules for WhereFilterJson
-
-	switch v := m.QueryFor.(type) {
-	case *GetReportMetaRequest_QueryForUserId:
-		if v == nil {
-			err := GetReportMetaRequestValidationError{
-				field:  "QueryFor",
-				reason: "oneof value cannot be a typed-nil",
-			}
-			if !all {
-				return err
-			}
-			errors = append(errors, err)
-		}
-		// no validation rules for QueryForUserId
-	case *GetReportMetaRequest_QueryForUserEmail:
-		if v == nil {
-			err := GetReportMetaRequestValidationError{
-				field:  "QueryFor",
-				reason: "oneof value cannot be a typed-nil",
-			}
-			if !all {
-				return err
-			}
-			errors = append(errors, err)
-		}
-		// no validation rules for QueryForUserEmail
-	case *GetReportMetaRequest_QueryForAttributes:
-		if v == nil {
-			err := GetReportMetaRequestValidationError{
-				field:  "QueryFor",
-				reason: "oneof value cannot be a typed-nil",
-			}
-			if !all {
-				return err
-			}
-			errors = append(errors, err)
-		}
-
-		if all {
-			switch v := interface{}(m.GetQueryForAttributes()).(type) {
-			case interface{ ValidateAll() error }:
-				if err := v.ValidateAll(); err != nil {
-					errors = append(errors, GetReportMetaRequestValidationError{
-						field:  "QueryForAttributes",
-						reason: "embedded message failed validation",
-						cause:  err,
-					})
-				}
-			case interface{ Validate() error }:
-				if err := v.Validate(); err != nil {
-					errors = append(errors, GetReportMetaRequestValidationError{
-						field:  "QueryForAttributes",
-						reason: "embedded message failed validation",
-						cause:  err,
-					})
-				}
-			}
-		} else if v, ok := interface{}(m.GetQueryForAttributes()).(interface{ Validate() error }); ok {
-			if err := v.Validate(); err != nil {
-				return GetReportMetaRequestValidationError{
-					field:  "QueryForAttributes",
-					reason: "embedded message failed validation",
-					cause:  err,
-				}
-			}
-		}
-
-	default:
-		_ = v // ensures v is used
-	}
 
 	if len(errors) > 0 {
 		return GetReportMetaRequestMultiError(errors)

@@ -16,17 +16,18 @@ func TestEmbedToken(t *testing.T) {
 	s := &Service{issuer: issuer}
 
 	resources := []database.ResourceName{{Type: runtime.ResourceKindExplore, Name: "e1"}}
-	token, err := s.IssueEmbedToken("p1", "embed@example.com", resources, time.Hour)
+	token, err := s.IssueEmbedToken("p1", "ext_abc", resources, time.Hour)
 	require.NoError(t, err)
 
 	res, err := s.ValidateEmbedToken(token)
 	require.NoError(t, err)
 	require.Equal(t, "p1", res.ProjectID)
-	require.Equal(t, "embed@example.com", res.Email)
+	require.Equal(t, "ext_abc", res.EmbedUserID)
+	require.Equal(t, "ext_abc", res.Subject)
 	require.Equal(t, resources, res.Resources)
 
 	// Expired tokens are rejected
-	token, err = s.IssueEmbedToken("p1", "embed@example.com", nil, -time.Minute)
+	token, err = s.IssueEmbedToken("p1", "ext_abc", nil, -time.Minute)
 	require.NoError(t, err)
 	_, err = s.ValidateEmbedToken(token)
 	require.Error(t, err)
@@ -34,7 +35,7 @@ func TestEmbedToken(t *testing.T) {
 	// Runtime tokens signed by the same issuer are rejected
 	token, err = issuer.NewToken(auth.TokenOptions{
 		AudienceURL: "http://runtime.example.com",
-		Subject:     "embed@example.com",
+		Subject:     "ext_abc",
 		TTL:         time.Hour,
 	})
 	require.NoError(t, err)

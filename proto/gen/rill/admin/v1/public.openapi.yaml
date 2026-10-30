@@ -882,6 +882,12 @@ components:
                     format: int64
                     type: integer
             type: object
+        v1GetEmbedUserResponse:
+            properties:
+                externalUserId:
+                    description: The external user ID passed to GetIFrame.
+                    type: string
+            type: object
         v1GetGithubPullRequestResponse:
             properties:
                 prState:
@@ -3236,6 +3242,7 @@ paths:
     /v1/orgs/{org}/projects/{project}/connect-to-github: {}
     /v1/orgs/{org}/projects/{project}/credentials: {}
     /v1/orgs/{org}/projects/{project}/deployments: {}
+    /v1/orgs/{org}/projects/{project}/embed-users/{id}: {}
     /v1/orgs/{org}/projects/{project}/github/pr: {}
     /v1/orgs/{org}/projects/{project}/github/pr/{branch}: {}
     /v1/orgs/{org}/projects/{project}/hibernate: {}

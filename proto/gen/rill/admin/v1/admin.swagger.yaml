@@ -1673,6 +1673,35 @@ paths:
                 description: |-
                   Whether the deployment is editable and the edited changes are persisted back to the git repo.
                   Can't be set for `prod` deployments.
+  /v1/orgs/{org}/projects/{project}/embed-users/{id}:
+    get:
+      summary: |-
+        GetEmbedUser returns an embed user, which is created when GetIFrame is called with an external user ID.
+        It is used to show which external user owns a report created from an embed.
+      operationId: AdminService_GetEmbedUser
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1GetEmbedUserResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: org
+          in: path
+          required: true
+          type: string
+        - name: project
+          in: path
+          required: true
+          type: string
+        - name: id
+          description: ID of the embed user, which is the value of the "admin_embed_owner_id" annotation of reports created from an embed.
+          in: path
+          required: true
+          type: string
   /v1/orgs/{org}/projects/{project}/github/pr:
     post:
       summary: CreateGithubPullRequest creates a Github PR from the specified branch in the project's connected Github repository to the primary branch.
@@ -4038,12 +4067,6 @@ paths:
                   $ref: '#/definitions/v1ResourceName'
               webOpenMode:
                 type: string
-              queryForUserId:
-                type: string
-              queryForUserEmail:
-                type: string
-              queryForAttributes:
-                type: object
               whereFilterJson:
                 type: string
               accessibleFields:
@@ -5784,6 +5807,12 @@ definitions:
       ttlSeconds:
         type: integer
         format: int64
+  v1GetEmbedUserResponse:
+    type: object
+    properties:
+      externalUserId:
+        type: string
+        description: The external user ID passed to GetIFrame.
   v1GetGithubPullRequestResponse:
     type: object
     properties:

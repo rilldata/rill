@@ -312,6 +312,11 @@ type DB interface {
 
 	SearchProjectUsers(ctx context.Context, projectID, emailQuery string, afterEmail string, limit int) ([]*User, error)
 
+	FindEmbedUser(ctx context.Context, id string) (*EmbedUser, error)
+	// UpsertEmbedUser inserts an embed user, or updates it if its email or attributes changed, or if it was last seen more than a day ago.
+	// It doesn't write anything otherwise, since it's called on every embed load.
+	UpsertEmbedUser(ctx context.Context, opts *UpsertEmbedUserOptions) error
+
 	FindVirtualFiles(ctx context.Context, projectID, environment string, afterUpdatedOn time.Time, afterPath string, limit int) ([]*VirtualFile, error)
 	FindVirtualFile(ctx context.Context, projectID, environment, path string) (*VirtualFile, error)
 	// FindVirtualFilesByOwner TODO: pagination
@@ -1262,22 +1267,49 @@ type UpdateBookmarkOptions struct {
 	Shared      bool   `json:"shared"`
 }
 
+// EmbedUser is a user of embedded dashboards, identified by the external user ID passed to GetIFrame.
+// Its ID is the hash of the external user ID and project ID (see subjectForExternalUser in admin/server),
+// which is also the subject of the embed's runtime JWT.
+// The hash is unsalted, so anyone who knows the project ID can recover guessable external user IDs from it.
+// It stores the identity the user had in their latest iframe, which resources owned by the user (such as reports) run as.
+type EmbedUser struct {
+	ID             string         `db:"id"`
+	ProjectID      string         `db:"project_id"`
+	ExternalUserID string         `db:"external_user_id"`
+	Email          *string        `db:"email"`      // Nil if the iframe didn't set an email
+	Attributes     map[string]any `db:"attributes"` // Nil if the iframe didn't set attributes
+	LastSeenOn     time.Time      `db:"last_seen_on"`
+	CreatedOn      time.Time      `db:"created_on"`
+	UpdatedOn      time.Time      `db:"updated_on"`
+}
+
+// UpsertEmbedUserOptions defines options for upserting an EmbedUser.
+type UpsertEmbedUserOptions struct {
+	ID             string `validate:"required"`
+	ProjectID      string `validate:"required"`
+	ExternalUserID string `validate:"required"`
+	Email          *string
+	Attributes     map[string]any // An empty map is stored as NULL
+}
+
 // VirtualFile represents an ad-hoc file for a project (not managed in Git)
 type VirtualFile struct {
-	Path      string    `db:"path"`
-	Data      []byte    `db:"data"`
-	OwnerID   *string   `db:"owner_id"`
-	Deleted   bool      `db:"deleted"`
-	UpdatedOn time.Time `db:"updated_on"`
+	Path         string    `db:"path"`
+	Data         []byte    `db:"data"`
+	OwnerID      *string   `db:"owner_id"`
+	EmbedOwnerID *string   `db:"embed_owner_id"`
+	Deleted      bool      `db:"deleted"`
+	UpdatedOn    time.Time `db:"updated_on"`
 }
 
 // InsertVirtualFileOptions defines options for inserting a VirtualFile
 type InsertVirtualFileOptions struct {
-	ProjectID   string
-	Environment string
-	Path        string  `validate:"required"`
-	OwnerID     *string `db:"owner_id"`
-	Data        []byte  `validate:"max=131072"` // 128kb
+	ProjectID    string
+	Environment  string
+	Path         string  `validate:"required"`
+	OwnerID      *string `db:"owner_id"`
+	EmbedOwnerID *string `db:"embed_owner_id"`
+	Data         []byte  `validate:"max=131072"` // 128kb
 }
 
 // Asset represents a user-uploaded file asset.

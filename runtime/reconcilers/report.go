@@ -125,11 +125,6 @@ func (r *ReportReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceN
 		return runtime.ReconcileResult{Err: fmt.Errorf("reports with 'ai' resolver only support non-email notifications in 'creator' web open mode")}
 	} // TODO add support for slack users who are also rill users in recipient mode
 
-	// The "for" identity replaces the creator's identity, so it doesn't apply when recipients access the report as themselves.
-	if rep.Spec.QueryFor != nil && mode != "creator" {
-		return runtime.ReconcileResult{Err: fmt.Errorf(`reports with "for" are only supported in 'creator' web open mode`)}
-	}
-
 	// Determine whether to trigger
 	adhocTrigger := rep.Spec.Trigger
 	scheduleTrigger := rep.State.NextRunOn != nil && !rep.State.NextRunOn.AsTime().After(time.Now())
@@ -556,7 +551,7 @@ func (r *ReportReconciler) sendReport(ctx context.Context, self *runtimev1.Resou
 		}
 	}
 
-	meta, err := admin.GetReportMetadata(ctx, self.Meta.Name.Name, ownerID, webOpenMode, emailRecipients, anonRecipients, t, rep.Spec.GetQueryForUserId(), rep.Spec.GetQueryForUserEmail(), rep.Spec.GetQueryForAttributes().AsMap())
+	meta, err := admin.GetReportMetadata(ctx, self.Meta.Name.Name, ownerID, webOpenMode, emailRecipients, anonRecipients, t)
 	if err != nil {
 		if errors.Is(err, drivers.ErrNotImplemented) {
 			r.C.Logger.Info("Skipped sending report: admin service does not support reports", zap.String("report", self.Meta.Name.Name), observability.ZapCtx(ctx))
@@ -565,10 +560,11 @@ func (r *ReportReconciler) sendReport(ctx context.Context, self *runtimev1.Resou
 		return false, nil, fmt.Errorf("failed to get report metadata: %w", err)
 	}
 
-	// Reports created from an embed are only for the embed user, who has no access to Rill Cloud.
-	// So their notifications have no open, edit, download or unsubscribe links.
-	// The owner email annotation is only set for reports created from an embed.
-	embedCreated := rep.Spec.Annotations["admin_owner_user_email"] != ""
+	// Reports created from an embed are opened through the embedder's app, and their recipients may have no access to Rill Cloud.
+	// So their notifications have no open, edit or download links; they only have an unsubscribe link.
+	// The embed owner annotation is only set for reports created from an embed.
+	// If the embed owner is missing or inactive, GetReportMetadata fails above, so nothing is sent.
+	embedCreated := rep.Spec.Annotations["admin_embed_owner_id"] != ""
 
 	// Embed users can only use reports if the project enables the "reports" feature flag for them (it's disabled for embeds by default).
 	// The UI hides reports otherwise, but this check also covers reports created directly through the API.
@@ -596,8 +592,8 @@ func (r *ReportReconciler) sendReport(ctx context.Context, self *runtimev1.Resou
 	case "ai": // generate ai sessions
 		aiReports := make(map[string]*aiReport)
 		// For AI reports, in recipient mode, we require the metadata to contain user attributes for reach recipient, since we'll need them to trigger the report and generate personalized content.
-		// In creator mode, we create a shared session for all recipients and create the session with creator's (or the "for" identity's) attributes.
-		// The session is owned by the user, which restricts access to it. So we require a user ID, which is empty when the report is run for explicit attributes or for an email that doesn't belong to a Rill user.
+		// In creator mode, we create a shared session for all recipients and create the session with creator's attributes.
+		// The session is owned by the user, which restricts access to it. So we require a user ID.
 		for recipient, delivery := range meta.ReportDelivery {
 			if delivery.UserID == "" || len(delivery.UserAttrs) == 0 {
 				r.C.Logger.Warn("Skipping recipient - no user ID or attributes found in metadata", zap.String("recipient", recipient), zap.String("report", self.Meta.Name.Name), observability.ZapCtx(ctx))
@@ -617,7 +613,8 @@ func (r *ReportReconciler) sendReport(ctx context.Context, self *runtimev1.Resou
 
 			if embedCreated {
 				notificationsContent[recipient] = &notificationData{
-					summary: truncateSummary(report.summary, 500),
+					unsubscribeLink: delivery.UnsubscribeURL,
+					summary:         truncateSummary(report.summary, 500),
 				}
 				continue
 			}
@@ -636,7 +633,7 @@ func (r *ReportReconciler) sendReport(ctx context.Context, self *runtimev1.Resou
 	default: // add more resolvers here, for default just generate export links
 		// Export the data to attach to emails.
 		// Attachments are only supported in creator mode (enforced by the parser), where every recipient gets the same data.
-		// So the data is exported once with the identity the admin service resolved for creator mode (the owner, or the "for" identity if set),
+		// So the data is exported once with the identity the admin service resolved for creator mode (the owner, or the embed user for reports created from an embed),
 		// which it returns for every recipient.
 		var attachment *email.Attachment
 		var attachmentTooLarge bool
@@ -673,6 +670,7 @@ func (r *ReportReconciler) sendReport(ctx context.Context, self *runtimev1.Resou
 		for recipient, delivery := range meta.ReportDelivery {
 			if embedCreated {
 				notificationsContent[recipient] = &notificationData{
+					unsubscribeLink:    delivery.UnsubscribeURL,
 					downloadFormat:     formatExportFormat(rep.Spec.ExportFormat),
 					attachment:         attachment,
 					attachmentTooLarge: attachmentTooLarge,

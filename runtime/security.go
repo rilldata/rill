@@ -616,34 +616,36 @@ func (p *securityEngine) builtInReportSecurityRule(reportRes *runtimev1.Resource
 		email, _ = claims.UserAttributes["email"].(string)
 	}
 
-	// Allow if the owner is accessing the report
-	if spec.Annotations != nil && !claims.Admin() {
-		if spec.Annotations["admin_owner_user_id"] != "" {
-			explicitAllow = userID == spec.Annotations["admin_owner_user_id"]
-		} else if spec.Annotations["admin_owner_user_email"] != "" {
-			explicitAllow = strings.EqualFold(email, spec.Annotations["admin_owner_user_email"])
+	// Reports created from an embed are only accessible to admins and the embed user who created them.
+	// Recipients don't get access, since they may be other embed users or project members, and the report shouldn't leak the owner or other recipients.
+	if spec.Annotations["admin_embed_owner_id"] != "" {
+		explicitAllow = claims.Admin() || isEmbedOwner(spec.Annotations, claims)
+	} else {
+		// Allow if the owner is accessing the report
+		if spec.Annotations["admin_owner_user_id"] != "" && userID == spec.Annotations["admin_owner_user_id"] {
+			explicitAllow = true
 		}
-	}
 
-	// Allow if the user is an email recipient
-	for _, notifier := range spec.Notifiers {
-		switch notifier.Connector {
-		case "email":
-			recipients := pbutil.ToSliceString(notifier.Properties.AsMap()["recipients"])
-			for _, recipient := range recipients {
-				if recipient == email {
-					explicitAllow = true
+		// Allow if the user is an email recipient
+		for _, notifier := range spec.Notifiers {
+			switch notifier.Connector {
+			case "email":
+				recipients := pbutil.ToSliceString(notifier.Properties.AsMap()["recipients"])
+				for _, recipient := range recipients {
+					if recipient == email {
+						explicitAllow = true
+					}
 				}
-			}
-		case "slack":
-			props, err := slack.DecodeProps(notifier.Properties.AsMap())
-			if err != nil {
-				p.logger.Error("failed to decode slack notifier properties", zap.Error(err))
-				continue
-			}
-			for _, user := range props.Users {
-				if user == email {
-					explicitAllow = true
+			case "slack":
+				props, err := slack.DecodeProps(notifier.Properties.AsMap())
+				if err != nil {
+					p.logger.Error("failed to decode slack notifier properties", zap.Error(err))
+					continue
+				}
+				for _, user := range props.Users {
+					if user == email {
+						explicitAllow = true
+					}
 				}
 			}
 		}
@@ -672,6 +674,13 @@ func (p *securityEngine) builtInReportSecurityRule(reportRes *runtimev1.Resource
 			},
 		},
 	}
+}
+
+// isEmbedOwner returns true if the claims belong to the embed user who owns a resource created from an embed.
+// The embed user is identified by the subject of the embed's runtime JWT, which is stored in the "admin_embed_owner_id" annotation.
+// Rill user IDs are UUIDs and embed user IDs start with "ext_", so they can't collide.
+func isEmbedOwner(annotations map[string]string, claims *SecurityClaims) bool {
+	return claims.UserID != "" && claims.UserID == annotations["admin_embed_owner_id"]
 }
 
 // isAdminManagedAnnotations returns true if the resource annotations indicate it is admin-managed

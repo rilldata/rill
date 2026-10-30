@@ -12,7 +12,8 @@
   const personalReports = useClientFilteredResources(
     runtimeClient,
     ResourceKind.Report,
-    (res) => !!res.report?.spec?.annotations?.admin_owner_user_email,
+    // The runtime only returns the reports the embed user created (and all reports to admins).
+    (res) => !!res.report?.spec?.annotations?.admin_embed_owner_id,
   );
   let reports = $derived($personalReports.data ?? []);
 

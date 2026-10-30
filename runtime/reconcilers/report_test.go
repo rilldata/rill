@@ -278,9 +278,12 @@ annotations:
 
 func TestReportExportAttach(t *testing.T) {
 	rt, id := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
-		AdminService: &creatorModeAdmin{userAttrs: map[string]map[string]any{"owner": {"domain": "example.com"}}},
+		AdminService: &creatorModeAdmin{
+			userAttrs:  map[string]map[string]any{"owner": {"domain": "example.com"}},
+			embedAttrs: map[string]map[string]any{"r3": {"email": "embed@other.com", "domain": "other.com", "admin": false}},
+		},
 		Files: map[string]string{
-			"rill.yaml": "",
+			"rill.yaml": "features:\n  reports: true\n", // Reports created from an embed require the feature flag
 			"models/bar.sql": `
 SELECT * FROM (VALUES
 	('2024-01-01T00:00:00Z'::TIMESTAMP, 'Denmark', 'example.com'),
@@ -353,38 +356,10 @@ notify:
 annotations:
   web_open_mode: creator
 `,
-			// Without an owner, the export is run with the "for" identity
+			// Reports created from an embed are run as the embed user, and only have an unsubscribe link
 			"reports/r3.yaml": `
 type: report
-display_name: Report for identity
-for:
-  user_email: someone@example.com
-query:
-  name: MetricsViewAggregation
-  args:
-    metrics_view: mv1
-    dimensions:
-    - name: country
-    measures:
-    - name: total
-  for:
-    user_email: someone@example.com
-export:
-  format: csv
-  attach: true
-notify:
-  email:
-    recipients:
-    - user_1@example.com
-annotations:
-  web_open_mode: creator
-`,
-			// Reports created from an embed are run for the embed user's email, and have no open link
-			"reports/r4.yaml": `
-type: report
 display_name: Report from embed
-for:
-  user_email: embed@other.com
 query:
   name: MetricsViewAggregation
   args:
@@ -393,8 +368,6 @@ query:
     - name: country
     measures:
     - name: total
-  for:
-    user_email: embed@other.com
 export:
   format: csv
   attach: true
@@ -402,16 +375,17 @@ notify:
   email:
     recipients:
     - embed@other.com
+    - colleague@other.com
 annotations:
-  admin_owner_user_email: embed@other.com
+  admin_embed_owner_id: ext_abc
   web_open_mode: creator
   explore: e1
 `,
 		},
 	})
-	testruntime.RequireReconcileState(t, rt, id, 8, 0, 0)
+	testruntime.RequireReconcileState(t, rt, id, 7, 0, 0)
 
-	for _, name := range []string{"r1", "r2", "r3", "r4"} {
+	for _, name := range []string{"r1", "r2", "r3"} {
 		testruntime.RefreshAndWait(t, rt, id, &runtimev1.ResourceName{Kind: runtime.ResourceKindReport, Name: name})
 		if name == "r2" {
 			continue
@@ -429,7 +403,7 @@ annotations:
 
 	emails := rt.Email.Sender.(*email.TestSender).Emails
 	require.Len(t, emails, 5)
-	var recipients []string
+	var recipients, embedRecipients []string
 	for _, e := range emails {
 		switch {
 		case strings.HasPrefix(e.Subject, "Report with owner"):
@@ -443,31 +417,33 @@ annotations:
 			require.Equal(t, "user_1@example.com", e.ToEmail)
 			require.NotContains(t, e.Body, "The CSV file is attached.")
 			require.Empty(t, e.Attachments)
-		case strings.HasPrefix(e.Subject, "Report for identity"):
-			require.Equal(t, "user_1@example.com", e.ToEmail)
-			require.Len(t, e.Attachments, 1)
-			require.Equal(t, "Country,Total\nDenmark,1\n", string(e.Attachments[0].Data))
-			require.Contains(t, e.Body, "https://example.com/open")
 		case strings.HasPrefix(e.Subject, "Report from embed"):
-			require.Equal(t, "embed@other.com", e.ToEmail)
+			embedRecipients = append(embedRecipients, e.ToEmail)
 			require.Contains(t, e.Body, "is ready.")
 			require.Contains(t, e.Body, "The CSV file is attached.")
 			require.Len(t, e.Attachments, 1)
 			require.Equal(t, "Country,Total\nSweden,1\n", string(e.Attachments[0].Data))
-			require.NotContains(t, e.Body, "https://example.com/")
+			require.Contains(t, e.Body, "https://example.com/unsubscribe")
+			require.NotContains(t, e.Body, "https://example.com/open")
+			require.NotContains(t, e.Body, "https://example.com/edit")
+			require.NotContains(t, e.Body, "https://example.com/export")
 		default:
 			require.Fail(t, "unexpected email", e.Subject)
 		}
 	}
 	require.ElementsMatch(t, []string{"user_1@example.com", "user_2@example.com"}, recipients)
+	require.ElementsMatch(t, []string{"embed@other.com", "colleague@other.com"}, embedRecipients)
 }
 
 func TestReportExportAttachRestrictedResources(t *testing.T) {
 	e1 := []*runtimev1.ResourceName{{Kind: runtime.ResourceKindExplore, Name: "e1"}}
 	rt, id := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
-		AdminService: &creatorModeAdmin{resources: map[string][]*runtimev1.ResourceName{"r1": e1, "r2": e1}},
+		AdminService: &creatorModeAdmin{
+			embedAttrs: map[string]map[string]any{"r1": {"email": "embed@example.com"}, "r2": {"email": "embed@example.com"}},
+			resources:  map[string][]*runtimev1.ResourceName{"r1": e1, "r2": e1},
+		},
 		Files: map[string]string{
-			"rill.yaml": "",
+			"rill.yaml": "features:\n  reports: true\n", // Reports created from an embed require the feature flag
 			"models/bar.sql": `
 SELECT * FROM (VALUES
 	('2024-01-01T00:00:00Z'::TIMESTAMP, 'Denmark')
@@ -507,8 +483,6 @@ metrics_view: mv2
 			"reports/r1.yaml": `
 type: report
 display_name: Report on allowed metrics view
-for:
-  user_email: embed@example.com
 query:
   name: MetricsViewAggregation
   args:
@@ -517,8 +491,6 @@ query:
     - name: country
     measures:
     - name: total
-  for:
-    user_email: embed@example.com
 export:
   format: csv
   attach: true
@@ -527,7 +499,7 @@ notify:
     recipients:
     - embed@example.com
 annotations:
-  admin_owner_user_email: embed@example.com
+  admin_embed_owner_id: ext_abc
   web_open_mode: creator
   explore: e1
 `,
@@ -535,8 +507,6 @@ annotations:
 			"reports/r2.yaml": `
 type: report
 display_name: Report on other metrics view
-for:
-  user_email: embed@example.com
 query:
   name: MetricsViewAggregation
   args:
@@ -545,8 +515,6 @@ query:
     - name: country
     measures:
     - name: total
-  for:
-    user_email: embed@example.com
 export:
   format: csv
   attach: true
@@ -555,7 +523,7 @@ notify:
     recipients:
     - embed@example.com
 annotations:
-  admin_owner_user_email: embed@example.com
+  admin_embed_owner_id: ext_abc
   web_open_mode: creator
   explore: e1
 `,
@@ -582,9 +550,12 @@ annotations:
 
 func TestReportExportAttachTooLarge(t *testing.T) {
 	rt, id := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
-		AdminService: &creatorModeAdmin{userAttrs: map[string]map[string]any{"owner": {"email": "owner@example.com"}}},
+		AdminService: &creatorModeAdmin{
+			userAttrs:  map[string]map[string]any{"owner": {"email": "owner@example.com"}},
+			embedAttrs: map[string]map[string]any{"r2": {"email": "embed@example.com"}},
+		},
 		Files: map[string]string{
-			"rill.yaml": "",
+			"rill.yaml": "features:\n  reports: true\n", // Reports created from an embed require the feature flag
 			// Exports to a CSV file of more than 10 MB
 			"models/bar.sql": `
 SELECT '2024-01-01T00:00:00Z'::TIMESTAMP AS __time, range AS id, repeat('x', 100) AS padding FROM range(120000)
@@ -627,8 +598,6 @@ annotations:
 			"reports/r2.yaml": `
 type: report
 display_name: Large embed report
-for:
-  user_email: embed@example.com
 query:
   name: MetricsViewAggregation
   args:
@@ -638,8 +607,6 @@ query:
     - name: padding
     measures:
     - name: total
-  for:
-    user_email: embed@example.com
 export:
   format: csv
   attach: true
@@ -648,7 +615,7 @@ notify:
     recipients:
     - embed@example.com
 annotations:
-  admin_owner_user_email: embed@example.com
+  admin_embed_owner_id: ext_abc
   web_open_mode: creator
 `,
 		},
@@ -679,7 +646,7 @@ annotations:
 			require.Contains(t, e.Body, "https://example.com/export")
 		case strings.HasPrefix(e.Subject, "Large embed report"):
 			require.Contains(t, e.Body, "The CSV file is too large to attach to this email. Try lowering the row limit of the report.")
-			require.NotContains(t, e.Body, "https://example.com/")
+			require.NotContains(t, e.Body, "https://example.com/export")
 		default:
 			require.Fail(t, "unexpected email", e.Subject)
 		}
@@ -694,7 +661,7 @@ func TestReportEmbedFeatureFlag(t *testing.T) {
 				rillYAML = "features:\n  reports: true\n"
 			}
 			rt, id := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
-				AdminService: &embedAdmin{},
+				AdminService: &creatorModeAdmin{embedAttrs: map[string]map[string]any{"r1": {"email": "embed@example.com"}}},
 				Files: map[string]string{
 					"rill.yaml":      rillYAML,
 					"models/bar.sql": `SELECT 'US' AS country`,
@@ -719,8 +686,6 @@ query:
     - name: country
     measures:
     - name: total
-  for:
-    user_email: embed@example.com
 export:
   format: csv
   attach: true
@@ -729,7 +694,7 @@ notify:
     recipients:
     - embed@example.com
 annotations:
-  admin_owner_user_email: embed@example.com
+  admin_embed_owner_id: ext_abc
   web_open_mode: creator
 `,
 				},
@@ -753,10 +718,12 @@ annotations:
 }
 
 // creatorModeAdmin is an admin service that returns report metadata the way the admin service does for reports run as the creator:
-// every recipient's delivery has the user ID and attributes of the "for" identity if set, or else of the report owner.
+// every recipient's delivery has the user ID and attributes of the report owner,
+// or for reports created from an embed, the attributes of the embed user marked as an embed user's.
 type creatorModeAdmin struct {
 	drivers.AdminService                                      // Not implemented; calls to methods that are not overridden panic
 	userAttrs            map[string]map[string]any            // User ID -> attributes
+	embedAttrs           map[string]map[string]any            // Report name -> attributes of the embed user who created the report
 	resources            map[string][]*runtimev1.ResourceName // Report name -> resources the report's data is restricted to
 }
 
@@ -764,23 +731,13 @@ func (a *creatorModeAdmin) GetConfig(ctx context.Context) (*drivers.Config, erro
 	return &drivers.Config{}, nil
 }
 
-func (a *creatorModeAdmin) GetReportMetadata(ctx context.Context, reportName, ownerID, webOpenMode string, emailRecipients []string, anonRecipients bool, executionTime time.Time, queryForUserID, queryForUserEmail string, queryForAttributes map[string]any) (*drivers.ReportMetadata, error) {
+func (a *creatorModeAdmin) GetReportMetadata(ctx context.Context, reportName, ownerID, webOpenMode string, emailRecipients []string, anonRecipients bool, executionTime time.Time) (*drivers.ReportMetadata, error) {
 	var userID string
 	var attrs map[string]any
-	switch {
-	case queryForUserID != "":
-		userID = queryForUserID
-		attrs = a.userAttrs[queryForUserID]
-	case queryForUserEmail != "":
-		// Like the admin service, presents an email that doesn't belong to a Rill user as a non-admin user
-		attrs = map[string]any{
-			"email":  queryForUserEmail,
-			"domain": queryForUserEmail[strings.LastIndex(queryForUserEmail, "@")+1:],
-			"admin":  false,
-		}
-	case len(queryForAttributes) > 0:
-		attrs = queryForAttributes
-	case ownerID != "":
+	if embedAttrs, ok := a.embedAttrs[reportName]; ok {
+		attrs = maps.Clone(embedAttrs)
+		attrs["embed"] = true
+	} else if ownerID != "" {
 		userID = ownerID
 		attrs = a.userAttrs[ownerID]
 	}
@@ -800,23 +757,4 @@ func (a *creatorModeAdmin) GetReportMetadata(ctx context.Context, reportName, ow
 		}
 	}
 	return &drivers.ReportMetadata{ReportDelivery: delivery}, nil
-}
-
-// embedAdmin is a creatorModeAdmin that marks every delivery's attributes as an embed user's,
-// the way the admin service does for reports created from an embed.
-type embedAdmin struct {
-	creatorModeAdmin
-}
-
-func (a *embedAdmin) GetReportMetadata(ctx context.Context, reportName, ownerID, webOpenMode string, emailRecipients []string, anonRecipients bool, executionTime time.Time, queryForUserID, queryForUserEmail string, queryForAttributes map[string]any) (*drivers.ReportMetadata, error) {
-	meta, err := a.creatorModeAdmin.GetReportMetadata(ctx, reportName, ownerID, webOpenMode, emailRecipients, anonRecipients, executionTime, queryForUserID, queryForUserEmail, queryForAttributes)
-	if err != nil {
-		return nil, err
-	}
-	for recipient, delivery := range meta.ReportDelivery {
-		delivery.UserAttrs = maps.Clone(delivery.UserAttrs)
-		delivery.UserAttrs["embed"] = true
-		meta.ReportDelivery[recipient] = delivery
-	}
-	return meta, nil
 }

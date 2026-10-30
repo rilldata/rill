@@ -292,8 +292,9 @@ func (c *embedClaims) OwnerType() OwnerType {
 	return OwnerTypeEmbed
 }
 
+// OwnerID returns the embed user ID, which is a hash that already includes the project ID.
 func (c *embedClaims) OwnerID() string {
-	return fmt.Sprintf("%s::%s", c.token.ProjectID, c.token.Email)
+	return c.token.EmbedUserID
 }
 
 func (c *embedClaims) AuthTokenID() string {

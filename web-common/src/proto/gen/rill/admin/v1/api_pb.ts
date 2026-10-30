@@ -2976,6 +2976,96 @@ export class GetIFrameResponse extends Message<GetIFrameResponse> {
 }
 
 /**
+ * @generated from message rill.admin.v1.GetEmbedUserRequest
+ */
+export class GetEmbedUserRequest extends Message<GetEmbedUserRequest> {
+  /**
+   * @generated from field: string org = 1;
+   */
+  org = "";
+
+  /**
+   * @generated from field: string project = 2;
+   */
+  project = "";
+
+  /**
+   * ID of the embed user, which is the value of the "admin_embed_owner_id" annotation of reports created from an embed.
+   *
+   * @generated from field: string id = 3;
+   */
+  id = "";
+
+  constructor(data?: PartialMessage<GetEmbedUserRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.GetEmbedUserRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "org", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "project", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetEmbedUserRequest {
+    return new GetEmbedUserRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetEmbedUserRequest {
+    return new GetEmbedUserRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetEmbedUserRequest {
+    return new GetEmbedUserRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: GetEmbedUserRequest | PlainMessage<GetEmbedUserRequest> | undefined, b: GetEmbedUserRequest | PlainMessage<GetEmbedUserRequest> | undefined): boolean {
+    return proto3.util.equals(GetEmbedUserRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.GetEmbedUserResponse
+ */
+export class GetEmbedUserResponse extends Message<GetEmbedUserResponse> {
+  /**
+   * The external user ID passed to GetIFrame.
+   *
+   * @generated from field: string external_user_id = 1;
+   */
+  externalUserId = "";
+
+  constructor(data?: PartialMessage<GetEmbedUserResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.GetEmbedUserResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "external_user_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetEmbedUserResponse {
+    return new GetEmbedUserResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetEmbedUserResponse {
+    return new GetEmbedUserResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetEmbedUserResponse {
+    return new GetEmbedUserResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: GetEmbedUserResponse | PlainMessage<GetEmbedUserResponse> | undefined, b: GetEmbedUserResponse | PlainMessage<GetEmbedUserResponse> | undefined): boolean {
+    return proto3.util.equals(GetEmbedUserResponse, a, b);
+  }
+}
+
+/**
  * @generated from message rill.admin.v1.ListServicesRequest
  */
 export class ListServicesRequest extends Message<ListServicesRequest> {
@@ -13602,29 +13692,6 @@ export class GetReportMetaRequest extends Message<GetReportMetaRequest> {
   webOpenMode = "";
 
   /**
-   * @generated from oneof rill.admin.v1.GetReportMetaRequest.query_for
-   */
-  queryFor: {
-    /**
-     * @generated from field: string query_for_user_id = 13;
-     */
-    value: string;
-    case: "queryForUserId";
-  } | {
-    /**
-     * @generated from field: string query_for_user_email = 14;
-     */
-    value: string;
-    case: "queryForUserEmail";
-  } | {
-    /**
-     * @generated from field: google.protobuf.Struct query_for_attributes = 15;
-     */
-    value: Struct;
-    case: "queryForAttributes";
-  } | { case: undefined; value?: undefined } = { case: undefined };
-
-  /**
    * @generated from field: string where_filter_json = 11 [deprecated = true];
    * @deprecated
    */
@@ -13652,9 +13719,6 @@ export class GetReportMetaRequest extends Message<GetReportMetaRequest> {
     { no: 8, name: "anon_recipients", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 9, name: "resources", kind: "message", T: ResourceName, repeated: true },
     { no: 10, name: "web_open_mode", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 13, name: "query_for_user_id", kind: "scalar", T: 9 /* ScalarType.STRING */, oneof: "query_for" },
-    { no: 14, name: "query_for_user_email", kind: "scalar", T: 9 /* ScalarType.STRING */, oneof: "query_for" },
-    { no: 15, name: "query_for_attributes", kind: "message", T: Struct, oneof: "query_for" },
     { no: 11, name: "where_filter_json", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 12, name: "accessible_fields", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
   ]);

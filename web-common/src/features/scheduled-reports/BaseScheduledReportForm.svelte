@@ -297,29 +297,21 @@
       />
     {/if}
 
-    <!-- Reports created from an embed are only sent to the embed user, by email. -->
-    {#if isEmbedded}
-      <div class="flex flex-col gap-y-1">
-        <InputLabel
-          label={m.report_form_email_recipients()}
-          id="emailRecipients"
-          capitalize={false}
-        />
-        <div class="text-sm text-fg-secondary">
-          {m.report_form_email_embed_note({ email: provider.userEmail })}
-        </div>
-      </div>
-    {:else}
-      <MultiInput
-        id="emailRecipients"
-        label={m.report_form_email_recipients()}
-        hint={m.report_form_email_hint()}
-        bind:values={$data["emailRecipients"]}
-        errors={$errors["emailRecipients"]}
-        singular="email"
-        plural="emails"
-        placeholder={m.report_form_email_placeholder()}
-      />
+    <!-- Reports created from an embed run as the creator, so the hint warns that every recipient sees the creator's data. -->
+    <MultiInput
+      id="emailRecipients"
+      label={m.report_form_email_recipients()}
+      hint={isEmbedded
+        ? m.report_form_email_embed_hint()
+        : m.report_form_email_hint()}
+      bind:values={$data["emailRecipients"]}
+      errors={$errors["emailRecipients"]}
+      singular="email"
+      plural="emails"
+      placeholder={m.report_form_email_placeholder()}
+    />
+    <!-- Reports created from an embed can't be sent to Slack. -->
+    {#if !isEmbedded}
       {#if provider.hasSlackNotifier}
         <FormSection
           bind:enabled={$data["enableSlackNotification"]}

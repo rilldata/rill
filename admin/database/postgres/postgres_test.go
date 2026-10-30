@@ -44,6 +44,7 @@ func TestPostgres(t *testing.T) {
 	t.Run("TestMembersWithPagination", func(t *testing.T) { testOrgsMembersPagination(t, db) })
 	t.Run("TestUpsertProjectVariable", func(t *testing.T) { testUpsertProjectVariable(t, db) })
 	t.Run("TestConnectorOAuth", func(t *testing.T) { testConnectorOAuth(t, db) })
+	t.Run("TestEmbedUsers", func(t *testing.T) { testEmbedUsers(t, db) })
 	t.Run("TestManagedGitRepos", func(t *testing.T) { testManagedGitRepos(t, db) })
 	t.Run("TestOrganizationMemberUserAttributes", func(t *testing.T) { testOrganizationMemberUserAttributes(t, db) })
 	t.Run("TestOrganizationInviteAttributes", func(t *testing.T) { testOrganizationInviteAttributes(t, db) })
@@ -597,6 +598,122 @@ func testConnectorOAuth(t *testing.T, db database.DB) {
 	require.NoError(t, db.DeleteConnectorOAuthClient(ctx, c2.ID))
 	_, err = db.FindConnectorOAuthToken(ctx, c2.ID, userID)
 	require.ErrorIs(t, err, database.ErrNotFound)
+}
+
+func testEmbedUsers(t *testing.T, db database.DB) {
+	ctx := context.Background()
+	conn := db.(*connection)
+
+	org, err := db.InsertOrganization(ctx, &database.InsertOrganizationOptions{Name: "embed-users"})
+	require.NoError(t, err)
+	defer func() { require.NoError(t, db.DeleteOrganization(ctx, org.Name)) }()
+	proj, err := db.InsertProject(ctx, &database.InsertProjectOptions{OrganizationID: org.ID, Name: "embed-users"})
+	require.NoError(t, err)
+	defer func() { require.NoError(t, db.DeleteProject(ctx, proj.ID)) }()
+	projectID := proj.ID
+
+	_, err = db.FindEmbedUser(ctx, "ext_1")
+	require.ErrorIs(t, err, database.ErrNotFound)
+
+	// Insert with attributes
+	err = db.UpsertEmbedUser(ctx, &database.UpsertEmbedUserOptions{
+		ID:             "ext_1",
+		ProjectID:      projectID,
+		ExternalUserID: "tenant1:user1",
+		Attributes:     map[string]any{"tenant": "t1"},
+	})
+	require.NoError(t, err)
+	u, err := db.FindEmbedUser(ctx, "ext_1")
+	require.NoError(t, err)
+	require.Equal(t, projectID, u.ProjectID)
+	require.Equal(t, "tenant1:user1", u.ExternalUserID)
+	require.Nil(t, u.Email)
+	require.Equal(t, map[string]any{"tenant": "t1"}, u.Attributes)
+
+	// An unchanged identity within a day doesn't write
+	err = db.UpsertEmbedUser(ctx, &database.UpsertEmbedUserOptions{
+		ID:             "ext_1",
+		ProjectID:      projectID,
+		ExternalUserID: "tenant1:user1",
+		Attributes:     map[string]any{"tenant": "t1"},
+	})
+	require.NoError(t, err)
+	u2, err := db.FindEmbedUser(ctx, "ext_1")
+	require.NoError(t, err)
+	require.Equal(t, u.UpdatedOn, u2.UpdatedOn)
+
+	// Changed attributes are written
+	err = db.UpsertEmbedUser(ctx, &database.UpsertEmbedUserOptions{
+		ID:             "ext_1",
+		ProjectID:      projectID,
+		ExternalUserID: "tenant1:user1",
+		Attributes:     map[string]any{"tenant": "t2"},
+	})
+	require.NoError(t, err)
+	u2, err = db.FindEmbedUser(ctx, "ext_1")
+	require.NoError(t, err)
+	require.Equal(t, map[string]any{"tenant": "t2"}, u2.Attributes)
+	require.True(t, u2.UpdatedOn.After(u.UpdatedOn))
+
+	// Switching to an email clears the attributes
+	email := "user1@example.com"
+	err = db.UpsertEmbedUser(ctx, &database.UpsertEmbedUserOptions{
+		ID:             "ext_1",
+		ProjectID:      projectID,
+		ExternalUserID: "tenant1:user1",
+		Email:          &email,
+	})
+	require.NoError(t, err)
+	u, err = db.FindEmbedUser(ctx, "ext_1")
+	require.NoError(t, err)
+	require.Equal(t, email, *u.Email)
+	require.Nil(t, u.Attributes)
+
+	// Empty attributes are stored as NULL, so they don't count as a change
+	err = db.UpsertEmbedUser(ctx, &database.UpsertEmbedUserOptions{
+		ID:             "ext_1",
+		ProjectID:      projectID,
+		ExternalUserID: "tenant1:user1",
+		Email:          &email,
+		Attributes:     map[string]any{},
+	})
+	require.NoError(t, err)
+	u2, err = db.FindEmbedUser(ctx, "ext_1")
+	require.NoError(t, err)
+	require.Equal(t, u.UpdatedOn, u2.UpdatedOn)
+
+	// An unchanged identity bumps last_seen_on when it is more than a day old
+	_, err = conn.db.ExecContext(ctx, "UPDATE embed_users SET last_seen_on = now() - INTERVAL '2 days' WHERE id = 'ext_1'")
+	require.NoError(t, err)
+	err = db.UpsertEmbedUser(ctx, &database.UpsertEmbedUserOptions{
+		ID:             "ext_1",
+		ProjectID:      projectID,
+		ExternalUserID: "tenant1:user1",
+		Email:          &email,
+	})
+	require.NoError(t, err)
+	u2, err = db.FindEmbedUser(ctx, "ext_1")
+	require.NoError(t, err)
+	require.WithinDuration(t, time.Now(), u2.LastSeenOn, time.Minute)
+
+	// Virtual files reference their embed owner, which is cleared when the embed user is deleted
+	ownerID := "ext_1"
+	err = db.UpsertVirtualFile(ctx, &database.InsertVirtualFileOptions{
+		ProjectID:    projectID,
+		Environment:  "prod",
+		Path:         "reports/r1.yaml",
+		Data:         []byte("type: report"),
+		EmbedOwnerID: &ownerID,
+	})
+	require.NoError(t, err)
+	vf, err := db.FindVirtualFile(ctx, projectID, "prod", "reports/r1.yaml")
+	require.NoError(t, err)
+	require.Equal(t, ownerID, *vf.EmbedOwnerID)
+	_, err = conn.db.ExecContext(ctx, "DELETE FROM embed_users WHERE id = 'ext_1'")
+	require.NoError(t, err)
+	vf, err = db.FindVirtualFile(ctx, projectID, "prod", "reports/r1.yaml")
+	require.NoError(t, err)
+	require.Nil(t, vf.EmbedOwnerID)
 }
 
 func testUpsertProjectVariable(t *testing.T, db database.DB) {

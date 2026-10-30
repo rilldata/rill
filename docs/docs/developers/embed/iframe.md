@@ -326,9 +326,26 @@ The `user_email`, `attributes` and `external_user_id` parameters serve two purpo
 Only one of `user_email` or `attributes` can be provided for a given iframe. The `external_user_id` parameter can optionally be combined with either of them. Here is how each parameter works:
 - `user_email`: Looks up the user in Rill Cloud by email and populates their standard attributes. If no matching user is found, it generates limited attributes with only the fields `email`, `domain` (the part of the email after `@`) and `admin` (set to `false`). The derived `domain` is commonly used in security policies (e.g. `app_site_domain = '{{ .user.domain }}'`). Does not enable per-user state on its own; combine with `external_user_id` to enable per-user state.
 - `attributes`: Passes the provided attributes through directly. Make sure to include all attributes referenced in your security policies (e.g. `email`, `domain`, `admin`, or custom attributes like `tenant_id`). Does not enable per-user state on its own; combine with `external_user_id` to enable per-user state.
-- `external_user_id`: Any stable identifier for the end user. This is usually the user's ID in your own database. Setting it enables per-user state such as AI chat history.
+- `external_user_id`: An opaque, stable identifier for the end user. Setting it enables per-user state such as AI chat history and [scheduled reports](#scheduled-reports-in-embeds).
+
+:::warning Use one `external_user_id` per security context
+Rill stores per-user state, such as AI chat history and the identity that scheduled reports run as, by `external_user_id`. So the ID must identify one security context, not just one person. If the same person can open your app in several tenants, and the `user_email` or `attributes` you pass vary by tenant, include the tenant in the ID, for example `<tenant id>:<user id>`. Use a separator that can't appear in either part; otherwise IDs collide (user `a_b` in tenant `c` and user `a` in tenant `b_c` both become `a_b_c`).
+
+If you change the format of your IDs, existing users lose their AI chat history and the scheduled reports they created stop running.
+:::
 
 The same attributes decide what an embedded canvas shows. Canvas rows, tabs and components can have [`if` conditions](/developers/build/dashboards/canvas#show-content-to-some-viewers-only) on them, such as `'{{ eq .user.plan "premium" }}'` to show premium content only to tenants on that plan. Every embed also carries the attribute `embed: true`, so a condition like `'{{ not .user.embed }}'` keeps content out of embedded dashboards.
+
+## Scheduled reports in embeds
+
+Embed users can schedule email reports of the dashboards they can see. Reports are disabled in embeds by default; enable them with the `reports` [feature flag](/reference/project-files/rill-yaml#features), for example `reports: true` to enable them everywhere.
+
+Reports created from an embed work as follows:
+- **They require `external_user_id`.** The report is owned by the external user, so the option to create reports is hidden in iframes without an `external_user_id`.
+- **They run as the owner's latest identity.** Rill stores the `user_email` or `attributes` of each external user, and refreshes them every time you request an iframe for the user. A scheduled report runs with the identity from the user's latest iframe, across all dashboards; for example, if you change a user's `attributes`, all of their reports use the new attributes on their next run. Reports are also limited to the dashboard the iframe was limited to, if any.
+- **They can be sent to any email address.** If you pass `user_email`, it is the default recipient. Every recipient receives the data the owner can see, and gets a link to unsubscribe.
+- **They pause when the owner is inactive.** If you haven't requested an iframe for the owner in 90 days, their reports stop running until you do. This way, revoking a user's access in your app also stops their reports.
+- **Only the owner can see and manage them in the embed.** Project admins can also manage them in Rill Cloud, where they are shown with the owner's `external_user_id`.
 
 ## Embedding the project vs embedding an individual dashboard
 

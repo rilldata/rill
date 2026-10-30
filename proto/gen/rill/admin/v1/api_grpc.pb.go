@@ -112,6 +112,7 @@ const (
 	AdminService_ListSuperusers_FullMethodName                           = "/rill.admin.v1.AdminService/ListSuperusers"
 	AdminService_GetDeploymentCredentials_FullMethodName                 = "/rill.admin.v1.AdminService/GetDeploymentCredentials"
 	AdminService_GetIFrame_FullMethodName                                = "/rill.admin.v1.AdminService/GetIFrame"
+	AdminService_GetEmbedUser_FullMethodName                             = "/rill.admin.v1.AdminService/GetEmbedUser"
 	AdminService_SetSuperuser_FullMethodName                             = "/rill.admin.v1.AdminService/SetSuperuser"
 	AdminService_SudoGetResource_FullMethodName                          = "/rill.admin.v1.AdminService/SudoGetResource"
 	AdminService_SudoUpdateUserQuotas_FullMethodName                     = "/rill.admin.v1.AdminService/SudoUpdateUserQuotas"
@@ -407,6 +408,9 @@ type AdminServiceClient interface {
 	GetDeploymentCredentials(ctx context.Context, in *GetDeploymentCredentialsRequest, opts ...grpc.CallOption) (*GetDeploymentCredentialsResponse, error)
 	// GetIFrame returns the iframe URL for the given project
 	GetIFrame(ctx context.Context, in *GetIFrameRequest, opts ...grpc.CallOption) (*GetIFrameResponse, error)
+	// GetEmbedUser returns an embed user, which is created when GetIFrame is called with an external user ID.
+	// It is used to show which external user owns a report created from an embed.
+	GetEmbedUser(ctx context.Context, in *GetEmbedUserRequest, opts ...grpc.CallOption) (*GetEmbedUserResponse, error)
 	// SetSuperuser adds/remove a superuser
 	SetSuperuser(ctx context.Context, in *SetSuperuserRequest, opts ...grpc.CallOption) (*SetSuperuserResponse, error)
 	// SudoGetResource returns details about a resource by ID lookup
@@ -1502,6 +1506,16 @@ func (c *adminServiceClient) GetIFrame(ctx context.Context, in *GetIFrameRequest
 	return out, nil
 }
 
+func (c *adminServiceClient) GetEmbedUser(ctx context.Context, in *GetEmbedUserRequest, opts ...grpc.CallOption) (*GetEmbedUserResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetEmbedUserResponse)
+	err := c.cc.Invoke(ctx, AdminService_GetEmbedUser_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *adminServiceClient) SetSuperuser(ctx context.Context, in *SetSuperuserRequest, opts ...grpc.CallOption) (*SetSuperuserResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(SetSuperuserResponse)
@@ -2497,6 +2511,9 @@ type AdminServiceServer interface {
 	GetDeploymentCredentials(context.Context, *GetDeploymentCredentialsRequest) (*GetDeploymentCredentialsResponse, error)
 	// GetIFrame returns the iframe URL for the given project
 	GetIFrame(context.Context, *GetIFrameRequest) (*GetIFrameResponse, error)
+	// GetEmbedUser returns an embed user, which is created when GetIFrame is called with an external user ID.
+	// It is used to show which external user owns a report created from an embed.
+	GetEmbedUser(context.Context, *GetEmbedUserRequest) (*GetEmbedUserResponse, error)
 	// SetSuperuser adds/remove a superuser
 	SetSuperuser(context.Context, *SetSuperuserRequest) (*SetSuperuserResponse, error)
 	// SudoGetResource returns details about a resource by ID lookup
@@ -2940,6 +2957,9 @@ func (UnimplementedAdminServiceServer) GetDeploymentCredentials(context.Context,
 }
 func (UnimplementedAdminServiceServer) GetIFrame(context.Context, *GetIFrameRequest) (*GetIFrameResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetIFrame not implemented")
+}
+func (UnimplementedAdminServiceServer) GetEmbedUser(context.Context, *GetEmbedUserRequest) (*GetEmbedUserResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetEmbedUser not implemented")
 }
 func (UnimplementedAdminServiceServer) SetSuperuser(context.Context, *SetSuperuserRequest) (*SetSuperuserResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SetSuperuser not implemented")
@@ -4870,6 +4890,24 @@ func _AdminService_GetIFrame_Handler(srv interface{}, ctx context.Context, dec f
 	return interceptor(ctx, in, info, handler)
 }
 
+func _AdminService_GetEmbedUser_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetEmbedUserRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).GetEmbedUser(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_GetEmbedUser_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).GetEmbedUser(ctx, req.(*GetEmbedUserRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _AdminService_SetSuperuser_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(SetSuperuserRequest)
 	if err := dec(in); err != nil {
@@ -6652,6 +6690,10 @@ var AdminService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetIFrame",
 			Handler:    _AdminService_GetIFrame_Handler,
+		},
+		{
+			MethodName: "GetEmbedUser",
+			Handler:    _AdminService_GetEmbedUser_Handler,
 		},
 		{
 			MethodName: "SetSuperuser",

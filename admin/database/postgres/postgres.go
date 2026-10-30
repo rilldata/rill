@@ -2986,6 +2986,58 @@ func (c *connection) DeleteBookmark(ctx context.Context, bookmarkID string) erro
 	return checkDeleteRow("bookmarks", res, err)
 }
 
+func (c *connection) FindEmbedUser(ctx context.Context, id string) (*database.EmbedUser, error) {
+	res := &embedUserDTO{}
+	err := c.getDB(ctx).QueryRowxContext(ctx, "SELECT * FROM embed_users WHERE id=$1", id).StructScan(res)
+	if err != nil {
+		return nil, parseErr("embed user", err)
+	}
+	return res.embedUserFromDTO()
+}
+
+func (c *connection) UpsertEmbedUser(ctx context.Context, opts *database.UpsertEmbedUserOptions) error {
+	if err := database.Validate(opts); err != nil {
+		return err
+	}
+
+	// Store NULL for empty attributes, so an empty map and NULL don't count as a change.
+	var attrs *string
+	if len(opts.Attributes) > 0 {
+		data, err := json.Marshal(opts.Attributes)
+		if err != nil {
+			return fmt.Errorf("failed to serialize embed user attributes: %w", err)
+		}
+		str := string(data)
+		attrs = &str
+	}
+
+	// We don't use INSERT ... ON CONFLICT DO UPDATE ... WHERE, since it locks the existing row even when the WHERE clause is false.
+	res, err := c.getDB(ctx).ExecContext(ctx, `
+		UPDATE embed_users SET email=$2, attributes=$3::JSONB, last_seen_on=now(), updated_on=now()
+		WHERE id=$1 AND (email IS DISTINCT FROM $2 OR attributes IS DISTINCT FROM $3::JSONB OR last_seen_on < now() - INTERVAL '1 day')
+	`, opts.ID, opts.Email, attrs)
+	if err != nil {
+		return parseErr("embed user", err)
+	}
+	n, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if n > 0 {
+		return nil
+	}
+
+	_, err = c.getDB(ctx).ExecContext(ctx, `
+		INSERT INTO embed_users (id, project_id, external_user_id, email, attributes)
+		VALUES ($1, $2, $3, $4, $5::JSONB)
+		ON CONFLICT (id) DO NOTHING
+	`, opts.ID, opts.ProjectID, opts.ExternalUserID, opts.Email, attrs)
+	if err != nil {
+		return parseErr("embed user", err)
+	}
+	return nil
+}
+
 func (c *connection) FindVirtualFiles(ctx context.Context, projectID, environment string, afterUpdatedOn time.Time, afterPath string, limit int) ([]*database.VirtualFile, error) {
 	var res []*database.VirtualFile
 	err := c.getDB(ctx).SelectContext(ctx, &res, `
@@ -3003,7 +3055,7 @@ func (c *connection) FindVirtualFiles(ctx context.Context, projectID, environmen
 func (c *connection) FindVirtualFile(ctx context.Context, projectID, environment, path string) (*database.VirtualFile, error) {
 	res := &database.VirtualFile{}
 	err := c.getDB(ctx).QueryRowxContext(ctx, `
-		SELECT path, data, owner_id, deleted, updated_on
+		SELECT path, data, owner_id, embed_owner_id, deleted, updated_on
 		FROM virtual_files
 		WHERE project_id=$1 AND environment=$2 AND path=$3
 	`, projectID, environment, path).StructScan(res)
@@ -3033,14 +3085,15 @@ func (c *connection) UpsertVirtualFile(ctx context.Context, opts *database.Inser
 	}
 
 	_, err := c.getDB(ctx).ExecContext(ctx, `
-		INSERT INTO virtual_files (project_id, environment, owner_id, path, data, deleted)
-		VALUES ($1, $2, $3, $4, $5, FALSE)
+		INSERT INTO virtual_files (project_id, environment, owner_id, embed_owner_id, path, data, deleted)
+		VALUES ($1, $2, $3, $4, $5, $6, FALSE)
 		ON CONFLICT (project_id, environment, path) DO UPDATE SET
 			data = EXCLUDED.data,
 		    owner_id = EXCLUDED.owner_id,
+		    embed_owner_id = EXCLUDED.embed_owner_id,
 			deleted = FALSE,
 			updated_on = now()
-	`, opts.ProjectID, opts.Environment, opts.OwnerID, opts.Path, opts.Data)
+	`, opts.ProjectID, opts.Environment, opts.OwnerID, opts.EmbedOwnerID, opts.Path, opts.Data)
 	if err != nil {
 		return parseErr("virtual file", err)
 	}
@@ -3611,6 +3664,20 @@ func (c *connection) provisionerResourcesFromDTOs(dtos []*provisionerResourceDTO
 		}
 	}
 	return res, nil
+}
+
+// embedUserDTO wraps database.EmbedUser, using the pgtype package to read its JSONB attributes.
+type embedUserDTO struct {
+	*database.EmbedUser
+	Attributes pgtype.JSONB `db:"attributes"`
+}
+
+func (dto *embedUserDTO) embedUserFromDTO() (*database.EmbedUser, error) {
+	err := dto.Attributes.AssignTo(&dto.EmbedUser.Attributes)
+	if err != nil {
+		return nil, err
+	}
+	return dto.EmbedUser, nil
 }
 
 // magicAuthTokenDTO wraps database.MagicAuthToken, using the pgtype package to handly types that pgx can't read directly into their native Go types.
