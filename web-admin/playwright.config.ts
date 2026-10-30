@@ -36,8 +36,21 @@ const config: PlaywrightTestConfig = {
     {
       name: "e2e",
       dependencies: process.env.E2E_NO_SETUP_OR_TEARDOWN ? [] : ["setup"],
-      testIgnore: "/setup",
+      // The mobile smoke suite runs only in the `mobile` project, at a phone viewport.
+      testIgnore: ["/setup", "mobile-smoke.spec.ts"],
       use: {
+        storageState: ADMIN_STORAGE_STATE,
+      },
+    },
+    {
+      // Responsive smoke checks run on an emulated phone against the same
+      // seeded stack. Limited to mobile-smoke so the desktop suites aren't
+      // re-run here.
+      name: "mobile",
+      dependencies: process.env.E2E_NO_SETUP_OR_TEARDOWN ? [] : ["setup"],
+      testMatch: "mobile-smoke.spec.ts",
+      use: {
+        ...devices["iPhone 13"],
         storageState: ADMIN_STORAGE_STATE,
       },
     },
