@@ -11,11 +11,29 @@ import (
 )
 
 func TestResourceStatus(t *testing.T) {
+	// A model, a metrics view, and its inline explore all named "orders".
+	sameNameFiles := map[string]string{
+		"rill.yaml":  ``,
+		"orders.sql": `SELECT 1 AS x`,
+		"metrics/orders.yaml": `
+type: metrics_view
+model: orders
+dimensions:
+- column: x
+measures:
+- name: count
+  expression: count(*)
+explore:
+  display_name: Orders
+`,
+	}
+
 	cases := []struct {
-		name       string
-		files      map[string]string
-		whereError bool
-		expected   []map[string]any
+		name     string
+		files    map[string]string
+		props    map[string]any
+		expected []map[string]any
+		err      string
 	}{
 		{
 			name:  "no resources",
@@ -25,10 +43,10 @@ func TestResourceStatus(t *testing.T) {
 			},
 		},
 		{
-			name:       "no resources with where_error",
-			files:      map[string]string{`rill.yaml`: ``},
-			whereError: true,
-			expected:   []map[string]any{},
+			name:     "no resources with where_error",
+			files:    map[string]string{`rill.yaml`: ``},
+			props:    map[string]any{"where_error": true},
+			expected: []map[string]any{},
 		},
 		{
 			name: "multiple resources",
@@ -50,8 +68,8 @@ func TestResourceStatus(t *testing.T) {
 				"m1.sql":    `SELECT 314`,
 				"m2.sql":    `SELECT 159`,
 			},
-			whereError: true,
-			expected:   []map[string]any{},
+			props:    map[string]any{"where_error": true},
+			expected: []map[string]any{},
 		},
 		{
 			name: "resource in error state",
@@ -73,7 +91,7 @@ func TestResourceStatus(t *testing.T) {
 				"m1.sql":    `SELECT 314`,
 				"m2.sql":    `SELECT error("booom!")`,
 			},
-			whereError: true,
+			props: map[string]any{"where_error": true},
 			expected: []map[string]any{
 				{"type": "Model", "name": "m2", "status": "Idle", "error": "booom!"},
 			},
@@ -88,6 +106,81 @@ func TestResourceStatus(t *testing.T) {
 				{"type": "ProjectParser", "name": "parser", "status": "Idle", "error": "encountered parse errors"},
 			},
 		},
+		{
+			name:  "where_resource exact match",
+			files: sameNameFiles,
+			props: map[string]any{"where_resource": []string{"metrics_view/orders"}},
+			expected: []map[string]any{
+				{"type": "MetricsView", "name": "orders", "status": "Idle", "error": ""},
+			},
+		},
+		{
+			name:  "where_resource does not cross kinds and names",
+			files: sameNameFiles,
+			props: map[string]any{"where_resource": []string{"model/orders", "explore/sales"}},
+			expected: []map[string]any{
+				{"type": "Model", "name": "orders", "status": "Idle", "error": ""},
+			},
+		},
+		{
+			name:  "where_resource wildcard name",
+			files: sameNameFiles,
+			props: map[string]any{"where_resource": "explore/*"},
+			expected: []map[string]any{
+				{"type": "Explore", "name": "orders", "status": "Idle", "error": ""},
+			},
+		},
+		{
+			name:  "where_resource wildcard kind",
+			files: sameNameFiles,
+			props: map[string]any{"where_resource": []string{"*/ORDERS"}},
+			expected: []map[string]any{
+				{"type": "Explore", "name": "orders", "status": "Idle", "error": ""},
+				{"type": "MetricsView", "name": "orders", "status": "Idle", "error": ""},
+				{"type": "Model", "name": "orders", "status": "Idle", "error": ""},
+			},
+		},
+		{
+			name:  "where_resource bare name",
+			files: sameNameFiles,
+			props: map[string]any{"where_resource": []string{"orders"}},
+			expected: []map[string]any{
+				{"type": "Explore", "name": "orders", "status": "Idle", "error": ""},
+				{"type": "MetricsView", "name": "orders", "status": "Idle", "error": ""},
+				{"type": "Model", "name": "orders", "status": "Idle", "error": ""},
+			},
+		},
+		{
+			name: "where_resource with where_error",
+			files: map[string]string{
+				"rill.yaml": ``,
+				"m1.sql":    `SELECT error("boom1")`,
+				"m2.sql":    `SELECT error("boom2")`,
+				"m3.sql":    `SELECT 314`,
+			},
+			props: map[string]any{"where_error": true, "where_resource": []string{"model/m2", "model/m3"}},
+			expected: []map[string]any{
+				{"type": "Model", "name": "m2", "status": "Idle", "error": "boom2"},
+			},
+		},
+		{
+			name:  "where_resource unknown kind",
+			files: map[string]string{`rill.yaml`: ``},
+			props: map[string]any{"where_resource": []string{"dashboard/orders"}},
+			err:   `invalid where_resource "dashboard/orders": unknown resource kind`,
+		},
+		{
+			name:  "where_resource empty segment",
+			files: map[string]string{`rill.yaml`: ``},
+			props: map[string]any{"where_resource": []string{"model/"}},
+			err:   `invalid where_resource "model/"`,
+		},
+		{
+			name:  "where_resource too many segments",
+			files: map[string]string{`rill.yaml`: ``},
+			props: map[string]any{"where_resource": []string{"model/a/b"}},
+			err:   `invalid where_resource "model/a/b"`,
+		},
 	}
 
 	for _, tc := range cases {
@@ -99,10 +192,14 @@ func TestResourceStatus(t *testing.T) {
 			res, _, err := rt.Resolve(context.Background(), &runtime.ResolveOptions{
 				InstanceID:         instanceID,
 				Resolver:           "resource_status",
-				ResolverProperties: map[string]any{"where_error": tc.whereError},
+				ResolverProperties: tc.props,
 				Args:               nil,
 				Claims:             &runtime.SecurityClaims{},
 			})
+			if tc.err != "" {
+				require.ErrorContains(t, err, tc.err)
+				return
+			}
 			require.NoError(t, err)
 			defer res.Close()
 

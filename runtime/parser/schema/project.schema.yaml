@@ -4290,6 +4290,11 @@ definitions:
               where_error:
                 type: boolean
                 description: Indicates whether the condition should trigger when the resource is in an error state.
+              where_resource:
+                type: array
+                items:
+                  type: string
+                description: Only include resources matching any of these `kind/name` patterns (e.g. `model/orders`, `model/*`, `*/orders`). Kinds accept shorthands like `metrics_view`; names are case-insensitive; a bare name matches any kind.
             additionalProperties: true
         required:
           - resource_status
@@ -4413,6 +4418,11 @@ definitions:
               where_error:
                 type: boolean
                 description: Indicates whether the condition should trigger when the resource is in an error state.
+              where_resource:
+                type: array
+                items:
+                  type: string
+                description: Only include resources matching any of these `kind/name` patterns (e.g. `model/orders`, `model/*`, `*/orders`). Kinds accept shorthands like `metrics_view`; names are case-insensitive; a bare name matches any kind.
             additionalProperties: true
         required:
           - resource_status
