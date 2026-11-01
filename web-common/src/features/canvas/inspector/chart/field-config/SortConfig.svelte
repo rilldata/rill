@@ -32,6 +32,14 @@
       label: m.canvas_sort_y_axis_delta_descending(),
       value: ChartSortType.Y_DELTA_DESC,
     },
+    {
+      label: m.canvas_sort_x_axis_delta_ascending(),
+      value: ChartSortType.X_DELTA_ASC,
+    },
+    {
+      label: m.canvas_sort_x_axis_delta_descending(),
+      value: ChartSortType.X_DELTA_DESC,
+    },
     { label: m.canvas_sort_color_ascending(), value: ChartSortType.COLOR_ASC },
     {
       label: m.canvas_sort_color_descending(),
@@ -48,9 +56,12 @@
     { label: m.canvas_sort_custom(), value: ChartSortType.CUSTOM },
   ];
 
-  $: sortOptionsForChart = sortOptions.filter((option) =>
-    sortConfig?.options?.includes(option.value),
-  );
+  // Listed in the order the chart declares them, so a chart can put the
+  // options that sort by its dimension first whichever channel it is on.
+  $: sortOptionsForChart = (sortConfig?.options ?? []).flatMap((value) => {
+    const option = sortOptions.find((o) => o.value === value);
+    return option ? [option] : [];
+  });
 
   $: sortValue = fieldConfig.sort
     ? typeof fieldConfig.sort === "string"

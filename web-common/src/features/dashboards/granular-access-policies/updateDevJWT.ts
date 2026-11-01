@@ -7,6 +7,7 @@ import { runtimeServiceIssueDevJWT } from "@rilldata/web-common/runtime-client";
 import {
   invalidateAllMetricsViews,
   invalidateCanvasQueries,
+  removeInactiveResourceQueries,
 } from "@rilldata/web-common/runtime-client/invalidation";
 import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import type { QueryClient } from "@tanstack/svelte-query";
@@ -43,5 +44,6 @@ export async function updateDevJWT(
   }
 
   await invalidateAllMetricsViews(queryClient, client.instanceId);
+  removeInactiveResourceQueries(queryClient, client.instanceId);
   return invalidateCanvasQueries(queryClient, client.instanceId);
 }

@@ -433,3 +433,174 @@ measures:
 		})
 	}
 }
+
+// Dimensions with lookup_group_by_key are validated against the two-level query shape,
+// which rejects a lookup_default_expression that references anything but constants and the key column.
+func TestValidateMetricsViewLookupGroupByKey(t *testing.T) {
+	rt, instanceID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
+		TestConnectors: []string{"clickhouse"},
+		Files: map[string]string{
+			"rill.yaml": "olap_connector: clickhouse",
+			"model.sql": `
+-- @connector: clickhouse
+select parseDateTimeBestEffort('2024-01-01T00:00:00Z') as time, 'DK' as country_code, 1 as val union all
+select parseDateTimeBestEffort('2024-01-02T00:00:00Z') as time, 'US' as country_code, 2 as val
+`,
+			"country_dict.yaml": `
+type: model
+connector: clickhouse
+sql: select 'DK' as code, 'Denmark' as name union all select 'US' as code, 'United States' as name
+output:
+  connector: clickhouse
+  type: DICTIONARY
+  primary_key: code
+  dictionary_source_user: default
+  dictionary_source_password: default
+`,
+		},
+	})
+	testruntime.RequireReconcileState(t, rt, instanceID, 3, 0, 0)
+
+	cases := []struct {
+		name          string
+		partial       string
+		errorContains string
+	}{
+		{
+			name: "constant default expression",
+			partial: `
+dimensions:
+  - name: country
+    column: country_code
+    lookup_table: country_dict
+    lookup_key_column: code
+    lookup_value_column: name
+    lookup_default_expression: "'Unknown'"
+    lookup_group_by_key: true
+`,
+		},
+		{
+			name: "default expression referencing the key column",
+			partial: `
+dimensions:
+  - name: country
+    column: country_code
+    lookup_table: country_dict
+    lookup_key_column: code
+    lookup_value_column: name
+    lookup_default_expression: concat('unknown-', country_code)
+    lookup_group_by_key: true
+`,
+		},
+		{
+			name: "expression key with a constant default expression",
+			partial: `
+dimensions:
+  - name: country
+    expression: upper(country_code)
+    lookup_table: country_dict
+    lookup_key_column: code
+    lookup_value_column: name
+    lookup_default_expression: "'Unknown'"
+    lookup_group_by_key: true
+`,
+		},
+		{
+			name: "default expression referencing another column",
+			partial: `
+dimensions:
+  - name: country
+    column: country_code
+    lookup_table: country_dict
+    lookup_key_column: code
+    lookup_value_column: name
+    lookup_default_expression: concat('unknown-', toString(val))
+    lookup_group_by_key: true
+`,
+			errorContains: `failed to validate dimension "country" with lookup_group_by_key`,
+		},
+	}
+
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			metricsView := `
+version: 1
+type: metrics_view
+model: model
+timeseries: time
+measures:
+  - name: val_sum
+    expression: sum(val)
+` + c.partial
+
+			testruntime.PutFiles(t, rt, instanceID, map[string]string{"metrics_view.yaml": metricsView})
+			testruntime.ReconcileParserAndWait(t, rt, instanceID)
+			testruntime.RequireReconcileState(t, rt, instanceID, 4, -1, 0)
+
+			r := testruntime.GetResource(t, rt, instanceID, runtime.ResourceKindMetricsView, "metrics_view")
+			if c.errorContains != "" {
+				require.Contains(t, r.Meta.ReconcileError, c.errorContains)
+			} else {
+				require.Empty(t, r.Meta.ReconcileError)
+			}
+		})
+	}
+}
+
+func TestValidateMetricsViewExactExpression(t *testing.T) {
+	rt, instanceID := testruntime.NewInstanceForProject(t, "ad_bids")
+
+	newMetricsView := func(measures ...*runtimev1.MetricsViewSpec_Measure) *runtimev1.MetricsViewSpec {
+		return &runtimev1.MetricsViewSpec{
+			Connector:     "duckdb",
+			Table:         "ad_bids",
+			DisplayName:   "Ad Bids",
+			TimeDimension: "timestamp",
+			Dimensions: []*runtimev1.MetricsViewSpec_Dimension{
+				{Name: "publisher", Column: "publisher"},
+			},
+			Measures: measures,
+		}
+	}
+
+	validate := func(t *testing.T, mv *runtimev1.MetricsViewSpec) *executor.ValidateMetricsViewResult {
+		e, err := executor.New(context.Background(), rt, instanceID, mv, false, runtime.ResolvedSecurityOpen, 0, nil)
+		require.NoError(t, err)
+		res, err := e.ValidateAndNormalizeMetricsView(context.Background())
+		require.NoError(t, err)
+		require.Empty(t, res.TimeDimensionErr)
+		require.Empty(t, res.DimensionErrs)
+		require.Empty(t, res.OtherErrs)
+		return res
+	}
+
+	t.Run("valid exact expression", func(t *testing.T) {
+		mv := newMetricsView(
+			&runtimev1.MetricsViewSpec_Measure{Name: "publishers", Expression: "approx_count_distinct(publisher)", ExactExpression: "count(DISTINCT publisher)", Type: runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE},
+		)
+		res := validate(t, mv)
+		require.Empty(t, res.MeasureErrs)
+		// The data type comes from the default expression.
+		require.NotNil(t, mv.Measures[0].DataType)
+	})
+
+	t.Run("invalid exact expression", func(t *testing.T) {
+		res := validate(t, newMetricsView(
+			&runtimev1.MetricsViewSpec_Measure{Name: "records", Expression: "count(*)", Type: runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE},
+			&runtimev1.MetricsViewSpec_Measure{Name: "publishers", Expression: "approx_count_distinct(publisher)", ExactExpression: "MAX(COUNT(DISTINCT publisher))", Type: runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE},
+		))
+		require.Len(t, res.MeasureErrs, 1)
+		require.Equal(t, 1, res.MeasureErrs[0].Idx)
+		require.ErrorContains(t, res.MeasureErrs[0].Err, `invalid exact_expression for measure "publishers"`)
+	})
+
+	t.Run("non-numeric exact expression", func(t *testing.T) {
+		res := validate(t, newMetricsView(
+			&runtimev1.MetricsViewSpec_Measure{Name: "records", Expression: "count(*)", ExactExpression: "max(publisher)", Type: runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE},
+		))
+		require.Len(t, res.MeasureErrs, 1)
+		require.Equal(t, 0, res.MeasureErrs[0].Idx)
+		require.ErrorContains(t, res.MeasureErrs[0].Err, "must be a numeric type")
+		require.ErrorContains(t, res.MeasureErrs[0].Err, "exact_expression")
+	})
+}

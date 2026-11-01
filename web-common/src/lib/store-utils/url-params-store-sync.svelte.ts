@@ -1,102 +1,159 @@
-import { cleanUrlParams } from "@rilldata/web-common/features/dashboards/url-state/clean-url-params.ts";
+import { EventEmitter } from "@rilldata/web-common/lib/event-emitter.ts";
+import { expandCompressedParams } from "@rilldata/web-common/features/dashboards/url-state/compression.ts";
+import { copySubsetParams } from "@rilldata/web-common/lib/url-utils.ts";
+import { goto } from "$app/navigation";
 import { page } from "$app/state";
-import { untrack } from "svelte";
+
+type UrlParamsStoreEvents = {
+  ready: void;
+};
 
 export interface UrlParamsStore {
   setUrlParams(urlParams: URLSearchParams): void;
   applyFilterToParams(urlParams: URLSearchParams): void;
+  ready: boolean;
+
+  on: EventEmitter<UrlParamsStoreEvents>["on"];
+
+  /**
+   * Url param keys set by this class.
+   */
+  paramKeys: Set<string>;
+  normalizeParams(urlParams: URLSearchParams): URLSearchParams;
 }
 
-export function syncStoreWithSource(
-  store: UrlParamsStore,
-  sync: (newUrlParams: URLSearchParams) => Promise<void>,
-  readyGetter: () => boolean,
-  defaultUrlParamsGetter?: () => URLSearchParams | undefined,
-  skipUrlSync = false,
-) {
-  let lock = false;
+type UrlParamsChangeTrackerEvents = {
+  /**
+   * Fired when the underlying class's state changes internally.
+   * Happens when UI controls directly update class's state.
+   * Does not fire when `setUrlParams` is called to avoid loop.
+   */
+  "internal-change": URLSearchParams;
+  /**
+   * Fired when
+   */
+  change: URLSearchParams;
+};
 
-  if (!skipUrlSync) {
-    $effect(() => {
-      // Read all dependencies first so the subscription survives the guard.
-      const currentUrl = page.url;
-      const defaultUrlParams = untrack(() =>
-        defaultUrlParamsGetter ? defaultUrlParamsGetter() : undefined,
-      );
-      const ready = readyGetter();
+/**
+ * A class that tracks URL search params that splits into multiple stores but backed by a single class.
+ *
+ * External sources like navigation should call `setUrlParams` and listen to `change` to sync.
+ * The internal store class that expands the search params into multiple stores should call `stateChanged` and listens to `set` to sync.
+ */
+export class UrlParamsChangeTracker {
+  /**
+   * Source of truth for the underlying class's state.
+   */
+  public searchParams = $state<URLSearchParams | undefined>();
 
-      if (!ready || lock) return;
-      lock = true;
+  private pendingParams: URLSearchParams | undefined = undefined;
 
-      const newUrlParams = new URLSearchParams(currentUrl.searchParams);
-      if (defaultUrlParams) {
-        defaultUrlParams.forEach((value, key) => {
-          if (newUrlParams.has(key)) return;
-          newUrlParams.set(key, value);
-        });
-      }
+  private events = new EventEmitter<UrlParamsChangeTrackerEvents>();
+  public readonly on = this.events.on.bind(
+    this.events,
+  ) as typeof this.events.on;
 
-      // No need to safeguard against unchanged url.
-      // It should already happen in setUrlParams since it will have other callers.
-      untrack(() => store.setUrlParams(newUrlParams));
+  public constructor(private readonly store: UrlParamsStore) {
+    this.store.on("ready", () => this.replayPendingParams());
+  }
 
-      lock = false;
+  /**
+   * Called by external sources like navigation to sync the search params.
+   * Calls `setUrlParams` on the store class.
+   */
+  public setUrlParams(urlParams: URLSearchParams) {
+    if (!this.store.ready) {
+      this.pendingParams = urlParams;
+      return;
+    }
+
+    let expandedUrlParams: URLSearchParams;
+    try {
+      expandedUrlParams = expandCompressedParams(urlParams);
+    } catch {
+      // If we fail to decompress, do not throw here.
+      return;
+    }
+
+    const relevantParams = copySubsetParams(
+      expandedUrlParams,
+      this.store.paramKeys,
+    );
+    if (this.searchParams?.toString() === relevantParams.toString()) return;
+
+    this.searchParams = this.store.normalizeParams(relevantParams);
+    this.store.setUrlParams(this.searchParams);
+    this.events.emit("change", this.searchParams);
+  }
+
+  /**
+   * Called by internal store class when its state is directly changed like a user action.
+   * Calls `applyFilterToParams` to get the actual url params in a new microtask so that changes are propagated.
+   * Fires `change` event so that external sources like navigation can sync.
+   */
+  public stateChanged() {
+    queueMicrotask(() => this.maybeNotifyStateChange());
+  }
+
+  /**
+   * Syncs the store's state to the URL by listening to 'change' event.
+   * Returns the unsub method from the event listener. It is the callers' responsibility to call it.
+   * @param emptySearchOverride The search override to use if the store's state is empty.
+   */
+  public syncToUrl(emptySearchOverride = "") {
+    return this.on("internal-change", (newUrlParams) => {
+      const urlParamsToApply = new URLSearchParams(page.url.searchParams);
+      this.store.paramKeys.forEach((key) => {
+        if (newUrlParams.has(key)) {
+          urlParamsToApply.set(key, newUrlParams.get(key) ?? "");
+        } else {
+          urlParamsToApply.delete(key);
+        }
+      });
+
+      let searchToApply = urlParamsToApply.toString();
+      if (!searchToApply) searchToApply = emptySearchOverride;
+      void goto("?" + searchToApply);
     });
   }
 
-  let prevStateParams = new URLSearchParams();
-  $effect(() => {
-    // Read all dependencies first so the subscription survives the guard.
-    const curStateParams = new URLSearchParams();
-    store.applyFilterToParams(curStateParams);
-
-    const defaultUrlParams = untrack(() =>
-      defaultUrlParamsGetter ? defaultUrlParamsGetter() : undefined,
-    );
-    const ready = readyGetter();
-
-    if (
-      !ready ||
-      lock ||
-      curStateParams.toString() === prevStateParams.toString()
-    )
-      return;
-    lock = true;
-
-    const currentUrlParams = untrack(() =>
-      skipUrlSync
-        ? new URLSearchParams(prevStateParams)
-        : page.url.searchParams,
-    );
-    prevStateParams = curStateParams;
-
-    let newUrlParams = new URLSearchParams(currentUrlParams);
-    if (defaultUrlParams) {
-      newUrlParams = cleanUrlParams(newUrlParams, defaultUrlParams);
-    }
-    untrack(() => {
-      store.applyFilterToParams(newUrlParams);
-    });
-
-    if (newUrlParams.toString() === currentUrlParams.toString()) {
-      lock = false;
+  private replayPendingParams() {
+    if (!this.pendingParams) {
+      this.reapplyCurrentParams();
       return;
     }
+    const pendingParams = this.pendingParams;
+    // Unset before calling setUrlParams.
+    // This will ensure that if params are still supposed to be pending, they are not cleared.
+    this.pendingParams = undefined;
 
-    try {
-      // Do not react to `sync` method changes
-      const syncPromise = untrack(() => sync(newUrlParams));
-      if (!syncPromise.then) {
-        lock = false;
-        return;
-      }
+    this.setUrlParams(pendingParams);
+  }
 
-      void syncPromise.then(
-        () => (lock = false),
-        () => (lock = false),
-      );
-    } catch {
-      lock = false;
-    }
-  });
+  /**
+   * Parses the current params again once the store is ready after a change in its dependencies.
+   * Goes around `setUrlParams` since the params themselves have not changed.
+   * Parts the store can no longer represent, like a filter on a dropped dimension, are removed,
+   * and `stateChanged` reports the removal.
+   */
+  private reapplyCurrentParams() {
+    if (!this.searchParams) return;
+
+    this.searchParams = this.store.normalizeParams(
+      copySubsetParams(this.searchParams, this.store.paramKeys),
+    );
+    this.store.setUrlParams(this.searchParams);
+    this.stateChanged();
+  }
+
+  private maybeNotifyStateChange() {
+    const urlParams = new URLSearchParams();
+    this.store.applyFilterToParams(urlParams);
+
+    if (this.searchParams?.toString() === urlParams.toString()) return;
+    this.searchParams = urlParams;
+    this.events.emit("internal-change", this.searchParams);
+    this.events.emit("change", this.searchParams);
+  }
 }

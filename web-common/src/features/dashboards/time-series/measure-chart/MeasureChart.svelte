@@ -1,5 +1,9 @@
 <script lang="ts">
-  import { splitTimeSeriesMeasures } from "@rilldata/web-common/features/dashboards/ephemeral-measures/measure-mapping";
+  import {
+    applyExactMeasures,
+    exactTimeSeriesMeasureNames,
+    splitTimeSeriesMeasures,
+  } from "@rilldata/web-common/features/dashboards/ephemeral-measures/measure-mapping";
   import type { EphemeralMeasureDef } from "@rilldata/web-common/features/dashboards/ephemeral-measures/types";
   import InlineErrorIndicator from "@rilldata/web-common/features/dashboards/errors/InlineErrorIndicator.svelte";
   import TDDMeasureChart from "@rilldata/web-common/features/dashboards/time-dimension-details/charts/TDDChart.svelte";
@@ -36,6 +40,8 @@
 
   export let measure: MetricsViewSpecMeasure;
   export let ephemeralMeasures: EphemeralMeasureDef[] | undefined = undefined;
+  // Request the measure with `exact: true` (see `requestExactNames`).
+  export let exact = false;
   export let metricsViewName: string;
   export let where: V1Expression | undefined = undefined;
   export let timeDimension: string | undefined = undefined;
@@ -88,6 +94,13 @@
   $: measureName = measure.name ?? "";
   $: ({ measureNames: tsMeasureNames, ephemeralMeasures: tsEphemeralMeasures } =
     splitTimeSeriesMeasures([measureName], ephemeralMeasures));
+  $: exactNames = exact ? new Set([measureName]) : undefined;
+  $: tsExactMeasureNames = exactTimeSeriesMeasureNames(
+    tsMeasureNames,
+    exactNames,
+  );
+  $: tsRequestEphemeralMeasures =
+    tsEphemeralMeasures && applyExactMeasures(tsEphemeralMeasures, exactNames);
   $: height = showTimeDimensionDetail ? tddChartHeight : 145;
 
   $: effectiveChartType = resolveEffectiveChartType(
@@ -130,7 +143,8 @@
     {
       metricsViewName,
       measureNames: tsMeasureNames,
-      ephemeralMeasures: tsEphemeralMeasures,
+      ephemeralMeasures: tsRequestEphemeralMeasures,
+      exactMeasureNames: tsExactMeasureNames,
       where,
       timeDimension,
       timeStart,
@@ -152,7 +166,8 @@
     {
       metricsViewName,
       measureNames: tsMeasureNames,
-      ephemeralMeasures: tsEphemeralMeasures,
+      ephemeralMeasures: tsRequestEphemeralMeasures,
+      exactMeasureNames: tsExactMeasureNames,
       where,
       timeDimension,
       timeStart: comparisonTimeStart,
@@ -207,6 +222,7 @@
         timeGranularity!,
         timeZone,
         $visible && ready && !!timeStart,
+        exact,
       )
     : undefined;
 
@@ -225,8 +241,8 @@
           comparisonTimeEnd,
           timeGranularity!,
           timeZone,
-
           $visible && ready && !!comparisonTimeStart,
+          exact,
         )
       : undefined;
 
@@ -342,6 +358,7 @@
         {metricsViewName}
         {measure}
         {ephemeralMeasures}
+        {exact}
         {timeDimension}
         {interval}
         comparisonInterval={showComparison ? comparisonInterval : undefined}

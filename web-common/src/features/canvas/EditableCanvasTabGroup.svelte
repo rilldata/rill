@@ -5,10 +5,9 @@
   import AddComponentDropdown from "./AddComponentDropdown.svelte";
   import CanvasTabStrip from "./CanvasTabStrip.svelte";
   import type { BaseCanvasComponent } from "./components/BaseCanvasComponent";
-  import type { CanvasComponentType } from "./components/types";
   import EditableCanvasRow from "./EditableCanvasRow.svelte";
   import ItemWrapper from "./ItemWrapper.svelte";
-  import type { EditTarget } from "./layout-util";
+  import type { AddableItem, EditTarget } from "./layout-util";
   import RowDropZone from "./RowDropZone.svelte";
   import RowWrapper from "./RowWrapper.svelte";
   import type { TabGroup } from "./stores/tab-group";
@@ -28,6 +27,10 @@
   export let isLastBlock: boolean = false;
   export let components: Map<string, BaseCanvasComponent>;
   export let dragComponent: BaseCanvasComponent | null;
+  // Top-level index of the tab group currently being dragged, or null when none is. While a
+  // group is dragged, the row drop zones around this block become landing slots (except the
+  // dragged group's own two, which would be no-ops) and the dragged group renders as a ghost.
+  export let dragBlockIndex: number | null = null;
   export let selectedComponent: Writable<string | null>;
   export let hasValidMetrics: boolean;
 
@@ -39,13 +42,13 @@
   ) => void;
   export let addItems: (
     position: { row: number; column: number },
-    items: CanvasComponentType[],
+    items: AddableItem[],
     target?: EditTarget,
   ) => void;
   export let spreadEvenly: (index: number, target?: EditTarget) => void;
   export let initializeRow: (
     row: number,
-    type: CanvasComponentType,
+    type: AddableItem,
     target?: EditTarget,
   ) => void;
   export let updateRowHeight: (
@@ -86,6 +89,10 @@
   export let onSelect: ((tabName: string) => void) | undefined = undefined;
   // Select this tab group for editing (opens the tab-group inspector panel).
   export let onSelectGroup: (() => void) | undefined = undefined;
+  // Start dragging this tab group to another position on the canvas.
+  export let onGroupMouseDown: (blockIndex: number, event: MouseEvent) => void;
+  // Duplicate this whole tab group (the copy is inserted right after it).
+  export let onDuplicateGroup: (blockIndex: number) => void;
   // Drop a dragged component onto a tab (cross-container move).
   export let onDropOnTab: (blockIndex: number, tabIndex: number) => void;
   // Insert a new tab group at a given top-level index (for the "add outside" affordance).
@@ -100,6 +107,9 @@
   // and punctuation, which break the `#${id}` querySelector used for height resizing.
   $: idPrefix = `${blockIndex}-${$activeTabIndex}-`;
   $: tabZoneScope = `tab:${group.name}:${activeTab?.name ?? $activeTabIndex}`;
+  $: blockDragging = dragBlockIndex !== null;
+  $: isDragSource = dragBlockIndex === blockIndex;
+  $: allowBlockDrop = blockDragging && !isDragSource;
 </script>
 
 <RowWrapper
@@ -109,13 +119,19 @@
   id={`tab-group-row-${group.name}`}
 >
   <ItemWrapper fitContent zIndex={0}>
-    <div class="tab-group-region">
+    <div
+      id={`tab-group-region-${blockIndex}`}
+      class="tab-group-region"
+      class:opacity-20={isDragSource}
+    >
       <CanvasTabStrip
         {group}
         {maxWidth}
         editable
         {dragComponent}
         {onSelect}
+        onGroupMouseDown={(event) => onGroupMouseDown(blockIndex, event)}
+        onDuplicateGroup={() => onDuplicateGroup(blockIndex)}
         onAddTab={() => onAddTab(blockIndex)}
         onRenameTab={(tabIndex, label) =>
           onRenameTab(blockIndex, tabIndex, label)}
@@ -138,6 +154,7 @@
             {components}
             {columnWidth}
             {dragComponent}
+            {blockDragging}
             {selectedComponent}
             zIndex={$grid.length - rowIndex + 1}
             onDrop={(r, c) => onDrop(r, c, target)}
@@ -186,6 +203,8 @@
                       label={m.canvas_add_widget_to_tab()}
                       onItemClick={(type) =>
                         initializeRow($grid.length, type, target)}
+                      onAddComponentRef={(componentName) =>
+                        initializeRow($grid.length, { componentName }, target)}
                     />
                   </div>
                 </div>
@@ -200,7 +219,7 @@
   </ItemWrapper>
 
   <RowDropZone
-    allowDrop={!!dragComponent}
+    allowDrop={!!dragComponent || allowBlockDrop}
     dropIndex={blockIndex}
     position="top"
     {onDrop}
@@ -211,7 +230,7 @@
   />
 
   <RowDropZone
-    allowDrop={!!dragComponent}
+    allowDrop={!!dragComponent || allowBlockDrop}
     dropIndex={blockIndex + 1}
     position="bottom"
     {onDrop}
@@ -235,6 +254,8 @@
         componentForm
         label={m.canvas_add_widget_below_tabs()}
         onItemClick={(type) => initializeRow(blockIndex + 1, type)}
+        onAddComponentRef={(componentName) =>
+          initializeRow(blockIndex + 1, { componentName })}
         onAddTabGroup={() => onAddTabGroup(blockIndex + 1)}
       />
     </ItemWrapper>

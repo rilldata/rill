@@ -118,6 +118,16 @@ components:
                     items:
                         type: string
                     type: array
+                exportAttach:
+                    description: If true, the query's result is exported and attached to email notifications for failed checks (only supported for query-based alerts).
+                    type: boolean
+                exportFormat:
+                    $ref: '#/components/schemas/v1ExportFormat'
+                exportIncludeHeader:
+                    type: boolean
+                exportLimit:
+                    format: uint64
+                    type: string
                 intervalDuration:
                     type: string
                 metricsViewName:
@@ -382,6 +392,11 @@ components:
             type: object
         v1CompleteRequest:
             properties:
+                includeReasoning:
+                    description: |-
+                        Whether the response may include reasoning blocks.
+                        Older clients don't support them, so they are removed from the response unless this is set.
+                    type: boolean
                 messages:
                     description: Input message(s) for the AI to complete.
                     items:
@@ -398,6 +413,10 @@ components:
             type: object
         v1CompleteResponse:
             properties:
+                cacheWriteInputTokens:
+                    description: Number of input tokens written to the prompt cache, which some providers (e.g. Claude) bill at a premium.
+                    format: int64
+                    type: integer
                 cachedInputTokens:
                     description: Number of cache-read (discounted) input tokens; a subset of input_tokens.
                     format: int64
@@ -442,6 +461,8 @@ components:
             type: object
         v1ContentBlock:
             properties:
+                reasoning:
+                    $ref: '#/components/schemas/v1Reasoning'
                 text:
                     type: string
                 toolCall:
@@ -558,6 +579,17 @@ components:
         v1CreateWhitelistedDomainResponse:
             type: object
         v1DeleteAlertResponse:
+            type: object
+        v1DeleteConnectorOAuthTokenRequest:
+            properties:
+                configHash:
+                    type: string
+                connector:
+                    type: string
+                userId:
+                    type: string
+            type: object
+        v1DeleteConnectorOAuthTokenResponse:
             type: object
         v1DeleteDeploymentResponse:
             properties:
@@ -738,6 +770,32 @@ components:
                 gitSubpath:
                     type: string
                 gitUsername:
+                    type: string
+            type: object
+        v1GetConnectorOAuthTokenRequest:
+            properties:
+                configHash:
+                    description: |-
+                        Hash of the connector's current OAuth configuration, as computed by the runtime.
+                        A token is only returned if the user authorized this configuration, so changing it never reuses an existing authorization.
+                    type: string
+                connector:
+                    description: Name of the connector in the deployment's project.
+                    type: string
+                forceRefresh:
+                    description: If true, the token is refreshed even if it has not expired yet (used after the server rejected the current token).
+                    type: boolean
+                userId:
+                    description: ID of the user whose token to return.
+                    type: string
+            type: object
+        v1GetConnectorOAuthTokenResponse:
+            properties:
+                accessToken:
+                    type: string
+                expiresOn:
+                    description: When the access token expires. Unset if the token does not expire.
+                    format: date-time
                     type: string
             type: object
         v1GetCurrentMagicAuthTokenResponse:
@@ -1823,6 +1881,21 @@ components:
                 tokensPerSeat:
                     type: string
             type: object
+        v1Reasoning:
+            description: |-
+                The model's reasoning before its text or tool calls.
+                Some providers (e.g. Claude) require it to be passed back unmodified within a tool call loop.
+            properties:
+                redactedData:
+                    description: Opaque encrypted reasoning, set instead of text and signature when the provider redacts the reasoning.
+                    type: string
+                signature:
+                    description: Opaque provider signature that lets the provider verify the reasoning.
+                    type: string
+                text:
+                    description: Readable reasoning. Often empty, since providers may omit it or return a summary.
+                    type: string
+            type: object
         v1RecordEventsRequest:
             properties:
                 events:
@@ -1874,6 +1947,9 @@ components:
                 explore:
                     title: either canvas or explore should be set
                     type: string
+                exportAttach:
+                    description: If true, the export is attached to email notifications (only supported for explore reports run as the creator).
+                    type: boolean
                 exportFormat:
                     $ref: '#/components/schemas/v1ExportFormat'
                 exportIncludeHeader:
@@ -2610,6 +2686,60 @@ paths:
                                 $ref: '#/components/schemas/rpcStatus'
                     description: An unexpected error response.
             summary: ListPublicBillingPlans lists all public billing plans
+    /v1/deployments/-/connector-oauth-token:
+        post:
+            operationId: AdminService_GetConnectorOAuthToken
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/v1GetConnectorOAuthTokenRequest'
+                required: true
+                x-originalParamName: body
+            responses:
+                "200":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/v1GetConnectorOAuthTokenResponse'
+                    description: A successful response.
+                default:
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/rpcStatus'
+                    description: An unexpected error response.
+            summary: |-
+                GetConnectorOAuthToken returns a user's OAuth access token for a connector in the calling deployment's project,
+                refreshing it first if it is about to expire.
+                It returns NotFound if the user has not authorized the connector's current OAuth configuration.
+                It can only be called by deployments.
+    /v1/deployments/-/connector-oauth-token/delete:
+        post:
+            operationId: AdminService_DeleteConnectorOAuthToken
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/v1DeleteConnectorOAuthTokenRequest'
+                required: true
+                x-originalParamName: body
+            responses:
+                "200":
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/v1DeleteConnectorOAuthTokenResponse'
+                    description: A successful response.
+                default:
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/rpcStatus'
+                    description: An unexpected error response.
+            summary: |-
+                DeleteConnectorOAuthToken removes a user's OAuth authorization for a connector in the calling deployment's project.
+                It can only be called by deployments.
     /v1/deployments/{deploymentId}:
         delete:
             operationId: AdminService_DeleteDeployment
@@ -2840,6 +2970,9 @@ paths:
                 content:
                     application/json:
                         schema:
+                            properties:
+                                superuserForceAccess:
+                                    type: boolean
                             type: object
                 required: true
                 x-originalParamName: body
@@ -2870,6 +3003,9 @@ paths:
                 content:
                     application/json:
                         schema:
+                            properties:
+                                superuserForceAccess:
+                                    type: boolean
                             type: object
                 required: true
                 x-originalParamName: body
@@ -3131,8 +3267,6 @@ paths:
                                 billingEmail:
                                     type: string
                                 defaultProjectRole:
-                                    type: string
-                                defaultProvisioner:
                                     type: string
                                 description:
                                     type: string
@@ -3825,6 +3959,7 @@ paths:
                                 project:
                                     type: string
                                 provisioner:
+                                    description: Provisioner to use for the project's deployments. Superuser-only; empty means the org's default provisioner (or the global default) is used.
                                     type: string
                                 public:
                                     type: boolean
@@ -4021,6 +4156,9 @@ paths:
                                 prodVersion:
                                     type: string
                                 provisioner:
+                                    description: |-
+                                        Provisioner to use for the project's deployments. Superuser-only; empty unsets it so the org's default provisioner (or the global default) is used.
+                                        Running deployments keep their current provisioner; the change is applied to each deployment the next time it is started (stopped deployments are moved to the new provisioner, keeping their IDs).
                                     type: string
                                 public:
                                     type: boolean
@@ -4437,6 +4575,10 @@ paths:
                   name: userId
                   schema:
                     type: string
+                - in: query
+                  name: superuserForceAccess
+                  schema:
+                    type: boolean
             responses:
                 "200":
                     content:
@@ -7611,7 +7753,7 @@ paths:
                     description: An unexpected error response.
             summary: |-
                 SudoUpdateOrganizationDefaultProvisioner sets the provisioner used by default for an organization's deployments.
-                It only affects deployments provisioned after the change; existing deployments stay on their current provisioner.
+                Running deployments keep their current provisioner; the change is applied to each deployment the next time it is started (stopped deployments are moved to the new provisioner, keeping their IDs).
     /v1/superuser/organization/trial/extend:
         post:
             operationId: AdminService_SudoExtendTrial

@@ -1,5 +1,6 @@
 import { useExploreFiltersVariant } from "@rilldata/web-common/features/dashboards/filters/test/explore-filters-variant";
 import {
+  testAdvancedFilters,
   testDimensionFilters,
   testMeasureFilters,
   testUrlLengthLimit,
@@ -75,4 +76,5 @@ describe("ExploreExpressionFilters", () => {
   testUrlLengthLimit(variant);
   testMeasureFilters(variant);
   testURLNavigationFlows(variant);
+  testAdvancedFilters(variant);
 });

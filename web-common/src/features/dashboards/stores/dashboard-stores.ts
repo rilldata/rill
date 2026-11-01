@@ -34,17 +34,41 @@ import {
   type PivotChipData,
   type PivotMeasureFormatting,
   type PivotTableMode,
+  type PivotTotalsRowPosition,
 } from "../pivot/types";
 import { parseMeasureExpression } from "../ephemeral-measures/expression-parser";
 import type { EphemeralMeasureDef } from "../ephemeral-measures/types";
+import { getQueryContextKey } from "../exact-measures/query-context-key";
 import type { ExpressionFilterManager } from "@rilldata/web-common/features/dashboards/filters/ExpressionFilterManager.svelte.ts";
 
 export interface MetricsExplorerStoreType {
   entities: Record<string, ExploreState>;
 }
-const { update, subscribe } = writable({
+const { update: rawUpdate, subscribe } = writable({
   entities: {},
 } as MetricsExplorerStoreType);
+
+/**
+ * Every mutation of the store runs through this wrapper, so the exact-measure
+ * selection of a dashboard resets as soon as its query context changes
+ * (filters, time controls, view, sorting); see `getQueryContextKey`. Doing it
+ * here covers reducers, URL sync and navigation alike, and costs nothing while
+ * no measure is selected.
+ */
+const update: typeof rawUpdate = (updater) =>
+  rawUpdate((state) => {
+    const next = updater(state);
+    for (const exploreState of Object.values(next.entities)) {
+      if (
+        exploreState.exactMeasures &&
+        exploreState.exactMeasures.contextKey !==
+          getQueryContextKey(exploreState)
+      ) {
+        delete exploreState.exactMeasures;
+      }
+    }
+    return next;
+  });
 
 export const updateMetricsExplorerByName = (
   name: string,
@@ -240,7 +264,7 @@ const metricsViewReducers = {
   mergePartialExplorerEntity(
     name: string,
     partialExploreState: Partial<ExploreState>,
-    expressionFilterManager: ExpressionFilterManager,
+    expressionFilterManager?: ExpressionFilterManager,
   ) {
     partialExploreState = structuredClone(partialExploreState);
 
@@ -249,14 +273,16 @@ const metricsViewReducers = {
         exploreState[key] = partialExploreState[key];
       }
 
-      const mvName =
-        expressionFilterManager.metricsViewsProvider.metricsViewNames[0];
-      if (mvName) {
-        exploreState.whereFilter =
-          expressionFilterManager.topLevelJoiner.expr[mvName] ??
-          createAndExpression([]);
-        exploreState.dimensionsWithInlistFilter =
-          expressionFilterManager.inList;
+      if (expressionFilterManager) {
+        const mvName =
+          expressionFilterManager.metricsViewsProvider.metricsViewNames[0];
+        if (mvName) {
+          exploreState.whereFilter =
+            expressionFilterManager.topLevelJoiner.expr[mvName] ??
+            createAndExpression([]);
+          exploreState.dimensionsWithInlistFilter =
+            expressionFilterManager.inList;
+        }
       }
 
       // this hack is needed since what is shown for comparison is not a single source
@@ -605,10 +631,22 @@ const metricsViewReducers = {
 
   setTimeGrain(name: string, timeGrain: V1TimeGrain) {
     updateMetricsExplorerByName(name, (exploreState) => {
+      exploreState.adaptiveTimeGrain = false;
       exploreState.selectedTimeRange = {
         ...(exploreState.selectedTimeRange as DashboardTimeControls),
         interval: timeGrain,
       };
+    });
+  },
+
+  /**
+   * Switches the time grain to adaptive mode: the grain follows the selected time range
+   * until the user fixes one again with `setTimeGrain`.
+   */
+  setAdaptiveTimeGrain(name: string, metricsViewSpec: V1MetricsViewSpec) {
+    updateMetricsExplorerByName(name, (exploreState) => {
+      exploreState.adaptiveTimeGrain = true;
+      correctExploreState(metricsViewSpec, exploreState);
     });
   },
 
@@ -665,6 +703,17 @@ const metricsViewReducers = {
         expanded: {},
         activeCell: null,
         rowPage: 1,
+      };
+    });
+  },
+
+  // Presentation-only: the totals row keeps the same data and row id, so no
+  // expansion, paging or query state needs to reset.
+  setPivotTotalsRowPosition(name: string, position: PivotTotalsRowPosition) {
+    updateMetricsExplorerByName(name, (exploreState) => {
+      exploreState.pivot = {
+        ...exploreState.pivot,
+        totalsRowPosition: position,
       };
     });
   },

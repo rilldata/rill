@@ -10,11 +10,13 @@ import (
 
 	"github.com/google/uuid"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
+	"github.com/rilldata/rill/runtime/canvas"
 	"github.com/rilldata/rill/runtime/metricsview"
 	"github.com/rilldata/rill/runtime/metricsview/metricssql"
 	"github.com/rilldata/rill/runtime/pkg/rilltime"
 	"github.com/rilldata/rill/runtime/pkg/urlutils"
 	"golang.org/x/exp/maps"
+	"google.golang.org/protobuf/types/known/structpb"
 	"gopkg.in/yaml.v3"
 )
 
@@ -45,6 +47,7 @@ type CanvasYAML struct {
 	Rows        []*canvasRowYAML         `yaml:"rows"`
 	Security    *SecurityPolicyYAML      `yaml:"security"`
 	Annotations map[string]string        `yaml:"annotations"`
+	AIPrompts   []AIPromptYAML           `yaml:"ai_prompts"`
 }
 
 // canvasRowYAML is a single entry in a canvas's (or tab's) rows list.
@@ -56,6 +59,8 @@ type canvasRowYAML struct {
 	Name string `yaml:"name"`
 	// Tabs, when set, makes this entry a tab group instead of a plain row.
 	Tabs []*canvasTabYAML `yaml:"tabs"`
+	// If is a templated condition; the row (or tab group) is only shown to viewers for whom it's true.
+	If string `yaml:"if"`
 }
 
 // canvasTabYAML is a single tab within a tab group. `label` is the display name shown on the
@@ -64,13 +69,18 @@ type canvasTabYAML struct {
 	Name  string           `yaml:"name"`
 	Label string           `yaml:"label"`
 	Rows  []*canvasRowYAML `yaml:"rows"`
+	// If is a templated condition; the tab is only shown to viewers for whom it's true.
+	If string `yaml:"if"`
 }
 
 // canvasItemYAML is a single item within a row.
 type canvasItemYAML struct {
-	Width           *string              `yaml:"width"`
-	Component       string               `yaml:"component"` // Name of an externally defined component
-	InlineComponent map[string]yaml.Node `yaml:",inline"`   // Any other properties are considered an inline component definition
+	Width     *string        `yaml:"width"`
+	Component string         `yaml:"component"` // Name of an externally defined component
+	Params    map[string]any `yaml:"params"`    // Values bound to the referenced component's declared params
+	// If is a templated condition; the item is only shown to viewers for whom it's true.
+	If              string               `yaml:"if"`
+	InlineComponent map[string]yaml.Node `yaml:",inline"` // Any other properties are considered an inline component definition
 }
 
 func (p *Parser) parseCanvas(node *Node) error {
@@ -157,7 +167,7 @@ func (p *Parser) parseCanvas(node *Node) error {
 	// Parse rows and items.
 	// Each row entry is either a plain row (items) or a tab group (tabs); tab groups are only allowed at the top level.
 	var inlineComponentDefs []*componentDef // Track inline component definitions so we can insert them after we have validated all components
-	rows, err := p.parseCanvasRows(node, tmp.Rows, true, "", &inlineComponentDefs)
+	rows, err := p.parseCanvasRows(node, tmp.Rows, true, "", nil, &inlineComponentDefs)
 	if err != nil {
 		return err
 	}
@@ -208,6 +218,12 @@ func (p *Parser) parseCanvas(node *Node) error {
 		}
 	}
 
+	// Validate the configured AI prompts
+	aiPrompts, err := parseAIPrompts(tmp.AIPrompts)
+	if err != nil {
+		return err
+	}
+
 	// Track canvas
 	r, err := p.insertResource(ResourceKindCanvas, node.Name, node.Paths, node.Tags, node.Metadata, node.Refs...)
 	if err != nil {
@@ -239,6 +255,7 @@ func (p *Parser) parseCanvas(node *Node) error {
 	r.CanvasSpec.PinnedFilters = tmp.Filters.Pinned
 	r.CanvasSpec.RequiredFilters = tmp.Filters.Required
 	r.CanvasSpec.Annotations = tmp.Annotations
+	r.CanvasSpec.AiPrompts = aiPrompts
 
 	// Track inline components
 	for _, def := range inlineComponentDefs {
@@ -258,7 +275,8 @@ func (p *Parser) parseCanvas(node *Node) error {
 // parseCanvasRows parses a list of canvas row entries. Each entry is either a plain row (items)
 // or a tab group (tabs). Tab groups are only allowed when allowTabs is true (the top level);
 // a tab's own rows are always plain. posPrefix disambiguates inline component names across tabs.
-func (p *Parser) parseCanvasRows(node *Node, rows []*canvasRowYAML, allowTabs bool, posPrefix string, inlineComponentDefs *[]*componentDef) ([]*runtimev1.CanvasRow, error) {
+// conditions are the `if` conditions of the enclosing tab group and tab, which inline components inherit.
+func (p *Parser) parseCanvasRows(node *Node, rows []*canvasRowYAML, allowTabs bool, posPrefix string, conditions []string, inlineComponentDefs *[]*componentDef) ([]*runtimev1.CanvasRow, error) {
 	var out []*runtimev1.CanvasRow
 	// seenGroupNames tracks tab group names so each group has a unique URL key. Only populated at the top level.
 	seenGroupNames := make(map[string]bool)
@@ -266,6 +284,12 @@ func (p *Parser) parseCanvasRows(node *Node, rows []*canvasRowYAML, allowTabs bo
 		if row == nil {
 			return nil, fmt.Errorf("row at index %d is empty", i)
 		}
+
+		rowCondition, err := parseCondition(row.If)
+		if err != nil {
+			return nil, fmt.Errorf("invalid 'if' for row %d: %w", i, err)
+		}
+		rowConditions := appendCondition(conditions, rowCondition)
 
 		// Dispatch on whether this entry is a tab group. Presence of the `tabs:` key (even if empty)
 		// marks an entry as a group, so an empty `tabs: []` is rejected rather than silently treated as a row.
@@ -276,11 +300,11 @@ func (p *Parser) parseCanvasRows(node *Node, rows []*canvasRowYAML, allowTabs bo
 			if !allowTabs {
 				return nil, fmt.Errorf("tab groups cannot be nested inside a tab (row %d)", i)
 			}
-			group, err := p.parseCanvasTabGroup(node, row, i, posPrefix, seenGroupNames, inlineComponentDefs)
+			group, err := p.parseCanvasTabGroup(node, row, i, posPrefix, rowConditions, seenGroupNames, inlineComponentDefs)
 			if err != nil {
 				return nil, err
 			}
-			out = append(out, &runtimev1.CanvasRow{TabGroup: group})
+			out = append(out, &runtimev1.CanvasRow{TabGroup: group, ConditionExpression: rowCondition})
 			continue
 		}
 
@@ -318,12 +342,44 @@ func (p *Parser) parseCanvasRows(node *Node, rows []*canvasRowYAML, allowTabs bo
 				widthUnit = u
 			}
 
+			itemCondition, err := parseCondition(item.If)
+			if err != nil {
+				return nil, fmt.Errorf("invalid 'if' for item %d in row %d: %w", j, i, err)
+			}
+
 			// Validate that exactly one of Component and InlineComponent are set
 			if item.Component == "" && len(item.InlineComponent) == 0 {
 				return nil, fmt.Errorf("item %d in row %d is missing a component definition", j, i)
 			}
 			if item.Component != "" && len(item.InlineComponent) > 0 {
 				return nil, fmt.Errorf("item %d in row %d has properties incompatible with 'component'", j, i)
+			}
+
+			// Validate and convert param bindings. Bindings are only valid for items that reference
+			// an externally defined component; inline components can hardcode values directly.
+			var params *structpb.Struct
+			if len(item.Params) > 0 {
+				if len(item.InlineComponent) > 0 {
+					return nil, fmt.Errorf("item %d in row %d cannot pass 'params' to an inline component", j, i)
+				}
+				for k, v := range item.Params {
+					if !componentParamNameRegex.MatchString(k) {
+						return nil, fmt.Errorf("invalid param name %q for item %d in row %d", k, j, i)
+					}
+					switch v.(type) {
+					case string, bool, int, int32, int64, uint, uint32, uint64, float32, float64:
+					default:
+						return nil, fmt.Errorf("invalid value for param %q for item %d in row %d: only scalar values are supported", k, j, i)
+					}
+				}
+				for _, name := range canvas.MetricsViewNamesFromBindings(item.Params) {
+					node.Refs = append(node.Refs, ResourceName{Kind: ResourceKindMetricsView, Name: name})
+				}
+				var err error
+				params, err = structpb.NewStruct(item.Params)
+				if err != nil {
+					return nil, fmt.Errorf("invalid params for item %d in row %d: %w", j, i, err)
+				}
 			}
 
 			// Parse inline component definition if present and assign into item.Component
@@ -334,25 +390,31 @@ func (p *Parser) parseCanvasRows(node *Node, rows []*canvasRowYAML, allowTabs bo
 					return nil, fmt.Errorf("invalid component for item %d in row %d: %w", j, i, err)
 				}
 
+				// The component inherits the conditions of the item and its ancestors, so it can't be read by viewers who can't see it.
+				def.spec.ConditionExpression = combineConditions(appendCondition(rowConditions, itemCondition))
+
 				item.Component = name
 				*inlineComponentDefs = append(*inlineComponentDefs, def)
 				definedInCanvs = true
 			}
 
 			items = append(items, &runtimev1.CanvasItem{
-				Component:       item.Component,
-				DefinedInCanvas: definedInCanvs,
-				Width:           width,
-				WidthUnit:       widthUnit,
+				Component:           item.Component,
+				DefinedInCanvas:     definedInCanvs,
+				Params:              params,
+				Width:               width,
+				WidthUnit:           widthUnit,
+				ConditionExpression: itemCondition,
 			})
 
 			node.Refs = append(node.Refs, ResourceName{Kind: ResourceKindComponent, Name: item.Component})
 		}
 
 		out = append(out, &runtimev1.CanvasRow{
-			Height:     height,
-			HeightUnit: heightUnit,
-			Items:      items,
+			Height:              height,
+			HeightUnit:          heightUnit,
+			Items:               items,
+			ConditionExpression: rowCondition,
 		})
 	}
 
@@ -360,7 +422,8 @@ func (p *Parser) parseCanvasRows(node *Node, rows []*canvasRowYAML, allowTabs bo
 }
 
 // parseCanvasTabGroup parses a single tab group entry (a row with tabs).
-func (p *Parser) parseCanvasTabGroup(node *Node, row *canvasRowYAML, rowIdx int, posPrefix string, seenGroupNames map[string]bool, inlineComponentDefs *[]*componentDef) (*runtimev1.CanvasTabGroup, error) {
+// conditions are the `if` conditions of the group and its ancestors, which inline components inherit.
+func (p *Parser) parseCanvasTabGroup(node *Node, row *canvasRowYAML, rowIdx int, posPrefix string, conditions []string, seenGroupNames map[string]bool, inlineComponentDefs *[]*componentDef) (*runtimev1.CanvasTabGroup, error) {
 	if len(row.Tabs) == 0 {
 		return nil, fmt.Errorf("tab group at row %d must have at least one tab", rowIdx)
 	}
@@ -394,15 +457,21 @@ func (p *Parser) parseCanvasTabGroup(node *Node, row *canvasRowYAML, rowIdx int,
 		tabName := uniqueName(target, fmt.Sprintf("tab-%d", t), seenNames)
 		seenNames[tabName] = true
 
-		tabRows, err := p.parseCanvasRows(node, tab.Rows, false, fmt.Sprintf("%sg%d-t%d-", posPrefix, rowIdx, t), inlineComponentDefs)
+		tabCondition, err := parseCondition(tab.If)
+		if err != nil {
+			return nil, fmt.Errorf("invalid 'if' for tab %q in tab group at row %d: %w", tab.Label, rowIdx, err)
+		}
+
+		tabRows, err := p.parseCanvasRows(node, tab.Rows, false, fmt.Sprintf("%sg%d-t%d-", posPrefix, rowIdx, t), appendCondition(conditions, tabCondition), inlineComponentDefs)
 		if err != nil {
 			return nil, fmt.Errorf("invalid tab %q in tab group at row %d: %w", tab.Label, rowIdx, err)
 		}
 
 		tabs = append(tabs, &runtimev1.CanvasTab{
-			Name:        tabName,
-			DisplayName: tab.Label,
-			Rows:        tabRows,
+			Name:                tabName,
+			DisplayName:         tab.Label,
+			Rows:                tabRows,
+			ConditionExpression: tabCondition,
 		})
 	}
 
@@ -429,6 +498,50 @@ func uniqueName(name, fallback string, seen map[string]bool) string {
 	}
 }
 
+// parseCondition validates the `if` condition of a canvas row, tab or item and returns it trimmed.
+// The condition uses the same templating and expression syntax as a security policy's `access`.
+// Conditions that reference custom user attributes can't be evaluated without a real user,
+// so for those only the template syntax is checked.
+func parseCondition(condition string) (string, error) {
+	condition = strings.TrimSpace(condition)
+	if condition == "" {
+		return "", nil
+	}
+	resolved, err := ResolveTemplate(condition, validationTemplateData, false)
+	if err != nil {
+		return "", fmt.Errorf("templating is not valid: %w", err)
+	}
+	if strings.Contains(resolved, "<no value>") {
+		return condition, nil
+	}
+	if _, err := EvaluateBoolExpression(resolved); err != nil {
+		return "", fmt.Errorf("expression error: %w", err)
+	}
+	return condition, nil
+}
+
+// appendCondition returns conditions with condition appended, without modifying the provided slice.
+func appendCondition(conditions []string, condition string) []string {
+	if condition == "" {
+		return conditions
+	}
+	res := make([]string, 0, len(conditions)+1)
+	res = append(res, conditions...)
+	return append(res, condition)
+}
+
+// combineConditions combines templated boolean conditions with AND.
+func combineConditions(conditions []string) string {
+	switch len(conditions) {
+	case 0:
+		return ""
+	case 1:
+		return conditions[0]
+	default:
+		return "(" + strings.Join(conditions, ") AND (") + ")"
+	}
+}
+
 // parseCanvasInlineComponent parses an inline component definition in a canvas item.
 // posKey uniquely identifies the item's position in the canvas (including any tab path).
 func (p *Parser) parseCanvasInlineComponent(canvasName, posKey string, props map[string]yaml.Node) (string, *componentDef, error) {
@@ -444,9 +557,14 @@ func (p *Parser) parseCanvasInlineComponent(canvasName, posKey string, props map
 		return "", nil, err
 	}
 
-	spec, refs, err := p.parseComponentYAML(tmp)
+	spec, refs, err := p.parseComponentYAML(tmp, true)
 	if err != nil {
 		return "", nil, err
+	}
+
+	// Param declarations only make sense on externally defined components, where canvas items can bind values to them.
+	if len(spec.Params) > 0 {
+		return "", nil, errors.New("inline components cannot declare params")
 	}
 
 	spec.DefinedInCanvas = true

@@ -333,6 +333,26 @@ service AdminService {
     option (google.api.http) = {get: "/v1/deployments/{deployment_id}/config"};
   }
 
+  // GetConnectorOAuthToken returns a user's OAuth access token for a connector in the calling deployment's project,
+  // refreshing it first if it is about to expire.
+  // It returns NotFound if the user has not authorized the connector's current OAuth configuration.
+  // It can only be called by deployments.
+  rpc GetConnectorOAuthToken(GetConnectorOAuthTokenRequest) returns (GetConnectorOAuthTokenResponse) {
+    option (google.api.http) = {
+      post: "/v1/deployments/-/connector-oauth-token",
+      body: "*"
+    };
+  }
+
+  // DeleteConnectorOAuthToken removes a user's OAuth authorization for a connector in the calling deployment's project.
+  // It can only be called by deployments.
+  rpc DeleteConnectorOAuthToken(DeleteConnectorOAuthTokenRequest) returns (DeleteConnectorOAuthTokenResponse) {
+    option (google.api.http) = {
+      post: "/v1/deployments/-/connector-oauth-token/delete",
+      body: "*"
+    };
+  }
+
   // ListRoles lists all the roles available for orgs and projects.
   rpc ListRoles(ListRolesRequest) returns (ListRolesResponse) {
     option (google.api.http) = {get: "/v1/roles"};
@@ -947,7 +967,7 @@ service AdminService {
   }
 
   // SudoUpdateOrganizationDefaultProvisioner sets the provisioner used by default for an organization's deployments.
-  // It only affects deployments provisioned after the change; existing deployments stay on their current provisioner.
+  // Running deployments keep their current provisioner; the change is applied to each deployment the next time it is started (stopped deployments are moved to the new provisioner, keeping their IDs).
   rpc SudoUpdateOrganizationDefaultProvisioner(SudoUpdateOrganizationDefaultProvisionerRequest) returns (SudoUpdateOrganizationDefaultProvisionerResponse) {
     option (google.api.http) = {
       patch: "/v1/superuser/organization/default-provisioner",
@@ -1463,8 +1483,9 @@ message UpdateOrganizationRequest {
   optional string favicon_asset_id = 7;
   optional string thumbnail_asset_id = 9;
   optional string default_project_role = 8;
-  optional string default_provisioner = 10;
   optional string billing_email = 4 [(validate.rules).string.email = true];
+  // Reserved for backwards compatibility (default_provisioner, which is now only settable via SudoUpdateOrganizationDefaultProvisioner)
+  reserved 10;
 }
 
 message UpdateOrganizationResponse {
@@ -1483,6 +1504,7 @@ message ListDeploymentsRequest {
   string environment = 3;
   string branch = 5;
   string user_id = 4;
+  bool superuser_force_access = 6;
 }
 
 message ListDeploymentsResponse {
@@ -1536,6 +1558,7 @@ message GetDeploymentResponse {
 
 message StartDeploymentRequest {
   string deployment_id = 1;
+  bool superuser_force_access = 2;
 }
 
 message StartDeploymentResponse {
@@ -1544,6 +1567,7 @@ message StartDeploymentResponse {
 
 message StopDeploymentRequest {
   string deployment_id = 1;
+  bool superuser_force_access = 2;
 }
 
 message StopDeploymentResponse {
@@ -1897,6 +1921,7 @@ message CreateProjectRequest {
   // directory_name should be the most recently observed local directory name for the project.
   // See ListProjectsForFingerprint for more context.
   string directory_name = 16;
+  // Provisioner to use for the project's deployments. Superuser-only; empty means the org's default provisioner (or the global default) is used.
   string provisioner = 5;
   int64 prod_slots = 8;
   string subpath = 12;
@@ -1938,6 +1963,8 @@ message UpdateProjectRequest {
   optional string subpath = 13;
   optional string archive_asset_id = 12;
   optional int64 prod_slots = 7;
+  // Provisioner to use for the project's deployments. Superuser-only; empty unsets it so the org's default provisioner (or the global default) is used.
+  // Running deployments keep their current provisioner; the change is applied to each deployment the next time it is started (stopped deployments are moved to the new provisioner, keeping their IDs).
   optional string provisioner = 8;
   optional string new_name = 9;
   optional int64 prod_ttl_seconds = 10;
@@ -2047,6 +2074,32 @@ message GetDeploymentConfigResponse {
   // System variables set by the admin service that should not be overridden by user input.
   map<string, string> system_variables = 9;
 }
+
+message GetConnectorOAuthTokenRequest {
+  // Name of the connector in the deployment's project.
+  string connector = 1 [(validate.rules).string.min_len = 1];
+  // Hash of the connector's current OAuth configuration, as computed by the runtime.
+  // A token is only returned if the user authorized this configuration, so changing it never reuses an existing authorization.
+  string config_hash = 2 [(validate.rules).string.min_len = 1];
+  // ID of the user whose token to return.
+  string user_id = 3 [(validate.rules).string.min_len = 1];
+  // If true, the token is refreshed even if it has not expired yet (used after the server rejected the current token).
+  bool force_refresh = 4;
+}
+
+message GetConnectorOAuthTokenResponse {
+  string access_token = 1;
+  // When the access token expires. Unset if the token does not expire.
+  google.protobuf.Timestamp expires_on = 2;
+}
+
+message DeleteConnectorOAuthTokenRequest {
+  string connector = 1 [(validate.rules).string.min_len = 1];
+  string config_hash = 2 [(validate.rules).string.min_len = 1];
+  string user_id = 3 [(validate.rules).string.min_len = 1];
+}
+
+message DeleteConnectorOAuthTokenResponse {}
 
 message ListRolesRequest {}
 
@@ -3775,6 +3828,7 @@ message ReportOptions {
   uint64 export_limit = 5;
   rill.runtime.v1.ExportFormat export_format = 6;
   bool export_include_header = 20;
+  bool export_attach = 24; // If true, the export is attached to email notifications (only supported for explore reports run as the creator).
   repeated string email_recipients = 8;
   repeated string slack_users = 10;
   repeated string slack_channels = 11;
@@ -3806,6 +3860,10 @@ message AlertOptions {
   string query_name = 3;
   // DEPRECATED: Use resolver and resolver_properties instead.
   string query_args_json = 4;
+  bool export_attach = 18; // If true, the query's result is exported and attached to email notifications for failed checks (only supported for query-based alerts).
+  rill.runtime.v1.ExportFormat export_format = 19;
+  bool export_include_header = 20;
+  uint64 export_limit = 21;
   string metrics_view_name = 5;
   bool renotify = 6;
   uint32 renotify_after_seconds = 7;

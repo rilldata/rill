@@ -124,6 +124,11 @@ export interface V1AlertOptions {
   queryName?: string;
   /** DEPRECATED: Use resolver and resolver_properties instead. */
   queryArgsJson?: string;
+  /** If true, the query's result is exported and attached to email notifications for failed checks (only supported for query-based alerts). */
+  exportAttach?: boolean;
+  exportFormat?: V1ExportFormat;
+  exportIncludeHeader?: boolean;
+  exportLimit?: string;
   metricsViewName?: string;
   renotify?: boolean;
   renotifyAfterSeconds?: number;
@@ -305,6 +310,9 @@ export interface V1CompleteRequest {
   messages?: V1CompletionMessage[];
   tools?: V1Tool[];
   outputJsonSchema?: string;
+  /** Whether the response may include reasoning blocks.
+Older clients don't support them, so they are removed from the response unless this is set. */
+  includeReasoning?: boolean;
 }
 
 export interface V1CompleteResponse {
@@ -315,6 +323,8 @@ export interface V1CompleteResponse {
   outputTokens?: number;
   /** Number of cache-read (discounted) input tokens; a subset of input_tokens. */
   cachedInputTokens?: number;
+  /** Number of input tokens written to the prompt cache, which some providers (e.g. Claude) bill at a premium. */
+  cacheWriteInputTokens?: number;
   /** The LLM provider that served the completion (e.g. "claude", "openai", "gemini"). */
   provider?: string;
 }
@@ -338,6 +348,7 @@ export interface V1ContentBlock {
   text?: string;
   toolCall?: V1ToolCall;
   toolResult?: V1ToolResult;
+  reasoning?: V1Reasoning;
 }
 
 export interface V1CreateAlertResponse {
@@ -422,6 +433,16 @@ export interface V1CreateWhitelistedDomainResponse {
 }
 
 export interface V1DeleteAlertResponse {
+  [key: string]: unknown;
+}
+
+export interface V1DeleteConnectorOAuthTokenRequest {
+  connector?: string;
+  configHash?: string;
+  userId?: string;
+}
+
+export interface V1DeleteConnectorOAuthTokenResponse {
   [key: string]: unknown;
 }
 
@@ -587,6 +608,24 @@ export interface V1GetCloneCredentialsResponse {
   gitPrimaryBranch?: string;
   gitManagedRepo?: boolean;
   archiveDownloadUrl?: string;
+}
+
+export interface V1GetConnectorOAuthTokenRequest {
+  /** Name of the connector in the deployment's project. */
+  connector?: string;
+  /** Hash of the connector's current OAuth configuration, as computed by the runtime.
+A token is only returned if the user authorized this configuration, so changing it never reuses an existing authorization. */
+  configHash?: string;
+  /** ID of the user whose token to return. */
+  userId?: string;
+  /** If true, the token is refreshed even if it has not expired yet (used after the server rejected the current token). */
+  forceRefresh?: boolean;
+}
+
+export interface V1GetConnectorOAuthTokenResponse {
+  accessToken?: string;
+  /** When the access token expires. Unset if the token does not expire. */
+  expiresOn?: string;
 }
 
 export interface V1GetCurrentMagicAuthTokenResponse {
@@ -1271,6 +1310,19 @@ export interface V1Quotas {
   tokensPerSeat?: string;
 }
 
+/**
+ * The model's reasoning before its text or tool calls.
+Some providers (e.g. Claude) require it to be passed back unmodified within a tool call loop.
+ */
+export interface V1Reasoning {
+  /** Readable reasoning. Often empty, since providers may omit it or return a summary. */
+  text?: string;
+  /** Opaque provider signature that lets the provider verify the reasoning. */
+  signature?: string;
+  /** Opaque encrypted reasoning, set instead of text and signature when the provider redacts the reasoning. */
+  redactedData?: string;
+}
+
 export type V1RecordEventsRequestEventsItem = { [key: string]: unknown };
 
 export interface V1RecordEventsRequest {
@@ -1350,6 +1402,8 @@ export interface V1ReportOptions {
   exportLimit?: string;
   exportFormat?: V1ExportFormat;
   exportIncludeHeader?: boolean;
+  /** If true, the export is attached to email notifications (only supported for explore reports run as the creator). */
+  exportAttach?: boolean;
   emailRecipients?: string[];
   slackUsers?: string[];
   slackChannels?: string[];
@@ -1819,6 +1873,10 @@ export type AdminServiceUpdateBillingSubscriptionBodyBody = {
 
 export type AdminServiceTriggerReconcileBodyBody = { [key: string]: unknown };
 
+export type AdminServiceStartDeploymentBodyBody = {
+  superuserForceAccess?: boolean;
+};
+
 export type AdminServiceRequestProjectAccessBodyBody = {
   role?: string;
 };
@@ -1911,7 +1969,6 @@ export type AdminServiceUpdateOrganizationBody = {
   faviconAssetId?: string;
   thumbnailAssetId?: string;
   defaultProjectRole?: string;
-  defaultProvisioner?: string;
   billingEmail?: string;
 };
 
@@ -2024,6 +2081,7 @@ export type AdminServiceCreateProjectBody = {
   /** directory_name should be the most recently observed local directory name for the project.
 See ListProjectsForFingerprint for more context. */
   directoryName?: string;
+  /** Provisioner to use for the project's deployments. Superuser-only; empty means the org's default provisioner (or the global default) is used. */
   provisioner?: string;
   prodSlots?: string;
   subpath?: string;
@@ -2072,6 +2130,8 @@ export type AdminServiceUpdateProjectBody = {
   subpath?: string;
   archiveAssetId?: string;
   prodSlots?: string;
+  /** Provisioner to use for the project's deployments. Superuser-only; empty unsets it so the org's default provisioner (or the global default) is used.
+Running deployments keep their current provisioner; the change is applied to each deployment the next time it is started (stopped deployments are moved to the new provisioner, keeping their IDs). */
   provisioner?: string;
   newName?: string;
   prodTtlSeconds?: string;
@@ -2119,6 +2179,7 @@ export type AdminServiceListDeploymentsParams = {
   environment?: string;
   branch?: string;
   userId?: string;
+  superuserForceAccess?: boolean;
 };
 
 export type AdminServiceCreateDeploymentBody = {

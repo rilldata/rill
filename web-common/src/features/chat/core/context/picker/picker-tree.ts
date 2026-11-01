@@ -8,6 +8,8 @@ export type PickerItem = {
   currentlyActive?: boolean;
   childrenLoading?: boolean;
   hasChildren?: boolean;
+  // Display only, shown below the label. Not part of the context so that it is not written to the prompt.
+  description?: string;
 };
 
 export type PickerTreeNode = {

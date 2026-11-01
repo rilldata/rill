@@ -18,7 +18,7 @@ func TestBuiltinSQL(t *testing.T) {
 		},
 	})
 
-	api, err := rt.APIForName(ctx, instanceID, "sql")
+	api, err := rt.APIForName(ctx, instanceID, "sql", &runtime.SecurityClaims{})
 	require.NoError(t, err)
 
 	tt := []struct {

@@ -233,6 +233,17 @@ service RuntimeService {
     option (google.api.http) = {get: "/v1/instances/{instance_id}/connectors/analyze"};
   }
 
+  // GetConnectorOAuthConfig returns the OAuth configuration of a connector that authorizes users with OAuth,
+  // after checking that the given user may use the connector.
+  // It is called by the admin service before it starts an authorization flow; it requires the ManageInstances permission
+  // because the response contains secrets.
+  rpc GetConnectorOAuthConfig(GetConnectorOAuthConfigRequest) returns (GetConnectorOAuthConfigResponse) {
+    option (google.api.http) = {
+      post: "/v1/instances/{instance_id}/connectors/{connector}/oauth-config",
+      body: "*"
+    };
+  }
+
   // ListNotifierConnectors returns the names of all configured connectors that can be used as notifiers.
   // This API is much faster than AnalyzeConnectors and can be called without admin-level permissions.
   rpc ListNotifierConnectors(ListNotifierConnectorsRequest) returns (ListNotifierConnectorsResponse) {
@@ -249,6 +260,19 @@ service RuntimeService {
   // GetConversation returns a specific AI chat conversation.
   rpc GetConversation(GetConversationRequest) returns (GetConversationResponse) {
     option (google.api.http) = {get: "/v1/instances/{instance_id}/ai/conversations/{conversation_id}"};
+  }
+
+  // UpdateConversation updates a conversation's metadata. Only the owner can update a conversation.
+  rpc UpdateConversation(UpdateConversationRequest) returns (UpdateConversationResponse) {
+    option (google.api.http) = {
+      patch: "/v1/instances/{instance_id}/ai/conversations/{conversation_id}",
+      body: "*"
+    };
+  }
+
+  // DeleteConversation deletes a conversation and its messages. Only the owner can delete a conversation.
+  rpc DeleteConversation(DeleteConversationRequest) returns (DeleteConversationResponse) {
+    option (google.api.http) = {delete: "/v1/instances/{instance_id}/ai/conversations/{conversation_id}"};
   }
 
   // ShareConversation enables sharing of the conversation by adding metadata.
@@ -294,6 +318,60 @@ service RuntimeService {
   rpc GetAIMessage(GetAIMessageRequest) returns (GetAIMessageResponse) {
     option (google.api.http) = {
       get: "/v1/instances/{instance_id}/ai/conversations/{conversation_id}/messages/{message_id}"
+    };
+  }
+
+  // ListAIMemories lists the current user's AI memories for an instance.
+  // Memories are short preferences and facts the AI has learned about the user and uses in later conversations.
+  rpc ListAIMemories(ListAIMemoriesRequest) returns (ListAIMemoriesResponse) {
+    option (google.api.http) = {get: "/v1/instances/{instance_id}/ai/memories"};
+  }
+
+  // CreateAIMemory creates an AI memory for the current user.
+  rpc CreateAIMemory(CreateAIMemoryRequest) returns (CreateAIMemoryResponse) {
+    option (google.api.http) = {
+      post: "/v1/instances/{instance_id}/ai/memories",
+      body: "*"
+    };
+  }
+
+  // UpdateAIMemory updates the content and agent of one of the current user's AI memories.
+  rpc UpdateAIMemory(UpdateAIMemoryRequest) returns (UpdateAIMemoryResponse) {
+    option (google.api.http) = {
+      put: "/v1/instances/{instance_id}/ai/memories/{memory_id}",
+      body: "*"
+    };
+  }
+
+  // DeleteAIMemory permanently deletes one of the current user's AI memories.
+  rpc DeleteAIMemory(DeleteAIMemoryRequest) returns (DeleteAIMemoryResponse) {
+    option (google.api.http) = {delete: "/v1/instances/{instance_id}/ai/memories/{memory_id}"};
+  }
+
+  // GetAIMemorySettings returns whether the current user has AI memory turned on in an instance.
+  rpc GetAIMemorySettings(GetAIMemorySettingsRequest) returns (GetAIMemorySettingsResponse) {
+    option (google.api.http) = {get: "/v1/instances/{instance_id}/ai/memory-settings"};
+  }
+
+  // UpdateAIMemorySettings turns AI memory on or off for the current user in an instance.
+  rpc UpdateAIMemorySettings(UpdateAIMemorySettingsRequest) returns (UpdateAIMemorySettingsResponse) {
+    option (google.api.http) = {
+      put: "/v1/instances/{instance_id}/ai/memory-settings",
+      body: "*"
+    };
+  }
+
+  // ListMCPServers lists the external MCP servers (connectors with driver "mcp") that the current user may use,
+  // including the tools each server exposes to the user and whether the user has authorized it.
+  rpc ListMCPServers(ListMCPServersRequest) returns (ListMCPServersResponse) {
+    option (google.api.http) = {get: "/v1/instances/{instance_id}/ai/mcp-servers"};
+  }
+
+  // DisconnectMCPServer removes the current user's OAuth authorization for an external MCP server.
+  rpc DisconnectMCPServer(DisconnectMCPServerRequest) returns (DisconnectMCPServerResponse) {
+    option (google.api.http) = {
+      post: "/v1/instances/{instance_id}/ai/mcp-servers/{connector}/disconnect",
+      body: "*"
     };
   }
 
@@ -473,6 +551,7 @@ message Instance {
   map<string, bool> feature_flags = 22;
   map<string, string> annotations = 14;
   string ai_instructions = 23;
+  repeated AIPrompt ai_prompts = 27;
   string frontend_url = 24;
   string theme = 26;
 }
@@ -1048,6 +1127,36 @@ message AnalyzeConnectorsResponse {
   repeated AnalyzedConnector connectors = 1;
 }
 
+// Request message for RuntimeService.GetConnectorOAuthConfig
+message GetConnectorOAuthConfigRequest {
+  string instance_id = 1;
+  string connector = 2;
+  // Attributes of the user the authorization flow runs for; the connector's security policy is evaluated with them.
+  google.protobuf.Struct user_attributes = 3;
+  // Additional security rules that apply to the user, such as resource restrictions.
+  repeated SecurityRule user_rules = 4;
+}
+
+// Response message for RuntimeService.GetConnectorOAuthConfig
+message GetConnectorOAuthConfigResponse {
+  // Opaque hash of the OAuth configuration. Any change to the configuration changes the hash, which invalidates existing authorizations.
+  string config_hash = 1;
+  ConnectorOAuthConfig config = 2;
+}
+
+// ConnectorOAuthConfig describes how to reach a connector's authorization server and which client to use with it.
+message ConnectorOAuthConfig {
+  // URL of the protected resource. The authorization server is discovered from its protected resource metadata (RFC 9728).
+  string resource_url = 1;
+  // Pre-registered client credentials. If empty, a client is registered dynamically (RFC 7591).
+  string client_id = 2;
+  string client_secret = 3;
+  // Scopes to request. If empty, the scopes the resource advertises are requested.
+  repeated string scopes = 4;
+  // Extra query parameters for the authorization endpoint, for servers that need non-standard ones (e.g. Google's access_type=offline).
+  map<string, string> authorization_params = 5;
+}
+
 // Request message for RuntimeService.ListNotifierConnectors
 message ListNotifierConnectorsRequest {
   string instance_id = 1;
@@ -1161,6 +1270,26 @@ message GetConversationResponse {
   bool is_owner = 3; // would be false for shared conversations accessed by non-owners
 }
 
+// Request message for RuntimeService.UpdateConversation
+message UpdateConversationRequest {
+  string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
+  string conversation_id = 2 [(validate.rules).string.min_len = 1];
+  // New title for the conversation. Not changed if unset.
+  optional string title = 3;
+}
+
+// Response message for RuntimeService.UpdateConversation
+message UpdateConversationResponse {}
+
+// Request message for RuntimeService.DeleteConversation
+message DeleteConversationRequest {
+  string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
+  string conversation_id = 2 [(validate.rules).string.min_len = 1];
+}
+
+// Response message for RuntimeService.DeleteConversation
+message DeleteConversationResponse {}
+
 // Request message for RuntimeService.ShareConversation
 message ShareConversationRequest {
   string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
@@ -1195,6 +1324,48 @@ message ListToolsResponse {
   repeated rill.ai.v1.Tool tools = 1;
 }
 
+// Request message for RuntimeService.ListMCPServers
+message ListMCPServersRequest {
+  string instance_id = 1;
+}
+
+// Response message for RuntimeService.ListMCPServers
+message ListMCPServersResponse {
+  repeated MCPServer servers = 1;
+}
+
+// MCPServer describes an external MCP server from the perspective of the current user.
+message MCPServer {
+  // Name of the connector that defines the server.
+  string connector = 1;
+  // Human-friendly name of the server.
+  string display_name = 2;
+  // True if the server requires a per-user OAuth authorization.
+  bool oauth = 4;
+  // True if the server can be used by the current user right now: it was reached and its tools were listed.
+  // Always true for reachable servers that don't use OAuth.
+  bool connected = 5;
+  // True if the current user has granted the server an OAuth authorization that Rill still holds.
+  // Unlike connected, it does not depend on the server being reachable, so an authorization can be removed during an outage.
+  // Only set for servers that use OAuth.
+  bool authorized = 9;
+  // AI agents that may use the server. Empty means all agents.
+  repeated string agents = 6;
+  // Tools the server exposes to the current user. Empty if the server could not be reached or the user is not connected.
+  repeated MCPTool tools = 7;
+  // Error encountered when connecting to the server or listing its tools, if any.
+  string error = 8;
+}
+
+// Request message for RuntimeService.DisconnectMCPServer
+message DisconnectMCPServerRequest {
+  string instance_id = 1;
+  string connector = 2;
+}
+
+// Response message for RuntimeService.DisconnectMCPServer
+message DisconnectMCPServerResponse {}
+
 // Request message for RuntimeService.Complete
 message CompleteRequest {
   // Instance to run the completion against.
@@ -1215,6 +1386,10 @@ message CompleteRequest {
   // Optional context for prompts handled by the feedback_agent.
   // The field is ignored if another agent is selected.
   FeedbackAgentContext feedback_agent_context = 13;
+  // Deprecated: no longer read by the server. The agents learn what the user is viewing from the analyst and developer contexts.
+  string ui_page_path = 14 [deprecated = true];
+  // Optional visible, enabled, uniquely-addressable browser actions.
+  repeated UIAction ui_actions = 15;
 }
 
 // Response message for RuntimeService.Complete
@@ -1243,6 +1418,10 @@ message CompleteStreamingRequest {
   // Optional context for prompts handled by the feedback_agent.
   // The field is ignored if another agent is selected.
   FeedbackAgentContext feedback_agent_context = 13;
+  // Deprecated: no longer read by the server. The agents learn what the user is viewing from the analyst and developer contexts.
+  string ui_page_path = 14 [deprecated = true];
+  // Optional visible, enabled, uniquely-addressable browser actions.
+  repeated UIAction ui_actions = 15;
 }
 
 // Response message for RuntimeService.CompleteStreaming
@@ -1263,6 +1442,85 @@ message GetAIMessageResponse {
   Message message = 1;
   Message result = 2;
 }
+
+// AIMemory is a short preference or fact the AI has learned about the current user in an instance.
+message AIMemory {
+  string id = 1;
+  string content = 2;
+  // The agent the memory applies to: "analyst_agent" or "developer_agent". Empty when it applies to every agent.
+  // The AI scopes what it learns to the agent that learned it; the user chooses the agent for memories they add themselves.
+  string agent = 3;
+  // The conversation the memory was learned from. Empty for memories the user added themselves.
+  string source_conversation_id = 4;
+  google.protobuf.Timestamp created_on = 5;
+  google.protobuf.Timestamp updated_on = 6;
+}
+
+// Request message for RuntimeService.ListAIMemories
+message ListAIMemoriesRequest {
+  string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
+}
+
+// Response message for RuntimeService.ListAIMemories
+message ListAIMemoriesResponse {
+  repeated AIMemory memories = 1;
+}
+
+// Request message for RuntimeService.CreateAIMemory
+message CreateAIMemoryRequest {
+  string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
+  string content = 2 [(validate.rules).string = {min_len: 1, max_len: 300}];
+  // The agent the memory applies to: "analyst_agent" or "developer_agent". Empty for every agent.
+  string agent = 3;
+}
+
+// Response message for RuntimeService.CreateAIMemory
+message CreateAIMemoryResponse {
+  AIMemory memory = 1;
+}
+
+// Request message for RuntimeService.UpdateAIMemory
+message UpdateAIMemoryRequest {
+  string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
+  string memory_id = 2 [(validate.rules).string = {min_len: 1}];
+  string content = 3 [(validate.rules).string = {min_len: 1, max_len: 300}];
+  // The agent the memory applies to: "analyst_agent" or "developer_agent". Empty for every agent.
+  string agent = 4;
+}
+
+// Response message for RuntimeService.UpdateAIMemory
+message UpdateAIMemoryResponse {
+  AIMemory memory = 1;
+}
+
+// Request message for RuntimeService.DeleteAIMemory
+message DeleteAIMemoryRequest {
+  string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
+  string memory_id = 2 [(validate.rules).string = {min_len: 1}];
+}
+
+// Response message for RuntimeService.DeleteAIMemory
+message DeleteAIMemoryResponse {}
+
+// Request message for RuntimeService.GetAIMemorySettings
+message GetAIMemorySettingsRequest {
+  string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
+}
+
+// Response message for RuntimeService.GetAIMemorySettings
+message GetAIMemorySettingsResponse {
+  // False if the user has turned memory off. Memories are then neither used nor updated, but can still be managed.
+  bool enabled = 1;
+}
+
+// Request message for RuntimeService.UpdateAIMemorySettings
+message UpdateAIMemorySettingsRequest {
+  string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
+  bool enabled = 2;
+}
+
+// Response message for RuntimeService.UpdateAIMemorySettings
+message UpdateAIMemorySettingsResponse {}
 
 // **********
 // Access management
@@ -1489,4 +1747,12 @@ message PushEnvResponse {
   int32 added_count = 1;
   // Number of variables changed
   int32 changed_count = 2;
+}
+
+// A non-destructive UI action explicitly exposed to the AI by the browser.
+message UIAction {
+  // Stable identifier from the element's data-ai-action attribute.
+  string id = 1;
+  // Human-readable accessible label for the action.
+  string label = 2;
 }

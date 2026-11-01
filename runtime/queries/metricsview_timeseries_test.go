@@ -65,6 +65,7 @@ func TestMetricsViewsTimeseriesAgainstClickHouse(t *testing.T) {
 		testMetricsViewTimeSeries_DayLightSavingsForwards_Sparse_Hourly(t, true, rt, instanceID)
 	})
 	t.Run("testMetricsViewTimeSeries_having_clause", func(t *testing.T) { testMetricsViewTimeSeries_having_clause(t, rt, instanceID) })
+	t.Run("testMetricsViewTimeSeries_empty_time_range", func(t *testing.T) { testMetricsViewTimeSeries_empty_time_range(t, rt, instanceID) })
 }
 
 func TestMetricsViewsTimeseriesAgainstDuckdb(t *testing.T) {
@@ -278,6 +279,7 @@ measures:
 		testMetricsViewTimeSeries_DayLightSavingsForwards_Sparse_Hourly(t, true, rt, instanceID)
 	})
 	t.Run("testMetricsViewTimeSeries_having_clause", func(t *testing.T) { testMetricsViewTimeSeries_having_clause(t, rt, instanceID) })
+	t.Run("testMetricsViewTimeSeries_empty_time_range", func(t *testing.T) { testMetricsViewTimeSeries_empty_time_range(t, rt, instanceID) })
 }
 
 func TestMetricsViewsTimeseriesAgainstDatabricks(t *testing.T) {
@@ -834,6 +836,25 @@ func testMetricsViewTimeSeries_DayLightSavingsBackwards_Continuous_Daily(t *test
 	require.Equal(t, parseTime(t, "2023-11-05T04:00:00Z").AsTime(), rows[i].Ts.AsTime())
 	i++
 	require.Equal(t, parseTime(t, "2023-11-06T05:00:00Z").AsTime(), rows[i].Ts.AsTime())
+}
+
+// A daily metrics view whose latest timestamp sits at midnight resolves `DTD as of latest/h` to an empty range (start == end).
+// The time series must return no rows instead of failing on an empty time spine.
+func testMetricsViewTimeSeries_empty_time_range(t *testing.T, rt *runtime.Runtime, instanceID string) {
+	q := &queries.MetricsViewTimeSeries{
+		MeasureNames:    []string{"total_records"},
+		MetricsViewName: "timeseries_dst_backwards",
+		TimeStart:       parseTime(t, "2023-11-04T00:00:00.000Z"),
+		TimeEnd:         parseTime(t, "2023-11-04T00:00:00.000Z"),
+		TimeGranularity: runtimev1.TimeGrain_TIME_GRAIN_DAY,
+		TimeZone:        "UTC",
+		Limit:           250,
+		SecurityClaims:  testClaims(),
+	}
+	err := q.Resolve(context.Background(), rt, instanceID, 0)
+	require.NoError(t, err)
+	require.NotNil(t, q.Result)
+	require.Empty(t, q.Result.Data)
 }
 
 func testMetricsViewTimeSeries_DayLightSavingsBackwards_Sparse_Daily(t *testing.T, rt *runtime.Runtime, instanceID string) {

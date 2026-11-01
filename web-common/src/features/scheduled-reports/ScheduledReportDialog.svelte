@@ -54,6 +54,7 @@
   import { defaults, superForm } from "sveltekit-superforms";
   import { yup, type ValidationAdapter } from "sveltekit-superforms/adapters";
   import { array, object, string, boolean } from "yup";
+  import { getExportLimitSchema } from "@rilldata/web-common/features/exports/export-file-options";
   import { Button } from "../../components/button";
   import {
     getRuntimeServiceGetResourceQueryKey,
@@ -208,6 +209,7 @@
       enableSlackNotification: boolean(), // Needed to get the type for validation
       slackChannels: array().of(string()),
       slackUsers: array().of(string().email(m.report_form_invalid_email())),
+      exportLimit: getExportLimitSchema(),
       columns: isCanvasReport
         ? array().of(string())
         : array().of(string()).min(1),
@@ -361,7 +363,8 @@
         }),
       ],
     );
-    updatedAggregationRequest.where = filters?.topLevelJoiner[metricsViewName];
+    updatedAggregationRequest.where =
+      filters?.topLevelJoiner.expr[metricsViewName];
     return {
       ...commonOptions,
       explore: exploreName,
@@ -369,6 +372,7 @@
       queryArgsJson: JSON.stringify(updatedAggregationRequest),
       exportLimit: values.exportLimit || undefined,
       exportIncludeHeader: values.exportIncludeHeader || false,
+      exportAttach: values.exportAttach,
       exportFormat: values.exportFormat,
       webOpenState:
         props.mode === "create"

@@ -1,6 +1,7 @@
 package runtime
 
 import (
+	"encoding/json"
 	"strings"
 	"testing"
 
@@ -575,4 +576,187 @@ func TestResolveMetricsView(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestResolveConnectorSecurity(t *testing.T) {
+	adminAttrs := map[string]any{"email": "a@rilldata.com", "domain": "rilldata.com", "groups": []any{"eng"}, "admin": true}
+	userAttrs := map[string]any{"email": "b@example.com", "domain": "example.com", "groups": []any{"sales"}, "admin": false}
+
+	access := func(expr string) *runtimev1.SecurityRule {
+		return &runtimev1.SecurityRule{Rule: &runtimev1.SecurityRule_Access{Access: &runtimev1.SecurityRuleAccess{ConditionExpression: expr, Allow: true}}}
+	}
+	fieldRule := func(expr string, allow bool, names ...string) *runtimev1.SecurityRule {
+		return &runtimev1.SecurityRule{Rule: &runtimev1.SecurityRule_FieldAccess{FieldAccess: &runtimev1.SecurityRuleFieldAccess{ConditionExpression: expr, Allow: allow, Fields: names}}}
+	}
+	allFields := func(allow bool) *runtimev1.SecurityRule {
+		return &runtimev1.SecurityRule{Rule: &runtimev1.SecurityRule_FieldAccess{FieldAccess: &runtimev1.SecurityRuleFieldAccess{Allow: allow, AllFields: true}}}
+	}
+
+	tests := []struct {
+		name       string
+		rules      []*runtimev1.SecurityRule
+		attrs      map[string]any
+		tools      []string
+		wantAccess bool
+		wantTools  map[string]bool
+	}{
+		{
+			name:       "no rules allows everyone and every tool",
+			attrs:      userAttrs,
+			tools:      []string{"search", "delete"},
+			wantAccess: true,
+			wantTools:  map[string]bool{"search": true, "delete": true, "unknown": true},
+		},
+		{
+			name:       "access denied for non-admin",
+			rules:      []*runtimev1.SecurityRule{access("{{ .user.admin }}")},
+			attrs:      userAttrs,
+			tools:      []string{"search"},
+			wantAccess: false,
+			wantTools:  map[string]bool{"search": false},
+		},
+		{
+			name:       "access allowed for admin",
+			rules:      []*runtimev1.SecurityRule{access("{{ .user.admin }}")},
+			attrs:      adminAttrs,
+			tools:      []string{"search"},
+			wantAccess: true,
+			wantTools:  map[string]bool{"search": true},
+		},
+		{
+			name:       "include implies deny for unlisted tools",
+			rules:      []*runtimev1.SecurityRule{access("true"), fieldRule("", true, "search")},
+			attrs:      userAttrs,
+			tools:      []string{"search", "delete"},
+			wantAccess: true,
+			wantTools:  map[string]bool{"search": true, "delete": false},
+		},
+		{
+			name:       "conditional include for admins only",
+			rules:      []*runtimev1.SecurityRule{access("true"), fieldRule("", true, "search"), fieldRule("{{ .user.admin }}", true, "create")},
+			attrs:      userAttrs,
+			tools:      []string{"search", "create"},
+			wantAccess: true,
+			wantTools:  map[string]bool{"search": true, "create": false},
+		},
+		{
+			name:       "exclude wins over allow all",
+			rules:      []*runtimev1.SecurityRule{access("true"), allFields(true), fieldRule("'{{ .user.domain }}' != 'rilldata.com'", false, "delete")},
+			attrs:      userAttrs,
+			tools:      []string{"search", "delete"},
+			wantAccess: true,
+			wantTools:  map[string]bool{"search": true, "delete": false},
+		},
+		{
+			name:       "exclude condition not met keeps the tool",
+			rules:      []*runtimev1.SecurityRule{access("true"), allFields(true), fieldRule("'{{ .user.domain }}' != 'rilldata.com'", false, "delete")},
+			attrs:      adminAttrs,
+			tools:      []string{"search", "delete"},
+			wantAccess: true,
+			wantTools:  map[string]bool{"search": true, "delete": true},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			r := &runtimev1.Resource{
+				Meta: &runtimev1.ResourceMeta{
+					Name:           &runtimev1.ResourceName{Kind: ResourceKindConnector, Name: "ext"},
+					StateUpdatedOn: timestamppb.Now(),
+				},
+				Resource: &runtimev1.Resource_Connector{
+					Connector: &runtimev1.ConnectorV2{
+						Spec:  &runtimev1.ConnectorSpec{Driver: "mcp", SecurityRules: tt.rules},
+						State: &runtimev1.ConnectorState{},
+					},
+				},
+			}
+			claims := &SecurityClaims{UserID: "u1", UserAttributes: tt.attrs}
+			p := newSecurityEngine(10, zap.NewNop(), nil)
+			got, err := p.resolveConnectorSecurity(t.Context(), "", "test", map[string]string{}, claims, r, tt.tools)
+			require.NoError(t, err)
+			require.Equal(t, tt.wantAccess, got.CanAccess())
+			for tool, want := range tt.wantTools {
+				require.Equal(t, want, got.CanAccessField(tool), "tool %q", tool)
+			}
+
+			// The regular resolution of connector resources stays admin-only (it guards the connector's configuration, not its tools)
+			regular, err := p.resolveSecurity(t.Context(), "", "test", map[string]string{}, claims, r)
+			require.NoError(t, err)
+			require.Equal(t, tt.attrs["admin"] == true, regular.CanAccess())
+		})
+	}
+}
+
+func TestResolveAPI(t *testing.T) {
+	tests := []struct {
+		name       string
+		attr       map[string]any
+		rules      []*runtimev1.SecurityRule
+		wantAccess bool
+		wantErr    bool
+	}{
+		{
+			name:       "no_rules_allows",
+			attr:       map[string]any{"tier": "free"},
+			wantAccess: true,
+		},
+		{
+			name:       "rule_matches_allows",
+			attr:       map[string]any{"tier": "enterprise"},
+			rules:      []*runtimev1.SecurityRule{{Rule: &runtimev1.SecurityRule_Access{Access: &runtimev1.SecurityRuleAccess{ConditionExpression: `{{ eq .user.tier "enterprise" }}`, Allow: true}}}},
+			wantAccess: true,
+		},
+		{
+			name:       "rule_does_not_match_denies",
+			attr:       map[string]any{"tier": "free"},
+			rules:      []*runtimev1.SecurityRule{{Rule: &runtimev1.SecurityRule_Access{Access: &runtimev1.SecurityRuleAccess{ConditionExpression: `{{ eq .user.tier "enterprise" }}`, Allow: true}}}},
+			wantAccess: false,
+		},
+		{
+			name:       "missing_attribute_denies",
+			attr:       map[string]any{},
+			rules:      []*runtimev1.SecurityRule{{Rule: &runtimev1.SecurityRule_Access{Access: &runtimev1.SecurityRuleAccess{ConditionExpression: `{{ eq .user.tier "enterprise" }}`, Allow: true}}}},
+			wantAccess: false,
+		},
+		{
+			name:    "evaluation_error_fails",
+			attr:    map[string]any{"admin": "notabool"},
+			rules:   []*runtimev1.SecurityRule{{Rule: &runtimev1.SecurityRule_Access{Access: &runtimev1.SecurityRuleAccess{ConditionExpression: `{{ .user.admin }}`, Allow: true}}}},
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			r := &runtimev1.Resource{
+				Meta: &runtimev1.ResourceMeta{
+					Name:           &runtimev1.ResourceName{Kind: ResourceKindAPI, Name: "test"},
+					StateUpdatedOn: timestamppb.Now(),
+				},
+				Resource: &runtimev1.Resource_Api{
+					Api: &runtimev1.API{Spec: &runtimev1.APISpec{SecurityRules: tt.rules}},
+				},
+			}
+
+			claims := &SecurityClaims{UserAttributes: tt.attr}
+			p := newSecurityEngine(1, zap.NewNop(), nil)
+			got, err := p.resolveSecurity(t.Context(), "", "test", map[string]string{}, claims, r)
+			if tt.wantErr {
+				require.Error(t, err)
+				return
+			}
+			require.NoError(t, err)
+			require.Equal(t, tt.wantAccess, got.CanAccess())
+		})
+	}
+}
+
+func TestResolvedSecurityMarshalJSON(t *testing.T) {
+	// ResolvedSecurity must not be serializable since it would serialize as an empty object.
+	_, err := json.Marshal(ResolvedSecurityOpen)
+	require.Error(t, err)
+
+	_, err = json.Marshal(struct {
+		Security *ResolvedSecurity `json:"security"`
+	}{Security: ResolvedSecurityOpen})
+	require.Error(t, err)
 }

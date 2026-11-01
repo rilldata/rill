@@ -263,6 +263,11 @@ func (u *URLs) GithubAuthCallback() string {
 	return urlutil.MustJoinURL(u.external, "/github/auth/callback") // NOTE: Always using the primary external URL.
 }
 
+// ConnectorOAuthCallback returns the redirect URI used when authorizing connectors on behalf of users.
+func (u *URLs) ConnectorOAuthCallback() string {
+	return urlutil.MustJoinURL(u.external, "/connectors/oauth/callback") // NOTE: Always using the primary external URL.
+}
+
 // GithubConnectUI returns the page in the Rill frontend for starting the Github connect flow.
 func (u *URLs) GithubConnectUI(redirect string) string {
 	res := urlutil.MustJoinURL(u.frontend, "/-/github/connect") // NOTE: Always using the primary frontend URL.

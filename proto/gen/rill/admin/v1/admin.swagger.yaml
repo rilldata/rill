@@ -59,6 +59,50 @@ paths:
           description: An unexpected error response.
           schema:
             $ref: '#/definitions/rpcStatus'
+  /v1/deployments/-/connector-oauth-token:
+    post:
+      summary: |-
+        GetConnectorOAuthToken returns a user's OAuth access token for a connector in the calling deployment's project,
+        refreshing it first if it is about to expire.
+        It returns NotFound if the user has not authorized the connector's current OAuth configuration.
+        It can only be called by deployments.
+      operationId: AdminService_GetConnectorOAuthToken
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1GetConnectorOAuthTokenResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: body
+          in: body
+          required: true
+          schema:
+            $ref: '#/definitions/v1GetConnectorOAuthTokenRequest'
+  /v1/deployments/-/connector-oauth-token/delete:
+    post:
+      summary: |-
+        DeleteConnectorOAuthToken removes a user's OAuth authorization for a connector in the calling deployment's project.
+        It can only be called by deployments.
+      operationId: AdminService_DeleteConnectorOAuthToken
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1DeleteConnectorOAuthTokenResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: body
+          in: body
+          required: true
+          schema:
+            $ref: '#/definitions/v1DeleteConnectorOAuthTokenRequest'
   /v1/deployments/{deploymentId}:
     delete:
       summary: DeleteDeployment deletes a deployment.
@@ -261,6 +305,9 @@ paths:
           required: true
           schema:
             type: object
+            properties:
+              superuserForceAccess:
+                type: boolean
   /v1/deployments/{deploymentId}/stop:
     post:
       summary: StopDeployment stops a deployment.
@@ -284,6 +331,9 @@ paths:
           required: true
           schema:
             type: object
+            properties:
+              superuserForceAccess:
+                type: boolean
   /v1/github/repositories:
     get:
       summary: |-
@@ -505,8 +555,6 @@ paths:
               thumbnailAssetId:
                 type: string
               defaultProjectRole:
-                type: string
-              defaultProvisioner:
                 type: string
               billingEmail:
                 type: string
@@ -1056,6 +1104,7 @@ paths:
                   See ListProjectsForFingerprint for more context.
               provisioner:
                 type: string
+                description: Provisioner to use for the project's deployments. Superuser-only; empty means the org's default provisioner (or the global default) is used.
               prodSlots:
                 type: string
                 format: int64
@@ -1232,6 +1281,9 @@ paths:
                 format: int64
               provisioner:
                 type: string
+                description: |-
+                  Provisioner to use for the project's deployments. Superuser-only; empty unsets it so the org's default provisioner (or the global default) is used.
+                  Running deployments keep their current provisioner; the change is applied to each deployment the next time it is started (stopped deployments are moved to the new provisioner, keeping their IDs).
               newName:
                 type: string
               prodTtlSeconds:
@@ -1580,6 +1632,10 @@ paths:
           in: query
           required: false
           type: string
+        - name: superuserForceAccess
+          in: query
+          required: false
+          type: boolean
     post:
       summary: CreateDeployment creates a new deployment for a project.
       operationId: AdminService_CreateDeployment
@@ -4152,7 +4208,7 @@ paths:
     patch:
       summary: |-
         SudoUpdateOrganizationDefaultProvisioner sets the provisioner used by default for an organization's deployments.
-        It only affects deployments provisioned after the change; existing deployments stay on their current provisioner.
+        Running deployments keep their current provisioner; the change is applied to each deployment the next time it is started (stopped deployments are moved to the new provisioner, keeping their IDs).
       operationId: AdminService_SudoUpdateOrganizationDefaultProvisioner
       responses:
         "200":
@@ -4963,6 +5019,16 @@ definitions:
       queryArgsJson:
         type: string
         description: 'DEPRECATED: Use resolver and resolver_properties instead.'
+      exportAttach:
+        type: boolean
+        description: If true, the query's result is exported and attached to email notifications for failed checks (only supported for query-based alerts).
+      exportFormat:
+        $ref: '#/definitions/v1ExportFormat'
+      exportIncludeHeader:
+        type: boolean
+      exportLimit:
+        type: string
+        format: uint64
       metricsViewName:
         type: string
       renotify:
@@ -5231,6 +5297,11 @@ definitions:
       outputJsonSchema:
         type: string
         title: Optional output JSON schema
+      includeReasoning:
+        type: boolean
+        description: |-
+          Whether the response may include reasoning blocks.
+          Older clients don't support them, so they are removed from the response unless this is set.
   v1CompleteResponse:
     type: object
     properties:
@@ -5249,6 +5320,10 @@ definitions:
         type: integer
         format: int64
         description: Number of cache-read (discounted) input tokens; a subset of input_tokens.
+      cacheWriteInputTokens:
+        type: integer
+        format: int64
+        description: Number of input tokens written to the prompt cache, which some providers (e.g. Claude) bill at a premium.
       provider:
         type: string
         description: The LLM provider that served the completion (e.g. "claude", "openai", "gemini").
@@ -5287,6 +5362,8 @@ definitions:
         $ref: '#/definitions/v1ToolCall'
       toolResult:
         $ref: '#/definitions/v1ToolResult'
+      reasoning:
+        $ref: '#/definitions/v1Reasoning'
     title: Content block within a message
   v1CreateAlertResponse:
     type: object
@@ -5396,6 +5473,17 @@ definitions:
   v1CreateWhitelistedDomainResponse:
     type: object
   v1DeleteAlertResponse:
+    type: object
+  v1DeleteConnectorOAuthTokenRequest:
+    type: object
+    properties:
+      connector:
+        type: string
+      configHash:
+        type: string
+      userId:
+        type: string
+  v1DeleteConnectorOAuthTokenResponse:
     type: object
   v1DeleteDeploymentResponse:
     type: object
@@ -5578,6 +5666,32 @@ definitions:
       archiveDownloadUrl:
         type: string
         title: either archive_download_url or git related details will be set
+  v1GetConnectorOAuthTokenRequest:
+    type: object
+    properties:
+      connector:
+        type: string
+        description: Name of the connector in the deployment's project.
+      configHash:
+        type: string
+        description: |-
+          Hash of the connector's current OAuth configuration, as computed by the runtime.
+          A token is only returned if the user authorized this configuration, so changing it never reuses an existing authorization.
+      userId:
+        type: string
+        description: ID of the user whose token to return.
+      forceRefresh:
+        type: boolean
+        description: If true, the token is refreshed even if it has not expired yet (used after the server rejected the current token).
+  v1GetConnectorOAuthTokenResponse:
+    type: object
+    properties:
+      accessToken:
+        type: string
+      expiresOn:
+        type: string
+        format: date-time
+        description: When the access token expires. Unset if the token does not expire.
   v1GetCurrentMagicAuthTokenResponse:
     type: object
     properties:
@@ -6699,6 +6813,21 @@ definitions:
         type: string
       tokensPerSeat:
         type: string
+  v1Reasoning:
+    type: object
+    properties:
+      text:
+        type: string
+        description: Readable reasoning. Often empty, since providers may omit it or return a summary.
+      signature:
+        type: string
+        description: Opaque provider signature that lets the provider verify the reasoning.
+      redactedData:
+        type: string
+        description: Opaque encrypted reasoning, set instead of text and signature when the provider redacts the reasoning.
+    description: |-
+      The model's reasoning before its text or tool calls.
+      Some providers (e.g. Claude) require it to be passed back unmodified within a tool call loop.
   v1RecordEventsRequest:
     type: object
     properties:
@@ -6765,6 +6894,9 @@ definitions:
         $ref: '#/definitions/v1ExportFormat'
       exportIncludeHeader:
         type: boolean
+      exportAttach:
+        type: boolean
+        description: If true, the export is attached to email notifications (only supported for explore reports run as the creator).
       emailRecipients:
         type: array
         items:

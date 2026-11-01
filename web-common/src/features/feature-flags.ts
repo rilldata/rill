@@ -60,12 +60,14 @@ class FeatureFlags {
   alerts = new FeatureFlag("user", true);
   reports = new FeatureFlag("user", true);
   chat = new FeatureFlag("user", true);
+  chatMemory = new FeatureFlag("user", true);
   dashboardChat = new FeatureFlag("user", false);
   developerChat = new FeatureFlag("user", false);
   deploy = new FeatureFlag("user", true);
   stickyDashboardState = new FeatureFlag("user", false);
   cloudEditing = new FeatureFlag("user", false);
   customCharts = new FeatureFlag("user", false);
+  customComponents = new FeatureFlag("user", false);
   disablePersistentDashboardState = new FeatureFlag("user", false);
   personalCanvases = new FeatureFlag("user", false);
 

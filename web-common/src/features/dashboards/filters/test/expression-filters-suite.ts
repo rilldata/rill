@@ -13,6 +13,7 @@ import {
   getSelectAllButton,
   isMeasureFilterFormOpen,
   pressEnter,
+  removeAdvancedFilter,
   removeDimensionFilter,
   removeMeasureFilter,
   selectDimensionFilterMode,
@@ -22,6 +23,7 @@ import {
   toggleMeasureFilter,
   toggleSelectAll,
   typeInDimensionFilterSearch,
+  waitForAdvancedFilter,
   waitForDimensionFilterResultCount,
   waitForDimensionFilterResults,
   waitForEmptyFilters,
@@ -34,8 +36,10 @@ import {
   createInExpression,
   createLikeExpression,
   createSubQueryExpression,
+  getAllIdentifiers,
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import {
+  AD_BIDS_DOMAIN_DIMENSION,
   AD_BIDS_IMPRESSIONS_MEASURE,
   AD_BIDS_PUBLISHER_DIMENSION,
 } from "@rilldata/web-common/features/dashboards/stores/test-data/data";
@@ -1139,6 +1143,58 @@ export function testURLNavigationFlows(variant: ExpressionFiltersVariant) {
         urlAfterDimensionFilter,
         initialUrlSearch,
       );
+    });
+  });
+}
+
+/**
+ * A filter the chips cannot show falls back to the read only advanced pill.
+ * The pill cannot be edited, so clearing is the only way out of it.
+ */
+export function testAdvancedFilters(variant: ExpressionFiltersVariant) {
+  const {
+    initialUrlSearch,
+    urlSearchWithFilter,
+    assertWhereFilter,
+    assertUrlSearch,
+  } = variantAssertions(variant);
+
+  describe("Advanced filters", () => {
+    // A top level OR has no chip of its own.
+    const orFilter = `${AD_BIDS_PUBLISHER_DIMENSION} IN ('Facebook') OR ${AD_BIDS_DOMAIN_DIMENSION} IN ('google.com')`;
+
+    it("Should clear an advanced filter with the clear button", async () => {
+      await variant.render(urlSearchWithFilter(orFilter));
+      await waitForAdvancedFilter(orFilter);
+
+      // The filter reaches the consumer even though no chip can show it.
+      // Only the identifiers are checked, since the explore state holds the OR as is while a
+      // standalone bar wraps it in an AND.
+      expect(
+        getAllIdentifiers(variant.expressionFilterManager.getWhereFilter()),
+      ).toEqual([AD_BIDS_PUBLISHER_DIMENSION, AD_BIDS_DOMAIN_DIMENSION]);
+      // Nothing can be added next to the pill.
+      expect(
+        screen.queryByLabelText("Add filter button"),
+      ).not.toBeInTheDocument();
+
+      await clearFilters();
+
+      expect(screen.queryByText("Advanced (BETA)")).not.toBeInTheDocument();
+      expect(screen.getByLabelText("Add filter button")).toBeVisible();
+      assertWhereFilter(createAndExpression([]));
+      assertUrlSearch(initialUrlSearch);
+    });
+
+    it("Should clear an advanced filter from its pill", async () => {
+      await variant.render(urlSearchWithFilter(orFilter));
+      await waitForAdvancedFilter(orFilter);
+
+      await removeAdvancedFilter();
+
+      await waitForEmptyFilters();
+      assertWhereFilter(createAndExpression([]));
+      assertUrlSearch(initialUrlSearch);
     });
   });
 }

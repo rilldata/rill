@@ -47,6 +47,7 @@ Request:
 - 'time_range' is inclusive of start time, exclusive of end time
 - 'time_range.time_dimension' (optional) specifies which time column to filter; defaults to the metrics view's default time column
 - For comparisons, 'time_range' and 'comparison_time_range' must be non-overlapping and similar in duration (~20% tolerance)
+- Measures that define an 'exact_expression' in the metrics view are approximate by default. Set 'exact: true' on such a measure only when the user explicitly asks for exact, precise or reconciled numbers; exact queries are much slower. Tell the user which precision was used.
 
 Response:
 - Returns aggregated data matching your query parameters

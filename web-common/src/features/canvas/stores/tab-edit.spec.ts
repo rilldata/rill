@@ -3,11 +3,14 @@ import { parseDocument } from "yaml";
 import {
   addTab,
   addTabGroup,
+  combineConditions,
   addTabGroupAt,
   convertRowToTabGroup,
   deleteTab,
   deleteTabGroup,
   duplicateTab,
+  duplicateTabGroup,
+  moveTabGroup,
   isTabGroupRow,
   moveItemAcrossContainers,
   moveTab,
@@ -232,6 +235,39 @@ rows:
     expect(isTabGroupRow(doc, 1)).toBe(false);
   });
 
+  it("deleteTab keeps the visibility of the unwrapped rows", () => {
+    const doc = parseDocument(`type: canvas
+rows:
+  - if: '{{ has "finance" .user.groups }}'
+    tabs:
+      - label: Only
+        if: '{{ .user.admin }}'
+        rows:
+          - items:
+              - component: a
+          - if: "'{{ .user.domain }}' = 'acme.com'"
+            items:
+              - component: b
+`);
+
+    expect(deleteTab(doc, 0, 0)).toBe("unwrapped-group");
+
+    const json = doc.toJSON();
+    expect(json.rows).toHaveLength(2);
+    expect(json.rows[0].if).toBe(
+      `({{ has "finance" .user.groups }}) AND ({{ .user.admin }})`,
+    );
+    expect(json.rows[1].if).toBe(
+      `({{ has "finance" .user.groups }}) AND ({{ .user.admin }}) AND ('{{ .user.domain }}' = 'acme.com')`,
+    );
+  });
+
+  it("combineConditions skips empty conditions", () => {
+    expect(combineConditions(undefined, "", null)).toBeUndefined();
+    expect(combineConditions(undefined, "a")).toBe("a");
+    expect(combineConditions(false, "a")).toBe("(false) AND (a)");
+  });
+
   it("addTabGroupAt inserts a group at the given index", () => {
     const doc = parseDocument(`type: canvas
 rows:
@@ -248,6 +284,109 @@ rows:
     expect(isTabGroupRow(doc, 1)).toBe(true);
     expect(json.rows[0]).toEqual({ items: [{ component: "a" }] });
     expect(json.rows[2]).toEqual({ items: [{ component: "b" }] });
+  });
+
+  it("duplicateTabGroup inserts a full copy of the group after the original", () => {
+    const doc = parseDocument(`type: canvas
+rows:
+  - name: deep_dive
+    tabs:
+      - name: ov
+        label: Overview
+        rows:
+          - items:
+              - component: a
+      - label: Detail
+        rows: []
+  - items:
+      - component: b
+`);
+    expect(duplicateTabGroup(doc, 0)).toBe(1);
+
+    const json = doc.toJSON();
+    expect(json.rows).toHaveLength(3);
+    // The copy carries every tab and row but not the group's URL name.
+    expect(json.rows[1].name).toBeUndefined();
+    expect(json.rows[1].tabs).toEqual(json.rows[0].tabs);
+    expect(json.rows[1].tabs[0].rows).toEqual([
+      { items: [{ component: "a" }] },
+    ]);
+    // The original and the row that followed it are untouched.
+    expect(json.rows[0].name).toBe("deep_dive");
+    expect(json.rows[2]).toEqual({ items: [{ component: "b" }] });
+  });
+
+  it("duplicateTabGroup is a noop on a plain row", () => {
+    const doc = parseDocument(BASE);
+    expect(duplicateTabGroup(doc, 0)).toBe(-1);
+    expect(doc.toString()).toBe(BASE);
+  });
+
+  it("moveTabGroup moves a group to a drop slot above or below other blocks", () => {
+    const yaml = `type: canvas
+rows:
+  - items:
+      - component: a
+  - tabs:
+      - label: Group
+        rows:
+          - items:
+              - component: g
+  - items:
+      - component: b
+  - items:
+      - component: c
+`;
+
+    // Drop slot 0 is above the first block.
+    let doc = parseDocument(yaml);
+    expect(moveTabGroup(doc, 1, 0)).toBe(0);
+    expect(doc.toJSON().rows.map((r: { tabs?: unknown }) => !!r.tabs)).toEqual([
+      true,
+      false,
+      false,
+      false,
+    ]);
+    expect(doc.toJSON().rows[1]).toEqual({ items: [{ component: "a" }] });
+
+    // Drop slot 4 is below the last block; the group ends up at index 3.
+    doc = parseDocument(yaml);
+    expect(moveTabGroup(doc, 1, 4)).toBe(3);
+    expect(doc.toJSON().rows.map((r: { tabs?: unknown }) => !!r.tabs)).toEqual([
+      false,
+      false,
+      false,
+      true,
+    ]);
+    expect(doc.toJSON().rows[3].tabs[0].rows).toEqual([
+      { items: [{ component: "g" }] },
+    ]);
+
+    // Drop slot 3 (between b and c) moves the group one block down.
+    doc = parseDocument(yaml);
+    expect(moveTabGroup(doc, 1, 3)).toBe(2);
+    expect(doc.toJSON().rows[1]).toEqual({ items: [{ component: "b" }] });
+    expect(isTabGroupRow(doc, 2)).toBe(true);
+  });
+
+  it("moveTabGroup is a noop for its own adjacent slots, plain rows and bad indices", () => {
+    const yaml = `type: canvas
+rows:
+  - items:
+      - component: a
+  - tabs:
+      - label: Group
+        rows: []
+`;
+    const doc = parseDocument(yaml);
+    // The slots directly above and below the group leave the order unchanged.
+    expect(moveTabGroup(doc, 1, 1)).toBe(-1);
+    expect(moveTabGroup(doc, 1, 2)).toBe(-1);
+    // Only tab groups move as a block.
+    expect(moveTabGroup(doc, 0, 2)).toBe(-1);
+    expect(moveTabGroup(doc, 1, 3)).toBe(-1);
+    expect(moveTabGroup(doc, 1, -1)).toBe(-1);
+    expect(doc.toString()).toBe(yaml);
   });
 
   it("reorderTab moves a tab from one position to another", () => {

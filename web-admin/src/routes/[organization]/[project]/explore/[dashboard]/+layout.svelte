@@ -1,6 +1,7 @@
 <script lang="ts">
   import ConnectClientProvider from "@rilldata/web-admin/features/ai/mcp/ConnectClientProvider.svelte";
   import DashboardChat from "@rilldata/web-common/features/chat/DashboardChat.svelte";
+  import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors.ts";
   import { RecentlyUsedDashboards } from "../../../../../features/dashboards/listing/dashboard-favourites.ts";
   import { page } from "$app/stores";
 
@@ -9,7 +10,8 @@
 
   // Record usage on every dashboard change. The layout persists across
   // param-only navigations, so onMount would only capture the first visit.
-  $: if (dashboard) recentlyUsedDashboards.update(dashboard.toLowerCase());
+  $: if (dashboard)
+    recentlyUsedDashboards.update(ResourceKind.Explore, dashboard);
 </script>
 
 <div class="flex h-full overflow-hidden">

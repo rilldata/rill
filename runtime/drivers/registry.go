@@ -69,6 +69,8 @@ type Instance struct {
 	IgnoreInitialInvalidProjectError bool `db:"-"`
 	// AIInstructions is extra context for LLM/AI features. Used to guide natural language question answering and routing.
 	AIInstructions string `db:"ai_instructions"`
+	// AIPrompts are suggested prompts configured in rill.yaml, shown as starters in the project-wide AI chat.
+	AIPrompts []*runtimev1.AIPrompt `db:"ai_prompts"`
 	// FrontendURL is the URL of the web interface.
 	FrontendURL string `db:"frontend_url"`
 	// Theme is the name of the theme resource to use for AI-generated charts.
@@ -103,6 +105,9 @@ type InstanceConfig struct {
 	MetricsApproximateComparisonsCTE bool `mapstructure:"rill.metrics.approximate_comparisons_cte"`
 	// MetricsApproxComparisonTwoPhaseLimit if query limit is less than this then rewrite metrics comparison queries to use a two-phase comparison approach where first query is used to get the base values and the second query is used to get the comparison values.
 	MetricsApproxComparisonTwoPhaseLimit int64 `mapstructure:"rill.metrics.approximate_comparisons_two_phase_limit"`
+	// MetricsExactMeasures indicates whether queries may compute measures with their exact_expression (requested per measure with `exact: true`).
+	// When false, such queries fail with an error. Acts as a kill switch for expensive exact aggregations.
+	MetricsExactMeasures bool `mapstructure:"rill.metrics.exact_measures"`
 	// MetricsExactifyDruidTopN indicates whether to split Druid TopN queries into two queries to increase the accuracy of the returned measures.
 	// Enabling it reduces the performance of Druid toplist queries.
 	// See runtime/metricsview/executor_rewrite_druid_exactify.go for more details.
@@ -127,6 +132,9 @@ type InstanceConfig struct {
 	AlertsDefaultStreamingRefreshCron string `mapstructure:"rill.alerts.default_streaming_refresh_cron"`
 	// AlertsFastStreamingRefreshCron is similar to AlertsDefaultStreamingRefreshCron but is used for alerts that are based on always-on OLAP connectors (i.e. that have MayScaleToZero == false).
 	AlertsFastStreamingRefreshCron string `mapstructure:"rill.alerts.fast_streaming_refresh_cron"`
+	// HealthMakeLiveQueries indicates whether health checks run live queries against the OLAP (including pings).
+	// When false, OLAP and metrics view health are not checked.
+	HealthMakeLiveQueries bool `mapstructure:"rill.health.make_live_queries"`
 	// ParserSkipUpdatesIfParseErrors short-circuits project parser reconciliation when parse errors exist.
 	ParserSkipUpdatesIfParseErrors bool `mapstructure:"rill.parser.skip_updates_if_parse_errors"`
 	// AICompletionTimeoutSeconds is the maximum duration of a full AI completion request, which may include multiple LLM requests and tool calls.
@@ -219,6 +227,7 @@ func (i *Instance) Config() (InstanceConfig, error) {
 		MetricsApproximateComparisons:        true,
 		MetricsApproximateComparisonsCTE:     false,
 		MetricsApproxComparisonTwoPhaseLimit: 250,
+		MetricsExactMeasures:                 true,
 		MetricsExactifyDruidTopN:             false,
 		MetricsDruidMVDFilteredGroupBy:       false,
 		MetricsDruidMVDFilteredSearch:        false,

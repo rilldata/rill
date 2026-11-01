@@ -98,8 +98,6 @@ TableCells – the cell contents.
   /* set context for child components */
   setContext("config", config);
 
-  let estimateColumnSize: number[] = $state([]);
-
   /* Separate out dimension column */
   let dimensionColumn = $derived(
     columns?.find((c) => c.name == dimensionName) as VirtualizedTableColumns,
@@ -150,19 +148,17 @@ TableCells – the cell contents.
     untrack(() => $rowVirtualizer.setOptions(options));
   });
 
-  $effect(() => {
-    if (rows && columns) {
-      estimateColumnSize = estimateColumnSizes(
-        columns,
-        columnWidths,
-        rows,
-        config,
-      );
-
-      if (manualDimensionColumnWidth !== null) {
-        estimateColumnSize[0] = manualDimensionColumnWidth;
-      }
+  // Derived, not an effect that assigns `$state`: an effect that writes `estimateColumnSize` and
+  // then reads it back (`estimateColumnSize[0] = ...`) registers the value it just wrote as its
+  // own dependency, so Svelte reschedules it forever. That branch only runs once the dimension
+  // column has been resized manually, which is why the table only froze on column resize.
+  let estimateColumnSize: number[] = $derived.by(() => {
+    if (!rows || !columns) return [];
+    const sizes = estimateColumnSizes(columns, columnWidths, rows, config);
+    if (manualDimensionColumnWidth !== null) {
+      sizes[0] = manualDimensionColumnWidth;
     }
+    return sizes;
   });
 
   const columnVirtualizer = createVirtualizer<HTMLDivElement, HTMLDivElement>({
