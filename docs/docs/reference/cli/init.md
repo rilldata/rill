@@ -10,6 +10,12 @@ Initialize a new Rill project
 
 Initialize a new Rill project. Use flags to customize the project or run interactively to be prompted for each option.
 
+Available example projects:
+  - rill-cost-monitoring (duckdb)
+  - rill-github-analytics (duckdb)
+  - rill-openrtb-prog-ads (duckdb)
+
+
 ```
 rill init [<path>] [flags]
 ```
@@ -47,3 +53,4 @@ rill init [<path>] [flags]
 ### SEE ALSO
 
 * [rill](cli.md)	 - A CLI for Rill
+
