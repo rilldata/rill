@@ -110,6 +110,8 @@ func TestCallRuntimeToolErrors(t *testing.T) {
 	require.NoError(t, err)
 	require.False(t, res.IsError)
 	require.Equal(t, map[string]any{"name": "hello"}, res.StructuredContent)
+	// The runtime's server info is stripped, so clients see the admin service's server info on every result.
+	require.NotContains(t, res.Meta, mcp.MetaKeyServerInfo)
 
 	// Any other error from the runtime stays a protocol error.
 	internal := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

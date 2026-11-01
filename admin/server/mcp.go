@@ -309,6 +309,9 @@ func (s *Server) callRuntimeTool(ctx context.Context, depl *database.Deployment,
 			return nil, errors.New(rpc.Error.Message)
 		}
 		if rpc.Result != nil {
+			// On protocol versions >= 2026-07-28, the runtime identifies itself in the result's _meta.
+			// It's removed so the MCP SDK annotates the result with the admin service's server info instead.
+			delete(rpc.Result.Meta, mcp.MetaKeyServerInfo)
 			return rpc.Result, nil
 		}
 	}
