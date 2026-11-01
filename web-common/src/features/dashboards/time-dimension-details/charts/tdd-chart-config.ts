@@ -4,6 +4,8 @@ import type {
   ChartType,
   ColorMapping,
 } from "@rilldata/web-common/features/components/charts/types";
+import { ephemeralDefsToSpecs } from "@rilldata/web-common/features/dashboards/ephemeral-measures/canvas";
+import type { EphemeralMeasureDef } from "@rilldata/web-common/features/dashboards/ephemeral-measures/types";
 import type { DimensionSeriesData } from "@rilldata/web-common/features/dashboards/time-series/measure-chart/types";
 import { TDDChart } from "../types";
 
@@ -39,6 +41,9 @@ export function createTDDCartesianSpec(
   dimensionData?: DimensionSeriesData[],
   showTimeDimensionDetail = true,
   dynamicYAxis = false,
+  ephemeralMeasures?: EphemeralMeasureDef[],
+  // Request the measure with `exact: true` (see `requestExactNames`).
+  exact = false,
 ): CartesianChartSpec & Pick<ChartSpec, "vl_config"> {
   const spec: CartesianChartSpec & Pick<ChartSpec, "vl_config"> = {
     metrics_view: metricsViewName,
@@ -54,6 +59,14 @@ export function createTDDCartesianSpec(
       // The "Dynamic Y-axis scale" toggle: off means the axis is anchored at zero.
       zeroBasedOrigin: !dynamicYAxis,
     },
+    // An ephemeral measure has no spec entry, so the chart's query has to carry
+    // its definition; without this the runtime rejects the bare measure name.
+    ...(ephemeralMeasures?.some((def) => def.name === measureName)
+      ? { adhoc_measures: ephemeralDefsToSpecs(ephemeralMeasures) }
+      : {}),
+    // The chart's query is built by the shared chart providers, which read the
+    // exact selection from the spec.
+    ...(exact ? { exact_measures: [measureName] } : {}),
     isInteractive: true,
     // Fix vertical alignment across stacked TDD charts: force a fixed axis
     // width so every measure's plot area is identical regardless of label width.

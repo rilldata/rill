@@ -1,7 +1,7 @@
 import { reverseMap } from "@rilldata/web-common/lib/map-utils.ts";
 import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 import { V1TimeGrain } from "@rilldata/web-common/runtime-client/gen/index.schemas";
-import type { DateTimeUnit, Interval } from "luxon";
+import type { DateTime, DateTimeUnit, Interval } from "luxon";
 
 const MAX_BUCKETS = 1500;
 
@@ -285,6 +285,19 @@ export function getAllowedGrains(
     return [];
   }
   return getAllowedGrainsFromOrder(order);
+}
+
+export function snapToDayOrLargerGrain(
+  date: DateTime<true>,
+  grain: DateTimeUnit,
+  zone: string,
+) {
+  const snapToGrain = GrainToOrder[grain] > GrainToOrder.day ? grain : "day";
+  return date
+    .setZone(zone)
+    .plus({ [snapToGrain]: 1 })
+    .startOf(snapToGrain)
+    .toUTC();
 }
 
 export function getLowerOrderGrain(grain: V1TimeGrain): V1TimeGrain {

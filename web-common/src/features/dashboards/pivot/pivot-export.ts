@@ -1,5 +1,4 @@
 import { getDimensionForTimeField } from "@rilldata/web-common/features/dashboards/aggregation-request/dimension-utils.ts";
-import { mergeDimensionAndMeasureFilters } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
 import { sanitiseExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
 import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
@@ -12,9 +11,11 @@ import {
   type V1TimeRange,
 } from "@rilldata/web-common/runtime-client";
 import { get } from "svelte/store";
+import { requestExactNames } from "../exact-measures/exact-measures";
+import { exploreExactSurface } from "../exact-measures/explore-surfaces";
 import type { StateManagers } from "../state-managers/state-managers";
 import { getPivotConfig } from "./pivot-data-config";
-import { prepareMeasureForComparison } from "./pivot-utils";
+import { prepareMeasuresForRequest } from "./pivot-utils";
 import {
   COMPARISON_DELTA,
   COMPARISON_PERCENT,
@@ -59,6 +60,20 @@ export function getPivotExportQuery(ctx: StateManagers, isScheduled: boolean) {
 
   if (!timeRange) return undefined;
 
+  // A one-shot export downloads what is on screen, so it carries the viewer's
+  // exact selection. A scheduled report must not: exact values are only
+  // fetched after an explicit click, never on a schedule.
+  const exactMeasures = isScheduled
+    ? undefined
+    : [
+        ...requestExactNames(
+          columns.measure.map((m) => m.id),
+          get(ctx.selectors.exactMeasures.exactMeasureContext)(
+            exploreExactSurface.pivot,
+          ),
+        ),
+      ];
+
   const query: V1Query = {
     metricsViewAggregationRequest: getPivotAggregationRequest({
       instanceId: ctx.runtimeClient.instanceId,
@@ -75,6 +90,7 @@ export function getPivotExportQuery(ctx: StateManagers, isScheduled: boolean) {
       comparisonTime,
       isFlat,
       pivotState,
+      exactMeasures,
     }),
   };
 
@@ -93,6 +109,7 @@ export function getPivotAggregationRequest({
   comparisonTime,
   isFlat,
   pivotState,
+  exactMeasures,
 }: {
   instanceId: string;
   metricsViewName: string;
@@ -105,6 +122,8 @@ export function getPivotAggregationRequest({
   comparisonTime: TimeRangeString | undefined;
   isFlat: boolean;
   pivotState: PivotState;
+  // Measures to request with `exact: true`; see `requestExactNames`.
+  exactMeasures?: string[];
 }): undefined | V1MetricsViewAggregationRequest {
   const measures = columns.measure.flatMap((m) => {
     const measureName = m.id;
@@ -190,17 +209,13 @@ export function getPivotAggregationRequest({
     metricsView: metricsViewName,
     timeRange,
     comparisonTimeRange: comparisonTime,
-    measures: enableComparison
-      ? prepareMeasureForComparison(measures)
-      : measures,
-    dimensions: allDimensions,
-    where: sanitiseExpression(
-      mergeDimensionAndMeasureFilters(
-        exploreState.whereFilter,
-        exploreState.dimensionThresholdFilters,
-      ),
-      undefined,
+    measures: prepareMeasuresForRequest(
+      measures,
+      exploreState.ephemeralMeasures,
+      exactMeasures,
     ),
+    dimensions: allDimensions,
+    where: sanitiseExpression(exploreState.whereFilter, undefined),
     pivotOn,
     sort,
     offset: "0",

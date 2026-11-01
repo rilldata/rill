@@ -36,7 +36,7 @@ export function useAllModelColumns(
       return;
     }
 
-    derived(
+    return derived(
       allModels.data.map((r) =>
         createTableColumnsWithName(
           queryClient,

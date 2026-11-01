@@ -56,6 +56,7 @@ func (c *connection) findInstances(_ context.Context, whereClause string, args .
 			annotations,
 			public_paths,
 			ai_instructions,
+			ai_prompts,
 			frontend_url,
 			theme
 		FROM instances %s ORDER BY id
@@ -70,7 +71,7 @@ func (c *connection) findInstances(_ context.Context, whereClause string, args .
 	var res []*drivers.Instance
 	for rows.Next() {
 		// sqlite doesn't support maps need to read as bytes and convert to map
-		var variables, projectVariables, systemVariables, featureFlags, annotations, connectors, projectConnectors, publicPaths []byte
+		var variables, projectVariables, systemVariables, featureFlags, annotations, connectors, projectConnectors, publicPaths, aiPrompts []byte
 		i := &drivers.Instance{}
 		err := rows.Scan(
 			&i.ID,
@@ -94,6 +95,7 @@ func (c *connection) findInstances(_ context.Context, whereClause string, args .
 			&annotations,
 			&publicPaths,
 			&i.AIInstructions,
+			&aiPrompts,
 			&i.FrontendURL,
 			&i.Theme,
 		)
@@ -151,6 +153,11 @@ func (c *connection) findInstances(_ context.Context, whereClause string, args .
 		}
 
 		i.PublicPaths, err = arrayFromJSON[string](publicPaths)
+		if err != nil {
+			return nil, err
+		}
+
+		i.AIPrompts, err = arrayFromJSON[*runtimev1.AIPrompt](aiPrompts)
 		if err != nil {
 			return nil, err
 		}
@@ -214,6 +221,11 @@ func (c *connection) CreateInstance(_ context.Context, inst *drivers.Instance) e
 		return err
 	}
 
+	aiPrompts, err := arrayToJSON(inst.AIPrompts)
+	if err != nil {
+		return err
+	}
+
 	now := time.Now()
 	_, err = c.db.ExecContext(
 		ctx,
@@ -240,10 +252,11 @@ func (c *connection) CreateInstance(_ context.Context, inst *drivers.Instance) e
 			annotations,
 			public_paths,
 			ai_instructions,
+			ai_prompts,
 			frontend_url,
 			theme
 		)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24)
 		`,
 		inst.ID,
 		inst.Environment,
@@ -266,6 +279,7 @@ func (c *connection) CreateInstance(_ context.Context, inst *drivers.Instance) e
 		annotations,
 		publicPaths,
 		inst.AIInstructions,
+		aiPrompts,
 		inst.FrontendURL,
 		inst.Theme,
 	)
@@ -325,6 +339,11 @@ func (c *connection) EditInstance(_ context.Context, inst *drivers.Instance) err
 		return err
 	}
 
+	aiPrompts, err := arrayToJSON(inst.AIPrompts)
+	if err != nil {
+		return err
+	}
+
 	now := time.Now()
 	_, err = c.db.ExecContext(
 		ctx,
@@ -349,8 +368,9 @@ func (c *connection) EditInstance(_ context.Context, inst *drivers.Instance) err
 			annotations = $18,
 			public_paths = $19,
 			ai_instructions = $20,
-			frontend_url = $21,
-			theme = $22
+			ai_prompts = $21,
+			frontend_url = $22,
+			theme = $23
 		WHERE id = $1
 		`,
 		inst.ID,
@@ -373,6 +393,7 @@ func (c *connection) EditInstance(_ context.Context, inst *drivers.Instance) err
 		annotations,
 		publicPaths,
 		inst.AIInstructions,
+		aiPrompts,
 		inst.FrontendURL,
 		inst.Theme,
 	)

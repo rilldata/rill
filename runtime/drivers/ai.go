@@ -27,5 +27,8 @@ type CompleteResult struct {
 	// is a subset of InputTokens.
 	InputTokens       int
 	CachedInputTokens int
-	OutputTokens      int
+	// CacheWriteInputTokens are input tokens written to the provider's prompt cache, which some providers (e.g. Claude) bill at a premium.
+	// Like for Claude's CachedInputTokens, they are disjoint from InputTokens.
+	CacheWriteInputTokens int
+	OutputTokens          int
 }

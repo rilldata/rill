@@ -20,7 +20,7 @@
     $exploreQuery.data?.metricsView?.meta?.filePaths?.[0] ?? "",
   );
   // When the explore is defined inline in the metrics view file, both items point
-  // at the same file; the ?view= param selects what gets edited.
+  // at the same file; the ?editor= param selects what gets edited.
   let definedInMetricsView = $derived(
     $exploreQuery.data?.explore?.explore?.state?.validSpec
       ?.definedInMetricsView ?? false,

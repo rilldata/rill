@@ -2,6 +2,7 @@
   import Column from "@rilldata/web-common/components/icons/Column.svelte";
   import Row from "@rilldata/web-common/components/icons/Row.svelte";
   import { splitPivotChips } from "@rilldata/web-common/features/dashboards/pivot/pivot-utils.ts";
+  import type { EphemeralMeasureDef } from "@rilldata/web-common/features/dashboards/ephemeral-measures/types";
   import { slide } from "svelte/transition";
   import DragList from "./DragList.svelte";
   import PivotAutoArrangeZone from "./PivotAutoArrangeZone.svelte";
@@ -21,8 +22,16 @@
     | ((measureName: string, fmt: PivotMeasureFormatting | null) => void)
     | undefined = undefined;
   export let lowerIsBetterMap: Record<string, boolean> = {};
+  export let ephemeralMeasures: EphemeralMeasureDef[] | undefined = undefined;
+  export let onEditEphemeralMeasure: ((id: string) => void) | undefined =
+    undefined;
+  export let onDeleteEphemeralMeasure: ((id: string) => void) | undefined =
+    undefined;
 
   $: ({ rows, columns, tableMode, measureFormatting } = pivotState);
+  $: ephemeralMeasureNames = new Set(
+    ephemeralMeasures?.map((def) => def.name) ?? [],
+  );
   $: splitColumns = splitPivotChips(columns);
   $: fullColumns = splitColumns.dimension.concat(splitColumns.measure);
   $: isFlat = tableMode === "flat";
@@ -78,6 +87,9 @@
       {measureFormatting}
       {setMeasureFormatting}
       {lowerIsBetterMap}
+      {ephemeralMeasureNames}
+      {onEditEphemeralMeasure}
+      {onDeleteEphemeralMeasure}
     />
   </div>
 </div>

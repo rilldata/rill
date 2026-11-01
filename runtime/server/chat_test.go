@@ -17,6 +17,8 @@ import (
 	"github.com/rilldata/rill/runtime/testruntime/testmode"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -386,6 +388,94 @@ func TestAnonymousSessionAccess(t *testing.T) {
 	})
 	require.NoError(t, err)
 	require.Equal(t, msg.Call.ID, msgRes.Message.Id)
+}
+
+func TestUpdateAndDeleteConversation(t *testing.T) {
+	rt, instanceID := testruntime.NewInstance(t)
+	srv, err := server.NewServer(context.Background(), &server.Options{}, rt, zap.NewNop(), ratelimit.NewNoop(), activity.NewNoopClient())
+	require.NoError(t, err)
+
+	perms := []runtime.Permission{runtime.ReadObjects, runtime.ReadMetrics, runtime.UseAI}
+	ownerClaims := &runtime.SecurityClaims{UserID: "foo", Permissions: perms}
+	ownerCtx := auth.WithClaims(t.Context(), ownerClaims)
+	otherCtx := auth.WithClaims(t.Context(), &runtime.SecurityClaims{UserID: "bar", Permissions: perms})
+	anonCtx := auth.WithClaims(t.Context(), &runtime.SecurityClaims{UserID: "", Permissions: perms})
+
+	// Create a session directly to avoid LLM calls.
+	runner := ai.NewRunner(rt, activity.NewNoopClient())
+	sess, err := runner.Session(t.Context(), &ai.SessionOptions{
+		InstanceID: instanceID,
+		Claims:     ownerClaims,
+		UserAgent:  "test",
+	})
+	require.NoError(t, err)
+	sessionID := sess.ID()
+
+	// Share the session to check that being able to view a conversation does not allow renaming or deleting it.
+	// It flushes twice to check that already persisted messages are not inserted again.
+	_, err = sess.CallTool(t.Context(), ai.RoleUser, ai.ListMetricsViewsName, nil, &ai.ListMetricsViewsArgs{})
+	require.NoError(t, err)
+	require.NoError(t, sess.Flush(t.Context()))
+	msg, err := sess.CallTool(t.Context(), ai.RoleUser, ai.ListMetricsViewsName, nil, &ai.ListMetricsViewsArgs{})
+	require.NoError(t, err)
+	require.NoError(t, sess.UpdateSharedUntilMessageID(t.Context(), msg.Result.ID))
+	require.NoError(t, sess.Flush(t.Context()))
+	_, err = srv.GetConversation(otherCtx, &runtimev1.GetConversationRequest{
+		InstanceId:     instanceID,
+		ConversationId: sessionID,
+	})
+	require.NoError(t, err)
+
+	// Non-owners cannot rename or delete the conversation.
+	title := "Renamed"
+	for _, ctx := range []context.Context{otherCtx, anonCtx} {
+		_, err = srv.UpdateConversation(ctx, &runtimev1.UpdateConversationRequest{
+			InstanceId:     instanceID,
+			ConversationId: sessionID,
+			Title:          &title,
+		})
+		require.Equal(t, codes.PermissionDenied, status.Code(err))
+		_, err = srv.DeleteConversation(ctx, &runtimev1.DeleteConversationRequest{
+			InstanceId:     instanceID,
+			ConversationId: sessionID,
+		})
+		require.Equal(t, codes.PermissionDenied, status.Code(err))
+	}
+
+	// The owner can rename the conversation.
+	_, err = srv.UpdateConversation(ownerCtx, &runtimev1.UpdateConversationRequest{
+		InstanceId:     instanceID,
+		ConversationId: sessionID,
+		Title:          &title,
+	})
+	require.NoError(t, err)
+	getRes, err := srv.GetConversation(ownerCtx, &runtimev1.GetConversationRequest{
+		InstanceId:     instanceID,
+		ConversationId: sessionID,
+	})
+	require.NoError(t, err)
+	require.Equal(t, "Renamed", getRes.Conversation.Title)
+
+	// The owner can delete the conversation.
+	_, err = srv.DeleteConversation(ownerCtx, &runtimev1.DeleteConversationRequest{
+		InstanceId:     instanceID,
+		ConversationId: sessionID,
+	})
+	require.NoError(t, err)
+	listRes, err := srv.ListConversations(ownerCtx, &runtimev1.ListConversationsRequest{InstanceId: instanceID})
+	require.NoError(t, err)
+	require.Empty(t, listRes.Conversations)
+
+	// A session that is still in use when deleted, e.g. during a streaming completion, does not recreate messages when flushed.
+	_, err = sess.CallTool(t.Context(), ai.RoleUser, ai.ListMetricsViewsName, nil, &ai.ListMetricsViewsArgs{})
+	require.NoError(t, err)
+	require.NoError(t, sess.Flush(t.Context()))
+	catalog, release, err := rt.Catalog(t.Context(), instanceID)
+	require.NoError(t, err)
+	defer release()
+	msgs, err := catalog.FindAIMessages(t.Context(), sessionID)
+	require.NoError(t, err)
+	require.Empty(t, msgs)
 }
 
 func TestAgentChoiceAndContext(t *testing.T) {

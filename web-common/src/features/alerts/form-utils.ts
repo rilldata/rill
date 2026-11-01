@@ -6,22 +6,25 @@ import {
   type MeasureFilterEntry,
 } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
 import { MeasureFilterType } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-options";
-import { mergeDimensionAndMeasureFilters } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
+import { mapEphemeralMeasuresForRequest } from "@rilldata/web-common/features/dashboards/ephemeral-measures/measure-mapping";
+import type { EphemeralMeasureDef } from "@rilldata/web-common/features/dashboards/ephemeral-measures/types";
 import { sanitiseExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import {
   mapSelectedComparisonTimeRangeToV1TimeRange,
   mapSelectedTimeRangeToV1TimeRange,
 } from "@rilldata/web-common/features/dashboards/time-controls/time-range-mappers.ts";
-import type { FiltersState } from "@rilldata/web-common/features/dashboards/stores/Filters.ts";
 import type { TimeControlState } from "@rilldata/web-common/features/dashboards/stores/TimeControls.ts";
 import { getInitialScheduleFormValues } from "@rilldata/web-common/features/scheduled-reports/time-utils.ts";
 import type {
   V1ExploreSpec,
+  V1ExportFormat,
+  V1Expression,
   V1MetricsViewAggregationRequest,
   V1Operation,
 } from "@rilldata/web-common/runtime-client";
 import type { ValidationErrors } from "sveltekit-superforms";
 import { yup, type ValidationAdapter } from "sveltekit-superforms/adapters";
+import { getExportLimitSchema } from "@rilldata/web-common/features/exports/export-file-options";
 import { object, array, string } from "yup";
 
 export type AlertFormValues = {
@@ -37,16 +40,24 @@ export type AlertFormValues = {
   slackUsers: string[];
   enableEmailNotification: boolean;
   emailRecipients: string[];
+  // Options for attaching the rows that triggered the alert to emails
+  exportAttach: boolean;
+  exportFormat: V1ExportFormat;
+  exportLimit: string;
+  exportIncludeHeader: boolean;
   refreshWhenDataRefreshes: boolean;
   // The following fields are not editable in the form, but they're state that's used throughout the form, so
   // it's helpful to have them here. Also, in the future they may be editable in the form.
   metricsViewName: string;
   exploreName: string;
+  // Definitions for the dashboard's ephemeral measures, so an alert can be
+  // built on one: the saved query embeds the expression it needs.
+  ephemeralMeasures?: EphemeralMeasureDef[];
 } & ReturnType<typeof getInitialScheduleFormValues>;
 
 export function getAlertQueryArgsFromFormValues(
   formValues: AlertFormValues,
-  filtersArgs: FiltersState,
+  expr: V1Expression | undefined,
   timeControlArgs: TimeControlState,
   exploreSpec: V1ExploreSpec,
 ): V1MetricsViewAggregationRequest {
@@ -63,43 +74,40 @@ export function getAlertQueryArgsFromFormValues(
 
   return {
     metricsView: formValues.metricsViewName,
-    measures: [
-      {
-        name: formValues.measure,
-      },
-      ...(comparisonTimeRange
-        ? [
-            {
-              name: formValues.measure + ComparisonDeltaAbsoluteSuffix,
-              comparisonDelta: { measure: formValues.measure },
-            },
-            {
-              name: formValues.measure + ComparisonDeltaRelativeSuffix,
-              comparisonRatio: { measure: formValues.measure },
-            },
-          ]
-        : []),
-      ...(formValues.criteria.some(
-        (c) => c.type === MeasureFilterType.PercentOfTotal,
-      )
-        ? [
-            {
-              name: formValues.measure + ComparisonPercentOfTotal,
-              percentOfTotal: { measure: formValues.measure },
-            },
-          ]
-        : []),
-    ],
+    measures: mapEphemeralMeasuresForRequest(
+      [
+        {
+          name: formValues.measure,
+        },
+        ...(comparisonTimeRange
+          ? [
+              {
+                name: formValues.measure + ComparisonDeltaAbsoluteSuffix,
+                comparisonDelta: { measure: formValues.measure },
+              },
+              {
+                name: formValues.measure + ComparisonDeltaRelativeSuffix,
+                comparisonRatio: { measure: formValues.measure },
+              },
+            ]
+          : []),
+        ...(formValues.criteria.some(
+          (c) => c.type === MeasureFilterType.PercentOfTotal,
+        )
+          ? [
+              {
+                name: formValues.measure + ComparisonPercentOfTotal,
+                percentOfTotal: { measure: formValues.measure },
+              },
+            ]
+          : []),
+      ],
+      formValues.ephemeralMeasures,
+    ),
     dimensions: formValues.splitByDimension
       ? [{ name: formValues.splitByDimension }]
       : [],
-    where: sanitiseExpression(
-      mergeDimensionAndMeasureFilters(
-        filtersArgs.whereFilter,
-        filtersArgs.dimensionThresholdFilters,
-      ),
-      undefined,
-    ),
+    where: sanitiseExpression(expr, undefined),
     having: sanitiseExpression(undefined, {
       cond: {
         op: formValues.criteriaOperation,
@@ -158,6 +166,12 @@ export const alertFormValidationSchema = yup(
     snooze: string().required("Required"),
     slackUsers: array(string().email("Invalid email")),
     emailRecipients: array(string().email("Invalid email")),
+    // The row limit input is hidden unless attachments are enabled for email delivery
+    exportLimit: string().when(["enableEmailNotification", "exportAttach"], {
+      is: (enableEmailNotification: boolean, exportAttach: boolean) =>
+        enableEmailNotification && exportAttach,
+      then: () => getExportLimitSchema(),
+    }),
   }),
 ) as unknown as ValidationAdapter<AlertFormValues>;
 export const FieldsByTab: (keyof AlertFormValues)[][] = [

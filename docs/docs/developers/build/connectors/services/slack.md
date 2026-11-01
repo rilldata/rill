@@ -38,7 +38,7 @@ The last two scopes are required to find the user's ID by email.
 
 ## Enabling the Slack integration in your project
 
-Once the Slack integration has been set up, the Slack destination will need to be enabled on a per project basis (note - alerts can only be configured on projects deployed to Rill Cloud). This requires the `SLACK_BOT_TOKEN` connector variable to be set, which can be configured in Rill in a manner very similar to [setting credentials](/developers/deploy/deploy-credentials) for other connectors. Please use one of the available options below.
+Once the Slack integration has been set up, the Slack destination will need to be enabled on a per-project basis (note - alerts can only be configured on projects deployed to Rill Cloud). This requires the `SLACK_BOT_TOKEN` connector variable to be set, which can be configured in Rill in a manner very similar to [setting credentials](/developers/deploy/deploy-credentials) for other connectors. Please use one of the available options below.
 
 ### Creating a Slack.yaml connector
 
@@ -53,7 +53,7 @@ SLACK_BOT_TOKEN=<BOT_USER_OAUTH_TOKEN>
 ```
 
 
-Afterwards, if the project has already been deployed to Rill Cloud, you can `rill env push` to update your cloud deployment accordingly.
+Afterward, if the project has already been deployed to Rill Cloud, you can `rill env push` to update your cloud deployment accordingly.
 
 ### Using the `rill env set` command
 
@@ -63,7 +63,7 @@ Another option to set this connector variable within your project is to use the 
 rill env set SLACK_BOT_TOKEN <BOT_USER_OAUTH_TOKEN>
 ```
 
-Afterwards, if the project has already been deployed to Rill Cloud, you can `rill env push` to update your cloud deployment accordingly.
+Afterward, if the project has already been deployed to Rill Cloud, you can `rill env push` to update your cloud deployment accordingly.
 
 ### Enabling the Slack connector through `rill.yaml`
 
@@ -84,4 +84,3 @@ If you subsequently add sources that require new credentials (or if you simply e
 ```
 rill env push
 ```
-

@@ -123,7 +123,7 @@ test.describe("Embeds", () => {
       await frame.getByRole("row", { name: "Instacart $2.1k" }).click();
 
       await recorder.expectContaining(
-        "tr=P7D&grain=day&f=advertiser_name+IN+%28%27Instacart%27%29",
+        "tr=P7D&f=advertiser_name+IN+%28%27Instacart%27%29",
       );
     });
 
@@ -170,7 +170,7 @@ test.describe("Embeds", () => {
       });
 
       await recorder.expectContaining(
-        `{"id":1337,"result":{"state":"tr=P7D&grain=day&f=advertiser_name+IN+%28%27Instacart%27%29"}}`,
+        `{"id":1337,"result":{"state":"tr=P7D&f=advertiser_name+IN+%28%27Instacart%27%29"}}`,
       );
     });
 
@@ -434,7 +434,7 @@ test.describe("Embeds", () => {
         );
 
         await recorder.expectContaining(
-          "tr=PT6H&compare_tr=rill-PP&grain=hour&f=advertiser_name+IN+%28%27Instacart%27%29",
+          "tr=PT6H&compare_tr=rill-PP&f=advertiser_name+IN+%28%27Instacart%27%29",
         );
       });
     });
@@ -500,6 +500,11 @@ test.describe("Embeds", () => {
       const recorder = new EmbedMessageRecorder(embedPage);
       await recorder.waitForReady();
       const frame = embedPage.frameLocator("iframe");
+
+      // Wait for canvas to load
+      await expect(frame.getByLabel("overall_spend KPI data")).toContainText(
+        /Advertising Spend Overall\s*\$3,900/,
+      );
 
       await embedPage.evaluate(() => {
         const iframe = document.querySelector("iframe");

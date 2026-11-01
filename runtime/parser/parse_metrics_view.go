@@ -51,6 +51,7 @@ type MetricsViewYAML struct {
 		LookupKeyColumn         string `yaml:"lookup_key_column"`
 		LookupValueColumn       string `yaml:"lookup_value_column"`
 		LookupDefaultExpression string `yaml:"lookup_default_expression"`
+		LookupGroupByKey        *bool  `yaml:"lookup_group_by_key"`
 		SmallestTimeGrain       string `yaml:"smallest_time_grain"`
 		Tags                    []string
 	}
@@ -61,6 +62,7 @@ type MetricsViewYAML struct {
 		Description         string
 		Type                string
 		Expression          string
+		ExactExpression     string `yaml:"exact_expression"`
 		Window              *MetricsViewMeasureWindow
 		Per                 MetricsViewFieldSelectorsYAML
 		Requires            MetricsViewFieldSelectorsYAML
@@ -386,6 +388,9 @@ func (p *Parser) parseMetricsView(node *Node) error {
 				return fmt.Errorf("unnest cannot be used with lookup fields")
 			}
 		}
+		if dim.LookupGroupByKey != nil && *dim.LookupGroupByKey && dim.LookupTable == "" {
+			return fmt.Errorf("lookup_group_by_key requires lookup_table, lookup_key_column and lookup_value_column for dimension: %q", dim.Name)
+		}
 
 		// Validate the dimension name is unique
 		lower := strings.ToLower(dim.Name)
@@ -440,6 +445,7 @@ func (p *Parser) parseMetricsView(node *Node) error {
 			LookupKeyColumn:         dim.LookupKeyColumn,
 			LookupValueColumn:       dim.LookupValueColumn,
 			LookupDefaultExpression: dim.LookupDefaultExpression,
+			LookupGroupByKey:        dim.LookupGroupByKey,
 			SmallestTimeGrain:       smallestTimeGrain,
 			Tags:                    dim.Tags,
 		})
@@ -479,6 +485,10 @@ func (p *Parser) parseMetricsView(node *Node) error {
 
 		if measure.FormatPreset != "" && measure.FormatD3 != "" {
 			return fmt.Errorf(`cannot set both "format_preset" and "format_d3" for a measure`)
+		}
+
+		if measure.ExactExpression != "" && measure.Expression == "" {
+			return fmt.Errorf(`measure %q: "exact_expression" can only be set if "expression" is set`, measure.Name)
 		}
 
 		var formatD3Locale *structpb.Struct
@@ -590,11 +600,17 @@ func (p *Parser) parseMetricsView(node *Node) error {
 			return fmt.Errorf(`invalid measure type %q (allowed values: simple, derived, time_comparison)`, measure.Type)
 		}
 
+		// Derived measures are calculated from the measures as a query computes them, so only simple measures have an exact variant.
+		if measure.ExactExpression != "" && (typ != runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE || window != nil) {
+			return fmt.Errorf(`measure %q: "exact_expression" can only be set on simple measures without a window`, measure.Name)
+		}
+
 		measures = append(measures, &runtimev1.MetricsViewSpec_Measure{
 			Name:                measure.Name,
 			DisplayName:         measure.DisplayName,
 			Description:         measure.Description,
 			Expression:          measure.Expression,
+			ExactExpression:     measure.ExactExpression,
 			Type:                typ,
 			Window:              window,
 			PerDimensions:       perDimensions,
@@ -847,13 +863,13 @@ func (p *Parser) parseMetricsView(node *Node) error {
 	}
 
 	// validate and insert inline explore, if true and no error is returned from the method then an explore resource is created so no error should be returned after this point
-	skipExplore, exploreRes, err := p.parseAndInsertInlineExplore(tmp, node.Name, node.Paths, node.Tags)
+	skipExplore, exploreRes, err := p.parseAndInsertInlineExplore(tmp, node.Name, node.Paths, node.Tags, node.Metadata)
 	if err != nil {
 		return fmt.Errorf("failed to parse inline explore: %w", err)
 	}
 
 	// insert metrics view resource immediately after parsing the inline explore as it inserts the explore resource so we should not return an error now
-	r, err := p.insertResource(ResourceKindMetricsView, node.Name, node.Paths, node.Tags, node.Refs...)
+	r, err := p.insertResource(ResourceKindMetricsView, node.Name, node.Paths, node.Tags, node.Metadata, node.Refs...)
 	if err != nil {
 		// If we fail to insert the metrics view, we must delete the inline explore if it was created.
 		if exploreRes != nil {
@@ -947,7 +963,7 @@ func (p *Parser) parseMetricsView(node *Node) error {
 	if tmp.DefaultTheme != "" {
 		refs = append(refs, ResourceName{Kind: ResourceKindTheme, Name: tmp.DefaultTheme})
 	}
-	e, err := p.insertResource(ResourceKindExplore, node.Name, node.Paths, node.Tags, refs...)
+	e, err := p.insertResource(ResourceKindExplore, node.Name, node.Paths, node.Tags, node.Metadata, refs...)
 	if err != nil {
 		// We mustn't error because we have already emitted one resource.
 		// Since this probably means an explore has been defined separately, we can just ignore this error.
@@ -1012,7 +1028,7 @@ func (p *Parser) parseMetricsView(node *Node) error {
 }
 
 // parseAndInsertInlineExplore parses and validates the inline explore definition in a metrics view YAML. It returns true if automatic explore emission should be skipped, false otherwise.
-func (p *Parser) parseAndInsertInlineExplore(tmp *MetricsViewYAML, mvName string, mvPaths, mvTags []string) (bool, *Resource, error) {
+func (p *Parser) parseAndInsertInlineExplore(tmp *MetricsViewYAML, mvName string, mvPaths, mvTags []string, mvMetadata map[string]string) (bool, *Resource, error) {
 	if tmp.Explore == nil {
 		return false, nil, nil
 	}
@@ -1046,7 +1062,7 @@ func (p *Parser) parseAndInsertInlineExplore(tmp *MetricsViewYAML, mvName string
 		name = tmp.Explore.Name
 	}
 	// Track explore
-	r, err := p.insertResource(ResourceKindExplore, name, mvPaths, mvTags, refs...)
+	r, err := p.insertResource(ResourceKindExplore, name, mvPaths, mvTags, mvMetadata, refs...)
 	if err != nil {
 		return false, nil, err
 	}

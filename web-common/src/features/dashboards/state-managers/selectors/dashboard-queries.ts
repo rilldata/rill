@@ -1,16 +1,14 @@
 import { additionalMeasures } from "../../selectors";
-import type { DimensionThresholdFilter } from "web-common/src/features/dashboards/stores/explore-state";
+import type { V1Expression } from "@rilldata/web-common/runtime-client";
 
 export function getMeasuresForDimensionOrLeaderboardDisplay(
   sortByMeasureName: string | null,
-  dimensionThresholdFilters: DimensionThresholdFilter[],
+  expr: V1Expression | undefined,
   visibleMeasureNames: string[],
 ) {
   const allMeasures = new Set([
     ...visibleMeasureNames,
-    ...(sortByMeasureName
-      ? additionalMeasures(sortByMeasureName, dimensionThresholdFilters)
-      : []),
+    ...(sortByMeasureName ? additionalMeasures(sortByMeasureName, expr) : []),
   ]);
   return [...allMeasures];
 }

@@ -37,6 +37,7 @@ func Test_ResolveFeatureFlags(t *testing.T) {
 				"alerts":                          true,
 				"reports":                         true,
 				"chat":                            true,
+				"chatMemory":                      true,
 				"dashboardChat":                   false,
 				"developerChat":                   true,
 				"chatCharts":                      true,
@@ -45,6 +46,7 @@ func Test_ResolveFeatureFlags(t *testing.T) {
 				"stickyDashboardState":            false,
 				"cloudEditing":                    false,
 				"customCharts":                    false,
+				"customComponents":                false,
 				"personalCanvases":                false,
 				"disablePersistentDashboardState": false,
 			},
@@ -65,6 +67,7 @@ func Test_ResolveFeatureFlags(t *testing.T) {
 				"alerts":                          false,
 				"reports":                         true,
 				"chat":                            true,
+				"chatMemory":                      true,
 				"dashboardChat":                   false,
 				"developerChat":                   true,
 				"chatCharts":                      true,
@@ -73,6 +76,7 @@ func Test_ResolveFeatureFlags(t *testing.T) {
 				"stickyDashboardState":            false,
 				"cloudEditing":                    false,
 				"customCharts":                    false,
+				"customComponents":                false,
 				"personalCanvases":                false,
 				"disablePersistentDashboardState": false,
 			},
@@ -93,6 +97,7 @@ func Test_ResolveFeatureFlags(t *testing.T) {
 				"alerts":                          false,
 				"reports":                         false,
 				"chat":                            true,
+				"chatMemory":                      true,
 				"dashboardChat":                   false,
 				"developerChat":                   true,
 				"chatCharts":                      true,
@@ -101,6 +106,7 @@ func Test_ResolveFeatureFlags(t *testing.T) {
 				"stickyDashboardState":            false,
 				"cloudEditing":                    false,
 				"customCharts":                    false,
+				"customComponents":                false,
 				"personalCanvases":                false,
 				"disablePersistentDashboardState": false,
 			},
@@ -121,6 +127,7 @@ func Test_ResolveFeatureFlags(t *testing.T) {
 				"alerts":                          false,
 				"reports":                         false,
 				"chat":                            false,
+				"chatMemory":                      false, // forced false because chat is false
 				"dashboardChat":                   false, // forced false because chat is false
 				"developerChat":                   true,
 				"chatCharts":                      true,
@@ -129,6 +136,7 @@ func Test_ResolveFeatureFlags(t *testing.T) {
 				"stickyDashboardState":            false,
 				"cloudEditing":                    false,
 				"customCharts":                    false,
+				"customComponents":                false,
 				"personalCanvases":                false,
 				"disablePersistentDashboardState": false,
 			},
@@ -146,6 +154,43 @@ func Test_ResolveFeatureFlags(t *testing.T) {
 			)
 			require.NoError(t, err)
 			require.Equal(t, test.featureFlags, featureFlags)
+		})
+	}
+}
+
+func Test_ResolveFeatureFlags_CloudEditingDisabledAnnotation(t *testing.T) {
+	tests := []struct {
+		name            string
+		annotationValue string
+		expected        bool
+	}{
+		{name: "annotation absent", expected: true},
+		{name: "annotation false", annotationValue: "false", expected: true},
+		{name: "annotation true", annotationValue: "true", expected: false},
+		{name: "annotation true case insensitive", annotationValue: "TRUE", expected: false},
+		{name: "annotation invalid", annotationValue: "invalid", expected: true},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			annotations := map[string]string{}
+			if test.annotationValue != "" {
+				annotations[CloudEditingDisabledAnnotation] = test.annotationValue
+			}
+
+			for _, camelCase := range []bool{false, true} {
+				featureFlags, err := ResolveFeatureFlags(&drivers.Instance{
+					FeatureFlags: map[string]string{"cloud_editing": "true"},
+					Annotations:  annotations,
+				}, nil, camelCase)
+				require.NoError(t, err)
+
+				key := "cloud_editing"
+				if camelCase {
+					key = "cloudEditing"
+				}
+				require.Equal(t, test.expected, featureFlags[key])
+			}
 		})
 	}
 }

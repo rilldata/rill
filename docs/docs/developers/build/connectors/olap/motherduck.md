@@ -20,7 +20,7 @@ Rill supports connecting to MotherDuck using the latest DuckDB-compatible driver
 
 ## Getting Your MotherDuck Access Token
 
-To connect to MotherDuck, you'll need a access token from your MotherDuck account:
+To connect to MotherDuck, you'll need an access token from your MotherDuck account:
 
 1. Log in to your [MotherDuck account](https://motherduck.com/)
 2. Navigate to the **Settings** section

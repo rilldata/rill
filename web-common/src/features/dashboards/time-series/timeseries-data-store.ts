@@ -1,4 +1,11 @@
-import { mergeDimensionAndMeasureFilters } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
+import {
+  applyExactMeasures,
+  ephemeralMeasureNameSet,
+  exactTimeSeriesMeasureNames,
+  splitTimeSeriesMeasures,
+} from "@rilldata/web-common/features/dashboards/ephemeral-measures/measure-mapping";
+import { requestExactNames } from "@rilldata/web-common/features/dashboards/exact-measures/exact-measures";
+import { exploreExactSurface } from "@rilldata/web-common/features/dashboards/exact-measures/explore-surfaces";
 import { filterOutSomeAdvancedMeasures } from "@rilldata/web-common/features/dashboards/state-managers/selectors/measures";
 import type { StateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
 import { sanitiseExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
@@ -54,24 +61,41 @@ export function createMetricsViewTimeSeries(
   ctx: StateManagers,
   measures: string[],
   isComparison = false,
+  // The surface whose exact selection the request follows; see `exploreExactSurface`.
+  exactSurface: string = exploreExactSurface.measures,
 ): CreateQueryResult<V1MetricsViewTimeSeriesResponse, Error> {
   return derived(
-    [ctx.metricsViewName, ctx.dashboardStore, useTimeControlStore(ctx)],
-    ([metricsViewName, dashboardStore, timeControls], set) => {
+    [
+      ctx.metricsViewName,
+      ctx.dashboardStore,
+      useTimeControlStore(ctx),
+      ctx.selectors.exactMeasures.exactMeasureContext,
+    ],
+    ([metricsViewName, dashboardStore, timeControls, exactContext], set) => {
       const timeGrain = timeControls.selectedTimeRange?.interval;
+
+      // Ephemeral measures travel in `measures` with their expression;
+      // regular measures stay in `measureNames`.
+      const { measureNames, ephemeralMeasures: ephemeralRequestMeasures } =
+        splitTimeSeriesMeasures(measures, dashboardStore.ephemeralMeasures);
+      const exactNames = requestExactNames(
+        measures,
+        exactContext(exactSurface),
+      );
 
       return createQueryServiceMetricsViewTimeSeries(
         ctx.runtimeClient,
         {
           metricsViewName,
-          measureNames: measures,
-          where: sanitiseExpression(
-            mergeDimensionAndMeasureFilters(
-              dashboardStore.whereFilter,
-              dashboardStore.dimensionThresholdFilters,
-            ),
-            undefined,
+          measureNames,
+          ephemeralMeasures:
+            ephemeralRequestMeasures &&
+            applyExactMeasures(ephemeralRequestMeasures, exactNames),
+          exactMeasureNames: exactTimeSeriesMeasureNames(
+            measureNames,
+            exactNames,
           ),
+          where: sanitiseExpression(dashboardStore.whereFilter, undefined),
           timeStart: isComparison
             ? timeControls.comparisonAdjustedStart
             : timeControls.adjustedStart,
@@ -127,9 +151,17 @@ export function createTimeSeriesDataStore(
         dashboardStore?.activePage ===
           DashboardState_ActivePage.TIME_DIMENSIONAL_DETAIL,
       );
+      // The Time Dimension Detail page is one surface: its chart, totals and
+      // table follow the chip in its header (see exploreExactSurface).
+      const exactSurface = showTimeDimensionDetail
+        ? exploreExactSurface.tdd
+        : exploreExactSurface.measures;
       const expandedMeasuerName = dashboardStore?.tdd?.expandedMeasureName;
       if (showTimeDimensionDetail && expandedMeasuerName) {
-        measures = allMeasures.filter(
+        const ephemeralMeasureNames = ephemeralMeasureNameSet(
+          dashboardStore?.ephemeralMeasures,
+        );
+        measures = [...allMeasures, ...ephemeralMeasureNames].filter(
           (measure) => measure === expandedMeasuerName,
         );
       } else {
@@ -153,7 +185,12 @@ export function createTimeSeriesDataStore(
 
       const primaryTimeSeries =
         measuresForTimeSeries.length > 0
-          ? createMetricsViewTimeSeries(ctx, measuresForTimeSeries, false)
+          ? createMetricsViewTimeSeries(
+              ctx,
+              measuresForTimeSeries,
+              false,
+              exactSurface,
+            )
           : writable({
               isFetching: false,
               isError: false,
@@ -163,7 +200,7 @@ export function createTimeSeriesDataStore(
 
       const primaryTotals =
         measuresForTotals.length > 0
-          ? createTotalsForMeasure(ctx, measuresForTotals, false)
+          ? createTotalsForMeasure(ctx, measuresForTotals, false, exactSurface)
           : writable({
               isFetching: false,
               isError: false,
@@ -180,6 +217,7 @@ export function createTimeSeriesDataStore(
           ctx,
           measuresForTotals,
           dashboardStore?.selectedComparisonDimension,
+          exactSurface,
         );
       }
       let comparisonTimeSeries:
@@ -193,8 +231,14 @@ export function createTimeSeriesDataStore(
           ctx,
           measuresForTimeSeries,
           true,
+          exactSurface,
         );
-        comparisonTotals = createTotalsForMeasure(ctx, measuresForTotals, true);
+        comparisonTotals = createTotalsForMeasure(
+          ctx,
+          measuresForTotals,
+          true,
+          exactSurface,
+        );
       }
 
       let dimensionTimeSeriesCharts:
@@ -205,6 +249,7 @@ export function createTimeSeriesDataStore(
           ctx,
           measuresForTimeSeries,
           "chart",
+          exactSurface,
         );
       }
 
@@ -246,7 +291,7 @@ export function createTimeSeriesDataStore(
           }
           if (primaryTotal.error) {
             isError = true;
-            error["totals"] = (primaryTotal.error as Error).message;
+            error["totals"] = primaryTotal.error.message;
           }
           const primaryIsFetching = primary.isFetching;
           const primaryTotalIsFetching = primaryTotal.isFetching;

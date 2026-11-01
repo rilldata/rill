@@ -9,9 +9,11 @@ import {
 import { QueryClient, type QueryKey } from "@tanstack/query-core";
 import { describe, expect, it } from "vitest";
 import {
+  buildInviteUsergroups,
   invalidateOrgInvites,
   invalidateOrgMemberUsers,
   invalidateOrgUsergroups,
+  pendingInviteesMatching,
 } from "./utils";
 
 const ORG = "acme";
@@ -92,3 +94,42 @@ describe.each(cases)(
     });
   },
 );
+
+describe("buildInviteUsergroups", () => {
+  it("omits the field when no groups are selected", () => {
+    expect(buildInviteUsergroups([])).toBeUndefined();
+    expect(buildInviteUsergroups(undefined)).toBeUndefined();
+  });
+
+  it("passes selected groups through unchanged", () => {
+    expect(buildInviteUsergroups(["analysts", "eng"])).toEqual([
+      "analysts",
+      "eng",
+    ]);
+  });
+});
+
+describe("pendingInviteesMatching", () => {
+  const invites = [
+    { email: "Alice@example.com", roleName: "viewer" },
+    { email: "bob@example.com", roleName: "viewer" },
+    { email: "carol@other.org", roleName: "editor" },
+  ];
+
+  it("returns nothing without search text, matching the member search", () => {
+    expect(pendingInviteesMatching(invites, "")).toEqual([]);
+    expect(pendingInviteesMatching(invites, "   ")).toEqual([]);
+    expect(pendingInviteesMatching(undefined, "a")).toEqual([]);
+  });
+
+  it("matches on a case-insensitive email prefix and flags the rows as pending", () => {
+    expect(pendingInviteesMatching(invites, "al")).toEqual([
+      { userEmail: "Alice@example.com", pendingAcceptance: true },
+    ]);
+    expect(pendingInviteesMatching(invites, "B")).toEqual([
+      { userEmail: "bob@example.com", pendingAcceptance: true },
+    ]);
+    // A prefix match only: "example" appears in the domain, not at the start
+    expect(pendingInviteesMatching(invites, "example")).toEqual([]);
+  });
+});

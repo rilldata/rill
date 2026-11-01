@@ -15,6 +15,7 @@ import (
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/duration"
+	"github.com/rilldata/rill/runtime/pkg/email"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"github.com/rilldata/rill/runtime/pkg/pbutil"
 	"github.com/rilldata/rill/runtime/queries"
@@ -694,15 +695,6 @@ func (r *AlertReconciler) executeSingleWrapped(ctx context.Context, self *runtim
 		return nil, fmt.Errorf("alert has no resolver")
 	}
 
-	// Evaluate query attributes
-	var queryForAttrs map[string]any
-	if adminMeta != nil {
-		queryForAttrs = adminMeta.QueryForAttributes
-	}
-	if a.Spec.GetQueryForAttributes() != nil { // Explicit attributes take precedence
-		queryForAttrs = a.Spec.GetQueryForAttributes().AsMap()
-	}
-
 	// Tag as alert execution so the metrics queries it runs are attributed to the "alert" source for billing.
 	ctx = runtime.WithRequestSource(ctx, runtime.RequestSourceAlert)
 
@@ -716,7 +708,7 @@ func (r *AlertReconciler) executeSingleWrapped(ctx context.Context, self *runtim
 			"format":         true,
 			"limit":          1,
 		},
-		Claims: &runtime.SecurityClaims{UserAttributes: queryForAttrs},
+		Claims: &runtime.SecurityClaims{UserAttributes: alertQueryForAttributes(a, adminMeta)},
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to resolve alert: %w", err)
@@ -880,15 +872,47 @@ func (r *AlertReconciler) popCurrentExecution(ctx context.Context, self *runtime
 	var notificationErr error
 	var sentNotifications bool
 	if msg != nil {
+		// Export the rows that triggered the alert to attach them to the emails.
+		// The alert's query runs with the same attributes for every recipient, so the data is exported once.
+		var attachment *email.Attachment
+		var attachmentTooLarge bool
+		if msg.Status == runtimev1.AssertionStatus_ASSERTION_STATUS_FAIL && a.Spec.ExportAttach {
+			hasEmailRecipients := false
+			for _, notifier := range a.Spec.Notifiers {
+				if notifier.Connector == "email" && len(pbutil.ToSliceString(notifier.Properties.AsMap()["recipients"])) > 0 {
+					hasEmailRecipients = true
+					break
+				}
+			}
+			if hasEmailRecipients {
+				var err error
+				attachment, attachmentTooLarge, err = r.exportAttachment(ctx, self, a, adminMeta, executionTime)
+				if err != nil {
+					return err
+				}
+			}
+		}
+
 		for _, notifier := range a.Spec.Notifiers {
 			switch notifier.Connector {
 			// TODO: transform email client to notifier
 			case "email":
 				recipients := pbutil.ToSliceString(notifier.Properties.AsMap()["recipients"])
 				for _, recipient := range recipients {
-					msg.ToEmail = recipient
+					opts := &email.AlertStatus{
+						ToEmail:            recipient,
+						DisplayName:        msg.DisplayName,
+						ExecutionTime:      msg.ExecutionTime,
+						Status:             msg.Status,
+						IsRecover:          msg.IsRecover,
+						FailRow:            msg.FailRow,
+						ExecutionError:     msg.ExecutionError,
+						Attachment:         attachment,
+						AttachmentTooLarge: attachmentTooLarge,
+					}
 
-					// Set recipient-specific URLs if available from admin metadata
+					// Set recipient-specific URLs if available from admin metadata.
+					// Note: adminMeta may not always be available (if outside of cloud) or no links sent for this recipient. In those cases, we leave the links blank (no clickthrough available).
 					if adminMeta != nil && adminMeta.RecipientURLs != nil {
 						if recipientURLs, ok := adminMeta.RecipientURLs[recipient]; ok {
 							// Use recipient-specific URLs (with magic token)
@@ -896,18 +920,13 @@ func (r *AlertReconciler) popCurrentExecution(ctx context.Context, self *runtime
 							if err != nil {
 								return fmt.Errorf("failed to build recipient open url: %w", err)
 							}
-							msg.OpenLink = openLink
-							msg.EditLink = recipientURLs.EditURL
-							msg.UnsubscribeLink = recipientURLs.UnsubscribeURL
-						} else {
-							// Note: adminMeta may not always be available (if outside of cloud) or no links sent for this recipient. In those cases, we leave the links blank (no clickthrough available).
-							msg.OpenLink = ""
-							msg.EditLink = ""
-							msg.UnsubscribeLink = ""
+							opts.OpenLink = openLink
+							opts.EditLink = recipientURLs.EditURL
+							opts.UnsubscribeLink = recipientURLs.UnsubscribeURL
 						}
 					}
 
-					err := r.C.Runtime.Email.SendAlertStatus(msg)
+					err := r.C.Runtime.Email.SendAlertStatus(opts)
 					if err != nil {
 						notificationErr = fmt.Errorf("failed to send email to %q: %w", recipient, err)
 						break
@@ -985,6 +1004,46 @@ func (r *AlertReconciler) popCurrentExecution(ctx context.Context, self *runtime
 	}
 
 	return r.C.UpdateState(ctx, self.Meta.Name, self)
+}
+
+// exportAttachment exports the rows that triggered a failed alert check for attaching them to emails.
+// If the export fails, it records a warning on the current execution and returns a nil attachment,
+// so the emails are still sent without the attachment.
+// The returned bool is true if the export was too large to attach.
+// It only returns an error on cancellation, so the alert is retried instead of sending emails without the attachment.
+// A timeout is not retried by executeAll, so it is handled like other export failures to avoid dropping the notifications.
+func (r *AlertReconciler) exportAttachment(ctx context.Context, self *runtimev1.Resource, a *runtimev1.Alert, adminMeta *drivers.AlertMetadata, executionTime time.Time) (*email.Attachment, bool, error) {
+	// Tag as alert execution so the export query is attributed to the "alert" source for billing.
+	ctx = runtime.WithRequestSource(ctx, runtime.RequestSourceAlert)
+
+	attachment, err := exportAttachment(ctx, r.C, &exportAttachmentOptions{
+		ResolverProperties: a.Spec.ResolverProperties.AsMap(),
+		Annotations:        a.Spec.Annotations,
+		ExecutionTime:      executionTime,
+		Claims: &runtime.SecurityClaims{
+			UserAttributes: alertQueryForAttributes(a, adminMeta),
+			Permissions:    []runtime.Permission{runtime.ReadObjects, runtime.ReadMetrics},
+		},
+		Format:        a.Spec.ExportFormat,
+		IncludeHeader: a.Spec.ExportIncludeHeader,
+		Limit:         a.Spec.ExportLimit,
+		Priority:      alertQueryPriority,
+	})
+	if errors.Is(err, context.Canceled) {
+		return nil, false, err
+	}
+	if errors.Is(err, errAttachmentTooLarge) {
+		warning := fmt.Sprintf("The rows that triggered the alert were not attached to emails because they are larger than %d MB", exportAttachmentSizeLimit/1024/1024)
+		a.State.CurrentExecution.Result.Warnings = append(a.State.CurrentExecution.Result.Warnings, warning)
+		return nil, true, nil
+	}
+	if err != nil {
+		r.C.Logger.Warn("Failed to export alert attachment", zap.String("name", self.Meta.Name.Name), zap.Time("execution_time", executionTime), zap.Error(err), observability.ZapCtx(ctx))
+		warning := fmt.Sprintf("The rows that triggered the alert were not attached to emails: %s", err.Error())
+		a.State.CurrentExecution.Result.Warnings = append(a.State.CurrentExecution.Result.Warnings, warning)
+		return nil, false, nil
+	}
+	return attachment, false, nil
 }
 
 // computeInheritedWatermark computes the inherited watermark for the alert.
@@ -1092,6 +1151,17 @@ func calculateAlertExecutionTimes(a *runtimev1.Alert, watermark, previousWaterma
 	slices.Reverse(ts)
 
 	return ts, nil
+}
+
+// alertQueryForAttributes returns the user attributes that the alert's query runs with.
+func alertQueryForAttributes(a *runtimev1.Alert, adminMeta *drivers.AlertMetadata) map[string]any {
+	if a.Spec.GetQueryForAttributes() != nil { // Explicit attributes take precedence
+		return a.Spec.GetQueryForAttributes().AsMap()
+	}
+	if adminMeta != nil {
+		return adminMeta.QueryForAttributes
+	}
+	return nil
 }
 
 func addExecutionTime(openURL string, executionTime time.Time) (string, error) {

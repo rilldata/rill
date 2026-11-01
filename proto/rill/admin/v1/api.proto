@@ -333,6 +333,26 @@ service AdminService {
     option (google.api.http) = {get: "/v1/deployments/{deployment_id}/config"};
   }
 
+  // GetConnectorOAuthToken returns a user's OAuth access token for a connector in the calling deployment's project,
+  // refreshing it first if it is about to expire.
+  // It returns NotFound if the user has not authorized the connector's current OAuth configuration.
+  // It can only be called by deployments.
+  rpc GetConnectorOAuthToken(GetConnectorOAuthTokenRequest) returns (GetConnectorOAuthTokenResponse) {
+    option (google.api.http) = {
+      post: "/v1/deployments/-/connector-oauth-token",
+      body: "*"
+    };
+  }
+
+  // DeleteConnectorOAuthToken removes a user's OAuth authorization for a connector in the calling deployment's project.
+  // It can only be called by deployments.
+  rpc DeleteConnectorOAuthToken(DeleteConnectorOAuthTokenRequest) returns (DeleteConnectorOAuthTokenResponse) {
+    option (google.api.http) = {
+      post: "/v1/deployments/-/connector-oauth-token/delete",
+      body: "*"
+    };
+  }
+
   // ListRoles lists all the roles available for orgs and projects.
   rpc ListRoles(ListRolesRequest) returns (ListRolesResponse) {
     option (google.api.http) = {get: "/v1/roles"};
@@ -946,6 +966,15 @@ service AdminService {
     };
   }
 
+  // SudoUpdateOrganizationDefaultProvisioner sets the provisioner used by default for an organization's deployments.
+  // Running deployments keep their current provisioner; the change is applied to each deployment the next time it is started (stopped deployments are moved to the new provisioner, keeping their IDs).
+  rpc SudoUpdateOrganizationDefaultProvisioner(SudoUpdateOrganizationDefaultProvisionerRequest) returns (SudoUpdateOrganizationDefaultProvisionerResponse) {
+    option (google.api.http) = {
+      patch: "/v1/superuser/organization/default-provisioner",
+      body: "*"
+    };
+  }
+
 
   // SudoUpdateAnnotations endpoint for superusers to update project annotations
   rpc SudoUpdateAnnotations(SudoUpdateAnnotationsRequest) returns (SudoUpdateAnnotationsResponse) {
@@ -1455,6 +1484,8 @@ message UpdateOrganizationRequest {
   optional string thumbnail_asset_id = 9;
   optional string default_project_role = 8;
   optional string billing_email = 4 [(validate.rules).string.email = true];
+  // Reserved for backwards compatibility (default_provisioner, which is now only settable via SudoUpdateOrganizationDefaultProvisioner)
+  reserved 10;
 }
 
 message UpdateOrganizationResponse {
@@ -1473,6 +1504,7 @@ message ListDeploymentsRequest {
   string environment = 3;
   string branch = 5;
   string user_id = 4;
+  bool superuser_force_access = 6;
 }
 
 message ListDeploymentsResponse {
@@ -1526,6 +1558,7 @@ message GetDeploymentResponse {
 
 message StartDeploymentRequest {
   string deployment_id = 1;
+  bool superuser_force_access = 2;
 }
 
 message StartDeploymentResponse {
@@ -1534,6 +1567,7 @@ message StartDeploymentResponse {
 
 message StopDeploymentRequest {
   string deployment_id = 1;
+  bool superuser_force_access = 2;
 }
 
 message StopDeploymentResponse {
@@ -1887,6 +1921,7 @@ message CreateProjectRequest {
   // directory_name should be the most recently observed local directory name for the project.
   // See ListProjectsForFingerprint for more context.
   string directory_name = 16;
+  // Provisioner to use for the project's deployments. Superuser-only; empty means the org's default provisioner (or the global default) is used.
   string provisioner = 5;
   int64 prod_slots = 8;
   string subpath = 12;
@@ -1928,6 +1963,8 @@ message UpdateProjectRequest {
   optional string subpath = 13;
   optional string archive_asset_id = 12;
   optional int64 prod_slots = 7;
+  // Provisioner to use for the project's deployments. Superuser-only; empty unsets it so the org's default provisioner (or the global default) is used.
+  // Running deployments keep their current provisioner; the change is applied to each deployment the next time it is started (stopped deployments are moved to the new provisioner, keeping their IDs).
   optional string provisioner = 8;
   optional string new_name = 9;
   optional int64 prod_ttl_seconds = 10;
@@ -2038,6 +2075,32 @@ message GetDeploymentConfigResponse {
   map<string, string> system_variables = 9;
 }
 
+message GetConnectorOAuthTokenRequest {
+  // Name of the connector in the deployment's project.
+  string connector = 1 [(validate.rules).string.min_len = 1];
+  // Hash of the connector's current OAuth configuration, as computed by the runtime.
+  // A token is only returned if the user authorized this configuration, so changing it never reuses an existing authorization.
+  string config_hash = 2 [(validate.rules).string.min_len = 1];
+  // ID of the user whose token to return.
+  string user_id = 3 [(validate.rules).string.min_len = 1];
+  // If true, the token is refreshed even if it has not expired yet (used after the server rejected the current token).
+  bool force_refresh = 4;
+}
+
+message GetConnectorOAuthTokenResponse {
+  string access_token = 1;
+  // When the access token expires. Unset if the token does not expire.
+  google.protobuf.Timestamp expires_on = 2;
+}
+
+message DeleteConnectorOAuthTokenRequest {
+  string connector = 1 [(validate.rules).string.min_len = 1];
+  string config_hash = 2 [(validate.rules).string.min_len = 1];
+  string user_id = 3 [(validate.rules).string.min_len = 1];
+}
+
+message DeleteConnectorOAuthTokenResponse {}
+
 message ListRolesRequest {}
 
 message ListRolesResponse {
@@ -2080,6 +2143,10 @@ message AddOrganizationMemberUserRequest {
   // Custom attributes to set on the new membership.
   // If the user has not signed up yet, they are stored on the invite and applied when the invite is accepted.
   google.protobuf.Struct attributes = 5;
+  // Names of user groups in the org to add the user to.
+  // If the user has not signed up yet, they are stored on the invite and applied when the invite is accepted.
+  // Groups are additive: on a re-invite they are merged with the groups already on the invite.
+  repeated string usergroups = 6;
   bool superuser_force_access = 4;
 }
 
@@ -2254,6 +2321,16 @@ message SudoUpdateOrganizationCustomDomainResponse {
   Organization organization = 1;
 }
 
+message SudoUpdateOrganizationDefaultProvisionerRequest {
+  string org = 1 [(validate.rules).string.min_len = 1];
+  // Name of the provisioner to use by default. Empty unsets the org's default provisioner.
+  string default_provisioner = 2;
+}
+
+message SudoUpdateOrganizationDefaultProvisionerResponse {
+  Organization organization = 1;
+}
+
 message SudoUpdateUserQuotasRequest {
   string email = 1;
   optional int32 singleuser_orgs = 2;
@@ -2344,6 +2421,10 @@ message AddProjectMemberUserRequest {
   // If the user has not signed up yet, they are stored on the org invite and applied when the invite is accepted.
   // Setting attributes requires permission to manage org members.
   google.protobuf.Struct attributes = 7;
+  // Names of user groups in the org to add the user to (user groups are org-scoped).
+  // If the user has not signed up yet, they are stored on the org invite and applied when the invite is accepted.
+  // Setting user groups requires permission to manage org members.
+  repeated string usergroups = 8;
 }
 
 message AddProjectMemberUserResponse {
@@ -2650,10 +2731,15 @@ message RevokeCurrentAuthTokenRequest {}
 message RevokeCurrentAuthTokenResponse {
 }
 
+// ListBookmarksRequest lists the bookmarks in a project that are visible to the caller:
+// the caller's own bookmarks plus shared and default bookmarks.
 message ListBookmarksRequest {
   string project_id = 1;
-  string resource_kind = 2;
-  string resource_name = 3;
+  // Optional filter on the kind of the resource the bookmark is for (e.g. "rill.runtime.v1.Explore").
+  // When both resource_kind and resource_name are unset, all bookmarks in the project are returned.
+  optional string resource_kind = 2;
+  // Optional filter on the name of the resource the bookmark is for. Requires resource_kind to be set.
+  optional string resource_name = 3;
 }
 
 message ListBookmarksResponse {
@@ -3450,6 +3536,7 @@ message Organization {
   string thumbnail_url = 17;
   string custom_domain = 10;
   string default_project_role_id = 16;
+  string default_provisioner = 19;
   OrganizationQuotas quotas = 4;
   string billing_customer_id = 7;
   string payment_customer_id = 8;
@@ -3634,6 +3721,9 @@ message UsergroupMemberUser {
   string user_email = 3;
   string user_name = 2;
   string user_photo_url = 7;
+  // True if the user has been invited to the group but has not signed up yet.
+  // For pending members, user_id, user_name and user_photo_url are empty.
+  bool pending_acceptance = 8;
   google.protobuf.Timestamp created_on = 5;
   google.protobuf.Timestamp updated_on = 6;
 }
@@ -3643,6 +3733,8 @@ message OrganizationInvite {
   string role_name = 2;
   string invited_by = 3;
   google.protobuf.Struct attributes = 4;
+  // Names of the user groups the user will be added to when the invite is accepted.
+  repeated string usergroups = 5;
 }
 
 message ProjectInvite {
@@ -3736,6 +3828,7 @@ message ReportOptions {
   uint64 export_limit = 5;
   rill.runtime.v1.ExportFormat export_format = 6;
   bool export_include_header = 20;
+  bool export_attach = 24; // If true, the export is attached to email notifications (only supported for explore reports run as the creator).
   repeated string email_recipients = 8;
   repeated string slack_users = 10;
   repeated string slack_channels = 11;
@@ -3767,6 +3860,10 @@ message AlertOptions {
   string query_name = 3;
   // DEPRECATED: Use resolver and resolver_properties instead.
   string query_args_json = 4;
+  bool export_attach = 18; // If true, the query's result is exported and attached to email notifications for failed checks (only supported for query-based alerts).
+  rill.runtime.v1.ExportFormat export_format = 19;
+  bool export_include_header = 20;
+  uint64 export_limit = 21;
   string metrics_view_name = 5;
   bool renotify = 6;
   uint32 renotify_after_seconds = 7;

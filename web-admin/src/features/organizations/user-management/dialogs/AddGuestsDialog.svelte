@@ -7,10 +7,13 @@
   } from "@rilldata/web-admin/client";
   import { getRpcErrorMessage } from "@rilldata/web-admin/components/errors/error-utils";
   import { getOrgRolesOptions } from "@rilldata/web-admin/features/organizations/constants";
+  import UserGroupsMultiSelect from "@rilldata/web-admin/features/organizations/user-management/UserGroupsMultiSelect.svelte";
   import {
     buildInviteAttributes,
+    buildInviteUsergroups,
     invalidateOrgInvites,
     invalidateOrgMemberUsers,
+    invalidateOrgUsergroups,
     type AttributeRow,
   } from "@rilldata/web-admin/features/organizations/user-management/utils";
   import { listProjectsForOrgQueryOptions } from "@rilldata/web-admin/features/projects/list-projects-query-options";
@@ -52,10 +55,13 @@
   let roleDropdownOpen = false;
   let hasAutoSelectedProject = false;
   let showAttributes = false;
+  // Names of the user groups every invited guest is added to (or joins on acceptance)
+  let selectedGroups: string[] = [];
 
   function resetDialogState() {
     failedInvites = [];
     selectedProjects = [];
+    selectedGroups = [];
     selectedRole = OrgUserRoles.Viewer;
     hasAutoSelectedProject = false;
     projectDropdownOpen = false;
@@ -113,6 +119,7 @@
   async function handleCreate(
     email: string,
     attributes: Record<string, string> | undefined,
+    usergroups: string[] | undefined,
   ) {
     // Loop selected projects and add as selectedRole
     await Promise.all(
@@ -120,7 +127,7 @@
         $addProjectMemberUser.mutateAsync({
           org: organization,
           project: projectName,
-          data: { email, role: selectedRole, attributes },
+          data: { email, role: selectedRole, attributes, usergroups },
         }),
       ),
     );
@@ -158,13 +165,14 @@
         if (emails.length === 0) return;
         if (selectedProjects.length === 0) return;
 
-        // The same attributes apply to every invited email
+        // The same attributes and groups apply to every invited email
         const attributes = buildInviteAttributes(form.data.attributes);
+        const usergroups = buildInviteUsergroups(selectedGroups);
 
         const results = await Promise.all(
           emails.map(async (email, index) => {
             try {
-              await handleCreate(email, attributes);
+              await handleCreate(email, attributes, usergroups);
               return { index, email, success: true };
             } catch {
               return { index, email, success: false };
@@ -195,6 +203,8 @@
         // Invalidate lists
         await invalidateOrgMemberUsers(queryClient, organization);
         await invalidateOrgInvites(queryClient, organization);
+        if (usergroups)
+          await invalidateOrgUsergroups(queryClient, organization);
 
         if (failedInvites.length === 0) {
           open = false;
@@ -337,6 +347,21 @@
             {/each}
           </Dropdown.Content>
         </Dropdown.Root>
+      </div>
+
+      <!-- User groups multi-select -->
+      <div class="mt-3">
+        <label for="invite-guest-usergroups" class="text-xs font-medium">
+          {m.users_user_groups()}
+        </label>
+        <div class="text-[11px] text-fg-secondary mb-1">
+          {m.users_user_groups_hint()}
+        </div>
+        <UserGroupsMultiSelect
+          id="invite-guest-usergroups"
+          {organization}
+          bind:selected={selectedGroups}
+        />
       </div>
 
       <div class="mt-3 flex flex-col gap-y-1">

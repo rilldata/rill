@@ -58,7 +58,9 @@
   $: workspace = workspaces.get(filePath);
   $: selectedViewStore = workspace.view;
 
-  $: selectedView = $selectedViewStore ?? "code";
+  // The store accepts views from other workspaces (e.g. "explore"); anything
+  // this workspace cannot render falls back to the preview.
+  $: selectedView = $selectedViewStore === "code" ? "code" : "viz";
 
   $: metricsViewName = metricsViewResource?.meta?.name?.name;
 

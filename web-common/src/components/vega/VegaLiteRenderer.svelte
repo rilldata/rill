@@ -4,6 +4,7 @@
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { onDestroy } from "svelte";
   import {
+    type EmbedOptions,
     type SignalListeners,
     VegaLite,
     type View,
@@ -23,6 +24,9 @@
   export let expressionFunctions: ExpressionFunction = {};
   export let error: string | null = null;
   export let canvasDashboard = false;
+  // Lets content wider than the container scroll sideways instead of being clipped,
+  // e.g. a faceted chart whose cells keep their natural size.
+  export let scrollX = false;
   export let renderer: "canvas" | "svg" = "canvas";
   export let themeMode: "light" | "dark" = "light";
   export let config: Config | undefined = undefined;
@@ -33,9 +37,15 @@
 
   let contentRect = new DOMRect(0, 0, 0, 0);
   let tooltipHandler: VegaLiteTooltipHandler | null = null;
+  // The container is measured asynchronously after mount. The view is only embedded once a
+  // real size is known, so the first render is already at the right dimensions.
+  let measured = false;
 
   $: width = contentRect.width;
-  $: height = contentRect.height - 10;
+  // Clamped: a container can report its width before its height, and a negative height
+  // gives Vega an inverted y range until the next resize.
+  $: height = Math.max(0, contentRect.height - 10);
+  $: if (width > 0) measured = true;
 
   $: if (viewVL && tooltipFormatter) {
     // Clean up previous handler if it exists
@@ -60,7 +70,7 @@
   }
 
   // Deliberately excludes width/height so a resize leaves this object's identity untouched
-  // and svelte-vega resizes the existing view rather than re-embedding it.
+  // and svelte-vega does not re-embed the view; the size is applied in `applySize` instead.
   $: baseOptions = createBaseEmbedOptions({
     client: runtimeClient,
     config,
@@ -71,7 +81,39 @@
     hasComparison: stableHasComparison,
   });
 
-  $: options = { ...baseOptions, width, height };
+  // svelte-vega tears down and re-embeds the view (a full Vega-Lite compile, parse and
+  // render) whenever `options` changes: it keeps the previous options in a Svelte `$state`
+  // proxy, so its `===` comparison of nested objects such as `config` and `tooltip` never
+  // passes and its cheap `view.width()` path is unreachable. Sizing the view through `options`
+  // therefore re-embedded every chart on every frame of a divider drag, which stalled the page
+  // and flashed blank canvases. Instead, `options` only picks up the size when it is (re)built
+  // and later size changes are applied to the live view in `applySize` below.
+  // `withEmbedSize` reads `width` and `height` inside a function on purpose: a `$:` statement
+  // only tracks the variables it references directly.
+  $: options = withEmbedSize(baseOptions, measured);
+
+  function withEmbedSize(base: EmbedOptions, hasSize: boolean): EmbedOptions {
+    if (!hasSize) return base;
+    return { ...base, width, height };
+  }
+
+  $: if (viewVL && measured) applySize(width, height);
+
+  function applySize(w: number, h: number) {
+    // svelte-vega still re-embeds from `options` whenever the spec changes, so its size fields
+    // have to stay current or the chart re-embeds at the size it had when `options` was last
+    // rebuilt. The mutation goes through a local alias on purpose: assigning to `options.width`
+    // directly would invalidate `options` and trigger the very re-embed this avoids.
+    const embedOptions = options;
+    embedOptions.width = w;
+    embedOptions.height = h;
+
+    // Resize the existing view in place. vega-embed applies `options.width`/`height` the same
+    // way, so this matches the initial embed. Setting an unchanged size is a no-op for Vega.
+    viewVL.width(w);
+    viewVL.height(h);
+    void viewVL.runAsync();
+  }
 
   // Create a more efficient key for component remounting
   $: configKey = config ? Object.keys(config).sort().join(",") : "default";
@@ -101,7 +143,9 @@
   bind:contentRect
   role="presentation"
   class:px-2={canvasDashboard}
-  class="rill-vega-container overflow-y-auto overflow-x-hidden size-full flex flex-col items-center"
+  class:overflow-x-auto={scrollX}
+  class:overflow-x-hidden={!scrollX}
+  class="rill-vega-container overflow-y-auto size-full flex flex-col [align-items:safe_center]"
   onmouseleave={handleMouseLeave}
 >
   {#if error}
@@ -113,14 +157,16 @@
     </div>
   {:else}
     {#key componentKey}
-      <VegaLite
-        {data}
-        {spec}
-        {signalListeners}
-        {options}
-        bind:view={viewVL}
-        {onError}
-      />
+      {#if measured}
+        <VegaLite
+          {data}
+          {spec}
+          {signalListeners}
+          {options}
+          bind:view={viewVL}
+          {onError}
+        />
+      {/if}
     {/key}
   {/if}
 </div>

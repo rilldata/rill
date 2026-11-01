@@ -10,7 +10,6 @@ import (
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
-	"github.com/rilldata/rill/runtime/ai"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/duration"
 	"github.com/rilldata/rill/runtime/pkg/email"
@@ -207,7 +206,7 @@ func (r *ReportReconciler) ResolveTransitiveAccess(ctx context.Context, claims *
 		resolver, err := initializer(ctx, &runtime.ResolverOptions{
 			Runtime:    r.C.Runtime,
 			InstanceID: r.C.InstanceID,
-			Properties: spec.ResolverProperties.AsMap(),
+			Properties: resolverProperties(spec),
 			Claims:     claims,
 			ForExport:  false,
 		})
@@ -601,17 +600,52 @@ func (r *ReportReconciler) sendReport(ctx context.Context, self *runtimev1.Resou
 			}
 		}
 	default: // add more resolvers here, for default just generate export links
+		// Export the data to attach to emails.
+		// Attachments are only supported in creator mode (enforced by the parser), where every recipient gets the same data.
+		// So the data is exported once with the report owner's attributes, which the admin service returns for every recipient in creator mode.
+		var attachment *email.Attachment
+		var attachmentTooLarge bool
+		if rep.Spec.ExportAttach && len(emailRecipients) > 0 {
+			if ownerID == "" {
+				allWarnings = append(allWarnings, "The export was not attached to emails because the report has no owner")
+			} else {
+				claims := &runtime.SecurityClaims{
+					UserID:         ownerID,
+					UserAttributes: meta.ReportDelivery[emailRecipients[0]].UserAttrs,
+					Permissions:    []runtime.Permission{runtime.ReadObjects, runtime.ReadMetrics},
+				}
+				attachment, err = exportAttachment(ctx, r.C, &exportAttachmentOptions{
+					ResolverProperties: rep.Spec.ResolverProperties.AsMap(),
+					Annotations:        rep.Spec.Annotations,
+					ExecutionTime:      t,
+					Claims:             claims,
+					Format:             rep.Spec.ExportFormat,
+					IncludeHeader:      rep.Spec.ExportIncludeHeader,
+					Limit:              rep.Spec.ExportLimit,
+					Priority:           reportQueryPriority,
+				})
+				if errors.Is(err, errAttachmentTooLarge) {
+					attachmentTooLarge = true
+					allWarnings = append(allWarnings, fmt.Sprintf("The export was not attached to emails because it is larger than %d MB", exportAttachmentSizeLimit/1024/1024))
+				} else if err != nil {
+					return false, nil, fmt.Errorf("failed to export attachment: %w", err)
+				}
+			}
+		}
+
 		for recipient, delivery := range meta.ReportDelivery {
 			downloadURL, err := createExportURL(delivery.ExportURL, t)
 			if err != nil {
 				return false, nil, err
 			}
 			notificationsContent[recipient] = &notificationData{
-				openLink:        delivery.OpenURL,
-				editLink:        delivery.EditURL,
-				unsubscribeLink: delivery.UnsubscribeURL,
-				downloadLink:    downloadURL.String(),
-				downloadFormat:  formatExportFormat(rep.Spec.ExportFormat),
+				openLink:           delivery.OpenURL,
+				editLink:           delivery.EditURL,
+				unsubscribeLink:    delivery.UnsubscribeURL,
+				downloadLink:       downloadURL.String(),
+				downloadFormat:     formatExportFormat(rep.Spec.ExportFormat),
+				attachment:         attachment,
+				attachmentTooLarge: attachmentTooLarge,
 			}
 		}
 	}
@@ -647,16 +681,18 @@ func (r *ReportReconciler) sendEmailNotification(ctx context.Context, self *runt
 		}
 
 		opts := &email.ScheduledReport{
-			ToEmail:         recipient,
-			ToName:          "",
-			DisplayName:     rep.Spec.DisplayName,
-			ReportTime:      t,
-			Summary:         content.summary,
-			OpenLink:        content.openLink,
-			EditLink:        content.editLink,
-			UnsubscribeLink: content.unsubscribeLink,
-			DownloadLink:    content.downloadLink,
-			DownloadFormat:  content.downloadFormat,
+			ToEmail:            recipient,
+			ToName:             "",
+			DisplayName:        rep.Spec.DisplayName,
+			ReportTime:         t,
+			Summary:            content.summary,
+			OpenLink:           content.openLink,
+			EditLink:           content.editLink,
+			UnsubscribeLink:    content.unsubscribeLink,
+			DownloadLink:       content.downloadLink,
+			DownloadFormat:     content.downloadFormat,
+			Attachment:         content.attachment,
+			AttachmentTooLarge: content.attachmentTooLarge,
 		}
 		if err := r.C.Runtime.Email.SendScheduledReport(opts); err != nil {
 			return true, fmt.Errorf("failed to send AI report email to %q: %w", recipient, err)
@@ -754,12 +790,14 @@ func canvasFilterSecurityRules(annotation string) ([]*runtimev1.SecurityRule, er
 
 // common notification data used for reports
 type notificationData struct {
-	openLink        string
-	editLink        string
-	downloadLink    string
-	downloadFormat  string
-	unsubscribeLink string
-	summary         string
+	openLink           string
+	editLink           string
+	downloadLink       string
+	downloadFormat     string
+	unsubscribeLink    string
+	summary            string
+	attachment         *email.Attachment // Only sent to email recipients
+	attachmentTooLarge bool
 } // add more fields as needed for new resolver types that reports will support
 
 type aiReport struct {
@@ -787,18 +825,11 @@ func (r *ReportReconciler) triggerAIReport(ctx context.Context, self *runtimev1.
 		Permissions:    []runtime.Permission{runtime.ReadObjects, runtime.ReadMetrics, runtime.UseAI},
 	}
 
-	// Get resolver properties from spec and add is_report flag
-	props := rep.Spec.ResolverProperties.AsMap()
-	props["is_report"] = true
-	if props["agent"] == nil {
-		props["agent"] = ai.AnalystAgentName
-	}
-
 	// Execute AI resolver
 	result, info, err := r.C.Runtime.Resolve(ctx, &runtime.ResolveOptions{
 		InstanceID:         r.C.InstanceID,
 		Resolver:           "ai",
-		ResolverProperties: props,
+		ResolverProperties: resolverProperties(rep.Spec),
 		Args: map[string]any{
 			"execution_time":        t,
 			"create_shared_session": webOpenMode == "creator", // if creator mode, create a shared session
@@ -882,11 +913,35 @@ func formatExportFormat(f runtimev1.ExportFormat) string {
 	}
 }
 
+// resolverProperties returns the report's resolver properties as they should be passed to the resolver.
+// For AI reports, it marks the properties as belonging to a report, which lets the resolver's validation pass (e.g. a prompt is optional).
+func resolverProperties(spec *runtimev1.ReportSpec) map[string]any {
+	props := spec.ResolverProperties.AsMap()
+	if spec.Resolver == "ai" {
+		props["is_report"] = true
+	}
+	return props
+}
+
 // computeInheritedWatermark computes the inherited watermark for the report.
 // It returns false if the watermark could not be computed.
 func (r *ReportReconciler) computeInheritedWatermark(ctx context.Context, refs []*runtimev1.ResourceName) (time.Time, bool, error) {
 	var t time.Time
 	for _, ref := range refs {
+		// Explores (referenced by AI reports) inherit the watermark of their metrics view.
+		// Resolving the metrics view here instead of in the watermark query keeps the query's cache keyed on the metrics view's data.
+		if ref.Kind == runtime.ResourceKindExplore {
+			res, err := r.C.Get(ctx, ref, false)
+			if err != nil {
+				return t, false, fmt.Errorf("failed to get explore %q: %w", ref.Name, err)
+			}
+			spec := res.GetExplore().State.ValidSpec
+			if spec == nil {
+				return t, false, fmt.Errorf("explore %q is not valid", ref.Name)
+			}
+			ref = &runtimev1.ResourceName{Kind: runtime.ResourceKindMetricsView, Name: spec.MetricsView}
+		}
+
 		q := &queries.ResourceWatermark{
 			ResourceKind: ref.Kind,
 			ResourceName: ref.Name,

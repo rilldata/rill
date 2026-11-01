@@ -5,7 +5,6 @@
   import MultiInput from "@rilldata/web-common/components/forms/MultiInput.svelte";
   import FormSection from "@rilldata/web-common/components/forms/FormSection.svelte";
   import { getHasSlackConnection } from "@rilldata/web-common/features/alerts/delivery-tab/notifiers-utils";
-  import type { Filters } from "@rilldata/web-common/features/dashboards/stores/Filters.ts";
   import type { TimeControls } from "@rilldata/web-common/features/dashboards/stores/TimeControls.ts";
   import FiltersForm from "@rilldata/web-common/features/scheduled-reports/FiltersForm.svelte";
   import RowsAndColumnsForm from "@rilldata/web-common/features/scheduled-reports/fields/RowsAndColumnsForm.svelte";
@@ -15,15 +14,14 @@
     type ReportValues,
   } from "@rilldata/web-common/features/scheduled-reports/utils";
   import { V1ExportFormat } from "@rilldata/web-common/runtime-client";
-  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
-  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
-  import InfoCircle from "@rilldata/web-common/components/icons/InfoCircle.svelte";
   import type { Readable } from "svelte/store";
   import type { SuperFormErrors } from "sveltekit-superforms/client";
   import Input from "../../components/forms/Input.svelte";
   import Select from "../../components/forms/Select.svelte";
   import Checkbox from "../../components/forms/Checkbox.svelte";
+  import ExportFileOptions from "@rilldata/web-common/features/exports/ExportFileOptions.svelte";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
+  import type { ExpressionFilterManager } from "../dashboards/filters/ExpressionFilterManager.svelte.ts";
   import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors.ts";
   import {
     ResourceKind,
@@ -31,7 +29,10 @@
   } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import CanvasProvider from "@rilldata/web-common/features/canvas/CanvasProvider.svelte";
   import CanvasFilters from "@rilldata/web-common/features/canvas/filters/CanvasFilters.svelte";
+  import CanvasFilterParamsSync from "@rilldata/web-common/features/canvas/CanvasFilterParamsSync.svelte";
+  import { useVisibilityConditionsCheck } from "@rilldata/web-common/features/dashboards/granular-access-policies/useSecurityPolicyCheck";
   import { specHasTabGroups } from "@rilldata/web-common/features/canvas/stores/tab-group";
+  import type { EphemeralMeasureDef } from "@rilldata/web-common/features/dashboards/ephemeral-measures/types.ts";
   import type { V1Resource } from "@rilldata/web-common/runtime-client";
 
   export let formId: string;
@@ -39,14 +40,15 @@
   export let errors: SuperFormErrors<ReportValues>;
   export let submit: () => void;
   export let enhance;
-  // Exactly one of exploreName and canvasName is non-empty; canvasName selects the canvas PDF variant of the form.
+  export let metricsViewName: string;
   export let exploreName: string;
   export let canvasName: string = "";
   // Canvas state (URL search string) to display instead of the page URL; set when
   // editing a report so the filter bar shows the report's captured state.
   export let canvasStateOverride: string | undefined = undefined;
-  export let filters: Filters | undefined = undefined;
+  export let filters: ExpressionFilterManager | undefined = undefined;
   export let timeControls: TimeControls | undefined = undefined;
+  export let ephemeralMeasures: EphemeralMeasureDef[] | undefined = undefined;
 
   const RUN_AS_OPTIONS = [
     {
@@ -65,6 +67,11 @@
   $: selectedRunAsOption = RUN_AS_OPTIONS.find(
     (o) => o.value === $data["webOpenMode"],
   );
+
+  // Attachments are only supported when running as the creator, since every recipient then gets the same file.
+  // Clear the option otherwise, so the form never holds a setting that will not be saved.
+  $: canAttach = $data["webOpenMode"] === ReportRunAs.Creator;
+  $: if (!canAttach && $data["exportAttach"]) $data["exportAttach"] = false;
 
   $: hasSlackNotifier = getHasSlackConnection(runtimeClient);
 
@@ -85,6 +92,17 @@
   );
   $: canvasFiltersEnabled =
     $canvasQuery.data?.canvas?.state?.validSpec?.filtersEnabled ?? true;
+
+  // Reports render a canvas as the creator or as each recipient sees it, so point out content that only some viewers see.
+  $: conditionsCheck = useVisibilityConditionsCheck(
+    runtimeClient,
+    canvasName ? ($canvasQuery.data?.meta?.filePaths?.[0] ?? "") : "",
+  );
+  $: visibilityNote = $conditionsCheck.data
+    ? $data["webOpenMode"] === ReportRunAs.Recipient
+      ? m.canvas_visibility_report_recipient_note()
+      : m.canvas_visibility_report_creator_note()
+    : "";
 
   // Keyboard counterpart of the read-only filter bar's pointer-events guard:
   // its controls remain focusable, so kick focus back out to keep them inoperable.
@@ -122,6 +140,11 @@
     {#if selectedRunAsOption}
       <div>
         {selectedRunAsOption.description}
+      </div>
+    {/if}
+    {#if visibilityNote}
+      <div>
+        {visibilityNote}
       </div>
     {/if}
     <ScheduleForm {data} {availableTimeZones} />
@@ -182,6 +205,10 @@
             isolated
             urlStateOverride={canvasStateOverride}
           >
+            <CanvasFilterParamsSync
+              {canvasName}
+              urlStateOverride={canvasStateOverride}
+            />
             <div class="readonly-filter-bar" onfocusin={blurFocusedDescendant}>
               <CanvasFilters {canvasName} maxWidth={820} readOnly />
             </div>
@@ -189,54 +216,23 @@
         </div>
       {/if}
     {:else}
-      <Select
-        bind:value={$data["exportFormat"]}
-        id="exportFormat"
-        label={m.report_form_format()}
-        options={[
-          {
-            value: V1ExportFormat.EXPORT_FORMAT_CSV,
-            label: m.report_form_format_csv(),
-          },
-          {
-            value: V1ExportFormat.EXPORT_FORMAT_PARQUET,
-            label: m.report_form_format_parquet(),
-          },
-          {
-            value: V1ExportFormat.EXPORT_FORMAT_XLSX,
-            label: m.report_form_format_xlsx(),
-          },
-        ]}
+      <ExportFileOptions
+        bind:format={$data["exportFormat"]}
+        bind:limit={$data["exportLimit"]}
+        bind:includeHeader={$data["exportIncludeHeader"]}
+        limitErrors={$errors["exportLimit"]}
       />
-      <Input
-        bind:value={$data["exportLimit"]}
-        errors={$errors["exportLimit"]}
-        id="exportLimit"
-        label={m.report_form_row_limit()}
-        optional
-        placeholder={m.report_form_row_limit_placeholder()}
+      <Checkbox
+        bind:checked={$data["exportAttach"]}
+        id="exportAttach"
+        onCheckedChange={(checked) => {
+          $data["exportAttach"] = Boolean(checked);
+        }}
+        inverse
+        disabled={!canAttach}
+        label={m.report_form_attach_file()}
+        hint={m.report_form_attach_file_hint()}
       />
-      <div class="flex items-center gap-x-1">
-        <Checkbox
-          bind:checked={$data["exportIncludeHeader"]}
-          id="exportIncludeHeader"
-          onCheckedChange={(checked) => {
-            $data["exportIncludeHeader"] = Boolean(checked);
-          }}
-          inverse
-          disabled={$data["exportFormat"] ===
-            V1ExportFormat.EXPORT_FORMAT_PARQUET}
-          label={m.report_form_include_metadata()}
-        />
-        <Tooltip location="right" alignment="middle" distance={8}>
-          <div class="text-fg-secondary" style="transform:translateY(-.5px)">
-            <InfoCircle size="13px" />
-          </div>
-          <TooltipContent maxWidth="400px" slot="tooltip-content">
-            {m.report_form_metadata_tooltip()}
-          </TooltipContent>
-        </Tooltip>
-      </div>
 
       {#if filters && timeControls}
         <div class="flex flex-col gap-y-3">
@@ -245,7 +241,13 @@
             id="filters"
             capitalize={false}
           />
-          <FiltersForm {filters} {timeControls} side="top" />
+          <FiltersForm
+            {filters}
+            {metricsViewName}
+            {exploreName}
+            {timeControls}
+            side="top"
+          />
         </div>
       {/if}
 
@@ -254,6 +256,7 @@
         bind:columns={$data["columns"]}
         columnErrors={$errors["columns"]}
         {exploreName}
+        {ephemeralMeasures}
       />
     {/if}
 

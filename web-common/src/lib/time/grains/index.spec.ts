@@ -4,12 +4,14 @@ import { DEFAULT_TIME_RANGES, TIME_COMPARISON, TIME_GRAIN } from "../config";
 import {
   durationToMillis,
   getAllowedTimeGrains,
+  getAdaptiveTimeGrain,
   getDefaultTimeGrain,
   getValidatedTimeGrain,
   unitToTimeGrain,
 } from "../grains";
 import { TimeComparisonOption, TimeRangePreset } from "../types";
 import { Interval, DateTime } from "luxon";
+import { V1TimeGrainToOrder } from "@rilldata/web-common/lib/time/new-grains";
 import { parseRillTime } from "@rilldata/web-common/features/dashboards/url-state/time-ranges/parser";
 import { afterEach, describe, it, expect } from "vitest";
 
@@ -281,13 +283,13 @@ describe("getValidatedTimeGrain", () => {
         undefined,
         parsed,
       );
-      // Should fall back to first allowed grain (day for ~1 year)
-      expect(result).toBe(V1TimeGrain.TIME_GRAIN_DAY);
+      // Falls back to the adaptive grain: about 52 weekly points
+      expect(result).toBe(V1TimeGrain.TIME_GRAIN_WEEK);
     });
   });
 
-  describe("falls back to first allowed grain", () => {
-    it("uses first allowed grain when no precision is specified", () => {
+  describe("falls back to the adaptive grain", () => {
+    it("sizes a custom range towards the ideal point count when no precision is specified", () => {
       const interval = createInterval(30); // 30 days: allows hour, day, week
       const result = getValidatedTimeGrain(
         interval,
@@ -295,10 +297,10 @@ describe("getValidatedTimeGrain", () => {
         undefined,
         undefined,
       );
-      expect(result).toBe(V1TimeGrain.TIME_GRAIN_HOUR);
+      expect(result).toBe(V1TimeGrain.TIME_GRAIN_DAY);
     });
 
-    it("uses first allowed grain when both precisions are invalid", () => {
+    it("uses first allowed grain when the fixed grain and the precision are invalid", () => {
       const interval = createInterval(365); // ~1 year
       const parsed = parseRillTime("365d as of latest/m"); // minute precision, not allowed
       const result = getValidatedTimeGrain(
@@ -339,7 +341,7 @@ describe("getValidatedTimeGrain", () => {
   });
 
   describe("integration with real Rill time strings", () => {
-    it("derives day grain for 365d as of latest/h", () => {
+    it("derives week grain for 365d as of latest/h", () => {
       const interval = createInterval(365);
       const parsed = parseRillTime("365d as of latest/h");
       const result = getValidatedTimeGrain(
@@ -348,8 +350,8 @@ describe("getValidatedTimeGrain", () => {
         undefined,
         parsed,
       );
-      // 365 days at hour grain = 8760 buckets (exceeds 1500), so use day
-      expect(result).toBe(V1TimeGrain.TIME_GRAIN_DAY);
+      // 365 days at hour grain = 8760 buckets (exceeds 1500); the adaptive grain is week
+      expect(result).toBe(V1TimeGrain.TIME_GRAIN_WEEK);
     });
 
     it("derives hour grain for 24h as of latest/h", () => {
@@ -376,18 +378,184 @@ describe("getValidatedTimeGrain", () => {
       expect(result).toBe(V1TimeGrain.TIME_GRAIN_WEEK);
     });
 
-    it("derives minute grain for 24h as of latest/m (1440 buckets)", () => {
+    it("adapts 24h as of latest/m to hours (1440 minute buckets is too many)", () => {
       const interval = createIntervalHours(24);
       const parsed = parseRillTime("24h as of latest/m");
       const result = getValidatedTimeGrain(
         interval,
-
         V1TimeGrain.TIME_GRAIN_MINUTE,
         undefined,
         parsed,
       );
+      expect(result).toBe(V1TimeGrain.TIME_GRAIN_HOUR);
+    });
 
+    it("keeps a fixed minute grain for 24h as of latest/m (1440 buckets)", () => {
+      const interval = createIntervalHours(24);
+      const parsed = parseRillTime("24h as of latest/m");
+      const result = getValidatedTimeGrain(
+        interval,
+        V1TimeGrain.TIME_GRAIN_MINUTE,
+        V1TimeGrain.TIME_GRAIN_MINUTE,
+        parsed,
+      );
       expect(result).toBe(V1TimeGrain.TIME_GRAIN_MINUTE);
     });
+  });
+});
+
+describe("getAdaptiveTimeGrain", () => {
+  function createInterval(days: number): Interval<true> {
+    const start = DateTime.fromISO("2024-01-01T00:00:00Z");
+    const end = start.plus({ days });
+    return Interval.fromDateTimes(start, end) as Interval<true>;
+  }
+  function createIntervalHours(hours: number): Interval<true> {
+    const start = DateTime.fromISO("2024-01-01T00:00:00Z");
+    const end = start.plus({ hours });
+    return Interval.fromDateTimes(start, end) as Interval<true>;
+  }
+  const minute = V1TimeGrain.TIME_GRAIN_MINUTE;
+
+  it("keeps the rill-time precision when it gives a reasonable number of points", () => {
+    expect(
+      getAdaptiveTimeGrain(createInterval(7), minute, parseRillTime("7D")),
+    ).toBe(V1TimeGrain.TIME_GRAIN_DAY);
+    expect(
+      getAdaptiveTimeGrain(
+        createIntervalHours(6),
+        minute,
+        parseRillTime("PT6H"),
+      ),
+    ).toBe(V1TimeGrain.TIME_GRAIN_HOUR);
+    expect(
+      getAdaptiveTimeGrain(createInterval(365), minute, parseRillTime("12M")),
+    ).toBe(V1TimeGrain.TIME_GRAIN_MONTH);
+  });
+
+  it("avoids a handful of points even when the precision fits", () => {
+    // 1 daily point
+    expect(
+      getAdaptiveTimeGrain(createInterval(1), minute, parseRillTime("1D")),
+    ).toBe(V1TimeGrain.TIME_GRAIN_HOUR);
+    // 4 weekly points
+    expect(
+      getAdaptiveTimeGrain(createInterval(28), minute, parseRillTime("4W")),
+    ).toBe(V1TimeGrain.TIME_GRAIN_DAY);
+    // 2 yearly points
+    expect(
+      getAdaptiveTimeGrain(createInterval(730), minute, parseRillTime("2Y")),
+    ).toBe(V1TimeGrain.TIME_GRAIN_MONTH);
+  });
+
+  it("avoids thousands of points when the precision is too fine", () => {
+    expect(
+      getAdaptiveTimeGrain(
+        createInterval(365),
+        minute,
+        parseRillTime("365D as of latest/h"),
+      ),
+    ).toBe(V1TimeGrain.TIME_GRAIN_WEEK);
+  });
+
+  it("sizes a custom range towards the ideal point count", () => {
+    expect(
+      getAdaptiveTimeGrain(createIntervalHours(2), minute, undefined),
+    ).toBe(V1TimeGrain.TIME_GRAIN_MINUTE);
+    expect(getAdaptiveTimeGrain(createInterval(3), minute, undefined)).toBe(
+      V1TimeGrain.TIME_GRAIN_HOUR,
+    );
+    expect(getAdaptiveTimeGrain(createInterval(30), minute, undefined)).toBe(
+      V1TimeGrain.TIME_GRAIN_DAY,
+    );
+    expect(getAdaptiveTimeGrain(createInterval(180), minute, undefined)).toBe(
+      V1TimeGrain.TIME_GRAIN_WEEK,
+    );
+    expect(
+      getAdaptiveTimeGrain(createInterval(365 * 4), minute, undefined),
+    ).toBe(V1TimeGrain.TIME_GRAIN_MONTH);
+  });
+
+  it("respects the smallest grain of the metrics view", () => {
+    // 3 days would be hourly, but the smallest grain is day.
+    expect(
+      getAdaptiveTimeGrain(
+        createInterval(3),
+        V1TimeGrain.TIME_GRAIN_DAY,
+        undefined,
+      ),
+    ).toBe(V1TimeGrain.TIME_GRAIN_DAY);
+  });
+
+  it("never goes below the smallest grain of the metrics view", () => {
+    const now = DateTime.fromISO("2026-10-08T14:30:00Z");
+    const ranges: [string | undefined, Interval<true>][] = [
+      ["PT6H", Interval.before(now, { hours: 6 }) as Interval<true>],
+      ["1D", Interval.before(now, { hours: 24 }) as Interval<true>],
+      ["7D", Interval.before(now, { days: 7 }) as Interval<true>],
+      ["4W", Interval.before(now, { weeks: 4 }) as Interval<true>],
+      ["3M", Interval.before(now, { months: 3 }) as Interval<true>],
+      ["12M", Interval.before(now, { months: 12 }) as Interval<true>],
+      ["2Y", Interval.before(now, { years: 2 }) as Interval<true>],
+      [
+        "WTD",
+        Interval.fromDateTimes(now.startOf("week"), now) as Interval<true>,
+      ],
+      [
+        "YTD",
+        Interval.fromDateTimes(now.startOf("year"), now) as Interval<true>,
+      ],
+      [undefined, Interval.before(now, { minutes: 30 }) as Interval<true>],
+      [undefined, Interval.before(now, { hours: 2 }) as Interval<true>],
+      [undefined, Interval.before(now, { days: 3 }) as Interval<true>],
+      [undefined, Interval.before(now, { days: 90 }) as Interval<true>],
+      [undefined, Interval.before(now, { years: 5 }) as Interval<true>],
+    ];
+    const floors = [
+      V1TimeGrain.TIME_GRAIN_MINUTE,
+      V1TimeGrain.TIME_GRAIN_HOUR,
+      V1TimeGrain.TIME_GRAIN_DAY,
+      V1TimeGrain.TIME_GRAIN_WEEK,
+      V1TimeGrain.TIME_GRAIN_MONTH,
+    ];
+    for (const floor of floors) {
+      for (const [expr, interval] of ranges) {
+        const parsed = expr ? parseRillTime(expr) : undefined;
+        const label = `${expr ?? "custom"} with floor ${floor}`;
+        // Resolved range: the adaptive grain and the validated grain without a fixed grain.
+        for (const grain of [
+          getAdaptiveTimeGrain(interval, floor, parsed),
+          getValidatedTimeGrain(interval, floor, undefined, parsed),
+        ]) {
+          expect(grain, label).toBeDefined();
+          expect(
+            V1TimeGrainToOrder[grain!] >= V1TimeGrainToOrder[floor],
+            label,
+          ).toBe(true);
+        }
+        // Unresolved range: only the precision is known and it must respect the floor too.
+        const unresolved = getAdaptiveTimeGrain(undefined, floor, parsed);
+        if (unresolved) {
+          expect(
+            V1TimeGrainToOrder[unresolved] >= V1TimeGrainToOrder[floor],
+            label,
+          ).toBe(true);
+        }
+      }
+    }
+  });
+
+  it("falls back to the precision alone before the range is resolved", () => {
+    expect(getAdaptiveTimeGrain(undefined, minute, parseRillTime("24H"))).toBe(
+      V1TimeGrain.TIME_GRAIN_HOUR,
+    );
+    expect(
+      getAdaptiveTimeGrain(
+        undefined,
+        V1TimeGrain.TIME_GRAIN_DAY,
+        parseRillTime("24H"),
+      ),
+    ).toBeUndefined();
+    expect(getAdaptiveTimeGrain(undefined, minute, undefined)).toBeUndefined();
   });
 });

@@ -35,6 +35,61 @@ describe("createTDDCartesianSpec", () => {
     });
   });
 
+  // Comparing by dimension switches the default chart to a Vega stacked bar,
+  // whose query builds its own measures. Without the definition the runtime
+  // rejects the bare name with `measure "..." not found`.
+  it("carries the ephemeral measure definition into the chart spec", () => {
+    const ephemeralMeasures = [
+      {
+        name: "sales_per_order",
+        displayName: "Sales per order",
+        expression: "total_sales / orders",
+      },
+    ];
+
+    const spec = createTDDCartesianSpec(
+      "my_metrics_view",
+      "sales_per_order",
+      "timestamp",
+      "country",
+      ["US"],
+      undefined,
+      true,
+      false,
+      ephemeralMeasures,
+    );
+
+    expect(spec.adhoc_measures).toEqual([
+      {
+        name: "sales_per_order",
+        display_name: "Sales per order",
+        expression: "total_sales / orders",
+      },
+    ]);
+  });
+
+  it("omits adhoc_measures for a spec measure", () => {
+    const spec = createTDDCartesianSpec(
+      "my_metrics_view",
+      "total_sales",
+      "timestamp",
+      "country",
+      ["US"],
+      undefined,
+      true,
+      false,
+      [
+        {
+          name: "sales_per_order",
+          displayName: "Sales per order",
+          expression: "total_sales / orders",
+        },
+      ],
+    );
+
+    expect(spec.adhoc_measures).toBeUndefined();
+  });
+
   it("includes colorMapping from dimensionData when available", () => {
     const dimensionData = [
       { dimensionValue: "US", color: "#ff0000", isFetching: false, data: [] },

@@ -18,6 +18,12 @@
   import { derived } from "svelte/store";
   import { slide } from "svelte/transition";
   import { useTimeControlStore } from "web-common/src/features/dashboards/time-controls/time-control-store.ts";
+  import { ephemeralMeasureDialog } from "../ephemeral-measures/dialog-store";
+  import {
+    precisionStateFor,
+    type PrecisionChipProps,
+  } from "../exact-measures/exact-measures";
+  import { exploreExactSurface } from "../exact-measures/explore-surfaces";
   import { getPivotConfig } from "./pivot-data-config";
   import { usePivotForExplore } from "./pivot-data-store";
   import PivotEmpty from "./PivotEmpty.svelte";
@@ -37,6 +43,11 @@
     selectors: {
       pivot: { columns, measures, dimensions },
       tags: { combinedTagIndex, dimensionTagIndex, measureTagIndex },
+      measures: { measureLabel },
+      exactMeasures: { exactMeasureContext },
+    },
+    actions: {
+      exactMeasures: { toggleExactMeasure },
     },
     timeRangeSummaryStore,
   } = stateManagers;
@@ -62,11 +73,28 @@
   });
 
   let showPanels = true;
+  let pivotTable: PivotTable | undefined;
 
   $: pivotDataStore = usePivotForExplore(stateManagers);
   $: pivotConfig = getPivotConfig(stateManagers);
 
   $: ({ isFetching, assembled } = $pivotDataStore);
+
+  // Precision chip of a measure column header; undefined when the measure has no exact variant.
+  $: precisionFor = (measureName: string): PrecisionChipProps | undefined => {
+    const state = precisionStateFor(
+      measureName,
+      $exactMeasureContext(exploreExactSurface.pivot),
+    );
+    if (!state) return undefined;
+    return {
+      state,
+      measureLabel: $measureLabel(measureName),
+      loading: state !== "approx" && isFetching,
+      onToggle: () =>
+        toggleExactMeasure(exploreExactSurface.pivot, measureName),
+    };
+  };
 
   // Build a description lookup from the metricsView so pivot chips get
   // descriptions even when the metricsView loads after the pivot state
@@ -171,6 +199,19 @@
             fmt,
           )}
         {lowerIsBetterMap}
+        ephemeralMeasures={$dashboardStore.ephemeralMeasures}
+        onEditEphemeralMeasure={(id) => {
+          const def = $dashboardStore.ephemeralMeasures?.find(
+            (d) => d.name === id,
+          );
+          if (def) ephemeralMeasureDialog.set({ def });
+        }}
+        onDeleteEphemeralMeasure={(id) =>
+          metricsExplorerStore.removeEphemeralMeasure(
+            $exploreName,
+            id,
+            $validSpecStore.data?.explore,
+          )}
       />
     {/if}
     <div
@@ -198,8 +239,15 @@
             totals.showTotalsColumn,
             totals.showTotalsRow,
           )}
+        setTotalsRowPosition={(position) =>
+          metricsExplorerStore.setPivotTotalsRowPosition(
+            $exploreName,
+            position,
+          )}
         collapseAll={() =>
           metricsExplorerStore.setPivotExpanded($exploreName, {})}
+        fitToWidth={() => pivotTable?.fitColumnsToWidth()}
+        canFitToWidth={assembled && !!pivotTable}
         {isFetching}
         bind:showPanels
       >
@@ -227,11 +275,13 @@
         />
       {:else}
         <PivotTable
+          bind:this={pivotTable}
           {widthScopeKey}
           {pivotDataStore}
           overscan={60}
           config={pivotConfig}
           pivotState={pivotExploreState}
+          {precisionFor}
           setPivotExpanded={(expanded) =>
             metricsExplorerStore.setPivotExpanded($exploreName, expanded)}
           setPivotSort={(sorting) =>

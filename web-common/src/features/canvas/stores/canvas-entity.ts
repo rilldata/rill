@@ -1,4 +1,10 @@
 import { goto } from "$app/navigation";
+import {
+  selectedInSurface,
+  toggleInSelection,
+  toggleSurfaceInSelection,
+  type ExactSelection,
+} from "@rilldata/web-common/features/dashboards/exact-measures/exact-measures";
 import { page } from "$app/stores";
 import {
   useCanvas,
@@ -16,6 +22,7 @@ import {
   type V1MetricsViewSpec,
   type V1Resource,
   type V1ThemeSpec,
+  getQueryServiceConvertExpressionToMetricsSQLQueryKey,
 } from "@rilldata/web-common/runtime-client";
 import {
   derived,
@@ -34,22 +41,29 @@ import type { CanvasComponentType, ComponentSpec } from "../components/types";
 import {
   COMPONENT_CLASS_MAP,
   createComponent,
+  getComponentInstanceType,
   isChartComponentType,
   isTableComponentType,
 } from "../components/util";
-import { FilterManager, flattenExpression } from "./filter-manager";
-import { getFilterParam } from "./filter-state";
 import { Grid } from "./grid";
-import { TabGroup, type LayoutBlock } from "./tab-group";
+import { TabGroup, rekeyedTabGroupNames, type LayoutBlock } from "./tab-group";
 import { getComparisonTypeFromRangeString } from "./time-state";
 import { TimeManager } from "./time-manager";
 import { Theme } from "../../themes/theme";
 import { createResolvedThemeStore } from "../../themes/selectors";
 import { ExploreStateURLParams } from "../../dashboards/url-state/url-params";
-import { DEFAULT_DASHBOARD_WIDTH, namePrefixFromPath } from "../layout-util";
+import {
+  canvasItemInstanceId,
+  DEFAULT_DASHBOARD_WIDTH,
+  namePrefixFromPath,
+} from "../layout-util";
 import { createCustomMapStore } from "@rilldata/web-common/lib/custom-map-store";
 import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import { queryServiceConvertExpressionToMetricsSQL } from "@rilldata/web-common/runtime-client";
+import { ExpressionFilterManager } from "@rilldata/web-common/features/dashboards/filters/ExpressionFilterManager.svelte.ts";
+import { convertExpressionToFilterParam } from "@rilldata/web-common/features/dashboards/url-state/filters/converters.ts";
+import { flattenExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils.ts";
+import { CanvasDashboardConfigProvider } from "@rilldata/web-common/features/dashboards/providers/DashboardConfigProvider.svelte.ts";
 
 export const lastVisitedState = new Map<string, string>();
 
@@ -78,6 +92,9 @@ export type SearchParamsStore = {
   clearAll: () => void;
 };
 
+// An exact selection with nothing selected; see `CanvasEntity.exactMeasures`.
+const NO_EXACT_SELECTION: ExactSelection = { contextKey: "", surfaces: {} };
+
 export class CanvasEntity {
   componentsStore = createCustomMapStore<BaseCanvasComponent>();
   _rows: Grid = new Grid(this);
@@ -90,11 +107,12 @@ export class CanvasEntity {
   // Time state controls
   timeManager: TimeManager;
 
-  // Dimension and measure filter state
-  filterManager: FilterManager;
-
   // Metrics view selectors
   metricsView: MetricsViewSelectors;
+  dashboardProvider: CanvasDashboardConfigProvider;
+
+  // Expression filter manager
+  expressionFilterManager: ExpressionFilterManager;
 
   fileArtifact: FileArtifact | undefined;
 
@@ -111,14 +129,23 @@ export class CanvasEntity {
   theme: Readable<Theme | undefined>;
   unsubscriber: Unsubscriber | undefined;
   private searchParams = writable<URLSearchParams>(new URLSearchParams());
+  // Measures the viewer switched to their `exact_expression`, per surface (a
+  // component, or one leaderboard of a leaderboard component; see
+  // `canvasExactSurface`), tied to the URL params (time, comparison, grain,
+  // timezone, filters, tabs) they were selected in. The selection resets as
+  // soon as those params change (see onUrlChange), so exact values are only
+  // fetched after an explicit click. Tab memory only: never serialized.
+  exactMeasures = writable<ExactSelection>(NO_EXACT_SELECTION);
   // This may sometimes be false due to discrepancy between two different ways
   // of storing the same state in the URL namely dimension IN (['value']) vs  dimension IN ('value')
   defaultUrlParamsStore = writable<URLSearchParams>(new URLSearchParams());
-  viewingDefaultsStore: Readable<boolean>;
   filtersEnabledStore = writable<boolean>(true);
   _embeddedTheme = writable<V1ThemeSpec | undefined>(undefined);
   _metricsViews = writable<Record<string, V1MetricsView | undefined>>({});
   bannerStore = writable<string | undefined>(undefined);
+  // YAML paths of the canvas elements hidden from the current user by `if` conditions or data access,
+  // such as "rows.0.items.1". Only the editor receives them; viewers get a canvas without that content.
+  hiddenPaths = writable<Set<string>>(new Set());
   _maxWidth = writable<number>(DEFAULT_DASHBOARD_WIDTH);
   titleStore = writable<string>("");
   // True only while this canvas is capturing a PDF export. Gates the off-screen
@@ -136,6 +163,8 @@ export class CanvasEntity {
   firstTimeLoad = true;
 
   private subscribers = 0;
+  // Set by dispose.
+  disposed = false;
 
   constructor(
     public name: string,
@@ -203,65 +232,32 @@ export class CanvasEntity {
     // override is applied.
     this.themeName.set(undefined);
 
-    this.processSpec(this.spec);
-
     this.metricsView = new MetricsViewSelectors(
       this.client,
       this._metricsViews,
     );
-
-    this.viewingDefaultsStore = derived(
-      [
-        this.searchParams,
-        this.defaultUrlParamsStore,
-        this.filterManager.pinnedFilterKeysStore,
-        this.filterManager.defaultPinnedFilterKeysStore,
-        this.filterManager.requiredFilterKeysStore,
-        this.filterManager.defaultRequiredFilterKeysStore,
-      ],
-      ([
-        $searchParams,
-        $defaultUrlParams,
-        pinnedFilters,
-        defaultPinnedFilterKeys,
-        requiredFilters,
-        defaultRequiredFilterKeys,
-      ]) => {
-        if (
-          defaultPinnedFilterKeys.symmetricDifference(pinnedFilters).size > 0
-        ) {
-          return false;
-        }
-        if (
-          defaultRequiredFilterKeys.symmetricDifference(requiredFilters).size >
-          0
-        ) {
-          return false;
-        }
-        if ($defaultUrlParams.size === 0) {
-          return false;
-        }
-
-        for (const [key, value] of $defaultUrlParams.entries()) {
-          if ($searchParams.get(key) !== value) {
-            // Ignore time range if not set
-            if (
-              $searchParams.get(key) === null &&
-              key === ExploreStateURLParams.TimeRange
-            ) {
-              continue;
-            }
-            return false;
-          }
-        }
-        for (const [key, value] of $searchParams.entries()) {
-          if ($defaultUrlParams.get(key) !== value) {
-            return false;
-          }
-        }
-        return true;
-      },
+    this.dashboardProvider = new CanvasDashboardConfigProvider(
+      this.client,
+      name,
+      allowUnvalidatedSpec,
     );
+
+    this.expressionFilterManager = new ExpressionFilterManager(
+      this.dashboardProvider.metricsViewsProvider,
+      this.dashboardProvider.yamlConfigProvider,
+    );
+    // A component that filters through its own interactions, a pivot click to filter for example,
+    // keeps its active state. Any other filter change, the filter bar or another component,
+    // releases it so the component drops its click selections.
+    // Not unsubscribed: the emitter belongs to a manager this entity owns, so the two are
+    // discarded together, and `dispose` can be followed by another `acquire`.
+    this.expressionFilterManager.on("filter-changed", ({ source }) => {
+      if (source && source === get(this.activeComponent)) return;
+      this.clearActiveComponent();
+    });
+    this.expressionFilterManager.storeSync.syncToUrl("clear=true");
+
+    this.processSpec(this.spec);
   }
 
   checkAndSetMaxWidth = ({ maxWidth }: V1CanvasSpec) => {
@@ -305,6 +301,17 @@ export class CanvasEntity {
     }
   };
 
+  checkAndSetHiddenPaths = (paths: string[] | undefined) => {
+    const next = new Set(paths ?? []);
+    const current = get(this.hiddenPaths);
+    if (
+      next.size !== current.size ||
+      [...next].some((path) => !current.has(path))
+    ) {
+      this.hiddenPaths.set(next);
+    }
+  };
+
   checkAndSetFileArtifact = (filePath: string | undefined) => {
     if (!filePath) return;
     if (!this.fileArtifact) {
@@ -345,39 +352,7 @@ export class CanvasEntity {
     this.timeManager.onSpecChange(response);
 
     this.titleStore.set(validSpec.displayName ?? "");
-
-    const defaultPreset = validSpec?.defaultPreset ?? {};
-    const filterExpressions = defaultPreset.filterExpr ?? {};
-    const pinnedFilters = validSpec?.pinnedFilters ?? [];
-    const requiredFilters = validSpec?.requiredFilters ?? [];
-
-    if (metricsViews) {
-      if (this.filterManager) {
-        this.filterManager.updateConfig(
-          metricsViews,
-          pinnedFilters,
-          filterExpressions,
-          requiredFilters,
-        );
-      } else {
-        this.filterManager = new FilterManager(
-          metricsViews,
-          this.instanceId,
-          pinnedFilters,
-          filterExpressions,
-          requiredFilters,
-        );
-        // Clears the active component when a global filter changes through
-        // FilterManager.actions.* (user-driven filter UI). Pivot click-to-filter
-        // bypasses actions and mutates FilterState directly, so it does NOT
-        // trigger this callback; see pivot-click-to-filter.ts for details.
-        this.filterManager.onFilterChange = () => this.clearActiveComponent();
-      }
-    } else {
-      // need to find a better way to initialize this in certain contextx - bgh
-      this.filterManager = new FilterManager({}, "", [], {});
-      this.filterManager.onFilterChange = () => this.clearActiveComponent();
-    }
+    this.checkAndSetHiddenPaths(response.hiddenPaths);
 
     this.processRows({ canvas, components, metricsViews, filePath });
   };
@@ -390,32 +365,42 @@ export class CanvasEntity {
       setTimeout(resolve, 100);
     });
 
-    const pinnedFilters = get(this.filterManager.pinnedFilterKeysStore);
-    const requiredFilters = get(this.filterManager.requiredFilterKeysStore);
+    const pinnedFilters = Object.keys(
+      this.dashboardProvider.yamlConfigProvider.pinnedFilters,
+    );
+    const requiredFilters = Object.keys(
+      this.dashboardProvider.yamlConfigProvider.requiredFilters,
+    );
 
     // Persist pinned and required independently. Render-time treats a filter as
     // visible whenever it's in either set, so we don't dedupe here: doing so
     // would silently drop the pin flag if a user later toggled required off.
-    const pinnedNames = Array.from(pinnedFilters).map((f) => f.split("::")[1]);
-    const requiredNames = Array.from(requiredFilters).map(
-      (f) => f.split("::")[1],
-    );
+    const pinnedNames = pinnedFilters
+      .map((f) => f.split("::").pop())
+      .filter(Boolean) as string[];
+    const requiredNames = requiredFilters
+      .map((f) => f.split("::").pop())
+      .filter(Boolean) as string[];
     const timeRange = get(this.timeManager.state.rangeStore);
     const comparisonOn = get(this.timeManager.state.showTimeComparisonStore);
 
-    const metricsViewFilters = get(this.filterManager.metricsViewFilters);
-    const filterNames = Array.from(metricsViewFilters.keys());
-    const promises = Array.from(metricsViewFilters.values()).map((filters) => {
-      const parsed = get(filters.parsed);
+    const filterNames = Object.keys(
+      this.expressionFilterManager.topLevelJoiner.expr,
+    );
+    const promises = Object.values(
+      this.expressionFilterManager.topLevelJoiner.expr,
+    ).map((expr) => {
+      // TODO: our API type is proto but there is a fromJSON underneath.
+      //       Once that is fixed, we need to call toExpressionProto here.
+      const protoExpr = expr as any;
       return queryClient.fetchQuery({
-        queryKey: [
-          "resolve-metrics-view-filter-expression",
+        queryKey: getQueryServiceConvertExpressionToMetricsSQLQueryKey(
           this.instanceId,
-          parsed.where,
-        ],
+          { expression: protoExpr },
+        ),
         queryFn: () =>
           queryServiceConvertExpressionToMetricsSQL(this.client, {
-            expression: parsed.where as any,
+            expression: protoExpr,
           }),
       });
     });
@@ -543,21 +528,80 @@ export class CanvasEntity {
       if (redirected) return;
     }
 
-    this.filterManager.onUrlChange(searchParams);
     this.searchParams.set(searchParams);
+    // The query context changed: new queries are approximate again.
+    this.exactMeasures.update((selection) =>
+      selection.contextKey === searchParams.toString()
+        ? selection
+        : NO_EXACT_SELECTION,
+    );
     if (!isolated) {
       this.saveSnapshot(searchParams.toString());
     }
+    this.expressionFilterManager.storeSync.setUrlParams(searchParams);
     this.timeManager.state.onUrlChange(searchParams);
     this.applyTabsFromURL(searchParams);
   };
 
+  /**
+   * Switches a measure of one surface between its approximate default and its
+   * exact variant for the current query context. Only that surface follows:
+   * a click re-runs the queries of one component (or one leaderboard).
+   */
+  toggleExactMeasure = (surface: string, measureName: string) => {
+    const contextKey = get(this.searchParams).toString();
+    this.exactMeasures.update(
+      (selection) =>
+        toggleInSelection(selection, contextKey, surface, measureName) ??
+        NO_EXACT_SELECTION,
+    );
+  };
+
+  /**
+   * Switches a whole surface between approximate and exact: every given
+   * measure becomes exact, or the surface returns to approximate when all of
+   * them are exact already. For components with one chip for all their
+   * measures (charts).
+   */
+  toggleExactSurface = (surface: string, measureNames: readonly string[]) => {
+    const contextKey = get(this.searchParams).toString();
+    this.exactMeasures.update(
+      (selection) =>
+        toggleSurfaceInSelection(
+          selection,
+          contextKey,
+          surface,
+          measureNames,
+        ) ?? NO_EXACT_SELECTION,
+    );
+  };
+
+  /**
+   * The measures the viewer selected as exact in a surface, for the current
+   * query context.
+   */
+  selectedExactMeasures = (surface: string): Readable<ReadonlySet<string>> =>
+    derived(
+      [this.exactMeasures, this.searchParams],
+      ([selection, searchParams]) =>
+        selectedInSurface(selection, searchParams.toString(), surface),
+    );
+
+  /**
+   * Non-reactive variant of `selectedExactMeasures`, for derivations that
+   * already subscribe to `exactMeasures`.
+   */
+  currentExactMeasures = (surface: string): ReadonlySet<string> =>
+    selectedInSurface(
+      get(this.exactMeasures),
+      get(this.searchParams).toString(),
+      surface,
+    );
+
   // Acquires a reference to the entity. The cached entity is shared across
   // consumers (e.g. an unmounting editor and a mounting preview overlap during
   // navigation), so its spec subscription must survive as long as any consumer
-  // needs it. Subscribes on the first consumer; idempotent thereafter. The
-  // subscription's processSpec call recreates the components, ensuring a cached
-  // entity that was previously disposed is not left in an error state.
+  // needs it. Subscribes on the first consumer; idempotent thereafter.
   acquire = () => {
     this.subscribers++;
     if (this.unsubscriber) return; // already subscribed
@@ -583,16 +627,21 @@ export class CanvasEntity {
     this.dispose();
   };
 
-  // Unconditionally tears down the spec subscription and disposes every child
-  // component, regardless of the reference count. Used when the entity is
-  // evicted from the registry (mode switch or removeCanvasStore) and is being
-  // discarded; a subsequent release on the disposed entity is a safe no-op.
+  // Unconditionally tears down the spec subscription, every child component
+  // and the filter providers, regardless of the reference count. Runs once the
+  // last consumer releases the entity, and when the entity is evicted from the
+  // registry (mode switch or removeCanvasStore). A disposed entity is discarded,
+  // never acquired again (see getCanvasStoreUnguarded); a subsequent release on
+  // it is a safe no-op.
   dispose = () => {
+    if (this.disposed) return;
+    this.disposed = true;
     this.subscribers = 0;
     this.unsubscriber?.();
-    this.unsubscriber = undefined; // so a later acquire re-subscribes
+    this.unsubscriber = undefined;
     this.componentsStore.read().forEach((component) => component.destroy());
     this.componentsStore.reset();
+    this.dashboardProvider.cleanup?.();
   };
 
   handleCanvasRedirect = async ({
@@ -621,6 +670,7 @@ export class CanvasEntity {
       const deployed = projectId;
 
       if (deployed) {
+        // TODO: bookmark specific code should only be in web-admin
         let homeBookmarkUrlSearch: string | undefined = undefined;
         try {
           // Only gets imported in admin context
@@ -751,23 +801,32 @@ export class CanvasEntity {
           const componentName = item.component;
           if (!componentName) return;
 
-          set.add(componentName);
+          // Items referencing an externally defined component get a positional
+          // instance id, so multiple references to the same component (with
+          // different params) each have their own instance and state.
+          const instanceId = canvasItemInstanceId(
+            item,
+            rowIndex,
+            columnIndex,
+            namePrefixFromPath(prefix),
+          );
+          set.add(instanceId);
 
           const newResource = newComponents?.[componentName];
           if (!newResource) {
             throw new Error("No component found: " + componentName);
           }
 
-          const newType = (newResource.component?.state?.validSpec?.renderer ??
-            (this.allowUnvalidatedSpec
-              ? newResource.component?.spec?.renderer
-              : undefined)) as CanvasComponentType;
-          const existingClass =
-            this.componentsStore.getNonReactive(componentName);
+          const newType = getComponentInstanceType(
+            newResource,
+            item,
+            this.allowUnvalidatedSpec,
+          );
+          const existingClass = this.componentsStore.getNonReactive(instanceId);
           const path = constructPath(rowIndex, columnIndex, newType, prefix);
 
           if (existingClass && areSameType(newType, existingClass.type)) {
-            existingClass.update(newResource, path);
+            existingClass.update(newResource, path, item);
           } else {
             createdNewComponent = true;
             // Tear down the replaced instance's spec subscription before
@@ -775,8 +834,8 @@ export class CanvasEntity {
             // filter/time state.
             existingClass?.destroy();
             this.componentsStore.set(
-              componentName,
-              createComponent(newResource, this, path),
+              instanceId,
+              createComponent(newResource, this, path, item, instanceId),
             );
           }
         });
@@ -810,6 +869,9 @@ export class CanvasEntity {
   // while each tab group owns a grid per tab.
   private processLayout = (rows: V1CanvasRow[]): boolean => {
     const freeRows: V1CanvasRow[] = [];
+    // The spec row index of each free row, so instance ids match the ones computed
+    // in processRows (which walks the full spec, including tab groups).
+    const freeRowSpecIndices: number[] = [];
     const blocks: LayoutBlock[] = [];
     const seenGroupNames = new Set<string>();
 
@@ -826,6 +888,7 @@ export class CanvasEntity {
         blocks.push({ kind: "tab-group", rowIndex, group });
       } else {
         blocks.push({ kind: "row", rowIndex, freeRowIndex: freeRows.length });
+        freeRowSpecIndices.push(rowIndex);
         freeRows.push(row);
       }
     });
@@ -835,7 +898,15 @@ export class CanvasEntity {
       if (!seenGroupNames.has(name)) this.tabGroups.delete(name);
     }
 
-    const didUpdateRowCount = this._rows.updateFromCanvasRows(freeRows);
+    const didUpdateRowCount = this._rows.updateFromCanvasRows(
+      freeRows,
+      (item, rowIndex, columnIndex) =>
+        canvasItemInstanceId(
+          item,
+          freeRowSpecIndices[rowIndex] ?? rowIndex,
+          columnIndex,
+        ),
+    );
     this.layout.set(blocks);
 
     // In view mode, spec updates follow the URL. In the editor, URL changes are
@@ -872,11 +943,13 @@ export class CanvasEntity {
 
     this.tabGroups.forEach((group, name) => {
       const tabName = active.get(name);
-      if (tabName) group.setActiveByName(tabName);
       // In view mode, a group absent from the param is reset to its first tab so back/forward
-      // restores state symmetrically. In edit mode the active tab is editor-local (driven by
-      // clicks), so don't reset it here — doing so on every URL change fought direct selection.
-      else if (!this.allowUnvalidatedSpec) group.activeTabIndex.set(0);
+      // restores state symmetrically. So is a group whose tab in the param isn't on the canvas,
+      // e.g. a shared link to a tab that's hidden from this viewer.
+      // In edit mode the active tab is editor-local (driven by clicks), so don't reset it here;
+      // doing so on every URL change fought direct selection.
+      const applied = !!tabName && group.setActiveByName(tabName);
+      if (!applied && !this.allowUnvalidatedSpec) group.activeTabIndex.set(0);
     });
   };
 
@@ -994,6 +1067,26 @@ export class CanvasEntity {
   // Look up a tab group by its stable name (for the inspector panel).
   getTabGroup = (name: string) => this.tabGroups.get(name);
 
+  // Re-key tab groups ahead of a top-level row edit (move, insert or delete of a block), so
+  // each index-keyed group's instance, with its active tab, follows the group to its new row.
+  // Without this the next layout pass would hand a shifted group its neighbour's instance,
+  // and a selection on it would silently point at a different group. `newIndexOf` maps a
+  // row index before the edit to the index after it, or -1 if that row is removed.
+  rekeyTabGroups = (newIndexOf: (rowIndex: number) => number) => {
+    const pairs = rekeyedTabGroupNames(get(this.layout), newIndexOf);
+    const remapped = new Map<string, TabGroup>();
+    for (const [from, to] of pairs) {
+      const group = this.tabGroups.get(from);
+      if (group) remapped.set(to, group);
+    }
+    this.tabGroups = remapped;
+
+    const selected = get(this.selectedTabGroup);
+    const renamed = pairs.find(([from]) => from === selected);
+    if (renamed && renamed[1] !== selected)
+      this.selectedTabGroup.set(renamed[1]);
+  };
+
   setActiveComponent = (id: string) => {
     this.activeComponent.set(id);
   };
@@ -1088,7 +1181,7 @@ function getDefaults(defaultPreset: V1CanvasPreset) {
     ([metricsViewName, { expression }]) => {
       if (expression) {
         const flattened = flattenExpression(expression);
-        const urlFormat = getFilterParam(flattened, [], []);
+        const urlFormat = convertExpressionToFilterParam(flattened, []);
 
         if (urlFormat) {
           defaultSearchParams.set(

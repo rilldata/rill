@@ -108,6 +108,7 @@ function getExploreTimeStateFromYAMLConfig(
     if (defaultPreset.timeGrain) {
       exploreTimeState.selectedTimeRange.interval =
         DateTimeUnitToV1TimeGrain[defaultPreset.timeGrain];
+      exploreTimeState.adaptiveTimeGrain = false;
     } else {
       const grainForRange = getGrainForRange(
         defaultPreset.timeRange,

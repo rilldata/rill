@@ -11,6 +11,7 @@ import {
   createInExpression,
   createLikeExpression,
   createOrExpression,
+  isSubqueryExpression,
   matchExpressionByName,
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import { type V1MetricsViewAggregationResponseDataItem } from "../../../runtime-client";
@@ -65,8 +66,8 @@ export function updateFilterOnSearch(
   }
 
   filterForDimension = copyFilterExpression(filterForDimension);
-  const filterIdx = filterForDimension.cond?.exprs?.findIndex((e) =>
-    matchExpressionByName(e, dimensionName),
+  const filterIdx = filterForDimension.cond?.exprs?.findIndex(
+    (e) => matchExpressionByName(e, dimensionName) && !isSubqueryExpression(e),
   );
   if (filterIdx === undefined || filterIdx === -1) {
     filterForDimension.cond?.exprs?.push(cond);
@@ -76,8 +77,12 @@ export function updateFilterOnSearch(
   return filterForDimension;
 }
 
+/**
+ * Returns the filters for the other dimensions plus a `like` filter for the search text on the given dimension.
+ * `filters` is undefined when the dashboard has no active filters; the search must still apply in that case.
+ */
 export function getDimensionFilterWithSearch(
-  filters: V1Expression,
+  filters: V1Expression | undefined,
   searchText: string,
   dimensionName: string,
 ) {
@@ -190,7 +195,6 @@ export function estimateColumnSizes(
     [key: string]: number;
   },
   rows: DimensionTableRow[],
-  containerWidth: number,
   config: DimensionTableConfig,
 ): number[] {
   const estimatedColumnSizes = columns.map((column, i) => {

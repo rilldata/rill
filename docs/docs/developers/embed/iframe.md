@@ -16,7 +16,7 @@ Rill Cloud provides the ability to embed dashboards as components in your own ap
 - Embedding individual dashboards with the ability to navigate to other dashboards (that exist in the _same_ project)
 - Embedding the dashboard list page present in a Rill project (with the ability to select and navigate between dashboards)
 
-When embedding Rill, you need to generate a service token for your backend to request an authenticated iframe URL via the Rill API. Afterwards, the iframe URL can be passed to your frontend application for rendering. Here's a high-level diagram of what this flow looks like:
+When embedding Rill, you need to generate a service token for your backend to request an authenticated iframe URL via the Rill API. Afterward, the iframe URL can be passed to your frontend application for rendering. Here's a high-level diagram of what this flow looks like:
 
 ```mermaid
 sequenceDiagram
@@ -327,6 +327,8 @@ Only one of `user_email` or `attributes` can be provided for a given iframe. The
 - `user_email`: Looks up the user in Rill Cloud by email and populates their standard attributes. If no matching user is found, it generates limited attributes with only the fields `email`, `domain` (the part of the email after `@`) and `admin` (set to `false`). The derived `domain` is commonly used in security policies (e.g. `app_site_domain = '{{ .user.domain }}'`). Does not enable per-user state on its own; combine with `external_user_id` to enable per-user state.
 - `attributes`: Passes the provided attributes through directly. Make sure to include all attributes referenced in your security policies (e.g. `email`, `domain`, `admin`, or custom attributes like `tenant_id`). Does not enable per-user state on its own; combine with `external_user_id` to enable per-user state.
 - `external_user_id`: Any stable identifier for the end user. This is usually the user's ID in your own database. Setting it enables per-user state such as AI chat history.
+
+The same attributes decide what an embedded canvas shows. Canvas rows, tabs and components can have [`if` conditions](/developers/build/dashboards/canvas#show-content-to-some-viewers-only) on them, such as `'{{ eq .user.plan "premium" }}'` to show premium content only to tenants on that plan. Every embed also carries the attribute `embed: true`, so a condition like `'{{ not .user.embed }}'` keeps content out of embedded dashboards.
 
 ## Embedding the project vs embedding an individual dashboard
 

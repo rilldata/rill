@@ -108,7 +108,7 @@ func (p *Parser) parseAPI(node *Node) error {
 		}
 	}
 
-	r, err := p.insertResource(ResourceKindAPI, node.Name, node.Paths, node.Tags, node.Refs...)
+	r, err := p.insertResource(ResourceKindAPI, node.Name, node.Paths, node.Tags, node.Metadata, node.Refs...)
 	if err != nil {
 		return err
 	}

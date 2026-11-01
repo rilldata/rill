@@ -177,12 +177,17 @@
   $: maxSnapDistance = Math.max(MIN_SNAP_INDICES, data.length * SNAP_FRACTION);
   $: isLocallyHovered =
     hoverState.isHovered && hoverState.index !== null && data.length > 0;
-  // All series the cursor can snap to: the primary measure, its time
-  // comparison, and any dimension comparison series.
+  // All series the cursor can snap to: the primary measure, any dimension
+  // comparison series, and their time comparisons.
   $: snapSeries = [
     data.map((d) => d.value),
     ...(showComparison ? [data.map((d) => d.comparisonValue ?? null)] : []),
     ...dimensionData.map((dim) => dim.data.map((d) => d.value)),
+    ...(showComparison
+      ? dimensionData.map((dim) =>
+          dim.data.map((d) => d.comparisonValue ?? null),
+        )
+      : []),
   ];
   // Snap to the nearest non-null point so sparse data is easy to hover; null
   // when the cursor is in a gap wider than maxSnapDistance.

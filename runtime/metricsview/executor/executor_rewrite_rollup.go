@@ -41,6 +41,7 @@ const (
 const (
 	skipRawRows                 = "raw_rows"
 	skipNonPrimaryTimeDimension = "non_primary_time_dimension"
+	skipExactMeasures           = "exact_measures"
 )
 
 // Rollup routing decides whether a metrics query can be served from a
@@ -48,7 +49,7 @@ const (
 //
 // Routing decision:
 //
-//  1. Quick disqualification: raw-row queries and queries referencing a non-primary time dimension are skipped.
+//  1. Quick disqualification: raw-row queries, queries referencing a non-primary time dimension, and queries that compute measures exactly are skipped.
 //
 //  2. Eligibility (per rollup): a rollup is eligible only if all of these hold:
 //     a. Query time grain is derivable from the rollup grain (e.g. month from day).
@@ -116,6 +117,20 @@ func (e *Executor) rewriteQueryForRollup(ctx context.Context, qry *metricsview.Q
 			attribute.Int("rollup.candidate_count", len(e.metricsView.Rollups)),
 			attribute.String("rollup.result", "skipped"),
 			attribute.String("rollup.skip_reason", skipNonPrimaryTimeDimension),
+		)
+		span.End()
+		return nil, nil
+	}
+
+	// Disqualify: queries that compute measures with their exact_expression.
+	// Exact aggregates (e.g. exact distinct counts) cannot be computed from pre-aggregated rows.
+	// This is keyed on the exact measures resolved by rewriteQueryExactMeasures, so an `exact` flag on a measure without an exact_expression keeps the rollup eligible.
+	if len(qry.ExactMeasures) > 0 {
+		_, span := tracer.Start(ctx, "rollup.selection")
+		span.SetAttributes(
+			attribute.Int("rollup.candidate_count", len(e.metricsView.Rollups)),
+			attribute.String("rollup.result", "skipped"),
+			attribute.String("rollup.skip_reason", skipExactMeasures),
 		)
 		span.End()
 		return nil, nil
@@ -393,23 +408,30 @@ func rollupEligible(rollup *runtimev1.MetricsViewSpec_Rollup, qry *metricsview.Q
 
 	// 6. All queried measures present in rollup; reject computed measures (count, count_distinct, etc.)
 	// since they produce incorrect results on pre-aggregated rollup tables. Comparison-derived
-	// computed measures (ComparisonValue / ComparisonDelta / ComparisonRatio / ComparisonTime) are
-	// allowed because they are pure SQL wrappers over a referenced base measure: the actual
-	// aggregation is done by the referenced measure, which itself must be in the rollup.
+	// computed measures (ComparisonValue / ComparisonDelta / ComparisonRatio / ComparisonTime) and
+	// expression measures are allowed because they are pure SQL wrappers over referenced base measures:
+	// the actual aggregation is done by those measures, which must themselves be in the rollup.
 	rollupMeasures := make(map[string]bool, len(rollup.Measures))
 	for _, m := range rollup.Measures {
 		rollupMeasures[strings.ToLower(m)] = true
 	}
 	for _, m := range qry.Measures {
 		if m.Compute != nil {
-			refName, ok := comparisonReferencedMeasure(m.Compute)
+			refNames, ok := rollupSafeReferencedMeasures(m.Compute)
 			if !ok {
-				// Non-comparison compute (count, count_distinct, percent_of_total, etc.)
+				// Compute that cannot be re-aggregated from a rollup (count, count_distinct, percent_of_total, etc.)
 				return false, rejectComputedMeasure, nil
 			}
-			// refName == "" for ComparisonTime: pure date arithmetic, no measure dependency.
-			if refName != "" && !rollupMeasures[strings.ToLower(refName)] {
-				return false, rejectMeasureMissing, nil
+			for _, refName := range refNames {
+				// A comparison compute may reference an expression measure defined in the same query.
+				// That measure is not in the rollup, but the measures it references may be, so check those instead.
+				// Its own rollup safety is checked when the loop reaches it.
+				if _, ok := queryExpressionMeasure(qry, refName); ok {
+					continue
+				}
+				if !rollupMeasures[strings.ToLower(refName)] {
+					return false, rejectMeasureMissing, nil
+				}
 			}
 			continue
 		}
@@ -553,25 +575,43 @@ func checkEndAlignment(end, baseMax time.Time, grain runtimev1.TimeGrain, loc *t
 	}
 }
 
-// comparisonReferencedMeasure returns the base measure referenced by a comparison-derived compute,
-// along with ok=true if the compute is a comparison type that's safe to evaluate against a rollup.
-// Returns ("", true) for ComparisonTime since it is pure date arithmetic with no measure dependency.
-// Returns ("", false) for non-comparison computes (count, count_distinct, percent_of_total),
-// which cannot be correctly re-aggregated from a pre-aggregated rollup table.
-func comparisonReferencedMeasure(c *metricsview.MeasureCompute) (string, bool) {
+// rollupSafeReferencedMeasures returns the base measures referenced by a computed measure,
+// along with ok=true if the compute is a type that's safe to evaluate against a rollup.
+// Returns (nil, true) for ComparisonTime and URI since they have no measure dependency.
+// Returns (nil, false) for computes that cannot be correctly re-aggregated from a pre-aggregated rollup table
+// (count, count_distinct, percent_of_total).
+func rollupSafeReferencedMeasures(c *metricsview.MeasureCompute) ([]string, bool) {
 	switch {
 	case c.ComparisonValue != nil:
-		return c.ComparisonValue.Measure, true
+		return []string{c.ComparisonValue.Measure}, true
 	case c.ComparisonDelta != nil:
-		return c.ComparisonDelta.Measure, true
+		return []string{c.ComparisonDelta.Measure}, true
 	case c.ComparisonRatio != nil:
-		return c.ComparisonRatio.Measure, true
+		return []string{c.ComparisonRatio.Measure}, true
 	case c.ComparisonTime != nil:
-		return "", true
+		return nil, true
 	case c.URI != nil:
-		return "", true
+		return nil, true
+	case c.Expression != nil:
+		parsed, err := metricsview.ParseMeasureExpression(c.Expression.Expression)
+		if err != nil {
+			// The expression is validated again when the AST is built, which reports the error properly.
+			// Here we only need to keep an invalid expression from taking the rollup path.
+			return nil, false
+		}
+		return parsed.Refs(), true
 	}
-	return "", false
+	return nil, false
+}
+
+// queryExpressionMeasure returns the expression measure with the given name defined in the query, if any.
+func queryExpressionMeasure(qry *metricsview.Query, name string) (metricsview.Measure, bool) {
+	for _, qm := range qry.Measures {
+		if qm.Name == name && qm.Compute != nil && qm.Compute.Expression != nil {
+			return qm, true
+		}
+	}
+	return metricsview.Measure{}, false
 }
 
 // normalizeTimezone validates and normalizes a timezone string for comparison.

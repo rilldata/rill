@@ -22,11 +22,13 @@ export interface CreateBaseEmbedOptionsParams {
 /**
  * Builds the size-independent half of the vega-embed options.
  *
- * Callers spread `width` and `height` on top of the result, and must keep this object's
- * identity stable while only the dimensions change: svelte-vega compares options key by key
- * with `===` (ignoring width and height), and a single fresh nested object makes it tear
- * down and re-embed the whole view instead of calling `view.width()`. That loses brush state
- * and, while a resize divider is being dragged, re-embeds on every frame.
+ * Callers spread `width` and `height` on top of the result, and must not rebuild the spread
+ * on every resize: svelte-vega re-embeds the whole view (losing brush state, and on every
+ * frame of a divider drag) whenever the options object it was handed is not the one it saw
+ * last. Its cheaper `view.width()` path is unreachable in practice, because it keeps the
+ * previous options in a Svelte `$state` proxy and so its `===` comparison of nested values
+ * such as `config` never passes. Resize the live view directly instead, as
+ * `VegaLiteRenderer` does.
  */
 export function createBaseEmbedOptions({
   client,

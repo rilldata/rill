@@ -2,12 +2,12 @@ package clickhouse
 
 import (
 	"context"
-	"crypto/md5"
 	"errors"
 	"fmt"
 	"strings"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/graceful"
 	"github.com/rilldata/rill/runtime/pkg/observability"
@@ -119,8 +119,8 @@ func (c *Connection) insertTableAsSelect(ctx context.Context, name, sql string, 
 		if err != nil {
 			return nil, err
 		}
-		// create temp table with the same schema using a deterministic name
-		tempName := fmt.Sprintf("__rill_temp_%s_%x", name, md5.Sum([]byte(sql)))
+		// create temp table with the same schema
+		tempName := tempTableName(name)
 		// clean up the temp table
 		defer func() {
 			// cleanup using a different ctx to prevent cleanups being impacted by the main ctx cancellation
@@ -234,9 +234,83 @@ func (c *Connection) insertTableAsSelect(ctx context.Context, name, sql string, 
 	return nil, fmt.Errorf("incremental insert strategy %q not supported", opts.Strategy)
 }
 
+// tempTablePrefix is the prefix of the temporary tables created while writing a model's table, e.g. for column inference and partition inserts.
+const tempTablePrefix = "__rill_temp_"
+
+// tempTableName returns a unique name for a temporary table used while writing table `name`.
+// Unique names prevent concurrent executions (e.g. partitions of the same model) and the stale table sweep from operating on the same table.
+func tempTableName(name string) string {
+	return fmt.Sprintf("%s%s_%d_%s", tempTablePrefix, name, time.Now().UnixMilli(), uuid.New().String()[0:8])
+}
+
+// tempTableTTL is the age after which a temporary table is assumed to be left behind by an execution that never dropped it.
+// The default model timeout is 3 hours, so this leaves a wide margin for executions that are still running.
+const tempTableTTL = 24 * time.Hour
+
+// dropStaleTempTables drops the temporary tables in the configured database that were created, or last altered, more than olderThan ago.
+// The execution that creates a temporary table also drops it, but that never happens if the runtime restarts in the meantime,
+// and it may fail, e.g. by timing out while a cancelled insert still holds a lock on the table.
+// Failures to drop individual tables are logged, so that the remaining tables are still dropped.
+func (c *Connection) dropStaleTempTables(ctx context.Context, olderThan time.Duration) error {
+	names, err := c.listStaleTempTables(ctx, olderThan)
+	if err != nil {
+		return err
+	}
+	for _, name := range names {
+		err := c.dropTable(ctx, name)
+		if errors.Is(err, drivers.ErrNotFound) {
+			// already dropped, e.g. a `_local` table along with its Distributed table
+			continue
+		}
+		if err != nil {
+			if ctx.Err() != nil {
+				return ctx.Err()
+			}
+			c.logger.Warn("clickhouse: failed to drop stale temp table", zap.String("name", name), zap.Error(err), observability.ZapCtx(ctx))
+			continue
+		}
+		c.logger.Info("clickhouse: dropped stale temp table", zap.String("name", name), observability.ZapCtx(ctx))
+	}
+	return nil
+}
+
+// listStaleTempTables returns the names of the temporary tables in the configured database that were created, or last altered, more than olderThan ago.
+// In cluster mode, it includes the `_local` counterparts of the tables, since their names share the prefix.
+func (c *Connection) listStaleTempTables(ctx context.Context, olderThan time.Duration) ([]string, error) {
+	args := []any{c.config.Database, tempTablePrefix, int64(olderThan.Seconds())}
+	if c.config.Database == "" {
+		args[0] = nil
+	}
+	res, err := c.Query(ctx, &drivers.Statement{
+		Query: `SELECT name FROM system.tables
+			WHERE database = coalesce(?, currentDatabase()) AND startsWith(name, ?) AND metadata_modification_time < now() - toIntervalSecond(?)`,
+		Args:     args,
+		Priority: 100,
+	})
+	if err != nil {
+		return nil, err
+	}
+	defer res.Close()
+
+	var names []string
+	for res.Next() {
+		var name string
+		if err := res.Scan(&name); err != nil {
+			return nil, err
+		}
+		names = append(names, name)
+	}
+	return names, res.Err()
+}
+
 func (c *Connection) dropTable(ctx context.Context, name string) error {
 	typ, err := c.entityType(ctx, c.config.Database, name)
 	if err != nil {
+		// In cluster mode, a table is created as a `_local` table first and a Distributed table over it second.
+		// If the second step never ran, e.g. because the execution was cancelled in between, the `_local` table is dropped on its own.
+		if errors.Is(err, drivers.ErrNotFound) && c.config.Cluster != "" && !strings.HasSuffix(name, "_local") {
+			return c.dropTable(ctx, localTableName(name))
+		}
 		return err
 	}
 
@@ -249,17 +323,26 @@ func (c *Connection) dropTable(ctx context.Context, name string) error {
 			Priority: 100,
 		})
 	case "DICTIONARY":
+		// Resolve the source table up front, since the dependency that identifies it disappears with the dictionary.
+		srcTable, err := c.dictionarySourceTable(ctx, name)
+		if err != nil {
+			return err
+		}
 		// first drop the dictionary
-		err := c.Exec(ctx, &drivers.Statement{
+		err = c.Exec(ctx, &drivers.Statement{
 			Query:    fmt.Sprintf("DROP DICTIONARY IF EXISTS %s %s", safeSQLName(name), onClusterClause),
 			Priority: 100,
 		})
-		// then drop the temp table
-		_ = c.Exec(ctx, &drivers.Statement{
-			Query:    fmt.Sprintf("DROP TABLE IF EXISTS %s %s", safeSQLName(tempTableForDictionary(name)), onClusterClause),
-			Priority: 100,
-		})
-		return err
+		if err != nil {
+			return err
+		}
+		// then drop the table it sourced from, which is now unreferenced
+		if srcTable != "" {
+			if dropErr := c.dropTable(ctx, srcTable); dropErr != nil && !errors.Is(dropErr, drivers.ErrNotFound) {
+				c.logger.Warn("clickhouse: failed to drop dictionary source table", zap.String("name", srcTable), zap.Error(dropErr), observability.ZapCtx(ctx))
+			}
+		}
+		return nil
 	case "TABLE":
 		// drop the main table
 		// use IF EXISTS so drops succeed in cluster mode even for tables that don't exist on every node,
@@ -446,7 +529,7 @@ func (c *Connection) createTable(ctx context.Context, name, sql string, outputPr
 			return fmt.Errorf("clickhouse: no columns specified for table %q", name)
 		}
 		// infer columns
-		v := safeSQLName(fmt.Sprintf("__rill_temp_%s_%x", name, md5.Sum([]byte(sql))))
+		v := safeSQLName(tempTableName(name))
 		defer func() {
 			// cleanup using a different ctx to prevent cleanups being impacted by the main ctx cancellation
 			// this is a best effort cleanup and query can still timeout and we don't want to wait forever due to blocked calls
@@ -526,15 +609,39 @@ func (c *Connection) createDictionary(ctx context.Context, name, sql string, out
 		})
 	}
 
-	// create a temp table first
-	// NOTE :: this can only be dropped when the dictionary is dropped
-	tempTable := tempTableForDictionary(name)
-	err := c.createTable(ctx, tempTable, sql, outputProps)
+	if outputProps.PrimaryKey == "" {
+		return fmt.Errorf("clickhouse: no primary key specified for dictionary %q", name)
+	}
+
+	// Note the table the dictionary currently sources from, so it can be dropped once the dictionary is repointed.
+	oldSrcTable, err := c.dictionarySourceTable(ctx, name)
+	if err != nil {
+		return err
+	}
+
+	// Write the new data to its own table instead of reusing oldSrcTable, which ClickHouse would not let us replace
+	// while the dictionary depends on it. It also means the dictionary keeps serving until the new data is ready.
+	srcTable := newDictionarySourceTable(name)
+	var repointed bool
+	defer func() {
+		if repointed {
+			return
+		}
+		ctx, cancel := graceful.WithMinimumDuration(ctx, 15*time.Second)
+		defer cancel()
+
+		err := c.dropTable(ctx, srcTable)
+		if err != nil && !errors.Is(err, drivers.ErrNotFound) {
+			c.logger.Warn("clickhouse: failed to drop dictionary source table", zap.String("name", srcTable), zap.Error(err), observability.ZapCtx(ctx))
+		}
+	}()
+
+	err = c.createTable(ctx, srcTable, sql, outputProps)
 	if err != nil {
 		return err
 	}
 	err = c.Exec(ctx, &drivers.Statement{
-		Query:    fmt.Sprintf("INSERT INTO %s %s", safeSQLName(tempTable), sql),
+		Query:    fmt.Sprintf("INSERT INTO %s %s", safeSQLName(srcTable), sql),
 		Priority: 100,
 	})
 	if err != nil {
@@ -543,29 +650,38 @@ func (c *Connection) createDictionary(ctx context.Context, name, sql string, out
 
 	if outputProps.Columns == "" {
 		// infer columns
-		outputProps.Columns, err = c.columnClause(ctx, tempTable)
+		outputProps.Columns, err = c.columnClause(ctx, srcTable)
 		if err != nil {
 			return err
 		}
 	}
 
-	if outputProps.PrimaryKey == "" {
-		return fmt.Errorf("clickhouse: no primary key specified for dictionary %q", name)
-	}
-
-	srcTbl := fmt.Sprintf("CLICKHOUSE(TABLE %s)", drivers.EscapeStringValue(tempTable))
+	srcTbl := fmt.Sprintf("CLICKHOUSE(TABLE %s)", drivers.EscapeStringValue(srcTable))
 	if outputProps.DictionarySourceUser != "" {
 		if outputProps.DictionarySourcePassword == "" {
 			return fmt.Errorf("clickhouse: no password specified for dictionary user")
 		}
-		srcTbl = fmt.Sprintf("CLICKHOUSE(TABLE %s USER %s PASSWORD %s)", drivers.EscapeStringValue(tempTable), safeSQLString(outputProps.DictionarySourceUser), safeSQLString(outputProps.DictionarySourcePassword))
+		srcTbl = fmt.Sprintf("CLICKHOUSE(TABLE %s USER %s PASSWORD %s)", drivers.EscapeStringValue(srcTable), safeSQLString(outputProps.DictionarySourceUser), safeSQLString(outputProps.DictionarySourcePassword))
 	}
 
 	// create dictionary
-	return c.Exec(ctx, &drivers.Statement{
+	err = c.Exec(ctx, &drivers.Statement{
 		Query:    fmt.Sprintf(`CREATE OR REPLACE DICTIONARY %s %s %s PRIMARY KEY %s SOURCE(%s) LAYOUT(HASHED()) LIFETIME(0)`, safeSQLName(name), onClusterClause, outputProps.Columns, outputProps.PrimaryKey, srcTbl),
 		Priority: 100,
 	})
+	if err != nil {
+		return err
+	}
+	repointed = true
+
+	// The dictionary no longer depends on its previous source table, so it can be dropped.
+	if oldSrcTable != "" {
+		err = c.dropTable(ctx, oldSrcTable)
+		if err != nil && !errors.Is(err, drivers.ErrNotFound) {
+			c.logger.Warn("clickhouse: failed to drop previous dictionary source table", zap.String("name", oldSrcTable), zap.Error(err), observability.ZapCtx(ctx))
+		}
+	}
+	return nil
 }
 
 func (c *Connection) columnClause(ctx context.Context, table string) (string, error) {
@@ -738,8 +854,51 @@ func isReplicatedEngine(engine string) bool {
 	return strings.Contains(strings.ToLower(engine), "replicated")
 }
 
-func tempTableForDictionary(name string) string {
-	return name + "_dict_temp_"
+const dictionarySourceTableInfix = "_dict_temp_"
+
+// newDictionarySourceTable returns a unique name for a table for the dictionary `name` to source from.
+// The name is unique per call because ClickHouse forbids dropping or renaming a table that a dictionary depends on,
+// so refreshing a dictionary has to write to a new table and repoint the dictionary at it.
+func newDictionarySourceTable(name string) string {
+	// A dictionary is staged by creating it under a temporary name and renaming it into place, but its source table
+	// is not renamed along with it. Strip the staging prefix so the source table keeps a readable, stable name.
+	name = strings.TrimPrefix(name, stagingTablePrefix)
+	return name + dictionarySourceTableInfix + strings.ReplaceAll(uuid.New().String(), "-", "")
+}
+
+// dictionarySourceTable returns the table the dictionary `name` currently sources from.
+// It returns an empty string if the dictionary does not exist or does not source from a table created by Rill.
+func (c *Connection) dictionarySourceTable(ctx context.Context, name string) (string, error) {
+	args := []any{c.config.Database, name}
+	if c.config.Database == "" {
+		args = []any{nil, name}
+	}
+	res, err := c.Query(ctx, &drivers.Statement{
+		Query:    "SELECT loading_dependencies_table FROM system.tables WHERE database = coalesce(?, currentDatabase()) AND name = ?",
+		Args:     args,
+		Priority: 100,
+	})
+	if err != nil {
+		return "", err
+	}
+	defer res.Close()
+
+	var deps []string
+	for res.Next() {
+		if err := res.Scan(&deps); err != nil {
+			return "", err
+		}
+	}
+	if err := res.Err(); err != nil {
+		return "", err
+	}
+
+	for _, dep := range deps {
+		if strings.Contains(dep, dictionarySourceTableInfix) {
+			return dep, nil
+		}
+	}
+	return "", nil
 }
 
 func safeSQLString(name string) string {

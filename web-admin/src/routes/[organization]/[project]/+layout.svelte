@@ -36,6 +36,7 @@
     isProjectPage,
     isPublicAlertPage,
     isPublicReportPage,
+    isPublicAIPage,
     isPublicURLPage,
     isProjectWelcomePage,
   } from "@rilldata/web-admin/features/navigation/nav-utils";
@@ -62,6 +63,8 @@
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.ts";
   import { getRuntimeServiceListResourcesQueryKey } from "@rilldata/web-common/runtime-client";
   import { Throttler } from "@rilldata/web-common/lib/throttler";
+  import { setMcpConnectContext } from "@rilldata/web-common/features/chat/connect/mcp-connect-context";
+  import { mcpConnectUrl } from "@rilldata/web-admin/features/ai/mcp/mcp-connect-url";
 
   const PAGE_VIEW_THROTTLE_TIMEOUT = 250;
 
@@ -80,9 +83,19 @@
     handleBranchNavigation(nav, activeBranch, organization, project, goto),
   );
 
-  // Token: from route params, or from search params on report/alert pages
+  // External MCP servers are authorized through the admin service, which stores each user's token.
+  setMcpConnectContext({
+    connectUrl: (connector) =>
+      mcpConnectUrl(organization, project, connector, activeBranch),
+  });
+
+  // Token: from route params, or from search params on report/alert/AI conversation pages
   let token = $derived.by(() => {
-    if (isPublicReportPage(page) || isPublicAlertPage(page)) {
+    if (
+      isPublicReportPage(page) ||
+      isPublicAlertPage(page) ||
+      isPublicAIPage(page)
+    ) {
       return page.url.searchParams.get("token") ?? page.params.token;
     }
     return page.params.token;
@@ -356,6 +369,7 @@
               pathname={page.url.pathname}
               {project}
               {branchPrefix}
+              hasUser={!!$user.data?.user}
             />
           {/if}
         {/if}

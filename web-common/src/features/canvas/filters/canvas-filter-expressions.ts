@@ -1,6 +1,5 @@
 import type { CanvasEntity } from "@rilldata/web-common/features/canvas/stores/canvas-entity";
 import type { V1Expression } from "@rilldata/web-common/runtime-client";
-import { get } from "svelte/store";
 
 /**
  * Extracts filters from a canvas entity, scoped per metrics view.
@@ -9,10 +8,10 @@ import { get } from "svelte/store";
 export function getCanvasFilters(
   canvasEntity: CanvasEntity,
 ): Record<string, V1Expression> | undefined {
-  const filtersMap = get(canvasEntity.filterManager.filterMapStore);
+  const exprByMv = canvasEntity.expressionFilterManager.topLevelJoiner.expr;
 
   // Check if there are any non-empty filters
-  const hasFilters = Array.from(filtersMap.values()).some(
+  const hasFilters = Object.values(exprByMv).some(
     (expr) => expr?.cond?.exprs && expr.cond.exprs.length > 0,
   );
 
@@ -20,25 +19,5 @@ export function getCanvasFilters(
     return undefined;
   }
 
-  // Convert Map to plain object for API
-  const metricsViewFilters: Record<string, V1Expression> = {};
-  filtersMap.forEach((expr, metricsViewName) => {
-    if (expr?.cond?.exprs && expr.cond.exprs.length > 0) {
-      metricsViewFilters[metricsViewName] = expr;
-    }
-  });
-
-  return Object.keys(metricsViewFilters).length > 0
-    ? metricsViewFilters
-    : undefined;
-}
-
-/**
- * Checks if the canvas has any active filters.
- */
-export function hasCanvasFilters(canvasEntity: CanvasEntity): boolean {
-  const filtersMap = get(canvasEntity.filterManager.filterMapStore);
-  return Array.from(filtersMap.values()).some(
-    (expr) => expr?.cond?.exprs && expr.cond.exprs.length > 0,
-  );
+  return Object.keys(exprByMv).length > 0 ? exprByMv : undefined;
 }

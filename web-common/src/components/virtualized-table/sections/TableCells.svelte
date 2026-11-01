@@ -43,21 +43,25 @@
 </script>
 
 {#each virtualColumnItems as column (column.key)}
-  <Row>
-    {#each virtualRowItems as row (`${row.key}-${column.key}`)}
-      {@const rowActive = activeIndex === row.index}
-      <Cell
-        {row}
-        {column}
-        {atLeastOneSelected}
-        {excludeMode}
-        {rowActive}
-        suppressTooltip={scrolling}
-        {...getCellProps(row, column, selectedIndex)}
-        {onInspect}
-        {onSelectItem}
-        label={cellLabel}
-      />
-    {/each}
-  </Row>
+  {#if columns[column.index]}
+    <Row>
+      {#each virtualRowItems as row (`${row.key}-${column.key}`)}
+        {@const rowActive = activeIndex === row.index}
+        {#if rows[row.index]}
+          <Cell
+            {row}
+            {column}
+            {atLeastOneSelected}
+            {excludeMode}
+            {rowActive}
+            suppressTooltip={scrolling}
+            {...getCellProps(row, column, selectedIndex)}
+            {onInspect}
+            {onSelectItem}
+            label={cellLabel}
+          />
+        {/if}
+      {/each}
+    </Row>
+  {/if}
 {/each}

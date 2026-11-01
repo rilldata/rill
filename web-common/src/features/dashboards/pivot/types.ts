@@ -1,3 +1,4 @@
+import type { EphemeralMeasureDef } from "@rilldata/web-common/features/dashboards/ephemeral-measures/types";
 import { type TimeRangeString } from "@rilldata/web-common/lib/time/types";
 import type {
   MetricsViewSpecDimension,
@@ -60,6 +61,8 @@ export interface PivotState {
   activeCell: PivotCell | null;
   showTotalsColumn: boolean;
   showTotalsRow: boolean;
+  // Where the grand-totals row is pinned. Undefined means "top".
+  totalsRowPosition?: PivotTotalsRowPosition;
   rowLimit?: number;
   outermostRowLimit?: number; // Local limit for outermost dimension only
   nestedRowLimits?: Record<string, number>; // Local per-row limits keyed by expand index (e.g., "0.1.2")
@@ -69,6 +72,27 @@ export interface PivotState {
 }
 
 export type PivotTableMode = "flat" | "nest";
+
+export type PivotColumnAlign = "left" | "center" | "right";
+
+// Presentation overrides for one column, keyed in PivotColumnStyles by the
+// tanstack column id: the field name in flat tables; the measure name or the
+// first row dimension name in nested tables.
+export interface PivotColumnStyle {
+  // Pixel width; the column is pinned, so stretch and fit never change it.
+  width?: number;
+  // Wrap cell text instead of truncating it. Dimension columns only.
+  wrap?: boolean;
+  align?: PivotColumnAlign;
+}
+
+export type PivotColumnStyles = Record<string, PivotColumnStyle>;
+
+export type PivotTotalsRowPosition = "top" | "bottom";
+export const PIVOT_TOTALS_ROW_POSITIONS: readonly PivotTotalsRowPosition[] = [
+  "top",
+  "bottom",
+];
 
 // Conditional formatting applied to a measure's cells in the pivot table,
 // discriminated on `mode`.
@@ -155,6 +179,15 @@ export interface PivotDataStoreConfig {
   comparisonTime: TimeRangeString | undefined;
   searchText: string | undefined;
   isFlat: boolean;
+  // ephemeral measure definitions available to this pivot.
+  // Sourced from the explore state in explore dashboards, and from the
+  // component spec in canvas table/pivot components.
+  ephemeralMeasures?: EphemeralMeasureDef[];
+  // Measures to request with `exact: true` (see `requestExactNames`).
+  // Sourced from the viewer's exact selection in explore dashboards, and from
+  // the canvas exact selection plus the component's `exact` pin in canvas
+  // table/pivot components.
+  exactMeasures?: string[];
 }
 
 export interface PivotAxesData {

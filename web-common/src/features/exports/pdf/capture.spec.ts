@@ -1,32 +1,13 @@
 // @vitest-environment jsdom
-import { describe, expect, it } from "vitest";
-import { captureTargetsIn, inlineSvgStyles, rowIndexFor } from "./capture";
+import { getFontEmbedCSS, toJpeg } from "html-to-image";
+import { beforeAll, describe, expect, it, vi } from "vitest";
+import { captureCanvasBlocks, captureTargetsIn, rowIndexFor } from "./capture";
 
-describe("inlineSvgStyles", () => {
-  it("restores original SVG style attributes", () => {
-    const root = document.createElement("div");
-    root.innerHTML = `
-      <svg style="color: red">
-        <path style="stroke-width: 2" />
-        <circle />
-      </svg>
-    `;
-
-    const svg = root.querySelector("svg")!;
-    const path = root.querySelector("path")!;
-    const circle = root.querySelector("circle")!;
-
-    const restore = inlineSvgStyles(root);
-    expect(svg.getAttribute("style")).not.toBe("color: red");
-    expect(path.getAttribute("style")).not.toBe("stroke-width: 2");
-    expect(circle.hasAttribute("style")).toBe(true);
-
-    restore();
-    expect(svg.getAttribute("style")).toBe("color: red");
-    expect(path.getAttribute("style")).toBe("stroke-width: 2");
-    expect(circle.hasAttribute("style")).toBe(false);
-  });
-});
+vi.mock("html-to-image", () => ({
+  toJpeg: vi.fn(() => Promise.resolve("data:image/jpeg;base64,")),
+  toPng: vi.fn(() => Promise.resolve("data:image/png;base64,")),
+  getFontEmbedCSS: vi.fn(() => Promise.resolve("")),
+}));
 
 describe("captureTargetsIn", () => {
   // Mirrors the export render: free rows and tab rows are top-level <section>s
@@ -106,5 +87,81 @@ describe("captureTargetsIn", () => {
     expect(indexOf("#pdf-tab-label-overview-empty")).toBe(0);
     expect(indexOf("#pdf-tab-label-overview-second")).toBe(2);
     expect(indexOf("#tab-a")).toBe(2);
+  });
+});
+
+describe("captureCanvasBlocks", () => {
+  // needsCanvasWarmup memoizes at module scope, so the probe runs once for the
+  // whole file: take a single capture run and assert on what it did.
+  let probeFills: number[][];
+  let header: HTMLElement;
+  let fontNode: HTMLElement;
+  let probeNode: HTMLElement;
+  let probeOptions: Record<string, unknown>;
+
+  beforeAll(async () => {
+    // jsdom cannot rasterize, so hand the probe a context it can paint on and
+    // let the blankness check fail into its own catch.
+    const fillRect =
+      vi.fn<(x: number, y: number, w: number, h: number) => void>();
+    vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue({
+      fillStyle: "",
+      fillRect,
+    } as unknown as CanvasRenderingContext2D);
+
+    const view = document.createElement("div");
+    view.id = "canvas-pdf-export-view";
+    view.dataset.instanceId = "inst";
+    view.dataset.canvasName = "canvas";
+    header = document.createElement("div");
+    header.id = "canvas-pdf-export-header";
+    const rows = document.createElement("div");
+    rows.className = "row-container";
+    view.append(header, rows);
+    document.body.appendChild(view);
+
+    vi.mocked(toJpeg).mockClear();
+    vi.mocked(getFontEmbedCSS).mockClear();
+    await captureCanvasBlocks({
+      instanceId: "inst",
+      canvasName: "canvas",
+      includeFilters: true,
+    });
+
+    // Read here, not in the tests: the mocks are cleared between them.
+    probeFills = fillRect.mock.calls.map((args) => [...args] as number[]);
+    fontNode = vi.mocked(getFontEmbedCSS).mock.calls[0][0];
+    [probeNode, probeOptions] = vi.mocked(toJpeg).mock.calls[0] as [
+      HTMLElement,
+      Record<string, unknown>,
+    ];
+  });
+
+  // The export header is a sibling of the row container, and getFontEmbedCSS
+  // keeps only the @font-face rules used inside the node it is handed, so
+  // collecting from the rows alone drops any face only the header uses.
+  it("collects the font CSS from a node that covers the header too", () => {
+    expect(fontNode.contains(header)).toBe(true);
+  });
+
+  // A square small enough to decode before WebKit paints would report a browser
+  // that needs no warm-up, and the export would go quietly blank.
+  it("probes with a canvas the size of a chart card", () => {
+    const canvas = probeNode.querySelector("canvas")!;
+    expect(canvas.width).toBeGreaterThanOrEqual(300);
+    expect(canvas.height).toBeGreaterThanOrEqual(200);
+    expect(probeOptions.pixelRatio).toBe(2);
+  });
+
+  // WebKit's decode cache outlives the page, so a probe that serializes the same
+  // canvas twice would have its answer handed back from the cache.
+  it("signs the probe so it is never the same image twice", () => {
+    expect(probeFills.some(([, , w, h]) => w === 1 && h === 1)).toBe(true);
+  });
+
+  // The probe carries no text, so resolving the app's web fonts for it is pure
+  // latency on the first export in every browser, affected or not.
+  it("probes without resolving web fonts", () => {
+    expect(probeOptions.skipFonts).toBe(true);
   });
 });

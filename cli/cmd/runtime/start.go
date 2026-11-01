@@ -32,6 +32,7 @@ import (
 	_ "github.com/rilldata/rill/runtime/drivers/admin"
 	_ "github.com/rilldata/rill/runtime/drivers/athena"
 	_ "github.com/rilldata/rill/runtime/drivers/azure"
+	_ "github.com/rilldata/rill/runtime/drivers/bedrock"
 	_ "github.com/rilldata/rill/runtime/drivers/bigquery"
 	_ "github.com/rilldata/rill/runtime/drivers/claude"
 	_ "github.com/rilldata/rill/runtime/drivers/clickhouse"
@@ -42,6 +43,7 @@ import (
 	_ "github.com/rilldata/rill/runtime/drivers/gcs"
 	_ "github.com/rilldata/rill/runtime/drivers/gemini"
 	_ "github.com/rilldata/rill/runtime/drivers/https"
+	_ "github.com/rilldata/rill/runtime/drivers/mcp"
 	_ "github.com/rilldata/rill/runtime/drivers/mock/ai"
 	_ "github.com/rilldata/rill/runtime/drivers/mysql"
 	_ "github.com/rilldata/rill/runtime/drivers/openai"
@@ -62,9 +64,18 @@ import (
 // Env var keys must be prefixed with RILL_RUNTIME_ and are converted from snake_case to CamelCase.
 // For example RILL_RUNTIME_HTTP_PORT is mapped to Config.HTTPPort.
 type Config struct {
-	MetastoreDriver         string                 `default:"sqlite" split_words:"true"`
-	MetastoreURL            string                 `default:"file:rill?mode=memory&cache=shared" split_words:"true"`
-	MetastoreID             string                 `split_words:"true"`
+	// MetastoreDriver specifies the database driver for the metastore.
+	MetastoreDriver string `default:"sqlite" split_words:"true"`
+	// MetastoreURL specifies the connection string for the metastore database.
+	// It defaults to an in-memory SQLite database.
+	MetastoreURL string `default:"file:rill?mode=memory&cache=shared" split_words:"true"`
+	// MetastoreID is an optional globally unique ID for the metastore.
+	// It is currently used to identify backups in object storage.
+	MetastoreID string `split_words:"true"`
+	// MetastoreBackupsEnable enables periodic backups of the metastore to object storage.
+	// It also enables restoring from the latest backup if the metastore is missing and a valid backup exists in object storage.
+	// It requires MetastoreID and DataBucket to be set.
+	MetastoreBackupsEnable  bool                   `default:"true" split_words:"true"`
 	RedisURL                string                 `default:"" split_words:"true"`
 	MetricsExporter         observability.Exporter `default:"prometheus" split_words:"true"`
 	TracesExporter          observability.Exporter `default:"" split_words:"true"`
@@ -229,11 +240,12 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 			ctx := graceful.WithCancelOnTerminate(context.Background())
 			// Init runtime
 			metastoreConfig, err := structpb.NewStruct(map[string]any{
-				"dsn": conf.MetastoreURL,
-				"id":  conf.MetastoreID,
+				"dsn":            conf.MetastoreURL,
+				"id":             conf.MetastoreID,
+				"backups_enable": conf.MetastoreBackupsEnable,
 			})
 			if err != nil {
-				logger.Fatal("error: could not creat metastore metastore config", zap.Error(err))
+				logger.Fatal("could not create metastore config", zap.Error(err))
 			}
 			opts := &runtime.Options{
 				ConnectionCacheSize:          conf.ConnectionCacheSize,

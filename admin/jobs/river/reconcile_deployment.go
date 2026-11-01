@@ -124,10 +124,19 @@ func (w *ReconcileDeploymentWorker) Work(ctx context.Context, job *river.Job[Rec
 		return nil
 	}
 
-	// Update the deployment status
-	depl, err = w.admin.DB.UpdateDeploymentStatus(ctx, depl.ID, newStatus, "")
+	// Update the deployment status.
+	// We skip the update when the status is unchanged (as on the periodic reconcile of a running deployment) because it bumps updated_on,
+	// which the runtime treats as a change to the deployment: it forces a repo pull and a full re-parse of the project (see runtime.configReloader).
+	// We re-fetch the deployment first since the status may have changed while we were working (e.g. UpdateDeploymentInner sets it to updating).
+	depl, err = w.admin.DB.FindDeployment(ctx, depl.ID)
 	if err != nil {
 		return err
+	}
+	if depl.Status != newStatus || depl.StatusMessage != "" {
+		depl, err = w.admin.DB.UpdateDeploymentStatus(ctx, depl.ID, newStatus, "")
+		if err != nil {
+			return err
+		}
 	}
 
 	// If current depl.DesiredStatusUpdatedOn != desiredStatusUpdatedOn when job started, then the deployment changed while we were working and we should reschedule another job.

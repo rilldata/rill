@@ -891,6 +891,31 @@ func (r *ModelReconciler) updateTriggerFalse(ctx context.Context, n *runtimev1.R
 	return r.C.UpdateSpec(ctx, self.Meta.Name, self)
 }
 
+// updateTriggerFullToNormal replaces the model's spec.TriggerFull with spec.Trigger.
+// It is called once a full refresh has reset the model's output,
+// so that if the reconcile is cancelled, the next reconcile resumes incrementally instead of resetting again.
+func (r *ModelReconciler) updateTriggerFullToNormal(ctx context.Context, n *runtimev1.ResourceName) error {
+	r.C.Lock(ctx)
+	defer r.C.Unlock(ctx)
+
+	self, err := r.C.Get(ctx, n, true)
+	if err != nil {
+		return err
+	}
+
+	model := self.GetModel()
+	if model == nil {
+		return fmt.Errorf("not a model")
+	}
+	if !model.Spec.TriggerFull {
+		return nil
+	}
+
+	model.Spec.Trigger = true
+	model.Spec.TriggerFull = false
+	return r.C.UpdateSpec(ctx, self.Meta.Name, self)
+}
+
 // resolveIncrementalState resolves the incremental state of a model using its configured incremental state resolver.
 // Note the ambiguity around "state" in models – all resources have a "spec" and a "state",
 // but models also have a resolver for "incremental state" that enables incremental/stateful computation by persisting data from the previous execution.
@@ -1297,6 +1322,12 @@ func (r *ModelReconciler) executeAll(ctx context.Context, self *runtimev1.Resour
 			r.C.Logger.Warn("failed to query output table stats", zap.String("model", self.Meta.Name.Name), zap.Error(statsErr), observability.ZapCtx(ctx))
 		}
 		err = r.updateStateAfterExecution(ctx, self, model, executor.finalConnector, specHash, refsHash, nil, nil, false, false, res, syncWarnings, newRowsTotal, newBytesTotal)
+		if err != nil {
+			return "", nil, false, 0, err
+		}
+
+		// The reset is done, so a manual full refresh must not reset again if this reconcile is cancelled.
+		err = r.updateTriggerFullToNormal(ctx, self.Meta.Name)
 		if err != nil {
 			return "", nil, false, 0, err
 		}

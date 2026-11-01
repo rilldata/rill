@@ -10,6 +10,7 @@
   import { DateTime, Duration, Interval } from "luxon";
   import {
     bucketYamlRanges,
+    type InheritRangeOption,
     type ISODurationString,
     type NamedRange,
   } from "../new-time-controls";
@@ -27,7 +28,11 @@
   export let availableTimeZones: string[];
   export let timeRanges: V1ExploreTimeRange[];
   export let showDefaultItem: boolean;
+  export let inheritOption: InheritRangeOption | undefined = undefined;
   export let activeTimeGrain: V1TimeGrain | undefined;
+  /** Whether the grain follows the time range; see TimeGrainSelector. */
+  export let adaptiveTimeGrain = false;
+  export let allowAdaptiveTimeGrain = false;
   export let interval: Interval<true> | undefined;
   export let hidePan = false;
   export let canPanLeft: boolean = !hidePan;
@@ -52,7 +57,7 @@
   }[] = [];
   export let onSelectRange: (range: NamedRange | ISODurationString) => void;
   export let onPan: (direction: "left" | "right") => void;
-  export let onTimeGrainSelect: (timeGrain: V1TimeGrain) => void;
+  export let onTimeGrainSelect: (timeGrain: V1TimeGrain | undefined) => void;
   export let onSelectTimeZone: (timeZone: string) => void;
   export let applyRange: (range: TimeRange) => void;
   // Time dimension selection disabled when this function is not provided
@@ -91,6 +96,7 @@
       {maxDate}
       {watermark}
       {showDefaultItem}
+      {inheritOption}
       {defaultTimeRange}
       {rangeBuckets}
       timeString={v2TimeString || selectedRangeAlias}
@@ -115,6 +121,7 @@
       {maxDate}
       ranges={rangeBuckets}
       {showDefaultItem}
+      {inheritOption}
       {showFullRange}
       {defaultTimeRange}
       {allowCustomTimeRange}
@@ -149,6 +156,8 @@
   {#if !$newPicker && !showPivot && minTimeGrain}
     <TimeGrainSelector
       {activeTimeGrain}
+      {adaptiveTimeGrain}
+      {allowAdaptiveTimeGrain}
       {minTimeGrain}
       {timeStart}
       {timeEnd}

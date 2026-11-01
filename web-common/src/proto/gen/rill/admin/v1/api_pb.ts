@@ -938,6 +938,11 @@ export class ListDeploymentsRequest extends Message<ListDeploymentsRequest> {
    */
   userId = "";
 
+  /**
+   * @generated from field: bool superuser_force_access = 6;
+   */
+  superuserForceAccess = false;
+
   constructor(data?: PartialMessage<ListDeploymentsRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -951,6 +956,7 @@ export class ListDeploymentsRequest extends Message<ListDeploymentsRequest> {
     { no: 3, name: "environment", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 5, name: "branch", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "user_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 6, name: "superuser_force_access", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListDeploymentsRequest {
@@ -1274,6 +1280,11 @@ export class StartDeploymentRequest extends Message<StartDeploymentRequest> {
    */
   deploymentId = "";
 
+  /**
+   * @generated from field: bool superuser_force_access = 2;
+   */
+  superuserForceAccess = false;
+
   constructor(data?: PartialMessage<StartDeploymentRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -1283,6 +1294,7 @@ export class StartDeploymentRequest extends Message<StartDeploymentRequest> {
   static readonly typeName = "rill.admin.v1.StartDeploymentRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "deployment_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "superuser_force_access", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): StartDeploymentRequest {
@@ -1348,6 +1360,11 @@ export class StopDeploymentRequest extends Message<StopDeploymentRequest> {
    */
   deploymentId = "";
 
+  /**
+   * @generated from field: bool superuser_force_access = 2;
+   */
+  superuserForceAccess = false;
+
   constructor(data?: PartialMessage<StopDeploymentRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -1357,6 +1374,7 @@ export class StopDeploymentRequest extends Message<StopDeploymentRequest> {
   static readonly typeName = "rill.admin.v1.StopDeploymentRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "deployment_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "superuser_force_access", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): StopDeploymentRequest {
@@ -3834,6 +3852,8 @@ export class CreateProjectRequest extends Message<CreateProjectRequest> {
   directoryName = "";
 
   /**
+   * Provisioner to use for the project's deployments. Superuser-only; empty means the org's default provisioner (or the global default) is used.
+   *
    * @generated from field: string provisioner = 5;
    */
   provisioner = "";
@@ -4097,6 +4117,9 @@ export class UpdateProjectRequest extends Message<UpdateProjectRequest> {
   prodSlots?: bigint;
 
   /**
+   * Provisioner to use for the project's deployments. Superuser-only; empty unsets it so the org's default provisioner (or the global default) is used.
+   * Running deployments keep their current provisioner; the change is applied to each deployment the next time it is started (stopped deployments are moved to the new provisioner, keeping their IDs).
+   *
    * @generated from field: optional string provisioner = 8;
    */
   provisioner?: string;
@@ -4966,6 +4989,195 @@ export class GetDeploymentConfigResponse extends Message<GetDeploymentConfigResp
 }
 
 /**
+ * @generated from message rill.admin.v1.GetConnectorOAuthTokenRequest
+ */
+export class GetConnectorOAuthTokenRequest extends Message<GetConnectorOAuthTokenRequest> {
+  /**
+   * Name of the connector in the deployment's project.
+   *
+   * @generated from field: string connector = 1;
+   */
+  connector = "";
+
+  /**
+   * Hash of the connector's current OAuth configuration, as computed by the runtime.
+   * A token is only returned if the user authorized this configuration, so changing it never reuses an existing authorization.
+   *
+   * @generated from field: string config_hash = 2;
+   */
+  configHash = "";
+
+  /**
+   * ID of the user whose token to return.
+   *
+   * @generated from field: string user_id = 3;
+   */
+  userId = "";
+
+  /**
+   * If true, the token is refreshed even if it has not expired yet (used after the server rejected the current token).
+   *
+   * @generated from field: bool force_refresh = 4;
+   */
+  forceRefresh = false;
+
+  constructor(data?: PartialMessage<GetConnectorOAuthTokenRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.GetConnectorOAuthTokenRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "connector", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "config_hash", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "user_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "force_refresh", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetConnectorOAuthTokenRequest {
+    return new GetConnectorOAuthTokenRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetConnectorOAuthTokenRequest {
+    return new GetConnectorOAuthTokenRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetConnectorOAuthTokenRequest {
+    return new GetConnectorOAuthTokenRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: GetConnectorOAuthTokenRequest | PlainMessage<GetConnectorOAuthTokenRequest> | undefined, b: GetConnectorOAuthTokenRequest | PlainMessage<GetConnectorOAuthTokenRequest> | undefined): boolean {
+    return proto3.util.equals(GetConnectorOAuthTokenRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.GetConnectorOAuthTokenResponse
+ */
+export class GetConnectorOAuthTokenResponse extends Message<GetConnectorOAuthTokenResponse> {
+  /**
+   * @generated from field: string access_token = 1;
+   */
+  accessToken = "";
+
+  /**
+   * When the access token expires. Unset if the token does not expire.
+   *
+   * @generated from field: google.protobuf.Timestamp expires_on = 2;
+   */
+  expiresOn?: Timestamp;
+
+  constructor(data?: PartialMessage<GetConnectorOAuthTokenResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.GetConnectorOAuthTokenResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "access_token", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "expires_on", kind: "message", T: Timestamp },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetConnectorOAuthTokenResponse {
+    return new GetConnectorOAuthTokenResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetConnectorOAuthTokenResponse {
+    return new GetConnectorOAuthTokenResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetConnectorOAuthTokenResponse {
+    return new GetConnectorOAuthTokenResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: GetConnectorOAuthTokenResponse | PlainMessage<GetConnectorOAuthTokenResponse> | undefined, b: GetConnectorOAuthTokenResponse | PlainMessage<GetConnectorOAuthTokenResponse> | undefined): boolean {
+    return proto3.util.equals(GetConnectorOAuthTokenResponse, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.DeleteConnectorOAuthTokenRequest
+ */
+export class DeleteConnectorOAuthTokenRequest extends Message<DeleteConnectorOAuthTokenRequest> {
+  /**
+   * @generated from field: string connector = 1;
+   */
+  connector = "";
+
+  /**
+   * @generated from field: string config_hash = 2;
+   */
+  configHash = "";
+
+  /**
+   * @generated from field: string user_id = 3;
+   */
+  userId = "";
+
+  constructor(data?: PartialMessage<DeleteConnectorOAuthTokenRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.DeleteConnectorOAuthTokenRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "connector", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "config_hash", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "user_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): DeleteConnectorOAuthTokenRequest {
+    return new DeleteConnectorOAuthTokenRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): DeleteConnectorOAuthTokenRequest {
+    return new DeleteConnectorOAuthTokenRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): DeleteConnectorOAuthTokenRequest {
+    return new DeleteConnectorOAuthTokenRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: DeleteConnectorOAuthTokenRequest | PlainMessage<DeleteConnectorOAuthTokenRequest> | undefined, b: DeleteConnectorOAuthTokenRequest | PlainMessage<DeleteConnectorOAuthTokenRequest> | undefined): boolean {
+    return proto3.util.equals(DeleteConnectorOAuthTokenRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.DeleteConnectorOAuthTokenResponse
+ */
+export class DeleteConnectorOAuthTokenResponse extends Message<DeleteConnectorOAuthTokenResponse> {
+  constructor(data?: PartialMessage<DeleteConnectorOAuthTokenResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.DeleteConnectorOAuthTokenResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): DeleteConnectorOAuthTokenResponse {
+    return new DeleteConnectorOAuthTokenResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): DeleteConnectorOAuthTokenResponse {
+    return new DeleteConnectorOAuthTokenResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): DeleteConnectorOAuthTokenResponse {
+    return new DeleteConnectorOAuthTokenResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: DeleteConnectorOAuthTokenResponse | PlainMessage<DeleteConnectorOAuthTokenResponse> | undefined, b: DeleteConnectorOAuthTokenResponse | PlainMessage<DeleteConnectorOAuthTokenResponse> | undefined): boolean {
+    return proto3.util.equals(DeleteConnectorOAuthTokenResponse, a, b);
+  }
+}
+
+/**
  * @generated from message rill.admin.v1.ListRolesRequest
  */
 export class ListRolesRequest extends Message<ListRolesRequest> {
@@ -5297,6 +5509,15 @@ export class AddOrganizationMemberUserRequest extends Message<AddOrganizationMem
   attributes?: Struct;
 
   /**
+   * Names of user groups in the org to add the user to.
+   * If the user has not signed up yet, they are stored on the invite and applied when the invite is accepted.
+   * Groups are additive: on a re-invite they are merged with the groups already on the invite.
+   *
+   * @generated from field: repeated string usergroups = 6;
+   */
+  usergroups: string[] = [];
+
+  /**
    * @generated from field: bool superuser_force_access = 4;
    */
   superuserForceAccess = false;
@@ -5313,6 +5534,7 @@ export class AddOrganizationMemberUserRequest extends Message<AddOrganizationMem
     { no: 2, name: "email", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "role", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 5, name: "attributes", kind: "message", T: Struct },
+    { no: 6, name: "usergroups", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 4, name: "superuser_force_access", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
@@ -6801,6 +7023,88 @@ export class SudoUpdateOrganizationCustomDomainResponse extends Message<SudoUpda
 }
 
 /**
+ * @generated from message rill.admin.v1.SudoUpdateOrganizationDefaultProvisionerRequest
+ */
+export class SudoUpdateOrganizationDefaultProvisionerRequest extends Message<SudoUpdateOrganizationDefaultProvisionerRequest> {
+  /**
+   * @generated from field: string org = 1;
+   */
+  org = "";
+
+  /**
+   * Name of the provisioner to use by default. Empty unsets the org's default provisioner.
+   *
+   * @generated from field: string default_provisioner = 2;
+   */
+  defaultProvisioner = "";
+
+  constructor(data?: PartialMessage<SudoUpdateOrganizationDefaultProvisionerRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.SudoUpdateOrganizationDefaultProvisionerRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "org", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "default_provisioner", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): SudoUpdateOrganizationDefaultProvisionerRequest {
+    return new SudoUpdateOrganizationDefaultProvisionerRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): SudoUpdateOrganizationDefaultProvisionerRequest {
+    return new SudoUpdateOrganizationDefaultProvisionerRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): SudoUpdateOrganizationDefaultProvisionerRequest {
+    return new SudoUpdateOrganizationDefaultProvisionerRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: SudoUpdateOrganizationDefaultProvisionerRequest | PlainMessage<SudoUpdateOrganizationDefaultProvisionerRequest> | undefined, b: SudoUpdateOrganizationDefaultProvisionerRequest | PlainMessage<SudoUpdateOrganizationDefaultProvisionerRequest> | undefined): boolean {
+    return proto3.util.equals(SudoUpdateOrganizationDefaultProvisionerRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.SudoUpdateOrganizationDefaultProvisionerResponse
+ */
+export class SudoUpdateOrganizationDefaultProvisionerResponse extends Message<SudoUpdateOrganizationDefaultProvisionerResponse> {
+  /**
+   * @generated from field: rill.admin.v1.Organization organization = 1;
+   */
+  organization?: Organization;
+
+  constructor(data?: PartialMessage<SudoUpdateOrganizationDefaultProvisionerResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.SudoUpdateOrganizationDefaultProvisionerResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "organization", kind: "message", T: Organization },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): SudoUpdateOrganizationDefaultProvisionerResponse {
+    return new SudoUpdateOrganizationDefaultProvisionerResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): SudoUpdateOrganizationDefaultProvisionerResponse {
+    return new SudoUpdateOrganizationDefaultProvisionerResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): SudoUpdateOrganizationDefaultProvisionerResponse {
+    return new SudoUpdateOrganizationDefaultProvisionerResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: SudoUpdateOrganizationDefaultProvisionerResponse | PlainMessage<SudoUpdateOrganizationDefaultProvisionerResponse> | undefined, b: SudoUpdateOrganizationDefaultProvisionerResponse | PlainMessage<SudoUpdateOrganizationDefaultProvisionerResponse> | undefined): boolean {
+    return proto3.util.equals(SudoUpdateOrganizationDefaultProvisionerResponse, a, b);
+  }
+}
+
+/**
  * @generated from message rill.admin.v1.SudoUpdateUserQuotasRequest
  */
 export class SudoUpdateUserQuotasRequest extends Message<SudoUpdateUserQuotasRequest> {
@@ -7583,6 +7887,15 @@ export class AddProjectMemberUserRequest extends Message<AddProjectMemberUserReq
    */
   attributes?: Struct;
 
+  /**
+   * Names of user groups in the org to add the user to (user groups are org-scoped).
+   * If the user has not signed up yet, they are stored on the org invite and applied when the invite is accepted.
+   * Setting user groups requires permission to manage org members.
+   *
+   * @generated from field: repeated string usergroups = 8;
+   */
+  usergroups: string[] = [];
+
   constructor(data?: PartialMessage<AddProjectMemberUserRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -7598,6 +7911,7 @@ export class AddProjectMemberUserRequest extends Message<AddProjectMemberUserReq
     { no: 5, name: "restrict_resources", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
     { no: 6, name: "resources", kind: "message", T: ResourceName, repeated: true },
     { no: 7, name: "attributes", kind: "message", T: Struct },
+    { no: 8, name: "usergroups", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): AddProjectMemberUserRequest {
@@ -10214,6 +10528,9 @@ export class RevokeCurrentAuthTokenResponse extends Message<RevokeCurrentAuthTok
 }
 
 /**
+ * ListBookmarksRequest lists the bookmarks in a project that are visible to the caller:
+ * the caller's own bookmarks plus shared and default bookmarks.
+ *
  * @generated from message rill.admin.v1.ListBookmarksRequest
  */
 export class ListBookmarksRequest extends Message<ListBookmarksRequest> {
@@ -10223,14 +10540,19 @@ export class ListBookmarksRequest extends Message<ListBookmarksRequest> {
   projectId = "";
 
   /**
-   * @generated from field: string resource_kind = 2;
+   * Optional filter on the kind of the resource the bookmark is for (e.g. "rill.runtime.v1.Explore").
+   * When both resource_kind and resource_name are unset, all bookmarks in the project are returned.
+   *
+   * @generated from field: optional string resource_kind = 2;
    */
-  resourceKind = "";
+  resourceKind?: string;
 
   /**
-   * @generated from field: string resource_name = 3;
+   * Optional filter on the name of the resource the bookmark is for. Requires resource_kind to be set.
+   *
+   * @generated from field: optional string resource_name = 3;
    */
-  resourceName = "";
+  resourceName?: string;
 
   constructor(data?: PartialMessage<ListBookmarksRequest>) {
     super();
@@ -10241,8 +10563,8 @@ export class ListBookmarksRequest extends Message<ListBookmarksRequest> {
   static readonly typeName = "rill.admin.v1.ListBookmarksRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "project_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "resource_kind", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 3, name: "resource_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "resource_kind", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 3, name: "resource_name", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListBookmarksRequest {
@@ -16621,6 +16943,11 @@ export class Organization extends Message<Organization> {
   defaultProjectRoleId = "";
 
   /**
+   * @generated from field: string default_provisioner = 19;
+   */
+  defaultProvisioner = "";
+
+  /**
    * @generated from field: rill.admin.v1.OrganizationQuotas quotas = 4;
    */
   quotas?: OrganizationQuotas;
@@ -16678,6 +17005,7 @@ export class Organization extends Message<Organization> {
     { no: 17, name: "thumbnail_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 10, name: "custom_domain", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 16, name: "default_project_role_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 19, name: "default_provisioner", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "quotas", kind: "message", T: OrganizationQuotas },
     { no: 7, name: "billing_customer_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 8, name: "payment_customer_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
@@ -17816,6 +18144,14 @@ export class UsergroupMemberUser extends Message<UsergroupMemberUser> {
   userPhotoUrl = "";
 
   /**
+   * True if the user has been invited to the group but has not signed up yet.
+   * For pending members, user_id, user_name and user_photo_url are empty.
+   *
+   * @generated from field: bool pending_acceptance = 8;
+   */
+  pendingAcceptance = false;
+
+  /**
    * @generated from field: google.protobuf.Timestamp created_on = 5;
    */
   createdOn?: Timestamp;
@@ -17837,6 +18173,7 @@ export class UsergroupMemberUser extends Message<UsergroupMemberUser> {
     { no: 3, name: "user_email", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "user_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 7, name: "user_photo_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 8, name: "pending_acceptance", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 5, name: "created_on", kind: "message", T: Timestamp },
     { no: 6, name: "updated_on", kind: "message", T: Timestamp },
   ]);
@@ -17882,6 +18219,13 @@ export class OrganizationInvite extends Message<OrganizationInvite> {
    */
   attributes?: Struct;
 
+  /**
+   * Names of the user groups the user will be added to when the invite is accepted.
+   *
+   * @generated from field: repeated string usergroups = 5;
+   */
+  usergroups: string[] = [];
+
   constructor(data?: PartialMessage<OrganizationInvite>) {
     super();
     proto3.util.initPartial(data, this);
@@ -17894,6 +18238,7 @@ export class OrganizationInvite extends Message<OrganizationInvite> {
     { no: 2, name: "role_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "invited_by", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "attributes", kind: "message", T: Struct },
+    { no: 5, name: "usergroups", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): OrganizationInvite {
@@ -18540,6 +18885,13 @@ export class ReportOptions extends Message<ReportOptions> {
   exportIncludeHeader = false;
 
   /**
+   * If true, the export is attached to email notifications (only supported for explore reports run as the creator).
+   *
+   * @generated from field: bool export_attach = 24;
+   */
+  exportAttach = false;
+
+  /**
    * @generated from field: repeated string email_recipients = 8;
    */
   emailRecipients: string[] = [];
@@ -18622,6 +18974,7 @@ export class ReportOptions extends Message<ReportOptions> {
     { no: 5, name: "export_limit", kind: "scalar", T: 4 /* ScalarType.UINT64 */ },
     { no: 6, name: "export_format", kind: "enum", T: proto3.getEnumType(ExportFormat) },
     { no: 20, name: "export_include_header", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 24, name: "export_attach", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 8, name: "email_recipients", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 10, name: "slack_users", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 11, name: "slack_channels", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
@@ -18700,6 +19053,28 @@ export class AlertOptions extends Message<AlertOptions> {
   queryArgsJson = "";
 
   /**
+   * If true, the query's result is exported and attached to email notifications for failed checks (only supported for query-based alerts).
+   *
+   * @generated from field: bool export_attach = 18;
+   */
+  exportAttach = false;
+
+  /**
+   * @generated from field: rill.runtime.v1.ExportFormat export_format = 19;
+   */
+  exportFormat = ExportFormat.UNSPECIFIED;
+
+  /**
+   * @generated from field: bool export_include_header = 20;
+   */
+  exportIncludeHeader = false;
+
+  /**
+   * @generated from field: uint64 export_limit = 21;
+   */
+  exportLimit = protoInt64.zero;
+
+  /**
    * @generated from field: string metrics_view_name = 5;
    */
   metricsViewName = "";
@@ -18764,6 +19139,10 @@ export class AlertOptions extends Message<AlertOptions> {
     { no: 14, name: "resolver_properties", kind: "message", T: Struct },
     { no: 3, name: "query_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "query_args_json", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 18, name: "export_attach", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 19, name: "export_format", kind: "enum", T: proto3.getEnumType(ExportFormat) },
+    { no: 20, name: "export_include_header", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 21, name: "export_limit", kind: "scalar", T: 4 /* ScalarType.UINT64 */ },
     { no: 5, name: "metrics_view_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 6, name: "renotify", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 7, name: "renotify_after_seconds", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },

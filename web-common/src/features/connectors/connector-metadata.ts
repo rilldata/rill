@@ -1,6 +1,7 @@
 import AmazonS3Icon from "../../components/icons/connectors/AmazonS3Icon.svelte";
 import ApacheDruidIcon from "../../components/icons/connectors/ApacheDruidIcon.svelte";
 import ApachePinotIcon from "../../components/icons/connectors/ApachePinotIcon.svelte";
+import BedrockIcon from "../../components/icons/connectors/BedrockIcon.svelte";
 import ClaudeIcon from "../../components/icons/connectors/ClaudeIcon.svelte";
 import ClickHouseIcon from "../../components/icons/connectors/ClickHouseIcon.svelte";
 import ClickHouseCloudIcon from "../../components/icons/connectors/ClickHouseCloudIcon.svelte";
@@ -30,6 +31,7 @@ import SQLiteIcon from "@rilldata/web-common/components/icons/connectors/SQLiteI
 export const connectorIconMapping = {
   athena: AthenaIcon,
   azure: MicrosoftAzureBlobStorageIcon,
+  bedrock: BedrockIcon,
   bigquery: GoogleBigQueryIcon,
   databricks: DatabricksIcon,
   claude: ClaudeIcon,
@@ -78,6 +80,7 @@ export const connectorLabelMapping = {
 export const connectorKeywordMapping = {
   athena: ["aws", "amazon", "serverless", "presto"],
   azure: ["object storage", "cloud storage"],
+  bedrock: ["aws", "amazon", "ai", "llm"],
   bigquery: ["google", "gcp", "data warehouse"],
   clickhouse: ["olap", "columnar", "real-time analytics"],
   databricks: ["lakehouse", "spark", "olap", "warehouse"],
