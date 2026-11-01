@@ -22,8 +22,10 @@ import type {
 } from "@rilldata/web-common/features/dashboards/filters/filter-events.ts";
 import { mergeFilterParams } from "@rilldata/web-common/features/dashboards/filters/expr-utils.ts";
 import { getSortFilterManagers } from "@rilldata/web-common/features/dashboards/filters/get-sort-filter-managers.ts";
-import { expandCompressedParams } from "@rilldata/web-common/features/dashboards/url-state/compression.ts";
-import type { UrlParamsStore } from "@rilldata/web-common/lib/store-utils/url-params-store-sync.svelte.ts";
+import {
+  UrlParamsChangeTracker,
+  type UrlParamsStore,
+} from "@rilldata/web-common/lib/store-utils/url-params-store-sync.svelte.ts";
 
 /**
  * Filter managers for the chips in a filter bar.
@@ -52,8 +54,6 @@ export class ExpressionFilterManager implements UrlParamsStore {
   };
   public readonly filterManagersMap: Record<string, DimensionOrMeasureManager>;
 
-  private curParams = $state<URLSearchParams | undefined>(undefined);
-
   // Shared with every manager below this one, so a chip edit reports itself
   // without the managers in between having to forward it. See `filter-events.ts`.
   private events = new EventEmitter<FilterEvents>();
@@ -61,14 +61,51 @@ export class ExpressionFilterManager implements UrlParamsStore {
     this.events,
   ) as typeof this.events.on;
 
-  // Temporary lock in explore. Once we move whereFilter out of explore, we can remove this.
-  public updating = false;
+  public ready = $state<boolean>(false);
+
+  public paramKeys = new Set<string>([ExploreStateURLParams.Filters]);
+  public readonly storeSync: UrlParamsChangeTracker;
+
+  // Unsubscribes from the providers, which can outlive this manager. See `cleanup`.
+  private readonly unsubscribers: (() => void)[];
 
   public constructor(
     public readonly metricsViewsProvider: MetricsViewsProvider,
     public readonly yamlConfigProvider: YAMLConfigProvider,
     private readonly singleParamFormMv = false,
   ) {
+    this.storeSync = new UrlParamsChangeTracker(this);
+
+    const syncParamKeys = (names: string[]) => {
+      this.paramKeys = new Set([
+        ExploreStateURLParams.Filters,
+        ...names.map((mvName) => getParamKeyForMv(mvName, singleParamFormMv)),
+      ]);
+    };
+    const unsubUpdate = metricsViewsProvider.on(
+      "update-metrics-views",
+      (names) => {
+        syncParamKeys(names);
+        // Specs for the new metrics views are loading, so params are queued until `specs-loaded`.
+        this.ready = metricsViewsProvider.specsReady;
+      },
+    );
+    // Call sync immediately for already loaded metricsViewsProvider
+    syncParamKeys(metricsViewsProvider.metricsViewNames);
+
+    this.ready = metricsViewsProvider.specsReady;
+    // Emit ready immediately for already loaded metricsViewsProvider
+    if (metricsViewsProvider.specsReady) this.events.emit("ready");
+    const unsubSpecsLoaded = metricsViewsProvider.on("specs-loaded", () => {
+      this.ready = true;
+      this.events.emit("ready");
+    });
+    // The config can land after the params were parsed. See `addRequiredAndPinnedFilters`.
+    const unsubYamlConfig = yamlConfigProvider.on("update", () =>
+      this.topLevelJoiner.addRequiredAndPinnedFilters(),
+    );
+    this.unsubscribers = [unsubUpdate, unsubSpecsLoaded, unsubYamlConfig];
+
     this.topLevelJoiner = $state(
       JoinerFilterManager.parse(
         this.metricsViewsProvider,
@@ -78,9 +115,9 @@ export class ExpressionFilterManager implements UrlParamsStore {
         this.events,
       ) as JoinerFilterManager,
     );
-    this.on("filter-removed", ({ name, wasEmpty }) => {
-      if (!wasEmpty) return; // This will change expr and other pipelines will update managers.
-      this.topLevelJoiner.removeManagerByName(name);
+    this.on("filter-changed", () => {
+      this.topLevelJoiner?.removeEmptyManagers();
+      this.storeSync.stateChanged();
     });
 
     this.sortedFilterManagers = $derived.by(() =>
@@ -118,39 +155,41 @@ export class ExpressionFilterManager implements UrlParamsStore {
 
     const newUrlSearch = new URLSearchParams();
     this.applyFilterToParams(newUrlSearch);
-    cloned.setUrlParams(newUrlSearch);
+    cloned.storeSync.setUrlParams(newUrlSearch);
 
     return cloned;
   }
 
-  public setUrlParams(searchParams: URLSearchParams) {
-    let expandedUrlParams: URLSearchParams;
-    try {
-      expandedUrlParams = expandCompressedParams(searchParams);
-    } catch {
-      // If we fail to decompress, do not throw here.
-      return;
-    }
+  /**
+   * Removes the listeners on `metricsViewsProvider` and `yamlConfigProvider`.
+   * Call this when the manager is discarded before the providers, e.g. a temporary `clone`.
+   */
+  public cleanup() {
+    this.unsubscribers.forEach((unsub) => unsub());
+  }
 
-    // Use and save just the params set by this class.
-    const relevantUrlParams = new URLSearchParams();
-    expandedUrlParams.forEach((value, key) => {
-      if (
-        key === ExploreStateURLParams.Filters ||
-        key.startsWith(ExploreStateURLParams.Filters + ".")
-      ) {
-        relevantUrlParams.append(key, value);
-      }
+  /**
+   * Folds the legacy singular `f` param into a param per metrics view.
+   *
+   * A metrics view that already has a param of its own keeps it, since that is the newer state:
+   * an embed host passes the singular param, and the dashboard then writes per metrics view params
+   * as the filter is edited. Merging the two instead would AND the host's condition with the edited
+   * one on the same dimension, which no chip can show and which usually matches nothing.
+   */
+  public normalizeParams(urlParams: URLSearchParams): URLSearchParams {
+    const singularParam = urlParams.get(ExploreStateURLParams.Filters);
+    if (!singularParam || this.singleParamFormMv) return urlParams;
+
+    const newUrlParams = new URLSearchParams();
+    this.metricsViewsProvider.metricsViewNames.forEach((mvName) => {
+      const paramKey = getParamKeyForMv(mvName, this.singleParamFormMv);
+      newUrlParams.set(paramKey, urlParams.get(paramKey) ?? singularParam);
     });
+    return newUrlParams;
+  }
 
-    // Do not update managers if params didnt change.
-    if (
-      this.curParams &&
-      this.curParams.toString() === relevantUrlParams.toString()
-    )
-      return;
-
-    const { expr, inList, advanced } = mergeFilterParams(relevantUrlParams);
+  public setUrlParams(searchParams: URLSearchParams) {
+    const { expr, inList, advanced } = mergeFilterParams(searchParams);
 
     this.temporaryFilterName = undefined;
     this.topLevelJoiner = JoinerFilterManager.parse(
@@ -161,19 +200,14 @@ export class ExpressionFilterManager implements UrlParamsStore {
       this.events,
     ) as JoinerFilterManager;
     this.isComplexFilter = advanced;
-
-    this.curParams = normalizeUrlParams(
-      relevantUrlParams,
-      this.metricsViewsProvider.metricsViewNames,
-      this.singleParamFormMv,
-    );
   }
 
   public setParamForMetricsView(mvName: string, param: string) {
     const paramKey = getParamKeyForMv(mvName, this.singleParamFormMv);
-    const newParams = new URLSearchParams(this.curParams);
+    const newParams = new URLSearchParams(this.storeSync.searchParams);
     newParams.set(paramKey, param);
-    this.setUrlParams(newParams);
+    // Thread through the sync code to ensure only changes update the internal state.
+    this.storeSync.setUrlParams(newParams);
   }
 
   public setExprForMetricsView(
@@ -201,7 +235,7 @@ export class ExpressionFilterManager implements UrlParamsStore {
 
     // A singular `f=...` is a legacy canvas filter. `setUrlParams` folds it into every metrics view,
     // so the per metrics view params written above already carry it and it can be dropped.
-    if (!this.singleParamFormMv && this.metricsViewsProvider.ready) {
+    if (!this.singleParamFormMv && this.metricsViewsProvider.specsReady) {
       searchParams.delete(ExploreStateURLParams.Filters);
     }
   }
@@ -286,6 +320,9 @@ export class ExpressionFilterManager implements UrlParamsStore {
 
   public clear() {
     this.temporaryFilterName = undefined;
+    // `setUrlParams` is the only other writer of this flag,
+    // and the navigation after a clear skips it because the params already match the cleared state.
+    this.isComplexFilter = false;
     this.topLevelJoiner.clear();
     // Clearing goes through the param rather than the managers, so it has to report itself.
     this.events.emit("filter-changed", { source: undefined });
@@ -335,24 +372,6 @@ export class ExpressionFilterManager implements UrlParamsStore {
       dimensionOnlyExpr: this.topLevelJoiner.dimensionOnlyExpr[mvName],
     }));
   }
-}
-
-function normalizeUrlParams(
-  urlParams: URLSearchParams,
-  metricsViews: string[],
-  singleParamFormMv: boolean,
-) {
-  const singularParam = urlParams.get(ExploreStateURLParams.Filters);
-  if (!singularParam || singleParamFormMv) return urlParams;
-
-  const newUrlParams = new URLSearchParams();
-  metricsViews.forEach((mvName) =>
-    newUrlParams.set(
-      getParamKeyForMv(mvName, singleParamFormMv),
-      singularParam,
-    ),
-  );
-  return newUrlParams;
 }
 
 export function getParamKeyForMv(mvName: string, singleParamFormMv: boolean) {

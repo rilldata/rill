@@ -199,6 +199,9 @@
                 : m.report_row_limit({ count: reportSpec.exportLimit })}
             </span>
           {/if}
+          {#if reportSpec.exportAttach}
+            <span>• {m.report_attached_to_emails()}</span>
+          {/if}
         {/if}
       </div>
       <div class="flex gap-x-2 items-center">

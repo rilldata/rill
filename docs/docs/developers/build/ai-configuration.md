@@ -181,6 +181,28 @@ Skills are parsed into resources like the rest of your project: invalid skill fi
 Skill contents are provided to every user who can use AI features in the project, including viewers and, on a public project, anonymous visitors. Never put secrets or sensitive data in a skill. Access to the underlying data is still governed by your metrics view security policies.
 :::
 
+## User Memory
+
+In addition to the project-wide `ai_instructions` you write, [AI Chat](/guide/ai/ai-chat#memory) learns per-user **memories**: short preferences and clarifications a user shares in chat, such as "prefers tables over charts" or "revenue means net revenue". The two layers are complementary:
+
+| | `ai_instructions` | User memory |
+|---|---|---|
+| Written by | Project authors, in YAML | The AI, from what a user says in chat (or the user, in the memory manager) |
+| Applies to | Everyone using the project | One user, in one project |
+| Authority | Instructions the AI follows | Background context; never overrides `ai_instructions` or system rules |
+| Good for | Business definitions, routing, data quirks | Personal formatting preferences, a user's role and focus, corrections |
+
+If several users keep teaching the AI the same thing, add it to `ai_instructions` so everyone benefits. Memory never stores data values, secrets, or anything `ai_instructions` already say.
+
+Memory is on by default for logged-in users. To turn it off for a project, disable the `chat_memory` feature flag in `rill.yaml`:
+
+```yaml
+features:
+  chat_memory: false
+```
+
+Feature flags support the same templating as other project settings, so memory can also be enabled for a subset of users based on their attributes.
+
 ## Visualization Tips 
 
 When using the [Rill MCP Server](/guide/ai/mcp) with external AI clients like Claude, you can provide specific instructions on how to visualize data. Since the MCP server returns structured data, the AI client is responsible for rendering it.

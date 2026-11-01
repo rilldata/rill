@@ -79,7 +79,7 @@ func (s *Server) mcpHandler() (http.Handler, error) {
 		}
 	}
 
-	return mcp.NewStreamableHTTPHandler(func(r *http.Request) *mcp.Server {
+	return middleware.MCPSessionIDMiddleware(mcp.NewStreamableHTTPHandler(func(r *http.Request) *mcp.Server {
 		srv := mcp.NewServer(
 			&mcp.Implementation{
 				Name:    "rill",
@@ -89,8 +89,6 @@ func (s *Server) mcpHandler() (http.Handler, error) {
 			&mcp.ServerOptions{
 				Instructions: mcpInstructions,
 				HasTools:     true,
-				// Issue a session ID so clients pass it back on subsequent requests, enabling us to keep one AI session per project.
-				GetSessionID: uuid.NewString,
 			},
 		)
 
@@ -102,7 +100,7 @@ func (s *Server) mcpHandler() (http.Handler, error) {
 		}))
 
 		client := &mcpClient{
-			sessionID:       r.Header.Get("Mcp-Session-Id"),
+			sessionID:       r.Header.Get(middleware.MCPSessionIDHeader), // Issued by MCPSessionIDMiddleware if the client did not send one
 			userAgent:       r.UserAgent(),
 			protocolVersion: r.Header.Get("Mcp-Protocol-Version"),
 		}
@@ -117,7 +115,7 @@ func (s *Server) mcpHandler() (http.Handler, error) {
 		return srv
 	}, &mcp.StreamableHTTPOptions{
 		Stateless: true, // Required since the server serves multiple users.
-	}), nil
+	})), nil
 }
 
 // mcpRequireAuth rejects unauthenticated requests to the MCP server.
@@ -143,7 +141,12 @@ func (s *Server) mcpAdminTools() []mcpAdminTool {
 				Name:        "list_projects",
 				Title:       "List Projects",
 				Description: `List the Rill projects you have access to. Pass a returned value as the "project" argument of other tools. The list may be incomplete; if you already know a project, you can pass it directly.`,
-				Annotations: &mcp.ToolAnnotations{ReadOnlyHint: true},
+				Annotations: &mcp.ToolAnnotations{
+					DestructiveHint: new(false),
+					IdempotentHint:  true,
+					OpenWorldHint:   new(false),
+					ReadOnlyHint:    true,
+				},
 				InputSchema: &jsonschema.Schema{Type: "object"},
 			},
 			handler: s.mcpListProjects,
@@ -221,19 +224,20 @@ func (s *Server) mcpForwardToolCall(name string, client *mcpClient) mcp.ToolHand
 
 		s.admin.Used.Deployment(depl.ID)
 
-		return s.callRuntimeTool(ctx, depl, jwt, client, name, args)
+		// The client's _meta is passed through, since protocol versions >= 2026-07-28 carry the protocol version and client capabilities in it.
+		return s.callRuntimeTool(ctx, depl, jwt, client, &mcp.CallToolParams{Meta: req.Params.Meta, Name: name, Arguments: args})
 	}
 }
 
 // callRuntimeTool calls a tool on a deployment's MCP server.
 // It sends a plain JSON-RPC request instead of using the MCP SDK's client, which would add an initialization
 // handshake to every tool call and would not let us pass through the session ID and user agent.
-func (s *Server) callRuntimeTool(ctx context.Context, depl *database.Deployment, jwt string, client *mcpClient, name string, args json.RawMessage) (*mcp.CallToolResult, error) {
+func (s *Server) callRuntimeTool(ctx context.Context, depl *database.Deployment, jwt string, client *mcpClient, params *mcp.CallToolParams) (*mcp.CallToolResult, error) {
 	body, err := json.Marshal(map[string]any{
 		"jsonrpc": "2.0",
 		"id":      1,
 		"method":  "tools/call",
-		"params":  mcp.CallToolParams{Name: name, Arguments: args},
+		"params":  params,
 	})
 	if err != nil {
 		return nil, err
@@ -252,18 +256,19 @@ func (s *Server) callRuntimeTool(ctx context.Context, depl *database.Deployment,
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Accept", "application/json, text/event-stream") // The runtime requires both, even though it responds with JSON
 	req.Header.Set("Authorization", "Bearer "+jwt)
+	// Protocol versions >= 2026-07-28 require these headers to mirror the body; older versions ignore them.
+	req.Header.Set("Mcp-Method", "tools/call")
+	req.Header.Set("Mcp-Name", params.Name)
 	if client.protocolVersion != "" {
 		req.Header.Set("Mcp-Protocol-Version", client.protocolVersion)
 	}
 	if client.userAgent != "" {
 		req.Header.Set("User-Agent", client.userAgent)
 	}
-	if client.sessionID != "" {
-		// Derive a session ID per project instead of passing the client's through.
-		// A runtime may serve several projects from one catalog, where AI session IDs must be unique.
-		sessionID := uuid.NewSHA1(mcpSessionNamespace, []byte(depl.RuntimeInstanceID+"/"+client.sessionID))
-		req.Header.Set("Mcp-Session-Id", sessionID.String())
-	}
+	// Derive a session ID per project instead of passing the client's through.
+	// A runtime may serve several projects from one catalog, where AI session IDs must be unique.
+	sessionID := uuid.NewSHA1(mcpSessionNamespace, []byte(depl.RuntimeInstanceID+"/"+client.sessionID))
+	req.Header.Set(middleware.MCPSessionIDHeader, sessionID.String())
 
 	// Uses http.DefaultClient to get caching/pooling of TCP connections.
 	res, err := http.DefaultClient.Do(req)
@@ -304,6 +309,9 @@ func (s *Server) callRuntimeTool(ctx context.Context, depl *database.Deployment,
 			return nil, errors.New(rpc.Error.Message)
 		}
 		if rpc.Result != nil {
+			// On protocol versions >= 2026-07-28, the runtime identifies itself in the result's _meta.
+			// It's removed so the MCP SDK annotates the result with the admin service's server info instead.
+			delete(rpc.Result.Meta, mcp.MetaKeyServerInfo)
 			return rpc.Result, nil
 		}
 	}

@@ -1,9 +1,9 @@
 <script lang="ts">
+  import * as Tooltip from "@rilldata/web-common/components/tooltip-v2";
   import { ExpressionFilterManager } from "@rilldata/web-common/features/dashboards/filters/ExpressionFilterManager.svelte.ts";
   import ExpressionFilters from "@rilldata/web-common/features/dashboards/filters/ExpressionFilters.svelte";
   import { YAMLConfigProvider } from "@rilldata/web-common/features/dashboards/providers/YAMLConfigProvider.svelte.ts";
   import { MetricsViewsProvider } from "@rilldata/web-common/features/metrics-views/providers/MetricsViewsProvider.svelte.ts";
-  import { syncStoreWithSource } from "@rilldata/web-common/lib/store-utils/url-params-store-sync.svelte.ts";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 
   /**
@@ -14,9 +14,12 @@
    */
   let {
     metricsViewNames,
+    initUrlSearch,
     onManagerCreated,
   }: {
     metricsViewNames: string[];
+    // Url search the bar starts from, for a test that begins with a filter already applied.
+    initUrlSearch?: string;
     onManagerCreated?: (
       expressionFilterManager: ExpressionFilterManager,
     ) => void;
@@ -33,23 +36,25 @@
     new YAMLConfigProvider(),
   );
   // svelte-ignore state_referenced_locally
+  metricsViewsProvider.setMetricsViewNames(metricsViewNames);
+  // svelte-ignore state_referenced_locally
   onManagerCreated?.(expressionFilterManager);
 
-  syncStoreWithSource(
-    expressionFilterManager,
-    async (newUrlParams) => expressionFilterManager.setUrlParams(newUrlParams),
-    () => metricsViewsProvider.ready,
-    undefined,
-    true,
+  // svelte-ignore state_referenced_locally
+  expressionFilterManager.storeSync.setUrlParams(
+    new URLSearchParams(initUrlSearch),
   );
 </script>
 
-<ExpressionFilters
-  {expressionFilterManager}
-  timeStart={undefined}
-  timeEnd={undefined}
-  timeControlsReady
-/>
-{#if metricsViewsProvider.ready}
-  <div>Dashboard loaded!</div>
-{/if}
+<!-- The app layout supplies the tooltip provider, which the advanced filter pill needs. -->
+<Tooltip.Provider>
+  <ExpressionFilters
+    {expressionFilterManager}
+    timeStart={undefined}
+    timeEnd={undefined}
+    timeControlsReady
+  />
+  {#if metricsViewsProvider.ready}
+    <div>Dashboard loaded!</div>
+  {/if}
+</Tooltip.Provider>

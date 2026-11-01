@@ -28,6 +28,7 @@ import {
 } from "svelte/store";
 import {
   canQueryWithTimeRange,
+  combineChartDataQuery,
   getFilterWithNullHandling,
 } from "../query-util";
 import { withEphemeralMeasures } from "../ephemeral-measures";
@@ -242,7 +243,7 @@ export class FunnelChartProvider {
     );
 
     const query = createQuery(queryOptionsStore);
-    return query;
+    return combineChartDataQuery(query, [topNStageQuery], visibleStore);
   }
 
   getChartDomainValues() {

@@ -2,6 +2,7 @@
   import { getCanvasStore } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import { page } from "$app/state";
+  import { untrack } from "svelte";
 
   /**
    * Applies the canvas state a `CanvasProvider` was given to that canvas's filter manager, once
@@ -31,16 +32,16 @@
     getCanvasStore(canvasName, runtimeClient.instanceId),
   );
 
-  // Mirrors the `effectiveUrl` the provider applied: the override when it has one,
-  // the page url otherwise.
-  let searchParams = $derived(
-    urlStateOverride === undefined
-      ? page.url.searchParams
-      : new URLSearchParams(urlStateOverride),
-  );
-
   $effect(() => {
-    if (!canvasEntity.dashboardProvider.metricsViewsProvider.ready) return;
-    canvasEntity.expressionFilterManager.setUrlParams(searchParams);
+    // Mirrors the `effectiveUrl` the provider applied: the override when it has one,
+    // the page url otherwise.
+    const searchParams =
+      urlStateOverride === undefined
+        ? page.url.searchParams
+        : new URLSearchParams(urlStateOverride);
+
+    untrack(() => {
+      canvasEntity.expressionFilterManager.storeSync.setUrlParams(searchParams);
+    });
   });
 </script>

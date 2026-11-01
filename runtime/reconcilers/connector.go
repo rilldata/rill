@@ -82,7 +82,7 @@ func (r *ConnectorReconciler) Reconcile(ctx context.Context, n *runtimev1.Resour
 
 	if specHash == t.State.SpecHash {
 		// The connector configuration should be tested even when spec has not changed since connector errors can be transient (e.g. cluster temporarily down)
-		err := r.testConnector(ctx, self.Meta.Name.Name)
+		err = r.testConnector(ctx, self.Meta.Name.Name)
 		return runtime.ReconcileResult{Err: err}
 	}
 
@@ -148,6 +148,9 @@ func (r *ConnectorReconciler) executionSpecHash(ctx context.Context, spec *runti
 	return hex.EncodeToString(hash.Sum(nil)), nil
 }
 
+// testConnector checks that the connector works.
+// For MCP connectors this is a reachability check only: which tools a server exposes depends on the user,
+// so the tool catalog is always listed per user by the AI runtime (see runtime/ai.DiscoverExternalServers).
 func (r *ConnectorReconciler) testConnector(ctx context.Context, connectorName string) error {
 	// Get the connector configuration
 	handle, release, err := r.C.Runtime.AcquireHandle(ctx, r.C.InstanceID, connectorName)

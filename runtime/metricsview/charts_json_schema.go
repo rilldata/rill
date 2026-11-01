@@ -330,6 +330,10 @@ const ChartsJSONSchema = `{
         "compute": {
           "$ref": "#/$defs/MeasureCompute",
           "description": "Optionally configure a derived measure, such as a comparison."
+        },
+        "exact": {
+          "type": "boolean",
+          "description": "Compute the measure with its exact_expression when the metrics view defines one (slower). Defaults to false (approximate)."
         }
       },
       "required": ["name"]

@@ -874,7 +874,7 @@ func (d *db) acquireWriteConn(ctx context.Context, dsn, table string, initQuerie
 	return conn, release, nil
 }
 
-func (d *db) openDBAndAttach(ctx context.Context, uri, ignoreTable string, initQueries []string, read bool) (db *sqlx.DB, dbErr error) {
+func (d *db) openDBAndAttach(ctx context.Context, uri, ignoreTable string, initQueries []string, read bool) (_ *sqlx.DB, dbErr error) {
 	d.logger.Debug("open db", zap.Bool("read", read), zap.String("uri", uri), observability.ZapCtx(ctx))
 	// open the db
 	var settings map[string]string
@@ -893,12 +893,15 @@ func (d *db) openDBAndAttach(ctx context.Context, uri, ignoreTable string, initQ
 	}
 	// Rebuild DuckDB DSN (which should be "path?key=val&...")
 	// this is required since spaces and other special characters are valid in db file path but invalid and hence encoded in URL
+	// The init queries run for every new connection the pool opens, for as long as the returned DB is in use.
+	// So they must not use the caller's ctx, which may be cancelled while the DB is still open.
+	connCtx := d.ctx
 	connector, err := duckdb.NewConnector(generateDSN(dsn.Path, query.Encode()), func(execer driver.ExecerContext) error {
 		for _, qry := range d.opts.ConnInitQueries {
-			_, err := execer.ExecContext(ctx, qry, nil)
+			_, err := execer.ExecContext(connCtx, qry, nil)
 			if err != nil && strings.Contains(err.Error(), "Failed to download extension") {
 				// Retry using another mirror. Based on: https://github.com/duckdb/duckdb/issues/9378
-				_, err = execer.ExecContext(ctx, qry+" FROM 'http://nightly-extensions.duckdb.org'", nil)
+				_, err = execer.ExecContext(connCtx, qry+" FROM 'http://nightly-extensions.duckdb.org'", nil)
 			}
 			if err != nil {
 				return err
@@ -926,11 +929,10 @@ func (d *db) openDBAndAttach(ctx context.Context, uri, ignoreTable string, initQ
 			},
 		}
 	}
-	db = sqlx.NewDb(otelsql.OpenDB(connector, otelsql.WithSpanOptions(spanOptions)), "duckdb")
+	db := sqlx.NewDb(otelsql.OpenDB(connector, otelsql.WithSpanOptions(spanOptions)), "duckdb")
 	defer func() {
 		// there are too many error paths after this so closing the db in a defer seems better
-		// but the dbErr can be non nil even before function reaches this point so need to check for db is non nil
-		if dbErr != nil && db != nil {
+		if dbErr != nil {
 			_ = db.Close()
 		}
 	}()

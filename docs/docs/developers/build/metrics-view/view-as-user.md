@@ -174,7 +174,7 @@ mock_users:
 
 ### Custom attributes for embedded dashboards
 
-When your app passes [custom attributes at embed time](/developers/embed/iframe#2-build-the-iframe-url-backend), mirror those attributes on a mock user so you can preview the embed locally.
+When your app passes [custom attributes at embed time](/developers/embed/iframe#backend-build-an-iframe-url), mirror those attributes on a mock user so you can preview the embed locally.
 
 ```yaml
 # metrics view
@@ -194,6 +194,8 @@ mock_users:
 ```
 
 Selecting `embed@rilldata.com` in the **View as** menu renders the dashboard exactly as your embedded frontend would render it for that tenant.
+
+If the canvas uses [`if` conditions](/developers/build/dashboards/canvas#show-content-to-some-viewers-only) that depend on the embed, add `embed: true` to the mock user too, because every embedded dashboard carries that attribute.
 
 ### Tenant mapping through a source
 
