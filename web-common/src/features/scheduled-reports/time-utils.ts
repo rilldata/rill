@@ -187,7 +187,10 @@ export function getExistingScheduleFormValues(
   if (!schedule?.cron) return getInitialScheduleFormValues();
   return {
     frequency: getFrequencyFromCronExpression(schedule?.cron),
-    dayOfWeek: getDayOfWeekFromCronExpression(schedule?.cron),
+    // Default to today when the cron has no single weekday (e.g. a daily schedule, or one saved with an invalid day),
+    // so that switching to or keeping a weekly frequency never builds a cron with an undefined day.
+    dayOfWeek:
+      getDayOfWeekFromCronExpression(schedule?.cron) || getTodaysDayOfWeek(),
     dayOfMonth: 1, // We only support 1st day of month as of now.
     timeOfDay: getTimeOfDayFromCronExpression(schedule?.cron),
     timeZone: schedule?.timeZone ?? getLocalIANA(),

@@ -3,11 +3,12 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   ReportFrequency,
   convertFormValuesToCronExpression,
+  getExistingScheduleFormValues,
   getInitialScheduleFormValues,
   getTodaysDayOfWeek,
 } from "./time-utils";
 
-describe("getTodaysDayOfWeek", () => {
+describe("weekly schedule day of week", () => {
   const originalLocale = Settings.defaultLocale;
 
   beforeEach(() => {
@@ -39,5 +40,40 @@ describe("getTodaysDayOfWeek", () => {
         values.dayOfMonth,
       ),
     ).toEqual("30 10 * * 3");
+  });
+
+  it("keeps the day of an existing weekly schedule", () => {
+    const values = getExistingScheduleFormValues({ cron: "30 10 * * 1" });
+    expect(values.frequency).toEqual(ReportFrequency.Weekly);
+    expect(values.dayOfWeek).toEqual("Monday");
+  });
+
+  it("repairs an existing weekly schedule saved with an invalid day", () => {
+    const values = getExistingScheduleFormValues({
+      cron: "30 10 * * undefined",
+    });
+    expect(values.frequency).toEqual(ReportFrequency.Weekly);
+    expect(values.dayOfWeek).toEqual("Wednesday");
+    expect(
+      convertFormValuesToCronExpression(
+        values.frequency,
+        values.dayOfWeek,
+        values.timeOfDay,
+        values.dayOfMonth,
+      ),
+    ).toEqual("30 10 * * 3");
+  });
+
+  it("builds a valid cron when an existing daily schedule is switched to weekly", () => {
+    const values = getExistingScheduleFormValues({ cron: "0 9 * * *" });
+    expect(values.frequency).toEqual(ReportFrequency.Daily);
+    expect(
+      convertFormValuesToCronExpression(
+        ReportFrequency.Weekly,
+        values.dayOfWeek,
+        values.timeOfDay,
+        values.dayOfMonth,
+      ),
+    ).toEqual("0 9 * * 3");
   });
 });
