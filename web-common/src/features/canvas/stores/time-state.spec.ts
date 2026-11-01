@@ -36,6 +36,19 @@ describe("getDefaultComparisonRange", () => {
     );
   });
 
+  it("uses the first time range's comparisons when no default range is set", () => {
+    const timeRanges = [
+      { range: "rill-MTD", comparisonTimeRanges: [{ offset: "rill-PM" }] },
+      { range: "P12M", comparisonTimeRanges: [{ offset: "rill-PY" }] },
+    ];
+    expect(getDefaultComparisonRange(undefined, timeRanges)).toBe(
+      TimeComparisonOption.MONTH,
+    );
+    expect(getDefaultComparisonRange(undefined, [{ range: "rill-MTD" }])).toBe(
+      TimeComparisonOption.CONTIGUOUS,
+    );
+  });
+
   it("keeps the grain-based default when nothing is declared", () => {
     expect(getDefaultComparisonRange("rill-MTD", undefined)).toBe(
       TimeComparisonOption.DAY,
