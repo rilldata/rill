@@ -35,6 +35,7 @@ import {
   type V1MetricsViewSpec,
   V1Operation,
   V1TimeGrain,
+  type V1TimeRange,
   type V1TimeRangeSummary,
 } from "@rilldata/web-common/runtime-client";
 import { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
@@ -554,6 +555,59 @@ describe("getDashboardFromAggregationRequest", () => {
         expectNoTimeRangeSummaryRequest();
       });
     }
+
+    async function mapWithTimeRange(timeRange: V1TimeRange) {
+      const mapQueryStore = mapQueryToDashboard(
+        new RuntimeClient({
+          host: "http://localhost:9009",
+          instanceId: "default",
+        }),
+        {
+          exploreName: NO_TIME_SOURCE.exploreName,
+          queryName: "MetricsViewAggregation",
+          queryArgsJson: JSON.stringify({
+            metricsView: NO_TIME_SOURCE.metricsViewName,
+            dimensions: [{ name: AD_BIDS_DOMAIN_DIMENSION }],
+            measures: [{ name: AD_BIDS_BID_PRICE_MEASURE }],
+            timeRange,
+          }),
+        },
+        {},
+      );
+
+      let mapQueryResp: MapQueryResponse | undefined;
+      const unsub = mapQueryStore.subscribe((r) => (mapQueryResp = r));
+      await waitUntil(
+        () => !!mapQueryResp?.data || !!mapQueryResp?.error,
+        1000,
+        50,
+      );
+      unsub();
+      return mapQueryResp;
+    }
+
+    // The runtime ignores it too, so the explore still shows what the query saw.
+    it("Ignores a time range without a time dimension", async () => {
+      const mapQueryResp = await mapWithTimeRange({ isoDuration: "P1D" });
+      expect(mapQueryResp?.error).toBeNull();
+      expect(mapQueryResp?.data?.exploreState.selectedDimensionName).toBe(
+        AD_BIDS_DOMAIN_DIMENSION,
+      );
+      expectNoTimeRangeSummaryRequest();
+    });
+
+    // The runtime filters on it, but the explore has no time controls to show it.
+    it("Fails on a time range on another time dimension", async () => {
+      const mapQueryResp = await mapWithTimeRange({
+        isoDuration: "P1D",
+        timeDimension: "created_at",
+      });
+      expect(mapQueryResp?.data).toBeUndefined();
+      expect(String(mapQueryResp?.error)).toContain(
+        `time range on "created_at"`,
+      );
+      expectNoTimeRangeSummaryRequest();
+    });
   });
 
   // TODO: add more extensive tests for other parts

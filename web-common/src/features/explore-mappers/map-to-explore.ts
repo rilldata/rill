@@ -1,3 +1,4 @@
+import { getMetricsViewTimeRangeFromExploreQueryOptions } from "@rilldata/web-common/features/dashboards/selectors.ts";
 import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
 import { getExploreStateFromYAMLConfig } from "@rilldata/web-common/features/dashboards/stores/get-explore-state-from-yaml-config.ts";
 import { getRillDefaultExploreState } from "@rilldata/web-common/features/dashboards/stores/get-rill-default-explore-state.ts";
@@ -11,15 +12,12 @@ import type {
 import { convertRequestKeysToCamelCase } from "@rilldata/web-common/features/explore-mappers/utils";
 import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
-import {
-  createQueryServiceMetricsViewTimeRange,
-  type V1MetricsViewAggregationRequest,
-  type V1MetricsViewComparisonRequest,
-  type V1MetricsViewTimeRangeResponse,
+import type {
+  V1MetricsViewAggregationRequest,
+  V1MetricsViewComparisonRequest,
 } from "@rilldata/web-common/runtime-client";
 import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
-import type { ConnectError } from "@connectrpc/connect";
-import type { CreateQueryResult } from "@tanstack/svelte-query";
+import { createQuery } from "@tanstack/svelte-query";
 import { derived, readable, type Readable } from "svelte/store";
 
 export type MapQueryRequest = {
@@ -113,23 +111,13 @@ export function mapQueryToDashboard(
     undefined,
     queryClient,
   );
-  // Metrics views without a time dimension have no time range to fetch.
-  // Gated on the explore response above rather than useMetricsViewTimeRange,
-  // which resolves the metrics view spec through a separate GetResource call.
-  const timeRangeSummaryStore: CreateQueryResult<
-    V1MetricsViewTimeRangeResponse,
-    ConnectError
-  > = derived(validSpecStore, (validSpec, set) =>
-    createQueryServiceMetricsViewTimeRange(
+  // Disabled when the explore's metrics view has no time dimension.
+  const timeRangeSummaryStore = createQuery(
+    getMetricsViewTimeRangeFromExploreQueryOptions(
       client,
-      { metricsViewName },
-      {
-        query: {
-          enabled: !!validSpec.data?.metricsView?.timeDimension,
-        },
-      },
-      queryClient,
-    ).subscribe(set),
+      readable(exploreName),
+    ),
+    queryClient,
   );
 
   return derived(
