@@ -443,9 +443,22 @@ func blockPrivateAddresses(_, address string, _ syscall.RawConn) error {
 	return nil
 }
 
+var (
+	// sharedAddressSpace is the carrier-grade NAT range (RFC 6598). It is not covered by IsPrivate,
+	// but it is used for internal networks, such as Pod and Service ranges on GKE and Tailscale.
+	sharedAddressSpace = netip.MustParsePrefix("100.64.0.0/10")
+	// nat64Prefix is the NAT64 well-known prefix (RFC 6052), whose last 32 bits embed an IPv4 address.
+	nat64Prefix = netip.MustParsePrefix("64:ff9b::/96")
+)
+
 // isPrivateAddress reports whether ip is loopback, private (RFC 1918 or IPv6 unique local),
-// link-local (which includes cloud metadata endpoints such as 169.254.169.254) or unspecified.
+// link-local (which includes cloud metadata endpoints such as 169.254.169.254), unspecified
+// or in the shared address space. NAT64 addresses are checked as the IPv4 address they embed.
 func isPrivateAddress(ip netip.Addr) bool {
 	ip = ip.Unmap()
-	return ip.IsLoopback() || ip.IsPrivate() || ip.IsLinkLocalUnicast() || ip.IsLinkLocalMulticast() || ip.IsUnspecified()
+	if nat64Prefix.Contains(ip) {
+		b := ip.As16()
+		ip = netip.AddrFrom4([4]byte(b[12:]))
+	}
+	return ip.IsLoopback() || ip.IsPrivate() || ip.IsLinkLocalUnicast() || ip.IsLinkLocalMulticast() || ip.IsUnspecified() || sharedAddressSpace.Contains(ip)
 }

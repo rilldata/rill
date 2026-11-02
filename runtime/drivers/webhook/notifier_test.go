@@ -532,18 +532,25 @@ func TestParseURLPrefixesRejectsInvalid(t *testing.T) {
 
 func TestIsPrivateAddress(t *testing.T) {
 	for addr, want := range map[string]bool{
-		"127.0.0.1":        true,
-		"10.1.2.3":         true,
-		"172.16.0.1":       true,
-		"192.168.1.1":      true,
-		"169.254.169.254":  true, // cloud metadata
-		"0.0.0.0":          true,
-		"::1":              true,
-		"fd00::1":          true,
-		"fe80::1":          true,
-		"::ffff:127.0.0.1": true,
-		"8.8.8.8":          false,
-		"2001:4860::8888":  false,
+		"127.0.0.1":          true,
+		"10.1.2.3":           true,
+		"172.16.0.1":         true,
+		"192.168.1.1":        true,
+		"169.254.169.254":    true, // cloud metadata
+		"0.0.0.0":            true,
+		"::1":                true,
+		"fd00::1":            true,
+		"fe80::1":            true,
+		"::ffff:127.0.0.1":   true,
+		"100.64.0.1":         true, // shared address space (RFC 6598)
+		"100.100.100.200":    true, // Alibaba Cloud metadata
+		"100.63.255.255":     false,
+		"100.128.0.0":        false,
+		"64:ff9b::a00:1":     true,  // NAT64 for 10.0.0.1
+		"64:ff9b::a9fe:a9fe": true,  // NAT64 for 169.254.169.254
+		"64:ff9b::808:808":   false, // NAT64 for 8.8.8.8
+		"8.8.8.8":            false,
+		"2001:4860::8888":    false,
 	} {
 		require.Equal(t, want, isPrivateAddress(netip.MustParseAddr(addr)), addr)
 	}

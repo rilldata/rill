@@ -91,9 +91,11 @@ its path is the entry's path or lies below it. A path entry ends at a segment, s
 `https://hooks.example.com/rill` admits `/rill` and `/rill/alerts`, but not `/rill-admin`. Deliveries to other URLs fail and are reported in the
 execution's error, while the allowed URLs are still delivered to.
 
-Without `allowed_url_prefixes`, deliveries to loopback, private and link-local addresses
-(such as `localhost`, `10.0.0.0/8` or `169.254.169.254`) are blocked, and deliveries don't go
-through an HTTP proxy configured in the environment (`HTTP_PROXY`, `HTTPS_PROXY`). To deliver
+Without `allowed_url_prefixes`, deliveries to loopback, private, link-local and shared
+(carrier-grade NAT) addresses are blocked, such as `localhost`, `10.0.0.0/8`,
+`169.254.169.254` or `100.64.0.0/10`. This includes those addresses reached through the NAT64
+prefix `64:ff9b::/96`. Deliveries also don't go through an HTTP proxy configured in the
+environment (`HTTP_PROXY`, `HTTPS_PROXY`). To deliver
 to a receiver on such an address, for example a local receiver during development, or through
 a proxy, list the receivers explicitly:
 
