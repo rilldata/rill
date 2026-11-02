@@ -193,7 +193,7 @@ _[string]_ - Defines the re-notification interval for the alert (e.g., '10m','24
 
 ### `notify`
 
-_[object]_ - Notification configuration for email and Slack delivery _(required)_
+_[object]_ - Notification configuration for email, Slack and webhook delivery _(required)_
 
   - **`email`** - _[object]_ - Send notifications via email.
 
@@ -206,6 +206,12 @@ _[object]_ - Notification configuration for email and Slack delivery _(required)
     - **`channels`** - _[array of string]_ - An array of Slack channel names to notify.
 
     - **`webhooks`** - _[array of string]_ - An array of Slack webhook URLs to send notifications to.
+
+  - **`webhook`** - _[object]_ - Send notifications as JSON payloads to HTTP endpoints.
+
+    - **`urls`** - _[array of string]_ - An array of absolute http or https URLs to send notifications to. _(required)_
+
+    - **`connector`** - _[string]_ - Name of the webhook connector to use. Defaults to `webhook`.
 
 ### `annotations`
 
