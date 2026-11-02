@@ -447,7 +447,7 @@ func validateWebhookURLs(urls []string) error {
 		if err != nil {
 			return fmt.Errorf(`invalid value %q for property "notify.webhook.urls": %w`, u, err)
 		}
-		if parsed.Scheme != "http" && parsed.Scheme != "https" {
+		if (parsed.Scheme != "http" && parsed.Scheme != "https") || parsed.Host == "" {
 			return fmt.Errorf(`invalid value %q for property "notify.webhook.urls": must be an absolute http(s) URL`, u)
 		}
 	}

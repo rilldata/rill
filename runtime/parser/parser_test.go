@@ -4200,3 +4200,21 @@ func must[T any](v T, err error) T {
 	}
 	return v
 }
+
+func TestValidateWebhookURLs(t *testing.T) {
+	for u, valid := range map[string]bool{
+		"https://hooks.example.com/rill": true,
+		"http://localhost:8080/hook":     true,
+		"ftp://example.com/hook":         false,
+		"/relative/hook":                 false,
+		"https:///hook":                  false, // no host
+		"https:hook.example.com":         false, // opaque, no host
+	} {
+		err := validateWebhookURLs([]string{u})
+		if valid {
+			require.NoError(t, err, u)
+		} else {
+			require.Error(t, err, u)
+		}
+	}
+}
