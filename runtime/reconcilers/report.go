@@ -560,6 +560,28 @@ func (r *ReportReconciler) sendReport(ctx context.Context, self *runtimev1.Resou
 		return false, nil, fmt.Errorf("failed to get report metadata: %w", err)
 	}
 
+	// Reports created from an embed are opened through the embedder's app, and their recipients may have no access to Rill Cloud.
+	// So their notifications have no open, edit or download links; they only have an unsubscribe link.
+	// The embed owner annotation is only set for reports created from an embed.
+	// If the embed owner is missing or inactive, GetReportMetadata fails above, so nothing is sent.
+	embedCreated := rep.Spec.Annotations["admin_embed_owner_id"] != ""
+
+	// Embed users can only use reports if the project enables the "reports" feature flag for them (it's disabled for embeds by default).
+	// The UI hides reports otherwise, but this check also covers reports created directly through the API.
+	// Reports created from an embed are run as the creator, so every delivery has the same attributes.
+	if embedCreated {
+		for _, delivery := range meta.ReportDelivery {
+			flags, err := r.C.Runtime.FeatureFlags(ctx, r.C.InstanceID, &runtime.SecurityClaims{UserAttributes: delivery.UserAttrs})
+			if err != nil {
+				return false, nil, fmt.Errorf("failed to resolve feature flags: %w", err)
+			}
+			if !flags["reports"] {
+				return false, nil, errors.New(`reports created from an embed require the "reports" feature flag to be enabled for embed users`)
+			}
+			break
+		}
+	}
+
 	// recipient -> notification data
 	notificationsContent := make(map[string]*notificationData)
 
@@ -571,21 +593,30 @@ func (r *ReportReconciler) sendReport(ctx context.Context, self *runtimev1.Resou
 		aiReports := make(map[string]*aiReport)
 		// For AI reports, in recipient mode, we require the metadata to contain user attributes for reach recipient, since we'll need them to trigger the report and generate personalized content.
 		// In creator mode, we create a shared session for all recipients and create the session with creator's attributes.
+		// The session is owned by the user, which restricts access to it. So we require a user ID.
 		for recipient, delivery := range meta.ReportDelivery {
 			if delivery.UserID == "" || len(delivery.UserAttrs) == 0 {
-				r.C.Logger.Warn("Skipping recipient - no user attributes found in metadata", zap.String("recipient", recipient), zap.String("report", self.Meta.Name.Name), observability.ZapCtx(ctx))
+				r.C.Logger.Warn("Skipping recipient - no user ID or attributes found in metadata", zap.String("recipient", recipient), zap.String("report", self.Meta.Name.Name), observability.ZapCtx(ctx))
 				continue
 			}
-			// In recipient mode, delivery.UserID will be recipients userId, in creator mode, delivery.UserID will be the ownerID which is same for all recipients so report will be triggered once.
+			// In recipient mode, delivery.UserID will be recipients userId, in creator mode, delivery.UserID will be the same for all recipients so report will be triggered once.
 			report, exists := aiReports[delivery.UserID]
 			if !exists {
 				var triggerWarnings []string
-				report, triggerWarnings, err = r.triggerAIReport(ctx, self, rep, t, webOpenMode, delivery.UserID, delivery.UserAttrs)
+				report, triggerWarnings, err = r.triggerAIReport(ctx, self, rep, t, webOpenMode, delivery.UserID, delivery.UserAttrs, runtime.SecurityRulesForResources(delivery.RestrictResources, delivery.Resources))
 				if err != nil {
 					return false, nil, fmt.Errorf("failed to trigger AI report for %q: %w", recipient, err)
 				}
 				allWarnings = append(allWarnings, triggerWarnings...)
 				aiReports[delivery.UserID] = report
+			}
+
+			if embedCreated {
+				notificationsContent[recipient] = &notificationData{
+					unsubscribeLink: delivery.UnsubscribeURL,
+					summary:         truncateSummary(report.summary, 500),
+				}
+				continue
 			}
 
 			openLink, err := buildAISessionURL(delivery.OpenURL, report.sessionID)
@@ -602,17 +633,20 @@ func (r *ReportReconciler) sendReport(ctx context.Context, self *runtimev1.Resou
 	default: // add more resolvers here, for default just generate export links
 		// Export the data to attach to emails.
 		// Attachments are only supported in creator mode (enforced by the parser), where every recipient gets the same data.
-		// So the data is exported once with the report owner's attributes, which the admin service returns for every recipient in creator mode.
+		// So the data is exported once with the identity the admin service resolved for creator mode (the owner, or the embed user for reports created from an embed),
+		// which it returns for every recipient.
 		var attachment *email.Attachment
 		var attachmentTooLarge bool
 		if rep.Spec.ExportAttach && len(emailRecipients) > 0 {
-			if ownerID == "" {
-				allWarnings = append(allWarnings, "The export was not attached to emails because the report has no owner")
+			delivery := meta.ReportDelivery[emailRecipients[0]]
+			if len(delivery.UserAttrs) == 0 {
+				allWarnings = append(allWarnings, "The export was not attached to emails because the report has no owner or identity to run as")
 			} else {
 				claims := &runtime.SecurityClaims{
-					UserID:         ownerID,
-					UserAttributes: meta.ReportDelivery[emailRecipients[0]].UserAttrs,
-					Permissions:    []runtime.Permission{runtime.ReadObjects, runtime.ReadMetrics},
+					UserID:          delivery.UserID,
+					UserAttributes:  delivery.UserAttrs,
+					Permissions:     []runtime.Permission{runtime.ReadObjects, runtime.ReadMetrics},
+					AdditionalRules: runtime.SecurityRulesForResources(delivery.RestrictResources, delivery.Resources),
 				}
 				attachment, err = exportAttachment(ctx, r.C, &exportAttachmentOptions{
 					ResolverProperties: rep.Spec.ResolverProperties.AsMap(),
@@ -634,6 +668,16 @@ func (r *ReportReconciler) sendReport(ctx context.Context, self *runtimev1.Resou
 		}
 
 		for recipient, delivery := range meta.ReportDelivery {
+			if embedCreated {
+				notificationsContent[recipient] = &notificationData{
+					unsubscribeLink:    delivery.UnsubscribeURL,
+					downloadFormat:     formatExportFormat(rep.Spec.ExportFormat),
+					attachment:         attachment,
+					attachmentTooLarge: attachmentTooLarge,
+				}
+				continue
+			}
+
 			downloadURL, err := createExportURL(delivery.ExportURL, t)
 			if err != nil {
 				return false, nil, err
@@ -806,8 +850,9 @@ type aiReport struct {
 }
 
 // triggerAIReport executes an AI-powered report and returns session id with summary.
-// If userID is provided, the session will be created with that user's claims for row-level security.
-func (r *ReportReconciler) triggerAIReport(ctx context.Context, self *runtimev1.Resource, rep *runtimev1.Report, t time.Time, webOpenMode, userID string, userAttrs map[string]any) (*aiReport, []string, error) {
+// The session will be created with the given user's claims for row-level security, and is owned by the user.
+// The additionalRules optionally further restrict the data the session can access.
+func (r *ReportReconciler) triggerAIReport(ctx context.Context, self *runtimev1.Resource, rep *runtimev1.Report, t time.Time, webOpenMode, userID string, userAttrs map[string]any, additionalRules []*runtimev1.SecurityRule) (*aiReport, []string, error) {
 	if rep.Spec.Resolver != "ai" {
 		return nil, nil, fmt.Errorf("triggerAIReport called for non-AI report")
 	}
@@ -819,10 +864,11 @@ func (r *ReportReconciler) triggerAIReport(ctx context.Context, self *runtimev1.
 	// Create claims for executing the AI resolver
 	// The userID and userAttrs determines what data the AI can access (row-level security)
 	claims := &runtime.SecurityClaims{
-		UserID:         userID,
-		UserAttributes: userAttrs,
-		SkipChecks:     false,
-		Permissions:    []runtime.Permission{runtime.ReadObjects, runtime.ReadMetrics, runtime.UseAI},
+		UserID:          userID,
+		UserAttributes:  userAttrs,
+		SkipChecks:      false,
+		Permissions:     []runtime.Permission{runtime.ReadObjects, runtime.ReadMetrics, runtime.UseAI},
+		AdditionalRules: additionalRules,
 	}
 
 	// Execute AI resolver

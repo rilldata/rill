@@ -295,7 +295,7 @@ The API accepts the following parameters:
 | ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------- |
 | resource         | The name of the dashboard to embed                                                                                                                                              | No (if not specified, `navigation` should be set to `true`)       |
 | type             | The type of the dashboard identified by `resource` (options: `explore`, `canvas`)                                                                                               | No (defaults to `explore`)                                        |
-| navigation       | Boolean whether to enable navigation and allow users to navigate to other dashboards (`false` will hard embed and allow access to a single dashboard; `true` allows navigation) | No (defaults to `false`)                                          |
+| navigation       | Boolean whether to enable navigation and allow users to navigate to other dashboards (`false` only shows the dashboard in `resource`; `true` allows navigation) | No (defaults to `false`)                                          |
 | hide_navigation_bar | Boolean whether to hide the navigation bar (the home link and dashboard breadcrumbs) while keeping navigation enabled. Only meaningful when `navigation` is `true`; the bar is always hidden when `navigation` is `false`. In-dashboard navigation, such as the drill-through from a Canvas component to an Explore dashboard, remains available. | No (defaults to `false`)                                          |
 | theme            | If [themes](/developers/build/dashboards/customization#changing-themes--colors) are being used, the specific theme to pass to the embedded dashboard                            | No (set to the name of the theme)                                 |
 | theme_mode       | The theme mode to use for the embedded dashboard. Valid values: `light`, `dark`, `system`. When set to `system`, the dashboard will follow the user's system preference.        | No (defaults to `light`)                                          |
@@ -326,9 +326,26 @@ The `user_email`, `attributes` and `external_user_id` parameters serve two purpo
 Only one of `user_email` or `attributes` can be provided for a given iframe. The `external_user_id` parameter can optionally be combined with either of them. Here is how each parameter works:
 - `user_email`: Looks up the user in Rill Cloud by email and populates their standard attributes. If no matching user is found, it generates limited attributes with only the fields `email`, `domain` (the part of the email after `@`) and `admin` (set to `false`). The derived `domain` is commonly used in security policies (e.g. `app_site_domain = '{{ .user.domain }}'`). Does not enable per-user state on its own; combine with `external_user_id` to enable per-user state.
 - `attributes`: Passes the provided attributes through directly. Make sure to include all attributes referenced in your security policies (e.g. `email`, `domain`, `admin`, or custom attributes like `tenant_id`). Does not enable per-user state on its own; combine with `external_user_id` to enable per-user state.
-- `external_user_id`: Any stable identifier for the end user. This is usually the user's ID in your own database. Setting it enables per-user state such as AI chat history.
+- `external_user_id`: An opaque, stable identifier for the end user. Setting it enables per-user state such as AI chat history and [scheduled reports](#scheduled-reports-in-embeds).
+
+:::warning Use one `external_user_id` per security context
+Rill stores per-user state, such as AI chat history and the identity that scheduled reports run as, by `external_user_id`. So the ID must identify one security context, not just one person. If the same person can open your app in several tenants, and the `user_email` or `attributes` you pass vary by tenant, include the tenant in the ID, for example `<tenant id>:<user id>`. Use a separator that can't appear in either part; otherwise IDs collide (user `a_b` in tenant `c` and user `a` in tenant `b_c` both become `a_b_c`).
+
+If you change the format of your IDs, existing users lose their AI chat history and the scheduled reports they created stop running.
+:::
 
 The same attributes decide what an embedded canvas shows. Canvas rows, tabs and components can have [`if` conditions](/developers/build/dashboards/canvas#show-content-to-some-viewers-only) on them, such as `'{{ eq .user.plan "premium" }}'` to show premium content only to tenants on that plan. Every embed also carries the attribute `embed: true`, so a condition like `'{{ not .user.embed }}'` keeps content out of embedded dashboards.
+
+## Scheduled reports in embeds
+
+Embed users can schedule email reports of the explore dashboards they can see. Reports are disabled in embeds by default; enable them with the `reports` [feature flag](/reference/project-files/rill-yaml#features), for example `reports: true` to enable them everywhere.
+
+Reports created from an embed work as follows:
+- **They require `external_user_id`.** Each report is owned by the external user who created it, so iframes without an `external_user_id` don't show the option to create reports.
+- **They run as the owner's latest identity.** Every time you request an iframe for an external user, Rill saves the `user_email` or `attributes` you passed. All of the user's reports run with the saved identity; for example, if you change a user's `attributes`, their reports use the new attributes from their next run onwards. If the iframe a report was created from was limited to one dashboard, the report is limited to that dashboard too. Otherwise, if the saved `user_email` belongs to a project member who can only access some dashboards, the report has the same restriction.
+- **They are sent by email with the export attached.** Recipients can be any email address; if you pass `user_email`, it is the default recipient. Every recipient receives the data the owner can see. The emails don't link back to Rill, so the export is always attached (up to 10 MB). Every recipient also gets a link to unsubscribe.
+- **They pause after 90 days of inactivity.** If you don't request an iframe for the owner for 90 days, their reports stop running. They resume the next time you request an iframe for the owner. To stop a user's reports right away, for example when you remove the user from your app, delete the reports in Rill Cloud.
+- **Only the owner can manage them in the embed.** Embed users whose attributes include `admin: true` can also see other users' reports, but can't edit them. Project admins can manage all reports in Rill Cloud, where reports created from an embed are shown with the owner's `external_user_id`.
 
 ## Embedding the project vs embedding an individual dashboard
 
@@ -341,6 +358,10 @@ If you wish to embed a single dashboard **only**, your payload might look like:
   "resource": "dashboardName"
 }
 ```
+
+:::note Use security policies to control access
+`resource` and `navigation` decide which dashboards an iframe shows; they are not meant for access control. To decide which data a user can access, pass `user_email` or `attributes` and enforce them with [security policies](/developers/build/metrics-view/security). This matters most when your app links to several dashboards through separate single-dashboard iframes: the user's access should be the same in all of them, since they share per-user state, such as scheduled reports, through the same [`external_user_id`](#user-identity-in-embeds).
+:::
 
 If you wish to still embed a dashboard _but allow navigation between dashboards_, then your payload should include both parameters:
 ```json
