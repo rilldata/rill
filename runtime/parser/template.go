@@ -210,6 +210,100 @@ func AnalyzeTemplateRecursively(val any, res map[string]string) error {
 	return nil
 }
 
+// TemplateReferencesVariables reports whether the value contains templates that may read project variables.
+// It checks strings, and recursively the values of maps and slices, matching the shapes accepted by ResolveTemplateRecursively.
+// A template references variables if it accesses .env or .vars (also through $ or the root data object) or calls the env function.
+// Templates that fail to parse are reported as not referencing variables, since the parse error surfaces when they are resolved.
+func TemplateReferencesVariables(val any) bool {
+	switch val := val.(type) {
+	case string:
+		// Parse without checking function names, since callers of ResolveTemplate may add their own template functions.
+		treeSet := make(map[string]*parse.Tree)
+		t := parse.New("")
+		t.Mode = parse.SkipFuncCheck
+		if _, err := t.Parse(val, "", "", treeSet); err != nil {
+			return false
+		}
+		for _, tree := range treeSet {
+			if nodeReferencesVariables(tree.Root, true) {
+				return true
+			}
+		}
+	case map[string]any:
+		for _, v := range val {
+			if TemplateReferencesVariables(v) {
+				return true
+			}
+		}
+	case []any:
+		for _, v := range val {
+			if TemplateReferencesVariables(v) {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+// nodeReferencesVariables reports whether a template parse tree node reads project variables.
+// dotIsRoot is true when "." refers to the root template data, which holds the variables; "range" and "with" rebind it in their bodies.
+func nodeReferencesVariables(node parse.Node, dotIsRoot bool) bool {
+	switch n := node.(type) {
+	case *parse.FieldNode:
+		return n.Ident[0] == "env" || n.Ident[0] == "vars"
+	case *parse.VariableNode:
+		// "$" is the root template data, so "$" and "$.env" both expose the variables.
+		return n.Ident[0] == "$" && (len(n.Ident) == 1 || n.Ident[1] == "env" || n.Ident[1] == "vars")
+	case *parse.DotNode:
+		return dotIsRoot
+	case *parse.IdentifierNode:
+		return n.Ident == "env"
+	case *parse.ChainNode:
+		return nodeReferencesVariables(n.Node, dotIsRoot)
+	case *parse.ListNode:
+		for _, ln := range n.Nodes {
+			if nodeReferencesVariables(ln, dotIsRoot) {
+				return true
+			}
+		}
+	case *parse.ActionNode:
+		return nodeReferencesVariables(n.Pipe, dotIsRoot)
+	case *parse.PipeNode:
+		for _, cmd := range n.Cmds {
+			if nodeReferencesVariables(cmd, dotIsRoot) {
+				return true
+			}
+		}
+	case *parse.CommandNode:
+		for _, arg := range n.Args {
+			if nodeReferencesVariables(arg, dotIsRoot) {
+				return true
+			}
+		}
+	case *parse.IfNode:
+		return branchReferencesVariables(&n.BranchNode, dotIsRoot, dotIsRoot)
+	case *parse.RangeNode:
+		return branchReferencesVariables(&n.BranchNode, dotIsRoot, false)
+	case *parse.WithNode:
+		return branchReferencesVariables(&n.BranchNode, dotIsRoot, false)
+	case *parse.TemplateNode:
+		return n.Pipe != nil && nodeReferencesVariables(n.Pipe, dotIsRoot)
+	}
+	return false
+}
+
+// branchReferencesVariables reports whether an if, range or with node reads project variables.
+// bodyDotIsRoot says whether "." still refers to the root template data inside the body; the else body always keeps the outer ".".
+func branchReferencesVariables(n *parse.BranchNode, dotIsRoot, bodyDotIsRoot bool) bool {
+	if nodeReferencesVariables(n.Pipe, dotIsRoot) {
+		return true
+	}
+	if n.List != nil && nodeReferencesVariables(n.List, bodyDotIsRoot) {
+		return true
+	}
+	return n.ElseList != nil && nodeReferencesVariables(n.ElseList, dotIsRoot)
+}
+
 // ResolveTemplate resolves a template to a string using the given data.
 func ResolveTemplate(tmpl string, data TemplateData, errOnMissingTemplKeys bool) (string, error) {
 	// Base func map

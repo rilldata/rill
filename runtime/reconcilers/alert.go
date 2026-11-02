@@ -255,8 +255,9 @@ func (r *AlertReconciler) ResolveTransitiveAccess(ctx context.Context, claims *r
 				"query_name":      spec.QueryName,
 				"query_args_json": spec.QueryArgsJson,
 			},
-			Claims:    claims,
-			ForExport: false,
+			TrustedProperties: !adminManaged(spec.Annotations),
+			Claims:            claims,
+			ForExport:         false,
 		})
 		if err != nil {
 			return nil, err
@@ -281,11 +282,12 @@ func (r *AlertReconciler) ResolveTransitiveAccess(ctx context.Context, claims *r
 			return nil, fmt.Errorf("no resolver found for name %q", spec.Resolver)
 		}
 		resolver, err := initializer(ctx, &runtime.ResolverOptions{
-			Runtime:    r.C.Runtime,
-			InstanceID: r.C.InstanceID,
-			Properties: spec.ResolverProperties.AsMap(),
-			Claims:     claims,
-			ForExport:  false,
+			Runtime:           r.C.Runtime,
+			InstanceID:        r.C.InstanceID,
+			Properties:        spec.ResolverProperties.AsMap(),
+			TrustedProperties: !adminManaged(spec.Annotations),
+			Claims:            claims,
+			ForExport:         false,
 		})
 		if err != nil {
 			return nil, err
@@ -702,6 +704,7 @@ func (r *AlertReconciler) executeSingleWrapped(ctx context.Context, self *runtim
 		InstanceID:         r.C.InstanceID,
 		Resolver:           a.Spec.Resolver,
 		ResolverProperties: a.Spec.ResolverProperties.AsMap(),
+		TrustedProperties:  !adminManaged(a.Spec.Annotations),
 		Args: map[string]any{
 			"priority":       alertQueryPriority,
 			"execution_time": executionTime,

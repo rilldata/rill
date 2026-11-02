@@ -1,6 +1,7 @@
 package parser
 
 import (
+	"fmt"
 	"strings"
 	"testing"
 
@@ -110,6 +111,54 @@ func TestVariables(t *testing.T) {
 	}, false)
 	require.NoError(t, err)
 	require.Equal(t, "a=1 b.a=2 b.a=2", resolved)
+}
+
+func TestTemplateReferencesVariables(t *testing.T) {
+	cases := []struct {
+		tmpl any
+		want bool
+	}{
+		{`SELECT 1`, false},
+		{`{{ .args.x }}`, false},
+		{`{{ .user.domain }}`, false},
+		{`{{ .environment }}`, false},
+		{`{{ range .args.ids }}{{ . }}{{ end }}`, false},
+		{`{{ with .args }}{{ .x }}{{ end }}`, false},
+		{`{{ metrics_sql "SELECT 1" }}`, false},
+		// The nested template is a string literal here; it is checked when the nested resolver resolves it.
+		{`{{ metrics_sql "SELECT {{ .env.x }}" }}`, false},
+		// Parse errors surface when the template is resolved.
+		{`{{ .env`, false},
+		{`{{ .env.x }}`, true},
+		{`{{ .vars.x }}`, true},
+		{`{{ .env }}`, true},
+		{`{{ index .env "x" }}`, true},
+		{`{{ env "x" }}`, true},
+		{`{{ toJson .env }}`, true},
+		{`{{ .env.x | b64enc }}`, true},
+		{`{{ if .env.x }}a{{ end }}`, true},
+		{`{{ if .args.x }}a{{ else }}{{ .env.x }}{{ end }}`, true},
+		{`{{ range .args.ids }}{{ $.env.x }}{{ end }}`, true},
+		{`{{ range .env }}{{ . }}{{ end }}`, true},
+		{`{{ with .args }}{{ else }}{{ . }}{{ end }}`, true},
+		{`{{ $e := .env }}{{ $e.x }}`, true},
+		{`{{ . }}`, true},
+		{`{{ $ }}`, true},
+		{`{{ (index . "env").x }}`, true},
+		{`{{ printf "%v" . }}`, true},
+		{`{{ define "t" }}{{ .env.x }}{{ end }}{{ template "t" .args }}`, true},
+		{`{{ template "t" . }}`, true},
+		{map[string]any{"path": "s3://bucket/{{ .env.prefix }}/*.parquet"}, true},
+		{map[string]any{"path": "s3://bucket/*.parquet", "partition": "{{ .args.p }}"}, false},
+		{map[string]any{"list": []any{"a", "{{ .vars.x }}"}}, true},
+		{[]any{1, "{{ .env.x }}"}, true},
+		{nil, false},
+	}
+	for _, tc := range cases {
+		t.Run(fmt.Sprint(tc.tmpl), func(t *testing.T) {
+			require.Equal(t, tc.want, TemplateReferencesVariables(tc.tmpl))
+		})
+	}
 }
 
 func TestAsSQLList(t *testing.T) {

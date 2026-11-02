@@ -211,16 +211,22 @@ measures:
 		Permissions: []runtime.Permission{runtime.ReadMetrics},
 	})
 
-	// The variable does not resolve in a filter, so the filter matches nothing and the query cannot confirm a guess through the result.
-	res, err := srv.QueryResolver(viewerCtx, metricsSQL(`SELECT total_revenue FROM mv WHERE country = '{{ .env.country }}'`))
+	// Templates that reference variables are rejected with an explicit error instead of resolving to empty values,
+	// so neither the result nor the error can be used to learn a variable's value.
+	for _, sql := range []string{
+		`SELECT total_revenue FROM mv WHERE country = '{{ .env.country }}'`,
+		`SELECT {{ .env.secret }} FROM mv`,
+	} {
+		_, err = srv.QueryResolver(viewerCtx, metricsSQL(sql))
+		require.ErrorContains(t, err, "project variables are only available to templates declared in the project files")
+		require.NotContains(t, err.Error(), secret)
+	}
+
+	// Templates that do not reference variables still resolve for a viewer.
+	res, err := srv.QueryResolver(viewerCtx, metricsSQL(`SELECT total_revenue FROM mv WHERE country = 'US'`))
 	require.NoError(t, err)
 	require.Len(t, res.Data, 1)
-	require.Nil(t, res.Data[0].Fields["total_revenue"].AsInterface())
-
-	// The variable is not echoed in the error for a query that fails to parse.
-	_, err = srv.QueryResolver(viewerCtx, metricsSQL(`SELECT {{ .env.secret }} FROM mv`))
-	require.Error(t, err)
-	require.NotContains(t, err.Error(), secret)
+	require.Equal(t, float64(100), res.Data[0].Fields["total_revenue"].GetNumberValue())
 
 	// A caller that can read sensitive instance info can already read the variables through GetInstance, so templates resolve them.
 	res, err = srv.QueryResolver(testCtx(), metricsSQL(`SELECT total_revenue FROM mv WHERE country = '{{ .env.country }}'`))

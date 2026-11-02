@@ -38,13 +38,18 @@ func newText(ctx context.Context, opts *runtime.ResolverOptions) (runtime.Resolv
 		return nil, err
 	}
 
+	variables, err := opts.TemplateVariables(inst, props.Text)
+	if err != nil {
+		return nil, err
+	}
+
 	r := &textResolver{
-		rt:             opts.Runtime,
-		instanceID:     opts.InstanceID,
-		claims:         opts.Claims,
-		props:          props,
-		untrustedProps: opts.UntrustedProperties,
-		variables:      opts.TemplateVariables(inst),
+		rt:           opts.Runtime,
+		instanceID:   opts.InstanceID,
+		claims:       opts.Claims,
+		props:        props,
+		trustedProps: opts.TrustedProperties,
+		variables:    variables,
 	}
 
 	if err := r.analyzeAndPopulateRefs(ctx); err != nil {
@@ -59,9 +64,9 @@ type textResolver struct {
 	instanceID string
 	claims     *runtime.SecurityClaims
 	props      *textProps
-	// untrustedProps is set when the text came from an API caller. It is propagated to the nested metrics_sql resolvers,
-	// since the SQL in a metrics_sql template call is just as untrusted as the text around it.
-	untrustedProps bool
+	// trustedProps is set when the text was declared in the project. It is propagated to the nested metrics_sql resolvers,
+	// since the SQL in a metrics_sql template call is exactly as trusted as the text around it.
+	trustedProps bool
 	// variables are the project variables the template may access. See ResolverOptions.TemplateVariables.
 	variables map[string]string
 	refs      []*runtimev1.ResourceName
@@ -119,8 +124,8 @@ func (r *textResolver) ResolveInteractive(ctx context.Context) (runtime.Resolver
 				"additional_where_by_metrics_view": r.props.AdditionalWhereByMetricsView,
 				"additional_time_range":            r.props.AdditionalTimeRange,
 			},
-			UntrustedProperties: r.untrustedProps,
-			Claims:              r.claims,
+			TrustedProperties: r.trustedProps,
+			Claims:            r.claims,
 		})
 		if err != nil {
 			return nil, err
@@ -270,10 +275,10 @@ func (r *textResolver) analyzeAndPopulateRefs(ctx context.Context) error {
 	seen := make(map[string]bool)
 	for _, sql := range sqls {
 		res, err := initializer(ctx, &runtime.ResolverOptions{
-			Runtime:             r.rt,
-			InstanceID:          r.instanceID,
-			Properties:          map[string]any{"sql": sql},
-			UntrustedProperties: r.untrustedProps,
+			Runtime:           r.rt,
+			InstanceID:        r.instanceID,
+			Properties:        map[string]any{"sql": sql},
+			TrustedProperties: r.trustedProps,
 			Claims: &runtime.SecurityClaims{
 				UserID:         r.claims.UserID,
 				UserAttributes: r.claims.UserAttributes,

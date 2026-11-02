@@ -12,6 +12,7 @@ import (
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/parser"
 	"github.com/rilldata/rill/runtime/pkg/jsonval"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"go.opentelemetry.io/otel/attribute"
@@ -88,24 +89,33 @@ type ResolverOptions struct {
 	InstanceID string
 	// Properties are the resolver's static properties, such as the SQL of a SQL resolver.
 	Properties map[string]any
-	// UntrustedProperties is set when Properties were supplied by an API caller instead of being declared in the project.
-	// Resolvers must not let templates in untrusted properties access project variables,
+	// TrustedProperties is set when Properties were declared in the project's source files.
+	// It must be left unset for properties supplied by an API caller, which includes alerts and reports created through the admin API.
+	// Only templates in trusted properties may access project variables,
 	// since the variables commonly hold secrets such as connector credentials. See TemplateVariables.
-	UntrustedProperties bool
-	Args                map[string]any
-	Claims              *SecurityClaims
-	ForExport           bool
+	TrustedProperties bool
+	Args              map[string]any
+	Claims            *SecurityClaims
+	ForExport         bool
 }
 
 // TemplateVariables returns the project variables that templates in the resolver's properties may access.
 // Project variables commonly hold secrets such as connector credentials,
-// so they are withheld when the properties were supplied by an API caller (see UntrustedProperties),
-// unless the caller may read sensitive instance info anyway (see ReadInstance).
-func (o *ResolverOptions) TemplateVariables(inst *drivers.Instance) map[string]string {
-	if o.UntrustedProperties && (o.Claims == nil || !o.Claims.Can(ReadInstance)) {
-		return nil
+// so they are only available to templates declared in the project (see TrustedProperties),
+// or to callers who may read sensitive instance info anyway (see ReadInstance).
+// Otherwise it returns an error if any of the given templates reference variables,
+// since resolving them to empty values would silently produce wrong results.
+// The templates may be strings or nested maps and slices of strings, matching the shapes accepted by parser.ResolveTemplateRecursively.
+func (o *ResolverOptions) TemplateVariables(inst *drivers.Instance, templates ...any) (map[string]string, error) {
+	if o.TrustedProperties || (o.Claims != nil && o.Claims.Can(ReadInstance)) {
+		return inst.ResolveVariables(false), nil
 	}
-	return inst.ResolveVariables(false)
+	for _, tmpl := range templates {
+		if parser.TemplateReferencesVariables(tmpl) {
+			return nil, errors.New("project variables are only available to templates declared in the project files")
+		}
+	}
+	return nil, nil
 }
 
 // ResolverInitializer is a function that initializes a resolver.
@@ -127,11 +137,10 @@ type ResolveOptions struct {
 	InstanceID         string
 	Resolver           string
 	ResolverProperties map[string]any
-	// UntrustedProperties is set when ResolverProperties were supplied by an API caller instead of being declared in the project.
-	// See ResolverOptions.UntrustedProperties.
-	UntrustedProperties bool
-	Args                map[string]any
-	Claims              *SecurityClaims
+	// TrustedProperties is set when ResolverProperties were declared in the project's source files. See ResolverOptions.TrustedProperties.
+	TrustedProperties bool
+	Args              map[string]any
+	Claims            *SecurityClaims
 }
 
 type ResolveInfo struct {
@@ -171,13 +180,13 @@ func (r *Runtime) Resolve(ctx context.Context, opts *ResolveOptions) (res Resolv
 		return nil, nil, fmt.Errorf("no resolver found for name %q", opts.Resolver)
 	}
 	resolver, err := initializer(ctx, &ResolverOptions{
-		Runtime:             r,
-		InstanceID:          opts.InstanceID,
-		Properties:          opts.ResolverProperties,
-		UntrustedProperties: opts.UntrustedProperties,
-		Args:                opts.Args,
-		Claims:              opts.Claims,
-		ForExport:           false,
+		Runtime:           r,
+		InstanceID:        opts.InstanceID,
+		Properties:        opts.ResolverProperties,
+		TrustedProperties: opts.TrustedProperties,
+		Args:              opts.Args,
+		Claims:            opts.Claims,
+		ForExport:         false,
 	})
 	if err != nil {
 		return nil, nil, err

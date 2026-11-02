@@ -48,7 +48,7 @@ func (s *Server) ResolveTemplatedString(ctx context.Context, req *runtimev1.Reso
 		timeZone = req.AdditionalTimeRange.TimeZone
 	}
 
-	// The template comes from the request, so it must not see project variables (which may hold secrets).
+	// The template comes from the request, so it is not trusted: it cannot access project variables.
 	resolveRes, _, err := s.runtime.Resolve(ctx, &runtime.ResolveOptions{
 		InstanceID: req.InstanceId,
 		Resolver:   "text",
@@ -59,8 +59,7 @@ func (s *Server) ResolveTemplatedString(ctx context.Context, req *runtimev1.Reso
 			"additional_time_range":            additionalTimeRange,
 			"time_zone":                        timeZone,
 		},
-		UntrustedProperties: true,
-		Claims:              claims,
+		Claims: claims,
 	})
 	if err != nil {
 		return nil, mapGRPCErrorWithFallback(err, codes.InvalidArgument)

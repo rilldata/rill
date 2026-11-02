@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
+	"strconv"
 	"strings"
 	"time"
 
@@ -147,6 +148,13 @@ func nextRefreshTime(t time.Time, schedule *runtimev1.Schedule) (time.Time, erro
 // exploreNameFromAnnotations extracts the explore name from resource annotations.
 // It checks the "explore" annotation first, then falls back to parsing the "web_open_path" annotation.
 // If neither is found, it returns fallback.
+// adminManaged reports whether an alert or report was created through the admin API, which copies the creator's resolver properties into a virtual project file.
+// Those properties are not declared in the project's source files, so they must not be trusted. See runtime.ResolverOptions.TrustedProperties.
+func adminManaged(annotations map[string]string) bool {
+	managed, _ := strconv.ParseBool(annotations["admin_managed"])
+	return managed
+}
+
 func exploreNameFromAnnotations(annotations map[string]string, fallback string) string {
 	if e, ok := annotations["explore"]; ok {
 		return e

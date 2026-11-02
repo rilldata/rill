@@ -62,17 +62,19 @@ func newAPI(ctx context.Context, opts *runtime.ResolverOptions) (runtime.Resolve
 	visited = append(visited, props.API)
 	opts.Args[key] = visited
 
-	// Initialize the resolver of the API to proxy to
+	// Initialize the resolver of the API to proxy to.
+	// The API's resolver properties are declared in the project, so they are trusted regardless of who calls the API.
 	initializer, ok := runtime.ResolverInitializers[api.Spec.Resolver]
 	if !ok {
 		return nil, fmt.Errorf("no resolver found of type %q", api.Spec.Resolver)
 	}
 	return initializer(ctx, &runtime.ResolverOptions{
-		Runtime:    opts.Runtime,
-		InstanceID: opts.InstanceID,
-		Properties: api.Spec.ResolverProperties.AsMap(),
-		Args:       opts.Args,
-		Claims:     opts.Claims,
-		ForExport:  opts.ForExport,
+		Runtime:           opts.Runtime,
+		InstanceID:        opts.InstanceID,
+		Properties:        api.Spec.ResolverProperties.AsMap(),
+		TrustedProperties: true,
+		Args:              opts.Args,
+		Claims:            opts.Claims,
+		ForExport:         opts.ForExport,
 	})
 }

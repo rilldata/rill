@@ -87,7 +87,7 @@ measures:
 	})
 
 	// Every spelling a caller could use to reach a variable, including a nested metrics_sql call,
-	// must neither return its value nor echo it in an error.
+	// is rejected with an explicit error that does not echo the value.
 	for _, body := range []string{
 		`{{ .env.secret }}`,
 		`{{ .vars.secret }}`,
@@ -95,24 +95,30 @@ measures:
 		`{{ env "secret" }}`,
 		`{{ toJson .env }}`,
 		`{{ .env.secret | b64enc }}`,
+		`{{ . }}`,
 		`{{ metrics_sql "SELECT total_revenue FROM mv WHERE country = '{{ .env.secret }}'" }}`,
 		`{{ metrics_sql "SELECT {{ .env.secret }} FROM mv" }}`,
 	} {
 		t.Run(body, func(t *testing.T) {
-			res, err := srv.ResolveTemplatedString(viewerCtx, &runtimev1.ResolveTemplatedStringRequest{
+			_, err := srv.ResolveTemplatedString(viewerCtx, &runtimev1.ResolveTemplatedStringRequest{
 				InstanceId: instanceID,
 				Body:       body,
 			})
-			if err != nil {
-				require.NotContains(t, err.Error(), secret)
-				return
-			}
-			require.NotContains(t, res.Body, secret)
+			require.ErrorContains(t, err, "project variables are only available to templates declared in the project files")
+			require.NotContains(t, err.Error(), secret)
 		})
 	}
 
+	// Templates that do not reference variables still resolve for a viewer.
+	res, err := srv.ResolveTemplatedString(viewerCtx, &runtimev1.ResolveTemplatedStringRequest{
+		InstanceId: instanceID,
+		Body:       `Revenue: {{ metrics_sql "SELECT total_revenue FROM mv" }}`,
+	})
+	require.NoError(t, err)
+	require.Equal(t, "Revenue: 300", res.Body)
+
 	// A caller that can read sensitive instance info can already read the variables through GetInstance, so templates resolve them.
-	res, err := srv.ResolveTemplatedString(testCtx(), &runtimev1.ResolveTemplatedStringRequest{
+	res, err = srv.ResolveTemplatedString(testCtx(), &runtimev1.ResolveTemplatedStringRequest{
 		InstanceId: instanceID,
 		Body:       `{{ .env.secret }}`,
 	})

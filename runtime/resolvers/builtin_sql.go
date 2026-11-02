@@ -59,7 +59,7 @@ func newBuiltinSQL(ctx context.Context, opts *runtime.ResolverOptions) (runtime.
 	}
 
 	// Rewrite to the regular SQL resolver.
-	// The SQL comes from the caller's args, so it is untrusted.
+	// The SQL comes from the caller's args, so the properties are not trusted.
 	return newSQL(ctx, &runtime.ResolverOptions{
 		Runtime:    opts.Runtime,
 		InstanceID: opts.InstanceID,
@@ -67,7 +67,6 @@ func newBuiltinSQL(ctx context.Context, opts *runtime.ResolverOptions) (runtime.
 			"connector": args.Connector,
 			"sql":       args.SQL,
 		},
-		UntrustedProperties: true,
 		Args: map[string]any{
 			"priority": args.Priority,
 		},

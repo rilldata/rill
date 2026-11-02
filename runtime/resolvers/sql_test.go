@@ -193,53 +193,72 @@ func must[T any](v T, err error) T {
 // TestSQLUntrustedPropertiesHideVariables verifies that templates in resolver properties supplied by an API caller
 // cannot read project variables unless the caller may read sensitive instance info,
 // while templates declared in the project always can.
-func TestSQLUntrustedPropertiesHideVariables(t *testing.T) {
+// TestSQLTemplateVariables verifies that only templates declared in the project may access project variables,
+// unless the caller may read sensitive instance info anyway.
+func TestSQLTemplateVariables(t *testing.T) {
 	const secret = "s3cret-value"
 	rt, instanceID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
 		Files:     map[string]string{"rill.yaml": ""},
 		Variables: map[string]string{"secret": secret},
 	})
 
+	viewer := &runtime.SecurityClaims{Permissions: []runtime.Permission{runtime.ReadAPI, runtime.ReadMetrics, runtime.ReadResolvers}}
+
 	cases := []struct {
-		name      string
-		untrusted bool
-		claims    *runtime.SecurityClaims
-		want      string
+		name    string
+		sql     string
+		trusted bool
+		claims  *runtime.SecurityClaims
+		want    string
+		wantErr string
 	}{
 		{
-			name:   "project-declared properties always see variables",
-			claims: &runtime.SecurityClaims{},
+			name:    "project-declared properties see variables",
+			sql:     "SELECT '{{ .env.secret }}' AS v",
+			trusted: true,
+			claims:  &runtime.SecurityClaims{},
+			want:    secret,
+		},
+		{
+			name:    "caller-supplied properties cannot reference variables",
+			sql:     "SELECT '{{ .env.secret }}' AS v",
+			claims:  viewer,
+			wantErr: "project variables are only available to templates declared in the project files",
+		},
+		{
+			name:   "caller-supplied properties without variables resolve",
+			sql:    "SELECT '{{ .args.x }}' AS v",
+			claims: viewer,
+			want:   "<no value>",
+		},
+		{
+			name:   "caller-supplied properties see variables with ReadInstance",
+			sql:    "SELECT '{{ .env.secret }}' AS v",
+			claims: &runtime.SecurityClaims{Permissions: []runtime.Permission{runtime.ReadInstance}},
 			want:   secret,
 		},
 		{
-			name:      "untrusted properties hide variables from a viewer",
-			untrusted: true,
-			claims:    &runtime.SecurityClaims{Permissions: []runtime.Permission{runtime.ReadAPI, runtime.ReadMetrics, runtime.ReadResolvers}},
-			want:      "<no value>",
-		},
-		{
-			name:      "untrusted properties show variables to a caller with ReadInstance",
-			untrusted: true,
-			claims:    &runtime.SecurityClaims{Permissions: []runtime.Permission{runtime.ReadInstance}},
-			want:      secret,
-		},
-		{
-			name:      "untrusted properties show variables when checks are skipped",
-			untrusted: true,
-			claims:    &runtime.SecurityClaims{SkipChecks: true},
-			want:      secret,
+			name:   "caller-supplied properties see variables when checks are skipped",
+			sql:    "SELECT '{{ .env.secret }}' AS v",
+			claims: &runtime.SecurityClaims{SkipChecks: true},
+			want:   secret,
 		},
 	}
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			res, _, err := rt.Resolve(context.Background(), &runtime.ResolveOptions{
-				InstanceID:          instanceID,
-				Resolver:            "sql",
-				ResolverProperties:  map[string]any{"sql": "SELECT '{{ .env.secret }}' AS v"},
-				UntrustedProperties: tc.untrusted,
-				Claims:              tc.claims,
+				InstanceID:         instanceID,
+				Resolver:           "sql",
+				ResolverProperties: map[string]any{"sql": tc.sql},
+				TrustedProperties:  tc.trusted,
+				Claims:             tc.claims,
 			})
+			if tc.wantErr != "" {
+				require.ErrorContains(t, err, tc.wantErr)
+				require.NotContains(t, err.Error(), secret)
+				return
+			}
 			require.NoError(t, err)
 			defer res.Close()
 

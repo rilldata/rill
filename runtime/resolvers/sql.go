@@ -256,13 +256,18 @@ func (r *sqlResolver) generalExport(ctx context.Context, w io.Writer, filename s
 }
 
 // resolveTemplate resolves the templating in a SQL string.
-// Project variables are only exposed to templates the project declared, see ResolverOptions.TemplateVariables.
+// Project variables are only available to templates declared in the project, see ResolverOptions.TemplateVariables.
 func resolveTemplate(sqlTemplate string, inst *drivers.Instance, opts *runtime.ResolverOptions) (string, []*runtimev1.ResourceName, error) {
+	variables, err := opts.TemplateVariables(inst, sqlTemplate)
+	if err != nil {
+		return "", nil, err
+	}
+
 	var refs []*runtimev1.ResourceName
 	sql, err := parser.ResolveTemplate(sqlTemplate, parser.TemplateData{
 		Environment: inst.Environment,
 		User:        opts.Claims.UserAttributes,
-		Variables:   opts.TemplateVariables(inst),
+		Variables:   variables,
 		ExtraProps: map[string]any{
 			"args":   opts.Args,
 			"export": opts.ForExport,
