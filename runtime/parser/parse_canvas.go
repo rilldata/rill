@@ -509,7 +509,7 @@ func parseCondition(condition string) (string, error) {
 	}
 	// Conditions are evaluated for viewers, so they can't reference project variables, which commonly hold secrets.
 	if TemplateReferencesVariables(condition) {
-		return "", errors.New(`project variables (".env") are not available in "if" conditions; use ".user" attributes instead`)
+		return "", errors.New(`"if" conditions can't access project variables (".env") or the full template data ("." or "$"); use ".user" attributes instead`)
 	}
 	resolved, err := ResolveTemplate(condition, validationTemplateData, false)
 	if err != nil {

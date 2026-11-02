@@ -131,7 +131,7 @@ func (p *Parser) parseReport(node *Node) error {
 
 		// Reports are created by users as well as declared in the project, so their templates can't reference project variables, which commonly hold secrets.
 		if TemplateReferencesVariables(resolverProps.AsMap()) {
-			return errors.New(`project variables (".env") are not available in report properties`)
+			return errors.New(`templates in report properties can't access project variables (".env") or the full template data ("." or "$")`)
 		}
 	} else if tmp.Query.Name != "" {
 		// Query args

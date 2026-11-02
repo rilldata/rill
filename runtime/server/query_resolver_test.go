@@ -218,7 +218,7 @@ measures:
 		`SELECT {{ .env.secret }} FROM mv`,
 	} {
 		_, err = srv.QueryResolver(viewerCtx, metricsSQL(sql))
-		require.ErrorContains(t, err, "project variables are only available to templates declared in the project files")
+		require.ErrorContains(t, err, `project variables (".env") and the full template data ("." or "$") are only available to templates in connectors and models`)
 		require.NotContains(t, err.Error(), secret)
 	}
 
@@ -230,5 +230,5 @@ measures:
 
 	// Not even a caller that could read the variables through GetInstance: the properties are not declared in the project.
 	_, err = srv.QueryResolver(testCtx(), metricsSQL(`SELECT total_revenue FROM mv WHERE country = '{{ .env.country }}'`))
-	require.ErrorContains(t, err, "project variables are only available to templates declared in the project files")
+	require.ErrorContains(t, err, `project variables (".env") and the full template data ("." or "$") are only available to templates in connectors and models`)
 }

@@ -4158,7 +4158,7 @@ func must[T any](v T, err error) T {
 }
 
 // TestTemplatesRejectProjectVariables verifies that templates whose results are served to viewers or that users write can't reference project variables,
-// which commonly hold secrets: canvas component properties and `if` conditions, standalone components, alerts, reports and custom APIs.
+// which commonly hold secrets, or the full template data that includes them: canvas component properties and `if` conditions, standalone components, alerts, reports and custom APIs.
 // Models, which the server resolves on the project's behalf, may reference them.
 func TestTemplatesRejectProjectVariables(t *testing.T) {
 	ctx := context.Background()
@@ -4199,6 +4199,14 @@ rows:
 type: component
 markdown:
   content: '{{ env "secret" }}'
+`,
+		// Uses the full template data without naming the variables; it is rejected too, since the data includes them.
+		`canvases/root.yaml`: `
+type: canvas
+rows:
+- items:
+  - markdown:
+      content: 'Hello {{ index . "user" "email" }}'
 `,
 		`alerts/a.yaml`: `
 type: alert
@@ -4250,14 +4258,15 @@ rows:
 	require.NoError(t, err)
 
 	wantErrors := map[string]string{
-		"/canvases/markdown.yaml":     `project variables (".env") are not available in component properties`,
-		"/canvases/chart.yaml":        `project variables (".env") are not available in component properties`,
-		"/canvases/nested.yaml":       `project variables (".env") are not available in component properties`,
-		"/canvases/condition.yaml":    `project variables (".env") are not available in "if" conditions`,
-		"/components/standalone.yaml": `project variables (".env") are not available in component properties`,
-		"/alerts/a.yaml":              `project variables (".env") are not available in alert properties`,
-		"/reports/r.yaml":             `project variables (".env") are not available in report properties`,
-		"/apis/a.yaml":                `project variables (".env") are not available in API properties`,
+		"/canvases/markdown.yaml":     `templates in component properties can't access project variables (".env") or the full template data ("." or "$")`,
+		"/canvases/chart.yaml":        `templates in component properties can't access project variables (".env") or the full template data ("." or "$")`,
+		"/canvases/nested.yaml":       `templates in component properties can't access project variables (".env") or the full template data ("." or "$")`,
+		"/canvases/condition.yaml":    `"if" conditions can't access project variables (".env") or the full template data ("." or "$")`,
+		"/components/standalone.yaml": `templates in component properties can't access project variables (".env") or the full template data ("." or "$")`,
+		"/canvases/root.yaml":         `templates in component properties can't access project variables (".env") or the full template data ("." or "$")`,
+		"/alerts/a.yaml":              `templates in alert properties can't access project variables (".env") or the full template data ("." or "$")`,
+		"/reports/r.yaml":             `templates in report properties can't access project variables (".env") or the full template data ("." or "$")`,
+		"/apis/a.yaml":                `templates in API properties can't access project variables (".env") or the full template data ("." or "$")`,
 	}
 	gotErrors := make(map[string]string)
 	for _, e := range p.Errors {

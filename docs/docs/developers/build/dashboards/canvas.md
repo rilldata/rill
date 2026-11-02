@@ -114,7 +114,7 @@ rows:
 Conditions use the same templating and [user attributes](/developers/build/metrics-view/security#user-attributes) as security policies. A few things to know:
 
 - An element shows only when its own condition and the conditions of the rows, tabs and groups containing it are all true.
-- Conditions can't reference project variables (`.env`), since they are evaluated for viewers and the variables commonly hold secrets. The same applies to all canvas component properties, such as Markdown content and chart SQL.
+- Conditions can't reference project variables (`.env`), or the full template data (`.` or `$`) that includes them, since they are evaluated for viewers and the variables commonly hold secrets. The same applies to all canvas component properties, such as Markdown content and chart SQL.
 - Built-in attributes (`name`, `email`, `domain`, `groups`, `admin` and `embed`) always resolve, even for an [embedded dashboard](/developers/embed/iframe) that only passes custom attributes. A condition that references a custom attribute the viewer doesn't have is false. To treat a missing attribute as a value instead, use `get`, as in `'{{ ne (get .user "plan") "premium" }}'`.
 - When components are hidden, the rest of the row widens to fill it, and rows and tabs left empty disappear.
 - Hidden content is removed before the dashboard reaches the viewer, including its components and the conditions themselves. In an embedded dashboard or a public URL that's restricted to the canvas, the viewer also can't query the metrics views that only hidden content uses.

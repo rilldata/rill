@@ -101,7 +101,7 @@ func (p *Parser) parseAPI(node *Node) error {
 
 	// API results are served to viewers, so API templates can't reference project variables, which commonly hold secrets.
 	if TemplateReferencesVariables(resolverProps.AsMap()) {
-		return errors.New(`project variables (".env") are not available in API properties`)
+		return errors.New(`templates in API properties can't access project variables (".env") or the full template data ("." or "$")`)
 	}
 
 	securityRules, err := tmp.Security.Proto()

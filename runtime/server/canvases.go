@@ -111,7 +111,7 @@ func (s *Server) ResolveComponent(ctx context.Context, req *runtimev1.ResolveCom
 	// Dashboard templates never access project variables, which commonly hold secrets: the parser rejects references to them,
 	// and this check covers components reconciled before that rule existed.
 	if parser.TemplateReferencesVariables(spec.RendererProperties.AsMap()) {
-		return nil, status.Errorf(codes.InvalidArgument, "project variables are not available in component %q", req.Component)
+		return nil, status.Errorf(codes.InvalidArgument, `templates in component %q can't access project variables (".env") or the full template data ("." or "$")`, req.Component)
 	}
 
 	// Setup templating data.

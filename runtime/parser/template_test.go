@@ -151,6 +151,11 @@ func TestTemplateReferencesVariables(t *testing.T) {
 		{`{{ . }}`, true},
 		{`{{ $ }}`, true},
 		{`{{ (index . "env").x }}`, true},
+		// Any use of the full template data is rejected, even when it never reaches the variables, since the walker does not follow where it goes.
+		{`{{ index . "user" "email" }}`, true},
+		{`{{ $root := . }}{{ $root.user.email }}`, true},
+		{`{{ with $ }}{{ .user.email }}{{ end }}`, true},
+		{`{{ define "item" }}- {{ . }}{{ end }}{{ range .args.items }}{{ template "item" . }}{{ end }}`, true},
 		{`{{ printf "%v" . }}`, true},
 		{`{{ define "t" }}{{ .env.x }}{{ end }}{{ template "t" .args }}`, true},
 		{`{{ template "t" . }}`, true},

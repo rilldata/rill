@@ -190,9 +190,6 @@ func must[T any](v T, err error) T {
 	return v
 }
 
-// TestSQLUntrustedPropertiesHideVariables verifies that templates in resolver properties supplied by an API caller
-// cannot read project variables unless the caller may read sensitive instance info,
-// while templates declared in the project always can.
 // TestSQLTemplateVariables verifies that only templates declared in the project's source files may access project variables,
 // whoever the caller is.
 func TestSQLTemplateVariables(t *testing.T) {
@@ -221,19 +218,19 @@ func TestSQLTemplateVariables(t *testing.T) {
 			name:    "caller-supplied properties cannot reference variables",
 			sql:     "SELECT '{{ .env.secret }}' AS v",
 			claims:  &runtime.SecurityClaims{Permissions: []runtime.Permission{runtime.ReadAPI, runtime.ReadMetrics, runtime.ReadResolvers}},
-			wantErr: "project variables are only available to templates declared in the project files",
+			wantErr: `project variables (".env") and the full template data ("." or "$") are only available to templates in connectors and models`,
 		},
 		{
 			name:    "caller-supplied properties cannot reference variables even with ReadInstance",
 			sql:     "SELECT '{{ .env.secret }}' AS v",
 			claims:  &runtime.SecurityClaims{Permissions: []runtime.Permission{runtime.ReadInstance}},
-			wantErr: "project variables are only available to templates declared in the project files",
+			wantErr: `project variables (".env") and the full template data ("." or "$") are only available to templates in connectors and models`,
 		},
 		{
 			name:    "caller-supplied properties cannot reference variables even when checks are skipped",
 			sql:     "SELECT '{{ .env.secret }}' AS v",
 			claims:  &runtime.SecurityClaims{SkipChecks: true},
-			wantErr: "project variables are only available to templates declared in the project files",
+			wantErr: `project variables (".env") and the full template data ("." or "$") are only available to templates in connectors and models`,
 		},
 		{
 			name:   "caller-supplied properties without variables resolve",

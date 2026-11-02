@@ -112,7 +112,7 @@ func (o *ResolverOptions) TemplateVariables(inst *drivers.Instance, templates ..
 	}
 	for _, tmpl := range templates {
 		if parser.TemplateReferencesVariables(tmpl) {
-			return nil, errors.New("project variables are only available to templates declared in the project files")
+			return nil, errors.New(`project variables (".env") and the full template data ("." or "$") are only available to templates in connectors and models`)
 		}
 	}
 	return nil, nil

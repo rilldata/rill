@@ -104,7 +104,7 @@ measures:
 				InstanceId: instanceID,
 				Body:       body,
 			})
-			require.ErrorContains(t, err, "project variables are only available to templates declared in the project files")
+			require.ErrorContains(t, err, `project variables (".env") and the full template data ("." or "$") are only available to templates in connectors and models`)
 			require.NotContains(t, err.Error(), secret)
 		})
 	}
@@ -122,5 +122,5 @@ measures:
 		InstanceId: instanceID,
 		Body:       `{{ .env.secret }}`,
 	})
-	require.ErrorContains(t, err, "project variables are only available to templates declared in the project files")
+	require.ErrorContains(t, err, `project variables (".env") and the full template data ("." or "$") are only available to templates in connectors and models`)
 }
