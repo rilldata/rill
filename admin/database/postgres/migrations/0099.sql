@@ -16,5 +16,6 @@ CREATE UNIQUE INDEX embed_users_project_id_external_user_id_idx ON embed_users (
 
 -- Virtual files owned by an embed user, such as reports created from an embed.
 -- Deleting an embed user must soft-delete their virtual files first, so the runtime learns about the deletion.
-ALTER TABLE virtual_files ADD COLUMN embed_owner_id TEXT REFERENCES embed_users (id) ON DELETE SET NULL;
+-- Soft-deleting a virtual file clears its embed owner, so RESTRICT only blocks deletion of embed users with live files.
+ALTER TABLE virtual_files ADD COLUMN embed_owner_id TEXT REFERENCES embed_users (id) ON DELETE RESTRICT;
 CREATE INDEX virtual_files_embed_owner_id_idx ON virtual_files (embed_owner_id);

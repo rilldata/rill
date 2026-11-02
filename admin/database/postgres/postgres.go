@@ -3105,6 +3105,7 @@ func (c *connection) UpdateVirtualFileDeleted(ctx context.Context, projectID, en
 		UPDATE virtual_files SET
 			data = ''::BYTEA,
 			deleted = TRUE,
+			embed_owner_id = NULL,
 			updated_on = now()
 		WHERE project_id=$1 AND environment=$2 AND path=$3`, projectID, environment, path)
 	return checkUpdateRow("virtual file", res, err)

@@ -696,7 +696,7 @@ func testEmbedUsers(t *testing.T, db database.DB) {
 	require.NoError(t, err)
 	require.WithinDuration(t, time.Now(), u2.LastSeenOn, time.Minute)
 
-	// Virtual files reference their embed owner, which is cleared when the embed user is deleted
+	// Virtual files reference their embed owner, which blocks deleting the embed user until the files are soft-deleted
 	ownerID := "ext_1"
 	err = db.UpsertVirtualFile(ctx, &database.InsertVirtualFileOptions{
 		ProjectID:    projectID,
@@ -710,10 +710,15 @@ func testEmbedUsers(t *testing.T, db database.DB) {
 	require.NoError(t, err)
 	require.Equal(t, ownerID, *vf.EmbedOwnerID)
 	_, err = conn.db.ExecContext(ctx, "DELETE FROM embed_users WHERE id = 'ext_1'")
+	require.Error(t, err)
+	err = db.UpdateVirtualFileDeleted(ctx, projectID, "prod", "reports/r1.yaml")
 	require.NoError(t, err)
 	vf, err = db.FindVirtualFile(ctx, projectID, "prod", "reports/r1.yaml")
 	require.NoError(t, err)
+	require.True(t, vf.Deleted)
 	require.Nil(t, vf.EmbedOwnerID)
+	_, err = conn.db.ExecContext(ctx, "DELETE FROM embed_users WHERE id = 'ext_1'")
+	require.NoError(t, err)
 }
 
 func testUpsertProjectVariable(t *testing.T, db database.DB) {
