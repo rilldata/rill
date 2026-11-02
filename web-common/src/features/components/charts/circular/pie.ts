@@ -217,7 +217,7 @@ export function generateVLPieChartSpec(
       };
     } else {
       labelEncoding.text = {
-        field: measureFieldRaw,
+        field: sanitizeValueForVega(measureFieldRaw),
         type: "quantitative",
         formatType: sanitizeFieldName(measureFieldRaw),
         ...(measureMetaData &&
