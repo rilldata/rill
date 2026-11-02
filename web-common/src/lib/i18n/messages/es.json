@@ -1908,6 +1908,7 @@
   "report_form_go_to_reports": "Ir a informes programados",
   "report_form_include_metadata": "Incluir metadatos",
   "report_form_invalid_email": "Correo inválido",
+  "report_form_invalid_url": "URL inválida",
   "report_form_local_suffix": " (Local)",
   "report_form_metadata_tooltip": "Agrega un encabezado al archivo que incluye filtros, rango de tiempo y otros metadatos.",
   "report_form_must_select_one_column": "Debe seleccionar una columna",

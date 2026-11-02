@@ -224,7 +224,7 @@
       slackChannels: array().of(string()),
       slackUsers: array().of(string().email(m.report_form_invalid_email())),
       enableWebhookNotification: boolean(),
-      webhookUrls: array().of(string().url("Invalid URL")),
+      webhookUrls: array().of(string().url(m.report_form_invalid_url())),
       exportLimit: getExportLimitSchema(),
       columns: isCanvasReport
         ? array().of(string())

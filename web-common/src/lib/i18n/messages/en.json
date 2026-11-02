@@ -1899,6 +1899,7 @@
   "report_form_go_to_reports": "Go to scheduled reports",
   "report_form_include_metadata": "Include metadata",
   "report_form_invalid_email": "Invalid email",
+  "report_form_invalid_url": "Invalid URL",
   "report_form_local_suffix": " (Local)",
   "report_form_metadata_tooltip": "Adds a header to the file that includes filters, time range, and other metadata.",
   "report_form_must_select_one_column": "Must select one column",
