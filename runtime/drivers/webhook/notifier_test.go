@@ -20,6 +20,7 @@ import (
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/zap"
 )
 
 // officialVectorSecret is the example signing secret published in the Standard Webhooks
@@ -275,6 +276,15 @@ func TestPingValidatesConfig(t *testing.T) {
 	require.ErrorContains(t, err, "headers require allowed_url_prefixes")
 	require.NoError(t, (&handle{config: &configProperties{Headers: headers, AllowedURLPrefixes: []string{"https://example.com/"}}}).Ping(ctx))
 	require.Error(t, (&handle{config: &configProperties{AllowedURLPrefixes: []string{"example.com"}}}).Ping(ctx))
+}
+
+func TestOpenAcceptsAllowedURLPrefixesAsString(t *testing.T) {
+	// Connector variables, such as connector.webhook.allowed_url_prefixes, always arrive as strings.
+	h, err := driver{}.Open(context.Background(), "", "default", map[string]any{
+		"allowed_url_prefixes": "https://hooks.example.com/",
+	}, nil, nil, zap.NewNop())
+	require.NoError(t, err)
+	require.Equal(t, []string{"https://hooks.example.com/"}, h.(*handle).config.AllowedURLPrefixes)
 }
 
 func TestRetryAfterIsCapped(t *testing.T) {

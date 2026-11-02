@@ -40,7 +40,9 @@ func (d driver) Open(_ context.Context, _, instanceID string, config map[string]
 		return nil, fmt.Errorf("webhook driver can't be shared")
 	}
 	conf := &configProperties{}
-	err := mapstructure.Decode(config, conf)
+	// Weak decoding turns a single string into a one-element slice, since connector variables
+	// such as connector.webhook.allowed_url_prefixes always arrive as strings.
+	err := mapstructure.WeakDecode(config, conf)
 	if err != nil {
 		return nil, err
 	}
