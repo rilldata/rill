@@ -220,6 +220,7 @@
       emailRecipients: array().of(
         string().email(m.report_form_invalid_email()),
       ),
+      embedOwnerEmail: string().email(m.report_form_invalid_email()),
       enableSlackNotification: boolean(), // Needed to get the type for validation
       slackChannels: array().of(string()),
       slackUsers: array().of(string().email(m.report_form_invalid_email())),
@@ -328,6 +329,10 @@
         ? values.slackUsers.filter(Boolean)
         : undefined,
       webOpenMode: values.webOpenMode,
+      // Always sent in an embed, even if the field is hidden, so editing a report keeps its saved email.
+      embedOwnerEmail: EmbedStore.isEmbedded()
+        ? values.embedOwnerEmail.trim()
+        : undefined,
     };
 
     if (isCanvasReport) {

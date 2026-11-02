@@ -13,6 +13,7 @@ import (
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/duration"
 	"github.com/rilldata/rill/runtime/pkg/email"
+	"github.com/rilldata/rill/runtime/pkg/embedopen"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"github.com/rilldata/rill/runtime/pkg/pbutil"
 	"github.com/rilldata/rill/runtime/queries"
@@ -561,7 +562,8 @@ func (r *ReportReconciler) sendReport(ctx context.Context, self *runtimev1.Resou
 	}
 
 	// Reports created from an embed are opened through the embedder's app, and their recipients may have no access to Rill Cloud.
-	// So their notifications have no open, edit or download links; they only have an unsubscribe link.
+	// So their notifications have no edit or download links; they have an unsubscribe link,
+	// and the creator's notification has an open link to the embedder's app if rill.yaml configures `embeds.open_url`.
 	// The embed owner annotation is only set for reports created from an embed.
 	// If the embed owner is missing or inactive, GetReportMetadata fails above, so nothing is sent.
 	embedCreated := rep.Spec.Annotations["admin_embed_owner_id"] != ""
@@ -579,6 +581,22 @@ func (r *ReportReconciler) sendReport(ctx context.Context, self *runtimev1.Resou
 				return false, nil, errors.New(`reports created from an embed require the "reports" feature flag to be enabled for embed users`)
 			}
 			break
+		}
+	}
+
+	// The open link only works for the embed user who created the report, since the embedder's app opens it with their external user ID.
+	// So it's only added to the delivery that the admin service marks as the creator's.
+	var embedLink string
+	if embedCreated {
+		inst, err := r.C.Runtime.Instance(ctx, r.C.InstanceID)
+		if err != nil {
+			return false, nil, err
+		}
+		if inst.EmbedOpenURL != "" {
+			embedLink, err = embedopen.Link(inst.EmbedOpenURL, &embedopen.Payload{Kind: embedopen.KindReport, Name: self.Meta.Name.Name, ExecutionTime: t})
+			if err != nil {
+				return false, nil, fmt.Errorf("failed to build open link: %w", err)
+			}
 		}
 	}
 
@@ -612,7 +630,12 @@ func (r *ReportReconciler) sendReport(ctx context.Context, self *runtimev1.Resou
 			}
 
 			if embedCreated {
+				var openLink string
+				if delivery.EmbedOwner {
+					openLink = embedLink
+				}
 				notificationsContent[recipient] = &notificationData{
+					openLink:        openLink,
 					unsubscribeLink: delivery.UnsubscribeURL,
 					summary:         truncateSummary(report.summary, 500),
 				}
@@ -669,7 +692,12 @@ func (r *ReportReconciler) sendReport(ctx context.Context, self *runtimev1.Resou
 
 		for recipient, delivery := range meta.ReportDelivery {
 			if embedCreated {
+				var openLink string
+				if delivery.EmbedOwner {
+					openLink = embedLink
+				}
 				notificationsContent[recipient] = &notificationData{
+					openLink:           openLink,
 					unsubscribeLink:    delivery.UnsubscribeURL,
 					downloadFormat:     formatExportFormat(rep.Spec.ExportFormat),
 					attachment:         attachment,

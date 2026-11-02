@@ -63,6 +63,9 @@ export function getNewReportInitialFormValues(
     pdfIncludeFilters: true,
     pdfAllTabs: true,
     ...extractNotification(undefined, userEmail, false),
+    // In an embed, only the creator's email gets an open link to the embedder's app.
+    // The embed's `user_email` is used if set; otherwise the creator can enter it.
+    embedOwnerEmail: EmbedStore.isEmbedded() ? (userEmail ?? "") : "",
     ...extractRowsAndColumns(aggregationRequest),
   };
 }
@@ -96,6 +99,10 @@ export function getExistingReportInitialFormValues(
     exportAttach: EmbedStore.isEmbedded() || (reportSpec.exportAttach ?? false),
     ...pdfOptions,
     ...extractNotification(reportSpec.notifiers, userEmail, true),
+    // The embed's `user_email` takes precedence over the saved email, the same way the admin service applies it.
+    embedOwnerEmail: EmbedStore.isEmbedded()
+      ? userEmail || reportSpec.annotations?.admin_embed_owner_email || ""
+      : "",
     ...extractRowsAndColumns(aggregationRequest),
   };
 }

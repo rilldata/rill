@@ -21,6 +21,11 @@ components:
             properties:
                 editUrl:
                     type: string
+                embedOwner:
+                    description: |-
+                        If true, the recipient is the embed user who created the report.
+                        Only set for reports created from an embed, for the recipient that matches the creator's saved email.
+                    type: boolean
                 exportUrl:
                     type: string
                 openUrl:
@@ -1959,6 +1964,12 @@ components:
                     items:
                         type: string
                     type: array
+                embedOwnerEmail:
+                    description: |-
+                        Email of the embed user who creates the report; only used for reports created from an embed.
+                        Only this address gets an open link to the embedder's app (see `embeds.open_url` in rill.yaml), and it's added to `email_recipients` if missing.
+                        It's ignored if the embed's iframe was issued with a `user_email`, which is used instead.
+                    type: string
                 explore:
                     title: either canvas or explore should be set
                     type: string

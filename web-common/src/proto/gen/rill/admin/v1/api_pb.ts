@@ -2819,6 +2819,15 @@ export class GetIFrameRequest extends Message<GetIFrameRequest> {
   resource = "";
 
   /**
+   * The `rill_open` query param of an open link from an email sent by a report created from an embed.
+   * If set, the embed opens the report's dashboard in the state it captured, and `type` is ignored.
+   * Cannot be combined with `resource`, and requires the `external_user_id` of the embed user who created the report.
+   *
+   * @generated from field: string open = 20;
+   */
+  open = "";
+
+  /**
    * Theme to use for the embedded resource.
    *
    * @generated from field: string theme = 12;
@@ -2888,6 +2897,7 @@ export class GetIFrameRequest extends Message<GetIFrameRequest> {
     { no: 14, name: "type", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "kind", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 5, name: "resource", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 20, name: "open", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 12, name: "theme", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 15, name: "theme_mode", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 13, name: "navigation", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
@@ -13826,6 +13836,14 @@ export class GetReportMetaResponse_DeliveryMeta extends Message<GetReportMetaRes
    */
   resources: ResourceName[] = [];
 
+  /**
+   * If true, the recipient is the embed user who created the report.
+   * Only set for reports created from an embed, for the recipient that matches the creator's saved email.
+   *
+   * @generated from field: bool embed_owner = 9;
+   */
+  embedOwner = false;
+
   constructor(data?: PartialMessage<GetReportMetaResponse_DeliveryMeta>) {
     super();
     proto3.util.initPartial(data, this);
@@ -13842,6 +13860,7 @@ export class GetReportMetaResponse_DeliveryMeta extends Message<GetReportMetaRes
     { no: 6, name: "user_attrs", kind: "message", T: Struct },
     { no: 7, name: "restrict_resources", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 8, name: "resources", kind: "message", T: ResourceName, repeated: true },
+    { no: 9, name: "embed_owner", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetReportMetaResponse_DeliveryMeta {
@@ -19002,6 +19021,15 @@ export class ReportOptions extends Message<ReportOptions> {
   emailRecipients: string[] = [];
 
   /**
+   * Email of the embed user who creates the report; only used for reports created from an embed.
+   * Only this address gets an open link to the embedder's app (see `embeds.open_url` in rill.yaml), and it's added to `email_recipients` if missing.
+   * It's ignored if the embed's iframe was issued with a `user_email`, which is used instead.
+   *
+   * @generated from field: string embed_owner_email = 25;
+   */
+  embedOwnerEmail = "";
+
+  /**
    * @generated from field: repeated string slack_users = 10;
    */
   slackUsers: string[] = [];
@@ -19081,6 +19109,7 @@ export class ReportOptions extends Message<ReportOptions> {
     { no: 20, name: "export_include_header", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 24, name: "export_attach", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 8, name: "email_recipients", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 25, name: "embed_owner_email", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 10, name: "slack_users", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 11, name: "slack_channels", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 12, name: "slack_webhooks", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },

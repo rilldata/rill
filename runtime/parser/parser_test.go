@@ -59,6 +59,34 @@ mock_users:
 	require.Equal(t, "bar", res.Variables[0].Default)
 }
 
+func TestRillYAMLEmbedOpenURL(t *testing.T) {
+	ctx := context.Background()
+
+	// Not set by default
+	repo := makeRepo(t, map[string]string{`rill.yaml`: ``})
+	res, err := ParseRillYAML(ctx, repo, "")
+	require.NoError(t, err)
+	require.Empty(t, res.EmbedOpenURL)
+
+	repo = makeRepo(t, map[string]string{`rill.yaml`: `
+embeds:
+  open_url: https://app.acme.com/analytics/open?tenant=foo
+`})
+	res, err = ParseRillYAML(ctx, repo, "")
+	require.NoError(t, err)
+	require.Equal(t, "https://app.acme.com/analytics/open?tenant=foo", res.EmbedOpenURL)
+
+	// Must be an absolute http(s) URL
+	repo = makeRepo(t, map[string]string{`rill.yaml`: `
+embeds:
+  open_url: /analytics/open
+`})
+	p, err := Parse(ctx, repo, "", "", "duckdb", false)
+	require.NoError(t, err)
+	require.Len(t, p.Errors, 1)
+	require.Contains(t, p.Errors[0].Message, `invalid property "embeds.open_url"`)
+}
+
 func TestRillYAMLFeatures(t *testing.T) {
 	tt := []struct {
 		yaml    string

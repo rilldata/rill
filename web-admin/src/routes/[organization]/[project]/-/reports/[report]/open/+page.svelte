@@ -1,110 +1,20 @@
 <script lang="ts">
-  import { goto } from "$app/navigation";
-  import CtaButton from "@rilldata/web-common/components/calls-to-action/CTAButton.svelte";
-  import CtaContentContainer from "@rilldata/web-common/components/calls-to-action/CTAContentContainer.svelte";
-  import CtaLayoutContainer from "@rilldata/web-common/components/calls-to-action/CTALayoutContainer.svelte";
-  import CtaMessage from "@rilldata/web-common/components/calls-to-action/CTAMessage.svelte";
-  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
-  import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
-  import LoadingSpinner from "@rilldata/web-common/components/LoadingSpinner.svelte";
-  import { mapQueryToDashboard } from "@rilldata/web-common/features/explore-mappers/map-to-explore";
-  import { getExplorePageUrlSearchParams } from "@rilldata/web-common/features/explore-mappers/utils";
-  import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
+  import ReportOpen from "@rilldata/web-admin/features/scheduled-reports/open/ReportOpen.svelte";
+  import { getCloudDashboardPaths } from "@rilldata/web-admin/features/scheduled-reports/open/open-urls";
   import type { PageData } from "./$types";
 
-  export let data: PageData;
-
-  const runtimeClient = useRuntimeClient();
-
-  $: ({
-    report: reportResource,
-    organization,
-    project,
-    reportId,
-    executionTime,
-    token,
-    exploreName,
-  } = data);
-
-  $: reportSpec = reportResource?.report?.spec;
-  $: queryName =
-    (reportSpec?.resolverProperties?.query_name as string | undefined) ??
-    reportSpec?.queryName ??
-    "";
-  $: queryArgsJson =
-    (reportSpec?.resolverProperties?.query_args_json as string | undefined) ??
-    reportSpec?.queryArgsJson ??
-    "";
-
-  let dashboardStateForReport: ReturnType<typeof mapQueryToDashboard>;
-  $: dashboardStateForReport = mapQueryToDashboard(
-    runtimeClient,
-    {
-      exploreName,
-      queryName,
-      queryArgsJson,
-      executionTime,
-    },
-    {
-      exploreProtoState:
-        reportResource?.report?.spec?.annotations?.web_open_state,
-      forceOpenPivot: true,
-      // When opening a report from a link with token we should remove the filters from request.
-      // The filters are already baked into the token, each query will have them added in the backend.
-      // So adding them again will essentially apply filters twice. It will lead to incorrect results for threshold filters.
-      ignoreFilters: !!token,
-    },
-  );
-
-  $: if ($dashboardStateForReport?.data) {
-    void gotoExplorePage(
-      $dashboardStateForReport.data.exploreName,
-      $dashboardStateForReport.data.exploreState,
-    );
-  }
-
-  async function gotoExplorePage(
-    exploreName: string,
-    exploreState: ExploreState,
-  ) {
-    const exploreStateParams = await getExplorePageUrlSearchParams(
-      runtimeClient,
-      exploreName,
-      exploreState,
-    );
-
-    const url = new URL(window.location.origin);
-    if (token) {
-      url.pathname = `/${organization}/${project}/-/share/${token}/explore/${exploreName}`;
-    } else {
-      url.pathname = `/${organization}/${project}/explore/${exploreName}`;
-    }
-
-    url.search = exploreStateParams.toString();
-
-    return goto(url.toString());
-  }
+  let { data }: { data: PageData } = $props();
 </script>
 
-<CtaLayoutContainer>
-  <CtaContentContainer>
-    {#if $dashboardStateForReport.isLoading}
-      <div class="mt-10">
-        <LoadingSpinner />
-      </div>
-    {:else if $dashboardStateForReport.error}
-      <div class="flex flex-col gap-y-2">
-        <h2 class="text-lg font-semibold">{m.report_unable_to_open()}</h2>
-        <CtaMessage>
-          {$dashboardStateForReport.error}
-        </CtaMessage>
-      </div>
-      <CtaButton
-        href={`/${organization}/${project}/-/reports/${reportId}`}
-        variant="secondary"
-      >
-        {m.report_go_to_page()}
-      </CtaButton>
-    {/if}
-  </CtaContentContainer>
-</CtaLayoutContainer>
+<ReportOpen
+  reportSpec={data.reportSpec}
+  exploreName={data.exploreName}
+  executionTime={data.executionTime}
+  dashboardPaths={getCloudDashboardPaths(
+    data.organization,
+    data.project,
+    data.token,
+  )}
+  ignoreFilters={!!data.token}
+  backHref={`/${data.organization}/${data.project}/-/reports/${data.reportId}`}
+/>
