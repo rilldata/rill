@@ -49,11 +49,9 @@
   ];
 </script>
 
-<div class="overflow-x-auto">
-  <VirtualizedTable
-    tableId="external-tables-table"
-    data={tables}
-    {columns}
-    columnLayout="minmax(80px, 0.5fr) minmax(150px, 2fr) minmax(100px, 1fr)"
-  />
-</div>
+<VirtualizedTable
+  tableId="external-tables-table"
+  data={tables}
+  {columns}
+  columnLayout="minmax(80px, 0.5fr) minmax(150px, 2fr) minmax(100px, 1fr)"
+/>
