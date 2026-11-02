@@ -3426,6 +3426,10 @@ export type QueryServiceResolveTemplatedStringBody = {
   useFormatTokens?: boolean;
   additionalWhereByMetricsView?: QueryServiceResolveTemplatedStringBodyAdditionalWhereByMetricsView;
   additionalTimeRange?: V1TimeRange;
+  /** Optional name of a markdown component whose content to resolve instead of body.
+The content is declared in the project, so its templates may access project variables.
+The caller must have access to the component. */
+  component?: string;
 };
 
 export type QueryServiceTableRowsParams = {

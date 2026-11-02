@@ -24,6 +24,7 @@ describe("getResolveTemplatedStringQueryOptions", () => {
     };
 
     const component = {
+      id: "canvas--component-0-0",
       specStore: writable({ content: "{{ metrics_sql 'select 1' }}" }),
       timeAndFilterStore: writable({ timeRange: undefined }),
       parent: {

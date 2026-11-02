@@ -20,12 +20,27 @@ func (s *Server) ResolveTemplatedString(ctx context.Context, req *runtimev1.Reso
 	s.addInstanceRequestAttributes(ctx, req.InstanceId)
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.instance_id", req.InstanceId),
+		attribute.String("args.component", req.Component),
 		attribute.Bool("args.use_format_tokens", req.UseFormatTokens),
 	)
 
 	claims := auth.GetClaims(ctx, req.InstanceId)
 	if !claims.Can(runtime.ReadAPI) {
 		return nil, status.Error(codes.PermissionDenied, "does not have access to query data")
+	}
+
+	// The template is either the saved content of a markdown component or the request body.
+	// The component's content is declared in the project, so its templates may access project variables.
+	// A body comes from the caller and is not trusted, so its templates cannot.
+	text := req.Body
+	trusted := false
+	if req.Component != "" {
+		var err error
+		text, err = s.markdownContent(ctx, req.InstanceId, req.Component, claims)
+		if err != nil {
+			return nil, err
+		}
+		trusted = true
 	}
 
 	additionalWhereByMetricsView := map[string]map[string]any{}
@@ -48,18 +63,18 @@ func (s *Server) ResolveTemplatedString(ctx context.Context, req *runtimev1.Reso
 		timeZone = req.AdditionalTimeRange.TimeZone
 	}
 
-	// The template comes from the request, so it is not trusted: it cannot access project variables.
 	resolveRes, _, err := s.runtime.Resolve(ctx, &runtime.ResolveOptions{
 		InstanceID: req.InstanceId,
 		Resolver:   "text",
 		ResolverProperties: map[string]any{
-			"text":                             req.Body,
+			"text":                             text,
 			"use_format_tokens":                req.UseFormatTokens,
 			"additional_where_by_metrics_view": additionalWhereByMetricsView,
 			"additional_time_range":            additionalTimeRange,
 			"time_zone":                        timeZone,
 		},
-		Claims: claims,
+		TrustedProperties: trusted,
+		Claims:            claims,
 	})
 	if err != nil {
 		return nil, mapGRPCErrorWithFallback(err, codes.InvalidArgument)
@@ -78,4 +93,21 @@ func (s *Server) ResolveTemplatedString(ctx context.Context, req *runtimev1.Reso
 	return &runtimev1.ResolveTemplatedStringResponse{
 		Body: body,
 	}, nil
+}
+
+// markdownContent returns the content of a markdown component, after checking that the caller may access the component.
+func (s *Server) markdownContent(ctx context.Context, instanceID, component string, claims *runtime.SecurityClaims) (string, error) {
+	res, err := s.accessibleComponent(ctx, instanceID, component, claims)
+	if err != nil {
+		return "", err
+	}
+	spec := res.GetComponent().State.ValidSpec
+	if spec == nil {
+		return "", status.Errorf(codes.FailedPrecondition, "component %q is invalid", component)
+	}
+	if spec.Renderer != "markdown" {
+		return "", status.Errorf(codes.InvalidArgument, "component %q is not a markdown component", component)
+	}
+	content, _ := spec.RendererProperties.AsMap()["content"].(string)
+	return content, nil
 }

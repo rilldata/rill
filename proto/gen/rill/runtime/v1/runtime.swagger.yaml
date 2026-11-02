@@ -3288,6 +3288,12 @@ paths:
               additionalTimeRange:
                 $ref: '#/definitions/v1TimeRange'
                 title: Additional time range to add to metrics SQL queries
+              component:
+                type: string
+                description: |-
+                  Optional name of a markdown component whose content to resolve instead of body.
+                  The content is declared in the project, so its templates may access project variables.
+                  The caller must have access to the component.
       tags:
         - QueryService
   /v1/instances/{instanceId}/queries/rollup-interval/tables/{tableName}:

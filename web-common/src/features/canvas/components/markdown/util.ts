@@ -100,16 +100,18 @@ export function formatResolvedContent(
 }
 
 function buildRequestBody(params: {
-  content: string;
+  component: string;
   applyFormatting: boolean;
   timeRange: V1TimeRange | undefined;
   exprByMetricsView: Record<string, V1Expression>;
   metricsViews: Record<string, V1MetricsView | undefined>;
 }): QueryServiceResolveTemplatedStringBody | null {
-  const { content, applyFormatting, timeRange, exprByMetricsView } = params;
+  const { component, applyFormatting, timeRange, exprByMetricsView } = params;
 
   return {
-    body: content,
+    // The runtime resolves the component's saved content rather than a body sent by the browser.
+    // Only content declared in the project may use project variables, so sending the content as a body would reject it.
+    component,
     useFormatTokens: applyFormatting,
     additionalTimeRange: timeRange,
     ...(Object.keys(exprByMetricsView).length > 0 && {
@@ -142,7 +144,7 @@ export function getResolveTemplatedStringQueryOptions(
           const metricsViews = parentSpec?.data?.metricsViews ?? {};
 
           const requestBody = buildRequestBody({
-            content,
+            component: component.id,
             applyFormatting,
             timeRange: timeAndFilters?.timeRange,
             exprByMetricsView,
@@ -158,7 +160,7 @@ export function getResolveTemplatedStringQueryOptions(
 
           const body: QueryServiceResolveTemplatedStringBody =
             !enabled || !requestBody
-              ? { body: content, useFormatTokens: applyFormatting }
+              ? { component: component.id, useFormatTokens: applyFormatting }
               : requestBody;
 
           const queryEnabled = enabled && !!requestBody;

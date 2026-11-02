@@ -246,11 +246,12 @@ func TemplateReferencesVariables(val any) bool {
 }
 
 // nodeReferencesVariables reports whether a template parse tree node reads project variables.
-// dotIsRoot is true when "." refers to the root template data, which holds the variables; "range" and "with" rebind it in their bodies.
+// dotIsRoot is true when "." refers to the root template data, which holds the variables; "range" and "with" rebind it in their bodies,
+// where ".env" is a field of the rebound value rather than the project variables.
 func nodeReferencesVariables(node parse.Node, dotIsRoot bool) bool {
 	switch n := node.(type) {
 	case *parse.FieldNode:
-		return n.Ident[0] == "env" || n.Ident[0] == "vars"
+		return dotIsRoot && (n.Ident[0] == "env" || n.Ident[0] == "vars")
 	case *parse.VariableNode:
 		// "$" is the root template data, so "$" and "$.env" both expose the variables.
 		return n.Ident[0] == "$" && (len(n.Ident) == 1 || n.Ident[1] == "env" || n.Ident[1] == "vars")

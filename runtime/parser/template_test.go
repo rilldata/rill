@@ -124,6 +124,11 @@ func TestTemplateReferencesVariables(t *testing.T) {
 		{`{{ .environment }}`, false},
 		{`{{ range .args.ids }}{{ . }}{{ end }}`, false},
 		{`{{ with .args }}{{ .x }}{{ end }}`, false},
+		// Inside range and with, ".env" is a field of the rebound value, not the project variables.
+		{`{{ with .args }}{{ .env }}{{ end }}`, false},
+		{`{{ range .args.ids }}{{ .env.x }}{{ end }}`, false},
+		{`{{ with .args }}{{ $.env.x }}{{ end }}`, true},
+		{`{{ with .env }}{{ .x }}{{ end }}`, true},
 		{`{{ metrics_sql "SELECT 1" }}`, false},
 		// The nested template is a string literal here; it is checked when the nested resolver resolves it.
 		{`{{ metrics_sql "SELECT {{ .env.x }}" }}`, false},
