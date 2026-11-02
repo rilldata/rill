@@ -30,3 +30,29 @@ describe("generateVLAreaChartSpec with a dotted color dimension", () => {
     );
   });
 });
+
+describe("generateVLAreaChartSpec with a dotted x dimension", () => {
+  it("escapes the x field once in the hover layer and keeps the custom sort", () => {
+    // The hover helper escapes the x field itself. Passing it pre-escaped
+    // escaped the backslash a second time, so the hover rule pointed at a
+    // field that does not exist and tooltips never showed.
+    const dimension = "event.time";
+    const data = chartData();
+    data.fields[dimension] = { name: dimension, displayName: "Event Time" };
+    data.domainValues = { [dimension]: ["Other", "Scheduled Report"] };
+
+    const spec = generateVLAreaChartSpec(
+      {
+        metrics_view: "druid_requests",
+        x: { field: dimension, type: "nominal", sort: "-y" },
+        y: { field: "count", type: "quantitative", zeroBasedOrigin: true },
+      },
+      data,
+    );
+    expect(at(spec, "layer.1.encoding.x.field")).toBe("event\\.time");
+    expect(at(spec, "layer.1.encoding.x.sort")).toEqual([
+      "Other",
+      "Scheduled Report",
+    ]);
+  });
+});

@@ -68,7 +68,7 @@ export function generateVLAreaChartSpec(
       layer: inner,
     },
     buildHoverRuleLayer({
-      xField: sanitizedXField,
+      xField: config.x?.field,
       domainValues: data.domainValues,
       defaultTooltip: defaultTooltipChannel,
       multiValueTooltipChannel,
