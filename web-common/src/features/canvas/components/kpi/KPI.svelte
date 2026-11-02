@@ -433,7 +433,12 @@
   }
 
   .big-number {
-    @apply text-3xl font-medium text-fg-primary whitespace-nowrap;
+    @apply text-3xl font-medium text-fg-primary;
+  }
+
+  /* Beside a sparkline the number keeps one line; the sparkline wraps instead. */
+  .spark-right .big-number {
+    @apply whitespace-nowrap;
   }
 
   :global(.dark) .big-number {
