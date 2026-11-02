@@ -499,7 +499,7 @@ func TestRedirectsNotFollowed(t *testing.T) {
 }
 
 func TestURLAllowed(t *testing.T) {
-	prefixes, err := parseURLPrefixes([]string{"https://example.com", "https://hooks.example.org/rill/"})
+	prefixes, err := parseURLPrefixes([]string{"https://example.com", "https://hooks.example.org/rill/", "https://gw.example.com/hooks"})
 	require.NoError(t, err)
 
 	for u, want := range map[string]bool{
@@ -514,6 +514,10 @@ func TestURLAllowed(t *testing.T) {
 		"https://hooks.example.org/other":             false,
 		"https://hooks.example.org/rill/../admin":     false, // dot segments
 		"https://hooks.example.org/rill/%2e%2e/admin": false,
+		"https://gw.example.com/hooks":                true,
+		"https://gw.example.com/hooks/alerts":         true,
+		"https://gw.example.com/hooksx":               false, // prefix ends at a path segment
+		"https://gw.example.com/hooks-admin/x":        false,
 	} {
 		require.Equal(t, want, urlAllowed(u, prefixes), u)
 	}

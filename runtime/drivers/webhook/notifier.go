@@ -386,8 +386,8 @@ func parseURLPrefixes(prefixes []string) ([]urlPrefix, error) {
 
 // urlAllowed reports whether rawURL falls under one of the prefixes. Unlike a plain string
 // prefix, the scheme and host must match exactly, so https://example.com does not admit
-// https://example.com.evil.io, and paths with dot segments are rejected because the receiver
-// may resolve them outside the prefix.
+// https://example.com.evil.io, and the path prefix ends at a segment. Paths with dot segments
+// are rejected because the receiver may resolve them outside the prefix.
 func urlAllowed(rawURL string, prefixes []urlPrefix) bool {
 	u, err := url.Parse(rawURL)
 	if err != nil || u.User != nil || slices.ContainsFunc(strings.Split(u.Path, "/"), func(seg string) bool {
@@ -397,11 +397,20 @@ func urlAllowed(rawURL string, prefixes []urlPrefix) bool {
 	}
 	host := canonicalHost(u)
 	for _, p := range prefixes {
-		if u.Scheme == p.scheme && host == p.host && strings.HasPrefix(u.Path, p.path) {
+		if u.Scheme == p.scheme && host == p.host && pathWithin(u.Path, p.path) {
 			return true
 		}
 	}
 	return false
+}
+
+// pathWithin reports whether path is prefix or lies below it. The prefix ends at a path
+// segment, so /hooks admits /hooks and /hooks/alerts but not /hooksx or /hooks-admin.
+func pathWithin(path, prefix string) bool {
+	if prefix == "" || strings.HasSuffix(prefix, "/") {
+		return strings.HasPrefix(path, prefix)
+	}
+	return path == prefix || strings.HasPrefix(path, prefix+"/")
 }
 
 func canonicalHost(u *url.URL) string {

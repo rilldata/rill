@@ -87,7 +87,8 @@ allowed_url_prefixes:
 ```
 
 A URL is allowed if it has the same scheme and host (including the port) as an entry and
-its path starts with the entry's path. Deliveries to other URLs fail and are reported in the
+its path is the entry's path or lies below it. A path entry ends at a segment, so
+`https://hooks.example.com/rill` admits `/rill` and `/rill/alerts`, but not `/rill-admin`. Deliveries to other URLs fail and are reported in the
 execution's error, while the allowed URLs are still delivered to.
 
 Without `allowed_url_prefixes`, deliveries to loopback, private and link-local addresses
