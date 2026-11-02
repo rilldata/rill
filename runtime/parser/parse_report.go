@@ -305,9 +305,6 @@ func (p *Parser) parseReport(node *Node) error {
 		}
 		// Webhook settings
 		if len(tmp.Notify.Webhook.URLs) > 0 {
-			if err := validateWebhookURLs(tmp.Notify.Webhook.URLs); err != nil {
-				return err
-			}
 			props, err := structpb.NewStruct(webhook.EncodeProps(tmp.Notify.Webhook.URLs))
 			if err != nil {
 				return err
