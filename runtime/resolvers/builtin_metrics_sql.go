@@ -57,13 +57,15 @@ func newBuiltinMetricsSQL(ctx context.Context, opts *runtime.ResolverOptions) (r
 		return nil, err
 	}
 
-	// Rewrite to the metrics SQL resolver
+	// Rewrite to the metrics SQL resolver.
+	// The SQL comes from the caller's args, so it is untrusted.
 	return newMetricsSQL(ctx, &runtime.ResolverOptions{
 		Runtime:    opts.Runtime,
 		InstanceID: opts.InstanceID,
 		Properties: map[string]any{
 			"sql": args.SQL,
 		},
+		UntrustedProperties: true,
 		Args: map[string]any{
 			"priority": args.Priority,
 		},

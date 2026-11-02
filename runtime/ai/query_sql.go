@@ -88,12 +88,14 @@ func (t *QuerySQL) Handler(ctx context.Context, args *QuerySQLArgs) (*QuerySQLRe
 		props["connector"] = args.Connector
 	}
 
-	// Execute via the SQL resolver
+	// Execute via the SQL resolver.
+	// The SQL is written by the model on the user's behalf, so templates in it must not see project variables (which may hold secrets).
 	res, _, err := t.Runtime.Resolve(ctx, &runtime.ResolveOptions{
-		InstanceID:         s.InstanceID(),
-		Resolver:           "sql",
-		ResolverProperties: props,
-		Claims:             s.Claims(),
+		InstanceID:          s.InstanceID(),
+		Resolver:            "sql",
+		ResolverProperties:  props,
+		UntrustedProperties: true,
+		Claims:              s.Claims(),
 	})
 	if err != nil {
 		return nil, err

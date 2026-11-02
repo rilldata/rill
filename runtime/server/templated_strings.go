@@ -48,6 +48,7 @@ func (s *Server) ResolveTemplatedString(ctx context.Context, req *runtimev1.Reso
 		timeZone = req.AdditionalTimeRange.TimeZone
 	}
 
+	// The template comes from the request, so it must not see project variables (which may hold secrets).
 	resolveRes, _, err := s.runtime.Resolve(ctx, &runtime.ResolveOptions{
 		InstanceID: req.InstanceId,
 		Resolver:   "text",
@@ -58,7 +59,8 @@ func (s *Server) ResolveTemplatedString(ctx context.Context, req *runtimev1.Reso
 			"additional_time_range":            additionalTimeRange,
 			"time_zone":                        timeZone,
 		},
-		Claims: claims,
+		UntrustedProperties: true,
+		Claims:              claims,
 	})
 	if err != nil {
 		return nil, mapGRPCErrorWithFallback(err, codes.InvalidArgument)

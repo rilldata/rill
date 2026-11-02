@@ -86,10 +86,26 @@ type ResolverExportOptions struct {
 type ResolverOptions struct {
 	Runtime    *Runtime
 	InstanceID string
+	// Properties are the resolver's static properties, such as the SQL of a SQL resolver.
 	Properties map[string]any
-	Args       map[string]any
-	Claims     *SecurityClaims
-	ForExport  bool
+	// UntrustedProperties is set when Properties were supplied by an API caller instead of being declared in the project.
+	// Resolvers must not let templates in untrusted properties access project variables,
+	// since the variables commonly hold secrets such as connector credentials. See TemplateVariables.
+	UntrustedProperties bool
+	Args                map[string]any
+	Claims              *SecurityClaims
+	ForExport           bool
+}
+
+// TemplateVariables returns the project variables that templates in the resolver's properties may access.
+// Project variables commonly hold secrets such as connector credentials,
+// so they are withheld when the properties were supplied by an API caller (see UntrustedProperties),
+// unless the caller may read sensitive instance info anyway (see ReadInstance).
+func (o *ResolverOptions) TemplateVariables(inst *drivers.Instance) map[string]string {
+	if o.UntrustedProperties && (o.Claims == nil || !o.Claims.Can(ReadInstance)) {
+		return nil
+	}
+	return inst.ResolveVariables(false)
 }
 
 // ResolverInitializer is a function that initializes a resolver.
@@ -111,8 +127,11 @@ type ResolveOptions struct {
 	InstanceID         string
 	Resolver           string
 	ResolverProperties map[string]any
-	Args               map[string]any
-	Claims             *SecurityClaims
+	// UntrustedProperties is set when ResolverProperties were supplied by an API caller instead of being declared in the project.
+	// See ResolverOptions.UntrustedProperties.
+	UntrustedProperties bool
+	Args                map[string]any
+	Claims              *SecurityClaims
 }
 
 type ResolveInfo struct {
@@ -152,12 +171,13 @@ func (r *Runtime) Resolve(ctx context.Context, opts *ResolveOptions) (res Resolv
 		return nil, nil, fmt.Errorf("no resolver found for name %q", opts.Resolver)
 	}
 	resolver, err := initializer(ctx, &ResolverOptions{
-		Runtime:    r,
-		InstanceID: opts.InstanceID,
-		Properties: opts.ResolverProperties,
-		Args:       opts.Args,
-		Claims:     opts.Claims,
-		ForExport:  false,
+		Runtime:             r,
+		InstanceID:          opts.InstanceID,
+		Properties:          opts.ResolverProperties,
+		UntrustedProperties: opts.UntrustedProperties,
+		Args:                opts.Args,
+		Claims:              opts.Claims,
+		ForExport:           false,
 	})
 	if err != nil {
 		return nil, nil, err

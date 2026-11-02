@@ -189,3 +189,63 @@ func must[T any](v T, err error) T {
 	}
 	return v
 }
+
+// TestSQLUntrustedPropertiesHideVariables verifies that templates in resolver properties supplied by an API caller
+// cannot read project variables unless the caller may read sensitive instance info,
+// while templates declared in the project always can.
+func TestSQLUntrustedPropertiesHideVariables(t *testing.T) {
+	const secret = "s3cret-value"
+	rt, instanceID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
+		Files:     map[string]string{"rill.yaml": ""},
+		Variables: map[string]string{"secret": secret},
+	})
+
+	cases := []struct {
+		name      string
+		untrusted bool
+		claims    *runtime.SecurityClaims
+		want      string
+	}{
+		{
+			name:   "project-declared properties always see variables",
+			claims: &runtime.SecurityClaims{},
+			want:   secret,
+		},
+		{
+			name:      "untrusted properties hide variables from a viewer",
+			untrusted: true,
+			claims:    &runtime.SecurityClaims{Permissions: []runtime.Permission{runtime.ReadAPI, runtime.ReadMetrics, runtime.ReadResolvers}},
+			want:      "<no value>",
+		},
+		{
+			name:      "untrusted properties show variables to a caller with ReadInstance",
+			untrusted: true,
+			claims:    &runtime.SecurityClaims{Permissions: []runtime.Permission{runtime.ReadInstance}},
+			want:      secret,
+		},
+		{
+			name:      "untrusted properties show variables when checks are skipped",
+			untrusted: true,
+			claims:    &runtime.SecurityClaims{SkipChecks: true},
+			want:      secret,
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			res, _, err := rt.Resolve(context.Background(), &runtime.ResolveOptions{
+				InstanceID:          instanceID,
+				Resolver:            "sql",
+				ResolverProperties:  map[string]any{"sql": "SELECT '{{ .env.secret }}' AS v"},
+				UntrustedProperties: tc.untrusted,
+				Claims:              tc.claims,
+			})
+			require.NoError(t, err)
+			defer res.Close()
+
+			row, err := res.Next()
+			require.NoError(t, err)
+			require.Equal(t, tc.want, row["v"])
+		})
+	}
+}

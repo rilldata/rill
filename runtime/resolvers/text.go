@@ -33,11 +33,18 @@ func newText(ctx context.Context, opts *runtime.ResolverOptions) (runtime.Resolv
 		return nil, err
 	}
 
+	inst, err := opts.Runtime.Instance(ctx, opts.InstanceID)
+	if err != nil {
+		return nil, err
+	}
+
 	r := &textResolver{
-		rt:         opts.Runtime,
-		instanceID: opts.InstanceID,
-		claims:     opts.Claims,
-		props:      props,
+		rt:             opts.Runtime,
+		instanceID:     opts.InstanceID,
+		claims:         opts.Claims,
+		props:          props,
+		untrustedProps: opts.UntrustedProperties,
+		variables:      opts.TemplateVariables(inst),
 	}
 
 	if err := r.analyzeAndPopulateRefs(ctx); err != nil {
@@ -52,7 +59,12 @@ type textResolver struct {
 	instanceID string
 	claims     *runtime.SecurityClaims
 	props      *textProps
-	refs       []*runtimev1.ResourceName
+	// untrustedProps is set when the text came from an API caller. It is propagated to the nested metrics_sql resolvers,
+	// since the SQL in a metrics_sql template call is just as untrusted as the text around it.
+	untrustedProps bool
+	// variables are the project variables the template may access. See ResolverOptions.TemplateVariables.
+	variables map[string]string
+	refs      []*runtimev1.ResourceName
 }
 
 var _ runtime.Resolver = &textResolver{}
@@ -74,11 +86,6 @@ func (r *textResolver) Validate(ctx context.Context) error {
 }
 
 func (r *textResolver) ResolveInteractive(ctx context.Context) (runtime.ResolverResult, error) {
-	inst, err := r.rt.Instance(ctx, r.instanceID)
-	if err != nil {
-		return nil, err
-	}
-
 	// Cache for looking up whether a field is a measure.
 	measuresCache := make(map[string]map[string]bool)
 	isMeasure := func(metricsView, field string) (bool, error) {
@@ -112,7 +119,8 @@ func (r *textResolver) ResolveInteractive(ctx context.Context) (runtime.Resolver
 				"additional_where_by_metrics_view": r.props.AdditionalWhereByMetricsView,
 				"additional_time_range":            r.props.AdditionalTimeRange,
 			},
-			Claims: r.claims,
+			UntrustedProperties: r.untrustedProps,
+			Claims:              r.claims,
 		})
 		if err != nil {
 			return nil, err
@@ -174,7 +182,7 @@ func (r *textResolver) ResolveInteractive(ctx context.Context) (runtime.Resolver
 
 	templateData := parser.TemplateData{
 		User:      r.claims.UserAttributes,
-		Variables: inst.ResolveVariables(false),
+		Variables: r.variables,
 		State:     make(map[string]any),
 		Resolve: func(ref parser.ResourceName) (string, error) {
 			return ref.Name, nil
@@ -240,14 +248,9 @@ func (r *textResolver) analyzeAndPopulateRefs(ctx context.Context) error {
 		},
 	}
 
-	inst, err := r.rt.Instance(ctx, r.instanceID)
-	if err != nil {
-		return err
-	}
-
 	td := parser.TemplateData{
 		User:      r.claims.UserAttributes,
-		Variables: inst.ResolveVariables(false),
+		Variables: r.variables,
 		State:     make(map[string]any),
 		Resolve: func(ref parser.ResourceName) (string, error) {
 			return ref.Name, nil
@@ -267,9 +270,10 @@ func (r *textResolver) analyzeAndPopulateRefs(ctx context.Context) error {
 	seen := make(map[string]bool)
 	for _, sql := range sqls {
 		res, err := initializer(ctx, &runtime.ResolverOptions{
-			Runtime:    r.rt,
-			InstanceID: r.instanceID,
-			Properties: map[string]any{"sql": sql},
+			Runtime:             r.rt,
+			InstanceID:          r.instanceID,
+			Properties:          map[string]any{"sql": sql},
+			UntrustedProperties: r.untrustedProps,
 			Claims: &runtime.SecurityClaims{
 				UserID:         r.claims.UserID,
 				UserAttributes: r.claims.UserAttributes,

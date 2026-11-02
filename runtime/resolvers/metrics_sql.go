@@ -72,7 +72,7 @@ func newMetricsSQL(ctx context.Context, opts *runtime.ResolverOptions) (runtime.
 		return nil, err
 	}
 
-	props.SQL, _, err = resolveTemplate(props.SQL, opts.Args, instance, opts.Claims.UserAttributes, opts.ForExport)
+	props.SQL, _, err = resolveTemplate(props.SQL, instance, opts)
 	if err != nil {
 		return nil, err
 	}
@@ -157,12 +157,13 @@ func newMetricsSQL(ctx context.Context, opts *runtime.ResolverOptions) (runtime.
 		return nil, err
 	}
 	resolverOpts := &runtime.ResolverOptions{
-		Runtime:    opts.Runtime,
-		InstanceID: opts.InstanceID,
-		Properties: metricProps,
-		Args:       opts.Args,
-		Claims:     opts.Claims,
-		ForExport:  opts.ForExport,
+		Runtime:             opts.Runtime,
+		InstanceID:          opts.InstanceID,
+		Properties:          metricProps,
+		UntrustedProperties: opts.UntrustedProperties,
+		Args:                opts.Args,
+		Claims:              opts.Claims,
+		ForExport:           opts.ForExport,
 	}
 	return newMetrics(ctx, resolverOpts)
 }

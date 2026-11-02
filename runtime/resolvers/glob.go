@@ -121,7 +121,7 @@ func newGlob(ctx context.Context, opts *runtime.ResolverOptions) (runtime.Resolv
 	propsMap, err := parser.ResolveTemplateRecursively(opts.Properties, parser.TemplateData{
 		Environment: inst.Environment,
 		User:        map[string]any{},
-		Variables:   inst.ResolveVariables(false),
+		Variables:   opts.TemplateVariables(inst),
 		State:       args.State,
 		ExtraProps: map[string]any{
 			"table": tmpTableName,

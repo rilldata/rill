@@ -45,14 +45,16 @@ func (s *Server) QueryResolver(ctx context.Context, req *runtimev1.QueryResolver
 		props["limit"] = req.Limit
 	}
 
-	// Initialize the resolver
+	// Initialize the resolver.
+	// The properties come from the request, so templates in them must not see project variables (which may hold secrets).
 	resolver, err := initializer(ctx, &runtime.ResolverOptions{
-		Runtime:    s.runtime,
-		InstanceID: req.InstanceId,
-		Properties: props,
-		Args:       req.ResolverArgs.AsMap(),
-		Claims:     claims,
-		ForExport:  false,
+		Runtime:             s.runtime,
+		InstanceID:          req.InstanceId,
+		Properties:          props,
+		UntrustedProperties: true,
+		Args:                req.ResolverArgs.AsMap(),
+		Claims:              claims,
+		ForExport:           false,
 	})
 	if err != nil {
 		return nil, mapGRPCErrorWithFallback(err, codes.InvalidArgument)
