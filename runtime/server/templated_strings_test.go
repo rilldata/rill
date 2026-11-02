@@ -180,10 +180,27 @@ rows:
   - markdown:
       content: 'Secret: {{ .env.secret }}'
 `,
+			// An inline component hidden from non-admins by its item's condition, which another item of the canvas references by name.
+			"hidden.yaml": `
+type: canvas
+rows:
+- items:
+  - markdown:
+      content: 'Admins only: {{ .env.secret }}'
+    if: '{{ .user.admin }}'
+  - component: hidden--component-0-0
+`,
+			// A canvas that references another canvas's inline component, e.g. to share it through a link that grants only this canvas.
+			"wrapper.yaml": `
+type: canvas
+rows:
+- items:
+  - component: public--component-0-0
+`,
 		},
 		Variables: map[string]string{"region": "US", "secret": secret},
 	})
-	testruntime.RequireReconcileState(t, rt, instanceID, 10, 0, 0)
+	testruntime.RequireReconcileState(t, rt, instanceID, 13, 0, 0)
 
 	srv, err := server.NewServer(t.Context(), &server.Options{}, rt, zap.NewNop(), ratelimit.NewNoop(), activity.NewNoopClient())
 	require.NoError(t, err)
@@ -209,13 +226,54 @@ rows:
 	})
 	require.ErrorContains(t, err, "project variables are only available to templates declared in the project files")
 
-	// The viewer can access their personal canvas, but its content is not declared in the project, so it cannot reference the variable.
+	// The viewer can access their personal canvas, but its content was written by the viewer, not declared in the project,
+	// so it cannot reference the variable; not even for a caller that could read the variables, since the content's author decides.
+	for _, ctx := range []context.Context{viewerCtx, testCtx()} {
+		_, err = srv.ResolveTemplatedString(ctx, &runtimev1.ResolveTemplatedStringRequest{
+			InstanceId: instanceID,
+			Component:  "personal--component-0-0",
+		})
+		require.ErrorContains(t, err, "project variables are only available to templates declared in the project files")
+		require.NotContains(t, err.Error(), secret)
+	}
+
+	// A component hidden from the viewer by its item's condition is rejected, even though another item of an accessible canvas references it.
 	_, err = srv.ResolveTemplatedString(viewerCtx, &runtimev1.ResolveTemplatedStringRequest{
 		InstanceId: instanceID,
-		Component:  "personal--component-0-0",
+		Component:  "hidden--component-0-0",
 	})
-	require.ErrorContains(t, err, "project variables are only available to templates declared in the project files")
+	require.Equal(t, codes.PermissionDenied, status.Code(err))
 	require.NotContains(t, err.Error(), secret)
+	res, err = srv.ResolveTemplatedString(auth.WithClaims(context.Background(), &runtime.SecurityClaims{
+		UserAttributes: map[string]any{"admin": true},
+		Permissions:    []runtime.Permission{runtime.ReadAPI, runtime.ReadMetrics},
+	}), &runtimev1.ResolveTemplatedStringRequest{
+		InstanceId: instanceID,
+		Component:  "hidden--component-0-0",
+	})
+	require.NoError(t, err)
+	require.Equal(t, "Admins only: "+secret, res.Body)
+
+	// A shared link's token is granted only the wrapper canvas, yet it can resolve the component the wrapper references,
+	// with the component's own origin: the content is declared in the project, so the variable resolves.
+	tokenCtx := auth.WithClaims(context.Background(), &runtime.SecurityClaims{
+		Permissions: []runtime.Permission{runtime.ReadAPI, runtime.ReadMetrics},
+		AdditionalRules: []*runtimev1.SecurityRule{{Rule: &runtimev1.SecurityRule_TransitiveAccess{TransitiveAccess: &runtimev1.SecurityRuleTransitiveAccess{
+			Resource: &runtimev1.ResourceName{Kind: runtime.ResourceKindCanvas, Name: "wrapper"},
+		}}}},
+	})
+	res, err = srv.ResolveTemplatedString(tokenCtx, &runtimev1.ResolveTemplatedStringRequest{
+		InstanceId: instanceID,
+		Component:  "public--component-0-0",
+	})
+	require.NoError(t, err)
+	require.Equal(t, "Region: US, total: 300", res.Body)
+	// The token cannot resolve a component that no canvas it is granted shows.
+	_, err = srv.ResolveTemplatedString(tokenCtx, &runtimev1.ResolveTemplatedStringRequest{
+		InstanceId: instanceID,
+		Component:  "hidden--component-0-0",
+	})
+	require.Equal(t, codes.PermissionDenied, status.Code(err))
 
 	// A component the viewer cannot access is rejected without resolving its content.
 	_, err = srv.ResolveTemplatedString(viewerCtx, &runtimev1.ResolveTemplatedStringRequest{

@@ -255,9 +255,9 @@ func (r *AlertReconciler) ResolveTransitiveAccess(ctx context.Context, claims *r
 				"query_name":      spec.QueryName,
 				"query_args_json": spec.QueryArgsJson,
 			},
-			TrustedProperties: !runtime.IsAdminManaged(spec.Annotations),
-			Claims:            claims,
-			ForExport:         false,
+			PropertiesOrigin: runtime.PropertiesOriginFromAnnotations(spec.Annotations),
+			Claims:           claims,
+			ForExport:        false,
 		})
 		if err != nil {
 			return nil, err
@@ -282,12 +282,12 @@ func (r *AlertReconciler) ResolveTransitiveAccess(ctx context.Context, claims *r
 			return nil, fmt.Errorf("no resolver found for name %q", spec.Resolver)
 		}
 		resolver, err := initializer(ctx, &runtime.ResolverOptions{
-			Runtime:           r.C.Runtime,
-			InstanceID:        r.C.InstanceID,
-			Properties:        spec.ResolverProperties.AsMap(),
-			TrustedProperties: !runtime.IsAdminManaged(spec.Annotations),
-			Claims:            claims,
-			ForExport:         false,
+			Runtime:          r.C.Runtime,
+			InstanceID:       r.C.InstanceID,
+			Properties:       spec.ResolverProperties.AsMap(),
+			PropertiesOrigin: runtime.PropertiesOriginFromAnnotations(spec.Annotations),
+			Claims:           claims,
+			ForExport:        false,
 		})
 		if err != nil {
 			return nil, err
@@ -704,7 +704,7 @@ func (r *AlertReconciler) executeSingleWrapped(ctx context.Context, self *runtim
 		InstanceID:         r.C.InstanceID,
 		Resolver:           a.Spec.Resolver,
 		ResolverProperties: a.Spec.ResolverProperties.AsMap(),
-		TrustedProperties:  !runtime.IsAdminManaged(a.Spec.Annotations),
+		PropertiesOrigin:   runtime.PropertiesOriginFromAnnotations(a.Spec.Annotations),
 		Args: map[string]any{
 			"priority":       alertQueryPriority,
 			"execution_time": executionTime,

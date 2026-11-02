@@ -211,7 +211,7 @@ func canvasTransitiveConditionResources(ctx context.Context, c *runtime.Controll
 	// Only grant the content that the canvas's `if` conditions show to these claims.
 	// The conditions are evaluated directly, since going through the security engine would recurse into this function.
 	// The evaluator is cached per claims and memoizes its results, so expanding the transitive rule on every security check stays cheap.
-	visibility, err := c.Runtime.VisibilityConditions(ctx, c.InstanceID, claims)
+	visibility, err := c.Runtime.VisibilityConditions(ctx, c.InstanceID, claims, res)
 	if err != nil {
 		return nil, err
 	}
@@ -249,9 +249,13 @@ func canvasTransitiveConditionResources(ctx context.Context, c *runtime.Controll
 			continue
 		}
 
-		// Skip a component whose own `if` conditions hide it from these claims,
-		// such as an inline component of another canvas referenced by name.
-		if !visibility.ComponentMet(componentRes) {
+		// Skip a component whose own `if` conditions hide it from these claims, such as an inline component of another canvas referenced by name.
+		// Its conditions are evaluated with the access to project variables of the canvas that defines it, so the evaluator is looked up per component.
+		componentVisibility, err := c.Runtime.VisibilityConditions(ctx, c.InstanceID, claims, componentRes)
+		if err != nil {
+			return nil, err
+		}
+		if !componentVisibility.ComponentMet(componentRes) {
 			continue
 		}
 
@@ -273,10 +277,28 @@ func canvasTransitiveConditionResources(ctx context.Context, c *runtime.Controll
 			continue
 		}
 
+		// Who wrote the component's properties decides whether templates in them may access project variables during ref discovery (see runtime.PropertiesOrigin).
+		// For an inline component that is the canvas that defines it, which may differ from this canvas when this canvas references the component by name.
+		origin := runtime.PropertiesFromProject
+		if componentSpec.ParentCanvas != "" {
+			parentSpec := spec
+			if componentSpec.ParentCanvas != res.Meta.Name.Name {
+				parent, err := c.Get(ctx, &runtimev1.ResourceName{Kind: runtime.ResourceKindCanvas, Name: componentSpec.ParentCanvas}, false)
+				if err != nil {
+					continue // Without the defining canvas, who wrote the component is unknown, so no refs are granted for it.
+				}
+				parentSpec = parent.GetCanvas().State.ValidSpec
+				if parentSpec == nil {
+					parentSpec = parent.GetCanvas().Spec
+				}
+			}
+			origin = runtime.PropertiesOriginFromAnnotations(parentSpec.GetAnnotations())
+		}
+
 		// Track refs.
 		// We silently ignore parse errors because some components may be malformed, which we don't want to block access to the entire canvas.
 		// Hopefully the parse errors were caught in normal validation; otherwise, the UI will probably fail the component at render time.
-		_ = refs.populateRendererRefs(ctx, componentSpec.Renderer, componentSpec.RendererProperties.AsMap())
+		_ = refs.populateRendererRefs(ctx, origin, componentSpec.Renderer, componentSpec.RendererProperties.AsMap())
 		if ctx.Err() != nil { // Return ctx errors immediately.
 			return nil, ctx.Err()
 		}
@@ -505,7 +527,8 @@ func (r *rendererRefs) result() []*runtimev1.ResourceName {
 }
 
 // populateRendererRefs discovers and tracks all metrics views referenced in the renderer properties.
-func (r *rendererRefs) populateRendererRefs(ctx context.Context, renderer string, rendererProps map[string]any) error {
+// origin says who wrote the properties, which decides whether templates in them may access project variables (see runtime.PropertiesOrigin).
+func (r *rendererRefs) populateRendererRefs(ctx context.Context, origin runtime.PropertiesOrigin, renderer string, rendererProps map[string]any) error {
 	// Check for a direct metrics_view reference.
 	if mv, ok := pathutil.GetPath(rendererProps, "metrics_view"); ok {
 		return r.metricsView(mv)
@@ -513,13 +536,13 @@ func (r *rendererRefs) populateRendererRefs(ctx context.Context, renderer string
 
 	// Check for a metrics_sql reference; use a resolver to discover the referenced metrics views.
 	if sql, ok := pathutil.GetPath(rendererProps, "metrics_sql"); ok {
-		return r.metricsSQL(ctx, sql)
+		return r.metricsSQL(ctx, origin, sql)
 	}
 
 	// For markdown renderers, analyze the content text for embedded metrics_sql references.
 	if renderer == "markdown" {
 		if content, ok := pathutil.GetPath(rendererProps, "content"); ok {
-			return r.text(ctx, content)
+			return r.text(ctx, origin, content)
 		}
 	}
 
@@ -540,7 +563,7 @@ func (r *rendererRefs) metricsView(mv any) error {
 }
 
 // text initializes a text resolver to discover metrics view references in a template string.
-func (r *rendererRefs) text(ctx context.Context, content any) error {
+func (r *rendererRefs) text(ctx context.Context, origin runtime.PropertiesOrigin, content any) error {
 	contentStr, ok := content.(string)
 	if !ok {
 		return fmt.Errorf("content field is not a string")
@@ -551,10 +574,10 @@ func (r *rendererRefs) text(ctx context.Context, content any) error {
 		return fmt.Errorf("text resolver not registered")
 	}
 	resolver, err := initializer(ctx, &runtime.ResolverOptions{
-		Runtime:           r.rt,
-		InstanceID:        r.instanceID,
-		Properties:        map[string]any{"text": contentStr},
-		TrustedProperties: true,
+		Runtime:          r.rt,
+		InstanceID:       r.instanceID,
+		Properties:       map[string]any{"text": contentStr},
+		PropertiesOrigin: origin,
 		Claims: &runtime.SecurityClaims{
 			UserID:         r.claims.UserID,
 			UserAttributes: r.claims.UserAttributes,
@@ -576,16 +599,16 @@ func (r *rendererRefs) text(ctx context.Context, content any) error {
 
 // metricsSQL parses and registers metrics view references found in a metrics_sql property,
 // which holds either a single query string or a list of query strings.
-func (r *rendererRefs) metricsSQL(ctx context.Context, sql any) error {
+func (r *rendererRefs) metricsSQL(ctx context.Context, origin runtime.PropertiesOrigin, sql any) error {
 	switch v := sql.(type) {
 	case string:
-		return r.metricsSQLString(ctx, v)
+		return r.metricsSQLString(ctx, origin, v)
 	case []any:
 		// Multi-query custom charts: register refs per query, best-effort,
 		// so one malformed query doesn't drop refs from the others.
 		for _, e := range v {
 			if s, ok := e.(string); ok {
-				_ = r.metricsSQLString(ctx, s)
+				_ = r.metricsSQLString(ctx, origin, s)
 				if ctx.Err() != nil {
 					return ctx.Err()
 				}
@@ -598,16 +621,16 @@ func (r *rendererRefs) metricsSQL(ctx context.Context, sql any) error {
 }
 
 // metricsSQLString parses and registers metrics view references found in a single metrics SQL query.
-func (r *rendererRefs) metricsSQLString(ctx context.Context, sqlStr string) error {
+func (r *rendererRefs) metricsSQLString(ctx context.Context, origin runtime.PropertiesOrigin, sqlStr string) error {
 	initializer, ok := runtime.ResolverInitializers["metrics_sql"]
 	if !ok {
 		return fmt.Errorf("metrics_sql resolver not registered")
 	}
 	resolver, err := initializer(ctx, &runtime.ResolverOptions{
-		Runtime:           r.rt,
-		InstanceID:        r.instanceID,
-		Properties:        map[string]any{"sql": sqlStr},
-		TrustedProperties: true,
+		Runtime:          r.rt,
+		InstanceID:       r.instanceID,
+		Properties:       map[string]any{"sql": sqlStr},
+		PropertiesOrigin: origin,
 		Claims: &runtime.SecurityClaims{
 			UserID:         r.claims.UserID,
 			UserAttributes: r.claims.UserAttributes,

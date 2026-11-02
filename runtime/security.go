@@ -670,6 +670,53 @@ func (p *securityEngine) builtInReportSecurityRule(reportRes *runtimev1.Resource
 	}
 }
 
+// securityTemplateVariables returns the project variables that the security rules and `if` conditions of a resource may reference.
+// A resource created through the admin API, such as a personal canvas and its inline components, was written by a user (see IsAdminManaged and PropertiesFromUser),
+// so its templates must not access project variables: evaluating them with the variables would let the user test guesses about a secret through what the canvas shows.
+// The variables are also skipped when the claims skip security checks, since no templates are evaluated then.
+func (r *Runtime) securityTemplateVariables(ctx context.Context, instanceID string, inst *drivers.Instance, claims *SecurityClaims, res *runtimev1.Resource) (map[string]string, error) {
+	if claims.SkipChecks {
+		return nil, nil
+	}
+	switch res.Resource.(type) {
+	case *runtimev1.Resource_Canvas:
+		spec := res.GetCanvas().GetState().GetValidSpec()
+		if spec == nil {
+			spec = res.GetCanvas().GetSpec()
+		}
+		if IsAdminManaged(spec.GetAnnotations()) {
+			return nil, nil
+		}
+	case *runtimev1.Resource_Component:
+		spec := res.GetComponent().GetState().GetValidSpec()
+		if spec == nil {
+			spec = res.GetComponent().GetSpec()
+		}
+		if spec.GetParentCanvas() != "" {
+			ctrl, err := r.Controller(ctx, instanceID)
+			if err != nil {
+				return nil, err
+			}
+			canvas, err := ctrl.Get(ctx, &runtimev1.ResourceName{Kind: ResourceKindCanvas, Name: spec.ParentCanvas}, false)
+			if err != nil {
+				if errors.Is(err, drivers.ErrResourceNotFound) {
+					// Without the canvas, who wrote the component is unknown, so the variables are withheld.
+					return nil, nil
+				}
+				return nil, err
+			}
+			canvasSpec := canvas.GetCanvas().GetState().GetValidSpec()
+			if canvasSpec == nil {
+				canvasSpec = canvas.GetCanvas().GetSpec()
+			}
+			if IsAdminManaged(canvasSpec.GetAnnotations()) {
+				return nil, nil
+			}
+		}
+	}
+	return inst.ResolveVariables(false), nil
+}
+
 // IsAdminManaged reports whether a resource's annotations mark it as created through the admin API,
 // such as a personal canvas or an alert or report created in the UI, instead of being declared in the project's source files.
 // The runtime sees such resources as project files, but their contents were written by the user who created them.

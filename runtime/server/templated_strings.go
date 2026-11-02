@@ -30,13 +30,13 @@ func (s *Server) ResolveTemplatedString(ctx context.Context, req *runtimev1.Reso
 	}
 
 	// The template is either the saved content of a markdown component or the request body.
-	// A component's content is trusted if it was declared in the project's source files, so its templates may access project variables.
-	// A body comes from the caller and is not trusted, so its templates cannot.
+	// Who wrote it decides whether its templates may access project variables (see runtime.PropertiesOrigin):
+	// a body comes from the caller, and a component's content from the project or from the user who created its canvas.
 	text := req.Body
-	trusted := false
+	origin := runtime.PropertiesFromCaller
 	if req.Component != "" {
 		var err error
-		text, trusted, err = s.markdownContent(ctx, req.InstanceId, req.Component, claims)
+		text, origin, err = s.markdownContent(ctx, req.InstanceId, req.Component, claims)
 		if err != nil {
 			return nil, err
 		}
@@ -72,8 +72,8 @@ func (s *Server) ResolveTemplatedString(ctx context.Context, req *runtimev1.Reso
 			"additional_time_range":            additionalTimeRange,
 			"time_zone":                        timeZone,
 		},
-		TrustedProperties: trusted,
-		Claims:            claims,
+		PropertiesOrigin: origin,
+		Claims:           claims,
 	})
 	if err != nil {
 		return nil, mapGRPCErrorWithFallback(err, codes.InvalidArgument)
@@ -94,22 +94,19 @@ func (s *Server) ResolveTemplatedString(ctx context.Context, req *runtimev1.Reso
 	}, nil
 }
 
-// markdownContent returns the content of a markdown component, after checking that the caller may access the component.
-// It also reports whether the content is trusted: a component of an admin-managed canvas (e.g. a personal canvas) was written by the canvas's creator,
-// not declared in the project's source files, so its templates must not access project variables.
-func (s *Server) markdownContent(ctx context.Context, instanceID, component string, claims *runtime.SecurityClaims) (string, bool, error) {
-	res, canvasRes, err := s.accessibleComponent(ctx, instanceID, component, claims)
+// markdownContent returns the content of a markdown component and who wrote it, after checking that the caller may access the component.
+func (s *Server) markdownContent(ctx context.Context, instanceID, component string, claims *runtime.SecurityClaims) (string, runtime.PropertiesOrigin, error) {
+	res, origin, err := s.accessibleComponent(ctx, instanceID, component, claims)
 	if err != nil {
-		return "", false, err
+		return "", 0, err
 	}
 	spec := res.GetComponent().State.ValidSpec
 	if spec == nil {
-		return "", false, status.Errorf(codes.FailedPrecondition, "component %q is invalid", component)
+		return "", 0, status.Errorf(codes.FailedPrecondition, "component %q is invalid", component)
 	}
 	if spec.Renderer != "markdown" {
-		return "", false, status.Errorf(codes.InvalidArgument, "component %q is not a markdown component", component)
+		return "", 0, status.Errorf(codes.InvalidArgument, "component %q is not a markdown component", component)
 	}
 	content, _ := spec.RendererProperties.AsMap()["content"].(string)
-	trusted := canvasRes == nil || !runtime.IsAdminManaged(canvasRes.GetCanvas().State.ValidSpec.Annotations)
-	return content, trusted, nil
+	return content, origin, nil
 }

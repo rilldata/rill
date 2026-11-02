@@ -129,15 +129,20 @@ func (r *Runtime) ResolveCanvas(ctx context.Context, instanceID, canvasName stri
 	}
 
 	// Track the components the claims can't see or query; viewers don't get them, and the editor gets their paths.
-	// An inline component keeps the `if` conditions of its item wherever it's referenced, including from another canvas.
+	// An inline component keeps the `if` conditions of its item wherever it's referenced, including from another canvas,
+	// and they are evaluated with the access to project variables of the canvas that defines the component, so the evaluator is looked up per component.
 	// Only its conditions are checked, not the full security policy, since claims granted just this canvas (e.g. alert links) can't access components directly.
-	visibility, err := r.VisibilityConditions(ctx, instanceID, claims)
+	visibility, err := r.VisibilityConditions(ctx, instanceID, claims, res)
 	if err != nil {
 		return nil, err
 	}
 	forbiddenComponents := make(map[string]bool)
 	for componentName, cmp := range components {
-		if !visibility.ComponentMet(cmp) {
+		componentVisibility, err := r.VisibilityConditions(ctx, instanceID, claims, cmp)
+		if err != nil {
+			return nil, err
+		}
+		if !componentVisibility.ComponentMet(cmp) {
 			forbiddenComponents[componentName] = true
 		}
 	}

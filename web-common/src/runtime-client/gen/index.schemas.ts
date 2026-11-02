@@ -682,6 +682,9 @@ export interface V1ComponentSpec {
   input?: V1ComponentVariable[];
   output?: V1ComponentVariable;
   definedInCanvas?: boolean;
+  /** For components defined inline in a canvas, the name of that canvas.
+The component is accessible only through the canvas, and the canvas decides whether the component's templates may access project variables. */
+  parentCanvas?: string;
   /** For components defined inline in a canvas, the `if` conditions of the item and its ancestors (rows, tabs), ANDed together.
 Only viewers for whom it evaluates to true can access the component. */
   conditionExpression?: string;
@@ -3469,6 +3472,11 @@ export type RuntimeServiceQueryResolverBody = {
   resolverProperties?: RuntimeServiceQueryResolverBodyResolverProperties;
   resolverArgs?: RuntimeServiceQueryResolverBodyResolverArgs;
   limit?: number;
+  /** Optional name of a component whose saved properties the resolver properties were taken from.
+Templates in the properties may then access project variables if the component's canvas is declared in the project.
+Only supported for the metrics_sql resolver: the SQL must match one of the component's metrics_sql queries.
+The caller must have access to the component. */
+  component?: string;
 };
 
 export type RuntimeServiceReloadConfigBody = { [key: string]: unknown };

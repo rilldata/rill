@@ -123,7 +123,10 @@ func (r *Runtime) ResolveSecurity(ctx context.Context, instanceID string, claims
 	if err != nil {
 		return nil, err
 	}
-	vars := inst.ResolveVariables(false)
+	vars, err := r.securityTemplateVariables(ctx, instanceID, inst, claims, res)
+	if err != nil {
+		return nil, err
+	}
 	return r.securityEngine.resolveSecurity(ctx, instanceID, inst.Environment, vars, claims, res)
 }
 

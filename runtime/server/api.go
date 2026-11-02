@@ -80,12 +80,12 @@ func (s *Server) apiHandler(w http.ResponseWriter, req *http.Request) error {
 	}
 
 	// Resolve the API to JSON data.
-	// The API's resolver properties are declared in the project, so they are trusted regardless of who calls the API.
+	// The API's resolver properties are declared in the project, regardless of who calls the API.
 	res, _, err := s.runtime.Resolve(ctx, &runtime.ResolveOptions{
 		InstanceID:         instanceID,
 		Resolver:           api.Spec.Resolver,
 		ResolverProperties: api.Spec.ResolverProperties.AsMap(),
-		TrustedProperties:  true,
+		PropertiesOrigin:   runtime.PropertiesFromProject,
 		Args:               args,
 		Claims:             claims,
 	})

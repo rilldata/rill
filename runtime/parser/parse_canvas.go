@@ -568,6 +568,7 @@ func (p *Parser) parseCanvasInlineComponent(canvasName, posKey string, props map
 	}
 
 	spec.DefinedInCanvas = true
+	spec.ParentCanvas = canvasName
 
 	name := fmt.Sprintf("%s--component-%s", canvasName, posKey)
 

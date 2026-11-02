@@ -26,6 +26,7 @@ describe("getResolveTemplatedStringQueryOptions", () => {
     const component = {
       id: "canvas--component-0-0",
       specStore: writable({ content: "{{ metrics_sql 'select 1' }}" }),
+      resource: writable({ meta: { stateVersion: "1" } }),
       timeAndFilterStore: writable({ timeRange: undefined }),
       parent: {
         specStore: parentSpecStore,
@@ -51,11 +52,13 @@ describe("getResolveTemplatedStringQueryOptions", () => {
     expect(parentSpecSubscribers).toBe(0);
   });
 
-  it("Should key the query on the content so edits to the component refetch the resolved text", () => {
+  it("Should key the query on the resource's state version so a reconcile refetches the resolved text", () => {
     const specStore = writable({ content: "{{ metrics_sql 'select 1' }}" });
+    const resource = writable({ meta: { stateVersion: "1" } });
     const component = {
       id: "canvas--component-0-0",
       specStore,
+      resource,
       timeAndFilterStore: writable({ timeRange: undefined }),
       parent: {
         specStore: writable({ data: { metricsViews: {} } }),
@@ -72,11 +75,15 @@ describe("getResolveTemplatedStringQueryOptions", () => {
     );
 
     const keyBefore = get(optionsStore).queryKey;
-    expect(keyBefore).toContain("{{ metrics_sql 'select 1' }}");
+    expect(keyBefore).toContain("1");
 
+    // A local edit changes the content before the runtime has reconciled it, so it must not change the key.
     specStore.set({ content: "{{ metrics_sql 'select 2' }}" });
+    expect(get(optionsStore).queryKey).toEqual(keyBefore);
+
+    resource.set({ meta: { stateVersion: "2" } });
     const keyAfter = get(optionsStore).queryKey;
     expect(keyAfter).not.toEqual(keyBefore);
-    expect(keyAfter).toContain("{{ metrics_sql 'select 2' }}");
+    expect(keyAfter).toContain("2");
   });
 });

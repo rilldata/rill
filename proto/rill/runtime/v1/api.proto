@@ -848,6 +848,11 @@ message QueryResolverRequest {
   google.protobuf.Struct resolver_properties = 3;
   google.protobuf.Struct resolver_args = 4;
   int32 limit = 5;
+  // Optional name of a component whose saved properties the resolver properties were taken from.
+  // Templates in the properties may then access project variables if the component's canvas is declared in the project.
+  // Only supported for the metrics_sql resolver: the SQL must match one of the component's metrics_sql queries.
+  // The caller must have access to the component.
+  string component = 6;
 }
 
 message QueryResolverResponse {

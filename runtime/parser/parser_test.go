@@ -2329,6 +2329,7 @@ rows:
 				Renderer:           "markdown",
 				RendererProperties: must(structpb.NewStruct(map[string]any{"content": "Foo"})),
 				DefinedInCanvas:    true,
+				ParentCanvas:       "d1",
 			},
 		},
 		{
@@ -2789,6 +2790,7 @@ rows:
 				Renderer:           "markdown",
 				RendererProperties: must(structpb.NewStruct(map[string]any{"content": "Overview"})),
 				DefinedInCanvas:    true,
+				ParentCanvas:       "d1",
 			},
 		},
 		{
@@ -2798,6 +2800,7 @@ rows:
 				Renderer:           "markdown",
 				RendererProperties: must(structpb.NewStruct(map[string]any{"content": "Detail"})),
 				DefinedInCanvas:    true,
+				ParentCanvas:       "d1",
 			},
 		},
 		{

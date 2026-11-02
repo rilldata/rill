@@ -157,13 +157,13 @@ func newMetricsSQL(ctx context.Context, opts *runtime.ResolverOptions) (runtime.
 		return nil, err
 	}
 	resolverOpts := &runtime.ResolverOptions{
-		Runtime:           opts.Runtime,
-		InstanceID:        opts.InstanceID,
-		Properties:        metricProps,
-		TrustedProperties: opts.TrustedProperties,
-		Args:              opts.Args,
-		Claims:            opts.Claims,
-		ForExport:         opts.ForExport,
+		Runtime:          opts.Runtime,
+		InstanceID:       opts.InstanceID,
+		Properties:       metricProps,
+		PropertiesOrigin: opts.PropertiesOrigin,
+		Args:             opts.Args,
+		Claims:           opts.Claims,
+		ForExport:        opts.ForExport,
 	}
 	return newMetrics(ctx, resolverOpts)
 }

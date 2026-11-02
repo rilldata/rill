@@ -10261,6 +10261,8 @@ func (m *ComponentSpec) validate(all bool) error {
 
 	// no validation rules for DefinedInCanvas
 
+	// no validation rules for ParentCanvas
+
 	// no validation rules for ConditionExpression
 
 	if len(errors) > 0 {

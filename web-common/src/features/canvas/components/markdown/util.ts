@@ -135,11 +135,12 @@ export function getResolveTemplatedStringQueryOptions(
       return derived(
         [
           component.specStore,
+          component.resource,
           component.timeAndFilterStore,
           component.parent?.specStore ?? null,
           component.parent.timeManager.hasTimeSeriesStore,
         ],
-        ([spec, timeAndFilters, parentSpec, hasTimeSeries]) => {
+        ([spec, resource, timeAndFilters, parentSpec, hasTimeSeries]) => {
           const content = spec?.content ?? "";
           const applyFormatting = spec?.apply_formatting === true;
           const needsTemplating = hasTemplatingSyntax(content);
@@ -171,8 +172,10 @@ export function getResolveTemplatedStringQueryOptions(
           // Cast needed: QueryServiceResolveTemplatedStringBody uses string
           // timestamps while the v2 proto request expects Timestamp objects;
           // the v2 fromJson layer handles the conversion at runtime.
-          // The request names the component instead of carrying its content, so the content is added to the
-          // query key to refetch the resolved text when the component's content changes.
+          // The request names the component instead of carrying its content, and the runtime resolves the content
+          // it has reconciled. The resource's state version is added to the query key so the text is refetched once a
+          // reconcile completes; keying on the local content instead would cache the previous text under the new key
+          // when the request races the reconcile.
           return getQueryServiceResolveTemplatedStringQueryOptions(
             client,
             body as any,
@@ -184,7 +187,7 @@ export function getResolveTemplatedStringQueryOptions(
                     client.instanceId,
                     body as any,
                   ),
-                  content,
+                  resource?.meta?.stateVersion ?? "",
                 ],
               },
             },

@@ -52,13 +52,13 @@ func newUnion(ctx context.Context, opts *runtime.ResolverOptions) (runtime.Resol
 			delete(opts.Args, "partitions_model_id")
 		}
 		r, err := initializer(ctx, &runtime.ResolverOptions{
-			Runtime:           opts.Runtime,
-			InstanceID:        opts.InstanceID,
-			Properties:        entry.Properties,
-			TrustedProperties: opts.TrustedProperties,
-			Args:              opts.Args,
-			Claims:            opts.Claims,
-			ForExport:         opts.ForExport,
+			Runtime:          opts.Runtime,
+			InstanceID:       opts.InstanceID,
+			Properties:       entry.Properties,
+			PropertiesOrigin: opts.PropertiesOrigin,
+			Args:             opts.Args,
+			Claims:           opts.Claims,
+			ForExport:        opts.ForExport,
 		})
 		if err != nil {
 			_ = closeResolvers(resolvers)

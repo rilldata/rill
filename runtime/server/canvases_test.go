@@ -2000,8 +2000,141 @@ rows:
 	require.ErrorContains(t, err, "project variables are only available to templates declared in the project files")
 	require.NotContains(t, err.Error(), secret)
 
-	// A caller that can read sensitive instance info can already read the variables, so the personal component resolves them.
-	res, err = srv.ResolveComponent(testCtx(), &runtimev1.ResolveComponentRequest{InstanceId: instanceID, Component: "personal--component-0-0"})
+	// The personal component's properties were written by its creator, so they never see the variables, even for a caller that could read them.
+	_, err = srv.ResolveComponent(testCtx(), &runtimev1.ResolveComponentRequest{InstanceId: instanceID, Component: "personal--component-0-0"})
+	require.Equal(t, codes.InvalidArgument, status.Code(err))
+	require.NotContains(t, err.Error(), secret)
+}
+
+// TestResolveCanvasConditionsProjectVariables verifies that `if` conditions may reference project variables only in canvases declared in the project.
+// In a personal canvas, the creator could otherwise test guesses about a secret through what the canvas shows them.
+func TestResolveCanvasConditionsProjectVariables(t *testing.T) {
+	const secret = "s3cret-value"
+	canvasYAML := func(annotations string) string {
+		return fmt.Sprintf(`
+type: canvas
+%s
+rows:
+- if: '{{ eq .env.secret "%s" }}'
+  items:
+  - kpi:
+      metrics_view: mv1
+      measure: count
+`, annotations, secret)
+	}
+	rt, instanceID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
+		Files: map[string]string{
+			"rill.yaml": "",
+			"m1.sql":    `SELECT 'US' AS country`,
+			"mv1.yaml": `
+type: metrics_view
+version: 1
+model: m1
+dimensions:
+- column: country
+measures:
+- name: count
+  expression: COUNT(*)
+`,
+			"project.yaml": canvasYAML(""),
+			"personal.yaml": canvasYAML(`
+annotations:
+  admin_managed: "true"
+  admin_owner_user_id: "viewer"
+`),
+			// A personal canvas that references the project canvas's inline component, which inherits the project's condition.
+			"personal_ref.yaml": `
+type: canvas
+annotations:
+  admin_managed: "true"
+  admin_owner_user_id: "viewer"
+rows:
+- items:
+  - component: project--component-0-0
+`,
+		},
+		Variables: map[string]string{"secret": secret},
+	})
+	testruntime.RequireReconcileState(t, rt, instanceID, 8, 0, 0)
+
+	srv, err := server.NewServer(context.Background(), &server.Options{}, rt, zap.NewNop(), ratelimit.NewNoop(), activity.NewNoopClient())
 	require.NoError(t, err)
-	require.Equal(t, "Secret: "+secret, res.RendererProperties.AsMap()["title"])
+
+	viewerCtx := auth.WithClaims(context.Background(), &runtime.SecurityClaims{
+		UserAttributes: map[string]any{"admin": false, "id": "viewer"},
+		Permissions:    []runtime.Permission{runtime.ReadAPI},
+	})
+
+	// The project's condition is evaluated with the variables, so the row is shown.
+	res, err := srv.ResolveCanvas(viewerCtx, &runtimev1.ResolveCanvasRequest{InstanceId: instanceID, Canvas: "project"})
+	require.NoError(t, err)
+	require.Len(t, res.Canvas.GetCanvas().State.ValidSpec.Rows, 1)
+
+	// The personal canvas's condition is not, so the correct guess reveals nothing: the row is hidden.
+	res, err = srv.ResolveCanvas(viewerCtx, &runtimev1.ResolveCanvasRequest{InstanceId: instanceID, Canvas: "personal"})
+	require.NoError(t, err)
+	require.Len(t, res.Canvas.GetCanvas().State.ValidSpec.Rows, 0)
+
+	// The project component's inherited condition was written in the project canvas, so it is evaluated with the variables
+	// also when a personal canvas references the component: the component is shown.
+	res, err = srv.ResolveCanvas(viewerCtx, &runtimev1.ResolveCanvasRequest{InstanceId: instanceID, Canvas: "personal_ref"})
+	require.NoError(t, err)
+	require.Len(t, res.Canvas.GetCanvas().State.ValidSpec.Rows, 1)
+	require.Contains(t, res.ResolvedComponents, "project--component-0-0")
+}
+
+// TestCanvasTransitiveAccessComponentOrigin verifies that when a canvas references another canvas's inline component,
+// the component's queries are analyzed for transitive access with the origin of the canvas that defines the component.
+// Otherwise a personal canvas reusing a project component whose SQL uses project variables would fail to grant its metrics view.
+func TestCanvasTransitiveAccessComponentOrigin(t *testing.T) {
+	rt, instanceID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
+		Files: map[string]string{
+			"rill.yaml": "",
+			"m1.sql":    `SELECT 'US' AS country`,
+			"mv1.yaml": `
+type: metrics_view
+version: 1
+model: m1
+dimensions:
+- column: country
+measures:
+- name: count
+  expression: COUNT(*)
+`,
+			"defining.yaml": `
+type: canvas
+rows:
+- items:
+  - custom_chart:
+      metrics_sql: "SELECT count FROM {{ .env.mv }}"
+      vega_spec: "{}"
+`,
+			"wrapper.yaml": `
+type: canvas
+annotations:
+  admin_managed: "true"
+  admin_owner_user_id: "viewer"
+rows:
+- items:
+  - component: defining--component-0-0
+`,
+		},
+		Variables: map[string]string{"mv": "mv1"},
+	})
+	testruntime.RequireReconcileState(t, rt, instanceID, 6, 0, 0)
+
+	// A shared link's token for the personal wrapper canvas, held by its owner.
+	claims := &runtime.SecurityClaims{
+		UserAttributes: map[string]any{"admin": false, "id": "viewer"},
+		Permissions:    []runtime.Permission{runtime.ReadAPI, runtime.ReadMetrics},
+		AdditionalRules: []*runtimev1.SecurityRule{{Rule: &runtimev1.SecurityRule_TransitiveAccess{TransitiveAccess: &runtimev1.SecurityRuleTransitiveAccess{
+			Resource: &runtimev1.ResourceName{Kind: runtime.ResourceKindCanvas, Name: "wrapper"},
+		}}}},
+	}
+
+	// The project component's SQL resolves the variable during ref discovery, so the token is granted the metrics view it reads.
+	mv := testruntime.GetResource(t, rt, instanceID, runtime.ResourceKindMetricsView, "mv1")
+	sec, err := rt.ResolveSecurity(context.Background(), instanceID, claims, mv)
+	require.NoError(t, err)
+	require.True(t, sec.CanAccess())
 }

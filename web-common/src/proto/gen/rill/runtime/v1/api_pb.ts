@@ -2493,6 +2493,16 @@ export class QueryResolverRequest extends Message$1<QueryResolverRequest> {
    */
   limit = 0;
 
+  /**
+   * Optional name of a component whose saved properties the resolver properties were taken from.
+   * Templates in the properties may then access project variables if the component's canvas is declared in the project.
+   * Only supported for the metrics_sql resolver: the SQL must match one of the component's metrics_sql queries.
+   * The caller must have access to the component.
+   *
+   * @generated from field: string component = 6;
+   */
+  component = "";
+
   constructor(data?: PartialMessage<QueryResolverRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -2506,6 +2516,7 @@ export class QueryResolverRequest extends Message$1<QueryResolverRequest> {
     { no: 3, name: "resolver_properties", kind: "message", T: Struct },
     { no: 4, name: "resolver_args", kind: "message", T: Struct },
     { no: 5, name: "limit", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
+    { no: 6, name: "component", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): QueryResolverRequest {
