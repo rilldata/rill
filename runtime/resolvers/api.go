@@ -63,18 +63,17 @@ func newAPI(ctx context.Context, opts *runtime.ResolverOptions) (runtime.Resolve
 	opts.Args[key] = visited
 
 	// Initialize the resolver of the API to proxy to.
-	// The API's resolver properties are declared in the project, regardless of who calls the API.
+	// API templates never access project variables (the parser rejects references to them), so ProjectDeclared is left unset.
 	initializer, ok := runtime.ResolverInitializers[api.Spec.Resolver]
 	if !ok {
 		return nil, fmt.Errorf("no resolver found of type %q", api.Spec.Resolver)
 	}
 	return initializer(ctx, &runtime.ResolverOptions{
-		Runtime:          opts.Runtime,
-		InstanceID:       opts.InstanceID,
-		Properties:       api.Spec.ResolverProperties.AsMap(),
-		PropertiesOrigin: runtime.PropertiesFromProject,
-		Args:             opts.Args,
-		Claims:           opts.Claims,
-		ForExport:        opts.ForExport,
+		Runtime:    opts.Runtime,
+		InstanceID: opts.InstanceID,
+		Properties: api.Spec.ResolverProperties.AsMap(),
+		Args:       opts.Args,
+		Claims:     opts.Claims,
+		ForExport:  opts.ForExport,
 	})
 }

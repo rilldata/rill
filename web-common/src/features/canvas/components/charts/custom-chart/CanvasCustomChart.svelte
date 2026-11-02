@@ -29,7 +29,6 @@
 {#if hasValidSpec || hasContent}
   <CustomChartRenderer
     name={component.id}
-    componentName={component.id}
     spec={$specStore.vega_spec}
     whereFilter={$timeAndFilterStore?.where}
     timeRange={$timeAndFilterStore?.timeRange}

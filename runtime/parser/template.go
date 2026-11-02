@@ -212,7 +212,8 @@ func AnalyzeTemplateRecursively(val any, res map[string]string) error {
 
 // TemplateReferencesVariables reports whether the value contains templates that may read project variables.
 // It checks strings, and recursively the values of maps and slices, matching the shapes accepted by ResolveTemplateRecursively.
-// A template references variables if it accesses .env or .vars (also through $ or the root data object) or calls the env function.
+// A template references variables if it accesses .env or .vars (also through $ or the root data object) or calls the env function,
+// including in a nested template inside a string literal, such as the SQL passed to the metrics_sql template function.
 // Templates that fail to parse are reported as not referencing variables, since the parse error surfaces when they are resolved.
 func TemplateReferencesVariables(val any) bool {
 	switch val := val.(type) {
@@ -259,6 +260,9 @@ func nodeReferencesVariables(node parse.Node, dotIsRoot bool) bool {
 		return dotIsRoot
 	case *parse.IdentifierNode:
 		return n.Ident == "env"
+	case *parse.StringNode:
+		// A string literal may hold a nested template that a template function resolves later, e.g. the SQL of metrics_sql.
+		return TemplateReferencesVariables(n.Text)
 	case *parse.ChainNode:
 		return nodeReferencesVariables(n.Node, dotIsRoot)
 	case *parse.ListNode:

@@ -4634,15 +4634,6 @@ export class ResolveTemplatedStringRequest extends Message<ResolveTemplatedStrin
    */
   additionalTimeRange?: TimeRange;
 
-  /**
-   * Optional name of a markdown component whose content to resolve instead of body.
-   * The content is declared in the project, so its templates may access project variables.
-   * The caller must have access to the component.
-   *
-   * @generated from field: string component = 6;
-   */
-  component = "";
-
   constructor(data?: PartialMessage<ResolveTemplatedStringRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -4656,7 +4647,6 @@ export class ResolveTemplatedStringRequest extends Message<ResolveTemplatedStrin
     { no: 3, name: "use_format_tokens", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 4, name: "additional_where_by_metrics_view", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "message", T: Expression} },
     { no: 5, name: "additional_time_range", kind: "message", T: TimeRange },
-    { no: 6, name: "component", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ResolveTemplatedStringRequest {

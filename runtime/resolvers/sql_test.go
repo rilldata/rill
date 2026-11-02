@@ -193,9 +193,8 @@ func must[T any](v T, err error) T {
 // TestSQLUntrustedPropertiesHideVariables verifies that templates in resolver properties supplied by an API caller
 // cannot read project variables unless the caller may read sensitive instance info,
 // while templates declared in the project always can.
-// TestSQLTemplateVariables verifies that who wrote a template decides whether it may access project variables:
-// templates declared in the project always may, templates supplied by the caller only if the caller may read the variables anyway,
-// and templates written by a user through the admin API never.
+// TestSQLTemplateVariables verifies that only templates declared in the project's source files may access project variables,
+// whoever the caller is.
 func TestSQLTemplateVariables(t *testing.T) {
 	const secret = "s3cret-value"
 	rt, instanceID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
@@ -203,60 +202,44 @@ func TestSQLTemplateVariables(t *testing.T) {
 		Variables: map[string]string{"secret": secret},
 	})
 
-	viewer := &runtime.SecurityClaims{Permissions: []runtime.Permission{runtime.ReadAPI, runtime.ReadMetrics, runtime.ReadResolvers}}
-
 	cases := []struct {
-		name    string
-		sql     string
-		origin  runtime.PropertiesOrigin
-		claims  *runtime.SecurityClaims
-		want    string
-		wantErr string
+		name            string
+		sql             string
+		projectDeclared bool
+		claims          *runtime.SecurityClaims
+		want            string
+		wantErr         string
 	}{
 		{
-			name:   "project-declared properties see variables",
-			sql:    "SELECT '{{ .env.secret }}' AS v",
-			origin: runtime.PropertiesFromProject,
-			claims: &runtime.SecurityClaims{},
-			want:   secret,
+			name:            "project-declared properties see variables",
+			sql:             "SELECT '{{ .env.secret }}' AS v",
+			projectDeclared: true,
+			claims:          &runtime.SecurityClaims{},
+			want:            secret,
 		},
 		{
 			name:    "caller-supplied properties cannot reference variables",
 			sql:     "SELECT '{{ .env.secret }}' AS v",
-			claims:  viewer,
+			claims:  &runtime.SecurityClaims{Permissions: []runtime.Permission{runtime.ReadAPI, runtime.ReadMetrics, runtime.ReadResolvers}},
+			wantErr: "project variables are only available to templates declared in the project files",
+		},
+		{
+			name:    "caller-supplied properties cannot reference variables even with ReadInstance",
+			sql:     "SELECT '{{ .env.secret }}' AS v",
+			claims:  &runtime.SecurityClaims{Permissions: []runtime.Permission{runtime.ReadInstance}},
+			wantErr: "project variables are only available to templates declared in the project files",
+		},
+		{
+			name:    "caller-supplied properties cannot reference variables even when checks are skipped",
+			sql:     "SELECT '{{ .env.secret }}' AS v",
+			claims:  &runtime.SecurityClaims{SkipChecks: true},
 			wantErr: "project variables are only available to templates declared in the project files",
 		},
 		{
 			name:   "caller-supplied properties without variables resolve",
 			sql:    "SELECT '{{ .args.x }}' AS v",
-			claims: viewer,
+			claims: &runtime.SecurityClaims{Permissions: []runtime.Permission{runtime.ReadAPI, runtime.ReadMetrics, runtime.ReadResolvers}},
 			want:   "<no value>",
-		},
-		{
-			name:   "caller-supplied properties see variables with ReadInstance",
-			sql:    "SELECT '{{ .env.secret }}' AS v",
-			claims: &runtime.SecurityClaims{Permissions: []runtime.Permission{runtime.ReadInstance}},
-			want:   secret,
-		},
-		{
-			name:   "caller-supplied properties see variables when checks are skipped",
-			sql:    "SELECT '{{ .env.secret }}' AS v",
-			claims: &runtime.SecurityClaims{SkipChecks: true},
-			want:   secret,
-		},
-		{
-			name:    "user-written properties never see variables, even for a caller with ReadInstance",
-			sql:     "SELECT '{{ .env.secret }}' AS v",
-			origin:  runtime.PropertiesFromUser,
-			claims:  &runtime.SecurityClaims{Permissions: []runtime.Permission{runtime.ReadInstance}},
-			wantErr: "project variables are only available to templates declared in the project files",
-		},
-		{
-			name:   "user-written properties without variables resolve",
-			sql:    "SELECT 'ok' AS v",
-			origin: runtime.PropertiesFromUser,
-			claims: &runtime.SecurityClaims{SkipChecks: true},
-			want:   "ok",
 		},
 	}
 
@@ -266,7 +249,7 @@ func TestSQLTemplateVariables(t *testing.T) {
 				InstanceID:         instanceID,
 				Resolver:           "sql",
 				ResolverProperties: map[string]any{"sql": tc.sql},
-				PropertiesOrigin:   tc.origin,
+				ProjectDeclared:    tc.projectDeclared,
 				Claims:             tc.claims,
 			})
 			if tc.wantErr != "" {

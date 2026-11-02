@@ -5975,8 +5975,6 @@ func (m *QueryResolverRequest) validate(all bool) error {
 
 	// no validation rules for Limit
 
-	// no validation rules for Component
-
 	if len(errors) > 0 {
 		return QueryResolverRequestMultiError(errors)
 	}

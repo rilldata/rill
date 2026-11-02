@@ -150,6 +150,11 @@ func (p *Parser) parseAlert(node *Node) error {
 		}
 		node.Refs = append(node.Refs, refs...)
 
+		// Alerts are created by users as well as declared in the project, so their templates can't reference project variables, which commonly hold secrets.
+		if TemplateReferencesVariables(resolverProps.AsMap()) {
+			return errors.New(`project variables (".env") are not available in alert properties`)
+		}
+
 		// Query for: validate only one of user_id, user_email, or attributes is set
 		n := 0
 		if tmp.For.UserID != "" {

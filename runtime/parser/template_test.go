@@ -130,8 +130,9 @@ func TestTemplateReferencesVariables(t *testing.T) {
 		{`{{ with .args }}{{ $.env.x }}{{ end }}`, true},
 		{`{{ with .env }}{{ .x }}{{ end }}`, true},
 		{`{{ metrics_sql "SELECT 1" }}`, false},
-		// The nested template is a string literal here; it is checked when the nested resolver resolves it.
-		{`{{ metrics_sql "SELECT {{ .env.x }}" }}`, false},
+		// A nested template inside a string literal is resolved later by the template function, so it counts.
+		{`{{ metrics_sql "SELECT {{ .env.x }}" }}`, true},
+		{`{{ metrics_sql "SELECT 1 FROM mv" }}`, false},
 		// Parse errors surface when the template is resolved.
 		{`{{ .env`, false},
 		{`{{ .env.x }}`, true},

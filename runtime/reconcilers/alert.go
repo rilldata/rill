@@ -255,9 +255,9 @@ func (r *AlertReconciler) ResolveTransitiveAccess(ctx context.Context, claims *r
 				"query_name":      spec.QueryName,
 				"query_args_json": spec.QueryArgsJson,
 			},
-			PropertiesOrigin: runtime.PropertiesOriginFromAnnotations(spec.Annotations),
-			Claims:           claims,
-			ForExport:        false,
+			ProjectDeclared: false, // Alert templates never access project variables (the parser rejects references to them).
+			Claims:          claims,
+			ForExport:       false,
 		})
 		if err != nil {
 			return nil, err
@@ -282,12 +282,12 @@ func (r *AlertReconciler) ResolveTransitiveAccess(ctx context.Context, claims *r
 			return nil, fmt.Errorf("no resolver found for name %q", spec.Resolver)
 		}
 		resolver, err := initializer(ctx, &runtime.ResolverOptions{
-			Runtime:          r.C.Runtime,
-			InstanceID:       r.C.InstanceID,
-			Properties:       spec.ResolverProperties.AsMap(),
-			PropertiesOrigin: runtime.PropertiesOriginFromAnnotations(spec.Annotations),
-			Claims:           claims,
-			ForExport:        false,
+			Runtime:         r.C.Runtime,
+			InstanceID:      r.C.InstanceID,
+			Properties:      spec.ResolverProperties.AsMap(),
+			ProjectDeclared: false, // Alert templates never access project variables (the parser rejects references to them).
+			Claims:          claims,
+			ForExport:       false,
 		})
 		if err != nil {
 			return nil, err
@@ -704,7 +704,7 @@ func (r *AlertReconciler) executeSingleWrapped(ctx context.Context, self *runtim
 		InstanceID:         r.C.InstanceID,
 		Resolver:           a.Spec.Resolver,
 		ResolverProperties: a.Spec.ResolverProperties.AsMap(),
-		PropertiesOrigin:   runtime.PropertiesOriginFromAnnotations(a.Spec.Annotations),
+		ProjectDeclared:    false, // Alert templates never access project variables (the parser rejects references to them).
 		Args: map[string]any{
 			"priority":       alertQueryPriority,
 			"execution_time": executionTime,

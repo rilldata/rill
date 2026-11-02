@@ -128,6 +128,11 @@ func (p *Parser) parseReport(node *Node) error {
 			return fmt.Errorf(`failed to parse "data": %w`, err)
 		}
 		node.Refs = append(node.Refs, refs...)
+
+		// Reports are created by users as well as declared in the project, so their templates can't reference project variables, which commonly hold secrets.
+		if TemplateReferencesVariables(resolverProps.AsMap()) {
+			return errors.New(`project variables (".env") are not available in report properties`)
+		}
 	} else if tmp.Query.Name != "" {
 		// Query args
 		if tmp.Query.ArgsJSON != "" {

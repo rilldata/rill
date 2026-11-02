@@ -5102,14 +5102,6 @@ export class ComponentSpec extends Message<ComponentSpec> {
   definedInCanvas = false;
 
   /**
-   * For components defined inline in a canvas, the name of that canvas.
-   * The component is accessible only through the canvas, and the canvas decides whether the component's templates may access project variables.
-   *
-   * @generated from field: string parent_canvas = 12;
-   */
-  parentCanvas = "";
-
-  /**
    * For components defined inline in a canvas, the `if` conditions of the item and its ancestors (rows, tabs), ANDed together.
    * Only viewers for whom it evaluates to true can access the component.
    *
@@ -5133,7 +5125,6 @@ export class ComponentSpec extends Message<ComponentSpec> {
     { no: 8, name: "input", kind: "message", T: ComponentVariable, repeated: true },
     { no: 9, name: "output", kind: "message", T: ComponentVariable },
     { no: 6, name: "defined_in_canvas", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
-    { no: 12, name: "parent_canvas", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 11, name: "condition_expression", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 

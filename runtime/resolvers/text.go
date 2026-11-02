@@ -44,12 +44,12 @@ func newText(ctx context.Context, opts *runtime.ResolverOptions) (runtime.Resolv
 	}
 
 	r := &textResolver{
-		rt:         opts.Runtime,
-		instanceID: opts.InstanceID,
-		claims:     opts.Claims,
-		props:      props,
-		origin:     opts.PropertiesOrigin,
-		variables:  variables,
+		rt:              opts.Runtime,
+		instanceID:      opts.InstanceID,
+		claims:          opts.Claims,
+		props:           props,
+		projectDeclared: opts.ProjectDeclared,
+		variables:       variables,
 	}
 
 	if err := r.analyzeAndPopulateRefs(ctx); err != nil {
@@ -64,9 +64,9 @@ type textResolver struct {
 	instanceID string
 	claims     *runtime.SecurityClaims
 	props      *textProps
-	// origin says who wrote the text. It is propagated to the nested metrics_sql resolvers,
+	// projectDeclared is set when the text was declared in the project's source files. It is propagated to the nested metrics_sql resolvers,
 	// since the SQL in a metrics_sql template call has the same author as the text around it.
-	origin runtime.PropertiesOrigin
+	projectDeclared bool
 	// variables are the project variables the template may access. See ResolverOptions.TemplateVariables.
 	variables map[string]string
 	refs      []*runtimev1.ResourceName
@@ -124,8 +124,8 @@ func (r *textResolver) ResolveInteractive(ctx context.Context) (runtime.Resolver
 				"additional_where_by_metrics_view": r.props.AdditionalWhereByMetricsView,
 				"additional_time_range":            r.props.AdditionalTimeRange,
 			},
-			PropertiesOrigin: r.origin,
-			Claims:           r.claims,
+			ProjectDeclared: r.projectDeclared,
+			Claims:          r.claims,
 		})
 		if err != nil {
 			return nil, err
@@ -275,10 +275,10 @@ func (r *textResolver) analyzeAndPopulateRefs(ctx context.Context) error {
 	seen := make(map[string]bool)
 	for _, sql := range sqls {
 		res, err := initializer(ctx, &runtime.ResolverOptions{
-			Runtime:          r.rt,
-			InstanceID:       r.instanceID,
-			Properties:       map[string]any{"sql": sql},
-			PropertiesOrigin: r.origin,
+			Runtime:         r.rt,
+			InstanceID:      r.instanceID,
+			Properties:      map[string]any{"sql": sql},
+			ProjectDeclared: r.projectDeclared,
 			Claims: &runtime.SecurityClaims{
 				UserID:         r.claims.UserID,
 				UserAttributes: r.claims.UserAttributes,

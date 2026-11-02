@@ -89,59 +89,26 @@ type ResolverOptions struct {
 	InstanceID string
 	// Properties are the resolver's static properties, such as the SQL of a SQL resolver.
 	Properties map[string]any
-	// PropertiesOrigin says who wrote Properties, which decides whether templates in them may access project variables. See TemplateVariables.
-	// It is PropertiesFromCaller unless set, so an entry point that forgets to set it withholds the variables.
-	PropertiesOrigin PropertiesOrigin
-	Args             map[string]any
-	Claims           *SecurityClaims
-	ForExport        bool
+	// ProjectDeclared is set when Properties were declared in the project's source files and are resolved on the project's behalf,
+	// which today means the model reconciler (incremental state, partitions and tests).
+	// Only templates in such properties may access project variables, since the variables commonly hold secrets such as connector credentials.
+	// It must be left unset for properties supplied by an API caller, and for resources whose results are served to viewers
+	// or that users create through the admin API (custom APIs, dashboards, alerts and reports); the parser rejects variable references there. See TemplateVariables.
+	ProjectDeclared bool
+	Args            map[string]any
+	Claims          *SecurityClaims
+	ForExport       bool
 }
 
 // TemplateVariables returns the project variables that templates in the resolver's properties may access.
-// See the package-level TemplateVariables.
-func (o *ResolverOptions) TemplateVariables(inst *drivers.Instance, templates ...any) (map[string]string, error) {
-	return TemplateVariables(inst, o.Claims, o.PropertiesOrigin, templates...)
-}
-
-// PropertiesOrigin says who wrote the templates in a resolver's properties (or other templated content),
-// which decides whether they may access project variables. Project variables commonly hold secrets such as connector credentials.
-type PropertiesOrigin int
-
-const (
-	// PropertiesFromCaller means the properties were supplied by the API caller, such as the SQL in a QueryResolver request.
-	// Templates in them may access project variables only if the caller may read the variables anyway (see ReadInstance).
-	// It is the zero value, so an entry point that forgets to set the origin withholds the variables.
-	PropertiesFromCaller PropertiesOrigin = iota
-	// PropertiesFromProject means the properties were declared in the project's source files, such as a custom API or an alert in the repo.
-	// Templates in them may access project variables.
-	PropertiesFromProject
-	// PropertiesFromUser means the properties were written by a user through the admin API, such as a personal canvas or an alert created in the UI.
-	// The runtime stores them as project files (see IsAdminManaged), but they are not reviewed like the project's source files,
-	// and the user resolving them may not be the one who wrote them. Templates in them never access project variables.
-	PropertiesFromUser
-)
-
-// PropertiesOriginFromAnnotations returns the origin of a resource's properties from the resource's annotations:
-// PropertiesFromUser if the resource was created through the admin API (see IsAdminManaged), and PropertiesFromProject otherwise.
-func PropertiesOriginFromAnnotations(annotations map[string]string) PropertiesOrigin {
-	if IsAdminManaged(annotations) {
-		return PropertiesFromUser
-	}
-	return PropertiesFromProject
-}
-
-// TemplateVariables returns the project variables that the given templates may access, based on who wrote them (see PropertiesOrigin).
-// It returns an error if the variables are withheld and any of the templates reference them,
+// Project variables commonly hold secrets such as connector credentials, so they are only available to templates declared
+// in the project's source files (see ProjectDeclared), whoever the caller is.
+// Otherwise it returns an error if any of the given templates reference variables,
 // since resolving them to empty values would silently produce wrong results.
 // The templates may be strings or nested maps and slices of strings, matching the shapes accepted by parser.ResolveTemplateRecursively.
-func TemplateVariables(inst *drivers.Instance, claims *SecurityClaims, origin PropertiesOrigin, templates ...any) (map[string]string, error) {
-	switch origin {
-	case PropertiesFromProject:
+func (o *ResolverOptions) TemplateVariables(inst *drivers.Instance, templates ...any) (map[string]string, error) {
+	if o.ProjectDeclared {
 		return inst.ResolveVariables(false), nil
-	case PropertiesFromCaller:
-		if claims != nil && claims.Can(ReadInstance) {
-			return inst.ResolveVariables(false), nil
-		}
 	}
 	for _, tmpl := range templates {
 		if parser.TemplateReferencesVariables(tmpl) {
@@ -170,10 +137,10 @@ type ResolveOptions struct {
 	InstanceID         string
 	Resolver           string
 	ResolverProperties map[string]any
-	// PropertiesOrigin says who wrote ResolverProperties. See ResolverOptions.PropertiesOrigin.
-	PropertiesOrigin PropertiesOrigin
-	Args             map[string]any
-	Claims           *SecurityClaims
+	// ProjectDeclared is set when ResolverProperties were declared in the project's source files. See ResolverOptions.ProjectDeclared.
+	ProjectDeclared bool
+	Args            map[string]any
+	Claims          *SecurityClaims
 }
 
 type ResolveInfo struct {
@@ -213,13 +180,13 @@ func (r *Runtime) Resolve(ctx context.Context, opts *ResolveOptions) (res Resolv
 		return nil, nil, fmt.Errorf("no resolver found for name %q", opts.Resolver)
 	}
 	resolver, err := initializer(ctx, &ResolverOptions{
-		Runtime:          r,
-		InstanceID:       opts.InstanceID,
-		Properties:       opts.ResolverProperties,
-		PropertiesOrigin: opts.PropertiesOrigin,
-		Args:             opts.Args,
-		Claims:           opts.Claims,
-		ForExport:        false,
+		Runtime:         r,
+		InstanceID:      opts.InstanceID,
+		Properties:      opts.ResolverProperties,
+		ProjectDeclared: opts.ProjectDeclared,
+		Args:            opts.Args,
+		Claims:          opts.Claims,
+		ForExport:       false,
 	})
 	if err != nil {
 		return nil, nil, err

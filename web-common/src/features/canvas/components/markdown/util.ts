@@ -9,10 +9,7 @@ import type {
   V1TimeRange,
   QueryServiceResolveTemplatedStringBody,
 } from "@rilldata/web-common/runtime-client";
-import {
-  getQueryServiceResolveTemplatedStringQueryKey,
-  getQueryServiceResolveTemplatedStringQueryOptions,
-} from "@rilldata/web-common/runtime-client";
+import { getQueryServiceResolveTemplatedStringQueryOptions } from "@rilldata/web-common/runtime-client";
 import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import { derived } from "svelte/store";
 import type { Readable } from "svelte/store";
@@ -103,18 +100,16 @@ export function formatResolvedContent(
 }
 
 function buildRequestBody(params: {
-  component: string;
+  content: string;
   applyFormatting: boolean;
   timeRange: V1TimeRange | undefined;
   exprByMetricsView: Record<string, V1Expression>;
   metricsViews: Record<string, V1MetricsView | undefined>;
 }): QueryServiceResolveTemplatedStringBody | null {
-  const { component, applyFormatting, timeRange, exprByMetricsView } = params;
+  const { content, applyFormatting, timeRange, exprByMetricsView } = params;
 
   return {
-    // The runtime resolves the component's saved content rather than a body sent by the browser.
-    // Only content declared in the project may use project variables, so sending the content as a body would reject it.
-    component,
+    body: content,
     useFormatTokens: applyFormatting,
     additionalTimeRange: timeRange,
     ...(Object.keys(exprByMetricsView).length > 0 && {
@@ -135,12 +130,11 @@ export function getResolveTemplatedStringQueryOptions(
       return derived(
         [
           component.specStore,
-          component.resource,
           component.timeAndFilterStore,
           component.parent?.specStore ?? null,
           component.parent.timeManager.hasTimeSeriesStore,
         ],
-        ([spec, resource, timeAndFilters, parentSpec, hasTimeSeries]) => {
+        ([spec, timeAndFilters, parentSpec, hasTimeSeries]) => {
           const content = spec?.content ?? "";
           const applyFormatting = spec?.apply_formatting === true;
           const needsTemplating = hasTemplatingSyntax(content);
@@ -148,7 +142,7 @@ export function getResolveTemplatedStringQueryOptions(
           const metricsViews = parentSpec?.data?.metricsViews ?? {};
 
           const requestBody = buildRequestBody({
-            component: component.id,
+            content,
             applyFormatting,
             timeRange: timeAndFilters?.timeRange,
             exprByMetricsView,
@@ -164,7 +158,7 @@ export function getResolveTemplatedStringQueryOptions(
 
           const body: QueryServiceResolveTemplatedStringBody =
             !enabled || !requestBody
-              ? { component: component.id, useFormatTokens: applyFormatting }
+              ? { body: content, useFormatTokens: applyFormatting }
               : requestBody;
 
           const queryEnabled = enabled && !!requestBody;
@@ -172,23 +166,12 @@ export function getResolveTemplatedStringQueryOptions(
           // Cast needed: QueryServiceResolveTemplatedStringBody uses string
           // timestamps while the v2 proto request expects Timestamp objects;
           // the v2 fromJson layer handles the conversion at runtime.
-          // The request names the component instead of carrying its content, and the runtime resolves the content
-          // it has reconciled. The resource's state version is added to the query key so the text is refetched once a
-          // reconcile completes; keying on the local content instead would cache the previous text under the new key
-          // when the request races the reconcile.
           return getQueryServiceResolveTemplatedStringQueryOptions(
             client,
             body as any,
             {
               query: {
                 enabled: queryEnabled,
-                queryKey: [
-                  ...getQueryServiceResolveTemplatedStringQueryKey(
-                    client.instanceId,
-                    body as any,
-                  ),
-                  resource?.meta?.stateVersion ?? "",
-                ],
               },
             },
           );

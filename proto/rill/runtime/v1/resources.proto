@@ -884,9 +884,6 @@ message ComponentSpec {
   repeated ComponentVariable input = 8;
   ComponentVariable output = 9;
   bool defined_in_canvas = 6;
-  // For components defined inline in a canvas, the name of that canvas.
-  // The component is accessible only through the canvas, and the canvas decides whether the component's templates may access project variables.
-  string parent_canvas = 12;
   // For components defined inline in a canvas, the `if` conditions of the item and its ancestors (rows, tabs), ANDed together.
   // Only viewers for whom it evaluates to true can access the component.
   string condition_expression = 11;

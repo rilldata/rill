@@ -89,7 +89,7 @@ func (t *QuerySQL) Handler(ctx context.Context, args *QuerySQLArgs) (*QuerySQLRe
 	}
 
 	// Execute via the SQL resolver.
-	// The SQL is written by the model on the user's behalf, so it is not trusted: templates in it cannot access project variables.
+	// The SQL is written by the model on the user's behalf, so templates in it cannot access project variables.
 	res, _, err := t.Runtime.Resolve(ctx, &runtime.ResolveOptions{
 		InstanceID:         s.InstanceID(),
 		Resolver:           "sql",

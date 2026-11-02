@@ -507,6 +507,10 @@ func parseCondition(condition string) (string, error) {
 	if condition == "" {
 		return "", nil
 	}
+	// Conditions are evaluated for viewers, so they can't reference project variables, which commonly hold secrets.
+	if TemplateReferencesVariables(condition) {
+		return "", errors.New(`project variables (".env") are not available in "if" conditions; use ".user" attributes instead`)
+	}
 	resolved, err := ResolveTemplate(condition, validationTemplateData, false)
 	if err != nil {
 		return "", fmt.Errorf("templating is not valid: %w", err)
@@ -568,7 +572,6 @@ func (p *Parser) parseCanvasInlineComponent(canvasName, posKey string, props map
 	}
 
 	spec.DefinedInCanvas = true
-	spec.ParentCanvas = canvasName
 
 	name := fmt.Sprintf("%s--component-%s", canvasName, posKey)
 

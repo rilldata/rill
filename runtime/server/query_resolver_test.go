@@ -15,7 +15,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/structpb"
 )
 
@@ -166,7 +165,7 @@ driver: duckdb
 }
 
 // TestQueryResolver_ProjectVariables verifies that the request's resolver properties cannot read project variables,
-// which commonly hold secrets such as connector credentials, unless the caller may read sensitive instance info.
+// which commonly hold secrets such as connector credentials, whoever the caller is.
 func TestQueryResolver_ProjectVariables(t *testing.T) {
 	t.Parallel()
 
@@ -229,97 +228,7 @@ measures:
 	require.Len(t, res.Data, 1)
 	require.Equal(t, float64(100), res.Data[0].Fields["total_revenue"].GetNumberValue())
 
-	// A caller that can read sensitive instance info can already read the variables through GetInstance, so templates resolve them.
-	res, err = srv.QueryResolver(testCtx(), metricsSQL(`SELECT total_revenue FROM mv WHERE country = '{{ .env.country }}'`))
-	require.NoError(t, err)
-	require.Len(t, res.Data, 1)
-	require.Equal(t, float64(100), res.Data[0].Fields["total_revenue"].GetNumberValue())
-}
-
-// TestQueryResolver_Component verifies that a request may name the component its metrics_sql was taken from,
-// so that a project-declared canvas chart keeps its access to project variables while the runtime never returns the resolved SQL.
-func TestQueryResolver_Component(t *testing.T) {
-	t.Parallel()
-
-	const secret = "s3cret-value"
-	rt, instanceID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
-		Files: map[string]string{
-			"rill.yaml": "",
-			"model.sql": `
-SELECT 'US' AS country, 100 AS revenue
-UNION ALL
-SELECT 'UK' AS country, 200 AS revenue
-`,
-			"mv.yaml": `
-type: metrics_view
-version: 1
-model: model
-dimensions:
-- column: country
-measures:
-- name: total_revenue
-  expression: SUM(revenue)
-`,
-			"project.yaml": `
-type: canvas
-rows:
-- items:
-  - custom_chart:
-      metrics_sql:
-      - "SELECT total_revenue FROM mv WHERE country = '{{ .env.country }}'"
-      - "SELECT total_revenue FROM mv"
-      vega_spec: "{}"
-`,
-			// A personal canvas created through the admin API by the viewer, so its queries were written by the viewer.
-			"personal.yaml": `
-type: canvas
-annotations:
-  admin_managed: "true"
-  admin_owner_user_id: "viewer"
-rows:
-- items:
-  - custom_chart:
-      metrics_sql: "SELECT total_revenue FROM mv WHERE country = '{{ .env.secret }}'"
-      vega_spec: "{}"
-`,
-		},
-		Variables: map[string]string{"country": "US", "secret": secret},
-	})
-	testruntime.RequireReconcileState(t, rt, instanceID, 7, 0, 0)
-
-	srv, err := server.NewServer(t.Context(), &server.Options{}, rt, zap.NewNop(), ratelimit.NewNoop(), activity.NewNoopClient())
-	require.NoError(t, err)
-
-	req := func(component, resolver, sql string) *runtimev1.QueryResolverRequest {
-		return &runtimev1.QueryResolverRequest{
-			InstanceId:         instanceID,
-			Resolver:           resolver,
-			ResolverProperties: &structpb.Struct{Fields: map[string]*structpb.Value{"sql": structpb.NewStringValue(sql)}},
-			Component:          component,
-		}
-	}
-	viewerCtx := auth.WithClaims(context.Background(), &runtime.SecurityClaims{
-		UserAttributes: map[string]any{"admin": false, "id": "viewer"},
-		Permissions:    []runtime.Permission{runtime.ReadMetrics},
-	})
-
-	// A query taken from a project-declared component resolves the variable for a viewer.
-	res, err := srv.QueryResolver(viewerCtx, req("project--component-0-0", "metrics_sql", `SELECT total_revenue FROM mv WHERE country = '{{ .env.country }}'`))
-	require.NoError(t, err)
-	require.Len(t, res.Data, 1)
-	require.Equal(t, float64(100), res.Data[0].Fields["total_revenue"].GetNumberValue())
-
-	// The query must match one of the component's saved queries, so the component cannot be used to run other templates.
-	_, err = srv.QueryResolver(viewerCtx, req("project--component-0-0", "metrics_sql", `SELECT total_revenue FROM mv WHERE country = '{{ .env.secret }}'`))
-	require.Equal(t, codes.InvalidArgument, status.Code(err))
-	require.NotContains(t, err.Error(), secret)
-
-	// Only metrics_sql queries can be taken from a component. (Other resolvers require ReadResolvers, which the test context has.)
-	_, err = srv.QueryResolver(testCtx(), req("project--component-0-0", "sql", `SELECT '{{ .env.country }}' AS v`))
-	require.Equal(t, codes.InvalidArgument, status.Code(err))
-
-	// A query written by the viewer in their personal canvas never sees the variables.
-	_, err = srv.QueryResolver(viewerCtx, req("personal--component-0-0", "metrics_sql", `SELECT total_revenue FROM mv WHERE country = '{{ .env.secret }}'`))
+	// Not even a caller that could read the variables through GetInstance: the properties are not declared in the project.
+	_, err = srv.QueryResolver(testCtx(), metricsSQL(`SELECT total_revenue FROM mv WHERE country = '{{ .env.country }}'`))
 	require.ErrorContains(t, err, "project variables are only available to templates declared in the project files")
-	require.NotContains(t, err.Error(), secret)
 }

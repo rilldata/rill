@@ -1096,10 +1096,6 @@ message ResolveTemplatedStringRequest {
   map<string, Expression> additional_where_by_metrics_view = 4;
   // Additional time range to add to metrics SQL queries
   TimeRange additional_time_range = 5;
-  // Optional name of a markdown component whose content to resolve instead of body.
-  // The content is declared in the project, so its templates may access project variables.
-  // The caller must have access to the component.
-  string component = 6;
 }
 
 message ResolveTemplatedStringResponse {

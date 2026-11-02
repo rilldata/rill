@@ -33,14 +33,11 @@ type VisibilityConditions struct {
 	results map[string]bool
 }
 
-// VisibilityConditions returns the evaluator of `if` conditions for the claims, for the conditions of the given canvas,
-// or for the conditions an inline component inherits from its item when given the component.
+// VisibilityConditions returns the evaluator of `if` conditions for the claims.
 // Unlike ResolveSecurity, it doesn't apply security rules,
 // so it can compute the content of a canvas that transitive access grants cover without recursing into the security engine,
 // and it also works for claims that are only granted a canvas (e.g. alert links).
-// The conditions are evaluated with the access to project variables of the canvas that wrote them, which for a component is the canvas that defines it,
-// also when another canvas references the component: the conditions of a canvas created through the admin API can't reference project variables, see securityTemplateVariables.
-func (r *Runtime) VisibilityConditions(ctx context.Context, instanceID string, claims *SecurityClaims, res *runtimev1.Resource) (*VisibilityConditions, error) {
+func (r *Runtime) VisibilityConditions(ctx context.Context, instanceID string, claims *SecurityClaims) (*VisibilityConditions, error) {
 	if claims.SkipChecks {
 		return nil, nil
 	}
@@ -48,11 +45,8 @@ func (r *Runtime) VisibilityConditions(ctx context.Context, instanceID string, c
 	if err != nil {
 		return nil, err
 	}
-	vars, err := r.securityTemplateVariables(ctx, instanceID, inst, claims, res)
-	if err != nil {
-		return nil, err
-	}
-	return r.securityEngine.visibilityConditions(instanceID, inst.Environment, vars, claims)
+	// `if` conditions never access project variables (the parser rejects references to them), so none are passed.
+	return r.securityEngine.visibilityConditions(instanceID, inst.Environment, nil, claims)
 }
 
 // newVisibilityConditions creates an evaluator of `if` conditions for the given template data,
@@ -165,7 +159,7 @@ func canIncludeHiddenCanvasContent(claims *SecurityClaims, res *runtimev1.Resour
 	if spec == nil {
 		spec = res.GetCanvas().GetSpec()
 	}
-	if !IsAdminManaged(spec.GetAnnotations()) {
+	if !isAdminManagedAnnotations(spec.GetAnnotations()) {
 		return false
 	}
 	userID, _ := claims.UserAttributes["id"].(string)

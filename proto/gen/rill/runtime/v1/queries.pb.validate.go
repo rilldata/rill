@@ -11690,8 +11690,6 @@ func (m *ResolveTemplatedStringRequest) validate(all bool) error {
 		}
 	}
 
-	// no validation rules for Component
-
 	if len(errors) > 0 {
 		return ResolveTemplatedStringRequestMultiError(errors)
 	}

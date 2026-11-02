@@ -346,7 +346,7 @@ func RequireResolve(t testing.TB, rt *runtime.Runtime, id string, opts *RequireR
 		InstanceID:         id,
 		Resolver:           opts.Resolver,
 		ResolverProperties: opts.Properties,
-		PropertiesOrigin:   runtime.PropertiesFromProject,
+		ProjectDeclared:    true,
 		Args:               opts.Args,
 		Claims: &runtime.SecurityClaims{
 			UserAttributes:  opts.UserAttributes,

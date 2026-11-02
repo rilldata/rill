@@ -3288,12 +3288,6 @@ paths:
               additionalTimeRange:
                 $ref: '#/definitions/v1TimeRange'
                 title: Additional time range to add to metrics SQL queries
-              component:
-                type: string
-                description: |-
-                  Optional name of a markdown component whose content to resolve instead of body.
-                  The content is declared in the project, so its templates may access project variables.
-                  The caller must have access to the component.
       tags:
         - QueryService
   /v1/instances/{instanceId}/queries/rollup-interval/tables/{tableName}:
@@ -3753,13 +3747,6 @@ paths:
               limit:
                 type: integer
                 format: int32
-              component:
-                type: string
-                description: |-
-                  Optional name of a component whose saved properties the resolver properties were taken from.
-                  Templates in the properties may then access project variables if the component's canvas is declared in the project.
-                  Only supported for the metrics_sql resolver: the SQL must match one of the component's metrics_sql queries.
-                  The caller must have access to the component.
       tags:
         - RuntimeService
   /v1/instances/{instanceId}/reload-config:
@@ -5476,11 +5463,6 @@ definitions:
         $ref: '#/definitions/v1ComponentVariable'
       definedInCanvas:
         type: boolean
-      parentCanvas:
-        type: string
-        description: |-
-          For components defined inline in a canvas, the name of that canvas.
-          The component is accessible only through the canvas, and the canvas decides whether the component's templates may access project variables.
       conditionExpression:
         type: string
         description: |-

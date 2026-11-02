@@ -380,7 +380,8 @@ func (p *securityEngine) resolveRulesForResource(instanceID, environment string,
 	// The canvas's conditions are evaluated lazily when its content is pruned.
 	// An inline canvas component inherits the conditions of its item, so a viewer who can't see the item can't access the component either.
 	if res.CanAccess() && (r.Meta.Name.Kind == ResourceKindCanvas || r.Meta.Name.Kind == ResourceKindComponent) {
-		visibility, err := p.visibilityConditions(instanceID, environment, vars, claims)
+		// `if` conditions never access project variables (the parser rejects references to them), so none are passed.
+		visibility, err := p.visibilityConditions(instanceID, environment, nil, claims)
 		if err != nil {
 			return nil, err
 		}
@@ -459,7 +460,7 @@ func (p *securityEngine) resolveRules(claims *SecurityClaims, rules []*runtimev1
 		if spec == nil {
 			spec = r.GetCanvas().Spec // Not ideal, but better than giving access to the full resource
 		}
-		if IsAdminManaged(spec.Annotations) {
+		if isAdminManagedAnnotations(spec.Annotations) {
 			// Personal / admin-managed canvas: only owner and admins can access. No default-allow fallthrough.
 			rule := p.builtInCanvasSecurityRule(r.Meta.Name, spec, claims)
 			if rule != nil {
@@ -670,57 +671,9 @@ func (p *securityEngine) builtInReportSecurityRule(reportRes *runtimev1.Resource
 	}
 }
 
-// securityTemplateVariables returns the project variables that the security rules and `if` conditions of a resource may reference.
-// A resource created through the admin API, such as a personal canvas and its inline components, was written by a user (see IsAdminManaged and PropertiesFromUser),
-// so its templates must not access project variables: evaluating them with the variables would let the user test guesses about a secret through what the canvas shows.
-// The variables are also skipped when the claims skip security checks, since no templates are evaluated then.
-func (r *Runtime) securityTemplateVariables(ctx context.Context, instanceID string, inst *drivers.Instance, claims *SecurityClaims, res *runtimev1.Resource) (map[string]string, error) {
-	if claims.SkipChecks {
-		return nil, nil
-	}
-	switch res.Resource.(type) {
-	case *runtimev1.Resource_Canvas:
-		spec := res.GetCanvas().GetState().GetValidSpec()
-		if spec == nil {
-			spec = res.GetCanvas().GetSpec()
-		}
-		if IsAdminManaged(spec.GetAnnotations()) {
-			return nil, nil
-		}
-	case *runtimev1.Resource_Component:
-		spec := res.GetComponent().GetState().GetValidSpec()
-		if spec == nil {
-			spec = res.GetComponent().GetSpec()
-		}
-		if spec.GetParentCanvas() != "" {
-			ctrl, err := r.Controller(ctx, instanceID)
-			if err != nil {
-				return nil, err
-			}
-			canvas, err := ctrl.Get(ctx, &runtimev1.ResourceName{Kind: ResourceKindCanvas, Name: spec.ParentCanvas}, false)
-			if err != nil {
-				if errors.Is(err, drivers.ErrResourceNotFound) {
-					// Without the canvas, who wrote the component is unknown, so the variables are withheld.
-					return nil, nil
-				}
-				return nil, err
-			}
-			canvasSpec := canvas.GetCanvas().GetState().GetValidSpec()
-			if canvasSpec == nil {
-				canvasSpec = canvas.GetCanvas().GetSpec()
-			}
-			if IsAdminManaged(canvasSpec.GetAnnotations()) {
-				return nil, nil
-			}
-		}
-	}
-	return inst.ResolveVariables(false), nil
-}
-
-// IsAdminManaged reports whether a resource's annotations mark it as created through the admin API,
-// such as a personal canvas or an alert or report created in the UI, instead of being declared in the project's source files.
-// The runtime sees such resources as project files, but their contents were written by the user who created them.
-func IsAdminManaged(annotations map[string]string) bool {
+// isAdminManagedAnnotations returns true if the resource annotations indicate it is admin-managed
+// (i.e. created by the admin server via the personal virtual file APIs).
+func isAdminManagedAnnotations(annotations map[string]string) bool {
 	if annotations == nil {
 		return false
 	}

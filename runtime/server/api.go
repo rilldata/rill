@@ -80,12 +80,11 @@ func (s *Server) apiHandler(w http.ResponseWriter, req *http.Request) error {
 	}
 
 	// Resolve the API to JSON data.
-	// The API's resolver properties are declared in the project, regardless of who calls the API.
+	// API templates never access project variables (the parser rejects references to them), so ProjectDeclared is left unset.
 	res, _, err := s.runtime.Resolve(ctx, &runtime.ResolveOptions{
 		InstanceID:         instanceID,
 		Resolver:           api.Spec.Resolver,
 		ResolverProperties: api.Spec.ResolverProperties.AsMap(),
-		PropertiesOrigin:   runtime.PropertiesFromProject,
 		Args:               args,
 		Claims:             claims,
 	})

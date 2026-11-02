@@ -2,6 +2,7 @@ package parser
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"strings"
 	"unicode"
@@ -97,6 +98,11 @@ func (p *Parser) parseAPI(node *Node) error {
 		return err
 	}
 	node.Refs = append(node.Refs, resolverRefs...)
+
+	// API results are served to viewers, so API templates can't reference project variables, which commonly hold secrets.
+	if TemplateReferencesVariables(resolverProps.AsMap()) {
+		return errors.New(`project variables (".env") are not available in API properties`)
+	}
 
 	securityRules, err := tmp.Security.Proto()
 	if err != nil {

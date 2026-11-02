@@ -24,10 +24,6 @@
   export let timeRange: V1TimeRange | undefined = undefined;
   export let showDataTable = false;
   export let name: string = "Custom Chart";
-  // Name of the canvas component the queries were taken from, if any.
-  // The runtime checks each query against the component's saved metrics_sql, which lets a project-declared
-  // component's queries use project variables without the runtime ever returning the resolved SQL.
-  export let componentName: string | undefined = undefined;
   export let onMetaChange:
     | ((meta: Record<string, unknown> | undefined) => void)
     | undefined = undefined;
@@ -62,7 +58,6 @@
           sql,
           ...metricsSQLFilterProperties(whereFilter, timeRange),
         } as unknown as PartialMessage<Struct>,
-        ...(componentName && { component: componentName }),
       },
       {
         query: {
