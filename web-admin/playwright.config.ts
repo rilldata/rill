@@ -51,6 +51,9 @@ const config: PlaywrightTestConfig = {
       testMatch: "mobile-smoke.spec.ts",
       use: {
         ...devices["iPhone 13"],
+        // The iPhone preset launches WebKit, but CI installs only Chrome's
+        // system dependencies, so keep the phone emulation on Chromium.
+        browserName: "chromium",
         storageState: ADMIN_STORAGE_STATE,
       },
     },
