@@ -113,7 +113,12 @@
   <!-- On narrow viewports the tab row scrolls horizontally; the selection
        indicator scrolls with it since both share the scroller. The edge
        fades signal the hidden overflow on either side. -->
-  <div class="tabs-scroller" bind:this={scroller} on:scroll={updateFades}>
+  <div
+    class="tabs-scroller"
+    data-horizontal-scroll
+    bind:this={scroller}
+    on:scroll={updateFades}
+  >
     <nav bind:this={navElement}>
       {#each tabs as tab, i (tab.route)}
         {#if tab.hasPermission}

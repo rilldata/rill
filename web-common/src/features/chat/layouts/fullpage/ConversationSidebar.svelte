@@ -103,7 +103,11 @@
       </div>
     </div>
 
-    <div class="conversation-list" data-testid="conversation-list">
+    <div
+      class="conversation-list"
+      data-testid="conversation-list"
+      data-horizontal-scroll
+    >
       {#if isLoading}
         <div class="loading-conversations">
           <DelayedContent visible={isLoading} delay={300}>

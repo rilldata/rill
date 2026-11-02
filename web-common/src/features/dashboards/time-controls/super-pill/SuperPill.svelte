@@ -82,7 +82,7 @@
   }
 </script>
 
-<div class="wrapper">
+<div class="wrapper" data-horizontal-scroll>
   {#if !hidePan}
     <Elements.Nudge {canPanLeft} {canPanRight} {onPan} direction="left" />
     <Elements.Nudge {canPanLeft} {canPanRight} {onPan} direction="right" />

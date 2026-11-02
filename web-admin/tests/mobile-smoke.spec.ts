@@ -1,4 +1,4 @@
-import { expect, type Page } from "@playwright/test";
+import { expect, type Locator, type Page } from "@playwright/test";
 import { test } from "./setup/base";
 
 /**
@@ -23,24 +23,43 @@ const MOBILE_READY_ROUTES: string[] = [
 
 /**
  * Maps each mobile-ready SvelteKit route id to a concrete URL in the e2e
- * environment (org `e2e`, projects `openrtb` / `adbids` seeded by `setup`).
+ * environment (org `e2e`, projects `openrtb` / `adbids` seeded by `setup`),
+ * and to an element that only shows once the route's content has loaded,
+ * so the scan doesn't run against a loading skeleton.
  */
-const TEST_ROUTES: Record<string, string> = {
-  "/[organization]/[project]": "/e2e/openrtb",
-  "/[organization]/[project]/-/ai": "/e2e/openrtb/-/ai",
-  "/[organization]/[project]/explore/[dashboard]":
-    "/e2e/openrtb/explore/auction_explore",
-  "/[organization]/[project]/canvas/[dashboard]":
-    "/e2e/openrtb/canvas/bids_canvas",
+const TEST_ROUTES: Record<
+  string,
+  { url: string; loaded: (page: Page) => Locator }
+> = {
+  "/[organization]/[project]": {
+    url: "/e2e/openrtb",
+    loaded: (page) =>
+      page.getByRole("link", { name: "Bids Canvas Dashboard" }).first(),
+  },
+  "/[organization]/[project]/-/ai": {
+    url: "/e2e/openrtb/-/ai",
+    loaded: (page) => page.getByText("How can I help you today?"),
+  },
+  "/[organization]/[project]/explore/[dashboard]": {
+    url: "/e2e/openrtb/explore/auction_explore",
+    loaded: (page) => page.getByLabel("app_site_domain leaderboard"),
+  },
+  "/[organization]/[project]/canvas/[dashboard]": {
+    url: "/e2e/openrtb/canvas/bids_canvas",
+    loaded: (page) => page.getByText("Advertising Spend Overall $3,900"),
+  },
 };
 
 /**
  * Asserts that the page produces no horizontal overflow at the current
  * viewport width: neither the document scrolls horizontally, nor does any
  * visible element extend past the right edge of the viewport.
- * Elements inside a scroll or clip container are left to that container,
- * since `getBoundingClientRect` reports their unclipped box;
+ * Elements inside a container marked `data-horizontal-scroll` are left to it,
+ * since that container scrolls them on purpose;
  * the container itself is still checked.
+ * Only marked containers count: any `overflow-y` other than `visible`
+ * makes `overflow-x` compute to `auto` too,
+ * so the computed style can't tell a horizontal scroller from a page section.
  * Offending element selectors are included in the failure message.
  */
 async function assertNoHorizontalOverflow(page: Page) {
@@ -59,22 +78,16 @@ async function assertNoHorizontalOverflow(page: Page) {
       return `${tag}${id}${cls}`;
     };
 
-    const insideOverflowContainer = (el: Element): boolean => {
-      let ancestor = el.parentElement;
-      while (ancestor && ancestor !== document.body) {
-        if (getComputedStyle(ancestor).overflowX !== "visible") return true;
-        ancestor = ancestor.parentElement;
-      }
-      return false;
-    };
-
     // Collect visible elements whose right edge extends past the viewport.
     // Cap the list so a systemic failure does not produce an unwieldy message.
     const offenders: string[] = [];
     for (const el of Array.from(document.querySelectorAll("*"))) {
       const rect = el.getBoundingClientRect();
       if (rect.width === 0 || rect.height === 0) continue;
-      if (rect.right > viewportWidth + 1 && !insideOverflowContainer(el)) {
+      if (
+        rect.right > viewportWidth + 1 &&
+        !el.parentElement?.closest("[data-horizontal-scroll]")
+      ) {
         offenders.push(`${describe(el)} (right=${Math.round(rect.right)})`);
         if (offenders.length >= 10) break;
       }
@@ -124,9 +137,10 @@ test.describe("Mobile smoke", () => {
 
   for (const routeId of MOBILE_READY_ROUTES) {
     test(`no horizontal overflow: ${routeId}`, async ({ page }) => {
-      const url = TEST_ROUTES[routeId];
-      test.skip(!url, `No TEST_ROUTES entry for ${routeId}`);
-      await page.goto(url);
+      const route = TEST_ROUTES[routeId];
+      test.skip(!route, `No TEST_ROUTES entry for ${routeId}`);
+      await page.goto(route.url);
+      await expect(route.loaded(page)).toBeVisible();
       await assertNoHorizontalOverflow(page);
     });
   }
