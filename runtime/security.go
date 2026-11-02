@@ -459,7 +459,7 @@ func (p *securityEngine) resolveRules(claims *SecurityClaims, rules []*runtimev1
 		if spec == nil {
 			spec = r.GetCanvas().Spec // Not ideal, but better than giving access to the full resource
 		}
-		if isAdminManagedAnnotations(spec.Annotations) {
+		if IsAdminManaged(spec.Annotations) {
 			// Personal / admin-managed canvas: only owner and admins can access. No default-allow fallthrough.
 			rule := p.builtInCanvasSecurityRule(r.Meta.Name, spec, claims)
 			if rule != nil {
@@ -670,9 +670,10 @@ func (p *securityEngine) builtInReportSecurityRule(reportRes *runtimev1.Resource
 	}
 }
 
-// isAdminManagedAnnotations returns true if the resource annotations indicate it is admin-managed
-// (i.e. created by the admin server via the personal virtual file APIs).
-func isAdminManagedAnnotations(annotations map[string]string) bool {
+// IsAdminManaged reports whether a resource's annotations mark it as created through the admin API,
+// such as a personal canvas or an alert or report created in the UI, instead of being declared in the project's source files.
+// The runtime sees such resources as project files, but their contents were written by the user who created them.
+func IsAdminManaged(annotations map[string]string) bool {
 	if annotations == nil {
 		return false
 	}

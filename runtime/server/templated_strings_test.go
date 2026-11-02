@@ -169,17 +169,28 @@ rows:
   - markdown:
       content: 'Secret: {{ .env.secret }}'
 `,
+			// A personal canvas created through the admin API by the viewer, so its content was written by the viewer.
+			"personal.yaml": `
+type: canvas
+annotations:
+  admin_managed: "true"
+  admin_owner_user_id: "viewer"
+rows:
+- items:
+  - markdown:
+      content: 'Secret: {{ .env.secret }}'
+`,
 		},
 		Variables: map[string]string{"region": "US", "secret": secret},
 	})
-	testruntime.RequireReconcileState(t, rt, instanceID, 8, 0, 0)
+	testruntime.RequireReconcileState(t, rt, instanceID, 10, 0, 0)
 
 	srv, err := server.NewServer(t.Context(), &server.Options{}, rt, zap.NewNop(), ratelimit.NewNoop(), activity.NewNoopClient())
 	require.NoError(t, err)
 
 	// A viewer has the permissions of an embed token: it can query data, but not read sensitive instance info.
 	viewerCtx := auth.WithClaims(context.Background(), &runtime.SecurityClaims{
-		UserAttributes: map[string]any{"admin": false},
+		UserAttributes: map[string]any{"admin": false, "id": "viewer"},
 		Permissions:    []runtime.Permission{runtime.ReadAPI, runtime.ReadMetrics},
 	})
 
@@ -197,6 +208,14 @@ rows:
 		Body:       `Region: {{ .env.region }}, total: {{ metrics_sql "SELECT total_revenue FROM mv" }}`,
 	})
 	require.ErrorContains(t, err, "project variables are only available to templates declared in the project files")
+
+	// The viewer can access their personal canvas, but its content is not declared in the project, so it cannot reference the variable.
+	_, err = srv.ResolveTemplatedString(viewerCtx, &runtimev1.ResolveTemplatedStringRequest{
+		InstanceId: instanceID,
+		Component:  "personal--component-0-0",
+	})
+	require.ErrorContains(t, err, "project variables are only available to templates declared in the project files")
+	require.NotContains(t, err.Error(), secret)
 
 	// A component the viewer cannot access is rejected without resolving its content.
 	_, err = srv.ResolveTemplatedString(viewerCtx, &runtimev1.ResolveTemplatedStringRequest{

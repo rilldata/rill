@@ -62,7 +62,7 @@ func (s *Server) ResolveComponent(ctx context.Context, req *runtimev1.ResolveCom
 	}
 
 	// Find the component and check the user can access it
-	res, err := s.accessibleComponent(ctx, req.InstanceId, req.Component, claims)
+	res, canvasRes, err := s.accessibleComponent(ctx, req.InstanceId, req.Component, claims)
 	if err != nil {
 		return nil, err
 	}
@@ -71,6 +71,10 @@ func (s *Server) ResolveComponent(ctx context.Context, req *runtimev1.ResolveCom
 	if spec == nil {
 		return nil, status.Errorf(codes.FailedPrecondition, "component %q is invalid", req.Component)
 	}
+
+	// Templates in the renderer properties may only access project variables if the component was declared in the project's source files.
+	// A component of an admin-managed canvas (e.g. a personal canvas) was written by the canvas's creator, so it is not trusted.
+	trusted := canvasRes == nil || !runtime.IsAdminManaged(canvasRes.GetCanvas().State.ValidSpec.Annotations)
 
 	// Get current instance metadata
 	inst, err := s.runtime.Instance(ctx, req.InstanceId)
@@ -95,12 +99,17 @@ func (s *Server) ResolveComponent(ctx context.Context, req *runtimev1.ResolveCom
 		}
 	}
 
+	variables, err := runtime.TemplateVariables(inst, claims, trusted, spec.RendererProperties.AsMap())
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
 	// Setup templating data.
 	// The effective args are exposed both as .params (canonical, matching the YAML key) and .args (legacy alias).
 	td := parser.TemplateData{
 		Environment: inst.Environment,
 		User:        claims.UserAttributes,
-		Variables:   inst.ResolveVariables(false),
+		Variables:   variables,
 		ExtraProps: map[string]any{
 			"args":   effectiveArgs,
 			"params": effectiveArgs,
@@ -175,26 +184,28 @@ func (s *Server) ResolveComponent(ctx context.Context, req *runtimev1.ResolveCom
 // accessibleComponent returns the component with the given name after checking that the claims may access it.
 // Components have no access rules of their own (see the security engine's resolveRules),
 // so a component defined inline in a canvas is only accessible if the claims can access that canvas and the component is not hidden from them on it.
-func (s *Server) accessibleComponent(ctx context.Context, instanceID, name string, claims *runtime.SecurityClaims) (*runtimev1.Resource, error) {
+// For such a component it also returns the canvas that defines it, so callers can tell whether the component was declared in the project's source files
+// or in an admin-managed canvas (see runtime.IsAdminManaged). The canvas is nil for a component defined in its own file.
+func (s *Server) accessibleComponent(ctx context.Context, instanceID, name string, claims *runtime.SecurityClaims) (*runtimev1.Resource, *runtimev1.Resource, error) {
 	ctrl, err := s.runtime.Controller(ctx, instanceID)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	res, err := ctrl.Get(ctx, &runtimev1.ResourceName{Kind: runtime.ResourceKindComponent, Name: name}, false)
 	if err != nil {
 		if errors.Is(err, drivers.ErrResourceNotFound) {
-			return nil, status.Errorf(codes.NotFound, "component %q not found", name)
+			return nil, nil, status.Errorf(codes.NotFound, "component %q not found", name)
 		}
-		return nil, err
+		return nil, nil, err
 	}
 
 	// Check the component is not hidden from the claims by an `if` condition on its canvas
 	res, access, err := s.runtime.ApplySecurityPolicy(ctx, instanceID, claims, res)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	if !access {
-		return nil, status.Errorf(codes.PermissionDenied, "does not have access to component %q", name)
+		return nil, nil, status.Errorf(codes.PermissionDenied, "does not have access to component %q", name)
 	}
 
 	spec := res.GetComponent().State.ValidSpec
@@ -202,7 +213,7 @@ func (s *Server) accessibleComponent(ctx context.Context, instanceID, name strin
 		spec = res.GetComponent().Spec
 	}
 	if !spec.DefinedInCanvas {
-		return res, nil
+		return res, nil, nil
 	}
 
 	// Find the canvas that defines the component.
@@ -210,12 +221,12 @@ func (s *Server) accessibleComponent(ctx context.Context, instanceID, name strin
 	// so the component is accessible only if an accessible canvas still contains it.
 	canvases, err := ctrl.List(ctx, runtime.ResourceKindCanvas, "", false)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	for _, c := range canvases {
 		c, access, err := s.runtime.ApplySecurityPolicy(ctx, instanceID, claims, c)
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 		if !access || c.GetCanvas().State.ValidSpec == nil {
 			continue
@@ -223,10 +234,10 @@ func (s *Server) accessibleComponent(ctx context.Context, instanceID, name strin
 		names := make(map[string]bool)
 		runtime.CollectCanvasComponentNames(c.GetCanvas().State.ValidSpec.Rows, names)
 		if names[name] {
-			return res, nil
+			return res, c, nil
 		}
 	}
-	return nil, status.Errorf(codes.PermissionDenied, "does not have access to component %q", name)
+	return nil, nil, status.Errorf(codes.PermissionDenied, "does not have access to component %q", name)
 }
 
 // boundMetricsViews loads the valid specs of the metrics views bound to a component's

@@ -207,7 +207,7 @@ func (r *ReportReconciler) ResolveTransitiveAccess(ctx context.Context, claims *
 			Runtime:           r.C.Runtime,
 			InstanceID:        r.C.InstanceID,
 			Properties:        resolverProperties(spec),
-			TrustedProperties: !adminManaged(spec.Annotations),
+			TrustedProperties: !runtime.IsAdminManaged(spec.Annotations),
 			Claims:            claims,
 			ForExport:         false,
 		})
@@ -831,7 +831,7 @@ func (r *ReportReconciler) triggerAIReport(ctx context.Context, self *runtimev1.
 		InstanceID:         r.C.InstanceID,
 		Resolver:           "ai",
 		ResolverProperties: resolverProperties(rep.Spec),
-		TrustedProperties:  !adminManaged(rep.Spec.Annotations),
+		TrustedProperties:  !runtime.IsAdminManaged(rep.Spec.Annotations),
 		Args: map[string]any{
 			"execution_time":        t,
 			"create_shared_session": webOpenMode == "creator", // if creator mode, create a shared session

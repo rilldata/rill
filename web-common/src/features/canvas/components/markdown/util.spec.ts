@@ -2,7 +2,7 @@ import type { MarkdownCanvasComponent } from "@rilldata/web-common/features/canv
 import { getResolveTemplatedStringQueryOptions } from "@rilldata/web-common/features/canvas/components/markdown/util";
 import type { V1Expression } from "@rilldata/web-common/runtime-client";
 import { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
-import { writable } from "svelte/store";
+import { get, writable } from "svelte/store";
 import { describe, expect, it } from "vitest";
 
 describe("getResolveTemplatedStringQueryOptions", () => {
@@ -49,5 +49,34 @@ describe("getResolveTemplatedStringQueryOptions", () => {
 
     unsubscribe();
     expect(parentSpecSubscribers).toBe(0);
+  });
+
+  it("Should key the query on the content so edits to the component refetch the resolved text", () => {
+    const specStore = writable({ content: "{{ metrics_sql 'select 1' }}" });
+    const component = {
+      id: "canvas--component-0-0",
+      specStore,
+      timeAndFilterStore: writable({ timeRange: undefined }),
+      parent: {
+        specStore: writable({ data: { metricsViews: {} } }),
+        expressionFilterManager: {
+          exprByMetricsViewStore: writable<Record<string, V1Expression>>({}),
+        },
+        timeManager: { hasTimeSeriesStore: writable(false) },
+      },
+    } as unknown as MarkdownCanvasComponent;
+
+    const optionsStore = getResolveTemplatedStringQueryOptions(
+      component,
+      new RuntimeClient({ host: "http://localhost", instanceId: "test" }),
+    );
+
+    const keyBefore = get(optionsStore).queryKey;
+    expect(keyBefore).toContain("{{ metrics_sql 'select 1' }}");
+
+    specStore.set({ content: "{{ metrics_sql 'select 2' }}" });
+    const keyAfter = get(optionsStore).queryKey;
+    expect(keyAfter).not.toEqual(keyBefore);
+    expect(keyAfter).toContain("{{ metrics_sql 'select 2' }}");
   });
 });

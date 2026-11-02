@@ -100,14 +100,20 @@ type ResolverOptions struct {
 }
 
 // TemplateVariables returns the project variables that templates in the resolver's properties may access.
+// See the package-level TemplateVariables.
+func (o *ResolverOptions) TemplateVariables(inst *drivers.Instance, templates ...any) (map[string]string, error) {
+	return TemplateVariables(inst, o.Claims, o.TrustedProperties, templates...)
+}
+
+// TemplateVariables returns the project variables that the given templates may access.
 // Project variables commonly hold secrets such as connector credentials,
-// so they are only available to templates declared in the project (see TrustedProperties),
+// so they are only available to templates declared in the project's source files (trusted),
 // or to callers who may read sensitive instance info anyway (see ReadInstance).
-// Otherwise it returns an error if any of the given templates reference variables,
+// Otherwise it returns an error if any of the templates reference variables,
 // since resolving them to empty values would silently produce wrong results.
 // The templates may be strings or nested maps and slices of strings, matching the shapes accepted by parser.ResolveTemplateRecursively.
-func (o *ResolverOptions) TemplateVariables(inst *drivers.Instance, templates ...any) (map[string]string, error) {
-	if o.TrustedProperties || (o.Claims != nil && o.Claims.Can(ReadInstance)) {
+func TemplateVariables(inst *drivers.Instance, claims *SecurityClaims, trusted bool, templates ...any) (map[string]string, error) {
+	if trusted || (claims != nil && claims.Can(ReadInstance)) {
 		return inst.ResolveVariables(false), nil
 	}
 	for _, tmpl := range templates {

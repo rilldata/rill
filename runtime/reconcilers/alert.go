@@ -255,7 +255,7 @@ func (r *AlertReconciler) ResolveTransitiveAccess(ctx context.Context, claims *r
 				"query_name":      spec.QueryName,
 				"query_args_json": spec.QueryArgsJson,
 			},
-			TrustedProperties: !adminManaged(spec.Annotations),
+			TrustedProperties: !runtime.IsAdminManaged(spec.Annotations),
 			Claims:            claims,
 			ForExport:         false,
 		})
@@ -285,7 +285,7 @@ func (r *AlertReconciler) ResolveTransitiveAccess(ctx context.Context, claims *r
 			Runtime:           r.C.Runtime,
 			InstanceID:        r.C.InstanceID,
 			Properties:        spec.ResolverProperties.AsMap(),
-			TrustedProperties: !adminManaged(spec.Annotations),
+			TrustedProperties: !runtime.IsAdminManaged(spec.Annotations),
 			Claims:            claims,
 			ForExport:         false,
 		})
@@ -704,7 +704,7 @@ func (r *AlertReconciler) executeSingleWrapped(ctx context.Context, self *runtim
 		InstanceID:         r.C.InstanceID,
 		Resolver:           a.Spec.Resolver,
 		ResolverProperties: a.Spec.ResolverProperties.AsMap(),
-		TrustedProperties:  !adminManaged(a.Spec.Annotations),
+		TrustedProperties:  !runtime.IsAdminManaged(a.Spec.Annotations),
 		Args: map[string]any{
 			"priority":       alertQueryPriority,
 			"execution_time": executionTime,

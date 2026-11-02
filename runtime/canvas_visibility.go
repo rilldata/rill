@@ -158,7 +158,7 @@ func canIncludeHiddenCanvasContent(claims *SecurityClaims, res *runtimev1.Resour
 	if spec == nil {
 		spec = res.GetCanvas().GetSpec()
 	}
-	if !isAdminManagedAnnotations(spec.GetAnnotations()) {
+	if !IsAdminManaged(spec.GetAnnotations()) {
 		return false
 	}
 	userID, _ := claims.UserAttributes["id"].(string)

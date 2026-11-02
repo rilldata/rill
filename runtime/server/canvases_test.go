@@ -1935,3 +1935,73 @@ rows:
 	require.Len(t, res.Canvas.GetCanvas().State.ValidSpec.Rows[0].Items, 3)
 	require.Equal(t, []string{"rows.0.items.1", "rows.0.items.2"}, res.HiddenPaths)
 }
+
+// TestResolveComponentProjectVariables verifies that templates in renderer properties may only access project variables
+// when the component was declared in the project's source files, not when it belongs to a personal canvas created by the caller.
+func TestResolveComponentProjectVariables(t *testing.T) {
+	const secret = "s3cret-value"
+	rt, instanceID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
+		Files: map[string]string{
+			"rill.yaml": "",
+			"m1.sql":    `SELECT 'US' AS country`,
+			"mv1.yaml": `
+type: metrics_view
+version: 1
+model: m1
+dimensions:
+- column: country
+measures:
+- name: count
+  expression: COUNT(*)
+`,
+			"project.yaml": `
+type: canvas
+rows:
+- items:
+  - kpi:
+      metrics_view: mv1
+      measure: count
+      title: "Region: {{ .env.region }}"
+`,
+			// A personal canvas created through the admin API by the viewer, so its properties were written by the viewer.
+			"personal.yaml": `
+type: canvas
+annotations:
+  admin_managed: "true"
+  admin_owner_user_id: "viewer"
+rows:
+- items:
+  - kpi:
+      metrics_view: mv1
+      measure: count
+      title: "Secret: {{ .env.secret }}"
+`,
+		},
+		Variables: map[string]string{"region": "US", "secret": secret},
+	})
+	testruntime.RequireReconcileState(t, rt, instanceID, 7, 0, 0)
+
+	srv, err := server.NewServer(context.Background(), &server.Options{}, rt, zap.NewNop(), ratelimit.NewNoop(), activity.NewNoopClient())
+	require.NoError(t, err)
+
+	viewerCtx := auth.WithClaims(context.Background(), &runtime.SecurityClaims{
+		UserAttributes: map[string]any{"admin": false, "id": "viewer"},
+		Permissions:    []runtime.Permission{runtime.ReadAPI},
+	})
+
+	// The project's component resolves the variable for a viewer.
+	res, err := srv.ResolveComponent(viewerCtx, &runtimev1.ResolveComponentRequest{InstanceId: instanceID, Component: "project--component-0-0"})
+	require.NoError(t, err)
+	require.Equal(t, "Region: US", res.RendererProperties.AsMap()["title"])
+
+	// The viewer's personal component cannot reference the variable, and the error does not echo its value.
+	_, err = srv.ResolveComponent(viewerCtx, &runtimev1.ResolveComponentRequest{InstanceId: instanceID, Component: "personal--component-0-0"})
+	require.Equal(t, codes.InvalidArgument, status.Code(err))
+	require.ErrorContains(t, err, "project variables are only available to templates declared in the project files")
+	require.NotContains(t, err.Error(), secret)
+
+	// A caller that can read sensitive instance info can already read the variables, so the personal component resolves them.
+	res, err = srv.ResolveComponent(testCtx(), &runtimev1.ResolveComponentRequest{InstanceId: instanceID, Component: "personal--component-0-0"})
+	require.NoError(t, err)
+	require.Equal(t, "Secret: "+secret, res.RendererProperties.AsMap()["title"])
+}

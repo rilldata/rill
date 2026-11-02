@@ -9,7 +9,10 @@ import type {
   V1TimeRange,
   QueryServiceResolveTemplatedStringBody,
 } from "@rilldata/web-common/runtime-client";
-import { getQueryServiceResolveTemplatedStringQueryOptions } from "@rilldata/web-common/runtime-client";
+import {
+  getQueryServiceResolveTemplatedStringQueryKey,
+  getQueryServiceResolveTemplatedStringQueryOptions,
+} from "@rilldata/web-common/runtime-client";
 import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import { derived } from "svelte/store";
 import type { Readable } from "svelte/store";
@@ -168,12 +171,21 @@ export function getResolveTemplatedStringQueryOptions(
           // Cast needed: QueryServiceResolveTemplatedStringBody uses string
           // timestamps while the v2 proto request expects Timestamp objects;
           // the v2 fromJson layer handles the conversion at runtime.
+          // The request names the component instead of carrying its content, so the content is added to the
+          // query key to refetch the resolved text when the component's content changes.
           return getQueryServiceResolveTemplatedStringQueryOptions(
             client,
             body as any,
             {
               query: {
                 enabled: queryEnabled,
+                queryKey: [
+                  ...getQueryServiceResolveTemplatedStringQueryKey(
+                    client.instanceId,
+                    body as any,
+                  ),
+                  content,
+                ],
               },
             },
           );

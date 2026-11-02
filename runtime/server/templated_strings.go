@@ -30,17 +30,16 @@ func (s *Server) ResolveTemplatedString(ctx context.Context, req *runtimev1.Reso
 	}
 
 	// The template is either the saved content of a markdown component or the request body.
-	// The component's content is declared in the project, so its templates may access project variables.
+	// A component's content is trusted if it was declared in the project's source files, so its templates may access project variables.
 	// A body comes from the caller and is not trusted, so its templates cannot.
 	text := req.Body
 	trusted := false
 	if req.Component != "" {
 		var err error
-		text, err = s.markdownContent(ctx, req.InstanceId, req.Component, claims)
+		text, trusted, err = s.markdownContent(ctx, req.InstanceId, req.Component, claims)
 		if err != nil {
 			return nil, err
 		}
-		trusted = true
 	}
 
 	additionalWhereByMetricsView := map[string]map[string]any{}
@@ -96,18 +95,21 @@ func (s *Server) ResolveTemplatedString(ctx context.Context, req *runtimev1.Reso
 }
 
 // markdownContent returns the content of a markdown component, after checking that the caller may access the component.
-func (s *Server) markdownContent(ctx context.Context, instanceID, component string, claims *runtime.SecurityClaims) (string, error) {
-	res, err := s.accessibleComponent(ctx, instanceID, component, claims)
+// It also reports whether the content is trusted: a component of an admin-managed canvas (e.g. a personal canvas) was written by the canvas's creator,
+// not declared in the project's source files, so its templates must not access project variables.
+func (s *Server) markdownContent(ctx context.Context, instanceID, component string, claims *runtime.SecurityClaims) (string, bool, error) {
+	res, canvasRes, err := s.accessibleComponent(ctx, instanceID, component, claims)
 	if err != nil {
-		return "", err
+		return "", false, err
 	}
 	spec := res.GetComponent().State.ValidSpec
 	if spec == nil {
-		return "", status.Errorf(codes.FailedPrecondition, "component %q is invalid", component)
+		return "", false, status.Errorf(codes.FailedPrecondition, "component %q is invalid", component)
 	}
 	if spec.Renderer != "markdown" {
-		return "", status.Errorf(codes.InvalidArgument, "component %q is not a markdown component", component)
+		return "", false, status.Errorf(codes.InvalidArgument, "component %q is not a markdown component", component)
 	}
 	content, _ := spec.RendererProperties.AsMap()["content"].(string)
-	return content, nil
+	trusted := canvasRes == nil || !runtime.IsAdminManaged(canvasRes.GetCanvas().State.ValidSpec.Annotations)
+	return content, trusted, nil
 }
