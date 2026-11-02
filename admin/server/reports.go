@@ -779,6 +779,9 @@ func (s *Server) yamlForManagedReport(opts *adminv1.ReportOptions, ownerUserID, 
 		if len(opts.SlackChannels) > 0 || len(opts.SlackUsers) > 0 || len(opts.SlackWebhooks) > 0 {
 			return nil, fmt.Errorf("reports created from an embed can't be sent to Slack")
 		}
+		if len(opts.WebhookUrls) > 0 {
+			return nil, fmt.Errorf("reports created from an embed can't be sent to webhooks")
+		}
 		// Embed users can only export metrics queries, which are subject to the same security policies as the embedded dashboard.
 		// Other resolvers, such as "sql" or "ai", could access data that the embed doesn't expose.
 		if opts.Resolver != "" {

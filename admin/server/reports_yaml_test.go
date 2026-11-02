@@ -163,6 +163,12 @@ func TestYAMLForManagedReportEmbed(t *testing.T) {
 	_, err = s.yamlForManagedReport(opts, "", "ext_abc", nil)
 	require.ErrorContains(t, err, "can't be sent to Slack")
 
+	// Webhooks are not supported
+	opts = newOpts()
+	opts.WebhookUrls = []string{"https://example.com/hook"}
+	_, err = s.yamlForManagedReport(opts, "", "ext_abc", nil)
+	require.ErrorContains(t, err, "can't be sent to webhooks")
+
 	// Data resolvers are not supported, since they could access data the embed doesn't expose
 	opts = newOpts()
 	opts.Resolver = "sql"
