@@ -135,7 +135,7 @@
       onUpdate: async ({ form }) => {
         if (!form.valid) return;
         const values: ResourceErrorAlertFormValues = {
-          ...form.data,
+          ...(form.data as ResourceErrorAlertFormValues),
           resources: scopeSelected ? form.data.resources : [],
         };
         if (
