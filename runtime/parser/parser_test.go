@@ -4156,3 +4156,126 @@ func must[T any](v T, err error) T {
 	}
 	return v
 }
+
+// TestTemplatesRejectProjectVariables verifies that templates whose results are served to viewers or that users write can't reference project variables,
+// which commonly hold secrets, or the full template data that includes them: canvas component properties and `if` conditions, standalone components, alerts, reports and custom APIs.
+// Models, which the server resolves on the project's behalf, may reference them.
+func TestTemplatesRejectProjectVariables(t *testing.T) {
+	ctx := context.Background()
+	repo := makeRepo(t, map[string]string{
+		`rill.yaml`: ``,
+		`canvases/markdown.yaml`: `
+type: canvas
+rows:
+- items:
+  - markdown:
+      content: "Region: {{ .env.region }}"
+`,
+		`canvases/chart.yaml`: `
+type: canvas
+rows:
+- items:
+  - custom_chart:
+      metrics_sql: "SELECT count FROM {{ .env.mv }}"
+      vega_spec: "{}"
+`,
+		`canvases/nested.yaml`: `
+type: canvas
+rows:
+- items:
+  - markdown:
+      content: '{{ metrics_sql "SELECT count FROM {{ .env.mv }}" }}'
+`,
+		`canvases/condition.yaml`: `
+type: canvas
+rows:
+- items:
+  - kpi:
+      metrics_view: mv1
+      measure: count
+    if: '{{ eq .env.secret "guess" }}'
+`,
+		`components/standalone.yaml`: `
+type: component
+markdown:
+  content: '{{ env "secret" }}'
+`,
+		// Uses the full template data without naming the variables; it is rejected too, since the data includes them.
+		`canvases/root.yaml`: `
+type: canvas
+rows:
+- items:
+  - markdown:
+      content: 'Hello {{ index . "user" "email" }}'
+`,
+		`alerts/a.yaml`: `
+type: alert
+display_name: Alert
+refs:
+- type: MetricsView
+  name: mv1
+watermark: inherit
+intervals:
+  duration: P1D
+data:
+  metrics_sql: "SELECT count FROM mv1 WHERE country = '{{ .env.secret }}'"
+notify:
+  email:
+    recipients:
+      - user_1@example.com
+`,
+		`reports/r.yaml`: `
+type: report
+display_name: Report
+refresh:
+  cron: 0 * * * *
+data:
+  sql: "SELECT '{{ .env.secret }}' AS v"
+export:
+  format: csv
+notify:
+  email:
+    recipients:
+      - user_1@example.com
+`,
+		`apis/a.yaml`: `
+type: api
+sql: "SELECT '{{ .env.secret }}' AS v"
+`,
+		// Allowed: user attributes and metrics queries in dashboards, and models the server resolves on the project's behalf.
+		`canvases/ok.yaml`: `
+type: canvas
+rows:
+- items:
+  - markdown:
+      content: 'Hello {{ .user.name }}: {{ metrics_sql "SELECT count FROM mv1" }}'
+    if: '{{ .user.admin }}'
+`,
+		`models/ok.sql`: `SELECT '{{ .env.secret }}' AS v`,
+	})
+
+	p, err := Parse(ctx, repo, "", "", "duckdb", true)
+	require.NoError(t, err)
+
+	wantErrors := map[string]string{
+		"/canvases/markdown.yaml":     `templates in component properties can't access project variables (".env") or the full template data ("." or "$")`,
+		"/canvases/chart.yaml":        `templates in component properties can't access project variables (".env") or the full template data ("." or "$")`,
+		"/canvases/nested.yaml":       `templates in component properties can't access project variables (".env") or the full template data ("." or "$")`,
+		"/canvases/condition.yaml":    `"if" conditions can't access project variables (".env") or the full template data ("." or "$")`,
+		"/components/standalone.yaml": `templates in component properties can't access project variables (".env") or the full template data ("." or "$")`,
+		"/canvases/root.yaml":         `templates in component properties can't access project variables (".env") or the full template data ("." or "$")`,
+		"/alerts/a.yaml":              `templates in alert properties can't access project variables (".env") or the full template data ("." or "$")`,
+		"/reports/r.yaml":             `templates in report properties can't access project variables (".env") or the full template data ("." or "$")`,
+		"/apis/a.yaml":                `templates in API properties can't access project variables (".env") or the full template data ("." or "$")`,
+	}
+	gotErrors := make(map[string]string)
+	for _, e := range p.Errors {
+		gotErrors[e.FilePath] = e.Message
+	}
+	for path, want := range wantErrors {
+		require.Contains(t, gotErrors[path], want, "for path %q", path)
+	}
+	require.NotContains(t, gotErrors, "/canvases/ok.yaml")
+	require.NotContains(t, gotErrors, "/models/ok.sql")
+	require.Len(t, gotErrors, len(wantErrors))
+}

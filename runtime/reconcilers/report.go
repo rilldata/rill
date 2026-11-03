@@ -204,11 +204,12 @@ func (r *ReportReconciler) ResolveTransitiveAccess(ctx context.Context, claims *
 			return nil, fmt.Errorf("no resolver found for name 'legacy_metrics'")
 		}
 		resolver, err := initializer(ctx, &runtime.ResolverOptions{
-			Runtime:    r.C.Runtime,
-			InstanceID: r.C.InstanceID,
-			Properties: resolverProperties(spec),
-			Claims:     claims,
-			ForExport:  false,
+			Runtime:         r.C.Runtime,
+			InstanceID:      r.C.InstanceID,
+			Properties:      resolverProperties(spec),
+			ProjectDeclared: false, // Report templates never access project variables (the parser rejects references to them).
+			Claims:          claims,
+			ForExport:       false,
 		})
 		if err != nil {
 			return nil, err
@@ -830,6 +831,7 @@ func (r *ReportReconciler) triggerAIReport(ctx context.Context, self *runtimev1.
 		InstanceID:         r.C.InstanceID,
 		Resolver:           "ai",
 		ResolverProperties: resolverProperties(rep.Spec),
+		ProjectDeclared:    false, // Report templates never access project variables (the parser rejects references to them).
 		Args: map[string]any{
 			"execution_time":        t,
 			"create_shared_session": webOpenMode == "creator", // if creator mode, create a shared session
