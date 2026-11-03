@@ -113,7 +113,7 @@ func (t *CreateChart) Handler(ctx context.Context, args CreateChartArgs) (*Creat
 	}
 
 	// Reject charts that silently drop or change the filters applied to the dashboard being analyzed (see checkDashboardFilter).
-	if dashboardFilter, ok := DashboardFiltersFromContext(ctx)[metricsView]; ok {
+	if dashboardFilter, ok := DashboardFiltersFromContext(ctx)[strings.ToLower(metricsView)]; ok {
 		err := checkDashboardFilter(spec["where"], dashboardFilter, metricsView)
 		if err != nil {
 			return nil, err
@@ -205,8 +205,7 @@ func (t *CreateChart) Handler(ctx context.Context, args CreateChartArgs) (*Creat
 
 // checkDashboardFilter rejects a chart whose 'where' silently drops or changes the filter applied to the dashboard being analyzed.
 // The chart is rendered to the user as-is, so a dropped filter makes it contradict the findings, which are based on queries of the filtered data.
-// Every dimension the dashboard filters on must also be filtered on in the chart, and a selection of values (eq or in) may be narrowed but not widened or changed.
-// Other operators are matched by dimension only, since the model may legitimately restate them.
+// The chart's filter must narrow the dashboard's filter (see metricsview.ValidateExpressionNarrows).
 // To chart unfiltered data on purpose, the model passes an explicit empty 'where'.
 func checkDashboardFilter(where any, dashboardFilter *metricsview.Expression, metricsView string) error {
 	const fix = `Keep the dashboard's filters in the chart's 'where' (narrowing them further is fine), or set 'where' to {"cond":{"op":"and","exprs":[]}} to chart unfiltered data on purpose`
@@ -229,79 +228,11 @@ func checkDashboardFilter(where any, dashboardFilter *metricsview.Expression, me
 		return nil // Explicit empty filter: the chart is meant to show unfiltered data
 	}
 
-	chartPredicates := dimensionPredicates(chartFilter, nil)
-	for _, dp := range dimensionPredicates(dashboardFilter, nil) {
-		var found bool
-		for _, cp := range chartPredicates {
-			if cp.dimension != dp.dimension {
-				continue
-			}
-			found = true
-			if dp.selects() && cp.selects() && !cp.within(dp) {
-				return fmt.Errorf("the chart's 'where' filters %q to %v, but the dashboard the user is viewing filters it to %v. Charts must apply the same filters as the data they visualize. %s", dp.dimension, cp.values, dp.values, fix)
-			}
-		}
-		if !found {
-			return fmt.Errorf("the chart's 'where' drops the dashboard's filter on %q: the dashboard the user is viewing filters %q by: %s. Charts must apply the same filters as the data they visualize. %s", dp.dimension, metricsView, dashboardSQL, fix)
-		}
+	err = metricsview.ValidateExpressionNarrows(chartFilter, dashboardFilter)
+	if err != nil {
+		return fmt.Errorf("the chart's 'where' does not keep the filters of the dashboard the user is viewing (%q is filtered by: %s): %w. Charts must apply the same filters as the data they visualize. %s", metricsView, dashboardSQL, err, fix)
 	}
-
 	return nil
-}
-
-// dimensionPredicate is a leaf condition that compares a dimension to literal values, such as country IN ('DK', 'US').
-type dimensionPredicate struct {
-	dimension string
-	op        metricsview.Operator
-	values    []any
-}
-
-// selects reports whether the predicate selects a set of values (eq or in), as opposed to excluding, ranging or pattern matching.
-func (p dimensionPredicate) selects() bool {
-	return p.op == metricsview.OperatorEq || p.op == metricsview.OperatorIn
-}
-
-// within reports whether every value selected by p is also selected by other.
-func (p dimensionPredicate) within(other dimensionPredicate) bool {
-	allowed := make(map[string]bool, len(other.values))
-	for _, v := range other.values {
-		allowed[fmt.Sprint(v)] = true
-	}
-	for _, v := range p.values {
-		if !allowed[fmt.Sprint(v)] {
-			return false
-		}
-	}
-	return true
-}
-
-// dimensionPredicates appends the dimension predicates that the expression requires: the expression itself, or the terms of its (nested) ANDs.
-// Terms that can't be matched by dimension, such as ORs and subqueries, are skipped.
-func dimensionPredicates(e *metricsview.Expression, out []dimensionPredicate) []dimensionPredicate {
-	if e == nil || e.Condition == nil {
-		return out
-	}
-	if e.Condition.Operator == metricsview.OperatorAnd {
-		for _, sub := range e.Condition.Expressions {
-			out = dimensionPredicates(sub, out)
-		}
-		return out
-	}
-	if len(e.Condition.Expressions) != 2 {
-		return out
-	}
-	dim, val := e.Condition.Expressions[0], e.Condition.Expressions[1]
-	if dim.Name == "" {
-		dim, val = val, dim
-	}
-	if dim.Name == "" || val.Name != "" || val.Condition != nil || val.Subquery != nil {
-		return out
-	}
-	values, ok := val.Value.([]any)
-	if !ok {
-		values = []any{val.Value}
-	}
-	return append(out, dimensionPredicate{dimension: dim.Name, op: e.Condition.Operator, values: values})
 }
 
 // validateChartFields validates that all field references in the chart spec exist in the metrics view
