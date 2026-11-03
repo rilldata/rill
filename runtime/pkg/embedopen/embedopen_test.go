@@ -79,7 +79,29 @@ func TestLink(t *testing.T) {
 	require.Equal(t, "foo", u.Query().Get("tenant"))
 	require.Equal(t, v, u.Query().Get(QueryParam))
 
+	// The open URL is kept as-is, and the param is appended to its query string
+	cases := []struct {
+		openURL string
+		want    string
+	}{
+		{"https://app.acme.com/open", "https://app.acme.com/open?rill_open=" + v},
+		{"https://app.acme.com/open?", "https://app.acme.com/open?rill_open=" + v},
+		{"https://app.acme.com/open?b=1&a&x=a+b", "https://app.acme.com/open?b=1&a&x=a+b&rill_open=" + v},
+		{"https://app.acme.com/open?b=1&", "https://app.acme.com/open?b=1&rill_open=" + v},
+		{"https://app.acme.com/a%2Fb/open", "https://app.acme.com/a%2Fb/open?rill_open=" + v},
+		// The param is added before the fragment, which is kept as-is, also for apps that route with the fragment
+		{"https://app.acme.com/#/analytics/open?tenant=foo", "https://app.acme.com/?rill_open=" + v + "#/analytics/open?tenant=foo"},
+		{"https://app.acme.com/open?tenant=foo#section", "https://app.acme.com/open?tenant=foo&rill_open=" + v + "#section"},
+	}
+	for _, tc := range cases {
+		link, err := Link(tc.openURL, p)
+		require.NoError(t, err)
+		require.Equal(t, tc.want, link, tc.openURL)
+	}
+
 	_, err = Link("https://app.acme.com", &Payload{Kind: "x", Name: "r1"})
+	require.Error(t, err)
+	_, err = Link("/open", p)
 	require.Error(t, err)
 }
 
@@ -91,4 +113,5 @@ func TestValidateOpenURL(t *testing.T) {
 	require.Error(t, ValidateOpenURL("javascript:alert(1)"))
 	require.Error(t, ValidateOpenURL("ftp://acme.com/open"))
 	require.Error(t, ValidateOpenURL("https://"))
+	require.Error(t, ValidateOpenURL("https://app.acme.com/open?rill_open=x"))
 }

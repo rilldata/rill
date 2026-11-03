@@ -13,6 +13,7 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
+	"strings"
 	"time"
 )
 
@@ -26,15 +27,6 @@ const (
 	KindReport Kind = "report"
 )
 
-// Valid returns true if the kind is known.
-func (k Kind) Valid() bool {
-	switch k {
-	case KindReport:
-		return true
-	}
-	return false
-}
-
 // Payload is the information encoded in the param.
 type Payload struct {
 	Kind Kind   `json:"kind"`
@@ -45,7 +37,7 @@ type Payload struct {
 
 // Validate returns an error if the payload is not valid.
 func (p *Payload) Validate() error {
-	if !p.Kind.Valid() {
+	if p.Kind != KindReport {
 		return fmt.Errorf("invalid kind %q", p.Kind)
 	}
 	if p.Name == "" {
@@ -85,24 +77,35 @@ func Decode(s string) (*Payload, error) {
 	return p, nil
 }
 
-// Link returns the open URL with the encoded payload added as the param.
-// It keeps any existing query params of the open URL.
+// Link returns the open URL with the encoded payload appended as the last param of its query string.
+// The rest of the open URL is kept as-is, including the order and encoding of its query params.
+// The param is always added to the query string before any fragment, also for apps that route with the fragment,
+// since a fragment can't reliably be told apart from an anchor.
 func Link(openURL string, p *Payload) (string, error) {
-	u, err := url.Parse(openURL)
-	if err != nil {
-		return "", fmt.Errorf("invalid open URL %q: %w", openURL, err)
+	if err := ValidateOpenURL(openURL); err != nil {
+		return "", err
 	}
 	v, err := Encode(p)
 	if err != nil {
 		return "", err
 	}
-	q := u.Query()
-	q.Set(QueryParam, v)
-	u.RawQuery = q.Encode()
-	return u.String(), nil
+	base, fragment, hasFragment := strings.Cut(openURL, "#")
+	switch {
+	case !strings.Contains(base, "?"):
+		base += "?"
+	case !strings.HasSuffix(base, "?") && !strings.HasSuffix(base, "&"):
+		base += "&"
+	}
+	// The value is base64url, so it doesn't need escaping.
+	link := base + QueryParam + "=" + v
+	if hasFragment {
+		link += "#" + fragment
+	}
+	return link, nil
 }
 
-// ValidateOpenURL returns an error if the URL is not an absolute http(s) URL.
+// ValidateOpenURL returns an error if the URL is not an absolute http(s) URL,
+// or if it already has the param.
 func ValidateOpenURL(openURL string) error {
 	u, err := url.Parse(openURL)
 	if err != nil {
@@ -110,6 +113,9 @@ func ValidateOpenURL(openURL string) error {
 	}
 	if (u.Scheme != "http" && u.Scheme != "https") || u.Host == "" {
 		return fmt.Errorf("invalid open URL %q: must be an absolute http or https URL", openURL)
+	}
+	if u.Query().Has(QueryParam) {
+		return fmt.Errorf("invalid open URL %q: must not have a %q query param, since Rill adds it", openURL, QueryParam)
 	}
 	return nil
 }

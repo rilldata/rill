@@ -140,6 +140,54 @@ export function getExploreName(webOpenPath: string) {
   return decodeURIComponent(matches[1]);
 }
 
+/**
+ * Where a dashboard is opened: in Rill Cloud, through a magic token's share route, or in an embed.
+ * Embeds have their own routes, so they don't need the organization and project.
+ */
+export type DashboardPathContext = {
+  organization?: string;
+  project?: string;
+  token?: string | null;
+  embedded?: boolean;
+};
+
+/**
+ * Returns the path of an explore or canvas dashboard.
+ */
+export function getDashboardPath(
+  { organization, project, token, embedded }: DashboardPathContext,
+  kind: "explore" | "canvas",
+  name: string,
+) {
+  if (embedded) return `/-/embed/${kind}/${name}`;
+  if (token) {
+    return `/${organization}/${project}/-/share/${token}/${kind}/${name}`;
+  }
+  return `/${organization}/${project}/${kind}/${name}`;
+}
+
+/**
+ * Returns the query of a report or alert, which is mapped to the dashboard state when opening it.
+ * The query is in the resolver properties, or in the legacy query fields of older resources.
+ * Empty strings are treated as unset, since they are the proto default.
+ */
+export function getSpecQuery(spec: {
+  resolverProperties?: { [key: string]: unknown };
+  queryName?: string;
+  queryArgsJson?: string;
+}): { queryName: string; queryArgsJson: string } {
+  return {
+    queryName:
+      (spec.resolverProperties?.query_name as string | undefined) ||
+      spec.queryName ||
+      "",
+    queryArgsJson:
+      (spec.resolverProperties?.query_args_json as string | undefined) ||
+      spec.queryArgsJson ||
+      "",
+  };
+}
+
 export async function convertQueryFilterToToplistQuery(
   client: RuntimeClient,
   metricsView: string,

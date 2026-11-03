@@ -344,7 +344,7 @@ Embed users can schedule email reports of the explore dashboards they can see. R
 Reports created from an embed work as follows:
 - **They require `external_user_id`.** Each report is owned by the external user who created it, so iframes without an `external_user_id` don't show the option to create reports.
 - **They run as the owner's latest identity.** Every time you request an iframe for an external user, Rill saves the `user_email` or `attributes` you passed. All of the user's reports run with the saved identity; for example, if you change a user's `attributes`, their reports use the new attributes from their next run onwards. If the iframe a report was created from was limited to one dashboard, the report is limited to that dashboard too. Otherwise, if the saved `user_email` belongs to a project member who can only access some dashboards, the report has the same restriction.
-- **They are sent by email with the export attached.** Recipients can be any email address; if you pass `user_email`, it is the default recipient. Every recipient receives the data the owner can see. The emails don't link back to Rill, so the export is always attached (up to 10 MB). Every recipient also gets a link to unsubscribe, and the owner can get a link to open the report in your application (see [Open links in report emails](#open-links-in-report-emails)).
+- **They are sent by email with the export attached.** Recipients can be any email address; if you pass `user_email`, it is the default recipient. Every recipient receives the data the owner can see. The emails don't link back to Rill, so the export is always attached (up to 10 MB). Every recipient also gets a link to unsubscribe, and the owner can get a link to open the report in your application (see [Open links in report emails](#open-links-in-report-emails)); in that case, the owner always gets the report and can't unsubscribe from it, so they stop it by deleting the report.
 - **They pause after 90 days of inactivity.** If you don't request an iframe for the owner for 90 days, their reports stop running. They resume the next time you request an iframe for the owner. To stop a user's reports right away, for example when you remove the user from your app, delete the reports in Rill Cloud.
 - **Only the owner can manage them in the embed.** Embed users whose attributes include `admin: true` can also see other users' reports, but can't edit them. Project admins can manage all reports in Rill Cloud, where reports created from an embed are shown with the owner's `external_user_id`.
 
@@ -426,6 +426,8 @@ Rill sends the link to the creator's email address, which comes from:
 - the `user_email` of the iframe the report was created or last edited in, if you passed one;
 - otherwise, the email the creator entered when creating the report. If they left it empty, no recipient gets an open link.
 
+The creator's email always gets the report, and it has no unsubscribe link, so the creator stops the report by deleting it.
+
 If no open URL is configured, the emails have no open link. Reports still attach the exported file.
 
 ### Configure the open URL
@@ -437,11 +439,14 @@ embeds:
   open_url: https://app.ezcommerce.com/analytics/open
 ```
 
-The open URL must be an absolute `http` or `https` URL. It can include its own query parameters; Rill keeps them and appends a `rill_open` parameter, for example:
+The open URL must be an absolute `http` or `https` URL. It can include its own query parameters; Rill keeps the URL as-is and appends a `rill_open` parameter to the end of its query string, for example:
 
 ```
 https://app.ezcommerce.com/analytics/open?tenant=acme&rill_open=<value>
 ```
+
+The `rill_open` parameter is always added to the query string, before any `#` fragment.
+If your application routes with the fragment, such as `https://app.ezcommerce.com/#/analytics/open`, the link is `https://app.ezcommerce.com/?rill_open=<value>#/analytics/open`, so read the parameter from `window.location.search` rather than from your router.
 
 ### Handle the open page
 

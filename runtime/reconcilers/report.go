@@ -585,7 +585,7 @@ func (r *ReportReconciler) sendReport(ctx context.Context, self *runtimev1.Resou
 	}
 
 	// The open link only works for the embed user who created the report, since the embedder's app opens it with their external user ID.
-	// So it's only added to the delivery that the admin service marks as the creator's.
+	// So it's only added to the delivery that the admin service marks as the creator's (see embedOpenLink).
 	var embedLink string
 	if embedCreated {
 		inst, err := r.C.Runtime.Instance(ctx, r.C.InstanceID)
@@ -598,6 +598,12 @@ func (r *ReportReconciler) sendReport(ctx context.Context, self *runtimev1.Resou
 				return false, nil, fmt.Errorf("failed to build open link: %w", err)
 			}
 		}
+	}
+	embedOpenLink := func(delivery drivers.ReportDelivery) string {
+		if delivery.EmbedOwner {
+			return embedLink
+		}
+		return ""
 	}
 
 	// recipient -> notification data
@@ -630,12 +636,8 @@ func (r *ReportReconciler) sendReport(ctx context.Context, self *runtimev1.Resou
 			}
 
 			if embedCreated {
-				var openLink string
-				if delivery.EmbedOwner {
-					openLink = embedLink
-				}
 				notificationsContent[recipient] = &notificationData{
-					openLink:        openLink,
+					openLink:        embedOpenLink(delivery),
 					unsubscribeLink: delivery.UnsubscribeURL,
 					summary:         truncateSummary(report.summary, 500),
 				}
@@ -692,12 +694,8 @@ func (r *ReportReconciler) sendReport(ctx context.Context, self *runtimev1.Resou
 
 		for recipient, delivery := range meta.ReportDelivery {
 			if embedCreated {
-				var openLink string
-				if delivery.EmbedOwner {
-					openLink = embedLink
-				}
 				notificationsContent[recipient] = &notificationData{
-					openLink:           openLink,
+					openLink:           embedOpenLink(delivery),
 					unsubscribeLink:    delivery.UnsubscribeURL,
 					downloadFormat:     formatExportFormat(rep.Spec.ExportFormat),
 					attachment:         attachment,

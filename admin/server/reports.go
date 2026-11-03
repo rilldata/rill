@@ -203,7 +203,8 @@ const embedReportOwnerInactivityLimit = 90 * 24 * time.Hour
 // getEmbedReportMeta returns the report metadata for a report created from an embed.
 // The report runs as the identity of the embed user's latest iframe, and fails if the embed user is missing or inactive.
 // Recipients only get an unsubscribe link, since they open the report through the embedder's app (if at all).
-// The delivery of the creator's saved email is marked, so the runtime only adds the open link to the embedder's app to it.
+// The delivery of the creator's saved email is marked, so the runtime only adds the open link to the embedder's app to it;
+// it gets no unsubscribe link, since the creator can't unsubscribe from their own report (see UnsubscribeReport).
 func (s *Server) getEmbedReportMeta(ctx context.Context, org *database.Organization, proj *database.Project, req *adminv1.GetReportMetaRequest, info *embedReportInfo, recipients []string) (*adminv1.GetReportMetaResponse, error) {
 	if info.ownerID == "" {
 		return nil, status.Error(codes.FailedPrecondition, "the embed user who created the report no longer exists")
@@ -246,9 +247,9 @@ func (s *Server) getEmbedReportMeta(ctx context.Context, org *database.Organizat
 		resourcesPb[i] = &adminv1.ResourceName{Type: r.Type, Name: r.Name}
 	}
 
-	// Recipients can be any address, so each of them gets an unsubscribe link.
+	// Recipients can be any address, so each of them except the creator gets an unsubscribe link.
 	// The tokens have no resources, so they don't grant access to any data.
-	tokens, err := s.createUnsubMagicTokens(ctx, proj.ID, req.Report, "", "", req.EmailRecipients)
+	tokens, err := s.createUnsubMagicTokens(ctx, proj.ID, req.Report, "", info.ownerEmail, req.EmailRecipients)
 	if err != nil {
 		return nil, fmt.Errorf("failed to issue magic auth tokens: %w", err)
 	}
@@ -413,7 +414,7 @@ func (s *Server) EditReport(ctx context.Context, req *adminv1.EditReportRequest)
 
 	// Preserve the original owner, since the editor may be someone with manage permissions.
 	// If the embed user who created the report no longer exists, editing it would turn it into a report without an owner.
-	// The creator's saved email can only be changed by the creator; other editors keep it.
+	// The creator's saved email can only be changed by the creator; other editors keep it, so it stays a recipient.
 	var embedOwnerID, embedOwnerEmail string
 	if embedInfo != nil {
 		if embedInfo.ownerID == "" {
@@ -563,6 +564,12 @@ func (s *Server) UnsubscribeReport(ctx context.Context, req *adminv1.Unsubscribe
 	err = yaml.Unmarshal(file.Data, &report)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to unmarshal report YAML: %s", err.Error())
+	}
+
+	// The creator of a report created from an embed always gets it, since only their email has the open link to the embedder's app.
+	// They stop it by deleting the report instead.
+	if userEmail != "" && strings.EqualFold(userEmail, report.Annotations.AdminEmbedOwnerEmail) {
+		return nil, status.Error(codes.FailedPrecondition, "the creator of a report can't unsubscribe from it")
 	}
 
 	found := false
@@ -750,7 +757,7 @@ func (s *Server) GenerateReportYAML(ctx context.Context, req *adminv1.GenerateRe
 
 // yamlForManagedReport generates the YAML for a report created from the UI.
 // For reports created from an embed, embedOwnerID is the ID of the embed user who created it,
-// embedOwnerEmail is their saved email (optional; it's added to the recipients if missing),
+// embedOwnerEmail is their saved email (optional; it's always added to the recipients, since the creator can't unsubscribe),
 // and embedResources optionally limits the report's data to the resources the embed was limited to.
 func (s *Server) yamlForManagedReport(opts *adminv1.ReportOptions, ownerUserID, embedOwnerID, embedOwnerEmail string, embedResources []database.ResourceName) ([]byte, error) {
 	res := reportYAML{}
@@ -821,7 +828,7 @@ func (s *Server) yamlForManagedReport(opts *adminv1.ReportOptions, ownerUserID, 
 			return nil, fmt.Errorf("reports created from an embed only support explore dashboards")
 		}
 		res.Annotations.AdminEmbedOwnerID = embedOwnerID
-		// The creator's email gets the open link to the embedder's app, so it must be one of the recipients.
+		// The creator's email gets the open link to the embedder's app, so it's always one of the recipients.
 		if embedOwnerEmail != "" {
 			res.Annotations.AdminEmbedOwnerEmail = embedOwnerEmail
 			if !slices.ContainsFunc(res.Notify.Email.Recipients, func(r string) bool { return strings.EqualFold(r, embedOwnerEmail) }) {
@@ -1168,11 +1175,18 @@ func (s *Server) embedCreatedReportInfo(ctx context.Context, projectID, report s
 }
 
 // embedReportOwnerEmail returns the email to save for the embed user who creates or edits a report.
-// The email of the embed user's latest iframe takes precedence over the requested email,
+// The email is opt-in: none is saved if none is requested,
+// since the creator can't unsubscribe from the report once their email is saved.
+// The UI only requests it if rill.yaml configures `embeds.open_url`, since it's only needed for the open link.
+// Otherwise, the email of the embed user's latest iframe takes precedence over the requested email,
 // so the email that the UI locks can't be bypassed through the API.
 // The email is saved on the report rather than read when sending,
 // so the open link keeps going to the same address if the embedder later changes the user's email.
 func (s *Server) embedReportOwnerEmail(ctx context.Context, embedUserID, requested string) (string, error) {
+	requested = strings.TrimSpace(requested)
+	if requested == "" {
+		return "", nil
+	}
 	embedUser, err := s.admin.DB.FindEmbedUser(ctx, embedUserID)
 	if err != nil {
 		return "", err
@@ -1180,7 +1194,7 @@ func (s *Server) embedReportOwnerEmail(ctx context.Context, embedUserID, request
 	if embedUser.Email != nil && *embedUser.Email != "" {
 		return *embedUser.Email, nil
 	}
-	return strings.TrimSpace(requested), nil
+	return requested, nil
 }
 
 // embedReportResources checks that a report targets a dashboard the embed is limited to,

@@ -677,10 +677,6 @@ func (s *Server) GetIFrame(ctx context.Context, req *adminv1.GetIFrameRequest) (
 	// When opening a report, the embed opens the explore dashboard it targets.
 	// If navigation is disabled, limit access to the report and its dashboard.
 	if open != nil {
-		if open.Kind != embedopen.KindReport {
-			return nil, status.Errorf(codes.InvalidArgument, "unsupported open kind %q", open.Kind)
-		}
-
 		// The open payload is not signed, so only allow opening a report created by the embed user.
 		// Otherwise, a user could edit the payload to open another user's report and gain access to its dashboard.
 		// Embed users are identified by their external user ID, and the virtual file's embed owner is the source of truth for ownership.
@@ -782,8 +778,12 @@ func (s *Server) GetIFrame(ctx context.Context, req *adminv1.GetIFrameRequest) (
 		iframeQuery["resource"] = req.Resource
 	}
 
-	if req.Open != "" {
-		iframeQuery["open"] = req.Open
+	// Pass the decoded open payload, so the iframe doesn't need to decode it again.
+	if open != nil {
+		iframeQuery["open_report"] = open.Name
+		if !open.ExecutionTime.IsZero() {
+			iframeQuery["open_execution_time"] = open.ExecutionTime.UTC().Format(time.RFC3339)
+		}
 	}
 
 	if req.Theme != "" {

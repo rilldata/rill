@@ -1,6 +1,5 @@
 <script lang="ts">
   import ReportOpen from "@rilldata/web-admin/features/scheduled-reports/open/ReportOpen.svelte";
-  import { getCloudDashboardPaths } from "@rilldata/web-admin/features/scheduled-reports/open/open-urls";
   import type { PageData } from "./$types";
 
   let { data }: { data: PageData } = $props();
@@ -10,11 +9,11 @@
   reportSpec={data.reportSpec}
   exploreName={data.exploreName}
   executionTime={data.executionTime}
-  dashboardPaths={getCloudDashboardPaths(
-    data.organization,
-    data.project,
-    data.token,
-  )}
+  pathContext={{
+    organization: data.organization,
+    project: data.project,
+    token: data.token,
+  }}
   ignoreFilters={!!data.token}
   backHref={`/${data.organization}/${data.project}/-/reports/${data.reportId}`}
 />

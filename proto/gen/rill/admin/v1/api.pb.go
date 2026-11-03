@@ -23850,8 +23850,9 @@ type ReportOptions struct {
 	ExportAttach        bool            `protobuf:"varint,24,opt,name=export_attach,json=exportAttach,proto3" json:"export_attach,omitempty"` // If true, the export is attached to email notifications (only supported for explore reports run as the creator).
 	EmailRecipients     []string        `protobuf:"bytes,8,rep,name=email_recipients,json=emailRecipients,proto3" json:"email_recipients,omitempty"`
 	// Email of the embed user who creates the report; only used for reports created from an embed.
-	// Only this address gets an open link to the embedder's app (see `embeds.open_url` in rill.yaml), and it's added to `email_recipients` if missing.
-	// It's ignored if the embed's iframe was issued with a `user_email`, which is used instead.
+	// Only this address gets an open link to the embedder's app (see `embeds.open_url` in rill.yaml).
+	// It's always added to `email_recipients`, and it can't unsubscribe from the report.
+	// If set, it's replaced by the `user_email` of the embed's iframe, if the iframe was issued with one.
 	EmbedOwnerEmail string   `protobuf:"bytes,25,opt,name=embed_owner_email,json=embedOwnerEmail,proto3" json:"embed_owner_email,omitempty"`
 	SlackUsers      []string `protobuf:"bytes,10,rep,name=slack_users,json=slackUsers,proto3" json:"slack_users,omitempty"`
 	SlackChannels   []string `protobuf:"bytes,11,rep,name=slack_channels,json=slackChannels,proto3" json:"slack_channels,omitempty"`

@@ -211,6 +211,10 @@ func TestEmbedReports(t *testing.T) {
 		require.True(t, resp.DeliveryMeta["creator@customer.com"].EmbedOwner)
 		require.False(t, resp.DeliveryMeta["other@customer.com"].EmbedOwner)
 
+		// The creator can't unsubscribe from their own report, so only the other recipient gets an unsubscribe link
+		require.Empty(t, resp.DeliveryMeta["creator@customer.com"].UnsubscribeUrl)
+		require.NotEmpty(t, resp.DeliveryMeta["other@customer.com"].UnsubscribeUrl)
+
 		// Without a saved email, no delivery is marked
 		createReport(t, "r-no-creator-email", &id)
 		resp, err = getReportMeta(t, "r-no-creator-email", "creator@customer.com")

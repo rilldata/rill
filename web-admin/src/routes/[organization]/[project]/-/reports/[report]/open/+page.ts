@@ -1,6 +1,5 @@
 import {
   getCanvasReportOpenUrl,
-  getCloudDashboardPaths,
   getOpenExploreName,
 } from "@rilldata/web-admin/features/scheduled-reports/open/open-urls";
 import { isAIReportSpec } from "@rilldata/web-common/features/scheduled-reports/utils";
@@ -17,10 +16,11 @@ export async function load({ parent, url, params }) {
 
   // Canvas reports open the canvas dashboard directly, with the canvas state
   // (URL search params) captured at scheduling time applied.
-  const canvasUrl = getCanvasReportOpenUrl(
-    reportSpec,
-    getCloudDashboardPaths(organization, project, token),
-  );
+  const canvasUrl = getCanvasReportOpenUrl(reportSpec, {
+    organization,
+    project,
+    token,
+  });
   if (canvasUrl) {
     redirect(307, canvasUrl);
   }

@@ -128,11 +128,13 @@ test.describe.serial("Embedded reports", () => {
     );
     expect(extractOpenLink(extraEmail)).toBeUndefined();
 
-    // Both have the export attached and an unsubscribe link
+    // Both have the export attached, but only the extra recipient has an unsubscribe link,
+    // since the creator can't unsubscribe from their own report
     for (const email of [aliceEmail, extraEmail]) {
       expect(email.Attachments.length).toBeGreaterThan(0);
-      expect(email.Text).toContain("To unsubscribe from this report");
     }
+    expect(aliceEmail.Text).not.toContain("To unsubscribe from this report");
+    expect(extraEmail.Text).toContain("To unsubscribe from this report");
   });
 
   test("Should open the report as its creator", async ({ embedHost }) => {

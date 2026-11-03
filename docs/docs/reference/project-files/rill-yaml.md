@@ -237,7 +237,7 @@ The `embeds` property configures [embedded dashboards](/developers/embed). Use `
 
 _[object]_ - Configuration for embedded dashboards
 
-  - **`open_url`** - _[string]_ - Base URL for open links in emails sent by reports created from an embed. Only the report's creator gets the link. It should be a page in your application that runs your embed integration. Rill keeps any query parameters in the URL and adds a `rill_open` parameter, which the page should pass as `open` when calling `GetIFrame`. Must be an absolute `http` or `https` URL.
+  - **`open_url`** - _[string]_ - Base URL for open links in emails sent by reports created from an embed. Only the report's creator gets the link. It should be a page in your application that runs your embed integration. Rill keeps the URL as-is and appends a `rill_open` parameter to its query string (before any fragment), which the page should pass as `open` when calling `GetIFrame`. Must be an absolute `http` or `https` URL without a `rill_open` parameter.
 
 ```yaml
 embeds:

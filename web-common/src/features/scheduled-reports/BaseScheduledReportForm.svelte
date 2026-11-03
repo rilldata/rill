@@ -20,7 +20,6 @@
   import Checkbox from "../../components/forms/Checkbox.svelte";
   import ExportFileOptions from "@rilldata/web-common/features/exports/ExportFileOptions.svelte";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
-  import { createRuntimeServiceGetInstance } from "@rilldata/web-common/runtime-client";
   import type { ExpressionFilterManager } from "../dashboards/filters/ExpressionFilterManager.svelte.ts";
   import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors.ts";
   import {
@@ -50,6 +49,7 @@
     filters,
     timeControls,
     ephemeralMeasures,
+    showEmbedOwnerEmail = false,
     provider,
   }: {
     formId: string;
@@ -66,6 +66,8 @@
     filters?: ExpressionFilterManager;
     timeControls?: TimeControls;
     ephemeralMeasures?: EphemeralMeasureDef[];
+    // Shows the field for the email of the embed user who created the report (see ScheduledReportDialog).
+    showEmbedOwnerEmail?: boolean;
     provider: ReportFormMetadataProvider;
   } = $props();
 
@@ -85,15 +87,9 @@
   // Reports created from an embed always run as the creator.
   const isEmbedded = EmbedStore.isEmbedded();
 
-  // In an embed, the creator's email gets an open link to the embedder's app if rill.yaml configures `embeds.open_url`.
-  // The email is locked if the embed was issued with a `user_email`, since the admin service uses it instead.
-  const embedOpenUrlQuery = createRuntimeServiceGetInstance(
-    runtimeClient,
-    {},
-    { query: { select: (data) => data?.instance?.embedOpenUrl ?? "" } },
-  );
-  const showEmbedOwnerEmail = $derived(isEmbedded && !!$embedOpenUrlQuery.data);
-  const embedOwnerEmailLocked = $derived(!!provider.userEmail);
+  // The creator's email is locked if the embed was issued with a `user_email`, since the admin service uses it instead.
+  // Outside of an embed, it's always locked, since only the creator can change it.
+  const embedOwnerEmailLocked = $derived(!isEmbedded || !!provider.userEmail);
 
   const selectedRunAsOption = $derived(
     RUN_AS_OPTIONS.find((o) => o.value === $data["webOpenMode"]),
@@ -326,13 +322,17 @@
         bind:value={$data["embedOwnerEmail"]}
         errors={$errors["embedOwnerEmail"]}
         id="embedOwnerEmail"
-        label={m.report_form_embed_owner_email_label()}
+        label={isEmbedded
+          ? m.report_form_embed_owner_email_label()
+          : m.report_form_embed_creator_email_label()}
         placeholder={m.report_form_email_placeholder()}
         disabled={embedOwnerEmailLocked}
         optional={!embedOwnerEmailLocked}
-        hint={embedOwnerEmailLocked
-          ? m.report_form_embed_owner_email_hint()
-          : m.report_form_embed_owner_email_optional_hint()}
+        hint={!isEmbedded
+          ? m.report_form_embed_creator_email_hint()
+          : embedOwnerEmailLocked
+            ? m.report_form_embed_owner_email_hint()
+            : m.report_form_embed_owner_email_optional_hint()}
       />
     {/if}
     <!-- Reports created from an embed can't be sent to Slack. -->

@@ -1,12 +1,7 @@
 import { EmbedStore } from "@rilldata/web-common/features/embeds/embed-store.ts";
 import { removeEmbedParams } from "@rilldata/web-admin/features/embeds/init-embed-public-api.ts";
-import {
-  decodeEmbedOpen,
-  getEmbedOpenPath,
-} from "@rilldata/web-admin/features/embeds/embed-open.ts";
 import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors.ts";
-import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
-import { error, redirect } from "@sveltejs/kit";
+import { redirect } from "@sveltejs/kit";
 
 export const load = async ({ url }) => {
   const embedStore = EmbedStore.getInstance();
@@ -14,13 +9,17 @@ export const load = async ({ url }) => {
     EmbedStore.init(url);
 
     // Open links from report emails open the report instead of a dashboard.
-    const open = url.searchParams.get("open");
-    if (open) {
-      const payload = decodeEmbedOpen(open);
-      if (!payload) {
-        throw error(400, m.embed_invalid_open_link());
-      }
-      throw redirect(307, getEmbedOpenPath(payload));
+    // GetIFrame decodes and validates the link's `rill_open` param, and passes the report to open as plain params.
+    const openReport = url.searchParams.get("open_report");
+    if (openReport) {
+      const path = `/-/embed/reports/${encodeURIComponent(openReport)}/open`;
+      const executionTime = url.searchParams.get("open_execution_time");
+      throw redirect(
+        307,
+        executionTime
+          ? `${path}?${new URLSearchParams({ execution_time: executionTime }).toString()}`
+          : path,
+      );
     }
 
     const resource = url.searchParams.get("resource");

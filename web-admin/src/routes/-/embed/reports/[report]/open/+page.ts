@@ -1,6 +1,5 @@
 import { fetchResource } from "@rilldata/web-admin/features/resources/fetch-resource";
 import {
-  EmbedDashboardPaths,
   getCanvasReportOpenUrl,
   getOpenExploreName,
 } from "@rilldata/web-admin/features/scheduled-reports/open/open-urls";
@@ -28,7 +27,9 @@ export async function load({ parent, url, params }) {
   const reportSpec = report?.report?.spec ?? {};
 
   // Canvas reports open the canvas dashboard directly, with the canvas state captured at scheduling time applied.
-  const canvasUrl = getCanvasReportOpenUrl(reportSpec, EmbedDashboardPaths);
+  const canvasUrl = getCanvasReportOpenUrl(reportSpec, {
+    embedded: true,
+  });
   if (canvasUrl) {
     redirect(307, canvasUrl);
   }

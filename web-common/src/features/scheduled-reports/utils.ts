@@ -47,9 +47,12 @@ export function getQueryNameFromQuery(query: V1Query) {
   }
 }
 
+// showEmbedOwnerEmail is true if the form shows the field for the email of the embed user who creates the report.
+// See showEmbedOwnerEmail in ScheduledReportDialog.
 export function getNewReportInitialFormValues(
   userEmail: string | undefined,
   aggregationRequest: V1MetricsViewAggregationRequest,
+  showEmbedOwnerEmail = false,
 ) {
   return {
     title: "",
@@ -62,10 +65,15 @@ export function getNewReportInitialFormValues(
     exportAttach: EmbedStore.isEmbedded(),
     pdfIncludeFilters: true,
     pdfAllTabs: true,
-    ...extractNotification(undefined, userEmail, false),
+    // The creator's email is in its own field if it's shown, so it isn't also added to the recipients.
+    ...extractNotification(
+      undefined,
+      showEmbedOwnerEmail ? undefined : userEmail,
+      false,
+    ),
     // In an embed, only the creator's email gets an open link to the embedder's app.
     // The embed's `user_email` is used if set; otherwise the creator can enter it.
-    embedOwnerEmail: EmbedStore.isEmbedded() ? (userEmail ?? "") : "",
+    embedOwnerEmail: showEmbedOwnerEmail ? (userEmail ?? "") : "",
     ...extractRowsAndColumns(aggregationRequest),
   };
 }
@@ -83,10 +91,24 @@ export function getExistingReportInitialFormValues(
   reportSpec: V1ReportSpec,
   userEmail: string | undefined,
   aggregationRequest: V1MetricsViewAggregationRequest,
+  showEmbedOwnerEmail = false,
 ) {
   const pdfOptions = getPdfOptionsFromWebOpenState(
     reportSpec.annotations?.web_open_state,
   );
+  // The creator's saved email is in its own field rather than in the recipients,
+  // since the admin service always keeps it as a recipient (the creator can't unsubscribe).
+  const savedOwnerEmail = reportSpec.annotations?.admin_embed_owner_email ?? "";
+  const notification = extractNotification(
+    reportSpec.notifiers,
+    userEmail,
+    true,
+  );
+  if (savedOwnerEmail) {
+    notification.emailRecipients = notification.emailRecipients.filter(
+      (r) => r.toLowerCase() !== savedOwnerEmail.toLowerCase(),
+    );
+  }
   return {
     title: reportSpec.displayName ?? "",
     webOpenMode:
@@ -98,10 +120,11 @@ export function getExistingReportInitialFormValues(
     exportIncludeHeader: reportSpec.exportIncludeHeader ?? false,
     exportAttach: EmbedStore.isEmbedded() || (reportSpec.exportAttach ?? false),
     ...pdfOptions,
-    ...extractNotification(reportSpec.notifiers, userEmail, true),
-    // The embed's `user_email` takes precedence over the saved email, the same way the admin service applies it.
-    embedOwnerEmail: EmbedStore.isEmbedded()
-      ? userEmail || reportSpec.annotations?.admin_embed_owner_email || ""
+    ...notification,
+    // In an embed, the embed's `user_email` takes precedence over the saved email, the same way the admin service applies it.
+    // Outside of an embed, userEmail is the editor's email, so only the saved email applies.
+    embedOwnerEmail: showEmbedOwnerEmail
+      ? (EmbedStore.isEmbedded() ? userEmail : "") || savedOwnerEmail
       : "",
     ...extractRowsAndColumns(aggregationRequest),
   };

@@ -1,5 +1,5 @@
 import { EmbedStore } from "@rilldata/web-common/features/embeds/embed-store.ts";
-import { isHttpError, isRedirect } from "@sveltejs/kit";
+import { isRedirect } from "@sveltejs/kit";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { load } from "./+layout";
 
@@ -14,13 +14,6 @@ vi.mock("@rilldata/web-admin/features/embeds/init-embed-public-api.ts", () => ({
     return cleaned.toString();
   },
 }));
-
-function encodeOpen(payload: unknown): string {
-  return btoa(JSON.stringify(payload))
-    .replace(/\+/g, "-")
-    .replace(/\//g, "_")
-    .replace(/=+$/, "");
-}
 
 async function callLoad(search: Record<string, string>): Promise<unknown> {
   const url = new URL("https://ui.rilldata.com/-/embed");
@@ -61,11 +54,8 @@ describe("embed/+layout load on the first load", () => {
   it("redirects to the report open route", async () => {
     await expectRedirect(
       {
-        open: encodeOpen({
-          kind: "report",
-          name: "weekly_revenue",
-          execution_time: "2026-10-20T00:00:00Z",
-        }),
+        open_report: "weekly_revenue",
+        open_execution_time: "2026-10-20T00:00:00Z",
       },
       "/-/embed/reports/weekly_revenue/open?execution_time=2026-10-20T00%3A00%3A00Z",
     );
@@ -74,7 +64,7 @@ describe("embed/+layout load on the first load", () => {
   it("drops other params when opening a report", async () => {
     await expectRedirect(
       {
-        open: encodeOpen({ kind: "report", name: "r" }),
+        open_report: "r",
         navigation: "true",
         tr: "P7D",
       },
@@ -82,14 +72,11 @@ describe("embed/+layout load on the first load", () => {
     );
   });
 
-  it("errors on an invalid open param", async () => {
-    const result = await callLoad({ open: "not-valid" });
-    expect(isHttpError(result)).toBe(true);
-    if (!isHttpError(result)) return;
-    expect(result.status).toBe(400);
+  it("escapes the report name", async () => {
+    await expectRedirect({ open_report: "a/b" }, "/-/embed/reports/a%2Fb/open");
   });
 
-  it("still redirects to the dashboard without an open param", async () => {
+  it("still redirects to the dashboard without a report to open", async () => {
     await expectRedirect(
       { resource: "e", type: "rill.runtime.v1.Explore", tr: "P7D" },
       "/-/embed/explore/e?tr=P7D",

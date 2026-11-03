@@ -6,24 +6,28 @@
   import CtaMessage from "@rilldata/web-common/components/calls-to-action/CTAMessage.svelte";
   import LoadingSpinner from "@rilldata/web-common/components/LoadingSpinner.svelte";
   import { mapQueryToDashboard } from "@rilldata/web-common/features/explore-mappers/map-to-explore";
-  import { getExplorePageUrlSearchParams } from "@rilldata/web-common/features/explore-mappers/utils";
+  import {
+    type DashboardPathContext,
+    getDashboardPath,
+    getExplorePageUrlSearchParams,
+    getSpecQuery,
+  } from "@rilldata/web-common/features/explore-mappers/utils";
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import type { V1ReportSpec } from "@rilldata/web-common/runtime-client";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
-  import { type DashboardPathBuilder, getOpenQuery } from "./open-urls";
 
   let {
     reportSpec,
     exploreName,
     executionTime,
-    dashboardPaths,
+    pathContext,
     ignoreFilters,
     backHref,
   }: {
     reportSpec: V1ReportSpec;
     exploreName: string;
     executionTime: string | null;
-    dashboardPaths: DashboardPathBuilder;
+    pathContext: DashboardPathContext;
     // Set when the filters are already applied by the access token, to avoid applying them twice.
     ignoreFilters: boolean;
     backHref: string;
@@ -36,7 +40,7 @@
       runtimeClient,
       {
         exploreName,
-        ...getOpenQuery(reportSpec),
+        ...getSpecQuery(reportSpec),
         executionTime: executionTime ?? undefined,
       },
       {
@@ -55,9 +59,10 @@
       data.exploreName,
       data.exploreState,
     ).then((params) => {
-      const path = dashboardPaths.explore(data.exploreName);
+      const path = getDashboardPath(pathContext, "explore", data.exploreName);
       const search = params.toString();
-      return goto(search ? `${path}?${search}` : path);
+      // Replace this page in the history, so going back from the dashboard doesn't land here and redirect again.
+      return goto(search ? `${path}?${search}` : path, { replaceState: true });
     });
   });
 </script>

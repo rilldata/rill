@@ -1,6 +1,5 @@
 <script lang="ts">
   import ReportOpen from "@rilldata/web-admin/features/scheduled-reports/open/ReportOpen.svelte";
-  import { EmbedDashboardPaths } from "@rilldata/web-admin/features/scheduled-reports/open/open-urls";
   import CtaButton from "@rilldata/web-common/components/calls-to-action/CTAButton.svelte";
   import CtaContentContainer from "@rilldata/web-common/components/calls-to-action/CTAContentContainer.svelte";
   import CtaLayoutContainer from "@rilldata/web-common/components/calls-to-action/CTALayoutContainer.svelte";
@@ -31,7 +30,7 @@
     reportSpec={data.reportSpec}
     exploreName={data.exploreName}
     executionTime={data.executionTime}
-    dashboardPaths={EmbedDashboardPaths}
+    pathContext={{ embedded: true }}
     ignoreFilters={false}
     {backHref}
   />
