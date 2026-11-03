@@ -1,0 +1,12 @@
+# Tinybird Competitive Analysis (Aug 2026)
+
+Research basis: tinybird.co site/docs/changelog/blog, HN, funding databases, and the Rill codebase + docs.rilldata.com.
+
+**TL;DR:** Tinybird is the most architecturally-kindred rival: managed ClickHouse (own fork) + SQL pipes published as parameterized REST APIs, local-first datafiles-in-git dev (Forward relaunch 2025; Classic sunsets Sept 15, 2026), zero-copy Branches GA, TS/Python SDKs, a hosted per-workspace MCP server with token-scoped RLS, and a disciplined AI pivot — they built their own coding agent, then sunset it (Feb 2026) in favor of primitives (agent skills, SDKs, MCP). Strong logos (Vercel, Canva, FanDuel, Ghost 6.0) on ~$70M raised, under existential squeeze from ClickHouse Inc. ($400M at $15B, Jan 2026). The fork in the road: Tinybird sells APIs for developers to build UIs on; Rill sells the governed metrics layer plus the finished BI/embed product on the same engine class. Rill's decisive gaps here: **streaming ingestion** (no Kafka/events endpoint) and API-product polish (per-endpoint observability, typed params, starter kits). Rill's decisive advantages: the semantic layer (Tinybird has none — its agents query raw SQL), the consumption product, multi-engine + BYO ClickHouse, and its own analyst/developer agents. Plan: close streaming, productize "Metrics APIs" with Tinybird-grade DX, win the agent-backend narrative with governed-vs-raw evidence, and time a migration guide to the Classic sunset.
+
+| File | Contents |
+|---|---|
+| [`tinybird-features-and-market.md`](tinybird-features-and-market.md) | Platform (ingestion, pipes/endpoints, dev workflow), Forward relaunch + agent build→sunset arc + MCP, consumption surfaces (API-first, BI routing), governance/tokens, pricing evolution, company/market, ClickHouse-Inc. tension, BI-deal overlap |
+| [`rill-feature-inventory.md`](rill-feature-inventory.md) | Rill current state, Tinybird-angled: consumption/semantic/multi-engine strengths; gaps (Kafka/streaming, endpoint productization, MV chains, observability, ecosystem) |
+| [`comparison.md`](comparison.md) | Feature matrix (architecture, serving, consumption, AI, pricing) + structural advantages/weaknesses both ways |
+| [`roadmap.md`](roadmap.md) | Phase 1 streaming (Kafka + events endpoint), Phase 2 Metrics-API polish + starter kits, Phase 3 agent-backend narrative (governed-vs-raw benchmark, skills repo, zero-copy branches), GTM (build-vs-buy, Classic-sunset migration, ClickHouse alignment), non-goals |

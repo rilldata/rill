@@ -1,0 +1,12 @@
+# Sigma Competitive Analysis (Aug 2026)
+
+Research basis: help.sigmacomputing.com raw docs, sigmacomputing.com announcements, BusinessWire/TechTarget/SiliconANGLE, Vendr/G2/Peer Insights, and the Rill codebase + docs.rilldata.com.
+
+**TL;DR:** Sigma is the momentum leader — $200M ARR doubling yearly, $80M Series E at $3B (May 2026, with Databricks/ServiceNow/Workday Ventures), Gartner MQ debutant, first sold-out user conference — and has pivoted from "spreadsheet BI on the warehouse" to "the AI runtime for business": Sigma Agents (beta, premium SKU; tools = actions + MCP + warehouse agents, scheduled/autonomous), Ask Sigma with a best-in-class editable-plan transparency UX, a live MCP server (Claude Connectors Directory), AI Query warehouse-LLM columns, deep writeback (input tables → Sigma Tables), data apps, Tenants, and pixel-perfect Reports. Its unrepealable tax: **every click, embed render, and AI query is a live query on the customer's warehouse bill** — its own #1 review complaint — plus optional governance ("metric divergence"), warehouse-only sources, no OSS/local, opaque $68K-median pricing. Rill's plan: make the all-in warehouse bill the headline (TCO calculator + benchmark), match the agent packaging from the existing runtime (bundled, not premium-SKU), adopt the editable-plan UX, ship sufficient self-service (ad-hoc calcs ♻, reports ♻, actions ♻), and win embedded/operational deals on fixed-cost sub-second architecture.
+
+| File | Contents |
+|---|---|
+| [`sigma-features-and-market.md`](sigma-features-and-market.md) | Platform (workbooks, data models, input tables/Sigma Tables, actions, materialization), full AI chronology (Ask Sigma → Assistant → Agents → MCP), embedded (Tenants, JWT, SDK), enterprise/governance, funding/ARR/pricing/complaints, quarterly ship log |
+| [`rill-feature-inventory.md`](rill-feature-inventory.md) | Rill current state, Sigma-angled: engine/governance/as-code/AI strengths; gaps (viewer calcs, writeback, CSV upload, actions, version-history UI) |
+| [`comparison.md`](comparison.md) | Feature matrix (AI first, then self-service/apps, architecture, embedded) + structural advantages/weaknesses both ways |
+| [`roadmap.md`](roadmap.md) | Phase 1 cost & momentum counters (TCO calculator, agent packaging, editable-plan UX, benchmark), Phase 2 sufficient self-service, Phase 3 structural bets (joins, writeback decision, tenant packaging), GTM, non-goals |
