@@ -25,6 +25,24 @@ export function resourceKey(kind: string, name: string): string {
   return `${kind}/${name}`;
 }
 
+// Matches every resource of a kind; the runtime treats "*" as a wildcard.
+export function allResourcesKey(kind: string): string {
+  return resourceKey(kind, "*");
+}
+
+// Toggles a resource key; a kind's wildcard and its specific resources are mutually exclusive.
+export function toggleResource(list: string[], key: string): string[] {
+  if (list.includes(key)) return list.filter((k) => k !== key);
+  const [kind, name] = key.split("/");
+  const wildcard = allResourcesKey(kind);
+  return [
+    ...list.filter((k) =>
+      name === "*" ? !k.startsWith(`${kind}/`) : k !== wildcard,
+    ),
+    key,
+  ];
+}
+
 export function getAlertOptionsFromFormValues(
   values: ResourceErrorAlertFormValues,
 ): V1AlertOptions {

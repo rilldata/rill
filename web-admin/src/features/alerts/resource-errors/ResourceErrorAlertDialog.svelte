@@ -36,10 +36,12 @@
     pluralizeKind,
   } from "@rilldata/web-admin/features/projects/status/overview/overview-utils";
   import {
+    allResourcesKey,
     DEFAULT_CHECK_CRON,
     getAlertOptionsFromFormValues,
     getFormValuesFromAlertSpec,
     resourceKey,
+    toggleResource,
     type ResourceErrorAlertFormValues,
   } from "./utils";
 
@@ -227,7 +229,17 @@
           })
           .sort((a, b) => a.label.localeCompare(b.label)),
       }))
-      .filter((g) => g.items.length > 0),
+      .filter((g) => g.items.length > 0)
+      .map((g) => ({
+        ...g,
+        items: [
+          {
+            name: allResourcesKey(g.name),
+            label: m.alert_errors_resources_all(),
+          },
+          ...g.items,
+        ],
+      })),
   );
 
   let checkSelectOptions = $derived(
@@ -247,7 +259,7 @@
 
   function resourceLabel(key: string): string {
     const [kind, name] = key.split("/");
-    return `${prettyResourceKind(kind)}: ${name}`;
+    return `${prettyResourceKind(kind)}: ${name === "*" ? m.alert_errors_resources_all() : name}`;
   }
 </script>
 
@@ -315,7 +327,7 @@
                 $form.resources.filter((r) => r.startsWith(`${g.name}/`)),
               )}
               onSelect={(key) =>
-                ($form.resources = toggle($form.resources, key))}
+                ($form.resources = toggleResource($form.resources, key))}
             />
           </DropdownMenu.Root>
           {#if $form.resources.length}

@@ -3,6 +3,7 @@ import {
   getAlertOptionsFromFormValues,
   getFormValuesFromAlertSpec,
   isResourceErrorAlert,
+  toggleResource,
   type ResourceErrorAlertFormValues,
 } from "./utils";
 
@@ -71,6 +72,26 @@ describe("resource error alert utils", () => {
       name: "Errors in orders",
       slackChannels: ["#alerts"],
     });
+  });
+
+  it("toggles resources with a kind wildcard exclusive of its resources", () => {
+    const model = "rill.runtime.v1.Model";
+    const source = "rill.runtime.v1.Source/raw";
+    const list = [`${model}/orders`, `${model}/users`, source];
+
+    // Selecting the wildcard replaces the kind's resources
+    const withAll = toggleResource(list, `${model}/*`);
+    expect(withAll).toEqual([source, `${model}/*`]);
+
+    // Selecting a resource replaces the kind's wildcard
+    expect(toggleResource(withAll, `${model}/orders`)).toEqual([
+      source,
+      `${model}/orders`,
+    ]);
+
+    // Deselecting removes only the key
+    expect(toggleResource(withAll, `${model}/*`)).toEqual([source]);
+    expect(toggleResource(list, source)).toEqual(list.slice(0, 2));
   });
 
   it("does not treat dashboard alerts as resource error alerts", () => {
