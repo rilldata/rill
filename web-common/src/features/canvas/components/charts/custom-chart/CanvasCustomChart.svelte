@@ -4,6 +4,7 @@
   import AgenticChartPrompt from "./AgenticChartPrompt.svelte";
   import { clearComponentConversation } from "./chart-ai-agent";
   import type { CustomChartComponent, QueryFieldMeta } from "./index";
+  import type { CustomChartExportResult } from "@rilldata/web-common/features/exports/xlsx/payload";
 
   export let component: CustomChartComponent;
   export let editable: boolean = false;
@@ -35,7 +36,7 @@
     metricsSQL={$specStore.metrics_sql}
     showDataTable={editable}
     onMetaChange={handleMetaChange}
-    onResults={(results) =>
+    onResults={(results: CustomChartExportResult[] | undefined) =>
       component.exportPayload.set(
         results ? { kind: "customChart", results } : undefined,
       )}

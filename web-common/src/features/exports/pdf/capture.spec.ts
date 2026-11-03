@@ -196,4 +196,3 @@ describe("measureCanvasBlocks", () => {
     expect(blocks[0].element).toBe(container.querySelector("#free-a"));
   });
 });
-

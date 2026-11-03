@@ -75,7 +75,8 @@ export abstract class BaseCanvasComponent<T = ComponentSpec> {
   // The data the component currently renders, published by its display
   // component for the workbook export (see features/exports/xlsx). Undefined
   // while loading or when the component has nothing to export.
-  exportPayload: Writable<ComponentExportPayload | undefined> = writable(undefined);
+  exportPayload: Writable<ComponentExportPayload | undefined> =
+    writable(undefined);
 
   // Tears down the spec subscription opened in the constructor. Without this,
   // a component replaced in CanvasEntity.processRows keeps reacting to spec

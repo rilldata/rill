@@ -69,7 +69,9 @@ export interface MeasuredBlock {
 }
 
 // Measures every capture target of the export render in document order.
-export function measureCanvasBlocks(rowContainer: HTMLElement): MeasuredBlock[] {
+export function measureCanvasBlocks(
+  rowContainer: HTMLElement,
+): MeasuredBlock[] {
   const contentRect = rowContainer.getBoundingClientRect();
   return captureTargetsIn(rowContainer).map((target) => {
     const rect = target.getBoundingClientRect();
