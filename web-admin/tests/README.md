@@ -49,6 +49,25 @@ npx playwright test --project=teardown
 # Or use the shorthand: npm run test:teardown
 ```
 
+### Embed host
+
+`tests/embed-host` is a small app that embeds the AdBids project the way a customer's app would.
+`embedded-reports.spec.ts` uses it, through the `embedHost` fixture, to create reports from an embed and open the links in their emails.
+
+- Its backend (`handler.ts`) requests iframe URLs from the admin service with the service token, as one of the users in `users.ts`.
+  Their emails are suffixed variants of the e2e admin's email, for example `e2e-admin+embed-a@rilldata.com`, so Mailpit catches them.
+- It runs on `http://localhost:4300`, which `embeds.open_url` in the AdBids project's `rill.yaml` points to.
+- Tests serve it with Playwright route interception, so nothing needs to listen on the port.
+
+To debug manually in a normal browser, start it on the same port after `npm run test:setup`:
+
+```bash
+npm run test:embed-host
+```
+
+Then open `http://localhost:4300/?user=alice`.
+Open links in report emails caught by Mailpit (`http://localhost:8025`) also work.
+
 ### Development Workflow
 
 When developing and debugging tests, follow this workflow to avoid repeatedly running setup and teardown:
