@@ -6,8 +6,9 @@ import (
 )
 
 // ValidateExpressionNarrows validates that expr narrows base: that it applies every dimension filter of base, so that on those dimensions it selects at most the rows that base selects.
-// A filter that selects values (eq or in) may be restated or narrowed to a subset of its values, but not widened or changed.
-// Filters that don't select values, such as exclusions, ranges and patterns, are matched by dimension only, since they can be restated in many equivalent ways.
+// A filter that selects values (eq or in) may be restated or narrowed to a subset of its values; any other kind of filter on the dimension is rejected, since it can't be shown to stay within the selection.
+// A filter that excludes values (neq or nin) may be restated, extended to exclude more values, or replaced by a selection that avoids the excluded values.
+// Filters that range or pattern match, such as lt or ilike, are matched by dimension only, since they can't be compared without the data.
 // Only the dimension filters that base requires are checked: the terms of its (nested) ANDs that compare a dimension to literal values. ORs and subqueries are skipped.
 // It returns an error describing the first filter of base that expr drops or widens.
 func ValidateExpressionNarrows(expr, base *Expression) error {
@@ -19,7 +20,7 @@ func ValidateExpressionNarrows(expr, base *Expression) error {
 				continue
 			}
 			found = true
-			if bf.selects() && f.selects() && !f.within(bf) {
+			if !f.narrows(bf) {
 				return fmt.Errorf("%s is not within %s", f, bf)
 			}
 		}
@@ -38,23 +39,63 @@ type dimensionFilter struct {
 	expr      *Expression
 }
 
-// selects reports whether the filter selects a set of values (eq or in), as opposed to excluding, ranging or pattern matching.
+// narrows reports whether f selects at most the rows that base selects on their shared dimension, as far as the operators and values can tell.
+func (f dimensionFilter) narrows(base dimensionFilter) bool {
+	switch {
+	case base.selects():
+		// Only a selection of a subset of the values is known to stay within a selection
+		return f.selects() && f.within(base)
+	case base.excludes() && f.selects():
+		// A selection stays within an exclusion if it avoids the excluded values
+		return !f.overlaps(base)
+	case base.excludes() && f.excludes():
+		// An exclusion stays within an exclusion if it excludes at least the same values
+		return base.within(f)
+	default:
+		// Ranges and patterns can't be compared without the data, so they are matched by dimension only
+		return true
+	}
+}
+
+// selects reports whether the filter selects a set of values (eq or in).
 func (f dimensionFilter) selects() bool {
 	return f.op == OperatorEq || f.op == OperatorIn
 }
 
-// within reports whether every value selected by f is also selected by other.
+// excludes reports whether the filter excludes a set of values (neq or nin).
+func (f dimensionFilter) excludes() bool {
+	return f.op == OperatorNeq || f.op == OperatorNin
+}
+
+// within reports whether every value of f is among the values of other.
 func (f dimensionFilter) within(other dimensionFilter) bool {
-	allowed := make(map[string]bool, len(other.values))
-	for _, v := range other.values {
-		allowed[fmt.Sprint(v)] = true
-	}
+	values := other.valueSet()
 	for _, v := range f.values {
-		if !allowed[fmt.Sprint(v)] {
+		if !values[fmt.Sprint(v)] {
 			return false
 		}
 	}
 	return true
+}
+
+// overlaps reports whether any value of f is among the values of other.
+func (f dimensionFilter) overlaps(other dimensionFilter) bool {
+	values := other.valueSet()
+	for _, v := range f.values {
+		if values[fmt.Sprint(v)] {
+			return true
+		}
+	}
+	return false
+}
+
+// valueSet returns the filter's values keyed by their printed form, so that equal numbers of different types match.
+func (f dimensionFilter) valueSet() map[string]bool {
+	res := make(map[string]bool, len(f.values))
+	for _, v := range f.values {
+		res[fmt.Sprint(v)] = true
+	}
+	return res
 }
 
 // String renders the filter as SQL for error messages.

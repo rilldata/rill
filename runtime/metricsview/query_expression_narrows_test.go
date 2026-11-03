@@ -134,8 +134,36 @@ func TestValidateExpressionNarrows(t *testing.T) {
 			base: cond(OperatorNin, "country", []any{"DK"}),
 		},
 		{
+			name: "exclusion extended to more values",
+			expr: cond(OperatorNin, "country", []any{"DK", "US"}),
+			base: cond(OperatorNeq, "country", "DK"),
+		},
+		{
+			name:    "exclusion replaced by another exclusion",
+			expr:    cond(OperatorNin, "country", []any{"US"}),
+			base:    cond(OperatorNin, "country", []any{"DK"}),
+			wantErr: `country NOT IN ('US') is not within country NOT IN ('DK')`,
+		},
+		{
 			name: "exclusion restated as a selection",
 			expr: cond(OperatorEq, "country", "US"),
+			base: cond(OperatorNin, "country", []any{"DK"}),
+		},
+		{
+			name:    "exclusion replaced by a selection of an excluded value",
+			expr:    cond(OperatorEq, "country", "DK"),
+			base:    cond(OperatorNin, "country", []any{"DK"}),
+			wantErr: `country = 'DK' is not within country NOT IN ('DK')`,
+		},
+		{
+			name:    "exclusion replaced by a selection that overlaps it",
+			expr:    cond(OperatorIn, "country", []any{"FR", "US"}),
+			base:    cond(OperatorNin, "country", []any{"DK", "US"}),
+			wantErr: `country IN ('FR', 'US') is not within country NOT IN ('DK', 'US')`,
+		},
+		{
+			name: "exclusion restated as a pattern",
+			expr: cond(OperatorNilike, "country", "DK"),
 			base: cond(OperatorNin, "country", []any{"DK"}),
 		},
 		{
@@ -143,6 +171,18 @@ func TestValidateExpressionNarrows(t *testing.T) {
 			expr:    cond(OperatorEq, "device", "mobile"),
 			base:    cond(OperatorNin, "country", []any{"DK"}),
 			wantErr: `no filter on "country"`,
+		},
+		{
+			name:    "selection replaced by an exclusion",
+			expr:    cond(OperatorNeq, "country", "US"),
+			base:    cond(OperatorIn, "country", []any{"DK"}),
+			wantErr: `country != 'US' is not within country IN ('DK')`,
+		},
+		{
+			name:    "selection restated as a pattern",
+			expr:    cond(OperatorIlike, "country", "DK"),
+			base:    cond(OperatorEq, "country", "DK"),
+			wantErr: `country ILIKE 'DK' is not within country = 'DK'`,
 		},
 		{
 			name: "pattern restated as a selection",
