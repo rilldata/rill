@@ -50,6 +50,7 @@
   "alert_errors_name_required": "El nombre es obligatorio",
   "alert_errors_recipient_required": "Agrega al menos un destinatario de correo o Slack",
   "alert_errors_resource_required": "Selecciona al menos un recurso",
+  "alert_errors_resources_all": "Todos",
   "alert_errors_resources_placeholder": "Selecciona recursos",
   "alert_errors_resources_selected": [
     {

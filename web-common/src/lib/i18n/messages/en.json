@@ -50,6 +50,7 @@
   "alert_errors_name_required": "Name is required",
   "alert_errors_recipient_required": "Add at least one email or Slack recipient",
   "alert_errors_resource_required": "Select at least one resource",
+  "alert_errors_resources_all": "All",
   "alert_errors_resources_placeholder": "Select resources",
   "alert_errors_resources_selected": [
     {
