@@ -11,6 +11,7 @@ import (
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/metricsview"
+	"github.com/rilldata/rill/runtime/pkg/mapstructureutil"
 	"github.com/rilldata/rill/runtime/pkg/pathutil"
 )
 
@@ -111,6 +112,14 @@ func (t *CreateChart) Handler(ctx context.Context, args CreateChartArgs) (*Creat
 		}
 	}
 
+	// Reject charts that silently drop or change the filters applied to the dashboard being analyzed (see checkDashboardFilter).
+	if dashboardFilter, ok := DashboardFiltersFromContext(ctx)[strings.ToLower(metricsView)]; ok {
+		err := checkDashboardFilter(spec["where"], dashboardFilter, metricsView)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	// Optional: Validate time_grain if present
 	if timeGrain, hasTimeGrain := spec["time_grain"]; hasTimeGrain {
 		timeGrainStr, ok := timeGrain.(string)
@@ -192,6 +201,38 @@ func (t *CreateChart) Handler(ctx context.Context, args CreateChartArgs) (*Creat
 		Spec:      spec,
 		Message:   fmt.Sprintf("Chart created successfully: %s", chartType),
 	}, nil
+}
+
+// checkDashboardFilter rejects a chart whose 'where' silently drops or changes the filter applied to the dashboard being analyzed.
+// The chart is rendered to the user as-is, so a dropped filter makes it contradict the findings, which are based on queries of the filtered data.
+// The chart's filter must narrow the dashboard's filter (see metricsview.ValidateExpressionNarrows).
+// To chart unfiltered data on purpose, the model passes an explicit empty 'where'.
+func checkDashboardFilter(where any, dashboardFilter *metricsview.Expression, metricsView string) error {
+	const fix = `Keep the dashboard's filters in the chart's 'where' (narrowing them further is fine), or set 'where' to {"cond":{"op":"and","exprs":[]}} to chart unfiltered data on purpose`
+
+	dashboardSQL, err := metricsview.ExpressionToSQL(dashboardFilter)
+	if err != nil {
+		return err
+	}
+
+	if where == nil {
+		return fmt.Errorf("the chart has no 'where' filter, but the dashboard the user is viewing filters %q by: %s. Charts must apply the same filters as the data they visualize. %s", metricsView, dashboardSQL, fix)
+	}
+
+	chartFilter := &metricsview.Expression{}
+	err = mapstructureutil.WeakDecode(where, chartFilter)
+	if err != nil {
+		return fmt.Errorf("invalid 'where': %w", err)
+	}
+	if chartFilter.Condition != nil && len(chartFilter.Condition.Expressions) == 0 {
+		return nil // Explicit empty filter: the chart is meant to show unfiltered data
+	}
+
+	err = metricsview.ValidateExpressionNarrows(chartFilter, dashboardFilter)
+	if err != nil {
+		return fmt.Errorf("the chart's 'where' does not keep the filters of the dashboard the user is viewing (%q is filtered by: %s): %w. Charts must apply the same filters as the data they visualize. %s", metricsView, dashboardSQL, err, fix)
+	}
+	return nil
 }
 
 // validateChartFields validates that all field references in the chart spec exist in the metrics view
@@ -439,7 +480,7 @@ All chart specifications must include:
 ## Optional Parameters
 
 - ` + "`time_grain`" + `: Time granularity for temporal aggregations (e.g., "TIME_GRAIN_DAY", "TIME_GRAIN_MONTH", "TIME_GRAIN_YEAR"). Defaults to "TIME_GRAIN_DAY" if not specified.
-- ` + "`where`" + `: Filter expression to apply to the underlying data. Use the same structure as in query_metrics_view.
+- ` + "`where`" + `: Filter expression to apply to the underlying data. Use the same structure as in query_metrics_view. A chart must apply the same filters as the data it visualizes, so pass the same ` + "`where`" + ` as the query it is based on, including the filters applied to the dashboard the user is viewing. A chart that drops or changes the dashboard's filters is rejected; narrowing them further is fine. To chart unfiltered data on purpose, pass an explicit empty filter: ` + "`{\"cond\": {\"op\": \"and\", \"exprs\": []}}`" + `.
 - ` + "`comparison_time_range`" + `: Optional time range for period-over-period comparison. Only supported for cartesian chart types: bar_chart, line_chart, stacked_bar, stacked_bar_normalized.
   - ` + "`start`" + `: ISO 8601 timestamp (inclusive) for the comparison period start
   - ` + "`end`" + `: ISO 8601 timestamp (exclusive) for the comparison period end

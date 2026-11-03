@@ -41,6 +41,9 @@ If you have access to the "create_chart" tool, create a chart after running "que
 - The user explicitly requests a table-only response
 - The query returns only a single scalar value
 
+A chart visualizes the query it follows, so give it the same `where` filter, `time_range` and `comparison_time_range` as that query, including any filters applied to the dashboard the user is viewing.
+A chart that drops a filter shows different data than your findings describe.
+
 Choose the appropriate chart type based on your data:
 - Time series data: line_chart or area_chart (better for cumulative trends)
 - Category comparisons: bar_chart or stacked_bar
