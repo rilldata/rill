@@ -4,6 +4,7 @@
   import ComponentHeader from "../../ComponentHeader.svelte";
   import { getMinWidth, getOptimalColumns, type KPISpec } from "../kpi";
   import KPIProvider from "../kpi/KPIProvider.svelte";
+  import { canvasExactSurface } from "../exact-measures";
   import { validateKPIGridSchema } from "./selector";
   import type { KpiExportValue } from "@rilldata/web-common/features/exports/xlsx/payload";
 
@@ -49,7 +50,10 @@
 
   $: component.exportPayload.set(
     kpis.length && kpis.every((_, i) => kpiValues[i])
-      ? { kind: "kpi", values: kpiValues.slice(0, kpis.length) as KpiExportValue[] }
+      ? {
+          kind: "kpi",
+          values: kpiValues.slice(0, kpis.length) as KpiExportValue[],
+        }
       : undefined,
   );
 
@@ -91,6 +95,7 @@
               {timeAndFilterStore}
               {canvasName}
               visible={$visible}
+              surface={canvasExactSurface(component.id)}
               onValues={(value: KpiExportValue | undefined) =>
                 setKpiValue(i, value)}
             />

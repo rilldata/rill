@@ -1,3 +1,4 @@
+import { getMetricsViewTimeRangeFromExploreQueryOptions } from "@rilldata/web-common/features/dashboards/selectors.ts";
 import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
 import { getExploreStateFromYAMLConfig } from "@rilldata/web-common/features/dashboards/stores/get-explore-state-from-yaml-config.ts";
 import { getRillDefaultExploreState } from "@rilldata/web-common/features/dashboards/stores/get-rill-default-explore-state.ts";
@@ -11,12 +12,12 @@ import type {
 import { convertRequestKeysToCamelCase } from "@rilldata/web-common/features/explore-mappers/utils";
 import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
-import {
-  createQueryServiceMetricsViewTimeRange,
-  type V1MetricsViewAggregationRequest,
-  type V1MetricsViewComparisonRequest,
+import type {
+  V1MetricsViewAggregationRequest,
+  V1MetricsViewComparisonRequest,
 } from "@rilldata/web-common/runtime-client";
 import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
+import { createQuery } from "@tanstack/svelte-query";
 import { derived, readable, type Readable } from "svelte/store";
 
 export type MapQueryRequest = {
@@ -104,19 +105,30 @@ export function mapQueryToDashboard(
   // backwards compatibility for older alerts created on metrics explore directly
   if (!exploreName) exploreName = metricsViewName;
 
+  const validSpecStore = useExploreValidSpec(
+    client,
+    exploreName,
+    undefined,
+    queryClient,
+  );
+  // Disabled when the explore's metrics view has no time dimension.
+  const timeRangeSummaryStore = createQuery(
+    getMetricsViewTimeRangeFromExploreQueryOptions(
+      client,
+      readable(exploreName),
+    ),
+    queryClient,
+  );
+
   return derived(
-    [
-      useExploreValidSpec(client, exploreName, undefined, queryClient),
-      // TODO: handle non-timestamp dashboards
-      createQueryServiceMetricsViewTimeRange(
-        client,
-        { metricsViewName },
-        undefined,
-        queryClient,
-      ),
-    ],
+    [validSpecStore, timeRangeSummaryStore],
     ([validSpecResp, timeRangeSummary], set) => {
-      if (validSpecResp.isLoading || timeRangeSummary.isLoading) {
+      const hasTimeDimension = !!validSpecResp.data?.metricsView?.timeDimension;
+
+      if (
+        validSpecResp.isLoading ||
+        (hasTimeDimension && !timeRangeSummary.data && !timeRangeSummary.error)
+      ) {
         set({
           isFetching: true,
           isLoading: true,
@@ -125,7 +137,7 @@ export function mapQueryToDashboard(
         return;
       }
 
-      if (validSpecResp.error || timeRangeSummary.error) {
+      if (validSpecResp.error || (hasTimeDimension && timeRangeSummary.error)) {
         set({
           isFetching: false,
           isLoading: false,
@@ -151,7 +163,7 @@ export function mapQueryToDashboard(
       }
 
       // Type guard
-      if (!timeRangeSummary.data?.timeRangeSummary) {
+      if (hasTimeDimension && !timeRangeSummary.data?.timeRangeSummary) {
         set({
           isFetching: false,
           isLoading: false,
@@ -183,7 +195,7 @@ export function mapQueryToDashboard(
         req: queryRequestProperties,
         metricsView,
         explore,
-        timeRangeSummary: timeRangeSummary.data.timeRangeSummary,
+        timeRangeSummary: timeRangeSummary.data?.timeRangeSummary,
         executionTime,
         exploreProtoState,
         ignoreFilters,

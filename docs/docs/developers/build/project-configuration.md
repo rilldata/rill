@@ -279,6 +279,7 @@ features:
 - `chat`: Enables chat functionality (default: `true`)
 - `dashboardChat`: Enables chat features within dashboards (default: `false`)
 - `cloud_editing`: Enables [editing the project in Rill Cloud](/developers/deploy/cloud-editing) (default: `false`; included as `true` in new projects)
+- `custom_components`: Enables authoring [custom viz](/developers/build/dashboards/canvas-widgets/custom-viz) components in Rill Developer (default: `false`)
 
 **How to enable**: Add the `features` section to your `rill.yaml`
 

@@ -17,8 +17,6 @@ import (
 	"google.golang.org/protobuf/types/known/structpb"
 )
 
-const defaultTemperature = 0.1
-
 func init() {
 	drivers.Register("claude", driver{})
 	drivers.RegisterAsConnector("claude", driver{})
@@ -58,8 +56,7 @@ var spec = drivers.Spec{
 			Type:        drivers.NumberPropertyType,
 			Required:    false,
 			DisplayName: "Temperature",
-			Description: "Sampling temperature to use.",
-			Default:     "0.1",
+			Description: "Sampling temperature to use. Defaults to the model's default. Leave unset for models that don't support it, such as Claude Opus 4.7 and later.",
 		},
 		{
 			Key:         "base_url",
@@ -68,6 +65,14 @@ var spec = drivers.Spec{
 			DisplayName: "Base URL",
 			Description: "Custom base URL for the Claude API.",
 			Placeholder: "",
+		},
+		{
+			Key:         "prompt_caching",
+			Type:        drivers.BooleanPropertyType,
+			Required:    false,
+			DisplayName: "Prompt Caching",
+			Description: "Cache the tools, system prompt, and conversation between requests. Cache reads cost a fraction of the input price, but cache writes cost more than it.",
+			Default:     "false",
 		},
 	},
 	ImplementsAI: true,
@@ -120,11 +125,12 @@ func (d driver) TertiarySourceConnectors(ctx context.Context, srcProps map[strin
 }
 
 type configProperties struct {
-	APIKey      string   `mapstructure:"api_key"`
-	Model       string   `mapstructure:"model"`
-	MaxTokens   int      `mapstructure:"max_tokens"`
-	Temperature *float64 `mapstructure:"temperature"`
-	BaseURL     string   `mapstructure:"base_url"`
+	APIKey        string   `mapstructure:"api_key"`
+	Model         string   `mapstructure:"model"`
+	MaxTokens     int      `mapstructure:"max_tokens"`
+	Temperature   *float64 `mapstructure:"temperature"`
+	BaseURL       string   `mapstructure:"base_url"`
+	PromptCaching bool     `mapstructure:"prompt_caching"`
 }
 
 func (c *configProperties) getModel() string {
@@ -139,13 +145,6 @@ func (c *configProperties) getMaxTokens() int {
 		return c.MaxTokens
 	}
 	return 8192 // Default max tokens
-}
-
-func (c *configProperties) getTemperature() float64 {
-	if c.Temperature != nil {
-		return *c.Temperature
-	}
-	return defaultTemperature
 }
 
 type handle struct {
@@ -259,7 +258,7 @@ func (h *handle) Ping(ctx context.Context) error {
 
 // Complete implements drivers.AIService.
 func (h *handle) Complete(ctx context.Context, opts *drivers.CompleteOptions) (*drivers.CompleteResult, error) {
-	system, msgs, err := convertMessages(opts.Messages)
+	system, msgs, err := convertMessages(opts.Messages, len(opts.Tools) > 0)
 	if err != nil {
 		return nil, fmt.Errorf("failed to convert messages: %w", err)
 	}
@@ -270,11 +269,14 @@ func (h *handle) Complete(ctx context.Context, opts *drivers.CompleteOptions) (*
 	}
 
 	params := anthropic.BetaMessageNewParams{
-		Model:       anthropic.Model(h.config.getModel()),
-		MaxTokens:   int64(h.config.getMaxTokens()),
-		Temperature: anthropic.Float(h.config.getTemperature()),
-		Messages:    msgs,
-		System:      system,
+		Model:     anthropic.Model(h.config.getModel()),
+		MaxTokens: int64(h.config.getMaxTokens()),
+		Messages:  msgs,
+		System:    system,
+	}
+	// Only set temperature if configured, since current models reject it (or reject non-default values).
+	if h.config.Temperature != nil {
+		params.Temperature = anthropic.Float(*h.config.Temperature)
 	}
 
 	if len(betaTools) > 0 {
@@ -297,6 +299,26 @@ func (h *handle) Complete(ctx context.Context, opts *drivers.CompleteOptions) (*
 		params.OutputFormat = anthropic.BetaJSONSchemaOutputFormat(schemaMap)
 	}
 
+	// The tools, system prompt, and conversation are resent on every step of a tool loop.
+	// If enabled, mark the end of each as a cache breakpoint, so later steps read them from the prompt cache.
+	if h.config.PromptCaching {
+		if n := len(params.Tools); n > 0 {
+			if cc := params.Tools[n-1].GetCacheControl(); cc != nil {
+				*cc = anthropic.NewBetaCacheControlEphemeralParam()
+			}
+		}
+		if n := len(params.System); n > 0 {
+			params.System[n-1].CacheControl = anthropic.NewBetaCacheControlEphemeralParam()
+		}
+		if n := len(params.Messages); n > 0 {
+			if content := params.Messages[n-1].Content; len(content) > 0 {
+				if cc := content[len(content)-1].GetCacheControl(); cc != nil {
+					*cc = anthropic.NewBetaCacheControlEphemeralParam()
+				}
+			}
+		}
+	}
+
 	res, err := h.client.Beta.Messages.New(ctx, params)
 	if err != nil {
 		return nil, err
@@ -309,23 +331,28 @@ func (h *handle) Complete(ctx context.Context, opts *drivers.CompleteOptions) (*
 
 	// Claude reports cache-read and cache-creation tokens separately from InputTokens.
 	return &drivers.CompleteResult{
-		Message:           resMsgs,
-		Provider:          "claude",
-		InputTokens:       int(res.Usage.InputTokens),
-		CachedInputTokens: int(res.Usage.CacheReadInputTokens),
-		OutputTokens:      int(res.Usage.OutputTokens),
+		Message:               resMsgs,
+		Provider:              "claude",
+		InputTokens:           int(res.Usage.InputTokens),
+		CachedInputTokens:     int(res.Usage.CacheReadInputTokens),
+		CacheWriteInputTokens: int(res.Usage.CacheCreationInputTokens),
+		OutputTokens:          int(res.Usage.OutputTokens),
 	}, nil
 }
 
 // convertMessages converts Rill messages to Claude beta message format.
 // It returns system blocks separately because Claude's API treats them differently.
-func convertMessages(msgs []*aiv1.CompletionMessage) ([]anthropic.BetaTextBlockParam, []anthropic.BetaMessageParam, error) {
+//
+// Reasoning blocks are passed back as thinking blocks, which Claude requires within a tool call loop.
+// But a thinking block is bound to the tools offered when it was produced,
+// so if no tools are offered (e.g. on the final iteration of a tool call loop), all reasoning blocks are removed.
+func convertMessages(msgs []*aiv1.CompletionMessage, toolsOffered bool) ([]anthropic.BetaTextBlockParam, []anthropic.BetaMessageParam, error) {
 	var system []anthropic.BetaTextBlockParam
 	var other []anthropic.BetaMessageParam
 
 	for _, msg := range msgs {
 		if msg.Role != "system" {
-			converted, err := convertMessage(msg)
+			converted, err := convertMessage(msg, toolsOffered)
 			if err != nil {
 				return nil, nil, err
 			}
@@ -336,6 +363,9 @@ func convertMessages(msgs []*aiv1.CompletionMessage) ([]anthropic.BetaTextBlockP
 		for _, block := range msg.Content {
 			switch block := block.BlockType.(type) {
 			case *aiv1.ContentBlock_Text:
+				if block.Text == "" {
+					continue
+				}
 				system = append(system, anthropic.BetaTextBlockParam{Text: block.Text})
 			default:
 				return nil, nil, fmt.Errorf("unsupported system message block type: %T", block)
@@ -348,7 +378,7 @@ func convertMessages(msgs []*aiv1.CompletionMessage) ([]anthropic.BetaTextBlockP
 
 // convertMessage converts a single Rill message to Claude beta messages.
 // Tool results become separate user messages per Claude's API requirements.
-func convertMessage(msg *aiv1.CompletionMessage) ([]anthropic.BetaMessageParam, error) {
+func convertMessage(msg *aiv1.CompletionMessage, toolsOffered bool) ([]anthropic.BetaMessageParam, error) {
 	var result []anthropic.BetaMessageParam
 
 	role := anthropic.BetaMessageParamRoleUser
@@ -359,11 +389,27 @@ func convertMessage(msg *aiv1.CompletionMessage) ([]anthropic.BetaMessageParam, 
 	for _, block := range msg.Content {
 		switch b := block.BlockType.(type) {
 		case *aiv1.ContentBlock_Text:
+			// Skip empty text blocks, which the API rejects (e.g. from conversations saved when thinking blocks were turned into text).
+			if b.Text == "" {
+				continue
+			}
 			result = append(result, anthropic.BetaMessageParam{
 				Role: role,
 				Content: []anthropic.BetaContentBlockParamUnion{
 					anthropic.NewBetaTextBlock(b.Text),
 				},
+			})
+		case *aiv1.ContentBlock_Reasoning:
+			if !toolsOffered {
+				continue
+			}
+			thinking := anthropic.NewBetaThinkingBlock(b.Reasoning.Signature, b.Reasoning.Text)
+			if b.Reasoning.RedactedData != "" {
+				thinking = anthropic.NewBetaRedactedThinkingBlock(b.Reasoning.RedactedData)
+			}
+			result = append(result, anthropic.BetaMessageParam{
+				Role:    anthropic.BetaMessageParamRoleAssistant, // NOTE: Hard-coded as assistant
+				Content: []anthropic.BetaContentBlockParamUnion{thinking},
 			})
 		case *aiv1.ContentBlock_ToolCall:
 			result = append(result, anthropic.BetaMessageParam{
@@ -434,6 +480,22 @@ func convertTool(tool *aiv1.Tool) (anthropic.BetaToolUnionParam, error) {
 		if err := json.Unmarshal([]byte(tool.InputSchema), &inputSchema); err != nil {
 			return anthropic.BetaToolUnionParam{}, fmt.Errorf("failed to parse schema for tool %q: %w", tool.Name, err)
 		}
+		// The SDK type only has fields for "type", "properties", and "required", and unmarshaling doesn't populate ExtraFields.
+		// So we copy the remaining keywords (such as "$defs", which "$ref"s point to) to ExtraFields to send them as-is.
+		var raw map[string]any
+		if err := json.Unmarshal([]byte(tool.InputSchema), &raw); err != nil {
+			return anthropic.BetaToolUnionParam{}, fmt.Errorf("failed to parse schema for tool %q: %w", tool.Name, err)
+		}
+		for k, v := range raw {
+			switch k {
+			case "type", "properties", "required":
+			default:
+				if inputSchema.ExtraFields == nil {
+					inputSchema.ExtraFields = make(map[string]any)
+				}
+				inputSchema.ExtraFields[k] = v
+			}
+		}
 	}
 
 	result := anthropic.BetaToolUnionParamOfTool(inputSchema, tool.Name)
@@ -451,12 +513,22 @@ func convertResponseMessage(msg *anthropic.BetaMessage) (*aiv1.CompletionMessage
 		block := msg.Content[idx] // Note: Separate line to avoid lint error about copying large structs
 		switch block.Type {
 		case "text":
+			// Skip empty text blocks, since the API rejects them when they're sent back in a later request.
+			if block.Text == "" {
+				continue
+			}
 			blocks = append(blocks, &aiv1.ContentBlock{
 				BlockType: &aiv1.ContentBlock_Text{Text: block.Text},
 			})
 		case "thinking":
+			// Current models return thinking blocks by default, with empty text unless display is "summarized".
+			// They're kept with their signature, since they must be passed back unmodified within a tool call loop.
 			blocks = append(blocks, &aiv1.ContentBlock{
-				BlockType: &aiv1.ContentBlock_Text{Text: block.Thinking},
+				BlockType: &aiv1.ContentBlock_Reasoning{Reasoning: &aiv1.Reasoning{Text: block.Thinking, Signature: block.Signature}},
+			})
+		case "redacted_thinking":
+			blocks = append(blocks, &aiv1.ContentBlock{
+				BlockType: &aiv1.ContentBlock_Reasoning{Reasoning: &aiv1.Reasoning{RedactedData: block.Data}},
 			})
 		case "tool_use":
 			cb, err := convertResponseToolUse(block)

@@ -47,6 +47,7 @@ func TestClickhouseSingle(t *testing.T) {
 	t.Run("QueryAttributesReadonlyUser", func(t *testing.T) { testQueryAttributesReadonlyUser(t, olap, dsn) })
 	t.Run("CreateTableAsSelect_WithPrePostExec", func(t *testing.T) { testCreateTableAsSelect_WithPrePostExec(t, c, olap) })
 	t.Run("InsertTableAsSelect_WithPrePostExec", func(t *testing.T) { testInsertTableAsSelect_WithPrePostExec(t, c, olap) })
+	t.Run("SelectInlineResults", func(t *testing.T) { testSelectInlineResults(t, olap) })
 }
 
 func TestClickhouseCluster(t *testing.T) {
@@ -1219,4 +1220,62 @@ func testEntityTypeRestrictedUser(t *testing.T, olap drivers.OLAPStore, dsn, clu
 	exists, err := restrictedConnection.checkBillingTableExists(ctx, cluster)
 	require.NoError(t, err)
 	require.False(t, exists)
+}
+
+// testSelectInlineResults checks that query results can be inlined in a VALUES clause that preserves their types.
+// UUID and Decimal values are bound as strings, so they must be cast back to their ClickHouse type to stay joinable with the original columns.
+func testSelectInlineResults(t *testing.T, olap drivers.OLAPStore) {
+	ctx := context.Background()
+	res, err := olap.Query(ctx, &drivers.Statement{
+		Query: `SELECT * FROM (
+				SELECT toUUID('6ba7b810-9dad-11d1-80b4-00c04fd430c8') AS id, toNullable(toUUID('6ba7b811-9dad-11d1-80b4-00c04fd430c8')) AS nid, toDecimal64(1.25, 2) AS price, toNullable(toDecimal128(-3.5, 4)) AS nprice, 'a' AS name, toDate('2024-01-02') AS day
+				UNION ALL
+				SELECT toUUID('6ba7b812-9dad-11d1-80b4-00c04fd430c8'), NULL, toDecimal64(0, 2), NULL, 'b', toDate('2024-01-03')
+			) ORDER BY name`,
+	})
+	require.NoError(t, err)
+	defer res.Close()
+
+	sql, args, dimVals, err := olap.Dialect().SelectInlineResults(res)
+	require.NoError(t, err)
+	require.Len(t, dimVals, 2)
+	require.Contains(t, sql, "CAST(? AS UUID)")
+	require.Contains(t, sql, "CAST(? AS Nullable(UUID))")
+	require.Contains(t, sql, "CAST(? AS Decimal(18, 2))")
+	require.Contains(t, sql, "CAST(? AS Nullable(Decimal(38, 4)))")
+	require.Contains(t, sql, "toDate(?)")
+
+	// Round-trip the inlined results through ClickHouse and check the values and the types they come back with.
+	rows, err := olap.Query(ctx, &drivers.Statement{
+		Query: fmt.Sprintf(`SELECT toTypeName(id) AS id_type, toString(id) AS id_text, toTypeName(nid) AS nid_type, ifNull(toString(nid), '<null>') AS nid_text, toTypeName(price) AS price_type, toString(price) AS price_text, toTypeName(nprice) AS nprice_type, ifNull(toString(nprice), '<null>') AS nprice_text, name, toTypeName(day) AS day_type, toString(day) AS day_text FROM (%s) ORDER BY name`, sql),
+		Args:  args,
+	})
+	require.NoError(t, err)
+	defer rows.Close()
+
+	var got []map[string]any
+	for rows.Next() {
+		row := make(map[string]any)
+		require.NoError(t, rows.MapScan(row))
+		got = append(got, row)
+	}
+	require.NoError(t, rows.Err())
+	require.Equal(t, []map[string]any{
+		{
+			"id_type": "UUID", "id_text": "6ba7b810-9dad-11d1-80b4-00c04fd430c8",
+			"nid_type": "Nullable(UUID)", "nid_text": "6ba7b811-9dad-11d1-80b4-00c04fd430c8",
+			"price_type": "Decimal(18, 2)", "price_text": "1.25",
+			"nprice_type": "Nullable(Decimal(38, 4))", "nprice_text": "-3.5",
+			"name":     "a",
+			"day_type": "Date", "day_text": "2024-01-02",
+		},
+		{
+			"id_type": "UUID", "id_text": "6ba7b812-9dad-11d1-80b4-00c04fd430c8",
+			"nid_type": "Nullable(UUID)", "nid_text": "<null>",
+			"price_type": "Decimal(18, 2)", "price_text": "0",
+			"nprice_type": "Nullable(Decimal(38, 4))", "nprice_text": "<null>",
+			"name":     "b",
+			"day_type": "Date", "day_text": "2024-01-03",
+		},
+	}, got)
 }

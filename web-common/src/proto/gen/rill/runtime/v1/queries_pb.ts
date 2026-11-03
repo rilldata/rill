@@ -1103,7 +1103,12 @@ export class MetricsViewAggregationRequest extends Message<MetricsViewAggregatio
   filter?: MetricsViewFilter;
 
   /**
-   * @generated from field: bool exact = 17;
+   * Deprecated: ignored; use `exact` on individual measures instead.
+   * It originally disabled the approximate comparison join (limiting the base period to the top N rows), but has been unused since the metrics queries were refactored onto the metricsview package.
+   * That behavior is now controlled by the instance variable `rill.metrics.approximate_comparisons`.
+   *
+   * @generated from field: bool exact = 17 [deprecated = true];
+   * @deprecated
    */
   exact = false;
 
@@ -1383,6 +1388,14 @@ export class MetricsViewAggregationMeasure extends Message<MetricsViewAggregatio
     case: "expression";
   } | { case: undefined; value?: undefined } = { case: undefined };
 
+  /**
+   * Optional. Compute the measure with its `exact_expression` instead of its (approximate) `expression`.
+   * No-op for measures without an `exact_expression`, which only simple measures define.
+   *
+   * @generated from field: bool exact = 14;
+   */
+  exact = false;
+
   constructor(data?: PartialMessage<MetricsViewAggregationMeasure>) {
     super();
     proto3.util.initPartial(data, this);
@@ -1404,6 +1417,7 @@ export class MetricsViewAggregationMeasure extends Message<MetricsViewAggregatio
     { no: 11, name: "uri", kind: "message", T: MetricsViewAggregationMeasureComputeURI, oneof: "compute" },
     { no: 12, name: "comparison_time", kind: "message", T: MetricsViewAggregationMeasureComputeComparisonTime, oneof: "compute" },
     { no: 13, name: "expression", kind: "message", T: MetricsViewAggregationMeasureComputeExpression, oneof: "compute" },
+    { no: 14, name: "exact", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewAggregationMeasure {
@@ -2116,9 +2130,12 @@ export class MetricsViewComparisonRequest extends Message<MetricsViewComparisonR
   priority = 0;
 
   /**
-   * Optional, defaults to false
+   * Deprecated: ignored; use `exact` on individual measures instead.
+   * It originally disabled the approximate comparison join and the two-phase Druid TopN query, but has been unused since the metrics queries were refactored onto the metricsview package.
+   * Those behaviors are now controlled by the instance variables `rill.metrics.approximate_comparisons` and `rill.metrics.exactify_druid_topn`.
    *
-   * @generated from field: bool exact = 13;
+   * @generated from field: bool exact = 13 [deprecated = true];
+   * @deprecated
    */
   exact = false;
 
@@ -2588,6 +2605,14 @@ export class MetricsViewTimeSeriesRequest extends Message<MetricsViewTimeSeriesR
   ephemeralMeasures: MetricsViewAggregationMeasure[] = [];
 
   /**
+   * Optional. Names of measures (from measure_names or ephemeral_measures) to compute with their `exact_expression`.
+   * No-op for measures without an `exact_expression`.
+   *
+   * @generated from field: repeated string exact_measure_names = 18;
+   */
+  exactMeasureNames: string[] = [];
+
+  /**
    * Optional. Defaults to min
    *
    * @generated from field: google.protobuf.Timestamp time_start = 4;
@@ -2681,6 +2706,7 @@ export class MetricsViewTimeSeriesRequest extends Message<MetricsViewTimeSeriesR
     { no: 2, name: "metrics_view_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "measure_names", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 17, name: "ephemeral_measures", kind: "message", T: MetricsViewAggregationMeasure, repeated: true },
+    { no: 18, name: "exact_measure_names", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 4, name: "time_start", kind: "message", T: Timestamp },
     { no: 5, name: "time_end", kind: "message", T: Timestamp },
     { no: 6, name: "time_granularity", kind: "enum", T: proto3.getEnumType(TimeGrain) },

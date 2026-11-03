@@ -203,6 +203,9 @@ export interface CommonChartProperties {
   // Ad-hoc measures derived from existing measures via an arithmetic
   // expression; measure fields may name them.
   adhoc_measures?: EphemeralMeasureSpec[];
+  // Measures to request with `exact: true`. Not a YAML property: injected by
+  // the surface that renders the chart from the viewer's exact selection.
+  exact_measures?: string[];
   tooltip?: FieldConfig;
   vl_config?: string;
 }

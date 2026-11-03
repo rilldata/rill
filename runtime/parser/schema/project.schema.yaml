@@ -76,6 +76,7 @@ definitions:
       - [**Claude**](#claude) - Claude connector for chat with your own API key
       - [**OpenAI**](#openai) - OpenAI connector for chat with your own API key
       - [**Gemini**](#gemini) - Gemini connector for chat with your own API key
+      - [**Bedrock**](#bedrock) - Amazon Bedrock connector for chat with models in your own AWS account
       - [**Slack**](#slack) - Slack data
 
       ### _Other_
@@ -703,7 +704,7 @@ definitions:
               description: "Maximum number of tokens to generate in the completion (default: 8192)"
             reasoning_effort:
               type: string
-              description: "Constrains effort on reasoning for reasoning models (e.g., 'low', 'medium', 'high')"
+              description: "Constrains effort on reasoning for reasoning models (e.g., 'low', 'medium', 'high'). Set this when using a model that reasons by default, since Rill otherwise sends a temperature of 0.1, which reasoning models reject."
             base_url:
               type: string
               description: The base URL for the OpenAI API (e.g., 'https://api.openai.com/v1')
@@ -745,10 +746,13 @@ definitions:
               description: Maximum number of tokens in the response (e.g., 8192)
             temperature:
               type: number
-              description: Sampling temperature to use (e.g., 0.0)
+              description: Sampling temperature to use (e.g., 0.0). Defaults to the model's default. Leave unset for models that don't support it, such as Claude Opus 4.7 and later.
             base_url:
               type: string
               description: The base URL for the Claude API
+            prompt_caching:
+              type: boolean
+              description: Cache the tools, system prompt, and conversation between requests (default false). Cache reads cost a fraction of the input price, which typically lowers cost for AI chat, but cache writes cost more than the input price.
           examples:
             - # Example: Claude connector configuration
               type: connector
@@ -781,7 +785,7 @@ definitions:
               description: Maximum number of tokens in the response (e.g., 8192)
             temperature:
               type: number
-              description: Sampling temperature to use (0.0-2.0)
+              description: Sampling temperature to use (0.0-2.0). Defaults to the model's default, which Google recommends keeping for Gemini 3 models.
             top_p:
               type: number
               description: Nucleus sampling parameter
@@ -797,6 +801,65 @@ definitions:
               model: gemini-2.5-pro-preview-05-06
           required:
             - api_key
+        - type: object
+          title: Bedrock
+          properties:
+            driver:
+              type: string
+              description: The driver type, must be set to "bedrock"
+              const: bedrock
+            model:
+              type: string
+              description: The Bedrock model ID, inference profile ID, or ARN to use (e.g., 'us.anthropic.claude-sonnet-4-5-20250929-v1:0'). The model must support tool use and structured outputs in the Bedrock Converse API.
+            region:
+              type: string
+              description: Optional AWS region to call Bedrock in (e.g., us-east-1). Defaults to 'us-east-1' if not specified. When using a long-term API key, this must be the region the key was generated in.
+            api_key:
+              type: string
+              description: Amazon Bedrock API key. Use either an API key or AWS access keys; they cannot be combined.
+            aws_access_key_id:
+              type: string
+              description: AWS Access Key ID used for authentication. Required unless using an API key or running locally with host credentials.
+            aws_secret_access_key:
+              type: string
+              description: AWS Secret Access Key paired with the Access Key ID.
+            aws_access_token:
+              type: string
+              description: AWS session token used with temporary credentials. Required only if the Access Key and Secret Key are part of temporary session credentials.
+            aws_role_arn:
+              type: string
+              description: ARN of the IAM role to assume. When specified, the base credentials are used to call STS AssumeRole and obtain temporary credentials scoped to this role.
+            aws_role_session_name:
+              type: string
+              description: Session name to associate with the STS AssumeRole session. Used only if 'aws_role_arn' is specified.
+            aws_external_id:
+              type: string
+              description: External ID required by some roles when assuming them, typically for cross-account access. Used only if 'aws_role_arn' is specified.
+            max_tokens:
+              type: number
+              description: Maximum number of tokens in the response. Defaults to the model's maximum.
+            temperature:
+              type: number
+              description: Sampling temperature to use (e.g., 0.1). Defaults to the model's default. Leave unset for models that don't support it, such as reasoning models.
+          examples:
+            - # Example: Bedrock connector configuration
+              type: connector
+              driver: bedrock
+
+              model: us.anthropic.claude-sonnet-4-5-20250929-v1:0
+              region: us-east-1
+              aws_access_key_id: "{{ .env.AWS_ACCESS_KEY_ID }}"
+              aws_secret_access_key: "{{ .env.AWS_SECRET_ACCESS_KEY }}"
+            - # Example: Bedrock connector configuration using an API key
+              type: connector
+              driver: bedrock
+
+              model: us.anthropic.claude-sonnet-4-5-20250929-v1:0
+              region: us-east-1
+              api_key: "{{ .env.BEDROCK_API_KEY }}"
+          required:
+            - driver
+            - model
         - type: object
           title: Pinot
           properties:
@@ -956,7 +1019,29 @@ definitions:
               description: Password for authentication
             sslmode:
               type: string
-              description:  "ssl mode options: `disable`, `allow`, `prefer` or `require`."
+              description: |
+                SSL mode options: `disable`, `allow`, `prefer`, `require`, `verify-ca`, or `verify-full`.
+                When certificate contents are supplied, defaults to `verify-full`; other modes are rejected.
+            sslrootcert_pem:
+              type: string
+              description: |
+                CA certificate contents as raw PEM or standard base64-encoded PEM.
+                Used to verify the PostgreSQL server certificate; omit to use the system trust roots.
+                Requires individual connection parameters (not `dsn` or `database_url`) and `verify-full` TLS.
+            sslcert_pem:
+              type: string
+              description: |
+                Client certificate contents as raw PEM or standard base64-encoded PEM.
+                Requires `sslkey_pem` and `verify-full` TLS. Cannot be combined with `dsn` or `database_url`.
+            sslkey_pem:
+              type: string
+              description: |
+                Matching unencrypted client private key contents as raw PEM or standard base64-encoded PEM.
+                Requires `sslcert_pem` and `verify-full` TLS. Cannot be combined with `dsn` or `database_url`.
+                Store this value in a secret project variable.
+
+                See [PostgreSQL TLS certificates](/developers/build/connectors/data-source/postgres#tls-certificates-in-rill-cloud)
+                for upload and Cloud configuration instructions.
             max_open_conns:
               type: integer
               description: Maximum number of open connections to the database (defaults to 1)
@@ -1182,6 +1267,11 @@ definitions:
               items:
                 type: string
               description: Scopes to request during authorization. Defaults to all scopes the server advertises
+            oauth_authorization_params:
+              type: object
+              additionalProperties:
+                type: string
+              description: 'Extra query parameters for the authorization request, for servers that need non-standard ones. For example, Google issues a refresh token only with `access_type: offline`, and only on the first consent unless `prompt: consent` is also set. Changing them requires users to connect again'
             headers:
               type: object
               additionalProperties:
@@ -2327,6 +2417,9 @@ definitions:
                 expression:
                   type: string
                   description: a combination of operators and functions for aggregations
+                exact_expression:
+                  type: string
+                  description: 'An optional exact variant of `expression` for measures whose default expression is approximate (e.g. `expression: uniq(user_id)` with `exact_expression: uniqExact(user_id)` in ClickHouse, or `approx_count_distinct(user_id)` with `count(DISTINCT user_id)` in DuckDB). Dashboards show the approximate value by default and only use the exact expression when a viewer or query explicitly asks for exact values. It shares all other measure settings with `expression`. Only simple measures without a `window` can define it: derived measures are calculated from the measures as a query computes them.'
                 window:
                   description: A measure window can be defined as a keyword string (e.g. 'time' or 'all') or an object with detailed window configuration. For more information, see the [window functions](/developers/build/metrics-view/measures/windows) documentation.
                   anyOf:
@@ -2670,6 +2763,8 @@ definitions:
                   - rill-TD // Today
                   - rill-WTD // Week-To-date
                 ```
+
+              When `defaults.comparison_mode` is `time`, the canvas opens with the first `comparison_offsets` entry declared for the default time range, or for the first entry in this list when `defaults.time_range` is not set. Only comparison aliases such as `rill-PW`, `rill-PM` and `rill-PY` are used for this default; other offsets are skipped. If none is declared, the default comparison is derived from the default time range. The comparison menu still lists every option.
             items:
               $ref: '#/definitions/explore_time_range_properties'
           time_zones:
@@ -2984,6 +3079,27 @@ definitions:
                 required:
                   - attributes
                 additionalProperties: false
+          export:
+            type: object
+            description: Configuration for attaching the rows that triggered the alert to email notifications. Only supported for alerts created from a dashboard (which use the `query` property).
+            properties:
+              attach:
+                type: boolean
+                description: If true, attaches an export of the rows that triggered the alert to email notifications for failed checks. Files larger than 10 MB are not attached; the email says so instead.
+              format:
+                type: string
+                enum:
+                  - csv
+                  - xlsx
+                  - parquet
+                description: Format of the attached file. Required if `attach` is true.
+              include_header:
+                type: boolean
+                description: Whether to include header rows in the attached file
+              limit:
+                type: integer
+                description: Maximum number of rows to include in the attached file
+                minimum: 0
           on_recover:
             type: boolean
             description: Send an alert when a previously failing alert recovers. Defaults to false.
@@ -3150,6 +3266,9 @@ definitions:
                 type: integer
                 description: Maximum number of rows to export
                 minimum: 0
+              attach:
+                type: boolean
+                description: If true, attaches the exported file to email notifications. Only supported for query-based reports run as the creator (`web_open_mode` set to `creator`, which is the default). Files larger than 10 MB are not attached; the email links to the download instead.
           notify:
             $ref: '#/definitions/notify_properties'
             description: Notification configuration for email and Slack delivery
@@ -3419,6 +3538,7 @@ definitions:
       A custom visualization: a Metrics SQL query plus a chart spec describing how to draw it.
       Rill derives scales, axes, formats, sorting, stacking and layout from the data and from the
       metrics view's semantics, so the spec only states the chart type and which field goes on which channel.
+      See [Custom Viz](/developers/build/dashboards/canvas-widgets/custom-viz).
     properties:
       metrics_sql:
         type: string
@@ -3437,7 +3557,9 @@ definitions:
           derives scales, axes, formats, sorting or layout, so the chart stops adapting on its own.
           Read the query result from the `query1` dataset, i.e. `"data": {"name": "query1"}`,
           and size the chart to its container with `"width": "container"`, `"height": "container"`
-          and `"autosize": {"type": "fit"}`. Mutually exclusive with `spec`.
+          and `"autosize": {"type": "fit", "contains": "padding"}`. Mutually exclusive with `spec`.
+          Template values are JSON-escaped, so place placeholders inside JSON strings.
+          See [Vega-Lite](/developers/build/dashboards/canvas-widgets/custom-viz/vega-lite).
     additionalProperties: false
 
   # Flint Chart Spec
@@ -3446,11 +3568,11 @@ definitions:
     properties:
       chartType:
         type: string
-        description: The chart type, e.g. `Line Chart`, `Bar Chart`, `Heatmap`, `Waterfall Chart`.
+        description: The chart type, e.g. `Line Chart`, `Bar Chart`, `Heatmap`, `Waterfall Chart`. See [Chart Types](/developers/build/dashboards/canvas-widgets/custom-viz/chart-types) for the full list.
       encodings:
         type: object
         description: |
-          Maps a visual channel (`x`, `y`, `color`, `size`, `column`, `row`, `group`, `angle`, `goal`, ...)
+          Maps a visual channel (`x`, `y`, `x2`, `y2`, `color`, `size`, `column`, `row`, `group`, `goal`, ...)
           to a field. Each value is either a field name or an encoding object.
         additionalProperties:
           oneOf:
@@ -4170,6 +4292,11 @@ definitions:
               where_error:
                 type: boolean
                 description: Indicates whether the condition should trigger when the resource is in an error state.
+              where_resource:
+                type: array
+                items:
+                  type: string
+                description: Only include resources matching any of these `kind/name` patterns (e.g. `model/orders`, `model/*`, `*/orders`). Kinds accept shorthands like `metrics_view`; names are case-insensitive; a bare name matches any kind.
             additionalProperties: true
         required:
           - resource_status
@@ -4293,6 +4420,11 @@ definitions:
               where_error:
                 type: boolean
                 description: Indicates whether the condition should trigger when the resource is in an error state.
+              where_resource:
+                type: array
+                items:
+                  type: string
+                description: Only include resources matching any of these `kind/name` patterns (e.g. `model/orders`, `model/*`, `*/orders`). Kinds accept shorthands like `metrics_view`; names are case-insensitive; a bare name matches any kind.
             additionalProperties: true
         required:
           - resource_status

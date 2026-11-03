@@ -146,6 +146,8 @@ _[array of oneOf]_ - Overrides the list of default time range selections availab
     - rill-WTD // Week-To-date
   ```
 
+When `defaults.comparison_mode` is `time`, the canvas opens with the first `comparison_offsets` entry declared for the default time range, or for the first entry in this list when `defaults.time_range` is not set. Only comparison aliases such as `rill-PW`, `rill-PM` and `rill-PY` are used for this default; other offsets are skipped. If none is declared, the default comparison is derived from the default time range. The comparison menu still lists every option.
+
 
   - **option 1** - _[string]_ - An [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601#Durations) duration or one of the [Rill ISO 8601 extensions](/reference/time-syntax/rill-iso-extensions#extensions) extensions for the selection.
 

@@ -36,7 +36,6 @@ type MetricsViewComparison struct {
 	HavingSQL           string                                         `json:"having_sql,omitempty"`
 	Filter              *runtimev1.MetricsViewFilter                   `json:"filter"` // Backwards compatibility
 	Aliases             []*runtimev1.MetricsViewComparisonMeasureAlias `json:"aliases,omitempty"`
-	Exact               bool                                           `json:"exact"`
 	SecurityClaims      *runtime.SecurityClaims                        `json:"security_claims,omitempty"`
 	ExecutionTime       *time.Time                                     `json:"execution_time,omitempty"`
 
@@ -261,7 +260,7 @@ func (q *MetricsViewComparison) rewriteToMetricsViewQuery(export bool) (*metrics
 	var measureFilter *runtimev1.Expression
 
 	for _, m := range q.Measures {
-		res := metricsview.Measure{Name: m.Name}
+		res := metricsview.Measure{Name: m.Name, Exact: m.Exact}
 		switch m.BuiltinMeasure {
 		case runtimev1.BuiltinMeasure_BUILTIN_MEASURE_COUNT:
 			res.Compute = &metricsview.MeasureCompute{Count: true}

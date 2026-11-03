@@ -1,10 +1,17 @@
 <script lang="ts">
   import { ephemeralSpecsToDefs } from "@rilldata/web-common/features/dashboards/ephemeral-measures/canvas";
   import {
+    applyExactMeasures,
     ephemeralMeasureToSpecMeasure,
+    exactTimeSeriesMeasureNames,
     mapEphemeralMeasuresForRequest,
     splitTimeSeriesMeasures,
   } from "@rilldata/web-common/features/dashboards/ephemeral-measures/measure-mapping";
+  import { requestExactNames } from "@rilldata/web-common/features/dashboards/exact-measures/exact-measures";
+  import {
+    canvasExactMeasureContext,
+    canvasPrecisionChip,
+  } from "../exact-measures";
   import { measureSupportsTotalsQuery } from "@rilldata/web-common/features/dashboards/state-managers/selectors/measures";
   import type { TimeAndFilterStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
   import { TIME_COMPARISON } from "@rilldata/web-common/lib/time/config";
@@ -26,10 +33,13 @@
   export let timeAndFilterStore: Readable<TimeAndFilterStore>;
   export let canvasName: string;
   export let visible: boolean;
+  // The exact-selection surface of the KPI (its component); see `canvasExactSurface`.
+  export let surface: string;
   // Reports the values the KPI shows (undefined while loading) for the
   // workbook export; see KPIGrid.
-  export let onValues: ((value: KpiExportValue | undefined) => void) | undefined =
-    undefined;
+  export let onValues:
+    | ((value: KpiExportValue | undefined) => void)
+    | undefined = undefined;
 
   const client = useRuntimeClient();
 
@@ -84,12 +94,29 @@
     (TIME_COMPARISON[comparisonTimeRangeState?.selectedComparisonTimeRange.name]
       ?.label as string | undefined);
 
-  $: queryMeasures = mapEphemeralMeasuresForRequest(
-    [{ name: measureName }],
-    ephemeralMeasures,
+  // Exact measures: the selection of this KPI's surface.
+  $: exactContextStore = canvasExactMeasureContext(
+    ctx.canvasEntity,
+    surface,
+    metricsViewName,
+  );
+  $: exact = requestExactNames([measureName], $exactContextStore).has(
+    measureName,
+  );
+  $: exactNames = exact ? new Set([measureName]) : undefined;
+
+  $: queryMeasures = applyExactMeasures(
+    mapEphemeralMeasuresForRequest([{ name: measureName }], ephemeralMeasures),
+    exactNames,
   );
   $: ({ measureNames: tsMeasureNames, ephemeralMeasures: tsEphemeralMeasures } =
     splitTimeSeriesMeasures([measureName], ephemeralMeasures));
+  $: tsExactMeasureNames = exactTimeSeriesMeasureNames(
+    tsMeasureNames,
+    exactNames,
+  );
+  $: tsRequestEphemeralMeasures =
+    tsEphemeralMeasures && applyExactMeasures(tsEphemeralMeasures, exactNames);
 
   $: totalQuery = createQueryServiceMetricsViewAggregation(
     client,
@@ -143,7 +170,8 @@
     {
       metricsViewName,
       measureNames: tsMeasureNames,
-      ephemeralMeasures: tsEphemeralMeasures,
+      ephemeralMeasures: tsRequestEphemeralMeasures,
+      exactMeasureNames: tsExactMeasureNames,
       timeStart: start,
       timeEnd: end,
       timeGranularity: timeGrain || V1TimeGrain.TIME_GRAIN_HOUR,
@@ -163,7 +191,8 @@
     {
       metricsViewName,
       measureNames: tsMeasureNames,
-      ephemeralMeasures: tsEphemeralMeasures,
+      ephemeralMeasures: tsRequestEphemeralMeasures,
+      exactMeasureNames: tsExactMeasureNames,
       timeStart: comparisonTimeRange?.start,
       timeEnd: comparisonTimeRange?.end,
       timeGranularity: timeGrain || V1TimeGrain.TIME_GRAIN_HOUR,
@@ -187,19 +216,28 @@
   $: exportValue = (() => {
     if (!onValues) return undefined;
     if (!isValid || !supportsTotal || $totalQuery.isFetching) return undefined;
-    const value = ($totalQuery.data?.data?.[0]?.[measureName] ?? null) as number | null;
+    const value = ($totalQuery.data?.data?.[0]?.[measureName] ?? null) as
+      | number
+      | null;
     const comparisonValue =
       showComparison && !$comparisonTotalQuery.isFetching
-        ? (($comparisonTotalQuery.data?.data?.[0]?.[measureName] ?? null) as number | null)
+        ? (($comparisonTotalQuery.data?.data?.[0]?.[measureName] ?? null) as
+            | number
+            | null)
         : null;
-    const delta = value != null && comparisonValue != null ? value - comparisonValue : null;
+    const delta =
+      value != null && comparisonValue != null ? value - comparisonValue : null;
     const deltaPercent =
-      value != null && comparisonValue ? (value - comparisonValue) / comparisonValue : null;
+      value != null && comparisonValue
+        ? (value - comparisonValue) / comparisonValue
+        : null;
     const trend =
       showSparkline && !$primarySparklineQuery.isFetching
         ? ($primarySparklineQuery.data?.data ?? []).map((point) => ({
             time: point.ts ?? "",
-            value: (point.records?.[measureName] as number | null | undefined) ?? null,
+            value:
+              (point.records?.[measureName] as number | null | undefined) ??
+              null,
           }))
         : undefined;
     return {
@@ -220,10 +258,23 @@
     DateTime.fromISO(start ?? "").setZone(timeZone),
     DateTime.fromISO(end ?? "").setZone(timeZone),
   );
+
+  // Declared after the queries: `$:` blocks run in source order for store
+  // reads, so reading `$totalQuery` above its declaration throws.
+  $: precision = canvasPrecisionChip(
+    measureName,
+    measure?.displayName || measureName,
+    $exactContextStore,
+    !!$totalQuery?.isFetching ||
+      (showComparison && !!$comparisonTotalQuery?.isFetching),
+    $totalQuery?.error?.message ?? undefined,
+    () => ctx.canvasEntity.toggleExactMeasure(surface, measureName),
+  );
 </script>
 
 <KPI
   {measure}
+  {precision}
   {timeGrain}
   {timeZone}
   {showTimeComparison}

@@ -1,5 +1,7 @@
 <script lang="ts">
   import ArrowDown from "@rilldata/web-common/components/icons/ArrowDown.svelte";
+  import type { PrecisionChipProps } from "@rilldata/web-common/features/dashboards/exact-measures/exact-measures";
+  import { precisionForColumn } from "@rilldata/web-common/features/dashboards/pivot/pivot-utils";
   import Resizer from "@rilldata/web-common/layout/Resizer.svelte";
   import { modified } from "@rilldata/web-common/lib/actions/modified-click";
   import { writable } from "svelte/store";
@@ -71,6 +73,10 @@
   export let rowSelectionState: PivotRowSelectionState | undefined = undefined;
   export let clickSelection: PivotClickSelectionState | undefined = undefined;
   export let activeCell: { rowId: string; columnId: string } | null | undefined;
+  // Precision chip for a measure column header; undefined when the measure has no exact variant.
+  export let precisionFor:
+    | ((measureName: string) => PrecisionChipProps | undefined)
+    | undefined = undefined;
   export let fillWidth = false;
   export let containerWidth = 0;
   export let headerHeight = 30;
@@ -749,6 +755,7 @@
                     label={String(header.column.columnDef.header)}
                     description={dimMeta?.description}
                     wrap={wrapHeaders}
+                    precision={precisionForColumn(header.column, precisionFor)}
                   />
                 {:else}
                   <p

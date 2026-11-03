@@ -38,14 +38,37 @@ import {
 } from "../pivot/types";
 import { parseMeasureExpression } from "../ephemeral-measures/expression-parser";
 import type { EphemeralMeasureDef } from "../ephemeral-measures/types";
+import { getQueryContextKey } from "../exact-measures/query-context-key";
 import type { ExpressionFilterManager } from "@rilldata/web-common/features/dashboards/filters/ExpressionFilterManager.svelte.ts";
 
 export interface MetricsExplorerStoreType {
   entities: Record<string, ExploreState>;
 }
-const { update, subscribe } = writable({
+const { update: rawUpdate, subscribe } = writable({
   entities: {},
 } as MetricsExplorerStoreType);
+
+/**
+ * Every mutation of the store runs through this wrapper, so the exact-measure
+ * selection of a dashboard resets as soon as its query context changes
+ * (filters, time controls, view, sorting); see `getQueryContextKey`. Doing it
+ * here covers reducers, URL sync and navigation alike, and costs nothing while
+ * no measure is selected.
+ */
+const update: typeof rawUpdate = (updater) =>
+  rawUpdate((state) => {
+    const next = updater(state);
+    for (const exploreState of Object.values(next.entities)) {
+      if (
+        exploreState.exactMeasures &&
+        exploreState.exactMeasures.contextKey !==
+          getQueryContextKey(exploreState)
+      ) {
+        delete exploreState.exactMeasures;
+      }
+    }
+    return next;
+  });
 
 export const updateMetricsExplorerByName = (
   name: string,

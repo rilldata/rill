@@ -202,8 +202,9 @@ func (t *AnalystAgent) Handler(ctx context.Context, args *AnalystAgentArgs) (*An
 		tools = append(tools, ListSkillsName, LoadSkillName)
 	}
 	// update_memory is dropped automatically by Complete when memory is not available (see UpdateMemory.CheckAccess).
-	tools = append(tools, UpdateMemoryName)
-	tools = append(tools, s.ExternalToolNames(ctx, "analyst")...)
+	// search_external_tools loads external tools on demand, and is dropped likewise when there are none.
+	tools = append(tools, UpdateMemoryName, SearchExternalToolsName)
+	tools = append(tools, loadedExternalTools(ctx, s, "analyst")...)
 
 	// Build completion messages
 	systemPrompt, err := t.systemPrompt(ctx)

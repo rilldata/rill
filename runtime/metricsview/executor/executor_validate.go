@@ -360,7 +360,8 @@ func (e *Executor) validateAndNormalizeRollups(ctx context.Context, mv *runtimev
 				if m.Type != runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE || m.Window != nil {
 					continue
 				}
-				if err := e.validateMeasure(ctx, t, m); err != nil {
+				// Only the default expression is validated against the rollup table: exact queries never route to rollups.
+				if err := e.validateMeasureExpression(ctx, t, m.Expression); err != nil {
 					res.OtherErrs = append(res.OtherErrs, fmt.Errorf("rollup[%d]: invalid expression for measure %q: %w", i, m.Name, err))
 				}
 			}
@@ -520,6 +521,9 @@ func (e *Executor) validateAllDimensionsAndMeasures(ctx context.Context, t *driv
 			continue
 		}
 		metricExprs = append(metricExprs, "("+m.Expression+")")
+		if m.ExactExpression != "" {
+			metricExprs = append(metricExprs, "("+m.ExactExpression+")")
+		}
 	}
 	var query string
 	if len(dimExprs) == 0 && len(metricExprs) == 0 {
@@ -595,7 +599,7 @@ func (e *Executor) validateIndividualDimensionsAndMeasures(ctx context.Context, 
 		idx := idx
 		m := m
 		grp.Go(func() error {
-			err := e.validateMeasure(ctx, t, m)
+			err := e.validateMeasureExpression(ctx, t, m.Expression)
 			if err != nil {
 				mu.Lock()
 				defer mu.Unlock()
@@ -603,6 +607,23 @@ func (e *Executor) validateIndividualDimensionsAndMeasures(ctx context.Context, 
 				res.MeasureErrs = append(res.MeasureErrs, IndexErr{
 					Idx: idx,
 					Err: fmt.Errorf("invalid expression for measure %q: %w", m.Name, err),
+				})
+			}
+			return nil
+		})
+
+		if m.ExactExpression == "" {
+			continue
+		}
+		grp.Go(func() error {
+			err := e.validateMeasureExpression(ctx, t, m.ExactExpression)
+			if err != nil {
+				mu.Lock()
+				defer mu.Unlock()
+
+				res.MeasureErrs = append(res.MeasureErrs, IndexErr{
+					Idx: idx,
+					Err: fmt.Errorf("invalid exact_expression for measure %q: %w", m.Name, err),
 				})
 			}
 			return nil
@@ -831,10 +852,10 @@ func (e *Executor) validateLookupGroupByKey(ctx context.Context, t *drivers.Olap
 	return nil
 }
 
-// validateMeasure validates a metrics view measure.
-func (e *Executor) validateMeasure(ctx context.Context, t *drivers.OlapTable, m *runtimev1.MetricsViewSpec_Measure) error {
+// validateMeasureExpression validates a metrics view measure's expression (or exact_expression) with a dry run.
+func (e *Executor) validateMeasureExpression(ctx context.Context, t *drivers.OlapTable, expr string) error {
 	err := e.olap.Exec(ctx, &drivers.Statement{
-		Query:           fmt.Sprintf("SELECT 1, (%s) FROM %s GROUP BY 1", m.Expression, e.olap.Dialect().EscapeTable(t.Database, t.DatabaseSchema, t.Name)),
+		Query:           fmt.Sprintf("SELECT 1, (%s) FROM %s GROUP BY 1", expr, e.olap.Dialect().EscapeTable(t.Database, t.DatabaseSchema, t.Name)),
 		DryRun:          true,
 		QueryAttributes: e.queryAttributes,
 	})
@@ -864,14 +885,19 @@ func (e *Executor) validateAndRewriteSchema(ctx context.Context, res *ValidateMe
 			continue
 		}
 
-		switch typ.Code {
-		case runtimev1.Type_CODE_TIMESTAMP, runtimev1.Type_CODE_DATE, runtimev1.Type_CODE_TIME, runtimev1.Type_CODE_STRING, runtimev1.Type_CODE_BYTES, runtimev1.Type_CODE_ARRAY, runtimev1.Type_CODE_STRUCT, runtimev1.Type_CODE_MAP, runtimev1.Type_CODE_JSON, runtimev1.Type_CODE_UUID:
+		if !isNumericMeasureType(typ) {
 			res.MeasureErrs = append(res.MeasureErrs, IndexErr{
 				Idx: i,
 				Err: fmt.Errorf("measure %q is of type %s, but must be a numeric type", m.Name, typ.Code),
 			})
 		}
 		m.DataType = typ
+	}
+
+	// Check that the exact expressions are not strings either. The DataType stays that of the default expression.
+	err = e.validateExactExpressionTypes(ctx, res)
+	if err != nil {
+		return err
 	}
 
 	// Populate the dimension types and data types
@@ -911,4 +937,57 @@ func (e *Executor) validateAndRewriteSchema(ctx context.Context, res *ValidateMe
 	}
 
 	return nil
+}
+
+// validateExactExpressionTypes checks that measures with an exact_expression produce a numeric type when computed exactly.
+// It is a no-op when no measure defines an exact_expression, so the extra schema query only runs for metrics views that use the feature.
+func (e *Executor) validateExactExpressionTypes(ctx context.Context, res *ValidateMetricsViewResult) error {
+	hasExact := false
+	for _, m := range e.metricsView.Measures {
+		if m.ExactExpression != "" {
+			hasExact = true
+			break
+		}
+	}
+	if !hasExact {
+		return nil
+	}
+
+	schema, err := e.ExactSchema(ctx)
+	if err != nil {
+		return err
+	}
+	types := make(map[string]*runtimev1.Type, len(schema.Fields))
+	for _, f := range schema.Fields {
+		types[strings.ToLower(f.Name)] = f.Type
+	}
+
+	for i, m := range e.metricsView.Measures {
+		if m.ExactExpression == "" {
+			continue
+		}
+		typ, ok := types[strings.ToLower(m.Name)]
+		if !ok {
+			// Don't error: schemas are not always reliable
+			continue
+		}
+		if !isNumericMeasureType(typ) {
+			res.MeasureErrs = append(res.MeasureErrs, IndexErr{
+				Idx: i,
+				Err: fmt.Errorf("exact_expression of measure %q is of type %s, but must be a numeric type", m.Name, typ.Code),
+			})
+		}
+	}
+
+	return nil
+}
+
+// isNumericMeasureType returns false for types that a measure must not have (strings, timestamps, composite types).
+func isNumericMeasureType(typ *runtimev1.Type) bool {
+	switch typ.Code {
+	case runtimev1.Type_CODE_TIMESTAMP, runtimev1.Type_CODE_DATE, runtimev1.Type_CODE_TIME, runtimev1.Type_CODE_STRING, runtimev1.Type_CODE_BYTES, runtimev1.Type_CODE_ARRAY, runtimev1.Type_CODE_STRUCT, runtimev1.Type_CODE_MAP, runtimev1.Type_CODE_JSON, runtimev1.Type_CODE_UUID:
+		return false
+	default:
+		return true
+	}
 }

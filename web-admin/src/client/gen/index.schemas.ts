@@ -33,6 +33,10 @@ export interface GetReportMetaResponseDeliveryMeta {
   unsubscribeUrl?: string;
   userId?: string;
   userAttrs?: GetReportMetaResponseDeliveryMetaUserAttrs;
+  /** If true, the report's data must only be accessed through the resources listed in `resources`.
+Set for reports created from an embed that was limited to specific resources. */
+  restrictResources?: boolean;
+  resources?: V1ResourceName[];
 }
 
 export interface ListGithubUserReposResponseRepo {
@@ -124,6 +128,11 @@ export interface V1AlertOptions {
   queryName?: string;
   /** DEPRECATED: Use resolver and resolver_properties instead. */
   queryArgsJson?: string;
+  /** If true, the query's result is exported and attached to email notifications for failed checks (only supported for query-based alerts). */
+  exportAttach?: boolean;
+  exportFormat?: V1ExportFormat;
+  exportIncludeHeader?: boolean;
+  exportLimit?: string;
   metricsViewName?: string;
   renotify?: boolean;
   renotifyAfterSeconds?: number;
@@ -305,6 +314,9 @@ export interface V1CompleteRequest {
   messages?: V1CompletionMessage[];
   tools?: V1Tool[];
   outputJsonSchema?: string;
+  /** Whether the response may include reasoning blocks.
+Older clients don't support them, so they are removed from the response unless this is set. */
+  includeReasoning?: boolean;
 }
 
 export interface V1CompleteResponse {
@@ -315,6 +327,8 @@ export interface V1CompleteResponse {
   outputTokens?: number;
   /** Number of cache-read (discounted) input tokens; a subset of input_tokens. */
   cachedInputTokens?: number;
+  /** Number of input tokens written to the prompt cache, which some providers (e.g. Claude) bill at a premium. */
+  cacheWriteInputTokens?: number;
   /** The LLM provider that served the completion (e.g. "claude", "openai", "gemini"). */
   provider?: string;
 }
@@ -338,6 +352,7 @@ export interface V1ContentBlock {
   text?: string;
   toolCall?: V1ToolCall;
   toolResult?: V1ToolResult;
+  reasoning?: V1Reasoning;
 }
 
 export interface V1CreateAlertResponse {
@@ -679,6 +694,11 @@ export interface V1GetDeploymentResponse {
   instanceId?: string;
   accessToken?: string;
   ttlSeconds?: number;
+}
+
+export interface V1GetEmbedUserResponse {
+  /** The external user ID passed to GetIFrame. */
+  externalUserId?: string;
 }
 
 export interface V1GetGithubPullRequestResponse {
@@ -1299,6 +1319,19 @@ export interface V1Quotas {
   tokensPerSeat?: string;
 }
 
+/**
+ * The model's reasoning before its text or tool calls.
+Some providers (e.g. Claude) require it to be passed back unmodified within a tool call loop.
+ */
+export interface V1Reasoning {
+  /** Readable reasoning. Often empty, since providers may omit it or return a summary. */
+  text?: string;
+  /** Opaque provider signature that lets the provider verify the reasoning. */
+  signature?: string;
+  /** Opaque encrypted reasoning, set instead of text and signature when the provider redacts the reasoning. */
+  redactedData?: string;
+}
+
 export type V1RecordEventsRequestEventsItem = { [key: string]: unknown };
 
 export interface V1RecordEventsRequest {
@@ -1378,6 +1411,8 @@ export interface V1ReportOptions {
   exportLimit?: string;
   exportFormat?: V1ExportFormat;
   exportIncludeHeader?: boolean;
+  /** If true, the export is attached to email notifications (only supported for explore reports run as the creator). */
+  exportAttach?: boolean;
   emailRecipients?: string[];
   slackUsers?: string[];
   slackChannels?: string[];
