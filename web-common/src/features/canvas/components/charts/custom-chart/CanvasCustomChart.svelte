@@ -35,6 +35,10 @@
     metricsSQL={$specStore.metrics_sql}
     showDataTable={editable}
     onMetaChange={handleMetaChange}
+    onResults={(results) =>
+      component.exportPayload.set(
+        results ? { kind: "customChart", results } : undefined,
+      )}
   />
 {:else if editable}
   <!-- The prompt edits the component by its YAML path, which only matches the file in the editor:

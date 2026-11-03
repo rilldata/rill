@@ -57,6 +57,7 @@ class FeatureFlags {
   rillTime = new FeatureFlag("user", true);
   hidePublicUrl = new FeatureFlag("user", false);
   exportHeader = new FeatureFlag("user", false);
+  canvasExcelExport = new FeatureFlag("user", false);
   alerts = new FeatureFlag("user", true);
   reports = new FeatureFlag("user", true);
   chat = new FeatureFlag("user", true);

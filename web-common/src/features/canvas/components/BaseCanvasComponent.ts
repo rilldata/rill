@@ -48,6 +48,7 @@ import type {
 } from "../stores/canvas-entity";
 import { TimeState } from "../stores/time-state";
 import type { ExpressionFilterManager } from "@rilldata/web-common/features/dashboards/filters/ExpressionFilterManager.svelte.ts";
+import type { ComponentExportPayload } from "@rilldata/web-common/features/exports/xlsx/payload";
 
 export abstract class BaseCanvasComponent<T = ComponentSpec> {
   id: string;
@@ -70,6 +71,11 @@ export abstract class BaseCanvasComponent<T = ComponentSpec> {
   // visible or while the canvas is exporting to PDF. Export uses this rather than
   // forcing `visible` so it never mutates the live lazy-load state.
   dataEnabled: Readable<boolean>;
+
+  // The data the component currently renders, published by its display
+  // component for the workbook export (see features/exports/xlsx). Undefined
+  // while loading or when the component has nothing to export.
+  exportPayload: Writable<ComponentExportPayload | undefined> = writable(undefined);
 
   // Tears down the spec subscription opened in the constructor. Without this,
   // a component replaced in CanvasEntity.processRows keeps reacting to spec

@@ -76,6 +76,15 @@
 
   $: ({ isFetching, error } = $chartData);
 
+  // The rendered data for the workbook export; see BaseCanvasComponent.exportPayload.
+  $: component.exportPayload.set(
+    !schema.isValid || isFetching
+      ? undefined
+      : error
+        ? { kind: "error", message: error.message }
+        : { kind: "chart", chartType, spec: chartSpec, data: $chartData },
+  );
+
   $: filters = {
     time_filters,
     dimension_filters,
