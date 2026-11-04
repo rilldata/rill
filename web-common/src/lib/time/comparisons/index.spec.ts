@@ -146,6 +146,27 @@ const invalidComparisionTests = [
     },
     output: undefined,
   },
+  // Placeholder dates such as 0001-01-01 put the previous period before the range a protobuf timestamp can represent.
+  {
+    description:
+      "should return undefined when the previous period would start before 0001-01-01",
+    input: {
+      start: new Date("0001-01-01T00:00:00.000Z"),
+      end: new Date("0001-02-01T00:00:00.000Z"),
+      comparison: TimeComparisonOption.CONTIGUOUS,
+    },
+    output: undefined,
+  },
+  {
+    description:
+      "should return undefined when the previous year would start before 0001-01-01",
+    input: {
+      start: new Date("0001-03-01T00:00:00.000Z"),
+      end: new Date("0001-04-01T00:00:00.000Z"),
+      comparison: TimeComparisonOption.YEAR,
+    },
+    output: undefined,
+  },
 ];
 
 const getComparisonIntervalTests = [

@@ -16,7 +16,10 @@ import {
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import { expandCompressedParams } from "@rilldata/web-common/features/dashboards/url-state/compression";
 import { convertLegacyStateToExplorePreset } from "@rilldata/web-common/features/dashboards/url-state/convertLegacyStateToExplorePreset";
-import { CustomTimeRangeRegex } from "@rilldata/web-common/features/dashboards/url-state/convertPresetToExploreState";
+import {
+  CustomTimeRangeRegex,
+  isCustomTimeRangeWithinBounds,
+} from "@rilldata/web-common/features/dashboards/url-state/convertPresetToExploreState";
 import {
   getMultiFieldError,
   getSingleFieldError,
@@ -357,7 +360,7 @@ export function fromTimeRangesParams(
     const tr = searchParams.get(ExploreStateURLParams.TimeRange) as string;
 
     const rillTimeError = validateRillTime(tr);
-    if (rillTimeError) {
+    if (rillTimeError || !isCustomTimeRangeWithinBounds(tr)) {
       errors.push(getSingleFieldError("time range", tr));
     } else {
       preset.timeRange = tr;
@@ -374,7 +377,10 @@ export function fromTimeRangesParams(
     const ctr = searchParams.get(
       ExploreStateURLParams.ComparisonTimeRange,
     ) as string;
-    if (ctr in TIME_COMPARISON || CustomTimeRangeRegex.test(ctr)) {
+    if (
+      ctr in TIME_COMPARISON ||
+      (CustomTimeRangeRegex.test(ctr) && isCustomTimeRangeWithinBounds(ctr))
+    ) {
       preset.compareTimeRange = ctr;
       preset.comparisonMode ??=
         V1ExploreComparisonMode.EXPLORE_COMPARISON_MODE_TIME;
@@ -427,7 +433,11 @@ export function fromTimeRangesParams(
     const selectTr = searchParams.get(
       ExploreStateURLParams.HighlightedTimeRange,
     ) as string;
-    if (CustomTimeRangeRegex.test(selectTr) || selectTr === "") {
+    if (
+      (CustomTimeRangeRegex.test(selectTr) &&
+        isCustomTimeRangeWithinBounds(selectTr)) ||
+      selectTr === ""
+    ) {
       preset.selectTimeRange = selectTr;
     } else {
       errors.push(getSingleFieldError("highlighted time range", selectTr));

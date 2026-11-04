@@ -359,6 +359,10 @@ export abstract class BaseCanvasComponent<T = ComponentSpec> {
           }
         }
 
+        // Without an interval there is nothing to compare against,
+        // for example when the previous period would start before 0001-01-01.
+        if (!comparisonInterval) showTimeComparison = false;
+
         const comparisonTimeRange: V1TimeRange = {
           start: comparisonInterval?.start.toUTC().toISO(),
           end: comparisonInterval?.end.toUTC().toISO(),
