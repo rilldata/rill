@@ -144,6 +144,17 @@ Unexpected " ".`,
     },
   },
   {
+    title: "Duplicate measure/dimension visibility selections",
+    url: "http://localhost/explore/AdBids_explore?dims=publisher,domain,publisher&measures=impressions,bid_price,impressions",
+    errors: [],
+    entity: {
+      visibleMeasures: ["impressions", "bid_price"],
+      allMeasuresVisible: true,
+      visibleDimensions: ["publisher", "domain"],
+      allDimensionsVisible: true,
+    },
+  },
+  {
     title: "Invalid sort by",
     url: "http://localhost/explore/AdBids_explore?sort_by=bp",
     errors: [`Selected sort by measure: "bp" is not valid.`],

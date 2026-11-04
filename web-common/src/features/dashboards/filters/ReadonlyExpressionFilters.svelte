@@ -81,7 +81,8 @@
     <TimeGrainReadOnly timeGrain={displayTimeGrain} />
   {/if}
 
-  {#each nonEmptyDimensionManagers as dimensionManager (dimensionManager.name)}
+  <!-- Keyed by the manager itself: an advanced filter holds a manager per condition, so one dimension can have two. -->
+  {#each nonEmptyDimensionManagers as dimensionManager (dimensionManager)}
     <div animate:flip={{ duration: 200 }}>
       <ReadonlyDimensionFilter
         manager={expressionFilterManager}
@@ -94,7 +95,7 @@
     </div>
   {/each}
 
-  {#each nonEmptyMeasureManager as measureManager (measureManager.name)}
+  {#each nonEmptyMeasureManager as measureManager (measureManager)}
     <div animate:flip={{ duration: 200 }}>
       <ReadonlyMeasureFilter
         {measureManager}
