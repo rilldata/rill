@@ -68,6 +68,23 @@ npm run test:embed-host
 Then open `http://localhost:4300/?user=alice`.
 Open links in report emails caught by Mailpit (`http://localhost:8025`) also work.
 
+To point the dev server elsewhere, add a gitignored `tests/embed-host/.env.test`.
+Only the dev server reads it; tests always use the defaults in `tests/embed-host/constants.ts`.
+
+| Variable                      | Default                                            |
+| ----------------------------- | -------------------------------------------------- |
+| `EMBED_HOST_PORT`             | `4300`                                             |
+| `EMBED_ADMIN_URL`             | `http://localhost:8080`                            |
+| `EMBED_ORG_NAME`              | `e2e`                                              |
+| `EMBED_PROJECT_NAME`          | `AdBids`                                           |
+| `EMBED_DEFAULT_RESOURCE`      | `AdBids_metrics_explore`                           |
+| `EMBED_DEFAULT_RESOURCE_TYPE` | `rill.runtime.v1.Explore`                          |
+| `EMBED_SERVICE_TOKEN`         | Read from `playwright/rill-service-token.txt`      |
+| `EMBED_EMAIL`                 | `RILL_DEVTOOL_E2E_ADMIN_ACCOUNT_EMAIL` from `.env` |
+
+`EMBED_EMAIL` is the base the users' emails are derived from, for example `you+embed-a@example.com`.
+Open links only reach the dev server if the deployed project's `embeds.open_url` matches its port.
+
 ### Development Workflow
 
 When developing and debugging tests, follow this workflow to avoid repeatedly running setup and teardown:

@@ -1,10 +1,8 @@
-import dotenv from "dotenv";
-import path from "node:path";
-import { fileURLToPath } from "node:url";
+import { getEmbedHostConfig } from "./config.ts";
 
 /**
  * Users of the embed host, keyed by the `?user=` param.
- * Their emails are suffixed variants of the e2e admin's email, so Mailpit catches them,
+ * Their emails are suffixed variants of the e2e admin's email (or `EMBED_EMAIL` in `.env.test`), so Mailpit catches them,
  * but they don't match any project member.
  */
 export type EmbedUserKey = "none" | "alice" | "bob" | "carol" | "admin";
@@ -19,16 +17,15 @@ export type EmbedUser = {
   attributes?: Record<string, unknown>;
 };
 
-let adminEmail: string | undefined;
 let users: EmbedUser[] | undefined;
 
 export function getEmbedUsers(): EmbedUser[] {
   if (users) return users;
 
-  const alice = withSuffix(getAdminEmail(), "embed-a");
-  const bob = withSuffix(getAdminEmail(), "embed-b");
-  const carol = withSuffix(getAdminEmail(), "embed-c");
-  const admin = withSuffix(getAdminEmail(), "embed-admin");
+  const alice = withSuffix(getBaseEmail(), "embed-a");
+  const bob = withSuffix(getBaseEmail(), "embed-b");
+  const carol = withSuffix(getBaseEmail(), "embed-c");
+  const admin = withSuffix(getBaseEmail(), "embed-admin");
   users = [
     { key: "none", label: "No user", email: "" },
     {
@@ -57,26 +54,17 @@ export function getEmbedUser(key: EmbedUserKey): EmbedUser {
 
 /** An address that isn't an embed user, used as an extra report recipient. */
 export function getExtraRecipientEmail() {
-  return withSuffix(getAdminEmail(), "embed-extra");
+  return withSuffix(getBaseEmail(), "embed-extra");
 }
 
-function getAdminEmail() {
-  if (adminEmail) return adminEmail;
-
-  // e2e workers don't load the root `.env` (only the setup project does), so load it here.
-  // It's loaded lazily, so specs that don't use the embed host don't need it.
-  const repoRoot = path.resolve(
-    path.dirname(fileURLToPath(import.meta.url)),
-    "../../../",
-  );
-  dotenv.config({ path: path.join(repoRoot, ".env") });
-  adminEmail = process.env.RILL_DEVTOOL_E2E_ADMIN_ACCOUNT_EMAIL;
-  if (!adminEmail) {
+function getBaseEmail() {
+  const { email } = getEmbedHostConfig();
+  if (!email) {
     throw new Error(
       "Missing RILL_DEVTOOL_E2E_ADMIN_ACCOUNT_EMAIL; run `npm run test:setup` to pull the root .env file",
     );
   }
-  return adminEmail;
+  return email;
 }
 
 /** Inserts `+suffix` before the `@`; for example, `e2e-admin@rilldata.com` becomes `e2e-admin+suffix@rilldata.com`. */

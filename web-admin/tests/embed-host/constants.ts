@@ -1,10 +1,10 @@
 /**
- * The embed host stands in for a customer's app that embeds Rill dashboards.
- * Tests serve it with Playwright route interception, and devs can serve it with `npm run test:embed-host`.
- * Both use this origin, since `embeds.open_url` in the AdBids project's `rill.yaml` points to it.
+ * Defaults for the embed host, which stands in for a customer's app that embeds Rill dashboards.
+ * Tests always use these; the dev server (`npm run test:embed-host`) lets `tests/embed-host/.env.test` override them.
+ * Read them through `getEmbedHostConfig()` in `config.ts`.
+ * The port matches `embeds.open_url` in the AdBids project's `rill.yaml`.
  */
 export const EMBED_HOST_PORT = 4300;
-export const EMBED_HOST_ORIGIN = `http://localhost:${EMBED_HOST_PORT}`;
 
 export const EMBED_ADMIN_URL = "http://localhost:8080";
 export const EMBED_ORG_NAME = "e2e";

@@ -1,14 +1,7 @@
-import { RILL_EMBED_SERVICE_TOKEN_FILE } from "@rilldata/web-integration/tests/constants.ts";
 import fs from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import {
-  EMBED_ADMIN_URL,
-  EMBED_DEFAULT_RESOURCE,
-  EMBED_DEFAULT_RESOURCE_TYPE,
-  EMBED_ORG_NAME,
-  EMBED_PROJECT_NAME,
-} from "./constants.ts";
+import { getEmbedHostConfig } from "./config.ts";
 import { getEmbedUsers } from "./users.ts";
 
 export type EmbedHostRequest = {
@@ -31,8 +24,6 @@ type IFrameRequestBody = {
 };
 
 const HOST_DIR = path.dirname(fileURLToPath(import.meta.url));
-// web-admin, which the service token file path is relative to.
-const WEB_ADMIN_DIR = path.resolve(HOST_DIR, "../../");
 
 // Only these files are served; request paths are never joined to file paths.
 const STATIC_FILES: Record<string, { file: string; contentType: string }> = {
@@ -84,6 +75,8 @@ async function getIFrame({
   const user = getEmbedUsers().find((u) => u.key === userKey);
   if (!user) return json(400, { message: `Unknown user "${userKey}"` });
 
+  const config = getEmbedHostConfig();
+
   const payload: Record<string, unknown> = { navigation };
   if (user.email) {
     payload.external_user_id = user.email;
@@ -94,22 +87,16 @@ async function getIFrame({
   if (open) {
     payload.open = open;
   } else {
-    payload.resource = resource || EMBED_DEFAULT_RESOURCE;
-    payload.type = EMBED_DEFAULT_RESOURCE_TYPE;
+    payload.resource = resource || config.defaultResource;
+    payload.type = config.defaultResourceType;
   }
 
-  const serviceToken = (
-    await fs.readFile(
-      path.join(WEB_ADMIN_DIR, RILL_EMBED_SERVICE_TOKEN_FILE),
-      "utf-8",
-    )
-  ).trim();
   const resp = await fetch(
-    `${EMBED_ADMIN_URL}/v1/orgs/${EMBED_ORG_NAME}/projects/${EMBED_PROJECT_NAME}/iframe`,
+    `${config.adminUrl}/v1/orgs/${config.orgName}/projects/${config.projectName}/iframe`,
     {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${serviceToken}`,
+        Authorization: `Bearer ${await config.getServiceToken()}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify(payload),

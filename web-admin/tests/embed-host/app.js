@@ -1,5 +1,4 @@
 // Client script of the embed host, shared by index.html and open.html.
-// A plain-JS port of the reference embedder app: https://github.com/AdityaHegde/rill-embedded-dashboards
 
 const params = new URLSearchParams(window.location.search);
 

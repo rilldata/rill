@@ -6,7 +6,7 @@ import {
   waitForEmail,
 } from "@rilldata/web-common/tests/utils/email-utils.ts";
 import { interactWithTimeRangeMenu } from "@rilldata/web-common/tests/utils/explore-interactions.ts";
-import { EMBED_HOST_ORIGIN } from "./embed-host/constants.ts";
+import { getEmbedHostConfig } from "./embed-host/config.ts";
 import type { EmbedHostApp } from "./embed-host/embed-host-app.ts";
 import { getEmbedUser, getExtraRecipientEmail } from "./embed-host/users.ts";
 import { test } from "./setup/base";
@@ -120,7 +120,7 @@ test.describe.serial("Embedded reports", () => {
     );
     aliceOpenLink = extractOpenLink(aliceEmail) ?? "";
     expect(aliceOpenLink).toMatch(
-      new RegExp(`^${EMBED_HOST_ORIGIN}/open\\.html\\?rill_open=`),
+      new RegExp(`^${getEmbedHostConfig().origin}/open\\.html\\?rill_open=`),
     );
 
     const extraEmail = await getCompleteEmail(
@@ -203,7 +203,7 @@ test.describe.serial("Embedded reports", () => {
       await waitForEmail(CAROL_REPORT, time, carol.email),
     );
     expect(link).toMatch(
-      new RegExp(`^${EMBED_HOST_ORIGIN}/open\\.html\\?rill_open=`),
+      new RegExp(`^${getEmbedHostConfig().origin}/open\\.html\\?rill_open=`),
     );
   });
 

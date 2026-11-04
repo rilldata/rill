@@ -1,5 +1,5 @@
 import { rillCloud } from "@rilldata/web-common/tests/fixtures/rill-cloud-fixtures";
-import { EMBED_HOST_ORIGIN } from "../embed-host/constants.ts";
+import { getEmbedHostConfig } from "../embed-host/config.ts";
 import { EmbedHostApp } from "../embed-host/embed-host-app.ts";
 import { handleEmbedHostRequest } from "../embed-host/handler.ts";
 
@@ -18,7 +18,7 @@ export const test = rillCloud.extend<{
       permissions: ["local-network-access"],
     });
     await context.route(
-      (url) => url.origin === EMBED_HOST_ORIGIN,
+      (url) => url.origin === getEmbedHostConfig().origin,
       async (route) => {
         const request = route.request();
         const { status, contentType, body } = await handleEmbedHostRequest({

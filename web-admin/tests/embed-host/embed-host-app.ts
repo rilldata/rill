@@ -5,7 +5,7 @@ import {
   type Page,
 } from "@playwright/test";
 import { EmbedMessageRecorder } from "@rilldata/web-common/tests/utils/embed-message-recorder.ts";
-import { EMBED_HOST_ORIGIN } from "./constants.ts";
+import { getEmbedHostConfig } from "./config.ts";
 import { getEmbedUser, type EmbedUserKey } from "./users.ts";
 
 export type EmbedHostPage = "home" | "reports" | "alerts";
@@ -34,7 +34,7 @@ export class EmbedHostApp {
     navigation?: boolean;
     resource?: string;
   }) {
-    const url = new URL("/", EMBED_HOST_ORIGIN);
+    const url = new URL("/", getEmbedHostConfig().origin);
     url.searchParams.set("user", user);
     url.searchParams.set("navigation", String(navigation));
     if (resource) url.searchParams.set("resource", resource);
