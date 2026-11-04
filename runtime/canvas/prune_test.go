@@ -178,6 +178,29 @@ row_dimensions: [order_date_rill_TIME_GRAIN_MONTH, region]
 			want:     `{metrics_view: mv, geo_dimension: {field: region}, color: {measure: total_revenue}}`,
 		},
 		{
+			name:     "map drops a regions layer with a restricted measure",
+			renderer: "map",
+			props:    `{metrics_view: mv, geo_dimension: {field: region}, color: {measure: total_revenue}, regions: {dimension: country, boundaries: countries, color: {measure: gross_margin}}}`,
+			keep:     true,
+			changed:  true,
+			want:     `{metrics_view: mv, geo_dimension: {field: region}, color: {measure: total_revenue}}`,
+		},
+		{
+			name:     "map drops a points layer with a restricted measure but keeps regions",
+			renderer: "map",
+			props:    `{metrics_view: mv, geo_dimension: {field: region}, color: {measure: gross_margin}, size_measure: {field: order_count}, regions: {dimension: country, boundaries: countries, color: {measure: total_revenue}}}`,
+			keep:     true,
+			changed:  true,
+			want:     `{metrics_view: mv, regions: {dimension: country, boundaries: countries, color: {measure: total_revenue}}}`,
+		},
+		{
+			name:     "map with only a restricted regions layer is removed",
+			renderer: "map",
+			props:    `{metrics_view: mv, regions: {dimension: customer_name, boundaries: countries, color: {measure: total_revenue}}}`,
+			keep:     false,
+			changed:  true,
+		},
+		{
 			name:     "adhoc measure on a restricted measure is dropped with its definition",
 			renderer: "table",
 			props: `

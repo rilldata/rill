@@ -536,17 +536,17 @@ See [Custom Viz](/developers/build/dashboards/canvas-widgets/custom-viz).
 
 ### `map`
 
-_[object]_ - Map of points or regions from a geo dimension, colored by a measure and, for points, sized by a second measure
+_[object]_ - Map with up to two layers: points or polygons from a geo dimension, colored by a measure and, for points, sized by a second measure; and regions such as countries or US states, filled by a measure and matched through the values of a regular dimension. At least one of `geo_dimension` and `regions` is required.
 
   - **`metrics_view`** - _[string]_ - Reference to the metrics view to use _(required)_
 
-  - **`geo_dimension`** - _[object]_ - Dimension that holds the location of each row, as a GeoJSON geometry string or a DuckDB `POINT_2D` or `POLYGON_2D` value, in longitude and latitude. Only dimensions with `type: geo` are offered in the visual editor. _(required)_
+  - **`geo_dimension`** - _[object]_ - Dimension that holds the location of each row, as a GeoJSON geometry string or a DuckDB `POINT_2D` or `POLYGON_2D` value, in longitude and latitude. Only dimensions with `type: geo` are offered in the visual editor. `color`, `size_measure` and `tooltip_dimension` apply to this layer.
 
     - **`field`** - _[string]_ - Name of the dimension _(required)_
 
     - **`type`** - _[string]_ - Field type, always `nominal`
 
-  - **`color`** - _[object]_ - Measure that colors each point or region _(required)_
+  - **`color`** - _[object]_ - Measure that colors each point or polygon of the `geo_dimension` layer. Required with `geo_dimension`.
 
     - **`measure`** - _[string]_ - Name of the measure _(required)_
 
@@ -571,6 +571,32 @@ _[object]_ - Map of points or regions from a geo dimension, colored by a measure
     - **`field`** - _[string]_ - Name of the dimension _(required)_
 
     - **`type`** - _[string]_ - Field type, always `nominal`
+
+  - **`regions`** - _[object]_ - Regions layer that fills region boundaries by a measure, joined to the rows through the values of `dimension`. Boundaries are either a built-in set, such as countries or the states of a country, or a GeoJSON or TopoJSON file in the project. Drawn below the base map's labels and the `geo_dimension` layer.
+
+    - **`dimension`** - _[string]_ - Name of the dimension whose values identify regions, such as country codes or state names _(required)_
+
+    - **`boundaries`** - _[oneOf]_ - Boundaries to draw, either the name of a built-in set or a mapping that points to a boundary file in the project. _(required)_
+
+      - **option 1** - _[string]_ - Built-in boundary set to draw. `countries` covers every country; `states` covers the first-level subdivisions of the country in `country`, such as states, provinces or regions; `us_states` is the same as `states` with `country: US`.
+
+      - **option 2** - _[object]_ - Custom boundaries from a GeoJSON `FeatureCollection` or a TopoJSON file with a single object, such as Nielsen DMAs or sales territories. The file must be under one of the project's `public_paths` (`public/` by default); every dashboard viewer downloads it, so make sure its license allows that.
+
+        - **`file`** - _[string]_ - Path of the GeoJSON or TopoJSON file, relative to the project root, such as `public/dma.topojson` _(required)_
+
+        - **`id`** - _[string]_ - Feature property that identifies each region, matched against the values of `dimension`. Features without this property use their top-level GeoJSON `id` instead. Only polygon features with an id are drawn. _(required)_
+
+        - **`name`** - _[string]_ - Feature property shown as the region name in tooltips. Defaults to the `id` property.
+
+    - **`country`** - _[string]_ - Country whose states to draw, as an ISO 3166-1 alpha-2 code such as `DE`. Required with `boundaries: states`, and not supported with other boundaries.
+
+    - **`key`** - _[string]_ - Region property the dimension values are matched against, for built-in boundaries only. For `countries`: `iso_a2` (`US`), `iso_a3` (`USA`), `iso_n3` (`840`) or `name`. For `states`: `code` (`CA`), `iso_3166_2` (`US-CA`), `fips` (`06`, US only) or `name`. For `us_states`: `postal` (`CA`), `iso_3166_2` (`US-CA`), `fips` (`06`) or `name`. `name` also matches common alternative names. Defaults to `auto`, which tries every key. Matching ignores case, accents and punctuation.
+
+    - **`color`** - _[object]_ - Measure that fills each region _(required)_
+
+      - **`measure`** - _[string]_ - Name of the measure _(required)_
+
+      - **`colorRange`** - _[object]_ - Color scale for the measure; same options as the top-level `color.colorRange`
 
   - **`initial_view`** - _[object]_ - Camera position the map opens with. When set, the map does not zoom to fit the data.
 

@@ -104,6 +104,9 @@ jobs:
           echo "DOMAIN=rilldata.in" >> $GITHUB_ENV
           echo "RILL_VERSION=${GITHUB_SHA}" >> $GITHUB_ENV
 
+      - name: Cache map boundaries
+        uses: ./.github/actions/map-boundaries-cache
+
       - name: Build Cloud UI
         run: |-
           npm ci
