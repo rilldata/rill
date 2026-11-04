@@ -1,9 +1,6 @@
 import { getMapFromArray } from "@rilldata/web-common/lib/arrayUtils.ts";
-import {
-  type MetricsViewSpecMeasure,
-  MetricsViewSpecMeasureType,
-} from "@rilldata/web-common/runtime-client";
-import { visibleMeasures } from "./measures";
+import type { MetricsViewSpecMeasure } from "@rilldata/web-common/runtime-client";
+import { isSimpleMeasure, visibleMeasures } from "./measures";
 import type { DashboardDataSources } from "./types";
 
 export const leaderboardSortByMeasureName = ({
@@ -22,31 +19,27 @@ export const leaderboardMeasures = ({
     (m) => m.name,
   );
 
+  // Leaderboards group by a single categorical dimension, so they can only query simple measures.
   // Filter and sort the leaderboard measure names based on the order in visibleMeasures
   const filteredMeasures = dashboard.leaderboardMeasureNames
     ?.map((name) => visibleMeasuresMap.get(name))
-    ?.filter((measure) => {
-      if (!measure) return false;
-      return (
-        measure.type !==
-          MetricsViewSpecMeasureType.MEASURE_TYPE_TIME_COMPARISON &&
-        !measure.window
-      );
-    })
+    ?.filter(
+      (measure): measure is MetricsViewSpecMeasure =>
+        !!measure && isSimpleMeasure(measure),
+    )
     .sort((a, b) => {
-      const aIndex = visibleMeasuresList.findIndex((m) => m.name === a?.name);
-      const bIndex = visibleMeasuresList.findIndex((m) => m.name === b?.name);
+      const aIndex = visibleMeasuresList.findIndex((m) => m.name === a.name);
+      const bIndex = visibleMeasuresList.findIndex((m) => m.name === b.name);
       return aIndex - bIndex;
-    }) as MetricsViewSpecMeasure[];
+    });
 
   if (filteredMeasures?.length) return filteredMeasures;
 
-  if (visibleMeasuresMap.has(dashboard.leaderboardSortByMeasureName))
-    return [
-      visibleMeasuresMap.get(
-        dashboard.leaderboardSortByMeasureName,
-      ) as MetricsViewSpecMeasure,
-    ];
+  // Fall back to the sort measure, but never to one that leaderboards cannot query.
+  const sortByMeasure = visibleMeasuresMap.get(
+    dashboard.leaderboardSortByMeasureName,
+  );
+  if (sortByMeasure && isSimpleMeasure(sortByMeasure)) return [sortByMeasure];
 
   return [];
 };

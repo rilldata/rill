@@ -19,6 +19,8 @@ export class AdvancedMeasureCorrector {
   private measuresMap: Map<string, MetricsViewSpecMeasure>;
   private measuresGrains: Map<string, V1TimeGrain>;
   private ephemeralMeasureNames: Set<string>;
+  // The time dimension that time series and TDD queries group by.
+  private timeDimension: string | undefined;
 
   private constructor(
     private readonly exploreState: ExploreState,
@@ -27,6 +29,8 @@ export class AdvancedMeasureCorrector {
     this.ephemeralMeasureNames = new Set(
       exploreState.ephemeralMeasures?.map((def) => def.name) ?? [],
     );
+    this.timeDimension =
+      exploreState.selectedTimeDimension || metricsViewSpec.timeDimension;
     this.measuresMap = getMapFromArray(
       metricsViewSpec.measures ?? [],
       (m) => m.name ?? "",
@@ -123,11 +127,14 @@ export class AdvancedMeasureCorrector {
   /**
    * Checks if a measure is valid for the component based on dashboard selections and component support.
    * Additional arguments indicate whether certain types of advanced measures are supported in the component or not.
+   * Explore components group by at most the time dimension (TDD), so window measures and measures with
+   * required dimensions are only valid in components that group by the time dimension,
+   * and only when that is the only dimension they require.
    */
   private measureIsValidForComponent(
     measureName: string,
     supportsComparisonMeasure: boolean,
-    supportsWindowedMeasure: boolean,
+    groupsByTimeDimension: boolean,
     supportsEphemeralMeasure = true,
   ) {
     // ephemeral measures are not in the metrics view spec;
@@ -158,8 +165,16 @@ export class AdvancedMeasureCorrector {
           !supportsComparisonMeasure):
         return true;
 
-      // for measures with window operations, if the component doesnt support it
-      case !!measure.window && !supportsWindowedMeasure:
+      // for measures with window operations, if the component doesnt group by the time dimension
+      case !!measure.window && !groupsByTimeDimension:
+        return true;
+
+      // for measures with required dimensions, if the component doesnt group by all of them
+      case !!measure.requiredDimensions?.length &&
+        (!groupsByTimeDimension ||
+          measure.requiredDimensions.some(
+            (d) => d.name !== this.timeDimension,
+          )):
         return true;
 
       default:
