@@ -324,7 +324,6 @@ iframe.contentWindow.postMessage({
   - `"page"`: A page of the embed; `name` is `"home"` for the project home page or `"reports"` for the user's scheduled reports.
   - `"explore"`: An explore dashboard; `name` is the dashboard name.
   - `"canvas"`: A canvas dashboard; `name` is the dashboard name.
-  - `"personal_canvas"`: A [personal canvas](/developers/embed/iframe#personal-canvases-in-embeds) created by the embed user; `name` is the canvas name.
 - `name` (string): The page or dashboard to navigate to.
 
 ## Notifications

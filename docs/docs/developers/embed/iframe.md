@@ -358,7 +358,7 @@ features:
 
 Personal canvases created from an embed work as follows:
 - **They require `external_user_id` and `navigation: true`.** Each personal canvas is owned by the external user who created it, so iframes without an `external_user_id`, or limited to a single dashboard, don't show personal canvases.
-- **They are listed in the embed.** The navigation bar has a menu to open, create and delete personal canvases, and the project home page lists them above the other dashboards. You can also open one from your app with the [`navigate` method](/developers/embed/postmessage#navigate-type-name-).
+- **They are listed in the embed.** The navigation bar has a menu to open, create and delete personal canvases, and the project home page lists them above the other dashboards.
 - **Only the owner can see them.** Personal canvases created from an embed can't be shared, so other embed users and project members can't see them. Rill project admins can also access them.
 - **They respect security policies.** Like any dashboard, a personal canvas only shows the data the viewer can access through [security policies](/developers/build/metrics-view/security).
 

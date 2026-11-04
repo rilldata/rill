@@ -99,9 +99,10 @@
       </DropdownMenu.Item>
     {:else}
       {#if !$personalCanvasesQuery.isPending}
-        <DropdownMenu.Label class="font-normal text-fg-muted">
+        <!-- Not a DropdownMenu.Label, which is a group heading and must be inside a DropdownMenu.Group. -->
+        <div class="px-2 py-1.5 text-xm text-fg-muted">
           {m.embed_personal_canvases_empty()}
-        </DropdownMenu.Label>
+        </div>
       {/if}
     {/each}
     <DropdownMenu.Separator />
