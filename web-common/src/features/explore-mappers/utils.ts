@@ -146,9 +146,11 @@ export async function convertQueryFilterToToplistQuery(
   req: V1MetricsViewAggregationRequest,
   dimension: string,
 ) {
+  // `metricsView` is the request's field for the metrics view;
+  // the proto decoder rejects any other key for it, so the request never reaches the runtime.
   const params = {
-    metricsViewName: metricsView,
     ...req,
+    metricsView,
   };
   const toplist = await queryClient.fetchQuery({
     queryKey: getQueryServiceMetricsViewAggregationQueryKey(
