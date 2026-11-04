@@ -9,6 +9,8 @@ import {
   URI_DIMENSION_SUFFIX,
 } from "@rilldata/web-common/features/dashboards/dashboard-utils";
 import { selectedDimensionValues } from "@rilldata/web-common/features/dashboards/state-managers/selectors/dimension-filters";
+import { filterOutSomeAdvancedAggregationMeasures } from "@rilldata/web-common/features/dashboards/state-managers/selectors/measures";
+import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
 import {
   createAndExpression,
   createInExpression,
@@ -34,6 +36,8 @@ import {
   type V1Expression,
   type V1MetricsViewAggregationMeasure,
   type V1MetricsViewAggregationResponse,
+  type V1MetricsViewAggregationSort,
+  type V1MetricsViewSpec,
   V1TimeGrain,
   type V1TimeSeriesValue,
 } from "@rilldata/web-common/runtime-client";
@@ -140,27 +144,35 @@ export function getDimensionValuesForComparison(
           sortBy = dimensionName;
         }
 
+        const { measures: tddMeasures, sort } =
+          getComparisonTopListMeasuresAndSort(
+            dashboardStore,
+            validSpec?.data?.metricsView ?? {},
+            applyExactMeasures(
+              mapEphemeralMeasuresForRequest(
+                measures.map((measure) => ({ name: measure })),
+                dashboardStore.ephemeralMeasures,
+              ),
+              requestExactNames(
+                measures,
+                exactMeasureContextFor(
+                  {
+                    dashboard: dashboardStore,
+                    validMetricsView: validSpec?.data?.metricsView,
+                  },
+                  exactSurface,
+                ),
+              ),
+            ),
+            dimensionName,
+            sortBy,
+          );
+
         // Request the URI measure so dimension values can be rendered as links.
+        // Added after filtering since it is not a spec measure.
         const hasUri = !!validSpec?.data?.metricsView?.dimensions?.find(
           (d) => d.name === dimensionName,
         )?.uri;
-        const tddMeasures: V1MetricsViewAggregationMeasure[] =
-          applyExactMeasures(
-            mapEphemeralMeasuresForRequest(
-              measures.map((measure) => ({ name: measure })),
-              dashboardStore.ephemeralMeasures,
-            ),
-            requestExactNames(
-              measures,
-              exactMeasureContextFor(
-                {
-                  dashboard: dashboardStore,
-                  validMetricsView: validSpec?.data?.metricsView,
-                },
-                exactSurface,
-              ),
-            ),
-          );
         if (hasUri) {
           tddMeasures.push(getURIRequestMeasure(dimensionName));
         }
@@ -181,13 +193,7 @@ export function getDimensionValuesForComparison(
                 end: timeControls.timeEnd,
                 timeDimension: dashboardStore.selectedTimeDimension,
               },
-              sort: [
-                {
-                  desc:
-                    dashboardStore.sortDirection === SortDirection.DESCENDING,
-                  name: sortBy,
-                },
-              ],
+              sort,
               limit: MAX_TDD_VALUES_LENGTH.toString(),
               offset: "0",
             },
@@ -233,6 +239,41 @@ export function getDimensionValuesForComparison(
       }
     },
   );
+}
+
+/**
+ * Measures and sort of the comparison table's top list query, which groups only by the comparison dimension.
+ * Measures that need other dimensions (e.g. a rolling window ordered by the time dimension) are omitted,
+ * which leaves their per-value totals unavailable, and the list then falls back to sorting by the dimension.
+ * The time-grouped queries that follow still request them.
+ * sortBy is the measure to sort by, or the dimension itself when sorting by dimension.
+ */
+export function getComparisonTopListMeasuresAndSort(
+  exploreState: ExploreState,
+  metricsViewSpec: V1MetricsViewSpec,
+  measures: V1MetricsViewAggregationMeasure[],
+  dimensionName: string,
+  sortBy: string | undefined,
+): {
+  measures: V1MetricsViewAggregationMeasure[];
+  sort: V1MetricsViewAggregationSort[];
+} {
+  const supportedMeasures = filterOutSomeAdvancedAggregationMeasures(
+    exploreState,
+    metricsViewSpec,
+    measures,
+    false,
+  );
+  const sortByIsSupported = supportedMeasures.some((m) => m.name === sortBy);
+  return {
+    measures: supportedMeasures,
+    sort: [
+      {
+        desc: exploreState.sortDirection === SortDirection.DESCENDING,
+        name: sortByIsSupported ? sortBy : dimensionName,
+      },
+    ],
+  };
 }
 
 function batchAggregationQueries(
