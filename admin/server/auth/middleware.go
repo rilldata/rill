@@ -25,11 +25,16 @@ import (
 // Embed users are untrusted outside users, but many handlers only check the ReadProject or ReadProd permissions that embed tokens have.
 // So we deny embed tokens by default, and handlers on this list must do their own checks for embed users.
 var embedTokenAllowedMethods = map[string]bool{
-	adminv1.AdminService_CreateReport_FullMethodName:      true,
-	adminv1.AdminService_EditReport_FullMethodName:        true,
-	adminv1.AdminService_DeleteReport_FullMethodName:      true,
-	adminv1.AdminService_TriggerReport_FullMethodName:     true,
-	adminv1.AdminService_UnsubscribeReport_FullMethodName: true,
+	adminv1.AdminService_CreateReport_FullMethodName:       true,
+	adminv1.AdminService_EditReport_FullMethodName:         true,
+	adminv1.AdminService_DeleteReport_FullMethodName:       true,
+	adminv1.AdminService_TriggerReport_FullMethodName:      true,
+	adminv1.AdminService_UnsubscribeReport_FullMethodName:  true,
+	adminv1.AdminService_ListPersonalFiles_FullMethodName:  true,
+	adminv1.AdminService_CreatePersonalFile_FullMethodName: true,
+	adminv1.AdminService_GetPersonalFile_FullMethodName:    true,
+	adminv1.AdminService_EditPersonalFile_FullMethodName:   true,
+	adminv1.AdminService_DeletePersonalFile_FullMethodName: true,
 }
 
 // Annotator is a gRPC-gateway annotator that moves access tokens in HTTP cookies to the "authorization" gRPC metadata.

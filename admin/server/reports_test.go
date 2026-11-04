@@ -197,7 +197,7 @@ func TestEmbedReports(t *testing.T) {
 
 	t.Run("embed tokens can only call allowlisted methods", func(t *testing.T) {
 		embedClient := adm.NewClient(t, getIFrame(t, &adminv1.GetIFrameRequest{ExternalUserId: "allowlist"}))
-		_, err := embedClient.ListPersonalFiles(t.Context(), &adminv1.ListPersonalFilesRequest{Org: "report-test", Project: "report-project"})
+		_, err := embedClient.GetProject(t.Context(), &adminv1.GetProjectRequest{Org: "report-test", Project: "report-project"})
 		require.Equal(t, codes.PermissionDenied, status.Code(err))
 		_, err = embedClient.GetAlertYAML(t.Context(), &adminv1.GetAlertYAMLRequest{Org: "report-test", Project: "report-project", Name: "a1"})
 		require.Equal(t, codes.PermissionDenied, status.Code(err))

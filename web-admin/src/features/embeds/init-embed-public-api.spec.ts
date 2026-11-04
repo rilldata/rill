@@ -120,6 +120,19 @@ describe("initEmbedPublicAPI", () => {
   // setValidState runs the real buildValidatedExploreUrl for explore routes, so the
   // runtime GetExplore/metrics fetches are mocked with the AD_BIDS fixtures. See
   // DashboardStateManager.spec.ts for the same API mocking approach.
+  describe("navigate", () => {
+    it("navigates to a personal canvas", async () => {
+      await harness.call("navigate", {
+        type: "personal_canvas",
+        name: "my-canvas-1234abcd",
+      });
+
+      expect(String(harness.lastGoto()?.url)).toBe(
+        "/-/embed/personal/my-canvas-1234abcd",
+      );
+    });
+  });
+
   describe("setValidState", () => {
     const EXPLORE_ROUTE = "/[organization]/[project]/-/embed/explore/[name]";
     const CANVAS_ROUTE = "/[organization]/[project]/-/embed/canvas/[name]";
