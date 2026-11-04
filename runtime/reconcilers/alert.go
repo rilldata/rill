@@ -244,63 +244,30 @@ func (r *AlertReconciler) ResolveTransitiveAccess(ctx context.Context, claims *r
 
 	var mvName string
 	if spec.QueryName != "" {
-		initializer, ok := runtime.ResolverInitializers["legacy_metrics"]
-		if !ok {
-			return nil, fmt.Errorf("no resolver found for name 'legacy_metrics'")
+		props := map[string]any{
+			"query_name":      spec.QueryName,
+			"query_args_json": spec.QueryArgsJson,
 		}
-		resolver, err := initializer(ctx, &runtime.ResolverOptions{
-			Runtime:    r.C.Runtime,
-			InstanceID: r.C.InstanceID,
-			Properties: map[string]any{
-				"query_name":      spec.QueryName,
-				"query_args_json": spec.QueryArgsJson,
-			},
-			ProjectDeclared: false, // Alert templates never access project variables (the parser rejects references to them).
-			Claims:          claims,
-			ForExport:       false,
-		})
-		if err != nil {
-			return nil, err
-		}
-		defer resolver.Close()
-		inferred, err := resolver.InferRequiredSecurityRules()
+		refs, inferred, err := r.C.Runtime.InferResolverAccess(ctx, r.C.InstanceID, "legacy_metrics", props, claims.UserAttributes)
 		if err != nil {
 			return nil, err
 		}
 
 		rules = append(rules, inferred...)
 
-		refs := resolver.Refs()
 		for _, ref := range refs {
 			conditionResources = append(conditionResources, &runtimev1.ResourceName{Kind: ref.Kind, Name: ref.Name})
 		}
 	}
 
 	if spec.Resolver != "" {
-		initializer, ok := runtime.ResolverInitializers[spec.Resolver]
-		if !ok {
-			return nil, fmt.Errorf("no resolver found for name %q", spec.Resolver)
-		}
-		resolver, err := initializer(ctx, &runtime.ResolverOptions{
-			Runtime:         r.C.Runtime,
-			InstanceID:      r.C.InstanceID,
-			Properties:      spec.ResolverProperties.AsMap(),
-			ProjectDeclared: false, // Alert templates never access project variables (the parser rejects references to them).
-			Claims:          claims,
-			ForExport:       false,
-		})
-		if err != nil {
-			return nil, err
-		}
-		defer resolver.Close()
-		inferred, err := resolver.InferRequiredSecurityRules()
+		refs, inferred, err := r.C.Runtime.InferResolverAccess(ctx, r.C.InstanceID, spec.Resolver, spec.ResolverProperties.AsMap(), claims.UserAttributes)
 		if err != nil {
 			return nil, err
 		}
 
 		rules = append(rules, inferred...)
 
-		refs := resolver.Refs()
 		for _, ref := range refs {
 			conditionResources = append(conditionResources, &runtimev1.ResourceName{Kind: ref.Kind, Name: ref.Name})
 		}

@@ -546,27 +546,12 @@ func (r *rendererRefs) text(ctx context.Context, content any) error {
 		return fmt.Errorf("content field is not a string")
 	}
 
-	initializer, ok := runtime.ResolverInitializers["text"]
-	if !ok {
-		return fmt.Errorf("text resolver not registered")
-	}
-	resolver, err := initializer(ctx, &runtime.ResolverOptions{
-		Runtime:         r.rt,
-		InstanceID:      r.instanceID,
-		Properties:      map[string]any{"text": contentStr},
-		ProjectDeclared: false, // Dashboard templates never access project variables (the parser rejects references to them).
-		Claims: &runtime.SecurityClaims{
-			UserID:         r.claims.UserID,
-			UserAttributes: r.claims.UserAttributes,
-			SkipChecks:     true,
-		},
-	})
+	refs, _, err := r.rt.InferResolverAccess(ctx, r.instanceID, "text", map[string]any{"text": contentStr}, r.claims.UserAttributes)
 	if err != nil {
 		return fmt.Errorf("failed to initialize text resolver: %w", err)
 	}
-	defer resolver.Close()
 
-	for _, ref := range resolver.Refs() {
+	for _, ref := range refs {
 		if ref.Kind == runtime.ResourceKindMetricsView {
 			r.metricsViews[ref.Name] = true
 		}
@@ -599,27 +584,12 @@ func (r *rendererRefs) metricsSQL(ctx context.Context, sql any) error {
 
 // metricsSQLString parses and registers metrics view references found in a single metrics SQL query.
 func (r *rendererRefs) metricsSQLString(ctx context.Context, sqlStr string) error {
-	initializer, ok := runtime.ResolverInitializers["metrics_sql"]
-	if !ok {
-		return fmt.Errorf("metrics_sql resolver not registered")
-	}
-	resolver, err := initializer(ctx, &runtime.ResolverOptions{
-		Runtime:         r.rt,
-		InstanceID:      r.instanceID,
-		Properties:      map[string]any{"sql": sqlStr},
-		ProjectDeclared: false, // Dashboard templates never access project variables (the parser rejects references to them).
-		Claims: &runtime.SecurityClaims{
-			UserID:         r.claims.UserID,
-			UserAttributes: r.claims.UserAttributes,
-			SkipChecks:     true, // To avoid infinite recursion
-		},
-	})
+	refs, _, err := r.rt.InferResolverAccess(ctx, r.instanceID, "metrics_sql", map[string]any{"sql": sqlStr}, r.claims.UserAttributes)
 	if err != nil {
 		return fmt.Errorf("failed to initialize metrics_sql resolver: %w", err)
 	}
-	defer resolver.Close()
 
-	for _, ref := range resolver.Refs() {
+	for _, ref := range refs {
 		if ref.Kind == runtime.ResourceKindMetricsView {
 			r.metricsViews[ref.Name] = true
 		}

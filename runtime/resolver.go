@@ -309,6 +309,34 @@ func (r *Runtime) Resolve(ctx context.Context, opts *ResolveOptions) (res Resolv
 	return val.(*cachedResolverResult).copy(), info, nil
 }
 
+// InferResolverAccess returns the refs and security rules required to execute a resolver with the given properties.
+// It initializes the resolver with SkipChecks since it must not depend on the caller's security,
+// which may itself be the transitive access rule being expanded (resolving it would recurse infinitely).
+// Properties are treated as not project-declared (see ResolverOptions.ProjectDeclared).
+// It does not authorize access: callers must not use the result to bypass security policies.
+func (r *Runtime) InferResolverAccess(ctx context.Context, instanceID, resolver string, props, userAttrs map[string]any) ([]*runtimev1.ResourceName, []*runtimev1.SecurityRule, error) {
+	initializer, ok := ResolverInitializers[resolver]
+	if !ok {
+		return nil, nil, fmt.Errorf("no resolver found for name %q", resolver)
+	}
+	res, err := initializer(ctx, &ResolverOptions{
+		Runtime:    r,
+		InstanceID: instanceID,
+		Properties: props,
+		Claims:     &SecurityClaims{UserAttributes: userAttrs, SkipChecks: true},
+	})
+	if err != nil {
+		return nil, nil, err
+	}
+	defer res.Close()
+
+	rules, err := res.InferRequiredSecurityRules()
+	if err != nil {
+		return nil, nil, err
+	}
+	return res.Refs(), rules, nil
+}
+
 // NewDriverResolverResult creates a ResolverResult from a drivers.Result.
 func NewDriverResolverResult(result *drivers.Result, meta map[string]any) ResolverResult {
 	return &driverResolverResult{
