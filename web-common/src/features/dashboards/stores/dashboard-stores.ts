@@ -36,7 +36,7 @@ import {
   type PivotTableMode,
   type PivotTotalsRowPosition,
 } from "../pivot/types";
-import { pivotHasSortField } from "../pivot/pivot-sorting";
+import { isMinimizedAccessor, pivotHasSortField } from "../pivot/pivot-sorting";
 import { parseMeasureExpression } from "../ephemeral-measures/expression-parser";
 import type { EphemeralMeasureDef } from "../ephemeral-measures/types";
 import { getQueryContextKey } from "../exact-measures/query-context-key";
@@ -208,6 +208,7 @@ function syncDimensions(explore: V1ExploreSpec, exploreState: ExploreState) {
     exploreState.ephemeralMeasures?.map((def) => def.name) ?? [],
   );
 
+  const columnCount = exploreState.pivot.columns.length;
   exploreState.pivot.columns = exploreState.pivot.columns.filter(
     (col) =>
       measuresSet.has(col.id) ||
@@ -215,11 +216,16 @@ function syncDimensions(explore: V1ExploreSpec, exploreState: ExploreState) {
       ephemeralMeasureNames.has(col.id) ||
       col.type === PivotChipType.Time,
   );
+  const columnRemoved = exploreState.pivot.columns.length !== columnCount;
 
   // A sort on a field the spec no longer has goes with its chip, as the
-  // pivot's queries would fail on it.
-  exploreState.pivot.sorting = exploreState.pivot.sorting.filter((sort) =>
-    pivotHasSortField(sort.id, exploreState.pivot),
+  // pivot's queries would fail on it. A sort on a measure under one column
+  // value is positional, so it goes once any column chip is removed: its
+  // indexes would point at other fields.
+  exploreState.pivot.sorting = exploreState.pivot.sorting.filter(
+    (sort) =>
+      pivotHasSortField(sort.id, exploreState.pivot) &&
+      !(columnRemoved && isMinimizedAccessor(sort.id)),
   );
 
   if (exploreState.allDimensionsVisible) {

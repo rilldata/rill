@@ -1,5 +1,6 @@
 import {
   canSortPivotBy,
+  isMinimizedAccessor,
   pivotHasSortField,
 } from "@rilldata/web-common/features/dashboards/pivot/pivot-sorting";
 import {
@@ -14,6 +15,17 @@ const chip = (type: PivotChipType, id: string): PivotChipData => ({
   id,
   title: id,
   type,
+});
+
+describe("isMinimizedAccessor", () => {
+  it("recognizes a measure under column values by its shape", () => {
+    expect(isMinimizedAccessor("m0")).toBe(true);
+    expect(isMinimizedAccessor("c0v2m0")).toBe(true);
+    expect(isMinimizedAccessor("c0v2_c1v0m1")).toBe(true);
+    expect(isMinimizedAccessor("impressions")).toBe(false);
+    expect(isMinimizedAccessor("c0m0")).toBe(false);
+    expect(isMinimizedAccessor("c0v2m0x")).toBe(false);
+  });
 });
 
 describe("pivotHasSortField", () => {

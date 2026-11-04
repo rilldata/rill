@@ -12,11 +12,20 @@ import {
 const MinimizedAccessorRegex = /^(?:c\d+v\d+(?:_c\d+v\d+)*)?m\d+$/;
 
 /**
+ * Whether a sort id is a minimized accessor, which points at its column
+ * dimensions and measure by position rather than by name.
+ */
+export function isMinimizedAccessor(sortId: string): boolean {
+  return MinimizedAccessorRegex.test(sortId);
+}
+
+/**
  * Whether the pivot still holds the field a sort refers to. A sort id is a
  * table column id: a dimension or measure name, a measure's comparison column
  * (`<measure>__delta_abs`), a time column (`<time dimension>_rill_<grain>`,
  * matched by its grain since the time dimension is not always at hand) or,
- * in a nested table, a measure under one column value (`c0v2m0`).
+ * in a nested table, a measure under one column value (`c0v2m0`), which is
+ * positional and so only checked for its shape here.
  * A sort outlives its field in URLs, bookmarks, reports and the editor
  * preview, so state loaders drop it when this is false.
  */
@@ -24,7 +33,7 @@ export function pivotHasSortField(
   sortId: string,
   pivot: Pick<PivotState, "rows" | "columns" | "tableMode">,
 ): boolean {
-  if (pivot.tableMode !== "flat" && MinimizedAccessorRegex.test(sortId)) {
+  if (pivot.tableMode !== "flat" && isMinimizedAccessor(sortId)) {
     return true;
   }
   const field = stripComparisonSuffix(sortId);
@@ -56,7 +65,7 @@ export function canSortPivotBy(
   // A flat table keeps all of its dimensions in rowDimensionNames.
   if (isFlat) return rowDimensionNames.includes(sortId);
   if (rowDimensionNames[0] === sortId) return true;
-  if (!MinimizedAccessorRegex.test(sortId)) return false;
+  if (!isMinimizedAccessor(sortId)) return false;
   const columnIndexes = [...sortId.matchAll(/c(\d+)v/g)].map((match) =>
     Number(match[1]),
   );

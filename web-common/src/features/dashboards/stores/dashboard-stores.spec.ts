@@ -186,12 +186,16 @@ describe("sync", () => {
     );
   });
 
-  function syncWithoutBidPrice() {
+  function syncWithMeasures(measures: string[]) {
     metricsExplorerStore.sync(AD_BIDS_EXPLORE_NAME, {
       ...AD_BIDS_EXPLORE_INIT,
-      measures: [AD_BIDS_IMPRESSIONS_MEASURE],
+      measures,
     });
     return get(metricsExplorerStore).entities[AD_BIDS_EXPLORE_NAME].pivot;
+  }
+
+  function syncWithoutBidPrice() {
+    return syncWithMeasures([AD_BIDS_IMPRESSIONS_MEASURE]);
   }
 
   // The editor preview syncs the state with every spec edit; the pivot's
@@ -217,5 +221,30 @@ describe("sync", () => {
     expect(pivot.sorting).toEqual([
       { id: AD_BIDS_IMPRESSIONS_MEASURE, desc: true },
     ]);
+  });
+
+  // A sort on a measure under one column value points at the measure by
+  // position, so it would silently move to another measure once one is
+  // removed: `m0` meant impressions and would mean bid price.
+  it("drops a positional sort once a column chip is removed", () => {
+    metricsExplorerStore.setPivotSort(AD_BIDS_EXPLORE_NAME, [
+      { id: "m0", desc: true },
+    ]);
+
+    const pivot = syncWithMeasures([AD_BIDS_BID_PRICE_MEASURE]);
+    expect(pivot.columns.map((c) => c.id)).toEqual([AD_BIDS_BID_PRICE_MEASURE]);
+    expect(pivot.sorting).toEqual([]);
+  });
+
+  it("keeps a positional sort while the columns are intact", () => {
+    metricsExplorerStore.setPivotSort(AD_BIDS_EXPLORE_NAME, [
+      { id: "m0", desc: true },
+    ]);
+
+    const pivot = syncWithMeasures([
+      AD_BIDS_IMPRESSIONS_MEASURE,
+      AD_BIDS_BID_PRICE_MEASURE,
+    ]);
+    expect(pivot.sorting).toEqual([{ id: "m0", desc: true }]);
   });
 });
