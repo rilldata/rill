@@ -155,8 +155,10 @@ func (e *Executor) rewriteQueryForRollup(ctx context.Context, qry *metricsview.Q
 	// Assumption: time is bounded by either the time range or the WHERE, not both; if both, the base table is used.
 	// The WHERE bounds are also not used when:
 	// a computed query dimension has the time dimension's name, since the WHERE then filters on the computed value;
-	// or the WHERE has a subquery, since subqueries inherit the time range but not the WHERE, so they scan all time.
-	useWhereBounds := !hasTimeRange && !hasComparisonTimeRange && !whereHasSubquery(qry.Where)
+	// or the WHERE or HAVING has a subquery, or the spine has a WHERE, since those inherit the time range but not the WHERE, so they scan all time.
+	useWhereBounds := !hasTimeRange && !hasComparisonTimeRange &&
+		!whereHasSubquery(qry.Where) && !whereHasSubquery(qry.Having) &&
+		(qry.Spine == nil || qry.Spine.Where == nil)
 	for _, d := range qry.Dimensions {
 		if d.Compute != nil && strings.EqualFold(d.Name, e.metricsView.TimeDimension) {
 			useWhereBounds = false
@@ -647,7 +649,7 @@ func whereTimeBounds(where *metricsview.Expression, timeDim string) (start, end 
 	}
 }
 
-// whereHasSubquery reports whether a WHERE expression contains a subquery anywhere.
+// whereHasSubquery reports whether a WHERE or HAVING expression contains a subquery anywhere.
 func whereHasSubquery(expr *metricsview.Expression) bool {
 	if expr == nil {
 		return false

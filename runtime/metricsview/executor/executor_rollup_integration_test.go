@@ -939,6 +939,38 @@ explore:
 			require.Equal(t, rollupTestBaseTable, queryAndGetTable(t, e, qry))
 		})
 
+		t.Run("having_subquery_falls_to_base", func(t *testing.T) {
+			e := newRollupTestExecutor(t, rt, instanceID)
+			defer e.Close()
+
+			// Like WHERE subqueries, HAVING subqueries inherit the (empty) time range but not the WHERE bounds
+			qry := whereQuery(t, "timestamp >= '2024-01-01T00:00:00Z' AND timestamp < '2024-02-01T00:00:00Z'", metricsview.TimeGrainUnspecified)
+			qry.Having = &metricsview.Expression{Condition: &metricsview.Condition{
+				Operator: metricsview.OperatorIn,
+				Expressions: []*metricsview.Expression{
+					{Name: "publisher"},
+					{Subquery: &metricsview.Subquery{
+						Dimension: metricsview.Dimension{Name: "publisher"},
+						Where:     &metricsview.Expression{Condition: &metricsview.Condition{Operator: metricsview.OperatorEq, Expressions: []*metricsview.Expression{{Name: "domain"}, {Value: "news.com"}}}},
+					}},
+				},
+			}}
+			require.Equal(t, rollupTestBaseTable, queryAndGetTable(t, e, qry))
+		})
+
+		t.Run("where_spine_falls_to_base", func(t *testing.T) {
+			e := newRollupTestExecutor(t, rt, instanceID)
+			defer e.Close()
+
+			// A WHERE spine applies its own filter and the (empty) time range, not the WHERE bounds
+			qry := whereQuery(t, "timestamp >= '2024-01-01T00:00:00Z' AND timestamp < '2024-02-01T00:00:00Z'", metricsview.TimeGrainUnspecified)
+			qry.Spine = &metricsview.Spine{Where: &metricsview.WhereSpine{Expression: &metricsview.Expression{Condition: &metricsview.Condition{
+				Operator:    metricsview.OperatorIn,
+				Expressions: []*metricsview.Expression{{Name: "publisher"}, {Value: "Google"}, {Value: "Facebook"}},
+			}}}}
+			require.Equal(t, rollupTestBaseTable, queryAndGetTable(t, e, qry))
+		})
+
 		t.Run("with_time_range_falls_to_base", func(t *testing.T) {
 			e := newRollupTestExecutor(t, rt, instanceID)
 			defer e.Close()
