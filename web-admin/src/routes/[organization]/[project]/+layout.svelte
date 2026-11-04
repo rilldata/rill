@@ -44,7 +44,10 @@
   import ProjectBuilding from "@rilldata/web-admin/features/projects/ProjectBuilding.svelte";
   import ProjectHeader from "../../../features/projects/header/ProjectHeader.svelte";
   import ProjectTabs from "@rilldata/web-admin/features/projects/ProjectTabs.svelte";
-  import { baseGetProjectQueryOptions } from "@rilldata/web-admin/features/projects/project-query-options";
+  import {
+    baseGetProjectQueryOptions,
+    createRuntimeJwtRefresher,
+  } from "@rilldata/web-admin/features/projects/project-query-options";
   import { resolveRuntimeConnection } from "@rilldata/web-admin/features/projects/project-runtime";
   import RedeployProjectCta from "@rilldata/web-admin/features/projects/RedeployProjectCTA.svelte";
   import SlimProjectHeader from "@rilldata/web-admin/features/projects/SlimProjectHeader.svelte";
@@ -228,6 +231,18 @@
     resolveRuntimeConnection(projectData, mockUser, onPublicURLPage),
   );
 
+  // Re-requests the runtime JWT from the query that issued it when a request finds it expired, e.g. after a
+  // laptop sleep or a network drop skipped the scheduled refetch, instead of waiting for the next poll.
+  let refreshJwt = $derived(
+    createRuntimeJwtRefresher(runtime.authContext, {
+      organization,
+      project,
+      branch: activeBranch,
+      token,
+      mockedUserId,
+    }),
+  );
+
   // --- Side effects (cache invalidation and telemetry) ---
 
   // Track previous status so we invalidate only on *transitions*, not on every
@@ -349,6 +364,7 @@
         instanceId={runtime.instanceId}
         jwt={runtime.jwt}
         authContext={runtime.authContext}
+        {refreshJwt}
       >
         {#if !onWelcomePage}
           <ProjectHeader

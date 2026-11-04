@@ -14,7 +14,10 @@
   import EditSessionLoading from "@rilldata/web-admin/features/edit-session/EditSessionLoading.svelte";
   import EditSessionTimeoutBanner from "@rilldata/web-admin/features/edit-session/EditSessionTimeoutBanner.svelte";
   import ProjectHeader from "../../../../../features/projects/header/ProjectHeader.svelte";
-  import { baseGetProjectQueryOptions } from "@rilldata/web-admin/features/projects/project-query-options";
+  import {
+    baseGetProjectQueryOptions,
+    createRuntimeJwtRefresher,
+  } from "@rilldata/web-admin/features/projects/project-query-options";
   import SlimProjectHeader from "@rilldata/web-admin/features/projects/SlimProjectHeader.svelte";
   import { getThemedLogoUrl } from "@rilldata/web-admin/features/themes/organization-logo";
   import ErrorPage from "@rilldata/web-common/components/ErrorPage.svelte";
@@ -80,6 +83,13 @@
   $: runtimeHost = deployment?.runtimeHost ?? null;
   $: instanceId = deployment?.runtimeInstanceId ?? null;
   $: jwt = $projectQuery.data?.jwt ?? null;
+
+  // Re-requests the branch's runtime JWT when a request finds it expired instead of waiting for the next poll.
+  $: refreshJwt = createRuntimeJwtRefresher("user", {
+    organization,
+    project,
+    branch,
+  });
 
   // Flipped when the user clicks "Start deployment" on a stopped deployment;
   // keeps the UI in loading state while the backend transitions STOPPED → PENDING → RUNNING.
@@ -179,7 +189,7 @@
     />
   {:else if isReady && deployment?.id && instanceId && runtimeHost && jwt}
     {#key `${runtimeHost}::${instanceId}::${hasPrimaryDeployment}`}
-      <RuntimeProvider host={runtimeHost} {instanceId} {jwt}>
+      <RuntimeProvider host={runtimeHost} {instanceId} {jwt} {refreshJwt}>
         {#if !inProjectWelcomePage}
           <ProjectHeader
             {organization}
