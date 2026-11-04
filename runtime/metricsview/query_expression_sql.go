@@ -148,6 +148,19 @@ func (b exprSQLBuilder) writeBinaryCondition(exprs []*Expression, op Operator) e
 			}
 			exprs = []*Expression{exprs[0], {Value: vals}}
 		}
+		// A membership condition with no values has no SQL form that reads back with the same meaning:
+		// IN () does not parse, and IN (NULL) would match NULL rows.
+		// It is written as a comparison of constants instead: no row passes an IN and every row passes a NIN.
+		if len(exprs) == 2 && exprs[1] != nil {
+			if rhs := reflect.ValueOf(exprs[1].Value); rhs.IsValid() && rhs.Kind() == reflect.Slice && rhs.Len() == 0 {
+				if op == OperatorIn {
+					b.writeString("1 = 0")
+				} else {
+					b.writeString("1 = 1")
+				}
+				return nil
+			}
+		}
 	}
 
 	if len(exprs) != 2 {

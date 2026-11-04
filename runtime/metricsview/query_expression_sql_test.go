@@ -120,6 +120,8 @@ func TestExpressionToSQL(t *testing.T) {
 			want: "foo IN ('a.%$/\" '' s', 'b', 'c')",
 		},
 		{
+			// No row passes an IN with no values. "foo IN ()" is not valid SQL and "foo IN (NULL)" would match NULL rows,
+			// so it is written as a comparison of constants that parses back with the same meaning.
 			name: "in empty list expression",
 			e: &Expression{
 				Condition: &Condition{
@@ -130,7 +132,7 @@ func TestExpressionToSQL(t *testing.T) {
 					},
 				},
 			},
-			want: "foo IN (NULL)",
+			want: "1 = 0",
 		},
 		{
 			// A flattened list with no values is the left hand side alone; it is written like an empty list.
@@ -141,7 +143,37 @@ func TestExpressionToSQL(t *testing.T) {
 					Expressions: []*Expression{{Name: "foo"}},
 				},
 			},
-			want: "foo IN (NULL)",
+			want: "1 = 0",
+		},
+		{
+			// Every row passes a NIN with no values.
+			name: "flattened nin expression without values",
+			e: &Expression{
+				Condition: &Condition{
+					Operator:    OperatorNin,
+					Expressions: []*Expression{{Name: "foo"}},
+				},
+			},
+			want: "1 = 1",
+		},
+		{
+			name: "in expression without values nested in and",
+			e: &Expression{
+				Condition: &Condition{
+					Operator: OperatorAnd,
+					Expressions: []*Expression{
+						{Condition: &Condition{
+							Operator:    OperatorIn,
+							Expressions: []*Expression{{Name: "foo"}},
+						}},
+						{Condition: &Condition{
+							Operator:    OperatorEq,
+							Expressions: []*Expression{{Name: "foo"}, {Value: 42}},
+						}},
+					},
+				},
+			},
+			want: "(1 = 0) AND (foo = 42)",
 		},
 		{
 			name: "is null",
