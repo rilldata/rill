@@ -133,6 +133,17 @@ func TestExpressionToSQL(t *testing.T) {
 			want: "foo IN (NULL)",
 		},
 		{
+			// A flattened list with no values is the left hand side alone; it is written like an empty list.
+			name: "flattened in expression without values",
+			e: &Expression{
+				Condition: &Condition{
+					Operator:    OperatorIn,
+					Expressions: []*Expression{{Name: "foo"}},
+				},
+			},
+			want: "foo IN (NULL)",
+		},
+		{
 			name: "is null",
 			e: &Expression{
 				Condition: &Condition{
