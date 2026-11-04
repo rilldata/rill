@@ -34,3 +34,9 @@ export function clampToTimestampBounds(time: DateTime): DateTime {
   }
   return time;
 }
+
+export function clampDateToTimestampBounds(date: Date): Date {
+  if (date.getTime() < MIN_TIMESTAMP_MS) return new Date(MIN_TIMESTAMP_MS);
+  if (date.getTime() > MAX_TIMESTAMP_MS) return new Date(MAX_TIMESTAMP_MS);
+  return date;
+}

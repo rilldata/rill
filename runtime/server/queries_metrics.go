@@ -563,8 +563,8 @@ func (s *Server) MetricsViewTimeRanges(ctx context.Context, req *runtimev1.Metri
 		})
 
 		timeRanges[i] = &runtimev1.ResolvedTimeRange{
-			Start:         clampedTimestamp(start),
-			End:           clampedTimestamp(end),
+			Start:         pbutil.ClampedTimestamp(start),
+			End:           pbutil.ClampedTimestamp(end),
 			Grain:         timeutil.TimeGrainToAPI(grain),
 			TimeDimension: timeDimension,
 			TimeZone:      req.TimeZone,
@@ -783,23 +783,5 @@ func valOrNullTime(v time.Time) *timestamppb.Timestamp {
 	if v.IsZero() {
 		return nil
 	}
-	return clampedTimestamp(v)
-}
-
-// The range of times that a protobuf timestamp can represent.
-var (
-	minProtoTime = time.Date(1, time.January, 1, 0, 0, 0, 0, time.UTC)
-	maxProtoTime = time.Date(9999, time.December, 31, 23, 59, 59, 999999999, time.UTC)
-)
-
-// clampedTimestamp converts t to a protobuf timestamp, clamping it to the range that protobuf can represent.
-// Resolved time ranges and time range summaries can fall outside that range when the data contains placeholder dates such as 0001-01-01 or 9999-12-31,
-// and the response would otherwise fail to marshal with "seconds out of range".
-func clampedTimestamp(t time.Time) *timestamppb.Timestamp {
-	if t.Before(minProtoTime) {
-		t = minProtoTime
-	} else if t.After(maxProtoTime) {
-		t = maxProtoTime
-	}
-	return timestamppb.New(t)
+	return pbutil.ClampedTimestamp(v)
 }
