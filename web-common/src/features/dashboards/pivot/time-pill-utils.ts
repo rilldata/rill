@@ -54,14 +54,16 @@ export function isNewTimeChip(pivotChip: PivotChipData) {
 }
 
 /**
- * Handle time chip transformation when dropping
+ * Resolves the sidebar's time chip into a chip for a specific grain when it
+ * is dropped into a zone. Returns undefined when no grain is available:
+ * the placeholder chip must never reach the pivot state, since its id is not
+ * a grain and the query it produces fails.
  */
 export function handleTimeChipDrop(
-  chip: PivotChipData,
   dropPosition: number,
   existingTimeChips: PivotChipData[],
   availableGrains: AvailableTimeGrain[],
-): PivotChipData {
+): PivotChipData | undefined {
   let selectedGrain: V1TimeGrain | undefined;
 
   if (existingTimeChips.length === 0) {
@@ -76,26 +78,20 @@ export function handleTimeChipDrop(
     );
   }
 
-  if (selectedGrain) {
-    return createTimeChipWithGrain(selectedGrain);
-  }
-
-  return chip;
+  if (!selectedGrain) return undefined;
+  return createTimeChipWithGrain(selectedGrain);
 }
 
 /**
- * Handle time chip click for adding to pivot
+ * Resolves the sidebar's time chip into a chip for the largest available
+ * grain when it is clicked. Returns undefined when no grain is available.
  */
 export function handleTimeChipClick(
-  chip: PivotChipData,
   availableGrains: AvailableTimeGrain[],
-): PivotChipData {
+): PivotChipData | undefined {
   const selectedGrain = getLargestGrain(availableGrains);
-  if (selectedGrain) {
-    return createTimeChipWithGrain(selectedGrain);
-  }
-
-  return chip;
+  if (!selectedGrain) return undefined;
+  return createTimeChipWithGrain(selectedGrain);
 }
 
 /**
