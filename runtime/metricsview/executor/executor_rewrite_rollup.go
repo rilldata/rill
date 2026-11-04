@@ -153,10 +153,19 @@ func (e *Executor) rewriteQueryForRollup(ctx context.Context, qry *metricsview.Q
 	// timeRange is used for routing checks only; either side may be zero (unbounded).
 	// Metrics SQL bounds time in the WHERE clause, so without a time range we use those bounds instead.
 	// Assumption: time is bounded by either the time range or the WHERE, not both; if both, the base table is used.
+	// The WHERE bounds are also not used when:
+	// a computed query dimension has the time dimension's name, since the WHERE then filters on the computed value;
+	// or the WHERE has a subquery, since subqueries inherit the time range but not the WHERE, so they scan all time.
+	useWhereBounds := !hasTimeRange && !hasComparisonTimeRange && !whereHasSubquery(qry.Where)
+	for _, d := range qry.Dimensions {
+		if d.Compute != nil && strings.EqualFold(d.Name, e.metricsView.TimeDimension) {
+			useWhereBounds = false
+		}
+	}
 	timeRange := &metricsview.TimeRange{}
 	if hasTimeRange {
 		timeRange = qry.TimeRange
-	} else if !hasComparisonTimeRange {
+	} else if useWhereBounds {
 		start, end, ok := whereTimeBounds(qry.Where, e.metricsView.TimeDimension)
 		if ok && (!start.IsZero() || !end.IsZero()) {
 			timeRange = &metricsview.TimeRange{Start: start, End: end}
@@ -607,17 +616,23 @@ func whereTimeBounds(where *metricsview.Expression, timeDim string) (start, end 
 	}
 
 	// Only accept values that identify an exact instant: the metrics SQL compiler produces either time.Time or RFC3339 strings.
-	// Strings without a zone offset are interpreted differently across OLAP engines, so they are not used for routing.
+	// Strings are passed to the OLAP engine as-is, so they must be read as the same instant there:
+	// strings without a zone are read in the engine's or column's time zone,
+	// and DuckDB ignores non-zero offsets when comparing with a TIMESTAMP column, so only UTC strings are used for routing.
 	var t time.Time
 	switch v := val.Value.(type) {
 	case time.Time:
-		t = v
+		t = v.UTC()
 	case string:
 		var err error
 		t, err = time.Parse(time.RFC3339Nano, v)
 		if err != nil {
 			return time.Time{}, time.Time{}, false
 		}
+		if _, offset := t.Zone(); offset != 0 {
+			return time.Time{}, time.Time{}, false
+		}
+		t = t.UTC()
 	default:
 		return time.Time{}, time.Time{}, false
 	}
@@ -630,6 +645,24 @@ func whereTimeBounds(where *metricsview.Expression, timeDim string) (start, end 
 	default:
 		return time.Time{}, time.Time{}, false
 	}
+}
+
+// whereHasSubquery reports whether a WHERE expression contains a subquery anywhere.
+func whereHasSubquery(expr *metricsview.Expression) bool {
+	if expr == nil {
+		return false
+	}
+	if expr.Subquery != nil {
+		return true
+	}
+	if expr.Condition != nil {
+		for _, sub := range expr.Condition.Expressions {
+			if whereHasSubquery(sub) {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 // checkRangeCoverage verifies that the rollup covers the given time range. The query range is clamped to the widest

@@ -808,7 +808,8 @@ explore:
 				Where:      where,
 			}
 			if grain != metricsview.TimeGrainUnspecified {
-				qry.Dimensions = append(qry.Dimensions, metricsview.Dimension{Name: "timestamp", Compute: &metricsview.DimensionCompute{TimeFloor: &metricsview.DimensionComputeTimeFloor{Dimension: "timestamp", Grain: grain}}})
+				// Not named "timestamp": a computed dimension with that name would shadow the time dimension in the WHERE
+				qry.Dimensions = append(qry.Dimensions, metricsview.Dimension{Name: "time_bucket", Compute: &metricsview.DimensionCompute{TimeFloor: &metricsview.DimensionComputeTimeFloor{Dimension: "timestamp", Grain: grain}}})
 			}
 			return qry
 		}
@@ -862,6 +863,18 @@ explore:
 				want:   rollupTestBaseTable,
 			},
 			{
+				name:   "zero_offset",
+				filter: "timestamp >= '2024-01-01T00:00:00+00:00' AND timestamp < '2024-01-15T00:00:00+00:00'",
+				grain:  metricsview.TimeGrainDay,
+				want:   rollupTestDailyTable,
+			},
+			{
+				// 01:00+01:00 is midnight UTC, but DuckDB ignores the offset when comparing with a TIMESTAMP column
+				name:   "non_utc_offset",
+				filter: "timestamp >= '2024-01-01T01:00:00+01:00' AND timestamp < '2024-02-01T01:00:00+01:00'",
+				want:   rollupTestBaseTable,
+			},
+			{
 				name:   "value_without_zone",
 				filter: "timestamp >= '2024-01-01' AND timestamp < '2024-02-01'",
 				want:   rollupTestBaseTable,
@@ -890,6 +903,41 @@ explore:
 				require.Equal(t, tc.want, table)
 			})
 		}
+
+		t.Run("computed_dimension_shadows_time_falls_to_base", func(t *testing.T) {
+			e := newRollupTestExecutor(t, rt, instanceID)
+			defer e.Close()
+
+			// The WHERE filters on the computed month dimension named "timestamp", not on the raw time column
+			qry := whereQuery(t, "timestamp >= '2024-01-01T00:00:00Z' AND timestamp < '2024-02-01T00:00:00Z'", metricsview.TimeGrainUnspecified)
+			qry.Dimensions = append(qry.Dimensions, metricsview.Dimension{Name: "timestamp", Compute: &metricsview.DimensionCompute{TimeFloor: &metricsview.DimensionComputeTimeFloor{Dimension: "timestamp", Grain: metricsview.TimeGrainMonth}}})
+			require.Equal(t, rollupTestBaseTable, queryAndGetTable(t, e, qry))
+		})
+
+		t.Run("subquery_falls_to_base", func(t *testing.T) {
+			e := newRollupTestExecutor(t, rt, instanceID)
+			defer e.Close()
+
+			// The subquery inherits the (empty) time range but not the WHERE bounds, so it scans all time
+			qry := whereQuery(t, "timestamp >= '2024-01-01T00:00:00Z' AND timestamp < '2024-02-01T00:00:00Z'", metricsview.TimeGrainUnspecified)
+			qry.Where = &metricsview.Expression{Condition: &metricsview.Condition{
+				Operator: metricsview.OperatorAnd,
+				Expressions: []*metricsview.Expression{
+					qry.Where,
+					{Condition: &metricsview.Condition{
+						Operator: metricsview.OperatorIn,
+						Expressions: []*metricsview.Expression{
+							{Name: "publisher"},
+							{Subquery: &metricsview.Subquery{
+								Dimension: metricsview.Dimension{Name: "publisher"},
+								Where:     &metricsview.Expression{Condition: &metricsview.Condition{Operator: metricsview.OperatorEq, Expressions: []*metricsview.Expression{{Name: "domain"}, {Value: "news.com"}}}},
+							}},
+						},
+					}},
+				},
+			}}
+			require.Equal(t, rollupTestBaseTable, queryAndGetTable(t, e, qry))
+		})
 
 		t.Run("with_time_range_falls_to_base", func(t *testing.T) {
 			e := newRollupTestExecutor(t, rt, instanceID)

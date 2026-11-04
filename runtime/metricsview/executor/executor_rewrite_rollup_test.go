@@ -637,6 +637,9 @@ func TestWhereTimeBounds(t *testing.T) {
 		{name: "eq", where: cmp(metricsview.OperatorEq, ts, val(jan1)), wantOK: false},
 		{name: "compared_to_column", where: cmp(metricsview.OperatorGte, ts, &metricsview.Expression{Name: "other"}), wantOK: false},
 		{name: "unparseable_value", where: cmp(metricsview.OperatorGte, ts, val("yesterday")), wantOK: false},
+		{name: "zero_offset_string", where: cmp(metricsview.OperatorGte, ts, val("2024-01-01T00:00:00+00:00")), wantStart: jan1, wantOK: true},
+		{name: "non_utc_offset_string", where: cmp(metricsview.OperatorGte, ts, val("2024-01-01T05:30:00+05:30")), wantOK: false},
+		{name: "non_utc_time_value", where: cmp(metricsview.OperatorGte, ts, val(jan1.In(time.FixedZone("IST", 19800)))), wantStart: jan1, wantOK: true},
 		{
 			name: "subquery_references_time",
 			where: &metricsview.Expression{Subquery: &metricsview.Subquery{
@@ -653,6 +656,8 @@ func TestWhereTimeBounds(t *testing.T) {
 			if ok {
 				require.True(t, tc.wantStart.Equal(start), "start: got %v, want %v", start, tc.wantStart)
 				require.True(t, tc.wantEnd.Equal(end), "end: got %v, want %v", end, tc.wantEnd)
+				require.Equal(t, time.UTC, start.Location())
+				require.Equal(t, time.UTC, end.Location())
 			}
 		})
 	}
