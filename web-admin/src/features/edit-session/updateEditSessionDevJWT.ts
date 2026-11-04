@@ -31,28 +31,21 @@ export function createUpdateEditSessionDevJWT(
 
     if (mockUser === null) {
       selectedMockUserJWT.set(null);
+      // Drop the mock token's refresher before leaving its context; the provider's applies again for the user
+      if (client.authContext === "mock") client.setJwtRefresher(undefined);
       client.updateJwt(editSessionJwt, "user");
     } else {
       try {
-        const { name, email, groups, admin, ...customAttributes } = mockUser;
-
-        const { accessToken } = await adminServiceGetDeployment(deploymentId, {
-          attributes: {
-            email,
-            ...(email ? { domain: getDomain(email) } : {}),
-            name: name || "Mock User",
-            admin: !!admin,
-            groups: groups || [],
-            ...customAttributes,
-          },
-          // Make sure to match TTL, GetDeployment defaults to 24-hours
-          accessTokenTtlSeconds: RUNTIME_ACCESS_TOKEN_DEFAULT_TTL / 1000, // Seconds param vs milliseconds constant
-        });
-
-        if (!accessToken) throw new Error("No JWT returned");
-
+        const accessToken = await issueMockUserJwt(deploymentId, mockUser);
         selectedMockUserJWT.set(accessToken);
         client.updateJwt(accessToken, "mock");
+        // The mock token expires like the user's; reissue it when a request finds it expired
+        // (e.g. after a laptop sleep) instead of leaving the preview waiting for a token that never comes
+        client.setJwtRefresher(async (signal) => {
+          const jwt = await issueMockUserJwt(deploymentId, mockUser, signal);
+          selectedMockUserJWT.set(jwt);
+          return jwt;
+        });
       } catch {
         // Reset the user and make sure we are not in a errored state.
         selectedMockUserStore.set(prevMockUser);
@@ -68,4 +61,32 @@ export function createUpdateEditSessionDevJWT(
     removeInactiveResourceQueries(queryClient, client.instanceId);
     return invalidateCanvasQueries(queryClient, client.instanceId);
   };
+}
+
+async function issueMockUserJwt(
+  deploymentId: string,
+  mockUser: MockUser,
+  signal?: AbortSignal,
+): Promise<string> {
+  const { name, email, groups, admin, ...customAttributes } = mockUser;
+
+  const { accessToken } = await adminServiceGetDeployment(
+    deploymentId,
+    {
+      attributes: {
+        email,
+        ...(email ? { domain: getDomain(email) } : {}),
+        name: name || "Mock User",
+        admin: !!admin,
+        groups: groups || [],
+        ...customAttributes,
+      },
+      // Make sure to match TTL, GetDeployment defaults to 24-hours
+      accessTokenTtlSeconds: RUNTIME_ACCESS_TOKEN_DEFAULT_TTL / 1000, // Seconds param vs milliseconds constant
+    },
+    signal,
+  );
+
+  if (!accessToken) throw new Error("No JWT returned");
+  return accessToken;
 }

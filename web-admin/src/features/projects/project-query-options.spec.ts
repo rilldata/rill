@@ -44,6 +44,8 @@ describe("baseGetProjectQueryOptions.refetchInterval", () => {
 });
 
 describe("createRuntimeJwtRefresher", () => {
+  const neverAborted = new AbortController().signal;
+
   afterEach(() => {
     vi.restoreAllMocks();
   });
@@ -62,7 +64,7 @@ describe("createRuntimeJwtRefresher", () => {
       branch: "dev",
     });
 
-    await expect(refresh?.()).resolves.toBe("fresh");
+    await expect(refresh?.(neverAborted)).resolves.toBe("fresh");
     expect(fetchQuery).toHaveBeenCalledWith(
       expect.objectContaining({
         queryKey: ["/v1/orgs/org/projects/proj", { branch: "dev" }],
@@ -78,7 +80,7 @@ describe("createRuntimeJwtRefresher", () => {
       token: "magic",
     });
 
-    await expect(refresh?.()).resolves.toBe("fresh");
+    await expect(refresh?.(neverAborted)).resolves.toBe("fresh");
     expect(fetchQuery).toHaveBeenCalledWith(
       expect.objectContaining({
         queryKey: ["/v1/orgs/org/projects/proj", "token/magic"],
@@ -95,7 +97,7 @@ describe("createRuntimeJwtRefresher", () => {
       mockedUserId: "u1",
     });
 
-    await expect(refresh?.()).resolves.toBe("fresh");
+    await expect(refresh?.(neverAborted)).resolves.toBe("fresh");
     expect(fetchQuery).toHaveBeenCalledWith(
       expect.objectContaining({
         queryKey: [
@@ -104,6 +106,27 @@ describe("createRuntimeJwtRefresher", () => {
         ],
       }),
     );
+  });
+
+  it("cancels the admin request when the client abandons the refresh", () => {
+    vi.spyOn(queryClient, "fetchQuery").mockImplementation(
+      () => new Promise(() => {}) as never,
+    );
+    const cancelQueries = vi
+      .spyOn(queryClient, "cancelQueries")
+      .mockResolvedValue();
+    const abort = new AbortController();
+    const refresh = createRuntimeJwtRefresher("user", {
+      organization: "org",
+      project: "proj",
+    });
+
+    void refresh?.(abort.signal);
+    abort.abort();
+
+    expect(cancelQueries).toHaveBeenCalledWith({
+      queryKey: ["/v1/orgs/org/projects/proj"],
+    });
   });
 
   it("has nothing to refetch for embeds", () => {

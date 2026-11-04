@@ -480,6 +480,118 @@ describe("RuntimeClient JWT refresh", () => {
       expect(refreshJwt.mock.calls.length).toBeLessThan(20);
     });
 
+    it("abandons a refresh that stalls, cancels it and tries again", async () => {
+      const client = createClient({ jwt: "expiring-token" });
+      const signals: AbortSignal[] = [];
+      const refreshJwt = vi.fn((signal: AbortSignal) => {
+        signals.push(signal);
+        return new Promise<string>(() => {});
+      });
+      client.setJwtRefresher(refreshJwt);
+      vi.advanceTimersByTime(PAST_WARNING_WINDOW);
+
+      const promise = client.runtimeService.ping({}).catch((e: Error) => e);
+
+      // An attempt is given 20s, then the retry waits out the 1s backoff
+      await vi.advanceTimersByTimeAsync(21_001);
+      expect(signals[0].aborted).toBe(true);
+      expect(refreshJwt).toHaveBeenCalledTimes(2);
+
+      // The request itself still fails at the 60s deadline
+      await vi.advanceTimersByTimeAsync(40_000);
+      const error = await promise;
+      expect((error as Error).message).toContain(
+        "Timed out waiting for a fresh JWT: the issuer did not respond within 20s",
+      );
+      expect(fetchMock).not.toHaveBeenCalled();
+    });
+
+    it("releases requests waiting on a stalled refresh as soon as a JWT arrives from elsewhere", async () => {
+      // e.g. the scheduled GetProject refetch completes while the refresh hangs
+      const client = createClient({ jwt: "expiring-token" });
+      client.setJwtRefresher(vi.fn(() => new Promise<string>(() => {})));
+      vi.advanceTimersByTime(PAST_WARNING_WINDOW);
+
+      let resolved = false;
+      const promise = makeRequest(client).then(() => {
+        resolved = true;
+      });
+      await vi.advanceTimersByTimeAsync(5_000);
+      expect(resolved).toBe(false);
+
+      client.updateJwt("fresh-token");
+      await promise;
+
+      expect(resolved).toBe(true);
+      expect(getLastAuthHeader(fetchMock)).toBe("Bearer fresh-token");
+    });
+
+    it("does not apply a user token refreshed during the backoff after View As switched the context", async () => {
+      const client = createClient({ jwt: "user-token", authContext: "user" });
+      const refreshJwt = vi
+        .fn()
+        .mockRejectedValueOnce(new Error("Network Error"))
+        .mockResolvedValue("fresh-user-token");
+      client.setJwtRefresher(refreshJwt);
+      vi.advanceTimersByTime(PAST_WARNING_WINDOW);
+
+      const promise = makeRequest(client);
+      // The first attempt failed; the retry is sleeping through the backoff
+      await vi.advanceTimersByTimeAsync(500);
+      expect(refreshJwt).toHaveBeenCalledTimes(1);
+
+      // View As installs a mock token while the retry sleeps
+      client.updateJwt("mock-token", "mock");
+      await promise;
+      await vi.advanceTimersByTimeAsync(2_000);
+
+      expect(refreshJwt).toHaveBeenCalledTimes(1);
+      expect(client.getJwt()).toBe("mock-token");
+      expect(client.authContext).toBe("mock");
+      expect(getLastAuthHeader(fetchMock)).toBe("Bearer mock-token");
+    });
+
+    it("keeps a refresher per auth context so View As can register its own", async () => {
+      const client = createClient({ jwt: "user-token", authContext: "user" });
+      const refreshUserJwt = vi.fn().mockResolvedValue("fresh-user-token");
+      client.setJwtRefresher(refreshUserJwt);
+
+      // View As in the editor installs a mock token and a refresher that reissues it
+      client.updateJwt("mock-token", "mock");
+      const refreshMockJwt = vi.fn().mockResolvedValue("fresh-mock-token");
+      client.setJwtRefresher(refreshMockJwt);
+      vi.advanceTimersByTime(PAST_WARNING_WINDOW);
+
+      await makeRequest(client);
+      expect(refreshMockJwt).toHaveBeenCalledTimes(1);
+      expect(refreshUserJwt).not.toHaveBeenCalled();
+      expect(getLastAuthHeader(fetchMock)).toBe("Bearer fresh-mock-token");
+
+      // View As ends: the user's refresher applies again without being registered anew
+      client.updateJwt("user-token", "user");
+      vi.advanceTimersByTime(PAST_WARNING_WINDOW);
+      await makeRequest(client);
+      expect(refreshUserJwt).toHaveBeenCalledTimes(1);
+      expect(getLastAuthHeader(fetchMock)).toBe("Bearer fresh-user-token");
+    });
+
+    it("removes the current context's refresher when given undefined", async () => {
+      const client = createClient({ jwt: "token" });
+      const refreshJwt = vi.fn().mockResolvedValue("fresh-token");
+      client.setJwtRefresher(refreshJwt);
+      client.setJwtRefresher(undefined);
+      vi.advanceTimersByTime(PAST_WARNING_WINDOW);
+
+      const promise = client.runtimeService.ping({}).catch((e: Error) => e);
+      await vi.advanceTimersByTimeAsync(61_000);
+      const error = await promise;
+
+      expect(refreshJwt).not.toHaveBeenCalled();
+      expect((error as Error).message).toContain(
+        "Timed out waiting for a fresh JWT",
+      );
+    });
+
     it("ignores a refresher registered for another auth context", async () => {
       // View As in Rill Developer sets a mock JWT directly on the client; the provider's
       // refresher for the "user" context must not replace it with the user's token

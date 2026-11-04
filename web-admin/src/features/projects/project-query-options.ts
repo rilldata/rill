@@ -86,7 +86,7 @@ export function createRuntimeJwtRefresher(
     case "mock": {
       if (!mockedUserId) return undefined;
       const body = { userId: mockedUserId, ...(branch ? { branch } : {}) };
-      return () =>
+      return (signal) =>
         fetchFreshJwt<V1GetDeploymentCredentialsResponse>(
           {
             queryKey: getAdminServiceGetDeploymentCredentialsQueryKey(
@@ -103,11 +103,12 @@ export function createRuntimeJwtRefresher(
               ),
           },
           (data) => data.accessToken,
+          signal,
         );
     }
     case "magic": {
       if (!token) return undefined;
-      return () =>
+      return (signal) =>
         fetchFreshJwt<V1GetProjectResponse>(
           {
             queryKey: getAdminServiceGetProjectWithBearerTokenQueryKey(
@@ -125,11 +126,12 @@ export function createRuntimeJwtRefresher(
               ),
           },
           (data) => data.jwt,
+          signal,
         );
     }
     case "user": {
       const params = branch ? { branch } : undefined;
-      return () =>
+      return (signal) =>
         fetchFreshJwt<V1GetProjectResponse>(
           {
             queryKey: getAdminServiceGetProjectQueryKey(
@@ -141,6 +143,7 @@ export function createRuntimeJwtRefresher(
               adminServiceGetProject(organization, project, params, signal),
           },
           (data) => data.jwt,
+          signal,
         );
     }
     case "embed":
@@ -152,8 +155,14 @@ export function createRuntimeJwtRefresher(
 function fetchFreshJwt<TData>(
   options: FetchQueryOptions<TData, RpcStatus>,
   selectJwt: (data: TData) => string | undefined,
+  signal: AbortSignal,
 ): Promise<string | undefined> {
+  // The client abandons a call that stalls; cancel the request so the retry is not deduped into it
+  const cancel = () =>
+    void queryClient.cancelQueries({ queryKey: options.queryKey });
+  signal.addEventListener("abort", cancel, { once: true });
   return queryClient
     .fetchQuery({ ...options, staleTime: FreshJwtStaleTime })
-    .then(selectJwt);
+    .then(selectJwt)
+    .finally(() => signal.removeEventListener("abort", cancel));
 }
