@@ -8,7 +8,11 @@ import {
   invalidateCanvasQueries,
   removeInactiveResourceQueries,
 } from "@rilldata/web-common/runtime-client/invalidation";
-import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
+import type {
+  AuthContext,
+  JwtRefresher,
+  RuntimeClient,
+} from "@rilldata/web-common/runtime-client/v2";
 import type { QueryClient } from "@tanstack/svelte-query";
 import { adminServiceGetDeployment } from "@rilldata/web-admin/client";
 import { getDomain } from "@rilldata/web-admin/features/projects/user-management/selectors.ts";
@@ -29,23 +33,16 @@ export function createUpdateEditSessionDevJWT(
     const prevMockUser = get(selectedMockUserStore);
     selectedMockUserStore.set(mockUser);
 
+    // The edit layout derives the provider's credentials from the stores set here (see editSessionRuntimeAuth);
+    // the client is updated directly as well so the invalidations below already run with the new token
     if (mockUser === null) {
       selectedMockUserJWT.set(null);
-      // Drop the mock token's refresher before leaving its context; the provider's applies again for the user
-      if (client.authContext === "mock") client.setJwtRefresher(undefined);
       client.updateJwt(editSessionJwt, "user");
     } else {
       try {
         const accessToken = await issueMockUserJwt(deploymentId, mockUser);
         selectedMockUserJWT.set(accessToken);
         client.updateJwt(accessToken, "mock");
-        // The mock token expires like the user's; reissue it when a request finds it expired
-        // (e.g. after a laptop sleep) instead of leaving the preview waiting for a token that never comes
-        client.setJwtRefresher(async (signal) => {
-          const jwt = await issueMockUserJwt(deploymentId, mockUser, signal);
-          selectedMockUserJWT.set(jwt);
-          return jwt;
-        });
       } catch {
         // Reset the user and make sure we are not in a errored state.
         selectedMockUserStore.set(prevMockUser);
@@ -60,6 +57,53 @@ export function createUpdateEditSessionDevJWT(
     await invalidateAllMetricsViews(queryClient, client.instanceId);
     removeInactiveResourceQueries(queryClient, client.instanceId);
     return invalidateCanvasQueries(queryClient, client.instanceId);
+  };
+}
+
+/**
+ * Reissues the mock user's JWT when a request finds it expired, e.g. after a laptop sleep,
+ * so the preview does not wait for a token that never comes. The mock token has the same TTL as the user's.
+ */
+export function createMockUserJwtRefresher(
+  deploymentId: string,
+  mockUser: MockUser,
+): JwtRefresher {
+  return async (signal) => {
+    const accessToken = await issueMockUserJwt(deploymentId, mockUser, signal);
+    selectedMockUserJWT.set(accessToken);
+    return accessToken;
+  };
+}
+
+/**
+ * Picks the credentials the edit layout's RuntimeProvider runs with: the mock user's JWT and refresher while
+ * View As is active, the user's otherwise. The provider must follow the View As selection: if it kept forwarding
+ * the user's JWT, the next GetProject update (the 15-minute poll, a focus refetch, or an on-demand refresh that was
+ * still in flight when View As started) would push the user's token back onto the client with the "user" context,
+ * and the preview would show the user's data while View As stays selected.
+ */
+export function editSessionRuntimeAuth(opts: {
+  userJwt: string | undefined;
+  userRefreshJwt: JwtRefresher | undefined;
+  mockUser: MockUser | null;
+  mockJwt: string | null;
+  mockRefreshJwt: JwtRefresher | undefined;
+}): {
+  jwt: string | undefined;
+  authContext: AuthContext;
+  refreshJwt: JwtRefresher | undefined;
+} {
+  if (opts.mockUser && opts.mockJwt) {
+    return {
+      jwt: opts.mockJwt,
+      authContext: "mock",
+      refreshJwt: opts.mockRefreshJwt,
+    };
+  }
+  return {
+    jwt: opts.userJwt,
+    authContext: "user",
+    refreshJwt: opts.userRefreshJwt,
   };
 }
 

@@ -1,8 +1,20 @@
 import { adminServiceGetDeployment } from "@rilldata/web-admin/client";
-import { createUpdateEditSessionDevJWT } from "@rilldata/web-admin/features/edit-session/updateEditSessionDevJWT";
+import {
+  createMockUserJwtRefresher,
+  createUpdateEditSessionDevJWT,
+  editSessionRuntimeAuth,
+} from "@rilldata/web-admin/features/edit-session/updateEditSessionDevJWT";
+import {
+  selectedMockUserJWT,
+  selectedMockUserStore,
+} from "@rilldata/web-common/features/dashboards/granular-access-policies/stores";
 import { createQueryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import { RUNTIME_ACCESS_TOKEN_DEFAULT_TTL } from "@rilldata/web-common/runtime-client/constants";
-import { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
+import {
+  RuntimeClient,
+  type JwtRefresher,
+} from "@rilldata/web-common/runtime-client/v2";
+import { get } from "svelte/store";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@rilldata/web-admin/client", async (importOriginal) => ({
@@ -10,9 +22,10 @@ vi.mock("@rilldata/web-admin/client", async (importOriginal) => ({
   adminServiceGetDeployment: vi.fn(),
 }));
 
-describe("createUpdateEditSessionDevJWT", () => {
+describe("edit session View As", () => {
   const fetchMock = vi.fn<typeof fetch>();
   const getDeployment = vi.mocked(adminServiceGetDeployment);
+  const mockUser = { email: "viewer@example.com" };
 
   beforeEach(() => {
     vi.useFakeTimers();
@@ -26,6 +39,8 @@ describe("createUpdateEditSessionDevJWT", () => {
     );
     vi.stubGlobal("fetch", fetchMock);
     getDeployment.mockReset();
+    selectedMockUserStore.set(null);
+    selectedMockUserJWT.set(null);
   });
 
   afterEach(() => {
@@ -41,42 +56,23 @@ describe("createUpdateEditSessionDevJWT", () => {
     });
   }
 
-  it("reissues an expired mock JWT instead of waiting for a refetch that never comes", async () => {
-    getDeployment
-      .mockResolvedValueOnce({ accessToken: "mock-token-1" })
-      .mockResolvedValueOnce({ accessToken: "mock-token-2" });
-    const client = createClient();
-    const updateDevJWT = createUpdateEditSessionDevJWT(
-      "deployment-1",
-      "edit-session-jwt",
-    );
-
-    await updateDevJWT(createQueryClient(), client, {
-      email: "viewer@example.com",
-    });
-    expect(client.getJwt()).toBe("mock-token-1");
-    expect(client.authContext).toBe("mock");
-
-    // The mock token's TTL passes without a scheduled refetch (e.g. the laptop was asleep)
-    vi.advanceTimersByTime(RUNTIME_ACCESS_TOKEN_DEFAULT_TTL);
+  /** Sends a request; ConnectRPC may reject the minimal mock response, which does not matter here. */
+  async function ping(client: RuntimeClient) {
     try {
       await client.runtimeService.ping({});
     } catch {
-      // ConnectRPC may reject the minimal mock response; the request still went out
+      // no-op
     }
+  }
 
-    expect(getDeployment).toHaveBeenCalledTimes(2);
-    expect(getDeployment.mock.calls[1][0]).toBe("deployment-1");
-    expect(getDeployment.mock.calls[1][1].attributes).toMatchObject({
-      email: "viewer@example.com",
-      domain: "example.com",
-    });
-    expect(client.getJwt()).toBe("mock-token-2");
-    const headers = fetchMock.mock.calls[0][1]?.headers as Headers;
-    expect(headers.get("Authorization")).toBe("Bearer mock-token-2");
-  });
+  function sentAuthHeader(index: number) {
+    const headers = fetchMock.mock.calls[index]?.[1]?.headers as
+      | Headers
+      | undefined;
+    return headers?.get("Authorization") ?? null;
+  }
 
-  it("restores the edit session JWT and the user context when View As ends", async () => {
+  it("installs the mock user's JWT and restores the user's when View As ends", async () => {
     getDeployment.mockResolvedValueOnce({ accessToken: "mock-token" });
     const client = createClient();
     const queryClient = createQueryClient();
@@ -85,10 +81,104 @@ describe("createUpdateEditSessionDevJWT", () => {
       "edit-session-jwt",
     );
 
-    await updateDevJWT(queryClient, client, { email: "viewer@example.com" });
-    await updateDevJWT(queryClient, client, null);
+    await updateDevJWT(queryClient, client, mockUser);
+    expect(client.getJwt()).toBe("mock-token");
+    expect(client.authContext).toBe("mock");
+    expect(get(selectedMockUserStore)).toBe(mockUser);
+    expect(get(selectedMockUserJWT)).toBe("mock-token");
 
+    await updateDevJWT(queryClient, client, null);
     expect(client.getJwt()).toBe("edit-session-jwt");
+    expect(client.authContext).toBe("user");
+    expect(get(selectedMockUserStore)).toBeNull();
+    expect(get(selectedMockUserJWT)).toBeNull();
+  });
+
+  it("reissues the mock user's JWT with the same attributes", async () => {
+    getDeployment.mockResolvedValueOnce({ accessToken: "mock-token-2" });
+    const abort = new AbortController();
+
+    const refresh = createMockUserJwtRefresher("deployment-1", mockUser);
+    await expect(refresh(abort.signal)).resolves.toBe("mock-token-2");
+
+    expect(getDeployment).toHaveBeenCalledTimes(1);
+    const [deploymentId, body, signal] = getDeployment.mock.calls[0];
+    expect(deploymentId).toBe("deployment-1");
+    expect(body.attributes).toMatchObject({
+      email: "viewer@example.com",
+      domain: "example.com",
+    });
+    expect(body.accessTokenTtlSeconds).toBe(
+      RUNTIME_ACCESS_TOKEN_DEFAULT_TTL / 1000,
+    );
+    expect(signal).toBe(abort.signal);
+    expect(get(selectedMockUserJWT)).toBe("mock-token-2");
+  });
+
+  it("keeps the mock credentials when a user JWT refresh lands after View As started", async () => {
+    getDeployment
+      .mockResolvedValueOnce({ accessToken: "mock-token" })
+      .mockResolvedValueOnce({ accessToken: "mock-token-2" });
+    const client = createClient();
+    const queryClient = createQueryClient();
+    let resolveUserRefresh!: (jwt: string) => void;
+    const userRefreshJwt: JwtRefresher = vi.fn(
+      () =>
+        new Promise<string>((resolve) => {
+          resolveUserRefresh = resolve;
+        }),
+    );
+    const mockRefreshJwt = createMockUserJwtRefresher("deployment-1", mockUser);
+    // Plays the edit layout and RuntimeProvider: the client gets whatever the layout
+    // derives from the GetProject JWT and the View As selection
+    function forwardToProvider(userJwt: string) {
+      const auth = editSessionRuntimeAuth({
+        userJwt,
+        userRefreshJwt,
+        mockUser: get(selectedMockUserStore),
+        mockJwt: get(selectedMockUserJWT),
+        mockRefreshJwt,
+      });
+      client.updateJwt(auth.jwt, auth.authContext);
+      client.setJwtRefresher(auth.refreshJwt);
+    }
+    forwardToProvider("edit-session-jwt");
+
+    // The user's JWT expires and a request starts an on-demand refresh
+    vi.advanceTimersByTime(RUNTIME_ACCESS_TOKEN_DEFAULT_TTL);
+    const request = ping(client);
+    await vi.advanceTimersByTimeAsync(1);
+    expect(userRefreshJwt).toHaveBeenCalledTimes(1);
+
+    // View As starts while that refresh is still in flight
+    const updateDevJWT = createUpdateEditSessionDevJWT(
+      "deployment-1",
+      "edit-session-jwt",
+    );
+    await updateDevJWT(queryClient, client, mockUser);
+    forwardToProvider("edit-session-jwt");
+    await request;
+    expect(sentAuthHeader(0)).toBe("Bearer mock-token");
+
+    // The user refresh completes and the layout forwards the new user JWT; the mock credentials stay
+    resolveUserRefresh("edit-session-jwt-2");
+    await vi.advanceTimersByTimeAsync(1);
+    forwardToProvider("edit-session-jwt-2");
+    expect(client.getJwt()).toBe("mock-token");
+    expect(client.authContext).toBe("mock");
+
+    // When the mock token expires, it is the mock issuer that is asked, not the user's
+    vi.advanceTimersByTime(RUNTIME_ACCESS_TOKEN_DEFAULT_TTL);
+    await ping(client);
+    expect(getDeployment).toHaveBeenCalledTimes(2);
+    expect(userRefreshJwt).toHaveBeenCalledTimes(1);
+    expect(client.getJwt()).toBe("mock-token-2");
+    expect(sentAuthHeader(1)).toBe("Bearer mock-token-2");
+
+    // View As ends: the latest user JWT applies
+    await updateDevJWT(queryClient, client, null);
+    forwardToProvider("edit-session-jwt-2");
+    expect(client.getJwt()).toBe("edit-session-jwt-2");
     expect(client.authContext).toBe("user");
   });
 });
