@@ -36,6 +36,7 @@ import {
   type PivotTableMode,
   type PivotTotalsRowPosition,
 } from "../pivot/types";
+import { pivotHasSortField } from "../pivot/pivot-sorting";
 import { parseMeasureExpression } from "../ephemeral-measures/expression-parser";
 import type { EphemeralMeasureDef } from "../ephemeral-measures/types";
 import { getQueryContextKey } from "../exact-measures/query-context-key";
@@ -213,6 +214,12 @@ function syncDimensions(explore: V1ExploreSpec, exploreState: ExploreState) {
       dimensionsSet.has(col.id) ||
       ephemeralMeasureNames.has(col.id) ||
       col.type === PivotChipType.Time,
+  );
+
+  // A sort on a field the spec no longer has goes with its chip, as the
+  // pivot's queries would fail on it.
+  exploreState.pivot.sorting = exploreState.pivot.sorting.filter((sort) =>
+    pivotHasSortField(sort.id, exploreState.pivot),
   );
 
   if (exploreState.allDimensionsVisible) {

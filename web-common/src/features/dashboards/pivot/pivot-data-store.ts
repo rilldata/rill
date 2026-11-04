@@ -45,6 +45,7 @@ import {
   applyOutermostRowLimit,
   createPivotBaseQueryPlan,
 } from "./pivot-query-plan";
+import { canSortPivotBy } from "./pivot-sorting";
 import {
   getTotalsRow,
   getTotalsRowSkeleton,
@@ -611,11 +612,15 @@ export function createTableCellQuery(
   let sortBy: V1MetricsViewAggregationSort[] = [];
   if (isFlat) {
     const sortConfig = config.pivot.sorting?.[0];
-    if (sortConfig) {
+    // For flat tables, the sort id is directly the measure or dimension name.
+    // A sort whose field left the pivot (it outlives the field in URLs,
+    // bookmarks and reports) falls back to the default sort, since the
+    // runtime rejects names that are not in the query.
+    if (sortConfig && canSortPivotBy(sortConfig.id, config)) {
       sortBy = [
         {
           desc: sortConfig.desc,
-          name: sortConfig.id, // For flat tables, sort ID is directly the measure or dimension name
+          name: sortConfig.id,
         },
       ];
     } else {

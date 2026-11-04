@@ -1,10 +1,25 @@
-import { getUpdatedPinIndex } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
+import { PivotChipType } from "@rilldata/web-common/features/dashboards/pivot/types";
+import {
+  getUpdatedPinIndex,
+  metricsExplorerStore,
+} from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
 import {
   createAndExpression,
   createInExpression,
   createLikeExpression,
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
-import { describe, expect, it } from "vitest";
+import {
+  AD_BIDS_BID_PRICE_MEASURE,
+  AD_BIDS_EXPLORE_INIT,
+  AD_BIDS_EXPLORE_NAME,
+  AD_BIDS_IMPRESSIONS_MEASURE,
+  AD_BIDS_METRICS_3_MEASURES_DIMENSIONS,
+  AD_BIDS_PUBLISHER_DIMENSION,
+  AD_BIDS_TIME_RANGE_SUMMARY,
+} from "@rilldata/web-common/features/dashboards/stores/test-data/data";
+import { getInitExploreStateForTest } from "@rilldata/web-common/features/dashboards/stores/test-data/helpers";
+import { get } from "svelte/store";
+import { beforeEach, describe, expect, it } from "vitest";
 
 const DIMENSION = "publisher";
 
@@ -135,5 +150,72 @@ describe("getUpdatedPinIndex", () => {
         createAndExpression([createLikeExpression(DIMENSION, "%oo%")]),
       ),
     ).toEqual(1);
+  });
+});
+
+describe("sync", () => {
+  const measureChip = (id: string) => ({
+    id,
+    title: id,
+    type: PivotChipType.Measure,
+  });
+
+  beforeEach(() => {
+    metricsExplorerStore.remove(AD_BIDS_EXPLORE_NAME);
+    metricsExplorerStore.init(
+      AD_BIDS_EXPLORE_NAME,
+      getInitExploreStateForTest(
+        AD_BIDS_METRICS_3_MEASURES_DIMENSIONS,
+        AD_BIDS_EXPLORE_INIT,
+        AD_BIDS_TIME_RANGE_SUMMARY,
+      ),
+    );
+    metricsExplorerStore.createPivot(
+      AD_BIDS_EXPLORE_NAME,
+      [
+        {
+          id: AD_BIDS_PUBLISHER_DIMENSION,
+          title: AD_BIDS_PUBLISHER_DIMENSION,
+          type: PivotChipType.Dimension,
+        },
+      ],
+      [
+        measureChip(AD_BIDS_IMPRESSIONS_MEASURE),
+        measureChip(AD_BIDS_BID_PRICE_MEASURE),
+      ],
+    );
+  });
+
+  function syncWithoutBidPrice() {
+    metricsExplorerStore.sync(AD_BIDS_EXPLORE_NAME, {
+      ...AD_BIDS_EXPLORE_INIT,
+      measures: [AD_BIDS_IMPRESSIONS_MEASURE],
+    });
+    return get(metricsExplorerStore).entities[AD_BIDS_EXPLORE_NAME].pivot;
+  }
+
+  // The editor preview syncs the state with every spec edit; the pivot's
+  // queries fail when the sort names a measure the spec no longer has.
+  it("drops the pivot sort together with its measure", () => {
+    metricsExplorerStore.setPivotSort(AD_BIDS_EXPLORE_NAME, [
+      { id: AD_BIDS_BID_PRICE_MEASURE, desc: true },
+    ]);
+
+    const pivot = syncWithoutBidPrice();
+    expect(pivot.columns.map((c) => c.id)).toEqual([
+      AD_BIDS_IMPRESSIONS_MEASURE,
+    ]);
+    expect(pivot.sorting).toEqual([]);
+  });
+
+  it("keeps a pivot sort on a measure the spec still has", () => {
+    metricsExplorerStore.setPivotSort(AD_BIDS_EXPLORE_NAME, [
+      { id: AD_BIDS_IMPRESSIONS_MEASURE, desc: true },
+    ]);
+
+    const pivot = syncWithoutBidPrice();
+    expect(pivot.sorting).toEqual([
+      { id: AD_BIDS_IMPRESSIONS_MEASURE, desc: true },
+    ]);
   });
 });

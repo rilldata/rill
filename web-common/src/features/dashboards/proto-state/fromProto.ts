@@ -8,6 +8,7 @@ import {
   type PivotState,
   type PivotTableMode,
 } from "@rilldata/web-common/features/dashboards/pivot/types";
+import { pivotHasSortField } from "@rilldata/web-common/features/dashboards/pivot/pivot-sorting";
 import {
   FromProtoOperationMap,
   FromProtoPivotTableModeMap,
@@ -457,14 +458,23 @@ function fromPivotProto(
     ];
   }
 
+  const columns = [
+    ...colDimensions,
+    ...dashboard.pivotColumnMeasures.map(mapMeasure),
+  ];
+  const tableMode =
+    FromProtoPivotTableModeMap[
+      dashboard.pivotTableMode || DashboardState_PivotTableMode.NEST
+    ];
+
   return {
     rows: rowDimensions,
-    columns: [
-      ...colDimensions,
-      ...dashboard.pivotColumnMeasures.map(mapMeasure),
-    ],
+    columns,
     expanded: dashboard.pivotExpanded,
-    sorting: dashboard.pivotSort ?? [],
+    // The sorted field may have left the pivot since the state was saved.
+    sorting: (dashboard.pivotSort ?? []).filter((sort) =>
+      pivotHasSortField(sort.id, { rows: rowDimensions, columns, tableMode }),
+    ),
     columnPage: dashboard.pivotColumnPage ?? 1,
     rowPage: 1,
     enableComparison: dashboard.pivotEnableComparison ?? true,
@@ -476,10 +486,7 @@ function fromPivotProto(
         dashboard.pivotTotalsRowPosition ||
           DashboardState_PivotTotalsRowPosition.TOP
       ],
-    tableMode:
-      FromProtoPivotTableModeMap[
-        dashboard.pivotTableMode || DashboardState_PivotTableMode.NEST
-      ],
+    tableMode,
     rowLimit: dashboard.pivotRowLimit,
     measureFormatting: fromPivotConditionalFormattingProto(
       dashboard.pivotConditionalFormatting,
