@@ -61,8 +61,11 @@ const (
 //        computes (ComparisonValue / ComparisonDelta / ComparisonRatio / ComparisonTime), which are
 //        allowed as long as their referenced base measure is in the rollup.
 //     g. All WHERE filter dimensions are present in the rollup.
+//        The primary time dimension is an exception when the query has no time range and the WHERE only bounds it with top-level `>=` and `<` conjuncts:
+//        those bounds are then used as the time range for routing, so they are subject to the same alignment and coverage checks.
 //
 //  3. Time coverage: an eligible rollup must cover both the base and (when present) comparison time ranges.
+//     An open start or end (including a query without a time range) is checked against the base table's min or max.
 //     The query range is clamped to the widest available source: the start to min(baseMin, rollupMin) and
 //     the end to max(baseMax, rollupEffEnd). So a rollup that extends further back (or forward) than the
 //     base is preserved here, not rejected. Additionally, if the base table has data beyond the query range's end,
@@ -147,6 +150,24 @@ func (e *Executor) rewriteQueryForRollup(ctx context.Context, qry *metricsview.Q
 	hasTimeRange := qry.TimeRange != nil && (!qry.TimeRange.Start.IsZero() || !qry.TimeRange.End.IsZero())
 	hasComparisonTimeRange := qry.ComparisonTimeRange != nil && (!qry.ComparisonTimeRange.Start.IsZero() || !qry.ComparisonTimeRange.End.IsZero())
 
+	// timeRange is used for routing checks only; either side may be zero (unbounded).
+	// Metrics SQL bounds time in the WHERE clause, so without a time range we use those bounds instead.
+	// Assumption: time is bounded by either the time range or the WHERE, not both; if both, the base table is used.
+	timeRange := &metricsview.TimeRange{}
+	if hasTimeRange {
+		timeRange = qry.TimeRange
+	} else if !hasComparisonTimeRange {
+		start, end, ok := whereTimeBounds(qry.Where, e.metricsView.TimeDimension)
+		if ok && (!start.IsZero() || !end.IsZero()) {
+			timeRange = &metricsview.TimeRange{Start: start, End: end}
+			for dim := range whereDims {
+				if strings.EqualFold(dim, e.metricsView.TimeDimension) {
+					delete(whereDims, dim)
+				}
+			}
+		}
+	}
+
 	// Parent span for rollup selection
 	selectionCtx, selectionSpan := tracer.Start(ctx, "rollup.selection")
 	selectionSpan.SetAttributes(attribute.Int("rollup.candidate_count", len(e.metricsView.Rollups)))
@@ -185,7 +206,7 @@ func (e *Executor) rewriteQueryForRollup(ctx context.Context, qry *metricsview.Q
 			candidateSpan.End()
 		}
 
-		eligible, reason, err := rollupEligible(rollup, qry, queryGrain, whereDims, e.metricsView.TimeDimension, e.metricsView.FirstDayOfWeek)
+		eligible, reason, err := rollupEligible(rollup, qry, timeRange, queryGrain, whereDims, e.metricsView.TimeDimension, e.metricsView.FirstDayOfWeek)
 		if err != nil {
 			candidateSpan.SetStatus(codes.Error, err.Error())
 			candidateSpan.End()
@@ -230,11 +251,14 @@ func (e *Executor) rewriteQueryForRollup(ctx context.Context, qry *metricsview.Q
 		rollupEffEnd := timeutil.OffsetTime(rollupMax, timeutil.TimeGrainFromAPI(rollup.TimeGrain), 1, rollupLoc)
 
 		// Check coverage for the base time range and the comparison time range when present.
-		// When the query has no time range, use {baseMin, baseMax} for the coverage check so the rollup must still
-		// cover the base table's full data range; otherwise a partial rollup would silently truncate the result.
-		coverageTimeRange := qry.TimeRange
-		if !hasTimeRange {
-			coverageTimeRange = &metricsview.TimeRange{Start: baseMin, End: baseMax}
+		// An open start or end is replaced with the base table's min or max,
+		// so the rollup must still cover the base table's data on that side; otherwise a partial rollup would silently truncate the result.
+		coverageTimeRange := &metricsview.TimeRange{Start: timeRange.Start, End: timeRange.End}
+		if coverageTimeRange.Start.IsZero() {
+			coverageTimeRange.Start = baseMin
+		}
+		if coverageTimeRange.End.IsZero() {
+			coverageTimeRange.End = baseMax
 		}
 		rangeRejected := false
 		if reason, attrs := checkRangeCoverage(coverageTimeRange, baseMin, baseMax, rollupMin, rollupEffEnd); reason != "" {
@@ -253,11 +277,9 @@ func (e *Executor) rewriteQueryForRollup(ctx context.Context, qry *metricsview.Q
 
 		// Check end alignment now: if data extends beyond the query end and the end is not aligned to the rollup grain,
 		// the last rollup bucket would include data beyond the requested range. rollupEligible before only checked start alignment.
-		if hasTimeRange {
-			if reason, attrs := checkEndAlignment(qry.TimeRange.End, baseMax, rollup.TimeGrain, rollupLoc, e.metricsView.FirstDayOfWeek); reason != "" {
-				rejectCandidate(reason, attrs...)
-				continue
-			}
+		if reason, attrs := checkEndAlignment(timeRange.End, baseMax, rollup.TimeGrain, rollupLoc, e.metricsView.FirstDayOfWeek); reason != "" {
+			rejectCandidate(reason, attrs...)
+			continue
 		}
 		if hasComparisonTimeRange {
 			if reason, attrs := checkEndAlignment(qry.ComparisonTimeRange.End, baseMax, rollup.TimeGrain, rollupLoc, e.metricsView.FirstDayOfWeek); reason != "" {
@@ -274,13 +296,11 @@ func (e *Executor) rewriteQueryForRollup(ctx context.Context, qry *metricsview.Q
 		// For two candidates with identical effective return ranges — selection falls to coarsest grain and then index order.
 		effRetStart := rollupMin
 		effRetEnd := rollupEffEnd
-		if hasTimeRange {
-			if !qry.TimeRange.Start.IsZero() && qry.TimeRange.Start.After(effRetStart) {
-				effRetStart = qry.TimeRange.Start
-			}
-			if !qry.TimeRange.End.IsZero() && qry.TimeRange.End.Before(effRetEnd) {
-				effRetEnd = qry.TimeRange.End
-			}
+		if !timeRange.Start.IsZero() && timeRange.Start.After(effRetStart) {
+			effRetStart = timeRange.Start
+		}
+		if !timeRange.End.IsZero() && timeRange.End.Before(effRetEnd) {
+			effRetEnd = timeRange.End
 		}
 
 		c := &rollupCandidate{
@@ -323,8 +343,9 @@ func (e *Executor) rewriteQueryForRollup(ctx context.Context, qry *metricsview.Q
 
 // rollupEligible checks whether a rollup table can satisfy the given query.
 // It returns (eligible, reason, error) where reason is non-empty only when eligible is false.
+// timeRange is the time range used for routing, which may come from the WHERE clause instead of qry.TimeRange; it may be nil.
 // primaryTimeDim is the metrics view's default time dimension name (used when query fields omit it).
-func rollupEligible(rollup *runtimev1.MetricsViewSpec_Rollup, qry *metricsview.Query, queryGrain runtimev1.TimeGrain, whereDims map[string]bool, primaryTimeDim string, firstDayOfWeek uint32) (bool, string, error) {
+func rollupEligible(rollup *runtimev1.MetricsViewSpec_Rollup, qry *metricsview.Query, timeRange *metricsview.TimeRange, queryGrain runtimev1.TimeGrain, whereDims map[string]bool, primaryTimeDim string, firstDayOfWeek uint32) (bool, string, error) {
 	// 1. Grain derivable: if query has a time grain, it must be derivable from rollup grain
 	if queryGrain != runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED {
 		if !grainDerivableFrom(queryGrain, rollup.TimeGrain) {
@@ -359,8 +380,8 @@ func rollupEligible(rollup *runtimev1.MetricsViewSpec_Rollup, qry *metricsview.Q
 		}
 		rollupLoc = loc
 	}
-	if qry.TimeRange != nil && !qry.TimeRange.Start.IsZero() {
-		if !timeAligned(qry.TimeRange.Start, rollup.TimeGrain, rollupLoc, firstDayOfWeek) {
+	if timeRange != nil && !timeRange.Start.IsZero() {
+		if !timeAligned(timeRange.Start, rollup.TimeGrain, rollupLoc, firstDayOfWeek) {
 			return false, rejectStartNotAligned, nil
 		}
 	}
@@ -519,6 +540,95 @@ func collectWhereDimensionsRec(expr *metricsview.Expression, dims map[string]boo
 		}
 		collectWhereDimensionsRec(expr.Subquery.Where, dims)
 		collectWhereDimensionsRec(expr.Subquery.Having, dims)
+	}
+}
+
+// whereTimeBounds extracts the bounds that a WHERE expression places on the primary time dimension.
+// It only understands top-level AND conjuncts of the form `time >= <timestamp>` and `time < <timestamp>` (or their mirrored forms),
+// since those map exactly onto the inclusive start and exclusive end of a time range.
+// Other operators are not safe to route to a rollup: for example, `time > <day boundary>` excludes the bucket at that boundary,
+// even though that bucket contains base rows after the boundary.
+// It returns ok=false if the time dimension is referenced in any other way; zero start or end means that side is unbounded.
+func whereTimeBounds(where *metricsview.Expression, timeDim string) (start, end time.Time, ok bool) {
+	if where == nil {
+		return time.Time{}, time.Time{}, true
+	}
+
+	if where.Condition != nil && where.Condition.Operator == metricsview.OperatorAnd {
+		for _, sub := range where.Condition.Expressions {
+			subStart, subEnd, ok := whereTimeBounds(sub, timeDim)
+			if !ok {
+				return time.Time{}, time.Time{}, false
+			}
+			if subStart.After(start) {
+				start = subStart
+			}
+			if !subEnd.IsZero() && (end.IsZero() || subEnd.Before(end)) {
+				end = subEnd
+			}
+		}
+		return start, end, true
+	}
+
+	// Conjuncts that don't reference the time dimension don't bound it
+	refsTimeDim := false
+	for dim := range collectWhereDimensions(where) {
+		if strings.EqualFold(dim, timeDim) {
+			refsTimeDim = true
+			break
+		}
+	}
+	if !refsTimeDim {
+		return time.Time{}, time.Time{}, true
+	}
+
+	if where.Condition == nil || len(where.Condition.Expressions) != 2 {
+		return time.Time{}, time.Time{}, false
+	}
+	isTimeDim := func(e *metricsview.Expression) bool {
+		return e != nil && strings.EqualFold(e.Name, timeDim)
+	}
+	ident, val := where.Condition.Expressions[0], where.Condition.Expressions[1]
+	op := where.Condition.Operator
+	if !isTimeDim(ident) {
+		// Normalize `<timestamp> <= time` to `time >= <timestamp>` and `<timestamp> > time` to `time < <timestamp>`
+		ident, val = val, ident
+		switch op {
+		case metricsview.OperatorLte:
+			op = metricsview.OperatorGte
+		case metricsview.OperatorGt:
+			op = metricsview.OperatorLt
+		default:
+			return time.Time{}, time.Time{}, false
+		}
+	}
+	if !isTimeDim(ident) || val == nil || val.Name != "" {
+		return time.Time{}, time.Time{}, false
+	}
+
+	// Only accept values that identify an exact instant: the metrics SQL compiler produces either time.Time or RFC3339 strings.
+	// Strings without a zone offset are interpreted differently across OLAP engines, so they are not used for routing.
+	var t time.Time
+	switch v := val.Value.(type) {
+	case time.Time:
+		t = v
+	case string:
+		var err error
+		t, err = time.Parse(time.RFC3339Nano, v)
+		if err != nil {
+			return time.Time{}, time.Time{}, false
+		}
+	default:
+		return time.Time{}, time.Time{}, false
+	}
+
+	switch op {
+	case metricsview.OperatorGte:
+		return t, time.Time{}, true
+	case metricsview.OperatorLt:
+		return time.Time{}, t, true
+	default:
+		return time.Time{}, time.Time{}, false
 	}
 }
 

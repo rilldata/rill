@@ -239,7 +239,7 @@ func TestRollupEligible_ComparisonTimeRange_Aligned(t *testing.T) {
 			End:   time.Date(2024, 2, 1, 0, 0, 0, 0, time.UTC),
 		},
 	}
-	eligible, reason, err := rollupEligible(rollup, qry, runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED, nil, "timestamp", 0)
+	eligible, reason, err := rollupEligible(rollup, qry, qry.TimeRange, runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED, nil, "timestamp", 0)
 	require.NoError(t, err)
 	require.True(t, eligible, "expected eligible, got reject reason: %s", reason)
 }
@@ -261,7 +261,7 @@ func TestRollupEligible_ComparisonTimeRange_StartNotAligned(t *testing.T) {
 			End:   time.Date(2024, 2, 1, 0, 0, 0, 0, time.UTC),
 		},
 	}
-	eligible, reason, err := rollupEligible(rollup, qry, runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED, nil, "timestamp", 0)
+	eligible, reason, err := rollupEligible(rollup, qry, qry.TimeRange, runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED, nil, "timestamp", 0)
 	require.NoError(t, err)
 	require.False(t, eligible)
 	require.Equal(t, rejectStartNotAligned, reason)
@@ -289,7 +289,7 @@ func TestRollupEligible_NonPrimaryTimeDim(t *testing.T) {
 			TimeDimension: "other_ts",
 		},
 	}
-	eligible, reason, err := rollupEligible(rollup, qry, runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED, nil, "timestamp", 0)
+	eligible, reason, err := rollupEligible(rollup, qry, qry.TimeRange, runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED, nil, "timestamp", 0)
 	require.NoError(t, err)
 	require.False(t, eligible)
 	require.Equal(t, rejectTimeDimensionMissing, reason)
@@ -321,7 +321,7 @@ func TestRollupEligible_ComparisonValueMeasure(t *testing.T) {
 			End:   time.Date(2024, 2, 1, 0, 0, 0, 0, time.UTC),
 		},
 	}
-	eligible, reason, err := rollupEligible(rollup, qry, runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED, nil, "timestamp", 0)
+	eligible, reason, err := rollupEligible(rollup, qry, qry.TimeRange, runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED, nil, "timestamp", 0)
 	require.NoError(t, err)
 	require.True(t, eligible, "expected eligible, got reject reason: %s", reason)
 }
@@ -351,7 +351,7 @@ func TestRollupEligible_ComparisonDeltaMissingReferencedMeasure(t *testing.T) {
 			End:   time.Date(2024, 2, 1, 0, 0, 0, 0, time.UTC),
 		},
 	}
-	eligible, reason, err := rollupEligible(rollup, qry, runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED, nil, "timestamp", 0)
+	eligible, reason, err := rollupEligible(rollup, qry, qry.TimeRange, runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED, nil, "timestamp", 0)
 	require.NoError(t, err)
 	require.False(t, eligible)
 	require.Equal(t, rejectMeasureMissing, reason)
@@ -379,7 +379,7 @@ func TestRollupEligible_ExpressionMeasure(t *testing.T) {
 			End:   time.Date(2024, 3, 1, 0, 0, 0, 0, time.UTC),
 		},
 	}
-	eligible, reason, err := rollupEligible(rollup, qry, runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED, nil, "timestamp", 0)
+	eligible, reason, err := rollupEligible(rollup, qry, qry.TimeRange, runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED, nil, "timestamp", 0)
 	require.NoError(t, err)
 	require.True(t, eligible)
 	require.Empty(t, reason)
@@ -406,7 +406,7 @@ func TestRollupEligible_ExpressionMeasureMissingReferencedMeasure(t *testing.T) 
 			End:   time.Date(2024, 3, 1, 0, 0, 0, 0, time.UTC),
 		},
 	}
-	eligible, reason, err := rollupEligible(rollup, qry, runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED, nil, "timestamp", 0)
+	eligible, reason, err := rollupEligible(rollup, qry, qry.TimeRange, runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED, nil, "timestamp", 0)
 	require.NoError(t, err)
 	require.False(t, eligible)
 	require.Equal(t, rejectMeasureMissing, reason)
@@ -424,7 +424,7 @@ func TestRollupEligible_CountStillRejected(t *testing.T) {
 			{Name: "__count__", Compute: &metricsview.MeasureCompute{Count: true}},
 		},
 	}
-	eligible, reason, err := rollupEligible(rollup, qry, runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED, nil, "timestamp", 0)
+	eligible, reason, err := rollupEligible(rollup, qry, qry.TimeRange, runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED, nil, "timestamp", 0)
 	require.NoError(t, err)
 	require.False(t, eligible)
 	require.Equal(t, rejectComputedMeasure, reason)
@@ -606,6 +606,56 @@ func TestCollectWhereDimensions(t *testing.T) {
 func TestCollectWhereDimensions_Nil(t *testing.T) {
 	dims := collectWhereDimensions(nil)
 	require.Empty(t, dims)
+}
+
+func TestWhereTimeBounds(t *testing.T) {
+	jan1 := time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)
+	jan15 := time.Date(2024, 1, 15, 0, 0, 0, 0, time.UTC)
+	feb1 := time.Date(2024, 2, 1, 0, 0, 0, 0, time.UTC)
+	cmp := func(op metricsview.Operator, left, right *metricsview.Expression) *metricsview.Expression {
+		return &metricsview.Expression{Condition: &metricsview.Condition{Operator: op, Expressions: []*metricsview.Expression{left, right}}}
+	}
+	and := func(exprs ...*metricsview.Expression) *metricsview.Expression {
+		return &metricsview.Expression{Condition: &metricsview.Condition{Operator: metricsview.OperatorAnd, Expressions: exprs}}
+	}
+	ts := &metricsview.Expression{Name: "timestamp"}
+	val := func(v any) *metricsview.Expression { return &metricsview.Expression{Value: v} }
+
+	cases := []struct {
+		name      string
+		where     *metricsview.Expression
+		wantStart time.Time
+		wantEnd   time.Time
+		wantOK    bool
+	}{
+		{name: "nil", where: nil, wantOK: true},
+		{name: "no_time_reference", where: cmp(metricsview.OperatorEq, &metricsview.Expression{Name: "publisher"}, val("Google")), wantOK: true},
+		{name: "time_values", where: and(cmp(metricsview.OperatorGte, ts, val(jan1)), cmp(metricsview.OperatorLt, ts, val(feb1))), wantStart: jan1, wantEnd: feb1, wantOK: true},
+		{name: "case_insensitive_name", where: cmp(metricsview.OperatorGte, &metricsview.Expression{Name: "TimeStamp"}, val(jan1)), wantStart: jan1, wantOK: true},
+		{name: "nested_and_takes_tightest", where: and(cmp(metricsview.OperatorGte, ts, val(jan1)), and(cmp(metricsview.OperatorGte, ts, val("2024-01-15T00:00:00Z")), cmp(metricsview.OperatorLt, ts, val(feb1)))), wantStart: jan15, wantEnd: feb1, wantOK: true},
+		{name: "mirrored", where: and(cmp(metricsview.OperatorLte, val(jan1), ts), cmp(metricsview.OperatorGt, val(feb1), ts)), wantStart: jan1, wantEnd: feb1, wantOK: true},
+		{name: "eq", where: cmp(metricsview.OperatorEq, ts, val(jan1)), wantOK: false},
+		{name: "compared_to_column", where: cmp(metricsview.OperatorGte, ts, &metricsview.Expression{Name: "other"}), wantOK: false},
+		{name: "unparseable_value", where: cmp(metricsview.OperatorGte, ts, val("yesterday")), wantOK: false},
+		{
+			name: "subquery_references_time",
+			where: &metricsview.Expression{Subquery: &metricsview.Subquery{
+				Dimension: metricsview.Dimension{Name: "publisher"},
+				Where:     cmp(metricsview.OperatorGte, ts, val(jan1)),
+			}},
+			wantOK: false,
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			start, end, ok := whereTimeBounds(tc.where, "timestamp")
+			require.Equal(t, tc.wantOK, ok)
+			if ok {
+				require.True(t, tc.wantStart.Equal(start), "start: got %v, want %v", start, tc.wantStart)
+				require.True(t, tc.wantEnd.Equal(end), "end: got %v, want %v", end, tc.wantEnd)
+			}
+		})
+	}
 }
 
 func TestNormalizeTimezone(t *testing.T) {

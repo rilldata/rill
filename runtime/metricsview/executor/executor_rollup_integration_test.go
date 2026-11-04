@@ -9,6 +9,7 @@ import (
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/metricsview"
 	"github.com/rilldata/rill/runtime/metricsview/executor"
+	"github.com/rilldata/rill/runtime/metricsview/metricssql"
 	"github.com/rilldata/rill/runtime/testruntime"
 	"github.com/stretchr/testify/require"
 
@@ -792,6 +793,138 @@ explore:
 			table := queryAndGetTable(t, e, qry)
 			// Both monthly rollups cover the range; wide is defined first so it wins under the definition-order tiebreaker.
 			require.Equal(t, "rollup_month_wide", table)
+		})
+	})
+
+	t.Run("where_time_bounds", func(t *testing.T) {
+		// Queries compiled from metrics SQL (e.g. custom APIs) bound time in the WHERE clause instead of the time range.
+		// Simple `>=` and `<` bounds on the primary time dimension should route like the equivalent time range.
+		whereQuery := func(t *testing.T, filter string, grain metricsview.TimeGrain) *metricsview.Query {
+			where, err := metricssql.ParseFilter(filter)
+			require.NoError(t, err)
+			qry := &metricsview.Query{
+				Dimensions: []metricsview.Dimension{{Name: "publisher"}},
+				Measures:   []metricsview.Measure{{Name: "total_impressions"}},
+				Where:      where,
+			}
+			if grain != metricsview.TimeGrainUnspecified {
+				qry.Dimensions = append(qry.Dimensions, metricsview.Dimension{Name: "timestamp", Compute: &metricsview.DimensionCompute{TimeFloor: &metricsview.DimensionComputeTimeFloor{Dimension: "timestamp", Grain: grain}}})
+			}
+			return qry
+		}
+
+		cases := []struct {
+			name   string
+			filter string
+			grain  metricsview.TimeGrain
+			want   string
+		}{
+			{
+				name:   "aligned_bounds_select_daily",
+				filter: "timestamp >= '2024-01-01T00:00:00Z' AND timestamp < '2024-01-15T00:00:00Z'",
+				grain:  metricsview.TimeGrainDay,
+				want:   rollupTestDailyTable,
+			},
+			{
+				name:   "aligned_bounds_select_coarsest",
+				filter: "timestamp >= '2024-01-01T00:00:00Z' AND timestamp < '2024-02-01T00:00:00Z'",
+				want:   rollupTestMonthTable,
+			},
+			{
+				name:   "mirrored_bounds_with_other_filter",
+				filter: "'2024-01-01T00:00:00Z' <= timestamp AND publisher = 'Google' AND '2024-01-15T00:00:00Z' > timestamp",
+				grain:  metricsview.TimeGrainDay,
+				want:   rollupTestDailyTable,
+			},
+			{
+				name:   "start_not_aligned",
+				filter: "timestamp >= '2024-01-15T12:00:00Z' AND timestamp < '2024-02-01T00:00:00Z'",
+				want:   rollupTestBaseTable,
+			},
+			{
+				name:   "end_not_aligned",
+				filter: "timestamp >= '2024-01-01T00:00:00Z' AND timestamp < '2024-01-15T12:00:00Z'",
+				want:   rollupTestBaseTable,
+			},
+			{
+				name:   "exclusive_start",
+				filter: "timestamp > '2024-01-01T00:00:00Z' AND timestamp < '2024-02-01T00:00:00Z'",
+				want:   rollupTestBaseTable,
+			},
+			{
+				name:   "inclusive_end",
+				filter: "timestamp >= '2024-01-01T00:00:00Z' AND timestamp <= '2024-02-01T00:00:00Z'",
+				want:   rollupTestBaseTable,
+			},
+			{
+				name:   "or_condition",
+				filter: "timestamp >= '2024-01-01T00:00:00Z' OR publisher = 'Google'",
+				want:   rollupTestBaseTable,
+			},
+			{
+				name:   "value_without_zone",
+				filter: "timestamp >= '2024-01-01' AND timestamp < '2024-02-01'",
+				want:   rollupTestBaseTable,
+			},
+			{
+				// The weekly rollup only covers Jan and Feb, so it must be rejected for a March window
+				name:   "not_covered_by_weekly",
+				filter: "timestamp >= '2024-03-04T00:00:00Z' AND timestamp < '2024-03-25T00:00:00Z'",
+				grain:  metricsview.TimeGrainWeek,
+				want:   rollupTestDailyTable,
+			},
+			{
+				// An open end must still be covered up to the base table's max
+				name:   "open_end_not_covered_by_weekly",
+				filter: "timestamp >= '2024-01-01T00:00:00Z'",
+				grain:  metricsview.TimeGrainWeek,
+				want:   rollupTestDailyTable,
+			},
+		}
+		for _, tc := range cases {
+			t.Run(tc.name, func(t *testing.T) {
+				e := newRollupTestExecutor(t, rt, instanceID)
+				defer e.Close()
+
+				table := queryAndGetTable(t, e, whereQuery(t, tc.filter, tc.grain))
+				require.Equal(t, tc.want, table)
+			})
+		}
+
+		t.Run("with_time_range_falls_to_base", func(t *testing.T) {
+			e := newRollupTestExecutor(t, rt, instanceID)
+			defer e.Close()
+
+			// WHERE bounds are only used when the query has no time range.
+			// Here the time range alone would be eligible, but the unaligned WHERE start is not checked, so the rollup must not be used.
+			qry := whereQuery(t, "timestamp >= '2024-01-15T12:00:00Z' AND timestamp < '2024-02-01T00:00:00Z'", metricsview.TimeGrainUnspecified)
+			qry.TimeRange = &metricsview.TimeRange{
+				Start: time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC),
+				End:   time.Date(2024, 2, 1, 0, 0, 0, 0, time.UTC),
+			}
+			require.Equal(t, rollupTestBaseTable, queryAndGetTable(t, e, qry))
+		})
+
+		t.Run("matches_time_range_result", func(t *testing.T) {
+			e := newRollupTestExecutor(t, rt, instanceID)
+			defer e.Close()
+			ctx := context.Background()
+
+			qry := whereQuery(t, "timestamp >= '2024-01-01T00:00:00Z' AND timestamp < '2024-02-01T00:00:00Z' AND publisher = 'Google'", metricsview.TimeGrainUnspecified)
+			res, err := e.Query(ctx, qry, nil)
+			require.NoError(t, err)
+			defer res.Close()
+			require.Equal(t, rollupTestMonthTable, e.LatestQueryTable())
+
+			var publisher string
+			var impressions float64
+			require.True(t, res.Next())
+			require.NoError(t, res.Scan(&publisher, &impressions))
+			require.False(t, res.Next())
+			require.NoError(t, res.Err())
+			require.Equal(t, "Google", publisher)
+			// Same as no_grain_with_filter_correctness, which uses a time range
+			require.Equal(t, float64(2480), impressions)
 		})
 	})
 
