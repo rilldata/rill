@@ -137,6 +137,12 @@ func (d *dialect) DateTruncExpr(dim *runtimev1.MetricsViewSpec_Dimension, grain 
 		expr = d.EscapeIdentifier(dim.Column)
 	}
 
+	// ClickHouse rejects date_trunc at sub-day grains on Date and Date32 values, so cast those to DateTime64 first.
+	// The time zone path below already casts its input, and DateTime columns are left as they are to keep the expression cheap.
+	if tz == "" && dim.DataType != nil && dim.DataType.Code == runtimev1.Type_CODE_DATE && grain != runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED && grain < runtimev1.TimeGrain_TIME_GRAIN_DAY {
+		expr = fmt.Sprintf("%s::DateTime64", expr)
+	}
+
 	var shift string
 	if grain == runtimev1.TimeGrain_TIME_GRAIN_WEEK && firstDayOfWeek > 1 {
 		offset := 8 - firstDayOfWeek

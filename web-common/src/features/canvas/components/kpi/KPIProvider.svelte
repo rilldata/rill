@@ -196,8 +196,11 @@
     },
     {
       query: {
+        // Wait for the comparison interval: until the canvas range resolves,
+        // the query would cover all time at the fallback grain.
         enabled:
-          comparisonTimeRange &&
+          !!comparisonTimeRange?.start &&
+          !!comparisonTimeRange?.end &&
           isValid &&
           showSparkline &&
           showComparison &&

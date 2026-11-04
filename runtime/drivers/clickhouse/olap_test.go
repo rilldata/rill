@@ -48,6 +48,7 @@ func TestClickhouseSingle(t *testing.T) {
 	t.Run("CreateTableAsSelect_WithPrePostExec", func(t *testing.T) { testCreateTableAsSelect_WithPrePostExec(t, c, olap) })
 	t.Run("InsertTableAsSelect_WithPrePostExec", func(t *testing.T) { testInsertTableAsSelect_WithPrePostExec(t, c, olap) })
 	t.Run("SelectInlineResults", func(t *testing.T) { testSelectInlineResults(t, olap) })
+	t.Run("DateTruncExprOnDateColumns", func(t *testing.T) { testDateTruncExprOnDateColumns(t, olap) })
 }
 
 func TestClickhouseCluster(t *testing.T) {
@@ -1278,4 +1279,47 @@ func testSelectInlineResults(t *testing.T, olap drivers.OLAPStore) {
 			"day_type": "Date", "day_text": "2024-01-03",
 		},
 	}, got)
+}
+
+// testDateTruncExprOnDateColumns checks that the time floor expression for Date and Date32 columns runs at every grain,
+// including the sub-day grains that ClickHouse's date_trunc rejects for plain Date values.
+func testDateTruncExprOnDateColumns(t *testing.T, olap drivers.OLAPStore) {
+	ctx := context.Background()
+	err := olap.Exec(ctx, &drivers.Statement{Query: "CREATE TABLE date_trunc_dates (d Date, d32 Date32, v UInt8) ENGINE = MergeTree ORDER BY d"})
+	require.NoError(t, err)
+	err = olap.Exec(ctx, &drivers.Statement{Query: "INSERT INTO date_trunc_dates VALUES ('2024-01-02', '2024-01-02', 1), ('2024-01-02', '2024-01-02', 2), ('2024-01-03', '2024-01-03', 3)"})
+	require.NoError(t, err)
+
+	// Every value in a Date column is midnight, so the sub-day grains bucket like the day grain.
+	daily := map[string]uint64{"2024-01-02 00:00:00": 3, "2024-01-03 00:00:00": 3}
+	cases := []struct {
+		grain runtimev1.TimeGrain
+		want  map[string]uint64
+	}{
+		{grain: runtimev1.TimeGrain_TIME_GRAIN_HOUR, want: daily},
+		{grain: runtimev1.TimeGrain_TIME_GRAIN_MINUTE, want: daily},
+		{grain: runtimev1.TimeGrain_TIME_GRAIN_DAY, want: daily},
+		{grain: runtimev1.TimeGrain_TIME_GRAIN_MONTH, want: map[string]uint64{"2024-01-01 00:00:00": 6}},
+	}
+	for _, col := range []string{"d", "d32"} {
+		dim := &runtimev1.MetricsViewSpec_Dimension{Name: col, Column: col, DataType: &runtimev1.Type{Code: runtimev1.Type_CODE_DATE}}
+		for _, c := range cases {
+			expr, err := olap.Dialect().DateTruncExpr(dim, c.grain, "UTC", 1, 1)
+			require.NoError(t, err)
+
+			rows, err := olap.Query(ctx, &drivers.Statement{Query: fmt.Sprintf("SELECT %s AS t, sum(v) AS v FROM date_trunc_dates GROUP BY 1 ORDER BY 1", expr)})
+			require.NoError(t, err, "column %s at grain %s", col, c.grain)
+			require.Equal(t, runtimev1.Type_CODE_TIMESTAMP, rows.Schema.Fields[0].Type.Code)
+
+			got := map[string]uint64{}
+			for rows.Next() {
+				var ts time.Time
+				var v uint64
+				require.NoError(t, rows.Scan(&ts, &v))
+				got[ts.UTC().Format(time.DateTime)] = v
+			}
+			require.NoError(t, rows.Close())
+			require.Equal(t, c.want, got, "column %s at grain %s", col, c.grain)
+		}
+	}
 }
