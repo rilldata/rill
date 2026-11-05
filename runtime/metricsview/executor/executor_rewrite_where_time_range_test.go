@@ -42,6 +42,7 @@ func TestRewriteQueryWhereTimeRange(t *testing.T) {
 		{name: "mirrored", filter: "'2024-01-01T00:00:00Z' <= timestamp AND '2024-02-01T00:00:00Z' > timestamp", wantStart: jan1, wantEnd: feb1, wantMoved: true},
 		{name: "offset_converted_to_utc", filter: "timestamp >= '2024-01-01T05:30:00+05:30'", wantStart: jan1, wantMoved: true},
 		{name: "time_value", where: cond(metricsview.OperatorGte, name("timestamp"), val(jan1.In(ist))), wantStart: jan1, wantMoved: true},
+		{name: "no_time_filter", filter: "publisher = 'Google' AND domain = 'news.com'"},
 		{name: "other_operators_stay", filter: "timestamp > '2024-01-01T00:00:00Z' AND timestamp <= '2024-02-01T00:00:00Z'"},
 		{name: "or_stays", filter: "timestamp >= '2024-01-01T00:00:00Z' OR publisher = 'Google'"},
 		{name: "value_without_zone_stays", filter: "timestamp >= '2024-01-01' AND publisher = 'Google'"},
