@@ -66,7 +66,8 @@ const (
 //  3. Time coverage: an eligible rollup must cover both the base and (when present) comparison time ranges.
 //     An open start or end (including a query without a time range) is checked against the base table's min or max.
 //     The query range is clamped to the widest available source: the start to min(baseMin, rollupMin) and
-//     the end to max(baseMax, rollupEffEnd). So a rollup that extends further back (or forward) than the
+//     the end to max(baseMax, rollupEffEnd), where the base data is treated as ending just after its last row (baseMax),
+//     since rollupEffEnd is exclusive. So a rollup that extends further back (or forward) than the
 //     base is preserved here, not rejected. Additionally, if the base table has data beyond the query range's end,
 //     that end must be aligned to the rollup grain (to prevent the last bucket from pulling in extra data).
 //
@@ -232,25 +233,15 @@ func (e *Executor) rewriteQueryForRollup(ctx context.Context, qry *metricsview.Q
 		rollupEffEnd := timeutil.OffsetTime(rollupMax, timeutil.TimeGrainFromAPI(rollup.TimeGrain), 1, rollupLoc)
 
 		// Check coverage for the base time range and the comparison time range when present.
-		// An open start or end (including a query without a time range) is replaced with the base table's min or max,
-		// so the rollup must still cover the base table's data on that side; otherwise a partial rollup would silently truncate the result.
-		withBaseBounds := func(tr *metricsview.TimeRange) *metricsview.TimeRange {
-			res := &metricsview.TimeRange{Start: baseMin, End: baseMax}
-			if tr != nil && !tr.Start.IsZero() {
-				res.Start = tr.Start
-			}
-			if tr != nil && !tr.End.IsZero() {
-				res.End = tr.End
-			}
-			return res
-		}
+		// An open start or end (including a query without a time range) must be covered up to the edge of the data;
+		// otherwise a partial rollup would silently truncate the result.
 		rangeRejected := false
-		if reason, attrs := checkRangeCoverage(withBaseBounds(qry.TimeRange), baseMin, baseMax, rollupMin, rollupEffEnd); reason != "" {
+		if reason, attrs := checkRangeCoverage(qry.TimeRange, baseMin, baseMax, rollupMin, rollupEffEnd); reason != "" {
 			rejectCandidate(reason, attrs...)
 			rangeRejected = true
 		}
 		if !rangeRejected && hasComparisonTimeRange {
-			if reason, attrs := checkRangeCoverage(withBaseBounds(qry.ComparisonTimeRange), baseMin, baseMax, rollupMin, rollupEffEnd); reason != "" {
+			if reason, attrs := checkRangeCoverage(qry.ComparisonTimeRange, baseMin, baseMax, rollupMin, rollupEffEnd); reason != "" {
 				rejectCandidate(reason, attrs...)
 				rangeRejected = true
 			}
@@ -536,24 +527,31 @@ func collectWhereDimensionsRec(expr *metricsview.Expression, dims map[string]boo
 }
 
 // checkRangeCoverage verifies that the rollup covers the given time range. The query range is clamped to the widest
-// available data range — i.e. min(baseMin, rollupMin) on the start and max(baseMax, rollupEffEnd) on the end
+// available data range — i.e. min(baseMin, rollupMin) on the start and max(baseEnd, rollupEffEnd) on the end
 // so a rollup isn't rejected when the query asks for data outside what either source can serve.
+// A nil range or an open (zero) start or end extends to the edge of that data range.
 // Returns the reject reason and trace attributes, or "" if covered.
 func checkRangeCoverage(tr *metricsview.TimeRange, baseMin, baseMax, rollupMin, rollupEffEnd time.Time) (string, []attribute.KeyValue) {
+	if tr == nil {
+		tr = &metricsview.TimeRange{}
+	}
 	deepestStart := baseMin
 	if rollupMin.Before(baseMin) {
 		deepestStart = rollupMin
 	}
 	effectiveStart := tr.Start
-	if !effectiveStart.IsZero() && deepestStart.After(effectiveStart) {
+	if effectiveStart.IsZero() || deepestStart.After(effectiveStart) {
 		effectiveStart = deepestStart
 	}
-	furthestEnd := baseMax
-	if rollupEffEnd.After(baseMax) {
+	// baseMax is the timestamp of the last row, so it is inclusive, while rollupEffEnd is exclusive.
+	// Treat the base data as ending just after baseMax, so a rollup must end strictly after the last base row to cover it.
+	baseEnd := baseMax.Add(time.Nanosecond)
+	furthestEnd := baseEnd
+	if rollupEffEnd.After(baseEnd) {
 		furthestEnd = rollupEffEnd
 	}
 	effectiveEnd := tr.End
-	if !effectiveEnd.IsZero() && effectiveEnd.After(furthestEnd) {
+	if effectiveEnd.IsZero() || effectiveEnd.After(furthestEnd) {
 		effectiveEnd = furthestEnd
 	}
 	if !effectiveStart.IsZero() && rollupMin.After(effectiveStart) {

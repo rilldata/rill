@@ -1241,6 +1241,70 @@ explore:
 		})
 	})
 
+	t.Run("base_row_at_rollup_end", func(t *testing.T) {
+		// The base table has one row per day at midnight, from Monday Jan 1 to Monday Jan 8.
+		// The weekly rollup only has the week of Jan 1, so its effective end (Jan 8) equals the base table's last row.
+		// Any range that includes that row must not use the rollup.
+		files := map[string]string{
+			"rill.yaml": "",
+			"models/base_events.sql": `
+SELECT ts AS timestamp, 10 AS impressions
+FROM generate_series(TIMESTAMP '2024-01-01 00:00:00', TIMESTAMP '2024-01-08 00:00:00', INTERVAL '1 DAY') t(ts)
+`,
+			"models/rollup_week.sql": `
+SELECT date_trunc('week', timestamp) AS timestamp, SUM(impressions) AS impressions
+FROM base_events WHERE timestamp < TIMESTAMP '2024-01-08' GROUP BY 1
+`,
+			"metrics_views/mv.yaml": `
+type: metrics_view
+version: 1
+model: base_events
+timeseries: timestamp
+measures:
+  - name: total_impressions
+    expression: 'SUM("impressions")'
+rollups:
+  - model: rollup_week
+    time_grain: week
+    measures: [total_impressions]
+explore:
+  skip: true
+`,
+		}
+		customRT, customID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{Files: files})
+		testruntime.RequireReconcileState(t, customRT, customID, 4, 0, 0)
+
+		jan1 := time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)
+		jan8 := time.Date(2024, 1, 8, 0, 0, 0, 0, time.UTC)
+		jan15 := time.Date(2024, 1, 15, 0, 0, 0, 0, time.UTC)
+		cases := []struct {
+			name      string
+			timeRange *metricsview.TimeRange
+			want      string
+		}{
+			{name: "no_time_range", timeRange: nil, want: "base_events"},
+			{name: "open_end", timeRange: &metricsview.TimeRange{Start: jan1}, want: "base_events"},
+			{name: "end_past_data", timeRange: &metricsview.TimeRange{Start: jan1, End: jan15}, want: "base_events"},
+			// The exclusive end leaves out the last row, so the rollup covers the range
+			{name: "end_before_last_row", timeRange: &metricsview.TimeRange{Start: jan1, End: jan8}, want: "rollup_week"},
+		}
+		for _, tc := range cases {
+			t.Run(tc.name, func(t *testing.T) {
+				e := newRollupTestExecutor(t, customRT, customID)
+				defer e.Close()
+
+				qry := &metricsview.Query{
+					Dimensions: []metricsview.Dimension{
+						{Name: "time_bucket", Compute: &metricsview.DimensionCompute{TimeFloor: &metricsview.DimensionComputeTimeFloor{Dimension: "timestamp", Grain: metricsview.TimeGrainWeek}}},
+					},
+					Measures:  []metricsview.Measure{{Name: "total_impressions"}},
+					TimeRange: tc.timeRange,
+				}
+				require.Equal(t, tc.want, queryAndGetTable(t, e, qry))
+			})
+		}
+	})
+
 	t.Run("data_time_range", func(t *testing.T) {
 		t.Run("hot_cold_split", func(t *testing.T) {
 			// Two day-grain rollups with disjoint declared ranges. Distinct physical tables so the
