@@ -357,10 +357,6 @@ func (e *Executor) Query(ctx context.Context, qry *metricsview.Query, executionT
 		return nil, err
 	}
 
-	if err := e.rewriteQueryDedupeDimensions(qry); err != nil {
-		return nil, err
-	}
-
 	if err := e.rewriteQueryExactMeasures(qry); err != nil {
 		return nil, err
 	}
@@ -517,10 +513,6 @@ func (e *Executor) Export(ctx context.Context, qry *metricsview.Query, execution
 
 	err := qry.Validate()
 	if err != nil {
-		return "", err
-	}
-
-	if err := e.rewriteQueryDedupeDimensions(qry); err != nil {
 		return "", err
 	}
 
