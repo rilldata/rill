@@ -220,9 +220,6 @@ func (s *Server) Complete(ctx context.Context, req *runtimev1.CompleteRequest) (
 	ctx, cancel := context.WithTimeout(ctx, time.Duration(cfg.AICompletionTimeoutSeconds)*time.Second)
 	defer cancel()
 
-	// Tag as chat so the agent's queries are attributed to the "chat" source (overrides the "ui" tag the gRPC
-	// interceptor sets, and covers the SSE HTTP handler which bypasses that interceptor).
-	ctx = runtime.WithRequestSource(ctx, runtime.RequestSourceChat)
 	// req.UiPagePath is deprecated and intentionally not read: the agents learn what the user is viewing from the analyst and developer contexts.
 	ctx = ai.WithUIContext(ctx, s.uiContextFromPB(req.UiActions))
 
@@ -341,9 +338,6 @@ func (s *Server) CompleteStreaming(req *runtimev1.CompleteStreamingRequest, stre
 	ctx, cancel := context.WithTimeout(stream.Context(), time.Duration(cfg.AICompletionTimeoutSeconds)*time.Second)
 	defer cancel()
 
-	// Tag as chat so the agent's queries are attributed to the "chat" source (overrides the "ui" tag the gRPC
-	// interceptor sets, and covers the SSE HTTP handler which bypasses that interceptor).
-	ctx = runtime.WithRequestSource(ctx, runtime.RequestSourceChat)
 	// req.UiPagePath is deprecated and intentionally not read: the agents learn what the user is viewing from the analyst and developer contexts.
 	ctx = ai.WithUIContext(ctx, s.uiContextFromPB(req.UiActions))
 
