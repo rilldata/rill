@@ -61,6 +61,7 @@ SELECT date_trunc('month', timestamp) AS timestamp, publisher, domain,
 	SUM(impressions) AS impressions, SUM(clicks) AS clicks
 FROM base_events GROUP BY 1, 2, 3
 `,
+		// The rollups list the time dimension, like rollups with default or '*' dimensions do; it must still not be treated as a regular rollup dimension.
 		"metrics_views/mv.yaml": `
 type: metrics_view
 version: 1
@@ -82,6 +83,7 @@ rollups:
   - model: rollup_day
     time_grain: day
     dimensions:
+      - timestamp
       - publisher
       - domain
     measures:
@@ -90,6 +92,7 @@ rollups:
   - model: rollup_week
     time_grain: week
     dimensions:
+      - timestamp
       - publisher
       - domain
     measures:
@@ -98,6 +101,7 @@ rollups:
   - model: rollup_month
     time_grain: month
     dimensions:
+      - timestamp
       - publisher
       - domain
     measures:
@@ -798,7 +802,8 @@ explore:
 
 	t.Run("where_time_bounds", func(t *testing.T) {
 		// Queries compiled from metrics SQL (e.g. custom APIs) bound time in the WHERE clause instead of the time range.
-		// Simple `>=` and `<` bounds on the primary time dimension should route like the equivalent time range.
+		// Simple `>=` and `<` bounds on the primary time dimension are moved into the time range, so they route like it.
+		// Other references to the time dimension stay in the WHERE, where the rollup's WHERE dimension check rejects them.
 		whereQuery := func(t *testing.T, filter string, grain metricsview.TimeGrain) *metricsview.Query {
 			where, err := metricssql.ParseFilter(filter)
 			require.NoError(t, err)
@@ -867,12 +872,6 @@ explore:
 				filter: "timestamp >= '2024-01-01T00:00:00+00:00' AND timestamp < '2024-01-15T00:00:00+00:00'",
 				grain:  metricsview.TimeGrainDay,
 				want:   rollupTestDailyTable,
-			},
-			{
-				// 01:00+01:00 is midnight UTC, but DuckDB ignores the offset when comparing with a TIMESTAMP column
-				name:   "non_utc_offset",
-				filter: "timestamp >= '2024-01-01T01:00:00+01:00' AND timestamp < '2024-02-01T01:00:00+01:00'",
-				want:   rollupTestBaseTable,
 			},
 			{
 				name:   "value_without_zone",
@@ -971,12 +970,50 @@ explore:
 			require.Equal(t, rollupTestBaseTable, queryAndGetTable(t, e, qry))
 		})
 
+		t.Run("non_utc_offset_matches_base", func(t *testing.T) {
+			e := newRollupTestExecutor(t, rt, instanceID)
+			defer e.Close()
+			ctx := context.Background()
+
+			// 01:00+01:00 is midnight UTC. Moved into the time range, the bounds are passed as typed timestamps, so the offset is honored
+			// (DuckDB ignores it when comparing a string with a TIMESTAMP column, which would select February's bucket instead).
+			qry := whereQuery(t, "timestamp >= '2024-01-01T01:00:00+01:00' AND timestamp < '2024-02-01T01:00:00+01:00'", metricsview.TimeGrainUnspecified)
+			qry.Dimensions = nil
+			res, err := e.Query(ctx, qry, nil)
+			require.NoError(t, err)
+			defer res.Close()
+			require.Equal(t, rollupTestMonthTable, e.LatestQueryTable())
+
+			var impressions float64
+			require.True(t, res.Next())
+			require.NoError(t, res.Scan(&impressions))
+			require.NoError(t, res.Err())
+			// January: 744 hours * 10 impressions
+			require.Equal(t, float64(7440), impressions)
+		})
+
+		t.Run("plain_time_dimension_falls_to_base", func(t *testing.T) {
+			e := newRollupTestExecutor(t, rt, instanceID)
+			defer e.Close()
+
+			// The rollup's time column is truncated to its grain, so it can't serve the raw time dimension
+			qry := &metricsview.Query{
+				Dimensions: []metricsview.Dimension{{Name: "timestamp"}},
+				Measures:   []metricsview.Measure{{Name: "total_impressions"}},
+				TimeRange: &metricsview.TimeRange{
+					Start: time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC),
+					End:   time.Date(2024, 2, 1, 0, 0, 0, 0, time.UTC),
+				},
+			}
+			require.Equal(t, rollupTestBaseTable, queryAndGetTable(t, e, qry))
+		})
+
 		t.Run("with_time_range_falls_to_base", func(t *testing.T) {
 			e := newRollupTestExecutor(t, rt, instanceID)
 			defer e.Close()
 
-			// WHERE bounds are only used when the query has no time range.
-			// Here the time range alone would be eligible, but the unaligned WHERE start is not checked, so the rollup must not be used.
+			// WHERE bounds are only moved when the query has no time range.
+			// Here the time range alone would be eligible, but the unaligned WHERE start stays in the WHERE, so the rollup must not be used.
 			qry := whereQuery(t, "timestamp >= '2024-01-15T12:00:00Z' AND timestamp < '2024-02-01T00:00:00Z'", metricsview.TimeGrainUnspecified)
 			qry.TimeRange = &metricsview.TimeRange{
 				Start: time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC),
@@ -1574,6 +1611,37 @@ explore:
 			}
 			table := queryAndGetTable(t, e, qry)
 			require.Equal(t, rollupTestMonthTable, table)
+		})
+
+		t.Run("comparison_open_end_not_covered_by_weekly", func(t *testing.T) {
+			// The comparison range has no end, so the rollup must cover the base data up to its max (March 31).
+			// The weekly rollup stops at the end of February, so it is rejected and daily is selected.
+			e := newRollupTestExecutor(t, rt, instanceID)
+			defer e.Close()
+
+			qry := &metricsview.Query{
+				Dimensions: []metricsview.Dimension{
+					{Name: "timestamp", Compute: &metricsview.DimensionCompute{TimeFloor: &metricsview.DimensionComputeTimeFloor{Dimension: "timestamp", Grain: metricsview.TimeGrainWeek}}},
+				},
+				Measures: []metricsview.Measure{
+					{Name: "total_impressions"},
+					{
+						Name: "prev_impressions",
+						Compute: &metricsview.MeasureCompute{
+							ComparisonValue: &metricsview.MeasureComputeComparisonValue{Measure: "total_impressions"},
+						},
+					},
+				},
+				TimeRange: &metricsview.TimeRange{
+					Start: time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC),
+					End:   time.Date(2024, 2, 5, 0, 0, 0, 0, time.UTC),
+				},
+				ComparisonTimeRange: &metricsview.TimeRange{
+					Start: time.Date(2024, 2, 5, 0, 0, 0, 0, time.UTC),
+				},
+			}
+			table := queryAndGetTable(t, e, qry)
+			require.Equal(t, rollupTestDailyTable, table)
 		})
 
 		t.Run("monthly_comparison_matches_base", func(t *testing.T) {
