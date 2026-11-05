@@ -22,6 +22,7 @@ import {
   getAllIdentifiers,
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
+import { validateAndCleanExploreState } from "@rilldata/web-common/features/dashboards/stores/validate-and-clean-explore-state";
 import { TDDChart } from "@rilldata/web-common/features/dashboards/time-dimension-details/types";
 import { getMapFromArray } from "@rilldata/web-common/lib/arrayUtils";
 import {
@@ -247,6 +248,10 @@ export function getDashboardStateFromProto(
   }
 
   Object.assign(entity, fromActivePageProto(dashboard));
+
+  // The proto was saved against an older spec, so drop any field it names that no longer exists.
+  // Anything removed is filled in from the other sources of explore state.
+  validateAndCleanExploreState(metricsView, explore, entity);
 
   return entity;
 }

@@ -734,9 +734,9 @@ async function runTest({
     source.timeRangeSummary,
   );
   const exploreStateFromYAMLConfig = getExploreStateFromYAMLConfig(
+    source.metricsView,
     source.explore,
     source.timeRangeSummary,
-    source.metricsView.smallestTimeGrain,
   );
   const expectedExploreState = {
     ...rillDefaultExploreState,

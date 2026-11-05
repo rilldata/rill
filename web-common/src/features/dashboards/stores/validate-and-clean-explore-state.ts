@@ -2,7 +2,16 @@ import {
   injectEphemeralMeasuresIntoMap,
   validateEphemeralDefsAgainstSpec,
 } from "@rilldata/web-common/features/dashboards/ephemeral-measures/url-state";
+import { stripMeasureSuffix } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
+import {
+  type PivotChipData,
+  PivotChipType,
+} from "@rilldata/web-common/features/dashboards/pivot/types";
 import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
+import {
+  createAndExpression,
+  filterIdentifiers,
+} from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import {
   getMultiFieldError,
   getSingleFieldError,
@@ -11,12 +20,44 @@ import {
   getMapFromArray,
   getMissingValues,
 } from "@rilldata/web-common/lib/arrayUtils";
+import { DashboardState_ActivePage } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
 import {
   type MetricsViewSpecDimension,
   type MetricsViewSpecMeasure,
   type V1ExploreSpec,
+  type V1Expression,
   type V1MetricsViewSpec,
+  V1Operation,
 } from "@rilldata/web-common/runtime-client";
+
+export type ExploreFieldNames = {
+  measures: string[];
+  dimensions: string[];
+};
+
+/**
+ * Names from the explore spec's measure and dimension lists that the metrics view spec also defines,
+ * in the explore's order.
+ * The two specs can disagree: when changes are staged, the runtime keeps serving an explore's last valid spec
+ * after its metrics view dropped a field, and a query for that field fails.
+ * So state built from the explore spec must only use the names returned here.
+ */
+export function getExploreFieldNames(
+  metricsViewSpec: V1MetricsViewSpec,
+  exploreSpec: V1ExploreSpec,
+): ExploreFieldNames {
+  const measureNames = new Set(
+    metricsViewSpec.measures?.map((m) => m.name) ?? [],
+  );
+  const dimensionNames = new Set(
+    metricsViewSpec.dimensions?.map((d) => d.name) ?? [],
+  );
+  return {
+    measures: exploreSpec.measures?.filter((m) => measureNames.has(m)) ?? [],
+    dimensions:
+      exploreSpec.dimensions?.filter((d) => dimensionNames.has(d)) ?? [],
+  };
+}
 
 /**
  * Validates various fields in explore state.
@@ -49,6 +90,10 @@ export function validateAndCleanExploreState(
     ) ?? [],
     (d) => d.name!,
   );
+  // Time dimensions cannot be filtered, compared, expanded or pivoted on.
+  const nonTimeDimensions = new Map(
+    [...dimensions].filter(([, d]) => d.type !== "DIMENSION_TYPE_TIME"),
+  );
 
   // Validate restored ephemeral measures and treat the valid ones as known
   // measure names for the validations below.
@@ -72,6 +117,183 @@ export function validateAndCleanExploreState(
     exploreState,
   );
   errors.push(...errorsFromExploreView);
+
+  if (exploreState.whereFilter) {
+    const { expr, errors: filterErrors } = dropUnknownFieldsFromFilter(
+      exploreState.whereFilter,
+      measures,
+      dimensions,
+    );
+    exploreState.whereFilter = expr;
+    errors.push(...filterErrors);
+  }
+
+  errors.push(
+    ...validateAndCleanSelectedFields(
+      measures,
+      nonTimeDimensions,
+      exploreState,
+    ),
+  );
+
+  return errors;
+}
+
+/**
+ * Drops the conditions of a filter that reference a field missing from the given maps,
+ * and the measures a measure filter selects that are missing.
+ * Time dimensions cannot be filtered on, so they count as missing.
+ * IN and NIN conditions and measure filters (a subquery grouped by a dimension) are certainly on a dimension,
+ * so their missing fields are reported apart from the rest.
+ * Shared by the url parser, the preset converter and the explore state cleaner
+ * so that a stale filter is handled the same way everywhere.
+ */
+export function dropUnknownFieldsFromFilter(
+  expr: V1Expression,
+  measures: Map<string, MetricsViewSpecMeasure>,
+  dimensions: Map<string, MetricsViewSpecDimension>,
+) {
+  const isKnownMeasure = (name: string) =>
+    measures.has(name) || measures.has(stripMeasureSuffix(name));
+  const isKnownDimension = (name: string) =>
+    dimensions.has(name) &&
+    dimensions.get(name)?.type !== "DIMENSION_TYPE_TIME";
+
+  // Sets, since a stale measure in a measure filter is found both in its HAVING clause and in its measure list.
+  const missingDimensions = new Set<string>();
+  const missingFields = new Set<string>();
+  const cleanedExpr =
+    filterIdentifiers(expr, (e, ident) => {
+      if (
+        e.cond?.op === V1Operation.OPERATION_IN ||
+        e.cond?.op === V1Operation.OPERATION_NIN ||
+        !!e.subquery
+      ) {
+        if (!isKnownDimension(ident)) {
+          missingDimensions.add(ident);
+          return false;
+        }
+        if (e.subquery?.measures) {
+          // The subquery's HAVING clause is cleaned by now,
+          // but the runtime resolves every measure the subquery selects, used or not.
+          // `e` is a copy made by filterIdentifiers, so replacing its subquery leaves the input as is.
+          const subqueryMeasures = e.subquery.measures.filter(isKnownMeasure);
+          getMissingValues(subqueryMeasures, e.subquery.measures).forEach((m) =>
+            missingFields.add(m),
+          );
+          e.subquery = { ...e.subquery, measures: subqueryMeasures };
+        }
+        return true;
+      }
+
+      if (isKnownMeasure(ident) || isKnownDimension(ident)) {
+        return true;
+      }
+      missingFields.add(ident);
+      return false;
+    }) ?? createAndExpression([]);
+
+  const errors: Error[] = [];
+  if (missingDimensions.size) {
+    errors.push(getMultiFieldError("filter dimension", [...missingDimensions]));
+  }
+  if (missingFields.size) {
+    errors.push(getMultiFieldError("filter field", [...missingFields]));
+  }
+  return { expr: cleanedExpr, errors };
+}
+
+/**
+ * Cleans the fields selected for comparison, the dimension table, time dimension details and the pivot.
+ * A view that was opened on a field that no longer exists is reset to the default view.
+ *
+ * Note: Modifies exploreState in place, like the rest of the validations here.
+ */
+function validateAndCleanSelectedFields(
+  measures: Map<string, MetricsViewSpecMeasure>,
+  dimensions: Map<string, MetricsViewSpecDimension>,
+  exploreState: Partial<ExploreState>,
+) {
+  const errors: Error[] = [];
+
+  if (
+    exploreState.selectedComparisonDimension &&
+    !dimensions.has(exploreState.selectedComparisonDimension)
+  ) {
+    errors.push(
+      getSingleFieldError(
+        "compare dimension",
+        exploreState.selectedComparisonDimension,
+      ),
+    );
+    delete exploreState.selectedComparisonDimension;
+  }
+
+  if (
+    exploreState.selectedDimensionName &&
+    !dimensions.has(exploreState.selectedDimensionName)
+  ) {
+    errors.push(
+      getSingleFieldError(
+        "expanded dimension",
+        exploreState.selectedDimensionName,
+      ),
+    );
+    delete exploreState.selectedDimensionName;
+    if (exploreState.activePage === DashboardState_ActivePage.DIMENSION_TABLE) {
+      exploreState.activePage = DashboardState_ActivePage.DEFAULT;
+    }
+  }
+
+  if (
+    exploreState.tdd?.expandedMeasureName &&
+    !measures.has(exploreState.tdd.expandedMeasureName)
+  ) {
+    errors.push(
+      getSingleFieldError(
+        "expanded measure",
+        exploreState.tdd.expandedMeasureName,
+      ),
+    );
+    exploreState.tdd.expandedMeasureName = "";
+    if (
+      exploreState.activePage ===
+      DashboardState_ActivePage.TIME_DIMENSIONAL_DETAIL
+    ) {
+      exploreState.activePage = DashboardState_ActivePage.DEFAULT;
+    }
+  }
+
+  if (exploreState.pivot) {
+    const isKnownChip = (chip: PivotChipData) => {
+      switch (chip.type) {
+        case PivotChipType.Time:
+          return true;
+        case PivotChipType.Measure:
+          return measures.has(chip.id);
+        default:
+          return dimensions.has(chip.id);
+      }
+    };
+    const rows = exploreState.pivot.rows?.filter(isKnownChip) ?? [];
+    const missingRows = getMissingValues(
+      rows.map((r) => r.id),
+      exploreState.pivot.rows?.map((r) => r.id) ?? [],
+    );
+    if (missingRows.length) {
+      errors.push(getMultiFieldError("pivot row", missingRows));
+      exploreState.pivot.rows = rows;
+    }
+    const columns = exploreState.pivot.columns?.filter(isKnownChip) ?? [];
+    const missingColumns = getMissingValues(
+      columns.map((c) => c.id),
+      exploreState.pivot.columns?.map((c) => c.id) ?? [],
+    );
+    if (missingColumns.length) {
+      errors.push(getMultiFieldError("pivot column", missingColumns));
+      exploreState.pivot.columns = columns;
+    }
+  }
 
   return errors;
 }

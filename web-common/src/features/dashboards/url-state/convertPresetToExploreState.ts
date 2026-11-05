@@ -10,6 +10,7 @@ import {
 } from "@rilldata/web-common/features/dashboards/pivot/types";
 import { SortDirection } from "@rilldata/web-common/features/dashboards/proto-state/derived-types";
 import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
+import { dropUnknownFieldsFromFilter } from "@rilldata/web-common/features/dashboards/stores/validate-and-clean-explore-state";
 import { TDDChart } from "@rilldata/web-common/features/dashboards/time-dimension-details/types";
 import {
   getMultiFieldError,
@@ -91,8 +92,16 @@ export function convertPresetToExploreState(
   }
 
   if (preset.where) {
-    partialExploreState.whereFilter = preset.where;
+    // The url parser cleans its filter param already,
+    // but the filter of a legacy `state` param or of a default preset can name a field the metrics view dropped.
+    const { expr, errors: filterErrors } = dropUnknownFieldsFromFilter(
+      preset.where,
+      measures,
+      dimensions,
+    );
+    partialExploreState.whereFilter = expr;
     partialExploreState.dimensionThresholdFilters = [];
+    errors.push(...filterErrors);
   }
   if (preset.dimensionsWithInlistFilter) {
     partialExploreState.dimensionsWithInlistFilter =
@@ -316,8 +325,21 @@ function fromExploreUrlParams(
   }
 
   if (preset.exploreLeaderboardMeasures !== undefined) {
-    partialExploreState.leaderboardMeasureNames =
-      preset.exploreLeaderboardMeasures;
+    // The url parser validates these already, but a default preset built from the explore spec
+    // can name a measure the metrics view dropped.
+    const leaderboardMeasures = preset.exploreLeaderboardMeasures.filter((m) =>
+      measures.has(m),
+    );
+    const missingLeaderboardMeasures = getMissingValues(
+      leaderboardMeasures,
+      preset.exploreLeaderboardMeasures,
+    );
+    if (missingLeaderboardMeasures.length) {
+      errors.push(
+        getMultiFieldError("leaderboard measure", missingLeaderboardMeasures),
+      );
+    }
+    partialExploreState.leaderboardMeasureNames = leaderboardMeasures;
   }
 
   if (preset.exploreLeaderboardShowContextForAllMeasures !== undefined) {
