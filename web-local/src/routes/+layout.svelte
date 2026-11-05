@@ -16,6 +16,7 @@
     errorEventHandler,
     initMetrics,
   } from "@rilldata/web-common/metrics/initMetrics";
+  import { installResizeObserverTracker } from "@rilldata/web-common/metrics/resize-observer-tracker";
   import { isDeployPage } from "@rilldata/web-common/layout/navigation/route-utils";
   import { previewModeStore } from "@rilldata/web-common/layout/preview-mode-store";
   import { LOCAL_HOST, LOCAL_INSTANCE_ID } from "../lib/runtime-client";
@@ -36,6 +37,9 @@
   export let data: LayoutData;
 
   const { deploy } = featureFlags;
+
+  // Before any component mounts, so ResizeObserver loop notices in error telemetry can name the callbacks that preceded them
+  installResizeObserverTracker();
 
   queryClient.getQueryCache().config.onError = (error: unknown, query: Query) =>
     errorEventHandler?.requestErrorEventHandler(error, query);
