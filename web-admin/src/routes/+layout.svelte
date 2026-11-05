@@ -25,6 +25,7 @@
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus.ts";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import { errorEventHandler } from "@rilldata/web-common/metrics/initMetrics";
+  import { installResizeObserverTracker } from "@rilldata/web-common/metrics/resize-observer-tracker";
   import { type Query, QueryClientProvider } from "@tanstack/svelte-query";
   import { onMount } from "svelte";
   import ErrorBoundary from "../components/errors/ErrorBoundary.svelte";
@@ -38,6 +39,8 @@
   export let data;
 
   initializeI18n();
+  // Before any component mounts, so ResizeObserver loop notices in error telemetry can name the callbacks that preceded them
+  installResizeObserverTracker();
 
   $: ({
     organizationPermissions,
