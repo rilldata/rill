@@ -153,17 +153,19 @@ export type DashboardPathContext = {
 
 /**
  * Returns the path of an explore or canvas dashboard.
+ * The dashboard name is escaped, so names with characters like `#` or `?` don't break the URL when the path is concatenated with a query.
  */
 export function getDashboardPath(
   { organization, project, token, embedded }: DashboardPathContext,
   kind: "explore" | "canvas",
   name: string,
 ) {
-  if (embedded) return `/-/embed/${kind}/${name}`;
+  const escapedName = encodeURIComponent(name);
+  if (embedded) return `/-/embed/${kind}/${escapedName}`;
   if (token) {
-    return `/${organization}/${project}/-/share/${token}/${kind}/${name}`;
+    return `/${organization}/${project}/-/share/${token}/${kind}/${escapedName}`;
   }
-  return `/${organization}/${project}/${kind}/${name}`;
+  return `/${organization}/${project}/${kind}/${escapedName}`;
 }
 
 /**

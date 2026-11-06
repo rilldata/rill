@@ -59,6 +59,16 @@ describe("getDashboardPath", () => {
     expect(getDashboardPath(ctx, "explore", "e")).toBe("/-/embed/explore/e");
     expect(getDashboardPath(ctx, "canvas", "c")).toBe("/-/embed/canvas/c");
   });
+
+  it("escapes the dashboard name", () => {
+    const ctx = { organization: "org", project: "proj" };
+    expect(getDashboardPath(ctx, "explore", "sales#2026")).toBe(
+      "/org/proj/explore/sales%232026",
+    );
+    expect(getDashboardPath(ctx, "canvas", "sales?region")).toBe(
+      "/org/proj/canvas/sales%3Fregion",
+    );
+  });
 });
 
 describe("getSpecQuery", () => {
