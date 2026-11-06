@@ -1,5 +1,6 @@
-import { navigating, page, updated } from "$app/state";
+import { navigating, updated } from "$app/state";
 import { EmbedStore } from "@rilldata/web-common/features/embeds/embed-store.ts";
+import type { BeforeNavigate } from "@sveltejs/kit";
 
 /**
  * Recovers tabs that are still running a previous build after a deploy.
@@ -11,12 +12,14 @@ import { EmbedStore } from "@rilldata/web-common/features/embeds/embed-store.ts"
  * Dynamic `import()` calls in app and library code (lazily loaded dialogs, Prism, jsPDF, ...) reject as
  * unhandled errors and leave the page half-broken until the user reloads it.
  *
- * Vite dispatches `vite:preloadError` on `window` for every failed dynamic import and CSS preload.
- * This listens for that event, confirms through SvelteKit's version check that a new build was deployed,
- * and does a single full-page navigation to pick it up.
+ * Two parts cover this:
+ * - `navigateToNewBuild` is SvelteKit's documented pattern: once polling (`kit.version.pollInterval`)
+ *   has found a newer build, the next client-side navigation becomes a full page load into it.
+ * - `registerStaleBuildReload` is the backstop for imports that fail before polling noticed the deploy,
+ *   most of them inside a page, with no navigation to hook into.
  *
  * Embeds are left as they are: they keep their access token in memory and strip it from the page URL,
- * so a full-page navigation would lose it. SvelteKit's own recovery has the same limitation there.
+ * so a full page load would lose it. SvelteKit's own recovery has the same limitation there.
  */
 
 /** Minimum time between two automatic reloads of a tab, so a build that keeps failing cannot cause a reload loop. */
@@ -24,55 +27,45 @@ export const STALE_BUILD_RELOAD_COOLDOWN_MS = 60_000;
 
 const STALE_BUILD_RELOAD_AT_KEY = "rill:stale-build-reload-at";
 
-export type StaleBuildReloadDeps = {
-  /** Resolves to true when a newer build than the running one has been deployed. */
-  isUpdated: () => Promise<boolean>;
-  /** The page to load, or null when the page must not be reloaded. */
-  getReloadUrl: () => URL | null;
-  /** Does a full-page navigation to the URL. */
-  navigate: (url: URL) => void;
-  /** Keeps the time of the last reload across reloads of the tab. */
-  storage: Pick<Storage, "getItem" | "setItem">;
-  now: () => number;
-};
+/** For `beforeNavigate` in the root layout: turns the navigation into a full page load once a newer build is deployed. */
+export function navigateToNewBuild({ to, willUnload }: BeforeNavigate) {
+  if (!updated.current || willUnload || !to || EmbedStore.isEmbedded()) {
+    return;
+  }
+  loadPage(to.url);
+}
 
-export function createStaleBuildReloadHandler(deps: StaleBuildReloadDeps) {
+/**
+ * Listens for Vite's `vite:preloadError`, which it dispatches on `window` for every failed dynamic import and CSS preload,
+ * confirms through SvelteKit's version check that a newer build is deployed,
+ * and does one full page load to the destination of an in-flight navigation, otherwise of the current page.
+ * Returns a function that removes the listener.
+ */
+export function registerStaleBuildReload(): () => void {
   let checking = false;
-  // Fallback for when storage is unavailable, for example in an iframe that is denied storage access.
+  // Fallback for when storage access is denied, for example when the user blocks all site data.
   let lastReloadInMemory: number | null = null;
 
-  function readLastReload(): number | null {
-    try {
-      const value = Number(deps.storage.getItem(STALE_BUILD_RELOAD_AT_KEY));
-      if (value > 0) return value;
-    } catch {
-      // Storage access is denied; fall through to the in-memory value.
-    }
-    return lastReloadInMemory;
-  }
-
-  function writeLastReload(at: number) {
-    lastReloadInMemory = at;
-    try {
-      deps.storage.setItem(STALE_BUILD_RELOAD_AT_KEY, String(at));
-    } catch {
-      // Storage access is denied; the in-memory value still guards this page.
-    }
-  }
-
-  return async function handlePreloadError(): Promise<void> {
+  async function handlePreloadError() {
     // Several imports can fail at once; one check and one navigation cover all of them.
-    if (checking) return;
-    const url = deps.getReloadUrl();
-    if (url === null) return;
+    if (checking || EmbedStore.isEmbedded()) return;
+    const destination = navigating.to?.url;
 
     checking = true;
     try {
       // The import may have failed for another reason (offline, blocked by an extension); a reload would not help then.
-      if (!(await deps.isUpdated())) return;
+      // Fetches `_app/version.json` and compares it with the running build. Always false in dev.
+      if (!(await updated.check())) return;
 
-      const now = deps.now();
-      const lastReload = readLastReload();
+      const now = Date.now();
+      let lastReload = lastReloadInMemory;
+      try {
+        lastReload =
+          Number(sessionStorage.getItem(STALE_BUILD_RELOAD_AT_KEY)) ||
+          lastReload;
+      } catch {
+        // Storage access is denied; the in-memory value still guards this page.
+      }
       if (
         lastReload !== null &&
         now - lastReload < STALE_BUILD_RELOAD_COOLDOWN_MS
@@ -80,31 +73,19 @@ export function createStaleBuildReloadHandler(deps: StaleBuildReloadDeps) {
         return;
       }
 
-      writeLastReload(now);
-      deps.navigate(url);
+      lastReloadInMemory = now;
+      try {
+        sessionStorage.setItem(STALE_BUILD_RELOAD_AT_KEY, String(now));
+      } catch {
+        // Storage access is denied; see above.
+      }
+
+      if (destination) loadPage(destination);
+      else location.reload();
     } finally {
       checking = false;
     }
-  };
-}
-
-/** Registers the `vite:preloadError` listener on `window`. Returns a function that removes it. */
-export function registerStaleBuildReload(): () => void {
-  const handlePreloadError = createStaleBuildReloadHandler({
-    // Fetches `_app/version.json` and compares it with the running build. Always false in dev.
-    isUpdated: () => updated.check(),
-    getReloadUrl,
-    navigate: (url) => {
-      // Like SvelteKit's own fallback navigation: the current URL replaces the history entry, a new URL pushes one.
-      location.href = url.href;
-    },
-    // Accessed lazily: reading `sessionStorage` itself throws in iframes that are denied storage access.
-    storage: {
-      getItem: (key) => sessionStorage.getItem(key),
-      setItem: (key, value) => sessionStorage.setItem(key, value),
-    },
-    now: Date.now,
-  });
+  }
 
   // The event's default is not prevented: the error keeps propagating,
   // so the code that awaited the import fails instead of continuing with an undefined module.
@@ -113,9 +94,13 @@ export function registerStaleBuildReload(): () => void {
   return () => window.removeEventListener("vite:preloadError", listener);
 }
 
-/** The destination of an in-flight navigation, otherwise the current page; null inside an embed. */
-export function getReloadUrl(): URL | null {
-  // Embeds keep their access token in memory and strip it from the page URL, so a reload would lose it.
-  if (EmbedStore.isEmbedded()) return null;
-  return navigating.to?.url ?? page.url;
+/** Does a full page load of the URL, also when it is the current page. */
+function loadPage(url: URL) {
+  // Assigning a URL that is the current document apart from its fragment only scrolls to the fragment.
+  // That is also the case for a back or forward navigation, where `location` already is the destination.
+  if (url.href.split("#")[0] === location.href.split("#")[0]) {
+    location.reload();
+  } else {
+    location.href = url.href;
+  }
 }

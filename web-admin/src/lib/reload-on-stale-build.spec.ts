@@ -1,158 +1,226 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
-import {
-  createStaleBuildReloadHandler,
-  STALE_BUILD_RELOAD_COOLDOWN_MS,
-  type StaleBuildReloadDeps,
-} from "./reload-on-stale-build";
+import type { BeforeNavigate } from "@sveltejs/kit";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-// The module reads SvelteKit's app state only in `getReloadUrl` and when it registers the real listener.
 const appState = vi.hoisted(() => ({
+  updated: { current: false, check: vi.fn<() => Promise<boolean>>() },
   navigating: { to: null as { url: URL } | null },
-  page: {
-    url: new URL("https://ui.rilldata.com/acme/sales/explore/revenue?tr=P7D"),
-  },
 }));
-vi.mock("$app/state", () => ({
-  updated: {},
-  navigating: appState.navigating,
-  page: appState.page,
-}));
+vi.mock("$app/state", () => appState);
 
-const reloadUrl = new URL(
-  "https://ui.rilldata.com/acme/sales/explore/revenue?tr=P7D",
-);
+const pageUrl = "https://ui.rilldata.com/acme/sales/explore/revenue?tr=P7D";
+const otherPageUrl = "https://ui.rilldata.com/acme/sales/explore/orders";
+const embedUrl =
+  "https://ui.rilldata.com/-/embed?instance_id=inst&runtime_host=https%3A%2F%2Fruntime.example.com&access_token=token&resource=revenue";
+const startTime = 1_700_000_000_000;
 
-function fakeStorage(): StaleBuildReloadDeps["storage"] {
-  const values = new Map<string, string>();
-  return {
-    getItem: (key) => values.get(key) ?? null,
-    setItem: (key, value) => void values.set(key, value),
-  };
+let reloadOnStaleBuild: typeof import("./reload-on-stale-build");
+/** The full page loads the tab started: the assigned URL, or "reload". */
+let pageLoads: string[];
+let storedValues: Map<string, string>;
+
+// The unit tests run in Node, which has no `window`, `location` or `sessionStorage`, so each test stubs them.
+function stubLocation(href: string) {
+  vi.stubGlobal("location", {
+    get href() {
+      return href;
+    },
+    set href(url: string) {
+      pageLoads.push(url);
+    },
+    reload: () => pageLoads.push("reload"),
+  });
 }
 
-function setup(overrides: Partial<StaleBuildReloadDeps> = {}) {
-  const deps: StaleBuildReloadDeps = {
-    isUpdated: vi.fn(() => Promise.resolve(true)),
-    getReloadUrl: () => reloadUrl,
-    navigate: vi.fn(),
-    storage: fakeStorage(),
-    now: () => 1_700_000_000_000,
-    ...overrides,
-  };
-  return { deps, handle: createStaleBuildReloadHandler(deps) };
+/** A page of the tab: a fresh `window` with the listener registered. */
+function openPage() {
+  vi.stubGlobal("window", new EventTarget());
+  reloadOnStaleBuild.registerStaleBuildReload();
 }
 
-describe("createStaleBuildReloadHandler", () => {
-  it("does a full-page navigation once a new build is detected", async () => {
-    const { deps, handle } = setup();
-    await handle();
-    expect(deps.navigate).toHaveBeenCalledTimes(1);
-    expect(deps.navigate).toHaveBeenCalledWith(reloadUrl);
+/** Dispatches what Vite dispatches when a dynamic import fails. */
+function dispatchPreloadError() {
+  window.dispatchEvent(new Event("vite:preloadError"));
+}
+
+/** Lets the listener finish its version check. */
+function settle() {
+  return new Promise((resolve) => setTimeout(resolve));
+}
+
+async function failImport() {
+  dispatchPreloadError();
+  await settle();
+}
+
+async function initEmbed() {
+  const { EmbedStore } = await import(
+    "@rilldata/web-common/features/embeds/embed-store.ts"
+  );
+  EmbedStore.init(new URL(embedUrl));
+}
+
+beforeEach(async () => {
+  // A fresh module registry gives each test an EmbedStore that has not been initialized.
+  vi.resetModules();
+  reloadOnStaleBuild = await import("./reload-on-stale-build");
+
+  appState.updated.current = false;
+  appState.updated.check.mockReset().mockResolvedValue(true);
+  appState.navigating.to = null;
+
+  pageLoads = [];
+  storedValues = new Map();
+  stubLocation(pageUrl);
+  vi.stubGlobal("sessionStorage", {
+    getItem: (key: string) => storedValues.get(key) ?? null,
+    setItem: (key: string, value: string) => void storedValues.set(key, value),
+  });
+  vi.setSystemTime(startTime);
+});
+
+afterEach(() => {
+  vi.unstubAllGlobals();
+  vi.useRealTimers();
+});
+
+describe("registerStaleBuildReload", () => {
+  it("reloads the current page once a new build is detected", async () => {
+    openPage();
+    await failImport();
+    expect(pageLoads).toEqual(["reload"]);
+  });
+
+  it("reloads the current page when its URL has a fragment, where assigning the URL would only scroll", async () => {
+    stubLocation(`${pageUrl}#chart`);
+    openPage();
+    await failImport();
+    expect(pageLoads).toEqual(["reload"]);
+  });
+
+  it("loads the destination of an in-flight navigation", async () => {
+    appState.navigating.to = { url: new URL(otherPageUrl) };
+    openPage();
+    await failImport();
+    expect(pageLoads).toEqual([otherPageUrl]);
+  });
+
+  it("reloads when the in-flight destination is the current page apart from its fragment", async () => {
+    appState.navigating.to = { url: new URL(`${pageUrl}#chart`) };
+    openPage();
+    await failImport();
+    expect(pageLoads).toEqual(["reload"]);
   });
 
   it("leaves the page alone while the running build is still the latest", async () => {
-    const isUpdated = vi
-      .fn<() => Promise<boolean>>()
-      .mockResolvedValueOnce(false)
-      .mockResolvedValue(true);
-    const { deps, handle } = setup({ isUpdated });
-    await handle();
-    expect(deps.navigate).not.toHaveBeenCalled();
+    appState.updated.check.mockResolvedValueOnce(false);
+    openPage();
+    await failImport();
+    expect(pageLoads).toEqual([]);
 
     // The failure that was not caused by a deploy did not count towards the cooldown.
-    await handle();
-    expect(deps.navigate).toHaveBeenCalledTimes(1);
+    await failImport();
+    expect(pageLoads).toEqual(["reload"]);
   });
 
-  it("leaves the page alone when there is no page to reload", async () => {
-    const { deps, handle } = setup({ getReloadUrl: () => null });
-    await handle();
-    expect(deps.isUpdated).not.toHaveBeenCalled();
-    expect(deps.navigate).not.toHaveBeenCalled();
+  it("leaves embeds alone, whose access token a reload would lose", async () => {
+    await initEmbed();
+    openPage();
+    await failImport();
+    expect(appState.updated.check).not.toHaveBeenCalled();
+    expect(pageLoads).toEqual([]);
   });
 
   it("reloads at most once per cooldown, also across the reload itself", async () => {
-    const storage = fakeStorage();
-    const reloadedAt = 1_700_000_000_000;
-    const first = setup({ storage, now: () => reloadedAt });
-    await first.handle();
-    expect(first.deps.navigate).toHaveBeenCalledTimes(1);
+    openPage();
+    await failImport();
+    expect(pageLoads).toEqual(["reload"]);
 
-    // The reloaded page creates a new handler but shares the tab's storage.
-    const second = setup({
-      storage,
-      now: () => reloadedAt + STALE_BUILD_RELOAD_COOLDOWN_MS - 1,
-    });
-    await second.handle();
-    expect(second.deps.navigate).not.toHaveBeenCalled();
+    // The reloaded page registers its own listener but shares the tab's storage.
+    vi.setSystemTime(
+      startTime + reloadOnStaleBuild.STALE_BUILD_RELOAD_COOLDOWN_MS - 1,
+    );
+    openPage();
+    await failImport();
+    expect(pageLoads).toEqual(["reload"]);
 
-    const third = setup({
-      storage,
-      now: () => reloadedAt + STALE_BUILD_RELOAD_COOLDOWN_MS,
-    });
-    await third.handle();
-    expect(third.deps.navigate).toHaveBeenCalledTimes(1);
+    vi.setSystemTime(
+      startTime + reloadOnStaleBuild.STALE_BUILD_RELOAD_COOLDOWN_MS,
+    );
+    openPage();
+    await failImport();
+    expect(pageLoads).toEqual(["reload", "reload"]);
   });
 
   it("coalesces failures that arrive while the version check is pending", async () => {
     let finishCheck!: (updated: boolean) => void;
-    const { deps, handle } = setup({
-      isUpdated: () => new Promise((resolve) => (finishCheck = resolve)),
-    });
-    const pending = Promise.all([handle(), handle(), handle()]);
+    appState.updated.check.mockReturnValue(
+      new Promise((resolve) => (finishCheck = resolve)),
+    );
+    openPage();
+    dispatchPreloadError();
+    dispatchPreloadError();
+    dispatchPreloadError();
     finishCheck(true);
-    await pending;
-    expect(deps.navigate).toHaveBeenCalledTimes(1);
+    await settle();
+    expect(appState.updated.check).toHaveBeenCalledTimes(1);
+    expect(pageLoads).toEqual(["reload"]);
   });
 
   it("still reloads once when storage access is denied", async () => {
-    const denied: StaleBuildReloadDeps["storage"] = {
-      getItem: () => {
-        throw new Error("Access is denied for this document");
-      },
-      setItem: () => {
-        throw new Error("Access is denied for this document");
-      },
+    const denied = () => {
+      throw new Error("Access is denied for this document");
     };
-    const { deps, handle } = setup({ storage: denied });
-    await handle();
-    await handle();
-    expect(deps.navigate).toHaveBeenCalledTimes(1);
+    vi.stubGlobal("sessionStorage", { getItem: denied, setItem: denied });
+    openPage();
+    await failImport();
+    await failImport();
+    expect(pageLoads).toEqual(["reload"]);
+  });
+
+  it("stops listening once removed", async () => {
+    vi.stubGlobal("window", new EventTarget());
+    const remove = reloadOnStaleBuild.registerStaleBuildReload();
+    remove();
+    await failImport();
+    expect(appState.updated.check).not.toHaveBeenCalled();
   });
 });
 
-describe("getReloadUrl", () => {
-  beforeEach(() => {
-    // A fresh module registry gives each test an EmbedStore that has not been initialized.
-    vi.resetModules();
-    appState.navigating.to = null;
+describe("navigateToNewBuild", () => {
+  function navigation(to: string, willUnload = false) {
+    return { to: { url: new URL(to) }, willUnload } as BeforeNavigate;
+  }
+
+  it("turns the navigation into a full page load once polling has found a newer build", () => {
+    appState.updated.current = true;
+    reloadOnStaleBuild.navigateToNewBuild(navigation(otherPageUrl));
+    expect(pageLoads).toEqual([otherPageUrl]);
   });
 
-  it("is the current page", async () => {
-    const { getReloadUrl } = await import("./reload-on-stale-build");
-    expect(getReloadUrl()?.href).toBe(appState.page.url.href);
+  it("reloads on a back or forward navigation, where the location already is the destination", () => {
+    appState.updated.current = true;
+    stubLocation(`${otherPageUrl}#chart`);
+    reloadOnStaleBuild.navigateToNewBuild(navigation(`${otherPageUrl}#chart`));
+    expect(pageLoads).toEqual(["reload"]);
   });
 
-  it("is the destination of an in-flight navigation", async () => {
-    appState.navigating.to = {
-      url: new URL("https://ui.rilldata.com/acme/sales/explore/orders"),
-    };
-    const { getReloadUrl } = await import("./reload-on-stale-build");
-    expect(getReloadUrl()?.href).toBe(
-      "https://ui.rilldata.com/acme/sales/explore/orders",
-    );
+  it("leaves the navigation alone while the running build is still the latest", () => {
+    reloadOnStaleBuild.navigateToNewBuild(navigation(otherPageUrl));
+    expect(pageLoads).toEqual([]);
   });
 
-  it("is null inside an embed, whose access token a reload would lose", async () => {
-    const { EmbedStore } = await import(
-      "@rilldata/web-common/features/embeds/embed-store.ts"
+  it("leaves navigations that unload the page alone", () => {
+    appState.updated.current = true;
+    reloadOnStaleBuild.navigateToNewBuild(
+      navigation("https://docs.rilldata.com", true),
     );
-    EmbedStore.init(
-      new URL(
-        "https://ui.rilldata.com/-/embed?instance_id=inst&runtime_host=https%3A%2F%2Fruntime.example.com&access_token=token&resource=revenue",
-      ),
-    );
-    const { getReloadUrl } = await import("./reload-on-stale-build");
-    expect(getReloadUrl()).toBeNull();
+    expect(pageLoads).toEqual([]);
+  });
+
+  it("leaves embeds alone, whose access token a full page load would lose", async () => {
+    appState.updated.current = true;
+    await initEmbed();
+    reloadOnStaleBuild.navigateToNewBuild(navigation(otherPageUrl));
+    expect(pageLoads).toEqual([]);
   });
 });
