@@ -15,6 +15,21 @@ export function getPartitionFields(partitions: V1ModelPartition[]): string[] {
   return [...fields].sort();
 }
 
+export function searchPartitions(
+  partitions: V1ModelPartition[],
+  searchText: string,
+): V1ModelPartition[] {
+  const query = searchText.trim().toLowerCase();
+  if (!query) return partitions;
+  return partitions.filter((partition) =>
+    [
+      partition.key ?? "",
+      JSON.stringify(partition.data ?? {}),
+      partition.error ?? "",
+    ].some((value) => value.toLowerCase().includes(query)),
+  );
+}
+
 function toNumber(v: unknown): number | undefined {
   if (typeof v === "number") return Number.isFinite(v) ? v : undefined;
   if (typeof v !== "string" || v.trim() === "") return undefined;

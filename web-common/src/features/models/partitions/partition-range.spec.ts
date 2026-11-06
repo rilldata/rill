@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import type { V1ModelPartition } from "../../../runtime-client";
 import {
   filterPartitionsInRange,
+  searchPartitions,
   getPartitionExecutionSettings,
   getPartitionFields,
   isPartitionPending,
@@ -184,5 +185,45 @@ describe("getPartitionExecutionSettings", () => {
       retryIfErrorMatches: [".*quota.*"],
       retryIsDefault: false,
     });
+  });
+});
+
+describe("searchPartitions", () => {
+  const selected = [
+    { key: "first-key", data: { hour: "0", region: "US" } },
+    { key: "second-key", data: { hour: "1", region: "EU" }, error: "Timeout" },
+    { key: "third-key" },
+  ];
+
+  it("searches every partition attribute without changing the selection", () => {
+    expect(keys(searchPartitions(selected, " eu "))).toEqual(["second-key"]);
+    expect(keys(selected)).toEqual(["first-key", "second-key", "third-key"]);
+    expect(keys(searchPartitions(selected, ""))).toEqual(keys(selected));
+  });
+
+  it("matches keys and errors without case sensitivity", () => {
+    expect(keys(searchPartitions(selected, "FIRST-KEY"))).toEqual([
+      "first-key",
+    ]);
+    expect(keys(searchPartitions(selected, "timeout"))).toEqual(["second-key"]);
+  });
+
+  it("handles numeric values and empty data", () => {
+    expect(
+      keys(searchPartitions([p("numeric", { hour: 12 }), {}], "12")),
+    ).toEqual(["numeric"]);
+    expect(searchPartitions(selected, "no match")).toEqual([]);
+    expect(keys(searchPartitions(selected, "   "))).toEqual(keys(selected));
+  });
+
+  it("does not reintroduce partitions removed from the selection", () => {
+    const remaining = selected.filter(
+      (partition) => partition.key !== "second-key",
+    );
+    expect(searchPartitions(remaining, "EU")).toEqual([]);
+    expect(keys(searchPartitions(remaining, ""))).toEqual([
+      "first-key",
+      "third-key",
+    ]);
   });
 });

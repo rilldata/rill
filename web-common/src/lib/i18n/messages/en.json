@@ -2110,6 +2110,7 @@
       }
     }
   ],
+  "status_backfill_end_placeholder": "Enter end value",
   "status_backfill_end_label": "End (inclusive)",
   "status_backfill_error_missing": "Choose a field and enter a start and an end.",
   "status_backfill_error_start_after_end": "Start must be less than or equal to end.",
@@ -2121,12 +2122,12 @@
       "declarations": ["input count", "local countPlural = count: plural"],
       "selectors": ["countPlural"],
       "match": {
-        "countPlural=one": "{count} partition matches this range",
-        "countPlural=other": "{count} partitions match this range"
+        "countPlural=one": "{count} partition selected for backfill",
+        "countPlural=other": "{count} partitions selected for backfill"
       }
     }
   ],
-  "status_backfill_no_match": "No partitions match this range.",
+  "status_backfill_no_match": "No partitions selected for backfill.",
   "status_backfill_pending_note": [
     {
       "declarations": ["input count", "local countPlural = count: plural"],
@@ -2138,6 +2139,8 @@
     }
   ],
   "status_backfill_preview": "Preview partitions",
+  "status_backfill_remove": "Remove",
+  "status_backfill_reset_selection": "Reset selection",
   "status_backfill_retry_attempts": [
     {
       "declarations": ["input count", "local countPlural = count: plural"],
@@ -2155,8 +2158,12 @@
   "status_backfill_retry_fixed": "fixed delay",
   "status_backfill_retry_label": "Retries",
   "status_backfill_retry_matches": "Retries errors matching: {patterns}",
+  "status_backfill_search": "Search selected partitions",
+  "status_backfill_search_empty": "No selected partitions match your search.",
+  "status_backfill_settings_expand": "Expand to view execution settings",
   "status_backfill_settings_hint": "Read-only. Change these in the model file.",
   "status_backfill_settings_title": "Execution settings",
+  "status_backfill_start_placeholder": "Enter start value",
   "status_backfill_start_label": "Start (inclusive)",
   "status_backfill_title": "Backfill partition range",
   "status_cancel": "Cancel",

@@ -1,5 +1,6 @@
 <script lang="ts">
   import { Button } from "@rilldata/web-common/components/button";
+  import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
   import Input from "@rilldata/web-common/components/forms/Input.svelte";
   import Select from "@rilldata/web-common/components/forms/Select.svelte";
   import BasicTable from "@rilldata/web-common/components/table/BasicTable.svelte";
@@ -15,8 +16,10 @@
   import { useRuntimeClient } from "../../../runtime-client/v2";
   import DataCell from "./DataCell.svelte";
   import ErrorCell from "./ErrorCell.svelte";
+  import RemovePartitionButton from "./RemovePartitionButton.svelte";
   import {
     filterPartitionsInRange,
+    searchPartitions,
     getPartitionExecutionSettings,
     getPartitionFields,
     isPartitionPending,
@@ -37,6 +40,7 @@
   let end = "";
   let rangeError: PartitionRangeError | undefined = undefined;
   let matched: V1ModelPartition[] | null = null;
+  let searchText = "";
   let submitError = "";
 
   $: modelName = resource.meta?.name?.name as string;
@@ -66,6 +70,7 @@
     resource.model?.spec,
     resource.model?.state,
   );
+  $: filteredMatched = searchPartitions(matched ?? [], searchText);
   $: matchedKeys = new Set((matched ?? []).map((p) => p.key));
   $: otherPendingCount = matched
     ? allRows.filter((p) => isPartitionPending(p) && !matchedKeys.has(p.key))
@@ -80,6 +85,7 @@
     rangeError = validatePartitionRange(field, start.trim(), end.trim());
     if (rangeError) return;
     matched = filterPartitionsInRange(allRows, field, start.trim(), end.trim());
+    searchText = "";
   }
 
   async function backfill() {
@@ -126,6 +132,19 @@
         renderComponent(ErrorCell, { error: row.original.error }),
       enableSorting: false,
     },
+    {
+      id: "actions",
+      header: m.status_backfill_remove(),
+      enableSorting: false,
+      cell: ({ row }) =>
+        renderComponent(RemovePartitionButton, {
+          onRemove: () => {
+            matched = (matched ?? []).filter(
+              (partition) => partition.key !== row.original.key,
+            );
+          },
+        }),
+    },
   ];
 </script>
 
@@ -147,7 +166,7 @@
       <Input
         id="backfill-start"
         label={m.status_backfill_start_label()}
-        placeholder="2026-03-01"
+        placeholder={m.status_backfill_start_placeholder()}
         bind:value={start}
         size="md"
       />
@@ -156,7 +175,7 @@
       <Input
         id="backfill-end"
         label={m.status_backfill_end_label()}
-        placeholder="2026-03-07"
+        placeholder={m.status_backfill_end_placeholder()}
         bind:value={end}
         size="md"
       />
@@ -180,57 +199,69 @@
     </span>
   {/if}
 
-  <div class="settings">
-    <div class="flex flex-row items-baseline justify-between">
-      <span class="font-semibold text-fg-primary">
-        {m.status_backfill_settings_title()}
-      </span>
-      <span class="text-fg-muted">{m.status_backfill_settings_hint()}</span>
-    </div>
-    <div class="settings-row">
-      <span class="settings-label">{m.status_backfill_concurrency_label()}</span
+  <details class="settings group">
+    <summary
+      class="flex cursor-pointer list-none items-center gap-x-1.5 rounded-sm font-semibold text-fg-primary hover:text-fg-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring-focus [&::-webkit-details-marker]:hidden"
+    >
+      <CaretDownIcon
+        size="14"
+        className="-rotate-90 transition-transform group-open:rotate-0"
+      />
+      <span class="group-open:hidden"
+        >{m.status_backfill_settings_expand()}</span
       >
-      <span class="text-fg-primary">
-        {#if settings.concurrency !== undefined}
-          {m.status_backfill_concurrency_value({
-            count: settings.concurrency,
+      <span class="hidden group-open:inline"
+        >{m.status_backfill_settings_title()}</span
+      >
+    </summary>
+    <div class="flex flex-col gap-y-1.5 pt-2">
+      <span class="text-fg-muted">{m.status_backfill_settings_hint()}</span>
+      <div class="settings-row">
+        <span class="settings-label"
+          >{m.status_backfill_concurrency_label()}</span
+        >
+        <span class="text-fg-primary">
+          {#if settings.concurrency !== undefined}
+            {m.status_backfill_concurrency_value({
+              count: settings.concurrency,
+            })}
+          {/if}
+          <span class="text-fg-muted">
+            {settings.concurrencySource === "observed"
+              ? m.status_backfill_concurrency_observed()
+              : settings.concurrencySource === "configured"
+                ? m.status_backfill_concurrency_configured()
+                : m.status_backfill_concurrency_unknown()}
+          </span>
+        </span>
+      </div>
+      <div class="settings-row">
+        <span class="settings-label">{m.status_backfill_retry_label()}</span>
+        <span class="text-fg-primary">
+          {m.status_backfill_retry_attempts({ count: settings.retryAttempts })},
+          {m.status_backfill_retry_delay({
+            seconds: settings.retryDelaySeconds,
+          })},
+          {settings.retryExponentialBackoff
+            ? m.status_backfill_retry_backoff()
+            : m.status_backfill_retry_fixed()}
+          <span class="text-fg-muted">
+            {settings.retryIsDefault
+              ? m.status_backfill_retry_default()
+              : m.status_backfill_retry_configured()}
+          </span>
+        </span>
+      </div>
+      <div class="settings-row">
+        <span class="settings-label"></span>
+        <span class="text-fg-secondary break-all">
+          {m.status_backfill_retry_matches({
+            patterns: settings.retryIfErrorMatches.join(", "),
           })}
-        {/if}
-        <span class="text-fg-muted">
-          {settings.concurrencySource === "observed"
-            ? m.status_backfill_concurrency_observed()
-            : settings.concurrencySource === "configured"
-              ? m.status_backfill_concurrency_configured()
-              : m.status_backfill_concurrency_unknown()}
         </span>
-      </span>
+      </div>
     </div>
-    <div class="settings-row">
-      <span class="settings-label">{m.status_backfill_retry_label()}</span>
-      <span class="text-fg-primary">
-        {m.status_backfill_retry_attempts({ count: settings.retryAttempts })},
-        {m.status_backfill_retry_delay({
-          seconds: settings.retryDelaySeconds,
-        })},
-        {settings.retryExponentialBackoff
-          ? m.status_backfill_retry_backoff()
-          : m.status_backfill_retry_fixed()}
-        <span class="text-fg-muted">
-          {settings.retryIsDefault
-            ? m.status_backfill_retry_default()
-            : m.status_backfill_retry_configured()}
-        </span>
-      </span>
-    </div>
-    <div class="settings-row">
-      <span class="settings-label"></span>
-      <span class="text-fg-secondary break-all">
-        {m.status_backfill_retry_matches({
-          patterns: settings.retryIfErrorMatches.join(", "),
-        })}
-      </span>
-    </div>
-  </div>
+  </details>
 
   {#if matched}
     <div class="flex flex-col gap-y-1 text-sm">
@@ -245,12 +276,28 @@
         </span>
       {/if}
     </div>
+    <div class="flex items-center justify-between gap-x-3">
+      <div class="w-72">
+        <Input
+          id="backfill-search"
+          title={m.status_backfill_search()}
+          placeholder={m.status_backfill_search()}
+          bind:value={searchText}
+          size="md"
+          disabled={!matched.length}
+        />
+      </div>
+      <Button type="tertiary" onClick={preview}>
+        {m.status_backfill_reset_selection()}
+      </Button>
+    </div>
     {#if matched.length}
       <div class="flex-1 min-h-0 overflow-auto">
         <BasicTable
-          data={matched}
+          data={filteredMatched}
           {columns}
-          columnLayout="minmax(0, 3fr) minmax(0, 1fr) minmax(0, 2fr)"
+          columnLayout="minmax(0, 3fr) minmax(0, 1fr) minmax(0, 2fr) 80px"
+          emptyText={m.status_backfill_search_empty()}
         />
       </div>
     {/if}
@@ -275,7 +322,7 @@
 
 <style lang="postcss">
   .settings {
-    @apply flex flex-col gap-y-1.5 rounded-sm border p-3 text-xs bg-surface-subtle;
+    @apply rounded-sm border p-3 text-xs bg-surface-subtle;
   }
   .settings-row {
     @apply flex flex-row gap-x-3;
