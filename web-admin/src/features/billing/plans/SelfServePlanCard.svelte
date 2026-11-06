@@ -38,12 +38,10 @@
       {m.billing_plan_pricing_info()}
     {/snippet}
 
-    {#snippet action()}
-      <div class="flex flex-col items-end gap-1">
-        <PricingBreakdownLink />
-        <DetailedUsageLink {billingPortalUrl} />
-      </div>
-    {/snippet}
+    <div class="flex items-center gap-4 mt-2">
+      <PricingBreakdownLink />
+      <DetailedUsageLink {billingPortalUrl} />
+    </div>
 
     <ul class="plan-details-container">
       {#each highlights as highlight (highlight)}

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import ArrowUpRight from "@rilldata/web-common/components/icons/ArrowUpRight.svelte";
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 </script>
 
@@ -9,15 +10,7 @@
   rel="noreferrer noopener"
 >
   {m.billing_view_pricing_breakdown()}
-  <svg
-    class="w-3 h-3"
-    viewBox="0 0 12 12"
-    fill="none"
-    stroke="currentColor"
-    stroke-width="1.5"
-  >
-    <path d="M3 3h6v6M3 9l6-6" />
-  </svg>
+  <ArrowUpRight />
 </a>
 
 <style lang="postcss">
