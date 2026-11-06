@@ -1,4 +1,5 @@
 import { DashboardFetchMocks } from "@rilldata/web-common/features/dashboards/dashboard-fetch-mocks.ts";
+import { ComparisonDeltaAbsoluteSuffix } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry.ts";
 import { PivotChipType } from "@rilldata/web-common/features/dashboards/pivot/types.ts";
 import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state.ts";
 import {
@@ -396,6 +397,59 @@ describe("getDashboardFromAggregationRequest", () => {
     ]);
   });
 
+  // Alerts with comparison criteria, such as "change vs previous day", have no
+  // dashboard equivalent for the criteria. The mapper runs the saved query itself
+  // to find the matching dimension values and pins them as an `in` filter.
+  it("Converts comparison criteria into a toplist filter", async () => {
+    const deltaMeasure =
+      AD_BIDS_BID_PRICE_MEASURE + ComparisonDeltaAbsoluteSuffix;
+    mocks.mockMetricsViewAggregation(
+      // The saved query is sent under the request's `metricsView` field.
+      // Any other key for it fails the strict proto decode before the request is sent.
+      new RegExp(
+        `(?=[\\s\\S]*"metricsView":"${AD_BIDS_METRICS_NAME}")(?=[\\s\\S]*"having")`,
+      ),
+      {
+        schema: { fields: [{ name: AD_BIDS_DOMAIN_DIMENSION }] },
+        data: [
+          { [AD_BIDS_DOMAIN_DIMENSION]: "yahoo.com" },
+          { [AD_BIDS_DOMAIN_DIMENSION]: "google.com" },
+        ],
+      },
+    );
+
+    const exploreState = await getExploreState(
+      {
+        dimensions: [{ name: AD_BIDS_DOMAIN_DIMENSION }],
+        measures: [
+          { name: AD_BIDS_BID_PRICE_MEASURE },
+          {
+            name: deltaMeasure,
+            comparisonDelta: { measure: AD_BIDS_BID_PRICE_MEASURE },
+          },
+        ],
+        sort: [{ desc: true, name: AD_BIDS_BID_PRICE_MEASURE }],
+        having: createAndExpression([
+          createBinaryExpression(deltaMeasure, V1Operation.OPERATION_GT, 100),
+        ]),
+        timeRange: { isoDuration: "P1D" },
+        comparisonTimeRange: { isoDuration: "P1D", isoOffset: "P1D" },
+      },
+      { forceOpenPivot: false },
+    );
+
+    expect(exploreState.whereFilter).toEqual(
+      createAndExpression([
+        createInExpression(AD_BIDS_DOMAIN_DIMENSION, [
+          "yahoo.com",
+          "google.com",
+        ]),
+      ]),
+    );
+    expect(exploreState.selectedDimensionName).toBe(AD_BIDS_DOMAIN_DIMENSION);
+    expect(exploreState.showTimeComparison).toBe(true);
+  });
+
   describe("metrics view without a time dimension", () => {
     let fetchSpy: MockInstance<typeof fetch>;
 
@@ -637,9 +691,16 @@ async function getExploreState(
 
   let mapQueryResp: MapQueryResponse | undefined;
   const unsub = mapQueryStore.subscribe((r) => (mapQueryResp = r));
-  await waitUntil(() => !!mapQueryResp?.data, 1000, 50);
+  await waitUntil(
+    () => !!mapQueryResp?.data || !!mapQueryResp?.error,
+    1000,
+    50,
+  );
   unsub();
 
+  if (mapQueryResp?.error) {
+    throw new Error(`mapQueryStore failed: ${mapQueryResp.error}`);
+  }
   if (!mapQueryResp?.data) {
     throw new Error("mapQueryStore did not return a response");
   }
