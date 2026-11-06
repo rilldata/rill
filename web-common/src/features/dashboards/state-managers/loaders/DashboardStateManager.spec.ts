@@ -1,5 +1,10 @@
 import { type CompoundQueryResult } from "@rilldata/web-common/features/compound-query-result";
 import { useDashboardFetchMocksForComponentTests } from "@rilldata/web-common/features/dashboards/filters/test/filter-test-utils";
+import {
+  type PivotChipData,
+  PivotChipType,
+  type PivotState,
+} from "@rilldata/web-common/features/dashboards/pivot/types";
 import { setExploreStateForWebView } from "@rilldata/web-common/features/dashboards/state-managers/loaders/explore-web-view-store";
 import { setMostRecentExploreStateInLocalStorage } from "@rilldata/web-common/features/dashboards/state-managers/loaders/most-recent-explore-state";
 import DashboardStateManagerTest from "@rilldata/web-common/features/dashboards/state-managers/loaders/test/DashboardStateManagerTest.svelte";
@@ -33,6 +38,7 @@ import {
   TimeComparisonOption,
 } from "@rilldata/web-common/lib/time/types";
 import {
+  DashboardState_ActivePage,
   DashboardState_LeaderboardSortDirection,
   DashboardState_LeaderboardSortType,
 } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
@@ -204,6 +210,45 @@ describe("DashboardStateManager", () => {
       );
       // only 2 urls should in history
       expect(pageMock.urlSearchHistory).toEqual([initUrlSearch, ""]);
+    });
+
+    it("Should drop pivot fields repeated in the 'other source' of dashboard state", async () => {
+      // A legacy home bookmark loads through proto state, not the url parser,
+      // so the final correction has to dedupe what the merge hands it.
+      const publisher: PivotChipData = {
+        id: AD_BIDS_PUBLISHER_DIMENSION,
+        title: AD_BIDS_PUBLISHER_DIMENSION,
+        type: PivotChipType.Dimension,
+      };
+      const domain: PivotChipData = {
+        id: AD_BIDS_DOMAIN_DIMENSION,
+        title: AD_BIDS_DOMAIN_DIMENSION,
+        type: PivotChipType.Dimension,
+      };
+      const impressions: PivotChipData = {
+        id: AD_BIDS_IMPRESSIONS_MEASURE,
+        title: AD_BIDS_IMPRESSIONS_MEASURE,
+        type: PivotChipType.Measure,
+      };
+      renderDashboardStateManager(
+        readable({
+          data: {
+            activePage: DashboardState_ActivePage.PIVOT,
+            pivot: {
+              rows: [publisher, publisher],
+              columns: [publisher, domain, impressions, impressions],
+            } as PivotState,
+          },
+          error: null,
+          isFetching: false,
+          isLoading: false,
+        }),
+      );
+      await waitFor(() => expect(screen.getByText("Dashboard loaded!")));
+
+      const { pivot } = getCleanMetricsExploreForAssertion();
+      expect(pivot?.rows).toEqual([publisher]);
+      expect(pivot?.columns).toEqual([domain, impressions]);
     });
 
     it("Should load most recent dashboard state", async () => {

@@ -14,6 +14,7 @@ import {
   FromProtoPivotTotalsRowPositionMap,
   FromProtoTimeGrainMap,
 } from "@rilldata/web-common/features/dashboards/proto-state/enum-maps";
+import { dedupePivotChips } from "@rilldata/web-common/features/dashboards/pivot/pivot-chip-utils";
 import { convertFilterToExpression } from "@rilldata/web-common/features/dashboards/proto-state/filter-converter";
 import {
   createAndExpression,
@@ -462,12 +463,16 @@ function fromPivotProto(
     ];
   }
 
+  // Legacy state can hold a field twice; the pivot header keys chips by field.
+  const rows = dedupePivotChips(rowDimensions);
+  const columns = dedupePivotChips(
+    [...colDimensions, ...dashboard.pivotColumnMeasures.map(mapMeasure)],
+    rows.map((chip) => chip.id),
+  );
+
   return {
-    rows: rowDimensions,
-    columns: [
-      ...colDimensions,
-      ...dashboard.pivotColumnMeasures.map(mapMeasure),
-    ],
+    rows,
+    columns,
     expanded: dashboard.pivotExpanded,
     sorting: dashboard.pivotSort ?? [],
     columnPage: dashboard.pivotColumnPage ?? 1,
