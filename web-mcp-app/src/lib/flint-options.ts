@@ -2,7 +2,7 @@ import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 import {
   assembleVegaLite,
   getChartOptions,
-  getChartPivot,
+  getChartTransform,
   vlAdaptChart,
   vlGetTemplateDef,
   vlRecommendChartTypes,
@@ -17,9 +17,10 @@ import { stripFlintChartSpec, type FlintCompileInput } from "./flint-input";
 /**
  * Presentation controls derived from Flint's own option model, so the panel can never offer a
  * knob the compiler ignores: applicable binary and discrete chart properties (`getChartOptions`),
- * the alternative views of the pivot surface (`getChartPivot`), and chart types the current
- * bindings can move to (`vlRecommendChartTypes` + `vlAdaptChart`). Every edit is a new chart
- * spec applied client-side; nothing here talks to the server.
+ * the alternative arrangements of the same bindings (the `arrange` control of
+ * `getChartTransform`), and chart types the current bindings can move to
+ * (`vlRecommendChartTypes` + `vlAdaptChart`). Every edit is a new chart spec applied
+ * client-side; nothing here talks to the server.
  *
  * Adapted from `packages/flint-mcp/ui/src/options.ts` in microsoft/flint-chart (MIT License,
  * Copyright (c) Microsoft Corporation), restricted to the controls this widget renders.
@@ -53,8 +54,15 @@ export interface PanelProperty {
 export interface FlintPanel {
   /** Chart types the data can move to; undefined when Flint recommends none that compile. */
   chartType: { current: string; choices: PanelChoice[] } | undefined;
-  /** Alternative views of the same bindings (swap axes, split panels, ...). */
-  layout: { label: string; choices: PanelChoice[]; value: string } | undefined;
+  /** Alternative arrangements of the same bindings (swap axes, split into panels, ...). */
+  layout:
+    | {
+        /** The chart property Flint reads the chosen arrangement from. */
+        key: string;
+        choices: PanelChoice[];
+        value: string;
+      }
+    | undefined;
   properties: PanelProperty[];
   apply: {
     chartType(type: string): WireFlintChartSpec;
@@ -74,9 +82,36 @@ export const EXCLUDED_CHART_TYPES: ReadonlySet<string> = new Set([
   "KPI Card",
 ]);
 
+/**
+ * Localized labels of the steps Flint composes its arrange states from; a state id is a path of
+ * steps (`flip:x-y|augment:row`), which Flint labels in operator notation ("X ⇄ Y · Color + Rows").
+ */
+const LAYOUT_STEP_LABELS: Partial<Record<string, () => string>> = {
+  "flip:x-y": m.mcp_chart_layout_swap_axes,
+  "swap:x-color": m.mcp_chart_layout_swap_x_color,
+  "swap:y-color": m.mcp_chart_layout_swap_y_color,
+  "swap:x-size": m.mcp_chart_layout_swap_x_size,
+  "swap:y-size": m.mcp_chart_layout_swap_y_size,
+  // The series also splits the chart into small multiples.
+  "augment:column": m.mcp_chart_layout_split_columns,
+  "augment:row": m.mcp_chart_layout_split_rows,
+  // The small multiples' field moves to another channel.
+  "series:color": m.mcp_chart_layout_combine_panels,
+  "series:column": m.mcp_chart_layout_panels_columns,
+  "series:row": m.mcp_chart_layout_panels_rows,
+};
+
 /** Stable string key for an arbitrary option value (handles undefined and objects). */
 export function valueKey(value: unknown): string {
   return JSON.stringify(value ?? null);
+}
+
+/** The label of an arrange state; a state with a step this widget does not know keeps Flint's. */
+export function layoutLabel(id: string, flintLabel: string): string {
+  if (id === "default") return m.mcp_chart_layout_default();
+  const steps = id.split("|").map((step) => LAYOUT_STEP_LABELS[step]);
+  if (!steps.every((label) => label !== undefined)) return flintLabel;
+  return steps.map((label) => label()).join(" · ");
 }
 
 function assemblyInput(
@@ -195,23 +230,31 @@ function panelProperties(input: AssemblyInput): PanelProperty[] {
       key: option.key,
       label: option.label,
       choices: propertyChoices(option),
-      value: option.value === undefined ? undefined : valueKey(option.value),
+      // Unset is the template's default, which a discrete option lists as a choice, or off.
+      value: valueKey(
+        option.type === "binary" ? option.value === true : option.value,
+      ),
     }));
 }
 
-function panelLayout(input: AssemblyInput): FlintPanel["layout"] | undefined {
-  let pivot: ReturnType<typeof getChartPivot>;
+/**
+ * Flint's arrange control: the views of the same bindings, stored under its own chart property
+ * (`key`). Its moves to another chart type are left out, since the chart-type control covers them.
+ */
+function panelLayout(input: AssemblyInput): FlintPanel["layout"] {
+  let arrange: NonNullable<ReturnType<typeof getChartTransform>>["arrange"];
   try {
-    pivot = getChartPivot(input);
+    arrange = getChartTransform(input)?.arrange;
   } catch {
     return undefined;
   }
-  if (!pivot || pivot.length < 2) return undefined;
-  const current = pivot.ids[pivot.index] ?? pivot.ids[0];
-  const choices = pivot.ids
-    .map((id, i) => ({ value: id, label: pivot.labels[i] ?? id }))
+  if (!arrange || arrange.ids.length < 2) return undefined;
+  const { key, ids, labels } = arrange;
+  const current = ids[arrange.index] ?? ids[0];
+  const choices = ids
+    .map((id, i) => ({ value: id, label: layoutLabel(id, labels[i] ?? id) }))
     .filter((choice, i) => i < MAX_LAYOUT_CHOICES || choice.value === current);
-  return { label: pivot.label, choices, value: current };
+  return { key, choices, value: current };
 }
 
 /**
@@ -274,14 +317,6 @@ export function buildFlintPanel(
   const candidates = chartTypeCandidates(baseSpec, compile, rows);
   const types = [baseSpec.chartType, ...candidates];
   if (!types.includes(chartSpec.chartType)) types.push(chartSpec.chartType);
-  const layoutKey = (() => {
-    try {
-      return getChartPivot(input)?.key ?? "pivot";
-    } catch {
-      return "pivot";
-    }
-  })();
-  const defaultLayout = layout?.choices[0]?.value;
 
   return {
     chartType:
@@ -298,14 +333,18 @@ export function buildFlintPanel(
         type === baseSpec.chartType
           ? baseSpec
           : withChartType(baseSpec, type, rows, compile.fields.semantic_types),
+      // The first view is the authored one, which needs no override.
       layout: (id) =>
-        withProperty(
-          chartSpec,
-          layoutKey,
-          id === defaultLayout ? undefined : id,
-        ),
+        layout
+          ? withProperty(
+              chartSpec,
+              layout.key,
+              id === layout.choices[0].value ? undefined : id,
+            )
+          : chartSpec,
+      // The default choice of a discrete option (`null`) clears the property.
       property: (key, choice) =>
-        withProperty(chartSpec, key, JSON.parse(choice) as unknown),
+        withProperty(chartSpec, key, JSON.parse(choice) ?? undefined),
     },
   };
 }

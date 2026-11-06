@@ -47,9 +47,13 @@ export const COMPARISON_FOLDS: ReadonlyMap<
   ["Slope Chart", { chartType: "Slope Chart", channel: "color" }],
 ]);
 
-export const COMPARISON_FOLD_CHART_TYPES: ReadonlySet<string> = new Set(
-  COMPARISON_FOLDS.keys(),
-);
+/**
+ * Chart types whose template groups the rows by `detail` with nothing else varying inside a
+ * group: an ECDF cumulates its curve over the rows of each group. The server's `detail` is the
+ * row grain (one row per value), so every group would hold a single row and every curve a
+ * single point. `color` still splits the curves.
+ */
+const DETAIL_GROUPED_CHART_TYPES: ReadonlySet<string> = new Set(["ECDF Plot"]);
 
 /** The column that names the period of each row once the previous period is folded in. */
 export const COMPARISON_SERIES_FIELD = "rill_period";
@@ -131,7 +135,8 @@ function stripEncoding(
  * The chart spec as Flint should see it: without the title, the subtitle and Rill's `limit` keys,
  * and without the channels the chart type does not accept. The server takes `detail` on every
  * chart type as a Rill extension (a row-grain dimension that gets no top-N query); for a type
- * whose template has no `detail` channel the rows are already at that grain and the binding is dropped.
+ * whose template has no `detail` channel the rows are already at that grain and the binding is
+ * dropped, and so it is for a type that would group by it into one-row groups.
  */
 export function stripFlintChartSpec(
   chartSpec: WireFlintChartSpec,
@@ -141,6 +146,12 @@ export function stripFlintChartSpec(
   for (const [channel, value] of Object.entries(chartSpec.encodings ?? {})) {
     if (value === undefined || value === null) continue;
     if (accepted && !accepted.has(channel)) continue;
+    if (
+      channel === "detail" &&
+      DETAIL_GROUPED_CHART_TYPES.has(chartSpec.chartType)
+    ) {
+      continue;
+    }
     encodings[channel] = Array.isArray(value)
       ? value.map(stripEncoding)
       : stripEncoding(value);
@@ -244,6 +255,8 @@ export function measureFieldsInRows(
  * The channel whose single measure can be folded with its previous period: `y`, or `x` when the
  * measure sits on x (a horizontal layout). Undefined when the chart type does not fold, the
  * channel binds several fields, or the series channel is already taken.
+ * This is the widget's one rule for a comparison: the fold, the comparison control and the
+ * `chart_data` request all follow it, since the server rejects a comparison the chart cannot draw.
  */
 export function comparisonChannel(
   chartSpec: WireFlintChartSpec,

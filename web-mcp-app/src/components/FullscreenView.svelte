@@ -3,6 +3,7 @@
   import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
   import type { V1TimeGrain } from "@rilldata/web-common/runtime-client/gen/index.schemas";
   import type { McpUiHostContext } from "@modelcontextprotocol/ext-apps";
+  import { ChevronDown, SlidersHorizontal } from "lucide-svelte";
   import type { AdaptedChart } from "../lib/adapt";
   import type { WireFlintChartSpec } from "../lib/contract";
   import {
@@ -60,8 +61,14 @@
   } = $props();
 
   let tab = $state<Tab>("chart");
+  // The presentation controls fold away by default, so the chart gets the height the data controls leave.
+  let presentationOpen = $state(false);
   let notices = $state.raw<CompileNotices>(NO_NOTICES);
   const banner = $derived(truncationBanner(chart, notices));
+  const hasPresentation = $derived(
+    !!panel &&
+      (!!panel.chartType || !!panel.layout || panel.properties.length > 0),
+  );
 
   const tabOptions: { value: Tab; label: string }[] = [
     { value: "chart", label: m.mcp_chart_tab_chart() },
@@ -75,7 +82,7 @@
     })),
   );
   const topNOptions = $derived(
-    topNChoices(controlState.topN).map((n) => ({
+    topNChoices(controlState.topN, controls?.topN ?? []).map((n) => ({
       value: String(n),
       label: String(n),
     })),
@@ -112,7 +119,7 @@
             onControlsChange({ ...controlState, grain: grain as V1TimeGrain })}
         />
       {/if}
-      {#if controls.topN}
+      {#if controls.topN.length > 0}
         <SegmentedControl
           label={m.mcp_chart_control_top_n()}
           options={topNOptions}
@@ -136,11 +143,24 @@
         />
       {/if}
     {/if}
+    {#if hasPresentation && tab === "chart"}
+      <button
+        type="button"
+        class="disclosure"
+        aria-expanded={presentationOpen}
+        aria-controls="presentation-controls"
+        onclick={() => (presentationOpen = !presentationOpen)}
+      >
+        <SlidersHorizontal size="14" aria-hidden="true" />
+        <span>{m.mcp_chart_presentation_controls()}</span>
+        <ChevronDown size="14" aria-hidden="true" class="chevron" />
+      </button>
+    {/if}
   </div>
 
-  {#if panel && tab === "chart"}
+  {#if panel && presentationOpen && tab === "chart"}
     <!-- Presentation controls from Flint's option model: every change recompiles locally. -->
-    <div class="toolbar presentation">
+    <div class="toolbar presentation" id="presentation-controls">
       {#if panel.chartType}
         <SegmentedControl
           label={m.mcp_chart_control_chart_type()}
@@ -213,6 +233,21 @@
   }
   .toolbar.presentation {
     @apply pt-0;
+  }
+  .disclosure {
+    /* As tall as the segmented controls next to it; 44px touch target with its border. */
+    @apply ml-auto inline-flex items-center gap-1.5 min-h-[44px] px-3 text-[13px] font-medium;
+    @apply rounded-[var(--radius)] border border-border bg-transparent text-fg-secondary;
+    @apply hover:text-fg-primary cursor-pointer transition-colors whitespace-nowrap;
+  }
+  .disclosure[aria-expanded="true"] {
+    @apply bg-surface-subtle text-fg-primary;
+  }
+  .disclosure :global(.chevron) {
+    @apply transition-transform;
+  }
+  .disclosure[aria-expanded="true"] :global(.chevron) {
+    @apply rotate-180;
   }
   .body {
     @apply flex flex-1 min-h-0 flex-col px-2;

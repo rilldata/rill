@@ -7,7 +7,10 @@
   import FlintSurface from "./FlintSurface.svelte";
   import Skeleton from "./Skeleton.svelte";
 
-  /** Vega draws text on a canvas, so the first paint waits for the host font (briefly). */
+  /**
+   * Both engines draw text on a canvas with Vega, so the first paint waits for the host font
+   * (briefly). One wait serves either engine.
+   */
   const FONT_WAIT_MS = 300;
 
   let {
@@ -28,7 +31,7 @@
     fill?: boolean;
     /** Fades the current chart under a skeleton while new data loads. */
     dimmed?: boolean;
-    /** Flint charts report their compile outcome (warnings, error) here. */
+    /** Flint charts report their compile outcome (what Flint left out, or the error) here. */
     onCompiled?: (notices: CompileNotices) => void;
   } = $props();
 
@@ -59,6 +62,7 @@
     {height}
     {fill}
     {dimmed}
+    {fontsReady}
     {onCompiled}
   />
 {:else}

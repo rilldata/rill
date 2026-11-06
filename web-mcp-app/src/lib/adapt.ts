@@ -56,8 +56,17 @@ import {
   type WireTimeRange,
 } from "./contract";
 import { topNTarget } from "./controls";
-import { flintTemporalField, flintTopNTarget } from "./flint-controls";
-import { buildFlintCompileInput, type FlintCompileInput } from "./flint-input";
+import {
+  flintFieldKind,
+  flintSeriesField,
+  flintTemporalField,
+  flintTopNTarget,
+} from "./flint-controls";
+import {
+  buildFlintCompileInput,
+  encodingFields,
+  type FlintCompileInput,
+} from "./flint-input";
 
 /**
  * Turns a `create_chart` result into what the chart surface renders from, plus the title,
@@ -154,6 +163,19 @@ export type AdaptedChart = AdaptedRillChart | AdaptedFlintChart;
 export const MAX_TABLE_ROWS = 500;
 /** Zero-filling stops when a range would need more buckets than this. */
 export const MAX_FILL_BUCKETS = 1500;
+/**
+ * Flint chart types whose time series are zero-filled, as Rill's own cartesian charts are: a
+ * line or an area reads a missing bucket as zero rather than as a straight run across it, and a
+ * stack or a group of bars keeps every series in every bucket.
+ */
+const FLINT_ZERO_FILL_CHART_TYPES: ReadonlySet<string> = new Set([
+  "Line Chart",
+  "Area Chart",
+  "Streamgraph",
+  "Bar Chart",
+  "Stacked Bar Chart",
+  "Grouped Bar Chart",
+]);
 export const DEFAULT_TIME_ZONE = "UTC";
 const DEFAULT_TIME_GRAIN = V1TimeGrain.TIME_GRAIN_DAY;
 /** Label the chart providers use for the time axis; titles key on it ("over Time"). */
@@ -307,10 +329,10 @@ export function adaptChartResult(
 }
 
 /**
- * Adapts a Flint result: the rows are converted to the resolved time zone like Rill's charts do
- * (Flint takes `Date` values), the measures get Rill's formatters, and `flint` holds the compile
- * input for the surface. The title comes from the result, else from the spec's headline; the
- * spec's subtitle leads the caption. No zero-filling: Flint lays out temporal axes itself.
+ * Adapts a Flint result: the rows are zero-filled and converted to the resolved time zone like
+ * Rill's charts do (Flint takes `Date` values), the measures get Rill's formatters, and `flint`
+ * holds the compile input for the surface. The title comes from the result, else from the spec's
+ * headline; the spec's subtitle leads the caption.
  */
 export function adaptFlintResult(
   result: FlintChartResult,
@@ -350,16 +372,62 @@ export function adaptFlintResult(
     dimensionNames,
     timeNames,
     timeGrain,
+    timeDimension,
   );
 
   let rows = normalizeRows(result.data);
   const measureKeys = measureKeysInRows(measureNames, rows);
   rows = rows.map((row) => coerceMeasureValues(row, measureKeys));
+
+  const range = result.resolved_time_range ?? result.input.data.time_range;
+  const series = flintSeriesField(chartSpec, wireFields, timeDimension);
+  const seriesDomain = series
+    ? stringDomain(result.domain_values?.[series])
+    : undefined;
+  // Filled per series, the comparison's `_prev` values included; rows split by another field
+  // (a facet, a detail, a second time field) are left as they are.
+  const splits = Object.values(chartSpec.encodings ?? {})
+    .flatMap((value) => encodingFields(value))
+    .filter(
+      (field) =>
+        field !== temporalField &&
+        flintFieldKind(field, wireFields, timeDimension) !== "measure",
+    );
+  if (
+    temporalField &&
+    timeGrain &&
+    range &&
+    rows.length > 0 &&
+    FLINT_ZERO_FILL_CHART_TYPES.has(chartSpec.chartType) &&
+    splits.every((field) => field === series)
+  ) {
+    rows = zeroFillTimeBuckets(rows, {
+      timeField: temporalField,
+      grain: timeGrain,
+      range,
+      timeZone,
+      fillKeys: measureKeys,
+      seriesField: series,
+      seriesValues: seriesDomain,
+      rowsTruncated: result.rows_truncated === true,
+    });
+  }
   if (timeNames.length > 0) {
     rows = convertTimeFields(rows, timeNames, timeZone);
   }
 
-  const flint = buildFlintCompileInput(chartSpec, result, rows, timeGrain);
+  // Flint colors the series in the order they first appear in the rows, and rows in time order
+  // list the series of a bucket in no particular order: in the server's top-N order, every
+  // series keeps its color when a refresh changes the grain or the top-N.
+  let flintRows = rows;
+  if (temporalField && series && seriesDomain) {
+    const rank = new Map(seriesDomain.map((value, index) => [value, index]));
+    const position = (row: WireRow) =>
+      rank.get(String(row[series])) ?? rank.size;
+    flintRows = [...rows].sort((a, b) => position(a) - position(b));
+  }
+  const flint = buildFlintCompileInput(chartSpec, result, flintRows, timeGrain);
+  const otherSlice = combinedSliceLabel(chartSpec, series, seriesDomain);
   const hasComparison =
     flint.comparison !== undefined ||
     measureNames.some((name) =>
@@ -381,7 +449,6 @@ export function adaptFlintResult(
     }
   }
 
-  const range = result.resolved_time_range ?? result.input.data.time_range;
   const title =
     result.title?.trim() || chartSpec.title?.trim() || chartSpec.chartType;
   const timeRangeLabel = range
@@ -430,11 +497,13 @@ export function adaptFlintResult(
     hasComparison,
     truncated: result.truncated === true,
     rowsTruncated: result.rows_truncated === true,
-    truncationNote: truncationNote(
-      result,
-      temporalField,
-      flintTopNTarget(chartSpec, wireFields, timeDimension)?.limit,
-    ),
+    truncationNote: otherSlice
+      ? m.mcp_chart_truncated_other({ label: otherSlice })
+      : truncationNote(
+          result,
+          temporalField,
+          flintTopNTarget(chartSpec, wireFields, timeDimension)?.limit,
+        ),
     truncationWarning: result.truncation_warning || undefined,
     openUrl: result.open_url || undefined,
   };
@@ -448,12 +517,17 @@ function resolveTimeGrain(
   return hasTemporalField ? DEFAULT_TIME_GRAIN : undefined;
 }
 
+/**
+ * Rill's field map for the formatters and the table. Time fields are labeled "Time"; given the
+ * metrics view's time dimension (Flint results), another time field keeps its own name.
+ */
 function buildFields(
   wireFields: Record<string, WireField>,
   measureNames: string[],
   dimensionNames: string[],
   timeNames: string[],
   grain: V1TimeGrain | undefined,
+  timeDimension?: string,
 ): ChartFieldsMap {
   const fields: ChartFieldsMap = {};
   for (const name of measureNames) {
@@ -480,17 +554,39 @@ function buildFields(
     fields[name] = dimension;
   }
   for (const name of timeNames) {
+    const displayName =
+      timeDimension === undefined || name === timeDimension
+        ? TIME_AXIS_LABEL
+        : wireFields[name]?.display_name || name;
     const definition: TimeDimensionDefinition = grain
       ? {
           field: name,
-          displayName: TIME_AXIS_LABEL,
+          displayName,
           timeUnit: timeGrainToVegaTimeUnitMap[grain],
           format: TIME_GRAIN[grain]?.d3format,
         }
-      : { field: name, displayName: TIME_AXIS_LABEL };
+      : { field: name, displayName };
     fields[name] = definition;
   }
   return fields;
+}
+
+/**
+ * The label of the slice that combines the values a pie or donut chart's top-N cut: the server
+ * appends it to the rows and to the series' domain, past the series' limit, when the measure adds up.
+ */
+function combinedSliceLabel(
+  chartSpec: WireFlintChartSpec,
+  series: string | undefined,
+  domain: string[] | undefined,
+): string | undefined {
+  if (!series || !domain) return undefined;
+  for (const value of Object.values(chartSpec.encodings ?? {})) {
+    if (typeof value !== "object" || Array.isArray(value)) continue;
+    if (value.field !== series || value.limit === undefined) continue;
+    return domain.length > value.limit ? domain[domain.length - 1] : undefined;
+  }
+  return undefined;
 }
 
 /** Measure columns present in the rows: the measures plus any `<measure>_prev` companions. */

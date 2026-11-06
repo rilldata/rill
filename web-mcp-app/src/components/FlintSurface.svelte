@@ -10,13 +10,11 @@
   } from "@rilldata/web-common/lib/number-formatting/format-measure-value";
   import { FormatPreset } from "@rilldata/web-common/lib/number-formatting/humanizer-types";
   import { AlertCircle } from "lucide-svelte";
-  import { onMount, untrack } from "svelte";
+  import { untrack } from "svelte";
   import type { AdaptedFlintChart } from "../lib/adapt";
-  import type { CompileNotices } from "../lib/notices";
+  import { compileNotices, type CompileNotices } from "../lib/notices";
   import Skeleton from "./Skeleton.svelte";
 
-  /** Vega draws text on a canvas, so the first paint waits for the host font (briefly). */
-  const FONT_WAIT_MS = 300;
   /** Vega resizes the live view at once; Flint only needs the settled size to recompute its layout. */
   const COMPILE_DEBOUNCE_MS = 150;
 
@@ -27,6 +25,7 @@
     height,
     fill = false,
     dimmed = false,
+    fontsReady,
     onCompiled,
   }: {
     chart: AdaptedFlintChart;
@@ -38,31 +37,22 @@
     fill?: boolean;
     /** Fades the current chart under a skeleton while new data loads. */
     dimmed?: boolean;
-    /** Reports the compile outcome so the card can show Flint's warnings or the error. */
+    /** The host font is ready for the canvas (see ChartSurface); the box is measured and compiled before. */
+    fontsReady: boolean;
+    /** Reports the compile outcome so the card can show what Flint left out, or the error. */
     onCompiled?: (notices: CompileNotices) => void;
   } = $props();
 
-  let fontsReady = $state(false);
-  let width = $state(0);
-  let boxHeight = $state(0);
+  // The content box, inside the surface's horizontal padding: it is the box the chart is drawn
+  // in (VegaLiteRenderer sizes the view to it), so Flint lays out for it. A chart whose width
+  // Flint fixes at compile time, such as a bar table, otherwise ran past the padding and was cut.
+  let contentRect = $state.raw<DOMRectReadOnly | undefined>(undefined);
+  const width = $derived(Math.floor(contentRect?.width ?? 0));
+  const boxHeight = $derived(Math.floor(contentRect?.height ?? 0));
   // The measured box Flint lays out for, updated once a resize settles.
   let compileSize = $state.raw<{ width: number; height: number } | undefined>(
     undefined,
   );
-
-  onMount(() => {
-    let cancelled = false;
-    const fonts = document.fonts?.ready ?? Promise.resolve();
-    const timeout = new Promise<void>((resolve) =>
-      setTimeout(resolve, FONT_WAIT_MS),
-    );
-    void Promise.race([fonts, timeout]).then(() => {
-      if (!cancelled) fontsReady = true;
-    });
-    return () => {
-      cancelled = true;
-    };
-  });
 
   // The first measurement compiles at once, so the chart embeds a single time; later
   // size changes wait for the resize to settle before the spec is recompiled.
@@ -98,12 +88,7 @@
 
   $effect(() => {
     if (!compiled) return;
-    const notices: CompileNotices = {
-      error: compiled.error ?? undefined,
-      warnings: compiled.warnings
-        .filter((warning) => warning.severity !== "info")
-        .map((warning) => warning.message),
-    };
+    const notices = compileNotices(compiled);
     untrack(() => onCompiled?.(notices));
   });
 
@@ -135,8 +120,7 @@
   class:dimmed
   style:height={fill ? undefined : `${height ?? 300}px`}
   aria-busy={dimmed}
-  bind:clientWidth={width}
-  bind:clientHeight={boxHeight}
+  bind:contentRect
 >
   {#if compiled?.error}
     <div class="compile-error" role="alert">

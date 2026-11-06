@@ -1,16 +1,20 @@
 import { describe, expect, it } from "vitest";
 import bar from "../../harness/fixtures/bar_chart.json";
 import empty from "../../harness/fixtures/empty.json";
+import flintBar from "../../harness/fixtures/flint_bar_chart.json";
 import noData from "../../harness/fixtures/no_data.json";
 import unsupported from "../../harness/fixtures/unsupported_widget.json";
 import {
   hasChartData,
+  httpUrl,
   normalizeRows,
+  parseChartDataResponse,
   parseChartPayload,
   textContent,
   withChartData,
   type ChartDataPayload,
   type ChartResult,
+  type FlintChartResult,
 } from "./contract";
 
 const result = (fixture: { result: { structuredContent?: unknown } }) =>
@@ -69,6 +73,71 @@ describe("parseChartPayload", () => {
     expect(parsed.kind).toBe("invalid");
     if (parsed.kind === "invalid") {
       expect(parsed.openUrl).toBe("https://example.com/open");
+    }
+  });
+
+  it("drops a deep link that is not http(s)", () => {
+    const chart = { widget: "chart", chart_type: "bar_chart", spec: {} };
+    for (const openUrl of [
+      "javascript:alert(1)",
+      "data:text/html,<script>alert(1)</script>",
+      "/relative/path",
+      42,
+    ]) {
+      const parsed = parseChartPayload({ ...chart, open_url: openUrl });
+      expect(parsed.kind === "chart" && parsed.result.open_url).toBe(undefined);
+      const invalid = parseChartPayload({
+        ...chart,
+        chart_type: "nope",
+        open_url: openUrl,
+      });
+      expect(invalid.kind === "invalid" && invalid.openUrl).toBe(undefined);
+    }
+    const parsed = parseChartPayload({
+      ...chart,
+      open_url: "https://ui.rilldata.com/demo/bids/explore/bids",
+    });
+    expect(parsed.kind === "chart" && parsed.result.open_url).toBe(
+      "https://ui.rilldata.com/demo/bids/explore/bids",
+    );
+    expect(httpUrl("http://localhost:9009/-/open")).toBe(
+      "http://localhost:9009/-/open",
+    );
+  });
+});
+
+describe("parseChartDataResponse", () => {
+  const flint = flintBar.result.structuredContent as FlintChartResult;
+  const section = { data: flint.data, fields: flint.fields };
+
+  it("accepts a data section, with or without the effective input", () => {
+    expect(parseChartDataResponse(section)).toEqual({
+      kind: "data",
+      response: section,
+    });
+    expect(parseChartDataResponse({ data: [] }).kind).toBe("data");
+    const withInput = { ...section, input: flint.input };
+    expect(parseChartDataResponse(withInput)).toEqual({
+      kind: "data",
+      response: withInput,
+    });
+  });
+
+  it("rejects a result that cannot replace the data", () => {
+    for (const payload of [
+      undefined,
+      "rows",
+      {},
+      { data: "rows" },
+      { data: [], fields: [] },
+      { data: [], domain_values: "x" },
+      { data: [], semantic_types: null },
+      { data: [], input: { chart_spec: {} } },
+    ]) {
+      expect(
+        parseChartDataResponse(payload).kind,
+        JSON.stringify(payload),
+      ).toBe("invalid");
     }
   });
 });

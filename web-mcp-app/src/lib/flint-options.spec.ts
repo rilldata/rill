@@ -1,12 +1,15 @@
 import { compileFlintSpec } from "@rilldata/web-common/features/custom-viz/flint/compile";
 import { describe, expect, it } from "vitest";
 import bar from "../../harness/fixtures/flint_bar_chart.json";
+import grouped from "../../harness/fixtures/flint_grouped_bar.json";
+import comparison from "../../harness/fixtures/flint_line_comparison.json";
 import pie from "../../harness/fixtures/flint_pie.json";
 import { normalizeRows, type FlintChartResult } from "./contract";
 import { buildFlintCompileInput } from "./flint-input";
 import {
   buildFlintPanel,
   EXCLUDED_CHART_TYPES,
+  layoutLabel,
   MAX_CHART_TYPE_CANDIDATES,
   MAX_PANEL_PROPERTIES,
   valueKey,
@@ -103,18 +106,88 @@ describe("buildFlintPanel", () => {
     });
   });
 
-  it("offers the pivot views and writes the chosen state into the properties", () => {
+  it("offers the arrangements and writes the chosen one into the properties", () => {
     const { panel } = panelFor(bar);
     expect(panel.layout).toBeDefined();
     expect(panel.layout!.choices[0].value).toBe(panel.layout!.value);
+    expect(panel.layout!.choices.map((choice) => choice.label)).toEqual([
+      "Default",
+      "Swap axes",
+    ]);
     const flipped = panel.apply.layout(panel.layout!.choices[1].value);
     expect(flipped.chartProperties).toEqual({
-      pivot: panel.layout!.choices[1].value,
+      [panel.layout!.key]: panel.layout!.choices[1].value,
     });
     // Choosing the default view again clears the override.
     expect(
       panel.apply.layout(panel.layout!.choices[0].value).chartProperties,
     ).toEqual({});
+  });
+
+  it("leaves chart-type moves to the chart-type control, and the compiler honors every arrangement", () => {
+    for (const fixture of [bar, grouped, comparison]) {
+      const { res, rows, panel } = panelFor(fixture);
+      const compiled = (spec: typeof res.input.chart_spec) => {
+        const input = buildFlintCompileInput(spec, res, rows, undefined);
+        return JSON.stringify(
+          compileFlintSpec({
+            spec: input.spec,
+            rows: input.rows,
+            fields: input.fields,
+            size: { width: 600, height: 320 },
+            measureFields: input.measureFields,
+          }).spec,
+        );
+      };
+      const authored = compiled(res.input.chart_spec);
+      for (const choice of panel.layout?.choices.slice(1) ?? []) {
+        expect(choice.value).not.toContain("type:");
+        expect(choice.label).not.toMatch(/θ|⇄/);
+        expect(
+          compiled(panel.apply.layout(choice.value)),
+          choice.value,
+        ).not.toBe(authored);
+      }
+    }
+  });
+
+  it("shows the default choice of a discrete property as selected", () => {
+    const { panel } = panelFor(comparison);
+    const curve = panel.properties.find((p) => p.key === "interpolate");
+    expect(curve).toBeDefined();
+    expect(curve!.value).toBe(curve!.choices[0].value);
+    const smooth = panel.apply.property("interpolate", '"monotone"');
+    expect(smooth.chartProperties).toEqual({ interpolate: "monotone" });
+    // Choosing the default again clears the property instead of storing null.
+    expect(
+      panel.apply.property("interpolate", curve!.choices[0].value)
+        .chartProperties,
+    ).toEqual({});
+    for (const property of panel.properties) {
+      expect(
+        property.choices.map((choice) => choice.value),
+        property.key,
+      ).toContain(property.value);
+    }
+  });
+});
+
+describe("layoutLabel", () => {
+  it("labels each step of a state and keeps Flint's label for an unknown one", () => {
+    expect(layoutLabel("default", "Default")).toBe("Default");
+    expect(layoutLabel("flip:x-y", "X ⇄ Y")).toBe("Swap axes");
+    expect(layoutLabel("swap:x-color", "X ⇄ Color")).toBe(
+      "Swap x-axis and color",
+    );
+    expect(layoutLabel("flip:x-y|augment:row", "X ⇄ Y · Color + Rows")).toBe(
+      "Swap axes · Split into rows",
+    );
+    expect(layoutLabel("series:color", "Columns ⇄ Color")).toBe(
+      "Combine panels",
+    );
+    expect(layoutLabel("flip:x-y|twist:z", "X ⇄ Y · Twist")).toBe(
+      "X ⇄ Y · Twist",
+    );
   });
 });
 

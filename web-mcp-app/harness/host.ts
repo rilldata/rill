@@ -143,11 +143,23 @@ function sendContextChanged(partial: Record<string, unknown>) {
   });
 }
 
-function dataPayload(fixture: Fixture) {
+function dataPayload(fixture: Fixture, args?: Record<string, unknown>) {
   const source = fixture.result.structuredContent ?? {};
-  return Object.fromEntries(
-    DATA_KEYS.filter((key) => key in source).map((key) => [key, source[key]]),
-  );
+  return {
+    ...Object.fromEntries(
+      DATA_KEYS.filter((key) => key in source).map((key) => [key, source[key]]),
+    ),
+    // Like the server, a Flint request is answered with its effective input.
+    ...(args?.chart_spec !== undefined && {
+      input: {
+        chart_spec: args.chart_spec,
+        data: args.data,
+        ...(args.semantic_types !== undefined && {
+          semantic_types: args.semantic_types,
+        }),
+      },
+    }),
+  };
 }
 
 window.addEventListener("message", (event) => {
@@ -205,11 +217,13 @@ window.addEventListener("message", (event) => {
     }
     case "tools/call": {
       // Echo the fixture's data after a short delay so the loading state is visible.
+      const args = (message.params as { arguments?: Record<string, unknown> })
+        ?.arguments;
       setTimeout(() => {
         if (id !== undefined) {
           respond(id, {
             content: [{ type: "text", text: "ok" }],
-            structuredContent: dataPayload(currentFixture()),
+            structuredContent: dataPayload(currentFixture(), args),
           });
         }
       }, 700);

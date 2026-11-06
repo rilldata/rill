@@ -13,8 +13,14 @@ import line from "../../harness/fixtures/line_chart.json";
 import multi from "../../harness/fixtures/multi_measure_bar.json";
 import truncated from "../../harness/fixtures/truncated.json";
 import truncatedRows from "../../harness/fixtures/truncated_rows.json";
-import { adaptChartResult, MAX_TABLE_ROWS } from "./adapt";
-import type { RillChartResult } from "./contract";
+import { adaptChartResult, adaptFlintResult, MAX_TABLE_ROWS } from "./adapt";
+import { flintControlOptions } from "./flint-controls";
+import type {
+  FlintChartResult,
+  RillChartResult,
+  WireFlintChartSpec,
+  WireRow,
+} from "./contract";
 
 const result = (fixture: { result: { structuredContent?: unknown } }) =>
   fixture.result.structuredContent as RillChartResult;
@@ -311,5 +317,264 @@ describe("adaptChartResult", () => {
         .timeZone,
     ).toBe("Asia/Tokyo");
     expect(adaptChartResult(result(line), light).timeZone).toBe("UTC");
+  });
+});
+
+describe("adaptFlintResult", () => {
+  // Four daily buckets: Sep 9 to Sep 12.
+  const range = { start: "2023-09-09T00:00:00Z", end: "2023-09-13T00:00:00Z" };
+  const day = (n: number) => `2023-09-${String(n).padStart(2, "0")}T00:00:00Z`;
+
+  function flintResult(
+    chartSpec: WireFlintChartSpec,
+    data: WireRow[],
+    domain?: Record<string, unknown[]>,
+  ): FlintChartResult {
+    return {
+      widget: "chart",
+      chart_type: chartSpec.chartType,
+      input: {
+        chart_spec: chartSpec,
+        data: { metrics_view: "bids", time_range: range },
+      },
+      data,
+      time_grain: "TIME_GRAIN_DAY",
+      fields: {
+        __time: { name: "__time", kind: "time" },
+        device: { name: "device", kind: "dimension" },
+        publisher: { name: "publisher", kind: "dimension" },
+        bids: { name: "bids", kind: "measure" },
+      },
+      domain_values: domain,
+      resolved_time_range: range,
+      metrics_view: { name: "bids", time_dimension: "__time" },
+    };
+  }
+
+  const countBy = (rows: WireRow[], field: string) =>
+    rows.reduce<Record<string, number>>((counts, row) => {
+      const key = String(row[field]);
+      counts[key] = (counts[key] ?? 0) + 1;
+      return counts;
+    }, {});
+
+  const firstAppearance = (rows: WireRow[], field: string) =>
+    Array.from(new Set(rows.map((row) => row[field])));
+
+  it("zero-fills every series of a time series, as Rill's charts do", () => {
+    const chart = adaptFlintResult(
+      flintResult(
+        {
+          chartType: "Line Chart",
+          encodings: { x: "__time", y: "bids", color: "device" },
+        },
+        [
+          { __time: day(9), device: "Mobile", bids: 5 },
+          { __time: day(10), device: "Desktop", bids: 3 },
+          { __time: day(11), device: "Mobile", bids: 4 },
+        ],
+        { device: ["Mobile", "Desktop"] },
+      ),
+      light,
+    );
+    expect(countBy(chart.rows, "device")).toEqual({ Mobile: 4, Desktop: 4 });
+    expect(chart.rows.filter((row) => row.bids === 0)).toHaveLength(5);
+    // The table shows the filled rows too, in time order.
+    expect(chart.table.totalRows).toBe(8);
+  });
+
+  it("zero-fills the previous period of a comparison as its own series", () => {
+    const chart = adaptFlintResult(
+      flintResult(
+        { chartType: "Area Chart", encodings: { x: "__time", y: "bids" } },
+        [
+          { __time: day(9), bids: 5, bids_prev: 2 },
+          { __time: day(12), bids: 4, bids_prev: 1 },
+        ],
+      ),
+      light,
+    );
+    expect(chart.flint.comparison).toBeDefined();
+    const periods = countBy(chart.rows, "rill_period");
+    expect(Object.values(periods)).toEqual([4, 4]);
+    expect(chart.rows.filter((row) => row.bids === 0)).toHaveLength(4);
+  });
+
+  it("leaves rows split by another dimension, and charts that are not time series", () => {
+    const rows = [
+      { __time: day(9), device: "Mobile", publisher: "news", bids: 5 },
+      { __time: day(11), device: "Mobile", publisher: "sports", bids: 4 },
+    ];
+    const faceted = adaptFlintResult(
+      flintResult(
+        {
+          chartType: "Line Chart",
+          encodings: {
+            x: "__time",
+            y: "bids",
+            color: "device",
+            column: "publisher",
+          },
+        },
+        rows,
+      ),
+      light,
+    );
+    expect(faceted.rows).toHaveLength(2);
+    const timeOnColor = flintResult(
+      {
+        chartType: "Line Chart",
+        encodings: { x: "__time", y: "bids", color: "order_date" },
+      },
+      [
+        { __time: day(9), order_date: day(1), bids: 5 },
+        { __time: day(11), order_date: day(2), bids: 4 },
+      ],
+    );
+    timeOnColor.fields!.order_date = { name: "order_date", kind: "time" };
+    expect(adaptFlintResult(timeOnColor, light).rows).toHaveLength(2);
+    const heatmap = adaptFlintResult(
+      flintResult(
+        {
+          chartType: "Heatmap",
+          encodings: { x: "__time", y: "device", color: "bids" },
+        },
+        rows,
+      ),
+      light,
+    );
+    expect(heatmap.rows).toHaveLength(2);
+  });
+
+  it("orders time rows by the server's top-N order, so a refresh keeps every series' color", () => {
+    const spec: WireFlintChartSpec = {
+      chartType: "Line Chart",
+      encodings: { x: "__time", y: "bids", color: "device" },
+    };
+    const domain = { device: ["Android", "iOS", "Roku OS"] };
+    // A bucket lists its series in no particular order, and each query orders them differently.
+    const byDay = adaptFlintResult(
+      flintResult(
+        spec,
+        [
+          { __time: day(9), device: "Roku OS", bids: 1 },
+          { __time: day(9), device: "Android", bids: 9 },
+          { __time: day(9), device: "iOS", bids: 4 },
+        ],
+        domain,
+      ),
+      light,
+    );
+    const byWeek = adaptFlintResult(
+      flintResult(
+        spec,
+        [
+          { __time: day(9), device: "iOS", bids: 30 },
+          { __time: day(9), device: "Roku OS", bids: 8 },
+          { __time: day(9), device: "Android", bids: 60 },
+        ],
+        domain,
+      ),
+      light,
+    );
+    expect(firstAppearance(byDay.rows, "device")).toEqual(domain.device);
+    expect(firstAppearance(byWeek.rows, "device")).toEqual(domain.device);
+    // The table keeps the result's own order.
+    expect(byDay.table.rows.slice(0, 3).map((row) => row.device)).toEqual([
+      "Roku OS",
+      "Android",
+      "iOS",
+    ]);
+  });
+
+  it("handles a time field other than the metrics view's time dimension", () => {
+    const spec: WireFlintChartSpec = {
+      chartType: "Line Chart",
+      encodings: { x: "order_date", y: "bids" },
+    };
+    const base = flintResult(spec, [
+      { order_date: day(9), bids: 5 },
+      { order_date: day(11), bids: 4 },
+    ]);
+    const result: FlintChartResult = {
+      ...base,
+      fields: {
+        ...base.fields,
+        order_date: {
+          name: "order_date",
+          kind: "time",
+          display_name: "Order Date",
+          type: "DATE",
+        },
+      },
+    };
+    const chart = adaptFlintResult(result, light);
+    expect(chart.temporalField).toBe("order_date");
+    // Zero-filled and converted to dates like the time dimension.
+    expect(chart.rows).toHaveLength(4);
+    expect(chart.rows.every((row) => row.order_date instanceof Date)).toBe(
+      true,
+    );
+    expect(
+      chart.table.columns.find((column) => column.key === "order_date")?.label,
+    ).toBe("Order Date");
+    expect(
+      flintControlOptions(spec, result.fields, "__time", range)?.grains,
+    ).toContain("TIME_GRAIN_DAY");
+  });
+
+  it("says the cut values of a pie are combined, rather than left out", () => {
+    const pie = (limit: number, domain: string[]) =>
+      adaptFlintResult(
+        {
+          ...flintResult(
+            {
+              chartType: "Pie Chart",
+              encodings: { color: { field: "device", limit }, size: "bids" },
+            },
+            [
+              { device: "Mobile", bids: 9 },
+              { device: "Desktop", bids: 5 },
+              { device: "Other", bids: 3 },
+            ],
+            { device: domain },
+          ),
+          truncated: true,
+        },
+        light,
+      );
+    const combined = pie(2, ["Mobile", "Desktop", "Other"]);
+    expect(combined.truncationNote).toBe(
+      "The remaining values are combined into “Other”.",
+    );
+    // The combined slice stays last.
+    expect(combined.rows.at(-1)?.device).toBe("Other");
+    // Without the extra slice the note says what the top-N kept.
+    expect(pie(3, ["Mobile", "Desktop", "Other"]).truncationNote).toBe(
+      "Showing the top 3 values.",
+    );
+  });
+
+  it("keeps the server's row order when no time axis orders the rows", () => {
+    const chart = adaptFlintResult(
+      flintResult(
+        {
+          chartType: "Bar Chart",
+          encodings: { x: "publisher", y: "bids", color: "device" },
+        },
+        [
+          { publisher: "news", device: "Desktop", bids: 9 },
+          { publisher: "news", device: "Mobile", bids: 5 },
+          { publisher: "sports", device: "Mobile", bids: 4 },
+        ],
+        { device: ["Mobile", "Desktop"], publisher: ["news", "sports"] },
+      ),
+      light,
+    );
+    expect(chart.rows.map((row) => row.device)).toEqual([
+      "Desktop",
+      "Mobile",
+      "Mobile",
+    ]);
   });
 });

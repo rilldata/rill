@@ -12,6 +12,8 @@ export interface FakeHostOptions {
   styles?: Record<string, string>;
   /** Result returned for `tools/call`; defaults to the fixture's data fields. */
   chartDataResult?: unknown;
+  /** How long a `tools/call` takes to answer, in milliseconds. */
+  chartDataDelayMs?: number;
 }
 
 declare global {
@@ -79,10 +81,15 @@ export function fakeHostPage(options: FakeHostOptions): string {
       function contextChanged(partial) {
         send({ jsonrpc: "2.0", method: "ui/notifications/host-context-changed", params: partial });
       }
-      function dataPayload() {
+      function dataPayload(args) {
         const source = (options.fixture.result && options.fixture.result.structuredContent) || {};
         const payload = {};
         for (const key of DATA_KEYS) if (key in source) payload[key] = source[key];
+        // Like the server, a Flint request is answered with its effective input.
+        if (args && args.chart_spec) {
+          payload.input = { chart_spec: args.chart_spec, data: args.data };
+          if (args.semantic_types) payload.input.semantic_types = args.semantic_types;
+        }
         return payload;
       }
       window.__host = {
@@ -125,10 +132,12 @@ export function fakeHostPage(options: FakeHostOptions): string {
             break;
           }
           case "tools/call":
-            respond(id, options.chartDataResult || {
-              content: [{ type: "text", text: "ok" }],
-              structuredContent: dataPayload(),
-            });
+            setTimeout(() => {
+              respond(id, options.chartDataResult || {
+                content: [{ type: "text", text: "ok" }],
+                structuredContent: dataPayload(message.params && message.params.arguments),
+              });
+            }, options.chartDataDelayMs || 0);
             break;
           case "ui/update-model-context":
           case "ui/message":

@@ -452,6 +452,7 @@ test("recompiles a Flint chart client-side when a presentation control changes",
   });
   await frame.getByRole("button", { name: "Fullscreen" }).click();
 
+  await frame.getByRole("button", { name: "Chart options" }).click();
   const chartTypes = frame.getByRole("radiogroup", { name: "Chart type" });
   await expect(chartTypes).toBeVisible();
   await expect(
@@ -493,6 +494,251 @@ test("recompiles a Flint chart client-side when a presentation control changes",
     timeout: 15_000,
   });
   expect(errors).toEqual([]);
+});
+
+test("gives the fullscreen chart the height the data controls leave", async ({
+  page,
+}) => {
+  // About the height of claude.ai's fullscreen view.
+  await page.setViewportSize({ width: 1000, height: 716 });
+  const { frame, errors } = await mountWidget(page, {
+    fixture: loadFixture("flint_line_comparison"),
+  });
+  await expect(frame.locator("canvas").first()).toBeVisible({
+    timeout: 15_000,
+  });
+  await frame.getByRole("button", { name: "Fullscreen" }).click();
+  // The data controls stay; the presentation controls fold away behind a disclosure.
+  await expect(
+    frame.getByRole("radiogroup", { name: "Time grain" }),
+  ).toBeVisible();
+  const options = frame.getByRole("button", { name: "Chart options" });
+  await expect(options).toHaveAttribute("aria-expanded", "false");
+  await expect(
+    frame.getByRole("radiogroup", { name: "Chart type" }),
+  ).toHaveCount(0);
+  const canvas = frame.locator("canvas").first();
+  await expect
+    .poll(async () => (await canvas.boundingBox())?.height ?? 0)
+    .toBeGreaterThan(716 * 0.6);
+  // The view fits the host's box: nothing scrolls the header away.
+  const overflow = await frame
+    .locator("html")
+    .evaluate((root) => root.scrollHeight - root.clientHeight);
+  expect(overflow).toBeLessThanOrEqual(0);
+
+  await options.click();
+  await expect(options).toHaveAttribute("aria-expanded", "true");
+  await expect(
+    frame.getByRole("radiogroup", { name: "Chart type" }),
+  ).toBeVisible();
+  await expect(frame.getByRole("radiogroup", { name: "Layout" })).toBeVisible();
+  expect(errors).toEqual([]);
+});
+
+test("rolls the controls back when a refresh fails", async ({ page }) => {
+  const { frame, errors } = await mountWidget(page, {
+    fixture: flintBar,
+    chartDataResult: {
+      isError: true,
+      content: [{ type: "text", text: "the query failed" }],
+    },
+  });
+  await expect(frame.locator("canvas").first()).toBeVisible({
+    timeout: 15_000,
+  });
+  await frame.getByRole("button", { name: "Fullscreen" }).click();
+  const topValues = frame.getByRole("radiogroup", { name: "Top values" });
+  await topValues.getByRole("radio", { name: "5", exact: true }).click();
+  await expect(
+    frame.getByText(
+      "The chart could not be updated. Showing the previous data.",
+    ),
+  ).toBeVisible();
+  // The control and the model go back to what the chart shows.
+  await expect(
+    topValues.getByRole("radio", { name: "10", exact: true }),
+  ).toHaveAttribute("aria-checked", "true");
+  await expect
+    .poll(() => sentMessages(page, "ui/update-model-context"), {
+      timeout: 5_000,
+    })
+    .toEqual([
+      expect.objectContaining({
+        params: expect.objectContaining({
+          content: [
+            {
+              type: "text",
+              text: expect.stringContaining("top 10 values"),
+            },
+          ],
+        }),
+      }),
+    ]);
+  expect(errors).toEqual([]);
+});
+
+for (const { name, structuredContent, notice } of [
+  {
+    name: "an invalid",
+    structuredContent: { data: "not rows" },
+    notice: "The chart could not be updated. Showing the previous data.",
+  },
+  {
+    name: "an empty",
+    structuredContent: { data: [] },
+    notice: "No data for this selection. Showing the previous data.",
+  },
+]) {
+  test(`keeps the chart and the fullscreen controls on ${name} chart_data result`, async ({
+    page,
+  }) => {
+    const { frame, errors } = await mountWidget(page, {
+      fixture: flintBar,
+      chartDataResult: {
+        content: [{ type: "text", text: "ok" }],
+        structuredContent,
+      },
+    });
+    await expect(frame.locator("canvas").first()).toBeVisible({
+      timeout: 15_000,
+    });
+    await frame.getByRole("button", { name: "Fullscreen" }).click();
+    const topValues = frame.getByRole("radiogroup", { name: "Top values" });
+    await topValues.getByRole("radio", { name: "5", exact: true }).click();
+    await expect(frame.getByText(notice)).toBeVisible();
+    await expect(
+      topValues.getByRole("radio", { name: "10", exact: true }),
+    ).toHaveAttribute("aria-checked", "true");
+    await expect(frame.locator("canvas").first()).toBeVisible();
+    await expect(
+      frame.getByRole("button", { name: "Exit fullscreen" }),
+    ).toBeVisible();
+    expect(errors).toEqual([]);
+  });
+}
+
+test("keeps a presentation edit made while a refresh is in flight", async ({
+  page,
+}) => {
+  const { frame, errors } = await mountWidget(page, {
+    fixture: flintBar,
+    chartDataDelayMs: 1_000,
+  });
+  await expect(frame.locator("canvas").first()).toBeVisible({
+    timeout: 15_000,
+  });
+  await frame.getByRole("button", { name: "Fullscreen" }).click();
+  const topValues = frame.getByRole("radiogroup", { name: "Top values" });
+  await topValues.getByRole("radio", { name: "5", exact: true }).click();
+  await expect.poll(() => sentMessages(page, "tools/call")).toHaveLength(1);
+
+  // The chart type changes while chart_data answers the top-N change.
+  await frame.getByRole("button", { name: "Chart options" }).click();
+  const chartTypes = frame.getByRole("radiogroup", { name: "Chart type" });
+  const alternativeName =
+    (await chartTypes.getByRole("radio").nth(1).textContent())?.trim() ?? "";
+  expect(alternativeName).not.toBe("");
+  await chartTypes
+    .getByRole("radio", { name: alternativeName, exact: true })
+    .click();
+
+  // The pending refresh is asked again with the edit, and its answer keeps it.
+  await expect
+    .poll(() => sentMessages(page, "tools/call"))
+    .toEqual([
+      expect.anything(),
+      expect.objectContaining({
+        params: expect.objectContaining({
+          arguments: expect.objectContaining({
+            chart_spec: expect.objectContaining({ chartType: alternativeName }),
+          }),
+        }),
+      }),
+    ]);
+  await expect(frame.locator('[aria-busy="true"]')).toHaveCount(0, {
+    timeout: 10_000,
+  });
+  await expect(
+    chartTypes.getByRole("radio", { name: alternativeName, exact: true }),
+  ).toHaveAttribute("aria-checked", "true");
+  await expect(
+    topValues.getByRole("radio", { name: "5", exact: true }),
+  ).toHaveAttribute("aria-checked", "true");
+  const contexts = (await sentMessages(page, "ui/update-model-context")) as {
+    params: { content: { text: string }[] };
+  }[];
+  expect(contexts.at(-1)?.params.content[0].text).toContain(
+    `${alternativeName} with`,
+  );
+  expect(errors).toEqual([]);
+});
+
+test("shows the limit the server applied after a refresh", async ({ page }) => {
+  // The server answers with its effective input, here capping the requested 20 at 8.
+  const source = flintBar.result.structuredContent!;
+  const input = source.input as {
+    chart_spec: { encodings: Record<string, unknown> };
+  };
+  const { frame, errors } = await mountWidget(page, {
+    fixture: flintBar,
+    chartDataResult: {
+      content: [{ type: "text", text: "Chart data: 8 rows." }],
+      structuredContent: {
+        data: source.data,
+        fields: source.fields,
+        domain_values: source.domain_values,
+        input: {
+          ...input,
+          chart_spec: {
+            ...input.chart_spec,
+            encodings: {
+              ...input.chart_spec.encodings,
+              x: { field: "advertiser_name", limit: 8 },
+            },
+          },
+        },
+      },
+    },
+  });
+  await expect(frame.locator("canvas").first()).toBeVisible({
+    timeout: 15_000,
+  });
+  await frame.getByRole("button", { name: "Fullscreen" }).click();
+  const topValues = frame.getByRole("radiogroup", { name: "Top values" });
+  await topValues.getByRole("radio", { name: "20", exact: true }).click();
+  await expect(
+    topValues.getByRole("radio", { name: "8", exact: true }),
+  ).toHaveAttribute("aria-checked", "true");
+  expect(errors).toEqual([]);
+});
+
+test("forwards the caller's semantic types to chart_data", async ({ page }) => {
+  const { frame } = await mountWidget(page, {
+    fixture: {
+      ...flintBar,
+      arguments: {
+        ...flintBar.arguments,
+        semantic_types: { total_bids: "Amount" },
+      },
+    },
+  });
+  await expect(frame.locator("canvas").first()).toBeVisible({
+    timeout: 15_000,
+  });
+  await frame.getByRole("button", { name: "Fullscreen" }).click();
+  await frame.getByRole("radio", { name: "5", exact: true }).click();
+  await expect
+    .poll(() => sentMessages(page, "tools/call"))
+    .toEqual([
+      expect.objectContaining({
+        params: expect.objectContaining({
+          arguments: expect.objectContaining({
+            semantic_types: { total_bids: "Amount" },
+          }),
+        }),
+      }),
+    ]);
 });
 
 test("renders the Flint comparison fold with its caption", async ({ page }) => {

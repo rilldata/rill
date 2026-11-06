@@ -127,6 +127,8 @@ export interface WireDataBinding {
 export interface WireFlintInput {
   chart_spec: WireFlintChartSpec;
   data: WireDataBinding;
+  /** The caller's semantic type overrides, per field; echoed so a refresh keeps them. */
+  semantic_types?: Record<string, unknown>;
 }
 
 /** Data fields shared by `create_chart` and the app-only `chart_data` tool. */
@@ -152,6 +154,12 @@ export interface ChartDataPayload {
   rows_truncated?: boolean;
   /** The server's explanation of what was cut, written for the model. */
   truncation_warning?: string;
+}
+
+/** The `structuredContent` of a `chart_data` result. */
+export interface ChartDataResponse extends ChartDataPayload {
+  /** Flint requests: the effective input, with the limits the server applied (a facet cap, say). */
+  input?: WireFlintInput;
 }
 
 interface ChartResultBase extends ChartDataPayload {
@@ -184,12 +192,39 @@ export type ParsedPayload =
   | { kind: "unsupported_widget"; widget: string; openUrl?: string }
   | { kind: "invalid"; reason: string; openUrl?: string };
 
-function isRecord(value: unknown): value is Record<string, unknown> {
+export type ParsedChartData =
+  | { kind: "data"; response: ChartDataResponse }
+  | { kind: "invalid"; reason: string };
+
+/** The keys of a data section that hold an object (per-field maps); `data` holds an array. */
+const DATA_SECTION_OBJECT_KEYS = [
+  "fields",
+  "semantic_types",
+  "field_display_names",
+  "domain_values",
+  "totals",
+] as const satisfies readonly (keyof ChartDataPayload)[];
+
+export function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
 function optionalString(value: unknown): string | undefined {
   return typeof value === "string" && value.length > 0 ? value : undefined;
+}
+
+/**
+ * The value when it is an absolute http(s) URL, else undefined: the host opens it as a link,
+ * so a `javascript:` or `data:` URL from an untrusted payload must never reach it.
+ */
+export function httpUrl(value: unknown): string | undefined {
+  if (typeof value !== "string") return undefined;
+  try {
+    const { protocol } = new URL(value);
+    return protocol === "https:" || protocol === "http:" ? value : undefined;
+  } catch {
+    return undefined;
+  }
 }
 
 export function isChartType(value: unknown): value is ChartType {
@@ -212,12 +247,13 @@ export function normalizeRows(data: WireRow[] | undefined): WireRow[] {
 /**
  * Shape check for an untrusted payload.
  * A widget mode other than "chart" is reported so the UI can fall back to "Open in Rill".
+ * An `open_url` that is not http(s) is dropped.
  */
 export function parseChartPayload(payload: unknown): ParsedPayload {
   if (!isRecord(payload)) {
     return { kind: "invalid", reason: "structuredContent is not an object" };
   }
-  const openUrl = optionalString(payload.open_url);
+  const openUrl = httpUrl(payload.open_url);
   if (typeof payload.widget !== "string") {
     return { kind: "invalid", reason: "widget is missing", openUrl };
   }
@@ -242,13 +278,48 @@ export function parseChartPayload(payload: unknown): ParsedPayload {
       return { kind: "invalid", reason: "spec is not an object", openUrl };
     }
   }
+  const reason = invalidDataSection(payload);
+  if (reason) return { kind: "invalid", reason, openUrl };
+  return {
+    kind: "chart",
+    result: { ...payload, open_url: openUrl } as unknown as ChartResult,
+  };
+}
+
+/**
+ * Shape check for the untrusted `structuredContent` of a `chart_data` result: a data section
+ * that carries its rows (`[]` for none), and the effective input of a Flint request when the
+ * server sends one.
+ */
+export function parseChartDataResponse(payload: unknown): ParsedChartData {
+  if (!isRecord(payload)) {
+    return { kind: "invalid", reason: "structuredContent is not an object" };
+  }
+  if (!Array.isArray(payload.data)) {
+    return { kind: "invalid", reason: "data is not an array" };
+  }
+  const reason =
+    invalidDataSection(payload) ??
+    (payload.input === undefined
+      ? undefined
+      : invalidFlintInput(payload.input));
+  if (reason) return { kind: "invalid", reason };
+  return { kind: "data", response: payload as ChartDataResponse };
+}
+
+/** The reason a data section is unusable, or undefined when its keys have the expected shapes. */
+function invalidDataSection(
+  payload: Record<string, unknown>,
+): string | undefined {
   if (payload.data !== undefined && !Array.isArray(payload.data)) {
-    return { kind: "invalid", reason: "data is not an array", openUrl };
+    return "data is not an array";
   }
-  if (payload.fields !== undefined && !isRecord(payload.fields)) {
-    return { kind: "invalid", reason: "fields is not an object", openUrl };
+  for (const key of DATA_SECTION_OBJECT_KEYS) {
+    if (payload[key] !== undefined && !isRecord(payload[key])) {
+      return `${key} is not an object`;
+    }
   }
-  return { kind: "chart", result: payload as unknown as ChartResult };
+  return undefined;
 }
 
 /** The reason a Flint `input` is unusable, or undefined when it has what the compiler needs. */
@@ -276,15 +347,15 @@ export function hasChartData(result: ChartDataPayload): boolean {
 }
 
 /**
- * The result with its data section replaced by what `chart_data` returned for `patched`,
- * the spec (Rill result) or the input (Flint result) the data was requested with.
+ * The result with its data section replaced by what `chart_data` returned for `queried`,
+ * the spec (Rill result) or the input (Flint result) the data answers.
  * The section is replaced rather than merged because the backend omits the optional keys
  * it has nothing for (`domain_values`, `totals`, `truncation_warning`, ...), and a value
  * from the previous result must not show through.
  */
 export function withChartData(
   result: ChartResult,
-  patched: WireChartSpec | WireFlintInput,
+  queried: WireChartSpec | WireFlintInput,
   data: ChartDataPayload,
 ): ChartResult {
   const { widget, chart_type, message, title, metrics_view, theme, open_url } =
@@ -299,12 +370,12 @@ export function withChartData(
     ...data,
   };
   if (isFlintResult(result)) {
-    return { ...base, chart_type, input: patched as WireFlintInput };
+    return { ...base, chart_type, input: queried as WireFlintInput };
   }
   return {
     ...base,
     chart_type: result.chart_type,
-    spec: patched as WireChartSpec,
+    spec: queried as WireChartSpec,
   };
 }
 

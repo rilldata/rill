@@ -20,7 +20,8 @@ import {
  * so these helpers only patch the chart spec and describe what is shown.
  */
 
-const TOP_N_PRESETS = [5, 10, 20];
+/** The top-N limits offered for an axis or a series split; the server caps them at 50 and 20. */
+export const TOP_N_PRESETS: readonly number[] = [5, 10, 20];
 
 export interface ControlState {
   grain?: V1TimeGrain;
@@ -32,8 +33,8 @@ export interface ControlState {
 export interface ControlOptions {
   /** Grains the user can pick; empty when the chart has no temporal x axis. */
   grains: V1TimeGrain[];
-  /** Whether a nominal x or color channel can take a top-N limit. */
-  topN: boolean;
+  /** The top-N limits to offer besides the one in effect; empty when no channel takes a limit. */
+  topN: readonly number[];
   /** Whether period-over-period comparison applies (cartesian charts only). */
   comparison: boolean;
 }
@@ -154,8 +155,11 @@ export function topNTarget(
 }
 
 /** The values the top-N control offers: the presets plus the current limit, ascending. */
-export function topNChoices(current: number | undefined): number[] {
-  const choices = new Set(TOP_N_PRESETS);
+export function topNChoices(
+  current: number | undefined,
+  presets: readonly number[],
+): number[] {
+  const choices = new Set(presets);
   if (current !== undefined) choices.add(current);
   return Array.from(choices).sort((a, b) => a - b);
 }
@@ -172,10 +176,14 @@ export function controlOptions(
 ): ControlOptions | undefined {
   const options: ControlOptions = {
     grains: availableGrains(chartType, spec, range, smallestGrain),
-    topN: topNTarget(chartType, spec) !== undefined,
+    topN: topNTarget(chartType, spec) ? TOP_N_PRESETS : [],
     comparison: supportsComparison(chartType),
   };
-  if (options.grains.length < 2 && !options.topN && !options.comparison) {
+  if (
+    options.grains.length < 2 &&
+    options.topN.length === 0 &&
+    !options.comparison
+  ) {
     return undefined;
   }
   return options;

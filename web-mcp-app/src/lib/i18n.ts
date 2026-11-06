@@ -1,7 +1,6 @@
 import {
   baseLocale,
   isLocale,
-  locales,
   overwriteGetLocale,
   type Locale,
 } from "@rilldata/web-common/lib/i18n/gen/runtime";
@@ -29,9 +28,3 @@ export function setLocaleFromHost(hostLocale: string | undefined): Locale {
   }
   return currentLocale;
 }
-
-export function getCurrentLocale(): Locale {
-  return currentLocale;
-}
-
-export const supportedLocales: readonly string[] = locales;

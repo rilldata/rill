@@ -162,3 +162,13 @@ body {
     0 0 0 1px rgb(255 255 255 / 0.14),
     0 4px 12px rgb(0 0 0 / 0.45);
 }
+/*
+ * vega-tooltip appends its element to the body, absolutely positioned but without offsets until
+ * it first shows, so below the app it adds its padding to the page height: the fullscreen view
+ * then scrolls and clips its header. Hidden, it waits at the top left (as web-common's
+ * `VegaLiteTooltipHandler.resetElement` does); shown, its inline position applies.
+ */
+#vg-tooltip-element:not(.visible) {
+  top: 0 !important;
+  left: 0 !important;
+}

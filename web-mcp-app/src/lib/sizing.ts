@@ -6,8 +6,6 @@ export const INLINE_CHART_MAX_HEIGHT = 360;
 export const INLINE_CHART_DEFAULT_HEIGHT = 300;
 /** Header, footer and paddings around the inline chart, in pixels. */
 export const INLINE_CARD_CHROME_HEIGHT = 112;
-/** Design guidelines ask for at least 320px; the card never lays out narrower than this. */
-export const MIN_WIDGET_WIDTH = 320;
 
 export type ContainerDimensions = McpUiHostContext["containerDimensions"];
 
@@ -20,19 +18,6 @@ export function availableHeight(
   }
   if ("maxHeight" in dimensions && typeof dimensions.maxHeight === "number") {
     return dimensions.maxHeight;
-  }
-  return undefined;
-}
-
-export function availableWidth(
-  dimensions: ContainerDimensions,
-): number | undefined {
-  if (!dimensions) return undefined;
-  if ("width" in dimensions && typeof dimensions.width === "number") {
-    return dimensions.width;
-  }
-  if ("maxWidth" in dimensions && typeof dimensions.maxWidth === "number") {
-    return dimensions.maxWidth;
   }
   return undefined;
 }

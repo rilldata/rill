@@ -66,6 +66,33 @@ describe("stripFlintChartSpec channels", () => {
     });
   });
 
+  it("drops detail where the template would group by it into one-row groups", () => {
+    const stripped = stripFlintChartSpec({
+      chartType: "ECDF Plot",
+      encodings: { x: "ctr", detail: "app_site_name", color: "device" },
+    });
+    expect(stripped.encodings).toEqual({ x: "ctr", color: "device" });
+    // The line-like types split along x inside each detail group, so they keep it.
+    for (const chartType of [
+      "Line Chart",
+      "Sparkline",
+      "Bump Chart",
+      "Slope Chart",
+    ]) {
+      expect(
+        stripFlintChartSpec({
+          chartType,
+          encodings: {
+            x: "__time",
+            y: "total_bids",
+            detail: "advertiser_name",
+          },
+        }).encodings,
+        chartType,
+      ).toHaveProperty("detail", "advertiser_name");
+    }
+  });
+
   it("keeps every channel of a chart type Flint does not know", () => {
     const stripped = stripFlintChartSpec({
       chartType: "Unknown Chart",

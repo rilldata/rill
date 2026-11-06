@@ -10,9 +10,12 @@
   import { adaptResult, type AdaptedChart } from "./lib/adapt";
   import {
     isFlintResult,
+    isRecord,
+    parseChartDataResponse,
     textContent,
     withChartData,
     type ChartDataPayload,
+    type ChartDataResponse,
     type ChartResult,
     type WireChartSpec,
     type WireFlintChartSpec,
@@ -57,11 +60,12 @@
   });
   let locale = $state("en");
 
-  // Interactive controls: the user's choices and the data they produced.
+  // Interactive controls: the choice of the refresh in flight, and the data the last refresh produced.
+  // Once a refresh settles the result in effect is what the controls show, so a failed one rolls them back.
   // Raw: these objects feed the chart spec and must not be proxied (see HostSession).
   let controls = $state.raw<ControlState>({});
   let dataOverride = $state.raw<
-    | { patched: WireChartSpec | WireFlintInput; payload: ChartDataPayload }
+    | { queried: WireChartSpec | WireFlintInput; payload: ChartDataPayload }
     | undefined
   >(undefined);
   // Flint charts: the presentation controls' edit of the chart spec, compiled client-side.
@@ -124,7 +128,7 @@
     if (!dataOverride) return baseResult;
     return withChartData(
       baseResult,
-      dataOverride.patched,
+      dataOverride.queried,
       dataOverride.payload,
     );
   });
@@ -203,7 +207,7 @@
       if (!currentFlintSpec) return undefined;
       return flintControlOptions(
         currentFlintSpec,
-        baseResult.fields,
+        effectiveResult?.fields,
         timeDimension,
         timeRange,
         smallestGrain,
@@ -217,17 +221,17 @@
     );
   });
 
-  // What the controls show as selected: the user's choice, else what the result carries.
-  // The result's spec holds the top-N limit the backend applied, defaults and caps included.
+  // What the controls show as selected: the choice in flight, else what the result in effect carries.
+  // Its spec holds the top-N limit the backend applied, defaults and caps included.
   const currentControls = $derived.by((): ControlState => {
-    if (!baseResult) return {};
-    const topN = isFlintResult(baseResult)
+    if (!effectiveResult) return {};
+    const topN = isFlintResult(effectiveResult)
       ? currentFlintSpec &&
-        flintTopNTarget(currentFlintSpec, baseResult.fields, timeDimension)
+        flintTopNTarget(currentFlintSpec, effectiveResult.fields, timeDimension)
           ?.limit
-      : topNTarget(baseResult.chart_type, baseResult.spec)?.limit;
+      : topNTarget(effectiveResult.chart_type, effectiveResult.spec)?.limit;
     return {
-      grain: controls.grain ?? effectiveResult?.time_grain,
+      grain: controls.grain ?? effectiveResult.time_grain,
       topN: controls.topN ?? topN,
       comparison:
         controls.comparison ??
@@ -254,17 +258,20 @@
     );
   });
 
-  function currentDescription(): string | undefined {
-    if (view.kind !== "ready") return undefined;
+  /** Tells the model what the chart shows now. */
+  function updateModelContext() {
+    if (view.kind !== "ready") return;
     const chart = view.chart;
-    return chart.engine === "flint"
-      ? describeFlintView(
-          chart.title,
-          chart.chartSpec,
-          currentControls,
-          chart.timeRangeLabel,
-        )
-      : describeView(chart.title, currentControls, chart.timeRangeLabel);
+    session.updateModelContext(
+      chart.engine === "flint"
+        ? describeFlintView(
+            chart.title,
+            chart.chartSpec,
+            currentControls,
+            chart.timeRangeLabel,
+          )
+        : describeView(chart.title, currentControls, chart.timeRangeLabel),
+    );
   }
 
   function applyControls(next: ControlState) {
@@ -289,18 +296,29 @@
     // strips before forwarding; the argument is echoed from the original `create_chart` input.
     const project = session.toolInput?.project;
     let args: Record<string, unknown>;
-    let patched: WireChartSpec | WireFlintInput;
+    let queried: WireChartSpec | WireFlintInput;
     if (isFlintResult(baseResult) && isFlintResult(effectiveResult)) {
       const input = patchFlintInput(
         effectiveResult.input,
         currentFlintSpec ?? effectiveResult.input.chart_spec,
         next,
         timeRange,
-        baseResult.fields,
+        effectiveResult.fields,
         timeDimension,
       );
-      patched = input;
-      args = { chart_spec: input.chart_spec, data: input.data };
+      // The caller's semantic type overrides hold for every query of the chart; older servers do not
+      // echo them. Without any the key is left out, since the input schema takes no null.
+      const semanticTypes =
+        input.semantic_types ?? session.toolInput?.semantic_types;
+      queried = input;
+      args = {
+        chart_spec: input.chart_spec,
+        data: input.data,
+        ...(isRecord(semanticTypes) &&
+          Object.keys(semanticTypes).length > 0 && {
+            semantic_types: semanticTypes,
+          }),
+      };
     } else {
       const spec = patchSpec(
         baseResult.spec as WireChartSpec,
@@ -308,9 +326,10 @@
         next,
         timeRange,
       );
-      patched = spec;
+      queried = spec;
       args = { chart_type: baseResult.chart_type, spec };
     }
+    let failure: string | undefined;
     try {
       const response = await session.callServerTool("chart_data", {
         ...(typeof project === "string" && { project }),
@@ -320,26 +339,54 @@
       if (response.isError) {
         throw new Error(textContent(response) || "chart_data failed");
       }
-      const payload = (response.structuredContent ?? {}) as ChartDataPayload;
-      dataOverride = { patched, payload };
-      // The refreshed input carries the presentation edits the request was built from.
-      presentationSpec = undefined;
-      // `view` has already been derived from the override at this point.
-      const description = currentDescription();
-      if (description) session.updateModelContext(description);
+      const parsed = parseChartDataResponse(response.structuredContent);
+      if (parsed.kind === "invalid") {
+        throw new Error(`invalid chart_data result: ${parsed.reason}`);
+      }
+      failure = applyChartData(parsed.response, queried);
     } catch (error) {
       if (seq !== requestSeq) return;
       console.warn("rill chart widget: chart_data call failed", error);
-      refreshError = m.mcp_chart_refresh_failed();
-    } finally {
-      if (seq === requestSeq) refreshing = false;
+      failure = m.mcp_chart_refresh_failed();
     }
+    // Settled: the controls show the state in effect again, which a failure leaves as it was.
+    controls = {};
+    refreshing = false;
+    refreshError = failure;
+    updateModelContext();
+  }
+
+  /**
+   * Applies a refresh, unless the chart cannot show it: `view` derives from the override on read,
+   * and data without rows, or that fails to adapt, would replace the chart and the fullscreen
+   * controls with an empty or error state. Returns the notice when the previous data stays.
+   */
+  function applyChartData(
+    response: ChartDataResponse,
+    queried: WireChartSpec | WireFlintInput,
+  ): string | undefined {
+    const previous = { dataOverride, presentationSpec };
+    const { input, ...payload } = response;
+    // A Flint refresh returns the effective input, with the limits the server applied (a facet
+    // cap, say); older servers send only the data, which then answers the input as requested.
+    dataOverride = { queried: input ?? queried, payload };
+    // The refreshed input carries the presentation edits the request was built from.
+    presentationSpec = undefined;
+    const outcome = view.kind;
+    if (outcome === "ready") return undefined;
+    dataOverride = previous.dataOverride;
+    presentationSpec = previous.presentationSpec;
+    return outcome === "empty"
+      ? m.mcp_chart_refresh_empty()
+      : m.mcp_chart_refresh_failed();
   }
 
   function applyPresentation(next: WireFlintChartSpec) {
     presentationSpec = next;
-    const description = currentDescription();
-    if (description) session.updateModelContext(description);
+    // A pending refresh was built from the previous spec, and its result would replace this edit;
+    // it is asked again, with the edit.
+    if (refreshing) applyControls(controls);
+    updateModelContext();
   }
 
   function openLink(url: string | undefined) {

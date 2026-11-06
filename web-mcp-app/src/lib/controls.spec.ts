@@ -9,6 +9,7 @@ import {
   describeView,
   patchSpec,
   previousPeriod,
+  TOP_N_PRESETS,
   topNChoices,
   topNTarget,
 } from "./controls";
@@ -54,10 +55,11 @@ describe("topNTarget", () => {
 
 describe("topNChoices", () => {
   it("offers the presets plus the current limit when it is not one", () => {
-    expect(topNChoices(undefined)).toEqual([5, 10, 20]);
-    expect(topNChoices(10)).toEqual([5, 10, 20]);
-    expect(topNChoices(15)).toEqual([5, 10, 15, 20]);
-    expect(topNChoices(40)).toEqual([5, 10, 20, 40]);
+    expect(topNChoices(undefined, TOP_N_PRESETS)).toEqual([5, 10, 20]);
+    expect(topNChoices(10, TOP_N_PRESETS)).toEqual([5, 10, 20]);
+    expect(topNChoices(15, TOP_N_PRESETS)).toEqual([5, 10, 15, 20]);
+    expect(topNChoices(40, TOP_N_PRESETS)).toEqual([5, 10, 20, 40]);
+    expect(topNChoices(3, [4, 6, 8])).toEqual([3, 4, 6, 8]);
   });
 });
 
@@ -97,7 +99,7 @@ describe("controlOptions", () => {
       controlOptions("bar_chart", result(bar).spec, week, "TIME_GRAIN_HOUR"),
     ).toEqual({
       grains: [],
-      topN: true,
+      topN: TOP_N_PRESETS,
       comparison: true,
     });
   });
