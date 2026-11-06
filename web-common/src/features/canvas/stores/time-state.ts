@@ -1,7 +1,11 @@
 import { fromTimeRangesParams } from "@rilldata/web-common/features/dashboards/url-state/convertURLToExplorePreset";
 import { ExploreStateURLParams } from "@rilldata/web-common/features/dashboards/url-state/url-params";
+import { TIME_COMPARISON } from "@rilldata/web-common/lib/time/config";
 import { TimeComparisonOption } from "@rilldata/web-common/lib/time/types";
-import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
+import {
+  V1TimeGrain,
+  type V1ExploreTimeRange,
+} from "@rilldata/web-common/runtime-client";
 import { DateTime, Interval } from "luxon";
 import { derived, get, writable, type Readable } from "svelte/store";
 import {
@@ -274,8 +278,12 @@ export class TimeState {
     const { range, comparisonRange, zone, grain } =
       parseSearchParams(searchParams);
 
-    // Component without local time range
-    if (this.isWidgetInstance && !range) return;
+    // A component without a local time range still keeps its own grain,
+    // which the component applies on top of the inherited canvas range.
+    if (this.isWidgetInstance && !range) {
+      this.urlGrainStore.set(grain);
+      return;
+    }
 
     this.urlRangeStore.set(range);
     this.urlGrainStore.set(grain);
@@ -309,17 +317,22 @@ export class TimeState {
       }
       return this.searchParamsStore.set(props, checkIfSet, replaceState);
     },
+    /**
+     * Fixes the grain in the URL. Without a grain the URL param is removed,
+     * which puts the grain back in adaptive mode where it follows the time range.
+     */
     grain: (
-      timeGrain: V1TimeGrain,
+      timeGrain: V1TimeGrain | undefined,
       checkIfSet = false,
       replaceState = false,
     ) => {
-      const mappedTimeGrain = V1TimeGrainToDateTimeUnit[timeGrain];
-      const props = new Map<string, string>();
-      if (mappedTimeGrain) {
-        props.set(ExploreStateURLParams.TimeGrain, mappedTimeGrain);
-        return this.searchParamsStore.set(props, checkIfSet, replaceState);
-      }
+      const mappedTimeGrain = timeGrain
+        ? V1TimeGrainToDateTimeUnit[timeGrain]
+        : undefined;
+      const props = new Map<string, string | undefined>([
+        [ExploreStateURLParams.TimeGrain, mappedTimeGrain],
+      ]);
+      return this.searchParamsStore.set(props, checkIfSet, replaceState);
     },
     comparison: (
       range: boolean | string,
@@ -395,6 +408,29 @@ export function parseSearchParams(urlParams: URLSearchParams) {
     grain,
     comparisonRange,
   };
+}
+
+/**
+ * The comparison a canvas opens with when its default comparison mode is time.
+ * A range in `time_ranges` can declare its comparisons with `comparison_offsets`;
+ * the first one the canvas URL state understands (a `rill-P*` alias) wins.
+ * Without `defaults.time_range`, the canvas opens on the first `time_ranges` entry,
+ * so that entry's comparisons apply.
+ * Without a declared comparison, it is derived from the range's grain as before.
+ */
+export function getDefaultComparisonRange(
+  range: string | undefined,
+  timeRanges: V1ExploreTimeRange[] | undefined,
+): string {
+  const openingRange = range ?? timeRanges?.[0]?.range;
+  const declared = timeRanges
+    ?.find((tr) => tr.range === openingRange)
+    ?.comparisonTimeRanges?.find(
+      (comparison) =>
+        !!comparison.offset && comparison.offset in TIME_COMPARISON,
+    )?.offset;
+
+  return declared ?? getComparisonTypeFromRangeString(range);
 }
 
 export function getComparisonTypeFromRangeString(

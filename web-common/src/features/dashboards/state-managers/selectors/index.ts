@@ -12,6 +12,7 @@ import { formattingSelectors } from "./data-formatting";
 import { dimensionFilterSelectors } from "./dimension-filters";
 import { dimensionTableSelectors } from "./dimension-table";
 import { dimensionSelectors } from "./dimensions";
+import { exactMeasureSelectors } from "./exact-measures";
 import { measureSelectors } from "./measures";
 import { pivotSelectors } from "./pivot";
 import { sortingSelectors } from "./sorting";
@@ -132,6 +133,14 @@ export const createStateManagerReadables = (
      */
     measures: createReadablesFromSelectors(
       measureSelectors,
+      dashboardDataReadables,
+    ),
+
+    /**
+     * Readables related to computing measures with their exact expression
+     */
+    exactMeasures: createReadablesFromSelectors(
+      exactMeasureSelectors,
       dashboardDataReadables,
     ),
 

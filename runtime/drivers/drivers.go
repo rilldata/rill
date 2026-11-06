@@ -34,13 +34,14 @@ func Register(name string, driver Driver) {
 // If instanceID is empty, the connection is considered shared and its As...() functions may be invoked with different instance IDs.
 // If instanceID is not empty, the connection is considered instance-specific and its As...() functions will only be invoked with the same instance ID.
 // connectorName can be empty if not available.
-func Open(driver, connectorName, instanceID string, config map[string]any, st *storage.Client, ac *activity.Client, logger *zap.Logger) (Handle, error) {
+// See Driver.Open for details about the ctx.
+func Open(ctx context.Context, driver, connectorName, instanceID string, config map[string]any, st *storage.Client, ac *activity.Client, logger *zap.Logger) (Handle, error) {
 	d, ok := Drivers[driver]
 	if !ok {
 		return nil, fmt.Errorf("unknown driver: %s", driver)
 	}
 
-	conn, err := d.Open(connectorName, instanceID, config, st, ac, logger)
+	conn, err := d.Open(ctx, connectorName, instanceID, config, st, ac, logger)
 	if err != nil {
 		return nil, err
 	}
@@ -55,7 +56,9 @@ type Driver interface {
 
 	// Open opens a new handle.
 	// If instanceID is empty, the connection is considered shared and its As...() functions may be invoked with different instance IDs.
-	Open(connectorName, instanceID string, config map[string]any, st *storage.Client, ac *activity.Client, logger *zap.Logger) (Handle, error)
+	// The ctx scopes the open itself, such as network dials, handshakes and provisioning of managed resources.
+	// It is cancelled as soon as Open returns, so implementations must not retain it on the returned handle.
+	Open(ctx context.Context, connectorName, instanceID string, config map[string]any, st *storage.Client, ac *activity.Client, logger *zap.Logger) (Handle, error)
 
 	// HasAnonymousSourceAccess returns true if the driver can access the data identified by srcProps without any additional configuration.
 	HasAnonymousSourceAccess(ctx context.Context, srcProps map[string]any, logger *zap.Logger) (bool, error)
@@ -141,4 +144,8 @@ type Handle interface {
 	// AsNotifier returns a Notifier (if the driver can serve as such) to send notifications: alerts, reports, etc.
 	// Examples: email notifier, slack notifier.
 	AsNotifier(properties map[string]any) (Notifier, error)
+
+	// AsMCP returns an MCPService if the handle can serve as such, otherwise returns false.
+	// An MCP service lets AI agents discover and call tools on an external MCP server.
+	AsMCP() (MCPService, bool)
 }

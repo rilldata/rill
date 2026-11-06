@@ -77,13 +77,15 @@ export function updateFilterOnSearch(
   return filterForDimension;
 }
 
+/**
+ * Returns the filters for the other dimensions plus a `like` filter for the search text on the given dimension.
+ * `filters` is undefined when the dashboard has no active filters; the search must still apply in that case.
+ */
 export function getDimensionFilterWithSearch(
   filters: V1Expression | undefined,
   searchText: string,
   dimensionName: string,
 ) {
-  if (!filters) return undefined;
-
   const filterForDimension =
     getFiltersForOtherDimensions(filters, dimensionName) ??
     createAndExpression([]);
@@ -590,4 +592,13 @@ export function prepareDimensionTableRows(
       return rowOut;
     });
   return tableRows;
+}
+
+/**
+ * Key of a dimension table row for the row virtualizer and the keyed `{#each}` blocks that render the rows.
+ * JSON text keeps values apart that `String()` would merge: a null value and the string "null",
+ * a number and its text, or two nested values, which all stringify to "[object Object]".
+ */
+export function getDimensionTableRowKey(value: unknown): string {
+  return JSON.stringify(value ?? null);
 }

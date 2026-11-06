@@ -17,6 +17,7 @@ TableCells – the cell contents.
   import {
     estimateColumnCharacterWidths,
     estimateColumnSizes,
+    getDimensionTableRowKey,
   } from "./dimension-table-utils";
   import DimensionFilterGutter from "./DimensionFilterGutter.svelte";
   import { DIMENSION_TABLE_CONFIG as config } from "./DimensionTableConfig";
@@ -98,8 +99,6 @@ TableCells – the cell contents.
   /* set context for child components */
   setContext("config", config);
 
-  let estimateColumnSize: number[] = $state([]);
-
   /* Separate out dimension column */
   let dimensionColumn = $derived(
     columns?.find((c) => c.name == dimensionName) as VirtualizedTableColumns,
@@ -141,8 +140,14 @@ TableCells – the cell contents.
       // blocks are keyed by, so reusing one function would leave stale keys behind after a
       // re-sort. Keying rows by their dimension value lets the virtualizer reuse DOM nodes during
       // fast scrolls instead of remounting them, which avoids blank frames and preserves focus.
-      getItemKey: (index: number) =>
-        String(rows?.[index]?.[dimensionName] ?? index),
+      // Only a row that is not loaded yet is keyed by its index. A null value used to be as well,
+      // and collided with a numeric value equal to that index.
+      getItemKey: (index: number) => {
+        const row = rows?.[index];
+        return row
+          ? getDimensionTableRowKey(row[dimensionName])
+          : `row-${index}`;
+      },
     };
 
     // `setOptions` pushes a new value into the store, so the virtualizer must be read untracked
@@ -150,19 +155,17 @@ TableCells – the cell contents.
     untrack(() => $rowVirtualizer.setOptions(options));
   });
 
-  $effect(() => {
-    if (rows && columns) {
-      estimateColumnSize = estimateColumnSizes(
-        columns,
-        columnWidths,
-        rows,
-        config,
-      );
-
-      if (manualDimensionColumnWidth !== null) {
-        estimateColumnSize[0] = manualDimensionColumnWidth;
-      }
+  // Derived, not an effect that assigns `$state`: an effect that writes `estimateColumnSize` and
+  // then reads it back (`estimateColumnSize[0] = ...`) registers the value it just wrote as its
+  // own dependency, so Svelte reschedules it forever. That branch only runs once the dimension
+  // column has been resized manually, which is why the table only froze on column resize.
+  let estimateColumnSize: number[] = $derived.by(() => {
+    if (!rows || !columns) return [];
+    const sizes = estimateColumnSizes(columns, columnWidths, rows, config);
+    if (manualDimensionColumnWidth !== null) {
+      sizes[0] = manualDimensionColumnWidth;
     }
+    return sizes;
   });
 
   const columnVirtualizer = createVirtualizer<HTMLDivElement, HTMLDivElement>({
@@ -209,14 +212,17 @@ TableCells – the cell contents.
 
   /** handle scrolling tooltip suppression */
   let scrolling = $state(false);
-  let timeoutID: ReturnType<typeof setTimeout> = $state(0 as any);
+  // Plain variable, not `$state`: the effect below both reads and writes it, so
+  // making it reactive makes the effect re-trigger itself until Svelte aborts
+  // with `effect_update_depth_exceeded`. Nothing renders it.
+  let timeoutID: ReturnType<typeof setTimeout> | undefined;
   $effect(() => {
-    if (scrolling) {
-      if (timeoutID) clearTimeout(timeoutID);
-      timeoutID = setTimeout(() => {
-        scrolling = false;
-      }, 200);
-    }
+    if (!scrolling) return;
+
+    if (timeoutID) clearTimeout(timeoutID);
+    timeoutID = setTimeout(() => {
+      scrolling = false;
+    }, 200);
   });
 
   function handleResizeDimensionColumn(size: number) {

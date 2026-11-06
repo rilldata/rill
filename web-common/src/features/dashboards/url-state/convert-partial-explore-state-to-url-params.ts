@@ -1,3 +1,5 @@
+import { toEphemeralMeasuresParam } from "@rilldata/web-common/features/dashboards/ephemeral-measures/url-param";
+import { referencedEphemeralMeasures } from "@rilldata/web-common/features/dashboards/ephemeral-measures/url-state";
 import { toPivotFormattingParam } from "@rilldata/web-common/features/dashboards/pivot/pivot-formatting-param";
 import {
   type PivotChipData,
@@ -119,6 +121,18 @@ export function convertPartialExploreStateToUrlParams(
     searchParams.set(ExploreStateURLParams.Filters, filterParam);
   }
 
+  if ("ephemeralMeasures" in partialExploreState) {
+    // Only definitions the state references go into the URL; unused ones live
+    // in the per-metrics-view library. Always set so deleting or hiding the
+    // last one removes it from the URL; cleanUrlParams strips the empty value.
+    searchParams.set(
+      ExploreStateURLParams.EphemeralMeasures,
+      toEphemeralMeasuresParam(
+        referencedEphemeralMeasures(partialExploreState),
+      ),
+    );
+  }
+
   switch (partialExploreState.activePage) {
     case DashboardState_ActivePage.UNSPECIFIED:
     case DashboardState_ActivePage.DEFAULT:
@@ -177,7 +191,10 @@ function toTimeRangesUrl(
     );
   }
 
+  // Only a fixed grain goes in the URL. In adaptive mode, the default, the grain is derived
+  // from the time range on load, so a partial state without the flag also writes no grain.
   if (
+    partialExploreState.adaptiveTimeGrain === false &&
     timeControlsState.selectedTimeRange &&
     "interval" in timeControlsState.selectedTimeRange
   ) {
@@ -390,17 +407,23 @@ function toPivotUrlParams(partialExploreState: Partial<ExploreState>) {
     return searchParams;
   }
 
-  const mapPivotEntry = (data: PivotChipData) => {
+  // Undefined for a time chip without a known grain. Such a chip is skipped:
+  // an empty name in the url is not a field.
+  const mapPivotEntry = (data: PivotChipData): string | undefined => {
     if (data.type === PivotChipType.Time)
-      return ToURLParamTimeDimensionMap[data.id] as string;
+      return ToURLParamTimeDimensionMap[data.id] as string | undefined;
     return data.id;
   };
 
-  const rows = partialExploreState.pivot.rows.map(mapPivotEntry);
+  const rows = partialExploreState.pivot.rows
+    .map(mapPivotEntry)
+    .filter((entry) => !!entry);
   const rowsParams = rows.join(",");
   searchParams.set(ExploreStateURLParams.PivotRows, rowsParams);
 
-  const cols = partialExploreState.pivot.columns.map(mapPivotEntry);
+  const cols = partialExploreState.pivot.columns
+    .map(mapPivotEntry)
+    .filter((entry) => !!entry);
   const colsParams = cols.join(",");
 
   searchParams.set(ExploreStateURLParams.PivotColumns, colsParams);
@@ -443,6 +466,11 @@ function toPivotUrlParams(partialExploreState: Partial<ExploreState>) {
 
   if (partialExploreState.pivot.showTotalsRow === false) {
     searchParams.set(ExploreStateURLParams.PivotShowTotalsRow, "false");
+  }
+
+  // "top" is the default, so only "bottom" needs to be in the URL.
+  if (partialExploreState.pivot.totalsRowPosition === "bottom") {
+    searchParams.set(ExploreStateURLParams.PivotTotalsRowPosition, "bottom");
   }
 
   // Always set so clearing formatting removes it from the URL; cleanUrlParams

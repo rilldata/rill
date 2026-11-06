@@ -9,14 +9,20 @@ import (
 	"github.com/rilldata/rill/runtime/metricsview"
 )
 
+// rewritePercentOfTotals runs a totals query for the base measures of the query's percent-of-total measures and stores the totals on them.
+// The totals query copies the exact measures resolved for the query (see rewriteQueryExactMeasures), so every total has the same precision as the values it divides.
 func (e *Executor) rewritePercentOfTotals(ctx context.Context, qry *metricsview.Query) error {
 	var measures []metricsview.Measure
 	var measureIndices []int
 	for i, measure := range qry.Measures {
 		if measure.Compute != nil && measure.Compute.PercentOfTotal != nil {
-			measures = append(measures, metricsview.Measure{
-				Name: measure.Compute.PercentOfTotal.Measure,
-			})
+			// The referenced measure is usually a metrics view measure, but it may also be an expression measure defined in the same query,
+			// in which case the totals query must carry its expression compute.
+			totalOf := metricsview.Measure{Name: measure.Compute.PercentOfTotal.Measure}
+			if qm, ok := queryExpressionMeasure(qry, totalOf.Name); ok {
+				totalOf = qm
+			}
+			measures = append(measures, totalOf)
 			measureIndices = append(measureIndices, i)
 		}
 	}
@@ -42,6 +48,7 @@ func (e *Executor) rewritePercentOfTotals(ctx context.Context, qry *metricsview.
 		UseDisplayNames:     false,
 		Rows:                false,
 		QueryLimits:         qry.QueryLimits,
+		ExactMeasures:       qry.ExactMeasures,
 		UnusedFields:        nil,
 	} //exhaustruct:enforce
 

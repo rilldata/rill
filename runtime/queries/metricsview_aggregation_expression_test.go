@@ -2,6 +2,7 @@ package queries_test
 
 import (
 	"context"
+	"math"
 	"testing"
 	"time"
 
@@ -11,6 +12,7 @@ import (
 	"github.com/rilldata/rill/runtime/queries"
 	"github.com/rilldata/rill/runtime/testruntime"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/protobuf/types/known/structpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -347,4 +349,222 @@ func TestMetricsViewTimeSeries_expression_rejects_other_computes(t *testing.T) {
 	err := q.Resolve(context.Background(), rt, instanceID, 0)
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "only the `expression` compute is supported")
+}
+
+func comparisonDeltaMeasure(name, measure string) *runtimev1.MetricsViewAggregationMeasure {
+	return &runtimev1.MetricsViewAggregationMeasure{
+		Name: name,
+		Compute: &runtimev1.MetricsViewAggregationMeasure_ComparisonDelta{
+			ComparisonDelta: &runtimev1.MetricsViewAggregationMeasureComputeComparisonDelta{Measure: measure},
+		},
+	}
+}
+
+func comparisonRatioMeasure(name, measure string) *runtimev1.MetricsViewAggregationMeasure {
+	return &runtimev1.MetricsViewAggregationMeasure{
+		Name: name,
+		Compute: &runtimev1.MetricsViewAggregationMeasure_ComparisonRatio{
+			ComparisonRatio: &runtimev1.MetricsViewAggregationMeasureComputeComparisonRatio{Measure: measure},
+		},
+	}
+}
+
+func comparisonValueMeasure(name, measure string) *runtimev1.MetricsViewAggregationMeasure {
+	return &runtimev1.MetricsViewAggregationMeasure{
+		Name: name,
+		Compute: &runtimev1.MetricsViewAggregationMeasure_ComparisonValue{
+			ComparisonValue: &runtimev1.MetricsViewAggregationMeasureComputeComparisonValue{Measure: measure},
+		},
+	}
+}
+
+func percentOfTotalMeasure(name, measure string) *runtimev1.MetricsViewAggregationMeasure {
+	return &runtimev1.MetricsViewAggregationMeasure{
+		Name: name,
+		Compute: &runtimev1.MetricsViewAggregationMeasure_PercentOfTotal{
+			PercentOfTotal: &runtimev1.MetricsViewAggregationMeasureComputePercentOfTotal{Measure: measure},
+		},
+	}
+}
+
+// Comparison computes may reference an expression measure defined in the same query.
+// "doubled" is 2 * measure_1, so its comparison value and delta are twice those of measure_1 and its ratio is the same.
+func TestMetricsViewsAggregation_expression_comparison_of_expression(t *testing.T) {
+	rt, instanceID := testruntime.NewInstanceForProject(t, "ad_bids")
+
+	limit := int64(10)
+	q := &queries.MetricsViewAggregation{
+		MetricsViewName: "ad_bids_metrics",
+		Dimensions: []*runtimev1.MetricsViewAggregationDimension{
+			{Name: "pub"},
+		},
+		Measures: []*runtimev1.MetricsViewAggregationMeasure{
+			{Name: "measure_1"},
+			comparisonValueMeasure("measure_1__prev", "measure_1"),
+			comparisonDeltaMeasure("measure_1__delta", "measure_1"),
+			comparisonRatioMeasure("measure_1__ratio", "measure_1"),
+			expressionMeasure("doubled", "measure_1 * 2"),
+			comparisonValueMeasure("doubled__prev", "doubled"),
+			comparisonDeltaMeasure("doubled__delta", "doubled"),
+			comparisonRatioMeasure("doubled__ratio", "doubled"),
+		},
+		Sort: []*runtimev1.MetricsViewAggregationSort{
+			{Name: "doubled__delta", Desc: true},
+		},
+		TimeRange: &runtimev1.TimeRange{
+			Start: timestamppb.New(time.Date(2022, 1, 1, 0, 0, 0, 0, time.UTC)),
+			End:   timestamppb.New(time.Date(2022, 1, 2, 0, 0, 0, 0, time.UTC)),
+		},
+		ComparisonTimeRange: &runtimev1.TimeRange{
+			Start: timestamppb.New(time.Date(2022, 1, 2, 0, 0, 0, 0, time.UTC)),
+			End:   timestamppb.New(time.Date(2022, 1, 3, 0, 0, 0, 0, time.UTC)),
+		},
+		Limit:          &limit,
+		SecurityClaims: testClaims(),
+	}
+	err := q.Resolve(context.Background(), rt, instanceID, 0)
+	require.NoError(t, err)
+	require.NotEmpty(t, q.Result.Data)
+
+	checked := 0
+	for _, row := range q.Result.Data {
+		f := row.Fields
+		if _, isNull := f["measure_1__delta"].GetKind().(*structpb.Value_NullValue); isNull {
+			// Rows present in only one of the time ranges have no comparison. Skip them.
+			continue
+		}
+		checked++
+		require.InDelta(t, 2*f["measure_1"].GetNumberValue(), f["doubled"].GetNumberValue(), 1e-9)
+		require.InDelta(t, 2*f["measure_1__prev"].GetNumberValue(), f["doubled__prev"].GetNumberValue(), 1e-9)
+		require.InDelta(t, 2*f["measure_1__delta"].GetNumberValue(), f["doubled__delta"].GetNumberValue(), 1e-9)
+		require.InDelta(t, f["measure_1__ratio"].GetNumberValue(), f["doubled__ratio"].GetNumberValue(), 1e-9)
+	}
+	require.NotZero(t, checked)
+
+	// The rows are sorted by the expression measure's delta.
+	prev := math.Inf(1)
+	for _, row := range q.Result.Data {
+		v := row.Fields["doubled__delta"]
+		if _, isNull := v.GetKind().(*structpb.Value_NullValue); isNull {
+			continue
+		}
+		require.LessOrEqual(t, v.GetNumberValue(), prev)
+		prev = v.GetNumberValue()
+	}
+}
+
+// Percent of total may reference an expression measure defined in the same query.
+// The totals query must carry the expression too.
+func TestMetricsViewsAggregation_expression_percent_of_total_of_expression(t *testing.T) {
+	rt, instanceID := testruntime.NewInstanceForProject(t, "ad_bids_2rows")
+
+	q := &queries.MetricsViewAggregation{
+		MetricsViewName: "ad_bids_metrics",
+		Dimensions: []*runtimev1.MetricsViewAggregationDimension{
+			{Name: "domain"},
+		},
+		Measures: []*runtimev1.MetricsViewAggregationMeasure{
+			{Name: "measure_2"},
+			percentOfTotalMeasure("measure_2__pot", "measure_2"),
+			expressionMeasure("tripled", "measure_2 * 3"),
+			percentOfTotalMeasure("tripled__pot", "tripled"),
+		},
+		Sort: []*runtimev1.MetricsViewAggregationSort{
+			{Name: "domain"},
+		},
+		SecurityClaims: testClaims(),
+	}
+	err := q.Resolve(context.Background(), rt, instanceID, 0)
+	require.NoError(t, err)
+	require.Len(t, q.Result.Data, 2)
+	for _, row := range q.Result.Data {
+		f := row.Fields
+		require.InDelta(t, f["measure_2__pot"].GetNumberValue(), f["tripled__pot"].GetNumberValue(), 1e-9)
+	}
+	// msn.com has 2 of 3 impressions, yahoo.com has 1 of 3.
+	require.InDelta(t, 2.0/3.0, q.Result.Data[0].Fields["tripled__pot"].GetNumberValue(), 1e-9)
+	require.InDelta(t, 1.0/3.0, q.Result.Data[1].Fields["tripled__pot"].GetNumberValue(), 1e-9)
+}
+
+func TestMetricsViewsAggregation_expression_comparison_errors(t *testing.T) {
+	rt, instanceID := testruntime.NewInstanceForProject(t, "ad_bids_2rows")
+
+	cases := []struct {
+		name        string
+		measures    []*runtimev1.MetricsViewAggregationMeasure
+		errContains string
+	}{
+		{
+			name:        "unknown measure",
+			measures:    []*runtimev1.MetricsViewAggregationMeasure{comparisonDeltaMeasure("x", "unknown_measure")},
+			errContains: "not found",
+		},
+		{
+			name:        "expression measure not in the query",
+			measures:    []*runtimev1.MetricsViewAggregationMeasure{comparisonDeltaMeasure("x", "profit")},
+			errContains: `measure "profit" not found`,
+		},
+		{
+			name: "expression measure with an invalid expression",
+			measures: []*runtimev1.MetricsViewAggregationMeasure{
+				expressionMeasure("profit", "sum(measure_1)"),
+				comparisonRatioMeasure("x", "profit"),
+			},
+			errContains: "aggregate function",
+		},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			q := &queries.MetricsViewAggregation{
+				MetricsViewName: "ad_bids_metrics",
+				Measures:        c.measures,
+				TimeRange: &runtimev1.TimeRange{
+					Start: timestamppb.New(time.Date(2022, 1, 1, 0, 0, 0, 0, time.UTC)),
+					End:   timestamppb.New(time.Date(2022, 1, 2, 0, 0, 0, 0, time.UTC)),
+				},
+				ComparisonTimeRange: &runtimev1.TimeRange{
+					Start: timestamppb.New(time.Date(2022, 1, 2, 0, 0, 0, 0, time.UTC)),
+					End:   timestamppb.New(time.Date(2022, 1, 3, 0, 0, 0, 0, time.UTC)),
+				},
+				SecurityClaims: testClaims(),
+			}
+			err := q.Resolve(context.Background(), rt, instanceID, 0)
+			require.Error(t, err)
+			require.Contains(t, err.Error(), c.errContains)
+		})
+	}
+}
+
+// A comparison of an expression measure is subject to the same security policy as the expression itself.
+func TestMetricsViewsAggregation_expression_comparison_security(t *testing.T) {
+	rt, instanceID := testruntime.NewInstanceForProject(t, "ad_bids")
+
+	newQuery := func() *queries.MetricsViewAggregation {
+		return &queries.MetricsViewAggregation{
+			MetricsViewName: "ad_bids_mini_metrics_with_policy",
+			Measures: []*runtimev1.MetricsViewAggregationMeasure{
+				expressionMeasure("net", `"total impressions" - "total volume"`),
+				comparisonDeltaMeasure("net__delta", "net"),
+			},
+			TimeRange: &runtimev1.TimeRange{
+				Start: timestamppb.New(time.Date(2022, 1, 1, 0, 0, 0, 0, time.UTC)),
+				End:   timestamppb.New(time.Date(2022, 1, 2, 0, 0, 0, 0, time.UTC)),
+			},
+			ComparisonTimeRange: &runtimev1.TimeRange{
+				Start: timestamppb.New(time.Date(2022, 1, 2, 0, 0, 0, 0, time.UTC)),
+				End:   timestamppb.New(time.Date(2022, 1, 3, 0, 0, 0, 0, time.UTC)),
+			},
+		}
+	}
+
+	q := newQuery()
+	q.SecurityClaims = &runtime.SecurityClaims{UserAttributes: map[string]any{"domain": "yahoo.com", "email": "user@yahoo.com"}}
+	err := q.Resolve(context.Background(), rt, instanceID, 0)
+	require.Error(t, err)
+	require.ErrorContains(t, err, "total volume")
+
+	q = newQuery()
+	q.SecurityClaims = &runtime.SecurityClaims{UserAttributes: map[string]any{"domain": "msn.com", "email": "user@msn.com"}}
+	err = q.Resolve(context.Background(), rt, instanceID, 0)
+	require.NoError(t, err)
 }

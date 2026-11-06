@@ -42,7 +42,6 @@
   import { createAndExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils.ts";
   import { untrack } from "svelte";
   import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
-  import { syncStoreWithSource } from "@rilldata/web-common/lib/store-utils/url-params-store-sync.svelte.ts";
 
   const { rillTime } = featureFlags;
 
@@ -68,15 +67,6 @@
     dashboardStore,
     expressionFilterManager,
   } = StateManagers;
-
-  syncStoreWithSource(
-    expressionFilterManager,
-    syncExpressionFilters,
-    () => expressionFilterManager.metricsViewsProvider.ready,
-    undefined,
-    // URL sync is managed by DashboardStateSync
-    true,
-  );
 
   const timeControlsStore = useTimeControlStore(StateManagers);
 
@@ -127,6 +117,7 @@
   );
 
   let activeTimeGrain = $derived(selectedTimeRange?.interval);
+  let adaptiveTimeGrain = $derived(!!$exploreState?.adaptiveTimeGrain);
   let defaultTimeRange = $derived(exploreSpec.defaultPreset?.timeRange);
 
   let { selectedTimeDimension } = $derived($dashboardStore);
@@ -358,10 +349,14 @@
       !selectedRangeAlias?.startsWith("rill-"),
   );
 
-  function onTimeGrainSelect(timeGrain: V1TimeGrain) {
-    if (usingRillTime && selectedRangeAlias) {
-      metricsExplorerStore.setTimeGrain($exploreName, timeGrain);
-    } else if (baseTimeRange) {
+  function onTimeGrainSelect(timeGrain: V1TimeGrain | undefined) {
+    if (timeGrain === undefined) {
+      metricsExplorerStore.setAdaptiveTimeGrain($exploreName, metricsViewSpec);
+      return;
+    }
+    metricsExplorerStore.setTimeGrain($exploreName, timeGrain);
+    if (!usingRillTime && baseTimeRange) {
+      // Legacy ranges are re-resolved with the new grain.
       makeTimeSeriesTimeRangeAndUpdateAppState(
         baseTimeRange,
         timeGrain,
@@ -394,19 +389,11 @@
         dimensionsWithInlistFilter: tempFilterManger.inList,
       };
 
+      tempFilterManger.cleanup();
+
       const url = dashboardStateSync.getUrlForExploreState(exploreState);
       return isUrlTooLong(url);
     });
-  }
-
-  function syncExpressionFilters() {
-    if (!expressionFilterManager.updating) {
-      metricsExplorerStore.syncExpressionFilter(
-        $exploreName,
-        expressionFilterManager,
-      );
-    }
-    return Promise.resolve();
   }
 </script>
 
@@ -444,6 +431,8 @@
           allowCustomTimeRange={exploreSpec.allowCustomTimeRange}
           {maxQueryTimeRange}
           {activeTimeGrain}
+          {adaptiveTimeGrain}
+          allowAdaptiveTimeGrain
           {activeTimeZone}
           canPanLeft={$canPanLeft}
           canPanRight={$canPanRight}

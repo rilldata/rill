@@ -41,6 +41,7 @@ const (
 const (
 	skipRawRows                 = "raw_rows"
 	skipNonPrimaryTimeDimension = "non_primary_time_dimension"
+	skipExactMeasures           = "exact_measures"
 )
 
 // Rollup routing decides whether a metrics query can be served from a
@@ -48,7 +49,7 @@ const (
 //
 // Routing decision:
 //
-//  1. Quick disqualification: raw-row queries and queries referencing a non-primary time dimension are skipped.
+//  1. Quick disqualification: raw-row queries, queries referencing a non-primary time dimension, and queries that compute measures exactly are skipped.
 //
 //  2. Eligibility (per rollup): a rollup is eligible only if all of these hold:
 //     a. Query time grain is derivable from the rollup grain (e.g. month from day).
@@ -59,11 +60,14 @@ const (
 //     f. All queried measures are present. Computed measures are rejected except for comparison-derived
 //        computes (ComparisonValue / ComparisonDelta / ComparisonRatio / ComparisonTime), which are
 //        allowed as long as their referenced base measure is in the rollup.
-//     g. All WHERE filter dimensions are present in the rollup.
+//     g. All WHERE filter dimensions are present in the rollup. The primary time dimension never counts as present here,
+//        since the rollup's time column is truncated to its grain; time bounds in the WHERE are moved into the time range earlier by rewriteQueryWhereTimeRange.
 //
 //  3. Time coverage: an eligible rollup must cover both the base and (when present) comparison time ranges.
+//     An open start or end (including a query without a time range) is checked against the base table's min or max.
 //     The query range is clamped to the widest available source: the start to min(baseMin, rollupMin) and
-//     the end to max(baseMax, rollupEffEnd). So a rollup that extends further back (or forward) than the
+//     the end to max(baseMax, rollupEffEnd), where the base data is treated as ending just after its last row (baseMax),
+//     since rollupEffEnd is exclusive. So a rollup that extends further back (or forward) than the
 //     base is preserved here, not rejected. Additionally, if the base table has data beyond the query range's end,
 //     that end must be aligned to the rollup grain (to prevent the last bucket from pulling in extra data).
 //
@@ -116,6 +120,20 @@ func (e *Executor) rewriteQueryForRollup(ctx context.Context, qry *metricsview.Q
 			attribute.Int("rollup.candidate_count", len(e.metricsView.Rollups)),
 			attribute.String("rollup.result", "skipped"),
 			attribute.String("rollup.skip_reason", skipNonPrimaryTimeDimension),
+		)
+		span.End()
+		return nil, nil
+	}
+
+	// Disqualify: queries that compute measures with their exact_expression.
+	// Exact aggregates (e.g. exact distinct counts) cannot be computed from pre-aggregated rows.
+	// This is keyed on the exact measures resolved by rewriteQueryExactMeasures, so an `exact` flag on a measure without an exact_expression keeps the rollup eligible.
+	if len(qry.ExactMeasures) > 0 {
+		_, span := tracer.Start(ctx, "rollup.selection")
+		span.SetAttributes(
+			attribute.Int("rollup.candidate_count", len(e.metricsView.Rollups)),
+			attribute.String("rollup.result", "skipped"),
+			attribute.String("rollup.skip_reason", skipExactMeasures),
 		)
 		span.End()
 		return nil, nil
@@ -215,14 +233,10 @@ func (e *Executor) rewriteQueryForRollup(ctx context.Context, qry *metricsview.Q
 		rollupEffEnd := timeutil.OffsetTime(rollupMax, timeutil.TimeGrainFromAPI(rollup.TimeGrain), 1, rollupLoc)
 
 		// Check coverage for the base time range and the comparison time range when present.
-		// When the query has no time range, use {baseMin, baseMax} for the coverage check so the rollup must still
-		// cover the base table's full data range; otherwise a partial rollup would silently truncate the result.
-		coverageTimeRange := qry.TimeRange
-		if !hasTimeRange {
-			coverageTimeRange = &metricsview.TimeRange{Start: baseMin, End: baseMax}
-		}
+		// An open start or end (including a query without a time range) must be covered up to the edge of the data;
+		// otherwise a partial rollup would silently truncate the result.
 		rangeRejected := false
-		if reason, attrs := checkRangeCoverage(coverageTimeRange, baseMin, baseMax, rollupMin, rollupEffEnd); reason != "" {
+		if reason, attrs := checkRangeCoverage(qry.TimeRange, baseMin, baseMax, rollupMin, rollupEffEnd); reason != "" {
 			rejectCandidate(reason, attrs...)
 			rangeRejected = true
 		}
@@ -355,9 +369,14 @@ func rollupEligible(rollup *runtimev1.MetricsViewSpec_Rollup, qry *metricsview.Q
 		}
 	}
 
-	// 4. All query dimensions present in rollup
+	// 4. All query dimensions present in rollup.
+	// The primary time dimension is left out of rollupDims even when the rollup lists it (e.g. with default or '*' dimensions):
+	// the rollup's time column is truncated to its grain, so it can't serve the raw time dimension or filters on it.
 	rollupDims := make(map[string]bool, len(rollup.Dimensions))
 	for _, d := range rollup.Dimensions {
+		if strings.EqualFold(d, primaryTimeDim) {
+			continue
+		}
 		rollupDims[strings.ToLower(d)] = true
 	}
 	// dimInRollup checks if a dimension is available in the rollup: either it's the primary
@@ -408,6 +427,12 @@ func rollupEligible(rollup *runtimev1.MetricsViewSpec_Rollup, qry *metricsview.Q
 				return false, rejectComputedMeasure, nil
 			}
 			for _, refName := range refNames {
+				// A comparison compute may reference an expression measure defined in the same query.
+				// That measure is not in the rollup, but the measures it references may be, so check those instead.
+				// Its own rollup safety is checked when the loop reaches it.
+				if _, ok := queryExpressionMeasure(qry, refName); ok {
+					continue
+				}
 				if !rollupMeasures[strings.ToLower(refName)] {
 					return false, rejectMeasureMissing, nil
 				}
@@ -502,24 +527,31 @@ func collectWhereDimensionsRec(expr *metricsview.Expression, dims map[string]boo
 }
 
 // checkRangeCoverage verifies that the rollup covers the given time range. The query range is clamped to the widest
-// available data range — i.e. min(baseMin, rollupMin) on the start and max(baseMax, rollupEffEnd) on the end
+// available data range — i.e. min(baseMin, rollupMin) on the start and max(baseEnd, rollupEffEnd) on the end
 // so a rollup isn't rejected when the query asks for data outside what either source can serve.
+// A nil range or an open (zero) start or end extends to the edge of that data range.
 // Returns the reject reason and trace attributes, or "" if covered.
 func checkRangeCoverage(tr *metricsview.TimeRange, baseMin, baseMax, rollupMin, rollupEffEnd time.Time) (string, []attribute.KeyValue) {
+	if tr == nil {
+		tr = &metricsview.TimeRange{}
+	}
 	deepestStart := baseMin
 	if rollupMin.Before(baseMin) {
 		deepestStart = rollupMin
 	}
 	effectiveStart := tr.Start
-	if !effectiveStart.IsZero() && deepestStart.After(effectiveStart) {
+	if effectiveStart.IsZero() || deepestStart.After(effectiveStart) {
 		effectiveStart = deepestStart
 	}
-	furthestEnd := baseMax
-	if rollupEffEnd.After(baseMax) {
+	// baseMax is the timestamp of the last row, so it is inclusive, while rollupEffEnd is exclusive.
+	// Treat the base data as ending just after baseMax, so a rollup must end strictly after the last base row to cover it.
+	baseEnd := baseMax.Add(time.Nanosecond)
+	furthestEnd := baseEnd
+	if rollupEffEnd.After(baseEnd) {
 		furthestEnd = rollupEffEnd
 	}
 	effectiveEnd := tr.End
-	if !effectiveEnd.IsZero() && effectiveEnd.After(furthestEnd) {
+	if effectiveEnd.IsZero() || effectiveEnd.After(furthestEnd) {
 		effectiveEnd = furthestEnd
 	}
 	if !effectiveStart.IsZero() && rollupMin.After(effectiveStart) {
@@ -581,6 +613,16 @@ func rollupSafeReferencedMeasures(c *metricsview.MeasureCompute) ([]string, bool
 		return parsed.Refs(), true
 	}
 	return nil, false
+}
+
+// queryExpressionMeasure returns the expression measure with the given name defined in the query, if any.
+func queryExpressionMeasure(qry *metricsview.Query, name string) (metricsview.Measure, bool) {
+	for _, qm := range qry.Measures {
+		if qm.Name == name && qm.Compute != nil && qm.Compute.Expression != nil {
+			return qm, true
+		}
+	}
+	return metricsview.Measure{}, false
 }
 
 // normalizeTimezone validates and normalizes a timezone string for comparison.

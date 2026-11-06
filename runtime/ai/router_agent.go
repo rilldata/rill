@@ -7,6 +7,7 @@ import (
 	"regexp"
 	"slices"
 	"strings"
+	"unicode/utf8"
 
 	"github.com/google/jsonschema-go/jsonschema"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
@@ -229,14 +230,34 @@ You must answer with a single agent choice and no further explanation. Pick only
 var whitespaceRegexp = regexp.MustCompile(`\s+`)
 
 // promptToTitle generates a truncated conversation title from a prompt.
+// Chat references are kept as-is so that the UI can render them with up-to-date labels.
 func promptToTitle(message string) string {
 	// Collapse whitespace to single spaces.
 	title := whitespaceRegexp.ReplaceAllString(message, " ")
 	title = strings.TrimSpace(title)
 
-	// Truncate to 50 characters.
-	if len(title) > 50 {
-		title = title[:47] + "..."
+	// Truncate to 50 runes.
+	// A chat reference counts as 10 runes since the UI renders it as a short label.
+	// It is never split, so the UI can still parse it; if it doesn't fit, the cut is placed before it.
+	refs := chatReferenceRegexp.FindAllStringIndex(title, -1)
+	length, cut := 0, -1
+	for i := 0; i < len(title); {
+		end, size := 0, 0
+		if len(refs) > 0 && refs[0][0] == i {
+			end, size = refs[0][1], 10
+			refs = refs[1:]
+		} else {
+			_, n := utf8.DecodeRuneInString(title[i:])
+			end, size = i+n, 1
+		}
+		if cut < 0 && length+size > 47 {
+			cut = i
+		}
+		length += size
+		i = end
+	}
+	if length > 50 {
+		title = strings.TrimRight(title[:cut], " ") + "..."
 	}
 
 	// Fallback title if empty.

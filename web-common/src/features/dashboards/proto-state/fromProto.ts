@@ -11,8 +11,10 @@ import {
 import {
   FromProtoOperationMap,
   FromProtoPivotTableModeMap,
+  FromProtoPivotTotalsRowPositionMap,
   FromProtoTimeGrainMap,
 } from "@rilldata/web-common/features/dashboards/proto-state/enum-maps";
+import { dedupePivotChips } from "@rilldata/web-common/features/dashboards/pivot/pivot-chip-utils";
 import { convertFilterToExpression } from "@rilldata/web-common/features/dashboards/proto-state/filter-converter";
 import {
   createAndExpression,
@@ -21,6 +23,7 @@ import {
   getAllIdentifiers,
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
+import { validateAndCleanExploreState } from "@rilldata/web-common/features/dashboards/stores/validate-and-clean-explore-state";
 import { TDDChart } from "@rilldata/web-common/features/dashboards/time-dimension-details/types";
 import { getMapFromArray } from "@rilldata/web-common/lib/arrayUtils";
 import {
@@ -44,6 +47,7 @@ import {
   DashboardState_ActivePage,
   DashboardState_LeaderboardContextColumn,
   DashboardState_PivotTableMode,
+  DashboardState_PivotTotalsRowPosition,
   DashboardTimeRange,
   PivotElement,
 } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
@@ -145,6 +149,9 @@ export function getDashboardStateFromProto(
     if (dashboard.timeGrain) {
       entity.selectedTimeRange.interval =
         FromProtoTimeGrainMap[dashboard.timeGrain];
+      entity.adaptiveTimeGrain = false;
+    } else {
+      entity.adaptiveTimeGrain = true;
     }
   }
 
@@ -226,6 +233,15 @@ export function getDashboardStateFromProto(
     entity.leaderboardMeasureNames = dashboard.leaderboardMeasures;
   }
 
+  if (dashboard.ephemeralMeasures?.length) {
+    entity.ephemeralMeasures = dashboard.ephemeralMeasures.map((def) => ({
+      name: def.name,
+      displayName: def.displayName,
+      expression: def.expression,
+      ...(def.formatPreset ? { formatPreset: def.formatPreset } : {}),
+    }));
+  }
+
   if (dashboard.activePage === DashboardState_ActivePage.PIVOT) {
     entity.pivot = fromPivotProto(dashboard, metricsView);
   } else if (dashboard.activePage !== DashboardState_ActivePage.UNSPECIFIED) {
@@ -233,6 +249,10 @@ export function getDashboardStateFromProto(
   }
 
   Object.assign(entity, fromActivePageProto(dashboard));
+
+  // The proto can name measures and dimensions that the metrics view or explore no longer defines,
+  // so drop them before they are queried.
+  validateAndCleanExploreState(metricsView, explore, entity);
 
   return entity;
 }
@@ -397,6 +417,10 @@ function fromPivotProto(
     }
   };
 
+  const ephemeralMeasuresMap = new Map(
+    (dashboard.ephemeralMeasures ?? []).map((def) => [def.name, def]),
+  );
+
   const measuresMap = getMapFromArray(
     metricsView.measures ?? [],
     (m) => m.name,
@@ -405,7 +429,11 @@ function fromPivotProto(
     const mes = measuresMap.get(name);
     return {
       id: name,
-      title: mes?.displayName || mes?.name || "Unknown",
+      title:
+        mes?.displayName ||
+        mes?.name ||
+        ephemeralMeasuresMap.get(name)?.displayName ||
+        "Unknown",
       type: PivotChipType.Measure,
     };
   };
@@ -435,12 +463,16 @@ function fromPivotProto(
     ];
   }
 
+  // Legacy state can hold a field twice; the pivot header keys chips by field.
+  const rows = dedupePivotChips(rowDimensions);
+  const columns = dedupePivotChips(
+    [...colDimensions, ...dashboard.pivotColumnMeasures.map(mapMeasure)],
+    rows.map((chip) => chip.id),
+  );
+
   return {
-    rows: rowDimensions,
-    columns: [
-      ...colDimensions,
-      ...dashboard.pivotColumnMeasures.map(mapMeasure),
-    ],
+    rows,
+    columns,
     expanded: dashboard.pivotExpanded,
     sorting: dashboard.pivotSort ?? [],
     columnPage: dashboard.pivotColumnPage ?? 1,
@@ -449,6 +481,11 @@ function fromPivotProto(
     activeCell: null,
     showTotalsColumn: dashboard.pivotShowTotalsColumn ?? true,
     showTotalsRow: dashboard.pivotShowTotalsRow ?? true,
+    totalsRowPosition:
+      FromProtoPivotTotalsRowPositionMap[
+        dashboard.pivotTotalsRowPosition ||
+          DashboardState_PivotTotalsRowPosition.TOP
+      ],
     tableMode:
       FromProtoPivotTableModeMap[
         dashboard.pivotTableMode || DashboardState_PivotTableMode.NEST
@@ -508,6 +545,7 @@ function blankPivotState(): PivotState {
     activeCell: null,
     showTotalsColumn: true,
     showTotalsRow: true,
+    totalsRowPosition: "top",
     tableMode: "nest" as PivotTableMode,
   };
 }

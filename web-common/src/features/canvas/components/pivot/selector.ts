@@ -4,6 +4,7 @@ import {
 } from "@rilldata/web-common/features/canvas/components/validators";
 import { isTimeDimension } from "@rilldata/web-common/features/dashboards/pivot/pivot-utils";
 import type { PivotSpec, TableSpec } from "./";
+import { fieldNames } from "./field-config";
 import type { V1MetricsViewSpec } from "@rilldata/web-common/runtime-client";
 
 export function validateTableSchema(
@@ -40,10 +41,16 @@ export function validateTableSchema(
 }
 
 function validateFlat(tableSpec: TableSpec, metricsView: V1MetricsViewSpec) {
-  const allMeasures = metricsView?.measures?.map((m) => m.name as string) || [];
+  const ephemeralMeasureNames = new Set(
+    tableSpec.adhoc_measures?.map((c) => c.name) ?? [],
+  );
+  const allMeasures = [
+    ...(metricsView?.measures?.map((m) => m.name as string) || []),
+    ...ephemeralMeasureNames,
+  ];
   const allDimensions =
     metricsView?.dimensions?.map((d) => d.name || (d.column as string)) || [];
-  const columns = tableSpec?.columns || [];
+  const columns = fieldNames(tableSpec?.columns);
 
   const measures = columns.filter((c) => allMeasures.includes(c));
   const dimensions = columns.filter((c) => allDimensions.includes(c));
@@ -54,7 +61,11 @@ function validateFlat(tableSpec: TableSpec, metricsView: V1MetricsViewSpec) {
       error: "Select at least one measure or dimension for the table",
     };
   }
-  const validateMeasuresRes = validateMeasures(metricsView, measures);
+  const validateMeasuresRes = validateMeasures(
+    metricsView,
+    measures,
+    ephemeralMeasureNames,
+  );
   if (!validateMeasuresRes.isValid) {
     const invalidMeasures = validateMeasuresRes.invalidMeasures.join(", ");
     return {
@@ -81,9 +92,12 @@ function validateFlat(tableSpec: TableSpec, metricsView: V1MetricsViewSpec) {
 }
 
 function validatePivot(tableSpec: PivotSpec, metricsView: V1MetricsViewSpec) {
-  const measures = tableSpec.measures || [];
-  const rowDimensions = tableSpec.row_dimensions || [];
-  const colDimensions = tableSpec.col_dimensions || [];
+  const ephemeralMeasureNames = new Set(
+    tableSpec.adhoc_measures?.map((c) => c.name) ?? [],
+  );
+  const measures = fieldNames(tableSpec.measures);
+  const rowDimensions = fieldNames(tableSpec.row_dimensions);
+  const colDimensions = fieldNames(tableSpec.col_dimensions);
 
   if (!measures.length && !rowDimensions.length && !colDimensions.length) {
     return {
@@ -91,7 +105,11 @@ function validatePivot(tableSpec: PivotSpec, metricsView: V1MetricsViewSpec) {
       error: "Select at least one measure or dimension for the table",
     };
   }
-  const validateMeasuresRes = validateMeasures(metricsView, measures);
+  const validateMeasuresRes = validateMeasures(
+    metricsView,
+    measures,
+    ephemeralMeasureNames,
+  );
   if (!validateMeasuresRes.isValid) {
     const invalidMeasures = validateMeasuresRes.invalidMeasures.join(", ");
     return {

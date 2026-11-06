@@ -541,8 +541,8 @@ func (c *Controller) Subscribe(ctx context.Context, fn SubscribeCallback) error 
 
 // Create creates a resource and enqueues it for reconciliation.
 // If a resource with the same name is currently being deleted, the deletion will be cancelled.
-// The tags parameter is stored generically on the resource's ResourceMeta for organization/filtering purposes.
-func (c *Controller) Create(ctx context.Context, name *runtimev1.ResourceName, refs []*runtimev1.ResourceName, owner *runtimev1.ResourceName, paths, tags []string, hidden bool, r *runtimev1.Resource) error {
+// The tags and metadata parameters are stored generically on the resource's ResourceMeta for organization/filtering purposes.
+func (c *Controller) Create(ctx context.Context, name *runtimev1.ResourceName, refs []*runtimev1.ResourceName, owner *runtimev1.ResourceName, paths, tags []string, metadata map[string]string, hidden bool, r *runtimev1.Resource) error {
 	if err := c.checkRunning(); err != nil {
 		return err
 	}
@@ -567,7 +567,7 @@ func (c *Controller) Create(ctx context.Context, name *runtimev1.ResourceName, r
 		requeued = true
 	}
 
-	err := c.catalog.create(name, refs, owner, paths, tags, hidden, r)
+	err := c.catalog.create(name, refs, owner, paths, tags, metadata, hidden, r)
 	if err != nil {
 		return err
 	}
@@ -580,8 +580,8 @@ func (c *Controller) Create(ctx context.Context, name *runtimev1.ResourceName, r
 
 // UpdateMeta updates a resource's meta fields and enqueues it for reconciliation.
 // If called from outside the resource's reconciler and the resource is currently reconciling, the current reconciler will be cancelled first.
-// The tags parameter is stored generically on the resource's ResourceMeta for organization/filtering purposes.
-func (c *Controller) UpdateMeta(ctx context.Context, name *runtimev1.ResourceName, refs []*runtimev1.ResourceName, owner *runtimev1.ResourceName, paths, tags []string) error {
+// The tags and metadata parameters are stored generically on the resource's ResourceMeta for organization/filtering purposes.
+func (c *Controller) UpdateMeta(ctx context.Context, name *runtimev1.ResourceName, refs []*runtimev1.ResourceName, owner *runtimev1.ResourceName, paths, tags []string, metadata map[string]string) error {
 	if err := c.checkRunning(); err != nil {
 		return err
 	}
@@ -601,7 +601,7 @@ func (c *Controller) UpdateMeta(ctx context.Context, name *runtimev1.ResourceNam
 		return err
 	}
 
-	err = c.catalog.updateMeta(name, refs, owner, paths, tags)
+	err = c.catalog.updateMeta(name, refs, owner, paths, tags, metadata)
 	if err != nil {
 		return err
 	}
@@ -617,8 +617,8 @@ func (c *Controller) UpdateMeta(ctx context.Context, name *runtimev1.ResourceNam
 
 // UpdateName renames a resource and updates annotations, and enqueues it for reconciliation.
 // If called from outside the resource's reconciler and the resource is currently reconciling, the current reconciler will be cancelled first.
-// The tags parameter is stored generically on the resource's ResourceMeta for organization/filtering purposes.
-func (c *Controller) UpdateName(ctx context.Context, name, newName, owner *runtimev1.ResourceName, paths, tags []string) error {
+// The tags and metadata parameters are stored generically on the resource's ResourceMeta for organization/filtering purposes.
+func (c *Controller) UpdateName(ctx context.Context, name, newName, owner *runtimev1.ResourceName, paths, tags []string, metadata map[string]string) error {
 	if err := c.checkRunning(); err != nil {
 		return err
 	}
@@ -653,7 +653,7 @@ func (c *Controller) UpdateName(ctx context.Context, name, newName, owner *runti
 	}
 	c.enqueue(newName)
 
-	err = c.catalog.updateMeta(newName, r.Meta.Refs, owner, paths, tags)
+	err = c.catalog.updateMeta(newName, r.Meta.Refs, owner, paths, tags, metadata)
 	if err != nil {
 		return err
 	}
@@ -1022,7 +1022,7 @@ func (c *Controller) safeMutateRenamed(n *runtimev1.ResourceName) error {
 	}
 
 	// Create a new resource with the old name, so we can delete it separately.
-	err = c.catalog.create(renamedFrom, r.Meta.Refs, r.Meta.Owner, r.Meta.FilePaths, r.Meta.Tags, r.Meta.Hidden, r)
+	err = c.catalog.create(renamedFrom, r.Meta.Refs, r.Meta.Owner, r.Meta.FilePaths, r.Meta.Tags, r.Meta.Metadata, r.Meta.Hidden, r)
 	if err != nil {
 		return err
 	}
@@ -1081,7 +1081,7 @@ func (c *Controller) safeRename(from, to *runtimev1.ResourceName) error {
 		return err
 	}
 
-	err = c.catalog.create(to, r.Meta.Refs, r.Meta.Owner, r.Meta.FilePaths, r.Meta.Tags, r.Meta.Hidden, r)
+	err = c.catalog.create(to, r.Meta.Refs, r.Meta.Owner, r.Meta.FilePaths, r.Meta.Tags, r.Meta.Metadata, r.Meta.Hidden, r)
 	if err != nil {
 		return err
 	}

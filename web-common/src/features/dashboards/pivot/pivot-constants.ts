@@ -1,7 +1,17 @@
 export const SHOW_MORE_BUTTON = "__rill_type_SHOW_MORE_BUTTON";
 export const LOADING_CELL = "__rill_type_LOADING_CELL";
+// Row id of the grand-totals row. It is rendered from a standalone tanstack row
+// that is not part of the table's row model, so it never collides with data row ids.
+export const PIVOT_TOTALS_ROW_ID = "__rill_totals_row";
 
 export const MAX_ROW_EXPANSION_LIMIT = 100;
+
+/**
+ * Time comparison is switched off in the pivot once more measures than this
+ * are in its columns. Every compared measure fans out into three request
+ * measures (value, delta and delta percent), so the query cost grows quickly.
+ */
+export const MAX_PIVOT_COMPARISON_MEASURES = 20;
 
 /**
  * Allowed row limit values for the pivot table.

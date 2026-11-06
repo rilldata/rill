@@ -1,4 +1,4 @@
-<script lang="ts" context="module">
+<script lang="ts" module>
   export type CreateReportProps = {
     mode: "create";
     query: V1Query;
@@ -18,14 +18,10 @@
 </script>
 
 <script lang="ts">
+  import { ephemeralDefsFromRequestMeasures } from "@rilldata/web-common/features/dashboards/ephemeral-measures/measure-mapping";
+  import { useExploreState } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
-  import { page } from "$app/stores";
-  import {
-    createAdminServiceCreateReport,
-    createAdminServiceEditReport,
-    createAdminServiceGetCurrentUser,
-    createAdminServiceListProjectMemberUsers,
-  } from "@rilldata/web-admin/client";
+  import { page } from "$app/state";
   import * as Dialog from "@rilldata/web-common/components/dialog";
   import {
     aggregationRequestWithRowsAndColumns,
@@ -34,6 +30,7 @@
   } from "@rilldata/web-common/features/dashboards/aggregation-request-utils.ts";
   import { useMetricsViewTimeRange } from "@rilldata/web-common/features/dashboards/selectors.ts";
   import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors.ts";
+  import { getSpecQuery } from "@rilldata/web-common/features/explore-mappers/utils";
   import {
     getDashboardNameFromReport,
     getExistingReportInitialFormValues,
@@ -52,8 +49,10 @@
   import { defaults, superForm } from "sveltekit-superforms";
   import { yup, type ValidationAdapter } from "sveltekit-superforms/adapters";
   import { array, object, string, boolean } from "yup";
+  import { getExportLimitSchema } from "@rilldata/web-common/features/exports/export-file-options";
   import { Button } from "../../components/button";
   import {
+    createRuntimeServiceGetInstance,
     getRuntimeServiceGetResourceQueryKey,
     getRuntimeServiceListResourcesQueryKey,
     V1ExportFormat,
@@ -71,23 +70,39 @@
   import { convertFormValuesToCronExpression } from "./time-utils";
   import type { ExpressionFilterManager } from "@rilldata/web-common/features/dashboards/filters/ExpressionFilterManager.svelte.ts";
   import type { TimeControls } from "@rilldata/web-common/features/dashboards/stores/TimeControls.ts";
-  import { onDestroy } from "svelte";
+  import { untrack } from "svelte";
+  import { createFormMetadataProvider } from "@rilldata/web-common/features/scheduled-reports/FormMetadataProvider.svelte.ts";
+  import {
+    reportDeleteMutationFactory,
+    getReportMutationFactory,
+  } from "@rilldata/web-common/features/scheduled-reports/ReportFormMetadataProvider.ts";
+  import { EmbedStore } from "@rilldata/web-common/features/embeds/embed-store.ts";
 
-  export let open: boolean;
-  export let props:
-    | CreateReportProps
-    | CreateCanvasReportProps
-    | EditReportProps;
+  let {
+    open = $bindable(),
+    props,
+  }: {
+    open: boolean;
+    props: CreateReportProps | CreateCanvasReportProps | EditReportProps;
+  } = $props();
 
-  const user = createAdminServiceGetCurrentUser();
   const FORM_ID = "scheduled-report-form";
 
   const runtimeClient = useRuntimeClient();
+  // svelte-ignore state_referenced_locally
+  const provider = createFormMetadataProvider(
+    runtimeClient,
+    getReportMutationFactory(props.mode === "edit"),
+    reportDeleteMutationFactory,
+  );
+  const { mutation } = provider;
 
   // The dialog is mounted fresh for each report, so deriving these once at init is safe.
+  // svelte-ignore state_referenced_locally
   const isCanvasReport =
     props.mode === "create-canvas" ||
     (props.mode === "edit" && !!props.reportSpec.annotations?.canvas);
+  // svelte-ignore state_referenced_locally
   const canvasName =
     props.mode === "create-canvas"
       ? props.canvasName
@@ -95,71 +110,93 @@
         ? (props.reportSpec.annotations?.canvas ?? "")
         : "";
 
-  $: ({ organization, project, report: reportName } = $page.params);
-  $: ({ instanceId } = runtimeClient);
+  const { instanceId } = runtimeClient;
+  const reportName = $derived(page.params.report);
 
-  $: listProjectMemberUsersQuery = createAdminServiceListProjectMemberUsers(
-    organization,
-    project,
-  );
-  $: projectMembersSet = new Set(
-    $listProjectMemberUsersQuery.data?.members?.map((m) => m.userEmail) ?? [],
-  );
-
-  $: exploreName = isCanvasReport
-    ? ""
-    : props.mode === "create"
-      ? props.exploreName
-      : props.mode === "edit"
-        ? getDashboardNameFromReport(props.reportSpec)
-        : "";
-
-  $: validExploreSpec = useExploreValidSpec(runtimeClient, exploreName);
-  $: exploreSpec = $validExploreSpec.data?.explore ?? {};
-  $: metricsViewName = exploreSpec.metricsView ?? "";
-
-  $: allTimeRangeResp = useMetricsViewTimeRange(
+  // The creator of a report created from an embed has a field for their email, which always gets the report:
+  // in an embed, if rill.yaml configures `embeds.open_url`, since only that email gets the open link to the embedder's app;
+  // and for reports with a saved creator email, which the admin service always keeps as a recipient.
+  // Outside of an embed, the field is read-only, since only the creator can change it.
+  const isEmbedded = EmbedStore.isEmbedded();
+  const embedOpenUrlQuery = createRuntimeServiceGetInstance(
     runtimeClient,
-    metricsViewName,
-    undefined,
-    queryClient,
+    {},
+    {
+      query: {
+        enabled: isEmbedded,
+        select: (data) => data?.instance?.embedOpenUrl ?? "",
+      },
+    },
+  );
+  // svelte-ignore state_referenced_locally
+  const hasSavedEmbedOwnerEmail =
+    props.mode === "edit" &&
+    !!props.reportSpec.annotations?.admin_embed_owner_email;
+  const showEmbedOwnerEmail = $derived(
+    hasSavedEmbedOwnerEmail || (isEmbedded && !!$embedOpenUrlQuery.data),
   );
 
-  $: mutation =
-    props.mode === "edit"
-      ? createAdminServiceEditReport()
-      : createAdminServiceCreateReport();
+  const exploreName = $derived(
+    isCanvasReport
+      ? ""
+      : props.mode === "create"
+        ? props.exploreName
+        : props.mode === "edit"
+          ? getDashboardNameFromReport(props.reportSpec)
+          : "",
+  );
 
-  $: queryName =
+  const validExploreSpec = $derived(
+    useExploreValidSpec(runtimeClient, exploreName),
+  );
+  const exploreSpec = $derived($validExploreSpec.data?.explore ?? {});
+  const exploreStateStore = $derived(useExploreState(exploreName));
+  const metricsViewName = $derived(exploreSpec.metricsView ?? "");
+
+  const allTimeRangeResp = $derived(
+    useMetricsViewTimeRange(
+      runtimeClient,
+      metricsViewName,
+      undefined,
+      queryClient,
+    ),
+  );
+
+  const queryName = $derived(
     props.mode === "create"
       ? getQueryNameFromQuery(props.query)
       : props.mode === "edit"
-        ? ((props.reportSpec.resolverProperties?.query_name as
-            | string
-            | undefined) ?? props.reportSpec.queryName)
-        : undefined;
+        ? getSpecQuery(props.reportSpec).queryName
+        : undefined,
+  );
   // Canvas reports have no query, and their queryArgsJson is an empty string (not undefined),
   // so they must not go through JSON.parse.
-  $: aggregationRequest = (
-    props.mode === "create"
+  const aggregationRequest = $derived(
+    (props.mode === "create"
       ? props.query.metricsViewAggregationRequest
       : props.mode === "edit" && !isCanvasReport
-        ? JSON.parse(
-            (props.reportSpec.resolverProperties?.query_args_json as
-              | string
-              | undefined) ||
-              props.reportSpec.queryArgsJson ||
-              "{}",
-          )
-        : {}
-  ) as V1MetricsViewAggregationRequest;
+        ? JSON.parse(getSpecQuery(props.reportSpec).queryArgsJson || "{}")
+        : {}) as V1MetricsViewAggregationRequest,
+  );
 
-  let filters: ExpressionFilterManager | undefined;
-  let timeControls: TimeControls | undefined;
-  let cleanup: (() => void) | undefined = undefined;
-  $: {
-    cleanup?.();
-    ({ filters, timeControls, cleanup } = isCanvasReport
+  // The explore state only exists on the explore page (create mode);
+  // an edited report carries its definitions in the saved request.
+  const ephemeralMeasures = $derived(
+    props.mode === "edit"
+      ? ephemeralDefsFromRequestMeasures(aggregationRequest.measures)
+      : $exploreStateStore?.ephemeralMeasures,
+  );
+
+  const {
+    filters,
+    timeControls,
+    cleanup,
+  }: {
+    filters: ExpressionFilterManager | undefined;
+    timeControls: TimeControls | undefined;
+    cleanup: (() => void) | undefined;
+  } = $derived(
+    isCanvasReport
       ? { filters: undefined, timeControls: undefined, cleanup: undefined }
       : getFiltersAndTimeControlsFromAggregationRequest(
           runtimeClient,
@@ -167,10 +204,14 @@
           exploreName,
           aggregationRequest,
           $allTimeRangeResp.data?.timeRangeSummary,
-        ));
-  }
+        ),
+  );
+  // Release the previous filters and time controls whenever they are rebuilt, and on destroy.
+  $effect(() => cleanup);
+  $effect(() => () => provider.cleanup());
 
   let currentProtobufState: string | undefined = undefined;
+  // svelte-ignore state_referenced_locally
   if (open && props.mode === "create") {
     const stateManagers = getStateManagers();
     const { dashboardStore } = stateManagers;
@@ -181,6 +222,7 @@
   // state to display and save. In edit mode, the report's stored state is applied to the
   // form's canvas store directly (via urlStateOverride), never through the page URL: the
   // dialog is on the report page, whose URL must not be rewritten.
+  // svelte-ignore state_referenced_locally
   const canvasStateOverride =
     props.mode === "edit" && isCanvasReport
       ? stripInternalReportParams(
@@ -195,9 +237,11 @@
       emailRecipients: array().of(
         string().email(m.report_form_invalid_email()),
       ),
+      embedOwnerEmail: string().email(m.report_form_invalid_email()),
       enableSlackNotification: boolean(), // Needed to get the type for validation
       slackChannels: array().of(string()),
       slackUsers: array().of(string().email(m.report_form_invalid_email())),
+      exportLimit: getExportLimitSchema(),
       columns: isCanvasReport
         ? array().of(string())
         : array().of(string()).min(1),
@@ -207,9 +251,11 @@
         m.report_email_validation(),
         function (value) {
           // Check if at least one array has non-empty values
-          const hasEmailRecipients = value.emailRecipients
-            ? value.emailRecipients.filter(Boolean).length > 0
-            : false;
+          const hasEmailRecipients =
+            !!value.embedOwnerEmail?.trim() ||
+            (value.emailRecipients
+              ? value.emailRecipients.filter(Boolean).length > 0
+              : false);
           if (!value.enableSlackNotification) return hasEmailRecipients;
 
           const hasSlackUsers = value.slackUsers
@@ -230,29 +276,38 @@
 
           return (
             values.emailRecipients?.every(
-              (recipient) => !recipient || projectMembersSet.has(recipient),
+              (recipient) =>
+                !recipient || provider.projectMembersSet.has(recipient),
             ) ?? true
           );
         },
       ),
   ) as ValidationAdapter<ReportValues>;
 
-  $: initialValues =
+  const initialValues = $derived(
     props.mode === "create"
       ? getNewReportInitialFormValues(
-          $user.data?.user?.email,
+          provider.userEmail,
           aggregationRequest,
+          showEmbedOwnerEmail,
         )
       : props.mode === "create-canvas"
-        ? getNewCanvasReportInitialFormValues($user.data?.user?.email)
+        ? getNewCanvasReportInitialFormValues(provider.userEmail)
         : getExistingReportInitialFormValues(
             props.reportSpec,
-            $user.data?.user?.email,
+            provider.userEmail,
             aggregationRequest,
-          );
+            showEmbedOwnerEmail,
+          ),
+  );
 
-  $: ({ form, errors, enhance, submit, submitting } = superForm(
-    defaults(initialValues, schema),
+  // superForm registers lifecycle hooks, so it must be created once during init.
+  // The initial values can change after init (e.g. the user's email loads), so reset the form to them.
+  const { form, errors, enhance, submit, submitting, reset } = superForm(
+    defaults(
+      untrack(() => initialValues),
+      schema,
+    ),
     {
       id: FORM_ID,
       SPA: true,
@@ -268,11 +323,16 @@
       validationMethod: "auto",
       invalidateAll: false,
     },
-  ));
+  );
+  $effect.pre(() => {
+    const newState = initialValues;
+    untrack(() => reset({ newState }));
+  });
 
-  let localError: string | undefined = undefined;
-  $: generalErrors =
-    $errors._errors?.[0] ?? localError ?? $mutation.error?.message;
+  let localError = $state<string | undefined>(undefined);
+  const generalErrors = $derived(
+    $errors._errors?.[0] ?? localError ?? ($mutation.error as any)?.message,
+  );
 
   function buildReportOptions(values: ReportValues) {
     const refreshCron = convertFormValuesToCronExpression(
@@ -293,6 +353,12 @@
         ? values.slackUsers.filter(Boolean)
         : undefined,
       webOpenMode: values.webOpenMode,
+      // Only sent if the field is shown, since the creator can't unsubscribe once their email is saved.
+      // The admin service ignores it unless the creator edits the report, so other editors keep the saved email.
+      embedOwnerEmail:
+        isEmbedded && showEmbedOwnerEmail
+          ? values.embedOwnerEmail.trim()
+          : undefined,
     };
 
     if (isCanvasReport) {
@@ -347,10 +413,12 @@
           columns: values.columns,
           showTimeComparison: timeControlsState.showTimeComparison,
           selectedTimezone: timeControlsState.selectedTimezone,
+          ephemeralMeasures,
         }),
       ],
     );
-    updatedAggregationRequest.where = filters?.topLevelJoiner[metricsViewName];
+    updatedAggregationRequest.where =
+      filters?.topLevelJoiner.expr[metricsViewName];
     return {
       ...commonOptions,
       explore: exploreName,
@@ -358,6 +426,7 @@
       queryArgsJson: JSON.stringify(updatedAggregationRequest),
       exportLimit: values.exportLimit || undefined,
       exportIncludeHeader: values.exportIncludeHeader || false,
+      exportAttach: values.exportAttach,
       exportFormat: values.exportFormat,
       webOpenState:
         props.mode === "create"
@@ -381,8 +450,8 @@
     }
     try {
       await $mutation.mutateAsync({
-        org: organization,
-        project,
+        org: provider.organization,
+        project: provider.project,
         name: reportName,
         data: {
           options,
@@ -406,32 +475,36 @@
 
       open = false;
 
+      // Show report link only during create.
+      // There only show when navigation is enabled in embed.
+      const showReportLink =
+        props.mode === "create" &&
+        (!EmbedStore.getInstance() ||
+          EmbedStore.getInstance()?.navigationEnabled);
       eventBus.emit("notification", {
         message:
           props.mode === "edit"
             ? m.report_form_edited_notification()
             : m.report_form_created_notification(),
-        link:
-          props.mode === "edit"
-            ? undefined
-            : {
-                href: `/${organization}/${project}/-/reports`,
-                text: m.report_form_go_to_reports(),
-              },
+        link: showReportLink
+          ? {
+              href: `${provider.pageBasePath}/reports`,
+              text: m.report_form_go_to_reports(),
+            }
+          : undefined,
         type: "success",
       });
     } catch {
       // showing error below
     }
   }
-
-  onDestroy(() => {
-    cleanup?.();
-  });
 </script>
 
 <Dialog.Root bind:open>
-  <Dialog.Content class="min-w-[900px]" escapeKeydownBehavior="ignore">
+  <Dialog.Content
+    class="min-w-[900px] max-h-screen overflow-auto"
+    escapeKeydownBehavior="ignore"
+  >
     <Dialog.Title>{m.report_form_schedule()}</Dialog.Title>
 
     <BaseScheduledReportForm
@@ -446,6 +519,9 @@
       {canvasStateOverride}
       {filters}
       {timeControls}
+      {ephemeralMeasures}
+      {showEmbedOwnerEmail}
+      {provider}
     />
 
     {#if generalErrors}

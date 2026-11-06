@@ -4,7 +4,6 @@
   import InputLabel from "@rilldata/web-common/components/forms/InputLabel.svelte";
   import MultiInput from "@rilldata/web-common/components/forms/MultiInput.svelte";
   import FormSection from "@rilldata/web-common/components/forms/FormSection.svelte";
-  import { getHasSlackConnection } from "@rilldata/web-common/features/alerts/delivery-tab/notifiers-utils";
   import type { TimeControls } from "@rilldata/web-common/features/dashboards/stores/TimeControls.ts";
   import FiltersForm from "@rilldata/web-common/features/scheduled-reports/FiltersForm.svelte";
   import RowsAndColumnsForm from "@rilldata/web-common/features/scheduled-reports/fields/RowsAndColumnsForm.svelte";
@@ -14,14 +13,12 @@
     type ReportValues,
   } from "@rilldata/web-common/features/scheduled-reports/utils";
   import { V1ExportFormat } from "@rilldata/web-common/runtime-client";
-  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
-  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
-  import InfoCircle from "@rilldata/web-common/components/icons/InfoCircle.svelte";
   import type { Readable } from "svelte/store";
-  import type { SuperFormErrors } from "sveltekit-superforms/client";
+  import type { SuperForm, SuperFormErrors } from "sveltekit-superforms/client";
   import Input from "../../components/forms/Input.svelte";
   import Select from "../../components/forms/Select.svelte";
   import Checkbox from "../../components/forms/Checkbox.svelte";
+  import ExportFileOptions from "@rilldata/web-common/features/exports/ExportFileOptions.svelte";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import type { ExpressionFilterManager } from "../dashboards/filters/ExpressionFilterManager.svelte.ts";
   import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors.ts";
@@ -31,22 +28,48 @@
   } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import CanvasProvider from "@rilldata/web-common/features/canvas/CanvasProvider.svelte";
   import CanvasFilters from "@rilldata/web-common/features/canvas/filters/CanvasFilters.svelte";
+  import CanvasFilterParamsSync from "@rilldata/web-common/features/canvas/CanvasFilterParamsSync.svelte";
+  import { useVisibilityConditionsCheck } from "@rilldata/web-common/features/dashboards/granular-access-policies/useSecurityPolicyCheck";
   import { specHasTabGroups } from "@rilldata/web-common/features/canvas/stores/tab-group";
+  import type { EphemeralMeasureDef } from "@rilldata/web-common/features/dashboards/ephemeral-measures/types.ts";
   import type { V1Resource } from "@rilldata/web-common/runtime-client";
+  import { EmbedStore } from "@rilldata/web-common/features/embeds/embed-store.ts";
+  import type { ReportFormMetadataProvider } from "@rilldata/web-common/features/scheduled-reports/ReportFormMetadataProvider.ts";
 
-  export let formId: string;
-  export let data: Readable<ReportValues>;
-  export let errors: SuperFormErrors<ReportValues>;
-  export let submit: () => void;
-  export let enhance;
-  export let metricsViewName: string;
-  export let exploreName: string;
-  export let canvasName: string = "";
-  // Canvas state (URL search string) to display instead of the page URL; set when
-  // editing a report so the filter bar shows the report's captured state.
-  export let canvasStateOverride: string | undefined = undefined;
-  export let filters: ExpressionFilterManager | undefined = undefined;
-  export let timeControls: TimeControls | undefined = undefined;
+  let {
+    formId,
+    data,
+    errors,
+    submit,
+    enhance,
+    metricsViewName,
+    exploreName,
+    canvasName = "",
+    canvasStateOverride,
+    filters,
+    timeControls,
+    ephemeralMeasures,
+    showEmbedOwnerEmail = false,
+    provider,
+  }: {
+    formId: string;
+    data: Readable<ReportValues>;
+    errors: SuperFormErrors<ReportValues>;
+    submit: () => void;
+    enhance: SuperForm<ReportValues>["enhance"];
+    metricsViewName: string;
+    exploreName: string;
+    canvasName?: string;
+    // Canvas state (URL search string) to display instead of the page URL; set when
+    // editing a report so the filter bar shows the report's captured state.
+    canvasStateOverride?: string;
+    filters?: ExpressionFilterManager;
+    timeControls?: TimeControls;
+    ephemeralMeasures?: EphemeralMeasureDef[];
+    // Shows the field for the email of the embed user who created the report (see ScheduledReportDialog).
+    showEmbedOwnerEmail?: boolean;
+    provider: ReportFormMetadataProvider;
+  } = $props();
 
   const RUN_AS_OPTIONS = [
     {
@@ -61,30 +84,59 @@
     },
   ];
   const runtimeClient = useRuntimeClient();
+  // Reports created from an embed always run as the creator.
+  const isEmbedded = EmbedStore.isEmbedded();
 
-  $: selectedRunAsOption = RUN_AS_OPTIONS.find(
-    (o) => o.value === $data["webOpenMode"],
+  // The creator's email is locked if the embed was issued with a `user_email`, since the admin service uses it instead.
+  // Outside of an embed, it's always locked, since only the creator can change it.
+  const embedOwnerEmailLocked = $derived(!isEmbedded || !!provider.userEmail);
+
+  const selectedRunAsOption = $derived(
+    RUN_AS_OPTIONS.find((o) => o.value === $data["webOpenMode"]),
   );
 
-  $: hasSlackNotifier = getHasSlackConnection(runtimeClient);
+  // Attachments are only supported when running as the creator, since every recipient then gets the same file.
+  // Clear the option otherwise, so the form never holds a setting that will not be saved.
+  const canAttach = $derived($data["webOpenMode"] === ReportRunAs.Creator);
+  $effect(() => {
+    if (!canAttach && $data["exportAttach"]) $data["exportAttach"] = false;
+  });
 
   // Pull the time zone options from the dashboard's spec
-  $: exploreSpecQuery = useExploreValidSpec(runtimeClient, exploreName);
-  $: canvasQuery = useResource<V1Resource>(
-    runtimeClient,
-    canvasName,
-    ResourceKind.Canvas,
+  const exploreSpecQuery = $derived(
+    useExploreValidSpec(runtimeClient, exploreName),
   );
-  $: availableTimeZones = canvasName
-    ? $canvasQuery.data?.canvas?.state?.validSpec?.timeZones
-    : $exploreSpecQuery.data?.explore?.timeZones;
+  const canvasQuery = $derived(
+    useResource<V1Resource>(runtimeClient, canvasName, ResourceKind.Canvas),
+  );
+  const availableTimeZones = $derived(
+    canvasName
+      ? $canvasQuery.data?.canvas?.state?.validSpec?.timeZones
+      : $exploreSpecQuery.data?.explore?.timeZones,
+  );
 
   // Gates the all-tabs option in the canvas PDF variant.
-  $: showTabOptions = specHasTabGroups(
-    $canvasQuery.data?.canvas?.state?.validSpec?.rows,
+  const showTabOptions = $derived(
+    specHasTabGroups($canvasQuery.data?.canvas?.state?.validSpec?.rows),
   );
-  $: canvasFiltersEnabled =
-    $canvasQuery.data?.canvas?.state?.validSpec?.filtersEnabled ?? true;
+  const canvasFiltersEnabled = $derived(
+    $canvasQuery.data?.canvas?.state?.validSpec?.filtersEnabled ?? true,
+  );
+
+  // Reports render a canvas as the creator or as each recipient sees it, so point out content that only some viewers see.
+  let conditionsCheck = $derived(
+    useVisibilityConditionsCheck(
+      runtimeClient,
+      canvasName ? ($canvasQuery.data?.meta?.filePaths?.[0] ?? "") : "",
+    ),
+  );
+  let visibilityNote = $derived(
+    $conditionsCheck.data
+      ? $data["webOpenMode"] === ReportRunAs.Recipient
+        ? m.canvas_visibility_report_recipient_note()
+        : m.canvas_visibility_report_creator_note()
+      : "",
+  );
 
   // Keyboard counterpart of the read-only filter bar's pointer-events guard:
   // its controls remain focusable, so kick focus back out to keep them inoperable.
@@ -112,16 +164,24 @@
       label={m.report_form_title_label()}
       placeholder={m.report_form_title_placeholder()}
     />
-    <Select
-      bind:value={$data["webOpenMode"]}
-      id="webOpenMode"
-      label={m.report_form_run_as()}
-      options={RUN_AS_OPTIONS}
-      dropdownWidth="w-[400px]"
-    />
-    {#if selectedRunAsOption}
+    <!-- TODO: Support other run as options in embed. They currently require recipients to be Rill project members. -->
+    {#if !isEmbedded}
+      <Select
+        bind:value={$data["webOpenMode"]}
+        id="webOpenMode"
+        label={m.report_form_run_as()}
+        options={RUN_AS_OPTIONS}
+        dropdownWidth="w-[400px]"
+      />
+      {#if selectedRunAsOption}
+        <div>
+          {selectedRunAsOption.description}
+        </div>
+      {/if}
+    {/if}
+    {#if visibilityNote}
       <div>
-        {selectedRunAsOption.description}
+        {visibilityNote}
       </div>
     {/if}
     <ScheduleForm {data} {availableTimeZones} />
@@ -182,6 +242,10 @@
             isolated
             urlStateOverride={canvasStateOverride}
           >
+            <CanvasFilterParamsSync
+              {canvasName}
+              urlStateOverride={canvasStateOverride}
+            />
             <div class="readonly-filter-bar" onfocusin={blurFocusedDescendant}>
               <CanvasFilters {canvasName} maxWidth={820} readOnly />
             </div>
@@ -189,54 +253,30 @@
         </div>
       {/if}
     {:else}
-      <Select
-        bind:value={$data["exportFormat"]}
-        id="exportFormat"
-        label={m.report_form_format()}
-        options={[
-          {
-            value: V1ExportFormat.EXPORT_FORMAT_CSV,
-            label: m.report_form_format_csv(),
-          },
-          {
-            value: V1ExportFormat.EXPORT_FORMAT_PARQUET,
-            label: m.report_form_format_parquet(),
-          },
-          {
-            value: V1ExportFormat.EXPORT_FORMAT_XLSX,
-            label: m.report_form_format_xlsx(),
-          },
-        ]}
+      <ExportFileOptions
+        bind:format={$data["exportFormat"]}
+        bind:limit={$data["exportLimit"]}
+        bind:includeHeader={$data["exportIncludeHeader"]}
+        limitErrors={$errors["exportLimit"]}
       />
-      <Input
-        bind:value={$data["exportLimit"]}
-        errors={$errors["exportLimit"]}
-        id="exportLimit"
-        label={m.report_form_row_limit()}
-        optional
-        placeholder={m.report_form_row_limit_placeholder()}
-      />
-      <div class="flex items-center gap-x-1">
+      <!-- Reports created from an embed are only delivered as an email attachment, so the file is always attached. -->
+      {#if isEmbedded}
+        <div class="text-sm text-fg-secondary">
+          {m.report_form_attach_file_embed_note()}
+        </div>
+      {:else}
         <Checkbox
-          bind:checked={$data["exportIncludeHeader"]}
-          id="exportIncludeHeader"
+          bind:checked={$data["exportAttach"]}
+          id="exportAttach"
           onCheckedChange={(checked) => {
-            $data["exportIncludeHeader"] = Boolean(checked);
+            $data["exportAttach"] = Boolean(checked);
           }}
           inverse
-          disabled={$data["exportFormat"] ===
-            V1ExportFormat.EXPORT_FORMAT_PARQUET}
-          label={m.report_form_include_metadata()}
+          disabled={!canAttach}
+          label={m.report_form_attach_file()}
+          hint={m.report_form_attach_file_hint()}
         />
-        <Tooltip location="right" alignment="middle" distance={8}>
-          <div class="text-fg-secondary" style="transform:translateY(-.5px)">
-            <InfoCircle size="13px" />
-          </div>
-          <TooltipContent maxWidth="400px" slot="tooltip-content">
-            {m.report_form_metadata_tooltip()}
-          </TooltipContent>
-        </Tooltip>
-      </div>
+      {/if}
 
       {#if filters && timeControls}
         <div class="flex flex-col gap-y-3">
@@ -260,57 +300,82 @@
         bind:columns={$data["columns"]}
         columnErrors={$errors["columns"]}
         {exploreName}
+        {ephemeralMeasures}
       />
     {/if}
 
+    <!-- Reports created from an embed run as the creator, so the hint warns that every recipient sees the creator's data. -->
     <MultiInput
       id="emailRecipients"
       label={m.report_form_email_recipients()}
-      hint={m.report_form_email_hint()}
+      hint={isEmbedded
+        ? m.report_form_email_embed_hint()
+        : m.report_form_email_hint()}
       bind:values={$data["emailRecipients"]}
       errors={$errors["emailRecipients"]}
       singular="email"
       plural="emails"
       placeholder={m.report_form_email_placeholder()}
     />
-    {#if $hasSlackNotifier.data}
-      <FormSection
-        bind:enabled={$data["enableSlackNotification"]}
-        showSectionToggle
-        title={m.report_form_slack_title()}
-        padding=""
-      >
-        <MultiInput
-          id="slackChannels"
-          label={m.report_form_channels()}
-          hint={m.report_form_slack_channels_hint()}
-          bind:values={$data["slackChannels"]}
-          errors={$errors["slackChannels"]}
-          singular="channel"
-          plural="channels"
-          placeholder={m.alert_form_slack_placeholder()}
-        />
-        <MultiInput
-          id="slackUsers"
-          label={m.report_form_slack_users()}
-          hint={m.report_form_slack_users_hint()}
-          bind:values={$data["slackUsers"]}
-          errors={$errors["slackUsers"]}
-          singular="user"
-          plural="users"
-          placeholder={m.report_form_email_placeholder()}
-        />
-      </FormSection>
-    {:else}
-      <FormSection title={m.report_form_slack_title()} padding="">
-        <svelte:fragment slot="description">
-          <span class="text-sm text-fg-secondary">
-            {@html m.report_form_slack_not_configured({
-              link: `<a href="https://docs.rilldata.com/guides/alerts#configuring-slack-targets" target="_blank">${escapeHtml(m.report_form_docs())}</a>`,
-            })}
-          </span>
-        </svelte:fragment>
-      </FormSection>
+    {#if showEmbedOwnerEmail}
+      <Input
+        bind:value={$data["embedOwnerEmail"]}
+        errors={$errors["embedOwnerEmail"]}
+        id="embedOwnerEmail"
+        label={isEmbedded
+          ? m.report_form_embed_owner_email_label()
+          : m.report_form_embed_creator_email_label()}
+        placeholder={m.report_form_email_placeholder()}
+        disabled={embedOwnerEmailLocked}
+        optional={!embedOwnerEmailLocked}
+        hint={!isEmbedded
+          ? m.report_form_embed_creator_email_hint()
+          : embedOwnerEmailLocked
+            ? m.report_form_embed_owner_email_hint()
+            : m.report_form_embed_owner_email_optional_hint()}
+      />
+    {/if}
+    <!-- Reports created from an embed can't be sent to Slack. -->
+    {#if !isEmbedded}
+      {#if provider.hasSlackNotifier}
+        <FormSection
+          bind:enabled={$data["enableSlackNotification"]}
+          showSectionToggle
+          title={m.report_form_slack_title()}
+          padding=""
+        >
+          <MultiInput
+            id="slackChannels"
+            label={m.report_form_channels()}
+            hint={m.report_form_slack_channels_hint()}
+            bind:values={$data["slackChannels"]}
+            errors={$errors["slackChannels"]}
+            singular="channel"
+            plural="channels"
+            placeholder={m.alert_form_slack_placeholder()}
+          />
+          <MultiInput
+            id="slackUsers"
+            label={m.report_form_slack_users()}
+            hint={m.report_form_slack_users_hint()}
+            bind:values={$data["slackUsers"]}
+            errors={$errors["slackUsers"]}
+            singular="user"
+            plural="users"
+            placeholder={m.report_form_email_placeholder()}
+          />
+        </FormSection>
+      {:else}
+        <FormSection title={m.report_form_slack_title()} padding="">
+          <svelte:fragment slot="description">
+            <span class="text-sm text-fg-secondary">
+              {@html m.report_form_slack_not_configured({
+                link: `<a href="https://docs.rilldata.com/guides/alerts#configuring-slack-targets" target="_blank">${escapeHtml(m.report_form_docs())}</a>`,
+              })}
+            </span>
+          </svelte:fragment>
+        </FormSection>
+      {/if}
     {/if}
   </div>
 </form>

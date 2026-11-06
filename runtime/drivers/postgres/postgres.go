@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/jackc/pgx/v5/stdlib"
 	"github.com/jmoiron/sqlx"
 	"github.com/mitchellh/mapstructure"
 	"github.com/rilldata/rill/runtime/drivers"
@@ -14,9 +15,6 @@ import (
 	"github.com/rilldata/rill/runtime/storage"
 	"go.uber.org/zap"
 	"golang.org/x/sync/semaphore"
-
-	// Load postgres driver
-	_ "github.com/jackc/pgx/v5/stdlib"
 )
 
 func init() {
@@ -85,7 +83,28 @@ var spec = drivers.Spec{
 			Type:        drivers.StringPropertyType,
 			DisplayName: "SSL Mode",
 			Placeholder: "require",
-			Hint:        "Options include disable, allow, prefer, require",
+			Hint:        "Options include disable, allow, prefer, require, verify-full",
+		},
+		{
+			Key:         "sslrootcert_pem",
+			Type:        drivers.StringPropertyType,
+			DisplayName: "CA certificate",
+			Secret:      true,
+			Hint:        "PEM contents or base64-encoded PEM. Requires verify-full TLS.",
+		},
+		{
+			Key:         "sslcert_pem",
+			Type:        drivers.StringPropertyType,
+			DisplayName: "Client certificate",
+			Secret:      true,
+			Hint:        "PEM contents or base64-encoded PEM. Requires verify-full TLS.",
+		},
+		{
+			Key:         "sslkey_pem",
+			Type:        drivers.StringPropertyType,
+			DisplayName: "Client private key",
+			Secret:      true,
+			Hint:        "PEM contents or base64-encoded PEM. Requires verify-full TLS.",
 		},
 	},
 	ImplementsSQLStore: true,
@@ -151,7 +170,28 @@ var supabaseSpec = drivers.Spec{
 			DisplayName: "SSL Mode",
 			Placeholder: "require",
 			Default:     "require",
-			Hint:        "Options include disable, allow, prefer, require",
+			Hint:        "Options include disable, allow, prefer, require, verify-full",
+		},
+		{
+			Key:         "sslrootcert_pem",
+			Type:        drivers.StringPropertyType,
+			DisplayName: "CA certificate",
+			Secret:      true,
+			Hint:        "PEM contents or base64-encoded PEM. Requires verify-full TLS.",
+		},
+		{
+			Key:         "sslcert_pem",
+			Type:        drivers.StringPropertyType,
+			DisplayName: "Client certificate",
+			Secret:      true,
+			Hint:        "PEM contents or base64-encoded PEM. Requires verify-full TLS.",
+		},
+		{
+			Key:         "sslkey_pem",
+			Type:        drivers.StringPropertyType,
+			DisplayName: "Client private key",
+			Secret:      true,
+			Hint:        "PEM contents or base64-encoded PEM. Requires verify-full TLS.",
 		},
 	},
 	ImplementsSQLStore: true,
@@ -170,12 +210,27 @@ type ConfigProperties struct {
 	User            string `mapstructure:"user"`
 	Password        string `mapstructure:"password"`
 	SSLMode         string `mapstructure:"sslmode"`
+	SSLRootCertPEM  string `mapstructure:"sslrootcert_pem"`
+	SSLCertPEM      string `mapstructure:"sslcert_pem"`
+	SSLKeyPEM       string `mapstructure:"sslkey_pem"`
 	MaxOpenConns    int    `mapstructure:"max_open_conns"`
 	ConnMaxLifetime string `mapstructure:"conn_max_lifetime"`
 	LogQueries      bool   `mapstructure:"log_queries"`
+	AllowHostAccess bool   `mapstructure:"allow_host_access"`
 }
 
 func (c *ConfigProperties) Validate() error {
+	if (c.SSLCertPEM == "") != (c.SSLKeyPEM == "") {
+		return errors.New("postgres: sslcert_pem and sslkey_pem must be provided together")
+	}
+	if c.hasCertificateContents() {
+		if c.DSN != "" || c.DatabaseURL != "" {
+			return errors.New("postgres: certificate contents require individual connection parameters, not dsn or database_url")
+		}
+		if c.SSLMode != "" && c.SSLMode != "verify-full" {
+			return errors.New("postgres: certificate contents require sslmode=verify-full")
+		}
+	}
 	var dsn string
 	if c.DSN != "" {
 		dsn = c.DSN
@@ -251,11 +306,13 @@ func (c *ConfigProperties) ResolveDSN() string {
 	}
 	if c.SSLMode != "" {
 		parts = append(parts, "sslmode="+quotedValue(c.SSLMode))
+	} else if c.hasCertificateContents() {
+		parts = append(parts, "sslmode=verify-full")
 	}
 	return strings.Join(parts, " ")
 }
 
-func (d driver) Open(_, instanceID string, config map[string]any, st *storage.Client, ac *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
+func (d driver) Open(_ context.Context, _, instanceID string, config map[string]any, st *storage.Client, ac *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
 	if instanceID == "" {
 		return nil, errors.New("postgres driver can't be shared")
 	}
@@ -401,6 +458,11 @@ func (c *connection) AsWarehouse() (drivers.Warehouse, bool) {
 	return nil, false
 }
 
+// AsMCP implements drivers.Handle.
+func (c *connection) AsMCP() (drivers.MCPService, bool) {
+	return nil, false
+}
+
 // AsNotifier implements drivers.Connection.
 func (c *connection) AsNotifier(properties map[string]any) (drivers.Notifier, error) {
 	return nil, drivers.ErrNotNotifier
@@ -422,10 +484,12 @@ func (c *connection) getDB(ctx context.Context) (*sqlx.DB, error) {
 		return nil, c.dbErr
 	}
 
-	c.db, c.dbErr = sqlx.Connect("pgx", c.config.ResolveDSN())
-	if c.dbErr != nil {
+	cfg, err := c.config.pgxConfig()
+	if err != nil {
+		c.dbErr = err
 		return nil, c.dbErr
 	}
+	c.db = sqlx.NewDb(stdlib.OpenDB(*cfg), "pgx")
 	c.db.SetMaxOpenConns(c.config.resolveMaxOpenConns())
 	c.db.SetConnMaxLifetime(connMaxLifetime)
 	c.db.SetConnMaxIdleTime(time.Minute)

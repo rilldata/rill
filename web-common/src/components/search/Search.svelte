@@ -36,7 +36,7 @@
       ref?.blur();
       return;
     }
-    if (event.code == "Enter") {
+    if (event.key === "Enter") {
       event.preventDefault();
       event.stopPropagation();
       onSubmit();

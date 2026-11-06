@@ -102,5 +102,19 @@ test.describe.serial("Public URLs", () => {
     await expect(
       anonPage.getByText("No matching dimensions shown"),
     ).toBeVisible();
+    await anonPage.keyboard.press("Escape");
+
+    // Check that the Export menu offers file exports but not scheduled reports
+    // (public URLs only grant viewing and exporting, so creating a report would fail with a 403)
+    await anonPage.getByText("App Site Domain").click();
+    await anonPage.getByLabel("Dimension Display").waitFor();
+    await anonPage.mouse.move(0, 0); // Dismiss the tooltip that can overlay the export button
+    await anonPage.getByLabel("Export dimension table data").click();
+    await expect(
+      anonPage.getByRole("menuitem", { name: "Export as CSV" }),
+    ).toBeVisible();
+    await expect(
+      anonPage.getByRole("menuitem", { name: "Create scheduled report..." }),
+    ).not.toBeVisible();
   });
 });

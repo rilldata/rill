@@ -1,12 +1,18 @@
 import { goto } from "$app/navigation";
 import { page } from "$app/stores";
 import { DashboardStateDataLoader } from "@rilldata/web-common/features/dashboards/state-managers/loaders/DashboardStateDataLoader";
+import {
+  syncEphemeralMeasureLibrary,
+  upsertIntoEphemeralMeasureLibrary,
+} from "@rilldata/web-common/features/dashboards/ephemeral-measures/library";
+import type { EphemeralMeasureDef } from "@rilldata/web-common/features/dashboards/ephemeral-measures/types";
 import { saveMostRecentPartialExploreState } from "@rilldata/web-common/features/dashboards/state-managers/loaders/most-recent-explore-state";
 import {
   metricsExplorerStore,
   useExploreState,
 } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
 import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
+import { applyAdaptiveTimeGrain } from "@rilldata/web-common/features/dashboards/time-controls/adaptive-time-grain";
 import { resolveTimeRanges } from "@rilldata/web-common/features/dashboards/time-controls/rill-time-ranges";
 import {
   createTimeControlStoreFromName,
@@ -15,12 +21,15 @@ import {
 import { updateExploreSessionStore } from "@rilldata/web-common/features/dashboards/state-managers/loaders/explore-web-view-store";
 import { getCleanedUrlParamsForGoto } from "@rilldata/web-common/features/dashboards/url-state/convert-partial-explore-state-to-url-params";
 import { createRillDefaultExploreUrlParams } from "@rilldata/web-common/features/dashboards/url-state/get-rill-default-explore-url-params";
+import type { V1ExploreSpec } from "@rilldata/web-common/runtime-client";
 import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import type { AfterNavigate } from "@sveltejs/kit";
 import { getContext, setContext } from "svelte";
 import { derived, get, type Readable } from "svelte/store";
 import type { CompoundQueryResult } from "@rilldata/web-common/features/compound-query-result";
 import type { ExpressionFilterManager } from "@rilldata/web-common/features/dashboards/filters/ExpressionFilterManager.svelte.ts";
+
+import { UrlParamsChangeTracker } from "@rilldata/web-common/lib/store-utils/url-params-store-sync.svelte.ts";
 
 export const DASHBOARD_STATE_SYNC_KEY = Symbol("state-sync");
 
@@ -41,9 +50,14 @@ export class DashboardStateSync {
   private readonly unsubExploreState: (() => void) | undefined;
 
   private initialized = false;
+  // Ad-hoc measure definitions as of the last persisted state.
+  // Used to detect deletions to mirror into the per-metrics-view library.
+  private lastEphemeralMeasures: EphemeralMeasureDef[] | undefined;
   // There can be cases when updating either the url or the state can impact the code handling the other part.
   // So we need a lock to make sure an update doesn't trigger the counterpart code.
   private updating = false;
+
+  private readonly expressionFilterParamsTracker: UrlParamsChangeTracker;
 
   public static getFromContext() {
     return getContext<DashboardStateSync>(DASHBOARD_STATE_SYNC_KEY);
@@ -68,6 +82,8 @@ export class DashboardStateSync {
       dataLoader.validSpecQuery,
       dataLoader.fullTimeRangeQuery,
     );
+
+    this.expressionFilterParamsTracker = expressionFilterManager.storeSync;
 
     this.unsubInit = derived(
       [dataLoader.initExploreState],
@@ -94,6 +110,26 @@ export class DashboardStateSync {
   public teardown() {
     this.unsubInit?.();
     this.unsubExploreState?.();
+  }
+
+  /**
+   * Mirrors the state's ad-hoc measure definitions into the per-metrics-view
+   * library: edits and additions are upserted, and a definition that was in
+   * the previously persisted state but is gone now was deleted by the user.
+   */
+  private syncEphemeralMeasureLibrary(
+    exploreSpec: V1ExploreSpec,
+    next: EphemeralMeasureDef[] | undefined,
+  ) {
+    if (exploreSpec.metricsView) {
+      syncEphemeralMeasureLibrary(
+        exploreSpec.metricsView,
+        this.extraPrefix,
+        this.lastEphemeralMeasures,
+        next,
+      );
+    }
+    this.lastEphemeralMeasures = next;
   }
 
   public getUrlForExploreState(exploreState: ExploreState) {
@@ -142,7 +178,6 @@ export class DashboardStateSync {
     // Ensure dashboard data is loaded before we proceed.
     if (!rillDefaultExploreURLParams) return;
     this.updating = true;
-    this.expressionFilterManager.updating = true;
 
     const pageState = get(page);
 
@@ -162,6 +197,8 @@ export class DashboardStateSync {
         undefined,
         initExploreState.selectedTimeDimension,
       );
+      // The grain can only be derived from the actual interval once start and end are known.
+      applyAdaptiveTimeGrain(initExploreState, metricsViewSpec);
     }
 
     // Init the store with state we got from dataLoader
@@ -187,10 +224,17 @@ export class DashboardStateSync {
         this.extraPrefix,
         initExploreState,
       );
+      // Definitions from the URL or a bookmark join the library; a missing
+      // definition on init is not a deletion, so only upsert here.
+      upsertIntoEphemeralMeasureLibrary(
+        exploreSpec.metricsView ?? "",
+        this.extraPrefix,
+        initExploreState.ephemeralMeasures,
+      );
     }
+    this.lastEphemeralMeasures = initExploreState.ephemeralMeasures;
 
-    this.expressionFilterManager.setUrlParams(redirectUrl.searchParams);
-    this.expressionFilterManager.updating = false;
+    this.expressionFilterParamsTracker.setUrlParams(redirectUrl.searchParams);
     // If the current url same as the new url then there is no need to do anything
     if (redirectUrl.search === pageState.url.search) {
       this.initialized = true;
@@ -246,7 +290,6 @@ export class DashboardStateSync {
     // Take the lock only once the guards have passed;
     // the finally ensures a throw below cannot leave it stuck.
     this.updating = true;
-    this.expressionFilterManager.updating = true;
     let redirectUrl: URL | undefined = undefined;
     // TODO: reassess this try-catch. resolveTimeRanges has error handling already.
     try {
@@ -266,13 +309,13 @@ export class DashboardStateSync {
           undefined,
           partialExplore.selectedTimeDimension,
         );
+        applyAdaptiveTimeGrain(partialExplore, metricsViewSpec);
       }
 
       // Merge the partial state from url into the store
       metricsExplorerStore.mergePartialExplorerEntity(
         this.exploreName,
         partialExplore,
-        this.expressionFilterManager,
       );
       // Get time controls state after explore state is updated.
       const timeControlsState = get(this.timeControlStore);
@@ -298,15 +341,20 @@ export class DashboardStateSync {
           this.extraPrefix,
           updatedExploreState,
         );
+        this.syncEphemeralMeasureLibrary(
+          exploreSpec,
+          updatedExploreState.ephemeralMeasures,
+        );
       }
     } finally {
       // Release before the goto below: state changes made while the navigation is in flight
       // must still be picked up by gotoNewState.
       this.updating = false;
       if (redirectUrl) {
-        this.expressionFilterManager.setUrlParams(redirectUrl.searchParams);
+        this.expressionFilterParamsTracker.setUrlParams(
+          redirectUrl.searchParams,
+        );
       }
-      this.expressionFilterManager.updating = false;
     }
     // Try-finally without a catch. Rest of the code is not run if the above try body throws.
 
@@ -336,7 +384,6 @@ export class DashboardStateSync {
     // Those methods need to replace the current URL while this does a direct navigation.
     if (this.updating) return;
     this.updating = true;
-    this.expressionFilterManager.updating = true;
 
     try {
       const { data: validSpecData } = get(this.dataLoader.validSpecQuery);
@@ -366,9 +413,13 @@ export class DashboardStateSync {
           this.extraPrefix,
           exploreState,
         );
+        this.syncEphemeralMeasureLibrary(
+          exploreSpec,
+          exploreState.ephemeralMeasures,
+        );
       }
 
-      this.expressionFilterManager.setUrlParams(newUrl.searchParams);
+      this.expressionFilterParamsTracker.setUrlParams(newUrl.searchParams);
       // If the state didnt result in a new url then skip goto.
       // This avoids adding redundant urls to the history.
       if (newUrl.search === pageState.url.search) {
@@ -379,7 +430,6 @@ export class DashboardStateSync {
       await goto(newUrl, { keepFocus: true });
     } finally {
       this.updating = false;
-      this.expressionFilterManager.updating = false;
     }
   }
 }

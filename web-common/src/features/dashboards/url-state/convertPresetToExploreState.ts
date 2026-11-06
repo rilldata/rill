@@ -1,8 +1,13 @@
+import { fromEphemeralMeasuresParam } from "@rilldata/web-common/features/dashboards/ephemeral-measures/url-param";
+import { injectEphemeralMeasuresIntoMap } from "@rilldata/web-common/features/dashboards/ephemeral-measures/url-state";
 import { fromPivotFormattingParam } from "@rilldata/web-common/features/dashboards/pivot/pivot-formatting-param";
+import { dedupePivotChips } from "@rilldata/web-common/features/dashboards/pivot/pivot-chip-utils";
 import {
+  PIVOT_TOTALS_ROW_POSITIONS,
   type PivotChipData,
   PivotChipType,
   type PivotTableMode,
+  type PivotTotalsRowPosition,
 } from "@rilldata/web-common/features/dashboards/pivot/types";
 import { SortDirection } from "@rilldata/web-common/features/dashboards/proto-state/derived-types";
 import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
@@ -18,6 +23,7 @@ import {
   ToActivePageViewMap,
 } from "@rilldata/web-common/features/dashboards/url-state/mappers";
 import {
+  dedupe,
   getMapFromArray,
   getMissingValues,
 } from "@rilldata/web-common/lib/arrayUtils";
@@ -66,6 +72,19 @@ export function convertPresetToExploreState(
     ) ?? [],
     (d) => d.name!,
   );
+
+  // The preset's ephemeral measures were already validated when the preset
+  // was built (convertURLToExplorePreset); resolve them and make their names
+  // valid everywhere a measure name is used below.
+  if (preset.ephemeralMeasures !== undefined) {
+    const { ephemeralMeasures } = fromEphemeralMeasuresParam(
+      preset.ephemeralMeasures,
+    );
+    partialExploreState.ephemeralMeasures = ephemeralMeasures.length
+      ? ephemeralMeasures
+      : undefined;
+    injectEphemeralMeasuresIntoMap(measures, ephemeralMeasures);
+  }
 
   if (preset.view) {
     partialExploreState.activePage = Number(
@@ -124,6 +143,10 @@ function fromTimeRangesParams(
     partialExploreState.selectedTimeRange ??= {} as DashboardTimeControls;
     partialExploreState.selectedTimeRange.interval =
       DateTimeUnitToV1TimeGrain[preset.timeGrain];
+    partialExploreState.adaptiveTimeGrain = false;
+  } else if (preset.timeRange) {
+    // A time range without a grain is adaptive: `correctExploreState` derives the grain from the range.
+    partialExploreState.adaptiveTimeGrain = true;
   }
 
   if (preset.timezone) {
@@ -240,19 +263,24 @@ function fromExploreUrlParams(
   const errors: Error[] = [];
 
   if (preset.measures?.length) {
-    const selectedMeasures = preset.measures.filter((m) => measures.has(m));
+    // A URL or a legacy bookmark can name a field twice; the lists that render the fields are keyed by name.
+    const selectedMeasures = dedupe(preset.measures).filter((m) =>
+      measures.has(m),
+    );
     const missingMeasures = getMissingValues(selectedMeasures, preset.measures);
     if (missingMeasures.length) {
       errors.push(getMultiFieldError("measure", missingMeasures));
     }
 
+    // `measures` includes ephemeral measures, so a hidden spec measure can
+    // never be masked by a visible ephemeral one.
     partialExploreState.allMeasuresVisible =
-      selectedMeasures.length === explore.measures?.length;
+      selectedMeasures.length === measures.size;
     partialExploreState.visibleMeasures = [...selectedMeasures];
   }
 
   if (preset.dimensions?.length) {
-    const selectedDimensions = preset.dimensions.filter((d) =>
+    const selectedDimensions = dedupe(preset.dimensions).filter((d) =>
       dimensions.has(d),
     );
     const missingDimensions = getMissingValues(
@@ -293,8 +321,21 @@ function fromExploreUrlParams(
   }
 
   if (preset.exploreLeaderboardMeasures !== undefined) {
-    partialExploreState.leaderboardMeasureNames =
-      preset.exploreLeaderboardMeasures;
+    // The url parser validates these already, but a default preset built from the explore spec
+    // can name a measure the metrics view dropped.
+    const leaderboardMeasures = preset.exploreLeaderboardMeasures.filter((m) =>
+      measures.has(m),
+    );
+    const missingLeaderboardMeasures = getMissingValues(
+      leaderboardMeasures,
+      preset.exploreLeaderboardMeasures,
+    );
+    if (missingLeaderboardMeasures.length) {
+      errors.push(
+        getMultiFieldError("leaderboard measure", missingLeaderboardMeasures),
+      );
+    }
+    partialExploreState.leaderboardMeasureNames = leaderboardMeasures;
   }
 
   if (preset.exploreLeaderboardShowContextForAllMeasures !== undefined) {
@@ -395,6 +436,9 @@ function fromPivotUrlParams(
   const errors: Error[] = [];
 
   const mapPivotEntry = (entry: string): PivotChipData | undefined => {
+    // An empty entry is a url artifact (`rows=a,`), not a field: skip it quietly.
+    if (!entry) return undefined;
+
     if (entry in FromURLParamTimeDimensionMap) {
       const grain = FromURLParamTimeDimensionMap[entry];
       return {
@@ -449,9 +493,35 @@ function fromPivotUrlParams(
     hasSomePivotFields = true;
   }
 
+  // A field listed twice, or in both zones, is dropped: the drop zones key
+  // their chips by id, so a repeat is a keyed-each error that breaks the view.
+  const rows = dedupePivotChips(rowDimensions);
+  const columns = dedupePivotChips(
+    colChips,
+    rows.map((chip) => chip.id),
+  );
+
   const showPivot = preset.view === V1ExploreWebView.EXPLORE_WEB_VIEW_PIVOT;
   const showTotalsColumn = preset.pivotShowTotalsColumn ?? true;
   const showTotalsRow = preset.pivotShowTotalsRow ?? true;
+  let totalsRowPosition: PivotTotalsRowPosition = "top";
+  if (preset.pivotTotalsRowPosition) {
+    if (
+      PIVOT_TOTALS_ROW_POSITIONS.includes(
+        preset.pivotTotalsRowPosition as PivotTotalsRowPosition,
+      )
+    ) {
+      totalsRowPosition =
+        preset.pivotTotalsRowPosition as PivotTotalsRowPosition;
+    } else {
+      errors.push(
+        getSingleFieldError(
+          "pivot totals row position",
+          preset.pivotTotalsRowPosition,
+        ),
+      );
+    }
+  }
   const measureFormatting = preset.pivotFormatting
     ? fromPivotFormattingParam(preset.pivotFormatting).measureFormatting
     : undefined;
@@ -470,6 +540,7 @@ function fromPivotUrlParams(
           activeCell: null,
           showTotalsColumn,
           showTotalsRow,
+          totalsRowPosition,
           tableMode: "nest",
           measureFormatting,
         },
@@ -518,8 +589,8 @@ function fromPivotUrlParams(
   return {
     partialExploreState: {
       pivot: {
-        rows: rowDimensions,
-        columns: colChips,
+        rows,
+        columns,
         sorting,
         // TODO: other fields are not supported right now
         expanded: {},
@@ -529,6 +600,7 @@ function fromPivotUrlParams(
         activeCell: null,
         showTotalsColumn,
         showTotalsRow,
+        totalsRowPosition,
         tableMode,
         rowLimit,
         measureFormatting,

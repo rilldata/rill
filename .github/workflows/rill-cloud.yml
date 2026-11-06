@@ -96,9 +96,9 @@ jobs:
           make runtime.examples.embed
 
           if [ ${RELEASE} == "true" ]; then
-            go build -o rill -mod=readonly -ldflags="-s -w -X main.Version=$(scripts/versiontag.sh) -X main.Commit=${GITHUB_SHA} -X main.BuildDate=$(date +%FT%T)" cli/main.go
+            go build -tags databricks_kernel -o rill -mod=readonly -ldflags="-s -w -X main.Version=$(scripts/versiontag.sh) -X main.Commit=${GITHUB_SHA} -X main.BuildDate=$(date +%FT%T)" cli/main.go
           else
-            go build -o rill -mod=readonly -ldflags="-s -w -X main.Commit=${GITHUB_SHA} -X main.BuildDate=$(date +%FT%T)" cli/main.go
+            go build -tags databricks_kernel -o rill -mod=readonly -ldflags="-s -w -X main.Commit=${GITHUB_SHA} -X main.BuildDate=$(date +%FT%T)" cli/main.go
           fi
           
           docker buildx build --platform linux/${{ matrix.arch }} -t ${IMAGE}:${GITHUB_SHA}-${{ matrix.arch }} . --push --provenance=false --sbom=false  

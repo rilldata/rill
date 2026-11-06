@@ -4,6 +4,7 @@ import { get } from "svelte/store";
 import { mockAnimationsForComponentTesting } from "@rilldata/web-common/lib/test/mock-animations";
 import { metricsExplorerStore } from "../stores/dashboard-stores";
 import { AD_BIDS_EXPLORE_NAME } from "../stores/test-data/data";
+import { ephemeralMeasureDialog } from "../ephemeral-measures/dialog-store";
 import PivotSidebarHarness from "./__fixtures__/PivotSidebarHarness.svelte";
 
 function state() {
@@ -29,6 +30,16 @@ async function start() {
 }
 
 describe("Pivot sidebar keyboard navigation", () => {
+  it("leaves calculated measure edit controls available to the keyboard", async () => {
+    render(PivotSidebarHarness, { withEphemeral: true });
+    const edit = screen.getByRole("button", { name: "Edit adhoc measure" });
+    edit.focus();
+    expect(await fireEvent.keyDown(edit, { key: "Enter" })).toBe(true);
+    expect(state().columns).toEqual([]);
+    await fireEvent.click(edit);
+    expect(get(ephemeralMeasureDialog)?.def?.name).toBe("requests");
+    ephemeralMeasureDialog.set(null);
+  });
   mockAnimationsForComponentTesting();
   beforeAll(() => {
     vi.stubGlobal(

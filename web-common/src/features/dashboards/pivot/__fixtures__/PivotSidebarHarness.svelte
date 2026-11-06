@@ -1,21 +1,38 @@
 <script lang="ts">
   import { setContext } from "svelte";
-  import { writable } from "svelte/store";
+  import { writable, derived, readable } from "svelte/store";
   import * as Tooltip from "@rilldata/web-common/components/tooltip-v2";
   import { buildTagIndex } from "@rilldata/web-common/components/menu/tag-utils";
   import { DEFAULT_STORE_KEY } from "../../state-managers/state-managers";
-  import { metricsExplorerStore } from "../../stores/dashboard-stores";
+  import {
+    metricsExplorerStore,
+    updateMetricsExplorerByName,
+  } from "../../stores/dashboard-stores";
   import { initAdBidsInStore } from "../../stores/test-data/helpers";
   import { AD_BIDS_EXPLORE_NAME } from "../../stores/test-data/data";
   import PivotSidebar from "../PivotSidebar.svelte";
   import { PivotChipType } from "../types";
 
   export let flat = false;
+  export let withEphemeral = false;
   const name = AD_BIDS_EXPLORE_NAME;
   initAdBidsInStore();
   metricsExplorerStore.setPivotRows(name, []);
   metricsExplorerStore.setPivotColumns(name, []);
-  setContext(DEFAULT_STORE_KEY, { exploreName: writable(name) });
+  if (withEphemeral)
+    updateMetricsExplorerByName(name, (state) => {
+      state.ephemeralMeasures = [
+        { name: "requests", displayName: "Requests", expression: "spend * 2" },
+      ];
+    });
+  setContext(DEFAULT_STORE_KEY, {
+    exploreName: writable(name),
+    dashboardStore: derived(
+      metricsExplorerStore,
+      (store) => store.entities[name],
+    ),
+    validSpecStore: readable({ data: { explore: {} } }),
+  });
   const measures = [
     { id: "requests", title: "Requests", type: PivotChipType.Measure },
     { id: "spend", title: "Spend", type: PivotChipType.Measure },

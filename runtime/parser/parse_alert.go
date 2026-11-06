@@ -44,6 +44,12 @@ type AlertYAML struct {
 			Attributes map[string]any `yaml:"attributes"`
 		} `yaml:"for"`
 	} `yaml:"query"`
+	Export struct {
+		Attach        bool   `yaml:"attach"`
+		Format        string `yaml:"format"`
+		IncludeHeader bool   `yaml:"include_header"`
+		Limit         uint   `yaml:"limit"`
+	} `yaml:"export"`
 	OnRecover     *bool  `yaml:"on_recover"`
 	OnFail        *bool  `yaml:"on_fail"`
 	OnError       *bool  `yaml:"on_error"`
@@ -144,6 +150,11 @@ func (p *Parser) parseAlert(node *Node) error {
 		}
 		node.Refs = append(node.Refs, refs...)
 
+		// Alerts are created by users as well as declared in the project, so their templates can't reference project variables, which commonly hold secrets.
+		if TemplateReferencesVariables(resolverProps.AsMap()) {
+			return errors.New(`templates in alert properties can't access project variables (".env") or the full template data ("." or "$")`)
+		}
+
 		// Query for: validate only one of user_id, user_email, or attributes is set
 		n := 0
 		if tmp.For.UserID != "" {
@@ -228,6 +239,27 @@ func (p *Parser) parseAlert(node *Node) error {
 		}
 	}
 
+	// Parse export options, which only apply to the export attached to email notifications for failed checks.
+	var exportFormat runtimev1.ExportFormat
+	if tmp.Export.Attach {
+		if resolver != "legacy_metrics" {
+			return errors.New(`"export.attach" requires the "query" property`)
+		}
+		if len(tmp.Email.Recipients) == 0 && len(tmp.Notify.Email.Recipients) == 0 {
+			return errors.New(`"export.attach" requires email recipients`)
+		}
+		exportFormat, err = parseExportFormat(tmp.Export.Format)
+		if err != nil {
+			return err
+		}
+		if exportFormat == runtimev1.ExportFormat_EXPORT_FORMAT_UNSPECIFIED {
+			return errors.New(`missing required property "export.format"`)
+		}
+		if exportFormat == runtimev1.ExportFormat_EXPORT_FORMAT_PDF {
+			return errors.New(`export format "pdf" is not supported for alerts`)
+		}
+	}
+
 	if len(tmp.Email.Recipients) > 0 && len(tmp.Notify.Email.Recipients) > 0 {
 		return errors.New(`cannot set both "email.recipients" and "notify.email.recipients"`)
 	}
@@ -270,7 +302,7 @@ func (p *Parser) parseAlert(node *Node) error {
 	}
 
 	// Track alert
-	r, err := p.insertResource(ResourceKindAlert, node.Name, node.Paths, node.Tags, node.Refs...)
+	r, err := p.insertResource(ResourceKindAlert, node.Name, node.Paths, node.Tags, node.Metadata, node.Refs...)
 	if err != nil {
 		return err
 	}
@@ -302,6 +334,10 @@ func (p *Parser) parseAlert(node *Node) error {
 	} else if queryForAttributes != nil {
 		r.AlertSpec.QueryFor = &runtimev1.AlertSpec_QueryForAttributes{QueryForAttributes: queryForAttributes}
 	}
+	r.AlertSpec.ExportAttach = tmp.Export.Attach
+	r.AlertSpec.ExportFormat = exportFormat
+	r.AlertSpec.ExportIncludeHeader = tmp.Export.IncludeHeader
+	r.AlertSpec.ExportLimit = uint64(tmp.Export.Limit)
 
 	// Notification default settings
 	r.AlertSpec.NotifyOnRecover = false

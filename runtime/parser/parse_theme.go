@@ -191,7 +191,7 @@ func (p *Parser) parseTheme(node *Node) error {
 		return err
 	}
 
-	r, err := p.insertResource(ResourceKindTheme, node.Name, node.Paths, node.Tags, node.Refs...)
+	r, err := p.insertResource(ResourceKindTheme, node.Name, node.Paths, node.Tags, node.Metadata, node.Refs...)
 	if err != nil {
 		return err
 	}

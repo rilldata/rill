@@ -2,5 +2,11 @@ compiler: rillv1
 
 display_name: "Untitled Rill Project"
 
+embeds:
+  # Served by web-admin/tests/embed-host (EMBED_HOST_ORIGIN).
+  open_url: http://localhost:4300/open.html
+
 features:
   chat: false
+  # Overrides the default of `{{ not .user.embed }}`, so web-admin/tests/embedded-reports.spec.ts can create reports from an embed.
+  reports: true

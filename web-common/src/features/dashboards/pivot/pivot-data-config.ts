@@ -1,4 +1,8 @@
+import { appendEphemeralSpecMeasures } from "@rilldata/web-common/features/dashboards/ephemeral-measures/measure-mapping";
+import { requestExactNames } from "@rilldata/web-common/features/dashboards/exact-measures/exact-measures";
 import { allDimensions } from "@rilldata/web-common/features/dashboards/state-managers/selectors/dimensions";
+import { exploreExactSurface } from "@rilldata/web-common/features/dashboards/exact-measures/explore-surfaces";
+import { exactMeasureContextFor } from "@rilldata/web-common/features/dashboards/state-managers/selectors/exact-measures";
 import { allMeasures } from "@rilldata/web-common/features/dashboards/state-managers/selectors/measures";
 import type { StateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
 import {
@@ -95,6 +99,20 @@ export function getPivotConfig(
       const { dimension: colDimensions, measure: colMeasures } =
         splitPivotChips(dashboardStore.pivot.columns);
 
+      const ephemeralMeasures = dashboardStore.ephemeralMeasures ?? [];
+
+      // Measures to request exactly: the pivot's own selection plus the pivot
+      // measures that reference a selected measure.
+      const exactMeasures = [
+        ...requestExactNames(
+          colMeasures.map((m) => m.id),
+          exactMeasureContextFor(
+            { dashboard: dashboardStore, validMetricsView: metricsView },
+            exploreExactSurface.pivot,
+          ),
+        ),
+      ];
+
       const measureNames = colMeasures.flatMap((m) => {
         const measureName = m.id;
         const group = [measureName];
@@ -138,10 +156,15 @@ export function getPivotConfig(
         measureNames,
         rowDimensionNames,
         colDimensionNames,
-        allMeasures: allMeasures({
-          validMetricsView: metricsView,
-          validExplore: explore,
-        }),
+        // Ephemeral measures get a synthetic spec entry so column definitions
+        // (labels, formatters, tooltips) resolve them like any other measure.
+        allMeasures: appendEphemeralSpecMeasures(
+          allMeasures({
+            validMetricsView: metricsView,
+            validExplore: explore,
+          }),
+          ephemeralMeasures,
+        ),
         allDimensions: allDimensions({
           validMetricsView: metricsView,
           validExplore: explore,
@@ -153,6 +176,8 @@ export function getPivotConfig(
         time,
         searchText,
         isFlat,
+        ephemeralMeasures,
+        exactMeasures,
       };
 
       const currentKey = getPivotConfigKey(config);

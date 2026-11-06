@@ -30,25 +30,25 @@
     }
   }
 
+  // Submit before handleClose(): onClose clears the messageId prop
+  // and resetForm clears the categories and comment.
+  // Both run in the same tick, so the modal still closes immediately.
   function handleSubmit() {
     if (!messageId || isSubmitDisabled) return;
-    // Close immediately - let the chat show the feedback response
-    handleClose();
-    // Submit asynchronously - conversation will handle streaming
     void conversation.submitFeedback(
       messageId,
       "negative",
       selectedCategories,
       comment || undefined,
     );
+    handleClose();
   }
 
   function handleSkip() {
     if (!messageId) return;
-    // Close immediately - let the chat show the feedback response
-    handleClose();
-    // Submit asynchronously with no categories
+    // Submit with no categories
     void conversation.submitFeedback(messageId, "negative");
+    handleClose();
   }
 
   function handleClose() {

@@ -2,6 +2,8 @@ import {
   getDashboardNameFromReport,
   getExistingReportInitialFormValues,
   getNewCanvasReportInitialFormValues,
+  getNewReportInitialFormValues,
+  isAIReportSpec,
   isCanvasReportSpec,
 } from "@rilldata/web-common/features/scheduled-reports/utils";
 import {
@@ -33,6 +35,24 @@ describe("getDashboardNameFromReport", () => {
     expect(getDashboardNameFromReport(reportSpec)).toEqual("my_metrics_view");
   });
 
+  it("returns the explore from the resolver properties for AI reports", () => {
+    const reportSpec: V1ReportSpec = {
+      resolver: "ai",
+      resolverProperties: { prompt: "Analyze", explore: "my_explore" },
+      annotations: {},
+    };
+    expect(getDashboardNameFromReport(reportSpec)).toEqual("my_explore");
+  });
+
+  it("returns an empty name for AI reports without an explore", () => {
+    const reportSpec: V1ReportSpec = {
+      resolver: "ai",
+      resolverProperties: { prompt: "Analyze" },
+      annotations: {},
+    };
+    expect(getDashboardNameFromReport(reportSpec)).toEqual("");
+  });
+
   it("does not throw for query-less reports with empty queryArgsJson", () => {
     // Proto string fields default to "", which must not be passed to JSON.parse.
     const reportSpec: V1ReportSpec = {
@@ -48,6 +68,14 @@ describe("isCanvasReportSpec", () => {
     expect(isCanvasReportSpec({ annotations: { canvas: "c1" } })).toBe(true);
     expect(isCanvasReportSpec({ annotations: { explore: "e1" } })).toBe(false);
     expect(isCanvasReportSpec({})).toBe(false);
+  });
+});
+
+describe("isAIReportSpec", () => {
+  it("detects AI reports via the resolver", () => {
+    expect(isAIReportSpec({ resolver: "ai" })).toBe(true);
+    expect(isAIReportSpec({ resolver: "legacy_metrics" })).toBe(false);
+    expect(isAIReportSpec({})).toBe(false);
   });
 });
 
@@ -91,5 +119,42 @@ describe("getExistingReportInitialFormValues", () => {
     );
     expect(values.pdfIncludeFilters).toBe(true);
     expect(values.pdfAllTabs).toBe(true);
+  });
+});
+
+describe("embed owner email", () => {
+  it("puts the creator's email in its own field instead of the recipients when shown", () => {
+    const values = getNewReportInitialFormValues("user@example.com", {}, true);
+    expect(values.emailRecipients).toEqual([""]);
+    expect(values.embedOwnerEmail).toEqual("user@example.com");
+  });
+
+  it("keeps the creator's email in the recipients when the field is hidden", () => {
+    const values = getNewReportInitialFormValues("user@example.com", {});
+    expect(values.emailRecipients).toEqual(["user@example.com", ""]);
+    expect(values.embedOwnerEmail).toEqual("");
+  });
+
+  it("moves the saved creator email out of the recipients of an existing report", () => {
+    const reportSpec: V1ReportSpec = {
+      annotations: { admin_embed_owner_email: "Creator@example.com" },
+      notifiers: [
+        {
+          connector: "email",
+          properties: {
+            recipients: ["creator@example.com", "other@example.com"],
+          },
+        },
+      ],
+    };
+    // Outside of an embed, the editor's email is not the creator's email
+    const values = getExistingReportInitialFormValues(
+      reportSpec,
+      "editor@example.com",
+      {},
+      true,
+    );
+    expect(values.emailRecipients).toEqual(["other@example.com", ""]);
+    expect(values.embedOwnerEmail).toEqual("Creator@example.com");
   });
 });

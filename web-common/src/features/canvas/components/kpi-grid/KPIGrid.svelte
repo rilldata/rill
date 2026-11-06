@@ -4,6 +4,7 @@
   import ComponentHeader from "../../ComponentHeader.svelte";
   import { getMinWidth, getOptimalColumns, type KPISpec } from "../kpi";
   import KPIProvider from "../kpi/KPIProvider.svelte";
+  import { canvasExactSurface } from "../exact-measures";
   import { validateKPIGridSchema } from "./selector";
 
   export let component: KPIGridComponent;
@@ -23,6 +24,7 @@
   $: kpis = (kpiGridProperties.measures || []).map((measure) => ({
     metrics_view: kpiGridProperties.metrics_view,
     measure,
+    adhoc_measures: kpiGridProperties.adhoc_measures,
     sparkline: kpiGridProperties.sparkline,
     hide_time_range: kpiGridProperties.hide_time_range,
     comparison: kpiGridProperties.comparison,
@@ -73,6 +75,7 @@
               {timeAndFilterStore}
               {canvasName}
               visible={$visible}
+              surface={canvasExactSurface(component.id)}
             />
           {/if}
         </div>

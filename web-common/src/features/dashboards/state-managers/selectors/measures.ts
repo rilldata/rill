@@ -1,3 +1,5 @@
+import { appendEphemeralSpecMeasures } from "@rilldata/web-common/features/dashboards/ephemeral-measures/measure-mapping";
+import { SortDirection } from "@rilldata/web-common/features/dashboards/proto-state/derived-types";
 import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
 import {
   MetricsViewSpecMeasureType,
@@ -6,6 +8,7 @@ import {
   V1TimeGrain,
   type V1MetricsViewAggregationMeasure,
   type V1MetricsViewAggregationMeasureComputeExpression,
+  type V1MetricsViewAggregationSort,
 } from "@rilldata/web-common/runtime-client";
 import type { DashboardDataSources } from "./types";
 
@@ -32,21 +35,26 @@ type AggregationMeasureRef = Pick<
 export const allMeasures = ({
   validMetricsView,
   validExplore,
-}: Pick<
-  DashboardDataSources,
-  "validMetricsView" | "validExplore"
->): MetricsViewSpecMeasure[] => {
+  dashboard,
+}: Pick<DashboardDataSources, "validMetricsView" | "validExplore"> &
+  Partial<
+    Pick<DashboardDataSources, "dashboard">
+  >): MetricsViewSpecMeasure[] => {
   if (!validMetricsView?.measures || !validExplore?.measures) return [];
 
-  return (
-    validMetricsView.measures
-      .filter((m) => validExplore.measures!.includes(m.name!))
-      // Sort the filtered measures based on their order in validExplore.measures
-      .sort(
-        (a, b) =>
-          validExplore.measures!.indexOf(a.name!) -
-          validExplore.measures!.indexOf(b.name!),
-      )
+  const specMeasures = validMetricsView.measures
+    .filter((m) => validExplore.measures!.includes(m.name!))
+    // Sort the filtered measures based on their order in validExplore.measures
+    .sort(
+      (a, b) =>
+        validExplore.measures!.indexOf(a.name!) -
+        validExplore.measures!.indexOf(b.name!),
+    );
+  // ephemeral measures behave like regular measures across the
+  // explore; they get synthetic spec entries so labels/formatting resolve.
+  return appendEphemeralSpecMeasures(
+    specMeasures,
+    dashboard?.ephemeralMeasures,
   );
 };
 
@@ -57,8 +65,9 @@ export const visibleMeasures = ({
 }: DashboardDataSources): MetricsViewSpecMeasure[] => {
   if (!validMetricsView?.measures || !validExplore?.measures) return [];
 
+  const all = allMeasures({ validMetricsView, validExplore, dashboard });
   return dashboard.visibleMeasures
-    .map((mes) => validMetricsView.measures?.find((m) => m.name === mes))
+    .map((mes) => all.find((m) => m.name === mes))
     .filter(Boolean) as MetricsViewSpecMeasure[];
 };
 
@@ -70,13 +79,11 @@ export const getMeasureByName = (
   };
 };
 
-export const measureLabel = ({
-  validMetricsView,
-}: DashboardDataSources): ((m: string) => string) => {
+export const measureLabel = (
+  dashData: DashboardDataSources,
+): ((m: string) => string) => {
   return (measureName) => {
-    const measure = validMetricsView?.measures?.find(
-      (d) => d.name === measureName,
-    );
+    const measure = allMeasures(dashData).find((d) => d.name === measureName);
     return measure?.displayName || measureName;
   };
 };
@@ -135,29 +142,80 @@ export const measureSupportsTotalsQuery = (measure: MetricsViewSpecMeasure) =>
   !measure.requiredDimensions?.length;
 
 /**
+ * The dimensions an explore query groups by.
+ * An empty object is a query with no dimensions, such as totals.
+ */
+export type QueryGroupBy = {
+  // Categorical dimensions the query groups by.
+  dimensions?: string[];
+  // Whether the query groups by the explore's time dimension at the selected grain, like the time series.
+  time?: boolean;
+};
+
+/**
+ * Whether a query grouped by `groupBy` satisfies the measure's required dimensions.
+ * The runtime rejects a measure unless the query groups by every dimension in its required_dimensions,
+ * and by a required time dimension at the required grain.
+ */
+export function queryGroupsByRequiredDimensions(
+  exploreState: ExploreState,
+  metricsViewSpec: V1MetricsViewSpec,
+  measure: MetricsViewSpecMeasure,
+  groupBy: QueryGroupBy,
+): boolean {
+  // Time grouped queries use the explore's selected time dimension, falling back to the metrics view's primary one.
+  const timeDimension =
+    exploreState.selectedTimeDimension || metricsViewSpec.timeDimension;
+  return (measure.requiredDimensions ?? []).every((reqDim) => {
+    const hasGrain =
+      !!reqDim.timeGrain &&
+      reqDim.timeGrain !== V1TimeGrain.TIME_GRAIN_UNSPECIFIED;
+    if (groupBy.time && reqDim.name === timeDimension) {
+      return (
+        !hasGrain ||
+        reqDim.timeGrain === exploreState.selectedTimeRange?.interval
+      );
+    }
+    return (
+      !hasGrain && !!reqDim.name && !!groupBy.dimensions?.includes(reqDim.name)
+    );
+  });
+}
+
+/**
  * Selects measure valid for current dashboard selections. We filter out advanced measures that are,
  * 1. Of type MEASURE_TYPE_TIME_COMPARISON.
- * 2. Dependent on a time dimension with a defined grain and not equal to the current selected grain.
- * 3. Window measures if includeWindowMeasures=false. Right now totals query does not support these.
+ * 2. Window measures, unless the query groups by the time dimension.
+ * 3. Measures whose required dimensions the query does not group by. See queryGroupsByRequiredDimensions.
  */
 export const filterOutSomeAdvancedMeasures = (
   exploreState: ExploreState,
   metricsViewSpec: V1MetricsViewSpec,
   measureNames: string[],
-  includeWindowMeasures: boolean,
+  groupBy: QueryGroupBy,
 ) => {
   const measuresSeen = new Set<string>();
 
+  const ephemeralMeasureNames = new Set(
+    exploreState.ephemeralMeasures?.map((def) => def.name) ?? [],
+  );
+
   return measureNames.filter((measureName) => {
+    // ephemeral measures are simple aggregations; always supported.
+    if (ephemeralMeasureNames.has(measureName)) {
+      if (measuresSeen.has(measureName)) return false;
+      measuresSeen.add(measureName);
+      return true;
+    }
     const measureSpec = metricsViewSpec.measures?.find(
       (m) => m.name === measureName,
     );
     if (!measureSpec) return false;
     const measureIsSupported = isMeasureSupported(
       exploreState,
+      metricsViewSpec,
       measureSpec,
-      includeWindowMeasures,
-      true,
+      groupBy,
     );
     if (!measureIsSupported || measuresSeen.has(measureName)) return false;
 
@@ -169,8 +227,8 @@ export const filterOutSomeAdvancedMeasures = (
 /**
  * Selects measure valid for current dashboard selections. We filter out advanced measures that are,
  * 1. Of type MEASURE_TYPE_TIME_COMPARISON.
- * 2. Dependent on a time dimension with a defined grain and not equal to the current selected grain.
- * 3. Window measures if includeWindowMeasures=false. Right now totals query does not support these.
+ * 2. Window measures, unless the query groups by the time dimension.
+ * 3. Measures whose required dimensions the query does not group by. See queryGroupsByRequiredDimensions.
  *
  * This is a variant of the above but works on V1MetricsViewAggregationMeasure.
  * Once we move all queries to MetricsViewAggregation we dont need the above method.
@@ -183,32 +241,38 @@ export const filterOutSomeAdvancedAggregationMeasures = <
   exploreState: ExploreState,
   metricsViewSpec: V1MetricsViewSpec,
   measures: T[],
-  includeWindowMeasures: boolean,
+  groupBy: QueryGroupBy,
 ): T[] => {
   const measuresSeen = new Set<string>();
 
+  const ephemeralMeasureNames = new Set(
+    exploreState.ephemeralMeasures?.map((def) => def.name) ?? [],
+  );
+
   return measures.filter((measure) => {
+    const sourceMeasureName =
+      measure.comparisonDelta?.measure ??
+      measure.comparisonValue?.measure ??
+      measure.comparisonRatio?.measure ??
+      measure.percentOfTotal?.measure ??
+      measure.name ??
+      "";
     // Ephemeral expression measures are derived from measures already in the spec and have no spec
     // entry of their own, so there is no source measure to resolve or check for support.
-    const isEphemeralExpression =
-      !!measure.expression && typeof measure.expression === "object";
-    if (!isEphemeralExpression) {
-      const sourceMeasureName =
-        measure.comparisonDelta?.measure ??
-        measure.comparisonValue?.measure ??
-        measure.comparisonRatio?.measure ??
-        measure.percentOfTotal?.measure ??
-        measure.name ??
-        "";
+    // The same applies to comparison measures derived from an ephemeral measure.
+    const isEphemeral =
+      (!!measure.expression && typeof measure.expression === "object") ||
+      ephemeralMeasureNames.has(sourceMeasureName);
+    if (!isEphemeral) {
       const measureSpec = metricsViewSpec.measures?.find(
         (m) => m.name === sourceMeasureName,
       );
       if (!measureSpec) return false;
       const measureIsSupported = isMeasureSupported(
         exploreState,
+        metricsViewSpec,
         measureSpec,
-        includeWindowMeasures,
-        false,
+        groupBy,
       );
       if (!measureIsSupported) return false;
     }
@@ -220,30 +284,54 @@ export const filterOutSomeAdvancedAggregationMeasures = <
   });
 };
 
+/**
+ * Measures and sort for a query that groups only by `dimensionName`,
+ * such as the dimension table export and the TDD comparison table's top list.
+ * Measures the query cannot satisfy (e.g. a rolling window ordered by the time dimension) are omitted,
+ * and the query sorts by the dimension when the sort measure is one of them.
+ * sortBy is the measure to sort by, or the dimension itself when sorting by dimension.
+ */
+export function getDimensionQueryMeasuresAndSort<
+  T extends AggregationMeasureRef,
+>(
+  exploreState: ExploreState,
+  metricsViewSpec: V1MetricsViewSpec,
+  measures: T[],
+  dimensionName: string,
+  sortBy: string | undefined,
+): { measures: T[]; sort: V1MetricsViewAggregationSort[] } {
+  const supportedMeasures = filterOutSomeAdvancedAggregationMeasures(
+    exploreState,
+    metricsViewSpec,
+    measures,
+    { dimensions: [dimensionName] },
+  );
+  const sortByIsSupported = supportedMeasures.some((m) => m.name === sortBy);
+  return {
+    measures: supportedMeasures,
+    sort: [
+      {
+        desc: exploreState.sortDirection === SortDirection.DESCENDING,
+        name: sortByIsSupported ? sortBy : dimensionName,
+      },
+    ],
+  };
+}
+
 const isMeasureSupported = (
   exploreState: ExploreState,
+  metricsViewSpec: V1MetricsViewSpec,
   measure: MetricsViewSpecMeasure,
-  allowWindowMeasure: boolean,
-  allowTimeDependentMeasure: boolean,
-) => {
-  if (
-    measure.type === MetricsViewSpecMeasureType.MEASURE_TYPE_TIME_COMPARISON ||
-    (!allowWindowMeasure && measure.window)
-  )
-    return false;
-
-  const allDependentDimensionsAllowed =
-    measure.requiredDimensions?.every((reqDim) => {
-      const hasNoTimeGrain =
-        !reqDim.timeGrain ||
-        reqDim.timeGrain === V1TimeGrain.TIME_GRAIN_UNSPECIFIED;
-      if (hasNoTimeGrain) return true;
-
-      if (!allowTimeDependentMeasure) return false;
-      return reqDim.timeGrain === exploreState.selectedTimeRange?.interval;
-    }) ?? true;
-  return allDependentDimensionsAllowed;
-};
+  groupBy: QueryGroupBy,
+) =>
+  measure.type !== MetricsViewSpecMeasureType.MEASURE_TYPE_TIME_COMPARISON &&
+  (!measure.window || !!groupBy.time) &&
+  queryGroupsByRequiredDimensions(
+    exploreState,
+    metricsViewSpec,
+    measure,
+    groupBy,
+  );
 
 export const measureSelectors = {
   /**

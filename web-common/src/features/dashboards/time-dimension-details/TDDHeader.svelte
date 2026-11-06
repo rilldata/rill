@@ -3,6 +3,10 @@
   import Column from "@rilldata/web-common/components/icons/Column.svelte";
   import Row from "@rilldata/web-common/components/icons/Row.svelte";
   import SearchableFilterChip from "@rilldata/web-common/components/searchable-filter-menu/SearchableFilterChip.svelte";
+  import { ephemeralMeasureDialog } from "@rilldata/web-common/features/dashboards/ephemeral-measures/dialog-store";
+  import { precisionStateFor } from "@rilldata/web-common/features/dashboards/exact-measures/exact-measures";
+  import { exploreExactSurface } from "@rilldata/web-common/features/dashboards/exact-measures/explore-surfaces";
+  import PrecisionChip from "@rilldata/web-common/features/dashboards/exact-measures/PrecisionChip.svelte";
   import { splitPivotChips } from "@rilldata/web-common/features/dashboards/pivot/pivot-utils";
   import ReplacePivotDialog from "@rilldata/web-common/features/dashboards/pivot/ReplacePivotDialog.svelte";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
@@ -54,30 +58,50 @@
     hideStartPivotButton = false,
   }: Props = $props();
 
-  const { adminServer, exports } = featureFlags;
+  const { exports } = featureFlags;
   const stateManagers = getStateManagers();
 
   const {
     selectors: {
       measures: { measureLabel, allMeasures },
       dimensions: { getDimensionDisplayName },
+      exactMeasures: { exactMeasureContext },
+    },
+    actions: {
+      exactMeasures: { toggleExactMeasure },
     },
     dashboardStore,
     validSpecStore,
     expressionFilterManager,
   } = stateManagers;
 
+  const ephemeralDefsByName = $derived(
+    new Map(
+      ($dashboardStore?.ephemeralMeasures ?? []).map((def) => [def.name, def]),
+    ),
+  );
+
+  // Precision of the expanded measure; null when it has no exact variant.
+  const expandedMeasurePrecision = $derived(
+    precisionStateFor(
+      expandedMeasureName,
+      $exactMeasureContext(exploreExactSurface.tdd),
+    ),
+  );
+
   const selectableMeasures = $derived(
     $allMeasures
       .filter((m) => m.name !== undefined || m.displayName !== undefined)
-      .map((m) =>
+      .map((m) => {
+        const def = ephemeralDefsByName.get(m.name || "");
         // Note: undefined values are filtered out above, so the
         // empty string fallback is unreachable.
-        ({
+        return {
           name: m.name || "",
           label: m.displayName || "",
-        }),
-      ),
+          ...(def ? { description: def.expression, ephemeral: true } : {}),
+        };
+      }),
   );
 
   const selectedMeasureLabel = $derived(
@@ -114,6 +138,8 @@
   }
 
   let showReplacePivotModal = $state(false);
+  // The precision chip has its own tooltip; the measure chip's tooltip hides while it is hovered.
+  let precisionChipHovered = $state(false);
   function startPivotForTDD() {
     const pivot = $dashboardStore?.pivot;
 
@@ -166,6 +192,7 @@
   const selectedTimeRange = $derived($timeControlsStore.selectedTimeRange);
 
   const activeTimeGrain = $derived(selectedTimeRange?.interval);
+  const adaptiveTimeGrain = $derived(!!$dashboardStore?.adaptiveTimeGrain);
 
   const baseTimeRange = $derived(
     selectedTimeRange?.start &&
@@ -176,7 +203,15 @@
       },
   );
 
-  function onTimeGrainSelect(timeGrain: V1TimeGrain) {
+  function onTimeGrainSelect(timeGrain: V1TimeGrain | undefined) {
+    if (timeGrain === undefined) {
+      metricsExplorerStore.setAdaptiveTimeGrain(
+        exploreName,
+        $validSpecStore.data?.metricsView ?? {},
+      );
+      return;
+    }
+    metricsExplorerStore.setTimeGrain(exploreName, timeGrain);
     if (baseTimeRange) {
       makeTimeSeriesTimeRangeAndUpdateAppState(
         baseTimeRange,
@@ -225,6 +260,8 @@
         <TimeGrainSelector
           tdd
           {activeTimeGrain}
+          {adaptiveTimeGrain}
+          allowAdaptiveTimeGrain
           {onTimeGrainSelect}
           {timeStart}
           {timeEnd}
@@ -233,10 +270,36 @@
         <SearchableFilterChip
           label={selectedMeasureLabel}
           onSelect={switchMeasure}
+          onEditItem={(name) => {
+            const def = ephemeralDefsByName.get(name);
+            if (def) ephemeralMeasureDialog.set({ def });
+          }}
           selectableItems={selectableMeasures}
           selectedItems={[expandedMeasureName]}
           tooltipText="Choose a measure to display"
-        />
+          suppressTooltip={precisionChipHovered}
+        >
+          <svelte:fragment slot="additional-label">
+            {#if ephemeralDefsByName.has(expandedMeasureName)}
+              <span class="flex-none text-[10px] font-semibold italic">ƒx</span>
+            {/if}
+            {#if expandedMeasurePrecision}
+              <span class="flex-none inline-flex">
+                <PrecisionChip
+                  state={expandedMeasurePrecision}
+                  measureLabel={selectedMeasureLabel}
+                  loading={expandedMeasurePrecision !== "approx" && isFetching}
+                  onToggle={() =>
+                    toggleExactMeasure(
+                      exploreExactSurface.tdd,
+                      expandedMeasureName,
+                    )}
+                  onHoverChange={(hovered) => (precisionChipHovered = hovered)}
+                />
+              </span>
+            {/if}
+          </svelte:fragment>
+        </SearchableFilterChip>
       </div>
     </div>
 
@@ -264,7 +327,7 @@
       {#if $exports}
         <ExportMenu
           label={m.dashboard_export_table_data()}
-          includeScheduledReport={$adminServer}
+          includeScheduledReport
           getQuery={(isScheduled) =>
             getTDDExportQuery(stateManagers, isScheduled)}
           {exploreName}

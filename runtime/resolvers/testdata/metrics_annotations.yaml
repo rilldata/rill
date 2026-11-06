@@ -103,6 +103,10 @@ tests:
         time_end: "2024-02-20T00:00:00Z"
         description: "2nd event"
         for_measures: ['sum']
+      - time: "2024-03-27T00:00:00Z"
+        time_end: "2024-04-11T00:00:00Z"
+        description: "3rd event"
+        for_measures: ['sum']
   - name: query_grain_duckdb_annotation
     resolver: metrics_annotations
     properties:

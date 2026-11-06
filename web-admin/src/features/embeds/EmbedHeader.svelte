@@ -14,6 +14,7 @@
     V1ResourceName,
   } from "@rilldata/web-common/runtime-client";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
+  import EmbedReportButton from "@rilldata/web-admin/features/embeds/EmbedReportButton.svelte";
 
   export let activeResource: V1ResourceName;
   export let navigationBarEnabled: boolean = true;
@@ -63,6 +64,7 @@
       twoTiered={$twoTieredNavigation}
     />
 
+    <EmbedReportButton />
     {#if showDashboardChat}
       <div class="flex gap-x-4 items-center">
         <LastRefreshedDate dashboard={activeResource?.name} />

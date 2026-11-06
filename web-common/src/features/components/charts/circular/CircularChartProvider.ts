@@ -1,3 +1,4 @@
+import type { EphemeralMeasureSpec } from "@rilldata/web-common/features/dashboards/ephemeral-measures/canvas";
 import {
   ChartSortType,
   type ChartDataQuery,
@@ -27,8 +28,10 @@ import {
   type Readable,
   type Writable,
 } from "svelte/store";
+import { withEphemeralMeasures } from "../ephemeral-measures";
 import {
   canQueryWithTimeRange,
+  combineChartDataQuery,
   getFilterWithNullHandling,
 } from "../query-util";
 import {
@@ -40,6 +43,9 @@ import {
 
 export type CircularChartSpec = {
   metrics_view: string;
+  // Ad-hoc measures derived from existing measures via an arithmetic
+  // expression; measure fields may name them.
+  adhoc_measures?: EphemeralMeasureSpec[];
   measure?: FieldConfig<"quantitative">;
   color?: FieldConfig<"nominal">;
   innerRadius?: number;
@@ -90,7 +96,9 @@ export class CircularChartProvider {
     let dimensions: V1MetricsViewAggregationDimension[] = [];
 
     if (config.measure?.field) {
-      measures = [{ name: config.measure.field }];
+      measures = withEphemeralMeasures(config, [
+        { name: config.measure.field },
+      ]);
     }
 
     let colorSort: V1MetricsViewAggregationSort | undefined;
@@ -275,11 +283,18 @@ export class CircularChartProvider {
 
         if (colorDimensionName) {
           this.customColorValues = topColorValues;
-          const filterForTopColorValues = createInExpression(
-            colorDimensionName,
-            topColorValues,
-          );
-          combinedWhere = mergeFilters(where, filterForTopColorValues);
+          if (topColorValues.length > 0) {
+            const filterForTopColorValues = createInExpression(
+              colorDimensionName,
+              topColorValues,
+            );
+            combinedWhere = mergeFilters(where, filterForTopColorValues);
+          } else {
+            // The top-N query found no values to narrow to, so the data query
+            // takes that query's own filter and finds none either. An `IN` with
+            // no values is never sent: the runtime rejects it.
+            combinedWhere = getFilterWithNullHandling(where, config.color);
+          }
         }
 
         // Store combinedWhere for use in BaseChart
@@ -323,7 +338,39 @@ export class CircularChartProvider {
     );
 
     const query = createQuery(queryOptionsStore);
-    return query;
+    const chartDataQuery = combineChartDataQuery(
+      query,
+      [topNColorQuery],
+      visibleStore,
+    );
+    if (!showOther || !colorDimensionName || !config.measure?.field) {
+      return chartDataQuery;
+    }
+    const measureName = config.measure.field;
+
+    // The "Other" slice is one more row of the chart's dataset. Writing it into
+    // the spec as inline data instead would replace the spec's named
+    // `metrics-view` source, which is how the renderer feeds the view its rows
+    // (see `VegaLiteRenderer`). `otherValue` is set while `queryOptionsStore`
+    // runs, and the query store re-emits on every options change, so this
+    // re-derives once the "Other" query resolves.
+    return derived(chartDataQuery, ($chartDataQuery) => {
+      const rows = $chartDataQuery.data?.data;
+      if (this.otherValue === undefined || !rows) return $chartDataQuery;
+      return {
+        ...$chartDataQuery,
+        data: {
+          ...$chartDataQuery.data,
+          data: [
+            ...rows,
+            {
+              [colorDimensionName]: OTHER_VALUE,
+              [measureName]: this.otherValue,
+            },
+          ],
+        },
+      };
+    });
   }
 
   private getColorSort(

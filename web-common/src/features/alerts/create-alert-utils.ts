@@ -6,7 +6,10 @@ import type { ExploreState } from "@rilldata/web-common/features/dashboards/stor
 import { ExploreMetricsViewMetadata } from "@rilldata/web-common/features/dashboards/stores/ExploreMetricsViewMetadata.ts";
 import { TimeControls } from "@rilldata/web-common/features/dashboards/stores/TimeControls.ts";
 import { getInitialScheduleFormValues } from "@rilldata/web-common/features/scheduled-reports/time-utils.ts";
-import { V1Operation } from "@rilldata/web-common/runtime-client";
+import {
+  V1ExportFormat,
+  V1Operation,
+} from "@rilldata/web-common/runtime-client";
 import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import { ExpressionFilterManager } from "@rilldata/web-common/features/dashboards/filters/ExpressionFilterManager.svelte.ts";
 import { MetricsViewsProvider } from "@rilldata/web-common/features/metrics-views/providers/MetricsViewsProvider.svelte.ts";
@@ -26,18 +29,23 @@ export function getNewAlertInitialFormValues(
     ? (exploreState.selectedComparisonDimension ?? "")
     : (exploreState.selectedDimensionName ?? "");
 
+  // Ephemeral measures can back an alert: the saved query embeds the
+  // expression, so the name resolves without the dashboard state.
+  const measure =
+    exploreState.tdd?.expandedMeasureName ||
+    exploreState.leaderboardSortByMeasureName ||
+    "";
+  const criteriaMeasure = exploreState.leaderboardSortByMeasureName ?? "";
+
   return {
     name: "",
-    measure:
-      exploreState.tdd?.expandedMeasureName ||
-      exploreState.leaderboardSortByMeasureName ||
-      "",
+    measure,
     splitByDimension: dimension,
     evaluationInterval: "",
     criteria: [
       {
         ...getEmptyMeasureFilterEntry(),
-        measure: exploreState.leaderboardSortByMeasureName ?? "",
+        measure: criteriaMeasure,
       },
     ],
     criteriaOperation: V1Operation.OPERATION_AND,
@@ -50,9 +58,14 @@ export function getNewAlertInitialFormValues(
     slackUsers: [user?.email ?? "", ""],
     enableEmailNotification: true,
     emailRecipients: [user?.email ?? "", ""],
+    exportAttach: false,
+    exportFormat: V1ExportFormat.EXPORT_FORMAT_CSV,
+    exportLimit: "",
+    exportIncludeHeader: false,
 
     metricsViewName,
     exploreName: exploreName,
+    ephemeralMeasures: exploreState.ephemeralMeasures,
   };
 }
 
@@ -76,7 +89,7 @@ export function getNewAlertInitialFiltersFormValues(
     metricsViewProvider,
     yamlConfigProvider,
   );
-  filters.setUrlParams(get(page).url.searchParams);
+  filters.storeSync.setUrlParams(get(page).url.searchParams);
 
   const timeControls = new TimeControls(metricsViewMetadata, {
     selectedTimeRange: exploreState.selectedTimeRange,

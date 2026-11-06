@@ -33,7 +33,7 @@ func newAPI(ctx context.Context, opts *runtime.ResolverOptions) (runtime.Resolve
 	}
 
 	// Find the API
-	api, err := opts.Runtime.APIForName(ctx, opts.InstanceID, props.API)
+	api, err := opts.Runtime.APIForName(ctx, opts.InstanceID, props.API, opts.Claims)
 	if err != nil {
 		return nil, err
 	}
@@ -62,7 +62,8 @@ func newAPI(ctx context.Context, opts *runtime.ResolverOptions) (runtime.Resolve
 	visited = append(visited, props.API)
 	opts.Args[key] = visited
 
-	// Initialize the resolver of the API to proxy to
+	// Initialize the resolver of the API to proxy to.
+	// API templates never access project variables (the parser rejects references to them), so ProjectDeclared is left unset.
 	initializer, ok := runtime.ResolverInitializers[api.Spec.Resolver]
 	if !ok {
 		return nil, fmt.Errorf("no resolver found of type %q", api.Spec.Resolver)

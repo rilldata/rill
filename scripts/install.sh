@@ -62,11 +62,6 @@ sha256Verify() {
 # Download the binary and check the integrity using the SHA256 checksum
 downloadBinary() {
     CDN="cdn.rilldata.com"
-
-    LATEST_URL="https://${CDN}/rill/latest.txt"
-    if [ "${VERSION}" = "latest" ]; then
-        VERSION=$(curl --silent --show-error "${LATEST_URL}")
-    fi
     BINARY_URL="https://${CDN}/rill/${VERSION}/rill_${PLATFORM}.zip"
     CHECKSUM_URL="https://${CDN}/rill/${VERSION}/checksums.txt"
 
@@ -89,6 +84,24 @@ downloadBinary() {
 
     printf "\nUnpacking rill_%s.zip\n" "$PLATFORM"
     unzip -q "rill_${PLATFORM}.zip"
+}
+
+# Resolve 'latest' to a concrete version and exit if it is already installed.
+resolveLatestVersion() {
+    if [ "${VERSION}" != "latest" ]; then
+        return
+    fi
+    VERSION=$(curl --silent --show-error "https://cdn.rilldata.com/rill/latest.txt")
+
+    if [ -n "$RILL_INSTALL_FORCE" ] || ! [ -x "$INSTALL_DIR/rill" ]; then
+        return
+    fi
+    # Output format: 'rill version v0.90.3 (build commit: ... date: ...)'
+    INSTALLED_VERSION=$("$INSTALL_DIR"/rill version 2>/dev/null | cut -d' ' -f3) || true
+    if [ "$INSTALLED_VERSION" = "$VERSION" ]; then
+        printf "Rill %s is already installed. To reinstall, run 'rill upgrade --force' or set RILL_INSTALL_FORCE=1.\n" "$VERSION"
+        exit 0
+    fi
 }
 
 # Print install options
@@ -298,6 +311,7 @@ installRill() {
     checkDependencies
     initPlatform
     resolveInstallDir
+    resolveLatestVersion
     initTmpDir
     downloadBinary
     installBinary

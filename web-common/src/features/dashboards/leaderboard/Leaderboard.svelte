@@ -1,6 +1,17 @@
 <script lang="ts">
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
+  import {
+    applyExactMeasures,
+    mapEphemeralMeasuresForRequest,
+  } from "@rilldata/web-common/features/dashboards/ephemeral-measures/measure-mapping";
+  import type { EphemeralMeasureDef } from "@rilldata/web-common/features/dashboards/ephemeral-measures/types";
+  import {
+    precisionStateFor,
+    requestExactNames,
+    type ExactMeasureContext,
+    type PrecisionChipProps,
+  } from "@rilldata/web-common/features/dashboards/exact-measures/exact-measures";
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import { DashboardState_LeaderboardSortType } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
   import type {
@@ -56,6 +67,14 @@
   export let whereFilter: V1Expression | undefined;
   export let leaderboardSortByMeasureName: string;
   export let leaderboardMeasures: MetricsViewSpecMeasure[];
+  // ephemeral measure definitions; their names may appear in
+  // leaderboardMeasures and are sent with an `expression` compute.
+  export let ephemeralMeasures: EphemeralMeasureDef[] | undefined = undefined;
+  // Exact-measure context of the dashboard; undefined when the surface has no
+  // exact variants (no chips, no `exact` flags).
+  export let exactContext: ExactMeasureContext | undefined = undefined;
+  export let onToggleExact: ((measureName: string) => void) | undefined =
+    undefined;
   export let leaderboardShowContextForAllMeasures: boolean;
   export let metricsViewName: string;
   export let sortType: SortType;
@@ -146,26 +165,41 @@
       : getFiltersForOtherDimensions(whereFilter, dimensionName),
   );
 
-  $: measures = [
-    ...getMeasuresForDimensionOrLeaderboardDisplay(
-      leaderboardShowContextForAllMeasures
-        ? null
-        : leaderboardSortByMeasureName,
-      whereFilter,
-      leaderboardMeasureNames,
-    ).map((name) => ({ name }) as V1MetricsViewAggregationMeasure),
+  // Measures requested with `exact: true`: the viewer's selection plus the
+  // leaderboard measures that reference a selected measure.
+  $: exactNames = exactContext
+    ? requestExactNames(
+        [...leaderboardMeasureNames, leaderboardSortByMeasureName],
+        exactContext,
+      )
+    : undefined;
 
-    // Add comparison measures if there's a comparison time range
-    ...(comparisonTimeRange
-      ? (leaderboardShowContextForAllMeasures
-          ? leaderboardMeasureNames
-          : [leaderboardSortByMeasureName]
-        ).flatMap((name) => getComparisonRequestMeasures(name))
-      : []),
+  $: measures = applyExactMeasures(
+    mapEphemeralMeasuresForRequest(
+      [
+        ...getMeasuresForDimensionOrLeaderboardDisplay(
+          leaderboardShowContextForAllMeasures
+            ? null
+            : leaderboardSortByMeasureName,
+          whereFilter,
+          leaderboardMeasureNames,
+        ).map((name) => ({ name }) as V1MetricsViewAggregationMeasure),
 
-    // Add URI measure if URI is present
-    ...(uri ? [getURIRequestMeasure(dimensionName)] : []),
-  ];
+        // Add comparison measures if there's a comparison time range.
+        ...(comparisonTimeRange
+          ? (leaderboardShowContextForAllMeasures
+              ? leaderboardMeasureNames
+              : [leaderboardSortByMeasureName]
+            ).flatMap((name) => getComparisonRequestMeasures(name))
+          : []),
+
+        // Add URI measure if URI is present
+        ...(uri ? [getURIRequestMeasure(dimensionName)] : []),
+      ],
+      ephemeralMeasures,
+    ),
+    exactNames,
+  );
 
   $: sort = getSort(
     sortedAscending,
@@ -199,7 +233,13 @@
     runtimeClient,
     {
       metricsView: metricsViewName,
-      measures: leaderboardMeasureNames.map((name) => ({ name })),
+      measures: applyExactMeasures(
+        mapEphemeralMeasuresForRequest(
+          leaderboardMeasureNames.map((name) => ({ name })),
+          ephemeralMeasures,
+        ),
+        exactNames,
+      ),
       where,
       timeRange,
     },
@@ -212,6 +252,23 @@
 
   $: ({ data: sortedData, isFetching, isLoading, isPending } = $sortedQuery);
   $: ({ data: totalsData } = $totalsQuery);
+
+  // Precision chip of a measure header; undefined when the measure has no exact
+  // variant. Declared after the query status above: a `$:` block that reads a
+  // variable assigned by a later block makes Svelte hoist that later block,
+  // which here would move the `$sortedQuery` read above the query's declaration.
+  $: precisionFor = (measureName: string): PrecisionChipProps | undefined => {
+    if (!exactContext) return undefined;
+    const state = precisionStateFor(measureName, exactContext);
+    if (!state) return undefined;
+    return {
+      state,
+      measureLabel: measureLabel(measureName),
+      loading: state !== "approx" && isFetching,
+      error: state !== "approx" ? $sortedQuery?.error?.message : undefined,
+      onToggle: onToggleExact ? () => onToggleExact?.(measureName) : undefined,
+    };
+  };
 
   $: leaderboardTotals = totalsData?.data?.[0]
     ? Object.fromEntries(
@@ -379,6 +436,7 @@
       {toggleComparisonDimension}
       {leaderboardSortByMeasureName}
       {measureLabel}
+      {precisionFor}
       {dimensionColumnWidth}
       {onDimensionColumnResize}
       {tableHeight}

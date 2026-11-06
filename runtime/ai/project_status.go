@@ -237,4 +237,5 @@ var projectStatusDefaultResourceKinds = []string{
 	runtime.ResourceKindExplore,
 	runtime.ResourceKindMetricsView,
 	runtime.ResourceKindModel,
+	runtime.ResourceKindSkill,
 }

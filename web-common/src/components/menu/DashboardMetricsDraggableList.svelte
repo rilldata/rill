@@ -14,6 +14,7 @@
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import { Button } from "../button";
   import Search from "../search/Search.svelte";
+  import DashboardMetricsItemLabel from "./DashboardMetricsItemLabel.svelte";
   import DashboardMetricsTagRow from "./DashboardMetricsTagRow.svelte";
   import TagFilterBanner from "./TagFilterBanner.svelte";
   import {
@@ -38,9 +39,21 @@
   export let allItems: SelectableItem[] = [];
   export let tagIndex: TagIndex;
   export let type: "measure" | "dimension" = "measure";
+  // ephemeral measures: marks their rows with an fx icon; their
+  // description tooltip carries the calculation.
+  export let ephemeralNames: Set<string> = new Set();
+  // When set, ephemeral rows get an edit button that closes the menu and
+  // invokes this with the measure name.
+  export let onEditEphemeral: ((name: string) => void) | undefined = undefined;
   export let onSelectedChange: (items: string[]) => void;
 
   let pickerElement: HTMLDivElement | null = null;
+  function editEphemeral(e: Event, name: string) {
+    e.stopPropagation();
+    active = false;
+    onEditEphemeral?.(name);
+  }
+
   let searchText = "";
 
   function pickerTargets(column: PickerColumn, section?: string) {
@@ -460,11 +473,15 @@
                               className="fill-icon pointer-events-none"
                             />
                           {/if}
-                          <span
-                            class="truncate min-w-0 flex-1 text-left pointer-events-none text-fg-primary"
-                          >
+                          <DashboardMetricsItemLabel
                             {displayName}
-                          </span>
+                            class="text-fg-primary"
+                            ephemeral={ephemeralNames.has(item.id)}
+                            onEdit={onEditEphemeral
+                              ? (e) => editEphemeral(e, item.id)
+                              : undefined}
+                            buttonClass={toggleButtonBaseClass}
+                          />
                           <button
                             class="{toggleButtonBaseClass} ml-auto"
                             data-picker-column="items"
@@ -509,11 +526,14 @@
                           className="fill-icon pointer-events-none"
                         />
                       {/if}
-                      <span
-                        class="truncate min-w-0 flex-1 text-left pointer-events-none"
-                      >
+                      <DashboardMetricsItemLabel
                         {displayName}
-                      </span>
+                        ephemeral={ephemeralNames.has(item.id)}
+                        onEdit={onEditEphemeral
+                          ? (e) => editEphemeral(e, item.id)
+                          : undefined}
+                        buttonClass={toggleButtonBaseClass}
+                      />
                       <button
                         class="{toggleButtonBaseClass} ml-auto"
                         data-picker-column="items"
@@ -603,11 +623,14 @@
                           <Tooltip.Trigger
                             class="w-full flex gap-x-1 justify-between items-center"
                           >
-                            <span
-                              class="truncate min-w-0 flex-1 text-left pointer-events-none"
-                            >
+                            <DashboardMetricsItemLabel
                               {displayName}
-                            </span>
+                              ephemeral={ephemeralNames.has(item.id)}
+                              onEdit={onEditEphemeral
+                                ? (e) => editEphemeral(e, item.id)
+                                : undefined}
+                              buttonClass={toggleButtonBaseClass}
+                            />
                             <button
                               class="{toggleButtonBaseClass} ml-auto"
                               data-picker-column="items"
@@ -635,11 +658,14 @@
                           </Tooltip.Content>
                         </Tooltip.Root>
                       {:else}
-                        <span
-                          class="truncate min-w-0 flex-1 text-left pointer-events-none"
-                        >
+                        <DashboardMetricsItemLabel
                           {displayName}
-                        </span>
+                          ephemeral={ephemeralNames.has(item.id)}
+                          onEdit={onEditEphemeral
+                            ? (e) => editEphemeral(e, item.id)
+                            : undefined}
+                          buttonClass={toggleButtonBaseClass}
+                        />
                         <button
                           class="{toggleButtonBaseClass} ml-auto"
                           data-picker-column="items"
@@ -684,6 +710,8 @@
             : m.explore_clear_search_to_reorder_dimensions()}
         </div>
       {/if}
+
+      <slot name="action" close={() => (active = false)} />
     </div>
   </Popover.Content>
 </Popover.Root>

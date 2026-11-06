@@ -29,6 +29,9 @@ type Instruction struct {
 type Options struct {
 	// External indicates whether the instructions are being loaded for external use (e.g., Claude Skills or Cursor rules) or internal use (e.g., Rill's own agents).
 	External bool
+	// Memory indicates whether user memory is enabled for the session the instructions are rendered for.
+	// When false, the sections about the user_memory block and the update_memory tool are omitted.
+	Memory bool
 }
 
 // frontMatter represents the YAML front matter of an instruction file.
@@ -96,7 +99,8 @@ func parseInstruction(path string, content []byte, opts Options) (*Instruction, 
 	name := strings.TrimSuffix(filepath.Base(path), filepath.Ext(path))
 
 	// Parse front matter
-	fm, body, err := parseFrontMatter(content)
+	var fm frontMatter
+	body, err := parseFrontMatter(content, &fm)
 	if err != nil {
 		return nil, err
 	}
@@ -114,15 +118,16 @@ func parseInstruction(path string, content []byte, opts Options) (*Instruction, 
 	}, nil
 }
 
-// parseFrontMatter extracts YAML front matter from markdown content.
+// parseFrontMatter extracts YAML front matter from markdown content, decoding it into the provided struct.
 // Front matter is expected to be delimited by "---" at the start and end.
-func parseFrontMatter(content []byte) (*frontMatter, string, error) {
+// If the content has no front matter, the struct is left untouched and the full content is returned as the body.
+func parseFrontMatter(content []byte, into any) (string, error) {
 	contentStr := strings.TrimSpace(string(content))
 
 	// Check for front matter delimiter at the start
 	if !strings.HasPrefix(contentStr, "---\n") && !strings.HasPrefix(contentStr, "---\r\n") {
-		// No front matter, return empty front matter and full content as body
-		return &frontMatter{}, contentStr, nil
+		// No front matter, return full content as body
+		return contentStr, nil
 	}
 
 	// Find the closing delimiter
@@ -134,7 +139,7 @@ func parseFrontMatter(content []byte) (*frontMatter, string, error) {
 
 	endIdx := strings.Index(rest, "\n---")
 	if endIdx == -1 {
-		return nil, "", fmt.Errorf("unclosed front matter: missing closing ---")
+		return "", fmt.Errorf("unclosed front matter: missing closing ---")
 	}
 
 	frontMatterContent := rest[:endIdx]
@@ -144,12 +149,11 @@ func parseFrontMatter(content []byte) (*frontMatter, string, error) {
 	body = strings.TrimSpace(body)
 
 	// Parse the front matter YAML
-	var fm frontMatter
-	if err := yaml.Unmarshal([]byte(frontMatterContent), &fm); err != nil {
-		return nil, "", fmt.Errorf("failed to parse front matter YAML: %w", err)
+	if err := yaml.Unmarshal([]byte(frontMatterContent), into); err != nil {
+		return "", fmt.Errorf("failed to parse front matter YAML: %w", err)
 	}
 
-	return &fm, body, nil
+	return body, nil
 }
 
 // executeTemplate applies Go's template engine to the instruction body.
@@ -166,6 +170,7 @@ func executeTemplate(body string, opts Options) (string, error) {
 
 	data := map[string]any{
 		"external": opts.External,
+		"memory":   opts.Memory,
 	}
 
 	var buf bytes.Buffer

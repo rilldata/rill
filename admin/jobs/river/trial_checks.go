@@ -270,6 +270,7 @@ func (w *TrialGracePeriodCheckWorker) Work(ctx context.Context, job *river.Job[T
 			ThumbnailAssetID:                    org.ThumbnailAssetID,
 			CustomDomain:                        org.CustomDomain,
 			DefaultProjectRoleID:                org.DefaultProjectRoleID,
+			DefaultProvisioner:                  org.DefaultProvisioner,
 			QuotaProjects:                       0,
 			QuotaDeployments:                    0,
 			QuotaSlotsTotal:                     0,

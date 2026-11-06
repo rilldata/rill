@@ -4,8 +4,8 @@
   import {
     createAdminServiceCreateBookmark,
     createAdminServiceUpdateBookmark,
-    getAdminServiceListBookmarksQueryKey,
   } from "@rilldata/web-admin/client";
+  import { invalidateBookmarkQueries } from "@rilldata/web-admin/features/bookmarks/selectors.ts";
   import {
     type BookmarkEntry,
     formatTimeRange,
@@ -24,7 +24,6 @@
   import { ExploreStateURLParams } from "@rilldata/web-common/features/dashboards/url-state/url-params";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors.ts";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus.ts";
-  import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.ts";
   import {
     V1TimeGrain,
     type V1TimeRange,
@@ -43,7 +42,6 @@
     ExploreDashboardConfigProvider,
   } from "@rilldata/web-common/features/dashboards/providers/DashboardConfigProvider.svelte.ts";
   import { onDestroy } from "svelte";
-  import { syncStoreWithSource } from "@rilldata/web-common/lib/store-utils/url-params-store-sync.svelte.ts";
 
   let {
     organization,
@@ -78,13 +76,9 @@
     dashboardConfigProvider.yamlConfigProvider,
   );
 
-  // Always load from current state. This is the only route to overwrite bookmark state.
+  // Always load from current url state. This is the only route to overwrite bookmark state.
   // A future PR will improve this by adding `Replace` action, in that case this should only have bookmark's state.
-  syncStoreWithSource(
-    expressionFilterManager,
-    async (newUrlParams) => expressionFilterManager.setUrlParams(newUrlParams),
-    () => dashboardConfigProvider.metricsViewsProvider.ready,
-  );
+  expressionFilterManager.storeSync.setUrlParams(page.url.searchParams);
 
   let timeFilterState = $state<
     | {
@@ -228,13 +222,7 @@
         }
         onClose();
 
-        await queryClient.refetchQueries({
-          queryKey: getAdminServiceListBookmarksQueryKey({
-            projectId,
-            resourceKind,
-            resourceName,
-          }),
-        });
+        await invalidateBookmarkQueries();
         eventBus.emit("notification", {
           message: bookmark ? m.bookmark_updated() : m.bookmark_created(),
         });

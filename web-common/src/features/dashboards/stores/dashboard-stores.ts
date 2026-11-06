@@ -29,20 +29,47 @@ import { V1Operation } from "@rilldata/web-common/runtime-client";
 import { derived, writable, type Readable } from "svelte/store";
 import type { ExpandedState, SortingState } from "tanstack-table-8-svelte-5";
 import { SortType } from "web-common/src/features/dashboards/proto-state/derived-types";
+import { dedupePivotChips } from "../pivot/pivot-chip-utils";
 import {
   PivotChipType,
   type PivotChipData,
   type PivotMeasureFormatting,
   type PivotTableMode,
+  type PivotTotalsRowPosition,
 } from "../pivot/types";
+import { parseMeasureExpression } from "../ephemeral-measures/expression-parser";
+import type { EphemeralMeasureDef } from "../ephemeral-measures/types";
+import { getQueryContextKey } from "../exact-measures/query-context-key";
 import type { ExpressionFilterManager } from "@rilldata/web-common/features/dashboards/filters/ExpressionFilterManager.svelte.ts";
 
 export interface MetricsExplorerStoreType {
   entities: Record<string, ExploreState>;
 }
-const { update, subscribe } = writable({
+const { update: rawUpdate, subscribe } = writable({
   entities: {},
 } as MetricsExplorerStoreType);
+
+/**
+ * Every mutation of the store runs through this wrapper, so the exact-measure
+ * selection of a dashboard resets as soon as its query context changes
+ * (filters, time controls, view, sorting); see `getQueryContextKey`. Doing it
+ * here covers reducers, URL sync and navigation alike, and costs nothing while
+ * no measure is selected.
+ */
+const update: typeof rawUpdate = (updater) =>
+  rawUpdate((state) => {
+    const next = updater(state);
+    for (const exploreState of Object.values(next.entities)) {
+      if (
+        exploreState.exactMeasures &&
+        exploreState.exactMeasures.contextKey !==
+          getQueryContextKey(exploreState)
+      ) {
+        delete exploreState.exactMeasures;
+      }
+    }
+    return next;
+  });
 
 export const updateMetricsExplorerByName = (
   name: string,
@@ -75,13 +102,46 @@ export function includeExcludeModeFromFilters(
   return map;
 }
 
+// syncEphemeralMeasures drops ephemeral measures that reference measures no
+// longer in the explore, so a spec change never leaves views permanently
+// erroring. Must run before syncMeasures/syncDimensions, which treat the
+// remaining ephemeral measure names as valid.
+function syncEphemeralMeasures(
+  explore: V1ExploreSpec,
+  exploreState: ExploreState,
+) {
+  if (!exploreState.ephemeralMeasures?.length) return;
+  const measuresSet = new Set(explore.measures ?? []);
+  const dimensionsSet = new Set(explore.dimensions ?? []);
+  exploreState.ephemeralMeasures = exploreState.ephemeralMeasures.filter(
+    (def) => {
+      // A field later added to the spec with the same name must win;
+      // otherwise the stale definition would silently shadow it in requests.
+      if (measuresSet.has(def.name) || dimensionsSet.has(def.name)) {
+        return false;
+      }
+      const parsed = parseMeasureExpression(def.expression);
+      if (parsed.error) return false;
+      return parsed.refs.every((ref) => measuresSet.has(ref));
+    },
+  );
+  if (!exploreState.ephemeralMeasures.length) {
+    exploreState.ephemeralMeasures = undefined;
+  }
+}
+
 function syncMeasures(explore: V1ExploreSpec, exploreState: ExploreState) {
   const measuresSet = new Set(explore.measures ?? []);
+  // Ephemeral measure names are valid anywhere a measure name is used.
+  const validNames = new Set([
+    ...measuresSet,
+    ...(exploreState.ephemeralMeasures?.map((def) => def.name) ?? []),
+  ]);
 
   // sync measures with selected leaderboard measure and ensure default measure is set
   if (explore.measures?.length) {
     const defaultMeasure = explore.measures[0];
-    if (!measuresSet.has(exploreState.leaderboardSortByMeasureName)) {
+    if (!validNames.has(exploreState.leaderboardSortByMeasureName)) {
       exploreState.leaderboardSortByMeasureName = defaultMeasure;
     }
     if (!exploreState.leaderboardMeasureNames?.length) {
@@ -102,18 +162,22 @@ function syncMeasures(explore: V1ExploreSpec, exploreState: ExploreState) {
 
   if (
     exploreState.tdd.expandedMeasureName &&
-    !measuresSet.has(exploreState.tdd.expandedMeasureName)
+    !validNames.has(exploreState.tdd.expandedMeasureName)
   ) {
     exploreState.tdd.expandedMeasureName = undefined;
   }
 
   if (exploreState.allMeasuresVisible) {
     // this makes sure that the visible keys is in sync with list of measures
-    exploreState.visibleMeasures = [...measuresSet];
+    // (ephemeral measures count as selectable measures too)
+    exploreState.visibleMeasures = [
+      ...measuresSet,
+      ...(exploreState.ephemeralMeasures?.map((def) => def.name) ?? []),
+    ];
   } else {
     // remove any visible measures that doesn't exist anymore
     exploreState.visibleMeasures = exploreState.visibleMeasures.filter((m) =>
-      measuresSet.has(m),
+      validNames.has(m),
     );
     // If there are no visible measures, make the first measure visible
     if (explore.measures?.length && exploreState.visibleMeasures.length === 0) {
@@ -140,10 +204,15 @@ function syncDimensions(explore: V1ExploreSpec, exploreState: ExploreState) {
       dimensionsSet.has(dimension.id) || dimension.type === PivotChipType.Time,
   );
 
+  const ephemeralMeasureNames = new Set(
+    exploreState.ephemeralMeasures?.map((def) => def.name) ?? [],
+  );
+
   exploreState.pivot.columns = exploreState.pivot.columns.filter(
     (col) =>
       measuresSet.has(col.id) ||
       dimensionsSet.has(col.id) ||
+      ephemeralMeasureNames.has(col.id) ||
       col.type === PivotChipType.Time,
   );
 
@@ -196,7 +265,7 @@ const metricsViewReducers = {
   mergePartialExplorerEntity(
     name: string,
     partialExploreState: Partial<ExploreState>,
-    expressionFilterManager: ExpressionFilterManager,
+    expressionFilterManager?: ExpressionFilterManager,
   ) {
     partialExploreState = structuredClone(partialExploreState);
 
@@ -205,14 +274,16 @@ const metricsViewReducers = {
         exploreState[key] = partialExploreState[key];
       }
 
-      const mvName =
-        expressionFilterManager.metricsViewsProvider.metricsViewNames[0];
-      if (mvName) {
-        exploreState.whereFilter =
-          expressionFilterManager.topLevelJoiner.expr[mvName] ??
-          createAndExpression([]);
-        exploreState.dimensionsWithInlistFilter =
-          expressionFilterManager.inList;
+      if (expressionFilterManager) {
+        const mvName =
+          expressionFilterManager.metricsViewsProvider.metricsViewNames[0];
+        if (mvName) {
+          exploreState.whereFilter =
+            expressionFilterManager.topLevelJoiner.expr[mvName] ??
+            createAndExpression([]);
+          exploreState.dimensionsWithInlistFilter =
+            expressionFilterManager.inList;
+        }
       }
 
       // this hack is needed since what is shown for comparison is not a single source
@@ -228,6 +299,9 @@ const metricsViewReducers = {
   sync(name: string, explore: V1ExploreSpec) {
     if (!name || !explore || !explore.measures) return;
     updateMetricsExplorerByName(name, (exploreState) => {
+      // remove ephemeral measures referencing non existent measures
+      syncEphemeralMeasures(explore, exploreState);
+
       // remove references to non existent measures
       syncMeasures(explore, exploreState);
 
@@ -282,13 +356,9 @@ const metricsViewReducers = {
       exploreState.pivot.rowPage = 1;
       exploreState.pivot.activeCell = null;
 
-      const dimensions: PivotChipData[] = [];
-
-      value.forEach((val) => {
-        if (val.type !== PivotChipType.Measure) {
-          dimensions.push(val);
-        }
-      });
+      const dimensions = dedupePivotChips(
+        value.filter((val) => val.type !== PivotChipType.Measure),
+      );
 
       if (exploreState.pivot.sorting.length) {
         const accessor = exploreState.pivot.sorting[0].id;
@@ -308,11 +378,13 @@ const metricsViewReducers = {
       exploreState.pivot.rowPage = 1;
       exploreState.pivot.activeCell = null;
 
+      const columns = dedupePivotChips(value);
+
       if (exploreState.pivot.sorting.length) {
         const accessor = exploreState.pivot.sorting[0].id;
 
         if (exploreState.pivot.tableMode === "flat") {
-          const validAccessors = value.map((d) => d.id);
+          const validAccessors = columns.map((d) => d.id);
           if (!validAccessors.includes(accessor)) {
             exploreState.pivot.sorting = [];
           }
@@ -324,12 +396,20 @@ const metricsViewReducers = {
         }
       }
       exploreState.pivot.expanded = {};
-      exploreState.pivot.columns = value;
+      exploreState.pivot.columns = columns;
     });
   },
 
   addPivotField(name: string, value: PivotChipData, rows: boolean) {
     updateMetricsExplorerByName(name, (exploreState) => {
+      // Already placed in either zone: nothing to add. The sidebar hides
+      // placed fields, but its list can lag behind the state.
+      const isPlaced = [
+        ...exploreState.pivot.rows,
+        ...exploreState.pivot.columns,
+      ].some((chip) => chip.id === value.id);
+      if (isPlaced) return;
+
       exploreState.pivot.rowPage = 1;
       exploreState.pivot.activeCell = null;
       exploreState.pivot.expanded = {};
@@ -405,8 +485,8 @@ const metricsViewReducers = {
       exploreState.activePage = DashboardState_ActivePage.PIVOT;
       exploreState.pivot = {
         ...exploreState.pivot,
-        rows,
-        columns,
+        rows: dedupePivotChips(rows),
+        columns: dedupePivotChips(columns),
         expanded: {},
         sorting: [],
         columnPage: 1,
@@ -558,10 +638,22 @@ const metricsViewReducers = {
 
   setTimeGrain(name: string, timeGrain: V1TimeGrain) {
     updateMetricsExplorerByName(name, (exploreState) => {
+      exploreState.adaptiveTimeGrain = false;
       exploreState.selectedTimeRange = {
         ...(exploreState.selectedTimeRange as DashboardTimeControls),
         interval: timeGrain,
       };
+    });
+  },
+
+  /**
+   * Switches the time grain to adaptive mode: the grain follows the selected time range
+   * until the user fixes one again with `setTimeGrain`.
+   */
+  setAdaptiveTimeGrain(name: string, metricsViewSpec: V1MetricsViewSpec) {
+    updateMetricsExplorerByName(name, (exploreState) => {
+      exploreState.adaptiveTimeGrain = true;
+      correctExploreState(metricsViewSpec, exploreState);
     });
   },
 
@@ -582,8 +674,8 @@ const metricsViewReducers = {
       exploreState.pivot = {
         ...exploreState.pivot,
         tableMode,
-        rows,
-        columns,
+        rows: dedupePivotChips(rows),
+        columns: dedupePivotChips(columns),
         sorting: [],
         expanded: {},
         activeCell: null,
@@ -622,6 +714,17 @@ const metricsViewReducers = {
     });
   },
 
+  // Presentation-only: the totals row keeps the same data and row id, so no
+  // expansion, paging or query state needs to reset.
+  setPivotTotalsRowPosition(name: string, position: PivotTotalsRowPosition) {
+    updateMetricsExplorerByName(name, (exploreState) => {
+      exploreState.pivot = {
+        ...exploreState.pivot,
+        totalsRowPosition: position,
+      };
+    });
+  },
+
   setPivotMeasureFormatting(
     name: string,
     measureName: string,
@@ -638,6 +741,98 @@ const metricsViewReducers = {
         ...exploreState.pivot,
         measureFormatting,
       };
+    });
+  },
+
+  addEphemeralMeasure(name: string, def: EphemeralMeasureDef) {
+    updateMetricsExplorerByName(name, (exploreState) => {
+      exploreState.ephemeralMeasures = [
+        ...(exploreState.ephemeralMeasures ?? []),
+        def,
+      ];
+      if (exploreState.activePage === DashboardState_ActivePage.PIVOT) {
+        exploreState.pivot.rowPage = 1;
+        exploreState.pivot.activeCell = null;
+        exploreState.pivot.columns.push({
+          id: def.name,
+          title: def.displayName,
+          type: PivotChipType.Measure,
+        });
+      } else {
+        // Make the new measure visible in the explore view.
+        exploreState.visibleMeasures = [
+          ...exploreState.visibleMeasures,
+          def.name,
+        ];
+        exploreState.allMeasuresVisible = false;
+      }
+    });
+  },
+
+  updateEphemeralMeasure(name: string, def: EphemeralMeasureDef) {
+    updateMetricsExplorerByName(name, (exploreState) => {
+      exploreState.pivot.rowPage = 1;
+      exploreState.pivot.activeCell = null;
+      exploreState.ephemeralMeasures = (
+        exploreState.ephemeralMeasures ?? []
+      ).map((d) => (d.name === def.name ? def : d));
+      // Chip titles are denormalized; keep any placed pivot chip in sync on rename.
+      exploreState.pivot.columns = exploreState.pivot.columns.map((col) =>
+        col.id === def.name ? { ...col, title: def.displayName } : col,
+      );
+    });
+  },
+
+  removeEphemeralMeasure(
+    name: string,
+    measureName: string,
+    explore: V1ExploreSpec | undefined,
+  ) {
+    updateMetricsExplorerByName(name, (exploreState) => {
+      exploreState.ephemeralMeasures = (
+        exploreState.ephemeralMeasures ?? []
+      ).filter((d) => d.name !== measureName);
+
+      // Remove all usages across views.
+      exploreState.pivot.rowPage = 1;
+      exploreState.pivot.activeCell = null;
+      exploreState.pivot.columns = exploreState.pivot.columns.filter(
+        (col) => col.id !== measureName,
+      );
+      exploreState.pivot.sorting = exploreState.pivot.sorting.filter(
+        (s) => s.id !== measureName,
+      );
+      if (exploreState.pivot.measureFormatting?.[measureName]) {
+        const measureFormatting = { ...exploreState.pivot.measureFormatting };
+        delete measureFormatting[measureName];
+        exploreState.pivot.measureFormatting = measureFormatting;
+      }
+
+      exploreState.visibleMeasures = exploreState.visibleMeasures.filter(
+        (m) => m !== measureName,
+      );
+      exploreState.leaderboardMeasureNames = (
+        exploreState.leaderboardMeasureNames ?? []
+      ).filter((m) => m !== measureName);
+      if (exploreState.leaderboardSortByMeasureName === measureName) {
+        exploreState.leaderboardSortByMeasureName =
+          exploreState.leaderboardMeasureNames[0] ??
+          exploreState.visibleMeasures[0] ??
+          "";
+      }
+      if (exploreState.tdd.expandedMeasureName === measureName) {
+        exploreState.tdd.expandedMeasureName = undefined;
+        if (
+          exploreState.activePage ===
+          DashboardState_ActivePage.TIME_DIMENSIONAL_DETAIL
+        ) {
+          exploreState.activePage = DashboardState_ActivePage.DEFAULT;
+        }
+      }
+
+      // The removed measure may have been the only visible or leaderboard
+      // measure; restore the spec defaults so views never end up measure-less.
+      if (explore) syncMeasures(explore, exploreState);
     });
   },
 

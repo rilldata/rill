@@ -1,4 +1,8 @@
 import { PivotChipType } from "@rilldata/web-common/features/dashboards/pivot/types";
+import {
+  queryGroupsByRequiredDimensions,
+  type QueryGroupBy,
+} from "@rilldata/web-common/features/dashboards/state-managers/selectors/measures";
 import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
 import { getMapFromArray } from "@rilldata/web-common/lib/arrayUtils";
 import { DashboardState_ActivePage } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
@@ -18,11 +22,15 @@ import {
 export class AdvancedMeasureCorrector {
   private measuresMap: Map<string, MetricsViewSpecMeasure>;
   private measuresGrains: Map<string, V1TimeGrain>;
+  private ephemeralMeasureNames: Set<string>;
 
   private constructor(
     private readonly exploreState: ExploreState,
     private readonly metricsViewSpec: V1MetricsViewSpec,
   ) {
+    this.ephemeralMeasureNames = new Set(
+      exploreState.ephemeralMeasures?.map((def) => def.name) ?? [],
+    );
     this.measuresMap = getMapFromArray(
       metricsViewSpec.measures ?? [],
       (m) => m.name ?? "",
@@ -55,12 +63,25 @@ export class AdvancedMeasureCorrector {
   }
 
   private correctLeaderboards() {
+    // Leaderboards group by each visible dimension in turn and also query totals,
+    // so they cannot query measures with required dimensions.
+    // The dimension table shares their measures and sort but groups only by its dimension,
+    // so while it is open, measures that require only that dimension are valid too.
+    const groupBy: QueryGroupBy =
+      this.exploreState.activePage ===
+        DashboardState_ActivePage.DIMENSION_TABLE &&
+      this.exploreState.selectedDimensionName
+        ? { dimensions: [this.exploreState.selectedDimensionName] }
+        : {};
     const validLeaderboardMeasures = this.exploreState.visibleMeasures.filter(
-      (m) => !this.measureIsValidForComponent(m, true, false),
+      (m) => !this.measureIsValidForComponent(m, true, false, groupBy),
     );
 
+    // Keep the sort measure when no visible measure is valid,
+    // since ExploreState requires one.
     if (
       this.exploreState.leaderboardSortByMeasureName &&
+      validLeaderboardMeasures.length > 0 &&
       !validLeaderboardMeasures.includes(
         this.exploreState.leaderboardSortByMeasureName,
       )
@@ -89,6 +110,7 @@ export class AdvancedMeasureCorrector {
         this.exploreState.tdd.expandedMeasureName ?? "",
         true,
         true,
+        { time: true },
       )
     ) {
       return;
@@ -107,24 +129,33 @@ export class AdvancedMeasureCorrector {
     this.exploreState.pivot.columns = this.exploreState.pivot.columns.filter(
       (m) =>
         m.type !== PivotChipType.Measure ||
-        !this.measureIsValidForComponent(m.id, true, false),
+        !this.measureIsValidForComponent(m.id, true, false, undefined),
     );
     this.exploreState.pivot.sorting = this.exploreState.pivot.sorting.filter(
       (s) =>
         !this.measuresMap.has(s.id) ||
-        !this.measureIsValidForComponent(s.id, true, false),
+        !this.measureIsValidForComponent(s.id, true, false, undefined),
     );
   }
 
   /**
    * Checks if a measure is valid for the component based on dashboard selections and component support.
    * Additional arguments indicate whether certain types of advanced measures are supported in the component or not.
+   * groupBy is what the component's queries group by, used to check required dimensions;
+   * undefined skips that check, for the pivot whose rows and columns the user picks.
    */
   private measureIsValidForComponent(
     measureName: string,
     supportsComparisonMeasure: boolean,
     supportsWindowedMeasure: boolean,
+    groupBy: QueryGroupBy | undefined,
+    supportsEphemeralMeasure = true,
   ) {
+    // ephemeral measures are not in the metrics view spec;
+    // they are validated separately when parsing the URL state.
+    if (this.ephemeralMeasureNames.has(measureName)) {
+      return !supportsEphemeralMeasure;
+    }
     const measure = this.measuresMap.get(measureName);
     if (!measure) return true;
     const grain =
@@ -150,6 +181,16 @@ export class AdvancedMeasureCorrector {
 
       // for measures with window operations, if the component doesnt support it
       case !!measure.window && !supportsWindowedMeasure:
+        return true;
+
+      // for measures with required dimensions, if the component doesnt group by all of them
+      case !!groupBy &&
+        !queryGroupsByRequiredDimensions(
+          this.exploreState,
+          this.metricsViewSpec,
+          measure,
+          groupBy,
+        ):
         return true;
 
       default:

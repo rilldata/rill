@@ -1,4 +1,6 @@
 import type { PathOption } from "@rilldata/web-common/components/navigation/breadcrumbs/types";
+import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
+import { resourceKey } from "@rilldata/web-common/features/resources/overview-utils";
 import {
   ComparisonDeltaAbsoluteSuffix,
   ComparisonDeltaPreviousSuffix,
@@ -201,13 +203,19 @@ export function getBreadcrumbOptions(
   exploreResources: V1Resource[],
   canvasResources: V1Resource[],
 ): Map<string, PathOption> {
+  // Keyed by kind as well as name: an explore and a canvas may share a name.
   const exploreOptions = exploreResources.reduce((map, exploreResource) => {
     const name = exploreResource.meta?.name?.name ?? "";
     const label =
       exploreResource.explore?.state?.validSpec?.displayName || name;
 
     if (label && name)
-      map.set(name.toLowerCase(), { label, section: "explore", depth: 0 });
+      map.set(resourceKey(ResourceKind.Explore, name), {
+        label,
+        section: "explore",
+        depth: 0,
+        param: name.toLowerCase(),
+      });
 
     return map;
   }, new Map<string, PathOption>());
@@ -217,7 +225,12 @@ export function getBreadcrumbOptions(
     const label = canvasResource?.canvas?.spec?.displayName || name;
 
     if (label && name)
-      map.set(name.toLowerCase(), { label, section: "canvas", depth: 0 });
+      map.set(resourceKey(ResourceKind.Canvas, name), {
+        label,
+        section: "canvas",
+        depth: 0,
+        param: name.toLowerCase(),
+      });
 
     return map;
   }, new Map<string, PathOption>());

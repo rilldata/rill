@@ -1,3 +1,5 @@
+import type { ExactSelection } from "@rilldata/web-common/features/dashboards/exact-measures/exact-measures";
+import type { EphemeralMeasureDef } from "@rilldata/web-common/features/dashboards/ephemeral-measures/types";
 import type { MeasureFilterEntry } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
 import {
   LeaderboardContextColumn,
@@ -31,6 +33,27 @@ export interface ExploreState {
    * or else all measure will be hidden
    */
   visibleMeasures: string[];
+
+  /**
+   * Ad-hoc measures derived from existing metrics view measures via an
+   * arithmetic expression (e.g. Profit = revenue - cost). Shared by all
+   * views (leaderboards, charts, pivot, ...) and encoded in the `adhoc_m` URL
+   * param. Definitions are independent of usage: an unused definition stays
+   * available in the measure menus until explicitly deleted.
+   */
+  ephemeralMeasures?: EphemeralMeasureDef[];
+
+  /**
+   * Measures the viewer switched to their `exact_expression`, per surface
+   * (the big-number row, each leaderboard, the dimension table, the Time
+   * Dimension Detail, the pivot; see `exploreExactSurface`), tied to the query
+   * context (filters, time controls, view, sorting) they were selected in; see
+   * `getQueryContextKey`. The store drops the selection as soon as the context
+   * changes, so exact values are only fetched after an explicit click. Tab
+   * memory only: never written to the URL, session storage, bookmarks, public
+   * URLs, reports or alerts.
+   */
+  exactMeasures?: ExactSelection;
 
   /**
    * While the `visibleMeasureKeys` has the list of visible measures,
@@ -104,6 +127,13 @@ export interface ExploreState {
    * user selected time range
    */
   selectedTimeRange?: DashboardTimeControls;
+
+  /**
+   * When true, the time grain follows the selected time range instead of staying fixed.
+   * The resolved grain is still stored in `selectedTimeRange.interval`.
+   * Cleared when the user picks a specific grain.
+   */
+  adaptiveTimeGrain?: boolean;
 
   /**
    * user selected scrub range
