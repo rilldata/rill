@@ -22,12 +22,19 @@ import {
   MetricsViewFilter,
   MetricsViewFilter_Cond,
 } from "@rilldata/web-common/proto/gen/rill/runtime/v1/queries_pb";
-import { DashboardState } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
+import {
+  DashboardState,
+  DashboardState_ActivePage,
+} from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
 import {
   type V1ExploreSpec,
   V1TimeGrain,
 } from "@rilldata/web-common/runtime-client";
 import { describe, expect, it } from "vitest";
+import {
+  type PivotChipData,
+  PivotChipType,
+} from "@rilldata/web-common/features/dashboards/pivot/types";
 
 describe("toProto/fromProto", () => {
   it("backwards compatibility for time controls", () => {
@@ -155,5 +162,49 @@ describe("toProto/fromProto", () => {
       ]),
     });
     expect(newState.selectedComparisonDimension).toBeUndefined();
+  });
+});
+
+describe("fromProto pivot fields", () => {
+  const dim = (id: string): PivotChipData => ({
+    id,
+    title: id,
+    type: PivotChipType.Dimension,
+  });
+  const measure = (id: string): PivotChipData => ({
+    id,
+    title: id,
+    type: PivotChipType.Measure,
+  });
+
+  it("keeps a field repeated in legacy state once", () => {
+    // Legacy bookmarks store the pivot as proto state, bypassing the url parser.
+    const exploreState = getFullInitExploreState(
+      AD_BIDS_NAME,
+      getInitExploreStateForTest(
+        AD_BIDS_METRICS_INIT_WITH_TIME,
+        AD_BIDS_EXPLORE_INIT,
+      ),
+    );
+    exploreState.activePage = DashboardState_ActivePage.PIVOT;
+    exploreState.pivot.rows = [dim("publisher"), dim("publisher")];
+    exploreState.pivot.columns = [
+      dim("publisher"),
+      dim("domain"),
+      measure("impressions"),
+      measure("impressions"),
+    ];
+
+    const newState = getDashboardStateFromUrl(
+      getProtoFromDashboardState(exploreState, AD_BIDS_EXPLORE_INIT),
+      AD_BIDS_METRICS_INIT_WITH_TIME,
+      AD_BIDS_EXPLORE_INIT,
+    );
+
+    expect(newState.pivot?.rows).toEqual([dim("publisher")]);
+    expect(newState.pivot?.columns).toEqual([
+      dim("domain"),
+      measure("impressions"),
+    ]);
   });
 });
