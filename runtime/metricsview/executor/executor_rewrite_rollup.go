@@ -487,7 +487,7 @@ func extractQueryTimeGrain(qry *metricsview.Query) runtimev1.TimeGrain {
 		if g == runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED {
 			continue
 		}
-		if smallest == runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED || grainOrder[g] < grainOrder[smallest] {
+		if smallest == runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED || timeutil.TimeGrainFromAPI(g).Compare(timeutil.TimeGrainFromAPI(smallest)) < 0 {
 			smallest = g
 		}
 	}

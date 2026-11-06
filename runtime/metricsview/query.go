@@ -328,7 +328,8 @@ const (
 	TimeGrainMonth       TimeGrain = "month"
 	TimeGrainQuarter     TimeGrain = "quarter"
 	TimeGrainYear        TimeGrain = "year"
-	// Multiples of a base grain. They only bucket time series; see the TimeGrain enum in the proto for the alignment rules.
+	// Multiples of a base grain.
+	// They only bucket time series; see the TimeGrain enum in the proto for the alignment rules.
 	TimeGrain5Minute  TimeGrain = "5m"
 	TimeGrain10Minute TimeGrain = "10m"
 	TimeGrain15Minute TimeGrain = "15m"
@@ -350,7 +351,8 @@ func (t TimeGrain) Valid() bool {
 	return false
 }
 
-// Base returns the standard grain a grain is a multiple of and the multiple. Standard grains return themselves and 1.
+// Base returns the standard grain a grain is a multiple of and the multiple.
+// Standard grains return themselves and 1.
 func (t TimeGrain) Base() (TimeGrain, int) {
 	unit, n := t.ToTimeutil().Base()
 	return TimeGrainFromProto(timeutil.TimeGrainToAPI(unit)), n

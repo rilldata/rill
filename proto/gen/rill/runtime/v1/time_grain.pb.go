@@ -33,8 +33,9 @@ const (
 	TimeGrain_TIME_GRAIN_MONTH       TimeGrain = 7
 	TimeGrain_TIME_GRAIN_QUARTER     TimeGrain = 8
 	TimeGrain_TIME_GRAIN_YEAR        TimeGrain = 9
-	// Multiples of a base grain. They are only used to bucket time series (not as the smallest grain, for rollups or for snapping),
-	// and each multiple divides its parent unit so buckets nest inside hours and days and align to local midnight.
+	// Multiples of a base grain.
+	// They are only used to bucket time series, not as the smallest grain, for rollups or for snapping.
+	// Each multiple divides its parent unit, so buckets nest inside hours and days and align to local midnight.
 	// The numeric values are not the grain order: compare grains by duration, never by enum value.
 	TimeGrain_TIME_GRAIN_5_MINUTE  TimeGrain = 10
 	TimeGrain_TIME_GRAIN_10_MINUTE TimeGrain = 11

@@ -73,7 +73,7 @@ func (d *dialect) DateTruncExpr(dim *runtimev1.MetricsViewSpec_Dimension, grain 
 		}
 	}
 
-	_, n := timeutil.TimeGrainBase(grain)
+	unit, n := timeutil.TimeGrainBase(grain)
 	var specifier string
 	if tz != "" || n > 1 {
 		specifier = druidTimeFloorSpecifier(grain)
@@ -92,6 +92,17 @@ func (d *dialect) DateTruncExpr(dim *runtimev1.MetricsViewSpec_Dimension, grain 
 		// Multiples use time_floor with an ISO period; date_trunc only supports standard units.
 		if tz == "" {
 			return fmt.Sprintf("time_floor(%s, '%s')", expr, specifier), nil
+		}
+		if unit == runtimev1.TimeGrain_TIME_GRAIN_HOUR {
+			// time_floor steps hour periods in absolute time from 1970-01-01 local,
+			// so during DST its 6-hour buckets start at 01:00 local.
+			// Shifting local midnight by the bucket's wall-clock hour is exact unless a DST change earlier that day moved it off that hour;
+			// then the event's own hour start, moved back by the hours it is into the bucket, is exact.
+			hour := fmt.Sprintf("time_extract(%s, 'HOUR', '%s')", expr, tz)
+			bucketHour := fmt.Sprintf("(%s - mod(%s, %d))", hour, hour, n)
+			fromMidnight := fmt.Sprintf("time_shift(time_floor(%s, 'P1D', null, '%s'), 'PT1H', %s, '%s')", expr, tz, bucketHour, tz)
+			fromHour := fmt.Sprintf("time_shift(time_floor(%s, 'PT1H', null, '%s'), 'PT1H', -mod(%s, %d), '%s')", expr, tz, hour, n, tz)
+			return fmt.Sprintf("CASE WHEN time_extract(%s, 'HOUR', '%s') = %s THEN %s ELSE %s END", fromMidnight, tz, bucketHour, fromMidnight, fromHour), nil
 		}
 		return fmt.Sprintf("time_floor(%s, '%s', null, '%s')", expr, specifier, tz), nil
 	}

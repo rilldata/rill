@@ -245,15 +245,30 @@ export function floorToGrain<IsValid extends boolean>(
   return floored.set({ hour: floored.hour - (floored.hour % count) });
 }
 
-/** Adds `n` buckets of the grain. */
+/**
+ * Adds `n` buckets of the grain.
+ * Hour multiples step on the wall clock like the runtime, so 6-hour buckets stay on local 00:00, 06:00, 12:00 and 18:00 across DST changes.
+ */
 export function plusGrain<IsValid extends boolean>(
   dt: DateTime<IsValid>,
   grain: V1TimeGrain,
   n = 1,
 ): DateTime<IsValid> {
-  return dt.plus({
-    [V1TimeGrainToDateTimeUnit[grain]]: n * V1TimeGrainToCount[grain],
-  });
+  const unit = V1TimeGrainToDateTimeUnit[grain];
+  const count = V1TimeGrainToCount[grain];
+  if (unit === "hour" && count > 1) {
+    return dt.set({ hour: dt.hour + n * count });
+  }
+  return dt.plus({ [unit]: n * count });
+}
+
+/**
+ * The standard grain of the grain's base unit, e.g. TIME_GRAIN_MINUTE for TIME_GRAIN_10_MINUTE.
+ * Use it to decide which date and time parts to show for a grain.
+ */
+export function getBaseGrain(grain: V1TimeGrain): V1TimeGrain {
+  if (isStandardGrain(grain)) return grain;
+  return DateTimeUnitToV1TimeGrain[V1TimeGrainToDateTimeUnit[grain]] ?? grain;
 }
 
 /** Number of buckets of the grain in the interval. */
@@ -576,7 +591,8 @@ export function getSmallestGrain(grains: (V1TimeGrain | undefined)[]) {
 /**
  * The grains of `availableGrains` (by default the standard grains) that bucket the interval into a sensible
  * number of points, excluding grains finer than `minTimeGrain`.
- * Falls back to the finest usable grain when none fits.
+ * When none fits, falls back to the coarsest usable grain,
+ * or to the finest one when the interval is shorter than a single bucket of every grain.
  */
 export function allowedGrainsForInterval(
   interval: Interval<true> | undefined,
@@ -598,11 +614,15 @@ export function allowedGrainsForInterval(
     );
   });
 
-  if (allowedGrains.length) {
-    return allowedGrains;
-  } else {
-    return [validGrains[0] ?? minTimeGrain];
+  if (allowedGrains.length) return allowedGrains;
+
+  const finest = validGrains[0];
+  if (!finest) return [minTimeGrain];
+  // Too long for every grain, e.g. a year with `time_grains: [10m, hour]`: the coarsest keeps the query small.
+  if (grainBucketCount(interval, finest) >= 1) {
+    return [validGrains[validGrains.length - 1]];
   }
+  return [finest];
 }
 
 /**

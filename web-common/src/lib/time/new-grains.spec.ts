@@ -8,6 +8,7 @@ import {
   DateTimeUnitToV1TimeGrain,
   floorToGrain,
   getAvailableTimeGrains,
+  getBaseGrain,
   grainBucketCount,
   isGrainAllowed,
   plusGrain,
@@ -325,6 +326,64 @@ describe("catalog grains", () => {
         declared,
       ),
     ).toEqual([V1TimeGrain.TIME_GRAIN_10_MINUTE]);
+  });
+
+  it("steps hour multiples on the wall clock across DST changes", () => {
+    // New York falls back on 2024-11-03: local midnight is 04:00Z and local 06:00 is 11:00Z, seven hours later.
+    const fallBack = DateTime.fromISO("2024-11-03T04:00:00Z").setZone(
+      "America/New_York",
+    );
+    expect(
+      plusGrain(fallBack, V1TimeGrain.TIME_GRAIN_6_HOUR).toUTC().toISO(),
+    ).toBe("2024-11-03T11:00:00.000Z");
+    expect(
+      plusGrain(fallBack, V1TimeGrain.TIME_GRAIN_6_HOUR, 4).toUTC().toISO(),
+    ).toBe("2024-11-04T05:00:00.000Z");
+    expect(
+      plusGrain(fallBack, V1TimeGrain.TIME_GRAIN_6_HOUR, -1).toUTC().toISO(),
+    ).toBe("2024-11-02T22:00:00.000Z");
+    // It springs forward on 2024-03-10: local 06:00 is 10:00Z, five hours after local midnight.
+    const springForward = DateTime.fromISO("2024-03-10T05:00:00Z").setZone(
+      "America/New_York",
+    );
+    expect(
+      plusGrain(springForward, V1TimeGrain.TIME_GRAIN_6_HOUR).toUTC().toISO(),
+    ).toBe("2024-03-10T10:00:00.000Z");
+  });
+
+  it("maps multiples to their base grain", () => {
+    expect(getBaseGrain(V1TimeGrain.TIME_GRAIN_10_MINUTE)).toBe(
+      V1TimeGrain.TIME_GRAIN_MINUTE,
+    );
+    expect(getBaseGrain(V1TimeGrain.TIME_GRAIN_6_HOUR)).toBe(
+      V1TimeGrain.TIME_GRAIN_HOUR,
+    );
+    expect(getBaseGrain(V1TimeGrain.TIME_GRAIN_WEEK)).toBe(
+      V1TimeGrain.TIME_GRAIN_WEEK,
+    );
+  });
+
+  it("falls back to the coarsest declared grain when the interval is too long for all of them", () => {
+    const declared = [
+      V1TimeGrain.TIME_GRAIN_10_MINUTE,
+      V1TimeGrain.TIME_GRAIN_HOUR,
+    ];
+    // 90 days are 12,960 ten-minute and 2,160 hourly buckets, both over the cap.
+    const quarter = createInterval(
+      "2024-01-01T00:00:00",
+      "2024-03-31T00:00:00",
+    );
+    expect(
+      allowedGrainsForInterval(
+        quarter,
+        V1TimeGrain.TIME_GRAIN_MINUTE,
+        declared,
+      ),
+    ).toEqual([V1TimeGrain.TIME_GRAIN_HOUR]);
+    const year = createInterval("2024-01-01T00:00:00", "2025-01-01T00:00:00");
+    expect(
+      allowedGrainsForInterval(year, V1TimeGrain.TIME_GRAIN_MINUTE, declared),
+    ).toEqual([V1TimeGrain.TIME_GRAIN_HOUR]);
   });
 
   it("labels multiples with their count", () => {

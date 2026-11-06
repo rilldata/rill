@@ -60,8 +60,9 @@ export enum TimeGrain {
   TIME_GRAIN_YEAR = 9,
 
   /**
-   * Multiples of a base grain. They are only used to bucket time series (not as the smallest grain, for rollups or for snapping),
-   * and each multiple divides its parent unit so buckets nest inside hours and days and align to local midnight.
+   * Multiples of a base grain.
+   * They are only used to bucket time series, not as the smallest grain, for rollups or for snapping.
+   * Each multiple divides its parent unit, so buckets nest inside hours and days and align to local midnight.
    * The numeric values are not the grain order: compare grains by duration, never by enum value.
    *
    * @generated from enum value: TIME_GRAIN_5_MINUTE = 10;

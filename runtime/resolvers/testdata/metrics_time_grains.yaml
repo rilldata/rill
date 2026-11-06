@@ -141,6 +141,122 @@ tests:
         time__6h: "2024-03-10T06:00:00+05:30"
       - sum: 16
         time__6h: "2024-03-10T12:00:00+05:30"
+  # 2024-03-10 is the spring-forward day in New York: buckets stay on local 00:00, 06:00, 12:00 and 18:00.
+  - name: time_floor_6h_new_york_dst_duckdb
+    resolver: metrics
+    properties:
+      metrics_view: duckdb_metrics
+      dimensions:
+        - name: time__6h
+          compute:
+            time_floor:
+              dimension: time
+              grain: 6h
+      measures:
+        - name: sum
+      time_range:
+        start: 2024-03-09T05:00:00Z
+        end: 2024-03-11T04:00:00Z
+      time_zone: America/New_York
+      sort:
+        - name: time__6h
+    result:
+      - sum: 15
+        time__6h: "2024-03-09T23:00:00Z"
+      - sum: 16
+        time__6h: "2024-03-10T10:00:00Z"
+      - sum: 32
+        time__6h: "2024-03-10T22:00:00Z"
+  - name: time_spine_6h_new_york_dst_duckdb
+    resolver: metrics
+    properties:
+      metrics_view: duckdb_metrics
+      dimensions:
+        - name: time__6h
+          compute:
+            time_floor:
+              dimension: time
+              grain: 6h
+      measures:
+        - name: sum
+      time_range:
+        start: 2024-03-10T05:00:00Z
+        end: 2024-03-11T04:00:00Z
+      time_zone: America/New_York
+      sort:
+        - name: time__6h
+      spine:
+        time:
+          start:
+          end:
+          grain:
+    result:
+      - sum: 0
+        time__6h: "2024-03-10T05:00:00Z"
+      - sum: 16
+        time__6h: "2024-03-10T10:00:00Z"
+      - sum: 0
+        time__6h: "2024-03-10T16:00:00Z"
+      - sum: 32
+        time__6h: "2024-03-10T22:00:00Z"
+  # 2024-03-10 is the spring-forward day in New York: buckets stay on local 00:00, 06:00, 12:00 and 18:00.
+  - name: time_floor_6h_new_york_dst_clickhouse
+    resolver: metrics
+    properties:
+      metrics_view: clickhouse_metrics
+      dimensions:
+        - name: time__6h
+          compute:
+            time_floor:
+              dimension: time
+              grain: 6h
+      measures:
+        - name: sum
+      time_range:
+        start: 2024-03-09T05:00:00Z
+        end: 2024-03-11T04:00:00Z
+      time_zone: America/New_York
+      sort:
+        - name: time__6h
+    result:
+      - sum: 15
+        time__6h: "2024-03-09T18:00:00-05:00"
+      - sum: 16
+        time__6h: "2024-03-10T06:00:00-04:00"
+      - sum: 32
+        time__6h: "2024-03-10T18:00:00-04:00"
+  - name: time_spine_6h_new_york_dst_clickhouse
+    resolver: metrics
+    properties:
+      metrics_view: clickhouse_metrics
+      dimensions:
+        - name: time__6h
+          compute:
+            time_floor:
+              dimension: time
+              grain: 6h
+      measures:
+        - name: sum
+      time_range:
+        start: 2024-03-10T05:00:00Z
+        end: 2024-03-11T04:00:00Z
+      time_zone: America/New_York
+      sort:
+        - name: time__6h
+      spine:
+        time:
+          start:
+          end:
+          grain:
+    result:
+      - sum: 0
+        time__6h: "2024-03-10T05:00:00Z"
+      - sum: 16
+        time__6h: "2024-03-10T10:00:00Z"
+      - sum: 0
+        time__6h: "2024-03-10T16:00:00Z"
+      - sum: 32
+        time__6h: "2024-03-10T22:00:00Z"
   - name: time_spine_10m_duckdb
     resolver: metrics
     properties:

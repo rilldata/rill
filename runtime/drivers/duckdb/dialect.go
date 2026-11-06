@@ -83,9 +83,15 @@ func (d *dialect) DateTruncExpr(dim *runtimev1.MetricsViewSpec_Dimension, grain 
 	}
 
 	if n > 1 {
-		// Multiples bucket with time_bucket, whose origin (2000-01-03 00:00 in the given zone) keeps buckets aligned to local midnight.
+		// Multiples bucket with time_bucket, whose origin (2000-01-03 00:00) keeps buckets aligned to midnight.
 		if tz == "" {
 			return fmt.Sprintf("time_bucket(INTERVAL '%d %s', %s::TIMESTAMP)", n, specifier, expr), nil
+		}
+		if specifier == "HOUR" {
+			// With a time zone, time_bucket steps hour widths in absolute time from a standard-time origin,
+			// so during DST its 6-hour buckets start at 01:00 local.
+			// Bucketing the local wall-clock time keeps them aligned to local midnight.
+			return fmt.Sprintf("time_bucket(INTERVAL '%d %s', %s::TIMESTAMPTZ AT TIME ZONE '%s') AT TIME ZONE '%s'", n, specifier, expr, tz, tz), nil
 		}
 		return fmt.Sprintf("time_bucket(INTERVAL '%d %s', %s::TIMESTAMPTZ, '%s')", n, specifier, expr, tz), nil
 	}

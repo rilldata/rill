@@ -1089,7 +1089,8 @@ func (p *Parser) parseAndInsertInlineExplore(tmp *MetricsViewYAML, mvName string
 // timeGrainMultipleRegex matches a multiple of minutes or hours, such as "10m", "10 min", "10 minutes" or "6h".
 var timeGrainMultipleRegex = regexp.MustCompile(`^(\d+)\s*(m|min|minutes?|h|hours?)$`)
 
-// timeGrainMultiples lists the supported multiples. Each divides its parent unit, so buckets nest inside hours and days.
+// timeGrainMultiples lists the supported multiples.
+// Each divides its parent unit, so buckets nest inside hours and days.
 var timeGrainMultiples = map[string]runtimev1.TimeGrain{
 	"5m":  runtimev1.TimeGrain_TIME_GRAIN_5_MINUTE,
 	"10m": runtimev1.TimeGrain_TIME_GRAIN_10_MINUTE,

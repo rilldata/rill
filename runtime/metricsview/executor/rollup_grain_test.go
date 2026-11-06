@@ -5,6 +5,7 @@ import (
 	"time"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
+	"github.com/rilldata/rill/runtime/metricsview"
 	"github.com/stretchr/testify/require"
 )
 
@@ -75,6 +76,31 @@ func TestGrainDerivableFrom(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			got := grainDerivableFrom(tt.query, tt.rollup)
 			require.Equal(t, tt.expected, got)
+		})
+	}
+}
+
+func TestExtractQueryTimeGrain(t *testing.T) {
+	timeFloor := func(g metricsview.TimeGrain) metricsview.Dimension {
+		return metricsview.Dimension{Name: string(g), Compute: &metricsview.DimensionCompute{TimeFloor: &metricsview.DimensionComputeTimeFloor{Dimension: "ts", Grain: g}}}
+	}
+	tests := []struct {
+		name     string
+		grains   []metricsview.TimeGrain
+		expected runtimev1.TimeGrain
+	}{
+		{"single multiple", []metricsview.TimeGrain{metricsview.TimeGrain10Minute}, runtimev1.TimeGrain_TIME_GRAIN_10_MINUTE},
+		{"minute finer than 6h", []metricsview.TimeGrain{metricsview.TimeGrain6Hour, metricsview.TimeGrainMinute}, runtimev1.TimeGrain_TIME_GRAIN_MINUTE},
+		{"10m finer than hour", []metricsview.TimeGrain{metricsview.TimeGrainHour, metricsview.TimeGrain10Minute}, runtimev1.TimeGrain_TIME_GRAIN_10_MINUTE},
+		{"12h finer than day", []metricsview.TimeGrain{metricsview.TimeGrainDay, metricsview.TimeGrain12Hour}, runtimev1.TimeGrain_TIME_GRAIN_12_HOUR},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			qry := &metricsview.Query{}
+			for _, g := range tt.grains {
+				qry.Dimensions = append(qry.Dimensions, timeFloor(g))
+			}
+			require.Equal(t, tt.expected, extractQueryTimeGrain(qry))
 		})
 	}
 }

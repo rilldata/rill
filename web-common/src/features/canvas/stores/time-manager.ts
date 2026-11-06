@@ -1,5 +1,8 @@
 import { isGrainBigger } from "@rilldata/web-common/lib/time/grains";
-import { getAvailableTimeGrains } from "@rilldata/web-common/lib/time/new-grains";
+import {
+  aggregationGrainOrder,
+  getAvailableTimeGrains,
+} from "@rilldata/web-common/lib/time/new-grains";
 import {
   V1ExploreComparisonMode,
   V1TimeGrain,
@@ -21,7 +24,8 @@ export class TimeManager {
   minTimeGrainMap = writable<Map<string, V1TimeGrain>>(new Map());
   // The grains each metrics view with a time dimension offers, see getAvailableTimeGrains.
   availableGrainsMap = writable<Map<string, V1TimeGrain[]>>(new Map());
-  // The grains every referenced metrics view offers; the canvas filter bar lists these.
+  // The grains every referenced metrics view offers, which the canvas filter bar lists.
+  // When the views share none, the grains any of them offers.
   commonAvailableGrains: Readable<V1TimeGrain[]>;
   hasTimeSeriesStore: Readable<boolean>;
 
@@ -57,13 +61,19 @@ export class TimeManager {
       [this.availableGrainsMap, this.largestMinTimeGrain],
       ([map, largestMinTimeGrain]) => {
         const lists = Array.from(map.values());
-        const common = lists[0]?.filter((grain) =>
+        if (!lists.length) {
+          return getAvailableTimeGrains({
+            smallestTimeGrain: largestMinTimeGrain,
+          });
+        }
+        const common = lists[0].filter((grain) =>
           lists.every((list) => list.includes(grain)),
         );
-        if (common?.length) return common;
-        return getAvailableTimeGrains({
-          smallestTimeGrain: largestMinTimeGrain,
-        });
+        if (common.length) return common;
+        // Never offer a grain that no view declares, so `time_grains` keeps replacing the default list.
+        return aggregationGrainOrder.filter((grain) =>
+          lists.some((list) => list.includes(grain)),
+        );
       },
     );
 

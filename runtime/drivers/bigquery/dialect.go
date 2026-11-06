@@ -140,6 +140,12 @@ func (d *dialect) DateTruncExpr(dim *runtimev1.MetricsViewSpec_Dimension, grain 
 		if tz == "" {
 			return fmt.Sprintf("TIMESTAMP_ADD(TIMESTAMP_TRUNC(%s, %s), INTERVAL DIV(EXTRACT(%s FROM %s), %d) * %d %s)", expr, parent, specifier, expr, n, n, specifier), nil
 		}
+		if specifier == "HOUR" {
+			// Hour multiples floor on the local wall clock, like the other dialects:
+			// adding hours to local midnight as absolute time would be off by the DST shift on transition days.
+			local := fmt.Sprintf("DATETIME(%s, '%s')", expr, tz)
+			return fmt.Sprintf("TIMESTAMP(DATETIME_ADD(DATETIME_TRUNC(%s, DAY), INTERVAL DIV(EXTRACT(HOUR FROM %s), %d) * %d HOUR), '%s')", local, local, n, n, tz), nil
+		}
 		return fmt.Sprintf("TIMESTAMP_ADD(TIMESTAMP_TRUNC(%s, %s, '%s'), INTERVAL DIV(EXTRACT(%s FROM %s AT TIME ZONE '%s'), %d) * %d %s)", expr, parent, tz, specifier, expr, tz, n, n, specifier), nil
 	}
 	if tz == "" {
@@ -175,11 +181,19 @@ func (d *dialect) SelectTimeRangeBins(start, end time.Time, grain runtimev1.Time
 	endStr := end.Format(time.RFC3339)
 	tzStr := tz.String()
 	unit, n := timeutil.TimeGrainBase(grain)
-	switch unit {
-	case runtimev1.TimeGrain_TIME_GRAIN_MILLISECOND,
-		runtimev1.TimeGrain_TIME_GRAIN_SECOND,
-		runtimev1.TimeGrain_TIME_GRAIN_MINUTE,
-		runtimev1.TimeGrain_TIME_GRAIN_HOUR:
+	switch {
+	case unit == runtimev1.TimeGrain_TIME_GRAIN_HOUR && n > 1:
+		// Hour multiples step on the local wall clock, like DateTruncExpr, so DST changes don't shift the bins.
+		// BigQuery has no DATETIME array generator, so offset the local start by a generated index.
+		steps := int(end.Sub(start)/(time.Duration(n)*time.Hour)) + 2
+		return fmt.Sprintf(
+			"SELECT ts AS %s FROM (SELECT TIMESTAMP(DATETIME_ADD(DATETIME(TIMESTAMP '%s', '%s'), INTERVAL i * %d HOUR), '%s') AS ts FROM UNNEST(GENERATE_ARRAY(0, %d)) AS i) WHERE ts < TIMESTAMP '%s'",
+			d.EscapeAlias(alias), startStr, tzStr, n, tzStr, steps, endStr,
+		), nil, nil
+	case unit == runtimev1.TimeGrain_TIME_GRAIN_MILLISECOND,
+		unit == runtimev1.TimeGrain_TIME_GRAIN_SECOND,
+		unit == runtimev1.TimeGrain_TIME_GRAIN_MINUTE,
+		unit == runtimev1.TimeGrain_TIME_GRAIN_HOUR:
 		return fmt.Sprintf(
 			"SELECT ts AS %s FROM UNNEST(GENERATE_TIMESTAMP_ARRAY(TIMESTAMP '%s', TIMESTAMP '%s', INTERVAL %d %s)) AS ts WHERE ts < TIMESTAMP '%s'",
 			d.EscapeAlias(alias), startStr, endStr, n, d.ConvertToDateTruncSpecifier(unit), endStr,

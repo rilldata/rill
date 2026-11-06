@@ -23,7 +23,8 @@ const (
 	TimeGrainMonth
 	TimeGrainQuarter
 	TimeGrainYear
-	// Multiples of a base grain. They are only used to bucket time series.
+	// Multiples of a base grain.
+	// They are only used to bucket time series.
 	// Their numeric values are not the grain order: use Compare to order grains.
 	TimeGrain5Minute
 	TimeGrain10Minute
@@ -93,13 +94,15 @@ func TimeGrainToAPI(tg TimeGrain) runtimev1.TimeGrain {
 	return grainToAPI[tg]
 }
 
-// TimeGrainBase returns the base unit of an API grain and the number of those units it spans. Standard grains return themselves and 1.
+// TimeGrainBase returns the base unit of an API grain and the number of those units it spans.
+// Standard grains return themselves and 1.
 func TimeGrainBase(tg runtimev1.TimeGrain) (runtimev1.TimeGrain, int) {
 	unit, n := TimeGrainFromAPI(tg).Base()
 	return TimeGrainToAPI(unit), n
 }
 
-// Base returns the unit a grain is a multiple of and the factor. Standard grains return themselves and 1.
+// Base returns the unit a grain is a multiple of and the factor.
+// Standard grains return themselves and 1.
 func (tg TimeGrain) Base() (TimeGrain, int) {
 	if m, ok := multiples[tg]; ok {
 		return m.unit, m.n
@@ -120,7 +123,8 @@ func (tg TimeGrain) Compare(other TimeGrain) int {
 	return 0
 }
 
-// ApproxDuration returns the nominal length of a grain. Calendar grains use fixed approximations, which is enough to order grains and estimate bin counts.
+// ApproxDuration returns the nominal length of a grain.
+// Calendar grains use fixed approximations, which is enough to order grains and estimate bin counts.
 func (tg TimeGrain) ApproxDuration() time.Duration {
 	unit, n := tg.Base()
 	var d time.Duration

@@ -41,7 +41,8 @@ var grainBranch = map[runtimev1.TimeGrain]int{
 	runtimev1.TimeGrain_TIME_GRAIN_YEAR:        branchCalendar,
 }
 
-// branchOf returns the branch of a grain. Multiples such as TIME_GRAIN_10_MINUTE share the branch of their base unit.
+// branchOf returns the branch of a grain.
+// Multiples such as TIME_GRAIN_10_MINUTE share the branch of their base unit.
 func branchOf(grain runtimev1.TimeGrain) int {
 	unit, _ := timeutil.TimeGrainBase(grain)
 	return grainBranch[unit]

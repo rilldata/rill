@@ -165,6 +165,8 @@ func (d *dialect) SelectTimeRangeBins(start, end time.Time, grain runtimev1.Time
 	startStr := start.Format(time.RFC3339)
 	endStr := end.Format(time.RFC3339)
 	tzStr := tz.String()
+	// Multiples such as TIME_GRAIN_10_MINUTE step by their base unit times the multiple.
+	unit, n := timeutil.TimeGrainBase(grain)
 	// Databricks SEQUENCE does not support INTERVAL 1 QUARTER or INTERVAL 1 WEEK;
 	// convert to the equivalent MONTH/DAY intervals.
 	var stepExpr string
@@ -174,14 +176,20 @@ func (d *dialect) SelectTimeRangeBins(start, end time.Time, grain runtimev1.Time
 	case runtimev1.TimeGrain_TIME_GRAIN_WEEK:
 		stepExpr = "INTERVAL 7 DAY"
 	default:
-		stepExpr = fmt.Sprintf("INTERVAL 1 %s", d.ConvertToDateTruncSpecifier(grain))
+		stepExpr = fmt.Sprintf("INTERVAL %d %s", n, d.ConvertToDateTruncSpecifier(unit))
 	}
 
-	switch grain {
-	case runtimev1.TimeGrain_TIME_GRAIN_MILLISECOND,
-		runtimev1.TimeGrain_TIME_GRAIN_SECOND,
-		runtimev1.TimeGrain_TIME_GRAIN_MINUTE,
-		runtimev1.TimeGrain_TIME_GRAIN_HOUR:
+	switch {
+	case unit == runtimev1.TimeGrain_TIME_GRAIN_HOUR && n > 1:
+		// Hour multiples step on the local wall clock, like DateTruncExpr, so DST changes don't shift the bins.
+		return fmt.Sprintf(
+			"SELECT TO_UTC_TIMESTAMP(ts, '%s') AS %s FROM (SELECT EXPLODE(SEQUENCE(FROM_UTC_TIMESTAMP(CAST('%s' AS TIMESTAMP), '%s'), FROM_UTC_TIMESTAMP(CAST('%s' AS TIMESTAMP), '%s'), %s)) AS ts) WHERE TO_UTC_TIMESTAMP(ts, '%s') < CAST('%s' AS TIMESTAMP)",
+			tzStr, d.EscapeAlias(alias), startStr, tzStr, endStr, tzStr, stepExpr, tzStr, endStr,
+		), nil, nil
+	case unit == runtimev1.TimeGrain_TIME_GRAIN_MILLISECOND,
+		unit == runtimev1.TimeGrain_TIME_GRAIN_SECOND,
+		unit == runtimev1.TimeGrain_TIME_GRAIN_MINUTE,
+		unit == runtimev1.TimeGrain_TIME_GRAIN_HOUR:
 		// Sub-day grains: generate timestamps directly
 		return fmt.Sprintf(
 			"SELECT ts AS %s FROM (SELECT EXPLODE(SEQUENCE(CAST('%s' AS TIMESTAMP), CAST('%s' AS TIMESTAMP), %s)) AS ts) WHERE ts < CAST('%s' AS TIMESTAMP)",

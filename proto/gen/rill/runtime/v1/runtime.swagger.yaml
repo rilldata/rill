@@ -9019,8 +9019,9 @@ definitions:
       - TIME_GRAIN_12_HOUR
     default: TIME_GRAIN_UNSPECIFIED
     description: |2-
-       - TIME_GRAIN_5_MINUTE: Multiples of a base grain. They are only used to bucket time series (not as the smallest grain, for rollups or for snapping),
-      and each multiple divides its parent unit so buckets nest inside hours and days and align to local midnight.
+       - TIME_GRAIN_5_MINUTE: Multiples of a base grain.
+      They are only used to bucket time series, not as the smallest grain, for rollups or for snapping.
+      Each multiple divides its parent unit, so buckets nest inside hours and days and align to local midnight.
       The numeric values are not the grain order: compare grains by duration, never by enum value.
   v1TimeRange:
     type: object
