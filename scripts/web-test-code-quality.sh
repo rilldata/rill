@@ -70,6 +70,12 @@ filter_defaults_if_unset() {
 
 filter_defaults_if_unset
 
+# ESLint runs only error-level rules under --quiet, and none of them needs type information: every type-aware rule in
+# eslint.config.js is a warning. So the lint skips building the TypeScript program, which for an app spans the whole repo
+# (each app's tsconfig inherits the root include) and needs about 5 GB, more than Node's default heap on the CI runners.
+# A type-aware rule set to "error" fails with "requires type information" until project:false is dropped here.
+ESLINT_ARGS=(--quiet --parser-options project:false)
+
 echo "Web code quality checks"
 echo "filters: admin=$ADMIN local=$LOCAL common=$COMMON mcpapp=$MCPAPP"
 
@@ -87,7 +93,7 @@ if [[ "$COMMON" == "true" ]]; then
   cd web-common
   npx svelte-kit sync
   cd ..
-  npx eslint web-common --quiet || exit_code=$?
+  npx eslint web-common "${ESLINT_ARGS[@]}" || exit_code=$?
   npx svelte-check --workspace web-common --no-tsconfig || exit_code=$?
 fi
 
@@ -107,7 +113,7 @@ if [[ "$LOCAL" == "true" ]]; then
   cd web-local
   npx svelte-kit sync
   cd ..
-  npx eslint web-local --quiet || exit_code=$?
+  npx eslint web-local "${ESLINT_ARGS[@]}" || exit_code=$?
   npm run check -w web-local || exit_code=$?
 fi
 
@@ -117,14 +123,14 @@ if [[ "$ADMIN" == "true" ]]; then
   cd web-admin
   npx svelte-kit sync
   cd ..
-  npx eslint web-admin --quiet || exit_code=$?
+  npx eslint web-admin "${ESLINT_ARGS[@]}" || exit_code=$?
   npx svelte-check --workspace web-admin --no-tsconfig || exit_code=$?
 fi
 
 if [[ "$MCPAPP" == "true" ]]; then
   echo ""
   echo "== lint and type checks for the MCP App widget =="
-  npx eslint web-mcp-app --quiet || exit_code=$?
+  npx eslint web-mcp-app "${ESLINT_ARGS[@]}" || exit_code=$?
   npm run check -w web-mcp-app || exit_code=$?
 fi
 
