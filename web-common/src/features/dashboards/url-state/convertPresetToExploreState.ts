@@ -22,6 +22,7 @@ import {
   ToActivePageViewMap,
 } from "@rilldata/web-common/features/dashboards/url-state/mappers";
 import {
+  dedupe,
   getMapFromArray,
   getMissingValues,
 } from "@rilldata/web-common/lib/arrayUtils";
@@ -261,7 +262,10 @@ function fromExploreUrlParams(
   const errors: Error[] = [];
 
   if (preset.measures?.length) {
-    const selectedMeasures = preset.measures.filter((m) => measures.has(m));
+    // A URL or a legacy bookmark can name a field twice; the lists that render the fields are keyed by name.
+    const selectedMeasures = dedupe(preset.measures).filter((m) =>
+      measures.has(m),
+    );
     const missingMeasures = getMissingValues(selectedMeasures, preset.measures);
     if (missingMeasures.length) {
       errors.push(getMultiFieldError("measure", missingMeasures));
@@ -275,7 +279,7 @@ function fromExploreUrlParams(
   }
 
   if (preset.dimensions?.length) {
-    const selectedDimensions = preset.dimensions.filter((d) =>
+    const selectedDimensions = dedupe(preset.dimensions).filter((d) =>
       dimensions.has(d),
     );
     const missingDimensions = getMissingValues(
