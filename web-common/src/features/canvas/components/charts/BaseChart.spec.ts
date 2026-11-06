@@ -1,7 +1,10 @@
 import { describe, expect, it, vi } from "vitest";
 import { get, writable } from "svelte/store";
 import { isMap, parseDocument } from "yaml";
-import type { V1Resource } from "@rilldata/web-common/runtime-client";
+import type {
+  V1ComponentSpecRendererProperties,
+  V1Resource,
+} from "@rilldata/web-common/runtime-client";
 import type { CanvasEntity, ComponentPath } from "../../stores/canvas-entity";
 import type { ChartType } from "../../../components/charts/types";
 import { BaseChart, type BaseChartConfig } from "./BaseChart";
@@ -35,7 +38,7 @@ function chart(
   resource: V1Resource,
   parent: CanvasEntity,
   path: ComponentPath,
-) {
+): BaseChart<BaseChartConfig> {
   const spec = resource.component!.spec!;
   return Object.assign(
     Object.create(BaseChart.prototype) as BaseChart<BaseChartConfig>,
@@ -45,13 +48,23 @@ function chart(
       pathInYAML: path,
       type: spec.renderer as ChartType,
       resource: writable(resource),
-      specStore: writable(spec.rendererProperties as BaseChartConfig),
+      specStore: writable(
+        spec.rendererProperties as unknown as BaseChartConfig,
+      ),
       chartType: writable(spec.renderer as ChartType),
     },
   );
 }
 function resource(type: string, spec: BaseChartConfig): V1Resource {
-  return { component: { spec: { renderer: type, rendererProperties: spec } } };
+  return {
+    component: {
+      spec: {
+        renderer: type,
+        rendererProperties:
+          spec as unknown as V1ComponentSpecRendererProperties,
+      },
+    },
+  };
 }
 
 const item = { bar_chart: { metrics_view: "ads" }, width: 8, if: "true" };

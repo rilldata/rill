@@ -29,7 +29,7 @@ afterEach(cleanup);
 async function openMenu() {
   const trigger = screen.getByRole("button", { name: "Choose fields" });
   await fireEvent.keyDown(trigger, { key: "Enter" });
-  return screen.findByRole("menuitemcheckbox", { name: "B", exact: true });
+  return screen.findByRole("menuitemcheckbox", { name: "B" });
 }
 
 describe("field selector optimistic selection", () => {
@@ -61,9 +61,10 @@ describe("field selector optimistic selection", () => {
     expect(onMultiSelect).toHaveBeenLastCalledWith(["a", "c"]);
     await view.rerender({ selectedItems: ["b", "c"] });
     expect(b).toHaveAttribute("aria-checked", "false");
-    expect(
-      screen.getByRole("menuitemcheckbox", { name: "A", exact: true }),
-    ).toHaveAttribute("aria-checked", "false");
+    expect(screen.getByRole("menuitemcheckbox", { name: "A" })).toHaveAttribute(
+      "aria-checked",
+      "false",
+    );
     await fireEvent.click(b);
     expect(onMultiSelect).toHaveBeenLastCalledWith(["b", "c"]);
   });
@@ -76,12 +77,14 @@ describe("field selector optimistic selection", () => {
     await view.rerender({ open: false, selectedItems: ["b", "c"] });
     const reopened = await openMenu();
     expect(reopened).toHaveAttribute("aria-checked", "true");
-    expect(
-      screen.getByRole("menuitemcheckbox", { name: "A", exact: true }),
-    ).toHaveAttribute("aria-checked", "false");
-    expect(
-      screen.getByRole("menuitemcheckbox", { name: "C", exact: true }),
-    ).toHaveAttribute("aria-checked", "true");
+    expect(screen.getByRole("menuitemcheckbox", { name: "A" })).toHaveAttribute(
+      "aria-checked",
+      "false",
+    );
+    expect(screen.getByRole("menuitemcheckbox", { name: "C" })).toHaveAttribute(
+      "aria-checked",
+      "true",
+    );
     expect(onMultiSelect).toHaveBeenCalledTimes(1);
   });
 
@@ -96,9 +99,7 @@ describe("field selector optimistic selection", () => {
       screen.getByRole("button", { name: "Choose fields" }),
       { key: "Enter" },
     );
-    await fireEvent.click(
-      await screen.findByRole("menuitem", { name: "B", exact: true }),
-    );
+    await fireEvent.click(await screen.findByRole("menuitem", { name: "B" }));
     expect(onMultiSelect).toHaveBeenCalledExactlyOnceWith(["b"]);
     expect(screen.queryByRole("menu")).not.toBeInTheDocument();
   });
