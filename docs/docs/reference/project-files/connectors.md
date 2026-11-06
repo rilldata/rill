@@ -39,6 +39,7 @@ Connector YAML files define how Rill connects to external data sources and OLAP 
 - [**Claude**](#claude) - Claude connector for chat with your own API key
 - [**OpenAI**](#openai) - OpenAI connector for chat with your own API key
 - [**Gemini**](#gemini) - Gemini connector for chat with your own API key
+- [**Bedrock**](#bedrock) - Amazon Bedrock connector for chat with models in your own AWS account
 - [**Slack**](#slack) - Slack data
 
 ### _Other_
@@ -738,7 +739,7 @@ _[number]_ - Maximum number of tokens to generate in the completion (default: 81
 
 ### `reasoning_effort`
 
-_[string]_ - Constrains effort on reasoning for reasoning models (e.g., 'low', 'medium', 'high')
+_[string]_ - Constrains effort on reasoning for reasoning models (e.g., 'low', 'medium', 'high'). Set this when using a model that reasons by default, since Rill otherwise sends a temperature of 0.1, which reasoning models reject.
 
 ### `base_url`
 
@@ -785,11 +786,15 @@ _[number]_ - Maximum number of tokens in the response (e.g., 8192)
 
 ### `temperature`
 
-_[number]_ - Sampling temperature to use (e.g., 0.0)
+_[number]_ - Sampling temperature to use (e.g., 0.0). Defaults to the model's default. Leave unset for models that don't support it, such as Claude Opus 4.7 and later.
 
 ### `base_url`
 
 _[string]_ - The base URL for the Claude API
+
+### `prompt_caching`
+
+_[boolean]_ - Cache the tools, system prompt, and conversation between requests (default false). Cache reads cost a fraction of the input price, which typically lowers cost for AI chat, but cache writes cost more than the input price.
 
 ```yaml
 # Example: Claude connector configuration
@@ -827,7 +832,7 @@ _[number]_ - Maximum number of tokens in the response (e.g., 8192)
 
 ### `temperature`
 
-_[number]_ - Sampling temperature to use (0.0-2.0)
+_[number]_ - Sampling temperature to use (0.0-2.0). Defaults to the model's default, which Google recommends keeping for Gemini 3 models.
 
 ### `top_p`
 
@@ -843,6 +848,75 @@ type: connector
 driver: gemini
 api_key: "{{ .env.gemini_api_key }}"
 model: gemini-2.5-pro-preview-05-06
+```
+
+## Bedrock
+
+### `driver`
+
+_[string]_ - The driver type, must be set to "bedrock" _(required)_
+
+### `model`
+
+_[string]_ - The Bedrock model ID, inference profile ID, or ARN to use (e.g., 'us.anthropic.claude-sonnet-4-5-20250929-v1:0'). The model must support tool use and structured outputs in the Bedrock Converse API. _(required)_
+
+### `region`
+
+_[string]_ - Optional AWS region to call Bedrock in (e.g., us-east-1). Defaults to 'us-east-1' if not specified. When using a long-term API key, this must be the region the key was generated in.
+
+### `api_key`
+
+_[string]_ - Amazon Bedrock API key. Use either an API key or AWS access keys; they cannot be combined.
+
+### `aws_access_key_id`
+
+_[string]_ - AWS Access Key ID used for authentication. Required unless using an API key or running locally with host credentials.
+
+### `aws_secret_access_key`
+
+_[string]_ - AWS Secret Access Key paired with the Access Key ID.
+
+### `aws_access_token`
+
+_[string]_ - AWS session token used with temporary credentials. Required only if the Access Key and Secret Key are part of temporary session credentials.
+
+### `aws_role_arn`
+
+_[string]_ - ARN of the IAM role to assume. When specified, the base credentials are used to call STS AssumeRole and obtain temporary credentials scoped to this role.
+
+### `aws_role_session_name`
+
+_[string]_ - Session name to associate with the STS AssumeRole session. Used only if 'aws_role_arn' is specified.
+
+### `aws_external_id`
+
+_[string]_ - External ID required by some roles when assuming them, typically for cross-account access. Used only if 'aws_role_arn' is specified.
+
+### `max_tokens`
+
+_[number]_ - Maximum number of tokens in the response. Defaults to the model's maximum.
+
+### `temperature`
+
+_[number]_ - Sampling temperature to use (e.g., 0.1). Defaults to the model's default. Leave unset for models that don't support it, such as reasoning models.
+
+```yaml
+# Example: Bedrock connector configuration
+type: connector
+driver: bedrock
+model: us.anthropic.claude-sonnet-4-5-20250929-v1:0
+region: us-east-1
+aws_access_key_id: "{{ .env.AWS_ACCESS_KEY_ID }}"
+aws_secret_access_key: "{{ .env.AWS_SECRET_ACCESS_KEY }}"
+```
+
+```yaml
+# Example: Bedrock connector configuration using an API key
+type: connector
+driver: bedrock
+model: us.anthropic.claude-sonnet-4-5-20250929-v1:0
+region: us-east-1
+api_key: "{{ .env.BEDROCK_API_KEY }}"
 ```
 
 ## Pinot
@@ -1311,6 +1385,10 @@ _[string]_ - Secret of the pre-registered OAuth client. Reference it from `.env`
 ### `oauth_scopes`
 
 _[array of string]_ - Scopes to request during authorization. Defaults to all scopes the server advertises
+
+### `oauth_authorization_params`
+
+_[object]_ - Extra query parameters for the authorization request, for servers that need non-standard ones. For example, Google issues a refresh token only with `access_type: offline`, and only on the first consent unless `prompt: consent` is also set. Changing them requires users to connect again
 
 ### `headers`
 

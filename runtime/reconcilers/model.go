@@ -934,6 +934,7 @@ func (r *ModelReconciler) resolveIncrementalState(ctx context.Context, mdl *runt
 		InstanceID:         r.C.InstanceID,
 		Resolver:           mdl.Spec.IncrementalStateResolver,
 		ResolverProperties: mdl.Spec.IncrementalStateResolverProperties.AsMap(),
+		ProjectDeclared:    true,
 		Claims:             &runtime.SecurityClaims{SkipChecks: true},
 	})
 	if err != nil {
@@ -981,6 +982,7 @@ func (r *ModelReconciler) resolveAndSyncPartitions(ctx context.Context, self *ru
 		InstanceID:         r.C.InstanceID,
 		Resolver:           mdl.Spec.PartitionsResolver,
 		ResolverProperties: mdl.Spec.PartitionsResolverProperties.AsMap(),
+		ProjectDeclared:    true,
 		Args:               map[string]any{"state": incrementalState, "partitions_model_id": mdl.State.PartitionsModelId},
 		Claims:             &runtime.SecurityClaims{SkipChecks: true},
 	})
@@ -2075,6 +2077,7 @@ func (r *ModelReconciler) execModelTest(ctx context.Context, test *runtimev1.Mod
 		InstanceID:         r.C.InstanceID,
 		Resolver:           test.Resolver,
 		ResolverProperties: test.ResolverProperties.AsMap(),
+		ProjectDeclared:    true,
 		Claims:             &runtime.SecurityClaims{SkipChecks: true},
 		Args:               map[string]any{"limit": 1},
 	})

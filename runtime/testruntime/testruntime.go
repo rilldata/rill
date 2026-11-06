@@ -30,6 +30,7 @@ import (
 	// Load database drivers for testing.
 	_ "github.com/rilldata/rill/runtime/drivers/admin"
 	_ "github.com/rilldata/rill/runtime/drivers/athena"
+	_ "github.com/rilldata/rill/runtime/drivers/bedrock"
 	_ "github.com/rilldata/rill/runtime/drivers/bigquery"
 	_ "github.com/rilldata/rill/runtime/drivers/claude"
 	_ "github.com/rilldata/rill/runtime/drivers/clickhouse"
@@ -107,7 +108,7 @@ type InstanceOptions struct {
 	WatchRepo         bool
 	StageChanges      bool
 	DisableHostAccess bool
-	AIConnector       string // Options: "" (none), "openai", "claude"
+	AIConnector       string // Options: "" (none), "openai", "claude", "gemini", "bedrock"
 	TestConnectors    []string
 	FrontendURL       string
 	// AdminService overrides the instance's admin service.

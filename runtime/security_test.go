@@ -8,6 +8,7 @@ import (
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
+	"google.golang.org/protobuf/types/known/structpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -683,6 +684,83 @@ func TestResolveConnectorSecurity(t *testing.T) {
 			regular, err := p.resolveSecurity(t.Context(), "", "test", map[string]string{}, claims, r)
 			require.NoError(t, err)
 			require.Equal(t, tt.attrs["admin"] == true, regular.CanAccess())
+		})
+	}
+}
+
+func TestResolveEmbedReportSecurity(t *testing.T) {
+	recipients := []any{"recipient@example.com"}
+	report := func(annotations map[string]string) *runtimev1.Resource {
+		props, err := structpb.NewStruct(map[string]any{"recipients": recipients})
+		require.NoError(t, err)
+		return &runtimev1.Resource{
+			Meta: &runtimev1.ResourceMeta{
+				Name:           &runtimev1.ResourceName{Kind: ResourceKindReport, Name: "r1"},
+				StateUpdatedOn: timestamppb.Now(),
+			},
+			Resource: &runtimev1.Resource_Report{
+				Report: &runtimev1.Report{
+					Spec: &runtimev1.ReportSpec{
+						Notifiers:   []*runtimev1.Notifier{{Connector: "email", Properties: props}},
+						Annotations: annotations,
+					},
+					State: &runtimev1.ReportState{},
+				},
+			},
+		}
+	}
+	embedReport := report(map[string]string{"admin_managed": "true", "admin_embed_owner_id": "ext_owner"})
+	userReport := report(map[string]string{"admin_managed": "true", "admin_owner_user_id": "u1"})
+
+	tests := []struct {
+		name   string
+		report *runtimev1.Resource
+		claims *SecurityClaims
+		want   bool
+	}{
+		{
+			name:   "embed owner can access embed report",
+			report: embedReport,
+			claims: &SecurityClaims{UserID: "ext_owner", UserAttributes: map[string]any{"embed": true}},
+			want:   true,
+		},
+		{
+			name:   "other embed user can't access embed report",
+			report: embedReport,
+			claims: &SecurityClaims{UserID: "ext_other", UserAttributes: map[string]any{"embed": true}},
+			want:   false,
+		},
+		{
+			name:   "recipient can't access embed report",
+			report: embedReport,
+			claims: &SecurityClaims{UserID: "u2", UserAttributes: map[string]any{"id": "u2", "email": "recipient@example.com"}},
+			want:   false,
+		},
+		{
+			name:   "admin can access embed report",
+			report: embedReport,
+			claims: &SecurityClaims{UserID: "u3", UserAttributes: map[string]any{"id": "u3", "email": "admin@example.com", "admin": true}},
+			want:   true,
+		},
+		{
+			name:   "recipient can access user report",
+			report: userReport,
+			claims: &SecurityClaims{UserID: "u2", UserAttributes: map[string]any{"id": "u2", "email": "recipient@example.com"}},
+			want:   true,
+		},
+		{
+			name:   "anonymous user can't access user report",
+			report: userReport,
+			claims: &SecurityClaims{},
+			want:   false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			p := newSecurityEngine(10, zap.NewNop(), nil)
+			got, err := p.resolveSecurity(t.Context(), "", "test", map[string]string{}, tt.claims, tt.report)
+			require.NoError(t, err)
+			require.Equal(t, tt.want, got.CanAccess())
 		})
 	}
 }

@@ -95,6 +95,10 @@ export function createSubTableCellQuery(
   rowNestFilters: V1Expression,
   timeFilters: TimeFilters[],
 ) {
+  // A row with no sub rows has no cells to fetch, and its row filter would be
+  // an `IN` with no values, which the runtime rejects.
+  if (!rowDimensionValues.length) return readable(null);
+
   const allDimensions = config.colDimensionNames.concat([anchorDimension]);
 
   const { time } = config;

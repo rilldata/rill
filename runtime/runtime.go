@@ -212,6 +212,7 @@ func (r *Runtime) UpdateInstanceWithRillYAML(ctx context.Context, instanceID str
 	inst.ProjectVariables = vars
 	inst.FeatureFlags = rillYAML.FeatureFlags
 	inst.PublicPaths = rillYAML.PublicPaths
+	inst.EmbedOpenURL = rillYAML.EmbedOpenURL
 	inst.AIInstructions = rillYAML.AIInstructions
 	// Clone the prompts so the instance doesn't share proto messages with the parser;
 	// marshalling mutates their internal state, which breaks the parser's rill.yaml change detection.

@@ -31,3 +31,18 @@ export function getSortFilterManagers(
 
   return { dimensions, measures };
 }
+
+/**
+ * Keys for a keyed `{#each}` over filter managers, aligned with the given list.
+ * Managers are rebuilt on every URL change, so keying by the manager remounts each chip;
+ * the name is stable, but an advanced filter holds a manager per condition,
+ * so repeats of a name get their occurrence appended.
+ */
+export function getFilterManagerKeys(managers: { name: string }[]): string[] {
+  const occurrences = new Map<string, number>();
+  return managers.map(({ name }) => {
+    const occurrence = (occurrences.get(name) ?? 0) + 1;
+    occurrences.set(name, occurrence);
+    return occurrence === 1 ? name : `${name}#${occurrence}`;
+  });
+}

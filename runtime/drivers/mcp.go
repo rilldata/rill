@@ -30,6 +30,8 @@ type MCPOAuthConfig struct {
 	ClientID     string
 	ClientSecret string
 	Scopes       []string
+	// AuthorizationParams are extra query parameters for the authorization endpoint.
+	AuthorizationParams map[string]string
 	// Hash identifies the configuration. It changes when any other field changes, which invalidates existing authorizations.
 	Hash string
 }

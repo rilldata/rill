@@ -50,6 +50,9 @@ type Client struct {
 	ClientSecret          string   `json:"client_secret,omitempty"`
 	ClientAuthStyle       string   `json:"client_auth_style,omitempty"` // "basic", "post" or empty for auto-detect
 	Scopes                []string `json:"scopes,omitempty"`
+	// AuthorizationParams are extra query parameters for the authorization endpoint, for servers that need non-standard ones
+	// (e.g. Google's access_type=offline, without which it issues no refresh token).
+	AuthorizationParams map[string]string `json:"authorization_params,omitempty"`
 }
 
 // DiscoverOptions are the inputs for Discover.
@@ -61,6 +64,8 @@ type DiscoverOptions struct {
 	ClientSecret string
 	// Scopes to request. Defaults to all scopes the server advertises.
 	Scopes []string
+	// AuthorizationParams are extra query parameters for the authorization endpoint (see Client.AuthorizationParams).
+	AuthorizationParams map[string]string
 	// HTTPClient is used for all requests; see safehttp.NewHTTPClient.
 	HTTPClient *http.Client
 }
@@ -120,7 +125,13 @@ func Discover(ctx context.Context, opts *DiscoverOptions) (*Client, error) {
 	}
 
 	if len(opts.Scopes) > 0 {
+		// Configured scopes are requested exactly as they are, so a client that may not use offline_access can opt out by listing its scopes.
 		scopes = opts.Scopes
+	} else if len(scopes) > 0 && slices.Contains(meta.ScopesSupported, "offline_access") && !slices.Contains(scopes, "offline_access") {
+		// Rill stores tokens securely and refreshes them, so it asks for a refresh token where the authorization server lets clients request one with the offline_access scope (MCP SEP-2207).
+		// Servers may still decline to issue one.
+		// Without scopes, no scope is sent and the server applies its defaults, which offline_access alone would replace.
+		scopes = append(scopes, "offline_access")
 	}
 
 	c := &Client{
@@ -133,6 +144,7 @@ func Discover(ctx context.Context, opts *DiscoverOptions) (*Client, error) {
 		TokenEndpoint:         meta.TokenEndpoint,
 		RevocationEndpoint:    meta.RevocationEndpoint,
 		Scopes:                scopes,
+		AuthorizationParams:   opts.AuthorizationParams,
 	}
 
 	// Use the pre-registered client if provided, otherwise register one dynamically.
@@ -192,7 +204,24 @@ func TokenExpiring(tok *oauth2.Token, obtainedOn time.Time) bool {
 
 // AuthCodeURL returns the URL to send the user's browser to.
 func (c *Client) AuthCodeURL(state, verifier string) string {
-	return c.oauth2Config().AuthCodeURL(state, oauth2.S256ChallengeOption(verifier), oauth2.SetAuthURLParam("resource", c.Resource))
+	opts := make([]oauth2.AuthCodeOption, 0, len(c.AuthorizationParams)+2)
+	for k, v := range c.AuthorizationParams {
+		opts = append(opts, oauth2.SetAuthURLParam(k, v))
+	}
+	opts = append(opts, oauth2.S256ChallengeOption(verifier), oauth2.SetAuthURLParam("resource", c.Resource))
+	return c.oauth2Config().AuthCodeURL(state, opts...)
+}
+
+// reservedAuthorizationParams are the authorization request parameters that the flow sets itself or depends on:
+// "request" and "request_uri" would let a request object (RFC 9101) replace them, and "response_mode" would move the response out of the callback's query.
+var reservedAuthorizationParams = []string{
+	"response_type", "client_id", "redirect_uri", "scope", "state", "code_challenge", "code_challenge_method", "resource",
+	"request", "request_uri", "response_mode",
+}
+
+// IsReservedAuthorizationParam reports whether an authorization request parameter is set by the flow itself, and so can't be configured.
+func IsReservedAuthorizationParam(key string) bool {
+	return slices.ContainsFunc(reservedAuthorizationParams, func(r string) bool { return strings.EqualFold(r, key) })
 }
 
 // ValidateIssuer checks the "iss" parameter of an authorization response (RFC 9207), which defends against mix-up attacks

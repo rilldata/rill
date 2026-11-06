@@ -97,6 +97,14 @@ Email is the default notification target for alerts and is automatically enabled
 
 ![Email Notifications](/img/explore/alerts/email-notifications.png)
 
+#### Attaching the matching rows
+
+Alert emails show the first row that matched the alert criteria. To send every matching row, select **Attach matching rows to emails** and choose a CSV, Excel, or Parquet file. You can also set a row limit and include metadata in the file.
+
+- Only emails include the attachment, and only when the alert triggers. Slack notifications and recovery emails do not.
+- Files larger than 10 MB are not attached. The email says so instead.
+- In alert YAML files, configure the attachment with the [`export`](/reference/project-files/alerts#export) property. Attachments are only supported for alerts that use the `query` property, which is what alerts created from a dashboard use.
+
 ### Configuring Slack targets
 
 Slack is also an available target for alert notifications and Rill can be configured to send alerts to your workspace, either in specified Slack channels (public / private) or as private messages via a configured bot. However, Slack will <u>first need to be enabled</u> to show up as an available notification target for alerts. For more information, refer to our [Configuring Slack integration](/developers/build/connectors/services/slack) documentation.

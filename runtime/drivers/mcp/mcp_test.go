@@ -3,6 +3,7 @@ package mcp
 import (
 	"context"
 	"fmt"
+	"maps"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -255,6 +256,8 @@ func TestHostedOAuthToken(t *testing.T) {
 func TestOAuthConfigHash(t *testing.T) {
 	base := &configProperties{URL: "https://mcp.example.com", OAuthClientID: "id", OAuthClientSecret: "secret", OAuthScopes: []string{"read"}}
 	hash := oauthConfigHash(base)
+	// Golden value: stored OAuth clients are keyed by this hash, so changing it for an unchanged config forces every user to reconnect
+	require.Equal(t, "3cfdfc260ed7eb25b86e8933bf2fe8a7a957ca3fb7813c536c0f4d013f67f456", hash)
 	require.Equal(t, hash, oauthConfigHash(&configProperties{URL: "https://mcp.example.com", OAuthClientID: "id", OAuthClientSecret: "secret", OAuthScopes: []string{"read"}}))
 
 	changes := []*configProperties{
@@ -263,11 +266,31 @@ func TestOAuthConfigHash(t *testing.T) {
 		{URL: "https://mcp.example.com", OAuthClientID: "id", OAuthClientSecret: "rotated", OAuthScopes: []string{"read"}},
 		{URL: "https://mcp.example.com", OAuthClientID: "id", OAuthClientSecret: "secret", OAuthScopes: []string{"read", "write"}},
 		{URL: "https://mcp.example.com", OAuthClientID: "id", OAuthClientSecret: "secret"},
+		{URL: "https://mcp.example.com", OAuthClientID: "id", OAuthClientSecret: "secret", OAuthScopes: []string{"read"}, OAuthAuthorizationParams: map[string]string{"access_type": "offline"}},
 		// Shifting a value between fields must not collide
 		{URL: "https://mcp.example.com", OAuthClientID: "idsecret", OAuthScopes: []string{"read"}},
 	}
 	for _, c := range changes {
 		require.NotEqual(t, hash, oauthConfigHash(c))
+	}
+
+	// Changing the value of an authorization param changes the hash
+	require.NotEqual(t,
+		oauthConfigHash(&configProperties{URL: "https://mcp.example.com", OAuthAuthorizationParams: map[string]string{"access_type": "offline"}}),
+		oauthConfigHash(&configProperties{URL: "https://mcp.example.com", OAuthAuthorizationParams: map[string]string{"access_type": "online"}}),
+	)
+
+	// Authorization params must not collide with scopes
+	require.NotEqual(t,
+		oauthConfigHash(&configProperties{URL: "https://mcp.example.com", OAuthScopes: []string{"access_type", "offline"}}),
+		oauthConfigHash(&configProperties{URL: "https://mcp.example.com", OAuthAuthorizationParams: map[string]string{"access_type": "offline"}}),
+	)
+
+	// Authorization params are hashed independently of their order
+	params := map[string]string{"access_type": "offline", "prompt": "consent", "hd": "example.com"}
+	withParams := &configProperties{URL: "https://mcp.example.com", OAuthAuthorizationParams: params}
+	for range 10 {
+		require.Equal(t, oauthConfigHash(withParams), oauthConfigHash(&configProperties{URL: "https://mcp.example.com", OAuthAuthorizationParams: maps.Clone(params)}))
 	}
 }
 
@@ -284,8 +307,13 @@ func TestConfigValidation(t *testing.T) {
 		{"private ip in hosted", map[string]any{"url": "https://10.1.2.3/mcp", "allow_host_access": false}, "private networks"},
 		{"bad auth", map[string]any{"url": "https://example.com/mcp", "auth": "basic"}, "invalid 'auth'"},
 		{"oauth with authorization header", map[string]any{"url": "https://example.com/mcp", "auth": "oauth", "headers": map[string]any{"Authorization": "Bearer x"}}, "cannot be combined"},
+		{"reserved authorization param", map[string]any{"url": "https://example.com/mcp", "auth": "oauth", "oauth_authorization_params": map[string]any{"State": "x"}}, "cannot set \"State\""},
+		{"scope as authorization param", map[string]any{"url": "https://example.com/mcp", "auth": "oauth", "oauth_authorization_params": map[string]any{"Scope": "x"}}, "use 'oauth_scopes' instead"},
+		{"null authorization param", map[string]any{"url": "https://example.com/mcp", "auth": "oauth", "oauth_authorization_params": map[string]any{"prompt": nil}}, "\"prompt\" has no value"},
+		{"authorization params without oauth", map[string]any{"url": "https://example.com/mcp", "oauth_authorization_params": map[string]any{"prompt": "consent"}}, "requires 'auth: oauth'"},
 		{"bad timeout", map[string]any{"url": "https://example.com/mcp", "timeout": "soon"}, "invalid 'timeout'"},
 		{"ok hosted", map[string]any{"url": "https://example.com/mcp", "allow_host_access": false, "timeout": "30s", "max_result_bytes": 10}, ""},
+		{"ok authorization params", map[string]any{"url": "https://example.com/mcp", "auth": "oauth", "oauth_authorization_params": map[string]any{"access_type": "offline", "prompt": "consent"}}, ""},
 		{"ok local http", map[string]any{"url": "http://localhost:8000/mcp", "allow_host_access": true}, ""},
 	}
 	for _, tc := range cases {
@@ -299,6 +327,38 @@ func TestConfigValidation(t *testing.T) {
 			require.ErrorContains(t, err, tc.err)
 		})
 	}
+}
+
+func TestConfigReservedAuthorizationParams(t *testing.T) {
+	// Parameters that the flow sets itself or depends on can't be configured, whatever their case
+	reserved := []string{"response_type", "client_id", "redirect_uri", "scope", "state", "code_challenge", "code_challenge_method", "resource", "request", "request_uri", "response_mode"}
+	for _, k := range reserved {
+		for _, key := range []string{k, strings.ToUpper(k)} {
+			_, err := newConfigProperties(map[string]any{"url": "https://example.com/mcp", "auth": "oauth", "oauth_authorization_params": map[string]any{key: "x"}})
+			require.ErrorContains(t, err, fmt.Sprintf("cannot set %q", key))
+		}
+	}
+}
+
+func TestConfigAuthorizationParamValues(t *testing.T) {
+	params := map[string]any{
+		"access_type":            "offline",
+		"include_granted_scopes": true,
+		"enable_granular":        false,
+		"max_age":                float64(1209600), // Properties arrive as float64 after the structpb round trip
+	}
+	config := map[string]any{"url": "https://example.com/mcp", "auth": "oauth", "oauth_authorization_params": params}
+	cfg, err := newConfigProperties(config)
+	require.NoError(t, err)
+	require.Equal(t, map[string]string{
+		"access_type":            "offline",
+		"include_granted_scopes": "true",
+		"enable_granular":        "false",
+		"max_age":                "1209600",
+	}, cfg.OAuthAuthorizationParams)
+	// The caller's config is not modified
+	require.Equal(t, true, params["include_granted_scopes"])
+	require.Equal(t, true, config["oauth_authorization_params"].(map[string]any)["include_granted_scopes"])
 }
 
 func TestTruncateUTF8(t *testing.T) {

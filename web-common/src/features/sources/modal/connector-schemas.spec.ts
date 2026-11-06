@@ -186,6 +186,12 @@ describe("connector-schemas", () => {
       expect(claude!.implementsWarehouse).toBe(false);
       expect(claude!.implementsObjectStore).toBe(false);
       expect(claude!.implementsSqlStore).toBe(false);
+
+      const bedrock = toConnectorDriver("bedrock");
+      expect(bedrock!.name).toBe("bedrock");
+      expect(bedrock!.displayName).toBe("Amazon Bedrock");
+      expect(bedrock!.implementsAi).toBe(true);
+      expect(bedrock!.implementsObjectStore).toBe(false);
     });
 
     it("sets implementsWarehouse for warehouse connectors", () => {
