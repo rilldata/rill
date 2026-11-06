@@ -18,7 +18,7 @@
     description: string;
     info?: Snippet;
 
-    action: Snippet;
+    action?: Snippet;
     children: Snippet;
     footer?: Snippet;
   } = $props();
@@ -43,9 +43,11 @@
           </Tooltip>
         {/if}
       </div>
-      <div class="flex items-center gap-2">
-        {@render action()}
-      </div>
+      {#if action}
+        <div class="flex items-center gap-2">
+          {@render action()}
+        </div>
+      {/if}
     </div>
 
     {@render children?.()}
