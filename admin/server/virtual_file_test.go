@@ -157,6 +157,22 @@ func TestEmbedPersonalFiles(t *testing.T) {
 		require.NotEmpty(t, a["admin_owner_user_id"])
 	})
 
+	t.Run("environment overrides are rejected", func(t *testing.T) {
+		data := "rows: []\nprod:\n  type: model\n  sql: SELECT 42\n"
+
+		_, err := embedA.CreatePersonalFile(t.Context(), &adminv1.CreatePersonalFileRequest{
+			Org:         "personal-test",
+			Project:     "personal-project",
+			Kind:        runtime.ResourceKindCanvas,
+			DisplayName: "My canvas",
+			Yaml:        data,
+		})
+		require.Equal(t, codes.InvalidArgument, status.Code(err))
+
+		name := create(t, embedA, "")
+		require.Equal(t, codes.InvalidArgument, status.Code(edit(t, embedA, name, data)))
+	})
+
 	t.Run("embeds with fixed resources are rejected", func(t *testing.T) {
 		resp, err := u1Client.GetIFrame(t.Context(), &adminv1.GetIFrameRequest{
 			Org:            "personal-test",

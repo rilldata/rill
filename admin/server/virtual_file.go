@@ -366,6 +366,23 @@ func (o *personalFileOwner) embedUserIDPtr() *string {
 	return &o.embedUserID
 }
 
+// personalFileBlockedKeys are top-level properties that personal files may not set.
+// They either change the resource's identity (name, kind) or are irrelevant for canvases.
+// The environment override keys are blocked because the runtime parser applies them on top of the stored YAML,
+// which would bypass the type and annotation enforcement in yamlForPersonalFile.
+var personalFileBlockedKeys = map[string]bool{
+	"env":                   true,
+	"environment_overrides": true,
+	"dev":                   true,
+	"prod":                  true,
+	"name":                  true,
+	"namespace":             true,
+	"kind":                  true,
+	"refs":                  true,
+	"connector":             true,
+	"sql":                   true,
+}
+
 // yamlForPersonalFile builds the YAML stored for a personal file.
 // If data is empty, it creates a blank file.
 // It strips any client-supplied admin_* annotations and sets the server-controlled ones for the owner.
@@ -382,14 +399,18 @@ func yamlForPersonalFile(displayName string, owner *personalFileOwner, kind, dat
 		doc = map[string]any{"rows": []any{}}
 	}
 
+	for k := range doc {
+		if personalFileBlockedKeys[k] {
+			return nil, status.Errorf(codes.InvalidArgument, "property %q is not allowed in personal files", k)
+		}
+	}
+
 	if displayName != "" {
 		doc["display_name"] = displayName
 	}
 
 	// Hardcode the kind to prevent client from changing it
 	doc["type"] = "canvas"
-	// Delete the legacy key to prevent client using that as an override
-	delete(doc, "kind")
 
 	annotations, _ := doc["annotations"].(map[string]any)
 	sanitized := map[string]any{}
