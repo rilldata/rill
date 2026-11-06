@@ -283,11 +283,18 @@ export class CircularChartProvider {
 
         if (colorDimensionName) {
           this.customColorValues = topColorValues;
-          const filterForTopColorValues = createInExpression(
-            colorDimensionName,
-            topColorValues,
-          );
-          combinedWhere = mergeFilters(where, filterForTopColorValues);
+          if (topColorValues.length > 0) {
+            const filterForTopColorValues = createInExpression(
+              colorDimensionName,
+              topColorValues,
+            );
+            combinedWhere = mergeFilters(where, filterForTopColorValues);
+          } else {
+            // The top-N query found no values to narrow to, so the data query
+            // takes that query's own filter and finds none either. An `IN` with
+            // no values is never sent: the runtime rejects it.
+            combinedWhere = getFilterWithNullHandling(where, config.color);
+          }
         }
 
         // Store combinedWhere for use in BaseChart
