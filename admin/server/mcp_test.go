@@ -19,6 +19,7 @@ import (
 	"github.com/rilldata/rill/runtime/ai"
 	"github.com/rilldata/rill/runtime/ai/mcpapp"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/zap"
 )
 
 func TestMCPForwardedToolSpecs(t *testing.T) {
@@ -67,6 +68,11 @@ func TestMCPForwardedToolSpecs(t *testing.T) {
 	require.Equal(t, []any{"app"}, byName[ai.ChartDataName].Meta["ui"].(map[string]any)["visibility"])
 	require.Nil(t, byName[ai.QueryMetricsViewName].Meta["ui"])
 	require.Contains(t, byName[ai.CreateChartName].InputSchema.(*jsonschema.Schema).Properties, mcpProjectArg)
+	// chart_data's minimal schema gets the project argument too.
+	chartData := byName[ai.ChartDataName].InputSchema.(*jsonschema.Schema)
+	require.Contains(t, chartData.Properties, "chart_spec")
+	require.Contains(t, chartData.Properties, mcpProjectArg)
+	require.Equal(t, []string{mcpProjectArg}, chartData.Required)
 }
 
 // TestCallRuntimeToolPassthrough verifies that the content blocks, structured content and _meta a runtime tool returns
@@ -93,7 +99,7 @@ func TestCallRuntimeToolPassthrough(t *testing.T) {
 
 	s := &Server{}
 	depl := &database.Deployment{RuntimeHost: rt.URL, RuntimeInstanceID: "default"}
-	res, err := s.callRuntimeTool(t.Context(), depl, "jwt", &mcpClient{sessionID: "session", userAgent: "claude-ai"}, "echo", json.RawMessage(`{"name":"hello"}`))
+	res, err := s.callRuntimeTool(t.Context(), depl, "jwt", &mcpClient{sessionID: "session", userAgent: "claude-ai"}, &mcp.CallToolParams{Name: "echo", Arguments: json.RawMessage(`{"name":"hello"}`)})
 	require.NoError(t, err)
 	require.False(t, res.IsError)
 	require.Len(t, res.Content, 1)
@@ -195,7 +201,7 @@ func TestCallRuntimeToolErrors(t *testing.T) {
 // TestMCPHandlerSessionID asserts that the MCP server issues a session ID on a client's first request and keeps the one a client sends.
 // The server is stateless, so the SDK does not do this itself; without it, every tool call would become its own AI session.
 func TestMCPHandlerSessionID(t *testing.T) {
-	s := &Server{admin: &admin.Service{}}
+	s := &Server{admin: &admin.Service{}, logger: zap.NewNop()}
 	handler, err := s.mcpHandler()
 	require.NoError(t, err)
 	srv := httptest.NewServer(handler)

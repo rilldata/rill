@@ -62,6 +62,18 @@ func TestMCPToolSpecs(t *testing.T) {
 	require.Equal(t, []any{"app"}, ai.MCPAppToolMeta(ai.ChartDataName, nil)["ui"].(map[string]any)["visibility"], "app-only visibility does not need the asset")
 }
 
+// TestMCPUserAgent asserts that no MCP client is recorded with a user agent that passes for one of Rill's own clients,
+// and that a recorded user agent is kept as is, which the MCP server relies on to tell MCP sessions from in-app ones.
+func TestMCPUserAgent(t *testing.T) {
+	require.Equal(t, "mcp/unknown", ai.MCPUserAgent(""))
+	require.Equal(t, "claude-ai/1.0", ai.MCPUserAgent("claude-ai/1.0"))
+	require.Equal(t, "mcp/rill/1.0.0", ai.MCPUserAgent("rill/1.0.0"), "Rill's own MCP connector")
+	require.Equal(t, "mcp/Rill Desktop/2", ai.MCPUserAgent("Rill Desktop/2"), "in-app conversations are listed by a case-insensitive match")
+	for _, userAgent := range []string{"mcp/unknown", "claude-ai/1.0", "mcp/rill/1.0.0"} {
+		require.Equal(t, userAgent, ai.MCPUserAgent(userAgent))
+	}
+}
+
 // TestSessionCreateIfNotExists asserts that a caller can address a session by an ID of its own choosing,
 // which the admin service's unified MCP server relies on to keep one session per project.
 func TestSessionCreateIfNotExists(t *testing.T) {

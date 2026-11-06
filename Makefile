@@ -60,9 +60,11 @@ proto.generate:
 
 # Builds the MCP Apps chart widget and copies it where the runtime embeds it (see runtime/ai/mcpapp/embed/README.md).
 # Requires the npm dependencies to be installed and the i18n messages to be compiled (npm run build:i18n).
+# The widget compiles web-common sources, whose tsconfig extends the one svelte-kit sync generates, so it runs that first.
 # The widget is optional: without the file, the runtime serves its MCP tools without the widget.
 .PHONY: runtime.mcpapp.embed
 runtime.mcpapp.embed:
+	npm run generate:sveltekit -w web-common
 	npm run build -w web-mcp-app
 	mkdir -p runtime/ai/mcpapp/embed
 	cp web-mcp-app/dist/widget.html runtime/ai/mcpapp/embed/widget.html

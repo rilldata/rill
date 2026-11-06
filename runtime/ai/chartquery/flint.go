@@ -14,13 +14,37 @@ import (
 	_ "embed"
 )
 
-// Budgets for the facet channels of a Flint chart. Axes take the budget of a nominal x axis and series channels
-// that of a color split (see the constants in build.go); small multiples stay small.
+// Budgets for the channels of a Flint chart that differ from Rill's own charts. Axes take the budget of a nominal x axis
+// and series channels that of a color split (see the constants in build.go); small multiples stay small,
+// and so does the angular axis of a polar chart, whose labels crowd sooner than along a straight axis.
 const (
 	defaultFacetLimit = 6
 	// MaxFacetValues caps the values of a column or row facet channel.
-	MaxFacetValues = 8
+	MaxFacetValues    = 8
+	defaultPolarLimit = 10
 )
+
+// polarChartTypes are the chart types whose x channel is an angular axis.
+var polarChartTypes = []string{"Rose Chart", "Radar Chart"}
+
+// categoryXChartTypes are the chart types that draw one mark per value of x, so x must bind the time field or a dimension:
+// with a measure there, the query returns a single aggregated row and the chart is empty.
+// Bar, lollipop, bullet and bar table charts take a measure on x for their horizontal layout, so they are not among them.
+var categoryXChartTypes = []string{"Line Chart", "Area Chart", "Streamgraph", "Range Area Chart", "Sparkline", "Bump Chart", "Slope Chart", "Candlestick Chart", "Waterfall Chart"}
+
+// comparisonFolds maps the chart types that can draw a comparison to the channel the previous period becomes a second series on.
+// The widget draws a bar chart as a grouped bar chart for it. Keep in sync with COMPARISON_FOLDS in web-mcp-app/src/lib/flint-input.ts.
+var comparisonFolds = map[string]string{
+	"Line Chart":        "color",
+	"Area Chart":        "color",
+	"Bar Chart":         "group",
+	"Grouped Bar Chart": "group",
+	"Lollipop Chart":    "color",
+	"Slope Chart":       "color",
+}
+
+// otherSliceChartTypes are the chart types that get an "Other" slice for the values the top-N of their slice dimension cut (see Plan.Other).
+var otherSliceChartTypes = []string{"Pie Chart", "Donut Chart"}
 
 // DetailChannel is a Rill extension to Flint's channels: a dimension bound to it sets the grain of the rows
 // (one row per value) without being drawn, which charts of individual observations need on aggregated data.
@@ -130,6 +154,9 @@ type FlintEncoding struct {
 	Channel string
 	Field   string
 	Kind    FieldKind
+	// Type is the type the spec declares for the field (quantitative, nominal, ordinal or temporal), or empty.
+	// A dimension declared temporal is a time field; the other types only affect how the widget draws the field.
+	Type string
 	// Limit is the top-N limit the spec asks for on a dimension channel, or 0 for the default.
 	Limit int
 	// SortOrder is "ascending", "descending" or empty; SortBy names the channel or the field the values are sorted by.
@@ -160,9 +187,13 @@ type rawFlintEncoding struct {
 // flintEncodingKeys are the keys an encoding object may carry.
 var flintEncodingKeys = []string{"field", "type", "aggregate", "sortOrder", "sortBy", "scheme", "limit"}
 
+// flintEncodingTypes are the values of an encoding's type.
+var flintEncodingTypes = []string{"quantitative", "nominal", "ordinal", "temporal"}
+
 // ParseFlintSpec parses the chart_spec and data arguments of a Flint chart call.
 // kinds classifies the metrics view's fields; a field the chart binds must be in it.
-// It validates the chart type and channels against the catalog, and what the queries need from the data block.
+// It validates the chart type and channels against the catalog, what the queries need from the data block,
+// and that the chart can draw what it binds (see checkFlintChart).
 func ParseFlintSpec(chartSpec, data map[string]any, kinds map[string]FieldKind) (*FlintSpec, error) {
 	chartType, _ := chartSpec["chartType"].(string)
 	ct := Catalog().ChartType(chartType)
@@ -170,6 +201,13 @@ func ParseFlintSpec(chartSpec, data map[string]any, kinds map[string]FieldKind) 
 		return nil, fmt.Errorf("unknown chart type %q; the chart types are: %s", chartType, strings.Join(Catalog().Names(), ", "))
 	}
 
+	// A filter without a condition would decode to an empty expression and fail later as an invalid expression.
+	if where, ok := data["where"]; ok && where != nil {
+		whereMap, ok := where.(map[string]any)
+		if !ok || whereMap["cond"] == nil {
+			return nil, fmt.Errorf("data.where must be an object with a 'cond' property that has an 'op' and 'exprs', as in query_metrics_view")
+		}
+	}
 	raw := &rawFlintData{}
 	if err := mapstructureutil.WeakDecode(data, raw); err != nil {
 		return nil, fmt.Errorf("invalid data: %w", err)
@@ -179,6 +217,9 @@ func ParseFlintSpec(chartSpec, data map[string]any, kinds map[string]FieldKind) 
 	}
 	if raw.TimeRange == nil || raw.TimeRange.Start.IsZero() || raw.TimeRange.End.IsZero() {
 		return nil, fmt.Errorf("data must contain a 'time_range' field with 'start' and 'end' properties")
+	}
+	if raw.ComparisonTimeRange != nil && (raw.ComparisonTimeRange.Start.IsZero() || raw.ComparisonTimeRange.End.IsZero()) {
+		return nil, fmt.Errorf("data.comparison_time_range must contain both 'start' and 'end' properties")
 	}
 
 	encodings, ok := chartSpec["encodings"].(map[string]any)
@@ -197,7 +238,7 @@ func ParseFlintSpec(chartSpec, data map[string]any, kinds map[string]FieldKind) 
 		TimeRange:   raw.TimeRange.toTimeRange(),
 		Where:       raw.Where,
 	}
-	if raw.ComparisonTimeRange != nil && !raw.ComparisonTimeRange.Start.IsZero() && !raw.ComparisonTimeRange.End.IsZero() {
+	if raw.ComparisonTimeRange != nil {
 		res.ComparisonTimeRange = raw.ComparisonTimeRange.toTimeRange()
 	}
 
@@ -206,6 +247,7 @@ func ParseFlintSpec(chartSpec, data map[string]any, kinds map[string]FieldKind) 
 	if !slices.Contains(channels, DetailChannel) {
 		channels = append(slices.Clone(channels), DetailChannel)
 	}
+	temporal := make(map[string]bool)
 	for _, channel := range channels {
 		value, ok := encodings[channel]
 		if !ok {
@@ -221,11 +263,24 @@ func ParseFlintSpec(chartSpec, data map[string]any, kinds map[string]FieldKind) 
 				return nil, fmt.Errorf("field %q on channel %q not found in metrics view %q", e.Field, channel, raw.MetricsView)
 			}
 			e.Kind = kind
+			if e.Type == "temporal" && kind == FieldKindDimension {
+				temporal[e.Field] = true
+			}
 			res.Encodings = append(res.Encodings, e)
 		}
 	}
 	if len(res.Encodings) == 0 {
 		return nil, fmt.Errorf("chart_spec must bind at least one field")
+	}
+	// A dimension declared temporal on any of its channels is a time field on all of them.
+	for _, e := range res.Encodings {
+		if temporal[e.Field] {
+			e.Kind = FieldKindTime
+		}
+	}
+
+	if err := checkFlintChart(res, encodings); err != nil {
+		return nil, err
 	}
 
 	// The grain only matters when a time field is bound, in which case it defaults to day.
@@ -241,6 +296,58 @@ func ParseFlintSpec(chartSpec, data map[string]any, kinds map[string]FieldKind) 
 	}
 
 	return res, nil
+}
+
+// checkFlintChart rejects bindings that would return data the chart cannot draw, with how to restructure the chart:
+// a sortBy that names nothing the chart binds, a measure where the chart draws one mark per value of x (see categoryXChartTypes),
+// and a comparison the widget cannot fold into a second series (see comparisonFolds).
+// encodings are the raw bindings of the chart spec.
+func checkFlintChart(s *FlintSpec, encodings map[string]any) error {
+	for _, e := range s.Encodings {
+		// sortBy names a channel or a field of the chart; Flint also takes a JSON list of values, which it orders the channel by.
+		if e.SortBy == "" || s.FieldOn(e.SortBy) != nil || s.fieldNamed(e.SortBy) != nil || strings.HasPrefix(strings.TrimSpace(e.SortBy), "[") {
+			continue
+		}
+		return fmt.Errorf("channel %q sorts by %q, which is neither a bound channel nor a bound field of the chart; sortBy takes a channel such as \"y\" or a field the chart binds", e.Channel, e.SortBy)
+	}
+
+	if slices.Contains(categoryXChartTypes, s.ChartType) {
+		x := s.FieldOn("x")
+		if x == nil {
+			return fmt.Errorf("%s needs the time field or a dimension on x: it draws one point per value of x", s.ChartType)
+		}
+		if x.Kind == FieldKindMeasure {
+			return fmt.Errorf("%s needs the time field or a dimension on x, not the measure %q: it draws one point per value of x, and a measure there leaves a single aggregated row. Bind the time field or a dimension to x and the measure to a value channel such as y", s.ChartType, x.Field)
+		}
+	}
+
+	// The rest mirrors comparisonChannel in web-mcp-app/src/lib/flint-input.ts, which decides whether the widget draws the comparison.
+	if s.ComparisonTimeRange == nil {
+		return nil
+	}
+	series, ok := comparisonFolds[s.ChartType]
+	if !ok {
+		return fmt.Errorf("a %s cannot draw data.comparison_time_range, which adds the previous period as a second series; use one of %s, or remove data.comparison_time_range", s.ChartType, strings.Join(slices.Sorted(maps.Keys(comparisonFolds)), ", "))
+	}
+	// The previous period takes the series channel, so it must be free. A bar chart is drawn as a grouped bar chart, which has no color channel.
+	taken := []string{series}
+	if series == "group" {
+		taken = append(taken, "color")
+	}
+	for _, channel := range taken {
+		if f := s.FieldOn(channel); f != nil {
+			return fmt.Errorf("data.comparison_time_range draws the previous period as a second series on %s, so the chart cannot also bind %q on %s; remove that binding (filter to the values you need with data.where instead), or remove data.comparison_time_range", series, f.Field, channel)
+		}
+	}
+	for _, channel := range []string{"y", "x"} {
+		if _, ok := encodings[channel].([]any); ok {
+			continue
+		}
+		if f := s.FieldOn(channel); f != nil && f.Kind == FieldKindMeasure {
+			return nil
+		}
+	}
+	return fmt.Errorf("data.comparison_time_range needs exactly one measure on y (or on x for a horizontal layout), whose previous period is drawn as a second series; bind a single measure there, or remove data.comparison_time_range")
 }
 
 // parseFlintEncoding parses the value of a channel: a field name, an encoding object, or an array of either.
@@ -269,7 +376,10 @@ func parseFlintEncoding(channel string, value any) ([]*FlintEncoding, error) {
 		default:
 			return nil, fmt.Errorf("channel %q has an invalid sortOrder %q; use ascending or descending", channel, raw.SortOrder)
 		}
-		return []*FlintEncoding{{Channel: channel, Field: raw.Field, Limit: raw.Limit, SortOrder: raw.SortOrder, SortBy: raw.SortBy}}, nil
+		if raw.Type != "" && !slices.Contains(flintEncodingTypes, raw.Type) {
+			return nil, fmt.Errorf("channel %q has an invalid type %q; the types are: %s", channel, raw.Type, strings.Join(flintEncodingTypes, ", "))
+		}
+		return []*FlintEncoding{{Channel: channel, Field: raw.Field, Type: raw.Type, Limit: raw.Limit, SortOrder: raw.SortOrder, SortBy: raw.SortBy}}, nil
 	case []any:
 		if len(v) == 0 {
 			return nil, fmt.Errorf("channel %q binds an empty array", channel)
@@ -291,7 +401,7 @@ func parseFlintEncoding(channel string, value any) ([]*FlintEncoding, error) {
 // BuildFlint plans the queries for a Flint chart spec from the kinds of its bound fields:
 // a top-N query for each dimension on an axis, series or facet channel, and a main query that groups by every bound dimension
 // (time fields floored to the grain), selects every bound measure (with its comparison value when a comparison is set),
-// filters to the top-N values and keeps the row cap.
+// filters to the top-N values and keeps the row cap. A pie or donut chart also gets a total query and an "Other" query (see Plan.Other).
 func BuildFlint(s *FlintSpec) (*Plan, error) {
 	measures := s.Measures()
 	if len(measures) == 0 {
@@ -308,7 +418,7 @@ func BuildFlint(s *FlintSpec) (*Plan, error) {
 	// One top-N query per dimension channel with a budget; a dimension bound twice is selected on its first channel.
 	topN := make(map[string]bool)
 	for _, e := range dims {
-		def, maximum, ok := flintChannelBudget(e.Channel)
+		def, maximum, ok := flintChannelBudget(s.ChartType, e.Channel)
 		if !ok || topN[e.Field] {
 			continue
 		}
@@ -367,15 +477,48 @@ func BuildFlint(s *FlintSpec) (*Plan, error) {
 		return q
 	}
 
+	// A pie or donut chart whose only dimension is its slice dimension gets a total, and an "Other" slice for the values its top-N cuts.
+	// Like the top-N and main queries, both leave out null values of the slice dimension.
+	if slices.Contains(otherSliceChartTypes, s.ChartType) && len(measures) == 1 && len(dims) == 1 && len(timeFields) == 0 && dims[0].Channel == "color" && topN[dims[0].Field] {
+		slice := nominalField(dims[0].Field)
+		where := and(s.Where, nullExclusion(slice))
+		plan.Extra = map[string]*metricsview.Query{"total": {
+			MetricsView: s.MetricsView,
+			Measures:    namedMeasures(measures),
+			Where:       where,
+			TimeRange:   s.TimeRange.toQuery(),
+			TimeZone:    s.TimeRange.TimeZone,
+		}}
+		plan.Other = &OtherQuery{
+			Field:   slice.Field,
+			Measure: measures[0],
+			Query: func(domain map[string][]any) *metricsview.Query {
+				return &metricsview.Query{
+					MetricsView: s.MetricsView,
+					Measures:    namedMeasures(measures),
+					Where: and(where, &metricsview.Expression{Condition: &metricsview.Condition{
+						Operator:    metricsview.OperatorNin,
+						Expressions: []*metricsview.Expression{{Name: slice.Field}, {Value: domain[slice.Field]}},
+					}}),
+					TimeRange: s.TimeRange.toQuery(),
+					TimeZone:  s.TimeRange.TimeZone,
+				}
+			},
+		}
+	}
+
 	return plan, nil
 }
 
-// flintChannelBudget returns the default and maximum top-N limit of a dimension channel, and whether the channel has a budget at all.
-// Axes take the budget of a nominal x axis, series channels that of a color split, facets stay small;
-// detail and the remaining channels are bounded by the row cap instead.
-func flintChannelBudget(channel string) (def, maximum int, ok bool) {
+// flintChannelBudget returns the default and maximum top-N limit of a dimension channel of a chart type, and whether the channel has a budget at all.
+// Axes take the budget of a nominal x axis (the angular x axis of a polar chart a smaller default), series channels that of a color split,
+// facets stay small; detail and the remaining channels are bounded by the row cap instead.
+func flintChannelBudget(chartType, channel string) (def, maximum int, ok bool) {
 	switch channel {
 	case "x", "y":
+		if channel == "x" && slices.Contains(polarChartTypes, chartType) {
+			return defaultPolarLimit, MaxNominalValues, true
+		}
 		return defaultNominalLimit, MaxNominalValues, true
 	case "color", "group", "shape", "strokeDash":
 		return defaultColorLimit, MaxColorValues, true

@@ -45,28 +45,30 @@ func (s *Server) mcpHandler() http.Handler {
 		sessionID := r.Header.Get(middleware.MCPSessionIDHeader)
 
 		// Requests without a session ID of their own normally start a conversation (initialize, or a tool call from a proxy that keeps its own sessions).
-		// Any other sessionless request (resources/list, tools/list, ping, ...) is not part of a conversation,
+		// Any other sessionless request (resources/list, tools/list, ping, a call of an app-only tool, ...) is not part of a conversation,
 		// so it gets a transient session that is never persisted instead of leaving an orphan session behind.
 		transient := middleware.MCPSessionIDIssued(r.Context()) && !mcpRequestStartsSession(r)
 
-		// It's just preliminary: for direct connections, the MCP server updates it with the actual user agent after the initialization handshake.
+		// Create session.
+		// The user agent is just preliminary: for direct connections, the MCP server updates it from the client info of the initialize handshake.
 		// Requests proxied by the admin service's unified MCP server don't carry that handshake, so the forwarded user agent is the only signal of the real client.
-		userAgent := r.UserAgent()
-		if userAgent == "" {
-			userAgent = "mcp/unknown"
-		}
-
-		// Create session
 		sess, err := runner.Session(r.Context(), &ai.SessionOptions{
 			InstanceID:        instanceID,
 			SessionID:         sessionID,
 			CreateIfNotExists: true,
 			Transient:         transient,
 			Claims:            auth.GetClaims(r.Context(), instanceID),
-			UserAgent:         userAgent,
+			UserAgent:         ai.MCPUserAgent(r.UserAgent()),
 		})
 		if err != nil {
 			s.logger.Error("failed to create AI session for MCP", zap.String("instance_id", instanceID), zap.String("session_id", sessionID), zap.Error(err))
+			return nil
+		}
+
+		// Only sessions recorded for MCP clients may be continued over MCP (see ai.MCPUserAgent):
+		// a session of Rill's own chat, addressed by its ID, would give the client the tools of the in-app chat.
+		if userAgent := sess.CatalogSession().UserAgent; userAgent != ai.MCPUserAgent(userAgent) {
+			s.logger.Warn("rejected an MCP request for a session that is not an MCP session", zap.String("instance_id", instanceID), zap.String("session_id", sessionID), zap.String("user_agent", userAgent))
 			return nil
 		}
 
@@ -97,7 +99,8 @@ func (s *Server) mcpHandler() http.Handler {
 const mcpRequestPeekBytes = 4 << 20
 
 // mcpRequestStartsSession reports whether a request without a session ID should create a persistent AI session:
-// an "initialize" handshake or a "tools/call" (which proxies such as the admin service's unified MCP server send without a handshake).
+// an "initialize" handshake or a "tools/call" (which proxies such as the admin service's unified MCP server send without a handshake),
+// except a call of an app-only tool, which is widget plumbing whose calls are never persisted (see ai.MCPAppTool).
 // It peeks at the JSON-RPC method in a bounded prefix of the body and stitches the body back together for the MCP handler.
 // A GET request never starts a conversation. A body it cannot classify (larger than the prefix, malformed, or without a method)
 // is treated as starting a session: a persistent session is at worst an orphan, whereas a transient one would lose the messages of a real tool call.
@@ -115,11 +118,17 @@ func mcpRequestStartsSession(r *http.Request) bool {
 	}
 	var msg struct {
 		Method string `json:"method"`
+		Params struct {
+			Name string `json:"name"`
+		} `json:"params"`
 	}
 	if err := json.Unmarshal(prefix, &msg); err != nil || msg.Method == "" {
 		return true
 	}
-	return msg.Method == "initialize" || msg.Method == "tools/call"
+	if msg.Method == "tools/call" {
+		return !ai.IsMCPAppOnlyTool(msg.Params.Name)
+	}
+	return msg.Method == "initialize"
 }
 
 // mcpRequestSourceMiddleware tags MCP requests with the "mcp" source so billable queries they trigger

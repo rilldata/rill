@@ -8,7 +8,7 @@ bundle, the resource and tool metadata that describe it, and the capability that
 
 | Layer | Standard | Where Rill implements it |
 | - | - | - |
-| Transport and protocol | [Model Context Protocol](https://modelcontextprotocol.io/specification), streamable HTTP transport, JSON-RPC 2.0; the server negotiates protocol versions `2025-11-25`, `2025-06-18`, `2025-03-26` and `2024-11-05` | `runtime/server/mcp.go` (runtime endpoint), `admin/server/mcp.go` (unified Rill Cloud endpoint), both on `github.com/modelcontextprotocol/go-sdk` v1.4.1 |
+| Transport and protocol | [Model Context Protocol](https://modelcontextprotocol.io/specification), streamable HTTP transport, JSON-RPC 2.0; the server negotiates protocol versions `2026-07-28` (which has no initialize handshake), `2025-11-25`, `2025-06-18`, `2025-03-26` and `2024-11-05` | `runtime/server/mcp.go` (runtime endpoint), `admin/server/mcp.go` (unified Rill Cloud endpoint), both on `github.com/modelcontextprotocol/go-sdk` v1.8.0 |
 | Tools with structured results | MCP `tools/call` with `content` and `structuredContent` validated against the tool's `outputSchema` | `runtime/ai/ai.go` (`RegisterTool`), `runtime/ai/create_chart.go`, `runtime/ai/chart_data.go` |
 | Interactive UI | [MCP Apps](https://modelcontextprotocol.io/docs/extensions/apps), the official MCP extension [SEP-1865](https://github.com/modelcontextprotocol/modelcontextprotocol/pull/1865) (specification revision `2026-01-26`, extension identifier `io.modelcontextprotocol/ui`, source in [modelcontextprotocol/ext-apps](https://github.com/modelcontextprotocol/ext-apps)) | this package, `runtime/ai/mcp.go`, `admin/server/mcp.go`; the widget in `web-mcp-app/` |
 | ChatGPT compatibility | OpenAI's plugin UI metadata layered on MCP Apps (`openai/*` `_meta` keys); ChatGPT reads the standard `_meta.ui` fields first | `WidgetResource` in this package; `openai/toolInvocation/*` strings on the tools |
@@ -41,7 +41,8 @@ that does not falls back to the tool's text result.
 4. **Data passing.** The tool result has two parts. `content` is a markdown rendering (title, a table of
    the first rows, the "Open in Rill" link) for the model and for hosts without MCP Apps.
    `structuredContent` is the full chart payload the widget renders from: the effective input (the chart
-   spec with the applied top-N limits and the data block with the resolved grain), rows keyed by field,
+   spec with the applied top-N limits, the data block with the resolved grain and the caller's
+   `semantic_types` overrides), rows keyed by field,
    field metadata with formats, the Flint semantic types and display names derived from the metrics view
    (`runtime/ai/chart_semantics.go`), domain values, resolved time ranges, the project theme and the deep
    link. The contract is the JSON form of `CreateChartResult` in `runtime/ai/create_chart.go`. The
@@ -49,8 +50,11 @@ that does not falls back to the tool's text result.
    and never talks to the runtime directly.
 5. **App-only tools.** `chart_data` carries `_meta.ui.visibility: ["app"]` (`AppOnlyToolMeta`). Hosts
    hide it from the model and only let the widget call it, through the host's `tools/call` bridge, when
-   the user changes the time grain, the top-N limit or the comparison inside the widget. Those calls are
-   not persisted as conversation messages and are not counted as billable tool calls.
+   the user changes the time grain, the top-N limit or the comparison inside the widget. It takes the
+   arguments of a `create_chart` call and returns the data section of its result plus the effective
+   input, with a one-line text content and a minimal input schema, since hosts without MCP Apps list it
+   to the model. Those calls are not persisted as conversation messages (a sessionless call does not
+   even create a session), but they count in the `tool_call` metric, since they run real queries.
 6. **Host context.** The host tells the widget its theme (light or dark), CSS variables, display mode
    (`inline` or `fullscreen`), container size, locale and time zone. The widget sends `ui/open-link` for
    "Open in Rill" and `ui/update-model-context` so the model knows what the chart currently shows.

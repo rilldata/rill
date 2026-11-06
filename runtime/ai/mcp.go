@@ -100,9 +100,26 @@ func MCPAppToolMeta(toolName string, a *mcpapp.Asset) map[string]any {
 	return t.AppUI.Meta(a)
 }
 
+// MCPUserAgent returns the user agent to record for an MCP client: the one it reports, or "mcp/unknown" when it reports none.
+// MCP clients are external by definition, so a user agent that would pass for one of Rill's own clients is prefixed with "mcp/".
+// Otherwise a client named, say, "rill-cli" would put its session in in-app mode (see isRillUserAgent):
+// the MCP server would offer it the tools of Rill's own chat, and the session would be listed among the user's in-app conversations.
+// The prefix is matched case-insensitively, since that listing matches user agents with a SQL LIKE.
+func MCPUserAgent(userAgent string) string {
+	if userAgent == "" {
+		return "mcp/unknown"
+	}
+	if strings.HasPrefix(strings.ToLower(userAgent), "rill") {
+		return "mcp/" + userAgent
+	}
+	return userAgent
+}
+
 // MCPServer returns a new MCP server scoped to the current session.
 // Since it is scoped to the session, a new MCP server should be created for each client connection.
 // Using a separate MCP server for each client enables tailoring the server's instructions and available tools to the end user's claims.
+// The session must be one recorded for an MCP client (see MCPUserAgent): a session of Rill's own chat gets the in-app tools,
+// which are not meant for MCP clients (and the agents' input schemas do not even resolve as MCP tool schemas).
 func (s *Session) MCPServer(ctx context.Context) *mcp.Server {
 	// Serve the MCP Apps widget (interactive charts) alongside the chart tools: when the chat_charts flag is on and the binary
 	// carries the widget bundle. Without the widget, clients get the text fallback of create_chart.
@@ -227,8 +244,8 @@ func isMCPInputValidationFailure(res mcp.Result, err error) bool {
 	return ok && strings.HasPrefix(text.Text, `validating "arguments"`)
 }
 
-// recordMCPInitialize updates the session's user agent from the client info and records an activity event with the client's
-// identity, protocol version and MCP Apps support.
+// recordMCPInitialize updates the session's user agent from the client info (see MCPUserAgent) and records an activity event
+// with the client's identity, protocol version and MCP Apps support.
 func (s *Session) recordMCPInitialize(ctx context.Context, params *mcp.InitializeParams) {
 	var clientName, clientVersion string
 	if params.ClientInfo != nil {
@@ -240,7 +257,7 @@ func (s *Session) recordMCPInitialize(ctx context.Context, params *mcp.Initializ
 		if clientVersion != "" {
 			userAgent += "/" + clientVersion
 		}
-		err := s.UpdateUserAgent(ctx, userAgent)
+		err := s.UpdateUserAgent(ctx, MCPUserAgent(userAgent))
 		if err != nil && !errors.Is(err, ctx.Err()) {
 			s.logger.Warn("failed to update user agent", zap.Error(err))
 		}

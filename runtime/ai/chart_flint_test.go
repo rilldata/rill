@@ -4,6 +4,7 @@ import (
 	"strings"
 	"testing"
 
+	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/ai/chartquery"
 	"github.com/stretchr/testify/require"
 )
@@ -34,22 +35,50 @@ func TestFlintChartNotesMatchCatalog(t *testing.T) {
 func TestFlintInputWithLimits(t *testing.T) {
 	input := &ChartInput{
 		ChartSpec: map[string]any{
-			"chartType": "Line Chart",
-			"encodings": map[string]any{"x": "__time", "y": []any{"bids", "clicks"}, "color": map[string]any{"field": "device", "sortBy": "y"}},
+			"chartType": "Bar Chart",
+			"encodings": map[string]any{
+				"x":     "advertiser",
+				"y":     []any{"bids", "clicks"},
+				"color": []any{map[string]any{"field": "device", "sortBy": "y"}, "country"},
+			},
 		},
-		Data: map[string]any{"metrics_view": "mv"},
+		Data:          map[string]any{"metrics_view": "mv"},
+		SemanticTypes: map[string]any{"bids": "Amount"},
 	}
-	res := flintInputWithLimits(input, map[string]int{"color": 10, "y": 3}, "TIME_GRAIN_DAY")
+	res := flintInputWithLimits(input, map[string]map[string]int{"x": {"advertiser": 20}, "color": {"device": 5, "country": 3}}, "TIME_GRAIN_DAY")
 
 	encodings := res.ChartSpec["encodings"].(map[string]any)
-	require.Equal(t, map[string]any{"field": "device", "sortBy": "y", "limit": 10}, encodings["color"])
-	require.Equal(t, []any{map[string]any{"field": "bids", "limit": 3}, "clicks"}, encodings["y"], "an array gets the limit on its first field")
-	require.Equal(t, "__time", encodings["x"], "channels without a limit are echoed as given")
+	require.Equal(t, map[string]any{"field": "advertiser", "limit": 20}, encodings["x"], "a field name becomes an object")
+	require.Equal(t, []any{map[string]any{"field": "device", "sortBy": "y", "limit": 5}, map[string]any{"field": "country", "limit": 3}}, encodings["color"], "each field of a channel gets its own limit")
+	require.Equal(t, []any{"bids", "clicks"}, encodings["y"], "channels without a limit are echoed as given")
 	require.Equal(t, "TIME_GRAIN_DAY", res.Data["time_grain"])
+	require.Equal(t, map[string]any{"bids": "Amount"}, res.SemanticTypes, "the caller's semantic types are echoed")
 
 	// The input maps are not modified.
-	require.Equal(t, map[string]any{"field": "device", "sortBy": "y"}, input.ChartSpec["encodings"].(map[string]any)["color"])
+	require.Equal(t, []any{map[string]any{"field": "device", "sortBy": "y"}, "country"}, input.ChartSpec["encodings"].(map[string]any)["color"])
 	require.NotContains(t, input.Data, "time_grain")
+}
+
+// TestFieldKinds checks that dimensions holding dates or timestamps are time fields, whatever the metrics view types them as.
+func TestFieldKinds(t *testing.T) {
+	kinds := fieldKinds(&runtimev1.MetricsViewSpec{
+		TimeDimension: "event_time",
+		Dimensions: []*runtimev1.MetricsViewSpec_Dimension{
+			{Name: "event_time", Type: runtimev1.MetricsViewSpec_DIMENSION_TYPE_TIME},
+			{Name: "order_time", Type: runtimev1.MetricsViewSpec_DIMENSION_TYPE_TIME, DataType: &runtimev1.Type{Code: runtimev1.Type_CODE_TIMESTAMP}},
+			// A date column other than the time dimension is typed categorical by the metrics view.
+			{Name: "order_date", Type: runtimev1.MetricsViewSpec_DIMENSION_TYPE_CATEGORICAL, DataType: &runtimev1.Type{Code: runtimev1.Type_CODE_DATE}},
+			{Name: "country", Type: runtimev1.MetricsViewSpec_DIMENSION_TYPE_CATEGORICAL, DataType: &runtimev1.Type{Code: runtimev1.Type_CODE_STRING}},
+		},
+		Measures: []*runtimev1.MetricsViewSpec_Measure{{Name: "bids"}},
+	})
+	require.Equal(t, map[string]chartquery.FieldKind{
+		"event_time": chartquery.FieldKindTime,
+		"order_time": chartquery.FieldKindTime,
+		"order_date": chartquery.FieldKindTime,
+		"country":    chartquery.FieldKindDimension,
+		"bids":       chartquery.FieldKindMeasure,
+	}, kinds)
 }
 
 func TestFlintTitle(t *testing.T) {

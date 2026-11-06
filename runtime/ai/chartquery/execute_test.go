@@ -80,7 +80,7 @@ func TestExecuteCartesian(t *testing.T) {
 
 	require.Len(t, out.Data, 2)
 	require.Equal(t, "INT64", out.Types["bids"])
-	require.Equal(t, map[string]int{"x": 3, "color": 2}, out.Limits)
+	require.Equal(t, map[string]map[string]int{"x": {"advertiser": 3}, "color": {"device": 2}}, out.Limits)
 	require.True(t, out.Truncated)
 	require.False(t, out.RowsTruncated, "only a top-N was cut")
 	require.Contains(t, out.TruncationWarning, `only the top 3 values of "advertiser" are shown`)
@@ -237,7 +237,7 @@ func TestExecuteDonutTotals(t *testing.T) {
 	require.Len(t, runner.queries, 3)
 	require.Equal(t, map[string]any{"commits": float64(42)}, out.Totals)
 	require.Equal(t, []any{"alice", "bob"}, out.DomainValues["username"])
-	require.Equal(t, map[string]int{"color": 2}, out.Limits)
+	require.Equal(t, map[string]map[string]int{"color": {"username": 2}}, out.Limits)
 	require.False(t, out.Truncated)
 	require.Empty(t, out.TruncationWarning)
 }
@@ -284,5 +284,67 @@ func TestExecuteLimitsHorizontal(t *testing.T) {
 	runner := &fakeRunner{answer: func(q *metricsview.Query) *Result { return &Result{} }}
 	out, err := Execute(t.Context(), plan, runner)
 	require.NoError(t, err)
-	require.Equal(t, map[string]int{"y": defaultNominalLimit}, out.Limits)
+	require.Equal(t, map[string]map[string]int{"y": {"advertiser": defaultNominalLimit}}, out.Limits)
+}
+
+// TestExecuteOtherSlice checks the "Other" slice of a pie chart whose slices were cut to the top N:
+// it is added for a measure that adds up, sized by the measure over the cut values, and listed last in the domain values.
+func TestExecuteOtherSlice(t *testing.T) {
+	spec, err := ParseFlintSpec(map[string]any{
+		"chartType": "Pie Chart",
+		"encodings": map[string]any{"size": "bids", "color": map[string]any{"field": "device", "limit": 2}},
+	}, flintTestData(nil), flintTestKinds)
+	require.NoError(t, err)
+	plan, err := BuildFlint(spec)
+	require.NoError(t, err)
+
+	// execute runs the plan against data whose top-N returns the given values (two of them shown), with the given total and value over the rest.
+	execute := func(t *testing.T, values []string, total, rest float64) (*Output, *fakeRunner) {
+		runner := &fakeRunner{answer: func(q *metricsview.Query) *Result {
+			if len(q.Dimensions) > 0 {
+				rows := make([]map[string]any, len(values))
+				for i, v := range values {
+					rows[i] = map[string]any{"device": v, "bids": float64(40 - 10*i)}
+				}
+				if q.Limit != nil && int(*q.Limit) == 2+1 && len(q.Sort) > 0 && q.Where != nil && q.Where.Condition.Operator == metricsview.OperatorNin {
+					return &Result{Rows: rows} // The top-N query
+				}
+				return &Result{Rows: rows[:min(2, len(rows))]} // The main query, filtered to the shown values
+			}
+			if q.Where.Condition.Operator == metricsview.OperatorAnd {
+				return &Result{Rows: []map[string]any{{"bids": rest}}} // The other query, which also leaves out the shown values
+			}
+			return &Result{Rows: []map[string]any{{"bids": total}}}
+		}}
+		out, err := Execute(t.Context(), plan, runner)
+		require.NoError(t, err)
+		return out, runner
+	}
+
+	// A measure that adds up: the shown slices (40 and 30) and the rest (30) make the total.
+	out, runner := execute(t, []string{"iOS", "Android", "Web"}, 100, 30)
+	require.Len(t, runner.queries, 4)
+	require.Equal(t, []map[string]any{{"device": "iOS", "bids": float64(40)}, {"device": "Android", "bids": float64(30)}, {"device": "Other", "bids": float64(30)}}, out.Data)
+	require.Equal(t, []any{"iOS", "Android", "Other"}, out.DomainValues["device"])
+	require.Equal(t, map[string]any{"bids": float64(100)}, out.Totals)
+	require.True(t, out.Truncated)
+	require.Contains(t, out.TruncationWarning, `only the top 2 values of "device" are shown individually, and the rest are combined into "Other"`)
+
+	// A measure that does not add up (an average, a ratio, a distinct count) gets no slice: its remainder would mean nothing.
+	out, _ = execute(t, []string{"iOS", "Android", "Web"}, 100, 45)
+	require.Len(t, out.Data, 2)
+	require.Equal(t, []any{"iOS", "Android"}, out.DomainValues["device"])
+	require.Contains(t, out.TruncationWarning, `only the top 2 values of "device" are shown.`)
+	require.NotContains(t, out.TruncationWarning, "Other")
+
+	// The label differs from the shown values.
+	out, _ = execute(t, []string{"Other", "Android", "Web"}, 100, 30)
+	require.Equal(t, map[string]any{"device": "(Other)", "bids": float64(30)}, out.Data[2])
+	require.Equal(t, []any{"Other", "Android", "(Other)"}, out.DomainValues["device"])
+
+	// Nothing was cut, so there is no rest to query.
+	out, runner = execute(t, []string{"iOS", "Android"}, 70, 0)
+	require.Len(t, runner.queries, 3)
+	require.Len(t, out.Data, 2)
+	require.False(t, out.Truncated)
 }

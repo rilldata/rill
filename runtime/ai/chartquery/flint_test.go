@@ -75,14 +75,27 @@ func TestBuildFlintGolden(t *testing.T) {
 			name: "flint_line_chart_comparison",
 			chartSpec: map[string]any{
 				"chartType": "Line Chart",
-				"encodings": map[string]any{
-					"x":     "__time",
-					"y":     "bids",
-					"color": map[string]any{"field": "device", "limit": 3},
-				},
+				"encodings": map[string]any{"x": "__time", "y": "bids"},
 			},
-			data:   flintTestData(map[string]any{"comparison_time_range": comparisonTimeRange, "time_grain": "TIME_GRAIN_MONTH"}),
-			domain: map[string][]any{"device": {"iOS", "Android"}},
+			data: flintTestData(map[string]any{"comparison_time_range": comparisonTimeRange, "time_grain": "TIME_GRAIN_MONTH", "where": where}),
+		},
+		{
+			name: "flint_rose_chart",
+			chartSpec: map[string]any{
+				"chartType": "Rose Chart",
+				"encodings": map[string]any{"x": "advertiser", "y": "bids"},
+			},
+			data:   flintTestData(nil),
+			domain: map[string][]any{"advertiser": {"A", "B"}},
+		},
+		{
+			name: "flint_line_chart_temporal_dimension",
+			chartSpec: map[string]any{
+				"chartType": "Line Chart",
+				"encodings": map[string]any{"x": map[string]any{"field": "country", "type": "temporal"}, "y": "bids", "color": "device"},
+			},
+			data:   flintTestData(map[string]any{"time_grain": "TIME_GRAIN_WEEK"}),
+			domain: map[string][]any{"device": {"iOS"}},
 		},
 		{
 			name: "flint_grouped_bar_chart",
@@ -185,14 +198,16 @@ func TestBuildFlintGolden(t *testing.T) {
 			require.NoError(t, err)
 
 			got := struct {
-				ChartType string             `json:"chart_type"`
-				TimeGrain string             `json:"time_grain,omitempty"`
-				TimeField string             `json:"time_field,omitempty"`
-				Fields    []string           `json:"fields"`
-				Measures  []string           `json:"measures"`
-				RowLimit  int                `json:"row_limit"`
-				TopN      []TopNQuery        `json:"top_n,omitempty"`
-				Main      *metricsview.Query `json:"main"`
+				ChartType string                        `json:"chart_type"`
+				TimeGrain string                        `json:"time_grain,omitempty"`
+				TimeField string                        `json:"time_field,omitempty"`
+				Fields    []string                      `json:"fields"`
+				Measures  []string                      `json:"measures"`
+				RowLimit  int                           `json:"row_limit"`
+				TopN      []TopNQuery                   `json:"top_n,omitempty"`
+				Main      *metricsview.Query            `json:"main"`
+				Extra     map[string]*metricsview.Query `json:"extra,omitempty"`
+				Other     *metricsview.Query            `json:"other,omitempty"`
 			}{
 				ChartType: spec.ChartType,
 				TimeGrain: spec.TimeGrainName(),
@@ -202,6 +217,10 @@ func TestBuildFlintGolden(t *testing.T) {
 				RowLimit:  plan.RowLimit,
 				TopN:      plan.TopN,
 				Main:      plan.Main(tc.domain),
+				Extra:     plan.Extra,
+			}
+			if plan.Other != nil {
+				got.Other = plan.Other.Query(tc.domain)
 			}
 			gotJSON, err := json.MarshalIndent(got, "", "  ")
 			require.NoError(t, err)
@@ -260,6 +279,97 @@ func TestParseFlintSpecErrors(t *testing.T) {
 	require.NoError(t, err)
 	_, err = BuildFlint(spec)
 	require.ErrorContains(t, err, "at least one measure")
+
+	_, err = ParseFlintSpec(map[string]any{"chartType": "Bar Chart", "encodings": map[string]any{"x": map[string]any{"field": "advertiser", "type": "categorical"}, "y": "bids"}}, data, flintTestKinds)
+	require.ErrorContains(t, err, `invalid type "categorical"`)
+
+	// The data block: a filter needs a condition, and a comparison both ends.
+	bar := map[string]any{"chartType": "Bar Chart", "encodings": map[string]any{"x": "advertiser", "y": "bids"}}
+	for _, where := range []any{map[string]any{}, map[string]any{"name": "country"}, "country = 'US'"} {
+		_, err = ParseFlintSpec(bar, flintTestData(map[string]any{"where": where}), flintTestKinds)
+		require.ErrorContains(t, err, "data.where must be an object with a 'cond' property", "where %v", where)
+	}
+	for _, comparison := range []any{map[string]any{"start": "2023-12-01T00:00:00Z"}, map[string]any{"end": "2024-01-01T00:00:00Z"}, map[string]any{}} {
+		_, err = ParseFlintSpec(bar, flintTestData(map[string]any{"comparison_time_range": comparison}), flintTestKinds)
+		require.ErrorContains(t, err, "data.comparison_time_range must contain both 'start' and 'end'", "comparison %v", comparison)
+	}
+}
+
+// TestParseFlintSpecDrawable covers the bindings a chart cannot draw, which are rejected with how to restructure the chart.
+func TestParseFlintSpecDrawable(t *testing.T) {
+	parse := func(chartType string, encodings map[string]any, extra map[string]any) error {
+		_, err := ParseFlintSpec(map[string]any{"chartType": chartType, "encodings": encodings}, flintTestData(extra), flintTestKinds)
+		return err
+	}
+
+	// sortBy names a bound channel, a bound field, or a list of values for Flint; anything else is an error rather than ignored.
+	require.NoError(t, parse("Bar Chart", map[string]any{"x": map[string]any{"field": "advertiser", "sortBy": "y"}, "y": "bids"}, nil))
+	require.NoError(t, parse("Bar Chart", map[string]any{"x": map[string]any{"field": "advertiser", "sortBy": "bids"}, "y": "bids"}, nil))
+	require.NoError(t, parse("Bar Chart", map[string]any{"x": map[string]any{"field": "advertiser", "sortBy": `["B", "A"]`}, "y": "bids"}, nil))
+	require.ErrorContains(t, parse("Bar Chart", map[string]any{"x": map[string]any{"field": "advertiser", "sortBy": "clicks"}, "y": "bids"}, nil), `channel "x" sorts by "clicks", which is neither a bound channel nor a bound field`)
+	require.ErrorContains(t, parse("Bar Chart", map[string]any{"x": map[string]any{"field": "advertiser", "sortBy": "color"}, "y": "bids"}, nil), `sorts by "color"`)
+
+	// Charts that draw one mark per value of x need the time field or a dimension there; horizontal layouts keep the measure on x.
+	require.ErrorContains(t, parse("Line Chart", map[string]any{"x": "spend", "y": "bids"}, nil), `Line Chart needs the time field or a dimension on x, not the measure "spend"`)
+	require.ErrorContains(t, parse("Waterfall Chart", map[string]any{"y": "bids"}, nil), "Waterfall Chart needs the time field or a dimension on x")
+	for _, chartType := range []string{"Area Chart", "Streamgraph", "Sparkline", "Bump Chart", "Slope Chart"} {
+		require.ErrorContains(t, parse(chartType, map[string]any{"x": "spend", "y": "bids"}, nil), "needs the time field or a dimension on x", chartType)
+	}
+	require.ErrorContains(t, parse("Range Area Chart", map[string]any{"x": "spend", "y": "bids", "y2": "clicks"}, nil), "needs the time field or a dimension on x")
+	require.ErrorContains(t, parse("Candlestick Chart", map[string]any{"x": "spend", "open": "bids", "high": "bids", "low": "bids", "close": "bids"}, nil), "needs the time field or a dimension on x")
+	require.NoError(t, parse("Line Chart", map[string]any{"x": "advertiser", "y": "bids"}, nil))
+	require.NoError(t, parse("Bar Chart", map[string]any{"x": "bids", "y": "advertiser"}, nil))
+	require.NoError(t, parse("Lollipop Chart", map[string]any{"x": "bids", "y": "advertiser"}, nil))
+	require.NoError(t, parse("Bullet Chart", map[string]any{"x": "bids", "y": "advertiser", "goal": "target"}, nil))
+	require.NoError(t, parse("Bar Table", map[string]any{"x": "bids", "y": "advertiser"}, nil))
+
+	// A comparison is drawn as a second series: one measure on y (or x), the series channel free, on a chart type that folds it.
+	comparison := map[string]any{"comparison_time_range": map[string]any{"start": "2023-12-01T00:00:00Z", "end": "2024-01-01T00:00:00Z"}}
+	require.NoError(t, parse("Line Chart", map[string]any{"x": "__time", "y": "bids"}, comparison))
+	require.NoError(t, parse("Bar Chart", map[string]any{"x": "advertiser", "y": "bids"}, comparison))
+	require.NoError(t, parse("Bar Chart", map[string]any{"y": "advertiser", "x": "bids"}, comparison), "horizontal bars fold the measure on x")
+	require.NoError(t, parse("Grouped Bar Chart", map[string]any{"x": "advertiser", "y": "bids"}, comparison))
+	require.ErrorContains(t, parse("Line Chart", map[string]any{"x": "__time", "y": "bids", "color": "device"}, comparison), `cannot also bind "device" on color`)
+	require.ErrorContains(t, parse("Bar Chart", map[string]any{"x": "advertiser", "y": "bids", "color": "device"}, comparison), `second series on group, so the chart cannot also bind "device" on color`)
+	require.ErrorContains(t, parse("Grouped Bar Chart", map[string]any{"x": "advertiser", "y": "bids", "group": "device"}, comparison), `cannot also bind "device" on group`)
+	require.ErrorContains(t, parse("Line Chart", map[string]any{"x": "__time", "y": []any{"bids", "clicks"}}, comparison), "needs exactly one measure on y")
+	require.ErrorContains(t, parse("Line Chart", map[string]any{"x": "__time", "y": []any{"bids"}}, comparison), "needs exactly one measure on y", "the widget does not fold an array")
+	err := parse("Pie Chart", map[string]any{"size": "bids", "color": "device"}, comparison)
+	require.ErrorContains(t, err, "a Pie Chart cannot draw data.comparison_time_range")
+	require.ErrorContains(t, err, "Area Chart, Bar Chart, Grouped Bar Chart, Line Chart, Lollipop Chart, Slope Chart")
+}
+
+// TestFlintTimeFields checks that a dimension declared temporal is a time field on all of its channels:
+// it is floored at the grain and gets no top-N.
+func TestFlintTimeFields(t *testing.T) {
+	spec, err := ParseFlintSpec(map[string]any{
+		"chartType": "Bar Chart",
+		"encodings": map[string]any{"x": map[string]any{"field": "country", "type": "temporal"}, "y": "bids", "column": "country"},
+	}, flintTestData(nil), flintTestKinds)
+	require.NoError(t, err)
+	require.Equal(t, "country", spec.TimeField())
+	require.Equal(t, "TIME_GRAIN_DAY", spec.TimeGrainName())
+	require.Empty(t, spec.Dimensions())
+	plan, err := BuildFlint(spec)
+	require.NoError(t, err)
+	require.Empty(t, plan.TopN)
+	require.Equal(t, "country", plan.TimeField)
+}
+
+// TestBuildFlintLimits checks the default top-N limits per chart type and channel: the angular axis of a polar chart defaults to 10.
+func TestBuildFlintLimits(t *testing.T) {
+	limit := func(chartType string, x any) int {
+		spec, err := ParseFlintSpec(map[string]any{"chartType": chartType, "encodings": map[string]any{"x": x, "y": "bids"}}, flintTestData(nil), flintTestKinds)
+		require.NoError(t, err)
+		plan, err := BuildFlint(spec)
+		require.NoError(t, err)
+		require.Len(t, plan.TopN, 1)
+		return plan.TopN[0].Limit
+	}
+	require.Equal(t, defaultNominalLimit, limit("Bar Chart", "advertiser"))
+	require.Equal(t, defaultPolarLimit, limit("Rose Chart", "advertiser"))
+	require.Equal(t, defaultPolarLimit, limit("Radar Chart", "advertiser"))
+	require.Equal(t, 30, limit("Rose Chart", map[string]any{"field": "advertiser", "limit": 30}), "an explicit limit is kept")
 }
 
 func TestFlintSpecFields(t *testing.T) {

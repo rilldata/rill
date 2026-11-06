@@ -43,6 +43,8 @@ measures:
   format_preset: humanize
 - name: bid_count
   expression: COUNT(*)
+- name: avg_bids
+  expression: AVG(bids)
 explore:
   skip: true
 `,
@@ -510,12 +512,11 @@ func TestCreateChartFlint(t *testing.T) {
 
 	// A time series with a comparison and a headline: the time field is floored at the grain, its semantic type follows the grain,
 	// the comparison values take the measure's type (here the caller's override) and a "(previous period)" display name.
-	var line *ai.CreateChartResult
-	_, err = s.CallTool(t.Context(), ai.RoleUser, ai.CreateChartName, &line, ai.CreateChartArgs{
+	lineArgs := ai.CreateChartArgs{
 		"chart_spec": map[string]any{
 			"chartType": "Line Chart",
 			"title":     "  Bids per day  ",
-			"encodings": map[string]any{"x": "event_time", "y": "total_bids", "color": "device_os"},
+			"encodings": map[string]any{"x": "event_time", "y": "total_bids"},
 		},
 		"data": map[string]any{
 			"metrics_view":          "bids_metrics",
@@ -523,22 +524,28 @@ func TestCreateChartFlint(t *testing.T) {
 			"comparison_time_range": map[string]any{"start": "2023-12-31T00:00:00Z", "end": "2024-01-02T00:00:00Z"},
 		},
 		"semantic_types": map[string]any{"total_bids": "Quantity"},
-	})
+	}
+	var line *ai.CreateChartResult
+	_, err = s.CallTool(t.Context(), ai.RoleUser, ai.CreateChartName, &line, lineArgs)
 	require.NoError(t, err)
 	require.Equal(t, "Bids per day", line.Title, "the headline wins")
 	require.Equal(t, "TIME_GRAIN_DAY", line.TimeGrain, "the grain defaults to day")
 	require.Equal(t, "TIME_GRAIN_DAY", line.Input.Data["time_grain"])
-	require.EqualValues(t, 10, line.Input.ChartSpec["encodings"].(map[string]any)["color"].(map[string]any)["limit"], "a series channel defaults to 10")
+	require.Equal(t, map[string]any{"total_bids": "Quantity"}, line.Input.SemanticTypes, "the input echoes the caller's overrides for the widget's refetches")
 	require.Equal(t, "Date", line.SemanticTypes["event_time"])
 	require.Equal(t, "Quantity", line.SemanticTypes["total_bids"], "the caller's override wins")
 	require.Equal(t, "Quantity", line.SemanticTypes["total_bids_prev"])
-	require.Equal(t, "Category", line.SemanticTypes["device_os"])
 	require.Equal(t, "Time", line.FieldDisplayNames["event_time"])
 	require.Equal(t, "Total Bids (previous period)", line.FieldDisplayNames["total_bids_prev"])
 	require.Equal(t, "time", line.Fields["event_time"].Kind)
 	require.Contains(t, line.Data[0], "total_bids_prev")
 	require.Equal(t, "2024-01-02T00:00:00Z", line.Data[0]["event_time"])
 	require.NotNil(t, line.ResolvedComparisonTimeRange)
+
+	// The widget draws the previous period as a second series, so a comparison with a series dimension is rejected rather than charted without it.
+	lineArgs["chart_spec"].(map[string]any)["encodings"].(map[string]any)["color"] = "device_os"
+	_, err = s.CallTool(t.Context(), ai.RoleUser, ai.CreateChartName, &line, lineArgs)
+	require.ErrorContains(t, err, `cannot also bind "device_os" on color`)
 
 	// Without a headline, a time field on x reads "over Time" and a series dimension "split by"
 	var area *ai.CreateChartResult
@@ -568,13 +575,21 @@ func TestCreateChartFlint(t *testing.T) {
 	})
 	require.ErrorContains(t, err, `field "publisher" on channel "x" not found`)
 
-	// chart_data takes the Flint shape too and returns the data section with the compiler inputs
-	var dataRes *ai.ChartDataResult
-	_, err = s.CallTool(t.Context(), ai.RoleUser, ai.ChartDataName, &dataRes, ai.ChartDataArgs(flintBarChartArgs()))
+	// chart_data takes the Flint shape too and returns the data section with the compiler inputs,
+	// the caller's semantic types applied, and the effective input as create_chart returns it.
+	dataArgs := ai.ChartDataArgs(flintBarChartArgs())
+	dataArgs["chart_spec"].(map[string]any)["encodings"].(map[string]any)["x"] = "advertiser_name"
+	dataArgs["semantic_types"] = map[string]any{"total_bids": "Amount"}
+	var dataRes *ai.ChartDataOutput
+	_, err = s.CallTool(t.Context(), ai.RoleUser, ai.ChartDataName, &dataRes, dataArgs)
 	require.NoError(t, err)
-	require.Len(t, dataRes.Data, 2)
+	require.Len(t, dataRes.Data, 3)
 	require.Equal(t, "Category", dataRes.SemanticTypes["advertiser_name"])
+	require.Equal(t, "Amount", dataRes.SemanticTypes["total_bids"])
 	require.Equal(t, "Total Bids", dataRes.FieldDisplayNames["total_bids"])
+	require.NotNil(t, dataRes.Input)
+	require.Equal(t, map[string]any{"field": "advertiser_name", "limit": float64(20)}, dataRes.Input.ChartSpec["encodings"].(map[string]any)["x"], "the default limit that was applied")
+	require.Equal(t, map[string]any{"total_bids": "Amount"}, dataRes.Input.SemanticTypes)
 
 	// The in-app client is not offered the Flint shape, but a call in that shape still echoes the input without data
 	rill := newChartSession(t, rt, instanceID, "rill/1.0")
@@ -584,6 +599,48 @@ func TestCreateChartFlint(t *testing.T) {
 	require.Nil(t, inApp.ChartDataResult)
 	require.Nil(t, inApp.Spec)
 	require.Equal(t, "Bar Chart", inApp.Input.ChartSpec["chartType"])
+
+	// A call in neither shape is told about the shape the client was taught.
+	_, err = rill.CallTool(t.Context(), ai.RoleUser, ai.CreateChartName, &inApp, ai.CreateChartArgs{})
+	require.ErrorContains(t, err, "chart_type is required")
+	require.NotContains(t, err.Error(), "chart_spec")
+	_, err = s.CallTool(t.Context(), ai.RoleUser, ai.CreateChartName, &res, ai.CreateChartArgs{})
+	require.ErrorContains(t, err, "chart_spec and data are required")
+}
+
+// TestCreateChartFlintOtherSlice checks the "Other" slice of a pie chart whose slices were cut to the top N:
+// a sum gets the rest of the total as one more slice, an average gets none, since its slices share no whole.
+func TestCreateChartFlintOtherSlice(t *testing.T) {
+	rt, instanceID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
+		Files: createChartTestFiles(""),
+	})
+	testruntime.RequireReconcileState(t, rt, instanceID, 4, 0, 0)
+	s := newChartSession(t, rt, instanceID, "claude-ai/1.0")
+
+	pie := func(t *testing.T, measure string) *ai.CreateChartResult {
+		var res *ai.CreateChartResult
+		_, err := s.CallTool(t.Context(), ai.RoleUser, ai.CreateChartName, &res, ai.CreateChartArgs{
+			"chart_spec": map[string]any{"chartType": "Pie Chart", "encodings": map[string]any{"size": measure, "color": map[string]any{"field": "advertiser_name", "limit": 2}}},
+			"data":       flintBarChartArgs()["data"],
+		})
+		require.NoError(t, err)
+		return res
+	}
+
+	// Acme (15) and Beta (7) are shown; Gamma (1) is the rest of the 23 bids of known advertisers.
+	sum := pie(t, "total_bids")
+	require.Len(t, sum.Data, 3)
+	require.Equal(t, "Other", sum.Data[2]["advertiser_name"])
+	require.EqualValues(t, 1, sum.Data[2]["total_bids"])
+	require.Equal(t, []any{"Acme", "Beta", "Other"}, sum.DomainValues["advertiser_name"])
+	require.EqualValues(t, 23, sum.Totals["total_bids"])
+	require.True(t, sum.Truncated)
+	require.Contains(t, sum.TruncationWarning, `the rest are combined into "Other"`)
+
+	avg := pie(t, "avg_bids")
+	require.Len(t, avg.Data, 2)
+	require.Equal(t, []any{"Acme", "Beta"}, avg.DomainValues["advertiser_name"])
+	require.NotContains(t, avg.TruncationWarning, "Other")
 }
 
 // TestCreateChartDashboardFilters tests that create_chart checks the chart's 'where' against the dashboard's filters.

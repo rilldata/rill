@@ -48,6 +48,8 @@ type Plan struct {
 	Main func(domain map[string][]any) *metricsview.Query
 	// Extra are queries whose single row is returned as totals (donut and pie charts), keyed by name.
 	Extra map[string]*metricsview.Query
+	// Other aggregates the values of a pie or donut chart's slice dimension that its top-N query cut, for an "Other" slice (see Execute).
+	Other *OtherQuery
 	// RowLimit caps the rows returned from the main query; the query itself asks for one more row to detect truncation.
 	RowLimit int
 	// TimeField is the temporal field the main query is ordered by, newest first, when the chart has a time axis.
@@ -66,6 +68,16 @@ type TopNQuery struct {
 	// Limit is the number of values to keep. The query asks for one more row to detect truncation.
 	Limit int                `json:"limit"`
 	Query *metricsview.Query `json:"query"`
+}
+
+// OtherQuery aggregates the measure of a pie or donut chart over the values of its slice dimension that the top-N query cut.
+// Execute adds the result as an "Other" slice when the measure adds up to the chart's total (the "total" query of Plan.Extra).
+type OtherQuery struct {
+	// Field is the slice dimension and Measure the measure the slices are sized by.
+	Field   string
+	Measure string
+	// Query builds the query from the selected domain values, which it leaves out.
+	Query func(domain map[string][]any) *metricsview.Query
 }
 
 // Build plans the queries for a chart spec.

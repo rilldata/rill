@@ -19,11 +19,13 @@ import (
 // as opposed to the in-app shape (chart_type and spec) that Rill's own chat renders itself.
 // The chart types come from the embedded Flint catalog (see chartquery.Catalog).
 
-// ChartInput is the effective Flint input echoed in a create_chart result:
-// the chart spec with the applied top-N limits and the data binding with the resolved grain.
+// ChartInput is the effective Flint input echoed in a create_chart or chart_data result:
+// the chart spec with the applied top-N limits, the data binding with the resolved grain,
+// and the caller's semantic type overrides, so that the widget sends them back when it refetches the data.
 type ChartInput struct {
-	ChartSpec map[string]any `json:"chart_spec"`
-	Data      map[string]any `json:"data"`
+	ChartSpec     map[string]any `json:"chart_spec"`
+	Data          map[string]any `json:"data"`
+	SemanticTypes map[string]any `json:"semantic_types,omitempty"`
 }
 
 // flintChartNotes are the rules of the chart types that need more than their channel list, shown in the tool description.
@@ -71,12 +73,12 @@ func flintChartsInputSchema() *jsonschema.Schema {
 		Description: "A field bound to a channel with optional sorting and top-N.",
 		Properties: map[string]*jsonschema.Schema{
 			"field":     {Type: "string", Description: "A measure, dimension or the time dimension of the metrics view."},
-			"type":      {Type: "string", Enum: []any{"quantitative", "nominal", "ordinal", "temporal"}, Description: "Overrides the type derived from the field; rarely needed."},
+			"type":      {Type: "string", Enum: []any{"quantitative", "nominal", "ordinal", "temporal"}, Description: "Overrides the type derived from the field; rarely needed. temporal makes a dimension that holds dates a time field, bucketed by time_grain."},
 			"aggregate": {Type: "string", Enum: []any{"count", "sum", "average", "mean"}, Description: "Rarely needed: measures are already aggregated."},
 			"sortOrder": {Type: "string", Enum: []any{"ascending", "descending"}, Description: "Direction of the sort; descending by default for a sort by a measure."},
 			"sortBy":    {Type: "string", Description: "Channel (e.g. \"y\") or field to sort this channel's values by; the first measure by default."},
 			"scheme":    {Type: "string", Description: "Color scheme for the color channel, e.g. viridis or tableau10."},
-			"limit":     {Type: "integer", Minimum: ptr(1.0), Description: "Top-N limit for a dimension on this channel: defaults to 20 on x and y, 10 on color, group, shape and strokeDash, 6 on column and row."},
+			"limit":     {Type: "integer", Minimum: ptr(1.0), Description: "Top-N limit for a dimension on this channel: defaults to 20 on x and y (10 on the x of Rose and Radar charts), 10 on color, group, shape and strokeDash, 6 on column and row."},
 		},
 	}
 	encodingValue := &jsonschema.Schema{
@@ -106,7 +108,7 @@ func flintChartsInputSchema() *jsonschema.Schema {
 		Properties: map[string]*jsonschema.Schema{
 			"metrics_view":          {Type: "string", Description: "The metrics view to query."},
 			"time_range":            {Type: "object", Required: []string{"start", "end"}, Properties: map[string]*jsonschema.Schema{"start": {Type: "string", Description: "ISO 8601 start, inclusive."}, "end": {Type: "string", Description: "ISO 8601 end, exclusive."}, "time_zone": {Type: "string", Description: "IANA time zone; defaults to UTC."}}, Description: "The period to chart."},
-			"comparison_time_range": {Type: "object", Required: []string{"start", "end"}, Properties: map[string]*jsonschema.Schema{"start": {Type: "string"}, "end": {Type: "string"}}, Description: "Optional period to compare with: every measure also returns its value in this period, drawn as a second series."},
+			"comparison_time_range": {Type: "object", Required: []string{"start", "end"}, Properties: map[string]*jsonschema.Schema{"start": {Type: "string"}, "end": {Type: "string"}}, Description: "Optional period to compare with, drawn as a second series: on a Line, Area, Bar, Grouped Bar, Lollipop or Slope Chart with exactly one measure on y (or on x for horizontal bars) and nothing on color (nor on group)."},
 			"where":                 {Ref: "#/$defs/Expression", Description: "Optional filter, with the same structure as in query_metrics_view."},
 			"time_grain":            {Ref: "#/$defs/TimeGrain", Description: "Bucket size of the time field when one is bound; defaults to TIME_GRAIN_DAY."},
 		},
@@ -161,9 +163,11 @@ Query the data with query_metrics_view first, then describe the chart: the chart
 }
 ` + "```" + `
 
-- ` + "`chart_spec.encodings`" + ` maps a channel to a field name or to an object with ` + "`field`" + ` and optionally ` + "`sortOrder`" + ` (ascending or descending), ` + "`sortBy`" + ` (a channel such as "y", or a field) and ` + "`limit`" + ` (top-N for a dimension; defaults to 20 on an axis, 10 on a series channel, 6 on a facet). An array of fields on one channel draws one series per field.
+- ` + "`chart_spec.encodings`" + ` maps a channel to a field name or to an object with ` + "`field`" + ` and optionally ` + "`sortOrder`" + ` (ascending or descending), ` + "`sortBy`" + ` (a bound channel such as "y", or a bound field) and ` + "`limit`" + ` (top-N for a dimension; defaults to 20 on an axis, 10 on a series channel or on the angular x of Rose and Radar charts, 6 on a facet). An array of fields on one channel draws one series per field.
 - ` + "`detail`" + ` may be bound on any chart type to a dimension that sets the row grain without being drawn: one row per value. Charts of individual observations (scatter, histogram, box plots) need it.
-- ` + "`data.time_range`" + ` is required (ISO 8601 ` + "`start`" + ` inclusive, ` + "`end`" + ` exclusive, optional ` + "`time_zone`" + `). ` + "`data.time_grain`" + ` buckets the time field (default TIME_GRAIN_DAY). ` + "`data.where`" + ` filters with the same expression structure as query_metrics_view. ` + "`data.comparison_time_range`" + ` adds the previous period of every measure as a second series; use it with a time field on x or a dimension axis.
+- ` + "`data.time_range`" + ` is required (ISO 8601 ` + "`start`" + ` inclusive, ` + "`end`" + ` exclusive, optional ` + "`time_zone`" + `). ` + "`data.time_grain`" + ` buckets the time fields (default TIME_GRAIN_DAY). ` + "`data.where`" + ` filters with the same expression structure as query_metrics_view.
+- ` + "`data.comparison_time_range`" + ` (` + "`start`" + ` and ` + "`end`" + `) draws the previous period of one measure as a second series. It needs a Line Chart, Area Chart, Bar Chart, Grouped Bar Chart, Lollipop Chart or Slope Chart with exactly one measure on y (or on x for horizontal bars) and nothing bound on color (nor on group); filter with ` + "`data.where`" + ` instead of splitting by a dimension.
+- A pie or donut chart whose slices are cut to the top N gets an "Other" slice for the rest when the measure adds up (a sum or a count).
 - Results are capped (at most 1500 rows); the result says when data was cut and how to narrow the chart.
 
 ## Chart types and their channels
@@ -225,24 +229,28 @@ func parseFlintChartRequest(ctx context.Context, rt *runtime.Runtime, s *Session
 	semanticTypes, _ := args["semantic_types"].(map[string]any)
 
 	return &chartRequest{
-		chartType:     parsed.ChartType,
-		flint:         parsed,
-		input:         &ChartInput{ChartSpec: chartSpec, Data: data},
-		semanticTypes: semanticTypes,
-		mv:            mv,
+		chartType: parsed.ChartType,
+		flint:     parsed,
+		input:     &ChartInput{ChartSpec: chartSpec, Data: data, SemanticTypes: semanticTypes},
+		mv:        mv,
 	}, nil
 }
 
-// fieldKinds classifies the fields of a metrics view: its time dimension and dimensions of the time type are time fields.
+// fieldKinds classifies the fields of a metrics view. Time fields are the time dimension, dimensions of the time type,
+// and dimensions that hold dates or timestamps: the metrics view types a date column as categorical unless it is the time dimension,
+// but a chart still draws it as time, bucketed at the grain and in time order.
 func fieldKinds(mv *runtimev1.MetricsViewSpec) map[string]chartquery.FieldKind {
 	kinds := make(map[string]chartquery.FieldKind, len(mv.Measures)+len(mv.Dimensions)+1)
 	for _, m := range mv.Measures {
 		kinds[m.Name] = chartquery.FieldKindMeasure
 	}
 	for _, d := range mv.Dimensions {
-		if d.Type == runtimev1.MetricsViewSpec_DIMENSION_TYPE_TIME {
+		switch {
+		case d.Type == runtimev1.MetricsViewSpec_DIMENSION_TYPE_TIME,
+			d.DataType.GetCode() == runtimev1.Type_CODE_DATE,
+			d.DataType.GetCode() == runtimev1.Type_CODE_TIMESTAMP:
 			kinds[d.Name] = chartquery.FieldKindTime
-		} else {
+		default:
 			kinds[d.Name] = chartquery.FieldKindDimension
 		}
 	}
@@ -252,18 +260,21 @@ func fieldKinds(mv *runtimev1.MetricsViewSpec) map[string]chartquery.FieldKind {
 	return kinds
 }
 
-// flintInputWithLimits returns the effective input: the chart spec with the applied top-N limit of each channel filled in
-// (as a copy; the input maps are not modified) and the data block with the resolved time grain.
-func flintInputWithLimits(input *ChartInput, limits map[string]int, timeGrain string) *ChartInput {
+// flintInputWithLimits returns the effective input: the chart spec with the applied top-N limit of each field filled in on its channel
+// (as a copy; the input maps are not modified), the data block with the resolved time grain, and the caller's semantic types.
+func flintInputWithLimits(input *ChartInput, limits map[string]map[string]int, timeGrain string) *ChartInput {
 	chartSpec := maps.Clone(input.ChartSpec)
 	if encodings, ok := input.ChartSpec["encodings"].(map[string]any); ok && len(limits) > 0 {
 		encodings = maps.Clone(encodings)
-		for channel, limit := range limits {
+		for channel, fieldLimits := range limits {
 			value, ok := encodings[channel]
 			if !ok {
 				continue
 			}
-			encodings[channel] = encodingWithLimit(value, limit)
+			for field, limit := range fieldLimits {
+				value = encodingWithLimit(value, field, limit)
+			}
+			encodings[channel] = value
 		}
 		chartSpec["encodings"] = encodings
 	}
@@ -271,29 +282,32 @@ func flintInputWithLimits(input *ChartInput, limits map[string]int, timeGrain st
 	if timeGrain != "" {
 		data["time_grain"] = timeGrain
 	}
-	return &ChartInput{ChartSpec: chartSpec, Data: data}
+	return &ChartInput{ChartSpec: chartSpec, Data: data, SemanticTypes: input.SemanticTypes}
 }
 
-// encodingWithLimit returns the encoding value with the limit set: a field name becomes an object,
-// an object is copied, and an array gets the limit on its first field, which is the one the top-N selected.
-func encodingWithLimit(value any, limit int) any {
+// encodingWithLimit returns the encoding value with the limit set on the binding of the field:
+// a field name becomes an object, an object is copied, and an array is copied with the field's binding set.
+// Bindings of other fields are returned as given.
+func encodingWithLimit(value any, field string, limit int) any {
 	switch v := value.(type) {
 	case string:
-		return map[string]any{"field": v, "limit": limit}
-	case map[string]any:
-		res := maps.Clone(v)
-		res["limit"] = limit
-		return res
-	case []any:
-		if len(v) == 0 {
-			return v
+		if v == field {
+			return map[string]any{"field": v, "limit": limit}
 		}
+	case map[string]any:
+		if v["field"] == field {
+			res := maps.Clone(v)
+			res["limit"] = limit
+			return res
+		}
+	case []any:
 		res := slices.Clone(v)
-		res[0] = encodingWithLimit(res[0], limit)
+		for i, item := range res {
+			res[i] = encodingWithLimit(item, field, limit)
+		}
 		return res
-	default:
-		return value
 	}
+	return value
 }
 
 // flintTitle builds the title of a Flint chart from its headline, or from the bound fields' display names:

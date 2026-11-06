@@ -189,7 +189,7 @@ func (t *CreateChart) Handler(ctx context.Context, args CreateChartArgs) (*Creat
 	if err != nil {
 		return nil, fmt.Errorf("failed to get instance: %w", err)
 	}
-	var limits map[string]int
+	var limits map[string]map[string]int
 	res.ChartDataResult, limits, err = queryChartData(ctx, t.Runtime, s, instance, req)
 	if err != nil {
 		return nil, err
@@ -243,9 +243,7 @@ type chartRequest struct {
 	parsed    *chartquery.Spec
 	input     *ChartInput
 	flint     *chartquery.FlintSpec
-	// semanticTypes are the caller's overrides of the derived semantic types (Flint shape only).
-	semanticTypes map[string]any
-	mv            *runtimev1.MetricsViewSpec
+	mv        *runtimev1.MetricsViewSpec
 }
 
 func (r *chartRequest) metricsView() string {
@@ -291,8 +289,12 @@ func parseChartRequest(ctx context.Context, rt *runtime.Runtime, s *Session, arg
 		return parseFlintChartRequest(ctx, rt, s, args)
 	}
 
+	// Rill's own chat is taught the in-app shape (see Spec) and external clients the Flint shape (see MCPSpec), so each is told about its own.
 	chartType, ok := args["chart_type"].(string)
 	if !ok || chartType == "" {
+		if isRillUserAgent(s) {
+			return nil, fmt.Errorf("chart_type is required and must be a string, and spec an object with the metrics view, time range and fields to chart")
+		}
 		return nil, fmt.Errorf("chart_spec and data are required: the chart type and encodings, and the metrics view and time range to query (the deprecated chart_type and spec shape is also accepted)")
 	}
 
@@ -422,10 +424,10 @@ func loadMetricsView(ctx context.Context, rt *runtime.Runtime, s *Session, name 
 }
 
 // queryChartData runs the chart's queries with the session's claims and the instance's AI query limits.
-// It returns the chart-ready data and the effective top-N limit of each spec channel (see chartquery.Output.Limits).
+// It returns the chart-ready data and the effective top-N limits by channel and field (see chartquery.Output.Limits).
 // The result always carries the field metadata and the resolved time ranges, even when the queries return no rows,
 // so that a renderer can show an empty state for the chart's fields and time range.
-func queryChartData(ctx context.Context, rt *runtime.Runtime, s *Session, instance *drivers.Instance, req *chartRequest) (*ChartDataResult, map[string]int, error) {
+func queryChartData(ctx context.Context, rt *runtime.Runtime, s *Session, instance *drivers.Instance, req *chartRequest) (*ChartDataResult, map[string]map[string]int, error) {
 	cfg, err := instance.Config()
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to get instance config: %w", err)
@@ -460,7 +462,11 @@ func queryChartData(ctx context.Context, rt *runtime.Runtime, s *Session, instan
 
 	names, temporal := req.fields()
 	fields := chartFields(names, temporal, req.mv, out.Types)
-	semanticTypes, displayNames := chartSemantics(fields, out.TimeGrain, out.ResolvedComparisonTimeRange != nil, req.semanticTypes)
+	var overrides map[string]any
+	if req.input != nil {
+		overrides = req.input.SemanticTypes
+	}
+	semanticTypes, displayNames := chartSemantics(fields, out.TimeGrain, out.ResolvedComparisonTimeRange != nil, overrides)
 	return &ChartDataResult{
 		TimeGrain:                   out.TimeGrain,
 		Data:                        out.Data,
@@ -479,13 +485,18 @@ func queryChartData(ctx context.Context, rt *runtime.Runtime, s *Session, instan
 
 // specWithLimits returns a copy of the spec with the effective top-N limit of each channel filled in,
 // so that a renderer can show the limit that was applied where the spec left it to the default. The input maps are not modified.
-func specWithLimits(spec map[string]any, limits map[string]int) map[string]any {
+func specWithLimits(spec map[string]any, limits map[string]map[string]int) map[string]any {
 	if len(limits) == 0 {
 		return spec
 	}
 	res := maps.Clone(spec)
-	for channel, limit := range limits {
+	for channel, fieldLimits := range limits {
 		field, ok := res[channel].(map[string]any)
+		if !ok {
+			continue
+		}
+		name, _ := field["field"].(string)
+		limit, ok := fieldLimits[name]
 		if !ok {
 			continue
 		}

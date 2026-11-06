@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"math"
 	"slices"
 	"strings"
 	"time"
@@ -34,12 +35,13 @@ type Output struct {
 	// Data are the rows of the main query keyed by field name.
 	// Comparison values are under <measure>_prev and temporal values are RFC3339 UTC strings of the bucket start.
 	Data []map[string]any
-	// DomainValues lists the ordered values selected for each nominal axis, split, stage or heatmap axis,
+	// DomainValues lists the ordered values selected for each nominal axis, split, stage or heatmap axis
+	// (followed by the label of the "Other" slice when one was added, see Plan.Other),
 	// and the measure names for a "rill_measures" color split.
 	DomainValues map[string][]any
-	// Limits is the effective top-N limit of each spec channel (x, y, color or stage, as named in the input spec)
-	// after defaults and caps, so that a renderer can show the limit that was applied.
-	Limits map[string]int
+	// Limits is the effective top-N limit of each dimension after defaults and caps, keyed by spec channel
+	// (x, y, color, stage, ..., as named in the input spec) and then by field, so that a renderer can show the limit that was applied.
+	Limits map[string]map[string]int
 	// Totals holds the total of each measure for donut and pie charts.
 	Totals map[string]any
 	// Types maps the columns of the main query to their type codes.
@@ -59,9 +61,8 @@ func Execute(ctx context.Context, plan *Plan, runner Runner) (*Output, error) {
 	out := &Output{
 		TimeGrain:    plan.Spec.TimeGrainName(),
 		DomainValues: make(map[string][]any),
-		Limits:       make(map[string]int, len(plan.TopN)),
+		Limits:       make(map[string]map[string]int, len(plan.TopN)),
 	}
-	var warnings []string
 
 	// Select the values of each top-N dimension. The spec may also pin the values explicitly.
 	domain := make(map[string][]any)
@@ -73,8 +74,12 @@ func Execute(ctx context.Context, plan *Plan, runner Runner) (*Output, error) {
 		domain[f.Field] = values
 		out.DomainValues[f.Field] = values
 	}
+	var cut []TopNQuery // The top-N queries that cut values
 	for _, topN := range plan.TopN {
-		out.Limits[topN.Channel] = topN.Limit
+		if out.Limits[topN.Channel] == nil {
+			out.Limits[topN.Channel] = make(map[string]int)
+		}
+		out.Limits[topN.Channel][topN.Field] = topN.Limit
 		res, err := runner.Query(ctx, topN.Query)
 		if err != nil {
 			return nil, fmt.Errorf("top-N query for %q failed: %w", topN.Field, err)
@@ -83,7 +88,7 @@ func Execute(ctx context.Context, plan *Plan, runner Runner) (*Output, error) {
 		if len(rows) > topN.Limit {
 			rows = rows[:topN.Limit]
 			out.Truncated = true
-			warnings = append(warnings, fmt.Sprintf("only the top %d values of %q are shown", topN.Limit, topN.Field))
+			cut = append(cut, topN)
 		}
 		values := make([]any, len(rows))
 		for i, row := range rows {
@@ -155,16 +160,16 @@ func Execute(ctx context.Context, plan *Plan, runner Runner) (*Output, error) {
 		out.Data = slices.Concat(buckets...)
 		periods = len(buckets)
 	}
+	var rowsWarning string
 	if out.RowsTruncated {
 		out.Truncated = true
-		warning := fmt.Sprintf("the data was limited to %d rows", len(out.Data))
+		rowsWarning = fmt.Sprintf("the data was limited to %d rows", len(out.Data))
 		if plan.TimeField != "" {
-			warning = fmt.Sprintf("only the most recent %d periods (%d rows) are shown", periods, len(out.Data))
+			rowsWarning = fmt.Sprintf("only the most recent %d periods (%d rows) are shown", periods, len(out.Data))
 		}
 		if overBudget {
-			warning += " to fit the response size budget"
+			rowsWarning += " to fit the response size budget"
 		}
-		warnings = append(warnings, warning)
 	}
 
 	// Data is never nil, so that the result carries data: [] when there are no rows and a renderer can tell an empty chart from missing data.
@@ -189,7 +194,27 @@ func Execute(ctx context.Context, plan *Plan, runner Runner) (*Output, error) {
 		}
 	}
 
+	// Combine the slices the top-N of a pie or donut chart cut into an "Other" slice.
+	var other string
+	if plan.Other != nil && slices.ContainsFunc(cut, func(q TopNQuery) bool { return q.Field == plan.Other.Field }) {
+		other, err = addOtherSlice(ctx, plan.Other, domain, out, runner)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	if out.Truncated {
+		var warnings []string
+		for _, q := range cut {
+			if other != "" && q.Field == plan.Other.Field {
+				warnings = append(warnings, fmt.Sprintf("only the top %d values of %q are shown individually, and the rest are combined into %q", q.Limit, q.Field, other))
+			} else {
+				warnings = append(warnings, fmt.Sprintf("only the top %d values of %q are shown", q.Limit, q.Field))
+			}
+		}
+		if rowsWarning != "" {
+			warnings = append(warnings, rowsWarning)
+		}
 		remedy := "lower the field limits or add filters"
 		if out.TimeGrain != "" {
 			remedy = "use a coarser time_grain, lower the field limits, or add filters"
@@ -197,6 +222,51 @@ func Execute(ctx context.Context, plan *Plan, runner Runner) (*Output, error) {
 		out.TruncationWarning = fmt.Sprintf("The chart data is incomplete: %s. To see the complete picture, %s.", strings.Join(warnings, "; "), remedy)
 	}
 	return out, nil
+}
+
+// addOtherSlice appends an "Other" row to a pie or donut chart's data for the slice values the top-N query cut, sized by the measure over them,
+// and appends its label to the domain values; it returns the label, or an empty string when it added no slice.
+// The label is "Other", parenthesized as often as needed to differ from the shown values.
+// The slice is only added when the measure adds up: the value over the cut values must equal the total minus the shown slices.
+// A sum or a count does; an average, a ratio or a distinct count generally does not, and a remainder of it would size a meaningless slice.
+// The check runs on the data, since the metrics view does not declare which measures add up.
+func addOtherSlice(ctx context.Context, q *OtherQuery, domain map[string][]any, out *Output, runner Runner) (string, error) {
+	res, err := runner.Query(ctx, q.Query(domain))
+	if err != nil {
+		return "", fmt.Errorf("other query failed: %w", err)
+	}
+	if len(res.Rows) == 0 {
+		return "", nil
+	}
+	value := normalizeValue(res.Rows[0][q.Measure])
+	rest, ok := number(value)
+	if !ok || rest <= 0 {
+		return "", nil
+	}
+	total, ok := number(out.Totals[q.Measure])
+	if !ok {
+		return "", nil
+	}
+	var shown float64
+	for _, row := range out.Data {
+		v, ok := number(row[q.Measure])
+		if !ok {
+			return "", nil
+		}
+		shown += v
+	}
+	// The tolerance absorbs the rounding of floating-point sums, which the database adds up in a different order per query.
+	if math.Abs(shown+rest-total) > 1e-6*math.Max(math.Abs(total), 1) {
+		return "", nil
+	}
+
+	label := "Other"
+	for slices.Contains(domain[q.Field], any(label)) {
+		label = "(" + label + ")"
+	}
+	out.Data = append(out.Data, map[string]any{q.Field: label, q.Measure: value})
+	out.DomainValues[q.Field] = append(slices.Clone(out.DomainValues[q.Field]), label)
+	return label, nil
 }
 
 // timeBuckets splits rows that are ordered by a time field into runs of rows with the same time value.
@@ -220,6 +290,22 @@ func (s *Spec) fieldsWithSortValues() []*Field {
 		}
 	}
 	return res
+}
+
+// number returns a numeric value of a result row as a float64, and whether it is numeric.
+func number(v any) (float64, bool) {
+	switch n := v.(type) {
+	case float64:
+		return n, true
+	case int64:
+		return float64(n), true
+	case uint64:
+		return float64(n), true
+	case int:
+		return float64(n), true
+	default:
+		return 0, false
+	}
 }
 
 // normalizeValue makes a value JSON-friendly for the widget: timestamps become RFC3339 UTC strings.

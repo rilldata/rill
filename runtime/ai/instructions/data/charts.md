@@ -16,6 +16,7 @@ The `create_chart` tool draws a chart from a metrics view. You describe the char
 ### Choosing a chart
 
 - A trend over time: Line Chart, with several measures on `y` or a dimension on `color`; Area Chart to stack parts; Bump Chart for ranks; Slope Chart for two periods.
+- A period against the previous one: `data.comparison_time_range` on a Line, Area, Bar, Grouped Bar, Lollipop or Slope Chart with one measure and nothing on `color` (or `group`); the previous period is drawn as a second series.
 - Categories compared: Bar Chart for one measure; Stacked Bar Chart with the parts on `color`; Grouped Bar Chart with the clustering dimension on `group`; Bar Table for many categories with value labels; Lollipop Chart for a ranking.
 - Share of a whole: Pie Chart with the measure on `size` and the dimension on `color`, `innerRadius` for a donut; only for a handful of values that add up to a whole.
 - How a total changed: Waterfall Chart with the step on `x` and the signed change on `y`; leave `color` unbound, it is reserved for a start/delta/end type field.

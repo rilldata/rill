@@ -356,7 +356,7 @@ type MCPSpecProvider interface {
 // MCPAppTool is an optional interface for tools that take part in the MCP Apps widget (see package mcpapp).
 // The returned UI drives the _meta.ui the tool is registered with on the MCP server.
 // App-only tools (see mcpapp.ToolUI.AppOnly) are called by the widget rather than the model, so their calls are plumbing:
-// they are not added to the session's messages and are not counted as billable tool calls.
+// they are not added to the session's messages. They still count in the tool_call metric, since they run real queries (see CallToolWithOptions).
 type MCPAppTool interface {
 	MCPAppUI() *mcpapp.ToolUI
 }

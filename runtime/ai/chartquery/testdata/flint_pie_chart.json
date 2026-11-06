@@ -131,5 +131,106 @@
     "time_zone": "",
     "use_display_names": false,
     "rows": false
+  },
+  "extra": {
+    "total": {
+      "metrics_view": "mv",
+      "dimensions": null,
+      "measures": [
+        {
+          "name": "bids"
+        }
+      ],
+      "pivot_on": null,
+      "spine": null,
+      "sort": null,
+      "time_range": {
+        "start": "2024-01-01T00:00:00Z",
+        "end": "2024-02-01T00:00:00Z"
+      },
+      "comparison_time_range": null,
+      "where": {
+        "cond": {
+          "op": "nin",
+          "exprs": [
+            {
+              "name": "device"
+            },
+            {
+              "val": [
+                null
+              ]
+            }
+          ]
+        }
+      },
+      "having": null,
+      "limit": null,
+      "offset": null,
+      "time_zone": "",
+      "use_display_names": false,
+      "rows": false
+    }
+  },
+  "other": {
+    "metrics_view": "mv",
+    "dimensions": null,
+    "measures": [
+      {
+        "name": "bids"
+      }
+    ],
+    "pivot_on": null,
+    "spine": null,
+    "sort": null,
+    "time_range": {
+      "start": "2024-01-01T00:00:00Z",
+      "end": "2024-02-01T00:00:00Z"
+    },
+    "comparison_time_range": null,
+    "where": {
+      "cond": {
+        "op": "and",
+        "exprs": [
+          {
+            "cond": {
+              "op": "nin",
+              "exprs": [
+                {
+                  "name": "device"
+                },
+                {
+                  "val": [
+                    null
+                  ]
+                }
+              ]
+            }
+          },
+          {
+            "cond": {
+              "op": "nin",
+              "exprs": [
+                {
+                  "name": "device"
+                },
+                {
+                  "val": [
+                    "iOS",
+                    "Android"
+                  ]
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    "having": null,
+    "limit": null,
+    "offset": null,
+    "time_zone": "",
+    "use_display_names": false,
+    "rows": false
   }
 }

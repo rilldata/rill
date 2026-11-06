@@ -119,7 +119,7 @@ func TestRegisterAndCapabilities(t *testing.T) {
 	defer cs.Close()
 
 	caps := cs.InitializeResult().Capabilities
-	require.NotNil(t, caps.Logging)
+	require.Nil(t, caps.Logging, "the deprecated logging capability is not advertised")
 	require.Contains(t, caps.Extensions, UIExtension)
 	require.NotNil(t, caps.Resources)
 

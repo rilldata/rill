@@ -249,12 +249,12 @@ func Register(srv *mcp.Server, a *Asset) {
 }
 
 // ServerCapabilities returns the server capabilities to use when the widget is served:
-// the SDK's default logging capability plus the MCP Apps extension with the MIME types the server can render.
+// the MCP Apps extension with the MIME types the server can render.
 // Tools and resources capabilities are still inferred by the SDK from what is registered.
+// They leave out the logging capability the SDK advertises when given no capabilities:
+// it is deprecated as of protocol version 2026-07-28, and Rill's servers never send log messages.
 func ServerCapabilities() *mcp.ServerCapabilities {
-	caps := &mcp.ServerCapabilities{
-		Logging: &mcp.LoggingCapabilities{},
-	}
+	caps := &mcp.ServerCapabilities{}
 	caps.AddExtension(UIExtension, map[string]any{
 		"mimeTypes": []any{MIMEType},
 	})
