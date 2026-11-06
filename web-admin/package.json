@@ -12,6 +12,7 @@
     "test:setup": "E2E_NO_TEARDOWN=true playwright test --project=setup",
     "test:dev": "E2E_NO_SETUP_OR_TEARDOWN=true playwright test --project=e2e",
     "test:teardown": "playwright test --project=teardown",
+    "test:embed-host": "tsx tests/embed-host/server.ts",
     "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
     "check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
     "lint": "prettier --check . && eslint .",

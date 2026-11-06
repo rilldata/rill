@@ -13,6 +13,7 @@ import {
   mapQueryToDashboard,
 } from "@rilldata/web-common/features/explore-mappers/map-to-explore.ts";
 import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors.ts";
+import { getDashboardPath } from "@rilldata/web-common/features/explore-mappers/utils.ts";
 import type { RuntimeClient } from "@rilldata/web-common/runtime-client/v2";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import { derived, readable, type Readable } from "svelte/store";
@@ -58,7 +59,7 @@ export function getMappedExploreUrl(
     ],
     ([validSpecResp, timeRangeSummaryResp, dashboardState, pageState]) => {
       const url = new URL(pageState.url);
-      url.pathname = getExplorePath(ctx, req.exploreName);
+      url.pathname = getDashboardPath(ctx, "explore", req.exploreName);
 
       if (!dashboardState?.data?.exploreState || !validSpecResp.data) {
         return url.toString();
@@ -122,7 +123,7 @@ export function getMappedAIExploreUrl(
     [validSpec, timeRangeSummary, page],
     ([validSpecResp, timeRangeSummaryResp, pageState]) => {
       const url = new URL(pageState.url);
-      url.pathname = getExplorePath(ctx, exploreName);
+      url.pathname = getDashboardPath(ctx, "explore", exploreName);
       url.search = "";
 
       const metricsViewSpec = validSpecResp.data?.metricsView;
@@ -157,15 +158,4 @@ export function getMappedAIExploreUrl(
       return url.toString();
     },
   );
-}
-
-function getExplorePath(
-  { organization, project, token, embedded }: MapExploreUrlContext,
-  exploreName: string,
-) {
-  if (embedded) return `/-/embed/explore/${exploreName}`;
-  if (token) {
-    return `/${organization}/${project}/-/share/${token}/explore/${exploreName}`;
-  }
-  return `/${organization}/${project}/explore/${exploreName}`;
 }
