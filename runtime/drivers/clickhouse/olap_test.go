@@ -1283,10 +1283,14 @@ func testSelectInlineResults(t *testing.T, olap drivers.OLAPStore) {
 
 // testDateTruncExprOnDateColumns checks that the time floor expression for Date and Date32 columns runs at every grain,
 // including the sub-day grains that ClickHouse's date_trunc rejects for plain Date values.
+// It also covers Date values of unknown type, such as the expression built for comparison time offsets.
 func testDateTruncExprOnDateColumns(t *testing.T, olap drivers.OLAPStore) {
 	ctx := context.Background()
 	err := olap.Exec(ctx, &drivers.Statement{Query: "CREATE TABLE date_trunc_dates (d Date, d32 Date32, v UInt8) ENGINE = MergeTree ORDER BY d"})
 	require.NoError(t, err)
+	t.Cleanup(func() {
+		_ = olap.Exec(context.Background(), &drivers.Statement{Query: "DROP TABLE IF EXISTS date_trunc_dates"})
+	})
 	err = olap.Exec(ctx, &drivers.Statement{Query: "INSERT INTO date_trunc_dates VALUES ('2024-01-02', '2024-01-02', 1), ('2024-01-02', '2024-01-02', 2), ('2024-01-03', '2024-01-03', 3)"})
 	require.NoError(t, err)
 
@@ -1301,14 +1305,22 @@ func testDateTruncExprOnDateColumns(t *testing.T, olap drivers.OLAPStore) {
 		{grain: runtimev1.TimeGrain_TIME_GRAIN_DAY, want: daily},
 		{grain: runtimev1.TimeGrain_TIME_GRAIN_MONTH, want: map[string]uint64{"2024-01-01 00:00:00": 6}},
 	}
-	for _, col := range []string{"d", "d32"} {
-		dim := &runtimev1.MetricsViewSpec_Dimension{Name: col, Column: col, DataType: &runtimev1.Type{Code: runtimev1.Type_CODE_DATE}}
+	// The comparison time offset path shifts the time column by whole days, which keeps it a Date, and passes the result without a type.
+	shifted, err := olap.Dialect().IntervalSubtract(`"d"`, "0", runtimev1.TimeGrain_TIME_GRAIN_DAY)
+	require.NoError(t, err)
+	dims := []*runtimev1.MetricsViewSpec_Dimension{
+		{Name: "d", Column: "d", DataType: &runtimev1.Type{Code: runtimev1.Type_CODE_DATE}},
+		{Name: "d32", Column: "d32", DataType: &runtimev1.Type{Code: runtimev1.Type_CODE_DATE}},
+		{Name: "d_untyped", Column: "d"},
+		{Name: "d_shifted", Expression: shifted},
+	}
+	for _, dim := range dims {
 		for _, c := range cases {
 			expr, err := olap.Dialect().DateTruncExpr(dim, c.grain, "UTC", 1, 1)
 			require.NoError(t, err)
 
 			rows, err := olap.Query(ctx, &drivers.Statement{Query: fmt.Sprintf("SELECT %s AS t, sum(v) AS v FROM date_trunc_dates GROUP BY 1 ORDER BY 1", expr)})
-			require.NoError(t, err, "column %s at grain %s", col, c.grain)
+			require.NoError(t, err, "dimension %s at grain %s", dim.Name, c.grain)
 			require.Equal(t, runtimev1.Type_CODE_TIMESTAMP, rows.Schema.Fields[0].Type.Code)
 
 			got := map[string]uint64{}
@@ -1319,7 +1331,7 @@ func testDateTruncExprOnDateColumns(t *testing.T, olap drivers.OLAPStore) {
 				got[ts.UTC().Format(time.DateTime)] = v
 			}
 			require.NoError(t, rows.Close())
-			require.Equal(t, c.want, got, "column %s at grain %s", col, c.grain)
+			require.Equal(t, c.want, got, "dimension %s at grain %s", dim.Name, c.grain)
 		}
 	}
 }

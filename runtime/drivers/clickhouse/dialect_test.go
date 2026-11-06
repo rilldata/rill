@@ -32,9 +32,11 @@ func TestDateTruncExpr(t *testing.T) {
 		{name: "date column at week grain with a shifted first day", dim: dateCol, grain: runtimev1.TimeGrain_TIME_GRAIN_WEEK, firstDayOfWeek: 7, want: `date_trunc('week', "d" + INTERVAL 1 DAY)::DateTime64 - INTERVAL 1 DAY`},
 		// The time zone path casts every input already.
 		{name: "date column at hour grain in a time zone", dim: dateCol, grain: runtimev1.TimeGrain_TIME_GRAIN_HOUR, tz: "America/New_York", want: `date_trunc('hour', "d"::DateTime64(6, 'America/New_York'))::DateTime64(6, 'America/New_York')`},
-		// DateTime columns and columns of unknown type are not wrapped in a cast.
+		// Columns of unknown type may be Date values, so they are cast too.
+		{name: "untyped column at hour grain", dim: untypedCol, grain: runtimev1.TimeGrain_TIME_GRAIN_HOUR, want: `date_trunc('hour', "ts"::DateTime64)::DateTime64`},
+		{name: "untyped column at day grain", dim: untypedCol, grain: runtimev1.TimeGrain_TIME_GRAIN_DAY, want: `date_trunc('day', "ts")::DateTime64`},
+		// Known DateTime columns are not wrapped in a cast.
 		{name: "timestamp column at hour grain", dim: timestampCol, grain: runtimev1.TimeGrain_TIME_GRAIN_HOUR, want: `date_trunc('hour', "ts")::DateTime64`},
-		{name: "untyped column at hour grain", dim: untypedCol, grain: runtimev1.TimeGrain_TIME_GRAIN_HOUR, want: `date_trunc('hour', "ts")::DateTime64`},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
