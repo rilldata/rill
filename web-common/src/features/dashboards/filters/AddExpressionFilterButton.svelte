@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { tick } from "svelte";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import type { ExpressionFilterManager } from "@rilldata/web-common/features/dashboards/filters/ExpressionFilterManager.svelte.ts";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
@@ -30,6 +31,16 @@
   } = $props();
 
   let open = $state(false);
+  let pendingFilterName: string | undefined = $state(undefined);
+
+  async function handlePickerClose(event: Event) {
+    if (!pendingFilterName) return;
+    event.preventDefault();
+    const name = pendingFilterName;
+    pendingFilterName = undefined;
+    await tick();
+    expressionFilterManager.addNewFilter(name);
+  }
 
   let { metricsViewsProvider, filterManagersMap } = $derived(
     expressionFilterManager,
@@ -98,7 +109,8 @@
 
   <SearchableMenuContent
     allowMultiSelect={false}
-    onSelect={(name) => expressionFilterManager.addNewFilter(name)}
+    onSelect={(name) => (pendingFilterName = name)}
+    onCloseAutoFocus={handlePickerClose}
     {selectableGroups}
     selectedItems={[]}
     {side}

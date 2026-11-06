@@ -29,6 +29,9 @@
   } from "./tag-utils";
   import { DashboardShortcutAction } from "@rilldata/web-common/features/dashboards/shortcuts/dashboard-shortcuts";
 
+  import { tick } from "svelte";
+
+  type PickerColumn = "items" | "tags";
   type SelectableItem = MetricsViewSpecMeasure | MetricsViewSpecDimension;
 
   export let selectedItems: string[];
@@ -37,7 +40,102 @@
   export let type: "measure" | "dimension" = "measure";
   export let onSelectedChange: (items: string[]) => void;
 
+  let pickerElement: HTMLDivElement | null = null;
   let searchText = "";
+
+  function pickerTargets(column: PickerColumn, section?: string) {
+    return Array.from(
+      pickerElement?.querySelectorAll<HTMLButtonElement>(
+        `[data-picker-column="${column}"]${section ? `[data-picker-section="${section}"]` : ""}`,
+      ) ?? [],
+    );
+  }
+
+  function focusPickerTarget(
+    column: PickerColumn,
+    index: number,
+    section?: string,
+  ) {
+    const targets = pickerTargets(column, section);
+    const target = targets[Math.max(0, Math.min(index, targets.length - 1))];
+    target?.focus();
+    target?.scrollIntoView({ block: "nearest" });
+  }
+
+  async function handlePickerKeydown(event: KeyboardEvent) {
+    if (
+      event.defaultPrevented ||
+      event.ctrlKey ||
+      event.metaKey ||
+      event.altKey
+    )
+      return;
+    const target = event.target;
+    if (!(target instanceof HTMLElement)) return;
+    const search = pickerElement?.querySelector<HTMLInputElement>(
+      'input[role="textbox"]',
+    );
+    if (target === search) {
+      if (event.key !== "ArrowDown" && event.key !== "ArrowUp") return;
+      event.preventDefault();
+      event.stopPropagation();
+      const column = pickerTargets("items").length ? "items" : "tags";
+      focusPickerTarget(
+        column,
+        event.key === "ArrowDown" ? 0 : pickerTargets(column).length - 1,
+      );
+      return;
+    }
+
+    const button = target.closest<HTMLButtonElement>("[data-picker-column]");
+    const column = button?.dataset.pickerColumn;
+    if (!button || (column !== "items" && column !== "tags")) return;
+    const index = pickerTargets(column).indexOf(button);
+    const section = button.dataset.pickerSection;
+    const otherSection = section === "shown" ? "hidden" : "shown";
+    if (
+      ["ArrowDown", "ArrowUp", "ArrowLeft", "ArrowRight", "Tab"].includes(
+        event.key,
+      )
+    ) {
+      if (
+        event.key === "Tab" &&
+        (column !== "items" || !pickerTargets("items", otherSection).length)
+      )
+        return;
+      event.preventDefault();
+      event.stopPropagation();
+      if (event.key === "ArrowUp" && index === 0) search?.focus();
+      else if (event.key === "ArrowUp") focusPickerTarget(column, index - 1);
+      else if (event.key === "ArrowDown") focusPickerTarget(column, index + 1);
+      else if (
+        column === "items" &&
+        (event.key === "Tab" ||
+          (event.key === "ArrowRight" && section === "shown") ||
+          (event.key === "ArrowLeft" && section === "hidden"))
+      )
+        focusPickerTarget("items", 0, otherSection);
+      else if (event.key === "ArrowLeft" && column === "items")
+        focusPickerTarget("tags", index);
+      else if (event.key === "ArrowRight" && column === "tags")
+        focusPickerTarget("items", index);
+    } else if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      event.stopPropagation();
+      const id = button.dataset.pickerId;
+      const sectionIndex = pickerTargets(column, section).indexOf(button);
+      button.click();
+      await tick();
+      const movedItem = pickerTargets(column).find(
+        (item) => item.dataset.pickerId === id,
+      );
+      if (column === "items" && movedItem?.dataset.pickerSection !== section) {
+        const remaining = pickerTargets(column, section);
+        if (remaining.length) focusPickerTarget(column, sectionIndex, section);
+        else movedItem?.focus();
+      } else movedItem?.focus();
+    }
+  }
   let active = false;
   let selectedTag: string | null = null;
   // Rendered width of the auto-sized tags column; seeds the resizer until the
@@ -45,7 +143,7 @@
   let tagsColMeasured: number = TAG_COLUMN.explore.MIN;
 
   const toggleButtonBaseClass =
-    "flex h-[26px] w-[42px] items-center justify-center rounded-sm text-icon-muted transition-colors hover:bg-surface-hover hover:text-fg-primary active:bg-gray-300 disabled:text-gray-300 disabled:cursor-not-allowed";
+    "flex h-[26px] w-[42px] items-center justify-center rounded-sm text-icon-muted focus-visible:outline-none transition-colors hover:bg-surface-hover hover:text-fg-primary active:bg-gray-300 disabled:text-gray-300 disabled:cursor-not-allowed";
 
   $: allItemsMap = new Map(allItems.map((item) => [item.name, item]));
   $: numAvailable = allItems?.length ?? 0;
@@ -178,11 +276,25 @@
     overflowY="auto"
     overflowX="hidden"
     minHeight="100px"
+    onOpenAutoFocus={(event) => {
+      event.preventDefault();
+      pickerElement
+        ?.querySelector<HTMLInputElement>('input[role="textbox"]')
+        ?.focus();
+    }}
   >
-    <div class="flex flex-col">
+    <div
+      class="flex flex-col"
+      data-dashboard-picker
+      role="presentation"
+      bind:this={pickerElement}
+      onkeydown={handlePickerKeydown}
+    >
       <div class="px-3 pt-3 pb-2 border-b border-border">
         <Search
+          autofocus={false}
           bind:value={searchText}
+          onKeyDown={handlePickerKeydown}
           label={m.explore_search_list()}
           placeholder={hasTags
             ? type === "measure"
@@ -334,7 +446,9 @@
                     (type === "measure"
                       ? m.explore_unknown_measure()
                       : m.explore_unknown_dimension())}
-                  <div class="w-full flex gap-x-1 items-center py-1">
+                  <div
+                    class="w-full flex gap-x-1 items-center py-1 rounded-sm focus-within:bg-popover-accent focus-within:ring-2 focus-within:ring-inset focus-within:ring-theme-500"
+                  >
                     {#if itemData?.description || selectedItems.length === 1}
                       <Tooltip.Root delayDuration={200}>
                         <Tooltip.Trigger
@@ -353,12 +467,15 @@
                           </span>
                           <button
                             class="{toggleButtonBaseClass} ml-auto"
+                            data-picker-column="items"
+                            data-picker-section="shown"
+                            data-picker-id={item.id}
                             onclick={(e) => {
                               e.stopPropagation();
                               removeSelectedItem(item.id);
                             }}
                             onmousedown={(e) => e.stopPropagation()}
-                            disabled={selectedItems.length === 1}
+                            aria-disabled={selectedItems.length === 1}
                             class:pointer-events-none={selectedItems.length ===
                               1}
                             class:opacity-50={selectedItems.length === 1}
@@ -399,12 +516,15 @@
                       </span>
                       <button
                         class="{toggleButtonBaseClass} ml-auto"
+                        data-picker-column="items"
+                        data-picker-section="shown"
+                        data-picker-id={item.id}
                         onclick={(e) => {
                           e.stopPropagation();
                           removeSelectedItem(item.id);
                         }}
                         onmousedown={(e) => e.stopPropagation()}
-                        disabled={selectedItems.length === 1}
+                        aria-disabled={selectedItems.length === 1}
                         class:pointer-events-none={selectedItems.length === 1}
                         class:opacity-50={selectedItems.length === 1}
                         aria-label={m.explore_hide_item({ name: displayName })}
@@ -476,7 +596,7 @@
                         ? m.explore_unknown_measure()
                         : m.explore_unknown_dimension())}
                     <div
-                      class="w-full flex gap-x-1 justify-between items-center py-1"
+                      class="w-full flex gap-x-1 justify-between items-center py-1 rounded-sm focus-within:bg-popover-accent focus-within:ring-2 focus-within:ring-inset focus-within:ring-theme-500"
                     >
                       {#if itemData?.description}
                         <Tooltip.Root delayDuration={200}>
@@ -490,6 +610,9 @@
                             </span>
                             <button
                               class="{toggleButtonBaseClass} ml-auto"
+                              data-picker-column="items"
+                              data-picker-section="hidden"
+                              data-picker-id={item.id}
                               onclick={(e) => {
                                 e.stopPropagation();
                                 handleHiddenItemClick({ item });
@@ -519,6 +642,9 @@
                         </span>
                         <button
                           class="{toggleButtonBaseClass} ml-auto"
+                          data-picker-column="items"
+                          data-picker-section="hidden"
+                          data-picker-id={item.id}
                           onclick={(e) => {
                             e.stopPropagation();
                             handleHiddenItemClick({ item });

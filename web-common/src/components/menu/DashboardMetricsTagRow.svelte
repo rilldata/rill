@@ -33,18 +33,21 @@
 </script>
 
 <div
-  class="group w-full flex items-center gap-x-1 px-2 py-1 rounded-sm"
+  class="group w-full flex items-center gap-x-1 px-2 py-1 rounded-sm focus-within:ring-2 focus-within:ring-inset focus-within:ring-theme-500"
   class:bg-popover-accent={selected}
   class:hover:bg-surface-hover={!selected}
+  class:focus-within:bg-surface-hover={!selected}
 >
   <button
     type="button"
-    class="flex items-center gap-x-2 flex-1 min-w-0 text-left"
+    class="flex items-center gap-x-2 flex-1 min-w-0 text-left rounded-sm focus-visible:outline-none"
     onclick={onSelect}
     aria-label={selected
       ? m.explore_clear_filter_tag({ tag: tag.name })
       : m.explore_filter_by_tag({ tag: tag.name })}
     aria-pressed={selected}
+    data-picker-column="tags"
+    data-picker-id={tag.name}
   >
     <svg width="12" height="12" viewBox="0 0 16 16" aria-hidden="true">
       {#if visibility.state === "all"}
@@ -99,7 +102,7 @@
   </button>
 
   <div
-    class="flex items-center gap-x-0.5 flex-none opacity-0 group-hover:opacity-100 transition-opacity"
+    class="flex items-center gap-x-0.5 flex-none opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity"
     class:opacity-100={selected}
   >
     <Tooltip.Root delayDuration={200}>

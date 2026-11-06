@@ -1,6 +1,9 @@
 <script lang="ts">
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
 
+  import type { DashboardShortcutAction } from "../shortcuts/dashboard-shortcuts";
+
+  export let shortcut: DashboardShortcutAction | undefined = undefined;
   export let disabled = false;
   export let selected = false;
   export let href: string | undefined = undefined;
@@ -10,7 +13,14 @@
 
 <!-- Use snippets when transitioning to Svelte 5 -->
 {#if href}
-  <a class="relative group" class:theme class:selected {href} {onclick}>
+  <a
+    data-dashboard-shortcut={shortcut}
+    class="relative group"
+    class:theme
+    class:selected
+    {href}
+    {onclick}
+  >
     <slot />
     {#if disabled}
       <div class="disabled group-hover:block">
@@ -19,7 +29,12 @@
     {/if}
   </a>
 {:else}
-  <button class="relative group" class:selected {onclick}>
+  <button
+    data-dashboard-shortcut={shortcut}
+    class="relative group"
+    class:selected
+    {onclick}
+  >
     <slot />
     {#if disabled}
       <div class="disabled group-hover:block">

@@ -7,6 +7,21 @@
   import { Search } from "../search";
 
   const voidFn = () => {};
+  let searchContainer: HTMLDivElement | null = null;
+
+  function handleSearchKeydown(event: KeyboardEvent) {
+    if (event.key === "Escape" || event.key === "Tab") return;
+    event.stopPropagation();
+    if (event.key !== "ArrowDown" && event.key !== "ArrowUp") return;
+    event.preventDefault();
+    const items = searchContainer
+      ?.closest('[role="menu"]')
+      ?.querySelectorAll<HTMLElement>(
+        '[role="menuitem"]:not([data-disabled]), [role="menuitemcheckbox"]:not([data-disabled])',
+      );
+    if (!items?.length) return;
+    items[event.key === "ArrowDown" ? 0 : items.length - 1]?.focus();
+  }
 
   export let selectableGroups: SearchableFilterSelectableGroup[];
   export let selectedItems: string[][];
@@ -20,6 +35,7 @@
   export let showHiddenSelectionsCount = false;
   export let side: "top" | "right" | "bottom" | "left" = "bottom";
   export let onSelect: (name: string) => void;
+  export let onCloseAutoFocus: ((event: Event) => void) | undefined = undefined;
   export let onToggleSelectAll: () => void = voidFn;
 
   $: allSelected = selectableGroups.every((g, i) => {
@@ -64,13 +80,15 @@
 </script>
 
 <DropdownMenu.Content
+  {onCloseAutoFocus}
   align="start"
   {side}
   class="flex flex-col max-h-96 w-72 overflow-hidden p-0"
 >
-  <div class="px-3 pt-3 pb-1">
+  <div class="px-3 pt-3 pb-1" bind:this={searchContainer}>
     <Search
       bind:value={searchText}
+      onKeyDown={handleSearchKeydown}
       label={m.common_search_list()}
       showBorderOnFocus={false}
     />

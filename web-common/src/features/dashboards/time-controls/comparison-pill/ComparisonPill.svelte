@@ -16,6 +16,7 @@
   import { SortType } from "../../proto-state/derived-types";
   import * as Elements from "../super-pill/components";
   import type { V1TimeGrain } from "@rilldata/web-common/runtime-client";
+  import { DashboardShortcutAction } from "../../shortcuts/dashboard-shortcuts";
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 
   export let allTimeRange: TimeRange;
@@ -94,6 +95,7 @@
         toggleSort(SortType.VALUE);
       }
     }}
+    data-dashboard-shortcut={DashboardShortcutAction.ToggleComparison}
     aria-label={m.dashboard_toggle_time_comparison_aria()}
   >
     <div class="pointer-events-none flex items-center gap-x-1.5">

@@ -208,11 +208,10 @@
 
   function handleKeyDown(e: KeyboardEvent) {
     if (comparisonCopy !== "dimension") return;
-    // Select all items on Meta+A
+    // Toggle all items on Meta+A
     if ((e.ctrlKey || e.metaKey) && e.key === "a") {
       if ((e.target as HTMLElement)?.tagName === "INPUT") return;
       e.preventDefault();
-      if (areAllTableRowsSelected) return;
       toggleAllSearchItems();
     }
   }

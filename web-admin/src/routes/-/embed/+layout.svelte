@@ -63,7 +63,7 @@
           | ResourceKind.Canvas
           | undefined);
 
-  $: showTopBar = navigationBarEnabled || showDashboardChat;
+  $: showTopBar = navigationEnabled || showDashboardChat;
 
   // Suppress browser back/forward
   beforeNavigate((nav) => {
@@ -150,8 +150,13 @@
         <div
           class="flex items-center w-full pr-4 py-1 min-h-[2.5rem] bg-surface-subtle"
           class:border-b={!onProjectPage}
+          class:sr-only={!navigationBarEnabled && !showDashboardChat}
         >
-          <EmbedHeader {activeResource} {navigationBarEnabled} />
+          <EmbedHeader
+            {activeResource}
+            {navigationBarEnabled}
+            {navigationEnabled}
+          />
         </div>
       </ThemeProvider>
     {/if}

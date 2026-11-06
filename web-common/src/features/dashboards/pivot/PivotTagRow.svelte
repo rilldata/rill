@@ -199,7 +199,17 @@
       {#snippet child({ props })}
         <span
           {...props}
-          class="truncate flex-1 min-w-0 text-left text-fg-primary"
+          role="button"
+          tabindex="0"
+          data-pivot-tag={tag.name}
+          aria-pressed={selected}
+          aria-label={selected
+            ? m.explore_clear_filter_tag({ tag: tag.name })
+            : m.explore_filter_by_tag({ tag: tag.name })}
+          onclick={(event) => {
+            if (event.detail === 0) onSelect();
+          }}
+          class="truncate flex-1 min-w-0 text-left text-fg-primary focus-visible:outline-none"
           use:detectOverflow={(v) => (isTruncated = v)}
         >
           {tag.name}
@@ -214,7 +224,9 @@
     </Tooltip.Content>
   </Tooltip.Root>
 
-  <div class="flex items-center gap-x-1 flex-none group-hover:hidden">
+  <div
+    class="flex items-center gap-x-1 flex-none group-hover:hidden group-focus-within:hidden"
+  >
     {#if measureCount > 0}
       <span
         class="count-tile meas-tile"
@@ -235,7 +247,9 @@
     {/if}
   </div>
 
-  <div class="hidden group-hover:flex items-center gap-x-0.5 flex-none">
+  <div
+    class="hidden group-hover:flex group-focus-within:flex items-center gap-x-0.5 flex-none"
+  >
     {#if dimensionCount > 0}
       <Tooltip.Root delayDuration={200}>
         <Tooltip.Trigger>
@@ -350,6 +364,10 @@
     @apply w-full flex items-center gap-x-1 px-1.5 py-0.5 rounded-sm;
     @apply cursor-grab select-none;
     @apply hover:bg-surface-hover;
+  }
+
+  .tag-row:focus-within {
+    @apply bg-surface-hover ring-2 ring-inset ring-theme-500;
   }
 
   .tag-row.selected {

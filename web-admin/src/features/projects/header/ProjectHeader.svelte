@@ -21,6 +21,7 @@
     developerChatActions,
     developerChatOpen,
   } from "web-common/src/features/chat/layouts/sidebar/sidebar-store";
+  import { DashboardShortcutAction } from "web-common/src/features/dashboards/shortcuts/dashboard-shortcuts";
   import GlobalDimensionSearch from "web-common/src/features/dashboards/dimension-search/GlobalDimensionSearch.svelte";
   import StateManagersProvider from "web-common/src/features/dashboards/state-managers/StateManagersProvider.svelte";
   import { useExplore } from "web-common/src/features/explores/selectors";
@@ -114,6 +115,7 @@
   $: reports = $reportsQuery.data?.resources ?? [];
 
   $: visualizationPaths = {
+    shortcut: DashboardShortcutAction.OpenDashboardList,
     options: [...visualizations]
       .sort((a, b) => {
         const aIsCanvas = !!a?.canvas;

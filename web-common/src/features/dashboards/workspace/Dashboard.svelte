@@ -162,7 +162,7 @@
 </script>
 
 <ThemeProvider theme={$theme}>
-  <DashboardShortcuts />
+  <DashboardShortcuts view={$showPivot ? "pivot" : "explore"} />
   <article
     class="flex flex-col overflow-y-hidden bg-surface-background"
     bind:clientWidth={exploreContainerWidth}

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import type { DashboardShortcutAction } from "../../dashboards/shortcuts/dashboard-shortcuts";
   import Label from "@rilldata/web-common/components/forms/Label.svelte";
   import Switch from "@rilldata/web-common/components/forms/Switch.svelte";
   import { getComparisonOptionsForCanvas } from "@rilldata/web-common/features/canvas/filters/util";
@@ -12,6 +13,7 @@
   import { DateTime, Interval } from "luxon";
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 
+  export let shortcut: DashboardShortcutAction | undefined = undefined;
   export let minDate: DateTime<true> | undefined;
   export let maxDate: DateTime<true> | undefined;
   export let comparisonInterval: Interval<true> | undefined;
@@ -83,6 +85,7 @@
       onDisplayTimeComparison(!showTimeComparison);
     }}
     type="button"
+    data-dashboard-shortcut={shortcut}
     aria-label={m.dashboard_toggle_time_comparison_aria()}
   >
     <div class="pointer-events-none flex items-center gap-x-1.5">

@@ -14,6 +14,7 @@ export type PathOption = {
 };
 
 export type PathOptions = {
+  shortcut?: string;
   options: Map<Param, PathOption>;
   carryOverSearchParams?: boolean;
   content?: Snippet<[BreadcrumbItemDropdownProps]>;

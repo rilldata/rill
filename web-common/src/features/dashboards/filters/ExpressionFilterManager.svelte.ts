@@ -280,6 +280,29 @@ export class ExpressionFilterManager implements UrlParamsStore {
     return ret;
   }
 
+  public removeFilter(name: string) {
+    const filter = this.filterManagersMap[name];
+    if (!filter) return;
+
+    if (this.temporaryFilterName === name) this.temporaryFilterName = undefined;
+    if (
+      !this.yamlConfigProvider.pinnedFilters[name] &&
+      !this.yamlConfigProvider.requiredFilters[name]
+    ) {
+      const managers = this.topLevelJoiner.managers;
+      this.topLevelJoiner.managers = {
+        ...managers,
+        dimensionManagers: managers.dimensionManagers.filter(
+          (manager) => manager.name !== name,
+        ),
+        measureManagers: managers.measureManagers.filter(
+          (manager) => manager.name !== name,
+        ),
+      };
+    }
+    filter.clear();
+  }
+
   public clear() {
     this.temporaryFilterName = undefined;
     this.topLevelJoiner.clear();

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { DashboardShortcutAction } from "../../dashboards/shortcuts/dashboard-shortcuts";
   import Calendar from "@rilldata/web-common/components/icons/Calendar.svelte";
   import * as Tooltip from "@rilldata/web-common/components/tooltip-v2";
   import { getCanvasStore } from "@rilldata/web-common/features/canvas/state-managers/state-managers";
@@ -155,6 +156,7 @@
             {onPan}
           />
           <CanvasComparisonPill
+            shortcut={DashboardShortcutAction.ToggleComparison}
             {minDate}
             {maxDate}
             {comparisonInterval}

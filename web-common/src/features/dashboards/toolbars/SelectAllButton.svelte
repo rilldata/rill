@@ -25,7 +25,14 @@
       </TooltipShortcutContainer>
     {/if}
   </TooltipContent>
-  <Button type="toolbar" onClick={onToggleSearchItems} {disabled}>
+  <Button
+    type="toolbar"
+    onClick={onToggleSearchItems}
+    {disabled}
+    dataAttributes={{
+      "data-dashboard-shortcut-context": "dimension-selection",
+    }}
+  >
     <div class="text-fg-secondary">
       <Inspect size={16} />
     </div>

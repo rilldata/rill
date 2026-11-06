@@ -100,7 +100,12 @@
       <DropdownMenu.Root>
         <DropdownMenu.Trigger>
           {#snippet child({ props })}
-            <button {...props} class="trigger" aria-label="Breadcrumb dropdown">
+            <button
+              {...props}
+              data-dashboard-shortcut={pathOptions.shortcut}
+              class="trigger"
+              aria-label="Breadcrumb dropdown"
+            >
               <CaretDownIcon size="14px" />
             </button>
           {/snippet}

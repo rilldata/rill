@@ -1,7 +1,6 @@
 <script lang="ts">
   import { isErrorStoreEmpty } from "@rilldata/web-admin/components/errors/error-store";
-  import BreadcrumbItem from "@rilldata/web-common/components/navigation/breadcrumbs/BreadcrumbItem.svelte";
-  import TwoTieredBreadcrumbItem from "@rilldata/web-common/components/navigation/breadcrumbs/TwoTieredBreadcrumbItem.svelte";
+  import EmbeddedDashboardNavigation from "@rilldata/web-common/features/embeds/EmbeddedDashboardNavigation.svelte";
   import { useValidDashboards } from "@rilldata/web-common/features/dashboards/selectors";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import LastRefreshedDate from "@rilldata/web-admin/features/dashboards/listing/LastRefreshedDate.svelte";
@@ -15,10 +14,10 @@
     V1ResourceName,
   } from "@rilldata/web-common/runtime-client";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
-  import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 
   export let activeResource: V1ResourceName;
   export let navigationBarEnabled: boolean = true;
+  export let navigationEnabled: boolean = navigationBarEnabled;
 
   const runtimeClient = useRuntimeClient();
   const { twoTieredNavigation, dashboardChat } = featureFlags;
@@ -26,7 +25,7 @@
   $: onProjectPage = !activeResource;
   $: showDashboardChat = $dashboardChat && !onProjectPage;
 
-  $: shouldRender = navigationBarEnabled || showDashboardChat;
+  $: shouldRender = navigationEnabled || showDashboardChat;
 
   // Dashboard breadcrumb
   $: dashboardsQuery = useValidDashboards(runtimeClient);
@@ -55,39 +54,14 @@
 
 {#if $isErrorStoreEmpty && shouldRender}
   <div class="flex items-center w-full">
-    {#if navigationBarEnabled}
-      <nav class="flex-1">
-        <ol class="flex items-center pl-4">
-          {#if !onProjectPage}
-            <div class="flex gap-x-2">
-              <a class="text-fg-muted hover:text-fg-secondary" href="/-/embed">
-                {m.embed_home()}
-              </a>
-              <span class="text-fg-muted">/</span>
-            </div>
-          {/if}
-
-          {#if currentResource}
-            {#if $twoTieredNavigation}
-              <TwoTieredBreadcrumbItem
-                pathOptions={breadcrumbOptions}
-                current={currentResourceName}
-                isCurrentPage
-              />
-            {:else}
-              <BreadcrumbItem
-                pathOptions={breadcrumbOptions}
-                current={currentResourceName}
-                isCurrentPage
-                isEmbedded
-              />
-            {/if}
-          {/if}
-        </ol>
-      </nav>
-    {:else}
-      <div class="flex-1"></div>
-    {/if}
+    <EmbeddedDashboardNavigation
+      {navigationEnabled}
+      {navigationBarEnabled}
+      {onProjectPage}
+      {currentResourceName}
+      {breadcrumbOptions}
+      twoTiered={$twoTieredNavigation}
+    />
 
     {#if showDashboardChat}
       <div class="flex gap-x-4 items-center">
