@@ -117,9 +117,13 @@ describe("AdvancedMeasureCorrector", () => {
         },
       ],
     });
-    // every measure now needs the time dimension, which leaderboards do not group by, so none is valid
-    expect(dashboard.leaderboardSortByMeasureName).toBeUndefined();
-    expect(dashboard.leaderboardMeasureNames).toEqual([]);
+    // no measure is valid for leaderboards now, so the sort measure is kept rather than cleared
+    expect(dashboard.leaderboardSortByMeasureName).toEqual(
+      AD_BIDS_IMPRESSIONS_MEASURE,
+    );
+    expect(dashboard.leaderboardMeasureNames).toEqual([
+      AD_BIDS_IMPRESSIONS_MEASURE,
+    ]);
   });
 
   it("leaderboards drop measures that require the time dimension", () => {
@@ -143,18 +147,51 @@ describe("AdvancedMeasureCorrector", () => {
     ]);
   });
 
+  const MeasurePerDomain = "impressions_per_domain";
+  const MetricsViewWithMeasurePerDomain = {
+    ...MetricsView,
+    measures: [
+      ...AD_BIDS_ADVANCED_MEASURES,
+      {
+        name: MeasurePerDomain,
+        requiredDimensions: [{ name: AD_BIDS_DOMAIN_DIMENSION }],
+      },
+    ],
+  } as V1MetricsViewSpec;
+
+  it("dimension table keeps a sort measure that requires only its dimension", () => {
+    const dashboard = getFullInitExploreState(
+      "AdBids",
+      getInitExploreStateForTest(MetricsViewWithMeasurePerDomain, {
+        ...Explore,
+        measures: [AD_BIDS_IMPRESSIONS_MEASURE, MeasurePerDomain],
+      }),
+    );
+    dashboard.activePage = DashboardState_ActivePage.DIMENSION_TABLE;
+    dashboard.selectedDimensionName = AD_BIDS_DOMAIN_DIMENSION;
+    dashboard.leaderboardMeasureNames = [MeasurePerDomain];
+    dashboard.leaderboardSortByMeasureName = MeasurePerDomain;
+
+    AdvancedMeasureCorrector.correct(
+      dashboard,
+      MetricsViewWithMeasurePerDomain,
+    );
+    expect(dashboard.leaderboardSortByMeasureName).toEqual(MeasurePerDomain);
+    expect(dashboard.leaderboardMeasureNames).toEqual([MeasurePerDomain]);
+
+    // leaderboards cannot query it
+    dashboard.activePage = DashboardState_ActivePage.DEFAULT;
+    dashboard.selectedDimensionName = undefined;
+    AdvancedMeasureCorrector.correct(
+      dashboard,
+      MetricsViewWithMeasurePerDomain,
+    );
+    expect(dashboard.leaderboardSortByMeasureName).toEqual(
+      AD_BIDS_IMPRESSIONS_MEASURE,
+    );
+  });
+
   it("TDD drops a measure that requires a dimension other than the time dimension", () => {
-    const MeasurePerDomain = "impressions_per_domain";
-    const MetricsViewWithMeasurePerDomain = {
-      ...MetricsView,
-      measures: [
-        ...AD_BIDS_ADVANCED_MEASURES,
-        {
-          name: MeasurePerDomain,
-          requiredDimensions: [{ name: AD_BIDS_DOMAIN_DIMENSION }],
-        },
-      ],
-    } as V1MetricsViewSpec;
     const dashboard = getFullInitExploreState(
       "AdBids",
       getInitExploreStateForTest(MetricsViewWithMeasurePerDomain, Explore),
@@ -170,18 +207,25 @@ describe("AdvancedMeasureCorrector", () => {
     expect(dashboard.activePage).toEqual(DashboardState_ActivePage.DEFAULT);
   });
 
-  it("pivot drops measures that require the time dimension", () => {
+  it("pivot keeps measures with required dimensions, since its rows and columns can include them", () => {
     const dashboard = getFullInitExploreState(
       "AdBids",
-      getInitExploreStateForTest(MetricsView, Explore),
+      getInitExploreStateForTest(MetricsViewWithMeasurePerDomain, Explore),
     );
     dashboard.pivot.columns = [
       AD_BIDS_IMPRESSIONS_MEASURE_NO_GRAIN,
+      MeasurePerDomain,
       AD_BIDS_IMPRESSIONS_MEASURE,
+      AD_BIDS_IMPRESSIONS_MEASURE_WINDOW,
     ].map((id) => ({ id, title: id, type: PivotChipType.Measure }));
 
-    AdvancedMeasureCorrector.correct(dashboard, MetricsView);
+    AdvancedMeasureCorrector.correct(
+      dashboard,
+      MetricsViewWithMeasurePerDomain,
+    );
     expect(dashboard.pivot.columns.map((c) => c.id)).toEqual([
+      AD_BIDS_IMPRESSIONS_MEASURE_NO_GRAIN,
+      MeasurePerDomain,
       AD_BIDS_IMPRESSIONS_MEASURE,
     ]);
   });

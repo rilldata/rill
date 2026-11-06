@@ -1,7 +1,8 @@
+import { SortDirection } from "@rilldata/web-common/features/dashboards/proto-state/derived-types";
 import {
   filterOutSomeAdvancedAggregationMeasures,
   filterOutSomeAdvancedMeasures,
-  isSimpleMeasure,
+  getDimensionQueryMeasuresAndSort,
   measureSupportsTotalsQuery,
 } from "@rilldata/web-common/features/dashboards/state-managers/selectors/measures";
 import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
@@ -150,7 +151,7 @@ describe("measures selectors", () => {
             } as ExploreState,
             MetricsView,
             measures,
-            true,
+            { time: true },
           ),
         ).toEqual(expectedMeasures);
       });
@@ -167,7 +168,7 @@ describe("measures selectors", () => {
           } as ExploreState,
           MetricsView,
           ["mes", "mes_time_no_grain", "window_time_mes"],
-          true,
+          { time: true },
         ),
       ).toEqual(["mes"]);
     });
@@ -184,7 +185,7 @@ describe("measures selectors", () => {
           } as ExploreState,
           MetricsView,
           ["mes", "window_mes"],
-          false,
+          {},
         ),
       ).toEqual(["mes"]);
     });
@@ -199,7 +200,7 @@ describe("measures selectors", () => {
           } as ExploreState,
           MetricsView,
           AllMeasureNames,
-          false,
+          {},
         ),
       ).toEqual(["mes"]);
     });
@@ -231,25 +232,111 @@ describe("measures selectors", () => {
           } as ExploreState,
           MetricsView,
           measures,
-          false,
+          {},
         ).map((m) => m.name),
       ).toEqual(["mes", "mes__previous"]);
     });
   });
 
-  describe("isSimpleMeasure", () => {
-    it("is true for a plain aggregate", () => {
-      expect(isSimpleMeasure(SimpleMeasure)).toBe(true);
+  describe("filterOutSomeAdvancedAggregationMeasures for queries grouped by a categorical dimension", () => {
+    it("keeps measures that require only that dimension", () => {
+      expect(
+        filterOutSomeAdvancedAggregationMeasures(
+          {
+            selectedTimeRange: {
+              interval: V1TimeGrain.TIME_GRAIN_DAY,
+            },
+          } as ExploreState,
+          MetricsView,
+          MetricsView.measures!,
+          { dimensions: ["domain"] },
+        ).map((m) => m.name),
+      ).toEqual(["mes", "mes_domain"]);
+    });
+  });
+
+  describe("getDimensionQueryMeasuresAndSort", () => {
+    const exploreState = {
+      selectedTimeRange: { interval: V1TimeGrain.TIME_GRAIN_DAY },
+      sortDirection: SortDirection.DESCENDING,
+    } as ExploreState;
+
+    it("keeps a simple measure and sorts by it", () => {
+      expect(
+        getDimensionQueryMeasuresAndSort(
+          exploreState,
+          MetricsView,
+          [{ name: "mes" }],
+          "publisher",
+          "mes",
+        ),
+      ).toEqual({
+        measures: [{ name: "mes" }],
+        sort: [{ desc: true, name: "mes" }],
+      });
     });
 
-    it("is false for measures with required dimensions", () => {
-      expect(isSimpleMeasure(TimeNoGrainMeasure)).toBe(false);
-      expect(isSimpleMeasure(DomainMeasure)).toBe(false);
+    it("keeps a measure that requires only the queried dimension and sorts by it", () => {
+      expect(
+        getDimensionQueryMeasuresAndSort(
+          exploreState,
+          MetricsView,
+          [{ name: "mes" }, { name: "mes_domain" }],
+          "domain",
+          "mes_domain",
+        ),
+      ).toEqual({
+        measures: [{ name: "mes" }, { name: "mes_domain" }],
+        sort: [{ desc: true, name: "mes_domain" }],
+      });
     });
 
-    it("is false for window measures", () => {
-      expect(isSimpleMeasure(WindowMeasure)).toBe(false);
-      expect(isSimpleMeasure(WindowTimeMeasure)).toBe(false);
+    it("omits a measure that needs another dimension and sorts by the dimension instead", () => {
+      expect(
+        getDimensionQueryMeasuresAndSort(
+          exploreState,
+          MetricsView,
+          [{ name: "mes" }, { name: "mes_time_no_grain" }],
+          "publisher",
+          "mes_time_no_grain",
+        ),
+      ).toEqual({
+        measures: [{ name: "mes" }],
+        sort: [{ desc: true, name: "publisher" }],
+      });
+    });
+
+    it("keeps sorting by the dimension when that is selected", () => {
+      expect(
+        getDimensionQueryMeasuresAndSort(
+          { ...exploreState, sortDirection: SortDirection.ASCENDING },
+          MetricsView,
+          [{ name: "mes" }],
+          "publisher",
+          "publisher",
+        ),
+      ).toEqual({
+        measures: [{ name: "mes" }],
+        sort: [{ desc: false, name: "publisher" }],
+      });
+    });
+
+    it("keeps an ephemeral measure, which has no spec entry", () => {
+      expect(
+        getDimensionQueryMeasuresAndSort(
+          {
+            ...exploreState,
+            ephemeralMeasures: [{ name: "mes_doubled" }],
+          } as ExploreState,
+          MetricsView,
+          [{ name: "mes_doubled" }],
+          "publisher",
+          "mes_doubled",
+        ),
+      ).toEqual({
+        measures: [{ name: "mes_doubled" }],
+        sort: [{ desc: true, name: "mes_doubled" }],
+      });
     });
   });
 

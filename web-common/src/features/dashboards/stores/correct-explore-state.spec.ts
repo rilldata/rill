@@ -120,8 +120,12 @@ describe("correctExploreState", () => {
       ],
     } as V1MetricsViewSpec;
     correctExploreState(updatedMetricsView, dashboard);
-    // every measure now needs the time dimension, which leaderboards do not group by, so the invalid state is cleared
-    expect(dashboard.leaderboardSortByMeasureName).toBeUndefined();
-    expect(dashboard.leaderboardMeasureNames).toEqual([]);
+    // no measure is valid for leaderboards now, so the sort measure is kept rather than cleared
+    expect(dashboard.leaderboardSortByMeasureName).toEqual(
+      AD_BIDS_IMPRESSIONS_MEASURE,
+    );
+    expect(dashboard.leaderboardMeasureNames).toEqual([
+      AD_BIDS_IMPRESSIONS_MEASURE,
+    ]);
   });
 });

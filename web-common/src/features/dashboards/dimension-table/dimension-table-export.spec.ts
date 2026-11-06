@@ -18,14 +18,21 @@ import type {
 import { describe, expect, it } from "vitest";
 
 describe("getDimensionTableAggregationRequestForTime", () => {
+  const MeasurePerPublisher = "impressions_per_publisher";
   // The advanced measures require the timestamp dimension, which is the metrics view's time dimension.
   const MetricsView: V1MetricsViewSpec = {
     ...AD_BIDS_METRICS_INIT_WITH_TIME,
-    measures: AD_BIDS_ADVANCED_MEASURES,
+    measures: [
+      ...AD_BIDS_ADVANCED_MEASURES,
+      {
+        name: MeasurePerPublisher,
+        requiredDimensions: [{ name: AD_BIDS_PUBLISHER_DIMENSION }],
+      },
+    ],
   };
   const Explore: V1ExploreSpec = {
     ...AD_BIDS_EXPLORE_INIT,
-    measures: AD_BIDS_ADVANCED_MEASURES.map((m) => m.name!),
+    measures: MetricsView.measures!.map((m) => m.name!),
   };
   const timeRange = {
     start: "2024-01-01T00:00:00Z",
@@ -36,16 +43,19 @@ describe("getDimensionTableAggregationRequestForTime", () => {
     end: "2024-01-01T00:00:00Z",
   };
 
-  function buildRequest(sortByMeasure: string) {
+  function buildRequest(
+    sortByMeasure: string,
+    visibleMeasures = [
+      AD_BIDS_IMPRESSIONS_MEASURE,
+      AD_BIDS_IMPRESSIONS_MEASURE_NO_GRAIN,
+    ],
+  ) {
     const exploreState = getFullInitExploreState(
       "AdBids",
       getInitExploreStateForTest(MetricsView, Explore),
     );
     exploreState.selectedDimensionName = AD_BIDS_PUBLISHER_DIMENSION;
-    exploreState.visibleMeasures = [
-      AD_BIDS_IMPRESSIONS_MEASURE,
-      AD_BIDS_IMPRESSIONS_MEASURE_NO_GRAIN,
-    ];
+    exploreState.visibleMeasures = visibleMeasures;
     exploreState.leaderboardSortByMeasureName = sortByMeasure;
     exploreState.sortDirection = SortDirection.DESCENDING;
 
@@ -82,5 +92,20 @@ describe("getDimensionTableAggregationRequestForTime", () => {
     expect(request.sort).toEqual([
       { name: AD_BIDS_PUBLISHER_DIMENSION, desc: true },
     ]);
+  });
+
+  it("keeps a measure that requires the selected dimension and sorts by it", () => {
+    const request = buildRequest(MeasurePerPublisher, [
+      AD_BIDS_IMPRESSIONS_MEASURE,
+      MeasurePerPublisher,
+    ]);
+    expect(request.measures?.map((m) => m.name)).toEqual([
+      AD_BIDS_IMPRESSIONS_MEASURE,
+      MeasurePerPublisher,
+      "impressions_per_publisher_prev",
+      "impressions_per_publisher_delta",
+      "impressions_per_publisher_delta_perc",
+    ]);
+    expect(request.sort).toEqual([{ name: MeasurePerPublisher, desc: true }]);
   });
 });

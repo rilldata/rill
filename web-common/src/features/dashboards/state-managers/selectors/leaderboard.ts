@@ -1,6 +1,10 @@
 import { getMapFromArray } from "@rilldata/web-common/lib/arrayUtils.ts";
 import type { MetricsViewSpecMeasure } from "@rilldata/web-common/runtime-client";
-import { isSimpleMeasure, visibleMeasures } from "./measures";
+import {
+  isSimpleMeasure,
+  measureSupportsTotalsQuery,
+  visibleMeasures,
+} from "./measures";
 import type { DashboardDataSources } from "./types";
 
 export const leaderboardSortByMeasureName = ({
@@ -19,13 +23,14 @@ export const leaderboardMeasures = ({
     (m) => m.name,
   );
 
-  // Leaderboards group by a single categorical dimension, so they can only query simple measures.
+  // Leaderboards group by each visible dimension in turn and also query totals,
+  // so they can only query simple measures without required dimensions.
   // Filter and sort the leaderboard measure names based on the order in visibleMeasures
   const filteredMeasures = dashboard.leaderboardMeasureNames
     ?.map((name) => visibleMeasuresMap.get(name))
     ?.filter(
       (measure): measure is MetricsViewSpecMeasure =>
-        !!measure && isSimpleMeasure(measure),
+        !!measure && isLeaderboardMeasure(measure),
     )
     .sort((a, b) => {
       const aIndex = visibleMeasuresList.findIndex((m) => m.name === a.name);
@@ -39,10 +44,14 @@ export const leaderboardMeasures = ({
   const sortByMeasure = visibleMeasuresMap.get(
     dashboard.leaderboardSortByMeasureName,
   );
-  if (sortByMeasure && isSimpleMeasure(sortByMeasure)) return [sortByMeasure];
+  if (sortByMeasure && isLeaderboardMeasure(sortByMeasure))
+    return [sortByMeasure];
 
   return [];
 };
+
+const isLeaderboardMeasure = (measure: MetricsViewSpecMeasure) =>
+  isSimpleMeasure(measure) && measureSupportsTotalsQuery(measure);
 
 export const leaderboardMeasureNames = ({
   dashboard,

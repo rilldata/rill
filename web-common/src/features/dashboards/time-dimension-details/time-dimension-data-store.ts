@@ -418,13 +418,13 @@ export function createTimeDimensionDataStore(
       const pinIndex = dashboardStore?.tdd.pinIndex;
       const dimensionName = dashboardStore?.selectedComparisonDimension;
 
-      // Fix types in V1MetricsViewAggregationResponseDataItem
-      const total =
-        timeSeries?.total && (timeSeries?.total[measureName] as number);
+      // A total is undefined when its query left the measure out; see UNAVAILABLE_TOTAL.
+      const total = sanitizeMeasure(timeSeries?.total?.[measureName]);
       const unfilteredTotal =
         timeSeries?.unfilteredTotal && timeSeries?.unfilteredTotal[measureName];
-      const comparisonTotal =
-        timeSeries?.comparisonTotal && timeSeries?.comparisonTotal[measureName];
+      const comparisonTotal = sanitizeMeasure(
+        timeSeries?.comparisonTotal?.[measureName],
+      );
       const isAllTime =
         timeControls?.selectedTimeRange?.name === TimeRangePreset.ALL_TIME;
 
@@ -446,7 +446,7 @@ export function createTimeDimensionDataStore(
         data = prepareDimensionData(
           timeSeries?.timeSeriesData,
           tableDimensionData,
-          total as number,
+          total,
           unfilteredTotal as number,
           measure,
           selectedValues.data,
@@ -469,8 +469,8 @@ export function createTimeDimensionDataStore(
 
         data = prepareTimeData(
           timeSeries?.timeSeriesData,
-          total as number,
-          comparisonTotal as number,
+          total,
+          comparisonTotal,
           currentLabel,
           comparisonLabel,
           measure,

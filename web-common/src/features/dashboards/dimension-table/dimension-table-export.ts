@@ -9,8 +9,7 @@ import {
   ComparisonDeltaAbsoluteSuffix,
   ComparisonDeltaRelativeSuffix,
 } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
-import { SortDirection } from "@rilldata/web-common/features/dashboards/proto-state/derived-types";
-import { filterOutSomeAdvancedAggregationMeasures } from "@rilldata/web-common/features/dashboards/state-managers/selectors/measures";
+import { getDimensionQueryMeasuresAndSort } from "@rilldata/web-common/features/dashboards/state-managers/selectors/measures";
 import type { StateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
 import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
 import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
@@ -160,20 +159,15 @@ export function getDimensionTableAggregationRequestForTime({
     }
   }
 
-  // The query groups only by the selected dimension, so measures that need other dimensions
-  // (e.g. a rolling window ordered by the time dimension) are omitted, as in the dimension table itself.
-  const supportedMeasures = filterOutSomeAdvancedAggregationMeasures(
-    exploreState,
-    metricsViewSpec,
-    measures,
-    false,
-  );
-  // Sort by the dimension when the sort measure cannot be queried.
-  const sortName = supportedMeasures.some(
-    (m) => m.name === exploreState.leaderboardSortByMeasureName,
-  )
-    ? apiSortName
-    : exploreState.selectedDimensionName!;
+  // The query groups only by the selected dimension, as in the dimension table itself.
+  const { measures: supportedMeasures, sort } =
+    getDimensionQueryMeasuresAndSort(
+      exploreState,
+      metricsViewSpec,
+      measures,
+      exploreState.selectedDimensionName!,
+      apiSortName,
+    );
 
   const where = buildWhereParamForDimensionTableAndTDDExports(
     filter,
@@ -198,12 +192,7 @@ export function getDimensionTableAggregationRequestForTime({
     ),
     timeRange,
     ...(comparisonTimeRange ? { comparisonTimeRange } : {}),
-    sort: [
-      {
-        name: sortName,
-        desc: exploreState.sortDirection === SortDirection.DESCENDING,
-      },
-    ],
+    sort,
     where,
     offset: "0",
   };

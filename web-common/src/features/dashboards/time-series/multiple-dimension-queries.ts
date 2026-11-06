@@ -9,8 +9,7 @@ import {
   URI_DIMENSION_SUFFIX,
 } from "@rilldata/web-common/features/dashboards/dashboard-utils";
 import { selectedDimensionValues } from "@rilldata/web-common/features/dashboards/state-managers/selectors/dimension-filters";
-import { filterOutSomeAdvancedAggregationMeasures } from "@rilldata/web-common/features/dashboards/state-managers/selectors/measures";
-import type { ExploreState } from "@rilldata/web-common/features/dashboards/stores/explore-state";
+import { getDimensionQueryMeasuresAndSort } from "@rilldata/web-common/features/dashboards/state-managers/selectors/measures";
 import {
   createAndExpression,
   createInExpression,
@@ -34,10 +33,7 @@ import {
 import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
 import {
   type V1Expression,
-  type V1MetricsViewAggregationMeasure,
   type V1MetricsViewAggregationResponse,
-  type V1MetricsViewAggregationSort,
-  type V1MetricsViewSpec,
   V1TimeGrain,
   type V1TimeSeriesValue,
 } from "@rilldata/web-common/runtime-client";
@@ -144,8 +140,11 @@ export function getDimensionValuesForComparison(
           sortBy = dimensionName;
         }
 
+        // The top list groups only by the comparison dimension.
+        // Measures it cannot query are left out, which leaves their per-value totals unavailable;
+        // the time-grouped queries that follow still request them.
         const { measures: tddMeasures, sort } =
-          getComparisonTopListMeasuresAndSort(
+          getDimensionQueryMeasuresAndSort(
             dashboardStore,
             validSpec?.data?.metricsView ?? {},
             applyExactMeasures(
@@ -239,41 +238,6 @@ export function getDimensionValuesForComparison(
       }
     },
   );
-}
-
-/**
- * Measures and sort of the comparison table's top list query, which groups only by the comparison dimension.
- * Measures that need other dimensions (e.g. a rolling window ordered by the time dimension) are omitted,
- * which leaves their per-value totals unavailable, and the list then falls back to sorting by the dimension.
- * The time-grouped queries that follow still request them.
- * sortBy is the measure to sort by, or the dimension itself when sorting by dimension.
- */
-export function getComparisonTopListMeasuresAndSort(
-  exploreState: ExploreState,
-  metricsViewSpec: V1MetricsViewSpec,
-  measures: V1MetricsViewAggregationMeasure[],
-  dimensionName: string,
-  sortBy: string | undefined,
-): {
-  measures: V1MetricsViewAggregationMeasure[];
-  sort: V1MetricsViewAggregationSort[];
-} {
-  const supportedMeasures = filterOutSomeAdvancedAggregationMeasures(
-    exploreState,
-    metricsViewSpec,
-    measures,
-    false,
-  );
-  const sortByIsSupported = supportedMeasures.some((m) => m.name === sortBy);
-  return {
-    measures: supportedMeasures,
-    sort: [
-      {
-        desc: exploreState.sortDirection === SortDirection.DESCENDING,
-        name: sortByIsSupported ? sortBy : dimensionName,
-      },
-    ],
-  };
 }
 
 function batchAggregationQueries(
