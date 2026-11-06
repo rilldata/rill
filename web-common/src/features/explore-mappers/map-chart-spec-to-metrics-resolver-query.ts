@@ -45,12 +45,21 @@ export type FlintCreateChartArgs = {
   };
   data: {
     metrics_view: string;
-    time_range?: TimeRange;
+    time_range?: ChartTimeRange;
     comparison_time_range?: TimeRange;
     where?: Expression;
     time_grain?: V1TimeGrain;
   };
 };
+
+/** A chart's time range: the resolver's, plus the IANA zone its buckets are in. */
+export type ChartTimeRange = TimeRange & { time_zone?: string };
+
+/**
+ * The zone a chart's buckets are in when its time range names none: the server queries in UTC.
+ * An explore otherwise opens in its own default zone, where the day buckets differ from the chart's.
+ */
+const DEFAULT_CHART_TIME_ZONE = "UTC";
 
 /** What a field is in the metrics view, as the `fields` of a `create_chart` result report it. */
 export type ChartFieldKind = "measure" | "dimension" | "time";
@@ -78,7 +87,7 @@ export function isFlintCreateChartArgs(
  */
 export type CreateChartSpec = {
   metrics_view: string;
-  time_range?: TimeRange;
+  time_range?: ChartTimeRange;
   comparison_time_range?: TimeRange;
   where?: Expression;
   time_grain?: V1TimeGrain;
@@ -108,7 +117,8 @@ const CHART_CHANNELS = [
  * for a `query_metrics_view` call. Quantitative fields become measures (all of `fields` for a
  * multi-measure chart), temporal fields become the time dimension floored at the chart's grain,
  * and every other field becomes a dimension. Time ranges and the `where` filter are shared with
- * the resolver's format and pass through unchanged.
+ * the resolver's format and pass through unchanged; the query takes the time range's zone, which
+ * the explore then buckets time in, as the chart did.
  */
 export function mapChartSpecToMetricsResolverQuery(
   spec: CreateChartSpec,
@@ -140,7 +150,10 @@ export function mapChartSpecToMetricsResolverQuery(
   const sort = mapSort(spec, dimensions);
   if (sort?.measure) measures.set(sort.measure.name, sort.measure);
 
-  const query: MetricsResolverQuery = { metrics_view: spec.metrics_view };
+  const query: MetricsResolverQuery = {
+    metrics_view: spec.metrics_view,
+    time_zone: spec.time_range?.time_zone || DEFAULT_CHART_TIME_ZONE,
+  };
   if (dimensions.size) query.dimensions = [...dimensions.values()];
   if (measures.size) query.measures = [...measures.values()];
   if (spec.time_range) query.time_range = spec.time_range;
@@ -296,7 +309,7 @@ function flintEncodingEntries(
  * Maps the arguments of a Flint-shaped `create_chart` call onto a metrics resolver query. The
  * encodings only name fields, so `kinds` (from the result's `fields`) says which are measures and
  * which is the time dimension, floored at the call's grain; a field the result does not describe
- * is treated as a dimension. The time ranges and the filter come from the data binding.
+ * is treated as a dimension. The time ranges, their zone and the filter come from the data binding.
  */
 export function mapFlintChartArgsToMetricsResolverQuery(
   args: FlintCreateChartArgs,
@@ -328,7 +341,10 @@ export function mapFlintChartArgsToMetricsResolverQuery(
     }
   }
 
-  const query: MetricsResolverQuery = { metrics_view: data.metrics_view };
+  const query: MetricsResolverQuery = {
+    metrics_view: data.metrics_view,
+    time_zone: data.time_range?.time_zone || DEFAULT_CHART_TIME_ZONE,
+  };
   if (dimensions.size) query.dimensions = [...dimensions.values()];
   if (measures.size) query.measures = [...measures.values()];
   if (data.time_range) query.time_range = data.time_range;
@@ -342,19 +358,19 @@ export function mapFlintChartArgsToMetricsResolverQuery(
 }
 
 /**
- * The first sort an encoding asks for. `sortBy` names a channel (`"y"`) or a field; without it
- * the channel sorts by its own field. A `sortBy` alone means the usual top-values intent, so it
- * is descending unless `sortOrder` says otherwise.
+ * The first sort an encoding asks for. `sortBy` names a channel (`"y"`, which sorts by its first
+ * field) or a field; without it the encoding sorts by its own field. A `sortBy` alone means the
+ * usual top-values intent, so it is descending unless `sortOrder` says otherwise.
  */
 function mapFlintSort(entries: [string, FlintEncoding[]][]): Sort | undefined {
   const fieldOnChannel = (channel: string) =>
     entries.find(([name]) => name === channel)?.[1][0]?.field;
-  for (const [channel, encodings] of entries) {
+  for (const [, encodings] of entries) {
     for (const encoding of encodings) {
       if (!encoding.sortBy && !encoding.sortOrder) continue;
       const name = encoding.sortBy
         ? (fieldOnChannel(encoding.sortBy) ?? encoding.sortBy)
-        : fieldOnChannel(channel);
+        : encoding.field;
       if (!name) continue;
       const desc = encoding.sortOrder
         ? encoding.sortOrder === "descending"

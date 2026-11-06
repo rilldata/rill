@@ -55,6 +55,8 @@ describe("maybeGetMetricsResolverQueryFromMessage", () => {
     });
     expect(maybeGetMetricsResolverQueryFromMessage(message)).toEqual({
       metrics_view: "bids_metrics",
+      // The server queries a chart without a zone in UTC, so its explore opens in UTC too.
+      time_zone: "UTC",
       dimensions: [
         {
           name: "__time",
@@ -82,7 +84,7 @@ describe("maybeGetMetricsResolverQueryFromMessage", () => {
       },
       data: {
         metrics_view: "bids_metrics",
-        time_range: query.time_range,
+        time_range: { ...query.time_range, time_zone: "Asia/Kolkata" },
         time_grain: "TIME_GRAIN_WEEK",
       },
     });
@@ -108,6 +110,8 @@ describe("maybeGetMetricsResolverQueryFromMessage", () => {
     });
     expect(maybeGetMetricsResolverQueryFromMessage(message, result)).toEqual({
       metrics_view: "bids_metrics",
+      // The explore buckets time in the chart's zone.
+      time_zone: "Asia/Kolkata",
       dimensions: [
         {
           name: "__time",
@@ -116,7 +120,7 @@ describe("maybeGetMetricsResolverQueryFromMessage", () => {
         { name: "advertiser_name" },
       ],
       measures: [{ name: "total_bids" }],
-      time_range: query.time_range,
+      time_range: { ...query.time_range, time_zone: "Asia/Kolkata" },
     });
   });
 

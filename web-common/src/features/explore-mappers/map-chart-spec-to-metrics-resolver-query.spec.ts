@@ -7,10 +7,15 @@ import {
   AD_BIDS_METRICS_3_MEASURES_DIMENSIONS_WITH_TIME,
   AD_BIDS_METRICS_NAME,
   AD_BIDS_PUBLISHER_DIMENSION,
+  AD_BIDS_TIME_RANGE_SUMMARY,
   AD_BIDS_TIMESTAMP_DIMENSION,
 } from "@rilldata/web-common/features/dashboards/stores/test-data/data.ts";
 import { TDDChart } from "@rilldata/web-common/features/dashboards/time-dimension-details/types.ts";
+import { getTimeControlState } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store.ts";
+import { convertPartialExploreStateToUrlParams } from "@rilldata/web-common/features/dashboards/url-state/convert-partial-explore-state-to-url-params.ts";
+import { ExploreStateURLParams } from "@rilldata/web-common/features/dashboards/url-state/url-params.ts";
 import {
+  type ChartTimeRange,
   type CreateChartSpec,
   type FlintCreateChartArgs,
   isFlintCreateChartArgs,
@@ -54,6 +59,7 @@ describe("mapChartSpecToMetricsResolverQuery", () => {
     };
     expect(mapChartSpecToMetricsResolverQuery(spec)).toEqual({
       metrics_view: "bids_metrics",
+      time_zone: "UTC",
       dimensions: [{ name: "advertiser_name" }],
       measures: [{ name: "total_bids" }],
       time_range: timeRange,
@@ -73,6 +79,7 @@ describe("mapChartSpecToMetricsResolverQuery", () => {
     };
     expect(mapChartSpecToMetricsResolverQuery(spec)).toEqual({
       metrics_view: "bids_metrics",
+      time_zone: "UTC",
       dimensions: [
         {
           name: "__time",
@@ -114,6 +121,7 @@ describe("mapChartSpecToMetricsResolverQuery", () => {
     };
     expect(mapChartSpecToMetricsResolverQuery(spec)).toEqual({
       metrics_view: "bids_metrics",
+      time_zone: "UTC",
       dimensions: [{ name: "day" }, { name: "hour" }],
       measures: [{ name: "total_bids" }],
       time_range: timeRange,
@@ -135,6 +143,7 @@ describe("mapChartSpecToMetricsResolverQuery", () => {
     };
     expect(mapChartSpecToMetricsResolverQuery(spec)).toEqual({
       metrics_view: "bids_metrics",
+      time_zone: "UTC",
       dimensions: [
         {
           name: "__time",
@@ -155,6 +164,7 @@ describe("mapChartSpecToMetricsResolverQuery", () => {
     };
     expect(mapChartSpecToMetricsResolverQuery(spec)).toEqual({
       metrics_view: "bids_metrics",
+      time_zone: "UTC",
       dimensions: [{ name: "advertiser_name" }],
       measures: [{ name: "total_bids" }],
       time_range: timeRange,
@@ -172,6 +182,7 @@ describe("mapChartSpecToMetricsResolverQuery", () => {
     };
     expect(mapChartSpecToMetricsResolverQuery(spec)).toEqual({
       metrics_view: "bids_metrics",
+      time_zone: "UTC",
       dimensions: [{ name: "advertiser_name" }],
       measures: [
         { name: "total_bids" },
@@ -231,6 +242,7 @@ describe("mapChartSpecToMetricsResolverQuery", () => {
     };
     expect(mapChartSpecToMetricsResolverQuery(spec)).toEqual({
       metrics_view: "bids",
+      time_zone: "UTC",
       measures: [
         { name: "impressions" },
         { name: "video_starts" },
@@ -250,6 +262,7 @@ describe("mapChartSpecToMetricsResolverQuery", () => {
     };
     expect(mapChartSpecToMetricsResolverQuery(spec)).toEqual({
       metrics_view: "bids",
+      time_zone: "UTC",
       dimensions: [{ name: "funnel_stage" }],
       measures: [{ name: "users" }],
       time_range: timeRange,
@@ -267,6 +280,7 @@ describe("mapChartSpecToMetricsResolverQuery", () => {
     };
     expect(mapChartSpecToMetricsResolverQuery(spec)).toEqual({
       metrics_view: "bids_metrics",
+      time_zone: "UTC",
       dimensions: [{ name: "device" }],
       measures: [{ name: "total_bids" }],
       time_range: timeRange,
@@ -286,6 +300,7 @@ describe("mapChartSpecToMetricsResolverQuery", () => {
     };
     expect(mapChartSpecToMetricsResolverQuery(spec)).toEqual({
       metrics_view: "bids_metrics",
+      time_zone: "UTC",
       dimensions: [{ name: "advertiser_name" }],
       measures: [
         { name: "impressions" },
@@ -306,6 +321,7 @@ describe("mapChartSpecToMetricsResolverQuery", () => {
     };
     expect(mapChartSpecToMetricsResolverQuery(spec)).toEqual({
       metrics_view: "auction_metrics",
+      time_zone: "UTC",
       dimensions: [{ name: "app_site_name" }],
       measures: [{ name: "requests" }, { name: "bid_rate" }],
       time_range: timeRange,
@@ -453,6 +469,7 @@ describe("mapFlintChartArgsToMetricsResolverQuery", () => {
     };
     expect(mapFlintChartArgsToMetricsResolverQuery(args, kinds)).toEqual({
       metrics_view: "bids_metrics",
+      time_zone: "UTC",
       dimensions: [{ name: "advertiser_name" }],
       measures: [{ name: "total_bids" }],
       time_range: timeRange,
@@ -480,6 +497,7 @@ describe("mapFlintChartArgsToMetricsResolverQuery", () => {
     };
     expect(mapFlintChartArgsToMetricsResolverQuery(args, kinds)).toEqual({
       metrics_view: "bids_metrics",
+      time_zone: "UTC",
       dimensions: [
         {
           name: "__time",
@@ -491,6 +509,71 @@ describe("mapFlintChartArgsToMetricsResolverQuery", () => {
       time_range: timeRange,
       comparison_time_range: comparisonTimeRange,
     });
+  });
+
+  it("sorts by the encoding that asks for it, not the first on its channel", () => {
+    const args: FlintCreateChartArgs = {
+      chart_spec: {
+        chartType: "Line Chart",
+        encodings: {
+          x: "__time",
+          y: [
+            { field: "total_bids" },
+            { field: "impressions", sortOrder: "descending" },
+          ],
+        },
+      },
+      data: { metrics_view: "bids_metrics" },
+    };
+    expect(mapFlintChartArgsToMetricsResolverQuery(args, kinds).sort).toEqual([
+      { name: "impressions", desc: true },
+    ]);
+  });
+
+  it("opens the explore in the chart's time zone, UTC when the chart names none", () => {
+    const open = (time_range: ChartTimeRange) => {
+      const state = mapMetricsResolverQueryToDashboard(
+        AD_BIDS_METRICS_3_MEASURES_DIMENSIONS_WITH_TIME,
+        AD_BIDS_EXPLORE_WITH_3_MEASURES_DIMENSIONS_TIME_DIMENSION,
+        {
+          query: mapFlintChartArgsToMetricsResolverQuery(
+            {
+              chart_spec: {
+                chartType: "Line Chart",
+                encodings: {
+                  x: AD_BIDS_TIMESTAMP_DIMENSION,
+                  y: AD_BIDS_IMPRESSIONS_MEASURE,
+                },
+              },
+              data: { metrics_view: AD_BIDS_METRICS_NAME, time_range },
+            },
+            {
+              [AD_BIDS_TIMESTAMP_DIMENSION]: "time",
+              [AD_BIDS_IMPRESSIONS_MEASURE]: "measure",
+            },
+          ),
+        },
+      );
+      // What `openQuery` writes into the explore's URL.
+      return convertPartialExploreStateToUrlParams(
+        AD_BIDS_EXPLORE_WITH_3_MEASURES_DIMENSIONS_TIME_DIMENSION,
+        AD_BIDS_METRICS_3_MEASURES_DIMENSIONS_WITH_TIME,
+        state,
+        getTimeControlState(
+          AD_BIDS_METRICS_3_MEASURES_DIMENSIONS_WITH_TIME,
+          AD_BIDS_EXPLORE_WITH_3_MEASURES_DIMENSIONS_TIME_DIMENSION,
+          AD_BIDS_TIME_RANGE_SUMMARY.timeRangeSummary,
+          state,
+        ),
+      ).get(ExploreStateURLParams.TimeZone);
+    };
+
+    expect(open({ ...timeRange, time_zone: "Asia/Kolkata" })).toBe(
+      "Asia/Kolkata",
+    );
+    // The server queries a chart without a zone in UTC, where the explore would open in its
+    // own default zone and bucket the days differently.
+    expect(open(timeRange)).toBe("UTC");
   });
 
   it("treats fields the result does not describe as dimensions and sorts by the channel's own field", () => {
@@ -506,6 +589,7 @@ describe("mapFlintChartArgsToMetricsResolverQuery", () => {
     };
     expect(mapFlintChartArgsToMetricsResolverQuery(args, kinds)).toEqual({
       metrics_view: "bids_metrics",
+      time_zone: "UTC",
       dimensions: [{ name: "publisher" }],
       measures: [{ name: "total_bids" }],
       sort: [{ name: "publisher", desc: false }],

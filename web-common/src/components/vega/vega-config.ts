@@ -1,6 +1,9 @@
 import { COMPARISON_COLORS } from "@rilldata/web-common/features/dashboards/config";
 import { definedLightModeColors } from "@rilldata/web-common/features/themes/colors";
-import { getSequentialColorsAsHex } from "@rilldata/web-common/features/themes/palette-store";
+import {
+  getDivergingColorsAsHex,
+  getSequentialColorsAsHex,
+} from "@rilldata/web-common/features/themes/palette-store";
 import { themeManager } from "@rilldata/web-common/features/themes/theme-manager";
 import { getChroma } from "@rilldata/web-common/features/themes/theme-utils";
 import type { Config } from "vega-lite";
@@ -81,26 +84,12 @@ export const getRillTheme: (
     );
   }
 
-  // The sequential palette: the project's, else the palette store's (scoped themes, hex).
-  const sequentialColors = (() => {
-    const defaultColors = getSequentialColorsAsHex();
-
-    if (!theme) return defaultColors;
-
-    const themeColors = [
-      theme["color-sequential-1"],
-      theme["color-sequential-2"],
-      theme["color-sequential-3"],
-      theme["color-sequential-4"],
-      theme["color-sequential-5"],
-      theme["color-sequential-6"],
-      theme["color-sequential-7"],
-      theme["color-sequential-8"],
-      theme["color-sequential-9"],
-    ].filter(Boolean);
-
-    return themeColors.length > 0 ? themeColors : defaultColors;
-  })();
+  // The sequential and diverging palettes: the project's, else the palette store's (scoped
+  // themes, hex).
+  const sequentialColors =
+    themePalette(theme, "sequential", 9) ?? getSequentialColorsAsHex();
+  const divergingColors =
+    themePalette(theme, "diverging", 11) ?? getDivergingColorsAsHex();
 
   return {
     autosize: {
@@ -257,9 +246,15 @@ export const getRillTheme: (
         return themeColors.length > 0 ? themeColors : defaultColors;
       })(),
       heatmap: sequentialColors,
-      // Quantitative color on other marks and ordinal color follow the same palette.
+      // Quantitative color on other marks follows the same palette.
       ramp: sequentialColors,
-      ordinal: sequentialColors,
+      // So does ordinal color, such as a time field on color. An ordinal scale takes a list's
+      // colors in order, which handed a few series the palette's faintest ones; a scheme is
+      // sampled evenly across the domain instead, from a quarter of the way along the palette
+      // so that the first series stands out from the background too.
+      ordinal: { scheme: sequentialColors, extent: [0.25, 1] },
+      // Quantitative color around a midpoint (a scale with `domainMid`).
+      diverging: divergingColors,
     },
     numberFormat: "s",
     tooltipFormat: {
@@ -268,3 +263,16 @@ export const getRillTheme: (
     customFormatTypes: true,
   };
 };
+
+/** The project theme's `color-<palette>-<n>` colors, or undefined when it sets none. */
+function themePalette(
+  theme: Record<string, string> | undefined,
+  palette: "sequential" | "diverging",
+  count: number,
+): string[] | undefined {
+  const colors = Array.from(
+    { length: count },
+    (_, i) => theme?.[`color-${palette}-${i + 1}`],
+  ).filter((color): color is string => !!color);
+  return colors.length > 0 ? colors : undefined;
+}
