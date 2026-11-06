@@ -20,6 +20,7 @@
     type WireFlintInput,
   } from "./lib/contract";
   import {
+    comparisonRangeFor,
     controlOptions,
     describeView,
     patchInput,
@@ -132,6 +133,10 @@
   /** The chart spec in effect: the presentation edit, else the (refreshed) result's. */
   const currentSpec = $derived(
     presentationSpec ?? effectiveResult?.input.chart_spec,
+  );
+  /** What a comparison turned on compares with: the original call's comparison, kept across refreshes. */
+  const comparisonRange = $derived(
+    baseResult ? comparisonRangeFor(baseResult) : undefined,
   );
 
   const view = $derived.by((): ViewState => {
@@ -270,7 +275,7 @@
       effectiveResult.input,
       currentSpec ?? effectiveResult.input.chart_spec,
       next,
-      timeRange,
+      comparisonRange,
       effectiveResult.fields,
       timeDimension,
     );

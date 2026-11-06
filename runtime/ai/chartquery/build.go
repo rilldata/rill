@@ -26,7 +26,9 @@ const (
 	MaxFacetValues = 8
 	// MaxRows caps the rows of the main query.
 	MaxRows = 1500
-	// MaxDataBytes caps the JSON size of the rows; rows are trimmed from the tail to fit.
+	// MaxDataBytes caps the JSON size of the chart data, the rows and the domain values together; rows are trimmed from the tail to fit.
+	// It leaves room for the rest of a result under the size at which hosts stop passing a result through
+	// (Claude writes one over about 150,000 characters to a file, which the widget never receives).
 	MaxDataBytes = 100 << 10
 )
 

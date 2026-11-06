@@ -113,15 +113,21 @@ func Execute(ctx context.Context, plan *Plan, runner Runner) (*Output, error) {
 		out.ResolvedTimeRange.TimeZone = plan.Spec.TimeRange.TimeZone
 	}
 
-	// Trim rows from the tail until the data fits the byte budget.
-	// A single row over the budget fails the chart: no cut makes it fit, and a chart without rows would misrepresent the data.
+	// Trim rows from the tail until the data fits the byte budget, which the rows share with the domain values:
+	// those repeat the values of the top-N dimensions, which may be long.
+	// Data that does not fit even with a single row fails the chart: no cut makes it fit, and a chart without rows would misrepresent the data.
+	domainData, err := json.Marshal(out.DomainValues)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal chart domain values: %w", err)
+	}
+	budget := MaxDataBytes - len(domainData)
 	data, err := json.Marshal(out.Data)
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal chart data: %w", err)
 	}
-	overBudget := len(data) > MaxDataBytes
-	for len(data) > MaxDataBytes && len(out.Data) > 1 {
-		keep := len(out.Data) * MaxDataBytes / len(data)
+	overBudget := len(data) > budget
+	for len(data) > budget && len(out.Data) > 1 {
+		keep := len(out.Data) * budget / len(data)
 		if keep >= len(out.Data) {
 			keep = len(out.Data) - 1
 		}
@@ -132,8 +138,8 @@ func Execute(ctx context.Context, plan *Plan, runner Runner) (*Output, error) {
 		}
 		out.RowsTruncated = true
 	}
-	if len(data) > MaxDataBytes {
-		return nil, fmt.Errorf("a single row of the chart data exceeds the response size budget of %d bytes, so a bound dimension holds values too long to chart; bind dimensions with shorter values", MaxDataBytes)
+	if len(data) > budget {
+		return nil, fmt.Errorf("the chart data exceeds the response size budget of %d bytes even when cut to a single row, so a bound dimension holds values too long to chart; bind dimensions with shorter values, or lower their limits", MaxDataBytes)
 	}
 
 	// The rows of a temporal chart arrive newest first. When rows were cut, the oldest bucket may be partial

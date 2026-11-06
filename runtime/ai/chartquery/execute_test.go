@@ -239,7 +239,41 @@ func TestExecuteRowOverBudget(t *testing.T) {
 	}}
 
 	_, err = Execute(t.Context(), plan, runner)
-	require.ErrorContains(t, err, fmt.Sprintf("a single row of the chart data exceeds the response size budget of %d bytes", MaxDataBytes))
+	require.ErrorContains(t, err, fmt.Sprintf("the chart data exceeds the response size budget of %d bytes even when cut to a single row", MaxDataBytes))
+}
+
+// TestExecuteDomainValuesShareBudget checks that the domain values count against the byte budget:
+// they repeat the values of a top-N dimension, so long values that fit as rows alone leave less room for the rows.
+func TestExecuteDomainValuesShareBudget(t *testing.T) {
+	spec, err := ParseFlintSpec(map[string]any{
+		"chartType": "Bar Chart",
+		"encodings": map[string]any{"x": map[string]any{"field": "advertiser", "limit": 40}, "y": "bids"},
+	}, flintTestData(nil), flintTestKinds)
+	require.NoError(t, err)
+	plan, err := BuildFlint(spec)
+	require.NoError(t, err)
+
+	// 40 values of 1.5 KiB: about 60 KiB of rows and as much again of domain values.
+	runner := &fakeRunner{answer: func(q *metricsview.Query) *Result {
+		res := &Result{}
+		for i := range 40 {
+			res.Rows = append(res.Rows, map[string]any{"advertiser": fmt.Sprintf("%02d%s", i, strings.Repeat("x", 1536)), "bids": float64(40 - i)})
+		}
+		return res
+	}}
+
+	out, err := Execute(t.Context(), plan, runner)
+	require.NoError(t, err)
+	require.Len(t, out.DomainValues["advertiser"], 40)
+	require.True(t, out.RowsTruncated)
+	require.NotEmpty(t, out.Data)
+	require.Less(t, len(out.Data), 40)
+	data, err := json.Marshal(out.Data)
+	require.NoError(t, err)
+	domain, err := json.Marshal(out.DomainValues)
+	require.NoError(t, err)
+	require.LessOrEqual(t, len(data)+len(domain), MaxDataBytes)
+	require.Contains(t, out.TruncationWarning, "to fit the response size budget")
 }
 
 func TestExecuteDonutTotals(t *testing.T) {

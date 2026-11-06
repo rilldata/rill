@@ -750,6 +750,76 @@ test("forwards the caller's semantic types to chart_data", async ({ page }) => {
     ]);
 });
 
+test("restores the call's comparison range when comparison is turned back on", async ({
+  page,
+}) => {
+  // The call compares with the same week a year earlier, not with the week before.
+  const fixture = loadFixture("line_comparison");
+  const structured = fixture.result.structuredContent!;
+  const input = structured.input as { data: Record<string, unknown> };
+  const yearEarlier = {
+    start: "2022-09-09T00:00:00Z",
+    end: "2022-09-16T00:00:00Z",
+  };
+  // The refreshes answer without previous-period values, as the server does without a comparison.
+  const rows = (structured.data as Record<string, unknown>[]).map(
+    ({ total_bids_prev: _, ...row }) => row,
+  );
+  const { frame, errors } = await mountWidget(page, {
+    fixture: {
+      ...fixture,
+      result: {
+        ...fixture.result,
+        structuredContent: {
+          ...structured,
+          input: {
+            ...input,
+            data: { ...input.data, comparison_time_range: yearEarlier },
+          },
+        },
+      },
+    },
+    chartDataResult: {
+      content: [{ type: "text", text: "Chart data: 7 rows." }],
+      structuredContent: { data: rows, fields: structured.fields },
+    },
+  });
+  await expect(frame.locator("canvas").first()).toBeVisible({
+    timeout: 15_000,
+  });
+  await frame.getByRole("button", { name: "Fullscreen" }).click();
+  const comparison = frame.getByRole("radiogroup", { name: "Comparison" });
+  await comparison.getByRole("radio", { name: "Off", exact: true }).click();
+  await expect.poll(() => sentMessages(page, "tools/call")).toHaveLength(1);
+  await expect(
+    comparison.getByRole("radio", { name: "Off", exact: true }),
+  ).toHaveAttribute("aria-checked", "true");
+  await comparison.getByRole("radio", { name: "On", exact: true }).click();
+  await expect
+    .poll(() => sentMessages(page, "tools/call"))
+    .toEqual([
+      expect.objectContaining({
+        params: expect.objectContaining({
+          arguments: expect.objectContaining({
+            data: expect.not.objectContaining({
+              comparison_time_range: expect.anything(),
+            }),
+          }),
+        }),
+      }),
+      expect.objectContaining({
+        params: expect.objectContaining({
+          arguments: expect.objectContaining({
+            data: expect.objectContaining({
+              comparison_time_range: yearEarlier,
+            }),
+          }),
+        }),
+      }),
+    ]);
+  expect(errors).toEqual([]);
+});
+
 test("renders the comparison fold with its caption", async ({ page }) => {
   const { frame, errors } = await mountWidget(page, {
     fixture: loadFixture("line_comparison"),

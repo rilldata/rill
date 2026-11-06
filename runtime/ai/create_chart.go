@@ -11,6 +11,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"unicode/utf8"
 
 	"github.com/google/jsonschema-go/jsonschema"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
@@ -35,6 +36,10 @@ const chartQueryTimeout = 2 * time.Minute
 
 // chartMarkdownRows is the number of rows included in the markdown fallback of an MCP result.
 const chartMarkdownRows = 20
+
+// chartMarkdownCellRunes caps the length of a cell of the markdown fallback,
+// so that dimensions with long values keep the text of a result small (see chartquery.MaxDataBytes).
+const chartMarkdownCellRunes = 100
 
 type CreateChart struct {
 	Runtime *runtime.Runtime
@@ -686,6 +691,9 @@ func formatChartValue(v any) string {
 }
 
 func escapeMarkdownCell(s string) string {
+	if utf8.RuneCountInString(s) > chartMarkdownCellRunes {
+		s = string([]rune(s)[:chartMarkdownCellRunes-1]) + "…"
+	}
 	s = strings.ReplaceAll(s, "|", "\\|")
 	return strings.ReplaceAll(s, "\n", " ")
 }

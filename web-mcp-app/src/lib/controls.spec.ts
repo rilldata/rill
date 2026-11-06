@@ -5,6 +5,7 @@ import comparison from "../../harness/fixtures/line_comparison.json";
 import pie from "../../harness/fixtures/pie.json";
 import type { ChartResult, WireFlintChartSpec } from "./contract";
 import {
+  comparisonRangeFor,
   controlOptions,
   describeView,
   grainsForRange,
@@ -48,6 +49,38 @@ describe("previousPeriod", () => {
       start: "2023-09-02T00:00:00.000Z",
       end: "2023-09-09T00:00:00Z",
     });
+  });
+});
+
+/** The comparison fixture comparing September 2023 with September 2022, as a call may set it. */
+function yearOverYear(): ChartResult {
+  const res = result(comparison);
+  return {
+    ...res,
+    input: {
+      ...res.input,
+      data: {
+        ...res.input.data,
+        time_range: {
+          start: "2023-09-01T00:00:00Z",
+          end: "2023-10-01T00:00:00Z",
+        },
+        comparison_time_range: {
+          start: "2022-09-01T00:00:00Z",
+          end: "2022-10-01T00:00:00Z",
+        },
+      },
+    },
+  };
+}
+
+describe("comparisonRangeFor", () => {
+  it("is the comparison the call set, else the period before the chart's", () => {
+    expect(comparisonRangeFor(yearOverYear())).toEqual({
+      start: "2022-09-01T00:00:00Z",
+      end: "2022-10-01T00:00:00Z",
+    });
+    expect(comparisonRangeFor(result(bar))).toEqual(previousPeriod(week));
   });
 });
 
@@ -209,7 +242,7 @@ describe("patchInput", () => {
       res.input,
       res.input.chart_spec,
       { grain: "TIME_GRAIN_WEEK", topN: 5, comparison: true },
-      week,
+      comparisonRangeFor(res),
       res.fields,
     );
     expect(patched.data.time_grain).toBe("TIME_GRAIN_WEEK");
@@ -229,7 +262,13 @@ describe("patchInput", () => {
       ...res.input.chart_spec,
       encodings: { x: "advertiser_name", y: "total_bids" },
     };
-    const patched = patchInput(res.input, spec, { topN: 20 }, week, res.fields);
+    const patched = patchInput(
+      res.input,
+      spec,
+      { topN: 20 },
+      undefined,
+      res.fields,
+    );
     expect(patched.chart_spec.encodings.x).toEqual({
       field: "advertiser_name",
       limit: 20,
@@ -259,12 +298,12 @@ describe("patchInput", () => {
       input,
       input.chart_spec,
       { topN: 5 },
-      week,
+      undefined,
       res.fields,
     );
     expect(patched.semantic_types).toEqual({ total_bids: "Amount" });
     expect(
-      patchInput(res.input, res.input.chart_spec, {}, week, res.fields),
+      patchInput(res.input, res.input.chart_spec, {}, undefined, res.fields),
     ).not.toHaveProperty("semantic_types");
   });
 
@@ -275,10 +314,33 @@ describe("patchInput", () => {
       res.input,
       res.input.chart_spec,
       { comparison: false },
-      week,
+      comparisonRangeFor(res),
       res.fields,
     );
     expect(patched.data.comparison_time_range).toBeUndefined();
+  });
+
+  it("restores the call's comparison when comparison is turned back on", () => {
+    const original = yearOverYear();
+    // Turning the comparison off refreshes the chart without it, and the refreshed input drops it.
+    const off = patchInput(
+      original.input,
+      original.input.chart_spec,
+      { comparison: false },
+      comparisonRangeFor(original),
+      original.fields,
+    );
+    expect(off.data.comparison_time_range).toBeUndefined();
+    const on = patchInput(
+      off,
+      off.chart_spec,
+      { comparison: true },
+      comparisonRangeFor(original),
+      original.fields,
+    );
+    expect(on.data.comparison_time_range).toEqual(
+      original.input.data.comparison_time_range,
+    );
   });
 });
 

@@ -2,6 +2,7 @@ import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
 import { V1TimeGrain } from "@rilldata/web-common/runtime-client/gen/index.schemas";
 import { DateTime } from "luxon";
 import type {
+  ChartResult,
   WireField,
   WireFieldKind,
   WireFlintChartSpec,
@@ -111,6 +112,20 @@ export function topNChoices(
   return Array.from(choices).sort((a, b) => a - b);
 }
 
+/**
+ * The range a comparison turned on compares with: the result's own comparison when its call set
+ * one, so that turning the comparison off and on again restores it, else the period before the
+ * chart's time range. Pass the original result: a refresh without the comparison drops it.
+ */
+export function comparisonRangeFor(
+  result: ChartResult,
+): WireTimeRange | undefined {
+  const range = result.resolved_time_range ?? result.input.data.time_range;
+  return (
+    result.input.data.comparison_time_range ?? (range && previousPeriod(range))
+  );
+}
+
 /** The period of the same length immediately before `range`. */
 export function previousPeriod(range: WireTimeRange): WireTimeRange {
   const start = DateTime.fromISO(range.start, { zone: "UTC" });
@@ -215,14 +230,15 @@ export function controlOptions(
 /**
  * The `chart_data` arguments for a control state: the current chart spec with the top-N limit on
  * its channel, the data binding with the grain and the comparison range, and the caller's
- * semantic type overrides. A spec that cannot draw a comparison is sent without one, since the
+ * semantic type overrides. Turning the comparison on sets `comparisonRange` (see
+ * `comparisonRangeFor`); a spec that cannot draw a comparison is sent without one, since the
  * server would reject it. Inputs are left untouched.
  */
 export function patchInput(
   input: WireFlintInput,
   chartSpec: WireFlintChartSpec,
   state: ControlState,
-  range: WireTimeRange | undefined,
+  comparisonRange: WireTimeRange | undefined,
   fields: Record<string, WireField> | undefined,
   timeDimension?: string,
 ): WireFlintInput {
@@ -252,9 +268,8 @@ export function patchInput(
   }
   const foldable = comparisonChannel(chartSpec, fields ?? {}) !== undefined;
   if (state.comparison === true && foldable) {
-    const base = range ?? input.data.time_range;
-    if (!patched.data.comparison_time_range && base) {
-      patched.data.comparison_time_range = previousPeriod(base);
+    if (!patched.data.comparison_time_range && comparisonRange) {
+      patched.data.comparison_time_range = comparisonRange;
     }
   } else if (state.comparison === false || !foldable) {
     delete patched.data.comparison_time_range;
