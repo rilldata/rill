@@ -1801,6 +1801,10 @@ message GetIFrameRequest {
   string kind = 4;
   // Name of the resource to embed. This should identify a resource that is valid for embedding, such as a dashboard or component.
   string resource = 5;
+  // The `rill_open` query param of an open link from an email sent by a report created from an embed.
+  // If set, the embed opens the report's dashboard in the state it captured, and `type` is ignored.
+  // Cannot be combined with `resource`, and requires the `external_user_id` of the embed user who created the report.
+  string open = 20;
   // Theme to use for the embedded resource.
   string theme = 12;
   // Theme mode to use for the embedded resource. Valid values: "light", "dark", "system".
@@ -3175,6 +3179,9 @@ message GetReportMetaResponse {
     // Set for reports created from an embed that was limited to specific resources.
     bool restrict_resources = 7;
     repeated ResourceName resources = 8;
+    // If true, the recipient is the embed user who created the report.
+    // Only set for reports created from an embed, for the recipient that matches the creator's saved email.
+    bool embed_owner = 9;
   }
   map<string, DeliveryMeta> delivery_meta = 2;
   reserved 1;
@@ -3852,6 +3859,11 @@ message ReportOptions {
   bool export_include_header = 20;
   bool export_attach = 24; // If true, the export is attached to email notifications (only supported for explore reports run as the creator).
   repeated string email_recipients = 8;
+  // Email of the embed user who creates the report; only used for reports created from an embed.
+  // Only this address gets an open link to the embedder's app (see `embeds.open_url` in rill.yaml).
+  // It's always added to `email_recipients`, and it can't unsubscribe from the report.
+  // If set, it's replaced by the `user_email` of the embed's iframe, if the iframe was issued with one.
+  string embed_owner_email = 25;
   repeated string slack_users = 10;
   repeated string slack_channels = 11;
   repeated string slack_webhooks = 12;

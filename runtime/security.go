@@ -415,7 +415,8 @@ func (p *securityEngine) resolveRulesForResource(instanceID, environment string,
 	// The canvas's conditions are evaluated lazily when its content is pruned.
 	// An inline canvas component inherits the conditions of its item, so a viewer who can't see the item can't access the component either.
 	if res.CanAccess() && (r.Meta.Name.Kind == ResourceKindCanvas || r.Meta.Name.Kind == ResourceKindComponent) {
-		visibility, err := p.visibilityConditions(instanceID, environment, vars, claims)
+		// `if` conditions never access project variables (the parser rejects references to them), so none are passed.
+		visibility, err := p.visibilityConditions(instanceID, environment, nil, claims)
 		if err != nil {
 			return nil, err
 		}

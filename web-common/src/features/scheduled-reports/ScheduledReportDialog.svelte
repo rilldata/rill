@@ -30,6 +30,7 @@
   } from "@rilldata/web-common/features/dashboards/aggregation-request-utils.ts";
   import { useMetricsViewTimeRange } from "@rilldata/web-common/features/dashboards/selectors.ts";
   import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors.ts";
+  import { getSpecQuery } from "@rilldata/web-common/features/explore-mappers/utils";
   import {
     getDashboardNameFromReport,
     getExistingReportInitialFormValues,
@@ -51,6 +52,7 @@
   import { getExportLimitSchema } from "@rilldata/web-common/features/exports/export-file-options";
   import { Button } from "../../components/button";
   import {
+    createRuntimeServiceGetInstance,
     getRuntimeServiceGetResourceQueryKey,
     getRuntimeServiceListResourcesQueryKey,
     V1ExportFormat,
@@ -111,6 +113,29 @@
   const { instanceId } = runtimeClient;
   const reportName = $derived(page.params.report);
 
+  // The creator of a report created from an embed has a field for their email, which always gets the report:
+  // in an embed, if rill.yaml configures `embeds.open_url`, since only that email gets the open link to the embedder's app;
+  // and for reports with a saved creator email, which the admin service always keeps as a recipient.
+  // Outside of an embed, the field is read-only, since only the creator can change it.
+  const isEmbedded = EmbedStore.isEmbedded();
+  const embedOpenUrlQuery = createRuntimeServiceGetInstance(
+    runtimeClient,
+    {},
+    {
+      query: {
+        enabled: isEmbedded,
+        select: (data) => data?.instance?.embedOpenUrl ?? "",
+      },
+    },
+  );
+  // svelte-ignore state_referenced_locally
+  const hasSavedEmbedOwnerEmail =
+    props.mode === "edit" &&
+    !!props.reportSpec.annotations?.admin_embed_owner_email;
+  const showEmbedOwnerEmail = $derived(
+    hasSavedEmbedOwnerEmail || (isEmbedded && !!$embedOpenUrlQuery.data),
+  );
+
   const exploreName = $derived(
     isCanvasReport
       ? ""
@@ -141,9 +166,7 @@
     props.mode === "create"
       ? getQueryNameFromQuery(props.query)
       : props.mode === "edit"
-        ? ((props.reportSpec.resolverProperties?.query_name as
-            | string
-            | undefined) ?? props.reportSpec.queryName)
+        ? getSpecQuery(props.reportSpec).queryName
         : undefined,
   );
   // Canvas reports have no query, and their queryArgsJson is an empty string (not undefined),
@@ -152,13 +175,7 @@
     (props.mode === "create"
       ? props.query.metricsViewAggregationRequest
       : props.mode === "edit" && !isCanvasReport
-        ? JSON.parse(
-            (props.reportSpec.resolverProperties?.query_args_json as
-              | string
-              | undefined) ||
-              props.reportSpec.queryArgsJson ||
-              "{}",
-          )
+        ? JSON.parse(getSpecQuery(props.reportSpec).queryArgsJson || "{}")
         : {}) as V1MetricsViewAggregationRequest,
   );
 
@@ -220,6 +237,7 @@
       emailRecipients: array().of(
         string().email(m.report_form_invalid_email()),
       ),
+      embedOwnerEmail: string().email(m.report_form_invalid_email()),
       enableSlackNotification: boolean(), // Needed to get the type for validation
       slackChannels: array().of(string()),
       slackUsers: array().of(string().email(m.report_form_invalid_email())),
@@ -233,9 +251,11 @@
         m.report_email_validation(),
         function (value) {
           // Check if at least one array has non-empty values
-          const hasEmailRecipients = value.emailRecipients
-            ? value.emailRecipients.filter(Boolean).length > 0
-            : false;
+          const hasEmailRecipients =
+            !!value.embedOwnerEmail?.trim() ||
+            (value.emailRecipients
+              ? value.emailRecipients.filter(Boolean).length > 0
+              : false);
           if (!value.enableSlackNotification) return hasEmailRecipients;
 
           const hasSlackUsers = value.slackUsers
@@ -266,13 +286,18 @@
 
   const initialValues = $derived(
     props.mode === "create"
-      ? getNewReportInitialFormValues(provider.userEmail, aggregationRequest)
+      ? getNewReportInitialFormValues(
+          provider.userEmail,
+          aggregationRequest,
+          showEmbedOwnerEmail,
+        )
       : props.mode === "create-canvas"
         ? getNewCanvasReportInitialFormValues(provider.userEmail)
         : getExistingReportInitialFormValues(
             props.reportSpec,
             provider.userEmail,
             aggregationRequest,
+            showEmbedOwnerEmail,
           ),
   );
 
@@ -328,6 +353,12 @@
         ? values.slackUsers.filter(Boolean)
         : undefined,
       webOpenMode: values.webOpenMode,
+      // Only sent if the field is shown, since the creator can't unsubscribe once their email is saved.
+      // The admin service ignores it unless the creator edits the report, so other editors keep the saved email.
+      embedOwnerEmail:
+        isEmbedded && showEmbedOwnerEmail
+          ? values.embedOwnerEmail.trim()
+          : undefined,
     };
 
     if (isCanvasReport) {
@@ -489,6 +520,7 @@
       {filters}
       {timeControls}
       {ephemeralMeasures}
+      {showEmbedOwnerEmail}
       {provider}
     />
 

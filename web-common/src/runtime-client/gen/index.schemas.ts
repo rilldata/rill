@@ -1372,6 +1372,7 @@ export interface V1Instance {
   aiPrompts?: V1AIPrompt[];
   frontendUrl?: string;
   theme?: string;
+  embedOpenUrl?: string;
 }
 
 export type V1InstanceHealthMetricsViewErrors = { [key: string]: string };

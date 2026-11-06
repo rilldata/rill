@@ -551,9 +551,10 @@ func (r *rendererRefs) text(ctx context.Context, content any) error {
 		return fmt.Errorf("text resolver not registered")
 	}
 	resolver, err := initializer(ctx, &runtime.ResolverOptions{
-		Runtime:    r.rt,
-		InstanceID: r.instanceID,
-		Properties: map[string]any{"text": contentStr},
+		Runtime:         r.rt,
+		InstanceID:      r.instanceID,
+		Properties:      map[string]any{"text": contentStr},
+		ProjectDeclared: false, // Dashboard templates never access project variables (the parser rejects references to them).
 		Claims: &runtime.SecurityClaims{
 			UserID:         r.claims.UserID,
 			UserAttributes: r.claims.UserAttributes,
@@ -603,9 +604,10 @@ func (r *rendererRefs) metricsSQLString(ctx context.Context, sqlStr string) erro
 		return fmt.Errorf("metrics_sql resolver not registered")
 	}
 	resolver, err := initializer(ctx, &runtime.ResolverOptions{
-		Runtime:    r.rt,
-		InstanceID: r.instanceID,
-		Properties: map[string]any{"sql": sqlStr},
+		Runtime:         r.rt,
+		InstanceID:      r.instanceID,
+		Properties:      map[string]any{"sql": sqlStr},
+		ProjectDeclared: false, // Dashboard templates never access project variables (the parser rejects references to them).
 		Claims: &runtime.SecurityClaims{
 			UserID:         r.claims.UserID,
 			UserAttributes: r.claims.UserAttributes,

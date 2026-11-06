@@ -316,8 +316,21 @@ function fromExploreUrlParams(
   }
 
   if (preset.exploreLeaderboardMeasures !== undefined) {
-    partialExploreState.leaderboardMeasureNames =
-      preset.exploreLeaderboardMeasures;
+    // The url parser validates these already, but a default preset built from the explore spec
+    // can name a measure the metrics view dropped.
+    const leaderboardMeasures = preset.exploreLeaderboardMeasures.filter((m) =>
+      measures.has(m),
+    );
+    const missingLeaderboardMeasures = getMissingValues(
+      leaderboardMeasures,
+      preset.exploreLeaderboardMeasures,
+    );
+    if (missingLeaderboardMeasures.length) {
+      errors.push(
+        getMultiFieldError("leaderboard measure", missingLeaderboardMeasures),
+      );
+    }
+    partialExploreState.leaderboardMeasureNames = leaderboardMeasures;
   }
 
   if (preset.exploreLeaderboardShowContextForAllMeasures !== undefined) {
