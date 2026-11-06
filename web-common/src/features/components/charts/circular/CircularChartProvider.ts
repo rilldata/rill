@@ -331,7 +331,39 @@ export class CircularChartProvider {
     );
 
     const query = createQuery(queryOptionsStore);
-    return combineChartDataQuery(query, [topNColorQuery], visibleStore);
+    const chartDataQuery = combineChartDataQuery(
+      query,
+      [topNColorQuery],
+      visibleStore,
+    );
+    if (!showOther || !colorDimensionName || !config.measure?.field) {
+      return chartDataQuery;
+    }
+    const measureName = config.measure.field;
+
+    // The "Other" slice is one more row of the chart's dataset. Writing it into
+    // the spec as inline data instead would replace the spec's named
+    // `metrics-view` source, which is how the renderer feeds the view its rows
+    // (see `VegaLiteRenderer`). `otherValue` is set while `queryOptionsStore`
+    // runs, and the query store re-emits on every options change, so this
+    // re-derives once the "Other" query resolves.
+    return derived(chartDataQuery, ($chartDataQuery) => {
+      const rows = $chartDataQuery.data?.data;
+      if (this.otherValue === undefined || !rows) return $chartDataQuery;
+      return {
+        ...$chartDataQuery,
+        data: {
+          ...$chartDataQuery.data,
+          data: [
+            ...rows,
+            {
+              [colorDimensionName]: OTHER_VALUE,
+              [measureName]: this.otherValue,
+            },
+          ],
+        },
+      };
+    });
   }
 
   private getColorSort(
