@@ -136,16 +136,22 @@ describe("isPartitionPending", () => {
 });
 
 describe("getPartitionExecutionSettings", () => {
-  it("prefers the configured limit over a previously observed value", () => {
+  it("uses the observed executor limit when available", () => {
     expect(
       getPartitionExecutionSettings(
         { partitionsConcurrencyLimit: 1 },
         { partitionsConcurrency: 4 },
       ),
-    ).toMatchObject({ concurrency: 1, concurrencySource: "configured" });
+    ).toMatchObject({ concurrency: 4, concurrencySource: "observed" });
   });
 
-  it("falls back to the observed value, then unknown", () => {
+  it("falls back to configuration before the model has run", () => {
+    expect(
+      getPartitionExecutionSettings({ partitionsConcurrencyLimit: 2 }, {}),
+    ).toMatchObject({ concurrency: 2, concurrencySource: "configured" });
+  });
+
+  it("uses observed concurrency and leaves unavailable limits unknown", () => {
     expect(
       getPartitionExecutionSettings({}, { partitionsConcurrency: 4 }),
     ).toMatchObject({ concurrency: 4, concurrencySource: "observed" });
@@ -225,5 +231,56 @@ describe("searchPartitions", () => {
       "first-key",
       "third-key",
     ]);
+  });
+});
+
+describe("partition range edge cases", () => {
+  it("does not include text beyond a string end bound", () => {
+    const rows = [
+      p("a", { label: "a" }),
+      p("b", { label: "b" }),
+      p("b-child", { label: "b-child" }),
+    ];
+    expect(keys(filterPartitionsInRange(rows, "label", "a", "b"))).toEqual([
+      "a",
+      "b",
+    ]);
+    expect(validatePartitionRange("label", "b-child", "b")).toBe(
+      "start_after_end",
+    );
+  });
+
+  it("only extends a date end bound to timestamps on that date", () => {
+    const rows = [
+      p("timestamp", { day: "2026-03-08T23:59:59Z" }),
+      p("text", { day: "2026-03-08-extra" }),
+      p("invalid-timestamp", { day: "2026-03-08T-not-a-timestamp" }),
+    ];
+    expect(
+      keys(filterPartitionsInRange(rows, "day", "2026-03-08", "2026-03-08")),
+    ).toEqual(["timestamp"]);
+  });
+
+  it("offers only fields with range-comparable values", () => {
+    expect(
+      getPartitionFields([
+        p("a", {
+          day: "2026-03-08",
+          count: 1,
+          missing: null,
+          nested: { day: "x" },
+          list: [1],
+        }),
+      ]),
+    ).toEqual(["count", "day"]);
+  });
+
+  it("shows the executor's resolved concurrency over the configured limit", () => {
+    expect(
+      getPartitionExecutionSettings(
+        { partitionsConcurrencyLimit: 1 },
+        { partitionsConcurrency: 8 },
+      ),
+    ).toMatchObject({ concurrency: 8, concurrencySource: "observed" });
   });
 });

@@ -5,12 +5,15 @@ import type {
 } from "../../../runtime-client";
 
 /**
- * Returns the sorted set of field names found in the partitions' data.
+ * Returns the sorted set of fields with scalar values usable in a range.
  */
 export function getPartitionFields(partitions: V1ModelPartition[]): string[] {
   const fields = new Set<string>();
   for (const p of partitions) {
-    for (const key of Object.keys(p.data ?? {})) fields.add(key);
+    for (const [key, value] of Object.entries(p.data ?? {})) {
+      if (value !== null && value !== undefined && typeof value !== "object")
+        fields.add(key);
+    }
   }
   return [...fields].sort();
 }
@@ -42,7 +45,7 @@ function toNumber(v: unknown): number | undefined {
  * Values compare numerically when the value and both bounds are numeric,
  * so `"9"` sorts before `"12"`.
  * Otherwise they compare as strings, which orders ISO 8601 dates and timestamps correctly;
- * in that case an end bound that is a prefix of the value also matches,
+ * a date-only end bound also includes timestamps on that date,
  * so an end of `2026-03-08` includes `2026-03-08T00:00:00Z`.
  */
 function isInRange(value: unknown, start: string, end: string): boolean {
@@ -53,7 +56,11 @@ function isInRange(value: unknown, start: string, end: string): boolean {
     return n >= lo && n <= hi;
   }
   const s = String(value);
-  return s >= start && (s <= end || s.startsWith(end));
+  const onEndDate =
+    /^\d{4}-\d{2}-\d{2}$/.test(end) &&
+    s.startsWith(`${end}T`) &&
+    !Number.isNaN(Date.parse(s));
+  return s >= start && (s <= end || onEndDate);
 }
 
 export type PartitionRangeError = "missing" | "start_after_end";
@@ -111,7 +118,7 @@ const DEFAULT_RETRY_IF_ERROR_MATCHES = [
 ];
 
 export type PartitionExecutionSettings = {
-  /** Partitions executed at a time; undefined when unknown until the model runs with partitions. */
+  /** Last resolved concurrency, with configuration as a fallback before a partitioned run. */
   concurrency: number | undefined;
   /** "observed" comes from the last partitioned run; "configured" comes from partitions_concurrency in the model file. */
   concurrencySource: "observed" | "configured" | "unknown";
@@ -131,17 +138,17 @@ export function getPartitionExecutionSettings(
   spec: V1ModelSpec | undefined,
   state: V1ModelState | undefined,
 ): PartitionExecutionSettings {
-  // A configured limit is what the executor uses, so it wins over a value observed before the file changed.
-  // When unset, the connector picks a default that is only known after a partitioned run.
+  // Executors can resolve a different limit, including connector and staging limits.
+  // The observed value describes the last partitioned run; use configuration only before one exists.
   let concurrency: number | undefined;
   let concurrencySource: PartitionExecutionSettings["concurrencySource"] =
     "unknown";
-  if (spec?.partitionsConcurrencyLimit) {
-    concurrency = spec.partitionsConcurrencyLimit;
-    concurrencySource = "configured";
-  } else if (state?.partitionsConcurrency) {
+  if (state?.partitionsConcurrency) {
     concurrency = state.partitionsConcurrency;
     concurrencySource = "observed";
+  } else if (spec?.partitionsConcurrencyLimit) {
+    concurrency = spec.partitionsConcurrencyLimit;
+    concurrencySource = "configured";
   }
 
   const retryIfErrorMatches = spec?.retryIfErrorMatches?.length

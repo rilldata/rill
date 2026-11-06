@@ -10,6 +10,7 @@
     V1ReconcileStatus,
     createRuntimeServiceCreateTriggerMutation,
     createRuntimeServiceGetModelPartitionsInfinite,
+    createRuntimeServiceGetResource,
     type V1ModelPartition,
     type V1Resource,
   } from "../../../runtime-client";
@@ -43,7 +44,20 @@
   let searchText = "";
   let submitError = "";
 
-  $: modelName = resource.meta?.name?.name as string;
+  $: modelName = resource.meta?.name?.name ?? "";
+
+  $: resourceQuery = createRuntimeServiceGetResource(
+    runtimeClient,
+    { name: { kind: "rill.runtime.v1.Model", name: modelName } },
+    {
+      query: {
+        enabled: !!modelName,
+        refetchOnMount: true,
+        refetchInterval: 2000,
+      },
+    },
+  );
+  $: modelResource = $resourceQuery.data?.resource;
 
   $: query = createRuntimeServiceGetModelPartitionsInfinite(
     runtimeClient,
@@ -56,20 +70,31 @@
     void $query.fetchNextPage();
   }
 
-  $: allRows =
-    $query.data?.pages.flatMap((p) => p.partitions as V1ModelPartition[]) ?? [];
-  $: isLoadingAll = $query.isLoading || ($query.hasNextPage && !$query.isError);
+  $: allRows = $query.data?.pages.flatMap((p) => p.partitions ?? []) ?? [];
+  $: isLoadingAll =
+    $query.isLoading ||
+    $query.isFetching ||
+    ($query.hasNextPage && !$query.isError);
+  $: queryError = $query.error ?? $resourceQuery.error;
   $: isReconciling =
-    resource.meta?.reconcileStatus ===
+    modelResource?.meta?.reconcileStatus ===
     V1ReconcileStatus.RECONCILE_STATUS_RUNNING;
   $: fieldOptions = getPartitionFields(allRows).map((f) => ({
     value: f,
     label: f,
   }));
   $: settings = getPartitionExecutionSettings(
-    resource.model?.spec,
-    resource.model?.state,
+    modelResource?.model?.spec ?? resource.model?.spec,
+    modelResource?.model?.state ?? resource.model?.state,
   );
+  $: canPreview =
+    !isLoadingAll && !$query.isError && !$triggerMutation.isPending;
+  $: canBackfill =
+    canPreview &&
+    !!matched?.length &&
+    !!modelResource?.model?.spec?.incremental &&
+    !$resourceQuery.isError &&
+    !isReconciling;
   $: filteredMatched = searchPartitions(matched ?? [], searchText);
   $: matchedKeys = new Set((matched ?? []).map((p) => p.key));
   $: otherPendingCount = matched
@@ -81,6 +106,7 @@
   $: field, start, end, ((matched = null), (rangeError = undefined));
 
   function preview() {
+    if (!canPreview) return;
     submitError = "";
     rangeError = validatePartitionRange(field, start.trim(), end.trim());
     if (rangeError) return;
@@ -89,7 +115,7 @@
   }
 
   async function backfill() {
-    if (!matched?.length) return;
+    if (!canBackfill || !matched?.length) return;
     submitError = "";
     try {
       await $triggerMutation.mutateAsync({
@@ -108,7 +134,7 @@
     }
   }
 
-  const columns: ColumnDef<V1ModelPartition, any>[] = [
+  const columns: ColumnDef<V1ModelPartition>[] = [
     {
       id: "data",
       header: "Data",
@@ -180,14 +206,14 @@
         size="md"
       />
     </div>
-    <Button type="secondary" onClick={preview} disabled={isLoadingAll}>
+    <Button type="secondary" onClick={preview} disabled={!canPreview}>
       {m.status_backfill_preview()}
     </Button>
   </div>
 
-  {#if $query.error}
+  {#if queryError}
     <span class="text-xs text-red-600">
-      {m.common_error_message({ message: $query.error.message })}
+      {m.common_error_message({ message: queryError.message })}
     </span>
   {/if}
 
@@ -312,7 +338,7 @@
     <Button
       type="primary"
       onClick={backfill}
-      disabled={!matched?.length || isReconciling || $triggerMutation.isPending}
+      disabled={!canBackfill}
       loading={$triggerMutation.isPending}
     >
       {m.status_backfill_confirm({ count: matched?.length ?? 0 })}
