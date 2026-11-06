@@ -20,6 +20,7 @@ import {
   createConnectorServiceListTablesInfinite,
 } from "@rilldata/web-common/runtime-client";
 import { ResourceKind } from "../entity-management/resource-selectors";
+import type { ConnectorTable } from "./connectors-utils";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.ts";
 
 /**
@@ -219,10 +220,7 @@ export function useInfiniteListTables(
  */
 export function useGetTable(
   client: RuntimeClient,
-  connector: string,
-  database: string,
-  databaseSchema: string,
-  table: string,
+  { connector, database, databaseSchema, tableName }: ConnectorTable,
 ) {
   return createConnectorServiceGetTable(
     client,
@@ -230,14 +228,14 @@ export function useGetTable(
       connector,
       database,
       databaseSchema,
-      table,
+      table: tableName,
     },
     {
       query: {
         enabled:
           !!client.instanceId &&
           !!connector &&
-          !!table &&
+          !!tableName &&
           database !== undefined &&
           databaseSchema !== undefined,
       },
