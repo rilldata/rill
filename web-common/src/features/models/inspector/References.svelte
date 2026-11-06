@@ -14,13 +14,11 @@
   import { derived } from "svelte/store";
   import { removeLeadingSlash } from "../../entity-management/entity-mappers";
   import { getFileHref } from "../../../layout/navigation/editor-routing";
+  import { getResultTable } from "./result-table";
   import WithModelResultTooltip from "./WithModelResultTooltip.svelte";
 
   export let refs: V1ResourceName[];
   export let modelHasError: boolean;
-  export let connector: string;
-  export let database: string;
-  export let databaseSchema: string;
 
   const client = useRuntimeClient();
 
@@ -39,13 +37,12 @@
   );
   $: referencedResources = $referencedResourcesStore;
 
+  // Only refs with a result table (models and sources) have rows to count, and the table lives in the ref's own connector.
   $: referencedResourceCardinalitiesStore = derived(
-    refs.map((ref) => {
-      return createQueryServiceTableCardinality(client, {
-        tableName: ref.name as string,
-        connector,
-        database,
-        databaseSchema,
+    referencedResources.map((referencedResource) => {
+      const table = getResultTable(referencedResource?.resource);
+      return createQueryServiceTableCardinality(client, table ?? {}, {
+        query: { enabled: !!table },
       });
     }),
     (refs) => refs.map((ref) => Number(ref.data?.cardinality ?? 0)),
