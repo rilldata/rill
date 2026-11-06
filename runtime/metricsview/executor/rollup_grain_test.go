@@ -121,6 +121,7 @@ func TestTimeAligned(t *testing.T) {
 		{"day not aligned UTC", time.Date(2024, 1, 1, 12, 0, 0, 0, utc), runtimev1.TimeGrain_TIME_GRAIN_DAY, utc, 1, false},
 		{"hour aligned", time.Date(2024, 1, 1, 5, 0, 0, 0, utc), runtimev1.TimeGrain_TIME_GRAIN_HOUR, utc, 1, true},
 		{"hour not aligned", time.Date(2024, 1, 1, 5, 30, 0, 0, utc), runtimev1.TimeGrain_TIME_GRAIN_HOUR, utc, 1, false},
+		{"hour not aligned in UTC with half-hour offset", time.Date(2024, 1, 1, 5, 0, 0, 0, time.FixedZone("IST", 19800)), runtimev1.TimeGrain_TIME_GRAIN_HOUR, utc, 1, false},
 		{"month aligned", time.Date(2024, 1, 1, 0, 0, 0, 0, utc), runtimev1.TimeGrain_TIME_GRAIN_MONTH, utc, 1, true},
 		{"month not aligned", time.Date(2024, 1, 15, 0, 0, 0, 0, utc), runtimev1.TimeGrain_TIME_GRAIN_MONTH, utc, 1, false},
 		{"quarter aligned", time.Date(2024, 1, 1, 0, 0, 0, 0, utc), runtimev1.TimeGrain_TIME_GRAIN_QUARTER, utc, 1, true},

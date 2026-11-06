@@ -165,6 +165,7 @@ import type {
   V1GetDeploymentConfigResponse,
   V1GetDeploymentCredentialsResponse,
   V1GetDeploymentResponse,
+  V1GetEmbedUserResponse,
   V1GetGithubPullRequestResponse,
   V1GetGithubRepoStatusResponse,
   V1GetGithubUserStatusResponse,
@@ -6084,6 +6085,117 @@ export const createAdminServiceCreateDeployment = <
 
   return createMutation(mutationOptions, queryClient);
 };
+/**
+ * @summary GetEmbedUser returns an embed user, which is created when GetIFrame is called with an external user ID.
+It is used to show which external user owns a report created from an embed.
+ */
+export const adminServiceGetEmbedUser = (
+  org: string,
+  project: string,
+  id: string,
+  signal?: AbortSignal,
+) => {
+  return httpClient<V1GetEmbedUserResponse>({
+    url: `/v1/orgs/${org}/projects/${project}/embed-users/${id}`,
+    method: "GET",
+    signal,
+  });
+};
+
+export const getAdminServiceGetEmbedUserQueryKey = (
+  org?: string,
+  project?: string,
+  id?: string,
+) => {
+  return [`/v1/orgs/${org}/projects/${project}/embed-users/${id}`] as const;
+};
+
+export const getAdminServiceGetEmbedUserQueryOptions = <
+  TData = Awaited<ReturnType<typeof adminServiceGetEmbedUser>>,
+  TError = RpcStatus,
+>(
+  org: string,
+  project: string,
+  id: string,
+  options?: {
+    query?: Partial<
+      CreateQueryOptions<
+        Awaited<ReturnType<typeof adminServiceGetEmbedUser>>,
+        TError,
+        TData
+      >
+    >;
+  },
+) => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ??
+    getAdminServiceGetEmbedUserQueryKey(org, project, id);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof adminServiceGetEmbedUser>>
+  > = ({ signal }) => adminServiceGetEmbedUser(org, project, id, signal);
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!(org && project && id),
+    ...queryOptions,
+  } as CreateQueryOptions<
+    Awaited<ReturnType<typeof adminServiceGetEmbedUser>>,
+    TError,
+    TData
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+};
+
+export type AdminServiceGetEmbedUserQueryResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceGetEmbedUser>>
+>;
+export type AdminServiceGetEmbedUserQueryError = RpcStatus;
+
+/**
+ * @summary GetEmbedUser returns an embed user, which is created when GetIFrame is called with an external user ID.
+It is used to show which external user owns a report created from an embed.
+ */
+
+export function createAdminServiceGetEmbedUser<
+  TData = Awaited<ReturnType<typeof adminServiceGetEmbedUser>>,
+  TError = RpcStatus,
+>(
+  org: string,
+  project: string,
+  id: string,
+  options?: {
+    query?: Partial<
+      CreateQueryOptions<
+        Awaited<ReturnType<typeof adminServiceGetEmbedUser>>,
+        TError,
+        TData
+      >
+    >;
+  },
+  queryClient?: QueryClient,
+): CreateQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+} {
+  const queryOptions = getAdminServiceGetEmbedUserQueryOptions(
+    org,
+    project,
+    id,
+    options,
+  );
+
+  const query = createQuery(queryOptions, queryClient) as CreateQueryResult<
+    TData,
+    TError
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  query.queryKey = queryOptions.queryKey;
+
+  return query;
+}
+
 /**
  * @summary CreateGithubPullRequest creates a Github PR from the specified branch in the project's connected Github repository to the primary branch.
  */

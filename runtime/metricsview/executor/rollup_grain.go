@@ -107,6 +107,8 @@ func timeAligned(t time.Time, grain runtimev1.TimeGrain, tz *time.Location, firs
 	if t.IsZero() {
 		return true
 	}
+	// Use UTC for sub-day grains, not t's own location (which may have an offset like +05:30); coarser grains convert to tz below.
+	t = t.UTC()
 	switch grain {
 	case runtimev1.TimeGrain_TIME_GRAIN_MILLISECOND:
 		// Millisecond: microseconds and nanoseconds must be zero

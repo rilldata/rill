@@ -168,11 +168,12 @@ func (s *Server) CreateAlert(ctx context.Context, req *adminv1.CreateAlertReques
 	}
 
 	err = s.admin.DB.UpsertVirtualFile(ctx, &database.InsertVirtualFileOptions{
-		ProjectID:   proj.ID,
-		Environment: "prod",
-		Path:        virtualFilePathForManagedAlert(name),
-		Data:        data,
-		OwnerID:     nil,
+		ProjectID:    proj.ID,
+		Environment:  "prod",
+		Path:         virtualFilePathForManagedAlert(name),
+		Data:         data,
+		OwnerID:      nil,
+		EmbedOwnerID: nil,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to insert virtual file: %w", err)
@@ -239,11 +240,12 @@ func (s *Server) EditAlert(ctx context.Context, req *adminv1.EditAlertRequest) (
 	}
 
 	err = s.admin.DB.UpsertVirtualFile(ctx, &database.InsertVirtualFileOptions{
-		ProjectID:   proj.ID,
-		Environment: "prod",
-		Path:        virtualFilePathForManagedAlert(req.Name),
-		Data:        data,
-		OwnerID:     nil,
+		ProjectID:    proj.ID,
+		Environment:  "prod",
+		Path:         virtualFilePathForManagedAlert(req.Name),
+		Data:         data,
+		OwnerID:      nil,
+		EmbedOwnerID: nil,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to update virtual file: %w", err)
@@ -387,11 +389,12 @@ func (s *Server) UnsubscribeAlert(ctx context.Context, req *adminv1.UnsubscribeA
 		}
 
 		err = s.admin.DB.UpsertVirtualFile(ctx, &database.InsertVirtualFileOptions{
-			ProjectID:   proj.ID,
-			Environment: "prod",
-			Path:        virtualFilePathForManagedAlert(req.Name),
-			Data:        data,
-			OwnerID:     nil,
+			ProjectID:    proj.ID,
+			Environment:  "prod",
+			Path:         virtualFilePathForManagedAlert(req.Name),
+			Data:         data,
+			OwnerID:      nil,
+			EmbedOwnerID: nil,
 		})
 		if err != nil {
 			return nil, fmt.Errorf("failed to update virtual file: %w", err)

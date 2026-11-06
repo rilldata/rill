@@ -14,15 +14,16 @@ import {
   AD_BIDS_IMPRESSIONS_MEASURE_DAY_GRAIN,
   AD_BIDS_IMPRESSIONS_MEASURE_NO_GRAIN,
   AD_BIDS_IMPRESSIONS_MEASURE_WINDOW,
-  AD_BIDS_METRICS_INIT,
+  AD_BIDS_METRICS_INIT_WITH_TIME,
   AD_BIDS_TIME_RANGE_SUMMARY,
   AD_BIDS_TIMESTAMP_DIMENSION,
 } from "./test-data/data";
 import { correctExploreState } from "@rilldata/web-common/features/dashboards/stores/correct-explore-state.ts";
 
 describe("correctExploreState", () => {
+  // The advanced measures require the timestamp dimension, which is the metrics view's time dimension.
   const MetricsView = {
-    ...AD_BIDS_METRICS_INIT,
+    ...AD_BIDS_METRICS_INIT_WITH_TIME,
     measures: AD_BIDS_ADVANCED_MEASURES,
   } as V1MetricsViewSpec;
   const Explore = {
@@ -119,9 +120,12 @@ describe("correctExploreState", () => {
       ],
     } as V1MetricsViewSpec;
     correctExploreState(updatedMetricsView, dashboard);
-    // Should correct to a valid measure - either a non-advanced measure or clear invalid state
+    // no measure is valid for leaderboards now, so the sort measure is kept rather than cleared
     expect(dashboard.leaderboardSortByMeasureName).toEqual(
-      AD_BIDS_IMPRESSIONS_MEASURE_NO_GRAIN,
+      AD_BIDS_IMPRESSIONS_MEASURE,
     );
+    expect(dashboard.leaderboardMeasureNames).toEqual([
+      AD_BIDS_IMPRESSIONS_MEASURE,
+    ]);
   });
 });

@@ -139,6 +139,15 @@ func (d *dialect) DateTruncExpr(dim *runtimev1.MetricsViewSpec_Dimension, grain 
 		expr = d.EscapeIdentifier(dim.Column)
 	}
 
+	// ClickHouse rejects date_trunc and toStartOfInterval at sub-day grains on Date and Date32 values, so cast those to DateTime64 first.
+	// The type is unknown when type detection failed or the dimension was synthesized (e.g. the comparison offset expression),
+	// so cast in that case too; only known DateTime columns skip the cast.
+	// The time zone paths below already cast their input.
+	isDateOrUnknown := dim.DataType == nil || dim.DataType.Code == runtimev1.Type_CODE_DATE
+	if tz == "" && isDateOrUnknown && unit != runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED && unit < runtimev1.TimeGrain_TIME_GRAIN_DAY {
+		expr = fmt.Sprintf("%s::DateTime64", expr)
+	}
+
 	if n > 1 {
 		// Multiples bucket with toStartOfInterval, which aligns minute and hour intervals to the start of the local day.
 		if tz == "" {

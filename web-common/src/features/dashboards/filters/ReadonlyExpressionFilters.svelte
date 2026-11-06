@@ -9,6 +9,7 @@
   import TimeRangeReadOnly from "@rilldata/web-common/features/dashboards/filters/TimeRangeReadOnly.svelte";
   import ReadonlyDimensionFilter from "@rilldata/web-common/features/dashboards/filters/dimension-filters/ReadonlyDimensionFilter.svelte";
   import ReadonlyMeasureFilter from "@rilldata/web-common/features/dashboards/filters/measure-filters/ReadonlyMeasureFilter.svelte";
+  import { getFilterManagerKeys } from "@rilldata/web-common/features/dashboards/filters/get-sort-filter-managers.ts";
   import { flip } from "svelte/animate";
 
   let {
@@ -51,6 +52,8 @@
       (measureManager) => showPinned || !!measureManager.expr,
     ),
   );
+  let dimensionKeys = $derived(getFilterManagerKeys(nonEmptyDimensionManagers));
+  let measureKeys = $derived(getFilterManagerKeys(nonEmptyMeasureManager));
 
   function handleWheel(event: WheelEvent) {
     if (chipLayout === "scroll" && event.deltaY !== 0) {
@@ -81,7 +84,7 @@
     <TimeGrainReadOnly timeGrain={displayTimeGrain} />
   {/if}
 
-  {#each nonEmptyDimensionManagers as dimensionManager (dimensionManager.name)}
+  {#each nonEmptyDimensionManagers as dimensionManager, i (dimensionKeys[i])}
     <div animate:flip={{ duration: 200 }}>
       <ReadonlyDimensionFilter
         manager={expressionFilterManager}
@@ -94,7 +97,7 @@
     </div>
   {/each}
 
-  {#each nonEmptyMeasureManager as measureManager (measureManager.name)}
+  {#each nonEmptyMeasureManager as measureManager, i (measureKeys[i])}
     <div animate:flip={{ duration: 200 }}>
       <ReadonlyMeasureFilter
         {measureManager}

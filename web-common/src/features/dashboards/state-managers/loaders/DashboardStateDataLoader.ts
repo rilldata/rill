@@ -124,10 +124,9 @@ export class DashboardStateDataLoader {
         }
 
         return getExploreStateFromYAMLConfig(
+          metricsViewSpec,
           exploreSpec,
           metricsViewTimeRangeResp?.timeRangeSummary,
-          metricsViewSpec.smallestTimeGrain,
-          metricsViewSpec.timeGrains,
         );
       },
     );

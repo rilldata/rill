@@ -21,10 +21,24 @@ components:
             properties:
                 editUrl:
                     type: string
+                embedOwner:
+                    description: |-
+                        If true, the recipient is the embed user who created the report.
+                        Only set for reports created from an embed, for the recipient that matches the creator's saved email.
+                    type: boolean
                 exportUrl:
                     type: string
                 openUrl:
                     type: string
+                resources:
+                    items:
+                        $ref: '#/components/schemas/v1ResourceName'
+                    type: array
+                restrictResources:
+                    description: |-
+                        If true, the report's data must only be accessed through the resources listed in `resources`.
+                        Set for reports created from an embed that was limited to specific resources.
+                    type: boolean
                 unsubscribeUrl:
                     type: string
                 userAttrs:
@@ -872,6 +886,12 @@ components:
                 ttlSeconds:
                     format: int64
                     type: integer
+            type: object
+        v1GetEmbedUserResponse:
+            properties:
+                externalUserId:
+                    description: The external user ID passed to GetIFrame.
+                    type: string
             type: object
         v1GetGithubPullRequestResponse:
             properties:
@@ -1944,6 +1964,13 @@ components:
                     items:
                         type: string
                     type: array
+                embedOwnerEmail:
+                    description: |-
+                        Email of the embed user who creates the report; only used for reports created from an embed.
+                        Only this address gets an open link to the embedder's app (see `embeds.open_url` in rill.yaml).
+                        It's always added to `email_recipients`, and it can't unsubscribe from the report.
+                        If set, it's replaced by the `user_email` of the embed's iframe, if the iframe was issued with one.
+                    type: string
                 explore:
                     title: either canvas or explore should be set
                     type: string
@@ -3227,6 +3254,7 @@ paths:
     /v1/orgs/{org}/projects/{project}/connect-to-github: {}
     /v1/orgs/{org}/projects/{project}/credentials: {}
     /v1/orgs/{org}/projects/{project}/deployments: {}
+    /v1/orgs/{org}/projects/{project}/embed-users/{id}: {}
     /v1/orgs/{org}/projects/{project}/github/pr: {}
     /v1/orgs/{org}/projects/{project}/github/pr/{branch}: {}
     /v1/orgs/{org}/projects/{project}/hibernate: {}

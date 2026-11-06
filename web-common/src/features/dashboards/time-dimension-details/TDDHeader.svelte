@@ -58,7 +58,7 @@
     hideStartPivotButton = false,
   }: Props = $props();
 
-  const { adminServer, exports } = featureFlags;
+  const { exports } = featureFlags;
   const stateManagers = getStateManagers();
 
   const {
@@ -328,7 +328,7 @@
       {#if $exports}
         <ExportMenu
           label={m.dashboard_export_table_data()}
-          includeScheduledReport={$adminServer}
+          includeScheduledReport
           getQuery={(isScheduled) =>
             getTDDExportQuery(stateManagers, isScheduled)}
           {exploreName}

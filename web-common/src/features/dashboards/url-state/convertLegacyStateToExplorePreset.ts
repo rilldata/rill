@@ -16,6 +16,7 @@ import {
   createSubQueryExpression,
   getAllIdentifiers,
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
+import { dropUnknownFieldsFromFilter } from "@rilldata/web-common/features/dashboards/stores/validate-and-clean-explore-state";
 import { ExploreStateDefaultChartType } from "@rilldata/web-common/features/dashboards/url-state/defaults";
 import {
   getMultiFieldError,
@@ -118,6 +119,16 @@ export function convertLegacyStateToExplorePreset(
         createSubQueryExpression(h.name, getAllIdentifiers(expr), expr),
       );
     });
+  }
+  if (preset.where) {
+    // The legacy filter and measure filters can name fields the metrics view no longer defines.
+    const { expr, errors: filterErrors } = dropUnknownFieldsFromFilter(
+      preset.where,
+      measures,
+      dimensions,
+    );
+    preset.where = expr;
+    errors.push(...filterErrors);
   }
 
   const { preset: trPreset, errors: trErrors } = fromLegacyTimeRangeFields(

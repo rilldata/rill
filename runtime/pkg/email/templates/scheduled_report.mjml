@@ -32,7 +32,7 @@
         </mj-text>
 
         <mj-text padding-bottom="0px">
-          Your report for <b>{{ .ReportTimeString }}</b> is ready to view.{{ if .Attached }} The {{ .DownloadFormat }} file is attached.{{ else if .AttachmentTooLarge }} The {{ .DownloadFormat }} file is too large to attach to this email, but you can download it below.{{ end }}
+          Your report for <b>{{ .ReportTimeString }}</b> is ready{{ if .OpenLink }} to view{{ end }}.{{ if .Attached }} The {{ .DownloadFormat }} file is attached.{{ else if .AttachmentTooLarge }} The {{ .DownloadFormat }} file is too large to attach to this email{{ if .DownloadLink }}, but you can download it below.{{ else }}. Try lowering the row limit of the report.{{ end }}{{ end }}
         </mj-text>
 
         <mj-spacer height="20px" />
