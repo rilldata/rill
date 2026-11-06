@@ -249,8 +249,8 @@ export function getDashboardStateFromProto(
 
   Object.assign(entity, fromActivePageProto(dashboard));
 
-  // The proto was saved against an older spec, so drop any field it names that no longer exists.
-  // Anything removed is filled in from the other sources of explore state.
+  // The proto can name measures and dimensions that the metrics view or explore no longer defines,
+  // so drop them before they are queried.
   validateAndCleanExploreState(metricsView, explore, entity);
 
   return entity;

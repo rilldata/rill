@@ -145,7 +145,7 @@ export function validateAndCleanExploreState(
  * Time dimensions cannot be filtered on, so they count as missing.
  * IN and NIN conditions and measure filters (a subquery grouped by a dimension) are certainly on a dimension,
  * so their missing fields are reported apart from the rest.
- * Shared by the url parser, the preset converter and the explore state cleaner
+ * Shared by the url parser, the legacy state converter and the explore state cleaner
  * so that a stale filter is handled the same way everywhere.
  */
 export function dropUnknownFieldsFromFilter(
