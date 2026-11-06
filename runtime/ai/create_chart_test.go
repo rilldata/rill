@@ -290,6 +290,15 @@ func TestCreateChartAccess(t *testing.T) {
 	require.False(t, access(t, external, ai.CreateChartName))
 	require.False(t, access(t, external, ai.ChartDataName))
 
+	// mcp_charts turns charts off for external clients alone: Rill's own chat keeps create_chart.
+	inst.FeatureFlags = map[string]string{"mcp_charts": "false"}
+	require.NoError(t, rt.EditInstance(t.Context(), inst, false))
+	rill = newChartSession(t, rt, instanceID, "rill/1.0")
+	external = newChartSession(t, rt, instanceID, "claude-ai/1.0")
+	require.True(t, access(t, rill, ai.CreateChartName))
+	require.False(t, access(t, external, ai.CreateChartName))
+	require.False(t, access(t, external, ai.ChartDataName))
+
 	// Without ReadMetrics there is no access at all.
 	inst.FeatureFlags = nil
 	require.NoError(t, rt.EditInstance(t.Context(), inst, false))

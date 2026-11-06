@@ -66,7 +66,7 @@ It takes the arguments of a create_chart call and returns the chart-ready rows, 
 }
 
 func (t *ChartData) CheckAccess(ctx context.Context) (bool, error) {
-	// Like create_chart, it requires ReadMetrics and the chat_charts feature flag.
+	// Like create_chart for external clients, it requires ReadMetrics and the chat_charts and mcp_charts feature flags (see mcpChartsEnabled).
 	// Only external MCP clients get it: Rill's own clients fetch chart data themselves.
 	s := GetSession(ctx)
 	if !s.Claims().Can(runtime.ReadMetrics) || isRillUserAgent(s) {
@@ -76,7 +76,7 @@ func (t *ChartData) CheckAccess(ctx context.Context) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	return ff["chat_charts"], nil
+	return mcpChartsEnabled(ff), nil
 }
 
 func (t *ChartData) Handler(ctx context.Context, args ChartDataArgs) (*ChartDataOutput, error) {

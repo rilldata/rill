@@ -153,7 +153,7 @@ func (t *CreateChart) MCPSpec() *mcp.Tool {
 }
 
 func (t *CreateChart) CheckAccess(ctx context.Context) (bool, error) {
-	// Must be able to query metrics and have the chat_charts feature flag.
+	// Must be able to query metrics and have the chat_charts feature flag, plus mcp_charts for external MCP clients (see mcpChartsEnabled).
 	// The tool is offered to every client: Rill's own clients render the chart themselves, and external MCP clients get the chart data,
 	// which the MCP Apps widget renders when the server serves it (see Session.MCPServer) and other clients get as a markdown table.
 	s := GetSession(ctx)
@@ -164,7 +164,10 @@ func (t *CreateChart) CheckAccess(ctx context.Context) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	return ff["chat_charts"], nil
+	if isRillUserAgent(s) {
+		return ff["chat_charts"], nil
+	}
+	return mcpChartsEnabled(ff), nil
 }
 
 func (t *CreateChart) Handler(ctx context.Context, args CreateChartArgs) (*CreateChartResult, error) {

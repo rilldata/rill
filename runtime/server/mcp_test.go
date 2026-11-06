@@ -603,6 +603,48 @@ func TestMCPAppsWithoutWidget(t *testing.T) {
 	require.Len(t, structured["data"], 2)
 }
 
+// TestMCPAppsMCPChartsOff asserts that mcp_charts: false turns charts off for external clients even where the widget bundle is present:
+// no MCP Apps capability, no widget resource, no chart tools and no rill-charts skill.
+// Rill's own chat keeps create_chart (see TestCreateChartAccess in runtime/ai).
+func TestMCPAppsMCPChartsOff(t *testing.T) {
+	serveMCPAppWidget(t)
+
+	rt, instanceID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
+		Files: mcpChartTestFiles("features:\n  mcp_charts: false\n"),
+	})
+	testruntime.RequireReconcileState(t, rt, instanceID, 3, 0, 0)
+
+	srv, err := NewServer(context.Background(), &Options{}, rt, zap.NewNop(), ratelimit.NewNoop(), activity.NewNoopClient())
+	require.NoError(t, err)
+	httpSrv := httptest.NewServer(auth.HTTPMiddleware(srv.aud, srv.mcpHandler()))
+	defer httpSrv.Close()
+
+	// A client that supports the MCP Apps UI extension
+	clientOpts := &mcp.ClientOptions{Capabilities: &mcp.ClientCapabilities{}}
+	clientOpts.Capabilities.AddExtension(mcpapp.UIExtension, map[string]any{"mimeTypes": []any{mcpapp.MIMEType}})
+	mcpClient := mcp.NewClient(&mcp.Implementation{Name: "claude-ai", Version: "1.0.0"}, clientOpts)
+	conn, err := mcpClient.Connect(t.Context(), &mcp.StreamableClientTransport{Endpoint: httpSrv.URL}, &mcp.ClientSessionOptions{ProtocolVersion: "2025-06-18"})
+	require.NoError(t, err)
+	defer conn.Close()
+	require.NotContains(t, conn.InitializeResult().Capabilities.Extensions, mcpapp.UIExtension)
+	require.Nil(t, conn.InitializeResult().Capabilities.Resources)
+
+	tools, err := conn.ListTools(t.Context(), &mcp.ListToolsParams{})
+	require.NoError(t, err)
+	var names []string
+	for _, tool := range tools.Tools {
+		names = append(names, tool.Name)
+	}
+	require.Contains(t, names, ai.QueryMetricsViewName)
+	require.NotContains(t, names, ai.CreateChartName)
+	require.NotContains(t, names, ai.ChartDataName)
+
+	res, err := conn.CallTool(t.Context(), &mcp.CallToolParams{Name: ai.ListSkillsName, Arguments: map[string]any{}})
+	require.NoError(t, err)
+	require.False(t, res.IsError)
+	require.NotContains(t, res.Content[0].(*mcp.TextContent).Text, "rill-charts")
+}
+
 // serveMCPAppWidget makes the MCP server serve a stub of the MCP Apps widget for the rest of the test,
 // whether or not the binary embeds the bundle (CI builds do not), and returns it.
 func serveMCPAppWidget(t *testing.T) *mcpapp.Asset {

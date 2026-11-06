@@ -20,6 +20,12 @@ func isRillUserAgent(s *Session) bool {
 	return strings.HasPrefix(s.CatalogSession().UserAgent, "rill")
 }
 
+// mcpChartsEnabled reports whether external MCP clients get charts: create_chart, chart_data, the MCP Apps widget and the rill-charts skill.
+// chat_charts turns charts on or off in every AI chat, and mcp_charts turns them off for external clients alone.
+func mcpChartsEnabled(ff map[string]bool) bool {
+	return ff["chat_charts"] && ff["mcp_charts"]
+}
+
 // aiMessageOpenURL returns the URL that opens the given tool call in the Rill UI (e.g. a query or chart replayed into an Explore).
 // It takes the instance's frontend URL and returns an empty string when there is none (e.g. in tests or during rollout).
 func aiMessageOpenURL(frontendURL, sessionID, callID string) (string, error) {

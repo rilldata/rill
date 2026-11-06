@@ -121,15 +121,15 @@ func MCPUserAgent(userAgent string) string {
 // The session must be one recorded for an MCP client (see MCPUserAgent): a session of Rill's own chat gets the in-app tools,
 // which are not meant for MCP clients (and the agents' input schemas do not even resolve as MCP tool schemas).
 func (s *Session) MCPServer(ctx context.Context) *mcp.Server {
-	// Serve the MCP Apps widget (interactive charts) alongside the chart tools: when the chat_charts flag is on and the binary
-	// carries the widget bundle. Without the widget, clients get the text fallback of create_chart.
+	// Serve the MCP Apps widget (interactive charts) alongside the chart tools: when external clients get charts (see mcpChartsEnabled)
+	// and the binary carries the widget bundle. Without the widget, clients get the text fallback of create_chart.
 	var widget *mcpapp.Asset
 	ff, err := s.FeatureFlags(ctx)
 	if err != nil {
 		if !errors.Is(err, ctx.Err()) {
 			s.logger.Error("failed to resolve feature flags", zap.Error(err))
 		}
-	} else if ff["chat_charts"] {
+	} else if mcpChartsEnabled(ff) {
 		widget, _ = mcpapp.Widget()
 	}
 	var capabilities *mcp.ServerCapabilities

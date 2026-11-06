@@ -83,8 +83,11 @@ widget -> host -> tools/call chart_data -----> runtime: fresh rows for the chang
 
 ## Gating and rollout
 
-- The `chat_charts` feature flag (default on) is the single gate: it enables the chart tools and, on the
-  runtime's own endpoint, the widget. Clients without MCP Apps get the markdown table and the link.
+- Two feature flags, both on by default, gate charts for external clients (`mcpChartsEnabled` in
+  runtime/ai/util.go): `chat_charts` turns charts on or off in every AI chat, Rill's own included, and
+  `mcp_charts` turns them off for external MCP clients alone. Together they enable the chart tools, the
+  `rill-charts` skill and, on the runtime's own endpoint, the widget. Clients without MCP Apps get the
+  markdown table and the link.
 - The widget is served whenever the binary carries the bundle. The unified `/v1/mcp` endpoint of the admin
   service cannot evaluate per-project flags, so it serves the widget unconditionally and leaves the
   per-project check to the runtime, which rejects `create_chart` calls for projects with charts disabled.

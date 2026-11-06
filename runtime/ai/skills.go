@@ -99,7 +99,7 @@ func (s *BaseSession) builtinSkills(ctx context.Context) ([]*Skill, error) {
 	if err != nil {
 		return nil, err
 	}
-	if !ff["chat_charts"] {
+	if !mcpChartsEnabled(ff) {
 		return nil, nil
 	}
 	instr, err := instructions.Load("charts.md", instructions.Options{External: true})
