@@ -101,10 +101,12 @@ func (b *sqlExprBuilder) writeSubquery(sub *Subquery) error {
 		UseDisplayNames:     false,
 		Rows:                false,
 		QueryLimits:         outer.QueryLimits,
+		ExactMeasures:       b.ast.exactMeasures,
 		UnusedFields:        nil,
 	} //exhaustruct:enforce
 
-	// Generate SQL for the subquery
+	// Generate SQL for the subquery.
+	// The subquery copies the exact measures resolved for the outer query, which already account for the subquery's own flags (see ExactMeasureSet), so both compute a shared measure with the same precision.
 	innerSecurity := b.ast.Security
 	if !b.visible {
 		innerSecurity = skipMetricsViewSecurity{}
@@ -206,6 +208,10 @@ func (b *sqlExprBuilder) writeJoinedExpressions(exprs []*Expression, joiner stri
 func (b *sqlExprBuilder) writeBinaryCondition(exprs []*Expression, op Operator) error {
 	// Backwards compatibility: For IN and NIN, the right hand side may be a flattened list of values, not a single list.
 	if op == OperatorIn || op == OperatorNin {
+		if len(exprs) == 1 {
+			// A flattened list with no values is just the left hand side; treat it as an empty list.
+			exprs = []*Expression{exprs[0], {Value: []any{}}}
+		}
 		if len(exprs) == 2 {
 			rhs := exprs[1]
 			typ := reflect.TypeOf(rhs.Value)

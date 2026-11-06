@@ -67,6 +67,7 @@ func NewRunner(rt *runtime.Runtime, activity *activity.Client) *Runner {
 	RegisterTool(r, &ChartData{Runtime: rt})
 	RegisterTool(r, &ListSkills{Runtime: rt})
 	RegisterTool(r, &LoadSkill{Runtime: rt})
+	RegisterTool(r, &SearchExternalTools{Runtime: rt})
 
 	RegisterTool(r, &DevelopFile{Runtime: rt})
 	RegisterTool(r, &ListFiles{Runtime: rt})
@@ -687,6 +688,10 @@ func (s *BaseSession) Flush(ctx context.Context) error {
 	if s.dtoDirty {
 		err = catalog.UpdateAISession(ctx, s.dto)
 		if err != nil {
+			if errors.Is(err, drivers.ErrNotFound) {
+				s.discardDeleted()
+				return nil
+			}
 			return err
 		}
 		s.dtoDirty = false
@@ -712,8 +717,13 @@ func (s *BaseSession) Flush(ctx context.Context) error {
 				Content:     msg.Content,
 			})
 			if err != nil {
+				if errors.Is(err, drivers.ErrNotFound) {
+					s.discardDeleted()
+					return nil
+				}
 				return err
 			}
+			msg.dirty = false
 			content := "<redacted>"
 			if msg.ContentType == MessageContentTypeError {
 				content = msg.Content
@@ -733,6 +743,17 @@ func (s *BaseSession) Flush(ctx context.Context) error {
 	}
 
 	return nil
+}
+
+// discardDeleted drops pending changes for a session that was deleted from the catalog while in use.
+// This can happen if the owner deletes a conversation during an ongoing completion.
+func (s *BaseSession) discardDeleted() {
+	s.logger.Info("ai: discarding changes for deleted session")
+	for _, msg := range s.messages {
+		msg.dirty = false
+	}
+	s.dtoDirty = false
+	s.messagesDirty = false
 }
 
 func (s *BaseSession) ID() string {
@@ -1346,7 +1367,7 @@ func (s *Session) Complete(ctx context.Context, name string, out any, opts *Comp
 	// (such as an external server's tools that are scoped to another agent).
 	tools := make([]*aiv1.Tool, 0, len(opts.Tools))
 	offered := make(map[string]bool, len(opts.Tools))
-	for _, toolName := range opts.Tools {
+	offer := func(ctx context.Context, toolName string) error {
 		tool, ok := s.Tool(toolName)
 		if !ok {
 			return fmt.Errorf("unknown tool %q", toolName)
@@ -1356,7 +1377,7 @@ func (s *Session) Complete(ctx context.Context, name string, out any, opts *Comp
 			return fmt.Errorf("failed to check access for tool %q: %w", toolName, err)
 		}
 		if !ok {
-			continue
+			return nil
 		}
 		toolPB, err := tool.AsProto()
 		if err != nil {
@@ -1364,6 +1385,12 @@ func (s *Session) Complete(ctx context.Context, name string, out any, opts *Comp
 		}
 		tools = append(tools, toolPB)
 		offered[toolName] = true
+		return nil
+	}
+	for _, toolName := range opts.Tools {
+		if err := offer(ctx, toolName); err != nil {
+			return err
+		}
 	}
 	if len(tools) > maxTools {
 		return fmt.Errorf("too many tools: the connected external MCP servers bring the total to %d, but at most %d are supported; disconnect a server, or limit a server's tools with 'security.include' in its connector file", len(tools), maxTools)
@@ -1410,7 +1437,7 @@ func (s *Session) Complete(ctx context.Context, name string, out any, opts *Comp
 		// TODO: For durable execution, add messages from current scope.
 
 		// Telemetry
-		var iterations, truncations, inputTokens, outputTokens, cachedInputTokens int
+		var iterations, truncations, inputTokens, outputTokens, cachedInputTokens, cacheWriteInputTokens int
 		var provider string
 		s.logger.Debug("completion started",
 			zap.Int("initial_messages", len(messages)),
@@ -1445,13 +1472,15 @@ func (s *Session) Complete(ctx context.Context, name string, out any, opts *Comp
 				attribute.Int("input_tokens", inputTokens),
 				attribute.Int("output_tokens", outputTokens),
 				attribute.Int("cached_input_tokens", cachedInputTokens),
+				attribute.Int("cache_write_input_tokens", cacheWriteInputTokens),
 				attribute.String("provider", provider),
 			)
 
 			// Emit billable token metrics. Tagged with the request source, the LLM provider, and whether the completion used
 			// the Rill-managed AI connector, so the billable scope is decided downstream in SQL (emitted for every completion,
 			// unlike tool_call). Values are reported as the provider returns them; cached_input_tokens is emitted separately
-			// so billing can price cached input at the cheaper rate (its relationship to input_tokens is provider-specific).
+			// so billing can price cached input at the cheaper rate (its relationship to input_tokens is provider-specific),
+			// and cache_write_input_tokens so billing can price cache writes at their premium rate.
 			source := attribute.String("source", string(runtime.RequestSourceFromContext(ctx)))
 			managedAI := attribute.Bool("managed_ai", s.managedAI)
 			providerAttr := attribute.String("provider", provider)
@@ -1463,6 +1492,9 @@ func (s *Session) Complete(ctx context.Context, name string, out any, opts *Comp
 			}
 			if cachedInputTokens > 0 {
 				s.activity.RecordMetric(ctx, "cached_input_tokens", float64(cachedInputTokens), source, managedAI, providerAttr)
+			}
+			if cacheWriteInputTokens > 0 {
+				s.activity.RecordMetric(ctx, "cache_write_input_tokens", float64(cacheWriteInputTokens), source, managedAI, providerAttr)
 			}
 		}()
 
@@ -1506,6 +1538,7 @@ func (s *Session) Complete(ctx context.Context, name string, out any, opts *Comp
 				inputTokens += res.InputTokens
 				outputTokens += res.OutputTokens
 				cachedInputTokens += res.CachedInputTokens
+				cacheWriteInputTokens += res.CacheWriteInputTokens
 				if res.Provider != "" {
 					provider = res.Provider
 				}
@@ -1542,8 +1575,18 @@ func (s *Session) Complete(ctx context.Context, name string, out any, opts *Comp
 			// Add returned blocks as messages.
 			// Run the requested tool calls.
 			// TODO: How to do durable execution here?
+			// Tools loaded with search_external_tools are offered after the response is processed:
+			// later calls in the same response were made without their schemas.
+			var loaded []string
 			for _, block := range res.Message.Content {
 				switch block := block.BlockType.(type) {
+				case *aiv1.ContentBlock_Reasoning:
+					// Some providers require the reasoning to be passed back within the tool call loop, so keep it for the next iterations.
+					// It isn't added to the session, since it's only needed until the loop completes.
+					messages = append(messages, &aiv1.CompletionMessage{
+						Role:    string(RoleAssistant),
+						Content: []*aiv1.ContentBlock{{BlockType: block}},
+					})
 				case *aiv1.ContentBlock_Text:
 					msg := s.AddMessage(&AddMessageOptions{
 						Role:        RoleAssistant,
@@ -1586,6 +1629,14 @@ func (s *Session) Complete(ctx context.Context, name string, out any, opts *Comp
 							return nil, fmt.Errorf("tool execution failed without producing a structured error: %w", err)
 						}
 						// Fall through since it's a structured error that we can capture in the messages.
+					} else if block.ToolCall.Name == SearchExternalToolsName {
+						var found SearchExternalToolsResult
+						if err := json.Unmarshal([]byte(toolResult.Result.Content), &found); err != nil {
+							return nil, fmt.Errorf("failed to parse loaded external tools: %w", err)
+						}
+						for _, info := range found.Tools {
+							loaded = append(loaded, info.Name)
+						}
 					}
 					callMessage, err := s.NewCompletionMessage(toolResult.Call)
 					if err != nil {
@@ -1598,6 +1649,14 @@ func (s *Session) Complete(ctx context.Context, name string, out any, opts *Comp
 					messages = append(messages, callMessage, resultMsg)
 				default:
 					return nil, fmt.Errorf("unexpected progress block type: %T", block)
+				}
+			}
+			for _, name := range loaded {
+				if offered[name] {
+					continue
+				}
+				if err := offer(ctx, name); err != nil {
+					return nil, err
 				}
 			}
 		}
@@ -1615,6 +1674,8 @@ func (s *Session) Complete(ctx context.Context, name string, out any, opts *Comp
 				} else if outputSchema != nil {
 					outVal = json.RawMessage(block.Text)
 				}
+			case *aiv1.ContentBlock_Reasoning:
+				// Not needed after the loop completes.
 			default:
 				return nil, fmt.Errorf("unexpected result block type: %T", block)
 			}
@@ -1862,6 +1923,14 @@ func maybeTruncateMessages(messages []*aiv1.CompletionMessage) []*aiv1.Completio
 			}
 		}
 		return false
+	})
+
+	// Remove reasoning blocks, since providers that require them (e.g. Claude) reject them after the history they were produced from has changed.
+	// Removing all of them is allowed; removing only some of them is not.
+	result = slices.DeleteFunc(result, func(msg *aiv1.CompletionMessage) bool {
+		return slices.ContainsFunc(msg.Content, func(block *aiv1.ContentBlock) bool {
+			return block.GetReasoning() != nil
+		})
 	})
 
 	return result

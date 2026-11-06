@@ -12,11 +12,12 @@ Canvas dashboards are built using various components that can display data, crea
 
 ## Available Components
 
-Canvas dashboards support four main types of components:
+Canvas dashboards support five main types of components:
 
 - **[Data components](/developers/build/dashboards/canvas-widgets/data)** - Display structured data and key metrics (KPIs, leaderboards, tables)
 - **[Chart components](/developers/build/dashboards/canvas-widgets/chart)** - Create rich visualizations (bar charts, line charts, heat maps, etc.)
 - **[Map components](/developers/build/dashboards/canvas-widgets/map)** - Plot measures by location as points or shaded regions
+- **[Custom viz components](/developers/build/dashboards/canvas-widgets/custom-viz)** - Reusable charts with params, built from 32 chart types or a Vega-Lite spec
 - **[Miscellaneous components](/developers/build/dashboards/canvas-widgets/misc)** - Add text, images, and other content
 
 Each component page shows both the visual result and the corresponding YAML code, making it easy to understand how to implement them in your own dashboards.
@@ -44,6 +45,21 @@ To keep a filter in the global filter bar at all times, or to block the canvas u
 
 
 ![Local Filters](/img/build/dashboard/canvas/local-filters.png)
+
+### Tab Groups
+
+A tab group shows several sets of rows in one place, one tab at a time. To add one, choose **Tab group** in the add menu between rows, or select **Convert row to tab group** in a component's menu. In YAML, a tab group is an entry in `rows` with `tabs` instead of `items`. See the [`rows`](/reference/project-files/canvas-dashboards#rows) reference.
+
+You can move or copy a whole tab group in the visual editor:
+
+- **Move:** Drag the grip handle at the left of the tab strip, or an empty part of the strip, and drop the group between two rows. A tab group can't be dropped inside another tab group.
+- **Duplicate:** Open any tab's three-dot menu and select **Duplicate tab group**, or select the tab group and click **Duplicate tab group** in the right-hand panel. The copy, with all its tabs and their rows, is added right below the original and selected.
+
+![A tab's menu with the Duplicate tab group option](/img/build/dashboard/canvas/tab-menu-duplicate-tab-group.png)
+
+![The tab group panel with the Duplicate tab group and Delete tab group buttons](/img/build/dashboard/canvas/tab-group-inspector.png)
+
+The copy doesn't keep the original's `name`, so it gets its own deep-link key in the dashboard URL. Rename it in the **Tab group name** field if you want a stable key.
 
 ### Making changes to the YAML 
 While we encourage creating Canvas dashboards via the visual editing experience described above, you can always edit the YAML file directly using the code view by toggling the switch next to the filename at the top of the page. Please see our [customization page](/developers/build/dashboards/customization) and [reference documentation](/reference/project-files/canvas-dashboards) for more information.
@@ -113,13 +129,49 @@ rows:
 Conditions use the same templating and [user attributes](/developers/build/metrics-view/security#user-attributes) as security policies. A few things to know:
 
 - An element shows only when its own condition and the conditions of the rows, tabs and groups containing it are all true.
+- Conditions can't reference project variables (`.env`), or the full template data (`.` or `$`) that includes them, since they are evaluated for viewers and the variables commonly hold secrets. The same applies to all canvas component properties, such as Markdown content and chart SQL.
 - Built-in attributes (`name`, `email`, `domain`, `groups`, `admin` and `embed`) always resolve, even for an [embedded dashboard](/developers/embed/iframe) that only passes custom attributes. A condition that references a custom attribute the viewer doesn't have is false. To treat a missing attribute as a value instead, use `get`, as in `'{{ ne (get .user "plan") "premium" }}'`.
 - When components are hidden, the rest of the row widens to fill it, and rows and tabs left empty disappear.
 - Hidden content is removed before the dashboard reaches the viewer, including its components and the conditions themselves. In an embedded dashboard or a public URL that's restricted to the canvas, the viewer also can't query the metrics views that only hidden content uses.
 - Hiding content doesn't restrict data elsewhere: a viewer with access to a metrics view can still query it, for example in an Explore dashboard. To restrict data, add a [security policy](/developers/build/metrics-view/security) to the metrics view.
 - Public URLs and scheduled reports that run as their creator show what the creator can see.
 
-To check what each audience sees, add [mock users](/developers/build/metrics-view/view-as-user) with their attributes to `rill.yaml` and use **View as** in the dashboard preview. In the visual editor, components that are only shown to some viewers have an indicator, and you can set a component's condition in its **Visible when** field.
+### Set Conditions in the Visual Editor
+
+To set a component's condition without editing YAML, select the component and fill in **Visible when** at the bottom of the right-hand panel. Leave it empty to show the component to everyone. Conditions on rows, tab groups and tabs are set in YAML.
+
+![The Visible when field in the component panel, set to an admin-only condition](/img/build/dashboard/canvas/visible-when-field.png)
+
+In the editor, you always see the whole canvas. Components that are only shown to some viewers have a crossed-out eye badge in their bottom-right corner. Hover over it to see the conditions that apply, including those inherited from the component's row, tab or tab group.
+
+![A crossed-out eye badge on a canvas component, with a tooltip showing its partners-only condition](/img/build/dashboard/canvas/visibility-badge.png)
+
+### Check What Each Audience Sees
+
+Add [mock users](/developers/build/metrics-view/view-as-user) with the attributes you want to test to `rill.yaml`:
+
+```yaml
+mock_users:
+  - email: someone@rilldata.com
+    name: John Doe
+    admin: true
+  - email: jane@partnercompany.com
+    name: Jane Partner
+    groups:
+      - partners
+```
+
+Then open the dashboard preview, click **View as**, and pick a mock user. **View as** appears when the canvas has `if` conditions, or when a security policy applies to the canvas or its metrics views.
+
+![The View as menu listing two mock users](/img/build/dashboard/canvas/view-as-mock-users.png)
+
+For example, this canvas has a welcome row with `if: '{{ has "partners" .user.groups }}'` and a heatmap with `if: '{{ .user.admin }}'`. Viewing as Jane, who is in the `partners` group, shows the welcome row but not the heatmap. Her KPI grid also has no spend tile, because the metrics view's [security policy](/developers/build/metrics-view/security) hides that measure from partners.
+
+![The canvas viewed as Jane: the partner welcome row and three KPIs, without the heatmap](/img/build/dashboard/canvas/view-as-partner.png)
+
+Viewing as John, an admin outside the `partners` group, shows the heatmap but not the welcome row.
+
+![The canvas viewed as John: four KPIs and the admin-only heatmap, without the partner welcome row](/img/build/dashboard/canvas/view-as-admin.png)
 
 ## Example Canvas Dashboards
 

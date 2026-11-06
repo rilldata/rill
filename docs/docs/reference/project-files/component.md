@@ -505,6 +505,7 @@ _[object]_ - (no description)
 _[object]_ - A custom visualization: a Metrics SQL query plus a chart spec describing how to draw it.
 Rill derives scales, axes, formats, sorting, stacking and layout from the data and from the
 metrics view's semantics, so the spec only states the chart type and which field goes on which channel.
+See [Custom Viz](/developers/build/dashboards/canvas-widgets/custom-viz).
 
 
   - **`metrics_sql`** - _[string]_ - Metrics SQL query selecting the dimensions and measures to plot, e.g.
@@ -514,9 +515,9 @@ metrics view's semantics, so the spec only states the chart type and which field
 
   - **`spec`** - _[object]_ - (no description)
 
-    - **`chartType`** - _[string]_ - The chart type, e.g. `Line Chart`, `Bar Chart`, `Heatmap`, `Waterfall Chart`.
+    - **`chartType`** - _[string]_ - The chart type, e.g. `Line Chart`, `Bar Chart`, `Heatmap`, `Waterfall Chart`. See [Chart Types](/developers/build/dashboards/canvas-widgets/custom-viz/chart-types) for the full list.
 
-    - **`encodings`** - _[object]_ - Maps a visual channel (`x`, `y`, `color`, `size`, `column`, `row`, `group`, `angle`, `goal`, ...)
+    - **`encodings`** - _[object]_ - Maps a visual channel (`x`, `y`, `x2`, `y2`, `color`, `size`, `column`, `row`, `group`, `goal`, ...)
     to a field. Each value is either a field name or an encoding object.
 
 
@@ -528,7 +529,9 @@ metrics view's semantics, so the spec only states the chart type and which field
   derives scales, axes, formats, sorting or layout, so the chart stops adapting on its own.
   Read the query result from the `query1` dataset, i.e. `"data": {"name": "query1"}`,
   and size the chart to its container with `"width": "container"`, `"height": "container"`
-  and `"autosize": {"type": "fit"}`. Mutually exclusive with `spec`.
+  and `"autosize": {"type": "fit", "contains": "padding"}`. Mutually exclusive with `spec`.
+  Template values are JSON-escaped, so place placeholders inside JSON strings.
+  See [Vega-Lite](/developers/build/dashboards/canvas-widgets/custom-viz/vega-lite).
 
 
 ### `map`

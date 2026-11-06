@@ -14,6 +14,7 @@
   import type { ExpressionFunction, VLTooltipFormatter } from "./types";
   import { createBaseEmbedOptions } from "./vega-embed-options";
   import { VegaLiteTooltipHandler } from "./vega-tooltip";
+  import { pickViewDatasets } from "./view-datasets";
   import "./vega.css";
 
   // Null outside a RuntimeProvider (e.g. the MCP chart widget); the view then has no loader.
@@ -48,6 +49,22 @@
   // gives Vega an inverted y range until the next resize.
   $: height = Math.max(0, contentRect.height - 10);
   $: if (width > 0) measured = true;
+
+  // svelte-vega applies `data` to the view with `view.change`, which throws for a dataset the
+  // compiled spec does not define (see `pickViewDatasets`), so it is only handed the datasets
+  // the live view knows. There is no view to check against until svelte-vega has embedded one,
+  // so nothing is passed until then; the view's arrival re-runs this, as does a re-embed, which
+  // clears `viewVL` before binding the new view. The recomputation is keyed on identity because
+  // svelte-vega re-binds `view` on every data update it runs, which a legacy `$:` counts as a
+  // change: recomputing on each run would hand it a fresh `data` object and loop.
+  let viewData: Record<string, unknown> = {};
+  let viewDataView: View | undefined;
+  let viewDataInput: Record<string, unknown> | undefined;
+  $: if (viewVL !== viewDataView || data !== viewDataInput) {
+    viewDataView = viewVL;
+    viewDataInput = data;
+    viewData = viewVL ? pickViewDatasets(viewVL, data) : {};
+  }
 
   $: if (viewVL && tooltipFormatter) {
     // Clean up previous handler if it exists
@@ -161,7 +178,7 @@
     {#key componentKey}
       {#if measured}
         <VegaLite
-          {data}
+          data={viewData}
           {spec}
           {signalListeners}
           {options}

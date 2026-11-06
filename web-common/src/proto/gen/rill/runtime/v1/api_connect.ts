@@ -3,7 +3,7 @@
 /* eslint-disable */
 // @ts-nocheck
 
-import { AnalyzeConnectorsRequest, AnalyzeConnectorsResponse, AnalyzeVariablesRequest, AnalyzeVariablesResponse, CompleteRequest, CompleteResponse, CompleteStreamingRequest, CompleteStreamingResponse, CreateAIMemoryRequest, CreateAIMemoryResponse, CreateDirectoryRequest, CreateDirectoryResponse, CreateInstanceRequest, CreateInstanceResponse, CreateTriggerRequest, CreateTriggerResponse, DeleteAIMemoryRequest, DeleteAIMemoryResponse, DeleteFileRequest, DeleteFileResponse, DeleteInstanceRequest, DeleteInstanceResponse, DisconnectMCPServerRequest, DisconnectMCPServerResponse, EditInstanceRequest, EditInstanceResponse, ForkConversationRequest, ForkConversationResponse, GenerateCanvasFileRequest, GenerateCanvasFileResponse, GenerateMetricsViewFileRequest, GenerateMetricsViewFileResponse, GetAIMemorySettingsRequest, GetAIMemorySettingsResponse, GetAIMessageRequest, GetAIMessageResponse, GetConnectorOAuthConfigRequest, GetConnectorOAuthConfigResponse, GetConversationRequest, GetConversationResponse, GetExploreRequest, GetExploreResponse, GetFileRequest, GetFileResponse, GetInstanceRequest, GetInstanceResponse, GetLogsRequest, GetLogsResponse, GetModelPartitionsRequest, GetModelPartitionsResponse, GetResourceRequest, GetResourceResponse, GitCommitRequest, GitCommitResponse, GitDiffRequest, GitDiffResponse, GitMergeToBranchRequest, GitMergeToBranchResponse, GitPullRequest, GitPullResponse, GitPushRequest, GitPushResponse, GitRevertRequest, GitRevertResponse, GitStatusRequest, GitStatusResponse, GitSwitchBranchRequest, GitSwitchBranchResponse, HealthRequest, HealthResponse, InstanceHealthRequest, InstanceHealthResponse, IssueDevJWTRequest, IssueDevJWTResponse, ListAIMemoriesRequest, ListAIMemoriesResponse, ListConnectorDriversRequest, ListConnectorDriversResponse, ListConversationsRequest, ListConversationsResponse, ListExamplesRequest, ListExamplesResponse, ListFilesRequest, ListFilesResponse, ListGitBranchesRequest, ListGitBranchesResponse, ListGitCommitsRequest, ListGitCommitsResponse, ListInstancesRequest, ListInstancesResponse, ListMCPServersRequest, ListMCPServersResponse, ListNotifierConnectorsRequest, ListNotifierConnectorsResponse, ListResourcesRequest, ListResourcesResponse, ListToolsRequest, ListToolsResponse, PingRequest, PingResponse, PushEnvRequest, PushEnvResponse, PutFileRequest, PutFileResponse, QueryResolverRequest, QueryResolverResponse, ReloadConfigRequest, ReloadConfigResponse, RenameFileRequest, RenameFileResponse, RestoreGitCommitRequest, RestoreGitCommitResponse, ShareConversationRequest, ShareConversationResponse, SkipModelPartitionsRequest, SkipModelPartitionsResponse, UnpackEmptyRequest, UnpackEmptyResponse, UnpackExampleRequest, UnpackExampleResponse, UpdateAIMemoryRequest, UpdateAIMemoryResponse, UpdateAIMemorySettingsRequest, UpdateAIMemorySettingsResponse, WatchFilesRequest, WatchFilesResponse, WatchLogsRequest, WatchLogsResponse, WatchResourcesRequest, WatchResourcesResponse } from "./api_pb.js";
+import { AnalyzeConnectorsRequest, AnalyzeConnectorsResponse, AnalyzeVariablesRequest, AnalyzeVariablesResponse, CompleteRequest, CompleteResponse, CompleteStreamingRequest, CompleteStreamingResponse, CreateAIMemoryRequest, CreateAIMemoryResponse, CreateDirectoryRequest, CreateDirectoryResponse, CreateInstanceRequest, CreateInstanceResponse, CreateTriggerRequest, CreateTriggerResponse, DeleteAIMemoryRequest, DeleteAIMemoryResponse, DeleteConversationRequest, DeleteConversationResponse, DeleteFileRequest, DeleteFileResponse, DeleteInstanceRequest, DeleteInstanceResponse, DisconnectMCPServerRequest, DisconnectMCPServerResponse, EditInstanceRequest, EditInstanceResponse, ForkConversationRequest, ForkConversationResponse, GenerateCanvasFileRequest, GenerateCanvasFileResponse, GenerateMetricsViewFileRequest, GenerateMetricsViewFileResponse, GetAIMemorySettingsRequest, GetAIMemorySettingsResponse, GetAIMessageRequest, GetAIMessageResponse, GetConnectorOAuthConfigRequest, GetConnectorOAuthConfigResponse, GetConversationRequest, GetConversationResponse, GetExploreRequest, GetExploreResponse, GetFileRequest, GetFileResponse, GetInstanceRequest, GetInstanceResponse, GetLogsRequest, GetLogsResponse, GetModelPartitionsRequest, GetModelPartitionsResponse, GetResourceRequest, GetResourceResponse, GitCommitRequest, GitCommitResponse, GitDiffRequest, GitDiffResponse, GitMergeToBranchRequest, GitMergeToBranchResponse, GitPullRequest, GitPullResponse, GitPushRequest, GitPushResponse, GitRevertRequest, GitRevertResponse, GitStatusRequest, GitStatusResponse, GitSwitchBranchRequest, GitSwitchBranchResponse, HealthRequest, HealthResponse, InstanceHealthRequest, InstanceHealthResponse, IssueDevJWTRequest, IssueDevJWTResponse, ListAIMemoriesRequest, ListAIMemoriesResponse, ListConnectorDriversRequest, ListConnectorDriversResponse, ListConversationsRequest, ListConversationsResponse, ListExamplesRequest, ListExamplesResponse, ListFilesRequest, ListFilesResponse, ListGitBranchesRequest, ListGitBranchesResponse, ListGitCommitsRequest, ListGitCommitsResponse, ListInstancesRequest, ListInstancesResponse, ListMCPServersRequest, ListMCPServersResponse, ListNotifierConnectorsRequest, ListNotifierConnectorsResponse, ListResourcesRequest, ListResourcesResponse, ListToolsRequest, ListToolsResponse, PingRequest, PingResponse, PushEnvRequest, PushEnvResponse, PutFileRequest, PutFileResponse, QueryResolverRequest, QueryResolverResponse, ReloadConfigRequest, ReloadConfigResponse, RenameFileRequest, RenameFileResponse, RestoreGitCommitRequest, RestoreGitCommitResponse, ShareConversationRequest, ShareConversationResponse, SkipModelPartitionsRequest, SkipModelPartitionsResponse, UnpackEmptyRequest, UnpackEmptyResponse, UnpackExampleRequest, UnpackExampleResponse, UpdateAIMemoryRequest, UpdateAIMemoryResponse, UpdateAIMemorySettingsRequest, UpdateAIMemorySettingsResponse, UpdateConversationRequest, UpdateConversationResponse, WatchFilesRequest, WatchFilesResponse, WatchLogsRequest, WatchLogsResponse, WatchResourcesRequest, WatchResourcesResponse } from "./api_pb.js";
 import { MethodKind } from "@bufbuild/protobuf";
 
 /**
@@ -429,6 +429,28 @@ export const RuntimeService = {
       name: "GetConversation",
       I: GetConversationRequest,
       O: GetConversationResponse,
+      kind: MethodKind.Unary,
+    },
+    /**
+     * UpdateConversation updates a conversation's metadata. Only the owner can update a conversation.
+     *
+     * @generated from rpc rill.runtime.v1.RuntimeService.UpdateConversation
+     */
+    updateConversation: {
+      name: "UpdateConversation",
+      I: UpdateConversationRequest,
+      O: UpdateConversationResponse,
+      kind: MethodKind.Unary,
+    },
+    /**
+     * DeleteConversation deletes a conversation and its messages. Only the owner can delete a conversation.
+     *
+     * @generated from rpc rill.runtime.v1.RuntimeService.DeleteConversation
+     */
+    deleteConversation: {
+      name: "DeleteConversation",
+      I: DeleteConversationRequest,
+      O: DeleteConversationResponse,
       kind: MethodKind.Unary,
     },
     /**

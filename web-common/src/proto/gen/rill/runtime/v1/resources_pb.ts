@@ -2057,6 +2057,13 @@ export class MetricsViewSpec_Measure extends Message<MetricsViewSpec_Measure> {
    */
   lowerIsBetter = false;
 
+  /**
+   * Optional exact variant of `expression`. When set, `expression` is treated as the approximate default and `exact_expression` is only used when a query explicitly requests exact values for the measure.
+   *
+   * @generated from field: string exact_expression = 18;
+   */
+  exactExpression = "";
+
   constructor(data?: PartialMessage<MetricsViewSpec_Measure>) {
     super();
     proto3.util.initPartial(data, this);
@@ -2082,6 +2089,7 @@ export class MetricsViewSpec_Measure extends Message<MetricsViewSpec_Measure> {
     { no: 14, name: "treat_nulls_as", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 15, name: "data_type", kind: "message", T: Type },
     { no: 17, name: "lower_is_better", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 18, name: "exact_expression", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewSpec_Measure {
@@ -4120,6 +4128,30 @@ export class AlertSpec extends Message<AlertSpec> {
   } | { case: undefined; value?: undefined } = { case: undefined };
 
   /**
+   * If true, the query's result is exported and attached to email notifications for failed checks (only supported for query-based alerts).
+   *
+   * @generated from field: bool export_attach = 24;
+   */
+  exportAttach = false;
+
+  /**
+   * Format of the attached export.
+   *
+   * @generated from field: rill.runtime.v1.ExportFormat export_format = 25;
+   */
+  exportFormat = ExportFormat.UNSPECIFIED;
+
+  /**
+   * @generated from field: bool export_include_header = 26;
+   */
+  exportIncludeHeader = false;
+
+  /**
+   * @generated from field: uint64 export_limit = 27;
+   */
+  exportLimit = protoInt64.zero;
+
+  /**
    * @generated from field: bool notify_on_recover = 15;
    */
   notifyOnRecover = false;
@@ -4177,6 +4209,10 @@ export class AlertSpec extends Message<AlertSpec> {
     { no: 11, name: "query_for_user_id", kind: "scalar", T: 9 /* ScalarType.STRING */, oneof: "query_for" },
     { no: 12, name: "query_for_user_email", kind: "scalar", T: 9 /* ScalarType.STRING */, oneof: "query_for" },
     { no: 13, name: "query_for_attributes", kind: "message", T: Struct, oneof: "query_for" },
+    { no: 24, name: "export_attach", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 25, name: "export_format", kind: "enum", T: proto3.getEnumType(ExportFormat) },
+    { no: 26, name: "export_include_header", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 27, name: "export_limit", kind: "scalar", T: 4 /* ScalarType.UINT64 */ },
     { no: 15, name: "notify_on_recover", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 16, name: "notify_on_fail", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 17, name: "notify_on_error", kind: "scalar", T: 8 /* ScalarType.BOOL */ },

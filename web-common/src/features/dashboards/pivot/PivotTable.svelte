@@ -1,6 +1,7 @@
 <script lang="ts">
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import VirtualTooltip from "@rilldata/web-common/components/virtualized-table/VirtualTooltip.svelte";
+  import type { PrecisionChipProps } from "@rilldata/web-common/features/dashboards/exact-measures/exact-measures";
   import FlatTable from "@rilldata/web-common/features/dashboards/pivot/FlatTable.svelte";
   import type { PivotClickSelectionState } from "@rilldata/web-common/features/dashboards/pivot/pivot-click-selection";
   import {
@@ -62,6 +63,10 @@
   export let widthScopeKey: string;
   export let config: Readable<PivotDataStoreConfig>;
   export let pivotState: Readable<PivotState>;
+  // Precision chip for a measure column header; undefined when the measure has no exact variant.
+  export let precisionFor:
+    | ((measureName: string) => PrecisionChipProps | undefined)
+    | undefined = undefined;
   export let canShowDataViewer = false;
   export let border = true;
   export let overscan = 20;
@@ -548,6 +553,7 @@
       {clickSelection}
       config={$config}
       activeCell={$pivotState.activeCell}
+      {precisionFor}
       {assembled}
       {onMouseMove}
       {onCellClick}
@@ -586,6 +592,7 @@
       {clickSelection}
       {onColumnHeaderClick}
       activeCell={$pivotState.activeCell}
+      {precisionFor}
       {assembled}
       {scrollLeft}
       {containerRefElement}

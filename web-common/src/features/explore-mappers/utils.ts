@@ -49,9 +49,24 @@ export async function fillTimeRange(
   exploreState: ExploreState,
   reqTimeRange: V1TimeRange | undefined,
   reqComparisonTimeRange: V1TimeRange | undefined,
-  timeRangeSummary: V1TimeRangeSummary,
+  timeRangeSummary: V1TimeRangeSummary | undefined,
   executionTime?: string,
 ) {
+  // Metrics views without a time dimension have no time range to fill;
+  // the runtime ignores a time range that does not name a time dimension.
+  if (!timeRangeSummary) {
+    // A range on another time dimension does filter the query,
+    // but the explore has no time controls to show it.
+    const timeDimension =
+      reqTimeRange?.timeDimension || reqComparisonTimeRange?.timeDimension;
+    if (timeDimension) {
+      throw new Error(
+        `The explore cannot show this query's time range on "${timeDimension}".`,
+      );
+    }
+    return;
+  }
+
   const endTime =
     executionTime ?? timeRangeSummary.max ?? new Date().toISOString();
 
@@ -131,9 +146,11 @@ export async function convertQueryFilterToToplistQuery(
   req: V1MetricsViewAggregationRequest,
   dimension: string,
 ) {
+  // `metricsView` is the request's field for the metrics view;
+  // the proto decoder rejects any other key for it, so the request never reaches the runtime.
   const params = {
-    metricsViewName: metricsView,
     ...req,
+    metricsView,
   };
   const toplist = await queryClient.fetchQuery({
     queryKey: getQueryServiceMetricsViewAggregationQueryKey(

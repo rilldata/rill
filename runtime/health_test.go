@@ -11,6 +11,7 @@ import (
 
 func TestHealth(t *testing.T) {
 	rt, instanceID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
+		Variables: map[string]string{"rill.health.make_live_queries": "true"},
 		Files: map[string]string{
 			"rill.yaml": ``,
 			"m1.sql":    `SELECT now() AS time, 'a' AS name, 1 AS value`,
@@ -54,4 +55,33 @@ measures:
 	require.True(t, ok)
 	require.Empty(t, mvErr.Err)
 	require.NotEmpty(t, mvErr.Version)
+}
+
+func TestHealthWithoutLiveQueries(t *testing.T) {
+	rt, instanceID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
+		Files: map[string]string{
+			"rill.yaml": ``,
+			"m1.sql":    `SELECT now() AS time, 'a' AS name, 1 AS value`,
+			"mv1.yaml": `
+type: metrics_view
+version: 1
+model: m1
+timeseries: time
+measures:
+  - name: count
+    expression: count(*)
+`,
+		},
+	})
+	testruntime.RequireReconcileState(t, rt, instanceID, 3, 0, 0)
+
+	health, err := rt.Health(t.Context(), true)
+	require.NoError(t, err)
+
+	ih, ok := health.InstancesHealth[instanceID]
+	require.True(t, ok)
+	require.Empty(t, ih.Controller)
+	require.Empty(t, ih.OLAP)
+	require.Empty(t, ih.Repo)
+	require.Empty(t, ih.MetricsViews)
 }

@@ -62,6 +62,7 @@ type MetricsViewYAML struct {
 		Description         string
 		Type                string
 		Expression          string
+		ExactExpression     string `yaml:"exact_expression"`
 		Window              *MetricsViewMeasureWindow
 		Per                 MetricsViewFieldSelectorsYAML
 		Requires            MetricsViewFieldSelectorsYAML
@@ -486,6 +487,10 @@ func (p *Parser) parseMetricsView(node *Node) error {
 			return fmt.Errorf(`cannot set both "format_preset" and "format_d3" for a measure`)
 		}
 
+		if measure.ExactExpression != "" && measure.Expression == "" {
+			return fmt.Errorf(`measure %q: "exact_expression" can only be set if "expression" is set`, measure.Name)
+		}
+
 		var formatD3Locale *structpb.Struct
 		if measure.FormatD3Locale != nil {
 			if measure.FormatD3 == "" {
@@ -595,11 +600,17 @@ func (p *Parser) parseMetricsView(node *Node) error {
 			return fmt.Errorf(`invalid measure type %q (allowed values: simple, derived, time_comparison)`, measure.Type)
 		}
 
+		// Derived measures are calculated from the measures as a query computes them, so only simple measures have an exact variant.
+		if measure.ExactExpression != "" && (typ != runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE || window != nil) {
+			return fmt.Errorf(`measure %q: "exact_expression" can only be set on simple measures without a window`, measure.Name)
+		}
+
 		measures = append(measures, &runtimev1.MetricsViewSpec_Measure{
 			Name:                measure.Name,
 			DisplayName:         measure.DisplayName,
 			Description:         measure.Description,
 			Expression:          measure.Expression,
+			ExactExpression:     measure.ExactExpression,
 			Type:                typ,
 			Window:              window,
 			PerDimensions:       perDimensions,

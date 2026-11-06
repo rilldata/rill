@@ -193,3 +193,50 @@ describe("generateVLStackedBarChartSpec orientation", () => {
     expect(() => compile(spec as TopLevelSpec)).not.toThrow();
   });
 });
+
+describe("generateVLBarChartSpec with a dotted color dimension", () => {
+  it("escapes the dimension in the hover pivot and the xOffset", () => {
+    // Nested Druid columns surface as dimensions whose names contain dots,
+    // which Vega would otherwise read as a nested field path.
+    const dimension = "query.context.metaData.type";
+    const data = chartData();
+    data.fields[dimension] = { name: dimension, displayName: "Query Type" };
+    data.domainValues = {
+      ...data.domainValues,
+      [dimension]: ["Scheduled Report", "Other"],
+    };
+
+    const spec = generateVLBarChartSpec(
+      { ...base, color: { field: dimension, type: "nominal" } },
+      data,
+    );
+    expect(at(spec, "layer.0.transform.0.pivot")).toBe(
+      "query\\.context\\.metaData\\.type",
+    );
+    expect(at(spec, "layer.1.encoding.xOffset.field")).toBe(
+      "query\\.context\\.metaData\\.type",
+    );
+  });
+});
+
+describe("generateVLBarChartSpec with a dotted x dimension", () => {
+  it("keeps the custom x sort values for a dotted x dimension", () => {
+    // The hover layer looks the sort values up by the raw name.
+    const dimension = "query.context.metaData.type";
+    const data = chartData();
+    data.fields[dimension] = { name: dimension, displayName: "Query Type" };
+    data.domainValues = { [dimension]: ["Other", "Scheduled Report"] };
+
+    const spec = generateVLBarChartSpec(
+      { ...base, x: { field: dimension, type: "nominal", sort: "-y" } },
+      data,
+    );
+    expect(at(spec, "layer.0.encoding.x.field")).toBe(
+      "query\\.context\\.metaData\\.type",
+    );
+    expect(at(spec, "layer.0.encoding.x.sort")).toEqual([
+      "Other",
+      "Scheduled Report",
+    ]);
+  });
+});

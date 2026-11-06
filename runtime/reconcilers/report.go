@@ -1,7 +1,6 @@
 package reconcilers
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -29,10 +28,7 @@ const (
 	reportCheckDefaultTimeout   = 5 * time.Minute
 	reportDefaultIntervalsLimit = 25
 	reportQueryPriority         = 1
-	reportAttachmentSizeLimit   = 10 * 1024 * 1024 // Exports larger than this are linked instead of attached to emails
 )
-
-var errAttachmentTooLarge = errors.New("export exceeds the attachment size limit")
 
 func init() {
 	runtime.RegisterReconcilerInitializer(runtime.ResourceKindReport, newReportReconciler)
@@ -208,11 +204,12 @@ func (r *ReportReconciler) ResolveTransitiveAccess(ctx context.Context, claims *
 			return nil, fmt.Errorf("no resolver found for name 'legacy_metrics'")
 		}
 		resolver, err := initializer(ctx, &runtime.ResolverOptions{
-			Runtime:    r.C.Runtime,
-			InstanceID: r.C.InstanceID,
-			Properties: resolverProperties(spec),
-			Claims:     claims,
-			ForExport:  false,
+			Runtime:         r.C.Runtime,
+			InstanceID:      r.C.InstanceID,
+			Properties:      resolverProperties(spec),
+			ProjectDeclared: false, // Report templates never access project variables (the parser rejects references to them).
+			Claims:          claims,
+			ForExport:       false,
 		})
 		if err != nil {
 			return nil, err
@@ -564,6 +561,28 @@ func (r *ReportReconciler) sendReport(ctx context.Context, self *runtimev1.Resou
 		return false, nil, fmt.Errorf("failed to get report metadata: %w", err)
 	}
 
+	// Reports created from an embed are opened through the embedder's app, and their recipients may have no access to Rill Cloud.
+	// So their notifications have no open, edit or download links; they only have an unsubscribe link.
+	// The embed owner annotation is only set for reports created from an embed.
+	// If the embed owner is missing or inactive, GetReportMetadata fails above, so nothing is sent.
+	embedCreated := rep.Spec.Annotations["admin_embed_owner_id"] != ""
+
+	// Embed users can only use reports if the project enables the "reports" feature flag for them (it's disabled for embeds by default).
+	// The UI hides reports otherwise, but this check also covers reports created directly through the API.
+	// Reports created from an embed are run as the creator, so every delivery has the same attributes.
+	if embedCreated {
+		for _, delivery := range meta.ReportDelivery {
+			flags, err := r.C.Runtime.FeatureFlags(ctx, r.C.InstanceID, &runtime.SecurityClaims{UserAttributes: delivery.UserAttrs})
+			if err != nil {
+				return false, nil, fmt.Errorf("failed to resolve feature flags: %w", err)
+			}
+			if !flags["reports"] {
+				return false, nil, errors.New(`reports created from an embed require the "reports" feature flag to be enabled for embed users`)
+			}
+			break
+		}
+	}
+
 	// recipient -> notification data
 	notificationsContent := make(map[string]*notificationData)
 
@@ -575,21 +594,30 @@ func (r *ReportReconciler) sendReport(ctx context.Context, self *runtimev1.Resou
 		aiReports := make(map[string]*aiReport)
 		// For AI reports, in recipient mode, we require the metadata to contain user attributes for reach recipient, since we'll need them to trigger the report and generate personalized content.
 		// In creator mode, we create a shared session for all recipients and create the session with creator's attributes.
+		// The session is owned by the user, which restricts access to it. So we require a user ID.
 		for recipient, delivery := range meta.ReportDelivery {
 			if delivery.UserID == "" || len(delivery.UserAttrs) == 0 {
-				r.C.Logger.Warn("Skipping recipient - no user attributes found in metadata", zap.String("recipient", recipient), zap.String("report", self.Meta.Name.Name), observability.ZapCtx(ctx))
+				r.C.Logger.Warn("Skipping recipient - no user ID or attributes found in metadata", zap.String("recipient", recipient), zap.String("report", self.Meta.Name.Name), observability.ZapCtx(ctx))
 				continue
 			}
-			// In recipient mode, delivery.UserID will be recipients userId, in creator mode, delivery.UserID will be the ownerID which is same for all recipients so report will be triggered once.
+			// In recipient mode, delivery.UserID will be recipients userId, in creator mode, delivery.UserID will be the same for all recipients so report will be triggered once.
 			report, exists := aiReports[delivery.UserID]
 			if !exists {
 				var triggerWarnings []string
-				report, triggerWarnings, err = r.triggerAIReport(ctx, self, rep, t, webOpenMode, delivery.UserID, delivery.UserAttrs)
+				report, triggerWarnings, err = r.triggerAIReport(ctx, self, rep, t, webOpenMode, delivery.UserID, delivery.UserAttrs, runtime.SecurityRulesForResources(delivery.RestrictResources, delivery.Resources))
 				if err != nil {
 					return false, nil, fmt.Errorf("failed to trigger AI report for %q: %w", recipient, err)
 				}
 				allWarnings = append(allWarnings, triggerWarnings...)
 				aiReports[delivery.UserID] = report
+			}
+
+			if embedCreated {
+				notificationsContent[recipient] = &notificationData{
+					unsubscribeLink: delivery.UnsubscribeURL,
+					summary:         truncateSummary(report.summary, 500),
+				}
+				continue
 			}
 
 			openLink, err := buildAISessionURL(delivery.OpenURL, report.sessionID)
@@ -606,22 +634,34 @@ func (r *ReportReconciler) sendReport(ctx context.Context, self *runtimev1.Resou
 	default: // add more resolvers here, for default just generate export links
 		// Export the data to attach to emails.
 		// Attachments are only supported in creator mode (enforced by the parser), where every recipient gets the same data.
-		// So the data is exported once with the report owner's attributes, which the admin service returns for every recipient in creator mode.
+		// So the data is exported once with the identity the admin service resolved for creator mode (the owner, or the embed user for reports created from an embed),
+		// which it returns for every recipient.
 		var attachment *email.Attachment
 		var attachmentTooLarge bool
 		if rep.Spec.ExportAttach && len(emailRecipients) > 0 {
-			if ownerID == "" {
-				allWarnings = append(allWarnings, "The export was not attached to emails because the report has no owner")
+			delivery := meta.ReportDelivery[emailRecipients[0]]
+			if len(delivery.UserAttrs) == 0 {
+				allWarnings = append(allWarnings, "The export was not attached to emails because the report has no owner or identity to run as")
 			} else {
 				claims := &runtime.SecurityClaims{
-					UserID:         ownerID,
-					UserAttributes: meta.ReportDelivery[emailRecipients[0]].UserAttrs,
-					Permissions:    []runtime.Permission{runtime.ReadObjects, runtime.ReadMetrics},
+					UserID:          delivery.UserID,
+					UserAttributes:  delivery.UserAttrs,
+					Permissions:     []runtime.Permission{runtime.ReadObjects, runtime.ReadMetrics},
+					AdditionalRules: runtime.SecurityRulesForResources(delivery.RestrictResources, delivery.Resources),
 				}
-				attachment, err = r.exportAttachment(ctx, rep, t, claims)
+				attachment, err = exportAttachment(ctx, r.C, &exportAttachmentOptions{
+					ResolverProperties: rep.Spec.ResolverProperties.AsMap(),
+					Annotations:        rep.Spec.Annotations,
+					ExecutionTime:      t,
+					Claims:             claims,
+					Format:             rep.Spec.ExportFormat,
+					IncludeHeader:      rep.Spec.ExportIncludeHeader,
+					Limit:              rep.Spec.ExportLimit,
+					Priority:           reportQueryPriority,
+				})
 				if errors.Is(err, errAttachmentTooLarge) {
 					attachmentTooLarge = true
-					allWarnings = append(allWarnings, fmt.Sprintf("The export was not attached to emails because it is larger than %d MB", reportAttachmentSizeLimit/1024/1024))
+					allWarnings = append(allWarnings, fmt.Sprintf("The export was not attached to emails because it is larger than %d MB", exportAttachmentSizeLimit/1024/1024))
 				} else if err != nil {
 					return false, nil, fmt.Errorf("failed to export attachment: %w", err)
 				}
@@ -629,6 +669,16 @@ func (r *ReportReconciler) sendReport(ctx context.Context, self *runtimev1.Resou
 		}
 
 		for recipient, delivery := range meta.ReportDelivery {
+			if embedCreated {
+				notificationsContent[recipient] = &notificationData{
+					unsubscribeLink:    delivery.UnsubscribeURL,
+					downloadFormat:     formatExportFormat(rep.Spec.ExportFormat),
+					attachment:         attachment,
+					attachmentTooLarge: attachmentTooLarge,
+				}
+				continue
+			}
+
 			downloadURL, err := createExportURL(delivery.ExportURL, t)
 			if err != nil {
 				return false, nil, err
@@ -801,8 +851,9 @@ type aiReport struct {
 }
 
 // triggerAIReport executes an AI-powered report and returns session id with summary.
-// If userID is provided, the session will be created with that user's claims for row-level security.
-func (r *ReportReconciler) triggerAIReport(ctx context.Context, self *runtimev1.Resource, rep *runtimev1.Report, t time.Time, webOpenMode, userID string, userAttrs map[string]any) (*aiReport, []string, error) {
+// The session will be created with the given user's claims for row-level security, and is owned by the user.
+// The additionalRules optionally further restrict the data the session can access.
+func (r *ReportReconciler) triggerAIReport(ctx context.Context, self *runtimev1.Resource, rep *runtimev1.Report, t time.Time, webOpenMode, userID string, userAttrs map[string]any, additionalRules []*runtimev1.SecurityRule) (*aiReport, []string, error) {
 	if rep.Spec.Resolver != "ai" {
 		return nil, nil, fmt.Errorf("triggerAIReport called for non-AI report")
 	}
@@ -814,10 +865,11 @@ func (r *ReportReconciler) triggerAIReport(ctx context.Context, self *runtimev1.
 	// Create claims for executing the AI resolver
 	// The userID and userAttrs determines what data the AI can access (row-level security)
 	claims := &runtime.SecurityClaims{
-		UserID:         userID,
-		UserAttributes: userAttrs,
-		SkipChecks:     false,
-		Permissions:    []runtime.Permission{runtime.ReadObjects, runtime.ReadMetrics, runtime.UseAI},
+		UserID:          userID,
+		UserAttributes:  userAttrs,
+		SkipChecks:      false,
+		Permissions:     []runtime.Permission{runtime.ReadObjects, runtime.ReadMetrics, runtime.UseAI},
+		AdditionalRules: additionalRules,
 	}
 
 	// Execute AI resolver
@@ -825,6 +877,7 @@ func (r *ReportReconciler) triggerAIReport(ctx context.Context, self *runtimev1.
 		InstanceID:         r.C.InstanceID,
 		Resolver:           "ai",
 		ResolverProperties: resolverProperties(rep.Spec),
+		ProjectDeclared:    false, // Report templates never access project variables (the parser rejects references to them).
 		Args: map[string]any{
 			"execution_time":        t,
 			"create_shared_session": webOpenMode == "creator", // if creator mode, create a shared session
@@ -859,71 +912,6 @@ func (r *ReportReconciler) triggerAIReport(ctx context.Context, self *runtimev1.
 		sessionID: sessionID,
 		summary:   summary,
 	}, warnings, nil
-}
-
-// exportAttachment exports a query-based report's data for attaching it to emails.
-// It exports the same data as the report's download link (see ExportReport in runtime/server).
-// It returns errAttachmentTooLarge if the export is larger than reportAttachmentSizeLimit.
-func (r *ReportReconciler) exportAttachment(ctx context.Context, rep *runtimev1.Report, t time.Time, claims *runtime.SecurityClaims) (*email.Attachment, error) {
-	var ext, contentType string
-	switch rep.Spec.ExportFormat {
-	case runtimev1.ExportFormat_EXPORT_FORMAT_CSV:
-		ext, contentType = "csv", "text/csv"
-	case runtimev1.ExportFormat_EXPORT_FORMAT_XLSX:
-		ext, contentType = "xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-	case runtimev1.ExportFormat_EXPORT_FORMAT_PARQUET:
-		ext, contentType = "parquet", "application/octet-stream"
-	default:
-		return nil, fmt.Errorf("export format %q cannot be attached", rep.Spec.ExportFormat.String())
-	}
-
-	props := rep.Spec.ResolverProperties.AsMap()
-	queryName, _ := props["query_name"].(string)
-	queryArgsJSON, _ := props["query_args_json"].(string)
-	qpb, err := queries.ProtoFromJSON(queryName, queryArgsJSON, &t)
-	if err != nil {
-		return nil, err
-	}
-	q, err := queries.ProtoToExportQuery(qpb, claims, int64(rep.Spec.ExportLimit), &t)
-	if err != nil {
-		return nil, err
-	}
-
-	var originDashboard *runtimev1.ResourceName
-	if explore := rep.Spec.Annotations["explore"]; explore != "" {
-		originDashboard = &runtimev1.ResourceName{Kind: runtime.ResourceKindExplore, Name: explore}
-	}
-
-	// Exports execute the query directly via q.Export (bypassing runtime.Query/Resolve), so emit the billable query metric here.
-	if r.C.Activity != nil {
-		queryAttrs := append(r.C.Runtime.GetInstanceAttributes(ctx, r.C.InstanceID), attribute.String("source", string(runtime.RequestSourceFromContext(ctx))))
-		r.C.Activity.RecordMetric(ctx, "query", 1, queryAttrs...)
-	}
-
-	var filename string
-	w := &limitedBuffer{limit: reportAttachmentSizeLimit}
-	err = q.Export(ctx, r.C.Runtime, r.C.InstanceID, w, &runtime.ExportOptions{
-		Format:   rep.Spec.ExportFormat,
-		Priority: reportQueryPriority,
-		PreWriteHook: func(name string) error {
-			filename = name
-			return nil
-		},
-		IncludeHeader:   rep.Spec.ExportIncludeHeader,
-		OriginDashboard: originDashboard,
-	})
-	if w.exceeded {
-		return nil, errAttachmentTooLarge
-	}
-	if err != nil {
-		return nil, err
-	}
-
-	return &email.Attachment{
-		Filename:    fmt.Sprintf("%s_%s.%s", filename, t.UTC().Format("20060102150405"), ext),
-		ContentType: contentType,
-		Data:        w.buf.Bytes(),
-	}, nil
 }
 
 func buildAISessionURL(baseOpenURL, sessionID string) (string, error) {
@@ -1109,21 +1097,4 @@ func latestReportWarnings(r *runtimev1.Report) []string {
 		return r.State.ExecutionHistory[len(r.State.ExecutionHistory)-1].Warnings
 	}
 	return nil
-}
-
-// limitedBuffer is an io.Writer that buffers data up to a size limit.
-// It records whether a write exceeded the limit, since writers wrapping it may not propagate the error it returns.
-// NOTE: It deliberately does not embed bytes.Buffer, which would let io.Copy bypass the limit through its io.ReaderFrom implementation.
-type limitedBuffer struct {
-	buf      bytes.Buffer
-	limit    int
-	exceeded bool
-}
-
-func (b *limitedBuffer) Write(p []byte) (int, error) {
-	if b.buf.Len()+len(p) > b.limit {
-		b.exceeded = true
-		return 0, errAttachmentTooLarge
-	}
-	return b.buf.Write(p)
 }

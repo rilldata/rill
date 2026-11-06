@@ -166,6 +166,8 @@ _[object]_ - A map of key-value pairs for setting variables on your project. It 
 
   - **`rill.metrics.approximate_comparisons_two_phase_limit`** - _[integer]_ - Row-limit threshold under which metrics comparison queries use a two-phase strategy (base values first, comparison values second). Default: 250.
 
+  - **`rill.metrics.exact_measures`** - _[boolean]_ - Allow queries to compute measures with their `exact_expression` when requested (per measure, with `exact: true`). When false, any query that would compute a measure exactly fails with an error; a flag on a measure without an `exact_expression` stays a no-op. Acts as a kill switch for expensive exact aggregations. Default: true.
+
   - **`rill.metrics.exactify_druid_topn`** - _[boolean]_ - Split Druid TopN queries into two queries to improve measure accuracy, at the cost of performance. Default: false.
 
   - **`rill.metrics.druid_mvd_filtered_group_by`** - _[boolean]_ - Narrow unnested (multi-value) dimensions to the filtered values when grouping in Druid, so results contain only the filtered values rather than every value co-occurring in matching rows. Default: false.
@@ -177,6 +179,8 @@ _[object]_ - A map of key-value pairs for setting variables on your project. It 
   - **`rill.alerts.default_streaming_refresh_cron`** - _[string]_ - Default cron expression for refreshing alerts that depend on streaming refs (for example, external tables in Druid where new data may arrive at any time). Default: `0 0 * * *` (every 24 hours).
 
   - **`rill.alerts.fast_streaming_refresh_cron`** - _[string]_ - Cron expression for refreshing streaming alerts on always-on OLAP connectors. Default: `*/10 * * * *` (every 10 minutes).
+
+  - **`rill.health.make_live_queries`** - _[boolean]_ - Run live queries against the OLAP (including pings) during health checks. Default: false.
 
   - **`rill.parser.skip_updates_if_parse_errors`** - _[boolean]_ - Short-circuit project parser reconciliation when parse errors exist. Default: false.
 

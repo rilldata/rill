@@ -3341,6 +3341,8 @@ func (m *MetricsViewAggregationMeasure) validate(all bool) error {
 		}
 	}
 
+	// no validation rules for Exact
+
 	switch v := m.Compute.(type) {
 	case *MetricsViewAggregationMeasure_Count:
 		if v == nil {

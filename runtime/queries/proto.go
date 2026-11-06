@@ -58,7 +58,6 @@ func ProtoToQuery(q *runtimev1.Query, claims *runtime.SecurityClaims, executionT
 			Where:               req.Where,
 			Having:              req.Having,
 			Filter:              req.Filter,
-			Exact:               req.Exact,
 			SecurityClaims:      claims,
 			ExecutionTime:       executionTime,
 		}, nil
@@ -103,7 +102,6 @@ func ProtoToExportQuery(q *runtimev1.Query, claims *runtime.SecurityClaims, limi
 			PivotOn:             r.PivotOn,
 			SecurityClaims:      claims,
 			Aliases:             r.Aliases,
-			Exact:               r.Exact,
 			Rows:                r.Rows,
 			ExecutionTime:       executionTime,
 		}, nil
@@ -154,6 +152,7 @@ func ProtoToExportQuery(q *runtimev1.Query, claims *runtime.SecurityClaims, limi
 			MetricsViewName:   r.MetricsViewName,
 			MeasureNames:      r.MeasureNames,
 			EphemeralMeasures: r.EphemeralMeasures,
+			ExactMeasureNames: r.ExactMeasureNames,
 			TimeStart:         r.TimeStart,
 			TimeEnd:           r.TimeEnd,
 			Where:             r.Where,
