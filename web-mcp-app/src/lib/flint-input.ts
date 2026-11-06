@@ -1,8 +1,4 @@
-import type {
-  FlintChartSpec,
-  FlintEncoding,
-  FlintEncodingValue,
-} from "@rilldata/web-common/features/custom-viz/flint/compile";
+import type { FlintChartSpec } from "@rilldata/web-common/features/custom-viz/flint/compile";
 import type {
   FlintFields,
   FlintSemanticType,
@@ -13,6 +9,7 @@ import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 import { FormatPreset } from "@rilldata/web-common/lib/number-formatting/humanizer-types";
 import { includesCurrencySymbol } from "@rilldata/web-common/lib/number-formatting/utils/d3-format-utils";
 import { V1TimeGrain } from "@rilldata/web-common/runtime-client/gen/index.schemas";
+import type { ChartEncoding, RawEncodingValue } from "flint-chart/core";
 import { vlGetTemplateChannels } from "flint-chart/vegalite";
 import type {
   ChartDataPayload,
@@ -66,7 +63,7 @@ const FLINT_ENCODING_KEYS = [
   "sortOrder",
   "sortBy",
   "scheme",
-] as const satisfies readonly (keyof FlintEncoding)[];
+] as const satisfies readonly (keyof ChartEncoding)[];
 
 /** What the metrics view's timestamp column is labelled; mirrors web-common's semantic derivation. */
 const TIME_DISPLAY_NAME = "Time";
@@ -120,9 +117,9 @@ export function encodingFields(
 
 function stripEncoding(
   value: string | WireFlintEncoding,
-): string | FlintEncoding {
+): string | ChartEncoding {
   if (typeof value === "string") return value;
-  const stripped: FlintEncoding = {};
+  const stripped: ChartEncoding = {};
   for (const key of FLINT_ENCODING_KEYS) {
     if (value[key] !== undefined) {
       (stripped as Record<string, unknown>)[key] = value[key];
@@ -142,7 +139,7 @@ export function stripFlintChartSpec(
   chartSpec: WireFlintChartSpec,
 ): FlintChartSpec {
   const accepted = templateChannels(chartSpec.chartType);
-  const encodings: Record<string, FlintEncodingValue> = {};
+  const encodings: Record<string, RawEncodingValue> = {};
   for (const [channel, value] of Object.entries(chartSpec.encodings ?? {})) {
     if (value === undefined || value === null) continue;
     if (accepted && !accepted.has(channel)) continue;

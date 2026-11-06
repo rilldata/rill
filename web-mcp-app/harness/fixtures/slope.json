@@ -1,5 +1,5 @@
 {
-  "name": "Flint slope chart",
+  "name": "Slope chart",
   "description": "Two months of bids per advertiser at month grain (YearMonth semantics).",
   "expect": "canvas",
   "arguments": {
@@ -27,7 +27,7 @@
     "content": [
       {
         "type": "text",
-        "text": "**Slope Chart: Total Bids over Time by Advertiser Name** (2023-07-01 to 2023-09-01)\n\n| Time | Advertiser Name | Total Bids |\n| - | - | - |\n| 2023-07-01T00:00:00Z | Acme Media | 128430 |\n| 2023-08-01T00:00:00Z | Acme Media | 126496 |\n| 2023-07-01T00:00:00Z | Beta Brands | 99210 |\n| 2023-08-01T00:00:00Z | Beta Brands | 112476 |\n| 2023-07-01T00:00:00Z | Cobalt Retail | 87650 |\n| 2023-08-01T00:00:00Z | Cobalt Retail | 59706 |\n| 2023-07-01T00:00:00Z | Delta Travel | 64320 |\n| 2023-08-01T00:00:00Z | Delta Travel | 78205 |\n\n_8 of 8 rows shown_\n\nOpen the interactive chart in Rill: https://ui.rilldata.com/demo/bids/-/ai/session-0b1c/message/call-4f2a/-/open"
+        "text": "**Slope Chart: Total Bids over Time by Advertiser Name** (2023-07-01 to 2023-09-01)\n\n| Time | Advertiser Name | Total Bids |\n| - | - | - |\n| 2023-07-01T00:00:00Z | Acme Media | 128430 |\n| 2023-08-01T00:00:00Z | Acme Media | 141111 |\n| 2023-07-01T00:00:00Z | Beta Brands | 99210 |\n| 2023-08-01T00:00:00Z | Beta Brands | 128627 |\n| 2023-07-01T00:00:00Z | Cobalt Retail | 87650 |\n| 2023-08-01T00:00:00Z | Cobalt Retail | 63525 |\n| 2023-07-01T00:00:00Z | Delta Travel | 64320 |\n| 2023-08-01T00:00:00Z | Delta Travel | 61162 |\n\n_8 of 8 rows shown_\n\nOpen the interactive chart in Rill: https://ui.rilldata.com/demo/bids/-/ai/session-0b1c/message/call-4f2a/-/open"
       }
     ],
     "structuredContent": {
@@ -89,7 +89,7 @@
         {
           "__time": "2023-08-01T00:00:00Z",
           "advertiser_name": "Acme Media",
-          "total_bids": 126496
+          "total_bids": 141111
         },
         {
           "__time": "2023-07-01T00:00:00Z",
@@ -99,7 +99,7 @@
         {
           "__time": "2023-08-01T00:00:00Z",
           "advertiser_name": "Beta Brands",
-          "total_bids": 112476
+          "total_bids": 128627
         },
         {
           "__time": "2023-07-01T00:00:00Z",
@@ -109,7 +109,7 @@
         {
           "__time": "2023-08-01T00:00:00Z",
           "advertiser_name": "Cobalt Retail",
-          "total_bids": 59706
+          "total_bids": 63525
         },
         {
           "__time": "2023-07-01T00:00:00Z",
@@ -119,7 +119,7 @@
         {
           "__time": "2023-08-01T00:00:00Z",
           "advertiser_name": "Delta Travel",
-          "total_bids": 78205
+          "total_bids": 61162
         }
       ],
       "fields": {

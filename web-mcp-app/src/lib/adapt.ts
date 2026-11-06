@@ -1,29 +1,8 @@
 import { timeGrainToVegaTimeUnitMap } from "@rilldata/web-common/components/vega/util";
-import type { CartesianChartSpec } from "@rilldata/web-common/features/components/charts/cartesian/CartesianChartProvider";
-import { toVerticalSpec } from "@rilldata/web-common/features/components/charts/cartesian/orientation";
-import type { CircularChartSpec } from "@rilldata/web-common/features/components/charts/circular/CircularChartProvider";
-import {
-  OTHER_VALUE,
-  OTHER_VALUE_DOMAIN_KEY,
-  TOTAL_DOMAIN_KEY,
-} from "@rilldata/web-common/features/components/charts/circular/constants";
-import type { ComboChartSpec } from "@rilldata/web-common/features/components/charts/combo/ComboChartProvider";
-import type { HeatmapChartSpec } from "@rilldata/web-common/features/components/charts/heatmap/HeatmapChartProvider";
-import type { ScatterPlotChartSpec } from "@rilldata/web-common/features/components/charts/scatter/ScatterPlotChartProvider";
 import type {
-  ChartDataResult,
-  ChartDomainValues,
   ChartFieldsMap,
-  ChartSpec,
-  ChartType,
-  FieldConfig,
   TimeDimensionDefinition,
 } from "@rilldata/web-common/features/components/charts/types";
-import {
-  getFieldsByType,
-  isFieldConfig,
-  isMultiFieldConfig,
-} from "@rilldata/web-common/features/components/charts/util";
 import { ComparisonDeltaPreviousSuffix } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
 import { themeManager } from "@rilldata/web-common/features/themes/theme-manager";
 import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
@@ -37,31 +16,25 @@ import {
 } from "@rilldata/web-common/runtime-client/gen/index.schemas";
 import { timeFormat } from "d3-time-format";
 import { DateTime, type DurationLikeObject } from "luxon";
-import { readable, type Readable } from "svelte/store";
 import {
   buildCaptionParts,
   CAPTION_SEPARATOR,
   formatTimeRange,
 } from "./caption";
 import {
-  isCartesianChartType,
-  isFlintResult,
   normalizeRows,
   type ChartResult,
-  type FlintChartResult,
-  type RillChartResult,
   type WireField,
   type WireFlintChartSpec,
   type WireRow,
   type WireTimeRange,
 } from "./contract";
-import { topNTarget } from "./controls";
 import {
-  flintFieldKind,
-  flintSeriesField,
-  flintTemporalField,
-  flintTopNTarget,
-} from "./flint-controls";
+  fieldKind,
+  seriesFieldOf,
+  temporalFieldOf,
+  topNTarget,
+} from "./controls";
 import {
   buildFlintCompileInput,
   encodingFields,
@@ -69,9 +42,8 @@ import {
 } from "./flint-input";
 
 /**
- * Turns a `create_chart` result into what the chart surface renders from, plus the title,
- * caption and data table the card shows around it: web-common's `Chart.svelte` inputs for a
- * Rill result, Flint's compile input for a Flint result.
+ * Turns a `create_chart` result into what the chart surface renders from, Flint's compile input,
+ * plus the title, caption and data table the card shows around it.
  * Pure: no DOM, no network, no host session. Everything the in-app chart gets from
  * TanStack queries and dashboard stores is derived here from the wire payload.
  */
@@ -85,7 +57,7 @@ export interface AdaptOptions {
   timeZone?: string;
   locale?: string;
   /**
-   * Flint results only: the chart spec to compile instead of the one the result carries,
+   * The chart spec to compile instead of the one the result carries,
    * i.e. the presentation controls' edits (chart type, properties, views) applied client-side.
    */
   chartSpec?: WireFlintChartSpec;
@@ -106,11 +78,20 @@ export interface TableModel {
   totalRows: number;
 }
 
-/** What the card and the fullscreen view show around either kind of chart. */
-export interface AdaptedChartBase {
+/** A result ready to render: Flint's compile input, and what the card and the fullscreen view show around it. */
+export interface AdaptedChart {
+  chartType: string;
+  /** The chart spec in effect: the result's, or the presentation controls' edit of it. */
+  chartSpec: WireFlintChartSpec;
+  flint: FlintCompileInput;
+  /**
+   * The rows Flint compiles, with temporal values converted to the resolved time zone and the
+   * comparison folded into long form; the table shows the result's own rows.
+   */
+  rows: WireRow[];
   /** The measures the chart draws, in the shape Rill's value formatters take. */
   measures: MetricsViewSpecMeasure[];
-  /** Project theme variables for the current mode, as `Chart.svelte` expects them. */
+  /** Project theme variables for the current mode, as Rill's Vega theme (`getRillTheme`) takes them. */
   theme: Record<string, string> | undefined;
   title: string;
   /** The formatted time range on its own; the first caption part when the result has one. */
@@ -122,6 +103,7 @@ export interface AdaptedChartBase {
   timeZone: string;
   timeGrain: V1TimeGrain | undefined;
   temporalField: string | undefined;
+  /** The chart draws the previous period as a second series; the caption and the comparison control follow it. */
   hasComparison: boolean;
   /** Any budget cut the data: a top-N cap or the row limit. */
   truncated: boolean;
@@ -134,32 +116,6 @@ export interface AdaptedChartBase {
   openUrl: string | undefined;
 }
 
-/** A Rill result, rendered by web-common's `Chart.svelte` from Rill's chart config. */
-export interface AdaptedRillChart extends AdaptedChartBase {
-  engine: "rill";
-  chartType: ChartType;
-  spec: ChartSpec;
-  chartData: Readable<ChartDataResult>;
-  /** The same value the store holds; convenient for spec generation and tests. */
-  snapshot: ChartDataResult;
-}
-
-/** A Flint result, compiled by `compileFlintSpec` and rendered with the Vega-Lite renderer. */
-export interface AdaptedFlintChart extends AdaptedChartBase {
-  engine: "flint";
-  chartType: string;
-  /** The chart spec in effect: the result's, or the presentation controls' edit of it. */
-  chartSpec: WireFlintChartSpec;
-  flint: FlintCompileInput;
-  /**
-   * The rows Flint compiles, with temporal values converted to the resolved time zone and the
-   * comparison folded into long form; the table shows the result's own rows.
-   */
-  rows: WireRow[];
-}
-
-export type AdaptedChart = AdaptedRillChart | AdaptedFlintChart;
-
 export const MAX_TABLE_ROWS = 500;
 /** Zero-filling stops when a range would need more buckets than this. */
 export const MAX_FILL_BUCKETS = 1500;
@@ -168,7 +124,7 @@ export const MAX_FILL_BUCKETS = 1500;
  * line or an area reads a missing bucket as zero rather than as a straight run across it, and a
  * stack or a group of bars keeps every series in every bucket.
  */
-const FLINT_ZERO_FILL_CHART_TYPES: ReadonlySet<string> = new Set([
+const ZERO_FILL_CHART_TYPES: ReadonlySet<string> = new Set([
   "Line Chart",
   "Area Chart",
   "Streamgraph",
@@ -178,166 +134,19 @@ const FLINT_ZERO_FILL_CHART_TYPES: ReadonlySet<string> = new Set([
 ]);
 export const DEFAULT_TIME_ZONE = "UTC";
 const DEFAULT_TIME_GRAIN = V1TimeGrain.TIME_GRAIN_DAY;
-/** Label the chart providers use for the time axis; titles key on it ("over Time"). */
+/** Label of the time axis, as in Rill's own charts. */
 const TIME_AXIS_LABEL = "Time";
 
-/** Adapts either kind of result; see `adaptChartResult` and `adaptFlintResult`. */
-export function adaptResult(
-  result: ChartResult,
-  options: AdaptOptions,
-): AdaptedChart {
-  return isFlintResult(result)
-    ? adaptFlintResult(result, options)
-    : adaptChartResult(result, options);
-}
-
-export function adaptChartResult(
-  result: RillChartResult,
-  options: AdaptOptions,
-): AdaptedRillChart {
-  const chartType = result.chart_type;
-  const spec = result.spec as unknown as ChartSpec;
-  const timeZone =
-    result.resolved_time_range?.time_zone ||
-    result.spec.time_range?.time_zone ||
-    options.timeZone ||
-    DEFAULT_TIME_ZONE;
-  const locale = options.locale ?? "en";
-
-  const {
-    measures: measureNames,
-    dimensions: dimensionNames,
-    timeDimensions,
-  } = getFieldsByType(spec);
-  const temporalField = timeDimensions[0];
-  const timeGrain = resolveTimeGrain(
-    result.time_grain ?? result.spec.time_grain,
-    temporalField !== undefined,
-  );
-  const fields = buildFields(
-    result.fields ?? {},
-    measureNames,
-    dimensionNames,
-    timeDimensions,
-    timeGrain,
-  );
-  const measures = measureNames.map(
-    (name) => fields[name] as MetricsViewSpecMeasure,
-  );
-
-  let rows = normalizeRows(result.data);
-  const measureKeys = measureKeysInRows(measureNames, rows);
-  rows = rows.map((row) => coerceMeasureValues(row, measureKeys));
-  const hasComparison = measureNames.some((name) =>
-    measureKeys.includes(name + ComparisonDeltaPreviousSuffix),
-  );
-
-  const range = result.resolved_time_range ?? result.spec.time_range;
-  if (
-    temporalField &&
-    timeGrain &&
-    range &&
-    rows.length > 0 &&
-    supportsZeroFill(chartType)
-  ) {
-    const series = seriesDimension(chartType, spec, temporalField);
-    rows = zeroFillTimeBuckets(rows, {
-      timeField: temporalField,
-      grain: timeGrain,
-      range,
-      timeZone,
-      fillKeys: measureKeys,
-      seriesField: series,
-      seriesValues: series
-        ? stringDomain(result.domain_values?.[series])
-        : undefined,
-      rowsTruncated: result.rows_truncated === true,
-    });
-  }
-  if (timeDimensions.length > 0) {
-    rows = convertTimeFields(rows, timeDimensions, timeZone);
-  }
-
-  const domainValues = buildDomainValues(chartType, spec, rows, result, fields);
-
-  const snapshot: ChartDataResult = {
-    data: rows as ChartDataResult["data"],
-    isFetching: false,
-    error: null,
-    fields,
-    domainValues,
-    isDarkMode: options.isDark,
-    hasComparison,
-    theme: themeManager.resolveThemeColors(result.theme, options.isDark),
-  };
-
-  // `create_chart` always sends a title; the humanized type id ("Bar chart") is a last resort.
-  const fallbackTitle = chartType.replace(/_/g, " ");
-  const title =
-    result.title?.trim() ||
-    fallbackTitle[0].toUpperCase() + fallbackTitle.slice(1);
-  const timeRangeLabel = range
-    ? formatTimeRange(range, timeZone, locale, timeGrain)
-    : undefined;
-  const captionParts = buildCaptionParts({
-    range,
-    grain: timeGrain,
-    showGrain: temporalField !== undefined,
-    hasComparison,
-    metricsViewLabel:
-      result.metrics_view?.display_name || result.metrics_view?.name,
-    timeZone,
-    locale,
-  });
-
-  return {
-    engine: "rill",
-    chartType,
-    spec,
-    chartData: readable(snapshot),
-    snapshot,
-    measures,
-    theme: themeManager.resolveThemeObject(result.theme, options.isDark),
-    title,
-    timeRangeLabel,
-    captionParts,
-    caption: captionParts.join(CAPTION_SEPARATOR),
-    table: buildTable(
-      rows,
-      fields,
-      timeDimensions,
-      dimensionNames,
-      measureNames,
-      hasComparison,
-      timeGrain,
-    ),
-    rowCount: rows.length,
-    timeZone,
-    timeGrain,
-    temporalField,
-    hasComparison,
-    truncated: result.truncated === true,
-    rowsTruncated: result.rows_truncated === true,
-    truncationNote: truncationNote(
-      result,
-      temporalField,
-      topNTarget(chartType, result.spec)?.limit,
-    ),
-    truncationWarning: result.truncation_warning || undefined,
-    openUrl: result.open_url || undefined,
-  };
-}
-
 /**
- * Adapts a Flint result: the rows are zero-filled and converted to the resolved time zone like
+ * Adapts a result: the rows are zero-filled and converted to the resolved time zone like
  * Rill's charts do (Flint takes `Date` values), the measures get Rill's formatters, and `flint`
  * holds the compile input for the surface. The title comes from the result, else from the spec's
  * headline; the spec's subtitle leads the caption.
  */
-export function adaptFlintResult(
-  result: FlintChartResult,
+export function adaptResult(
+  result: ChartResult,
   options: AdaptOptions,
-): AdaptedFlintChart {
+): AdaptedChart {
   const chartSpec = options.chartSpec ?? result.input.chart_spec;
   const timeZone =
     result.resolved_time_range?.time_zone ||
@@ -357,11 +166,7 @@ export function adaptFlintResult(
       timeNames.push(name);
     else dimensionNames.push(name);
   }
-  const temporalField = flintTemporalField(
-    chartSpec,
-    wireFields,
-    timeDimension,
-  );
+  const temporalField = temporalFieldOf(chartSpec, wireFields, timeDimension);
   const timeGrain = resolveTimeGrain(
     result.time_grain ?? result.input.data.time_grain,
     temporalField !== undefined,
@@ -380,7 +185,7 @@ export function adaptFlintResult(
   rows = rows.map((row) => coerceMeasureValues(row, measureKeys));
 
   const range = result.resolved_time_range ?? result.input.data.time_range;
-  const series = flintSeriesField(chartSpec, wireFields, timeDimension);
+  const series = seriesFieldOf(chartSpec, wireFields, timeDimension);
   const seriesDomain = series
     ? stringDomain(result.domain_values?.[series])
     : undefined;
@@ -391,14 +196,14 @@ export function adaptFlintResult(
     .filter(
       (field) =>
         field !== temporalField &&
-        flintFieldKind(field, wireFields, timeDimension) !== "measure",
+        fieldKind(field, wireFields, timeDimension) !== "measure",
     );
   if (
     temporalField &&
     timeGrain &&
     range &&
     rows.length > 0 &&
-    FLINT_ZERO_FILL_CHART_TYPES.has(chartSpec.chartType) &&
+    ZERO_FILL_CHART_TYPES.has(chartSpec.chartType) &&
     splits.every((field) => field === series)
   ) {
     rows = zeroFillTimeBuckets(rows, {
@@ -428,11 +233,12 @@ export function adaptFlintResult(
   }
   const flint = buildFlintCompileInput(chartSpec, result, flintRows, timeGrain);
   const otherSlice = combinedSliceLabel(chartSpec, series, seriesDomain);
-  const hasComparison =
-    flint.comparison !== undefined ||
-    measureNames.some((name) =>
-      measureKeys.includes(name + ComparisonDeltaPreviousSuffix),
-    );
+  // The caption and the comparison control say what the chart draws: the previous period is
+  // drawn when it is folded in as a second series. The table shows the previous values it has.
+  const hasComparison = flint.comparison !== undefined;
+  const hasPreviousValues = measureNames.some((name) =>
+    measureKeys.includes(name + ComparisonDeltaPreviousSuffix),
+  );
 
   // Each comparison column is formatted like its measure.
   const measures: MetricsViewSpecMeasure[] = [];
@@ -470,7 +276,6 @@ export function adaptFlintResult(
   ];
 
   return {
-    engine: "flint",
     chartType: chartSpec.chartType,
     chartSpec,
     flint,
@@ -487,7 +292,7 @@ export function adaptFlintResult(
       timeNames,
       dimensionNames,
       measureNames,
-      hasComparison,
+      hasPreviousValues,
       timeGrain,
     ),
     rowCount: rows.length,
@@ -502,7 +307,7 @@ export function adaptFlintResult(
       : truncationNote(
           result,
           temporalField,
-          flintTopNTarget(chartSpec, wireFields, timeDimension)?.limit,
+          topNTarget(chartSpec, wireFields, timeDimension)?.limit,
         ),
     truncationWarning: result.truncation_warning || undefined,
     openUrl: result.open_url || undefined,
@@ -518,8 +323,8 @@ function resolveTimeGrain(
 }
 
 /**
- * Rill's field map for the formatters and the table. Time fields are labeled "Time"; given the
- * metrics view's time dimension (Flint results), another time field keeps its own name.
+ * Rill's field map for the formatters and the table. The metrics view's time dimension is
+ * labeled "Time"; another time field keeps its own name.
  */
 function buildFields(
   wireFields: Record<string, WireField>,
@@ -527,7 +332,7 @@ function buildFields(
   dimensionNames: string[],
   timeNames: string[],
   grain: V1TimeGrain | undefined,
-  timeDimension?: string,
+  timeDimension: string | undefined,
 ): ChartFieldsMap {
   const fields: ChartFieldsMap = {};
   for (const name of measureNames) {
@@ -614,28 +419,6 @@ function coerceMeasureValues(row: WireRow, measureKeys: string[]): WireRow {
     }
   }
   return copy ?? row;
-}
-
-function supportsZeroFill(chartType: ChartType): boolean {
-  return isCartesianChartType(chartType) || chartType === "combo_chart";
-}
-
-/** The nominal dimension that splits a time series into several series, if any. */
-function seriesDimension(
-  chartType: ChartType,
-  spec: ChartSpec,
-  temporalField: string,
-): string | undefined {
-  const color = (spec as { color?: FieldConfig | string }).color;
-  if (isFieldConfig(color) && color.type === "nominal") {
-    return color.field;
-  }
-  if (isCartesianChartType(chartType)) {
-    const vertical = toVerticalSpec(spec as CartesianChartSpec);
-    const x = vertical.x;
-    if (x && x.type === "nominal" && x.field !== temporalField) return x.field;
-  }
-  return undefined;
 }
 
 interface ZeroFillOptions {
@@ -781,128 +564,6 @@ function stringDomain(values: unknown[] | undefined): string[] | undefined {
     .map((value) => String(value));
 }
 
-function firstAppearance(rows: WireRow[], field: string): string[] {
-  const seen = new Set<string>();
-  for (const row of rows) {
-    const value = row[field];
-    if (value === null || value === undefined) continue;
-    seen.add(String(value));
-  }
-  return Array.from(seen);
-}
-
-function measureLabels(names: string[] | undefined, fields: ChartFieldsMap) {
-  return (names ?? []).map((name) => fields[name]?.displayName || name);
-}
-
-function sumMeasure(rows: WireRow[], field: string): number {
-  return rows.reduce((total, row) => {
-    const value = row[field];
-    return typeof value === "number" && Number.isFinite(value)
-      ? total + value
-      : total;
-  }, 0);
-}
-
-/**
- * Ordered domains for the nominal channels: the backend's top-N order when it sent one,
- * else first appearance in the rows. The circular total and the multi-measure legend
- * labels are derived here because the spec generators read them from the same map.
- */
-function buildDomainValues(
-  chartType: ChartType,
-  spec: ChartSpec,
-  rows: WireRow[],
-  result: ChartResult,
-  fields: ChartFieldsMap,
-): ChartDomainValues {
-  const domain: ChartDomainValues = {};
-  for (const [key, values] of Object.entries(result.domain_values ?? {})) {
-    if (!Array.isArray(values)) continue;
-    const defined = values.filter(
-      (value) => value !== null && value !== undefined,
-    );
-    domain[key] = defined.every((value) => typeof value === "number")
-      ? (defined as number[])
-      : defined.map((value) => String(value));
-  }
-
-  const fallback = (field: FieldConfig | string | undefined) => {
-    if (!isFieldConfig(field) || field.type !== "nominal") return;
-    if (!(field.field in domain))
-      domain[field.field] = firstAppearance(rows, field.field);
-  };
-
-  switch (chartType) {
-    case "bar_chart":
-    case "line_chart":
-    case "area_chart":
-    case "stacked_bar":
-    case "stacked_bar_normalized": {
-      const vertical = toVerticalSpec(spec as CartesianChartSpec);
-      fallback(vertical.x);
-      if (isFieldConfig(vertical.color)) {
-        if (isMultiFieldConfig(vertical.y)) {
-          domain[vertical.color.field] = measureLabels(
-            vertical.y.fields,
-            fields,
-          );
-        } else {
-          fallback(vertical.color);
-        }
-      }
-      break;
-    }
-    case "combo_chart": {
-      const combo = spec as ComboChartSpec;
-      fallback(combo.x);
-      if (combo.color?.field && combo.y1?.field && combo.y2?.field) {
-        domain[combo.color.field] = measureLabels(
-          [combo.y1.field, combo.y2.field],
-          fields,
-        );
-      }
-      break;
-    }
-    case "donut_chart":
-    case "pie_chart": {
-      const circular = spec as CircularChartSpec;
-      fallback(circular.color);
-      const measureField = circular.measure?.field;
-      if (measureField) {
-        const sum = sumMeasure(rows, measureField);
-        const total = result.totals?.[measureField] ?? sum;
-        domain[TOTAL_DOMAIN_KEY] = [total];
-        const other = total - sum;
-        if (circular.show_other === true && circular.color && other > 0) {
-          domain[OTHER_VALUE_DOMAIN_KEY] = [other];
-          const colors = domain[circular.color.field];
-          if (Array.isArray(colors) && !colors.includes(OTHER_VALUE as never)) {
-            domain[circular.color.field] = [
-              ...(colors as string[]),
-              OTHER_VALUE,
-            ];
-          }
-        }
-      }
-      break;
-    }
-    case "heatmap": {
-      const heatmap = spec as HeatmapChartSpec;
-      fallback(heatmap.x);
-      fallback(heatmap.y);
-      break;
-    }
-    case "scatter_plot": {
-      fallback((spec as ScatterPlotChartSpec).color);
-      break;
-    }
-    case "funnel_chart":
-      break;
-  }
-  return domain;
-}
-
 /**
  * The banner line for a truncated result. Row truncation keeps the newest buckets of a time
  * series; otherwise the cut is the top-N cap of the chart's nominal channel.
@@ -929,7 +590,7 @@ function buildTable(
   timeNames: string[],
   dimensionNames: string[],
   measureNames: string[],
-  hasComparison: boolean,
+  hasPreviousValues: boolean,
   grain: V1TimeGrain | undefined,
 ): TableModel {
   const columns: TableColumn[] = [];
@@ -969,7 +630,7 @@ function buildTable(
     };
     const label = measure?.displayName || name;
     columns.push({ key: name, label, kind: "measure", format });
-    if (hasComparison) {
+    if (hasPreviousValues) {
       columns.push({
         key: name + ComparisonDeltaPreviousSuffix,
         label: m.mcp_chart_previous_column({ name: label }),

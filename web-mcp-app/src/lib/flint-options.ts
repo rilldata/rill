@@ -1,42 +1,34 @@
 import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
 import {
-  assembleVegaLite,
+  computeChartTypeStates,
+  type ChartAssemblyInput,
+  type ChartEncoding,
+  type ChartOption,
+} from "flint-chart/core";
+import {
   getChartOptions,
   getChartTransform,
-  vlAdaptChart,
   vlGetTemplateDef,
-  vlRecommendChartTypes,
 } from "flint-chart/vegalite";
 import type {
+  WireField,
+  WireFieldKind,
   WireFlintChartSpec,
   WireFlintEncodingValue,
-  WireRow,
 } from "./contract";
-import { stripFlintChartSpec, type FlintCompileInput } from "./flint-input";
+import { comparisonChannel, type FlintCompileInput } from "./flint-input";
 
 /**
  * Presentation controls derived from Flint's own option model, so the panel can never offer a
  * knob the compiler ignores: applicable binary and discrete chart properties (`getChartOptions`),
  * the alternative arrangements of the same bindings (the `arrange` control of
- * `getChartTransform`), and chart types the current bindings can move to
- * (`vlRecommendChartTypes` + `vlAdaptChart`). Every edit is a new chart spec applied
+ * `getChartTransform`), and Flint's chart-type transitions, the sibling types that keep the
+ * chart's meaning (`computeChartTypeStates`). Every edit is a new chart spec applied
  * client-side; nothing here talks to the server.
  *
  * Adapted from `packages/flint-mcp/ui/src/options.ts` in microsoft/flint-chart (MIT License,
  * Copyright (c) Microsoft Corporation), restricted to the controls this widget renders.
  */
-
-type AssemblyInput = Parameters<typeof assembleVegaLite>[0];
-
-/** The shape of a Flint chart option this module reads; declared locally, like `compile.ts` does. */
-interface RawOption {
-  key: string;
-  label: string;
-  type: "continuous" | "discrete" | "binary";
-  applicable: boolean;
-  value?: unknown;
-  options?: { value: unknown; label: string }[];
-}
 
 export interface PanelChoice {
   value: string;
@@ -52,7 +44,7 @@ export interface PanelProperty {
 }
 
 export interface FlintPanel {
-  /** Chart types the data can move to; undefined when Flint recommends none that compile. */
+  /** The chart types the result's spec can move to; undefined when Flint offers no transition. */
   chartType: { current: string; choices: PanelChoice[] } | undefined;
   /** Alternative arrangements of the same bindings (swap axes, split into panels, ...). */
   layout:
@@ -71,16 +63,16 @@ export interface FlintPanel {
   };
 }
 
-/** The toolbar stays readable: a few properties, a few views, a few chart types. */
+/** The toolbar stays readable: a few properties and a few views. */
 export const MAX_PANEL_PROPERTIES = 3;
 export const MAX_LAYOUT_CHOICES = 4;
-export const MAX_CHART_TYPE_CANDIDATES = 4;
-/** Flint types the server does not plan queries for in this phase. */
-export const EXCLUDED_CHART_TYPES: ReadonlySet<string> = new Set([
-  "Map",
-  "Choropleth",
-  "KPI Card",
-]);
+
+/** The Vega-Lite type of a field of each kind, for a binding that declares none. */
+const KIND_TYPES: Record<WireFieldKind, NonNullable<ChartEncoding["type"]>> = {
+  measure: "quantitative",
+  dimension: "nominal",
+  time: "temporal",
+};
 
 /**
  * Localized labels of the steps Flint composes its arrange states from; a state id is a path of
@@ -114,77 +106,120 @@ export function layoutLabel(id: string, flintLabel: string): string {
   return steps.map((label) => label()).join(" · ");
 }
 
-function assemblyInput(
-  compile: FlintCompileInput,
-  rows: WireRow[],
-): AssemblyInput {
+function assemblyInput(compile: FlintCompileInput): ChartAssemblyInput {
   return {
-    data: { values: rows },
+    data: { values: compile.rows },
     semantic_types: compile.fields.semantic_types,
     field_display_names: compile.fields.field_display_names,
-    chart_spec: compile.spec,
+    chart_spec: compile.spec as ChartAssemblyInput["chart_spec"],
     options: { addTooltips: true },
-  } as AssemblyInput;
-}
-
-/** The single-field bindings of a spec, as `vlAdaptChart` takes them; series folds are skipped. */
-function singleBindings(chartSpec: WireFlintChartSpec): Record<string, string> {
-  const bindings: Record<string, string> = {};
-  for (const [channel, value] of Object.entries(chartSpec.encodings ?? {})) {
-    const field =
-      typeof value === "string"
-        ? value
-        : Array.isArray(value)
-          ? undefined
-          : value?.field;
-    if (field) bindings[channel] = field;
-  }
-  return bindings;
+  };
 }
 
 /**
- * The binding a moved field keeps: its Rill `limit`, so the top-N survives the move. Its sort
- * keys are dropped, since `sortBy` names a channel of the old chart type and the new type's
- * own ordering applies.
+ * The binding a moved field keeps: its declared type and its Rill `limit`, so a dimension read as
+ * time stays one and the top-N survives the move. Its sort keys are dropped, since `sortBy` names
+ * a channel of the old chart type and the new type's own ordering applies.
  */
 function encodingFor(
   chartSpec: WireFlintChartSpec,
   field: string,
 ): WireFlintEncodingValue {
   for (const value of Object.values(chartSpec.encodings ?? {})) {
-    if (
-      typeof value === "object" &&
-      !Array.isArray(value) &&
-      value.field === field
-    ) {
-      return value.limit === undefined ? field : { field, limit: value.limit };
-    }
+    if (typeof value !== "object" || Array.isArray(value)) continue;
+    if (value.field !== field) continue;
+    const { type, limit } = value;
+    if (type === undefined && limit === undefined) return field;
+    return {
+      field,
+      ...(type !== undefined && { type }),
+      ...(limit !== undefined && { limit }),
+    };
   }
   return field;
 }
 
-/** The spec moved to another chart type, with Flint's re-binding of the fields. */
-export function withChartType(
+/**
+ * The spec's bindings as Flint's transitions read them: one typed encoding per channel, the type
+ * from the field's kind unless the binding declares one. Undefined for a spec that binds several
+ * fields on a channel (a series fold), which this widget does not move.
+ */
+function typedEncodings(
   chartSpec: WireFlintChartSpec,
-  chartType: string,
-  rows: WireRow[],
-  semanticTypes: Record<string, string>,
-): WireFlintChartSpec {
-  const adapted = vlAdaptChart(
-    chartSpec.chartType,
-    chartType,
-    singleBindings(chartSpec),
-    rows,
-    semanticTypes,
-  );
-  const encodings: Record<string, WireFlintEncodingValue> = {};
-  for (const [channel, field] of Object.entries(adapted)) {
-    if (field) encodings[channel] = encodingFor(chartSpec, field);
+  fields: Record<string, WireField>,
+): Record<string, ChartEncoding> | undefined {
+  const typed: Record<string, ChartEncoding> = {};
+  for (const [channel, value] of Object.entries(chartSpec.encodings ?? {})) {
+    if (Array.isArray(value)) return undefined;
+    const encoding = typeof value === "string" ? { field: value } : value;
+    if (!encoding.field) continue;
+    const kind = fields[encoding.field]?.kind;
+    typed[channel] = {
+      field: encoding.field,
+      type: encoding.type ?? (kind ? KIND_TYPES[kind] : "nominal"),
+      ...(encoding.aggregate && { aggregate: encoding.aggregate }),
+    };
   }
-  // Properties are template-specific; the new type starts from its own defaults.
-  const moved: WireFlintChartSpec = { ...chartSpec, chartType, encodings };
-  delete moved.chartProperties;
-  return moved;
+  return typed;
+}
+
+/**
+ * The specs the chart can move to, keyed by chart type: Flint's one-hop transitions of the spec
+ * (a line chart to an area or a bar chart, a grouped bar chart to a stacked one, ...), with the
+ * fields re-routed the way Flint's own chart-type control does. Each is a plain chart spec rather
+ * than Flint's `chartType` override, so that the comparison fold, the server's validation and
+ * `chart_data` all see the chart type that is drawn. Chart properties are template-specific, so
+ * a moved spec starts from the new type's defaults.
+ */
+function chartTypeMoves(
+  chartSpec: WireFlintChartSpec,
+  fields: Record<string, WireField>,
+  rows: FlintCompileInput["rows"],
+): Map<string, WireFlintChartSpec> {
+  const moves = new Map<string, WireFlintChartSpec>();
+  const template = vlGetTemplateDef(chartSpec.chartType);
+  const encodings = typedEncodings(chartSpec, fields);
+  if (!template || !encodings) return moves;
+  // The transitions' gates count distinct values with a Set, which tells Date objects apart by
+  // identity, so time values are compared by their timestamp: a line over 8 days of 5 series
+  // has 8 categories for its bar transition, not 40.
+  const data = rows.map((row) =>
+    Object.fromEntries(
+      Object.entries(row).map(([key, value]) => [
+        key,
+        value instanceof Date ? value.getTime() : value,
+      ]),
+    ),
+  );
+  let states: ReturnType<typeof computeChartTypeStates>;
+  try {
+    states = computeChartTypeStates(
+      template,
+      encodings,
+      data,
+      vlGetTemplateDef,
+    );
+  } catch {
+    return moves;
+  }
+  if (!states) return moves;
+  for (const id of states.ids) {
+    const chartType = states.chartTypeById[id];
+    if (!chartType) continue;
+    const moved: WireFlintChartSpec = {
+      ...chartSpec,
+      chartType,
+      encodings: {},
+    };
+    delete moved.chartProperties;
+    for (const [channel, encoding] of Object.entries(states.statesById[id])) {
+      if (encoding.field) {
+        moved.encodings[channel] = encodingFor(chartSpec, encoding.field);
+      }
+    }
+    moves.set(chartType, moved);
+  }
+  return moves;
 }
 
 /** The spec with a chart property set, or reset to the compiler's default when the choice is undefined. */
@@ -199,23 +234,27 @@ export function withProperty(
   return { ...chartSpec, chartProperties };
 }
 
-function propertyChoices(option: RawOption): PanelChoice[] {
-  if (option.type === "binary") {
-    return [
-      { value: valueKey(true), label: m.mcp_chart_option_on() },
-      { value: valueKey(false), label: m.mcp_chart_option_off() },
-    ];
+function propertyChoices(option: ChartOption): PanelChoice[] {
+  switch (option.type) {
+    case "binary":
+      return [
+        { value: valueKey(true), label: m.mcp_chart_option_on() },
+        { value: valueKey(false), label: m.mcp_chart_option_off() },
+      ];
+    case "discrete":
+      return option.options.map((choice) => ({
+        value: valueKey(choice.value),
+        label: choice.label,
+      }));
+    default:
+      return [];
   }
-  return (option.options ?? []).map((choice) => ({
-    value: valueKey(choice.value),
-    label: choice.label,
-  }));
 }
 
-function panelProperties(input: AssemblyInput): PanelProperty[] {
-  let options: RawOption[];
+function panelProperties(input: ChartAssemblyInput): PanelProperty[] {
+  let options: ChartOption[];
   try {
-    options = getChartOptions(input) as unknown as RawOption[];
+    options = getChartOptions(input);
   } catch {
     return [];
   }
@@ -241,7 +280,7 @@ function panelProperties(input: AssemblyInput): PanelProperty[] {
  * Flint's arrange control: the views of the same bindings, stored under its own chart property
  * (`key`). Its moves to another chart type are left out, since the chart-type control covers them.
  */
-function panelLayout(input: AssemblyInput): FlintPanel["layout"] {
+function panelLayout(input: ChartAssemblyInput): FlintPanel["layout"] {
   let arrange: NonNullable<ReturnType<typeof getChartTransform>>["arrange"];
   try {
     arrange = getChartTransform(input)?.arrange;
@@ -258,69 +297,31 @@ function panelLayout(input: AssemblyInput): FlintPanel["layout"] {
 }
 
 /**
- * Chart types the current bindings can move to: Flint's ranking for the data, kept when the
- * adapted spec compiles, since a recommendation is made for the dataset rather than for these
- * bindings.
- */
-function chartTypeCandidates(
-  chartSpec: WireFlintChartSpec,
-  compile: FlintCompileInput,
-  rows: WireRow[],
-): string[] {
-  let ranked: string[];
-  try {
-    ranked = vlRecommendChartTypes(rows, compile.fields.semantic_types, {
-      max: 12,
-    });
-  } catch {
-    return [];
-  }
-  const candidates: string[] = [];
-  for (const type of ranked) {
-    if (candidates.length >= MAX_CHART_TYPE_CANDIDATES) break;
-    if (type === chartSpec.chartType || EXCLUDED_CHART_TYPES.has(type))
-      continue;
-    if (!vlGetTemplateDef(type)) continue;
-    try {
-      const moved = withChartType(
-        chartSpec,
-        type,
-        rows,
-        compile.fields.semantic_types,
-      );
-      if (Object.keys(moved.encodings).length === 0) continue;
-      assembleVegaLite(
-        assemblyInput({ ...compile, spec: stripFlintChartSpec(moved) }, rows),
-      );
-      candidates.push(type);
-    } catch {
-      // Flint cannot draw the data as this type; skip it.
-    }
-  }
-  return candidates;
-}
-
-/**
- * Builds the panel for the chart spec in effect. The chart-type choices are computed from
+ * Builds the panel for the chart spec in effect. The chart-type choices are the moves of
  * `baseSpec`, the result's own spec, and a switch always moves from it, so the list stays put
  * while the user tries types and choosing the original type restores the original bindings.
+ * While the chart draws a comparison, only the types that can draw it too are offered.
  */
 export function buildFlintPanel(
   chartSpec: WireFlintChartSpec,
   compile: FlintCompileInput,
-  rows: WireRow[],
+  fields: Record<string, WireField>,
   baseSpec: WireFlintChartSpec = chartSpec,
 ): FlintPanel {
-  const input = assemblyInput(compile, rows);
+  const input = assemblyInput(compile);
   const properties = panelProperties(input);
   const layout = panelLayout(input);
-  const candidates = chartTypeCandidates(baseSpec, compile, rows);
-  const types = [baseSpec.chartType, ...candidates];
-  if (!types.includes(chartSpec.chartType)) types.push(chartSpec.chartType);
+  const moves = chartTypeMoves(baseSpec, fields, compile.rows);
+  if (compile.comparison) {
+    for (const [type, moved] of moves) {
+      if (!comparisonChannel(moved, fields)) moves.delete(type);
+    }
+  }
+  const types = [baseSpec.chartType, ...moves.keys()];
 
   return {
     chartType:
-      candidates.length > 0
+      moves.size > 0
         ? {
             current: chartSpec.chartType,
             choices: types.map((type) => ({ value: type, label: type })),
@@ -329,10 +330,7 @@ export function buildFlintPanel(
     layout,
     properties,
     apply: {
-      chartType: (type) =>
-        type === baseSpec.chartType
-          ? baseSpec
-          : withChartType(baseSpec, type, rows, compile.fields.semantic_types),
+      chartType: (type) => moves.get(type) ?? baseSpec,
       // The first view is the authored one, which needs no override.
       layout: (id) =>
         layout

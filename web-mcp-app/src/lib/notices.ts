@@ -1,5 +1,5 @@
 import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
-import type { AdaptedChartBase } from "./adapt";
+import type { AdaptedChart } from "./adapt";
 
 /** What compiling a Flint chart reported: a hard error, or that Flint left values out. */
 export interface CompileNotices {
@@ -38,7 +38,7 @@ export function compileNotices(compiled: {
  * dropped something; the server's explanation and Flint's messages are the hover detail.
  */
 export function truncationBanner(
-  chart: Pick<AdaptedChartBase, "truncationNote" | "truncationWarning">,
+  chart: Pick<AdaptedChart, "truncationNote" | "truncationWarning">,
   notices: CompileNotices,
 ): { note: string; detail: string | undefined } | undefined {
   if (!chart.truncationNote && notices.dropped.length === 0) return undefined;

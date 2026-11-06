@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vitest";
 import bar from "../../harness/fixtures/bar_chart.json";
 import empty from "../../harness/fixtures/empty.json";
-import flintBar from "../../harness/fixtures/flint_bar_chart.json";
 import noData from "../../harness/fixtures/no_data.json";
 import unsupported from "../../harness/fixtures/unsupported_widget.json";
 import {
@@ -14,7 +13,6 @@ import {
   withChartData,
   type ChartDataPayload,
   type ChartResult,
-  type FlintChartResult,
 } from "./contract";
 
 const result = (fixture: { result: { structuredContent?: unknown } }) =>
@@ -25,8 +23,9 @@ describe("parseChartPayload", () => {
     const parsed = parseChartPayload(bar.result.structuredContent);
     expect(parsed.kind).toBe("chart");
     if (parsed.kind !== "chart") return;
-    expect(parsed.result.chart_type).toBe("bar_chart");
-    expect(parsed.result.title).toBe("Total Bids per Advertiser Name");
+    expect(parsed.result.chart_type).toBe("Bar Chart");
+    expect(parsed.result.input.chart_spec.chartType).toBe("Bar Chart");
+    expect(parsed.result.title).toBe("Total Bids by Advertiser Name");
     expect(hasChartData(parsed.result)).toBe(true);
   });
 
@@ -49,13 +48,30 @@ describe("parseChartPayload", () => {
   });
 
   it("rejects malformed payloads", () => {
-    const chart = { widget: "chart", chart_type: "bar_chart", spec: {} };
+    const input = bar.result.structuredContent.input;
+    const chart = { widget: "chart", chart_type: "Bar Chart", input };
     expect(parseChartPayload(undefined).kind).toBe("invalid");
     expect(parseChartPayload("text").kind).toBe("invalid");
-    expect(parseChartPayload({ ...chart, chart_type: "pivot" }).kind).toBe(
+    expect(parseChartPayload({ ...chart, chart_type: 42 }).kind).toBe(
       "invalid",
     );
-    expect(parseChartPayload({ ...chart, spec: "x" }).kind).toBe("invalid");
+    expect(parseChartPayload({ ...chart, input: "x" }).kind).toBe("invalid");
+    expect(
+      parseChartPayload({ ...chart, input: { ...input, chart_spec: {} } }).kind,
+    ).toBe("invalid");
+    expect(
+      parseChartPayload({ ...chart, input: { chart_spec: input.chart_spec } })
+        .kind,
+    ).toBe("invalid");
+    // Rill's own chat gets `chart_type` and `spec`, which this widget does not render.
+    expect(
+      parseChartPayload({
+        widget: "chart",
+        chart_type: "bar_chart",
+        spec: { metrics_view: "bids_metrics" },
+        data: [],
+      }).kind,
+    ).toBe("invalid");
     expect(parseChartPayload({ ...chart, data: "rows" }).kind).toBe("invalid");
     expect(
       parseChartPayload({ ...chart, data: { columns: [], rows: [] } }).kind,
@@ -67,7 +83,7 @@ describe("parseChartPayload", () => {
   it("keeps the deep link on invalid payloads", () => {
     const parsed = parseChartPayload({
       widget: "chart",
-      chart_type: "nope",
+      chart_type: "Bar Chart",
       open_url: "https://example.com/open",
     });
     expect(parsed.kind).toBe("invalid");
@@ -77,7 +93,11 @@ describe("parseChartPayload", () => {
   });
 
   it("drops a deep link that is not http(s)", () => {
-    const chart = { widget: "chart", chart_type: "bar_chart", spec: {} };
+    const chart = {
+      widget: "chart",
+      chart_type: "Bar Chart",
+      input: bar.result.structuredContent.input,
+    };
     for (const openUrl of [
       "javascript:alert(1)",
       "data:text/html,<script>alert(1)</script>",
@@ -88,7 +108,7 @@ describe("parseChartPayload", () => {
       expect(parsed.kind === "chart" && parsed.result.open_url).toBe(undefined);
       const invalid = parseChartPayload({
         ...chart,
-        chart_type: "nope",
+        input: undefined,
         open_url: openUrl,
       });
       expect(invalid.kind === "invalid" && invalid.openUrl).toBe(undefined);
@@ -107,8 +127,8 @@ describe("parseChartPayload", () => {
 });
 
 describe("parseChartDataResponse", () => {
-  const flint = flintBar.result.structuredContent as FlintChartResult;
-  const section = { data: flint.data, fields: flint.fields };
+  const chart = result(bar);
+  const section = { data: chart.data, fields: chart.fields };
 
   it("accepts a data section, with or without the effective input", () => {
     expect(parseChartDataResponse(section)).toEqual({
@@ -116,7 +136,7 @@ describe("parseChartDataResponse", () => {
       response: section,
     });
     expect(parseChartDataResponse({ data: [] }).kind).toBe("data");
-    const withInput = { ...section, input: flint.input };
+    const withInput = { ...section, input: chart.input };
     expect(parseChartDataResponse(withInput)).toEqual({
       kind: "data",
       response: withInput,
@@ -167,14 +187,18 @@ describe("normalizeRows", () => {
 describe("withChartData", () => {
   it("replaces the data section and keeps the rest of the result", () => {
     const base = result(bar);
-    const spec = { ...base.spec, time_grain: "TIME_GRAIN_WEEK" as const };
+    const input = {
+      ...base.input,
+      data: { ...base.input.data, time_grain: "TIME_GRAIN_WEEK" as const },
+    };
     const payload: ChartDataPayload = {
       data: [],
       fields: base.fields,
       resolved_time_range: base.resolved_time_range,
     };
-    const replaced = withChartData(base, spec, payload);
-    expect(replaced.spec).toBe(spec);
+    const replaced = withChartData(base, input, payload);
+    expect(replaced.input).toBe(input);
+    expect(replaced.chart_type).toBe(base.chart_type);
     expect(replaced.title).toBe(base.title);
     expect(replaced.open_url).toBe(base.open_url);
     expect(replaced.theme).toBe(base.theme);

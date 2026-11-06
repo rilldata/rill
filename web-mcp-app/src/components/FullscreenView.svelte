@@ -49,7 +49,7 @@
     /** Undefined when the host cannot run server tools or the chart has nothing to control. */
     controls: ControlOptions | undefined;
     controlState: ControlState;
-    /** Flint charts only: the presentation controls, applied client-side. */
+    /** The presentation controls from Flint's option model, applied client-side. */
     panel?: FlintPanel;
     refreshing?: boolean;
     refreshError?: string;

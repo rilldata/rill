@@ -1,5 +1,5 @@
 {
-  "name": "Flint donut chart",
+  "name": "Donut chart",
   "description": "Bid share per device as a Pie Chart with an inner radius.",
   "expect": "canvas",
   "arguments": {

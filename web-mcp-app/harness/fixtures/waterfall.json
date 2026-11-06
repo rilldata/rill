@@ -1,5 +1,5 @@
 {
-  "name": "Flint waterfall chart",
+  "name": "Waterfall chart",
   "description": "Spend change per publisher; Flint colors the bars by sign and adds the totals.",
   "expect": "canvas",
   "arguments": {

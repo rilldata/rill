@@ -9,7 +9,6 @@
   import Skeleton from "./components/Skeleton.svelte";
   import { adaptResult, type AdaptedChart } from "./lib/adapt";
   import {
-    isFlintResult,
     isRecord,
     parseChartDataResponse,
     textContent,
@@ -17,23 +16,16 @@
     type ChartDataPayload,
     type ChartDataResponse,
     type ChartResult,
-    type WireChartSpec,
     type WireFlintChartSpec,
     type WireFlintInput,
   } from "./lib/contract";
   import {
     controlOptions,
     describeView,
-    patchSpec,
+    patchInput,
     topNTarget,
     type ControlState,
   } from "./lib/controls";
-  import {
-    describeFlintView,
-    flintControlOptions,
-    flintTopNTarget,
-    patchFlintInput,
-  } from "./lib/flint-controls";
   import { buildFlintPanel } from "./lib/flint-options";
   import { HostSession } from "./lib/host.svelte";
   import { setLocaleFromHost } from "./lib/i18n";
@@ -65,10 +57,9 @@
   // Raw: these objects feed the chart spec and must not be proxied (see HostSession).
   let controls = $state.raw<ControlState>({});
   let dataOverride = $state.raw<
-    | { queried: WireChartSpec | WireFlintInput; payload: ChartDataPayload }
-    | undefined
+    { queried: WireFlintInput; payload: ChartDataPayload } | undefined
   >(undefined);
-  // Flint charts: the presentation controls' edit of the chart spec, compiled client-side.
+  // The presentation controls' edit of the chart spec, compiled client-side.
   let presentationSpec = $state.raw<WireFlintChartSpec | undefined>(undefined);
   let refreshing = $state(false);
   let refreshError = $state<string | undefined>(undefined);
@@ -135,18 +126,12 @@
   const timeDimension = $derived(baseResult?.metrics_view?.time_dimension);
   const timeRange = $derived(
     baseResult
-      ? (baseResult.resolved_time_range ??
-          (isFlintResult(baseResult)
-            ? baseResult.input.data.time_range
-            : baseResult.spec.time_range))
+      ? (baseResult.resolved_time_range ?? baseResult.input.data.time_range)
       : undefined,
   );
-  /** The Flint chart spec in effect: the presentation edit, else the (refreshed) result's. */
-  const currentFlintSpec = $derived(
-    presentationSpec ??
-      (effectiveResult && isFlintResult(effectiveResult)
-        ? effectiveResult.input.chart_spec
-        : undefined),
+  /** The chart spec in effect: the presentation edit, else the (refreshed) result's. */
+  const currentSpec = $derived(
+    presentationSpec ?? effectiveResult?.input.chart_spec,
   );
 
   const view = $derived.by((): ViewState => {
@@ -201,35 +186,27 @@
   );
 
   const availableControls = $derived.by(() => {
-    if (!baseResult || !session.canCallServerTools) return undefined;
-    const smallestGrain = baseResult.metrics_view?.smallest_time_grain;
-    if (isFlintResult(baseResult)) {
-      if (!currentFlintSpec) return undefined;
-      return flintControlOptions(
-        currentFlintSpec,
-        effectiveResult?.fields,
-        timeDimension,
-        timeRange,
-        smallestGrain,
-      );
+    if (!baseResult || !currentSpec || !session.canCallServerTools) {
+      return undefined;
     }
     return controlOptions(
-      baseResult.chart_type,
-      baseResult.spec,
+      currentSpec,
+      effectiveResult?.fields,
+      timeDimension,
       timeRange,
-      smallestGrain,
+      baseResult.metrics_view?.smallest_time_grain,
     );
   });
 
   // What the controls show as selected: the choice in flight, else what the result in effect carries.
   // Its spec holds the top-N limit the backend applied, defaults and caps included.
   const currentControls = $derived.by((): ControlState => {
-    if (!effectiveResult) return {};
-    const topN = isFlintResult(effectiveResult)
-      ? currentFlintSpec &&
-        flintTopNTarget(currentFlintSpec, effectiveResult.fields, timeDimension)
-          ?.limit
-      : topNTarget(effectiveResult.chart_type, effectiveResult.spec)?.limit;
+    if (!effectiveResult || !currentSpec) return {};
+    const topN = topNTarget(
+      currentSpec,
+      effectiveResult.fields,
+      timeDimension,
+    )?.limit;
     return {
       grain: controls.grain ?? effectiveResult.time_grain,
       topN: controls.topN ?? topN,
@@ -239,22 +216,18 @@
     };
   });
 
-  // The presentation controls are built only when they are shown: Flint ranks and test-compiles
-  // the candidate chart types, which is cheap but not free.
+  // The presentation controls are built only when they are shown: reading Flint's options compiles
+  // the chart, which is cheap but not free.
   const panel = $derived.by(() => {
-    if (view.kind !== "ready" || view.chart.engine !== "flint")
+    if (view.kind !== "ready" || !session.isFullscreen || !effectiveResult) {
       return undefined;
-    if (!session.isFullscreen) return undefined;
+    }
     // Chart-type choices come from the result's own spec so they stay put across switches.
-    const base =
-      effectiveResult && isFlintResult(effectiveResult)
-        ? effectiveResult.input.chart_spec
-        : view.chart.chartSpec;
     return buildFlintPanel(
       view.chart.chartSpec,
       view.chart.flint,
-      view.chart.rows,
-      base,
+      effectiveResult.fields ?? {},
+      effectiveResult.input.chart_spec,
     );
   });
 
@@ -263,14 +236,12 @@
     if (view.kind !== "ready") return;
     const chart = view.chart;
     session.updateModelContext(
-      chart.engine === "flint"
-        ? describeFlintView(
-            chart.title,
-            chart.chartSpec,
-            currentControls,
-            chart.timeRangeLabel,
-          )
-        : describeView(chart.title, currentControls, chart.timeRangeLabel),
+      describeView(
+        chart.title,
+        chart.chartSpec,
+        currentControls,
+        chart.timeRangeLabel,
+      ),
     );
   }
 
@@ -288,52 +259,35 @@
   }
 
   async function fetchChartData(next: ControlState, seq: number) {
-    if (!baseResult || !effectiveResult) {
+    if (!effectiveResult) {
       refreshing = false;
       return;
     }
     // Rill Cloud's unified MCP server routes every call by a `project` argument, which it
     // strips before forwarding; the argument is echoed from the original `create_chart` input.
     const project = session.toolInput?.project;
-    let args: Record<string, unknown>;
-    let queried: WireChartSpec | WireFlintInput;
-    if (isFlintResult(baseResult) && isFlintResult(effectiveResult)) {
-      const input = patchFlintInput(
-        effectiveResult.input,
-        currentFlintSpec ?? effectiveResult.input.chart_spec,
-        next,
-        timeRange,
-        effectiveResult.fields,
-        timeDimension,
-      );
-      // The caller's semantic type overrides hold for every query of the chart; older servers do not
-      // echo them. Without any the key is left out, since the input schema takes no null.
-      const semanticTypes =
-        input.semantic_types ?? session.toolInput?.semantic_types;
-      queried = input;
-      args = {
+    const input = patchInput(
+      effectiveResult.input,
+      currentSpec ?? effectiveResult.input.chart_spec,
+      next,
+      timeRange,
+      effectiveResult.fields,
+      timeDimension,
+    );
+    // The caller's semantic type overrides hold for every query of the chart: the input echoes them,
+    // else the original call carries them. Without any the key is left out, since the input schema takes no null.
+    const semanticTypes =
+      input.semantic_types ?? session.toolInput?.semantic_types;
+    let failure: string | undefined;
+    try {
+      const response = await session.callServerTool("chart_data", {
+        ...(typeof project === "string" && { project }),
         chart_spec: input.chart_spec,
         data: input.data,
         ...(isRecord(semanticTypes) &&
           Object.keys(semanticTypes).length > 0 && {
             semantic_types: semanticTypes,
           }),
-      };
-    } else {
-      const spec = patchSpec(
-        baseResult.spec as WireChartSpec,
-        baseResult.chart_type as never,
-        next,
-        timeRange,
-      );
-      queried = spec;
-      args = { chart_type: baseResult.chart_type, spec };
-    }
-    let failure: string | undefined;
-    try {
-      const response = await session.callServerTool("chart_data", {
-        ...(typeof project === "string" && { project }),
-        ...args,
       });
       if (seq !== requestSeq) return;
       if (response.isError) {
@@ -343,7 +297,7 @@
       if (parsed.kind === "invalid") {
         throw new Error(`invalid chart_data result: ${parsed.reason}`);
       }
-      failure = applyChartData(parsed.response, queried);
+      failure = applyChartData(parsed.response, input);
     } catch (error) {
       if (seq !== requestSeq) return;
       console.warn("rill chart widget: chart_data call failed", error);
@@ -363,12 +317,12 @@
    */
   function applyChartData(
     response: ChartDataResponse,
-    queried: WireChartSpec | WireFlintInput,
+    queried: WireFlintInput,
   ): string | undefined {
     const previous = { dataOverride, presentationSpec };
     const { input, ...payload } = response;
-    // A Flint refresh returns the effective input, with the limits the server applied (a facet
-    // cap, say); older servers send only the data, which then answers the input as requested.
+    // A refresh returns the effective input, with the limits the server applied (a facet cap,
+    // say); without one, the data answers the input as requested.
     dataOverride = { queried: input ?? queried, payload };
     // The refreshed input carries the presentation edits the request was built from.
     presentationSpec = undefined;

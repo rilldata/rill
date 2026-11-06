@@ -149,7 +149,7 @@ function dataPayload(fixture: Fixture, args?: Record<string, unknown>) {
     ...Object.fromEntries(
       DATA_KEYS.filter((key) => key in source).map((key) => [key, source[key]]),
     ),
-    // Like the server, a Flint request is answered with its effective input.
+    // Like the server, a request is answered with its effective input.
     ...(args?.chart_spec !== undefined && {
       input: {
         chart_spec: args.chart_spec,

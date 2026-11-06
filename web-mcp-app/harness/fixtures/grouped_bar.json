@@ -1,5 +1,5 @@
 {
-  "name": "Flint grouped bar chart",
+  "name": "Grouped bar chart",
   "description": "Impressions per publisher with devices side by side (the `group` channel).",
   "expect": "canvas",
   "arguments": {
@@ -29,7 +29,7 @@
     "content": [
       {
         "type": "text",
-        "text": "**Grouped Bar Chart: Impressions by Publisher and Device** (2023-09-09 to 2023-09-16)\n\n| Publisher | Device | Impressions |\n| - | - | - |\n| news.example | Mobile | 57610 |\n| news.example | Desktop | 76597 |\n| news.example | Tablet | 76173 |\n| sports.example | Mobile | 65164 |\n| sports.example | Desktop | 42653 |\n| sports.example | Tablet | 55495 |\n| video.example | Mobile | 63747 |\n| video.example | Desktop | 63295 |\n| video.example | Tablet | 62303 |\n| music.example | Mobile | 81820 |\n| music.example | Desktop | 42482 |\n| music.example | Tablet | 16354 |\n| shop.example | Mobile | 23411 |\n| shop.example | Desktop | 39816 |\n| shop.example | Tablet | 15890 |\n\n_15 of 15 rows shown_\n\nOpen the interactive chart in Rill: https://ui.rilldata.com/demo/bids/-/ai/session-0b1c/message/call-4f2a/-/open"
+        "text": "**Grouped Bar Chart: Impressions by Publisher and Device** (2023-09-09 to 2023-09-16)\n\n| Publisher | Device | Impressions |\n| - | - | - |\n| news.example | Mobile | 58505 |\n| news.example | Desktop | 36627 |\n| news.example | Tablet | 83018 |\n| sports.example | Mobile | 75005 |\n| sports.example | Desktop | 26870 |\n| sports.example | Tablet | 72557 |\n| video.example | Mobile | 47684 |\n| video.example | Desktop | 17749 |\n| video.example | Tablet | 13571 |\n| music.example | Mobile | 50110 |\n| music.example | Desktop | 69097 |\n| music.example | Tablet | 68673 |\n| shop.example | Mobile | 57664 |\n| shop.example | Desktop | 35153 |\n| shop.example | Tablet | 47995 |\n\n_15 of 15 rows shown_\n\nOpen the interactive chart in Rill: https://ui.rilldata.com/demo/bids/-/ai/session-0b1c/message/call-4f2a/-/open"
       }
     ],
     "structuredContent": {
@@ -87,77 +87,77 @@
         {
           "publisher": "news.example",
           "device": "Mobile",
-          "impressions": 57610
+          "impressions": 58505
         },
         {
           "publisher": "news.example",
           "device": "Desktop",
-          "impressions": 76597
+          "impressions": 36627
         },
         {
           "publisher": "news.example",
           "device": "Tablet",
-          "impressions": 76173
+          "impressions": 83018
         },
         {
           "publisher": "sports.example",
           "device": "Mobile",
-          "impressions": 65164
+          "impressions": 75005
         },
         {
           "publisher": "sports.example",
           "device": "Desktop",
-          "impressions": 42653
+          "impressions": 26870
         },
         {
           "publisher": "sports.example",
           "device": "Tablet",
-          "impressions": 55495
+          "impressions": 72557
         },
         {
           "publisher": "video.example",
           "device": "Mobile",
-          "impressions": 63747
+          "impressions": 47684
         },
         {
           "publisher": "video.example",
           "device": "Desktop",
-          "impressions": 63295
+          "impressions": 17749
         },
         {
           "publisher": "video.example",
           "device": "Tablet",
-          "impressions": 62303
+          "impressions": 13571
         },
         {
           "publisher": "music.example",
           "device": "Mobile",
-          "impressions": 81820
+          "impressions": 50110
         },
         {
           "publisher": "music.example",
           "device": "Desktop",
-          "impressions": 42482
+          "impressions": 69097
         },
         {
           "publisher": "music.example",
           "device": "Tablet",
-          "impressions": 16354
+          "impressions": 68673
         },
         {
           "publisher": "shop.example",
           "device": "Mobile",
-          "impressions": 23411
+          "impressions": 57664
         },
         {
           "publisher": "shop.example",
           "device": "Desktop",
-          "impressions": 39816
+          "impressions": 35153
         },
         {
           "publisher": "shop.example",
           "device": "Tablet",
-          "impressions": 15890
+          "impressions": 47995
         }
       ],
       "fields": {

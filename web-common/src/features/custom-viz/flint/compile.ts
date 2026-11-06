@@ -1,3 +1,4 @@
+import type { ChartWarning, RawEncodingValue } from "flint-chart/core";
 import { assembleVegaLite } from "flint-chart/vegalite";
 import type { VisualizationSpec } from "svelte-vega";
 import { sanitizeFieldName } from "@rilldata/web-common/components/vega/util";
@@ -10,40 +11,18 @@ import type { FlintFields } from "./semantic-types";
  * layout from the data and the declared semantics, then emits a Vega-Lite spec. That spec goes
  * through the same VegaLiteRenderer, theme and measure formatters as the rest of Rill's charts.
  *
- * Flint's types are intentionally not imported: only values are re-exported from the
- * `flint-chart/vegalite` subpath, and the package is pre-1.0 and moving quickly, so the narrow
- * shapes this module actually depends on are declared locally.
+ * Flint's own types (from `flint-chart/core`) describe the encodings and the warnings, so a Flint
+ * upgrade that changes them fails to type-check here rather than at render time.
  */
 
-/** The complete Flint encoding vocabulary. */
-export interface FlintEncoding {
-  field?: string;
-  type?: "quantitative" | "nominal" | "ordinal" | "temporal";
-  aggregate?: "count" | "sum" | "average" | "mean";
-  sortOrder?: "ascending" | "descending";
-  sortBy?: string;
-  scheme?: string;
-}
-
-/** A channel binds to a field name, an encoding object, or an array of either. */
-export type FlintEncodingValue =
-  | string
-  | FlintEncoding
-  | (string | FlintEncoding)[];
-
-/** A Flint chart spec, as authored under `custom_chart.spec` in a component file. */
+/**
+ * A Flint chart spec, as authored under `custom_chart.spec` in a component file. A channel binds
+ * a field name, an encoding object, or an array of either.
+ */
 export interface FlintChartSpec {
   chartType?: string;
-  encodings?: Record<string, FlintEncodingValue>;
+  encodings?: Record<string, RawEncodingValue>;
   chartProperties?: Record<string, unknown>;
-}
-
-export interface FlintWarning {
-  severity: "info" | "warning" | "error";
-  code: string;
-  message: string;
-  channel?: string;
-  field?: string;
 }
 
 export interface CompileOptions {
@@ -58,7 +37,7 @@ export interface CompileOptions {
 
 export interface CompileResult {
   spec: VisualizationSpec | null;
-  warnings: FlintWarning[];
+  warnings: ChartWarning[];
   error: string | null;
 }
 
@@ -114,7 +93,7 @@ export function compileFlintSpec({
     };
   }
 
-  const warnings = (assembled._warnings as FlintWarning[] | undefined) ?? [];
+  const warnings = (assembled._warnings as ChartWarning[] | undefined) ?? [];
   const vegaSpec = stripInternalKeys(assembled);
   const authored = spec.encodings ?? {};
   deferToTheme(vegaSpec, authored);
@@ -506,7 +485,7 @@ const BAR_TABLE_TEXT_PADDING = 12;
  */
 function formatBarTable(
   spec: Record<string, unknown>,
-  authored: Record<string, FlintEncodingValue>,
+  authored: Record<string, RawEncodingValue>,
   fields: FlintFields,
   measureFields: string[],
   size: { width: number; height: number } | undefined,
@@ -596,7 +575,7 @@ function wrapHeader(header: string, maxChars: number): string[] {
 }
 
 /** The field of a single-field Flint encoding. */
-function fieldOf(value: FlintEncodingValue | undefined): string | undefined {
+function fieldOf(value: RawEncodingValue | undefined): string | undefined {
   if (typeof value === "string") return value;
   if (value && !Array.isArray(value)) return value.field;
   return undefined;
@@ -821,7 +800,7 @@ const COLOR_CHANNELS = new Set(["color", "fill", "stroke"]);
  */
 function deferToTheme(
   spec: Record<string, unknown>,
-  authored: Record<string, FlintEncodingValue>,
+  authored: Record<string, RawEncodingValue>,
 ): void {
   const config = spec.config as Record<string, unknown> | undefined;
   if (config) {

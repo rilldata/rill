@@ -182,7 +182,10 @@ test("requests fullscreen and shows the data table", async ({ page }) => {
       expect.objectContaining({
         params: expect.objectContaining({
           name: "chart_data",
-          arguments: { chart_type: "bar_chart", spec: expect.any(Object) },
+          arguments: {
+            chart_spec: expect.any(Object),
+            data: expect.any(Object),
+          },
         }),
       }),
     ]);
@@ -197,9 +200,7 @@ test("requests fullscreen and shows the data table", async ({ page }) => {
           content: [
             {
               type: "text",
-              text: expect.stringMatching(
-                /^Chart now shows Total Bids per Advertiser Name: time grain n\/a, top 5 values, comparison off, Sep 9 – Sep 15, 2023\.$/,
-              ),
+              text: "Chart now shows Total Bids by Advertiser Name: Bar Chart with x = advertiser_name, y = total_bids; time grain n/a, top 5 values, comparison off, Sep 9 – Sep 15, 2023.",
             },
           ],
         }),
@@ -234,8 +235,8 @@ test("forwards the project of a unified MCP server call to chart_data", async ({
           name: "chart_data",
           arguments: {
             project: "demo/bids",
-            chart_type: "bar_chart",
-            spec: expect.any(Object),
+            chart_spec: expect.any(Object),
+            data: expect.any(Object),
           },
         }),
       }),
@@ -245,10 +246,30 @@ test("forwards the project of a unified MCP server call to chart_data", async ({
 test("offers the result's top-N limit when it is not a preset", async ({
   page,
 }) => {
-  // The funnel's stage channel carries the limit the backend applied (15), so the model is
-  // told the real value and the control adds it to the presets.
+  // The x channel carries the limit the backend applied (15), so the model is told the real
+  // value and the control adds it to the presets.
+  const structured = canonical.result.structuredContent!;
+  const input = structured.input as {
+    chart_spec: { encodings: Record<string, unknown> };
+  };
+  const chartSpec = {
+    ...input.chart_spec,
+    encodings: {
+      ...input.chart_spec.encodings,
+      x: { field: "advertiser_name", limit: 15 },
+    },
+  };
   const { frame, errors } = await mountWidget(page, {
-    fixture: loadFixture("funnel_chart"),
+    fixture: {
+      ...canonical,
+      result: {
+        ...canonical.result,
+        structuredContent: {
+          ...structured,
+          input: { ...input, chart_spec: chartSpec },
+        },
+      },
+    },
   });
   await expect(frame.locator("canvas").first()).toBeVisible({
     timeout: 15_000,
@@ -273,10 +294,12 @@ test("offers the result's top-N limit when it is not a preset", async ({
         params: expect.objectContaining({
           name: "chart_data",
           arguments: {
-            chart_type: "funnel_chart",
-            spec: expect.objectContaining({
-              stage: expect.objectContaining({ limit: 10 }),
+            chart_spec: expect.objectContaining({
+              encodings: expect.objectContaining({
+                x: { field: "advertiser_name", limit: 10 },
+              }),
             }),
+            data: expect.any(Object),
           },
         }),
       }),
@@ -291,7 +314,7 @@ test("offers the result's top-N limit when it is not a preset", async ({
           content: [
             {
               type: "text",
-              text: "Chart now shows Total Bids funnel by Campaign Stage: time grain n/a, top 10 values, comparison off, Sep 9 – Sep 15, 2023.",
+              text: "Chart now shows Total Bids by Advertiser Name: Bar Chart with x = advertiser_name, y = total_bids; time grain n/a, top 10 values, comparison off, Sep 9 – Sep 15, 2023.",
             },
           ],
         }),
@@ -362,18 +385,6 @@ for (const [name, note] of [
   });
 }
 
-test("renders the comparison caption", async ({ page }) => {
-  const { frame } = await mountWidget(page, {
-    fixture: loadFixture("comparison"),
-  });
-  await expect(frame.locator("canvas").first()).toBeVisible({
-    timeout: 15_000,
-  });
-  await expect(
-    frame.getByText("vs. previous period", { exact: false }),
-  ).toBeVisible();
-});
-
 test("localizes the actions from the host locale", async ({ page }) => {
   const { frame } = await mountWidget(page, {
     fixture: canonical,
@@ -384,12 +395,10 @@ test("localizes the actions from the host locale", async ({ page }) => {
   ).toBeVisible();
 });
 
-const flintBar = loadFixture("flint_bar_chart");
-
-test("re-queries a Flint chart through chart_data with the Flint arguments", async ({
+test("re-queries the chart through chart_data with its effective input", async ({
   page,
 }) => {
-  const { frame, errors } = await mountWidget(page, { fixture: flintBar });
+  const { frame, errors } = await mountWidget(page, { fixture: canonical });
   await expect(frame.locator("canvas").first()).toBeVisible({
     timeout: 15_000,
   });
@@ -443,10 +452,10 @@ test("re-queries a Flint chart through chart_data with the Flint arguments", asy
   expect(errors).toEqual([]);
 });
 
-test("recompiles a Flint chart client-side when a presentation control changes", async ({
+test("recompiles the chart client-side when a presentation control changes", async ({
   page,
 }) => {
-  const { frame, errors } = await mountWidget(page, { fixture: flintBar });
+  const { frame, errors } = await mountWidget(page, { fixture: canonical });
   await expect(frame.locator("canvas").first()).toBeVisible({
     timeout: 15_000,
   });
@@ -502,7 +511,7 @@ test("gives the fullscreen chart the height the data controls leave", async ({
   // About the height of claude.ai's fullscreen view.
   await page.setViewportSize({ width: 1000, height: 716 });
   const { frame, errors } = await mountWidget(page, {
-    fixture: loadFixture("flint_line_comparison"),
+    fixture: loadFixture("line_comparison"),
   });
   await expect(frame.locator("canvas").first()).toBeVisible({
     timeout: 15_000,
@@ -538,7 +547,7 @@ test("gives the fullscreen chart the height the data controls leave", async ({
 
 test("rolls the controls back when a refresh fails", async ({ page }) => {
   const { frame, errors } = await mountWidget(page, {
-    fixture: flintBar,
+    fixture: canonical,
     chartDataResult: {
       isError: true,
       content: [{ type: "text", text: "the query failed" }],
@@ -594,7 +603,7 @@ for (const { name, structuredContent, notice } of [
     page,
   }) => {
     const { frame, errors } = await mountWidget(page, {
-      fixture: flintBar,
+      fixture: canonical,
       chartDataResult: {
         content: [{ type: "text", text: "ok" }],
         structuredContent,
@@ -622,7 +631,7 @@ test("keeps a presentation edit made while a refresh is in flight", async ({
   page,
 }) => {
   const { frame, errors } = await mountWidget(page, {
-    fixture: flintBar,
+    fixture: canonical,
     chartDataDelayMs: 1_000,
   });
   await expect(frame.locator("canvas").first()).toBeVisible({
@@ -676,12 +685,12 @@ test("keeps a presentation edit made while a refresh is in flight", async ({
 
 test("shows the limit the server applied after a refresh", async ({ page }) => {
   // The server answers with its effective input, here capping the requested 20 at 8.
-  const source = flintBar.result.structuredContent!;
+  const source = canonical.result.structuredContent!;
   const input = source.input as {
     chart_spec: { encodings: Record<string, unknown> };
   };
   const { frame, errors } = await mountWidget(page, {
-    fixture: flintBar,
+    fixture: canonical,
     chartDataResult: {
       content: [{ type: "text", text: "Chart data: 8 rows." }],
       structuredContent: {
@@ -716,9 +725,9 @@ test("shows the limit the server applied after a refresh", async ({ page }) => {
 test("forwards the caller's semantic types to chart_data", async ({ page }) => {
   const { frame } = await mountWidget(page, {
     fixture: {
-      ...flintBar,
+      ...canonical,
       arguments: {
-        ...flintBar.arguments,
+        ...canonical.arguments,
         semantic_types: { total_bids: "Amount" },
       },
     },
@@ -741,9 +750,9 @@ test("forwards the caller's semantic types to chart_data", async ({ page }) => {
     ]);
 });
 
-test("renders the Flint comparison fold with its caption", async ({ page }) => {
+test("renders the comparison fold with its caption", async ({ page }) => {
   const { frame, errors } = await mountWidget(page, {
-    fixture: loadFixture("flint_line_comparison"),
+    fixture: loadFixture("line_comparison"),
   });
   await expect(frame.locator("canvas").first()).toBeVisible({
     timeout: 15_000,

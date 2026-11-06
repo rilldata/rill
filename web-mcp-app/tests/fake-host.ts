@@ -85,7 +85,7 @@ export function fakeHostPage(options: FakeHostOptions): string {
         const source = (options.fixture.result && options.fixture.result.structuredContent) || {};
         const payload = {};
         for (const key of DATA_KEYS) if (key in source) payload[key] = source[key];
-        // Like the server, a Flint request is answered with its effective input.
+        // Like the server, a request is answered with its effective input.
         if (args && args.chart_spec) {
           payload.input = { chart_spec: args.chart_spec, data: args.data };
           if (args.semantic_types) payload.input.semantic_types = args.semantic_types;

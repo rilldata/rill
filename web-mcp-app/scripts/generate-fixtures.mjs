@@ -1,7 +1,8 @@
 // Generates the fixture files under harness/fixtures/. Each fixture is one tool call:
-// the `create_chart` arguments and the result the host forwards to the widget, shaped
-// like `CreateChartResult` in runtime/ai/create_chart.go. `bar_chart.json` is the
-// canonical example the backend output is checked against.
+// the `create_chart` arguments (Flint's `chart_spec` with Rill's data binding in the `data` slot)
+// and the result the host forwards to the widget, shaped like `CreateChartResult` in
+// runtime/ai/create_chart.go: the server echoes the effective input (limits filled in) and derives
+// the semantic types and display names. `bar_chart.json` is the canonical example.
 // Run with `node scripts/generate-fixtures.mjs && npx prettier --write harness/fixtures`;
 // the output is committed.
 import { mkdirSync, writeFileSync } from "node:fs";
@@ -55,12 +56,6 @@ const FIELDS = {
     display_name: "Device",
     type: "STRING",
   },
-  campaign_stage: {
-    name: "campaign_stage",
-    kind: "dimension",
-    display_name: "Campaign Stage",
-    type: "STRING",
-  },
   total_bids: {
     name: "total_bids",
     kind: "measure",
@@ -76,13 +71,6 @@ const FIELDS = {
     type: "INT64",
     format_preset: "humanize",
   },
-  total_spend: {
-    name: "total_spend",
-    kind: "measure",
-    display_name: "Total Spend",
-    type: "FLOAT64",
-    format_preset: "currency_usd",
-  },
   win_rate: {
     name: "win_rate",
     kind: "measure",
@@ -90,13 +78,6 @@ const FIELDS = {
     type: "FLOAT64",
     format_preset: "percentage",
     lower_is_better: false,
-  },
-  avg_bid_price: {
-    name: "avg_bid_price",
-    kind: "measure",
-    display_name: "Avg Bid Price",
-    type: "FLOAT64",
-    format_d3: "$.2f",
   },
   spend_change: {
     name: "spend_change",
@@ -130,7 +111,6 @@ const PUBLISHERS = [
   "shop.example",
 ];
 const DEVICES = ["Mobile", "Desktop", "Tablet"];
-const STAGES = ["Impression", "Click", "Add to cart", "Purchase"];
 
 // Deterministic numbers so the fixtures are stable across regenerations.
 let seed = 42;
@@ -145,20 +125,6 @@ const round = (value, digits = 2) =>
 const pickFields = (...names) =>
   Object.fromEntries(names.map((name) => [name, FIELDS[name]]));
 
-const CHART_LABELS = {
-  bar_chart: "Bar",
-  line_chart: "Line",
-  area_chart: "Stacked area",
-  stacked_bar: "Stacked bar",
-  stacked_bar_normalized: "Stacked bar (normalized)",
-  donut_chart: "Donut",
-  pie_chart: "Pie",
-  funnel_chart: "Funnel",
-  heatmap: "Heatmap",
-  combo_chart: "Combo",
-  scatter_plot: "Scatter",
-};
-
 function textFallback(chartType, structured) {
   const {
     title,
@@ -166,7 +132,7 @@ function textFallback(chartType, structured) {
     fields = {},
     resolved_time_range: range,
   } = structured;
-  const header = `**${CHART_LABELS[chartType] ?? chartType}: ${title}**${
+  const header = `**${chartType}: ${title}**${
     range ? ` (${range.start.slice(0, 10)} to ${range.end.slice(0, 10)})` : ""
   }`;
   if (!data.length) return `${header}\n\n_No rows._`;
@@ -200,28 +166,6 @@ function textFallback(chartType, structured) {
   return parts.join("\n");
 }
 
-function fixture({ name, description, expect, chartType, spec, structured }) {
-  const structuredContent = {
-    widget: "chart",
-    chart_type: chartType,
-    spec,
-    message: `Chart created successfully: ${chartType}`,
-    ...structured,
-  };
-  return {
-    name,
-    description,
-    expect,
-    arguments: { chart_type: chartType, spec },
-    result: {
-      content: [
-        { type: "text", text: textFallback(chartType, structuredContent) },
-      ],
-      structuredContent,
-    },
-  };
-}
-
 function common(extra = {}) {
   return {
     metrics_view: METRICS_VIEW,
@@ -240,554 +184,6 @@ function write(name, content) {
   );
   console.log(`wrote harness/fixtures/${name}.json`);
 }
-
-const timeRange = { start: RANGE.start, end: RANGE.end };
-
-// Canonical bar chart: nominal x, one measure, static primary color.
-const barBids = [128430, 99210, 87650, 64320, 51200, 40880, 28100, 19750];
-const barSpec = {
-  metrics_view: "bids_metrics",
-  time_range: timeRange,
-  x: { field: "advertiser_name", type: "nominal", limit: 10, sort: "-y" },
-  y: { field: "total_bids", type: "quantitative" },
-  color: "primary",
-};
-const barStructured = common({
-  title: "Total Bids per Advertiser Name",
-  data: ADVERTISERS.map((advertiser_name, i) => ({
-    advertiser_name,
-    total_bids: barBids[i],
-  })),
-  fields: pickFields("advertiser_name", "total_bids"),
-  domain_values: { advertiser_name: ADVERTISERS },
-});
-write(
-  "bar_chart",
-  fixture({
-    name: "Bar chart",
-    description:
-      "Canonical create_chart result: top advertisers by total bids.",
-    expect: "canvas",
-    chartType: "bar_chart",
-    spec: barSpec,
-    structured: barStructured,
-  }),
-);
-
-write(
-  "horizontal_bar",
-  fixture({
-    name: "Horizontal bar chart",
-    description: "Measure on x and the dimension on y draws horizontal bars.",
-    expect: "canvas",
-    chartType: "bar_chart",
-    spec: {
-      metrics_view: "bids_metrics",
-      time_range: timeRange,
-      x: { field: "total_bids", type: "quantitative" },
-      y: { field: "advertiser_name", type: "nominal", limit: 10, sort: "-x" },
-      color: "primary",
-    },
-    structured: barStructured,
-  }),
-);
-
-write(
-  "multi_measure_bar",
-  fixture({
-    name: "Multi-measure bar chart",
-    description:
-      "Two measures side by side; the color channel is the synthetic rill_measures field.",
-    expect: "canvas",
-    chartType: "bar_chart",
-    spec: {
-      metrics_view: "bids_metrics",
-      time_range: timeRange,
-      x: { field: "advertiser_name", type: "nominal", limit: 5, sort: "-y" },
-      y: {
-        field: "total_bids",
-        type: "quantitative",
-        fields: ["total_bids", "impressions"],
-      },
-      color: { field: "rill_measures", type: "nominal" },
-    },
-    structured: common({
-      title: "Total Bids, Impressions by Advertiser Name",
-      data: ADVERTISERS.slice(0, 5).map((advertiser_name, i) => ({
-        advertiser_name,
-        total_bids: barBids[i],
-        impressions: Math.round(barBids[i] * (0.55 + rand() * 0.2)),
-      })),
-      fields: pickFields("advertiser_name", "total_bids", "impressions"),
-      domain_values: {
-        advertiser_name: ADVERTISERS.slice(0, 5),
-        rill_measures: ["total_bids", "impressions"],
-      },
-    }),
-  }),
-);
-
-// Daily series with one missing bucket (Sep 12) that the widget zero-fills.
-const dailyBids = [41200, 45800, 39900, 0, 47300, 52100, 36400];
-const lineSpec = {
-  metrics_view: "bids_metrics",
-  time_range: timeRange,
-  time_grain: "TIME_GRAIN_DAY",
-  x: { field: "__time", type: "temporal" },
-  y: { field: "total_bids", type: "quantitative", zeroBasedOrigin: true },
-  color: "primary",
-};
-write(
-  "line_chart",
-  fixture({
-    name: "Line chart",
-    description:
-      "Daily total bids; Sep 12 is missing from the rows and gets zero-filled.",
-    expect: "canvas",
-    chartType: "line_chart",
-    spec: lineSpec,
-    structured: common({
-      title: "Total Bids over Time",
-      time_grain: "TIME_GRAIN_DAY",
-      data: DAYS.filter((_, i) => i !== 3).map((__time, i) => ({
-        __time,
-        total_bids: dailyBids[i < 3 ? i : i + 1],
-      })),
-      fields: pickFields("__time", "total_bids"),
-    }),
-  }),
-);
-
-write(
-  "comparison",
-  fixture({
-    name: "Line chart with comparison",
-    description:
-      "Daily total bids compared with the previous week (`_prev` columns).",
-    expect: "canvas",
-    chartType: "line_chart",
-    spec: {
-      metrics_view: "bids_metrics",
-      time_range: timeRange,
-      comparison_time_range: {
-        start: COMPARISON_RANGE.start,
-        end: COMPARISON_RANGE.end,
-      },
-      time_grain: "TIME_GRAIN_DAY",
-      x: { field: "__time", type: "temporal" },
-      y: { field: "total_bids", type: "quantitative" },
-      color: "primary",
-    },
-    structured: common({
-      title: "Total Bids over Time",
-      time_grain: "TIME_GRAIN_DAY",
-      data: DAYS.map((__time, i) => ({
-        __time,
-        total_bids: dailyBids[i] || 43800,
-        total_bids_prev: Math.round(
-          (dailyBids[i] || 43800) * (0.8 + rand() * 0.3),
-        ),
-      })),
-      fields: pickFields("__time", "total_bids"),
-      resolved_comparison_time_range: COMPARISON_RANGE,
-    }),
-  }),
-);
-
-const areaRows = [];
-DAYS.forEach((__time, dayIndex) => {
-  DEVICES.forEach((device, deviceIndex) => {
-    // Leave two holes to exercise per-series zero-filling.
-    if (
-      (dayIndex === 3 && device === "Mobile") ||
-      (dayIndex === 5 && device === "Tablet")
-    )
-      return;
-    areaRows.push({
-      __time,
-      device,
-      total_spend: round(1800 + deviceIndex * 600 + rand() * 900),
-    });
-  });
-});
-write(
-  "area_chart",
-  fixture({
-    name: "Stacked area chart",
-    description: "Daily spend split by device, with two missing buckets.",
-    expect: "canvas",
-    chartType: "area_chart",
-    spec: {
-      metrics_view: "bids_metrics",
-      time_range: timeRange,
-      time_grain: "TIME_GRAIN_DAY",
-      x: { field: "__time", type: "temporal" },
-      y: { field: "total_spend", type: "quantitative" },
-      color: { field: "device", type: "nominal", limit: 3 },
-    },
-    structured: common({
-      title: "Total Spend over Time split by Device",
-      time_grain: "TIME_GRAIN_DAY",
-      data: areaRows,
-      fields: pickFields("__time", "device", "total_spend"),
-      domain_values: { device: DEVICES },
-    }),
-  }),
-);
-
-const stackedRows = [];
-PUBLISHERS.forEach((publisher, p) => {
-  DEVICES.forEach((device, d) => {
-    stackedRows.push({
-      publisher,
-      device,
-      impressions: int(20000, 90000) - p * 2500 - d * 1500,
-    });
-  });
-});
-for (const [name, chartType, label] of [
-  ["stacked_bar", "stacked_bar", "Stacked bar chart"],
-  [
-    "stacked_bar_normalized",
-    "stacked_bar_normalized",
-    "Normalized stacked bar chart",
-  ],
-]) {
-  write(
-    name,
-    fixture({
-      name: label,
-      description: "Impressions per publisher split by device.",
-      expect: "canvas",
-      chartType,
-      spec: {
-        metrics_view: "bids_metrics",
-        time_range: timeRange,
-        x: { field: "publisher", type: "nominal", limit: 10, sort: "-y" },
-        y: { field: "impressions", type: "quantitative" },
-        color: { field: "device", type: "nominal", limit: 10 },
-      },
-      structured: common({
-        title: "Impressions per Publisher split by Device",
-        data: stackedRows,
-        fields: pickFields("publisher", "device", "impressions"),
-        domain_values: { publisher: PUBLISHERS, device: DEVICES },
-      }),
-    }),
-  );
-}
-
-const spendByPublisher = [48210.5, 36990.25, 25480.75, 18760.0, 9340.4];
-write(
-  "donut_chart",
-  fixture({
-    name: "Donut chart",
-    description: "Spend share per publisher with a total in the center.",
-    expect: "canvas",
-    chartType: "donut_chart",
-    spec: {
-      metrics_view: "bids_metrics",
-      time_range: timeRange,
-      measure: { field: "total_spend", type: "quantitative", showTotal: true },
-      color: { field: "publisher", type: "nominal", limit: 5 },
-      innerRadius: 50,
-    },
-    structured: common({
-      title: "Total Spend split by Publisher",
-      data: PUBLISHERS.map((publisher, i) => ({
-        publisher,
-        total_spend: spendByPublisher[i],
-      })),
-      fields: pickFields("publisher", "total_spend"),
-      domain_values: { publisher: PUBLISHERS },
-      totals: { total_spend: 151220.9 },
-    }),
-  }),
-);
-
-write(
-  "pie_chart",
-  fixture({
-    name: "Pie chart",
-    description: "Bid share per device.",
-    expect: "canvas",
-    chartType: "pie_chart",
-    spec: {
-      metrics_view: "bids_metrics",
-      time_range: timeRange,
-      measure: { field: "total_bids", type: "quantitative" },
-      color: { field: "device", type: "nominal", limit: 10 },
-    },
-    structured: common({
-      title: "Total Bids split by Device",
-      data: DEVICES.map((device, i) => ({
-        device,
-        total_bids: [312400, 201300, 48900][i],
-      })),
-      fields: pickFields("device", "total_bids"),
-      domain_values: { device: DEVICES },
-      totals: { total_bids: 562600 },
-    }),
-  }),
-);
-
-write(
-  "funnel_chart",
-  fixture({
-    name: "Funnel chart",
-    description: "Bids by campaign stage.",
-    expect: "canvas",
-    chartType: "funnel_chart",
-    spec: {
-      metrics_view: "bids_metrics",
-      time_range: timeRange,
-      measure: { field: "total_bids", type: "quantitative" },
-      stage: { field: "campaign_stage", type: "nominal", limit: 15 },
-      mode: "width",
-      percentMode: "top",
-    },
-    structured: common({
-      title: "Total Bids funnel by Campaign Stage",
-      data: STAGES.map((campaign_stage, i) => ({
-        campaign_stage,
-        total_bids: [562600, 148200, 61300, 22400][i],
-      })),
-      fields: pickFields("campaign_stage", "total_bids"),
-      domain_values: { campaign_stage: STAGES },
-    }),
-  }),
-);
-
-const heatmapRows = [];
-PUBLISHERS.forEach((publisher) => {
-  DEVICES.forEach((device) => {
-    heatmapRows.push({
-      publisher,
-      device,
-      win_rate: round(0.08 + rand() * 0.3, 3),
-    });
-  });
-});
-write(
-  "heatmap",
-  fixture({
-    name: "Heatmap",
-    description:
-      "Win rate per publisher and device. No domain_values: the widget falls back to first appearance.",
-    expect: "canvas",
-    chartType: "heatmap",
-    spec: {
-      metrics_view: "bids_metrics",
-      time_range: timeRange,
-      x: { field: "publisher", type: "nominal", limit: 40 },
-      y: { field: "device", type: "nominal", limit: 40 },
-      color: { field: "win_rate", type: "quantitative" },
-    },
-    structured: common({
-      title: "Win Rate by Publisher and Device",
-      data: heatmapRows,
-      fields: pickFields("publisher", "device", "win_rate"),
-    }),
-  }),
-);
-
-write(
-  "combo_chart",
-  fixture({
-    name: "Combo chart",
-    description: "Daily bids as bars with the win rate as a line.",
-    expect: "canvas",
-    chartType: "combo_chart",
-    spec: {
-      metrics_view: "bids_metrics",
-      time_range: timeRange,
-      time_grain: "TIME_GRAIN_DAY",
-      x: { field: "__time", type: "temporal" },
-      y1: { field: "total_bids", type: "quantitative", mark: "bar" },
-      y2: { field: "win_rate", type: "quantitative", mark: "line" },
-      color: { field: "rill_measures", type: "nominal" },
-    },
-    structured: common({
-      title: "Total Bids & Win Rate over Time",
-      time_grain: "TIME_GRAIN_DAY",
-      data: DAYS.map((__time, i) => ({
-        __time,
-        total_bids: dailyBids[i] || 43800,
-        win_rate: round(0.12 + rand() * 0.1, 3),
-      })),
-      fields: pickFields("__time", "total_bids", "win_rate"),
-      domain_values: { rill_measures: ["total_bids", "win_rate"] },
-    }),
-  }),
-);
-
-const scatterRows = [];
-ADVERTISERS.forEach((advertiser_name, i) => {
-  DEVICES.forEach((device) => {
-    scatterRows.push({
-      advertiser_name,
-      device,
-      total_bids: Math.round(barBids[i] * (0.2 + rand() * 0.3)),
-      win_rate: round(0.05 + rand() * 0.35, 3),
-      impressions: int(5000, 60000),
-    });
-  });
-});
-write(
-  "scatter_plot",
-  fixture({
-    name: "Scatter plot",
-    description:
-      "Bids against win rate per advertiser and device, sized by impressions.",
-    expect: "canvas",
-    chartType: "scatter_plot",
-    spec: {
-      metrics_view: "bids_metrics",
-      time_range: timeRange,
-      x: { field: "total_bids", type: "quantitative" },
-      y: { field: "win_rate", type: "quantitative" },
-      dimension: { field: "advertiser_name", type: "nominal", limit: 50 },
-      color: { field: "device", type: "nominal", limit: 3 },
-      size: { field: "impressions", type: "quantitative" },
-    },
-    structured: common({
-      title:
-        "Total Bids vs Win Rate for Advertiser Name split by Device sized by Impressions",
-      data: scatterRows,
-      fields: pickFields(
-        "advertiser_name",
-        "device",
-        "total_bids",
-        "win_rate",
-        "impressions",
-      ),
-      domain_values: { device: DEVICES },
-    }),
-  }),
-);
-
-// `truncated` alone means a top-N cap applied; the x limit is the one the backend applied.
-write(
-  "truncated",
-  fixture({
-    name: "Truncated bar chart",
-    description:
-      "The server capped the x values and tells the model how to narrow the chart.",
-    expect: "canvas",
-    chartType: "bar_chart",
-    spec: barSpec,
-    structured: {
-      ...barStructured,
-      truncated: true,
-      truncation_warning:
-        "Only the first 50 of 120 advertisers are shown. Lower the x limit or add a filter to see the rest.",
-    },
-  }),
-);
-
-// Row truncation keeps the newest buckets: the first three days were cut, not empty.
-write(
-  "truncated_rows",
-  fixture({
-    name: "Row-truncated line chart",
-    description:
-      "The row limit cut the oldest days. The widget does not zero-fill before Sep 12 and says the most recent periods are shown.",
-    expect: "canvas",
-    chartType: "line_chart",
-    spec: lineSpec,
-    structured: common({
-      title: "Total Bids over Time",
-      time_grain: "TIME_GRAIN_DAY",
-      data: DAYS.slice(3).map((__time, i) => ({
-        __time,
-        total_bids: dailyBids[i + 3] || 43800,
-      })),
-      fields: pickFields("__time", "total_bids"),
-      truncated: true,
-      rows_truncated: true,
-      truncation_warning:
-        "The chart data is incomplete: the data was limited to 4 rows. To see the complete picture, use a coarser time_grain, lower the field limits, or add filters.",
-    }),
-  }),
-);
-
-// A zero-row result still carries `data`, as an empty array; `domain_values` is omitempty and absent.
-write(
-  "empty",
-  fixture({
-    name: "Empty result",
-    description:
-      "The query returned no rows: `data` is empty and the server omits `domain_values`.",
-    expect: "empty",
-    chartType: "bar_chart",
-    spec: barSpec,
-    structured: common({
-      title: "Total Bids per Advertiser Name",
-      data: [],
-      fields: pickFields("advertiser_name", "total_bids"),
-    }),
-  }),
-);
-
-write("no_data", {
-  name: "Result without data",
-  description:
-    "The host did not forward the data section (e.g. Claude wrote a large result to a file). The widget shows an error with Open in Rill.",
-  expect: "error",
-  arguments: { chart_type: "bar_chart", spec: barSpec },
-  result: {
-    content: [
-      { type: "text", text: "**Bar: Total Bids per Advertiser Name**" },
-    ],
-    structuredContent: {
-      widget: "chart",
-      chart_type: "bar_chart",
-      spec: barSpec,
-      message: "Chart created successfully: bar_chart",
-      title: "Total Bids per Advertiser Name",
-      open_url: OPEN_URL,
-    },
-  },
-});
-
-write("unsupported_widget", {
-  name: "Unsupported widget mode",
-  description:
-    "A newer server sent a widget mode this bundle does not implement.",
-  expect: "error",
-  arguments: { type: "canvas", name: "overview" },
-  result: {
-    content: [{ type: "text", text: "Dashboard: Overview" }],
-    structuredContent: {
-      widget: "dashboard",
-      type: "canvas",
-      name: "overview",
-      title: "Overview",
-      open_url: "https://ui.rilldata.com/demo/bids/canvas/overview",
-    },
-  },
-});
-
-write("tool_error", {
-  name: "Tool error",
-  description: "The tool call itself failed.",
-  expect: "error",
-  arguments: {
-    chart_type: "bar_chart",
-    spec: { ...barSpec, metrics_view: "missing_metrics" },
-  },
-  result: {
-    isError: true,
-    content: [
-      { type: "text", text: 'metrics view "missing_metrics" not found' },
-    ],
-  },
-});
-
-// ---------------------------------------------------------------------------------------------
-// Flint results: `create_chart` called with Flint's `chart_spec` and Rill's data binding in the
-// `data` slot (see .claude/plans/flint-implementation-contract.md). The server echoes the
-// effective input (limits filled in) and derives the semantic types and display names.
 
 /** Mirrors the server's derivation: format preset first, then the data type. */
 function semanticTypeOf(field, grain) {
@@ -832,9 +228,10 @@ function semanticsFor(fields, grain, rows) {
   return { semantic_types, field_display_names };
 }
 
+const timeRange = { start: RANGE.start, end: RANGE.end };
 const BINDING = { metrics_view: "bids_metrics", time_range: timeRange };
 
-function flintFixture({
+function fixture({
   name,
   description,
   expect,
@@ -868,7 +265,9 @@ function flintFixture({
   };
 }
 
-const flintBarSpec = {
+// Canonical bar chart: top advertisers by total bids, with the server's effective limit on x.
+const barBids = [128430, 99210, 87650, 64320, 51200, 40880, 28100, 19750];
+const barSpec = {
   chartType: "Bar Chart",
   encodings: {
     x: {
@@ -880,7 +279,7 @@ const flintBarSpec = {
     y: "total_bids",
   },
 };
-const flintBarStructured = common({
+const barStructured = common({
   title: "Total Bids by Advertiser Name",
   data: ADVERTISERS.map((advertiser_name, i) => ({
     advertiser_name,
@@ -890,35 +289,58 @@ const flintBarStructured = common({
   domain_values: { advertiser_name: ADVERTISERS },
 });
 write(
-  "flint_bar_chart",
-  flintFixture({
-    name: "Flint bar chart",
+  "bar_chart",
+  fixture({
+    name: "Bar chart",
     description:
-      "Canonical Flint result: top advertisers by total bids, with the server's effective limit on x.",
+      "Canonical result: top advertisers by total bids, with the server's effective limit on x.",
     expect: "canvas",
-    chartSpec: flintBarSpec,
-    structured: flintBarStructured,
+    chartSpec: barSpec,
+    structured: barStructured,
+  }),
+);
+
+// Daily series with one missing bucket (Sep 12) that the widget zero-fills.
+const dailyBids = [41200, 45800, 39900, 0, 47300, 52100, 36400];
+const lineSpec = {
+  chartType: "Line Chart",
+  encodings: { x: "__time", y: "total_bids" },
+};
+const lineBinding = { ...BINDING, time_grain: "TIME_GRAIN_DAY" };
+write(
+  "line_chart",
+  fixture({
+    name: "Line chart",
+    description:
+      "Daily total bids; Sep 12 is missing from the rows and gets zero-filled.",
+    expect: "canvas",
+    chartSpec: lineSpec,
+    data: lineBinding,
+    structured: common({
+      title: "Total Bids over Time",
+      time_grain: "TIME_GRAIN_DAY",
+      data: DAYS.flatMap((__time, i) =>
+        dailyBids[i] ? [{ __time, total_bids: dailyBids[i] }] : [],
+      ),
+      fields: pickFields("__time", "total_bids"),
+    }),
   }),
 );
 
 write(
-  "flint_line_comparison",
-  flintFixture({
-    name: "Flint line chart with comparison",
+  "line_comparison",
+  fixture({
+    name: "Line chart with comparison",
     description:
       "Daily total bids with the previous week as `_prev` columns; the widget folds them into a second series.",
     expect: "canvas",
-    chartSpec: {
-      chartType: "Line Chart",
-      encodings: { x: "__time", y: "total_bids" },
-    },
+    chartSpec: lineSpec,
     data: {
-      ...BINDING,
+      ...lineBinding,
       comparison_time_range: {
         start: COMPARISON_RANGE.start,
         end: COMPARISON_RANGE.end,
       },
-      time_grain: "TIME_GRAIN_DAY",
     },
     structured: common({
       title: "Total Bids over Time",
@@ -936,10 +358,31 @@ write(
   }),
 );
 
+const heatmapRows = [];
+PUBLISHERS.forEach((publisher) => {
+  DEVICES.forEach((device) => {
+    heatmapRows.push({
+      publisher,
+      device,
+      win_rate: round(0.08 + rand() * 0.3, 3),
+    });
+  });
+});
+const stackedRows = [];
+PUBLISHERS.forEach((publisher, p) => {
+  DEVICES.forEach((device, d) => {
+    stackedRows.push({
+      publisher,
+      device,
+      impressions: int(20000, 90000) - p * 2500 - d * 1500,
+    });
+  });
+});
+
 write(
-  "flint_waterfall",
-  flintFixture({
-    name: "Flint waterfall chart",
+  "waterfall",
+  fixture({
+    name: "Waterfall chart",
     description:
       "Spend change per publisher; Flint colors the bars by sign and adds the totals.",
     expect: "canvas",
@@ -962,9 +405,9 @@ write(
 );
 
 write(
-  "flint_pie",
-  flintFixture({
-    name: "Flint donut chart",
+  "pie",
+  fixture({
+    name: "Donut chart",
     description: "Bid share per device as a Pie Chart with an inner radius.",
     expect: "canvas",
     chartSpec: {
@@ -985,9 +428,9 @@ write(
 );
 
 write(
-  "flint_heatmap",
-  flintFixture({
-    name: "Flint heatmap",
+  "heatmap",
+  fixture({
+    name: "Heatmap",
     description: "Win rate per publisher and device.",
     expect: "canvas",
     chartSpec: {
@@ -1019,9 +462,9 @@ ADVERTISERS.slice(0, 4).forEach((advertiser_name, i) => {
   });
 });
 write(
-  "flint_slope",
-  flintFixture({
-    name: "Flint slope chart",
+  "slope",
+  fixture({
+    name: "Slope chart",
     description:
       "Two months of bids per advertiser at month grain (YearMonth semantics).",
     expect: "canvas",
@@ -1056,9 +499,9 @@ write(
 );
 
 write(
-  "flint_grouped_bar",
-  flintFixture({
-    name: "Flint grouped bar chart",
+  "grouped_bar",
+  fixture({
+    name: "Grouped bar chart",
     description:
       "Impressions per publisher with devices side by side (the `group` channel).",
     expect: "canvas",
@@ -1079,13 +522,59 @@ write(
   }),
 );
 
+// `truncated` alone means a top-N cap applied; the x limit is the one the backend applied.
 write(
-  "flint_empty",
-  flintFixture({
-    name: "Flint empty result",
-    description: "A Flint result whose query returned no rows.",
+  "truncated",
+  fixture({
+    name: "Truncated bar chart",
+    description:
+      "The server capped the x values and tells the model how to narrow the chart.",
+    expect: "canvas",
+    chartSpec: barSpec,
+    structured: {
+      ...barStructured,
+      truncated: true,
+      truncation_warning:
+        "Only the first 50 of 120 advertisers are shown. Lower the x limit or add a filter to see the rest.",
+    },
+  }),
+);
+
+// Row truncation keeps the newest buckets: the first three days were cut, not empty.
+write(
+  "truncated_rows",
+  fixture({
+    name: "Row-truncated line chart",
+    description:
+      "The row limit cut the oldest days. The widget does not zero-fill before Sep 12 and says the most recent periods are shown.",
+    expect: "canvas",
+    chartSpec: lineSpec,
+    data: lineBinding,
+    structured: common({
+      title: "Total Bids over Time",
+      time_grain: "TIME_GRAIN_DAY",
+      data: DAYS.slice(3).map((__time, i) => ({
+        __time,
+        total_bids: dailyBids[i + 3] || 43800,
+      })),
+      fields: pickFields("__time", "total_bids"),
+      truncated: true,
+      rows_truncated: true,
+      truncation_warning:
+        "The chart data is incomplete: the data was limited to 4 rows. To see the complete picture, use a coarser time_grain, lower the field limits, or add filters.",
+    }),
+  }),
+);
+
+// A zero-row result still carries `data`, as an empty array; `domain_values` is omitempty and absent.
+write(
+  "empty",
+  fixture({
+    name: "Empty result",
+    description:
+      "The query returned no rows: `data` is empty and the server omits `domain_values`.",
     expect: "empty",
-    chartSpec: flintBarSpec,
+    chartSpec: barSpec,
     structured: common({
       title: "Total Bids by Advertiser Name",
       data: [],
@@ -1093,3 +582,58 @@ write(
     }),
   }),
 );
+
+write("no_data", {
+  name: "Result without data",
+  description:
+    "The host did not forward the data section (e.g. Claude wrote a large result to a file). The widget shows an error with Open in Rill.",
+  expect: "error",
+  arguments: { chart_spec: barSpec, data: BINDING },
+  result: {
+    content: [
+      { type: "text", text: "**Bar Chart: Total Bids by Advertiser Name**" },
+    ],
+    structuredContent: {
+      widget: "chart",
+      chart_type: "Bar Chart",
+      input: { chart_spec: barSpec, data: BINDING },
+      message: "Chart created successfully: Bar Chart",
+      title: "Total Bids by Advertiser Name",
+      open_url: OPEN_URL,
+    },
+  },
+});
+
+write("unsupported_widget", {
+  name: "Unsupported widget mode",
+  description:
+    "A newer server sent a widget mode this bundle does not implement.",
+  expect: "error",
+  arguments: { type: "canvas", name: "overview" },
+  result: {
+    content: [{ type: "text", text: "Dashboard: Overview" }],
+    structuredContent: {
+      widget: "dashboard",
+      type: "canvas",
+      name: "overview",
+      title: "Overview",
+      open_url: "https://ui.rilldata.com/demo/bids/canvas/overview",
+    },
+  },
+});
+
+write("tool_error", {
+  name: "Tool error",
+  description: "The tool call itself failed.",
+  expect: "error",
+  arguments: {
+    chart_spec: barSpec,
+    data: { ...BINDING, metrics_view: "missing_metrics" },
+  },
+  result: {
+    isError: true,
+    content: [
+      { type: "text", text: 'metrics view "missing_metrics" not found' },
+    ],
+  },
+});

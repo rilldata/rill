@@ -1,5 +1,5 @@
 {
-  "name": "Flint line chart with comparison",
+  "name": "Line chart with comparison",
   "description": "Daily total bids with the previous week as `_prev` columns; the widget folds them into a second series.",
   "expect": "canvas",
   "arguments": {
@@ -16,18 +16,18 @@
         "start": "2023-09-09T00:00:00Z",
         "end": "2023-09-16T00:00:00Z"
       },
+      "time_grain": "TIME_GRAIN_DAY",
       "comparison_time_range": {
         "start": "2023-09-02T00:00:00Z",
         "end": "2023-09-09T00:00:00Z"
-      },
-      "time_grain": "TIME_GRAIN_DAY"
+      }
     }
   },
   "result": {
     "content": [
       {
         "type": "text",
-        "text": "**Line Chart: Total Bids over Time** (2023-09-09 to 2023-09-16)\n\n| Time | Total Bids | Total Bids (prev) |\n| - | - | - |\n| 2023-09-09T00:00:00Z | 41200 | 38640 |\n| 2023-09-10T00:00:00Z | 45800 | 47170 |\n| 2023-09-11T00:00:00Z | 39900 | 43559 |\n| 2023-09-12T00:00:00Z | 43800 | 35543 |\n| 2023-09-13T00:00:00Z | 47300 | 46009 |\n| 2023-09-14T00:00:00Z | 52100 | 46420 |\n| 2023-09-15T00:00:00Z | 36400 | 36164 |\n\n_7 of 7 rows shown_\n\nOpen the interactive chart in Rill: https://ui.rilldata.com/demo/bids/-/ai/session-0b1c/message/call-4f2a/-/open"
+        "text": "**Line Chart: Total Bids over Time** (2023-09-09 to 2023-09-16)\n\n| Time | Total Bids | Total Bids (prev) |\n| - | - | - |\n| 2023-09-09T00:00:00Z | 41200 | 36079 |\n| 2023-09-10T00:00:00Z | 45800 | 37851 |\n| 2023-09-11T00:00:00Z | 39900 | 38830 |\n| 2023-09-12T00:00:00Z | 43800 | 37964 |\n| 2023-09-13T00:00:00Z | 47300 | 43171 |\n| 2023-09-14T00:00:00Z | 52100 | 42081 |\n| 2023-09-15T00:00:00Z | 36400 | 34004 |\n\n_7 of 7 rows shown_\n\nOpen the interactive chart in Rill: https://ui.rilldata.com/demo/bids/-/ai/session-0b1c/message/call-4f2a/-/open"
       }
     ],
     "structuredContent": {
@@ -47,11 +47,11 @@
             "start": "2023-09-09T00:00:00Z",
             "end": "2023-09-16T00:00:00Z"
           },
+          "time_grain": "TIME_GRAIN_DAY",
           "comparison_time_range": {
             "start": "2023-09-02T00:00:00Z",
             "end": "2023-09-09T00:00:00Z"
-          },
-          "time_grain": "TIME_GRAIN_DAY"
+          }
         }
       },
       "message": "Chart created successfully: Line Chart",
@@ -84,37 +84,37 @@
         {
           "__time": "2023-09-09T00:00:00Z",
           "total_bids": 41200,
-          "total_bids_prev": 38640
+          "total_bids_prev": 36079
         },
         {
           "__time": "2023-09-10T00:00:00Z",
           "total_bids": 45800,
-          "total_bids_prev": 47170
+          "total_bids_prev": 37851
         },
         {
           "__time": "2023-09-11T00:00:00Z",
           "total_bids": 39900,
-          "total_bids_prev": 43559
+          "total_bids_prev": 38830
         },
         {
           "__time": "2023-09-12T00:00:00Z",
           "total_bids": 43800,
-          "total_bids_prev": 35543
+          "total_bids_prev": 37964
         },
         {
           "__time": "2023-09-13T00:00:00Z",
           "total_bids": 47300,
-          "total_bids_prev": 46009
+          "total_bids_prev": 43171
         },
         {
           "__time": "2023-09-14T00:00:00Z",
           "total_bids": 52100,
-          "total_bids_prev": 46420
+          "total_bids_prev": 42081
         },
         {
           "__time": "2023-09-15T00:00:00Z",
           "total_bids": 36400,
-          "total_bids_prev": 36164
+          "total_bids_prev": 34004
         }
       ],
       "fields": {

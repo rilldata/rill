@@ -1,36 +1,24 @@
-import { TOTAL_DOMAIN_KEY } from "@rilldata/web-common/features/components/charts/circular/constants";
-import { get } from "svelte/store";
 import { describe, expect, it } from "vitest";
-import area from "../../harness/fixtures/area_chart.json";
 import bar from "../../harness/fixtures/bar_chart.json";
-import combo from "../../harness/fixtures/combo_chart.json";
-import comparison from "../../harness/fixtures/comparison.json";
-import donut from "../../harness/fixtures/donut_chart.json";
 import empty from "../../harness/fixtures/empty.json";
-import funnel from "../../harness/fixtures/funnel_chart.json";
-import heatmap from "../../harness/fixtures/heatmap.json";
+import comparison from "../../harness/fixtures/line_comparison.json";
 import line from "../../harness/fixtures/line_chart.json";
-import multi from "../../harness/fixtures/multi_measure_bar.json";
 import truncated from "../../harness/fixtures/truncated.json";
 import truncatedRows from "../../harness/fixtures/truncated_rows.json";
-import { adaptChartResult, adaptFlintResult, MAX_TABLE_ROWS } from "./adapt";
-import { flintControlOptions } from "./flint-controls";
-import type {
-  FlintChartResult,
-  RillChartResult,
-  WireFlintChartSpec,
-  WireRow,
-} from "./contract";
+import { adaptResult, MAX_TABLE_ROWS } from "./adapt";
+import type { ChartResult, WireFlintChartSpec, WireRow } from "./contract";
+import { controlOptions } from "./controls";
 
 const result = (fixture: { result: { structuredContent?: unknown } }) =>
-  fixture.result.structuredContent as RillChartResult;
+  fixture.result.structuredContent as ChartResult;
 
 const light = { isDark: false, locale: "en" };
 
-describe("adaptChartResult", () => {
-  it("builds measures, fields and domain values for the canonical bar chart", () => {
-    const chart = adaptChartResult(result(bar), light);
-    expect(chart.chartType).toBe("bar_chart");
+describe("adaptResult", () => {
+  it("builds the measures, the compile input and the table for the canonical bar chart", () => {
+    const chart = adaptResult(result(bar), light);
+    expect(chart.chartType).toBe("Bar Chart");
+    expect(chart.chartSpec).toBe(result(bar).input.chart_spec);
     expect(chart.rowCount).toBe(8);
     expect(chart.measures).toEqual([
       expect.objectContaining({
@@ -39,44 +27,46 @@ describe("adaptChartResult", () => {
         formatPreset: "humanize",
       }),
     ]);
-    expect(chart.snapshot.fields.advertiser_name).toEqual(
-      expect.objectContaining({ displayName: "Advertiser Name" }),
-    );
-    expect(chart.snapshot.domainValues?.advertiser_name).toEqual(
-      result(bar).domain_values?.advertiser_name,
-    );
-    expect(chart.snapshot.hasComparison).toBe(false);
-    expect(chart.title).toBe("Total Bids per Advertiser Name");
+    // Flint sees the spec without Rill's `limit`, and the server's semantics.
+    expect(chart.flint.spec.encodings?.x).toEqual({
+      field: "advertiser_name",
+      sortBy: "y",
+      sortOrder: "descending",
+    });
+    expect(chart.flint.fields.semantic_types.total_bids).toBe("Count");
+    expect(chart.table.columns.map((column) => column.label)).toEqual([
+      "Advertiser Name",
+      "Total Bids",
+    ]);
+    expect(chart.hasComparison).toBe(false);
+    expect(chart.title).toBe("Total Bids by Advertiser Name");
     expect(chart.caption).toBe("Sep 9 – Sep 15, 2023 · Bids");
     expect(chart.openUrl).toBe(result(bar).open_url);
-    expect(get(chart.chartData)).toBe(chart.snapshot);
   });
 
   it("resolves the project theme per mode", () => {
-    const lightChart = adaptChartResult(result(bar), light);
-    const darkChart = adaptChartResult(result(bar), { isDark: true });
+    const lightChart = adaptResult(result(bar), light);
+    const darkChart = adaptResult(result(bar), { isDark: true });
     expect(lightChart.theme?.primary).toBe("#4f46e5");
     expect(darkChart.theme?.primary).toBe("#818cf8");
-    expect(lightChart.snapshot.theme.primary.hex()).toBe("#4f46e5");
-    expect(darkChart.snapshot.isDarkMode).toBe(true);
   });
 
-  it("falls back to the humanized chart type when the result has no title", () => {
-    const chart = adaptChartResult({ ...result(bar), title: undefined }, light);
-    expect(chart.title).toBe("Bar chart");
+  it("falls back to the spec's title, then the chart type, when the result has no title", () => {
+    const untitled = { ...result(bar), title: undefined };
+    expect(adaptResult(untitled, light).title).toBe("Bar Chart");
+    const chartSpec = { ...untitled.input.chart_spec, title: "Top bidders" };
+    const chart = adaptResult(untitled, { ...light, chartSpec });
+    expect(chart.title).toBe("Top bidders");
     expect(chart.timeRangeLabel).toBe("Sep 9 – Sep 15, 2023");
   });
 
   it("converts temporal values to dates and zero-fills missing buckets", () => {
-    const chart = adaptChartResult(result(line), light);
+    const chart = adaptResult(result(line), light);
     expect(chart.timeGrain).toBe("TIME_GRAIN_DAY");
     expect(chart.temporalField).toBe("__time");
     // Six rows arrive, the seventh (Sep 12) is filled with zero.
     expect(chart.rowCount).toBe(7);
-    const rows = chart.snapshot.data as Array<{
-      __time: Date;
-      total_bids: number;
-    }>;
+    const rows = chart.rows as Array<{ __time: Date; total_bids: number }>;
     rows.forEach((row) => expect(row.__time).toBeInstanceOf(Date));
     expect(rows.map((row) => row.__time.getDate())).toEqual([
       9, 10, 11, 12, 13, 14, 15,
@@ -84,9 +74,6 @@ describe("adaptChartResult", () => {
     // Same wall-clock time as the UTC bucket start, in the system zone.
     expect(rows[0].__time.getHours()).toBe(0);
     expect(rows[3].total_bids).toBe(0);
-    expect(chart.snapshot.fields.__time).toEqual(
-      expect.objectContaining({ timeUnit: "yearmonthdate", format: "%b %d" }),
-    );
     expect(chart.captionParts).toEqual([
       "Sep 9 – Sep 15, 2023",
       "by day",
@@ -100,11 +87,11 @@ describe("adaptChartResult", () => {
     const data = (result(line).data ?? []).filter((row) =>
       ["11", "13"].includes(String(row.__time).slice(8, 10)),
     );
-    const chart = adaptChartResult(
+    const chart = adaptResult(
       { ...result(line), data, truncated: true },
       light,
     );
-    const dates = (chart.snapshot.data as Array<{ __time: Date }>).map((row) =>
+    const dates = (chart.rows as Array<{ __time: Date }>).map((row) =>
       row.__time.getDate(),
     );
     expect(dates).toEqual([9, 10, 11, 12, 13, 14, 15]);
@@ -117,14 +104,11 @@ describe("adaptChartResult", () => {
     const data = (result(line).data ?? []).filter((row) =>
       ["11", "13"].includes(String(row.__time).slice(8, 10)),
     );
-    const chart = adaptChartResult(
+    const chart = adaptResult(
       { ...result(line), data, truncated: true, rows_truncated: true },
       light,
     );
-    const rows = chart.snapshot.data as Array<{
-      __time: Date;
-      total_bids: number;
-    }>;
+    const rows = chart.rows as Array<{ __time: Date; total_bids: number }>;
     expect(rows.map((row) => row.__time.getDate())).toEqual([
       11, 12, 13, 14, 15,
     ]);
@@ -138,28 +122,13 @@ describe("adaptChartResult", () => {
     expect(chart.rowsTruncated).toBe(true);
   });
 
-  it("zero-fills per series when a color dimension is present", () => {
-    const chart = adaptChartResult(result(area), light);
-    expect(chart.rowCount).toBe(21);
-    const rows = chart.snapshot.data as Array<{
-      __time: Date;
-      device: string;
-      total_spend: number;
-    }>;
-    const mobileSep12 = rows.find(
-      (row) => row.device === "Mobile" && row.__time.getDate() === 12,
-    );
-    expect(mobileSep12?.total_spend).toBe(0);
-    expect(chart.snapshot.domainValues?.device).toEqual([
-      "Mobile",
-      "Desktop",
-      "Tablet",
-    ]);
-  });
-
-  it("detects comparison columns", () => {
-    const chart = adaptChartResult(result(comparison), light);
+  it("folds the comparison into a second series and says so in the caption", () => {
+    const chart = adaptResult(result(comparison), light);
     expect(chart.hasComparison).toBe(true);
+    expect(chart.flint.comparison).toEqual({
+      channel: "color",
+      measure: "total_bids",
+    });
     expect(chart.captionParts).toContain("vs. previous period");
     expect(chart.table.columns.map((column) => column.key)).toEqual([
       "__time",
@@ -169,74 +138,24 @@ describe("adaptChartResult", () => {
     expect(chart.table.columns[2].label).toBe("Total Bids (prev)");
   });
 
-  it("labels the multi-measure color domain with display names", () => {
-    const chart = adaptChartResult(result(multi), light);
-    expect(chart.snapshot.domainValues?.rill_measures).toEqual([
-      "Total Bids",
-      "Impressions",
-    ]);
-    expect(chart.measures.map((measure) => measure.name)).toEqual([
-      "total_bids",
-      "impressions",
-    ]);
-  });
-
-  it("labels the combo color domain with both measures", () => {
-    const chart = adaptChartResult(result(combo), light);
-    expect(chart.snapshot.domainValues?.rill_measures).toEqual([
-      "Total Bids",
-      "Win Rate",
-    ]);
-  });
-
-  it("carries the donut total and synthesizes an Other slice when asked", () => {
-    const chart = adaptChartResult(result(donut), light);
-    expect(chart.snapshot.domainValues?.[TOTAL_DOMAIN_KEY]).toEqual([151220.9]);
-    expect(chart.snapshot.domainValues?.__other_value).toBeUndefined();
-
-    const withOther = adaptChartResult(
-      {
-        ...result(donut),
-        spec: { ...result(donut).spec, show_other: true },
-      },
-      light,
+  it("captions only the comparison the chart draws", () => {
+    // A chart type that cannot fold the previous period in draws the current period only;
+    // the table still shows the previous values the rows carry.
+    const chartSpec: WireFlintChartSpec = {
+      chartType: "Heatmap",
+      encodings: { x: "__time", color: "total_bids" },
+    };
+    const chart = adaptResult(result(comparison), { ...light, chartSpec });
+    expect(chart.flint.comparison).toBeUndefined();
+    expect(chart.hasComparison).toBe(false);
+    expect(chart.captionParts).not.toContain("vs. previous period");
+    expect(chart.table.columns.map((column) => column.key)).toContain(
+      "total_bids_prev",
     );
-    // 151220.9 total minus the 138781.9 the five visible publishers add up to.
-    expect(withOther.snapshot.domainValues?.__other_value?.[0]).toBeCloseTo(
-      12439,
-      3,
-    );
-    expect(withOther.snapshot.domainValues?.publisher).toContain("Other");
-  });
-
-  it("falls back to first appearance for heatmap axes without domain values", () => {
-    const chart = adaptChartResult(result(heatmap), light);
-    expect(chart.snapshot.domainValues?.publisher).toEqual([
-      "news.example",
-      "sports.example",
-      "video.example",
-      "music.example",
-      "shop.example",
-    ]);
-    expect(chart.snapshot.domainValues?.device).toEqual([
-      "Mobile",
-      "Desktop",
-      "Tablet",
-    ]);
-  });
-
-  it("passes funnel stages through untouched", () => {
-    const chart = adaptChartResult(result(funnel), light);
-    expect(chart.snapshot.domainValues?.campaign_stage).toEqual([
-      "Impression",
-      "Click",
-      "Add to cart",
-      "Purchase",
-    ]);
   });
 
   it("coerces numeric strings in measure columns", () => {
-    const chart = adaptChartResult(
+    const chart = adaptResult(
       {
         ...result(bar),
         data: [
@@ -246,7 +165,7 @@ describe("adaptChartResult", () => {
       },
       light,
     );
-    expect(chart.snapshot.data).toEqual([
+    expect(chart.rows).toEqual([
       { advertiser_name: "Acme", total_bids: 12345 },
       { advertiser_name: "Beta", total_bids: 9876 },
     ]);
@@ -255,27 +174,27 @@ describe("adaptChartResult", () => {
   it("reports empty results", () => {
     // A zero-row result carries an empty `data` array.
     expect(result(empty).data).toEqual([]);
-    expect(adaptChartResult(result(empty), light).rowCount).toBe(0);
+    expect(adaptResult(result(empty), light).rowCount).toBe(0);
   });
 
   it("tells apart a top-N cap from cut rows", () => {
-    expect(adaptChartResult(result(bar), light).truncationNote).toBeUndefined();
+    expect(adaptResult(result(bar), light).truncationNote).toBeUndefined();
 
-    const capped = adaptChartResult(result(truncated), light);
+    const capped = adaptResult(result(truncated), light);
     expect(capped.truncated).toBe(true);
     expect(capped.rowsTruncated).toBe(false);
     // The x limit the backend applied is on the spec.
     expect(capped.truncationNote).toBe("Showing the top 10 values.");
     expect(capped.truncationWarning).toContain("Lower the x limit");
 
-    const cut = adaptChartResult(result(truncatedRows), light);
+    const cut = adaptResult(result(truncatedRows), light);
     expect(cut.rowsTruncated).toBe(true);
     expect(cut.truncationNote).toBe("Showing the most recent periods.");
     // The first three days were cut, not empty, so nothing is filled before Sep 12.
     expect(cut.rowCount).toBe(4);
 
     // Cut rows of a chart without a time axis are neither periods nor top values.
-    const points = adaptChartResult(
+    const points = adaptResult(
       { ...result(bar), truncated: true, rows_truncated: true },
       light,
     );
@@ -283,7 +202,7 @@ describe("adaptChartResult", () => {
   });
 
   it("formats table cells with Rill's measure formatters and caps the rows", () => {
-    const chart = adaptChartResult(result(bar), light);
+    const chart = adaptResult(result(bar), light);
     const measure = chart.table.columns.find(
       (column) => column.key === "total_bids",
     )!;
@@ -294,13 +213,13 @@ describe("adaptChartResult", () => {
       advertiser_name: `adv ${i}`,
       total_bids: i,
     }));
-    const big = adaptChartResult({ ...result(bar), data: manyRows }, light);
+    const big = adaptResult({ ...result(bar), data: manyRows }, light);
     expect(big.table.rows).toHaveLength(MAX_TABLE_ROWS);
     expect(big.table.totalRows).toBe(MAX_TABLE_ROWS + 50);
   });
 
   it("uses the time zone from the result before the option", () => {
-    const zoned = adaptChartResult(
+    const zoned = adaptResult(
       {
         ...result(line),
         resolved_time_range: {
@@ -313,14 +232,13 @@ describe("adaptChartResult", () => {
     );
     expect(zoned.timeZone).toBe("America/New_York");
     expect(
-      adaptChartResult(result(line), { ...light, timeZone: "Asia/Tokyo" })
-        .timeZone,
+      adaptResult(result(line), { ...light, timeZone: "Asia/Tokyo" }).timeZone,
     ).toBe("Asia/Tokyo");
-    expect(adaptChartResult(result(line), light).timeZone).toBe("UTC");
+    expect(adaptResult(result(line), light).timeZone).toBe("UTC");
   });
 });
 
-describe("adaptFlintResult", () => {
+describe("adaptResult on hand-built results", () => {
   // Four daily buckets: Sep 9 to Sep 12.
   const range = { start: "2023-09-09T00:00:00Z", end: "2023-09-13T00:00:00Z" };
   const day = (n: number) => `2023-09-${String(n).padStart(2, "0")}T00:00:00Z`;
@@ -329,7 +247,7 @@ describe("adaptFlintResult", () => {
     chartSpec: WireFlintChartSpec,
     data: WireRow[],
     domain?: Record<string, unknown[]>,
-  ): FlintChartResult {
+  ): ChartResult {
     return {
       widget: "chart",
       chart_type: chartSpec.chartType,
@@ -362,7 +280,7 @@ describe("adaptFlintResult", () => {
     Array.from(new Set(rows.map((row) => row[field])));
 
   it("zero-fills every series of a time series, as Rill's charts do", () => {
-    const chart = adaptFlintResult(
+    const chart = adaptResult(
       flintResult(
         {
           chartType: "Line Chart",
@@ -384,7 +302,7 @@ describe("adaptFlintResult", () => {
   });
 
   it("zero-fills the previous period of a comparison as its own series", () => {
-    const chart = adaptFlintResult(
+    const chart = adaptResult(
       flintResult(
         { chartType: "Area Chart", encodings: { x: "__time", y: "bids" } },
         [
@@ -405,7 +323,7 @@ describe("adaptFlintResult", () => {
       { __time: day(9), device: "Mobile", publisher: "news", bids: 5 },
       { __time: day(11), device: "Mobile", publisher: "sports", bids: 4 },
     ];
-    const faceted = adaptFlintResult(
+    const faceted = adaptResult(
       flintResult(
         {
           chartType: "Line Chart",
@@ -432,8 +350,8 @@ describe("adaptFlintResult", () => {
       ],
     );
     timeOnColor.fields!.order_date = { name: "order_date", kind: "time" };
-    expect(adaptFlintResult(timeOnColor, light).rows).toHaveLength(2);
-    const heatmap = adaptFlintResult(
+    expect(adaptResult(timeOnColor, light).rows).toHaveLength(2);
+    const heatmap = adaptResult(
       flintResult(
         {
           chartType: "Heatmap",
@@ -453,7 +371,7 @@ describe("adaptFlintResult", () => {
     };
     const domain = { device: ["Android", "iOS", "Roku OS"] };
     // A bucket lists its series in no particular order, and each query orders them differently.
-    const byDay = adaptFlintResult(
+    const byDay = adaptResult(
       flintResult(
         spec,
         [
@@ -465,7 +383,7 @@ describe("adaptFlintResult", () => {
       ),
       light,
     );
-    const byWeek = adaptFlintResult(
+    const byWeek = adaptResult(
       flintResult(
         spec,
         [
@@ -496,7 +414,7 @@ describe("adaptFlintResult", () => {
       { order_date: day(9), bids: 5 },
       { order_date: day(11), bids: 4 },
     ]);
-    const result: FlintChartResult = {
+    const result: ChartResult = {
       ...base,
       fields: {
         ...base.fields,
@@ -508,7 +426,7 @@ describe("adaptFlintResult", () => {
         },
       },
     };
-    const chart = adaptFlintResult(result, light);
+    const chart = adaptResult(result, light);
     expect(chart.temporalField).toBe("order_date");
     // Zero-filled and converted to dates like the time dimension.
     expect(chart.rows).toHaveLength(4);
@@ -519,13 +437,13 @@ describe("adaptFlintResult", () => {
       chart.table.columns.find((column) => column.key === "order_date")?.label,
     ).toBe("Order Date");
     expect(
-      flintControlOptions(spec, result.fields, "__time", range)?.grains,
+      controlOptions(spec, result.fields, "__time", range)?.grains,
     ).toContain("TIME_GRAIN_DAY");
   });
 
   it("says the cut values of a pie are combined, rather than left out", () => {
     const pie = (limit: number, domain: string[]) =>
-      adaptFlintResult(
+      adaptResult(
         {
           ...flintResult(
             {
@@ -556,7 +474,7 @@ describe("adaptFlintResult", () => {
   });
 
   it("keeps the server's row order when no time axis orders the rows", () => {
-    const chart = adaptFlintResult(
+    const chart = adaptResult(
       flintResult(
         {
           chartType: "Bar Chart",

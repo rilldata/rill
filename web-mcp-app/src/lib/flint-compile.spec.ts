@@ -13,14 +13,14 @@ import { expressionFunction, parse, View } from "vega";
 import { expressionInterpreter } from "vega-interpreter";
 import { compile, type TopLevelSpec } from "vega-lite";
 import { describe, expect, it } from "vitest";
-import comparison from "../../harness/fixtures/flint_line_comparison.json";
-import { adaptFlintResult, type AdaptedFlintChart } from "./adapt";
-import type { FlintChartResult, WireRow } from "./contract";
+import comparison from "../../harness/fixtures/line_comparison.json";
+import { adaptResult, type AdaptedChart } from "./adapt";
+import type { ChartResult, WireRow } from "./contract";
 
 /**
  * End-to-end check of the Flint render path per fixture: result -> adapter -> Flint compile ->
  * Vega-Lite compile -> headless Vega run with the CSP-safe interpreter, no renderer. This is the
- * wiring FlintSurface performs, minus the Svelte shell.
+ * wiring ChartSurface performs, minus the Svelte shell.
  */
 
 interface Fixture {
@@ -29,15 +29,18 @@ interface Fixture {
   result: { structuredContent?: unknown };
 }
 
+// Every fixture with a chart result: the error fixtures have none to compile.
 const flintFixtures = Object.entries(
-  import.meta.glob<Fixture>("../../harness/fixtures/flint_*.json", {
+  import.meta.glob<Fixture>("../../harness/fixtures/*.json", {
     eager: true,
     import: "default",
   }),
-).map(([path, fixture]) => ({
-  file: path.split("/").pop()!,
-  result: fixture.result.structuredContent as FlintChartResult,
-}));
+)
+  .filter(([, fixture]) => fixture.expect !== "error")
+  .map(([path, fixture]) => ({
+    file: path.split("/").pop()!,
+    result: fixture.result.structuredContent as ChartResult,
+  }));
 
 const catalog = Object.values(
   import.meta.glob<{
@@ -49,7 +52,7 @@ const catalog = Object.values(
   }),
 )[0];
 
-function registerFormatters(chart: AdaptedFlintChart) {
+function registerFormatters(chart: AdaptedChart) {
   expressionFunction("humanize", (value: number) =>
     humanizeDataType(value, FormatPreset.HUMANIZE, "table"),
   );
@@ -62,7 +65,7 @@ function registerFormatters(chart: AdaptedFlintChart) {
   }
 }
 
-async function runHeadless(chart: AdaptedFlintChart, isDark = false) {
+async function runHeadless(chart: AdaptedChart, isDark = false) {
   registerFormatters(chart);
   const compiled = compileFlintSpec({
     spec: chart.flint.spec,
@@ -86,8 +89,8 @@ async function runHeadless(chart: AdaptedFlintChart, isDark = false) {
 }
 
 describe("Flint render path", () => {
-  it("covers every Flint fixture", () => {
-    expect(flintFixtures.length).toBeGreaterThanOrEqual(8);
+  it("covers every chart fixture", () => {
+    expect(flintFixtures.length).toBeGreaterThanOrEqual(10);
   });
 
   it("validates with a catalog generated from the installed Flint", () => {
@@ -122,7 +125,7 @@ describe("Flint render path", () => {
 
   for (const { file, result } of flintFixtures) {
     it(`compiles and runs the ${file} fixture`, async () => {
-      const chart = adaptFlintResult(result, { isDark: false, locale: "en" });
+      const chart = adaptResult(result, { isDark: false, locale: "en" });
       if (chart.rowCount === 0) return;
       const { view, compiled } = await runHeadless(chart);
       expect(compiled.warnings.filter((w) => w.severity === "error")).toEqual(
@@ -134,8 +137,8 @@ describe("Flint render path", () => {
   }
 
   it("draws the comparison as a second series with the previous-period label", async () => {
-    const chart = adaptFlintResult(
-      comparison.result.structuredContent as FlintChartResult,
+    const chart = adaptResult(
+      comparison.result.structuredContent as ChartResult,
       { isDark: false, locale: "en" },
     );
     expect(chart.hasComparison).toBe(true);
@@ -168,7 +171,7 @@ describe("Flint render path", () => {
       ctr,
     }));
     const ecdf = (encodings: Record<string, string>) =>
-      adaptFlintResult(
+      adaptResult(
         {
           widget: "chart",
           chart_type: "ECDF Plot",
@@ -191,7 +194,7 @@ describe("Flint render path", () => {
         },
         { isDark: false, locale: "en" },
       );
-    const proportions = async (chart: AdaptedFlintChart) => {
+    const proportions = async (chart: AdaptedChart) => {
       const { view, vgSpec } = await runHeadless(chart);
       return (vgSpec.data ?? [])
         .flatMap((dataset) => view.data(dataset.name) as { __ecdf?: number }[])
@@ -211,8 +214,8 @@ describe("Flint render path", () => {
   });
 
   it("routes measure axes through Rill's formatters", async () => {
-    const chart = adaptFlintResult(
-      comparison.result.structuredContent as FlintChartResult,
+    const chart = adaptResult(
+      comparison.result.structuredContent as ChartResult,
       { isDark: true, locale: "en" },
     );
     const { compiled } = await runHeadless(chart, true);

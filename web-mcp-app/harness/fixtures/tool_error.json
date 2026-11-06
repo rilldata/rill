@@ -3,24 +3,24 @@
   "description": "The tool call itself failed.",
   "expect": "error",
   "arguments": {
-    "chart_type": "bar_chart",
-    "spec": {
+    "chart_spec": {
+      "chartType": "Bar Chart",
+      "encodings": {
+        "x": {
+          "field": "advertiser_name",
+          "sortBy": "y",
+          "sortOrder": "descending",
+          "limit": 10
+        },
+        "y": "total_bids"
+      }
+    },
+    "data": {
       "metrics_view": "missing_metrics",
       "time_range": {
         "start": "2023-09-09T00:00:00Z",
         "end": "2023-09-16T00:00:00Z"
-      },
-      "x": {
-        "field": "advertiser_name",
-        "type": "nominal",
-        "limit": 10,
-        "sort": "-y"
-      },
-      "y": {
-        "field": "total_bids",
-        "type": "quantitative"
-      },
-      "color": "primary"
+      }
     }
   },
   "result": {

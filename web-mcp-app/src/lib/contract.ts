@@ -1,19 +1,18 @@
-import type { ChartType } from "@rilldata/web-common/features/components/charts/types";
 import type {
   V1ThemeSpec,
   V1TimeGrain,
 } from "@rilldata/web-common/runtime-client/gen/index.schemas";
 import type { AppToolResult } from "@modelcontextprotocol/ext-apps";
+import type { ChartEncoding } from "flint-chart/core";
 
 /**
  * Wire contract between Rill's `create_chart` / `chart_data` MCP tools and this widget
  * (`CreateChartResult` in `runtime/ai/create_chart.go`); the backend emits it as `structuredContent`.
  * The payload is untrusted input: `parseChartPayload` checks the shape before anything renders.
  *
- * Two result shapes exist. A Flint result carries `input`, the effective Flint chart spec plus the
- * metrics view binding the rows were queried with, and the widget compiles it with Flint. A Rill
- * result carries `spec`, Rill's own chart config for one of the 11 built-in chart types, and renders
- * through web-common's chart components; it is what older runtimes answer with.
+ * A result carries `input`, the effective Flint chart spec plus the metrics view binding the rows
+ * were queried with, and the widget compiles it with Flint. Rill's own chat gets a different
+ * result (`chart_type` and `spec`, without data), which never reaches this widget.
  */
 
 /** A tool result as the host forwards it: the MCP SDK's `CallToolResult`. */
@@ -21,33 +20,6 @@ export type ToolResult = AppToolResult;
 
 /** The `widget` value of a result this bundle renders; other values come from newer servers. */
 export const CHART_WIDGET_MODE = "chart";
-
-/**
- * The Rill chart types `create_chart` can return. Listed by hand because web-common's
- * `CHART_CONFIG` cannot be imported here: it pulls the icons and the query providers into
- * the bundle.
- */
-export const CHART_TYPES: ChartType[] = [
-  "bar_chart",
-  "line_chart",
-  "area_chart",
-  "stacked_bar",
-  "stacked_bar_normalized",
-  "donut_chart",
-  "pie_chart",
-  "funnel_chart",
-  "heatmap",
-  "combo_chart",
-  "scatter_plot",
-];
-
-const CARTESIAN_CHART_TYPES: ReadonlySet<ChartType> = new Set([
-  "bar_chart",
-  "line_chart",
-  "area_chart",
-  "stacked_bar",
-  "stacked_bar_normalized",
-]);
 
 export interface WireTimeRange {
   start: string;
@@ -78,24 +50,8 @@ export interface WireMetricsView {
 
 export type WireRow = Record<string, unknown>;
 
-/** The validated `create_chart` input of a Rill result; the field configs are Rill's chart spec vocabulary. */
-export interface WireChartSpec {
-  metrics_view?: string;
-  time_range?: WireTimeRange;
-  comparison_time_range?: WireTimeRange;
-  time_grain?: V1TimeGrain;
-  where?: unknown;
-  [key: string]: unknown;
-}
-
-/** A Flint encoding object: Flint's six keys plus Rill's `limit`, the top-N of a dimension on the channel. */
-export interface WireFlintEncoding {
-  field?: string;
-  type?: "quantitative" | "nominal" | "ordinal" | "temporal";
-  aggregate?: "count" | "sum" | "average" | "mean";
-  sortOrder?: "ascending" | "descending";
-  sortBy?: string;
-  scheme?: string;
+/** A Flint encoding object plus Rill's `limit`, the top-N of a dimension on the channel. */
+export interface WireFlintEncoding extends ChartEncoding {
   limit?: number;
 }
 
@@ -158,34 +114,21 @@ export interface ChartDataPayload {
 
 /** The `structuredContent` of a `chart_data` result. */
 export interface ChartDataResponse extends ChartDataPayload {
-  /** Flint requests: the effective input, with the limits the server applied (a facet cap, say). */
+  /** The effective input, with the limits the server applied (a facet cap, say). */
   input?: WireFlintInput;
 }
 
-interface ChartResultBase extends ChartDataPayload {
+/** A `create_chart` result, compiled with Flint from its effective input. */
+export interface ChartResult extends ChartDataPayload {
   widget: typeof CHART_WIDGET_MODE;
+  chart_type: string;
+  input: WireFlintInput;
   message?: string;
   title?: string;
   metrics_view?: WireMetricsView;
   theme?: V1ThemeSpec;
   open_url?: string;
 }
-
-/** A result rendered with web-common's chart components from Rill's chart config. */
-export interface RillChartResult extends ChartResultBase {
-  chart_type: ChartType;
-  spec: WireChartSpec;
-  input?: undefined;
-}
-
-/** A result compiled with Flint from its effective input. */
-export interface FlintChartResult extends ChartResultBase {
-  chart_type: string;
-  input: WireFlintInput;
-  spec?: undefined;
-}
-
-export type ChartResult = RillChartResult | FlintChartResult;
 
 export type ParsedPayload =
   | { kind: "chart"; result: ChartResult }
@@ -227,18 +170,6 @@ export function httpUrl(value: unknown): string | undefined {
   }
 }
 
-export function isChartType(value: unknown): value is ChartType {
-  return typeof value === "string" && CHART_TYPES.includes(value as ChartType);
-}
-
-export function isCartesianChartType(chartType: ChartType): boolean {
-  return CARTESIAN_CHART_TYPES.has(chartType);
-}
-
-export function isFlintResult(result: ChartResult): result is FlintChartResult {
-  return result.input !== undefined;
-}
-
 /** The rows of a data section, dropping anything that is not an object; no section is no rows. */
 export function normalizeRows(data: WireRow[] | undefined): WireRow[] {
   return (data ?? []).filter((row): row is WireRow => isRecord(row));
@@ -260,25 +191,11 @@ export function parseChartPayload(payload: unknown): ParsedPayload {
   if (payload.widget !== CHART_WIDGET_MODE) {
     return { kind: "unsupported_widget", widget: payload.widget, openUrl };
   }
-  if (payload.input !== undefined) {
-    const reason = invalidFlintInput(payload.input);
-    if (reason) return { kind: "invalid", reason, openUrl };
-    if (typeof payload.chart_type !== "string") {
-      return { kind: "invalid", reason: "chart_type is missing", openUrl };
-    }
-  } else {
-    if (!isChartType(payload.chart_type)) {
-      return {
-        kind: "invalid",
-        reason: `unknown chart_type ${JSON.stringify(payload.chart_type)}`,
-        openUrl,
-      };
-    }
-    if (!isRecord(payload.spec)) {
-      return { kind: "invalid", reason: "spec is not an object", openUrl };
-    }
+  if (typeof payload.chart_type !== "string") {
+    return { kind: "invalid", reason: "chart_type is missing", openUrl };
   }
-  const reason = invalidDataSection(payload);
+  const reason =
+    invalidFlintInput(payload.input) ?? invalidDataSection(payload);
   if (reason) return { kind: "invalid", reason, openUrl };
   return {
     kind: "chart",
@@ -288,8 +205,7 @@ export function parseChartPayload(payload: unknown): ParsedPayload {
 
 /**
  * Shape check for the untrusted `structuredContent` of a `chart_data` result: a data section
- * that carries its rows (`[]` for none), and the effective input of a Flint request when the
- * server sends one.
+ * that carries its rows (`[]` for none), and the effective input when the server sends one.
  */
 export function parseChartDataResponse(payload: unknown): ParsedChartData {
   if (!isRecord(payload)) {
@@ -348,34 +264,28 @@ export function hasChartData(result: ChartDataPayload): boolean {
 
 /**
  * The result with its data section replaced by what `chart_data` returned for `queried`,
- * the spec (Rill result) or the input (Flint result) the data answers.
+ * the input the data answers.
  * The section is replaced rather than merged because the backend omits the optional keys
  * it has nothing for (`domain_values`, `totals`, `truncation_warning`, ...), and a value
  * from the previous result must not show through.
  */
 export function withChartData(
   result: ChartResult,
-  queried: WireChartSpec | WireFlintInput,
+  queried: WireFlintInput,
   data: ChartDataPayload,
 ): ChartResult {
   const { widget, chart_type, message, title, metrics_view, theme, open_url } =
     result;
-  const base = {
+  return {
     widget,
+    chart_type,
+    input: queried,
     message,
     title,
     metrics_view,
     theme,
     open_url,
     ...data,
-  };
-  if (isFlintResult(result)) {
-    return { ...base, chart_type, input: queried as WireFlintInput };
-  }
-  return {
-    ...base,
-    chart_type: result.chart_type,
-    spec: queried as WireChartSpec,
   };
 }
 

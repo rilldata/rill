@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
-import bar from "../../harness/fixtures/flint_bar_chart.json";
-import comparison from "../../harness/fixtures/flint_line_comparison.json";
-import pie from "../../harness/fixtures/flint_pie.json";
-import waterfall from "../../harness/fixtures/flint_waterfall.json";
-import { normalizeRows, type FlintChartResult } from "./contract";
+import bar from "../../harness/fixtures/bar_chart.json";
+import comparison from "../../harness/fixtures/line_comparison.json";
+import pie from "../../harness/fixtures/pie.json";
+import waterfall from "../../harness/fixtures/waterfall.json";
+import { normalizeRows, type ChartResult } from "./contract";
 import {
   buildFlintCompileInput,
   COMPARISON_SERIES_FIELD,
@@ -16,7 +16,7 @@ import {
 } from "./flint-input";
 
 const result = (fixture: { result: { structuredContent?: unknown } }) =>
-  fixture.result.structuredContent as FlintChartResult;
+  fixture.result.structuredContent as ChartResult;
 
 describe("stripFlintChartSpec", () => {
   it("drops the title, the subtitle and Rill's limit keys", () => {

@@ -11,6 +11,7 @@ import type {
   Sort,
   TimeRange,
 } from "@rilldata/web-common/runtime-client/gen/resolvers/metrics/schema.ts";
+import type { ChartEncoding } from "flint-chart/core";
 
 /**
  * The arguments of a `create_chart` tool call. Rill's own clients send a chart type and Rill's
@@ -24,13 +25,8 @@ export type RillCreateChartArgs = {
   spec: CreateChartSpec;
 };
 
-/** A Flint encoding: Flint's keys plus Rill's `limit`; only the sort keys matter to an explore. */
-export type FlintEncoding = {
-  field?: string;
-  sortOrder?: "ascending" | "descending";
-  sortBy?: string;
-  [key: string]: unknown;
-};
+/** A Flint encoding plus Rill's `limit`; only the sort keys matter to an explore. */
+export type FlintEncoding = ChartEncoding & { limit?: number };
 
 export type FlintEncodingValue =
   | string

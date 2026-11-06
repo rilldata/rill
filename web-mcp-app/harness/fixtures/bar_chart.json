@@ -1,57 +1,60 @@
 {
   "name": "Bar chart",
-  "description": "Canonical create_chart result: top advertisers by total bids.",
+  "description": "Canonical result: top advertisers by total bids, with the server's effective limit on x.",
   "expect": "canvas",
   "arguments": {
-    "chart_type": "bar_chart",
-    "spec": {
+    "chart_spec": {
+      "chartType": "Bar Chart",
+      "encodings": {
+        "x": {
+          "field": "advertiser_name",
+          "sortBy": "y",
+          "sortOrder": "descending",
+          "limit": 10
+        },
+        "y": "total_bids"
+      }
+    },
+    "data": {
       "metrics_view": "bids_metrics",
       "time_range": {
         "start": "2023-09-09T00:00:00Z",
         "end": "2023-09-16T00:00:00Z"
-      },
-      "x": {
-        "field": "advertiser_name",
-        "type": "nominal",
-        "limit": 10,
-        "sort": "-y"
-      },
-      "y": {
-        "field": "total_bids",
-        "type": "quantitative"
-      },
-      "color": "primary"
+      }
     }
   },
   "result": {
     "content": [
       {
         "type": "text",
-        "text": "**Bar: Total Bids per Advertiser Name** (2023-09-09 to 2023-09-16)\n\n| Advertiser Name | Total Bids |\n| - | - |\n| Acme Media | 128430 |\n| Beta Brands | 99210 |\n| Cobalt Retail | 87650 |\n| Delta Travel | 64320 |\n| Echo Games | 51200 |\n| Foxtrot Foods | 40880 |\n| Gamma Motors | 28100 |\n| Helix Health | 19750 |\n\n_8 of 8 rows shown_\n\nOpen the interactive chart in Rill: https://ui.rilldata.com/demo/bids/-/ai/session-0b1c/message/call-4f2a/-/open"
+        "text": "**Bar Chart: Total Bids by Advertiser Name** (2023-09-09 to 2023-09-16)\n\n| Advertiser Name | Total Bids |\n| - | - |\n| Acme Media | 128430 |\n| Beta Brands | 99210 |\n| Cobalt Retail | 87650 |\n| Delta Travel | 64320 |\n| Echo Games | 51200 |\n| Foxtrot Foods | 40880 |\n| Gamma Motors | 28100 |\n| Helix Health | 19750 |\n\n_8 of 8 rows shown_\n\nOpen the interactive chart in Rill: https://ui.rilldata.com/demo/bids/-/ai/session-0b1c/message/call-4f2a/-/open"
       }
     ],
     "structuredContent": {
       "widget": "chart",
-      "chart_type": "bar_chart",
-      "spec": {
-        "metrics_view": "bids_metrics",
-        "time_range": {
-          "start": "2023-09-09T00:00:00Z",
-          "end": "2023-09-16T00:00:00Z"
+      "chart_type": "Bar Chart",
+      "input": {
+        "chart_spec": {
+          "chartType": "Bar Chart",
+          "encodings": {
+            "x": {
+              "field": "advertiser_name",
+              "sortBy": "y",
+              "sortOrder": "descending",
+              "limit": 10
+            },
+            "y": "total_bids"
+          }
         },
-        "x": {
-          "field": "advertiser_name",
-          "type": "nominal",
-          "limit": 10,
-          "sort": "-y"
-        },
-        "y": {
-          "field": "total_bids",
-          "type": "quantitative"
-        },
-        "color": "primary"
+        "data": {
+          "metrics_view": "bids_metrics",
+          "time_range": {
+            "start": "2023-09-09T00:00:00Z",
+            "end": "2023-09-16T00:00:00Z"
+          }
+        }
       },
-      "message": "Chart created successfully: bar_chart",
+      "message": "Chart created successfully: Bar Chart",
       "metrics_view": {
         "name": "bids_metrics",
         "display_name": "Bids",
@@ -75,7 +78,7 @@
       },
       "open_url": "https://ui.rilldata.com/demo/bids/-/ai/session-0b1c/message/call-4f2a/-/open",
       "truncated": false,
-      "title": "Total Bids per Advertiser Name",
+      "title": "Total Bids by Advertiser Name",
       "data": [
         {
           "advertiser_name": "Acme Media",
@@ -138,6 +141,14 @@
           "Gamma Motors",
           "Helix Health"
         ]
+      },
+      "semantic_types": {
+        "advertiser_name": "Category",
+        "total_bids": "Count"
+      },
+      "field_display_names": {
+        "advertiser_name": "Advertiser Name",
+        "total_bids": "Total Bids"
       }
     }
   }
