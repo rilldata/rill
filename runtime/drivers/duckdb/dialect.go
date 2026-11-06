@@ -144,9 +144,14 @@ func (d *dialect) SelectTimeRangeBins(start, end time.Time, grain runtimev1.Time
 	specifier := d.ConvertToDateTruncSpecifier(unit)
 	// first convert start and end to the target timezone as the application sends UTC representation of the time, so it will send `2024-03-12T18:30:00Z` for the 13th day of March in Asia/Kolkata timezone (`2024-03-13T00:00:00Z`)
 	// then let duckdb range over it and then convert back to the target timezone
-	return fmt.Sprintf("SELECT range AT TIME ZONE '%s' AS %s FROM range('%s'::TIMESTAMPTZ AT TIME ZONE '%s', '%s'::TIMESTAMPTZ AT TIME ZONE '%s', INTERVAL '%d %s')",
+	startExpr := fmt.Sprintf("'%s'::TIMESTAMPTZ AT TIME ZONE '%s'", start.Format(time.RFC3339), tz.String())
+	if unit == runtimev1.TimeGrain_TIME_GRAIN_HOUR && n > 1 {
+		// Hour multiples step from the bucket's wall-clock start, which is earlier than its local start time when it falls in a DST gap.
+		startExpr = fmt.Sprintf("TIMESTAMP '%s'", timeutil.WallClockBucketStart(start, n, tz).Format(time.DateTime))
+	}
+	return fmt.Sprintf("SELECT range AT TIME ZONE '%s' AS %s FROM range(%s, '%s'::TIMESTAMPTZ AT TIME ZONE '%s', INTERVAL '%d %s')",
 		tz.String(), d.EscapeAlias(alias),
-		start.Format(time.RFC3339), tz.String(),
+		startExpr,
 		end.Format(time.RFC3339), tz.String(),
 		n, specifier,
 	), nil, nil

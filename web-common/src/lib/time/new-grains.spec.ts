@@ -351,6 +351,73 @@ describe("catalog grains", () => {
     ).toBe("2024-03-10T10:00:00.000Z");
   });
 
+  it("steps past a bucket that starts in a DST gap like the runtime", () => {
+    const bins = (
+      start: string,
+      zone: string,
+      grain: V1TimeGrain,
+      n: number,
+    ) => {
+      let dt = floorToGrain(DateTime.fromISO(start).setZone(zone), grain);
+      const out: string[] = [];
+      for (let i = 0; i < n; i++) {
+        out.push(dt.toUTC().toISO()!);
+        dt = plusGrain(dt, grain);
+      }
+      return out;
+    };
+    // Local 02:00 does not exist in New York on 2024-03-10, so that bucket starts at 03:00 EDT and the next one at 04:00.
+    expect(
+      bins(
+        "2024-03-10T05:00:00Z",
+        "America/New_York",
+        V1TimeGrain.TIME_GRAIN_2_HOUR,
+        4,
+      ),
+    ).toEqual([
+      "2024-03-10T05:00:00.000Z",
+      "2024-03-10T07:00:00.000Z",
+      "2024-03-10T08:00:00.000Z",
+      "2024-03-10T10:00:00.000Z",
+    ]);
+    // Local midnight does not exist in Havana that day, so the first bucket starts at 01:00 CDT.
+    expect(
+      bins(
+        "2024-03-09T23:00:00Z",
+        "America/Havana",
+        V1TimeGrain.TIME_GRAIN_6_HOUR,
+        3,
+      ),
+    ).toEqual([
+      "2024-03-09T23:00:00.000Z",
+      "2024-03-10T05:00:00.000Z",
+      "2024-03-10T10:00:00.000Z",
+    ]);
+    // Lord Howe skips 30 minutes on 2024-10-06, so the 02:00 bucket starts at 02:30 and the next one at 04:00.
+    expect(
+      bins(
+        "2024-10-05T13:30:00Z",
+        "Australia/Lord_Howe",
+        V1TimeGrain.TIME_GRAIN_2_HOUR,
+        3,
+      ),
+    ).toEqual([
+      "2024-10-05T13:30:00.000Z",
+      "2024-10-05T15:30:00.000Z",
+      "2024-10-05T17:00:00.000Z",
+    ]);
+    // From a time inside a bucket, it steps to the start of the next bucket.
+    const inGapBucket = DateTime.fromISO("2024-03-10T07:30:00Z").setZone(
+      "America/New_York",
+    );
+    expect(
+      floorToGrain(inGapBucket, V1TimeGrain.TIME_GRAIN_2_HOUR).toUTC().toISO(),
+    ).toBe("2024-03-10T07:00:00.000Z");
+    expect(
+      plusGrain(inGapBucket, V1TimeGrain.TIME_GRAIN_2_HOUR).toUTC().toISO(),
+    ).toBe("2024-03-10T08:00:00.000Z");
+  });
+
   it("maps multiples to their base grain", () => {
     expect(getBaseGrain(V1TimeGrain.TIME_GRAIN_10_MINUTE)).toBe(
       V1TimeGrain.TIME_GRAIN_MINUTE,

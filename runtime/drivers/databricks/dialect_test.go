@@ -24,5 +24,10 @@ func TestSelectTimeRangeBinsMultiples(t *testing.T) {
 	sql, args, err = databricks.DialectDatabricks.SelectTimeRangeBins(start, end, runtimev1.TimeGrain_TIME_GRAIN_6_HOUR, "ts", ny, 1, 1)
 	require.NoError(t, err)
 	require.Nil(t, args)
-	require.Equal(t, "SELECT TO_UTC_TIMESTAMP(ts, 'America/New_York') AS `ts` FROM (SELECT EXPLODE(SEQUENCE(FROM_UTC_TIMESTAMP(CAST('2024-11-03T04:00:00Z' AS TIMESTAMP), 'America/New_York'), FROM_UTC_TIMESTAMP(CAST('2024-11-04T05:00:00Z' AS TIMESTAMP), 'America/New_York'), INTERVAL 6 HOUR)) AS ts) WHERE TO_UTC_TIMESTAMP(ts, 'America/New_York') < CAST('2024-11-04T05:00:00Z' AS TIMESTAMP)", sql)
+	require.Equal(t, "SELECT TO_UTC_TIMESTAMP(ts, 'America/New_York') AS `ts` FROM (SELECT EXPLODE(SEQUENCE(CAST('2024-11-03T00:00:00Z' AS TIMESTAMP), FROM_UTC_TIMESTAMP(CAST('2024-11-04T05:00:00Z' AS TIMESTAMP), 'America/New_York'), INTERVAL 6 HOUR)) AS ts) WHERE TO_UTC_TIMESTAMP(ts, 'America/New_York') < CAST('2024-11-04T05:00:00Z' AS TIMESTAMP)", sql)
+
+	// A spine that starts in the bucket after the spring-forward gap steps from its wall-clock start, 02:00, not from 03:00 EDT.
+	sql, _, err = databricks.DialectDatabricks.SelectTimeRangeBins(time.Date(2024, 3, 10, 7, 30, 0, 0, time.UTC), time.Date(2024, 3, 10, 13, 0, 0, 0, time.UTC), runtimev1.TimeGrain_TIME_GRAIN_2_HOUR, "ts", ny, 1, 1)
+	require.NoError(t, err)
+	require.Equal(t, "SELECT TO_UTC_TIMESTAMP(ts, 'America/New_York') AS `ts` FROM (SELECT EXPLODE(SEQUENCE(CAST('2024-03-10T02:00:00Z' AS TIMESTAMP), FROM_UTC_TIMESTAMP(CAST('2024-03-10T13:00:00Z' AS TIMESTAMP), 'America/New_York'), INTERVAL 2 HOUR)) AS ts) WHERE TO_UTC_TIMESTAMP(ts, 'America/New_York') < CAST('2024-03-10T13:00:00Z' AS TIMESTAMP)", sql)
 }

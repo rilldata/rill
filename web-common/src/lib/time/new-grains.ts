@@ -247,7 +247,9 @@ export function floorToGrain<IsValid extends boolean>(
 
 /**
  * Adds `n` buckets of the grain.
- * Hour multiples step on the wall clock like the runtime, so 6-hour buckets stay on local 00:00, 06:00, 12:00 and 18:00 across DST changes.
+ * Hour multiples step between bucket starts on the wall clock like the runtime, so 6-hour buckets stay on local 00:00, 06:00, 12:00 and 18:00 across DST changes:
+ * they return the start of the n-th bucket from dt's bucket.
+ * Stepping from the grid hour of dt's bucket also covers a bucket that starts after a DST gap, at a later local time.
  */
 export function plusGrain<IsValid extends boolean>(
   dt: DateTime<IsValid>,
@@ -257,7 +259,12 @@ export function plusGrain<IsValid extends boolean>(
   const unit = V1TimeGrainToDateTimeUnit[grain];
   const count = V1TimeGrainToCount[grain];
   if (unit === "hour" && count > 1) {
-    return dt.set({ hour: dt.hour + n * count });
+    return dt.set({
+      hour: dt.hour - (dt.hour % count) + n * count,
+      minute: 0,
+      second: 0,
+      millisecond: 0,
+    });
   }
   return dt.plus({ [unit]: n * count });
 }

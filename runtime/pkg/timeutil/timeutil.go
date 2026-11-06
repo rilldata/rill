@@ -240,9 +240,18 @@ func TruncateTime(tm time.Time, tg TimeGrain, tz *time.Location, firstDay, first
 	case TimeGrainMinute:
 		tm = time.Date(tm.Year(), tm.Month(), tm.Day(), tm.Hour(), tm.Minute()-tm.Minute()%n, 0, 0, tz)
 	case TimeGrainHour:
-		tm = time.Date(tm.Year(), tm.Month(), tm.Day(), tm.Hour()-tm.Hour()%n, 0, 0, 0, tz)
+		tm = startOfLocalHour(tm, tm.Hour()-tm.Hour()%n, tz)
 	}
 	return tm.In(time.UTC)
+}
+
+// WallClockBucketStart returns the local date and time in tz at which the bucket of an hour multiple that contains tm starts,
+// as a UTC time that holds that wall-clock time.
+// Dialects that step hour multiples on the local clock start their spines from it.
+// It is earlier than the local time of TruncateTime for a bucket that starts in a DST gap, since TruncateTime moves that start past the gap.
+func WallClockBucketStart(tm time.Time, hours int, tz *time.Location) time.Time {
+	tm = tm.In(tz)
+	return time.Date(tm.Year(), tm.Month(), tm.Day(), tm.Hour()-tm.Hour()%hours, 0, 0, 0, time.UTC)
 }
 
 func ApproximateBins(start, end time.Time, tg TimeGrain) int {
@@ -299,8 +308,10 @@ func OffsetTime(tm time.Time, tg TimeGrain, n int, tz *time.Location) time.Time 
 		case TimeGrainMinute:
 			tm = tm.Add(time.Duration(n*k) * time.Minute)
 		case TimeGrainHour:
-			// Step on the wall clock so bins stay aligned to local midnight across DST changes, like TruncateTime.
-			tm = time.Date(tm.Year(), tm.Month(), tm.Day(), tm.Hour()+n*k, tm.Minute(), tm.Second(), tm.Nanosecond(), tz)
+			// Step between bucket starts on the local grid so bins stay aligned to local midnight across DST changes, like TruncateTime.
+			// This returns the start of the n-th bucket from tm's bucket.
+			// Stepping from the grid hour of tm's bucket, not tm's own hour, also covers a bucket start that a DST gap moved later.
+			tm = startOfLocalHour(tm, tm.Hour()-tm.Hour()%k+n*k, tz)
 		}
 	}
 
@@ -318,4 +329,26 @@ func daysInMonth(year, month int) int {
 		return 28
 	}
 	return daysForMonths[month-1]
+}
+
+// startOfLocalHour returns the first instant of the given hour on tm's date in tz; the hour may overflow into adjacent dates.
+// time.Date does not specify which instant it picks around a DST change, so this pins down both cases:
+// an hour that starts in a DST gap resolves to the first instant after the gap, as in DuckDB, ClickHouse, Druid and luxon,
+// and an hour that a fall-back change repeats resolves to its first occurrence, as in ClickHouse and Druid, whose spines are built from it.
+// DuckDB resolves a repeated hour to its second occurrence, but it builds its own spines.
+func startOfLocalHour(tm time.Time, hour int, tz *time.Location) time.Time {
+	t := time.Date(tm.Year(), tm.Month(), tm.Day(), hour, 0, 0, 0, tz)
+	_, offset := t.Zone()
+	if t.Hour() != (hour%24+24)%24 {
+		_, after := t.Add(3 * time.Hour).Zone()
+		return t.Add(time.Duration(after-offset) * time.Second)
+	}
+	_, before := t.Add(-3 * time.Hour).Zone()
+	if before > offset {
+		earlier := t.Add(-time.Duration(before-offset) * time.Second)
+		if earlier.Hour() == t.Hour() && earlier.Minute() == 0 {
+			return earlier
+		}
+	}
+	return t
 }

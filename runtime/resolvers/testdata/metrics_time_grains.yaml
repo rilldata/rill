@@ -6,6 +6,9 @@ project_files:
     connector: clickhouse
     output: clickhouse
     sql: |
+      select parseDateTimeBestEffort('2023-03-12T07:30:00Z') as time, 'US' as country, 64 as val union all
+      select parseDateTimeBestEffort('2023-10-29T00:30:00Z') as time, 'DE' as country, 128 as val union all
+      select parseDateTimeBestEffort('2023-10-29T01:30:00Z') as time, 'DE' as country, 256 as val union all
       select parseDateTimeBestEffort('2024-03-10T04:03:00Z') as time, 'US' as country, 1 as val union all
       select parseDateTimeBestEffort('2024-03-10T04:07:00Z') as time, 'US' as country, 2 as val union all
       select parseDateTimeBestEffort('2024-03-10T04:12:00Z') as time, 'DK' as country, 4 as val union all
@@ -17,7 +20,7 @@ project_files:
     model: clickhouse_data
     timeseries: time
     smallest_time_grain: minute
-    time_grains: [10m, 30m, hour, 6h, day]
+    time_grains: [10m, 30m, hour, 2h, 6h, day]
     dimensions:
       - column: country
     measures:
@@ -28,6 +31,9 @@ project_files:
     type: model
     connector: duckdb
     sql: |
+      select '2023-03-12T07:30:00Z'::TIMESTAMP as time, 'US' as country, 64 as val union all
+      select '2023-10-29T00:30:00Z'::TIMESTAMP as time, 'DE' as country, 128 as val union all
+      select '2023-10-29T01:30:00Z'::TIMESTAMP as time, 'DE' as country, 256 as val union all
       select '2024-03-10T04:03:00Z'::TIMESTAMP as time, 'US' as country, 1 as val union all
       select '2024-03-10T04:07:00Z'::TIMESTAMP as time, 'US' as country, 2 as val union all
       select '2024-03-10T04:12:00Z'::TIMESTAMP as time, 'DK' as country, 4 as val union all
@@ -39,7 +45,7 @@ project_files:
     model: duckdb_data
     timeseries: time
     smallest_time_grain: minute
-    time_grains: [10m, 30m, hour, 6h, day]
+    time_grains: [10m, 30m, hour, 2h, 6h, day]
     dimensions:
       - column: country
     measures:
@@ -257,6 +263,273 @@ tests:
         time__6h: "2024-03-10T16:00:00Z"
       - sum: 32
         time__6h: "2024-03-10T22:00:00Z"
+  # 2023-03-12 is the spring-forward day in New York: local 02:00 does not exist,
+  # so the 02:00 bucket starts at 03:00 EDT (07:00Z) and the next one at 04:00 EDT (08:00Z).
+  - name: time_spine_2h_new_york_dst_duckdb
+    resolver: metrics
+    properties:
+      metrics_view: duckdb_metrics
+      dimensions:
+        - name: time__2h
+          compute:
+            time_floor:
+              dimension: time
+              grain: 2h
+      measures:
+        - name: sum
+      time_range:
+        start: 2023-03-12T05:00:00Z
+        end: 2023-03-12T13:00:00Z
+      time_zone: America/New_York
+      sort:
+        - name: time__2h
+      spine:
+        time:
+          start:
+          end:
+          grain:
+    result:
+      - sum: 0
+        time__2h: "2023-03-12T05:00:00Z"
+      - sum: 64
+        time__2h: "2023-03-12T07:00:00Z"
+      - sum: 0
+        time__2h: "2023-03-12T08:00:00Z"
+      - sum: 0
+        time__2h: "2023-03-12T10:00:00Z"
+      - sum: 0
+        time__2h: "2023-03-12T12:00:00Z"
+  - name: time_spine_2h_new_york_dst_clickhouse
+    resolver: metrics
+    properties:
+      metrics_view: clickhouse_metrics
+      dimensions:
+        - name: time__2h
+          compute:
+            time_floor:
+              dimension: time
+              grain: 2h
+      measures:
+        - name: sum
+      time_range:
+        start: 2023-03-12T05:00:00Z
+        end: 2023-03-12T13:00:00Z
+      time_zone: America/New_York
+      sort:
+        - name: time__2h
+      spine:
+        time:
+          start:
+          end:
+          grain:
+    result:
+      - sum: 0
+        time__2h: "2023-03-12T05:00:00Z"
+      - sum: 64
+        time__2h: "2023-03-12T07:00:00Z"
+      - sum: 0
+        time__2h: "2023-03-12T08:00:00Z"
+      - sum: 0
+        time__2h: "2023-03-12T10:00:00Z"
+      - sum: 0
+        time__2h: "2023-03-12T12:00:00Z"
+  # A spine that starts in the bucket after the gap steps from that bucket's wall-clock start, 02:00, not from 03:00.
+  - name: time_spine_2h_new_york_dst_gap_start_duckdb
+    resolver: metrics
+    properties:
+      metrics_view: duckdb_metrics
+      dimensions:
+        - name: time__2h
+          compute:
+            time_floor:
+              dimension: time
+              grain: 2h
+      measures:
+        - name: sum
+      time_range:
+        start: 2023-03-12T07:30:00Z
+        end: 2023-03-12T13:00:00Z
+      time_zone: America/New_York
+      sort:
+        - name: time__2h
+      spine:
+        time:
+          start:
+          end:
+          grain:
+    result:
+      - sum: 64
+        time__2h: "2023-03-12T07:00:00Z"
+      - sum: 0
+        time__2h: "2023-03-12T08:00:00Z"
+      - sum: 0
+        time__2h: "2023-03-12T10:00:00Z"
+      - sum: 0
+        time__2h: "2023-03-12T12:00:00Z"
+  - name: time_spine_2h_new_york_dst_gap_start_clickhouse
+    resolver: metrics
+    properties:
+      metrics_view: clickhouse_metrics
+      dimensions:
+        - name: time__2h
+          compute:
+            time_floor:
+              dimension: time
+              grain: 2h
+      measures:
+        - name: sum
+      time_range:
+        start: 2023-03-12T07:30:00Z
+        end: 2023-03-12T13:00:00Z
+      time_zone: America/New_York
+      sort:
+        - name: time__2h
+      spine:
+        time:
+          start:
+          end:
+          grain:
+    result:
+      - sum: 64
+        time__2h: "2023-03-12T07:00:00Z"
+      - sum: 0
+        time__2h: "2023-03-12T08:00:00Z"
+      - sum: 0
+        time__2h: "2023-03-12T10:00:00Z"
+      - sum: 0
+        time__2h: "2023-03-12T12:00:00Z"
+  # 2023-03-12 is also the spring-forward day in Havana, where local midnight does not exist,
+  # so the first bucket of the day starts at 01:00 CDT (05:00Z).
+  - name: time_spine_6h_havana_dst_duckdb
+    resolver: metrics
+    properties:
+      metrics_view: duckdb_metrics
+      dimensions:
+        - name: time__6h
+          compute:
+            time_floor:
+              dimension: time
+              grain: 6h
+      measures:
+        - name: sum
+      time_range:
+        start: 2023-03-12T05:00:00Z
+        end: 2023-03-13T04:00:00Z
+      time_zone: America/Havana
+      sort:
+        - name: time__6h
+      spine:
+        time:
+          start:
+          end:
+          grain:
+    result:
+      - sum: 64
+        time__6h: "2023-03-12T05:00:00Z"
+      - sum: 0
+        time__6h: "2023-03-12T10:00:00Z"
+      - sum: 0
+        time__6h: "2023-03-12T16:00:00Z"
+      - sum: 0
+        time__6h: "2023-03-12T22:00:00Z"
+  - name: time_spine_6h_havana_dst_clickhouse
+    resolver: metrics
+    properties:
+      metrics_view: clickhouse_metrics
+      dimensions:
+        - name: time__6h
+          compute:
+            time_floor:
+              dimension: time
+              grain: 6h
+      measures:
+        - name: sum
+      time_range:
+        start: 2023-03-12T05:00:00Z
+        end: 2023-03-13T04:00:00Z
+      time_zone: America/Havana
+      sort:
+        - name: time__6h
+      spine:
+        time:
+          start:
+          end:
+          grain:
+    result:
+      - sum: 64
+        time__6h: "2023-03-12T05:00:00Z"
+      - sum: 0
+        time__6h: "2023-03-12T10:00:00Z"
+      - sum: 0
+        time__6h: "2023-03-12T16:00:00Z"
+      - sum: 0
+        time__6h: "2023-03-12T22:00:00Z"
+  # 2023-10-29 is the fall-back day in Berlin, where local 02:00 happens twice, so the 02:00 bucket lasts three hours and holds both events.
+  # DuckDB labels it with the second 02:00 (01:00Z) and ClickHouse with the first (00:00Z); each spine matches its engine's label.
+  - name: time_spine_2h_berlin_dst_duckdb
+    resolver: metrics
+    properties:
+      metrics_view: duckdb_metrics
+      dimensions:
+        - name: time__2h
+          compute:
+            time_floor:
+              dimension: time
+              grain: 2h
+      measures:
+        - name: sum
+      time_range:
+        start: 2023-10-28T22:00:00Z
+        end: 2023-10-29T07:00:00Z
+      time_zone: Europe/Berlin
+      sort:
+        - name: time__2h
+      spine:
+        time:
+          start:
+          end:
+          grain:
+    result:
+      - sum: 0
+        time__2h: "2023-10-28T22:00:00Z"
+      - sum: 384
+        time__2h: "2023-10-29T01:00:00Z"
+      - sum: 0
+        time__2h: "2023-10-29T03:00:00Z"
+      - sum: 0
+        time__2h: "2023-10-29T05:00:00Z"
+  - name: time_spine_2h_berlin_dst_clickhouse
+    resolver: metrics
+    properties:
+      metrics_view: clickhouse_metrics
+      dimensions:
+        - name: time__2h
+          compute:
+            time_floor:
+              dimension: time
+              grain: 2h
+      measures:
+        - name: sum
+      time_range:
+        start: 2023-10-28T22:00:00Z
+        end: 2023-10-29T07:00:00Z
+      time_zone: Europe/Berlin
+      sort:
+        - name: time__2h
+      spine:
+        time:
+          start:
+          end:
+          grain:
+    result:
+      - sum: 0
+        time__2h: "2023-10-28T22:00:00Z"
+      - sum: 384
+        time__2h: "2023-10-29T00:00:00Z"
+      - sum: 0
+        time__2h: "2023-10-29T03:00:00Z"
+      - sum: 0
+        time__2h: "2023-10-29T05:00:00Z"
   - name: time_spine_10m_duckdb
     resolver: metrics
     properties:
@@ -389,6 +662,12 @@ tests:
       sql: |
         select date_trunc('10m', time) as t, sum from duckdb_metrics order by t
     result:
+      - sum: 64
+        t: "2023-03-12T07:30:00Z"
+      - sum: 128
+        t: "2023-10-29T00:30:00Z"
+      - sum: 256
+        t: "2023-10-29T01:30:00Z"
       - sum: 3
         t: "2024-03-10T04:00:00Z"
       - sum: 4

@@ -26,7 +26,14 @@ func TestDateTruncExprMultiples(t *testing.T) {
 	require.NoError(t, err)
 	hour := `time_extract("__time", 'HOUR', 'America/New_York')`
 	bucketHour := "(" + hour + " - mod(" + hour + ", 6))"
+	bucketMinute := "(" + bucketHour + " * 60)"
+	minuteOfDay := func(t string) string {
+		return "(time_extract(" + t + ", 'HOUR', 'America/New_York') * 60 + time_extract(" + t + ", 'MINUTE', 'America/New_York'))"
+	}
 	fromMidnight := `time_shift(time_floor("__time", 'P1D', null, 'America/New_York'), 'PT1H', ` + bucketHour + `, 'America/New_York')`
 	fromHour := `time_shift(time_floor("__time", 'PT1H', null, 'America/New_York'), 'PT1H', -mod(` + hour + `, 6), 'America/New_York')`
-	require.Equal(t, "CASE WHEN time_extract("+fromMidnight+", 'HOUR', 'America/New_York') = "+bucketHour+" THEN "+fromMidnight+" ELSE "+fromHour+" END", expr)
+	pastGap := "time_shift(" + fromHour + ", 'PT1M', mod(" + bucketMinute + " - " + minuteOfDay(fromHour) + " + 1440, 1440), 'America/New_York')"
+	require.Equal(t, "CASE WHEN "+minuteOfDay(fromMidnight)+" = "+bucketMinute+" THEN "+fromMidnight+
+		" WHEN "+minuteOfDay(fromHour)+" = "+bucketMinute+" THEN "+fromHour+
+		" ELSE "+pastGap+" END", expr)
 }

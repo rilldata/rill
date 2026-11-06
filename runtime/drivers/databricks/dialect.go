@@ -182,9 +182,11 @@ func (d *dialect) SelectTimeRangeBins(start, end time.Time, grain runtimev1.Time
 	switch {
 	case unit == runtimev1.TimeGrain_TIME_GRAIN_HOUR && n > 1:
 		// Hour multiples step on the local wall clock, like DateTruncExpr, so DST changes don't shift the bins.
+		// They step from the bucket's wall-clock start, which is earlier than its local start time when it falls in a DST gap.
+		// Like FROM_UTC_TIMESTAMP values, the start holds the local time as if it were UTC.
 		return fmt.Sprintf(
-			"SELECT TO_UTC_TIMESTAMP(ts, '%s') AS %s FROM (SELECT EXPLODE(SEQUENCE(FROM_UTC_TIMESTAMP(CAST('%s' AS TIMESTAMP), '%s'), FROM_UTC_TIMESTAMP(CAST('%s' AS TIMESTAMP), '%s'), %s)) AS ts) WHERE TO_UTC_TIMESTAMP(ts, '%s') < CAST('%s' AS TIMESTAMP)",
-			tzStr, d.EscapeAlias(alias), startStr, tzStr, endStr, tzStr, stepExpr, tzStr, endStr,
+			"SELECT TO_UTC_TIMESTAMP(ts, '%s') AS %s FROM (SELECT EXPLODE(SEQUENCE(CAST('%s' AS TIMESTAMP), FROM_UTC_TIMESTAMP(CAST('%s' AS TIMESTAMP), '%s'), %s)) AS ts) WHERE TO_UTC_TIMESTAMP(ts, '%s') < CAST('%s' AS TIMESTAMP)",
+			tzStr, d.EscapeAlias(alias), timeutil.WallClockBucketStart(start, n, tz).Format(time.RFC3339), endStr, tzStr, stepExpr, tzStr, endStr,
 		), nil, nil
 	case unit == runtimev1.TimeGrain_TIME_GRAIN_MILLISECOND,
 		unit == runtimev1.TimeGrain_TIME_GRAIN_SECOND,

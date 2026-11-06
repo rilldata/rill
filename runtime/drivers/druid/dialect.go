@@ -96,13 +96,25 @@ func (d *dialect) DateTruncExpr(dim *runtimev1.MetricsViewSpec_Dimension, grain 
 		if unit == runtimev1.TimeGrain_TIME_GRAIN_HOUR {
 			// time_floor steps hour periods in absolute time from 1970-01-01 local,
 			// so during DST its 6-hour buckets start at 01:00 local.
-			// Shifting local midnight by the bucket's wall-clock hour is exact unless a DST change earlier that day moved it off that hour;
-			// then the event's own hour start, moved back by the hours it is into the bucket, is exact.
+			// Shifting local midnight by the bucket's wall-clock hour is exact unless a DST change earlier that day moved it off that time;
+			// then the event's own hour start, moved back by the hours it is into the bucket, is exact unless the bucket starts in a DST gap.
+			// That start lands before the gap, so moving it forward to the bucket's wall-clock time gives the first instant after the gap,
+			// as in the other engines and TruncateTime.
+			// Comparing minutes of the day, not just hours, also catches the 30-minute DST change of Australia/Lord_Howe.
 			hour := fmt.Sprintf("time_extract(%s, 'HOUR', '%s')", expr, tz)
 			bucketHour := fmt.Sprintf("(%s - mod(%s, %d))", hour, hour, n)
+			bucketMinute := fmt.Sprintf("(%s * 60)", bucketHour)
+			minuteOfDay := func(t string) string {
+				return fmt.Sprintf("(time_extract(%s, 'HOUR', '%s') * 60 + time_extract(%s, 'MINUTE', '%s'))", t, tz, t, tz)
+			}
 			fromMidnight := fmt.Sprintf("time_shift(time_floor(%s, 'P1D', null, '%s'), 'PT1H', %s, '%s')", expr, tz, bucketHour, tz)
 			fromHour := fmt.Sprintf("time_shift(time_floor(%s, 'PT1H', null, '%s'), 'PT1H', -mod(%s, %d), '%s')", expr, tz, hour, n, tz)
-			return fmt.Sprintf("CASE WHEN time_extract(%s, 'HOUR', '%s') = %s THEN %s ELSE %s END", fromMidnight, tz, bucketHour, fromMidnight, fromHour), nil
+			pastGap := fmt.Sprintf("time_shift(%s, 'PT1M', mod(%s - %s + 1440, 1440), '%s')", fromHour, bucketMinute, minuteOfDay(fromHour), tz)
+			return fmt.Sprintf("CASE WHEN %s = %s THEN %s WHEN %s = %s THEN %s ELSE %s END",
+				minuteOfDay(fromMidnight), bucketMinute, fromMidnight,
+				minuteOfDay(fromHour), bucketMinute, fromHour,
+				pastGap,
+			), nil
 		}
 		return fmt.Sprintf("time_floor(%s, '%s', null, '%s')", expr, specifier, tz), nil
 	}

@@ -184,11 +184,12 @@ func (d *dialect) SelectTimeRangeBins(start, end time.Time, grain runtimev1.Time
 	switch {
 	case unit == runtimev1.TimeGrain_TIME_GRAIN_HOUR && n > 1:
 		// Hour multiples step on the local wall clock, like DateTruncExpr, so DST changes don't shift the bins.
+		// They step from the bucket's wall-clock start, which is earlier than its local start time when it falls in a DST gap.
 		// BigQuery has no DATETIME array generator, so offset the local start by a generated index.
 		steps := int(end.Sub(start)/(time.Duration(n)*time.Hour)) + 2
 		return fmt.Sprintf(
-			"SELECT ts AS %s FROM (SELECT TIMESTAMP(DATETIME_ADD(DATETIME(TIMESTAMP '%s', '%s'), INTERVAL i * %d HOUR), '%s') AS ts FROM UNNEST(GENERATE_ARRAY(0, %d)) AS i) WHERE ts < TIMESTAMP '%s'",
-			d.EscapeAlias(alias), startStr, tzStr, n, tzStr, steps, endStr,
+			"SELECT ts AS %s FROM (SELECT TIMESTAMP(DATETIME_ADD(DATETIME '%s', INTERVAL i * %d HOUR), '%s') AS ts FROM UNNEST(GENERATE_ARRAY(0, %d)) AS i) WHERE ts < TIMESTAMP '%s'",
+			d.EscapeAlias(alias), timeutil.WallClockBucketStart(start, n, tz).Format(time.DateTime), n, tzStr, steps, endStr,
 		), nil, nil
 	case unit == runtimev1.TimeGrain_TIME_GRAIN_MILLISECOND,
 		unit == runtimev1.TimeGrain_TIME_GRAIN_SECOND,

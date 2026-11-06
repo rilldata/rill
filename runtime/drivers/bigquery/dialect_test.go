@@ -42,5 +42,10 @@ func TestSelectTimeRangeBinsMultiples(t *testing.T) {
 	sql, args, err = bigquery.DialectBigQuery.SelectTimeRangeBins(start, end, runtimev1.TimeGrain_TIME_GRAIN_6_HOUR, "ts", ny, 1, 1)
 	require.NoError(t, err)
 	require.Nil(t, args)
-	require.Equal(t, "SELECT ts AS `ts` FROM (SELECT TIMESTAMP(DATETIME_ADD(DATETIME(TIMESTAMP '2024-11-03T04:00:00Z', 'America/New_York'), INTERVAL i * 6 HOUR), 'America/New_York') AS ts FROM UNNEST(GENERATE_ARRAY(0, 6)) AS i) WHERE ts < TIMESTAMP '2024-11-04T05:00:00Z'", sql)
+	require.Equal(t, "SELECT ts AS `ts` FROM (SELECT TIMESTAMP(DATETIME_ADD(DATETIME '2024-11-03 00:00:00', INTERVAL i * 6 HOUR), 'America/New_York') AS ts FROM UNNEST(GENERATE_ARRAY(0, 6)) AS i) WHERE ts < TIMESTAMP '2024-11-04T05:00:00Z'", sql)
+
+	// A spine that starts in the bucket after the spring-forward gap steps from its wall-clock start, 02:00, not from 03:00 EDT.
+	sql, _, err = bigquery.DialectBigQuery.SelectTimeRangeBins(time.Date(2024, 3, 10, 7, 30, 0, 0, time.UTC), time.Date(2024, 3, 10, 13, 0, 0, 0, time.UTC), runtimev1.TimeGrain_TIME_GRAIN_2_HOUR, "ts", ny, 1, 1)
+	require.NoError(t, err)
+	require.Equal(t, "SELECT ts AS `ts` FROM (SELECT TIMESTAMP(DATETIME_ADD(DATETIME '2024-03-10 02:00:00', INTERVAL i * 2 HOUR), 'America/New_York') AS ts FROM UNNEST(GENERATE_ARRAY(0, 5)) AS i) WHERE ts < TIMESTAMP '2024-03-10T13:00:00Z'", sql)
 }
