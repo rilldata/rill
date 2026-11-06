@@ -7,21 +7,12 @@ import (
 	"slices"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/rilldata/rill/runtime/metricsview"
 	"github.com/rilldata/rill/runtime/pkg/mapstructureutil"
 
 	_ "embed"
-)
-
-// Budgets for the channels of a Flint chart that differ from Rill's own charts. Axes take the budget of a nominal x axis
-// and series channels that of a color split (see the constants in build.go); small multiples stay small,
-// and so does the angular axis of a polar chart, whose labels crowd sooner than along a straight axis.
-const (
-	defaultFacetLimit = 6
-	// MaxFacetValues caps the values of a column or row facet channel.
-	MaxFacetValues    = 8
-	defaultPolarLimit = 10
 )
 
 // polarChartTypes are the chart types whose x channel is an angular axis.
@@ -135,7 +126,7 @@ const (
 )
 
 // FlintSpec is a parsed Flint chart spec (chartType and encodings) bound to a metrics view through the data block of create_chart.
-// Unlike Spec, it is not normalized per chart type: the queries follow from the kinds of the bound fields alone.
+// It is not normalized per chart type: the queries follow from the kinds of the bound fields alone.
 type FlintSpec struct {
 	ChartType           string
 	MetricsView         string
@@ -171,6 +162,16 @@ type rawFlintData struct {
 	ComparisonTimeRange *rawTimeRange           `mapstructure:"comparison_time_range"`
 	Where               *metricsview.Expression `mapstructure:"where"`
 	TimeGrain           string                  `mapstructure:"time_grain"`
+}
+
+type rawTimeRange struct {
+	Start    time.Time `mapstructure:"start"`
+	End      time.Time `mapstructure:"end"`
+	TimeZone string    `mapstructure:"time_zone"`
+}
+
+func (r *rawTimeRange) toTimeRange() *TimeRange {
+	return &TimeRange{Start: r.Start, End: r.End, TimeZone: r.TimeZone}
 }
 
 // rawFlintEncoding is the wire shape of an encoding object: Flint's own keys plus Rill's limit.
@@ -284,15 +285,16 @@ func ParseFlintSpec(chartSpec, data map[string]any, kinds map[string]FieldKind) 
 	}
 
 	// The grain only matters when a time field is bound, in which case it defaults to day.
+	// It is named as in query_metrics_view (TIME_GRAIN_DAY, ...).
 	if res.TimeField() != "" {
-		grain, err := parseTimeGrain(raw.TimeGrain)
-		if err != nil {
-			return nil, err
+		res.TimeGrain = metricsview.TimeGrainDay
+		if raw.TimeGrain != "" {
+			grain := metricsview.TimeGrain(strings.ToLower(strings.TrimPrefix(raw.TimeGrain, "TIME_GRAIN_")))
+			if !grain.Valid() || grain == metricsview.TimeGrainUnspecified {
+				return nil, fmt.Errorf("invalid time_grain %q", raw.TimeGrain)
+			}
+			res.TimeGrain = grain
 		}
-		if grain == metricsview.TimeGrainUnspecified {
-			grain = metricsview.TimeGrainDay
-		}
-		res.TimeGrain = grain
 	}
 
 	return res, nil
@@ -410,7 +412,7 @@ func BuildFlint(s *FlintSpec) (*Plan, error) {
 	dims := s.Dimensions()
 	timeFields := s.timeFields()
 
-	plan := &Plan{Spec: s.executeSpec(), RowLimit: MaxRows}
+	plan := &Plan{Spec: s, RowLimit: MaxRows}
 	if len(timeFields) > 0 {
 		plan.TimeField = timeFields[0]
 	}
@@ -433,7 +435,7 @@ func BuildFlint(s *FlintSpec) (*Plan, error) {
 				Dimensions:  []metricsview.Dimension{{Name: e.Field}},
 				Measures:    namedMeasures(measures),
 				Sort:        []metricsview.Sort{s.topNSort(e, measures[0])},
-				Where:       and(s.Where, nullExclusion(nominalField(e.Field))),
+				Where:       and(s.Where, nullExclusion(e.Field)),
 				TimeRange:   s.TimeRange.toQuery(),
 				TimeZone:    s.TimeRange.TimeZone,
 				Limit:       limitPtr(limit + 1),
@@ -456,7 +458,10 @@ func BuildFlint(s *FlintSpec) (*Plan, error) {
 			q.Measures = withPrevMeasures(measures)
 		}
 		for _, name := range timeFields {
-			q.Dimensions = append(q.Dimensions, dimensionFor(temporalField(name), s.TimeGrain))
+			q.Dimensions = append(q.Dimensions, metricsview.Dimension{
+				Name:    name,
+				Compute: &metricsview.DimensionCompute{TimeFloor: &metricsview.DimensionComputeTimeFloor{Dimension: name, Grain: s.TimeGrain}},
+			})
 		}
 		seen := make(map[string]bool)
 		for _, e := range dims {
@@ -466,7 +471,7 @@ func BuildFlint(s *FlintSpec) (*Plan, error) {
 			seen[e.Field] = true
 			q.Dimensions = append(q.Dimensions, metricsview.Dimension{Name: e.Field})
 			if topN[e.Field] {
-				q.Where = and(q.Where, nullExclusion(nominalField(e.Field)), inFilter(nominalField(e.Field), domain))
+				q.Where = and(q.Where, nullExclusion(e.Field), inFilter(e.Field, domain))
 			}
 		}
 		if plan.TimeField != "" {
@@ -480,7 +485,7 @@ func BuildFlint(s *FlintSpec) (*Plan, error) {
 	// A pie or donut chart whose only dimension is its slice dimension gets a total, and an "Other" slice for the values its top-N cuts.
 	// Like the top-N and main queries, both leave out null values of the slice dimension.
 	if slices.Contains(otherSliceChartTypes, s.ChartType) && len(measures) == 1 && len(dims) == 1 && len(timeFields) == 0 && dims[0].Channel == "color" && topN[dims[0].Field] {
-		slice := nominalField(dims[0].Field)
+		slice := dims[0].Field
 		where := and(s.Where, nullExclusion(slice))
 		plan.Extra = map[string]*metricsview.Query{"total": {
 			MetricsView: s.MetricsView,
@@ -490,7 +495,7 @@ func BuildFlint(s *FlintSpec) (*Plan, error) {
 			TimeZone:    s.TimeRange.TimeZone,
 		}}
 		plan.Other = &OtherQuery{
-			Field:   slice.Field,
+			Field:   slice,
 			Measure: measures[0],
 			Query: func(domain map[string][]any) *metricsview.Query {
 				return &metricsview.Query{
@@ -498,7 +503,7 @@ func BuildFlint(s *FlintSpec) (*Plan, error) {
 					Measures:    namedMeasures(measures),
 					Where: and(where, &metricsview.Expression{Condition: &metricsview.Condition{
 						Operator:    metricsview.OperatorNin,
-						Expressions: []*metricsview.Expression{{Name: slice.Field}, {Value: domain[slice.Field]}},
+						Expressions: []*metricsview.Expression{{Name: slice}, {Value: domain[slice]}},
 					}}),
 					TimeRange: s.TimeRange.toQuery(),
 					TimeZone:  s.TimeRange.TimeZone,
@@ -511,8 +516,8 @@ func BuildFlint(s *FlintSpec) (*Plan, error) {
 }
 
 // flintChannelBudget returns the default and maximum top-N limit of a dimension channel of a chart type, and whether the channel has a budget at all.
-// Axes take the budget of a nominal x axis (the angular x axis of a polar chart a smaller default), series channels that of a color split,
-// facets stay small; detail and the remaining channels are bounded by the row cap instead.
+// Axes, series channels and facets each have their own budget (the angular x axis of a polar chart a smaller default);
+// detail and the remaining channels are bounded by the row cap instead.
 func flintChannelBudget(chartType, channel string) (def, maximum int, ok bool) {
 	switch channel {
 	case "x", "y":
@@ -634,25 +639,8 @@ func (s *FlintSpec) timeFields() []string {
 
 // TimeGrainName returns the TIME_GRAIN_* name of the resolved grain, or an empty string when no time field is bound.
 func (s *FlintSpec) TimeGrainName() string {
-	return s.executeSpec().TimeGrainName()
-}
-
-// executeSpec is the Spec view of a Flint spec that Execute reads: the time grain and the query scope; it binds no fields.
-func (s *FlintSpec) executeSpec() *Spec {
-	return &Spec{
-		ChartType:           s.ChartType,
-		MetricsView:         s.MetricsView,
-		TimeRange:           s.TimeRange,
-		ComparisonTimeRange: s.ComparisonTimeRange,
-		Where:               s.Where,
-		TimeGrain:           s.TimeGrain,
+	if s.TimeGrain == metricsview.TimeGrainUnspecified {
+		return ""
 	}
-}
-
-func nominalField(name string) *Field {
-	return &Field{Field: name, Type: TypeNominal}
-}
-
-func temporalField(name string) *Field {
-	return &Field{Field: name, Type: TypeTemporal}
+	return "TIME_GRAIN_" + strings.ToUpper(string(s.TimeGrain))
 }

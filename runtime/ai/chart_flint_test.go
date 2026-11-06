@@ -24,12 +24,18 @@ func TestFlintChartNotesMatchCatalog(t *testing.T) {
 	require.Less(t, len(description), 12_000, "the description is sent with every tool list")
 
 	schema := flintChartsInputSchema()
-	require.Empty(t, schema.Required, "both shapes must pass validation")
-	require.Contains(t, schema.Properties, "chart_type")
-	require.Contains(t, schema.Properties, "spec")
+	require.Equal(t, []string{"chart_spec", "data"}, schema.Required)
+	require.NotContains(t, schema.Properties, "chart_type", "external clients use the Flint shape only")
+	require.NotContains(t, schema.Properties, "spec")
 	require.Len(t, schema.Properties["chart_spec"].Properties["chartType"].Enum, len(catalog.ChartTypes))
 	require.Contains(t, schema.Defs, "FlintEncoding")
 	require.Contains(t, schema.Defs, "Expression")
+	require.Contains(t, schema.Defs, "TimeGrain")
+	require.NotContains(t, schema.Defs, "ChartSpec", "the in-app chart spec is not part of the schema")
+	require.NotContains(t, schema.Defs, "FieldConfig")
+	resolved, err := schema.Resolve(nil)
+	require.NoError(t, err, "every reference resolves without the in-app definitions")
+	require.Error(t, resolved.Validate(map[string]any{"chart_type": "bar_chart", "spec": map[string]any{}}), "the in-app shape does not validate")
 }
 
 func TestFlintInputWithLimits(t *testing.T) {

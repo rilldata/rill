@@ -29,8 +29,8 @@ var _ MCPAppTool = (*ChartData)(nil)
 // ChartDataArgs are the arguments of chart_data, which are the same as those of create_chart.
 type ChartDataArgs map[string]any
 
-// ChartDataOutput is the result of chart_data: the data section of a create_chart result and,
-// for the Flint shape, the effective input (see ChartInput), so that the widget shows the limits and the grain that were applied.
+// ChartDataOutput is the result of chart_data: the data section of a create_chart result and the effective input (see ChartInput),
+// so that the widget shows the limits and the grain that were applied.
 type ChartDataOutput struct {
 	Input *ChartInput `json:"input,omitempty"`
 	*ChartDataResult
@@ -81,7 +81,7 @@ func (t *ChartData) CheckAccess(ctx context.Context) (bool, error) {
 
 func (t *ChartData) Handler(ctx context.Context, args ChartDataArgs) (*ChartDataOutput, error) {
 	s := GetSession(ctx)
-	req, err := parseChartRequest(ctx, t.Runtime, s, args)
+	req, err := parseFlintChartRequest(ctx, t.Runtime, s, args)
 	if err != nil {
 		return nil, err
 	}
@@ -93,11 +93,10 @@ func (t *ChartData) Handler(ctx context.Context, args ChartDataArgs) (*ChartData
 	if err != nil {
 		return nil, err
 	}
-	res := &ChartDataOutput{ChartDataResult: data}
-	if req.flint != nil {
-		res.Input = flintInputWithLimits(req.input, limits, data.TimeGrain)
-	}
-	return res, nil
+	return &ChartDataOutput{
+		Input:           flintInputWithLimits(req.input, limits, data.TimeGrain),
+		ChartDataResult: data,
+	}, nil
 }
 
 // MCPAppUI restricts chart_data to the widget: hosts hide tools with app visibility from the model.

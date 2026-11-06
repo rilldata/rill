@@ -49,17 +49,15 @@ var _ MCPAppTool = (*CreateChart)(nil)
 type CreateChartArgs map[string]any
 
 // CreateChartResult is the result of create_chart.
-// The in-app chat renders the chart from the spec and fetches the data itself, so it only receives the first four fields:
-// the widget mode, which is always present, plus the chart type, spec and message it received before.
-// External MCP clients cannot query Rill, so for them the result also carries the chart-ready data (see ChartDataResult),
-// the field metadata needed to format it, the project theme and a link that opens the chart in Rill,
-// and the spec is returned with the effective top-N limit of each channel filled in (see specWithLimits).
-// Those fields are omitted when empty, so the in-app result keeps its old shape plus widget.
+// The in-app chat renders the chart from the spec and fetches the data itself, so it only receives the widget mode, chart type, spec and message.
+// External MCP clients cannot query Rill, so their result carries the effective Flint input instead of the spec (see ChartInput),
+// the chart-ready data (see ChartDataResult), the field metadata needed to format it, the project theme and a link that opens the chart in Rill.
+// The fields a result does not carry are omitted.
 type CreateChartResult struct {
 	// Widget selects the mode of the MCP Apps widget bundle.
 	Widget    string `json:"widget"`
 	ChartType string `json:"chart_type"`
-	// Spec is the chart spec of the in-app shape; Input is the effective input of the Flint shape (see ChartInput). One of the two is set.
+	// Spec is the chart spec of an in-app result; Input is the effective input of an external one (see ChartInput).
 	Spec    map[string]any `json:"spec,omitempty"`
 	Input   *ChartInput    `json:"input,omitempty"`
 	Message string         `json:"message"`
@@ -167,44 +165,45 @@ func (t *CreateChart) CheckAccess(ctx context.Context) (bool, error) {
 func (t *CreateChart) Handler(ctx context.Context, args CreateChartArgs) (*CreateChartResult, error) {
 	s := GetSession(ctx)
 
-	req, err := parseChartRequest(ctx, t.Runtime, s, args)
+	// The in-app chat renders the chart from the spec and fetches the data itself.
+	if isRillUserAgent(s) {
+		chartType, spec, err := parseInAppChartArgs(ctx, t.Runtime, s, args)
+		if err != nil {
+			return nil, err
+		}
+		return &CreateChartResult{
+			Widget:    chartWidget,
+			ChartType: chartType,
+			Spec:      spec,
+			Message:   fmt.Sprintf("Chart created successfully: %s", chartType),
+		}, nil
+	}
+
+	// External clients cannot query Rill, so run the chart's queries for them.
+	req, err := parseFlintChartRequest(ctx, t.Runtime, s, args)
 	if err != nil {
 		return nil, err
 	}
-
-	res := &CreateChartResult{
-		Widget:    chartWidget,
-		ChartType: req.chartType,
-		Spec:      req.spec,
-		Input:     req.input,
-		Message:   fmt.Sprintf("Chart created successfully: %s", req.chartType),
-	}
-
-	// The in-app chat fetches the data itself from the spec. External clients cannot, so run the chart's queries for them.
-	if isRillUserAgent(s) {
-		return res, nil
-	}
-
 	instance, err := t.Runtime.Instance(ctx, s.InstanceID())
 	if err != nil {
 		return nil, fmt.Errorf("failed to get instance: %w", err)
 	}
-	var limits map[string]map[string]int
-	res.ChartDataResult, limits, err = queryChartData(ctx, t.Runtime, s, instance, req)
+	data, limits, err := queryChartData(ctx, t.Runtime, s, instance, req)
 	if err != nil {
 		return nil, err
 	}
-	if req.flint != nil {
-		res.Input = flintInputWithLimits(req.input, limits, res.TimeGrain)
-		res.Title = flintTitle(req.flint, req.input.ChartSpec, res.Fields)
-	} else {
-		res.Spec = specWithLimits(req.spec, limits)
-		res.Title = chartTitle(req.parsed, res.Fields)
-	}
-	res.MetricsView = &ChartMetricsView{
-		Name:          req.metricsView(),
-		DisplayName:   req.mv.DisplayName,
-		TimeDimension: req.mv.TimeDimension,
+	res := &CreateChartResult{
+		Widget:    chartWidget,
+		ChartType: req.flint.ChartType,
+		Input:     flintInputWithLimits(req.input, limits, data.TimeGrain),
+		Message:   fmt.Sprintf("Chart created successfully: %s", req.flint.ChartType),
+		Title:     flintTitle(req.flint, req.input.ChartSpec, data.Fields),
+		MetricsView: &ChartMetricsView{
+			Name:          req.flint.MetricsView,
+			DisplayName:   req.mv.DisplayName,
+			TimeDimension: req.mv.TimeDimension,
+		},
+		ChartDataResult: data,
 	}
 	if req.mv.SmallestTimeGrain != runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED {
 		res.MetricsView.SmallestTimeGrain = req.mv.SmallestTimeGrain.String()
@@ -236,43 +235,14 @@ func (t *CreateChart) DecorateMCPResult(ctx context.Context, out *CreateChartRes
 	res.Content = []mcp.Content{&mcp.TextContent{Text: text}}
 }
 
-// chartRequest is a validated create_chart or chart_data call, in the in-app shape (spec and parsed) or the Flint shape (input and flint).
+// chartRequest is a validated create_chart or chart_data call of an external client: a Flint chart spec bound to a metrics view (see parseFlintChartRequest).
 type chartRequest struct {
-	chartType string
-	spec      map[string]any
-	parsed    *chartquery.Spec
-	input     *ChartInput
-	flint     *chartquery.FlintSpec
-	mv        *runtimev1.MetricsViewSpec
+	input *ChartInput
+	flint *chartquery.FlintSpec
+	mv    *runtimev1.MetricsViewSpec
 }
 
-func (r *chartRequest) metricsView() string {
-	if r.flint != nil {
-		return r.flint.MetricsView
-	}
-	return r.parsed.MetricsView
-}
-
-// fields returns the metrics view fields the chart binds and which of them are temporal.
-func (r *chartRequest) fields() (names []string, temporal map[string]bool) {
-	temporal = make(map[string]bool)
-	if r.flint != nil {
-		for _, e := range r.flint.Encodings {
-			if e.Kind == chartquery.FieldKindTime {
-				temporal[e.Field] = true
-			}
-		}
-		return r.flint.Fields(), temporal
-	}
-	for _, f := range []*chartquery.Field{r.parsed.X, r.parsed.Y, r.parsed.Dimension} {
-		if f != nil && f.Type == chartquery.TypeTemporal {
-			temporal[f.Field] = true
-		}
-	}
-	return r.parsed.Fields(), temporal
-}
-
-// chartsInputSchema returns the JSON schema of the chart arguments shared by create_chart and chart_data.
+// chartsInputSchema returns the JSON schema of the in-app chart arguments (chart_type and spec); see Spec.
 func chartsInputSchema() *jsonschema.Schema {
 	var schema *jsonschema.Schema
 	err := json.Unmarshal([]byte(metricsview.ChartsJSONSchema), &schema)
@@ -282,55 +252,50 @@ func chartsInputSchema() *jsonschema.Schema {
 	return schema
 }
 
-// parseChartRequest validates the chart arguments against the metrics view the caller has access to.
-// The Flint shape (chart_spec and data) is recognized by its chart_spec; anything else is the in-app shape (chart_type and spec).
-func parseChartRequest(ctx context.Context, rt *runtime.Runtime, s *Session, args map[string]any) (*chartRequest, error) {
+// parseInAppChartArgs validates the in-app shape of the chart arguments (chart_type and spec) against the metrics view the caller has access to.
+// Rill's own chat renders the chart from the spec and queries its data itself, so the spec is validated but not planned into queries.
+func parseInAppChartArgs(ctx context.Context, rt *runtime.Runtime, s *Session, args map[string]any) (chartType string, spec map[string]any, err error) {
+	// The chat is taught this shape (see Spec); the Flint shape is for external clients (see MCPSpec), whose results carry data.
 	if _, ok := args["chart_spec"]; ok {
-		return parseFlintChartRequest(ctx, rt, s, args)
+		return "", nil, fmt.Errorf("chart_spec and data are not supported here: pass chart_type, and spec with the metrics view, time range and fields to chart")
 	}
-
-	// Rill's own chat is taught the in-app shape (see Spec) and external clients the Flint shape (see MCPSpec), so each is told about its own.
 	chartType, ok := args["chart_type"].(string)
 	if !ok || chartType == "" {
-		if isRillUserAgent(s) {
-			return nil, fmt.Errorf("chart_type is required and must be a string, and spec an object with the metrics view, time range and fields to chart")
-		}
-		return nil, fmt.Errorf("chart_spec and data are required: the chart type and encodings, and the metrics view and time range to query (the deprecated chart_type and spec shape is also accepted)")
+		return "", nil, fmt.Errorf("chart_type is required and must be a string, and spec an object with the metrics view, time range and fields to chart")
 	}
 
-	spec, ok := args["spec"].(map[string]any)
+	spec, ok = args["spec"].(map[string]any)
 	if !ok {
-		return nil, fmt.Errorf("spec is required and must be an object")
+		return "", nil, fmt.Errorf("spec is required and must be an object")
 	}
 
 	// Validate that metrics_view is specified
 	metricsView, ok := spec["metrics_view"].(string)
 	if !ok || metricsView == "" {
-		return nil, fmt.Errorf("spec must contain a 'metrics_view' field")
+		return "", nil, fmt.Errorf("spec must contain a 'metrics_view' field")
 	}
 
 	// Validate that time_range is specified
 	_, hasTimeRange := spec["time_range"]
 	if !hasTimeRange {
-		return nil, fmt.Errorf("spec must contain a 'time_range' field with 'start' and 'end' properties")
+		return "", nil, fmt.Errorf("spec must contain a 'time_range' field with 'start' and 'end' properties")
 	}
 
 	// Optional: Validate where clause structure if present
 	if whereClause, hasWhere := spec["where"]; hasWhere {
 		whereMap, ok := whereClause.(map[string]any)
 		if !ok {
-			return nil, fmt.Errorf("'where' must be an object with a 'cond' property")
+			return "", nil, fmt.Errorf("'where' must be an object with a 'cond' property")
 		}
 		if _, hasCond := whereMap["cond"]; !hasCond {
-			return nil, fmt.Errorf("'where' must contain a 'cond' property with 'op' and 'exprs'")
+			return "", nil, fmt.Errorf("'where' must contain a 'cond' property with 'op' and 'exprs'")
 		}
 	}
 
 	// Reject charts that silently drop or change the filters applied to the dashboard being analyzed (see checkDashboardFilter).
 	if dashboardFilter, ok := DashboardFiltersFromContext(ctx)[strings.ToLower(metricsView)]; ok {
-		err := checkDashboardFilter(spec["where"], dashboardFilter, metricsView)
-		if err != nil {
-			return nil, err
+		if err := checkDashboardFilter(spec["where"], dashboardFilter, metricsView); err != nil {
+			return "", nil, err
 		}
 	}
 
@@ -338,7 +303,7 @@ func parseChartRequest(ctx context.Context, rt *runtime.Runtime, s *Session, arg
 	if timeGrain, hasTimeGrain := spec["time_grain"]; hasTimeGrain {
 		timeGrainStr, ok := timeGrain.(string)
 		if !ok {
-			return nil, fmt.Errorf("'time_grain' must be a string (e.g., 'TIME_GRAIN_DAY', 'TIME_GRAIN_MONTH')")
+			return "", nil, fmt.Errorf("'time_grain' must be a string (e.g., 'TIME_GRAIN_DAY', 'TIME_GRAIN_MONTH')")
 		}
 		// Validate it's a valid time grain
 		validTimeGrains := []string{
@@ -347,7 +312,7 @@ func parseChartRequest(ctx context.Context, rt *runtime.Runtime, s *Session, arg
 			"TIME_GRAIN_MONTH", "TIME_GRAIN_QUARTER", "TIME_GRAIN_YEAR",
 		}
 		if !slices.Contains(validTimeGrains, timeGrainStr) {
-			return nil, fmt.Errorf("'time_grain' must be one of: %v", validTimeGrains)
+			return "", nil, fmt.Errorf("'time_grain' must be one of: %v", validTimeGrains)
 		}
 	}
 
@@ -355,13 +320,13 @@ func parseChartRequest(ctx context.Context, rt *runtime.Runtime, s *Session, arg
 	if comparisonTimeRange, hasComparisonTimeRange := spec["comparison_time_range"]; hasComparisonTimeRange {
 		comparisonMap, ok := comparisonTimeRange.(map[string]any)
 		if !ok {
-			return nil, fmt.Errorf("'comparison_time_range' must be an object with 'start' and 'end' properties")
+			return "", nil, fmt.Errorf("'comparison_time_range' must be an object with 'start' and 'end' properties")
 		}
 		if _, hasStart := comparisonMap["start"]; !hasStart {
-			return nil, fmt.Errorf("'comparison_time_range' must contain a 'start' property")
+			return "", nil, fmt.Errorf("'comparison_time_range' must contain a 'start' property")
 		}
 		if _, hasEnd := comparisonMap["end"]; !hasEnd {
-			return nil, fmt.Errorf("'comparison_time_range' must contain an 'end' property")
+			return "", nil, fmt.Errorf("'comparison_time_range' must contain an 'end' property")
 		}
 
 		// Only allow comparison_time_range for cartesian chart types
@@ -372,31 +337,21 @@ func parseChartRequest(ctx context.Context, rt *runtime.Runtime, s *Session, arg
 			"stacked_bar_normalized": true,
 		}
 		if !validComparisonChartTypes[chartType] {
-			return nil, fmt.Errorf("'comparison_time_range' is only supported for: bar_chart, line_chart, stacked_bar, stacked_bar_normalized")
+			return "", nil, fmt.Errorf("'comparison_time_range' is only supported for: bar_chart, line_chart, stacked_bar, stacked_bar_normalized")
 		}
 	}
 
 	mv, err := loadMetricsView(ctx, rt, s, metricsView)
 	if err != nil {
-		return nil, err
+		return "", nil, err
 	}
 
 	// Validate that all field references in the chart spec exist in the metrics view
 	if err := validateChartFields(chartType, spec, mv); err != nil {
-		return nil, fmt.Errorf("field validation failed: %w", err)
+		return "", nil, fmt.Errorf("field validation failed: %w", err)
 	}
 
-	parsed, err := chartquery.ParseSpec(chartType, spec)
-	if err != nil {
-		return nil, err
-	}
-
-	return &chartRequest{
-		chartType: chartType,
-		spec:      spec,
-		parsed:    parsed,
-		mv:        mv,
-	}, nil
+	return chartType, spec, nil
 }
 
 // loadMetricsView returns the valid spec of a metrics view the caller has access to, as the caller may see it.
@@ -433,12 +388,7 @@ func queryChartData(ctx context.Context, rt *runtime.Runtime, s *Session, instan
 		return nil, nil, fmt.Errorf("failed to get instance config: %w", err)
 	}
 
-	var plan *chartquery.Plan
-	if req.flint != nil {
-		plan, err = chartquery.BuildFlint(req.flint)
-	} else {
-		plan, err = chartquery.Build(req.parsed)
-	}
+	plan, err := chartquery.BuildFlint(req.flint)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -460,13 +410,14 @@ func queryChartData(ctx context.Context, rt *runtime.Runtime, s *Session, instan
 		return nil, nil, err
 	}
 
-	names, temporal := req.fields()
-	fields := chartFields(names, temporal, req.mv, out.Types)
-	var overrides map[string]any
-	if req.input != nil {
-		overrides = req.input.SemanticTypes
+	temporal := make(map[string]bool)
+	for _, e := range req.flint.Encodings {
+		if e.Kind == chartquery.FieldKindTime {
+			temporal[e.Field] = true
+		}
 	}
-	semanticTypes, displayNames := chartSemantics(fields, out.TimeGrain, out.ResolvedComparisonTimeRange != nil, overrides)
+	fields := chartFields(req.flint.Fields(), temporal, req.mv, out.Types)
+	semanticTypes, displayNames := chartSemantics(fields, out.TimeGrain, out.ResolvedComparisonTimeRange != nil, req.input.SemanticTypes)
 	return &ChartDataResult{
 		TimeGrain:                   out.TimeGrain,
 		Data:                        out.Data,
@@ -481,30 +432,6 @@ func queryChartData(ctx context.Context, rt *runtime.Runtime, s *Session, instan
 		RowsTruncated:               out.RowsTruncated,
 		TruncationWarning:           out.TruncationWarning,
 	}, out.Limits, nil
-}
-
-// specWithLimits returns a copy of the spec with the effective top-N limit of each channel filled in,
-// so that a renderer can show the limit that was applied where the spec left it to the default. The input maps are not modified.
-func specWithLimits(spec map[string]any, limits map[string]map[string]int) map[string]any {
-	if len(limits) == 0 {
-		return spec
-	}
-	res := maps.Clone(spec)
-	for channel, fieldLimits := range limits {
-		field, ok := res[channel].(map[string]any)
-		if !ok {
-			continue
-		}
-		name, _ := field["field"].(string)
-		limit, ok := fieldLimits[name]
-		if !ok {
-			continue
-		}
-		field = maps.Clone(field)
-		field["limit"] = limit
-		res[channel] = field
-	}
-	return res
 }
 
 // metricsQueryRunner runs chart queries through the runtime's metrics resolver.
@@ -608,91 +535,6 @@ func chartFields(names []string, temporal map[string]bool, mv *runtimev1.Metrics
 	return fields
 }
 
-// chartTitle builds the chart title the same way the frontend chart providers do.
-func chartTitle(parsed *chartquery.Spec, fields map[string]*ChartField) string {
-	label := func(f *chartquery.Field) string {
-		if f == nil || f.Field == "" {
-			return ""
-		}
-		if f.Type == chartquery.TypeTemporal {
-			return "Time"
-		}
-		if field, ok := fields[f.Field]; ok && field.DisplayName != "" {
-			return field.DisplayName
-		}
-		return f.Field
-	}
-	labels := func(names []string) string {
-		res := make([]string, len(names))
-		for i, n := range names {
-			res[i] = n
-			if field, ok := fields[n]; ok && field.DisplayName != "" {
-				res[i] = field.DisplayName
-			}
-		}
-		return strings.Join(res, ", ")
-	}
-	preposition := func(x *chartquery.Field, over, other string) string {
-		if x != nil && x.Type == chartquery.TypeTemporal {
-			return over
-		}
-		return other
-	}
-
-	switch parsed.ChartType {
-	case chartquery.BarChart, chartquery.LineChart, chartquery.AreaChart, chartquery.StackedBar, chartquery.StackedBarNormalized:
-		if parsed.Y != nil && len(parsed.Y.Fields) > 0 {
-			return fmt.Sprintf("%s %s %s", labels(parsed.Y.Fields), preposition(parsed.X, "over", "by"), label(parsed.X))
-		}
-		title := fmt.Sprintf("%s %s %s", label(parsed.Y), preposition(parsed.X, "over", "per"), label(parsed.X))
-		if parsed.Color != nil && parsed.Color.Field != "" && parsed.Color.Field != chartquery.MeasuresField {
-			title += " split by " + label(parsed.Color)
-		}
-		return title
-	case chartquery.DonutChart, chartquery.PieChart:
-		if parsed.Color != nil && parsed.Color.Field != "" {
-			return fmt.Sprintf("%s split by %s", label(parsed.Measure), label(parsed.Color))
-		}
-		return label(parsed.Measure)
-	case chartquery.FunnelChart:
-		if parsed.Measure == nil || (parsed.Measure.Field == "" && len(parsed.Measure.Fields) == 0) {
-			return "Funnel"
-		}
-		if parsed.BreakdownMode == "measures" || len(parsed.Measure.Fields) > 0 {
-			names := parsed.Measure.Fields
-			if len(names) == 0 {
-				names = []string{parsed.Measure.Field}
-			}
-			return labels(names) + " funnel"
-		}
-		if parsed.Stage != nil && parsed.Stage.Field != "" {
-			return fmt.Sprintf("%s funnel by %s", label(parsed.Measure), label(parsed.Stage))
-		}
-		return label(parsed.Measure)
-	case chartquery.Heatmap:
-		return fmt.Sprintf("%s by %s and %s", label(parsed.Color), label(parsed.X), label(parsed.Y))
-	case chartquery.ComboChart:
-		measures := label(parsed.Y1)
-		if l := label(parsed.Y2); l != "" {
-			measures += " & " + l
-		}
-		return fmt.Sprintf("%s %s %s", measures, preposition(parsed.X, "over", "per"), label(parsed.X))
-	case chartquery.ScatterPlot:
-		title := fmt.Sprintf("%s vs %s", label(parsed.X), label(parsed.Y))
-		if l := label(parsed.Dimension); l != "" {
-			title += " for " + l
-		}
-		if l := label(parsed.Color); l != "" {
-			title += " split by " + l
-		}
-		if l := label(parsed.Size); l != "" {
-			title += " sized by " + l
-		}
-		return title
-	}
-	return ""
-}
-
 // chartTheme returns the project's default theme spec as protojson, or nil when the project has none.
 func chartTheme(ctx context.Context, rt *runtime.Runtime, instance *drivers.Instance) (map[string]any, error) {
 	if instance.Theme == "" {
@@ -732,7 +574,7 @@ func chartTheme(ctx context.Context, rt *runtime.Runtime, instance *drivers.Inst
 func chartMarkdown(out *CreateChartResult) string {
 	var b strings.Builder
 
-	fmt.Fprintf(&b, "**%s: %s**", chartTypeLabel(out.ChartType), out.Title)
+	fmt.Fprintf(&b, "**%s: %s**", out.ChartType, out.Title)
 	if tr := out.ResolvedTimeRange; tr != nil {
 		fmt.Fprintf(&b, " (%s to %s", formatChartTime(tr.Start), formatChartTime(tr.End))
 		if ctr := out.ResolvedComparisonTimeRange; ctr != nil {
@@ -820,14 +662,6 @@ func chartColumns(out *CreateChartResult) []chartColumn {
 		}
 	}
 	return columns
-}
-
-func chartTypeLabel(chartType string) string {
-	label := strings.ReplaceAll(chartType, "_", " ")
-	if label == "" {
-		return label
-	}
-	return strings.ToUpper(label[:1]) + label[1:]
 }
 
 func formatChartTime(t time.Time) string {
@@ -1117,8 +951,6 @@ func validateFieldsArray(availableFields map[string]bool, fields any) error {
 const createChartDescription = `# Chart Visualization Tool
 
 Create visualization charts based on metrics views. This tool generates chart specifications that will be rendered in the chat interface.
-
-Clients that cannot render charts (for example terminals or IDE chats) receive the chart's data as a table together with a link. Whenever the result includes an ` + "`open_url`" + `, surface it to the user so they can open the interactive chart in Rill.
 
 ## Required Parameters
 

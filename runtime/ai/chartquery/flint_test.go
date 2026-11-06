@@ -2,6 +2,7 @@ package chartquery
 
 import (
 	"encoding/json"
+	"flag"
 	"os"
 	"path/filepath"
 	"testing"
@@ -9,6 +10,8 @@ import (
 	"github.com/rilldata/rill/runtime/metricsview"
 	"github.com/stretchr/testify/require"
 )
+
+var update = flag.Bool("update", false, "update the golden files")
 
 // flintTestKinds classifies the fields of the metrics view the Flint tests bind.
 var flintTestKinds = map[string]FieldKind{

@@ -14,7 +14,7 @@ import (
 	"github.com/rilldata/rill/runtime/ai/chartquery"
 )
 
-// The Flint shape of create_chart and chart_data, served to external MCP clients (see CreateChart.MCPSpec):
+// The Flint shape of create_chart and chart_data, the only shape external MCP clients may use (see CreateChart.MCPSpec):
 // a Flint chart spec (chartType, encodings, chartProperties) bound to a metrics view through a data block,
 // as opposed to the in-app shape (chart_type and spec) that Rill's own chat renders itself.
 // The chart types come from the embedded Flint catalog (see chartquery.Catalog).
@@ -100,7 +100,6 @@ func flintChartsInputSchema() *jsonschema.Schema {
 			"chartProperties": {Type: "object", Description: "Per-chart-type tuning, e.g. {\"stackMode\": \"normalize\"} or {\"innerRadius\": 50}; the keys of each chart type are listed in the tool description."},
 		},
 	}
-	legacy := chartsInputSchema()
 	data := &jsonschema.Schema{
 		Type:        "object",
 		Required:    []string{"metrics_view", "time_range"},
@@ -113,19 +112,17 @@ func flintChartsInputSchema() *jsonschema.Schema {
 			"time_grain":            {Ref: "#/$defs/TimeGrain", Description: "Bucket size of the time field when one is bound; defaults to TIME_GRAIN_DAY."},
 		},
 	}
-	defs := maps.Clone(legacy.Defs)
+	// The definitions of the in-app chart spec are left out: every byte of the schema is sent with each tool list.
+	defs := maps.Clone(chartsInputSchema().Defs)
+	delete(defs, "ChartSpec")
+	delete(defs, "FieldConfig")
 	defs["FlintEncoding"] = encoding
-	// The root requires neither shape: hosts cache a connector's tool list across conversations, so a client that still holds
-	// the previous shape (chart_type and spec) keeps passing validation and gets the handler's guidance instead of a protocol error.
-	// Both of its properties are described as deprecated so a client that reads this schema uses the Flint shape.
-	deprecated := "Deprecated: the previous shape of this tool, kept for clients with a cached tool list. Use chart_spec and data instead."
 	return &jsonschema.Schema{
-		Type: "object",
+		Type:     "object",
+		Required: []string{"chart_spec", "data"},
 		Properties: map[string]*jsonschema.Schema{
 			"chart_spec":     chartSpec,
 			"data":           data,
-			"chart_type":     {Type: "string", Description: deprecated},
-			"spec":           {Ref: "#/$defs/ChartSpec", Description: deprecated},
 			"semantic_types": {Type: "object", AdditionalProperties: &jsonschema.Schema{Type: "string"}, Description: "Optional overrides of the semantic type Rill derives per field (e.g. {\"revenue\": \"Amount\"}); only needed when the derived type is wrong."},
 		},
 		Defs: defs,
@@ -207,7 +204,7 @@ func propertyKeys(ct *chartquery.FlintChartType) []string {
 func parseFlintChartRequest(ctx context.Context, rt *runtime.Runtime, s *Session, args map[string]any) (*chartRequest, error) {
 	chartSpec, ok := args["chart_spec"].(map[string]any)
 	if !ok {
-		return nil, fmt.Errorf("chart_spec is required and must be an object")
+		return nil, fmt.Errorf("chart_spec and data are required: the chart type and encodings, and the metrics view and time range to query")
 	}
 	data, ok := args["data"].(map[string]any)
 	if !ok {
@@ -229,10 +226,9 @@ func parseFlintChartRequest(ctx context.Context, rt *runtime.Runtime, s *Session
 	semanticTypes, _ := args["semantic_types"].(map[string]any)
 
 	return &chartRequest{
-		chartType: parsed.ChartType,
-		flint:     parsed,
-		input:     &ChartInput{ChartSpec: chartSpec, Data: data, SemanticTypes: semanticTypes},
-		mv:        mv,
+		input: &ChartInput{ChartSpec: chartSpec, Data: data, SemanticTypes: semanticTypes},
+		flint: parsed,
+		mv:    mv,
 	}, nil
 }
 

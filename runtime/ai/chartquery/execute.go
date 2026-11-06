@@ -35,14 +35,14 @@ type Output struct {
 	// Data are the rows of the main query keyed by field name.
 	// Comparison values are under <measure>_prev and temporal values are RFC3339 UTC strings of the bucket start.
 	Data []map[string]any
-	// DomainValues lists the ordered values selected for each nominal axis, split, stage or heatmap axis
-	// (followed by the label of the "Other" slice when one was added, see Plan.Other),
-	// and the measure names for a "rill_measures" color split.
+	// DomainValues lists the ordered values selected for each top-N dimension,
+	// followed by the label of the "Other" slice when one was added (see Plan.Other).
 	DomainValues map[string][]any
-	// Limits is the effective top-N limit of each dimension after defaults and caps, keyed by spec channel
-	// (x, y, color, stage, ..., as named in the input spec) and then by field, so that a renderer can show the limit that was applied.
+	// Limits is the effective top-N limit of each dimension after defaults and caps,
+	// keyed by the channel of the chart spec (x, y, color, column, ...) and then by field,
+	// so that a renderer can show the limit that was applied.
 	Limits map[string]map[string]int
-	// Totals holds the total of each measure for donut and pie charts.
+	// Totals holds the total of each measure for pie and donut charts.
 	Totals map[string]any
 	// Types maps the columns of the main query to their type codes.
 	Types                       map[string]string
@@ -64,16 +64,8 @@ func Execute(ctx context.Context, plan *Plan, runner Runner) (*Output, error) {
 		Limits:       make(map[string]map[string]int, len(plan.TopN)),
 	}
 
-	// Select the values of each top-N dimension. The spec may also pin the values explicitly.
+	// Select the values of each top-N dimension.
 	domain := make(map[string][]any)
-	for _, f := range plan.Spec.fieldsWithSortValues() {
-		values := make([]any, len(f.SortValues))
-		for i, v := range f.SortValues {
-			values[i] = v
-		}
-		domain[f.Field] = values
-		out.DomainValues[f.Field] = values
-	}
 	var cut []TopNQuery // The top-N queries that cut values
 	for _, topN := range plan.TopN {
 		if out.Limits[topN.Channel] == nil {
@@ -96,13 +88,6 @@ func Execute(ctx context.Context, plan *Plan, runner Runner) (*Output, error) {
 		}
 		domain[topN.Field] = values
 		out.DomainValues[topN.Field] = values
-	}
-	if plan.Spec.Color != nil && len(plan.MeasureDomain) > 0 {
-		values := make([]any, len(plan.MeasureDomain))
-		for i, m := range plan.MeasureDomain {
-			values[i] = m
-		}
-		out.DomainValues[plan.Spec.Color.Field] = values
 	}
 
 	// Run the main query. Temporal charts are queried newest first (see Plan.TimeField), so the row cuts below keep the most recent rows.
@@ -129,6 +114,7 @@ func Execute(ctx context.Context, plan *Plan, runner Runner) (*Output, error) {
 	}
 
 	// Trim rows from the tail until the data fits the byte budget.
+	// A single row over the budget fails the chart: no cut makes it fit, and a chart without rows would misrepresent the data.
 	data, err := json.Marshal(out.Data)
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal chart data: %w", err)
@@ -145,6 +131,9 @@ func Execute(ctx context.Context, plan *Plan, runner Runner) (*Output, error) {
 			return nil, fmt.Errorf("failed to marshal chart data: %w", err)
 		}
 		out.RowsTruncated = true
+	}
+	if len(data) > MaxDataBytes {
+		return nil, fmt.Errorf("a single row of the chart data exceeds the response size budget of %d bytes, so a bound dimension holds values too long to chart; bind dimensions with shorter values", MaxDataBytes)
 	}
 
 	// The rows of a temporal chart arrive newest first. When rows were cut, the oldest bucket may be partial
@@ -277,17 +266,6 @@ func timeBuckets(rows []map[string]any, field string) [][]map[string]any {
 			res = append(res, nil)
 		}
 		res[len(res)-1] = append(res[len(res)-1], row)
-	}
-	return res
-}
-
-// fieldsWithSortValues returns the fields whose values are pinned by the spec.
-func (s *Spec) fieldsWithSortValues() []*Field {
-	var res []*Field
-	for _, f := range []*Field{s.X, s.Y, s.Color, s.Stage} {
-		if f != nil && f.Field != "" && len(f.SortValues) > 0 {
-			res = append(res, f)
-		}
 	}
 	return res
 }

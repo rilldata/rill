@@ -486,13 +486,11 @@ func TestMCPApps(t *testing.T) {
 	require.Equal(t, widget.HTML, read.Contents[0].Text)
 
 	// create_chart takes the Flint shape externally and returns a markdown fallback as content and the chart data as structured content.
-	// The previous shape is still accepted, since hosts cache a connector's tool list: it renders through the widget's legacy path.
-	legacy, err := conn.CallTool(t.Context(), &mcp.CallToolParams{Name: ai.CreateChartName, Arguments: mcpLegacyChartArgs()})
+	// The in-app shape, which Rill's own chat renders itself, fails validation with the arguments that are required instead.
+	inApp, err := conn.CallTool(t.Context(), &mcp.CallToolParams{Name: ai.CreateChartName, Arguments: mcpInAppChartArgs()})
 	require.NoError(t, err)
-	require.False(t, legacy.IsError, "the previous shape is still accepted")
-	legacyOut := legacy.StructuredContent.(map[string]any)
-	require.Contains(t, legacyOut, "spec")
-	require.NotContains(t, legacyOut, "input")
+	require.True(t, inApp.IsError, "the in-app shape is not accepted from MCP clients")
+	require.Contains(t, inApp.Content[0].(*mcp.TextContent).Text, "chart_spec")
 	res, err := conn.CallTool(t.Context(), &mcp.CallToolParams{Name: ai.CreateChartName, Arguments: mcpChartArgs()})
 	require.NoError(t, err)
 	require.False(t, res.IsError)
@@ -655,8 +653,8 @@ func mcpChartArgs() map[string]any {
 	}
 }
 
-// mcpLegacyChartArgs are the same chart in the in-app shape, which the MCP server does not advertise.
-func mcpLegacyChartArgs() map[string]any {
+// mcpInAppChartArgs are the same chart in the in-app shape of Rill's own chat, which MCP clients may not use.
+func mcpInAppChartArgs() map[string]any {
 	return map[string]any{
 		"chart_type": "bar_chart",
 		"spec": map[string]any{

@@ -33,11 +33,12 @@ that does not falls back to the tool's text result.
    (`WidgetToolMeta`). When the model calls it, the host reads the resource, renders it in a sandboxed
    iframe (a native WebView on mobile) and delivers the call's arguments and result to the iframe through
    the extension's `ui/notifications/tool-input` and `ui/notifications/tool-result` messages.
-   On MCP servers the tool takes the [Flint](https://github.com/microsoft/flint-chart) shape of a chart
+   On MCP servers the tool takes only the [Flint](https://github.com/microsoft/flint-chart) shape of a chart
    (`ai.MCPSpecProvider`, `runtime/ai/chart_flint.go`): `chart_spec` with a `chartType` from the embedded
    catalog (`runtime/ai/chartquery/flint_catalog.json`, generated from the installed `flint-chart`
    package) and `encodings` binding channels to fields, plus a `data` block naming the metrics view, time
-   range, comparison, filter and grain. The in-app chat keeps Rill's own chart spec (`Spec`).
+   range, comparison, filter and grain. The in-app chat keeps Rill's own chart spec (`Spec`); it renders
+   the chart and queries its data itself, so its result carries no data and never reaches the widget.
 4. **Data passing.** The tool result has two parts. `content` is a markdown rendering (title, a table of
    the first rows, the "Open in Rill" link) for the model and for hosts without MCP Apps.
    `structuredContent` is the full chart payload the widget renders from: the effective input (the chart

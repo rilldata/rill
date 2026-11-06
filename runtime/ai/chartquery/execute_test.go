@@ -31,16 +31,18 @@ func rows(field string, n int) []map[string]any {
 	return res
 }
 
-func TestExecuteCartesian(t *testing.T) {
-	spec, err := ParseSpec(BarChart, map[string]any{
-		"metrics_view": "mv", "time_range": map[string]any{"start": "2024-01-01T00:00:00Z", "end": "2024-02-01T00:00:00Z"},
-		"comparison_time_range": map[string]any{"start": "2023-12-01T00:00:00Z", "end": "2024-01-01T00:00:00Z"},
-		"color":                 map[string]any{"field": "device", "type": "nominal", "limit": 2},
-		"x":                     map[string]any{"field": "advertiser", "type": "nominal", "limit": 3, "sort": "-y"},
-		"y":                     map[string]any{"field": "bids", "type": "quantitative"},
-	})
+// TestExecuteTopN checks the top-N queries of an axis and a facet, the main query they filter, and the comparison values.
+func TestExecuteTopN(t *testing.T) {
+	spec, err := ParseFlintSpec(map[string]any{
+		"chartType": "Bar Chart",
+		"encodings": map[string]any{
+			"x":      map[string]any{"field": "advertiser", "limit": 3, "sortBy": "y"},
+			"y":      "bids",
+			"column": map[string]any{"field": "device", "limit": 2},
+		},
+	}, flintTestData(map[string]any{"comparison_time_range": map[string]any{"start": "2023-12-01T00:00:00Z", "end": "2024-01-01T00:00:00Z"}}), flintTestKinds)
 	require.NoError(t, err)
-	plan, err := Build(spec)
+	plan, err := BuildFlint(spec)
 	require.NoError(t, err)
 
 	runner := &fakeRunner{answer: func(q *metricsview.Query) *Result {
@@ -80,7 +82,7 @@ func TestExecuteCartesian(t *testing.T) {
 
 	require.Len(t, out.Data, 2)
 	require.Equal(t, "INT64", out.Types["bids"])
-	require.Equal(t, map[string]map[string]int{"x": {"advertiser": 3}, "color": {"device": 2}}, out.Limits)
+	require.Equal(t, map[string]map[string]int{"x": {"advertiser": 3}, "column": {"device": 2}}, out.Limits)
 	require.True(t, out.Truncated)
 	require.False(t, out.RowsTruncated, "only a top-N was cut")
 	require.Contains(t, out.TruncationWarning, `only the top 3 values of "advertiser" are shown`)
@@ -91,14 +93,15 @@ func TestExecuteCartesian(t *testing.T) {
 }
 
 func TestExecuteTemporalAndRowLimit(t *testing.T) {
-	spec, err := ParseSpec(LineChart, map[string]any{
-		"metrics_view": "mv", "time_range": map[string]any{"start": "2024-01-01T00:00:00Z", "end": "2024-02-01T00:00:00Z", "time_zone": "America/New_York"},
-		"time_grain": "TIME_GRAIN_HOUR", "color": "primary",
-		"x": map[string]any{"field": "__time", "type": "temporal"},
-		"y": map[string]any{"field": "bids", "type": "quantitative"},
-	})
+	spec, err := ParseFlintSpec(map[string]any{
+		"chartType": "Line Chart",
+		"encodings": map[string]any{"x": "__time", "y": "bids"},
+	}, flintTestData(map[string]any{
+		"time_range": map[string]any{"start": "2024-01-01T00:00:00Z", "end": "2024-02-01T00:00:00Z", "time_zone": "America/New_York"},
+		"time_grain": "TIME_GRAIN_HOUR",
+	}), flintTestKinds)
 	require.NoError(t, err)
-	plan, err := Build(spec)
+	plan, err := BuildFlint(spec)
 	require.NoError(t, err)
 
 	// The query asks for the rows newest first (and one more than the cap), so the fake returns hours MaxRows down to 0.
@@ -136,21 +139,25 @@ func TestExecuteTemporalAndRowLimit(t *testing.T) {
 // including a newest bucket that is genuinely partial, the oldest bucket (partial after the cut) is dropped whole,
 // and the rows are returned in ascending time order with the order within each bucket kept.
 func TestExecuteTemporalKeepsNewestBuckets(t *testing.T) {
-	spec, err := ParseSpec(LineChart, map[string]any{
-		"metrics_view": "mv", "time_range": map[string]any{"start": "2024-01-01T00:00:00Z", "end": "2024-04-01T00:00:00Z"},
+	spec, err := ParseFlintSpec(map[string]any{
+		"chartType": "Line Chart",
+		"encodings": map[string]any{"x": "__time", "y": "bids", "color": "device"},
+	}, flintTestData(map[string]any{
+		"time_range": map[string]any{"start": "2024-01-01T00:00:00Z", "end": "2024-04-01T00:00:00Z"},
 		"time_grain": "TIME_GRAIN_HOUR",
-		"color":      map[string]any{"field": "device", "type": "nominal", "sort": []any{"a", "b"}},
-		"x":          map[string]any{"field": "__time", "type": "temporal"},
-		"y":          map[string]any{"field": "bids", "type": "quantitative"},
-	})
+	}), flintTestKinds)
 	require.NoError(t, err)
-	plan, err := Build(spec)
+	plan, err := BuildFlint(spec)
 	require.NoError(t, err)
 
-	// Newest first: bucket 0 has only device "a", buckets 1 to 750 have both devices; MaxRows+1 rows in total.
+	// The top-N query of the color split selects both devices.
+	// The main query returns the rows newest first: bucket 0 has only device "a", buckets 1 to 750 have both devices; MaxRows+1 rows in total.
 	newest := time.Date(2024, 3, 31, 23, 0, 0, 0, time.UTC)
 	bucket := func(k int) time.Time { return newest.Add(-time.Duration(k) * time.Hour) }
 	runner := &fakeRunner{answer: func(q *metricsview.Query) *Result {
+		if len(q.Dimensions) == 1 && q.Dimensions[0].Name == "device" {
+			return &Result{Rows: []map[string]any{{"device": "a", "bids": float64(2)}, {"device": "b", "bids": float64(1)}}}
+		}
 		res := &Result{}
 		res.Rows = append(res.Rows, map[string]any{"__time": bucket(0), "device": "a", "bids": float64(1)})
 		for k := 1; k <= 750; k++ {
@@ -179,13 +186,12 @@ func TestExecuteTemporalKeepsNewestBuckets(t *testing.T) {
 }
 
 func TestExecuteByteBudget(t *testing.T) {
-	spec, err := ParseSpec(LineChart, map[string]any{
-		"metrics_view": "mv", "time_range": map[string]any{"start": "2024-01-01T00:00:00Z", "end": "2024-02-01T00:00:00Z"}, "color": "primary",
-		"x": map[string]any{"field": "__time", "type": "temporal"},
-		"y": map[string]any{"field": "bids", "type": "quantitative"},
-	})
+	spec, err := ParseFlintSpec(map[string]any{
+		"chartType": "Line Chart",
+		"encodings": map[string]any{"x": "__time", "y": "bids"},
+	}, flintTestData(nil), flintTestKinds)
 	require.NoError(t, err)
-	plan, err := Build(spec)
+	plan, err := BuildFlint(spec)
 	require.NoError(t, err)
 
 	// 1000 rows of ~1 KiB each, newest first, exceed the 100 KiB budget without hitting the row limit.
@@ -212,79 +218,77 @@ func TestExecuteByteBudget(t *testing.T) {
 	require.Less(t, out.Data[0]["__time"].(string), out.Data[1]["__time"].(string))
 }
 
-func TestExecuteDonutTotals(t *testing.T) {
-	spec, err := ParseSpec(DonutChart, map[string]any{
-		"metrics_view": "mv", "time_range": map[string]any{"start": "2024-01-01T00:00:00Z", "end": "2024-02-01T00:00:00Z"},
-		"color":   map[string]any{"field": "username", "type": "nominal", "limit": 2},
-		"measure": map[string]any{"field": "commits", "type": "quantitative"},
-	})
+// TestExecuteRowOverBudget checks that rows that do not fit the byte budget even when cut to one fail the chart,
+// rather than returning the data over budget.
+func TestExecuteRowOverBudget(t *testing.T) {
+	spec, err := ParseFlintSpec(map[string]any{
+		"chartType": "Bar Chart",
+		"encodings": map[string]any{"x": "advertiser", "y": "bids"},
+	}, flintTestData(nil), flintTestKinds)
 	require.NoError(t, err)
-	plan, err := Build(spec)
+	plan, err := BuildFlint(spec)
 	require.NoError(t, err)
 
+	// Every value of the dimension is longer than the budget on its own.
+	runner := &fakeRunner{answer: func(q *metricsview.Query) *Result {
+		res := &Result{}
+		for i := range 3 {
+			res.Rows = append(res.Rows, map[string]any{"advertiser": fmt.Sprintf("%d%s", i, strings.Repeat("x", MaxDataBytes)), "bids": float64(3 - i)})
+		}
+		return res
+	}}
+
+	_, err = Execute(t.Context(), plan, runner)
+	require.ErrorContains(t, err, fmt.Sprintf("a single row of the chart data exceeds the response size budget of %d bytes", MaxDataBytes))
+}
+
+func TestExecuteDonutTotals(t *testing.T) {
+	spec, err := ParseFlintSpec(map[string]any{
+		"chartType": "Donut Chart",
+		"encodings": map[string]any{"size": "bids", "color": map[string]any{"field": "device", "limit": 2}},
+	}, flintTestData(nil), flintTestKinds)
+	require.NoError(t, err)
+	plan, err := BuildFlint(spec)
+	require.NoError(t, err)
+
+	// The top-N query, the main query and the total query; nothing was cut, so there is no "Other" query.
 	runner := &fakeRunner{answer: func(q *metricsview.Query) *Result {
 		if len(q.Dimensions) == 0 {
-			return &Result{Rows: []map[string]any{{"commits": float64(42)}}}
+			return &Result{Rows: []map[string]any{{"bids": float64(42)}}}
 		}
 		return &Result{Rows: []map[string]any{
-			{"username": "alice", "commits": float64(20)},
-			{"username": "bob", "commits": float64(12)},
+			{"device": "iOS", "bids": float64(30)},
+			{"device": "Android", "bids": float64(12)},
 		}}
 	}}
 
 	out, err := Execute(t.Context(), plan, runner)
 	require.NoError(t, err)
 	require.Len(t, runner.queries, 3)
-	require.Equal(t, map[string]any{"commits": float64(42)}, out.Totals)
-	require.Equal(t, []any{"alice", "bob"}, out.DomainValues["username"])
-	require.Equal(t, map[string]map[string]int{"color": {"username": 2}}, out.Limits)
+	require.Equal(t, map[string]any{"bids": float64(42)}, out.Totals)
+	require.Equal(t, []any{"iOS", "Android"}, out.DomainValues["device"])
+	require.Equal(t, map[string]map[string]int{"color": {"device": 2}}, out.Limits)
 	require.False(t, out.Truncated)
 	require.Empty(t, out.TruncationWarning)
 }
 
-func TestExecuteMeasureDomainAndPinnedValues(t *testing.T) {
-	spec, err := ParseSpec(StackedBar, map[string]any{
-		"metrics_view": "mv", "time_range": map[string]any{"start": "2024-01-01T00:00:00Z", "end": "2024-02-01T00:00:00Z"},
-		"color": map[string]any{"field": "rill_measures", "type": "value"},
-		"x":     map[string]any{"field": "weekday", "type": "nominal", "sort": []any{"Mon", "Tue"}},
-		"y":     map[string]any{"field": "clicks", "type": "quantitative", "fields": []any{"clicks", "impressions"}},
-	})
-	require.NoError(t, err)
-	plan, err := Build(spec)
-	require.NoError(t, err)
-	require.Empty(t, plan.TopN, "pinned values replace the top-N query")
-
-	runner := &fakeRunner{answer: func(q *metricsview.Query) *Result { return &Result{} }}
-	out, err := Execute(t.Context(), plan, runner)
-	require.NoError(t, err)
-	require.Len(t, runner.queries, 1)
-	whereJSON, err := json.Marshal(runner.queries[0].Where)
-	require.NoError(t, err)
-	require.Contains(t, string(whereJSON), `{"name":"weekday"},{"val":["Mon","Tue"]}`)
-	require.Equal(t, []any{"Mon", "Tue"}, out.DomainValues["weekday"])
-	require.Equal(t, []any{"clicks", "impressions"}, out.DomainValues["rill_measures"])
-	require.Empty(t, out.Limits, "pinned values apply no limit")
-	require.NotNil(t, out.Data, "no rows is an empty slice, not nil")
-	require.Empty(t, out.Data)
-}
-
-// TestExecuteLimitsHorizontal checks that the limit of a horizontal bar chart is reported on the input's y channel,
-// which holds the dimension, and that the default limit is reported when the spec sets none.
+// TestExecuteLimitsHorizontal checks that the limit of a horizontal bar chart is reported on its y channel, which holds the dimension,
+// that the default limit is reported when the spec sets none, and that no rows are an empty slice.
 func TestExecuteLimitsHorizontal(t *testing.T) {
-	spec, err := ParseSpec(BarChart, map[string]any{
-		"metrics_view": "mv", "time_range": map[string]any{"start": "2024-01-01T00:00:00Z", "end": "2024-02-01T00:00:00Z"}, "color": "primary",
-		"x": map[string]any{"field": "bids", "type": "quantitative"},
-		"y": map[string]any{"field": "advertiser", "type": "nominal", "sort": "-x"},
-	})
+	spec, err := ParseFlintSpec(map[string]any{
+		"chartType": "Bar Chart",
+		"encodings": map[string]any{"x": "bids", "y": map[string]any{"field": "advertiser", "sortBy": "x"}},
+	}, flintTestData(nil), flintTestKinds)
 	require.NoError(t, err)
-	require.True(t, spec.Horizontal)
-	plan, err := Build(spec)
+	plan, err := BuildFlint(spec)
 	require.NoError(t, err)
 
 	runner := &fakeRunner{answer: func(q *metricsview.Query) *Result { return &Result{} }}
 	out, err := Execute(t.Context(), plan, runner)
 	require.NoError(t, err)
 	require.Equal(t, map[string]map[string]int{"y": {"advertiser": defaultNominalLimit}}, out.Limits)
+	require.NotNil(t, out.Data, "no rows is an empty slice, not nil")
+	require.Empty(t, out.Data)
 }
 
 // TestExecuteOtherSlice checks the "Other" slice of a pie chart whose slices were cut to the top N:
