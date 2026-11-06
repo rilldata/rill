@@ -111,9 +111,9 @@ describe("getDashboardFromComparisonRequest", () => {
           undefined,
         ),
         ...getExploreStateFromYAMLConfig(
+          AD_BIDS_METRICS_INIT,
           AD_BIDS_EXPLORE_INIT,
           undefined,
-          AD_BIDS_METRICS_INIT.smallestTimeGrain,
         ),
         whereFilter: where,
         visibleMeasures: [AD_BIDS_BID_PRICE_MEASURE],

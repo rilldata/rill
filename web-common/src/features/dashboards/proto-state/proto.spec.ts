@@ -9,6 +9,7 @@ import {
 import {
   AD_BIDS_EXPLORE_INIT,
   AD_BIDS_EXPLORE_WITH_BOOL_DIMENSION,
+  AD_BIDS_IMPRESSIONS_MEASURE,
   AD_BIDS_METRICS_INIT_WITH_TIME,
   AD_BIDS_METRICS_WITH_BOOL_DIMENSION,
   AD_BIDS_NAME,
@@ -22,7 +23,10 @@ import {
   MetricsViewFilter_Cond,
 } from "@rilldata/web-common/proto/gen/rill/runtime/v1/queries_pb";
 import { DashboardState } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
-import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
+import {
+  type V1ExploreSpec,
+  V1TimeGrain,
+} from "@rilldata/web-common/runtime-client";
 import { describe, expect, it } from "vitest";
 
 describe("toProto/fromProto", () => {
@@ -100,5 +104,56 @@ describe("toProto/fromProto", () => {
         createInExpression(AD_BIDS_PUBLISHER_IS_NULL_DOMAIN, [false]),
       ]),
     );
+  });
+
+  it("drops fields the metrics view no longer has from a legacy bookmark", () => {
+    // The bookmark was saved while the explore still had these fields.
+    const staleExploreSpec: V1ExploreSpec = {
+      ...AD_BIDS_EXPLORE_INIT,
+      measures: [...AD_BIDS_EXPLORE_INIT.measures!, "stale_measure"],
+      dimensions: [...AD_BIDS_EXPLORE_INIT.dimensions!, "stale_dimension"],
+    };
+    const exploreState = getFullInitExploreState(
+      AD_BIDS_NAME,
+      getInitExploreStateForTest(
+        AD_BIDS_METRICS_INIT_WITH_TIME,
+        staleExploreSpec,
+      ),
+    );
+    exploreState.visibleMeasures = [
+      AD_BIDS_IMPRESSIONS_MEASURE,
+      "stale_measure",
+    ];
+    exploreState.allMeasuresVisible = false;
+    exploreState.visibleDimensions = [
+      "stale_dimension",
+      AD_BIDS_PUBLISHER_DIMENSION,
+    ];
+    exploreState.allDimensionsVisible = false;
+    exploreState.leaderboardSortByMeasureName = "stale_measure";
+    exploreState.leaderboardMeasureNames = ["stale_measure"];
+    exploreState.selectedComparisonDimension = "stale_dimension";
+    exploreState.whereFilter = createAndExpression([
+      createInExpression(AD_BIDS_PUBLISHER_DIMENSION, ["Yahoo"]),
+      createInExpression("stale_dimension", ["Google"]),
+    ]);
+
+    const newState = getDashboardStateFromUrl(
+      getProtoFromDashboardState(exploreState, staleExploreSpec),
+      AD_BIDS_METRICS_INIT_WITH_TIME,
+      AD_BIDS_EXPLORE_INIT,
+    );
+    expect(newState).toMatchObject({
+      visibleMeasures: [AD_BIDS_IMPRESSIONS_MEASURE],
+      allMeasuresVisible: false,
+      visibleDimensions: [AD_BIDS_PUBLISHER_DIMENSION],
+      allDimensionsVisible: false,
+      leaderboardSortByMeasureName: AD_BIDS_IMPRESSIONS_MEASURE,
+      leaderboardMeasureNames: [AD_BIDS_IMPRESSIONS_MEASURE],
+      whereFilter: createAndExpression([
+        createInExpression(AD_BIDS_PUBLISHER_DIMENSION, ["Yahoo"]),
+      ]),
+    });
+    expect(newState.selectedComparisonDimension).toBeUndefined();
   });
 });
