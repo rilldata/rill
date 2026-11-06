@@ -111,8 +111,13 @@ async function verifyTimeRangeCases(page: Page, dashboardTZ: string) {
   for (const testCase of TIME_RANGE_TEST_CASES) {
     let timeseriesPromise: ReturnType<typeof interceptTimeseriesResponse>;
     await interactWithTimeRangeMenu(page, async () => {
-      // Registered once the menu is open so the initial load's response is not picked up.
-      timeseriesPromise = interceptTimeseriesResponse(page);
+      // A timezone reload may still have WEEK responses in flight when this menu opens.
+      timeseriesPromise = interceptTimeseriesResponse(page, {
+        metricsViewName: "AdBids_metrics",
+        measureName: "total_records",
+        timeGranularity: testCase.grain,
+        timeZone: dashboardTZ,
+      });
       await page.getByRole("menuitem", { name: testCase.menuItem }).click();
     });
 
