@@ -9,7 +9,11 @@ import {
 import { QueryClient } from "@tanstack/svelte-query";
 import { overwriteGetLocale } from "../../../lib/i18n/gen/runtime";
 import { RuntimeClient } from "../../../runtime-client/v2";
-import { V1ReconcileStatus, type V1Resource } from "../../../runtime-client";
+import {
+  getRuntimeServiceGetResourceQueryKey,
+  V1ReconcileStatus,
+  type V1Resource,
+} from "../../../runtime-client";
 import Harness from "./test/BackfillPartitionsHarness.svelte";
 
 const resource: V1Resource = {
@@ -17,7 +21,10 @@ const resource: V1Resource = {
     name: { kind: "rill.runtime.v1.Model", name: "hourly" },
     reconcileStatus: V1ReconcileStatus.RECONCILE_STATUS_IDLE,
   },
-  model: { spec: { incremental: true }, state: { partitionsConcurrency: 1 } },
+  model: {
+    spec: { incremental: true, partitionsResolver: "sql" },
+    state: { partitionsConcurrency: 1, partitionsModelId: "catalog-a" },
+  },
 };
 
 let client: RuntimeClient;
@@ -25,6 +32,7 @@ let queryClient: QueryClient;
 let failNextPage: boolean;
 let latestResource: V1Resource;
 let submissions: unknown[];
+let partitionRequestCount: number;
 const scrollIntoView = Object.getOwnPropertyDescriptor(
   HTMLElement.prototype,
   "scrollIntoView",
@@ -39,6 +47,7 @@ beforeEach(() => {
   failNextPage = false;
   latestResource = resource;
   submissions = [];
+  partitionRequestCount = 0;
   queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false, networkMode: "always" } },
   });
@@ -53,6 +62,7 @@ beforeEach(() => {
             ? new TextDecoder().decode(init.body)
             : "{}";
       if (url.endsWith("/GetModelPartitions")) {
+        partitionRequestCount++;
         const request: unknown = JSON.parse(body);
         const nextPage =
           request !== null &&
@@ -75,6 +85,7 @@ beforeEach(() => {
                     key: "p2",
                     data: { hour: "2" },
                     executedOn: "2026-03-01T00:00:00Z",
+                    skipped: true,
                   },
                 ],
               }
@@ -141,6 +152,15 @@ async function preview() {
   return screen.findByRole("button", { name: "Backfill 3 partitions" });
 }
 
+async function refetchLiveResource() {
+  await queryClient.invalidateQueries({
+    queryKey: getRuntimeServiceGetResourceQueryKey("test", {
+      name: { kind: "rill.runtime.v1.Model", name: "hourly" },
+    }),
+    exact: true,
+  });
+}
+
 describe("partition backfill preview", () => {
   it("blocks a partial preview if a later page fails", async () => {
     failNextPage = true;
@@ -189,6 +209,121 @@ describe("partition backfill preview", () => {
     expect(submissions).toEqual([]);
   });
 
+  it("blocks submission while the live model is pending", async () => {
+    render(Harness, { client, queryClient, resource, onTriggered: vi.fn() });
+    const button = await preview();
+    expect(button).toBeEnabled();
+    latestResource = {
+      ...resource,
+      meta: {
+        ...resource.meta,
+        reconcileStatus: V1ReconcileStatus.RECONCILE_STATUS_PENDING,
+      },
+    };
+    await refetchLiveResource();
+    await waitFor(() => expect(button).toBeDisabled());
+    expect(
+      screen.queryByRole("button", { name: "Reset selection" }),
+    ).not.toBeInTheDocument();
+    expect(submissions).toEqual([]);
+  });
+
+  it("blocks submission if the live model is no longer partitioned", async () => {
+    render(Harness, { client, queryClient, resource, onTriggered: vi.fn() });
+    const button = await preview();
+    expect(button).toBeEnabled();
+    latestResource = {
+      ...resource,
+      model: { spec: { incremental: true }, state: {} },
+    };
+    await refetchLiveResource();
+    await waitFor(() => expect(button).toBeDisabled());
+    expect(submissions).toEqual([]);
+  });
+
+  it("refetches a changed partition catalog only after reconciliation", async () => {
+    render(Harness, { client, queryClient, resource, onTriggered: vi.fn() });
+    await preview();
+    const requestsBeforeChange = partitionRequestCount;
+    latestResource = {
+      ...resource,
+      meta: {
+        ...resource.meta,
+        reconcileStatus: V1ReconcileStatus.RECONCILE_STATUS_RUNNING,
+      },
+      model: {
+        ...resource.model,
+        state: {
+          ...resource.model?.state,
+          partitionsModelId: "catalog-b",
+        },
+      },
+    };
+    await refetchLiveResource();
+    await waitFor(() =>
+      expect(
+        screen.getByRole("button", { name: "Backfill 0 partitions" }),
+      ).toBeDisabled(),
+    );
+    expect(partitionRequestCount).toBe(requestsBeforeChange);
+
+    latestResource = {
+      ...latestResource,
+      meta: {
+        ...latestResource.meta,
+        reconcileStatus: V1ReconcileStatus.RECONCILE_STATUS_IDLE,
+      },
+      model: {
+        ...latestResource.model,
+        state: {
+          ...latestResource.model?.state,
+          refreshedOn: "2026-03-02T00:00:00Z",
+        },
+      },
+    };
+    await refetchLiveResource();
+    await waitFor(() =>
+      expect(partitionRequestCount).toBeGreaterThan(requestsBeforeChange),
+    );
+    expect(submissions).toEqual([]);
+  });
+
+  it("invalidates and refetches a preview after a same-catalog reconciliation", async () => {
+    render(Harness, { client, queryClient, resource, onTriggered: vi.fn() });
+    await preview();
+    const requestsBeforeReconcile = partitionRequestCount;
+    latestResource = {
+      ...resource,
+      meta: {
+        ...resource.meta,
+        reconcileStatus: V1ReconcileStatus.RECONCILE_STATUS_RUNNING,
+      },
+    };
+    await refetchLiveResource();
+    await waitFor(() =>
+      expect(
+        screen.getByRole("button", { name: "Backfill 0 partitions" }),
+      ).toBeDisabled(),
+    );
+    expect(partitionRequestCount).toBe(requestsBeforeReconcile);
+
+    latestResource = {
+      ...resource,
+      model: {
+        ...resource.model,
+        state: {
+          ...resource.model?.state,
+          refreshedOn: "2026-03-02T00:00:00Z",
+        },
+      },
+    };
+    await refetchLiveResource();
+    await waitFor(() =>
+      expect(partitionRequestCount).toBeGreaterThan(requestsBeforeReconcile),
+    );
+    expect(submissions).toEqual([]);
+  });
+
   it("blocks submission if partition refetch fails after preview", async () => {
     render(Harness, { client, queryClient, resource, onTriggered: vi.fn() });
     const button = await preview();
@@ -228,5 +363,34 @@ describe("partition backfill preview", () => {
       screen.getByRole("button", { name: "Backfill 0 partitions" }),
     ).toBeDisabled();
     expect(submissions).toEqual([]);
+  });
+
+  it("localizes the preview table", async () => {
+    overwriteGetLocale(() => "es");
+    render(Harness, { client, queryClient, resource, onTriggered: vi.fn() });
+    const previewButton = screen.getByRole("button", {
+      name: "Previsualizar particiones",
+    });
+    await waitFor(() => expect(previewButton).toBeEnabled());
+    const field = screen.getByRole("button", { name: "Campo de partición" });
+    field.focus();
+    await fireEvent.keyDown(field, { key: "ArrowDown" });
+    await screen.findByRole("option", { name: "hour" });
+    await fireEvent.keyDown(field, { key: "Enter" });
+    await fireEvent.input(screen.getByLabelText("Inicio (inclusive)"), {
+      target: { value: "0" },
+    });
+    await fireEvent.input(screen.getByLabelText("Fin (inclusive)"), {
+      target: { value: "2" },
+    });
+    await fireEvent.click(previewButton);
+    await screen.findByRole("button", { name: "Rellenar 3 particiones" });
+    expect(
+      screen.getByRole("columnheader", { name: "Datos" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("columnheader", { name: "Ejecutado el" }),
+    ).toBeInTheDocument();
+    expect(screen.getByText("Omitida")).toBeInTheDocument();
   });
 });

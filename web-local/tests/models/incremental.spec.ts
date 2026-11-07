@@ -55,8 +55,14 @@ sql: >
     await page.getByRole("menuitemcheckbox", { name: "Errored" }).click();
 
     // Check that the errored partition is displayed
-    const errorText = page.getByText("failed to incrementally");
+    const errorDetails = page
+      .locator("details")
+      .filter({ hasText: "simulated error" })
+      .first();
+    await errorDetails.getByText("Show details").click();
+    const errorText = errorDetails.locator("pre");
     await expect(errorText).toBeVisible();
+    await expect(errorText).toContainText("failed to incrementally");
     await expect(errorText).toContainText("simulated error");
   });
 });

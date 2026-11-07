@@ -41,8 +41,15 @@
   let end = "";
   let rangeError: PartitionRangeError | undefined = undefined;
   let matched: V1ModelPartition[] | null = null;
+  let previewPartitionsModelId: string | undefined;
   let searchText = "";
   let submitError = "";
+  let observedPartitionsModelId: string | undefined;
+  let observedRefreshedOn: string | undefined;
+  let observedWasReconciling = false;
+  let hasObservedLiveState = false;
+  let partitionsNeedRefetch = false;
+  let partitionsRefetchVersion = 0;
 
   $: modelName = resource.meta?.name?.name ?? "";
 
@@ -58,6 +65,12 @@
     },
   );
   $: modelResource = $resourceQuery.data?.resource;
+  $: liveModel = modelResource?.model;
+  $: livePartitionsModelId = liveModel?.state?.partitionsModelId;
+  $: isLivePartitioned =
+    !!liveModel?.spec?.incremental &&
+    !!liveModel.spec.partitionsResolver &&
+    !!livePartitionsModelId;
 
   $: query = createRuntimeServiceGetModelPartitionsInfinite(
     runtimeClient,
@@ -76,25 +89,32 @@
     $query.isFetching ||
     ($query.hasNextPage && !$query.isError);
   $: queryError = $query.error ?? $resourceQuery.error;
+  $: reconcileStatus = modelResource?.meta?.reconcileStatus;
   $: isReconciling =
-    modelResource?.meta?.reconcileStatus ===
-    V1ReconcileStatus.RECONCILE_STATUS_RUNNING;
+    reconcileStatus === V1ReconcileStatus.RECONCILE_STATUS_PENDING ||
+    reconcileStatus === V1ReconcileStatus.RECONCILE_STATUS_RUNNING;
   $: fieldOptions = getPartitionFields(allRows).map((f) => ({
     value: f,
     label: f,
   }));
   $: settings = getPartitionExecutionSettings(
-    modelResource?.model?.spec ?? resource.model?.spec,
-    modelResource?.model?.state ?? resource.model?.state,
+    liveModel?.spec ?? resource.model?.spec,
+    liveModel?.state ?? resource.model?.state,
   );
   $: canPreview =
-    !isLoadingAll && !$query.isError && !$triggerMutation.isPending;
+    $resourceQuery.isSuccess &&
+    isLivePartitioned &&
+    !isReconciling &&
+    !partitionsNeedRefetch &&
+    !isLoadingAll &&
+    !$resourceQuery.isError &&
+    !$query.isError &&
+    !$triggerMutation.isPending;
   $: canBackfill =
     canPreview &&
     !!matched?.length &&
-    !!modelResource?.model?.spec?.incremental &&
-    !$resourceQuery.isError &&
-    !isReconciling;
+    previewPartitionsModelId === livePartitionsModelId &&
+    !!livePartitionsModelId;
   $: filteredMatched = searchPartitions(matched ?? [], searchText);
   $: matchedKeys = new Set((matched ?? []).map((p) => p.key));
   $: otherPendingCount = matched
@@ -103,14 +123,91 @@
     : 0;
 
   // Any edit to the range invalidates a previous preview.
-  $: field, start, end, ((matched = null), (rangeError = undefined));
+  $: field,
+    start,
+    end,
+    ((matched = null),
+    (previewPartitionsModelId = undefined),
+    (rangeError = undefined));
+
+  function invalidatePreview() {
+    matched = null;
+    previewPartitionsModelId = undefined;
+    searchText = "";
+  }
+
+  async function refetchPartitions(expectedPartitionsModelId: string) {
+    const refetchVersion = ++partitionsRefetchVersion;
+    const result = await $query.refetch();
+    if (
+      refetchVersion === partitionsRefetchVersion &&
+      expectedPartitionsModelId === livePartitionsModelId &&
+      !isReconciling &&
+      !result.isError
+    ) {
+      partitionsNeedRefetch = false;
+    }
+  }
+
+  function syncLivePartitionsState(
+    nextPartitionsModelId: string | undefined,
+    nextRefreshedOn: string | undefined,
+    nextIsReconciling: boolean,
+  ) {
+    // Reconciliation can reuse a catalog ID. Invalidate at its start, then
+    // wait for the live model to become idle before fetching the final rows.
+    if (!hasObservedLiveState) {
+      observedPartitionsModelId = nextPartitionsModelId;
+      observedRefreshedOn = nextRefreshedOn;
+      observedWasReconciling = nextIsReconciling;
+      hasObservedLiveState = true;
+      if (nextIsReconciling) {
+        invalidatePreview();
+        partitionsNeedRefetch = true;
+      }
+      return;
+    }
+
+    const partitionsModelChanged =
+      observedPartitionsModelId !== nextPartitionsModelId;
+    const refreshedOnChanged = observedRefreshedOn !== nextRefreshedOn;
+    const reconciliationStarted = !observedWasReconciling && nextIsReconciling;
+    const reconciliationFinished = observedWasReconciling && !nextIsReconciling;
+
+    observedPartitionsModelId = nextPartitionsModelId;
+    observedRefreshedOn = nextRefreshedOn;
+    observedWasReconciling = nextIsReconciling;
+
+    if (partitionsModelChanged || refreshedOnChanged || reconciliationStarted) {
+      invalidatePreview();
+      partitionsNeedRefetch = true;
+    }
+
+    if (
+      partitionsNeedRefetch &&
+      !nextIsReconciling &&
+      nextPartitionsModelId &&
+      (partitionsModelChanged || refreshedOnChanged || reconciliationFinished)
+    ) {
+      void refetchPartitions(nextPartitionsModelId);
+    }
+  }
+
+  $: if ($resourceQuery.isSuccess) {
+    syncLivePartitionsState(
+      livePartitionsModelId,
+      liveModel?.state?.refreshedOn,
+      isReconciling,
+    );
+  }
 
   function preview() {
-    if (!canPreview) return;
+    if (!canPreview || !livePartitionsModelId) return;
     submitError = "";
     rangeError = validatePartitionRange(field, start.trim(), end.trim());
     if (rangeError) return;
     matched = filterPartitionsInRange(allRows, field, start.trim(), end.trim());
+    previewPartitionsModelId = livePartitionsModelId;
     searchText = "";
   }
 
@@ -137,23 +234,23 @@
   const columns: ColumnDef<V1ModelPartition>[] = [
     {
       id: "data",
-      header: "Data",
+      header: m.status_backfill_column_data(),
       cell: ({ row }) => renderComponent(DataCell, { data: row.original.data }),
       enableSorting: false,
     },
     {
       accessorKey: "executedOn",
-      header: "Executed on",
+      header: m.status_backfill_column_executed_on(),
       cell: ({ row }) =>
         row.original.skipped
-          ? "Skipped"
+          ? m.status_backfill_skipped()
           : row.original.executedOn
             ? new Date(row.original.executedOn).toLocaleString()
             : "-",
     },
     {
       accessorKey: "error",
-      header: "Error",
+      header: m.status_backfill_column_error(),
       cell: ({ row }) =>
         renderComponent(ErrorCell, { error: row.original.error }),
       enableSorting: false,
@@ -313,7 +410,7 @@
           disabled={!matched.length}
         />
       </div>
-      <Button type="tertiary" onClick={preview}>
+      <Button type="tertiary" onClick={preview} disabled={!canPreview}>
         {m.status_backfill_reset_selection()}
       </Button>
     </div>
