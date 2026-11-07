@@ -52,6 +52,15 @@ func TestRouterAgent(t *testing.T) {
 			prompt: "Add a new metric code_churn. Use the developer agent.",
 			agent:  ai.DeveloperAgentName,
 		},
+		{
+			// Users who can edit the project get an alert they own, not a file in the project.
+			prompt: "Alert me by email if total revenue drops below 30k.",
+			agent:  ai.AnalystAgentName,
+		},
+		{
+			prompt: "Add an alert file to the project that emails the team when revenue drops below 30k.",
+			agent:  ai.DeveloperAgentName,
+		},
 	}
 	for _, c := range cases {
 		var res *ai.RouterAgentResult

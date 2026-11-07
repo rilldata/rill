@@ -51,6 +51,7 @@ const (
 // which is only granted for editable deployments, and a project's primary deployment is never editable.
 // develop_personal_canvas is the exception: personal canvases are owned by the user, not stored in the repo.
 // It is listed for every project, and the runtime rejects calls for projects without the personal_canvases feature flag.
+// The alert tools are another exception: the alerts they save are owned by the user, not stored in the repo.
 // create_chart is always exposed: clients that do not get the MCP Apps widget receive its markdown fallback.
 // chart_data may only be called by the widget, so it is only exposed when this server serves the widget (see mcpForwardedToolSpecs).
 var mcpForwardedTools = []string{
@@ -64,6 +65,8 @@ var mcpForwardedTools = []string{
 	ai.LoadSkillName,
 	ai.ListCanvasesName,
 	ai.DevelopPersonalCanvasName,
+	ai.ListAlertsName,
+	ai.SaveAlertName,
 }
 
 // mcpSessionNamespace is a UUIDv5 namespace for the per-project session IDs derived in callRuntimeTool.
