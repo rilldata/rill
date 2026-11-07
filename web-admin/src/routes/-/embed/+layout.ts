@@ -8,6 +8,20 @@ export const load = async ({ url }) => {
   if (!embedStore) {
     EmbedStore.init(url);
 
+    // Open links from report emails open the report instead of a dashboard.
+    // GetIFrame decodes and validates the link's `rill_open` param, and passes the report to open as plain params.
+    const openReport = url.searchParams.get("open_report");
+    if (openReport) {
+      const path = `/-/embed/reports/${encodeURIComponent(openReport)}/open`;
+      const executionTime = url.searchParams.get("open_execution_time");
+      throw redirect(
+        307,
+        executionTime
+          ? `${path}?${new URLSearchParams({ execution_time: executionTime }).toString()}`
+          : path,
+      );
+    }
+
     const resource = url.searchParams.get("resource");
     if (!resource) {
       throw redirect(307, "/-/embed");

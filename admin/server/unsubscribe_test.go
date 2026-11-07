@@ -49,7 +49,7 @@ func TestUnsubscribeKeepsReportWithWebhook(t *testing.T) {
 			ExportFormat:    runtimev1.ExportFormat_EXPORT_FORMAT_CSV,
 			EmailRecipients: []string{"user@example.com"},
 			WebhookUrls:     webhookURLs,
-		}, "owner", "", nil)
+		}, "owner", "", "", nil)
 		require.NoError(t, err)
 		var report reportYAML
 		require.NoError(t, yaml.Unmarshal(data, &report))

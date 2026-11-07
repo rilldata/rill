@@ -507,6 +507,10 @@ func parseCondition(condition string) (string, error) {
 	if condition == "" {
 		return "", nil
 	}
+	// Conditions are evaluated for viewers, so they can't reference project variables, which commonly hold secrets.
+	if TemplateReferencesVariables(condition) {
+		return "", errors.New(`"if" conditions can't access project variables (".env") or the full template data ("." or "$"); use ".user" attributes instead`)
+	}
 	resolved, err := ResolveTemplate(condition, validationTemplateData, false)
 	if err != nil {
 		return "", fmt.Errorf("templating is not valid: %w", err)

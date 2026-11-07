@@ -195,6 +195,33 @@ func TestEmbedReports(t *testing.T) {
 		require.Equal(t, true, d.UserAttrs.AsMap()["embed"])
 	})
 
+	t.Run("only the creator's delivery is marked", func(t *testing.T) {
+		id := embedUserID("creator")
+		getIFrame(t, &adminv1.GetIFrameRequest{ExternalUserId: "creator"})
+		err := adm.Admin.DB.UpsertVirtualFile(t.Context(), &database.InsertVirtualFileOptions{
+			ProjectID:    proj.ID,
+			Environment:  "prod",
+			Path:         "reports/r-creator.yaml",
+			Data:         fmt.Appendf(nil, "type: report\nannotations:\n  admin_managed: true\n  admin_embed_owner_id: %s\n  admin_embed_owner_email: Creator@customer.com\n  web_open_mode: creator\n", id),
+			EmbedOwnerID: &id,
+		})
+		require.NoError(t, err)
+		resp, err := getReportMeta(t, "r-creator", "creator@customer.com", "other@customer.com")
+		require.NoError(t, err)
+		require.True(t, resp.DeliveryMeta["creator@customer.com"].EmbedOwner)
+		require.False(t, resp.DeliveryMeta["other@customer.com"].EmbedOwner)
+
+		// The creator can't unsubscribe from their own report, so only the other recipient gets an unsubscribe link
+		require.Empty(t, resp.DeliveryMeta["creator@customer.com"].UnsubscribeUrl)
+		require.NotEmpty(t, resp.DeliveryMeta["other@customer.com"].UnsubscribeUrl)
+
+		// Without a saved email, no delivery is marked
+		createReport(t, "r-no-creator-email", &id)
+		resp, err = getReportMeta(t, "r-no-creator-email", "creator@customer.com")
+		require.NoError(t, err)
+		require.False(t, resp.DeliveryMeta["creator@customer.com"].EmbedOwner)
+	})
+
 	t.Run("embed tokens can only call allowlisted methods", func(t *testing.T) {
 		embedClient := adm.NewClient(t, getIFrame(t, &adminv1.GetIFrameRequest{ExternalUserId: "allowlist"}))
 		_, err := embedClient.ListPersonalFiles(t.Context(), &adminv1.ListPersonalFilesRequest{Org: "report-test", Project: "report-project"})

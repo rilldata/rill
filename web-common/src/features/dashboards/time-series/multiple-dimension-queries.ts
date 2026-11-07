@@ -9,6 +9,7 @@ import {
   URI_DIMENSION_SUFFIX,
 } from "@rilldata/web-common/features/dashboards/dashboard-utils";
 import { selectedDimensionValues } from "@rilldata/web-common/features/dashboards/state-managers/selectors/dimension-filters";
+import { getDimensionQueryMeasuresAndSort } from "@rilldata/web-common/features/dashboards/state-managers/selectors/measures";
 import {
   createAndExpression,
   createInExpression,
@@ -32,7 +33,6 @@ import {
 import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
 import {
   type V1Expression,
-  type V1MetricsViewAggregationMeasure,
   type V1MetricsViewAggregationResponse,
   V1TimeGrain,
   type V1TimeSeriesValue,
@@ -140,27 +140,38 @@ export function getDimensionValuesForComparison(
           sortBy = dimensionName;
         }
 
+        // The top list groups only by the comparison dimension.
+        // Measures it cannot query are left out, which leaves their per-value totals unavailable;
+        // the time-grouped queries that follow still request them.
+        const { measures: tddMeasures, sort } =
+          getDimensionQueryMeasuresAndSort(
+            dashboardStore,
+            validSpec?.data?.metricsView ?? {},
+            applyExactMeasures(
+              mapEphemeralMeasuresForRequest(
+                measures.map((measure) => ({ name: measure })),
+                dashboardStore.ephemeralMeasures,
+              ),
+              requestExactNames(
+                measures,
+                exactMeasureContextFor(
+                  {
+                    dashboard: dashboardStore,
+                    validMetricsView: validSpec?.data?.metricsView,
+                  },
+                  exactSurface,
+                ),
+              ),
+            ),
+            dimensionName,
+            sortBy,
+          );
+
         // Request the URI measure so dimension values can be rendered as links.
+        // Added after filtering since it is not a spec measure.
         const hasUri = !!validSpec?.data?.metricsView?.dimensions?.find(
           (d) => d.name === dimensionName,
         )?.uri;
-        const tddMeasures: V1MetricsViewAggregationMeasure[] =
-          applyExactMeasures(
-            mapEphemeralMeasuresForRequest(
-              measures.map((measure) => ({ name: measure })),
-              dashboardStore.ephemeralMeasures,
-            ),
-            requestExactNames(
-              measures,
-              exactMeasureContextFor(
-                {
-                  dashboard: dashboardStore,
-                  validMetricsView: validSpec?.data?.metricsView,
-                },
-                exactSurface,
-              ),
-            ),
-          );
         if (hasUri) {
           tddMeasures.push(getURIRequestMeasure(dimensionName));
         }
@@ -181,13 +192,7 @@ export function getDimensionValuesForComparison(
                 end: timeControls.timeEnd,
                 timeDimension: dashboardStore.selectedTimeDimension,
               },
-              sort: [
-                {
-                  desc:
-                    dashboardStore.sortDirection === SortDirection.DESCENDING,
-                  name: sortBy,
-                },
-              ],
+              sort,
               limit: MAX_TDD_VALUES_LENGTH.toString(),
               offset: "0",
             },

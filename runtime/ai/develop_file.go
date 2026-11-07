@@ -52,7 +52,7 @@ func (t *DevelopFile) Spec() *mcp.Tool {
 }
 
 func (t *DevelopFile) CheckAccess(ctx context.Context) (bool, error) {
-	return checkDeveloperAccess(ctx, t.Runtime, true)
+	return checkDeveloperAccess(ctx, true)
 }
 
 func (t *DevelopFile) Handler(ctx context.Context, args *DevelopFileArgs) (*DevelopFileResult, error) {

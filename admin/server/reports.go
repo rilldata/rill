@@ -203,6 +203,8 @@ const embedReportOwnerInactivityLimit = 90 * 24 * time.Hour
 // getEmbedReportMeta returns the report metadata for a report created from an embed.
 // The report runs as the identity of the embed user's latest iframe, and fails if the embed user is missing or inactive.
 // Recipients only get an unsubscribe link, since they open the report through the embedder's app (if at all).
+// The delivery of the creator's saved email is marked, so the runtime only adds the open link to the embedder's app to it;
+// it gets no unsubscribe link, since the creator can't unsubscribe from their own report (see UnsubscribeReport).
 func (s *Server) getEmbedReportMeta(ctx context.Context, org *database.Organization, proj *database.Project, req *adminv1.GetReportMetaRequest, info *embedReportInfo, recipients []string) (*adminv1.GetReportMetaResponse, error) {
 	if info.ownerID == "" {
 		return nil, status.Error(codes.FailedPrecondition, "the embed user who created the report no longer exists")
@@ -245,9 +247,9 @@ func (s *Server) getEmbedReportMeta(ctx context.Context, org *database.Organizat
 		resourcesPb[i] = &adminv1.ResourceName{Type: r.Type, Name: r.Name}
 	}
 
-	// Recipients can be any address, so each of them gets an unsubscribe link.
+	// Recipients can be any address, so each of them except the creator gets an unsubscribe link.
 	// The tokens have no resources, so they don't grant access to any data.
-	tokens, err := s.createUnsubMagicTokens(ctx, proj.ID, req.Report, "", "", req.EmailRecipients)
+	tokens, err := s.createUnsubMagicTokens(ctx, proj.ID, req.Report, "", info.ownerEmail, req.EmailRecipients)
 	if err != nil {
 		return nil, fmt.Errorf("failed to issue magic auth tokens: %w", err)
 	}
@@ -263,6 +265,8 @@ func (s *Server) getEmbedReportMeta(ctx context.Context, org *database.Organizat
 		if tkn, ok := tokens[recipient]; ok {
 			meta.UnsubscribeUrl = s.admin.URLs.WithCustomDomain(org.CustomDomain).ReportUnsubscribe(org.Name, proj.Name, req.Report, tkn, recipient)
 		}
+		// Only the creator gets an open link, since it only works with their external user ID (see GetIFrame).
+		meta.EmbedOwner = info.ownerEmail != "" && strings.EqualFold(recipient, info.ownerEmail)
 		delivery[recipient] = meta
 	}
 	return &adminv1.GetReportMetaResponse{
@@ -289,6 +293,7 @@ func (s *Server) CreateReport(ctx context.Context, req *adminv1.CreateReportRequ
 
 	ownerID := ""
 	embedOwnerID := ""
+	embedOwnerEmail := ""
 	var embedResources []database.ResourceName
 	switch claims.OwnerType() {
 	case auth.OwnerTypeUser:
@@ -299,6 +304,10 @@ func (s *Server) CreateReport(ctx context.Context, req *adminv1.CreateReportRequ
 			return nil, status.Error(codes.PermissionDenied, "invalid embed token")
 		}
 		embedOwnerID = mdl.EmbedUserID
+		embedOwnerEmail, err = s.embedReportOwnerEmail(ctx, embedOwnerID, req.Options.EmbedOwnerEmail)
+		if err != nil {
+			return nil, err
+		}
 		embedResources, err = embedReportResources(mdl.Resources, req.Options)
 		if err != nil {
 			return nil, err
@@ -324,7 +333,7 @@ func (s *Server) CreateReport(ctx context.Context, req *adminv1.CreateReportRequ
 		return nil, err
 	}
 
-	data, err := s.yamlForManagedReport(req.Options, ownerID, embedOwnerID, embedResources)
+	data, err := s.yamlForManagedReport(req.Options, ownerID, embedOwnerID, embedOwnerEmail, embedResources)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "failed to generate report YAML: %s", err.Error())
 	}
@@ -405,12 +414,20 @@ func (s *Server) EditReport(ctx context.Context, req *adminv1.EditReportRequest)
 
 	// Preserve the original owner, since the editor may be someone with manage permissions.
 	// If the embed user who created the report no longer exists, editing it would turn it into a report without an owner.
-	var embedOwnerID string
+	// The creator's saved email can only be changed by the creator; other editors keep it, so it stays a recipient.
+	var embedOwnerID, embedOwnerEmail string
 	if embedInfo != nil {
 		if embedInfo.ownerID == "" {
 			return nil, status.Error(codes.FailedPrecondition, "can't edit report because the embed user who created it no longer exists")
 		}
 		embedOwnerID = embedInfo.ownerID
+		embedOwnerEmail = embedInfo.ownerEmail
+		if mdl, ok := claims.AuthTokenModel().(*admin.EmbedToken); ok && mdl.EmbedUserID == embedOwnerID {
+			embedOwnerEmail, err = s.embedReportOwnerEmail(ctx, embedOwnerID, req.Options.EmbedOwnerEmail)
+			if err != nil {
+				return nil, err
+			}
+		}
 	}
 
 	// Keep the resources the report was limited to.
@@ -436,7 +453,7 @@ func (s *Server) EditReport(ctx context.Context, req *adminv1.EditReportRequest)
 		return nil, err
 	}
 
-	data, err := s.yamlForManagedReport(req.Options, annotations.AdminOwnerUserID, embedOwnerID, embedResources)
+	data, err := s.yamlForManagedReport(req.Options, annotations.AdminOwnerUserID, embedOwnerID, embedOwnerEmail, embedResources)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "failed to generate report YAML: %s", err.Error())
 	}
@@ -547,6 +564,12 @@ func (s *Server) UnsubscribeReport(ctx context.Context, req *adminv1.Unsubscribe
 	err = yaml.Unmarshal(file.Data, &report)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to unmarshal report YAML: %s", err.Error())
+	}
+
+	// The creator of a report created from an embed always gets it, since only their email has the open link to the embedder's app.
+	// They stop it by deleting the report instead.
+	if userEmail != "" && strings.EqualFold(userEmail, report.Annotations.AdminEmbedOwnerEmail) {
+		return nil, status.Error(codes.FailedPrecondition, "the creator of a report can't unsubscribe from it")
 	}
 
 	found, remaining := report.unsubscribe(userEmail, slackEmail)
@@ -719,8 +742,9 @@ func (s *Server) GenerateReportYAML(ctx context.Context, req *adminv1.GenerateRe
 
 // yamlForManagedReport generates the YAML for a report created from the UI.
 // For reports created from an embed, embedOwnerID is the ID of the embed user who created it,
+// embedOwnerEmail is their saved email (optional; it's always added to the recipients, since the creator can't unsubscribe),
 // and embedResources optionally limits the report's data to the resources the embed was limited to.
-func (s *Server) yamlForManagedReport(opts *adminv1.ReportOptions, ownerUserID, embedOwnerID string, embedResources []database.ResourceName) ([]byte, error) {
+func (s *Server) yamlForManagedReport(opts *adminv1.ReportOptions, ownerUserID, embedOwnerID, embedOwnerEmail string, embedResources []database.ResourceName) ([]byte, error) {
 	res := reportYAML{}
 	res.Type = "report"
 	res.DisplayName = opts.DisplayName
@@ -787,11 +811,19 @@ func (s *Server) yamlForManagedReport(opts *adminv1.ReportOptions, ownerUserID, 
 		if opts.Resolver != "" {
 			return nil, fmt.Errorf("reports created from an embed must use a query, not a data resolver")
 		}
-		// Their emails have no open link, so they need an attachment, which canvas reports don't support.
+		// Their emails have no download link, so they need an attachment, which canvas reports don't support.
+		// TODO: Revisit now that their emails can have an open link to the embedder's app through `embeds.open_url` in rill.yaml.
 		if opts.Explore == "" || opts.Canvas != "" {
 			return nil, fmt.Errorf("reports created from an embed only support explore dashboards")
 		}
 		res.Annotations.AdminEmbedOwnerID = embedOwnerID
+		// The creator's email gets the open link to the embedder's app, so it's always one of the recipients.
+		if embedOwnerEmail != "" {
+			res.Annotations.AdminEmbedOwnerEmail = embedOwnerEmail
+			if !slices.ContainsFunc(res.Notify.Email.Recipients, func(r string) bool { return strings.EqualFold(r, embedOwnerEmail) }) {
+				res.Notify.Email.Recipients = append(slices.Clone(res.Notify.Email.Recipients), embedOwnerEmail)
+			}
+		}
 		if len(embedResources) > 0 {
 			resourcesJSON, err := json.Marshal(embedResources)
 			if err != nil {
@@ -1077,6 +1109,11 @@ type embedReportInfo struct {
 	// ownerID is the ID of the embed user who created the report.
 	// It is empty if the embed user no longer exists.
 	ownerID string
+	// ownerEmail is the saved email of the embed user who created the report; empty if they didn't provide one.
+	// Only this recipient gets an open link to the embedder's app.
+	ownerEmail string
+	// explore is the explore dashboard the report targets.
+	explore string
 	// resources the report is limited to; an empty list means the report is not limited.
 	resources []database.ResourceName
 }
@@ -1099,8 +1136,10 @@ func (s *Server) embedCreatedReportInfo(ctx context.Context, projectID, report s
 
 	var res struct {
 		Annotations struct {
-			AdminEmbedOwnerID   string `yaml:"admin_embed_owner_id"`
-			AdminEmbedResources string `yaml:"admin_embed_resources"`
+			AdminEmbedOwnerID    string `yaml:"admin_embed_owner_id"`
+			AdminEmbedOwnerEmail string `yaml:"admin_embed_owner_email"`
+			AdminEmbedResources  string `yaml:"admin_embed_resources"`
+			Explore              string `yaml:"explore"`
 		} `yaml:"annotations"`
 	}
 	if err := yaml.Unmarshal(vf.Data, &res); err != nil {
@@ -1114,11 +1153,38 @@ func (s *Server) embedCreatedReportInfo(ctx context.Context, projectID, report s
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse virtual file %q: %w", path, err)
 	}
-	info := &embedReportInfo{resources: resources}
+	info := &embedReportInfo{
+		ownerEmail: res.Annotations.AdminEmbedOwnerEmail,
+		explore:    res.Annotations.Explore,
+		resources:  resources,
+	}
 	if vf.EmbedOwnerID != nil {
 		info.ownerID = *vf.EmbedOwnerID
 	}
 	return info, nil
+}
+
+// embedReportOwnerEmail returns the email to save for the embed user who creates or edits a report.
+// The email is opt-in: none is saved if none is requested,
+// since the creator can't unsubscribe from the report once their email is saved.
+// The UI only requests it if rill.yaml configures `embeds.open_url`, since it's only needed for the open link.
+// Otherwise, the email of the embed user's latest iframe takes precedence over the requested email,
+// so the email that the UI locks can't be bypassed through the API.
+// The email is saved on the report rather than read when sending,
+// so the open link keeps going to the same address if the embedder later changes the user's email.
+func (s *Server) embedReportOwnerEmail(ctx context.Context, embedUserID, requested string) (string, error) {
+	requested = strings.TrimSpace(requested)
+	if requested == "" {
+		return "", nil
+	}
+	embedUser, err := s.admin.DB.FindEmbedUser(ctx, embedUserID)
+	if err != nil {
+		return "", err
+	}
+	if embedUser.Email != nil && *embedUser.Email != "" {
+		return *embedUser.Email, nil
+	}
+	return requested, nil
 }
 
 // embedReportResources checks that a report targets a dashboard the embed is limited to,
@@ -1263,16 +1329,17 @@ func (r *reportYAML) unsubscribe(email, slackUser string) (found, remaining bool
 }
 
 type reportAnnotations struct {
-	AdminOwnerUserID    string      `yaml:"admin_owner_user_id"`
-	AdminEmbedOwnerID   string      `yaml:"admin_embed_owner_id,omitempty"`  // ID of the embed user who created the report; the admin service resolves it to the user's identity
-	AdminEmbedResources string      `yaml:"admin_embed_resources,omitempty"` // JSON list of resources that limit the data of a report created from an embed
-	AdminManaged        bool        `yaml:"admin_managed"`
-	AdminNonce          string      `yaml:"admin_nonce"` // To ensure spec version gets updated on writes, to enable polling in TriggerReconcileAndAwaitReport
-	WebOpenPath         string      `yaml:"web_open_path"`
-	WebOpenState        string      `yaml:"web_open_state"`
-	WebOpenMode         WebOpenMode `yaml:"web_open_mode,omitempty"`
-	Explore             string      `yaml:"explore,omitempty"`
-	Canvas              string      `yaml:"canvas,omitempty"`
+	AdminOwnerUserID     string      `yaml:"admin_owner_user_id"`
+	AdminEmbedOwnerID    string      `yaml:"admin_embed_owner_id,omitempty"`    // ID of the embed user who created the report; the admin service resolves it to the user's identity
+	AdminEmbedOwnerEmail string      `yaml:"admin_embed_owner_email,omitempty"` // Saved email of the embed user who created the report; only this recipient gets an open link
+	AdminEmbedResources  string      `yaml:"admin_embed_resources,omitempty"`   // JSON list of resources that limit the data of a report created from an embed
+	AdminManaged         bool        `yaml:"admin_managed"`
+	AdminNonce           string      `yaml:"admin_nonce"` // To ensure spec version gets updated on writes, to enable polling in TriggerReconcileAndAwaitReport
+	WebOpenPath          string      `yaml:"web_open_path"`
+	WebOpenState         string      `yaml:"web_open_state"`
+	WebOpenMode          WebOpenMode `yaml:"web_open_mode,omitempty"`
+	Explore              string      `yaml:"explore,omitempty"`
+	Canvas               string      `yaml:"canvas,omitempty"`
 	// Per-metrics-view filters of the canvas at scheduling time, as a JSON object of
 	// metrics view name to filter expression in protojson format (canvas reports only).
 	// The report reconciler bakes these into the report's transitive security rules.
@@ -1303,6 +1370,7 @@ func parseReportAnnotations(annotations map[string]string) reportAnnotations {
 	res := reportAnnotations{}
 	res.AdminOwnerUserID = annotations["admin_owner_user_id"]
 	res.AdminEmbedOwnerID = annotations["admin_embed_owner_id"]
+	res.AdminEmbedOwnerEmail = annotations["admin_embed_owner_email"]
 	res.AdminEmbedResources = annotations["admin_embed_resources"]
 	res.AdminManaged, _ = strconv.ParseBool(annotations["admin_managed"])
 	res.AdminNonce = annotations["admin_nonce"]

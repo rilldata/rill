@@ -34,9 +34,11 @@ func TestNotifyWebhookOmittedWhenEmpty(t *testing.T) {
 	}
 
 	generators := map[string]func(urls []string) ([]byte, error){
-		"managed alert":    func(urls []string) ([]byte, error) { return s.yamlForManagedAlert(alertOpts(urls), "owner") },
-		"committed alert":  func(urls []string) ([]byte, error) { return s.yamlForCommittedAlert(alertOpts(urls)) },
-		"managed report":   func(urls []string) ([]byte, error) { return s.yamlForManagedReport(reportOpts(urls), "owner", "", nil) },
+		"managed alert":   func(urls []string) ([]byte, error) { return s.yamlForManagedAlert(alertOpts(urls), "owner") },
+		"committed alert": func(urls []string) ([]byte, error) { return s.yamlForCommittedAlert(alertOpts(urls)) },
+		"managed report": func(urls []string) ([]byte, error) {
+			return s.yamlForManagedReport(reportOpts(urls), "owner", "", "", nil)
+		},
 		"committed report": func(urls []string) ([]byte, error) { return s.yamlForCommittedReport(reportOpts(urls)) },
 	}
 	for name, gen := range generators {

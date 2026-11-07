@@ -15,6 +15,7 @@
     getMappedExploreUrl,
   } from "@rilldata/web-common/features/explore-mappers/get-mapped-explore-url.ts";
   import type { AIResolverProps } from "@rilldata/web-common/features/explore-mappers/map-ai-resolver-props-to-metrics-resolver-query.ts";
+  import { getSpecQuery } from "@rilldata/web-common/features/explore-mappers/utils";
   import { useExploreValidSpec } from "@rilldata/web-common/features/explores/selectors";
   import { EmbedStore } from "@rilldata/web-common/features/embeds/embed-store.ts";
   import ScheduledReportDialog from "@rilldata/web-common/features/scheduled-reports/ScheduledReportDialog.svelte";
@@ -105,14 +106,7 @@
   $: slackNotifier = extractNotifier(reportSpec?.notifiers, "slack");
   $: webhookNotifier = extractNotifier(reportSpec?.notifiers, "webhook");
 
-  $: queryName =
-    (reportSpec?.resolverProperties?.query_name as string | undefined) ??
-    reportSpec?.queryName ??
-    "";
-  $: queryArgsJson =
-    (reportSpec?.resolverProperties?.query_args_json as string | undefined) ??
-    reportSpec?.queryArgsJson ??
-    "";
+  $: ({ queryName, queryArgsJson } = getSpecQuery(reportSpec ?? {}));
 
   $: exploreUrl = getMappedExploreUrl(
     {
