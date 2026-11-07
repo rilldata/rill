@@ -1,6 +1,7 @@
 import { fromEphemeralMeasuresParam } from "@rilldata/web-common/features/dashboards/ephemeral-measures/url-param";
 import { injectEphemeralMeasuresIntoMap } from "@rilldata/web-common/features/dashboards/ephemeral-measures/url-state";
 import { fromPivotFormattingParam } from "@rilldata/web-common/features/dashboards/pivot/pivot-formatting-param";
+import { dedupePivotChips } from "@rilldata/web-common/features/dashboards/pivot/pivot-chip-utils";
 import {
   PIVOT_TOTALS_ROW_POSITIONS,
   type PivotChipData,
@@ -435,6 +436,9 @@ function fromPivotUrlParams(
   const errors: Error[] = [];
 
   const mapPivotEntry = (entry: string): PivotChipData | undefined => {
+    // An empty entry is a url artifact (`rows=a,`), not a field: skip it quietly.
+    if (!entry) return undefined;
+
     if (entry in FromURLParamTimeDimensionMap) {
       const grain = FromURLParamTimeDimensionMap[entry];
       return {
@@ -488,6 +492,14 @@ function fromPivotUrlParams(
     });
     hasSomePivotFields = true;
   }
+
+  // A field listed twice, or in both zones, is dropped: the drop zones key
+  // their chips by id, so a repeat is a keyed-each error that breaks the view.
+  const rows = dedupePivotChips(rowDimensions);
+  const columns = dedupePivotChips(
+    colChips,
+    rows.map((chip) => chip.id),
+  );
 
   const showPivot = preset.view === V1ExploreWebView.EXPLORE_WEB_VIEW_PIVOT;
   const showTotalsColumn = preset.pivotShowTotalsColumn ?? true;
@@ -577,8 +589,8 @@ function fromPivotUrlParams(
   return {
     partialExploreState: {
       pivot: {
-        rows: rowDimensions,
-        columns: colChips,
+        rows,
+        columns,
         sorting,
         // TODO: other fields are not supported right now
         expanded: {},

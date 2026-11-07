@@ -38,6 +38,13 @@ import {
   V1Operation,
 } from "@rilldata/web-common/runtime-client";
 import { beforeEach, describe, expect, it } from "vitest";
+import {
+  type PivotChipData,
+  PivotChipType,
+  type PivotState,
+  type PivotTableMode,
+} from "@rilldata/web-common/features/dashboards/pivot/types";
+import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
 
 // The filter manager validates the filter param against the metrics view specs, so an invalid
 // filter has to be invalid for it as well.
@@ -45,12 +52,116 @@ const getFilterManager = useTestFilterManager({
   [AD_BIDS_METRICS_NAME]: AD_BIDS_METRICS_3_MEASURES_DIMENSIONS,
 });
 
+const PUBLISHER_CHIP: PivotChipData = {
+  id: "publisher",
+  title: "publisher",
+  type: PivotChipType.Dimension,
+};
+const DOMAIN_CHIP: PivotChipData = {
+  id: "domain",
+  title: "domain",
+  type: PivotChipType.Dimension,
+};
+const IMPRESSIONS_CHIP: PivotChipData = {
+  id: "impressions",
+  title: "impressions",
+  type: PivotChipType.Measure,
+};
+const BID_PRICE_CHIP: PivotChipData = {
+  id: "bid_price",
+  title: "bid_price",
+  type: PivotChipType.Measure,
+};
+const DAY_CHIP: PivotChipData = {
+  id: V1TimeGrain.TIME_GRAIN_DAY,
+  title: "day",
+  type: PivotChipType.Time,
+};
+
+function pivotStateWith(
+  rows: PivotChipData[],
+  columns: PivotChipData[],
+  tableMode: PivotTableMode = "nest",
+): PivotState {
+  return {
+    rows,
+    columns,
+    sorting: [],
+    expanded: {},
+    columnPage: 1,
+    rowPage: 1,
+    enableComparison: true,
+    activeCell: null,
+    showTotalsColumn: true,
+    showTotalsRow: true,
+    totalsRowPosition: "top",
+    tableMode,
+  };
+}
+
 const TestCases: {
   title: string;
   url: string;
   errors: string[];
   entity: Partial<ExploreState>;
 }[] = [
+  {
+    title: "Pivot: a field repeated in rows or columns is kept once",
+    url: "http://localhost/explore/AdBids_explore?view=pivot&rows=publisher,domain,publisher&cols=impressions,time.day,impressions&table_mode=nest",
+    errors: [],
+    entity: {
+      activePage: DashboardState_ActivePage.PIVOT,
+      pivot: pivotStateWith(
+        [PUBLISHER_CHIP, DOMAIN_CHIP],
+        [IMPRESSIONS_CHIP, DAY_CHIP],
+      ),
+    },
+  },
+  {
+    title: "Pivot: a field repeated in a flat table is kept once",
+    url: "http://localhost/explore/AdBids_explore?view=pivot&cols=domain,publisher,impressions,bid_price,publisher&table_mode=flat",
+    errors: [],
+    entity: {
+      activePage: DashboardState_ActivePage.PIVOT,
+      pivot: pivotStateWith(
+        [],
+        [DOMAIN_CHIP, PUBLISHER_CHIP, IMPRESSIONS_CHIP, BID_PRICE_CHIP],
+        "flat",
+      ),
+    },
+  },
+  {
+    title: "Pivot: a dimension in both rows and columns stays in rows only",
+    url: "http://localhost/explore/AdBids_explore?view=pivot&rows=publisher&cols=publisher,impressions&table_mode=nest",
+    errors: [],
+    entity: {
+      activePage: DashboardState_ActivePage.PIVOT,
+      pivot: pivotStateWith([PUBLISHER_CHIP], [IMPRESSIONS_CHIP]),
+    },
+  },
+  {
+    title:
+      "Pivot: empty field names from a leading or trailing comma are dropped",
+    url: "http://localhost/explore/AdBids_explore?view=pivot&rows=publisher,&cols=,impressions,bid_price&table_mode=nest",
+    errors: [],
+    entity: {
+      activePage: DashboardState_ActivePage.PIVOT,
+      pivot: pivotStateWith(
+        [PUBLISHER_CHIP],
+        [IMPRESSIONS_CHIP, BID_PRICE_CHIP],
+      ),
+    },
+  },
+  {
+    title:
+      "Pivot: unknown fields are still reported next to dropped empty names",
+    url: "http://localhost/explore/AdBids_explore?view=pivot&rows=publisher,,pub&cols=impressions,&table_mode=nest",
+    errors: [`Selected pivot row: "pub" is not valid.`],
+    entity: {
+      activePage: DashboardState_ActivePage.PIVOT,
+      pivot: pivotStateWith([PUBLISHER_CHIP], [IMPRESSIONS_CHIP]),
+    },
+  },
   {
     title: "Invalid filter syntax: unknown syntax",
     url: "http://localhost/explore/AdBids_explore?f=abc",

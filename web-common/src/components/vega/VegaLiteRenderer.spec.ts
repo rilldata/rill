@@ -5,7 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { stubCanvasContext } from "../../features/components/charts/cartesian/test-fixtures";
 
 vi.mock("@rilldata/web-common/runtime-client/v2", () => ({
-  useRuntimeClient: () => ({
+  tryUseRuntimeClient: () => ({
     host: "http://localhost:9009",
     instanceId: "default",
     getJwt: () => undefined,
