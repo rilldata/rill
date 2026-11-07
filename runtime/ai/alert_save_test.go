@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"maps"
+	"net/url"
 	"strings"
 	"sync"
 	"testing"
@@ -78,7 +79,7 @@ rows:
 `,
 }
 
-func TestAlertToolsCheckAccess(t *testing.T) {
+func TestAlertReportToolsCheckAccess(t *testing.T) {
 	user := map[string]any{"email": "user@example.com"}
 	service := map[string]any{"name": "my-service"}
 
@@ -110,7 +111,7 @@ func TestAlertToolsCheckAccess(t *testing.T) {
 			s := newAlertReportSession(t, rt, instanceID, tt.userID, tt.attrs, tt.userAgent, tt.permissions...)
 			ctx := ai.WithSession(t.Context(), s)
 
-			for _, name := range []string{ai.SaveAlertName, ai.ListAlertsName} {
+			for _, name := range []string{ai.SaveAlertName, ai.ListAlertsName, ai.SaveReportName, ai.ListReportsName} {
 				tool, ok := s.Tool(name)
 				require.True(t, ok, name)
 				allowed, err := tool.CheckAccess(ctx)
@@ -680,9 +681,36 @@ func TestEditKeepsFiltersTheToolsCantExpress(t *testing.T) {
 		saveAlert(t, s, `{"name":"ai-measure-filter","version":"`+version+`","where":[{"dimension":"country","values":["US"]}]}`)
 		requireExpr(t, editedWhere, propsWhere(admin.lastAlert(t).opts.ResolverProperties))
 	})
+
+	t.Run("explore data report", func(t *testing.T) {
+		version := admin.storeReport(userID, "measure-filter", &drivers.ReportOptions{
+			DisplayName: "A", RefreshCron: "0 9 * * 1", Explore: "sales", QueryName: "MetricsViewAggregation", ExportFormat: runtimev1.ExportFormat_EXPORT_FORMAT_CSV, EmailRecipients: []string{"user@example.com"}, WebOpenMode: "recipient",
+			QueryArgsJSON: `{"metricsView":"mv","measures":[{"name":"revenue"}],"dimensions":[{"name":"country"}],"where":` + dialogWhere + `,"timeRange":{"isoDuration":"P7D"}}`,
+		})
+
+		var list *ai.ListReportsResult
+		_, err := s.CallTool(t.Context(), ai.RoleUser, ai.ListReportsName, &list, &ai.ListReportsArgs{})
+		require.NoError(t, err)
+		r := asJSON(t, findByName(t, list.Reports, "measure-filter"))
+		require.Equal(t, listed, r["where"])
+		require.Len(t, r["where_saved_otherwise"], 1)
+
+		saveReport(t, s, `{"name":"measure-filter","version":"`+version+`","where":[{"dimension":"country","values":["US"]}]}`)
+		requireExpr(t, editedWhere, parseAggregation(t, admin.lastReport(t).opts.QueryArgsJSON).Where)
+		requireQueryRuns(t, rt, instanceID, admin.lastReport(t).opts.QueryArgsJSON)
+	})
+
+	t.Run("AI report", func(t *testing.T) {
+		version := admin.storeReport(userID, "ai-measure-filter", &drivers.ReportOptions{
+			DisplayName: "A", RefreshCron: "0 9 * * 1", EmailRecipients: []string{"user@example.com"}, WebOpenMode: "recipient",
+			Resolver: "ai", ResolverProperties: map[string]any{"prompt": "Summarize", "explore": "sales", "where": whereProps()},
+		})
+		saveReport(t, s, `{"name":"ai-measure-filter","version":"`+version+`","where":[{"dimension":"country","values":["US"]}]}`)
+		requireExpr(t, editedWhere, propsWhere(admin.lastReport(t).opts.ResolverProperties))
+	})
 }
 
-func TestSaveAlertExploreFromMetricsView(t *testing.T) {
+func TestSaveAlertReportExploreFromMetricsView(t *testing.T) {
 	// The analyst's tools list metrics views, not explores, so the model may pass a metrics view's name as the explore.
 	// mv has two explores, costs one the user can access and one they can't, and items none.
 	files := maps.Clone(alertReportFiles)
@@ -694,6 +722,7 @@ func TestSaveAlertExploreFromMetricsView(t *testing.T) {
 	rt, instanceID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{Files: files, Environment: "prod", AdminService: admin})
 	testruntime.RequireReconcileState(t, rt, instanceID, 12, 0, 0)
 	s := newAlertReportSession(t, rt, instanceID, uuid.NewString(), map[string]any{"email": "user@example.com"}, "rill", runtime.UseAI, runtime.ReadObjects, runtime.ReadMetrics)
+	weekly := &ai.Schedule{Cron: "0 9 * * 1"}
 
 	// Each tool saves the explore it resolves in its own place.
 	tools := []struct {
@@ -721,6 +750,22 @@ func TestSaveAlertExploreFromMetricsView(t *testing.T) {
 				return opts.ResolverProperties["explore"].(string)
 			},
 		},
+		{
+			name: "explore data report",
+			save: func(explore string) error {
+				_, err := s.CallTool(t.Context(), ai.RoleUser, ai.SaveReportName, nil, &ai.SaveReportArgs{DisplayName: "A", Kind: "explore_data", Explore: &explore, Measures: []string{"cost"}, TimeRange: ptr("7D as of latest/D"), Schedule: weekly})
+				return err
+			},
+			explore: func(t *testing.T) string { return admin.lastReport(t).opts.Explore },
+		},
+		{
+			name: "AI report",
+			save: func(explore string) error {
+				_, err := s.CallTool(t.Context(), ai.RoleUser, ai.SaveReportName, nil, &ai.SaveReportArgs{DisplayName: "A", Kind: "ai", Explore: &explore, Schedule: weekly})
+				return err
+			},
+			explore: func(t *testing.T) string { return admin.lastReport(t).opts.ResolverProperties["explore"].(string) },
+		},
 	}
 	cases := []struct {
 		name    string
@@ -743,6 +788,7 @@ func TestSaveAlertExploreFromMetricsView(t *testing.T) {
 				if c.err != "" {
 					require.ErrorContains(t, err, c.err)
 					require.Empty(t, admin.alerts)
+					require.Empty(t, admin.reports)
 					return
 				}
 				require.NoError(t, err)
@@ -795,6 +841,13 @@ func TestDimensionFilterContains(t *testing.T) {
 			_, err = s.CallTool(t.Context(), ai.RoleUser, ai.ListAlertsName, &list, &ai.ListAlertsArgs{})
 			require.NoError(t, err)
 			require.Equal(t, asJSONValue(t, []ai.DimensionFilter{c.filter}), asJSONValue(t, findByName(t, list.Alerts, res.Name)["where"]))
+
+			// A canvas PDF report writes it in its security rules and in the canvas state.
+			saveReport(t, s, argsJSON(t, &ai.SaveReportArgs{DisplayName: "A", Kind: "canvas_pdf", Canvas: "overview", CanvasFilters: []ai.CanvasFilters{{MetricsView: "mv", Filters: []ai.DimensionFilter{c.filter}}}, Schedule: &ai.Schedule{Cron: "0 9 * * 1"}}))
+			requireExpr(t, c.expr, admin.lastReport(t).opts.MetricsViewFilters["mv"])
+			state, err := url.ParseQuery(admin.lastReport(t).opts.WebOpenState)
+			require.NoError(t, err)
+			require.Equal(t, c.param, state.Get("f.mv"))
 		})
 	}
 
@@ -810,7 +863,7 @@ func TestDimensionFilterContains(t *testing.T) {
 
 func TestSaveArgsKeepNullsWhenForwarded(t *testing.T) {
 	// MCP clients' arguments are unmarshaled into the tool's arguments and marshaled again to call it, so a null must survive the trip.
-	for _, args := range []any{&ai.SaveAlertArgs{}} {
+	for _, args := range []any{&ai.SaveAlertArgs{}, &ai.SaveReportArgs{}} {
 		in := `{"name":"x","version":"v1","where":null,"time_range":null}`
 		require.NoError(t, json.Unmarshal([]byte(in), args))
 		out, err := json.Marshal(args)
@@ -936,12 +989,14 @@ func changedFields(changes []ai.FieldChange) []string {
 	return fields
 }
 
-// fakeAlertReportAdmin is an admin service that stores the alerts saved through it, with versions, and records the saves.
+// fakeAlertReportAdmin is an admin service that stores the alerts and reports saved through it, with versions, and records the saves.
 type fakeAlertReportAdmin struct {
 	drivers.AdminService // Not implemented; calls to methods that are not overridden panic
 	mu                   sync.Mutex
 	alerts               []savedAlert
+	reports              []savedReport
 	storedAlerts         map[string]*storedAlert
+	storedReports        map[string]*storedReport
 	versions             int
 	err                  error
 }
@@ -951,9 +1006,19 @@ type savedAlert struct {
 	opts                  *drivers.AlertOptions
 }
 
+type savedReport struct {
+	userID, name, version string
+	opts                  *drivers.ReportOptions
+}
+
 type storedAlert struct {
 	owner string
 	alert drivers.ManagedAlert
+}
+
+type storedReport struct {
+	owner  string
+	report drivers.ManagedReport
 }
 
 // storeAlert stores an alert as if a user saved it from the dialog, and returns its version.
@@ -969,6 +1034,19 @@ func (a *fakeAlertReportAdmin) storeAlert(owner, name string, opts *drivers.Aler
 	return v
 }
 
+// storeReport stores a report as if a user saved it from the dialog, and returns its version.
+func (a *fakeAlertReportAdmin) storeReport(owner, name string, opts *drivers.ReportOptions) string {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+	if a.storedReports == nil {
+		a.storedReports = map[string]*storedReport{}
+	}
+	a.versions++
+	v := fmt.Sprintf("v%d", a.versions)
+	a.storedReports[name] = &storedReport{owner: owner, report: drivers.ManagedReport{Name: name, Version: v, Options: opts}}
+	return v
+}
+
 func (a *fakeAlertReportAdmin) ListAlerts(ctx context.Context, userID string) ([]*drivers.ManagedAlert, error) {
 	a.mu.Lock()
 	defer a.mu.Unlock()
@@ -977,6 +1055,19 @@ func (a *fakeAlertReportAdmin) ListAlerts(ctx context.Context, userID string) ([
 		if s.owner == userID {
 			alert := s.alert
 			res = append(res, &alert)
+		}
+	}
+	return res, nil
+}
+
+func (a *fakeAlertReportAdmin) ListReports(ctx context.Context, userID string) ([]*drivers.ManagedReport, error) {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+	var res []*drivers.ManagedReport
+	for _, s := range a.storedReports {
+		if s.owner == userID {
+			report := s.report
+			res = append(res, &report)
 		}
 	}
 	return res, nil
@@ -1002,10 +1093,31 @@ func (a *fakeAlertReportAdmin) SaveAlert(ctx context.Context, userID, name, vers
 	return &drivers.SavedResource{Name: name, URL: "https://ui.example.com/-/alerts/" + name, Version: v}, nil
 }
 
+func (a *fakeAlertReportAdmin) SaveReport(ctx context.Context, userID, name, version string, opts *drivers.ReportOptions) (*drivers.SavedResource, error) {
+	a.mu.Lock()
+	a.reports = append(a.reports, savedReport{userID: userID, name: name, version: version, opts: opts})
+	err := a.err
+	if err == nil && name != "" {
+		if s, ok := a.storedReports[name]; !ok || s.owner != userID || s.report.Version != version {
+			err = status.Errorf(codes.Aborted, "report %q changed since it was listed", name)
+		}
+	}
+	if name == "" {
+		name = fmt.Sprintf("report-%d", len(a.reports))
+	}
+	a.mu.Unlock()
+	if err != nil {
+		return nil, err
+	}
+	v := a.storeReport(userID, name, opts)
+	return &drivers.SavedResource{Name: name, URL: "https://ui.example.com/-/reports/" + name, Version: v}, nil
+}
+
 func (a *fakeAlertReportAdmin) reset() {
 	a.mu.Lock()
 	defer a.mu.Unlock()
 	a.alerts = nil
+	a.reports = nil
 }
 
 func (a *fakeAlertReportAdmin) lastAlert(t *testing.T) savedAlert {
@@ -1013,6 +1125,13 @@ func (a *fakeAlertReportAdmin) lastAlert(t *testing.T) savedAlert {
 	defer a.mu.Unlock()
 	require.NotEmpty(t, a.alerts, "no alert reached the admin service")
 	return a.alerts[len(a.alerts)-1]
+}
+
+func (a *fakeAlertReportAdmin) lastReport(t *testing.T) savedReport {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+	require.NotEmpty(t, a.reports, "no report reached the admin service")
+	return a.reports[len(a.reports)-1]
 }
 
 func ptr[T any](v T) *T { return &v }

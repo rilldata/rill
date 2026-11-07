@@ -198,6 +198,14 @@ func protoValue(m proto.Message) any {
 	return v
 }
 
+// filtersFromExpression decodes a where expression saved as an AND of IN or NIN conditions on dimensions,
+// and of the LIKE or NLIKE conditions of the dashboard's Contains mode, into dimension filters.
+// It returns false if the expression can't be expressed as dimension filters.
+func filtersFromExpression(e *runtimev1.Expression) ([]DimensionFilter, bool) {
+	filters, others := splitWhere(e)
+	return filters, len(others) == 0
+}
+
 // splitWhere splits a where expression into the dimension filters the tools' arguments express
 // and the other conditions of its AND, like the dashboards' measure filters, which an edit of the filters keeps.
 // A where expression that isn't an AND is a single other condition.
@@ -443,5 +451,13 @@ func exploreFromPath(path string) string {
 func cloneAlertOptions(o *drivers.AlertOptions) *drivers.AlertOptions {
 	c := *o
 	c.ResolverProperties = maps.Clone(o.ResolverProperties)
+	return &c
+}
+
+// cloneReportOptions returns a copy of report options that can be changed without changing the original.
+func cloneReportOptions(o *drivers.ReportOptions) *drivers.ReportOptions {
+	c := *o
+	c.ResolverProperties = maps.Clone(o.ResolverProperties)
+	c.MetricsViewFilters = maps.Clone(o.MetricsViewFilters)
 	return &c
 }

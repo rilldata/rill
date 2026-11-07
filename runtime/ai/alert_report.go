@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"regexp"
 	"slices"
 	"strings"
 	"time"
@@ -256,4 +257,40 @@ func checkTimeZone(tz string) error {
 		return fmt.Errorf("invalid time zone %q: %w", tz, err)
 	}
 	return nil
+}
+
+// filterParamIdentifierRegexp matches the dimension names the UI's filter params don't quote.
+var filterParamIdentifierRegexp = regexp.MustCompile(`^[a-zA-Z][a-zA-Z0-9_]*$`)
+
+// filtersURLParam formats dimension filters as the filter param of a dashboard URL, as the UI does (convertExpressionToFilterParam),
+// for example `country IN ('US','CA') AND channel NIN ('web') AND city LIKE '%York%'`.
+func filtersURLParam(filters []DimensionFilter) string {
+	quote := func(v string) string {
+		return "'" + strings.NewReplacer(`\`, `\\`, `'`, `\'`, "\n", `\n`).Replace(v) + "'"
+	}
+	var parts []string
+	for _, f := range filters {
+		col := f.Dimension
+		if !filterParamIdentifierRegexp.MatchString(col) {
+			col = `"` + strings.NewReplacer(`\`, `\\`, `"`, `\"`).Replace(col) + `"`
+		}
+		if f.Contains != "" {
+			op := "LIKE"
+			if f.Exclude {
+				op = "NOT LIKE"
+			}
+			parts = append(parts, fmt.Sprintf("%s %s %s", col, op, quote("%"+f.Contains+"%")))
+			continue
+		}
+		var vals []string
+		for _, v := range f.Values {
+			vals = append(vals, quote(v))
+		}
+		op := "IN"
+		if f.Exclude {
+			op = "NIN"
+		}
+		parts = append(parts, fmt.Sprintf("%s %s (%s)", col, op, strings.Join(vals, ",")))
+	}
+	return strings.Join(parts, " AND ")
 }
