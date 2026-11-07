@@ -175,6 +175,32 @@
   const isPending = $derived($mapDataQuery.isPending);
   const canRender = $derived(mapReady && !isPending && !!colorMeasure);
 
+  // The rows behind the map for the workbook export; see BaseCanvasComponent.exportPayload.
+  $effect(() => {
+    if (isPending || !colorMeasure) {
+      component.exportPayload.set(undefined);
+      return;
+    }
+    const dimensionNames = [geoDimension, tooltipDimension].filter(
+      (name): name is string => !!name,
+    );
+    const measureNames = [colorMeasure, sizeMeasure].filter(
+      (name): name is string => !!name,
+    );
+    component.exportPayload.set({
+      kind: "map",
+      rows,
+      dimensions: dimensionNames.map(
+        (name) =>
+          metricsViewSpec?.dimensions?.find((d) => d.name === name) ?? { name },
+      ),
+      measures: measureNames.map(
+        (name) =>
+          metricsViewSpec?.measures?.find((m) => m.name === name) ?? { name },
+      ),
+    });
+  });
+
   const geoJsonOpts = $derived({
     geoDimension,
     colorMeasure,

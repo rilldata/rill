@@ -1,0 +1,181 @@
+syntax = "proto3";
+package rill.runtime.v1;
+
+import "google/protobuf/struct.proto";
+
+// CanvasWorkbookExportRequest is the JSON body of `POST /v1/instances/{instance_id}/exports/workbook`.
+// It describes an Excel workbook rendered from a canvas dashboard.
+// The browser builds it from data it already holds for the dashboard, so the runtime only formats
+// the request into a .xlsx file; it never queries or executes anything from it.
+message CanvasWorkbookExportRequest {
+  // Name of the canvas the workbook is exported from. The caller must be able to access it.
+  string canvas = 1;
+  WorkbookMeta meta = 2;
+  // Sheets that mirror the canvas layout, in order. The first one is the main sheet.
+  repeated WorkbookDashboardSheet dashboard_sheets = 3;
+  // Sheets holding the data behind charts and tables. Blocks reference them by id.
+  repeated WorkbookDataSheet data_sheets = 4;
+}
+
+message WorkbookMeta {
+  string title = 1;
+  // Human readable generation time, e.g. "2026-10-21 18:40 UTC".
+  string generated_at = 2;
+  // Link to the live dashboard. Must not carry credentials.
+  string dashboard_url = 3;
+  // The resolved time range, e.g. "Jan 1 – Jan 7, 2026".
+  string time_range_text = 4;
+  // The resolved comparison range, if a comparison is shown.
+  string comparison_text = 5;
+  string time_zone = 6;
+  // One line per active filter.
+  repeated string filter_lines = 7;
+}
+
+message WorkbookDashboardSheet {
+  string title = 1;
+  // Lines printed under the header, e.g. pointers to the sheets of a tab group.
+  repeated string notes = 2;
+  // Components laid out on the sheet.
+  repeated WorkbookBlock blocks = 3;
+}
+
+// WorkbookGeometry is a block's position and size in CSS pixels, relative to the sheet's content area.
+message WorkbookGeometry {
+  uint32 x_px = 1;
+  uint32 y_px = 2;
+  uint32 width_px = 3;
+  uint32 height_px = 4;
+}
+
+message WorkbookBlock {
+  // Name of the canvas component the block renders.
+  string component = 1;
+  string title = 2;
+  // The component's description, shown under the title of cell-based blocks.
+  string subtitle = 10;
+  WorkbookGeometry geometry = 3;
+  oneof content {
+    WorkbookChartBlock chart = 4;
+    WorkbookImageBlock image = 5;
+    WorkbookKpiBlock kpi = 6;
+    WorkbookTableBlock table = 7;
+    WorkbookTextBlock text = 8;
+    WorkbookNoteBlock note = 9;
+  }
+}
+
+enum WorkbookChartType {
+  WORKBOOK_CHART_TYPE_UNSPECIFIED = 0;
+  WORKBOOK_CHART_TYPE_COLUMN = 1;
+  WORKBOOK_CHART_TYPE_BAR = 2;
+  WORKBOOK_CHART_TYPE_LINE = 3;
+  WORKBOOK_CHART_TYPE_AREA = 4;
+  WORKBOOK_CHART_TYPE_PIE = 5;
+  WORKBOOK_CHART_TYPE_DOUGHNUT = 6;
+  WORKBOOK_CHART_TYPE_SCATTER = 7;
+  WORKBOOK_CHART_TYPE_COMBO = 8;
+}
+
+enum WorkbookSeriesMark {
+  WORKBOOK_SERIES_MARK_UNSPECIFIED = 0;
+  WORKBOOK_SERIES_MARK_BAR = 1;
+  WORKBOOK_SERIES_MARK_LINE = 2;
+}
+
+// WorkbookChartSeries is one series of a chart. Its legend label is the header of its column.
+message WorkbookChartSeries {
+  // Name of the data sheet column holding the values.
+  string column = 1;
+  // Only used by combo charts.
+  WorkbookSeriesMark mark = 2;
+  bool secondary_axis = 3;
+}
+
+// WorkbookChartBlock is a native Excel chart bound to the cells of a data sheet.
+message WorkbookChartBlock {
+  string data_sheet_id = 1;
+  WorkbookChartType type = 2;
+  // Name of the data sheet column holding the categories (or the x values of a scatter chart).
+  string category_column = 3;
+  repeated WorkbookChartSeries series = 4;
+  // One of none, top, bottom, left or right. Defaults to bottom.
+  string legend_position = 5;
+  string x_axis_title = 6;
+  string y_axis_title = 7;
+  bool stacked = 8;
+  bool percent_stacked = 9;
+  // Excel number format of the value axis.
+  string number_format = 10;
+}
+
+// WorkbookImageBlock is a PNG snapshot of a component.
+message WorkbookImageBlock {
+  bytes png = 1;
+}
+
+message WorkbookKpiValue {
+  string label = 1;
+  // A number, or null when there is no data.
+  google.protobuf.Value value = 2;
+  string number_format = 3;
+  string comparison_label = 4;
+  google.protobuf.Value comparison_value = 5;
+  google.protobuf.Value delta = 6;
+  // A ratio, e.g. 0.12 for +12%.
+  google.protobuf.Value delta_percent = 7;
+  // Column of the block's trend data sheet holding this KPI's time series, drawn as a sparkline under the value.
+  string trend_column = 8;
+}
+
+// WorkbookKpiBlock holds one value for a KPI component and several for a KPI grid.
+message WorkbookKpiBlock {
+  repeated WorkbookKpiValue values = 1;
+  // Data sheet with the KPIs' time series: a time column first, then one column per KPI (see WorkbookKpiValue.trend_column).
+  string trend_data_sheet_id = 2;
+}
+
+// WorkbookTableBlock previews data sheets on the dashboard sheet, laid out side by side, each linking to its full sheet.
+message WorkbookTableBlock {
+  repeated string data_sheet_ids = 1;
+}
+
+message WorkbookTextBlock {
+  string text = 1;
+}
+
+// WorkbookNoteBlock is a short status message, e.g. "No data" or an error.
+message WorkbookNoteBlock {
+  string text = 1;
+}
+
+enum WorkbookColumnType {
+  WORKBOOK_COLUMN_TYPE_UNSPECIFIED = 0;
+  WORKBOOK_COLUMN_TYPE_STRING = 1;
+  WORKBOOK_COLUMN_TYPE_NUMBER = 2;
+  WORKBOOK_COLUMN_TYPE_BOOL = 3;
+  WORKBOOK_COLUMN_TYPE_DATE = 4;
+  WORKBOOK_COLUMN_TYPE_TIMESTAMP = 5;
+}
+
+message WorkbookColumn {
+  // Identifier referenced by charts. Unique within the sheet.
+  string name = 1;
+  // Header text. Defaults to the name.
+  string display_name = 2;
+  WorkbookColumnType type = 3;
+  // Excel number format applied to the column's cells.
+  string number_format = 4;
+}
+
+message WorkbookDataSheet {
+  // Identifier referenced by blocks. Unique within the request.
+  string id = 1;
+  string title = 2;
+  repeated WorkbookColumn columns = 3;
+  // One list per row with one value per column. Dates and timestamps are RFC 3339 strings.
+  repeated google.protobuf.ListValue rows = 4;
+  // True when the source has more rows than the sheet holds, because the component had not
+  // loaded them or the export's row cap trimmed them. Links to the sheet then say "first N rows".
+  bool more_rows = 5;
+}
