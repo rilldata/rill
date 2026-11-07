@@ -125,6 +125,7 @@ func (n *notifier) SendAlertStatus(s *drivers.AlertStatus) error {
 			DisplayName:         s.DisplayName,
 			ExecutionTimeString: s.ExecutionTime.Format(time.RFC1123),
 			FailRow:             s.FailRow,
+			Reason:              s.Reason,
 			OpenLink:            htemplate.URL(s.OpenLink),
 			EditLink:            htemplate.URL(s.EditLink),
 		})
@@ -281,6 +282,7 @@ type AlertFailData struct {
 	DisplayName         string
 	ExecutionTimeString string // Will be inferred from ExecutionTime
 	FailRow             map[string]any
+	Reason              string // The AI analysis's reason when an AI alert fires, shown instead of the fail row
 	OpenLink            htemplate.URL
 	EditLink            htemplate.URL
 }
