@@ -10,6 +10,10 @@
 
 {#key `${instanceId}::${canvasName}`}
   <CanvasProvider {canvasName} {instanceId} showBanner>
-    <CanvasDashboardEmbed {canvasName} {navigationEnabled} />
+    <CanvasDashboardEmbed
+      {canvasName}
+      {navigationEnabled}
+      tableOfContents={false}
+    />
   </CanvasProvider>
 {/key}

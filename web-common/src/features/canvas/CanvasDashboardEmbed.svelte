@@ -18,6 +18,7 @@
 
   export let canvasName: string;
   export let navigationEnabled: boolean = true;
+  export let tableOfContents: boolean = true;
 
   const runtimeClient = useRuntimeClient();
 
@@ -73,7 +74,13 @@
 </script>
 
 {#if canvasName}
-  <CanvasDashboardWrapper {maxWidth} {canvasName} {filtersEnabled} embedded>
+  <CanvasDashboardWrapper
+    {maxWidth}
+    {canvasName}
+    {filtersEnabled}
+    showTableOfContents={tableOfContents}
+    embedded
+  >
     {#each blocks as block (block.kind === "tab-group" ? `g-${block.group.name}` : `r-${block.rowIndex}`)}
       {#if block.kind === "tab-group"}
         <CanvasTabGroupView
