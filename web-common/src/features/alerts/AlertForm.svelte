@@ -24,6 +24,12 @@
     useAlertDashboardState,
   } from "@rilldata/web-admin/features/alerts/selectors.ts";
   import { DialogTitle } from "@rilldata/web-common/components/dialog";
+  import {
+    generateAIAlertName,
+    getAggregationRequestFromAIAlertProperties,
+    AIConditionType,
+    isAIAlertSpec,
+  } from "@rilldata/web-common/features/alerts/ai-alert-utils.ts";
   import * as DialogTabs from "@rilldata/web-common/components/dialog/tabs";
   import {
     getNewAlertInitialFiltersFormValues,
@@ -34,10 +40,11 @@
   import AlertDialogDeliveryTab from "@rilldata/web-common/features/alerts/delivery-tab/AlertDialogDeliveryTab.svelte";
   import {
     alertFormValidationSchema,
+    type AlertConditionType,
     type AlertFormValues,
     checkIsTabValid,
     FieldsByTab,
-    getAlertQueryArgsFromFormValues,
+    getAlertResolverOptions,
   } from "@rilldata/web-common/features/alerts/form-utils.ts";
   import {
     generateAlertName,
@@ -124,15 +131,27 @@
             runtimeClient,
             metricsViewName,
             exploreName,
-            JSON.parse(
-              props.alertSpec.queryArgsJson ||
-                (props.alertSpec.resolverProperties?.query_args_json as
-                  | string
-                  | undefined) ||
-                "{}",
-            ),
+            getEditedAlertAggregationRequest(props.alertSpec, metricsViewName),
             $allTimeRangeResp.data?.timeRangeSummary,
           ));
+  }
+
+  // The data context of the alert being edited: an AI alert keeps it in the ai resolver's properties, a criteria alert in its query.
+  function getEditedAlertAggregationRequest(
+    alertSpec: V1AlertSpec,
+    metricsViewName: string,
+  ) {
+    if (isAIAlertSpec(alertSpec)) {
+      return getAggregationRequestFromAIAlertProperties(
+        alertSpec.resolverProperties ?? {},
+        metricsViewName,
+      );
+    }
+    return JSON.parse(
+      alertSpec.queryArgsJson ||
+        (alertSpec.resolverProperties?.query_args_json as string | undefined) ||
+        "{}",
+    );
   }
   $: ({ selectedComparisonTimeRange } = timeControls);
 
@@ -190,14 +209,12 @@
       data: {
         options: {
           displayName: values.name,
-          queryName: "MetricsViewAggregation",
-          queryArgsJson: JSON.stringify(
-            getAlertQueryArgsFromFormValues(
-              values,
-              filters.topLevelJoiner.expr[metricsViewName],
-              timeControls.toState(),
-              exploreSpec,
-            ),
+          ...getAlertResolverOptions(
+            values,
+            filters.topLevelJoiner.expr[metricsViewName],
+            timeControls.toState(),
+            exploreSpec,
+            props.mode === "edit" ? props.alertSpec : undefined,
           ),
           metricsViewName: values.metricsViewName,
           slackChannels: values.enableSlackNotification
@@ -209,8 +226,11 @@
           emailRecipients: values.enableEmailNotification
             ? values.emailRecipients.filter(Boolean)
             : undefined,
-          // Attachments are only sent with emails, and the export options only apply to attachments
-          ...(values.enableEmailNotification && values.exportAttach
+          // Attachments are only sent with emails, and the export options only apply to attachments.
+          // An AI alert has no rows to attach.
+          ...(values.enableEmailNotification &&
+          values.exportAttach &&
+          values.conditionType !== AIConditionType
             ? {
                 exportAttach: true,
                 exportFormat: values.exportFormat,
@@ -223,10 +243,7 @@
           renotify: !!values.snooze,
           renotifyAfterSeconds: values.snooze ? Number(values.snooze) : 0,
           webOpenPath: `/explore/${encodeURIComponent(exploreName)}`,
-          webOpenState: getProtoFromDashboardState(
-            $exploreState as ExploreState,
-            exploreSpec,
-          ),
+          webOpenState: getWebOpenState(),
         },
       },
     });
@@ -260,6 +277,44 @@
     }
   }
 
+  // An AI alert created through the API has no dashboard state to capture; it keeps the one it had, if any.
+  function getWebOpenState() {
+    if (
+      props.mode === "edit" &&
+      (!$exploreState || Object.keys($exploreState).length === 0)
+    ) {
+      return props.alertSpec.annotations?.web_open_state ?? "";
+    }
+    return getProtoFromDashboardState(
+      $exploreState as ExploreState,
+      exploreSpec,
+    );
+  }
+
+  // For an AI alert, a measure or dimension narrows what the AI looks at. The ones the criteria had (often prefilled from
+  // the dashboard) were not chosen for that, so switching to AI clears them; switching back restores them.
+  // This lives here rather than in the data tab, which unmounts while another tab is shown.
+  let criteriaFields: Pick<AlertFormValues, "measure" | "splitByDimension"> = {
+    measure: "",
+    splitByDimension: "",
+  };
+  function setConditionType(conditionType: AlertConditionType) {
+    if (conditionType === $form.conditionType) return;
+    if (conditionType === AIConditionType) {
+      criteriaFields = {
+        measure: $form.measure,
+        splitByDimension: $form.splitByDimension,
+      };
+      $form.measure = "";
+      $form.splitByDimension = "";
+    } else {
+      $form.measure = $form.measure || criteriaFields.measure;
+      $form.splitByDimension =
+        $form.splitByDimension || criteriaFields.splitByDimension;
+    }
+    $form.conditionType = conditionType;
+  }
+
   $: measure = $form.measure;
   function measureUpdated(mes: string) {
     $form.criteria.forEach((c) => (c.measure = mes));
@@ -290,11 +345,14 @@
       return;
     }
     // if the user came to the delivery tab and name was not changed then auto generate it
-    const name = generateAlertName(
-      $form,
-      $selectedComparisonTimeRange,
-      metricsViewSpec,
-    );
+    const name =
+      $form.conditionType === AIConditionType
+        ? generateAIAlertName($form.aiCondition)
+        : generateAlertName(
+            $form,
+            $selectedComparisonTimeRange,
+            metricsViewSpec,
+          );
     if (!name) return;
     $form.name = name;
   }
@@ -334,7 +392,12 @@
     </DialogTabs.List>
     <div class="p-3 bg-surface-subtle h-[600px] min-h-0 shrink overflow-auto">
       <DialogTabs.Content {currentTabIndex} tabIndex={0} value={tabs[0]}>
-        <AlertDialogDataTab {superFormInstance} {filters} {timeControls} />
+        <AlertDialogDataTab
+          {superFormInstance}
+          {filters}
+          {timeControls}
+          {setConditionType}
+        />
       </DialogTabs.Content>
       <DialogTabs.Content {currentTabIndex} tabIndex={1} value={tabs[1]}>
         <AlertDialogCriteriaTab {superFormInstance} {filters} {timeControls} />
