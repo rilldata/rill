@@ -234,6 +234,18 @@ function isEditableTarget(target: EventTarget | null): boolean {
   );
 }
 
+const OPEN_MODAL_SELECTOR =
+  '[role="dialog"][aria-modal="true"]:not([data-state="closed"]):not([hidden]), [role="alertdialog"][aria-modal="true"]:not([data-state="closed"]):not([hidden])';
+
+export function hasOpenDashboardModal(
+  root: ParentNode = document,
+  except?: Element,
+): boolean {
+  return Array.from(root.querySelectorAll(OPEN_MODAL_SELECTOR)).some(
+    (modal) => modal !== except,
+  );
+}
+
 export function getDashboardShortcutAction(
   event: KeyboardEvent,
   {
@@ -256,11 +268,7 @@ export function getDashboardShortcutAction(
   if (helpOpen) {
     return action === DashboardShortcutAction.ToggleHelp ? action : undefined;
   }
-  if (
-    root.querySelector(
-      '[role="dialog"][aria-modal="true"]:not([data-state="closed"]):not([hidden]), [role="alertdialog"][aria-modal="true"]:not([data-state="closed"]):not([hidden])',
-    )
-  ) {
+  if (hasOpenDashboardModal(root)) {
     return undefined;
   }
   return action;

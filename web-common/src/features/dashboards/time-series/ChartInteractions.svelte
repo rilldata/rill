@@ -14,6 +14,7 @@
   import { DateTime, Interval } from "luxon";
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import RangeDisplay from "../time-controls/super-pill/components/RangeDisplay.svelte";
+  import { hasOpenDashboardModal } from "@rilldata/web-common/features/dashboards/shortcuts/dashboard-shortcuts";
 
   export let exploreName: string;
   export let showComparison = false;
@@ -51,6 +52,7 @@
     : null;
 
   function onKeyDown(e: KeyboardEvent) {
+    if (hasOpenDashboardModal()) return;
     const target = e.target as HTMLElement;
 
     if (

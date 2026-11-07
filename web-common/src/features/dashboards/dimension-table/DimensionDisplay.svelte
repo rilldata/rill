@@ -39,6 +39,7 @@
   import DimensionTable from "./DimensionTable.svelte";
   import { getDimensionFilterWithSearch } from "./dimension-table-utils";
   import { sanitiseExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils.ts";
+  import { hasOpenDashboardModal } from "@rilldata/web-common/features/dashboards/shortcuts/dashboard-shortcuts";
 
   const queryLimit = 250;
 
@@ -275,6 +276,7 @@
       currentTarget: EventTarget & Window;
     },
   ) {
+    if (hasOpenDashboardModal()) return;
     if ((e.ctrlKey || e.metaKey) && e.key === "a") {
       if (e.target instanceof HTMLElement && e.target.tagName === "INPUT")
         return;

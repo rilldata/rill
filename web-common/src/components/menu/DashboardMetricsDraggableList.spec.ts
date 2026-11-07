@@ -2,6 +2,8 @@ import { fireEvent, render, screen, waitFor } from "@testing-library/svelte";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { mockAnimationsForComponentTesting } from "@rilldata/web-common/lib/test/mock-animations";
 import { EmbedStore } from "@rilldata/web-common/features/embeds/embed-store";
+import { cellInspectorStore } from "@rilldata/web-common/features/dashboards/stores/cell-inspector-store";
+import { get } from "svelte/store";
 import DashboardMetricsPickerHarness from "./__fixtures__/DashboardMetricsPickerHarness.svelte";
 
 async function openPicker(type: "measure" | "dimension" = "measure") {
@@ -84,6 +86,30 @@ describe("Dashboard picker keyboard navigation", () => {
     await fireEvent.input(search, { target: { value: "no matching item" } });
     await fireEvent.keyDown(search, { key: "ArrowDown" });
     expect(search).toHaveFocus();
+  });
+
+  it("does not run the cell inspector shortcut inside shortcut help", async () => {
+    render(DashboardMetricsPickerHarness);
+    cellInspectorStore.close();
+
+    await fireEvent.keyDown(window, { key: "?" });
+    const close = await screen.findByRole("button", { name: "Close" });
+    close.focus();
+
+    await fireEvent.keyDown(close, { key: " ", code: "Space" });
+    expect(get(cellInspectorStore).isOpen).toBe(false);
+    await fireEvent.click(close);
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+  });
+
+  it("keeps the cell inspector's own Escape shortcut working", async () => {
+    render(DashboardMetricsPickerHarness);
+    cellInspectorStore.close();
+
+    await fireEvent.keyDown(document.body, { key: " ", code: "Space" });
+    expect(get(cellInspectorStore).isOpen).toBe(true);
+    await fireEvent.keyDown(document.body, { key: "Escape" });
+    expect(get(cellInspectorStore).isOpen).toBe(false);
   });
 
   it("keeps focus on the next shown row and reaches hidden rows with Right", async () => {

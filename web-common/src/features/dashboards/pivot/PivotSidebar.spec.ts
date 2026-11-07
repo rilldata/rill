@@ -1,4 +1,10 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/svelte";
+import {
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within,
+} from "@testing-library/svelte";
 import { beforeAll, describe, expect, it, vi } from "vitest";
 import { get } from "svelte/store";
 import { mockAnimationsForComponentTesting } from "@rilldata/web-common/lib/test/mock-animations";
@@ -30,13 +36,31 @@ async function start() {
 }
 
 describe("Pivot sidebar keyboard navigation", () => {
-  it("leaves calculated measure edit controls available to the keyboard", async () => {
+  it("reaches calculated measure actions from the field", async () => {
     render(PivotSidebarHarness, { withEphemeral: true });
-    const edit = screen.getByRole("button", { name: "Edit adhoc measure" });
-    edit.focus();
-    expect(await fireEvent.keyDown(edit, { key: "Enter" })).toBe(true);
+    await start();
+    await key("Tab");
+
+    const row = focused()?.closest<HTMLElement>("[data-pivot-field]");
+    if (!row) throw new Error("No focused pivot field");
+    const edit = within(row).getByRole("button", {
+      name: "Edit adhoc measure",
+    });
+    const remove = within(row).getByRole("button", { name: "Delete" });
+    const addColumn = within(row).getByRole("button", { name: "Add Column" });
+    await key("ArrowRight");
+    expect(edit).toHaveFocus();
+    await key("ArrowRight");
+    expect(remove).toHaveFocus();
+    await key("ArrowRight");
+    expect(addColumn).toHaveFocus();
+    await key("ArrowLeft");
+    expect(remove).toHaveFocus();
+    await key("ArrowLeft");
+    expect(edit).toHaveFocus();
+    await key("Enter");
+
     expect(state().columns).toEqual([]);
-    await fireEvent.click(edit);
     expect(get(ephemeralMeasureDialog)?.def?.name).toBe("requests");
     ephemeralMeasureDialog.set(null);
   });

@@ -27,6 +27,7 @@
   import type { PivotChipData } from "./types";
   import { PivotChipType } from "./types";
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
+  import { hasOpenDashboardModal } from "@rilldata/web-common/features/dashboards/shortcuts/dashboard-shortcuts";
 
   export let pivotState: PivotState;
   export let measures: PivotChipData[];
@@ -184,9 +185,7 @@
     );
     const tag = target.closest<HTMLElement>("[data-pivot-tag]");
     const row = target.closest<HTMLElement>("[data-pivot-field]");
-    const placement = target.closest<HTMLButtonElement>(
-      "[data-pivot-placement]",
-    );
+    const action = target.closest<HTMLButtonElement>(".icons button");
     if (target === search) {
       if (event.key !== "ArrowDown" && event.key !== "ArrowUp") return;
       event.preventDefault();
@@ -198,7 +197,7 @@
       return;
     }
     if (!tag && !row) return;
-    if (row && !placement && target !== row.querySelector(".drag-item button"))
+    if (row && !action && target !== row.querySelector(".drag-item button"))
       return;
     if (
       ![
@@ -216,7 +215,7 @@
     event.preventDefault();
     event.stopPropagation();
     if (event.key === "Escape") {
-      if (placement) focusField(row ?? undefined);
+      if (action) focusField(row ?? undefined);
       else focusTarget(search);
     } else if (event.key === "Tab") {
       const sections = [TIME_ZONE, MEASURES_ZONE, DIMENSIONS_ZONE].filter(
@@ -246,25 +245,38 @@
         else focusField(fields[Math.min(index, fields.length - 1)]);
       }
     } else if (event.key === "ArrowLeft" || event.key === "ArrowRight") {
-      if (placement) {
+      if (action) {
         const actions = Array.from(
-          row?.querySelectorAll<HTMLButtonElement>("[data-pivot-placement]") ??
-            [],
+          row?.querySelectorAll<HTMLButtonElement>(".icons button") ?? [],
         );
-        focusTarget(
-          actions[event.key === "ArrowLeft" ? 0 : actions.length - 1],
-        );
+        const index = actions.indexOf(action);
+        if (event.key === "ArrowLeft" && index === 0)
+          focusField(row ?? undefined);
+        else
+          focusTarget(
+            actions[
+              Math.max(
+                0,
+                Math.min(
+                  actions.length - 1,
+                  index + (event.key === "ArrowLeft" ? -1 : 1),
+                ),
+              )
+            ],
+          );
       } else if (tag && event.key === "ArrowRight")
         focusField(fieldRows(lastFieldSection)[0] ?? fieldRows()[0]);
       else if (row && event.key === "ArrowLeft") focusTarget(tags[0]);
+      else if (row && event.key === "ArrowRight")
+        focusTarget(row.querySelector<HTMLButtonElement>(".icons button"));
     } else if (tag) {
       tag.click();
     } else if (row) {
-      const actions = Array.from(
+      const placements = Array.from(
         row.querySelectorAll<HTMLButtonElement>("[data-pivot-placement]"),
       );
-      if (!placement && actions.length > 1) {
-        focusTarget(actions[0]);
+      if (!action && placements.length > 1) {
+        focusTarget(placements[0]);
         return;
       }
       const rowsBefore = fieldRows(row.dataset.pivotSection);
@@ -274,8 +286,15 @@
         rowsBefore[index - 1] ??
         fieldRows().find((candidate) => candidate !== row);
       const nextId = nextRow?.dataset.pivotField;
-      (placement ?? actions[0])?.click();
+      const activated = action ?? placements[0];
+      const hadOpenModal = hasOpenDashboardModal();
+      activated?.click();
       await tick();
+      if (!hadOpenModal && hasOpenDashboardModal()) return;
+      if (row.isConnected) {
+        focusField(row);
+        return;
+      }
       focusField(
         fieldRows().find(
           (candidate) => candidate.dataset.pivotField === nextId,
