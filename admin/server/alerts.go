@@ -535,7 +535,7 @@ func (s *Server) yamlForManagedAlert(opts *adminv1.AlertOptions, ownerUserID str
 	res.Intervals.Duration = opts.IntervalDuration
 	if opts.Resolver != "" {
 		res.Data = map[string]any{
-			opts.Resolver: opts.ResolverProperties,
+			opts.Resolver: opts.ResolverProperties.AsMap(),
 		}
 	}
 	res.Query.Name = opts.QueryName
@@ -585,7 +585,7 @@ func (s *Server) yamlForCommittedAlert(opts *adminv1.AlertOptions) ([]byte, erro
 	res.Intervals.Duration = opts.IntervalDuration
 	if opts.Resolver != "" {
 		res.Data = map[string]any{
-			opts.Resolver: opts.ResolverProperties,
+			opts.Resolver: opts.ResolverProperties.AsMap(),
 		}
 	}
 	res.Query.Name = opts.QueryName
