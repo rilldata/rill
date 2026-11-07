@@ -6,6 +6,7 @@
   import { cubicOut } from "svelte/easing";
   import Kbd from "./Kbd.svelte";
   import { Lock, Unlock } from "lucide-svelte";
+  import { hasOpenDashboardModal } from "@rilldata/web-common/features/dashboards/shortcuts/dashboard-shortcuts";
 
   export let value: any = null;
   export let isOpen: boolean = false;
@@ -33,6 +34,8 @@
     // Only handle Space key when not in an input, textarea, or other form element
     const target = event.target as HTMLElement;
     if (!target?.tagName) return; // non-element event
+    if (target.closest('[data-dashboard-picker], [role="menu"]')) return;
+    if (hasOpenDashboardModal(document, container)) return;
     const tagName = target.tagName.toLowerCase();
     const isContentEditable = target.getAttribute("contenteditable") !== null;
     const isFormElement =

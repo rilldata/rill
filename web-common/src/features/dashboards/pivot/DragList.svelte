@@ -364,6 +364,8 @@
 >
   {#each items as item, index (item.id)}
     <div
+      data-pivot-section={!isDropLocation ? zone : undefined}
+      data-pivot-field={!isDropLocation ? item.id : undefined}
       class="item-wrapper gap-x-2"
       class:aligned={zone === "Time" ||
         zone === "Measures" ||
@@ -482,6 +484,7 @@
             <Tooltip distance={8} location="top" alignment="start">
               <button
                 class="icon-wrapper"
+                data-pivot-placement="rows"
                 onclick={() => addField(item, true)}
                 aria-label={m.dashboard_add_row()}
                 type="button"
@@ -497,6 +500,7 @@
           <Tooltip distance={8} location="top" alignment="start">
             <button
               class="icon-wrapper"
+              data-pivot-placement="columns"
               onclick={() => addField(item, false)}
               aria-label={m.dashboard_add_column()}
               type="button"
@@ -593,8 +597,17 @@
     @apply gap-x-2 hidden transition-opacity duration-200;
   }
 
-  .item-wrapper:hover .icons {
+  .item-wrapper:hover .icons,
+  .item-wrapper:focus-within .icons {
     @apply flex;
+  }
+
+  .item-wrapper.aligned:focus-within {
+    @apply bg-popover-accent rounded-sm ring-2 ring-inset ring-theme-500;
+  }
+
+  .icon-wrapper:focus-visible {
+    @apply outline-none ring-2 ring-theme-500 rounded-sm;
   }
 
   .icon-wrapper {

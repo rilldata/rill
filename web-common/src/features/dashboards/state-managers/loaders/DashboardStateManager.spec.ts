@@ -55,13 +55,18 @@ import { render, screen, waitFor } from "@testing-library/svelte";
 import { readable } from "svelte/store";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+const navigationOptions = vi.hoisted(() => vi.fn());
+
 const hoistedPage: HoistedPageForComponentTests = vi.hoisted(() => ({}) as any);
 
 vi.stubEnv("TZ", "UTC");
 
 vi.mock("$app/navigation", () => {
   return {
-    goto: (url, opts) => hoistedPage.goto(url, opts),
+    goto: (url, opts) => {
+      navigationOptions(opts);
+      return hoistedPage.goto(url, opts);
+    },
     afterNavigate: (cb) => hoistedPage.afterNavigate(cb),
     onNavigate: () => {},
   };
@@ -103,6 +108,23 @@ describe("DashboardStateManager", () => {
     sessionStorage.clear();
     queryClient.clear();
     metricsExplorerStore.remove(AD_BIDS_EXPLORE_NAME);
+  });
+
+  it("preserves keyboard focus when a dashboard action updates the URL", async () => {
+    renderDashboardStateManager();
+    await waitFor(() => expect(screen.getByText("Dashboard loaded!")));
+    await waitFor(() =>
+      expect(pageMock.urlSearchHistory.length).toBeGreaterThan(0),
+    );
+    navigationOptions.mockClear();
+    metricsExplorerStore.createPivot(
+      AD_BIDS_EXPLORE_NAME,
+      [{ id: "publisher", title: "Publisher", type: PivotChipType.Dimension }],
+      [],
+    );
+    await waitFor(() =>
+      expect(navigationOptions).toHaveBeenCalledWith({ keepFocus: true }),
+    );
   });
 
   describe("Dashboards with timeseries", () => {

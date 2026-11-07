@@ -11,18 +11,21 @@
 
   $: selected = options.get(current.toLowerCase());
 
-  const groupedData = new Map();
+  let groupedData = new Map();
 
   // Group data by colon separator
-  for (let [key, option] of options) {
-    const [group, sub] = key.split(":");
-    if (sub) {
-      if (!groupedData.has(group)) {
-        groupedData.set(group, []);
+  $: {
+    groupedData = new Map();
+    for (let [key, option] of options) {
+      const [group, sub] = key.split(":");
+      if (sub) {
+        if (!groupedData.has(group)) {
+          groupedData.set(group, []);
+        }
+        groupedData.get(group).push(option);
+      } else {
+        groupedData.set(group, option); // Standalone items
       }
-      groupedData.get(group).push(option);
-    } else {
-      groupedData.set(group, option); // Standalone items
     }
   }
 </script>
@@ -42,7 +45,12 @@
       <DropdownMenu.Root>
         <DropdownMenu.Trigger>
           {#snippet child({ props })}
-            <button {...props} class="trigger">
+            <button
+              {...props}
+              data-dashboard-shortcut={pathOptions.shortcut}
+              aria-label="Breadcrumb dropdown"
+              class="trigger"
+            >
               <CaretDownIcon size="14px" />
             </button>
           {/snippet}

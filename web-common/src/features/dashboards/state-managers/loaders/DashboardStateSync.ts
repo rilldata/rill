@@ -427,7 +427,7 @@ export class DashboardStateSync {
       }
 
       // dashboard changed so we should update the url
-      await goto(newUrl);
+      await goto(newUrl, { keepFocus: true });
     } finally {
       this.updating = false;
     }

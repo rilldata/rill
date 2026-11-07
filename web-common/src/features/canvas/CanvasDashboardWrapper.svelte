@@ -1,6 +1,7 @@
 <script lang="ts">
   import { dynamicHeight } from "@rilldata/web-common/layout/layout-settings.ts";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
+  import DashboardShortcuts from "../dashboards/shortcuts/DashboardShortcuts.svelte";
   import CellInspector from "@rilldata/web-common/components/CellInspector.svelte";
   import CanvasFilters from "./filters/CanvasFilters.svelte";
   import { getCanvasStore } from "./state-managers/state-managers";
@@ -67,6 +68,7 @@
 </script>
 
 <ThemeProvider theme={$theme}>
+  <DashboardShortcuts view="canvas" />
   <main
     class="flex flex-col overflow-hidden"
     class:w-full={$dynamicHeight}

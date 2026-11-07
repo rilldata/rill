@@ -17,6 +17,7 @@ export type PathOption = {
 };
 
 export type PathOptions = {
+  shortcut?: string;
   options: Map<Param, PathOption>;
   // Key of the current page's option, when the map is not keyed by the URL segment.
   // Defaults to the lowercased URL segment.

@@ -20,6 +20,7 @@
   export let forcedInputStyle = "";
   export let theme = false;
   export let rounded: "sm" | "md" | "lg" = "sm";
+  export let onKeyDown: (event: KeyboardEvent) => void = () => {};
   export let onSubmit: () => void = () => {};
 
   $: resolvedLabel = label ?? m.common_search();
@@ -28,8 +29,13 @@
   /* Reference of input DOM element */
   let ref: HTMLInputElement | HTMLTextAreaElement;
 
-  function handleKeyDown(event) {
-    // Use `key` rather than `code`: the numeric keypad Enter reports code "NumpadEnter", and without this the form submits natively and reloads the page.
+  function handleKeyDown(event: KeyboardEvent) {
+    onKeyDown(event);
+    if (event.defaultPrevented) return;
+    if (event.key === "Escape") {
+      ref?.blur();
+      return;
+    }
     if (event.key === "Enter") {
       event.preventDefault();
       event.stopPropagation();
@@ -67,6 +73,7 @@
 >
   <button
     type="button"
+    tabindex="-1"
     class="flex absolute inset-y-0 items-center pl-2 text-fg-secondary"
     onclick={() => {
       ref?.focus();
@@ -95,7 +102,7 @@
     onkeydown={handleKeyDown}
     aria-label={resolvedLabel}
     role="textbox"
-    tabindex="-1"
+    tabindex="0"
     {value}
   />
 </form>

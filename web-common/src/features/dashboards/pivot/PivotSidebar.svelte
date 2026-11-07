@@ -14,7 +14,7 @@
   import { type TimeControlState } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
-  import { onMount } from "svelte";
+  import { onMount, tick } from "svelte";
   import type {
     PivotSidebarSection,
     PivotState,
@@ -27,6 +27,7 @@
   import type { PivotChipData } from "./types";
   import { PivotChipType } from "./types";
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
+  import { hasOpenDashboardModal } from "@rilldata/web-common/features/dashboards/shortcuts/dashboard-shortcuts";
 
   export let pivotState: PivotState;
   export let measures: PivotChipData[];
@@ -137,6 +138,171 @@
     namesInSelectedTag,
   );
 
+  let sidebarElement: HTMLDivElement;
+  let lastFieldSection: PivotSidebarSection = TIME_ZONE;
+
+  function fieldRows(section?: string) {
+    return Array.from(
+      sidebarElement?.querySelectorAll<HTMLElement>(
+        `[data-pivot-field]${section ? `[data-pivot-section="${section}"]` : ""}`,
+      ) ?? [],
+    );
+  }
+
+  function focusTarget(target: HTMLElement | null | undefined) {
+    target?.focus();
+    target?.scrollIntoView({ block: "nearest" });
+  }
+
+  function focusField(row: HTMLElement | undefined) {
+    if (row) {
+      const section = row.dataset.pivotSection;
+      if (
+        section === TIME_ZONE ||
+        section === MEASURES_ZONE ||
+        section === DIMENSIONS_ZONE
+      )
+        lastFieldSection = section;
+    }
+    focusTarget(row?.querySelector<HTMLButtonElement>(".drag-item button"));
+  }
+
+  async function handleSidebarKeydown(event: KeyboardEvent) {
+    if (
+      event.defaultPrevented ||
+      event.metaKey ||
+      event.ctrlKey ||
+      event.altKey
+    )
+      return;
+    const target = event.target;
+    if (!(target instanceof HTMLElement)) return;
+    const search = sidebarElement.querySelector<HTMLInputElement>(
+      'input[role="textbox"]',
+    );
+    const tags = Array.from(
+      sidebarElement.querySelectorAll<HTMLElement>("[data-pivot-tag]"),
+    );
+    const tag = target.closest<HTMLElement>("[data-pivot-tag]");
+    const row = target.closest<HTMLElement>("[data-pivot-field]");
+    const action = target.closest<HTMLButtonElement>(".icons button");
+    if (target === search) {
+      if (event.key !== "ArrowDown" && event.key !== "ArrowUp") return;
+      event.preventDefault();
+      event.stopPropagation();
+      const fields = fieldRows();
+      if (fields.length)
+        focusField(event.key === "ArrowDown" ? fields[0] : fields.at(-1));
+      else focusTarget(tags[0]);
+      return;
+    }
+    if (!tag && !row) return;
+    if (row && !action && target !== row.querySelector(".drag-item button"))
+      return;
+    if (
+      ![
+        "ArrowUp",
+        "ArrowDown",
+        "ArrowLeft",
+        "ArrowRight",
+        "Tab",
+        "Enter",
+        " ",
+        "Escape",
+      ].includes(event.key)
+    )
+      return;
+    event.preventDefault();
+    event.stopPropagation();
+    if (event.key === "Escape") {
+      if (action) focusField(row ?? undefined);
+      else focusTarget(search);
+    } else if (event.key === "Tab") {
+      const sections = [TIME_ZONE, MEASURES_ZONE, DIMENSIONS_ZONE].filter(
+        (section) => fieldRows(section).length,
+      );
+      const sectionIndex = sections.findIndex(
+        (section) => section === row?.dataset.pivotSection,
+      );
+      const nextIndex = tag
+        ? event.shiftKey
+          ? sections.length - 1
+          : 0
+        : (sectionIndex + (event.shiftKey ? -1 : 1) + sections.length) %
+          sections.length;
+      focusField(fieldRows(sections[nextIndex])[0]);
+    } else if (event.key === "ArrowUp" || event.key === "ArrowDown") {
+      const offset = event.key === "ArrowUp" ? -1 : 1;
+      if (tag) {
+        const index = tags.indexOf(tag) + offset;
+        focusTarget(
+          index < 0 ? search : tags[Math.min(index, tags.length - 1)],
+        );
+      } else {
+        const fields = fieldRows();
+        const index = fields.indexOf(row!) + offset;
+        if (index < 0) focusTarget(search);
+        else focusField(fields[Math.min(index, fields.length - 1)]);
+      }
+    } else if (event.key === "ArrowLeft" || event.key === "ArrowRight") {
+      if (action) {
+        const actions = Array.from(
+          row?.querySelectorAll<HTMLButtonElement>(".icons button") ?? [],
+        );
+        const index = actions.indexOf(action);
+        if (event.key === "ArrowLeft" && index === 0)
+          focusField(row ?? undefined);
+        else
+          focusTarget(
+            actions[
+              Math.max(
+                0,
+                Math.min(
+                  actions.length - 1,
+                  index + (event.key === "ArrowLeft" ? -1 : 1),
+                ),
+              )
+            ],
+          );
+      } else if (tag && event.key === "ArrowRight")
+        focusField(fieldRows(lastFieldSection)[0] ?? fieldRows()[0]);
+      else if (row && event.key === "ArrowLeft") focusTarget(tags[0]);
+      else if (row && event.key === "ArrowRight")
+        focusTarget(row.querySelector<HTMLButtonElement>(".icons button"));
+    } else if (tag) {
+      tag.click();
+    } else if (row) {
+      const placements = Array.from(
+        row.querySelectorAll<HTMLButtonElement>("[data-pivot-placement]"),
+      );
+      if (!action && placements.length > 1) {
+        focusTarget(placements[0]);
+        return;
+      }
+      const rowsBefore = fieldRows(row.dataset.pivotSection);
+      const index = rowsBefore.indexOf(row);
+      const nextRow =
+        rowsBefore[index + 1] ??
+        rowsBefore[index - 1] ??
+        fieldRows().find((candidate) => candidate !== row);
+      const nextId = nextRow?.dataset.pivotField;
+      const activated = action ?? placements[0];
+      const hadOpenModal = hasOpenDashboardModal();
+      activated?.click();
+      await tick();
+      if (!hadOpenModal && hasOpenDashboardModal()) return;
+      if (row.isConnected) {
+        focusField(row);
+        return;
+      }
+      focusField(
+        fieldRows().find(
+          (candidate) => candidate.dataset.pivotField === nextId,
+        ) ?? fieldRows()[0],
+      );
+    }
+  }
+
   function filterItems(
     fullList: PivotChipData[],
     search: string,
@@ -164,9 +330,23 @@
   }
 </script>
 
-<div class="sidebar" class:has-tags={hasTags} bind:clientHeight={sidebarHeight}>
+<div
+  class="sidebar"
+  class:has-tags={hasTags}
+  bind:clientHeight={sidebarHeight}
+  bind:this={sidebarElement}
+  data-dashboard-picker
+  data-dashboard-shortcut-context="pivot-sidebar"
+  role="presentation"
+  onkeydown={handleSidebarKeydown}
+>
   <div class="input-wrapper sticky top-0 z-10 bg-surface-background">
-    <Search theme background bind:value={searchText} />
+    <Search
+      theme
+      background
+      bind:value={searchText}
+      onKeyDown={handleSidebarKeydown}
+    />
   </div>
 
   <div class="body">
@@ -245,7 +425,7 @@
           type="button"
           aria-label={m.dashboard_pivot_ephemeral_create()}
           title={m.dashboard_pivot_ephemeral_create()}
-          on:click={() => ephemeralMeasureDialog.set({})}
+          onclick={() => ephemeralMeasureDialog.set({})}
         >
           <Add size="14px" />
         </button>

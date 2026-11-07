@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { tick } from "svelte";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import type { ExpressionFilterManager } from "@rilldata/web-common/features/dashboards/filters/ExpressionFilterManager.svelte.ts";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
@@ -13,6 +14,7 @@
   import type { SearchableFilterSelectableGroup } from "@rilldata/web-common/components/searchable-filter-menu/SearchableFilterSelectableItem.ts";
   import { isSimpleMeasure } from "@rilldata/web-common/features/dashboards/state-managers/selectors/measures.ts";
   import { MetricsViewSpecDimensionType } from "@rilldata/web-common/runtime-client";
+  import { DashboardShortcutAction } from "@rilldata/web-common/features/dashboards/shortcuts/dashboard-shortcuts";
 
   let {
     expressionFilterManager,
@@ -29,6 +31,16 @@
   } = $props();
 
   let open = $state(false);
+  let pendingFilterName: string | undefined = $state(undefined);
+
+  async function handlePickerClose(event: Event) {
+    if (!pendingFilterName) return;
+    event.preventDefault();
+    const name = pendingFilterName;
+    pendingFilterName = undefined;
+    await tick();
+    expressionFilterManager.addNewFilter(name);
+  }
 
   let { metricsViewsProvider, filterManagersMap } = $derived(
     expressionFilterManager,
@@ -81,6 +93,7 @@
       <Tooltip distance={8} suppress={open}>
         <button
           {...props}
+          data-dashboard-shortcut={DashboardShortcutAction.OpenFilter}
           class:addBorder
           class:active={open}
           aria-label={m.dashboard_add_filter_button()}
@@ -96,7 +109,8 @@
 
   <SearchableMenuContent
     allowMultiSelect={false}
-    onSelect={(name) => expressionFilterManager.addNewFilter(name)}
+    onSelect={(name) => (pendingFilterName = name)}
+    onCloseAutoFocus={handlePickerClose}
     {selectableGroups}
     selectedItems={[]}
     {side}

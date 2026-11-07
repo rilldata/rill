@@ -11,6 +11,7 @@
   } from "@rilldata/web-common/metrics/service/MetricsTypes";
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
   import type { ComponentType } from "svelte";
+  import { DashboardShortcutAction } from "../shortcuts/dashboard-shortcuts";
   import Tab from "./Tab.svelte";
 
   type TabName = MetricsEventScreenName.Pivot | MetricsEventScreenName.Explore;
@@ -61,6 +62,9 @@
         <Tab
           theme
           {selected}
+          shortcut={!hidePivot && !selected
+            ? DashboardShortcutAction.ToggleView
+            : undefined}
           href="?{ExploreStateURLParams.WebView}={tab}"
           onclick={() => handleTabChange(tab)}
         >

@@ -30,7 +30,7 @@
     createDimensionSearchQuery,
   } from "./queries.svelte.ts";
   import type { ExpressionFilterManager } from "../ExpressionFilterManager.svelte.ts";
-  import { onMount } from "svelte";
+  import { onMount, tick } from "svelte";
   import type { YAMLConfigProvider } from "@rilldata/web-common/features/dashboards/providers/YAMLConfigProvider.svelte.ts";
   import {
     dedupe,
@@ -69,6 +69,104 @@
   let proxyDimensionManager = $derived(dimensionManager.clone());
 
   let open = $state(false);
+  let searchControls: HTMLDivElement | null = $state(null);
+
+  function getSearchInput() {
+    return searchControls?.querySelector<
+      HTMLInputElement | HTMLTextAreaElement
+    >("input, textarea");
+  }
+
+  function getValueItems() {
+    return Array.from(
+      searchControls
+        ?.closest('[role="menu"]')
+        ?.querySelectorAll<HTMLElement>(
+          "[data-filter-value]:not([data-disabled])",
+        ) ?? [],
+    );
+  }
+
+  function focusSearchOnOpen(event: Event) {
+    event.preventDefault();
+    getSearchInput()?.focus();
+  }
+
+  function handleEscapeKeydown(event: KeyboardEvent) {
+    if (
+      dimensionManager.expr ||
+      proxyDimensionManager.selectedValues.length ||
+      pinned ||
+      required ||
+      curPinned ||
+      curRequired
+    )
+      return;
+    event.preventDefault();
+    event.stopPropagation();
+    open = false;
+    manager.removeFilter(dimensionManager.name);
+  }
+
+  function handleSearchKeydown(event: KeyboardEvent) {
+    if (event.ctrlKey || event.metaKey || event.altKey) return;
+    if (
+      proxyDimensionManager.mode === DimensionFilterMode.Select &&
+      (event.key === "ArrowDown" || event.key === "ArrowUp")
+    ) {
+      event.preventDefault();
+      event.stopPropagation();
+      const items = getValueItems();
+      items[event.key === "ArrowDown" ? 0 : items.length - 1]?.focus();
+    }
+  }
+
+  async function handleValueKeydown(event: KeyboardEvent) {
+    if (
+      event.defaultPrevented ||
+      event.ctrlKey ||
+      event.metaKey ||
+      event.altKey
+    )
+      return;
+    const target = event.target;
+    if (!(target instanceof HTMLElement)) return;
+    const search = getSearchInput();
+    const mode = searchControls?.querySelector<HTMLElement>(
+      '[id="dimension-filter-mode-selector"]',
+    );
+    if (event.key === "Tab" && (target === search || target === mode)) {
+      event.preventDefault();
+      event.stopPropagation();
+      (target === search ? mode : search)?.focus();
+      return;
+    }
+    const item = target.closest<HTMLElement>("[data-filter-value]");
+    if (!item || item.hasAttribute("data-disabled")) return;
+    const items = getValueItems();
+    const index = items.indexOf(item);
+    if (
+      ["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(event.key)
+    ) {
+      event.preventDefault();
+      event.stopPropagation();
+      if (event.key === "ArrowUp") {
+        if (index > 0) items[index - 1]?.focus();
+        else search?.focus();
+      } else if (event.key === "ArrowDown") {
+        items[Math.min(index + 1, items.length - 1)]?.focus();
+      }
+    } else if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      event.stopPropagation();
+      const value = item.dataset.filterValue;
+      item.click();
+      await tick();
+      getValueItems()
+        .find((candidate) => candidate.dataset.filterValue === value)
+        ?.focus();
+    }
+  }
   let curSearchText = $state("");
 
   const client = useRuntimeClient();
@@ -369,7 +467,7 @@
 
 <svelte:window
   onkeydown={(e) => {
-    if (open && e.key === "Enter") onApply();
+    if (!e.defaultPrevented && open && e.key === "Enter") onApply();
   }}
 />
 
@@ -395,10 +493,10 @@
             name: dimensionManager.name,
           })}
           theme
-          onRemove={() => dimensionManager.clear()}
+          onRemove={() => manager.removeFilter(dimensionManager.name)}
           removable={removable && !pinned && !required}
-          removeTooltipText={m.filter_remove_values({
-            count: dimensionManager.selectedValues.length,
+          removeTooltipText={m.dashboard_remove_label({
+            label: dimensionManager.label,
           })}
         >
           <DimensionFilterChipBody
@@ -444,6 +542,10 @@
   <!-- This has significant differences with SearchableMenuContent with how search text is handled.
        So we have a custom implementation here to not overload SearchableMenuContent unnecessarily. -->
   <DropdownMenu.Content
+    loop={false}
+    onOpenAutoFocus={focusSearchOnOpen}
+    onEscapeKeydown={handleEscapeKeydown}
+    onkeydowncapture={handleValueKeydown}
     align="start"
     {side}
     class="flex flex-col max-h-96 w-[400px] overflow-hidden p-0"
@@ -467,7 +569,7 @@
           </div>
         </div>
       {/if}
-      <div class="flex flex-row">
+      <div class="flex flex-row" bind:this={searchControls}>
         <DimensionFilterModeSelector
           bind:mode={proxyDimensionManager.mode}
           onModeChange={handleModeChange}
@@ -475,6 +577,7 @@
         />
         <Search
           bind:value={curSearchText}
+          onKeyDown={handleSearchKeydown}
           label={m.filter_dimension_search_list_aria({
             name: dimensionManager.name,
           })}
@@ -538,6 +641,7 @@
               {@const label = name ?? "null"}
 
               <DropdownMenu.CheckboxItem
+                data-filter-value={JSON.stringify(name)}
                 closeOnSelect={false}
                 class="text-xs cursor-pointer"
                 checked={selected}
@@ -570,6 +674,7 @@
                 : DropdownMenu.Item}
 
             <ItemComponent
+              data-filter-value={JSON.stringify(name)}
               closeOnSelect={false}
               class="text-xs cursor-pointer {proxyDimensionManager.mode !==
               DimensionFilterMode.Select

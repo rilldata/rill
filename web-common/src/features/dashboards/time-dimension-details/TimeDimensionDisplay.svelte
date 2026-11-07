@@ -27,6 +27,7 @@
   } from "@rilldata/web-common/features/dashboards/time-series/measure-chart/hover-index";
   import type { TDDComparison, TableData } from "./types";
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
+  import { hasOpenDashboardModal } from "@rilldata/web-common/features/dashboards/shortcuts/dashboard-shortcuts";
 
   interface Props {
     exploreName: string;
@@ -230,12 +231,12 @@
   }
 
   function handleKeyDown(e: KeyboardEvent) {
+    if (hasOpenDashboardModal()) return;
     if (comparisonCopy !== "dimension") return;
-    // Select all items on Meta+A
+    // Toggle all items on Meta+A
     if ((e.ctrlKey || e.metaKey) && e.key === "a") {
       if ((e.target as HTMLElement)?.tagName === "INPUT") return;
       e.preventDefault();
-      if (areAllTableRowsSelected) return;
       toggleAllSearchItems();
     }
   }

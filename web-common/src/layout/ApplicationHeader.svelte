@@ -12,6 +12,7 @@
     developerChatActions,
     developerChatOpen,
   } from "@rilldata/web-common/features/chat/layouts/sidebar/sidebar-store";
+  import { DashboardShortcutAction } from "@rilldata/web-common/features/dashboards/shortcuts/dashboard-shortcuts";
   import { getBreadcrumbOptions } from "@rilldata/web-common/features/dashboards/dashboard-utils";
   import DisabledViewAsButton from "@rilldata/web-common/features/dashboards/granular-access-policies/DisabledViewAsButton.svelte";
   import {
@@ -74,6 +75,7 @@
   $: hasValidDashboard = Boolean(defaultDashboard);
 
   $: dashboardOptions = {
+    shortcut: DashboardShortcutAction.OpenDashboardList,
     options: getBreadcrumbOptions(explores, canvases),
     currentId: dashboardName
       ? resourceKey(

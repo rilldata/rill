@@ -432,7 +432,7 @@
           <div></div>
           <!-- min-w-0 lets the 1fr track follow the resizable panel width instead of
                being propped open by the chart's intrinsic size (see the chart cell below) -->
-          <div class="relative min-w-0">
+          <div class="relative min-w-0" data-dashboard-shortcut-context="chart">
             <MeasureChartXAxis
               interval={chartInterval}
               timeGranularity={activeTimeGrain}

@@ -47,8 +47,9 @@ import {
   type V1Expression,
   V1Operation,
 } from "@rilldata/web-common/runtime-client";
-import { screen, waitFor } from "@testing-library/svelte";
-import { describe, expect, it } from "vitest";
+import { act, fireEvent, screen, waitFor } from "@testing-library/svelte";
+import { describe, expect, it, vi } from "vitest";
+import { ExpressionFilterManager } from "../ExpressionFilterManager.svelte.ts";
 
 /**
  * How a test reads the filter state back. Explore takes it from the dashboard store the filter bar
@@ -141,6 +142,229 @@ export function testDimensionFilters(variant: ExpressionFiltersVariant) {
   } = variantAssertions(variant);
 
   describe("Dimension filters", () => {
+    it("cancels an empty new dimension pill with Escape", async () => {
+      await variant.render();
+      await addFilter(AD_BIDS_PUBLISHER_DIMENSION);
+      const search = await screen.findByLabelText(
+        `${AD_BIDS_PUBLISHER_DIMENSION} search list`,
+      );
+      await fireEvent.keyDown(search, { key: "Escape", code: "Escape" });
+      await waitFor(() =>
+        expect(
+          screen.queryByLabelText(`Open ${AD_BIDS_PUBLISHER_DIMENSION} filter`),
+        ).not.toBeInTheDocument(),
+      );
+      assertWhereFilter(createAndExpression([]));
+      assertUrlSearch(initialUrlSearch);
+    });
+
+    it("keeps staged and applied dimension selections when Escape closes their menu", async () => {
+      await variant.render();
+      await addFilter(AD_BIDS_PUBLISHER_DIMENSION);
+      await selectValues(["Facebook"]);
+      await fireEvent.keyDown(
+        screen.getByLabelText(`${AD_BIDS_PUBLISHER_DIMENSION} search list`),
+        { key: "Escape", code: "Escape" },
+      );
+      await waitFor(() =>
+        expect(screen.queryByRole("menu")).not.toBeInTheDocument(),
+      );
+      assertWhereFilter(
+        createAndExpression([
+          createInExpression(AD_BIDS_PUBLISHER_DIMENSION, ["Facebook"]),
+        ]),
+      );
+      await toggleFilter(AD_BIDS_PUBLISHER_DIMENSION);
+      await fireEvent.keyDown(
+        screen.getByLabelText(`${AD_BIDS_PUBLISHER_DIMENSION} search list`),
+        { key: "Escape", code: "Escape" },
+      );
+      await waitFor(() =>
+        expect(screen.queryByRole("menu")).not.toBeInTheDocument(),
+      );
+      expect(getFilterChip(AD_BIDS_PUBLISHER_DIMENSION)).toHaveTextContent(
+        "Facebook",
+      );
+      assertWhereFilter(
+        createAndExpression([
+          createInExpression(AD_BIDS_PUBLISHER_DIMENSION, ["Facebook"]),
+        ]),
+      );
+    });
+
+    it("hands focus to value search only after the filter picker has closed", async () => {
+      const original = ExpressionFilterManager.prototype.addNewFilter;
+      const overlappingSearches: boolean[] = [];
+      const spy = vi
+        .spyOn(ExpressionFilterManager.prototype, "addNewFilter")
+        .mockImplementation(function (
+          this: ExpressionFilterManager,
+          name: string,
+        ) {
+          overlappingSearches.push(
+            !!screen.queryByRole("textbox", {
+              name: "Search list",
+            }),
+          );
+          original.call(this, name);
+        });
+      try {
+        await variant.render();
+        await act(() => screen.getByLabelText("Add filter button").click());
+        const item = await screen.findByRole("menuitem", {
+          name: AD_BIDS_PUBLISHER_DIMENSION,
+        });
+        await fireEvent.keyDown(item, { key: "Enter", code: "Enter" });
+        const search = await screen.findByLabelText(
+          `${AD_BIDS_PUBLISHER_DIMENSION} search list`,
+        );
+        await waitFor(() => expect(search).toHaveFocus());
+        expect(overlappingSearches).toEqual([false]);
+      } finally {
+        spy.mockRestore();
+      }
+    });
+
+    it("returns to search from the first selected value after reopening the filter", async () => {
+      await variant.render();
+      await addFilter(AD_BIDS_PUBLISHER_DIMENSION);
+      await selectValues(["Facebook", "Google"]);
+      await closeFilter(AD_BIDS_PUBLISHER_DIMENSION);
+      await toggleFilter(AD_BIDS_PUBLISHER_DIMENSION);
+      await waitForDimensionFilterResults(AD_BIDS_PUBLISHER_DIMENSION, [
+        "Facebook",
+        "Google",
+        "null",
+        "Yahoo",
+        "Microsoft",
+      ]);
+      const search = screen.getByLabelText(
+        `${AD_BIDS_PUBLISHER_DIMENSION} search list`,
+      );
+      await waitFor(() => expect(search).toHaveFocus());
+      await fireEvent.keyDown(search, { key: "ArrowDown" });
+      const first = screen.getByRole("menuitemcheckbox", { name: "Facebook" });
+      expect(first).toHaveFocus();
+      await fireEvent.keyDown(first, { key: "ArrowUp" });
+      expect(search).toHaveFocus();
+    });
+
+    it("starts in value search and cycles between search and Select with Tab", async () => {
+      await variant.render();
+      await addFilter(AD_BIDS_PUBLISHER_DIMENSION);
+      const search = screen.getByLabelText(
+        `${AD_BIDS_PUBLISHER_DIMENSION} search list`,
+      );
+      await waitFor(() => expect(search).toHaveFocus());
+      await fireEvent.keyDown(search, { key: "Tab" });
+      const mode = document.getElementById("dimension-filter-mode-selector");
+      expect(mode).toHaveFocus();
+      if (!mode) throw new Error("Missing dimension filter mode selector");
+      await fireEvent.keyDown(mode, { key: "Tab" });
+      expect(search).toHaveFocus();
+      await fireEvent.keyDown(search, { key: "Tab", shiftKey: true });
+      expect(mode).toHaveFocus();
+      await fireEvent.keyDown(mode, { key: "Tab", shiftKey: true });
+      expect(search).toHaveFocus();
+    });
+
+    it("enters searched values with Down and toggles them with Enter and Space", async () => {
+      await variant.render();
+      await addFilter(AD_BIDS_PUBLISHER_DIMENSION);
+      const search = screen.getByLabelText(
+        `${AD_BIDS_PUBLISHER_DIMENSION} search list`,
+      );
+      await typeInDimensionFilterSearch(AD_BIDS_PUBLISHER_DIMENSION, "oo");
+      await waitForDimensionFilterResults(AD_BIDS_PUBLISHER_DIMENSION, [
+        "Facebook",
+        "Google",
+        "Yahoo",
+      ]);
+      search.focus();
+      await fireEvent.keyDown(search, { key: "ArrowDown" });
+      const value = screen.getByRole("menuitemcheckbox", { name: "Facebook" });
+      expect(value).toHaveFocus();
+      await fireEvent.keyDown(value, { key: "Enter", code: "Enter" });
+      await waitFor(() =>
+        expect(
+          screen.getByRole("menuitemcheckbox", { name: "Facebook" }),
+        ).toHaveAttribute("aria-checked", "true"),
+      );
+      expect(
+        screen.getByRole("menuitemcheckbox", { name: "Facebook" }),
+      ).toHaveFocus();
+      await fireEvent.keyDown(
+        screen.getByRole("menuitemcheckbox", { name: "Facebook" }),
+        { key: " ", code: "Space" },
+      );
+      await waitFor(() =>
+        expect(
+          screen.getByRole("menuitemcheckbox", { name: "Facebook" }),
+        ).toHaveAttribute("aria-checked", "false"),
+      );
+      await fireEvent.keyDown(
+        screen.getByRole("menuitemcheckbox", { name: "Facebook" }),
+        { key: "ArrowUp" },
+      );
+      expect(search).toHaveFocus();
+    });
+
+    it("removes a newly added dimension pill that has no selected values", async () => {
+      await variant.render();
+      await addFilter(AD_BIDS_PUBLISHER_DIMENSION);
+      await closeFilter(AD_BIDS_PUBLISHER_DIMENSION);
+      await removeDimensionFilter(AD_BIDS_PUBLISHER_DIMENSION);
+      await waitFor(() =>
+        expect(
+          screen.queryByLabelText(`Open ${AD_BIDS_PUBLISHER_DIMENSION} filter`),
+        ).not.toBeInTheDocument(),
+      );
+      await act(() => screen.getByLabelText("Add filter button").click());
+      expect(
+        await screen.findByRole("menuitem", {
+          name: AD_BIDS_PUBLISHER_DIMENSION,
+        }),
+      ).toBeVisible();
+    });
+
+    it("does not close value options for an Enter already handled by another control", async () => {
+      await variant.render();
+      await addFilter(AD_BIDS_PUBLISHER_DIMENSION);
+      await waitForDimensionFilterResults(AD_BIDS_PUBLISHER_DIMENSION, [
+        "null",
+        "Facebook",
+        "Google",
+        "Yahoo",
+        "Microsoft",
+      ]);
+      const event = new KeyboardEvent("keydown", {
+        key: "Enter",
+        bubbles: true,
+        cancelable: true,
+      });
+      event.preventDefault();
+      await act(() => window.dispatchEvent(event));
+      expect(getDimensionFilterResults(AD_BIDS_PUBLISHER_DIMENSION)).toContain(
+        "Facebook",
+      );
+    });
+
+    it("keeps value options open after adding a dimension with Enter", async () => {
+      await variant.render();
+      await act(() => screen.getByLabelText("Add filter button").click());
+      const item = await screen.findByRole("menuitem", {
+        name: AD_BIDS_PUBLISHER_DIMENSION,
+      });
+      await fireEvent.keyDown(item, { key: "Enter", code: "Enter" });
+      await waitForDimensionFilterResults(AD_BIDS_PUBLISHER_DIMENSION, [
+        "null",
+        "Facebook",
+        "Google",
+        "Yahoo",
+        "Microsoft",
+      ]);
+    });
+
     it("Should apply a dimension filter selected in the filter bar", async () => {
       await variant.render();
 
