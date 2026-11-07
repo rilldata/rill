@@ -13,6 +13,10 @@
   } from "@rilldata/web-common/features/explore-mappers/utils";
   import { useRuntimeClient } from "@rilldata/web-common/runtime-client/v2";
   import type { PageData } from "./$types";
+  import {
+    isResourceErrorAlert,
+    RESOURCE_ERRORS_OPEN_PATH,
+  } from "@rilldata/web-admin/features/alerts/resource-errors/utils";
 
   export let data: PageData;
 
@@ -49,7 +53,9 @@
     },
   );
 
-  $: if (alertSpec && (!queryName || !queryArgsJson)) {
+  $: if (isResourceErrorAlert(alertSpec)) {
+    goto(`/${organization}/${project}${RESOURCE_ERRORS_OPEN_PATH}`);
+  } else if (alertSpec && (!queryName || !queryArgsJson)) {
     goto(`/${organization}/${project}/-/alerts/${alertId}`);
   }
 

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { page } from "$app/stores";
   import IconButton from "@rilldata/web-common/components/button/IconButton.svelte";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import ThreeDot from "@rilldata/web-common/components/icons/ThreeDot.svelte";
@@ -13,9 +14,11 @@
     CodeIcon,
     ScrollTextIcon,
     AlertCircleIcon,
+    BellIcon,
   } from "lucide-svelte";
   import { getAvailableModelActions } from "@rilldata/web-common/features/projects/status/tables/model-actions";
   import { m } from "@rilldata/web-common/lib/i18n/gen/messages";
+  import { featureFlags } from "@rilldata/web-common/features/feature-flags";
 
   export let resourceKind: string;
   export let resourceName: string;
@@ -46,6 +49,9 @@
   $: isPartitioned = actions.includes("viewPartitions");
   $: isIncremental = actions.includes("incrementalRefresh");
   $: hasErroredPartitions = actions.includes("refreshErrored");
+
+  const { alerts: alertsFlag } = featureFlags;
+  $: alertOnErrorsHref = `/${$page.params.organization}/${$page.params.project}/-/settings/notifications?resource=${encodeURIComponent(`${resourceKind}/${resourceName}`)}`;
 
   $: refreshDisabled = isReconciling;
   $: refreshTooltip = isReconciling ? m.status_resource_reconciling() : "";
@@ -82,6 +88,19 @@
         <span class="ml-2">{m.status_action_view_logs()}</span>
       </div>
     </DropdownMenu.Item>
+
+    <!-- Alert on errors -->
+    {#if $alertsFlag}
+      <DropdownMenu.Item
+        class="font-normal flex items-center"
+        href={alertOnErrorsHref}
+      >
+        <div class="flex items-center">
+          <BellIcon size="12px" />
+          <span class="ml-2">{m.status_action_alert_on_errors()}</span>
+        </div>
+      </DropdownMenu.Item>
+    {/if}
 
     <!-- View Partitions (models only, if partitioned) -->
     {#if isPartitioned && onViewPartitionsClick}
